@@ -18,19 +18,15 @@ const onDeleteOrder = (pk: number) => emit('on-delete', pk)
 <template>
   <CTable hover responsive>
     <colgroup>
-      <col style="width: 14%" />
-      <col style="width: 14%" />
-      <col style="width: 14%" />
       <col style="width: 20%" />
-      <col style="width: 14%" />
-      <col style="width: 14%" />
+      <col style="width: 20%" />
+      <col style="width: 20%" />
+      <col style="width: 20%" />
       <col v-if="write_project" style="width: 10%" />
     </colgroup>
     <CTableHead :color="TableSecondary" class="text-center">
       <CTableRow>
-        <CTableHeaderCell>대분류</CTableHeaderCell>
-        <CTableHeaderCell>중분류</CTableHeaderCell>
-        <CTableHeaderCell>소분류</CTableHeaderCell>
+        <CTableHeaderCell>계정 과목</CTableHeaderCell>
         <CTableHeaderCell>산출 근거</CTableHeaderCell>
         <CTableHeaderCell>기초 지출 예산</CTableHeaderCell>
         <CTableHeaderCell>현황 지출 예산</CTableHeaderCell>

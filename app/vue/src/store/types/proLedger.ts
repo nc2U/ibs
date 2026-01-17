@@ -135,7 +135,7 @@ export type DataFilter = {
 }
 
 export type ProAccountFilter = {
-  category?: string
+  category?: 'asset' | 'liability' | 'equity' | 'revenue' | 'expense' | 'transfer' | 'cancel' | ''
   direction?: 'deposit' | 'withdraw'
   parent?: number | null
   is_category_only?: boolean | ''

@@ -5,18 +5,16 @@ import { write_project } from '@/utils/pageAuth'
 import { type ProjectAccountD2, type ProjectAccountD3 } from '@/store/types/proCash'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
-
-const d2List = inject<ProjectAccountD2[]>('d2List')
-const d3List = inject<ProjectAccountD3[]>('d3List')
+import { CTableRow } from '@coreui/vue'
 
 const props = defineProps({ budget: { type: Object, required: true } })
 const emit = defineEmits(['on-update', 'on-delete'])
 
+const accountList = inject<any>('accountList')
+
 const form = reactive({
   pk: null,
-  account_d2: null,
-  account_opt: '',
-  account_d3: null,
+  account: null,
   basis_calc: null,
   budget: null,
   revised_budget: null,
@@ -27,13 +25,11 @@ const refConfirmModal = ref()
 
 const formsCheck = computed(() => {
   const a = form.pk === props.budget.pk
-  const b = form.account_d2 === props.budget.account_d2
-  const c = form.account_opt === props.budget.account_opt
-  const d = form.account_d3 === props.budget.account_d3
-  const e = form.basis_calc === props.budget.basis_calc
-  const f = form.budget === props.budget.budget || !props.budget.budget
-  const g = form.revised_budget === props.budget.revised_budget
-  return a && b && c && d && e && f && g
+  const b = form.account === props.budget.account
+  const c = form.basis_calc === props.budget.basis_calc
+  const d = form.budget === props.budget.budget || !props.budget.budget
+  const e = form.revised_budget === props.budget.revised_budget
+  return a && b && c && d && e
 })
 
 const onUpdateBudget = () => {
@@ -61,9 +57,7 @@ const modalAction = () => {
 
 const dataSetup = () => {
   form.pk = props.budget.pk
-  form.account_d2 = props.budget.account_d2
-  form.account_opt = props.budget.account_opt
-  form.account_d3 = props.budget.account_d3
+  form.account = props.budget.account
   form.basis_calc = props.budget.basis_calc
   form.budget = props.budget.budget || '0'
   form.revised_budget = props.budget.revised_budget
@@ -75,25 +69,10 @@ onBeforeMount(() => dataSetup())
 <template>
   <CTableRow>
     <CTableDataCell>
-      <CFormSelect v-model.number="form.account_d2" required>
-        <option value="">대분류</option>
-        <option v-for="d2 in d2List" :key="d2.pk" :value="d2.pk">
-          {{ d2.name }}
-        </option>
-      </CFormSelect>
-    </CTableDataCell>
-    <CTableDataCell>
-      <CFormInput
-        v-model="form.account_opt"
-        placeholder="중분류(필요시 기재)"
-        @keydown.enter="onUpdateBudget"
-      />
-    </CTableDataCell>
-    <CTableDataCell>
-      <CFormSelect v-model.number="form.account_d3" required>
-        <option value="">소분류</option>
-        <option v-for="d3 in d3List" :key="d3.pk" :value="d3.pk">
-          {{ d3.name }}
+      <CFormSelect v-model.number="form.account" required>
+        <option value="">계정과목</option>
+        <option v-for="acc in accountList" :key="acc.value" :value="acc.value">
+          {{ acc.label }}
         </option>
       </CFormSelect>
     </CTableDataCell>

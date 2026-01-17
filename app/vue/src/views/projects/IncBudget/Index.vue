@@ -1,13 +1,12 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, provide, ref } from 'vue'
-import { pageTitle, navMenu } from '@/views/projects/_menu/headermixin3'
+import { navMenu, pageTitle } from '@/views/projects/_menu/headermixin3'
 import { write_project } from '@/utils/pageAuth'
 import { useProject } from '@/store/pinia/project'
-import { useProLedger } from '@/store/pinia/proLedger.ts'
-import { useProCash } from '@/store/pinia/proCash'
 import { useContract } from '@/store/pinia/contract'
+import { useProLedger } from '@/store/pinia/proLedger.ts'
 import { useProjectData } from '@/store/pinia/project_data'
-import type { Project, ProIncBudget } from '@/store/types/project'
+import type { ProIncBudget, Project } from '@/store/types/project'
 import type { ProAccountFilter } from '@/store/types/proLedger.ts'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
@@ -24,12 +23,6 @@ const allProAccount = computed(() => pLedgerStore.proAccounts)
 const fetchProjectAccounts = (payload: ProAccountFilter) =>
   pLedgerStore.fetchProjectAccounts(payload)
 
-const pCashStore = useProCash()
-const allAccD2List = computed(() => pCashStore.allAccD2List.filter(d1 => d1.pk <= 2))
-const allAccD3List = computed(() =>
-  pCashStore.allAccD3List.filter(d3 => d3.pk === 1 || d3.pk === 5),
-)
-
 const contStore = useContract()
 const getOrderGroups = computed(() => contStore.getOrderGroups)
 
@@ -37,8 +30,6 @@ const pDataStore = useProjectData()
 const getTypes = computed(() => pDataStore.getTypes)
 
 provide('accountList', allProAccount)
-provide('d2List', allAccD2List)
-provide('d3List', allAccD3List)
 provide('orderGroups', getOrderGroups)
 provide('unitTypes', getTypes)
 
@@ -46,9 +37,6 @@ const fetchIncBudgetList = (pj: number) => projStore.fetchIncBudgetList(pj)
 const createIncBudget = (payload: ProIncBudget) => projStore.createIncBudget(payload)
 const updateIncBudget = (payload: ProIncBudget) => projStore.updateIncBudget(payload)
 const deleteIncBudget = (pk: number, project: number) => projStore.deleteIncBudget(pk, project)
-
-const fetchProAllAccD2List = () => pCashStore.fetchProAllAccD2List()
-const fetchProAllAccD3List = () => pCashStore.fetchProAllAccD3List()
 
 const fetchOrderGroupList = (proj: number) => contStore.fetchOrderGroupList(proj)
 
@@ -70,7 +58,6 @@ const dataSetup = (pk: number) => {
   fetchOrderGroupList(pk)
   fetchTypeList(pk)
   fetchIncBudgetList(pk)
-  fetchProjectAccounts({ direction: 'deposit', is_payment: true })
 }
 
 const dataReset = () => {
@@ -86,8 +73,7 @@ const projSelect = (target: number | null) => {
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  await fetchProAllAccD2List()
-  await fetchProAllAccD3List()
+  await fetchProjectAccounts({ direction: 'deposit', is_active: true, is_payment: true })
   dataSetup(project.value || projStore.initProjId)
   loading.value = false
 })

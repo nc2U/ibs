@@ -1,24 +1,20 @@
 <script lang="ts" setup>
-import { ref, reactive, inject, watch } from 'vue'
+import { inject, reactive, ref, watch } from 'vue'
 import { write_project } from '@/utils/pageAuth'
-import { type ProjectAccountD2, type ProjectAccountD3 } from '@/store/types/proCash'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
-const d2List = inject<ProjectAccountD2[]>('d2List')
-const d3List = inject<ProjectAccountD3[]>('d3List')
-
 const props = defineProps({ disabled: Boolean })
 const emit = defineEmits(['on-submit'])
+
+const accountList = inject<any>('accountList')
 
 const refAlertModal = ref()
 const refConfirmModal = ref()
 
 const validated = ref(false)
 const form = reactive({
-  account_d2: null,
-  account_opt: '',
-  account_d3: null,
+  account: null,
   basis_calc: '',
   budget: null,
   revised_budget: null,
@@ -51,9 +47,7 @@ const modalAction = () => {
 }
 
 const resetForm = () => {
-  form.account_d2 = null
-  form.account_opt = ''
-  form.account_d3 = null
+  form.account = null
   form.basis_calc = ''
   form.budget = null
   form.revised_budget = null
@@ -63,40 +57,17 @@ const resetForm = () => {
 <template>
   <CForm novalidate class="needs-validation" :validated="validated" @submit.prevent="onSubmit">
     <CRow class="p-2" color="success">
-      <CCol md="12" lg="5">
+      <CCol md="10" xl="11">
         <CRow>
-          <CCol md="4" class="mb-2">
-            <CFormSelect v-model="form.account_d2" required :disabled="disabled">
-              <option value="">대분류</option>
-              <option v-for="d1 in d2List" :key="d1.pk" :value="d1.pk">
-                {{ d1.name }}
+          <CCol md="3" class="mb-2">
+            <CFormSelect v-model="form.account" required :disabled="disabled">
+              <option value="">계정 과목</option>
+              <option v-for="acc in accountList" :key="acc.value" :value="acc.value">
+                {{ acc.label }}
               </option>
             </CFormSelect>
           </CCol>
-
-          <CCol md="4" class="mb-2">
-            <CFormInput
-              v-model="form.account_opt"
-              placeholder="중분류(필요시 기재)"
-              maxlength="20"
-              :disabled="disabled"
-            />
-          </CCol>
-
-          <CCol md="4" class="mb-2">
-            <CFormSelect v-model="form.account_d3" :disabled="disabled">
-              <option value="">소분류</option>
-              <option v-for="d2 in d3List" :key="d2.pk" :value="d2.pk">
-                {{ d2.name }}
-              </option>
-            </CFormSelect>
-          </CCol>
-        </CRow>
-      </CCol>
-
-      <CCol md="12" lg="7">
-        <CRow>
-          <CCol md="4" class="mb-2">
+          <CCol md="3" class="mb-2">
             <CFormInput
               v-model="form.basis_calc"
               placeholder="산출근거"
@@ -105,7 +76,7 @@ const resetForm = () => {
             />
           </CCol>
 
-          <CCol md="4" lg="3" class="mb-2">
+          <CCol md="3" class="mb-2">
             <CFormInput
               v-model.number="form.budget"
               min="0"
@@ -117,7 +88,7 @@ const resetForm = () => {
             />
           </CCol>
 
-          <CCol md="4" lg="3" class="mb-2">
+          <CCol md="3" class="mb-2">
             <CFormInput
               v-model.number="form.revised_budget"
               min="0"
@@ -127,8 +98,11 @@ const resetForm = () => {
               :disabled="disabled"
             />
           </CCol>
-
-          <CCol md="4" lg="2" class="d-grid gap-2 d-lg-block mb-3">
+        </CRow>
+      </CCol>
+      <CCol md="2" xl="1">
+        <CRow>
+          <CCol md="12" class="d-grid gap-2 d-lg-block text-right mb-3">
             <v-btn color="primary" type="submit" :disabled="disabled"> 지출 예산 추가</v-btn>
           </CCol>
         </CRow>
