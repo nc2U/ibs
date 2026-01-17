@@ -12,7 +12,8 @@ from django.http import HttpResponse
 
 from _excel.mixins import ExcelExportMixin, XlwtStyleMixin
 from company.models import Company
-from ledger.models import CompanyBankTransaction, CompanyAccountingEntry, ProjectBankTransaction, ProjectAccountingEntry, ProjectAccount
+from ledger.models import CompanyBankTransaction, CompanyAccountingEntry, ProjectBankTransaction, \
+    ProjectAccountingEntry, ProjectAccount
 from ledger.services.company_transaction import get_company_transactions
 from ledger.services.project_transaction import get_project_transactions
 from project.models import Project, ProjectOutBudget
@@ -763,6 +764,7 @@ class ExportLedgerBudgetExecutionStatus(ExcelExportMixin):
             project=project,
             account__isnull=False,
             account__depth=2,
+            account__category='expense',
             account__is_category_only=False
         ).select_related('account', 'account__parent').order_by('order', 'id')
 
@@ -1013,6 +1015,7 @@ class ExportLedgerCashFlowForm(ExcelExportMixin):
             project=project,
             account__isnull=False,
             account__depth=2,
+            account__category='expense',
             account__is_category_only=False
         ).select_related('account', 'account__parent').order_by('order', 'id')
 

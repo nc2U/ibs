@@ -101,7 +101,7 @@ const excelUrl = computed(() => {
 
 const cashFlowUrl = computed(
   () =>
-    `/excel/cash-flow-form/?project=${project.value}&date=${date.value}&revised=${revised.value}`,
+    `/excel/ledger-cash-flow-form/?project=${project.value}&date=${date.value}&revised=${revised.value}`,
 )
 
 const comp: { [key: number]: string } = {
