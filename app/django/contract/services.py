@@ -760,12 +760,28 @@ class ContractCreationService:
         if isinstance(activation_value, str):
             activation_value = activation_value.lower() == 'true'
 
+        # Convert string 'true'/'false' to boolean for is_sup_cont
+        is_sup_cont_value = data.get('is_sup_cont', False)
+        if isinstance(is_sup_cont_value, str):
+            is_sup_cont_value = is_sup_cont_value.lower() == 'true'
+
+        # Convert string to date for sup_cont_date
+        sup_cont_date_value = data.get('sup_cont_date')
+        if isinstance(sup_cont_date_value, str) and sup_cont_date_value:
+            try:
+                from datetime import datetime
+                sup_cont_date_value = datetime.strptime(sup_cont_date_value, '%Y-%m-%d').date()
+            except ValueError:
+                sup_cont_date_value = None
+
         return Contract.objects.create(
             project_id=data.get('project'),
+            serial_number=data.get('serial_number'),
             order_group_id=data.get('order_group'),
             unit_type_id=data.get('unit_type'),
-            serial_number=data.get('serial_number'),
-            activation=activation_value
+            activation=activation_value,
+            is_sup_cont=is_sup_cont_value,
+            sup_cont_date=sup_cont_date_value
         )
 
 
@@ -795,6 +811,24 @@ class ContractUpdateService:
         # 1. 기본 계약 정보 업데이트
         instance.order_group_id = data.get('order_group', instance.order_group_id)
         instance.unit_type_id = data.get('unit_type', instance.unit_type_id)
+
+        # is_sup_cont와 sup_cont_date 필드 처리
+        if 'is_sup_cont' in data:
+            is_sup_cont_value = data.get('is_sup_cont')
+            if isinstance(is_sup_cont_value, str):
+                is_sup_cont_value = is_sup_cont_value.lower() == 'true'
+            instance.is_sup_cont = is_sup_cont_value
+
+        if 'sup_cont_date' in data:
+            sup_cont_date_value = data.get('sup_cont_date')
+            if isinstance(sup_cont_date_value, str) and sup_cont_date_value:
+                try:
+                    from datetime import datetime
+                    sup_cont_date_value = datetime.strptime(sup_cont_date_value, '%Y-%m-%d').date()
+                except ValueError:
+                    sup_cont_date_value = None
+            instance.sup_cont_date = sup_cont_date_value
+
         instance.updator = user
         instance.save()
 

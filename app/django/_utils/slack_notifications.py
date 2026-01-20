@@ -565,7 +565,16 @@ class SlackMessageBuilder:
 
         # 간소화된 제목: 프로젝트명 + 계약번호
         title = f"📋 [PR-계약]-[{instance.project.name}] {instance.serial_number}"
-        cont_date_str = instance.sup_cont_date.strftime('%Y-%m-%d') if instance.sup_cont_date else '미정'
+        # sup_cont_date 안전하게 처리 (문자열/날짜 객체 모두 지원)
+        if instance.sup_cont_date:
+            if hasattr(instance.sup_cont_date, 'strftime'):
+                # 날짜 객체인 경우
+                cont_date_str = instance.sup_cont_date.strftime('%Y-%m-%d')
+            else:
+                # 문자열인 경우 그대로 사용
+                cont_date_str = str(instance.sup_cont_date)
+        else:
+            cont_date_str = '미정'
 
         # 편집 시 updator와 creator 정보 표시
         if action == '편집' and hasattr(instance, 'updator') and instance.updator:
