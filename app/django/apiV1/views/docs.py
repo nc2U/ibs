@@ -3,15 +3,15 @@ from datetime import datetime
 from django.db.models import Q
 from django.http import FileResponse
 from django.utils import timezone
-from django_filters import BooleanFilter, ModelChoiceFilter, NumberFilter, CharFilter, DateFilter
+from django_filters import BooleanFilter, ModelChoiceFilter, CharFilter, DateFilter
 from django_filters.rest_framework import FilterSet
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from company.models import Company
-from project.models import Project
 from docs.models import LetterSequence
+from docs.utils import generate_official_letter_pdf
 from ..pagination import PageNumberPaginationOneHundred, PageNumberPaginationThreeThousand
 from ..permission import *
 from ..serializers.docs import *
@@ -221,8 +221,6 @@ class OfficialLetterViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def generate_pdf(self, request, pk=None):
         """공문 PDF 생성"""
-        from docs.utils import generate_official_letter_pdf
-
         letter = self.get_object()
         pdf_file = generate_official_letter_pdf(letter)
         letter.pdf_file = pdf_file
