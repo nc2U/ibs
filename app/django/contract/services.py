@@ -20,6 +20,13 @@ from payment.models import InstallmentPaymentOrder, SalesPriceByGT, ContractPaym
 from project.models import Project
 
 
+def clean_date_value(value):
+    """빈 문자열을 None으로 변환하는 유틸리티 함수"""
+    if value == '' or value is None:
+        return None
+    return value
+
+
 class ContractPriceBulkUpdateService:
     """
     SalesPriceByGT 변경 시 프로젝트 내 모든 계약 가격 일괄 업데이트 서비스
@@ -413,28 +420,15 @@ class ContractorRegistrationService:
             Contractor 인스턴스
         """
 
-        # Handle date fields properly - empty strings should be converted to None
-        birth_date_value = data.get('birth_date')
-        if birth_date_value == '':
-            birth_date_value = None
-
-        reservation_date_value = data.get('reservation_date')
-        if reservation_date_value == '':
-            reservation_date_value = None
-
-        contract_date_value = data.get('contract_date')
-        if contract_date_value == '':
-            contract_date_value = None
-
         contractor = Contractor.objects.create(
             contract=contract,
             name=data.get('name'),
-            birth_date=birth_date_value,
+            birth_date=clean_date_value(data.get('birth_date')),
             gender=data.get('gender'),
             qualification=data.get('qualification') or '1',
             status=data.get('status'),
-            reservation_date=reservation_date_value,
-            contract_date=contract_date_value,
+            reservation_date=clean_date_value(data.get('reservation_date')),
+            contract_date=clean_date_value(data.get('contract_date')),
             note=data.get('note', '')
         )
 
@@ -475,26 +469,24 @@ class ContractorRegistrationService:
 
         # 계약자 기본 정보 수정
         contractor.name = data.get('name')
-        # Handle date fields properly - empty strings should be converted to None
-        birth_date_value = data.get('birth_date')
-        if birth_date_value == '':
-            birth_date_value = None
-        contractor.birth_date = birth_date_value or contractor.birth_date
-
         contractor.gender = data.get('gender')
         contractor.qualification = data.get('qualification') or '1'
         contractor.status = data.get('status')
-
-        reservation_date_value = data.get('reservation_date')
-        if reservation_date_value == '':
-            reservation_date_value = None
-        contractor.reservation_date = reservation_date_value or contractor.reservation_date
-
-        contract_date_value = data.get('contract_date')
-        if contract_date_value == '':
-            contract_date_value = None
-        contractor.contract_date = contract_date_value or contractor.contract_date
         contractor.note = data.get('note', '')
+
+        # 날짜 필드 처리 - 빈 문자열은 None으로, 값이 있으면 업데이트
+        birth_date_value = clean_date_value(data.get('birth_date'))
+        if birth_date_value is not None:
+            contractor.birth_date = birth_date_value
+
+        reservation_date_value = clean_date_value(data.get('reservation_date'))
+        if reservation_date_value is not None:
+            contractor.reservation_date = reservation_date_value
+
+        contract_date_value = clean_date_value(data.get('contract_date'))
+        if contract_date_value is not None:
+            contractor.contract_date = contract_date_value
+
         contractor.save()
 
         # 연락처 정보 수정
@@ -793,7 +785,7 @@ class ContractCreationService:
             is_sup_cont_value = is_sup_cont_value.lower() == 'true'
 
         # Convert string to date for sup_cont_date
-        sup_cont_date_value = data.get('sup_cont_date')
+        sup_cont_date_value = clean_date_value(data.get('sup_cont_date'))
         if isinstance(sup_cont_date_value, str) and sup_cont_date_value:
             try:
                 sup_cont_date_value = datetime.strptime(sup_cont_date_value, '%Y-%m-%d').date()
@@ -846,15 +838,12 @@ class ContractUpdateService:
             instance.is_sup_cont = is_sup_cont_value
 
         if 'sup_cont_date' in data:
-            sup_cont_date_value = data.get('sup_cont_date')
-            if isinstance(sup_cont_date_value, str):
-                if sup_cont_date_value == '':
+            sup_cont_date_value = clean_date_value(data.get('sup_cont_date'))
+            if isinstance(sup_cont_date_value, str) and sup_cont_date_value:
+                try:
+                    sup_cont_date_value = datetime.strptime(sup_cont_date_value, '%Y-%m-%d').date()
+                except ValueError:
                     sup_cont_date_value = None
-                elif sup_cont_date_value:
-                    try:
-                        sup_cont_date_value = datetime.strptime(sup_cont_date_value, '%Y-%m-%d').date()
-                    except ValueError:
-                        sup_cont_date_value = None
             instance.sup_cont_date = sup_cont_date_value
 
         instance.updator = user
