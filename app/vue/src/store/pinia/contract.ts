@@ -196,6 +196,7 @@ export const useContract = defineStore('contract', () => {
   }
 
   // state & getters
+  const contractFilter = ref<ContFilter>({})
   const contract = ref<Contract | null>(null)
   const contractList = ref<Contract[]>([])
   const isLoading = ref(false)
@@ -256,6 +257,7 @@ export const useContract = defineStore('contract', () => {
     return await api
       .get('/contract-set/', { params })
       .then(res => {
+        contractFilter.value = payload
         contractList.value = res.data.results
         contractsCount.value = res.data.count
         isLoading.value = false
@@ -283,8 +285,8 @@ export const useContract = defineStore('contract', () => {
   const createContractSet = (payload: FormData) =>
     api
       .post(`/contract-set/`, payload, config_headers)
-      .then(async res => {
-        await fetchContractList({ project: res.data.project, status: res.data.contractor.status })
+      .then(async () => {
+        await fetchContractList(contractFilter.value)
         message()
       })
       .catch(err => errorHandle(err.response.data))
@@ -292,8 +294,8 @@ export const useContract = defineStore('contract', () => {
   const updateContractSet = (pk: number, payload: FormData) =>
     api
       .put(`/contract-set/${pk}/`, payload, config_headers)
-      .then(async res => {
-        await fetchContractList({ project: res.data.project, status: res.data.contractor.status })
+      .then(async () => {
+        await fetchContractList(contractFilter.value)
         message()
       })
       .catch(err => errorHandle(err.response.data))
@@ -841,6 +843,7 @@ export const useContract = defineStore('contract', () => {
     fetchSalePriceList,
     fetchDownPayList,
 
+    contractFilter,
     contract,
     contractList,
     isLoading,
