@@ -72,9 +72,12 @@ def get_company_transactions(params):
             descendants = acc.get_descendants(include_self=True)
             active_descendants = [a.pk for a in descendants if a.is_active]
             all_account_ids.extend(active_descendants)
-        
+
         account_ids = list(set(all_account_ids))
         entry_filters |= Q(account_id__in=account_ids)
+
+        # trader 검색 추가
+        entry_filters |= Q(trader__icontains=search)
 
     # entry_filters가 있는 경우, transaction_id를 통해 필터링
     if entry_filters:
@@ -84,20 +87,34 @@ def get_company_transactions(params):
         
         # search가 있는 경우 OR 조건, 없는 경우 AND 조건
         if search:
+            # trader 검색을 위한 추가 transaction_ids
+            trader_transaction_ids = CompanyAccountingEntry.objects.filter(
+                trader__icontains=search
+            ).values_list('transaction_id', flat=True).distinct()
+
+            # 기존 조건과 trader 조건을 합침
+            all_transaction_ids = set(transaction_ids) | set(trader_transaction_ids)
+
             qs = qs.filter(
                 Q(transaction_id__icontains=search) |
                 Q(content__icontains=search) |
                 Q(note__icontains=search) |
-                Q(transaction_id__in=transaction_ids)
+                Q(transaction_id__in=all_transaction_ids)
             )
         else:
             qs = qs.filter(transaction_id__in=transaction_ids)
     elif search:
         # entry_filters는 없지만 search는 있는 경우
+        # trader 검색을 위한 transaction_ids
+        trader_transaction_ids = CompanyAccountingEntry.objects.filter(
+            trader__icontains=search
+        ).values_list('transaction_id', flat=True).distinct()
+
         qs = qs.filter(
             Q(transaction_id__icontains=search) |
             Q(content__icontains=search) |
-            Q(note__icontains=search)
+            Q(note__icontains=search) |
+            Q(transaction_id__in=trader_transaction_ids)
         )
 
     # 정렬 및 반환
