@@ -3,6 +3,7 @@ Contract 관련 비즈니스 로직 서비스
 """
 import os
 from datetime import date
+from datetime import datetime
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
@@ -412,15 +413,28 @@ class ContractorRegistrationService:
             Contractor 인스턴스
         """
 
+        # Handle date fields properly - empty strings should be converted to None
+        birth_date_value = data.get('birth_date')
+        if birth_date_value == '':
+            birth_date_value = None
+
+        reservation_date_value = data.get('reservation_date')
+        if reservation_date_value == '':
+            reservation_date_value = None
+
+        contract_date_value = data.get('contract_date')
+        if contract_date_value == '':
+            contract_date_value = None
+
         contractor = Contractor.objects.create(
             contract=contract,
             name=data.get('name'),
-            birth_date=data.get('birth_date') or None,
+            birth_date=birth_date_value,
             gender=data.get('gender'),
             qualification=data.get('qualification') or '1',
             status=data.get('status'),
-            reservation_date=data.get('reservation_date') or None,
-            contract_date=data.get('contract_date') or None,
+            reservation_date=reservation_date_value,
+            contract_date=contract_date_value,
             note=data.get('note', '')
         )
 
@@ -461,12 +475,25 @@ class ContractorRegistrationService:
 
         # 계약자 기본 정보 수정
         contractor.name = data.get('name')
-        contractor.birth_date = data.get('birth_date') or contractor.birth_date
+        # Handle date fields properly - empty strings should be converted to None
+        birth_date_value = data.get('birth_date')
+        if birth_date_value == '':
+            birth_date_value = None
+        contractor.birth_date = birth_date_value or contractor.birth_date
+
         contractor.gender = data.get('gender')
         contractor.qualification = data.get('qualification') or '1'
         contractor.status = data.get('status')
-        contractor.reservation_date = data.get('reservation_date') or contractor.reservation_date
-        contractor.contract_date = data.get('contract_date') or contractor.contract_date
+
+        reservation_date_value = data.get('reservation_date')
+        if reservation_date_value == '':
+            reservation_date_value = None
+        contractor.reservation_date = reservation_date_value or contractor.reservation_date
+
+        contract_date_value = data.get('contract_date')
+        if contract_date_value == '':
+            contract_date_value = None
+        contractor.contract_date = contract_date_value or contractor.contract_date
         contractor.note = data.get('note', '')
         contractor.save()
 
@@ -769,7 +796,6 @@ class ContractCreationService:
         sup_cont_date_value = data.get('sup_cont_date')
         if isinstance(sup_cont_date_value, str) and sup_cont_date_value:
             try:
-                from datetime import datetime
                 sup_cont_date_value = datetime.strptime(sup_cont_date_value, '%Y-%m-%d').date()
             except ValueError:
                 sup_cont_date_value = None
@@ -821,12 +847,14 @@ class ContractUpdateService:
 
         if 'sup_cont_date' in data:
             sup_cont_date_value = data.get('sup_cont_date')
-            if isinstance(sup_cont_date_value, str) and sup_cont_date_value:
-                try:
-                    from datetime import datetime
-                    sup_cont_date_value = datetime.strptime(sup_cont_date_value, '%Y-%m-%d').date()
-                except ValueError:
+            if isinstance(sup_cont_date_value, str):
+                if sup_cont_date_value == '':
                     sup_cont_date_value = None
+                elif sup_cont_date_value:
+                    try:
+                        sup_cont_date_value = datetime.strptime(sup_cont_date_value, '%Y-%m-%d').date()
+                    except ValueError:
+                        sup_cont_date_value = None
             instance.sup_cont_date = sup_cont_date_value
 
         instance.updator = user
