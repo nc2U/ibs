@@ -431,7 +431,12 @@ const saveContract = (payload: any) => {
 
   const form = new FormData()
 
-  for (const key in getData) form.set(key, getData[key] ?? '')
+  for (const key in getData) {
+    const value = getData[key]
+    if (value !== null && value !== undefined && value !== '') {
+      form.set(key, value)
+    }
+  }
 
   if (!pk) contStore.createContractSet(form)
   else contStore.updateContractSet(pk, form)
