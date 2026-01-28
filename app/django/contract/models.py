@@ -210,7 +210,7 @@ class Contract(models.Model):
         return ContractFile.objects.none()
 
     class Meta:
-        ordering = ('-project', '-created')
+        ordering = ('-project', '-created', '-pk')  # pk로 정렬 안정성 보장
         verbose_name = '04. 계약 정보'
         verbose_name_plural = '04. 계약 정보'
 

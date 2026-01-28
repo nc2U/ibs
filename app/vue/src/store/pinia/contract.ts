@@ -295,7 +295,9 @@ export const useContract = defineStore('contract', () => {
     api
       .put(`/contract-set/${pk}/`, payload, config_headers)
       .then(async () => {
-        await fetchContractList(contractFilter.value)
+        // 현재 페이지를 유지하면서 목록 새로고침
+        const currentPage = contractFilter.value.page ?? 1
+        await fetchContractList({ ...contractFilter.value, page: currentPage })
         message()
       })
       .catch(err => errorHandle(err.response.data))

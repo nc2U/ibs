@@ -97,6 +97,17 @@ class ContractViewSet(viewsets.ModelViewSet):
                      'contractor__contractorcontact__email')
     ordering_fields = ('created', 'contractor__contract_date',
                        'serial_number', 'contractor__name')
+    ordering = ['-created', '-pk']  # 기본 정렬 + pk로 안정적인 정렬 보장
+
+    def filter_queryset(self, queryset):
+        """정렬 안정성을 위해 pk를 보조 정렬 키로 항상 추가"""
+        queryset = super().filter_queryset(queryset)
+        # 현재 정렬 조건 가져오기
+        current_ordering = list(queryset.query.order_by) if queryset.query.order_by else []
+        # pk가 이미 정렬 조건에 없으면 추가 (정렬 안정성 보장)
+        if current_ordering and 'pk' not in current_ordering and '-pk' not in current_ordering:
+            return queryset.order_by(*current_ordering, '-pk')
+        return queryset
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
