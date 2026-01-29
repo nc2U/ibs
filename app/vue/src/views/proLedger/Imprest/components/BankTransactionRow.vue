@@ -51,6 +51,16 @@ const emit = defineEmits<Emits>()
 
 // 로컬 상태 관리 - props를 직접 수정하지 않고 emit으로 업데이트
 const localBankForm = reactive<BankForm>({ ...props.transaction.bankForm })
+
+// props 변경 시 localBankForm 동기화
+watch(
+  () => props.transaction.bankForm,
+  newBankForm => {
+    Object.assign(localBankForm, newBankForm)
+  },
+  { deep: true },
+)
+
 const localEntries = computed({
   get: () => props.transaction.entries,
   set: value => {
@@ -205,7 +215,7 @@ watch(
 
     <!-- 거래계좌 -->
     <CTableDataCell>
-      <CFormSelect v-model.number="localBankForm.bank_account" required>
+      <CFormSelect v-model="localBankForm.bank_account" required>
         <option :value="null">---------</option>
         <option v-for="ba in bankAccounts" :key="ba.value!" :value="ba.value">
           {{ ba.label }}

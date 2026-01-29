@@ -867,7 +867,7 @@ onBeforeRouteLeave((to, from, next) => {
 
             <!-- 거래계좌 -->
             <CTableDataCell>
-              <CFormSelect v-model.number="bankForm.bank_account" required>
+              <CFormSelect v-model="bankForm.bank_account" required>
                 <option :value="null">---------</option>
                 <option v-for="ba in formBankAccounts" :key="ba.value" :value="ba.value">
                   {{ ba.label }}
