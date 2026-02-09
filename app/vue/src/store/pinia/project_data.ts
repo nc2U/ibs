@@ -252,6 +252,14 @@ export const useProjectData = defineStore('projectData', () => {
     message()
   }
 
+  const updateKeyUnit = (pk: number, payload: CreateKeyUnit, page?: number) =>
+    api
+      .patch(`/key-unit/${pk}/`, payload)
+      .then(() =>
+        fetchKeyUnitList(payload.project, undefined, page).then(() => message()),
+      )
+      .catch(err => errorHandle(err.response.data))
+
   const deleteKeyUnit = (pk: number, project: number, unit_type?: number, page?: number) =>
     api
       .delete(`/key-unit/${pk}/`)
@@ -365,6 +373,7 @@ export const useProjectData = defineStore('projectData', () => {
     fetchKeyUnitList,
     createKeyUnit,
     createKeyUnitBulk,
+    updateKeyUnit,
     deleteKeyUnit,
 
     createUnit,

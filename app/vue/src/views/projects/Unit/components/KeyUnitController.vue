@@ -119,6 +119,34 @@ const modalAction = () => {
   refConfirmModal.value.close()
 }
 
+// 인라인 편집
+const editingPk = ref<number | null>(null)
+const editForm = reactive<{ unit_code: string; unit_type: number | null }>({
+  unit_code: '',
+  unit_type: null,
+})
+
+const startEdit = (ku: { pk: number; unit_code: string; unit_type: number }) => {
+  editingPk.value = ku.pk
+  editForm.unit_code = ku.unit_code
+  editForm.unit_type = ku.unit_type
+}
+
+const cancelEdit = () => {
+  editingPk.value = null
+}
+
+const saveEdit = (pk: number) => {
+  if (!props.project || !editForm.unit_type || !editForm.unit_code) return
+  projectDataStore
+    .updateKeyUnit(pk, {
+      project: props.project,
+      unit_type: editForm.unit_type,
+      unit_code: editForm.unit_code,
+    }, pageNum.value)
+    .then(() => (editingPk.value = null))
+}
+
 const deleteUnit = (pk: number) => {
   if (props.project)
     projectDataStore.deleteKeyUnit(pk, props.project, form.unit_type || undefined, pageNum.value)
@@ -226,29 +254,69 @@ const deleteUnit = (pk: number) => {
         <th class="text-center">유닛 코드</th>
         <th class="text-center">타입</th>
         <th class="text-center">계약 상태</th>
-        <th v-if="write_project" class="text-center" style="width: 80px">삭제</th>
+        <th v-if="write_project" class="text-center" style="width: 120px"></th>
       </tr>
     </thead>
     <tbody>
       <tr v-for="(ku, i) in keyUnitList" :key="ku.pk">
         <td class="text-center">{{ listNo - i }}</td>
-        <td class="text-center">{{ ku.unit_code }}</td>
-        <td class="text-center">{{ typeName(ku.unit_type) }}</td>
+
+        <template v-if="editingPk === ku.pk">
+          <td class="text-center">
+            <CFormInput
+              v-model="editForm.unit_code"
+              size="sm"
+              @keydown.enter="saveEdit(ku.pk)"
+              @keydown.escape="cancelEdit"
+            />
+          </td>
+          <td class="text-center">
+            <CFormSelect v-model.number="editForm.unit_type" size="sm">
+              <option v-for="type in unitTypeList" :key="type.pk" :value="type.pk">
+                {{ type.name }}
+              </option>
+            </CFormSelect>
+          </td>
+        </template>
+        <template v-else>
+          <td class="text-center">{{ ku.unit_code }}</td>
+          <td class="text-center">{{ typeName(ku.unit_type) }}</td>
+        </template>
+
         <td class="text-center">
           <v-chip v-if="ku.contract" color="primary" size="small">계약</v-chip>
           <v-chip v-else color="grey" size="small">미계약</v-chip>
         </td>
         <td v-if="write_project" class="text-center">
-          <v-btn
-            icon
-            size="x-small"
-            color="error"
-            variant="text"
-            :disabled="!!ku.contract"
-            @click="deleteUnit(ku.pk)"
-          >
-            <v-icon icon="mdi-trash-can-outline" />
-          </v-btn>
+          <template v-if="editingPk === ku.pk">
+            <v-btn icon size="x-small" color="success" variant="text" @click="saveEdit(ku.pk)">
+              <v-icon icon="mdi-check" />
+            </v-btn>
+            <v-btn icon size="x-small" variant="text" @click="cancelEdit">
+              <v-icon icon="mdi-close" />
+            </v-btn>
+          </template>
+          <template v-else>
+            <v-btn
+              icon
+              size="x-small"
+              variant="text"
+              :disabled="!!ku.contract"
+              @click="startEdit(ku)"
+            >
+              <v-icon icon="mdi-pencil-outline" />
+            </v-btn>
+            <v-btn
+              icon
+              size="x-small"
+              color="error"
+              variant="text"
+              :disabled="!!ku.contract"
+              @click="deleteUnit(ku.pk)"
+            >
+              <v-icon icon="mdi-trash-can-outline" />
+            </v-btn>
+          </template>
         </td>
       </tr>
       <tr v-if="keyUnitList.length === 0">
