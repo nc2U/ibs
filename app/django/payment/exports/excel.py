@@ -87,7 +87,7 @@ class ExportPayments(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMixin):
         header_src = [
             ['거래일자', 'deal_date', 12],
             ['차수', 'contract__order_group__name', 12],
-            ['타입', 'contract__key_unit__unit_type__name', 10],
+            ['타입', 'contract__unit_type__name', 10],
             ['일련번호', 'contract__serial_number', 12],
             ['계약자', 'contract__contractor__name', 11],
             ['입금 금액', 'income', 12],
@@ -307,7 +307,7 @@ class ExportPaymentsByCont(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMi
             ['계약번호', 'serial_number', 10],
             ['성명', 'contractor__name', 10],
             ['차수', 'order_group__name', 10],
-            ['타입', 'key_unit__unit_type__name', 7],
+            ['타입', 'unit_type__name', 7],
             ['계약일', 'contractor__contract_date', 12],
             ['기납부 총액', '', 14],
             ['미납내역', '', 13],
@@ -1117,7 +1117,7 @@ class ExportLedgerPayments(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMi
         header_src = [
             ['거래일자', 'deal_date', 12],
             ['차수', 'contract__order_group__name', 12],
-            ['타입', 'contract__key_unit__unit_type__name', 10],
+            ['타입', 'contract__unit_type__name', 10],
             ['일련번호', 'contract__serial_number', 12],
             ['계약자', 'contract__contractor__name', 11],
             ['입금 금액', 'accounting_entry__amount', 12],
@@ -1204,7 +1204,7 @@ class ExportLedgerPayments(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMi
             ContractPayment.objects
             .select_related(
                 'contract__order_group',
-                'contract__key_unit__unit_type',
+                'contract__unit_type',
                 'contract__key_unit__houseunit__building_unit',
                 'contract__key_unit__houseunit',
                 'contract__contractor',
@@ -1362,7 +1362,7 @@ class ExportLedgerPaymentsByCont(ExcelExportMixin, ProjectFilterMixin, AdvancedE
             ['계약번호', 'serial_number', 10],
             ['성명', 'contractor__name', 10],
             ['차수', 'order_group__name', 10],
-            ['타입', 'key_unit__unit_type__name', 7],
+            ['타입', 'unit_type__name', 7],
             ['계약일', 'contractor__contract_date', 12],
             ['기납부 총액', '', 14],
             ['미납내역', '', 13],

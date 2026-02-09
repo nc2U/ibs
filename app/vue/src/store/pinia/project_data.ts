@@ -22,6 +22,12 @@ export type CreateUnit = {
   unit_code: string
 }
 
+export type CreateKeyUnit = {
+  project: number
+  unit_type: number
+  unit_code: string
+}
+
 export const useProjectData = defineStore('projectData', () => {
   // states & getters
   const unitTypeList = ref<UnitType[]>([])
@@ -207,14 +213,42 @@ export const useProjectData = defineStore('projectData', () => {
       .then(res => (numUnitByType.value = res.data.count))
       .catch(err => errorHandle(err.response.data))
 
+  // KeyUnit 관련 state & actions (is_unit_set=False 용)
+  const keyUnitList = ref<{ pk: number; project: number; unit_type: number; unit_code: string; contract: number | null }[]>([])
+
+  const fetchKeyUnitList = async (project: number, unit_type?: number) => {
+    let url = `/key-unit/?project=${project}`
+    if (unit_type) url += `&unit_type=${unit_type}`
+    return await api
+      .get(url)
+      .then(res => (keyUnitList.value = res.data.results))
+      .catch(err => errorHandle(err.response.data))
+  }
+
+  const createKeyUnit = async (payload: CreateKeyUnit) => {
+    const { project, unit_type, unit_code } = payload
+    await api
+      .post(`/key-unit/`, { project, unit_type, unit_code })
+      .then(() => fetchKeyUnitList(project, unit_type).then(() => message()))
+      .catch(err => errorHandle(err.response.data))
+  }
+
+  const deleteKeyUnit = (pk: number, project: number, unit_type?: number) =>
+    api
+      .delete(`/key-unit/${pk}/`)
+      .then(() =>
+        fetchKeyUnitList(project, unit_type).then(() =>
+          message('warning', '알림!', '해당 유닛이 삭제되었습니다.'),
+        ),
+      )
+      .catch(err => errorHandle(err.response.data))
+
   const createUnit = async (payload: CreateUnit) => {
     const { project, unit_type, ...restPayload } = payload
     const { unit_code, ...unitPayload } = restPayload
-    const houseUnits = { ...{ project, unit_type }, ...unitPayload }
-    const keyUnits = { project, unit_type, unit_code }
+    const houseUnits = { ...{ project, unit_type }, ...unitPayload, unit_code }
 
     await api.post(`/house-unit/`, houseUnits).catch(err => errorHandle(err.response.data))
-    await api.post(`/key-unit/`, keyUnits).catch(err => errorHandle(err.response.data))
     await fetchNumUnitByType(project, unit_type)
   }
 
@@ -305,6 +339,12 @@ export const useProjectData = defineStore('projectData', () => {
     numUnitByType,
     fetchHouseUnitList,
     fetchNumUnitByType,
+
+    keyUnitList,
+    fetchKeyUnitList,
+    createKeyUnit,
+    deleteKeyUnit,
+
     createUnit,
     updateUnit,
     patchUnit,

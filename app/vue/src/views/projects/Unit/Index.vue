@@ -12,15 +12,18 @@ import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ProjectAuthGuard from '@/components/AuthGuard/ProjectAuthGuard.vue'
 import UnitController from '@/views/projects/Unit/components/UnitController.vue'
 import UnitTable from '@/views/projects/Unit/components/UnitTable.vue'
+import KeyUnitController from '@/views/projects/Unit/components/KeyUnitController.vue'
 
 const alertModal = ref()
 const refUnitController = ref()
+const refKeyUnitController = ref()
 
 const bldgPk = ref<null | number>(null)
 const bldgName = ref('')
 
 const projStore = useProject()
 const project = computed(() => (projStore.project as Project)?.pk)
+const isUnitSet = computed(() => (projStore.project as Project)?.is_unit_set)
 
 const pDataStore = useProjectData()
 const numUnitByType = computed(() => pDataStore.numUnitByType)
@@ -139,8 +142,13 @@ const onDelete = (payload: { pk: number; type: number }) =>
 
 const dataSetup = (pk: number) => {
   fetchTypeList(pk)
-  fetchFloorTypeList(pk)
-  fetchBuildingList(pk)
+  if (isUnitSet.value !== false) {
+    fetchFloorTypeList(pk)
+    fetchBuildingList(pk)
+  }
+  if (isUnitSet.value === false) {
+    pDataStore.fetchKeyUnitList(pk)
+  }
 }
 
 const dataReset = () => {
@@ -148,10 +156,12 @@ const dataReset = () => {
   pDataStore.floorTypeList = []
   pDataStore.buildingList = []
   pDataStore.houseUnitList = []
+  pDataStore.keyUnitList = []
 }
 
 const projSelect = (target: number | null) => {
-  refUnitController.value.projReset()
+  if (refUnitController.value) refUnitController.value.projReset()
+  if (refKeyUnitController.value) refKeyUnitController.value.projReset()
   dataReset()
   if (!!target) dataSetup(target)
 }
@@ -163,7 +173,7 @@ onBeforeMount(() => {
 
 const loading = ref(true)
 onBeforeRouteLeave(async () => {
-  await dataReset()
+  dataReset()
   loading.value = false
 })
 </script>
@@ -180,14 +190,19 @@ onBeforeRouteLeave(async () => {
 
     <ContentBody>
       <CCardBody class="pb-5">
-        <UnitController
-          ref="refUnitController"
-          :project="project as number"
-          @bldg-select="bldgSelect"
-          @dong-register="dongRegister"
-          @unit-register="unitRegister"
-        />
-        <UnitTable :bldg-name="bldgName" @on-update="onUpdate" @on-delete="onDelete" />
+        <template v-if="isUnitSet">
+          <UnitController
+            ref="refUnitController"
+            :project="project as number"
+            @bldg-select="bldgSelect"
+            @dong-register="dongRegister"
+            @unit-register="unitRegister"
+          />
+          <UnitTable :bldg-name="bldgName" @on-update="onUpdate" @on-delete="onDelete" />
+        </template>
+        <template v-else>
+          <KeyUnitController ref="refKeyUnitController" :project="project as number" />
+        </template>
       </CCardBody>
     </ContentBody>
 

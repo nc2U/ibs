@@ -209,6 +209,14 @@ class Contract(models.Model):
             return self.contractor.contractor_files.all()
         return ContractFile.objects.none()
 
+    def clean(self):
+        super().clean()
+        if self.key_unit_id and self.unit_type_id:
+            if self.key_unit.unit_type_id != self.unit_type_id:
+                raise ValidationError({
+                    'unit_type': '계약의 타입과 유닛의 타입이 일치하지 않습니다.'
+                })
+
     class Meta:
         ordering = ('-project', '-created', '-pk')  # pk로 정렬 안정성 보장
         verbose_name = '04. 계약 정보'

@@ -351,6 +351,13 @@ class UnitAssignmentService:
         """
 
         key_unit = KeyUnit.objects.get(pk=unit_pk)
+
+        # unit_type 일관성 검증
+        if contract.unit_type_id and key_unit.unit_type_id != contract.unit_type_id:
+            raise serializers.ValidationError(
+                '계약의 타입과 유닛의 타입이 일치하지 않습니다.'
+            )
+
         contract.key_unit = key_unit
         contract.save()
 
@@ -829,6 +836,14 @@ class ContractUpdateService:
         # 1. 기본 계약 정보 업데이트
         instance.order_group_id = data.get('order_group', instance.order_group_id)
         instance.unit_type_id = data.get('unit_type', instance.unit_type_id)
+
+        # unit_type 일관성 검증: key_unit이 변경되지 않는 경우 기존 key_unit과 비교
+        new_unit_pk = data.get('key_unit')
+        if not new_unit_pk and instance.key_unit_id:
+            if instance.key_unit.unit_type_id != instance.unit_type_id:
+                raise serializers.ValidationError(
+                    '계약의 타입과 유닛의 타입이 일치하지 않습니다.'
+                )
 
         # is_sup_cont와 sup_cont_date 필드 처리
         if 'is_sup_cont' in data:

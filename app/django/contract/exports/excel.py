@@ -62,7 +62,7 @@ class ExportContracts(ExcelExportMixin):
                       ['일련번호', 'serial_number', 10],
                       ['등록상태', 'contractor__qualification', 8],
                       ['차수', 'order_group__name', 10],
-                      ['타입', 'key_unit__unit_type__name', 7],
+                      ['타입', 'unit_type__name', 7],
                       [f'{t_name}자', 'contractor__name', 10],
                       ['동', 'key_unit__houseunit__building_unit__name', 7],
                       ['호수', 'key_unit__houseunit__name', 7],

@@ -41,10 +41,26 @@ class KeyUnitSerializer(serializers.ModelSerializer):
 
 
 class HouseUnitSerializer(serializers.ModelSerializer):
+    unit_code = serializers.CharField(write_only=True, required=False)
+
     class Meta:
         model = HouseUnit
         fields = ('pk', 'unit_type', 'floor_type', '__str__', 'building_unit',
-                  'name', 'key_unit', 'bldg_line', 'floor_no', 'is_hold', 'hold_reason')
+                  'name', 'key_unit', 'bldg_line', 'floor_no', 'is_hold', 'hold_reason',
+                  'unit_code')
+
+    def create(self, validated_data):
+        unit_code = validated_data.pop('unit_code', None)
+        if unit_code:
+            project = validated_data['building_unit'].project
+            unit_type = validated_data['unit_type']
+            key_unit, _ = KeyUnit.objects.get_or_create(
+                project=project,
+                unit_type=unit_type,
+                unit_code=unit_code,
+            )
+            validated_data['key_unit'] = key_unit
+        return super().create(validated_data)
 
 
 class ContractorInContractSerializer(serializers.ModelSerializer):

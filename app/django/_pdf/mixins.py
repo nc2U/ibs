@@ -69,7 +69,7 @@ class ContractPdfMixin:
             'contractor': contract.contractor.name,
             'cont_date': contract.contractor.contract_date,
             'cont_no': unit if unit else contract.serial_number,
-            'cont_type': contract.unit_type or contract.key_unit.unit_type,
+            'cont_type': contract.unit_type,
         }
 
 
