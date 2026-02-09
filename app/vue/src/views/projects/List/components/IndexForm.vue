@@ -25,8 +25,10 @@ const emit = defineEmits(['to-submit', 'reset-form', 'close', 'get-project'])
 const projStore = useProject()
 const getAllProjects = async (sort: '1' | '2' | '3') => {
   emit('get-project', sort)
-  await projStore.fetchProject(props.project?.pk as number)
-  formDataSetup()
+  if (props.project?.pk) {
+    await projStore.fetchProject(props.project.pk)
+    formDataSetup()
+  }
 }
 
 const refIssueForm = ref()

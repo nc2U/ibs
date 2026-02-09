@@ -137,7 +137,7 @@ const getSlug = (event: { key: string; code: string }) => {
 
 const [route, router] = [useRoute(), useRouter()]
 
-const onSubmit = (event: Event) => {
+const onSubmit = async (event: Event) => {
   const el = event.currentTarget as HTMLFormElement
   if (!el.checkValidity()) {
     event.preventDefault()
@@ -146,16 +146,14 @@ const onSubmit = (event: Event) => {
   } else {
     Cookies.set('workSettingMenu', '프로젝트')
 
-    if (form.pk) workStore.updateIssueProject({ ...form, ...module } as any)
+    if (form.pk) await workStore.updateIssueProject({ ...form, ...module } as any)
     else {
-      workStore.createIssueProject({ ...form, ...module } as any)
+      await workStore.createIssueProject({ ...form, ...module } as any)
       if (props.redirect)
-        setTimeout(() => {
-          router.push({
-            name: '(설정)',
-            params: { projId: (workStore.issueProject as IssueProject)?.slug },
-          })
-        }, 500)
+        await router.push({
+          name: '(설정)',
+          params: { projId: (workStore.issueProject as IssueProject)?.slug },
+        })
       else emit('modal-close')
     }
     validated.value = false
