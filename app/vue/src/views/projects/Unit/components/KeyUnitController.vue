@@ -3,6 +3,7 @@ import { computed, reactive, ref } from 'vue'
 import { useProjectData, type CreateKeyUnit } from '@/store/pinia/project_data'
 import { AlertLight } from '@/utils/cssMixins'
 import { write_project } from '@/utils/pageAuth'
+import Pagination from '@/components/Pagination'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
@@ -10,6 +11,8 @@ const props = defineProps({ project: { type: Number, default: null } })
 
 const projReset = () => {
   form.unit_type = null
+  form.prefix = ''
+  form.digitLen = 3
   form.startNum = null
   form.endNum = null
 }
@@ -21,10 +24,14 @@ const refAlertModal = ref()
 
 const form = reactive<{
   unit_type: number | null
+  prefix: string
+  digitLen: number
   startNum: number | null
   endNum: number | null
 }>({
   unit_type: null,
+  prefix: '',
+  digitLen: 3,
   startNum: null,
   endNum: null,
 })
@@ -32,15 +39,16 @@ const form = reactive<{
 const projectDataStore = useProjectData()
 const unitTypeList = computed(() => projectDataStore.unitTypeList)
 const keyUnitList = computed(() => projectDataStore.keyUnitList)
+const keyUnitCount = computed(() => projectDataStore.keyUnitCount)
+
+const pageNum = ref(1)
+const limit = 10
+const keyUnitPages = computed(() => projectDataStore.keyUnitPages(limit))
+const listNo = computed(() => keyUnitCount.value - (pageNum.value - 1) * limit)
 
 const selectedType = computed(() =>
   unitTypeList.value.find(t => t.pk === form.unit_type),
 )
-
-const filteredKeyUnits = computed(() => {
-  if (!form.unit_type) return keyUnitList.value
-  return keyUnitList.value.filter(ku => ku.unit_type === form.unit_type)
-})
 
 const bulkCount = computed(() => {
   if (!form.startNum || !form.endNum || form.endNum < form.startNum) return 0
@@ -52,33 +60,29 @@ const typeName = (typeId: number) => {
   return t ? t.name : ''
 }
 
-// unit_code 생성: 타입명(영숫자) + 0패딩 번호 (Index.vue의 getCode 패턴과 동일)
+// unit_code 생성: 접두어 + 자리수 기반 0패딩 번호
 const generateUnitCode = (num: number) => {
-  if (!selectedType.value) return ''
-  const typeStr = selectedType.value.name.replace(/[^0-9a-zA-Z]/g, '')
-
-  // 타입명 목록 중 가장 긴 영숫자 길이
-  const maxTypeLen = Math.max(
-    ...unitTypeList.value
-      .map(t => t.name.replace(/[^0-9a-zA-Z]/g, ''))
-      .map(s => s.length),
-  )
-  const typeDigit = maxTypeLen - typeStr.length
-  const suffix = typeDigit >= 1 ? '0'.repeat(typeDigit - 1) + '1' : ''
-
-  // num_unit 기준 자릿수 (최대 유닛 수 기반)
-  const maxUnits = Math.max(
-    ...unitTypeList.value.map(t => (t.num_unit as number) || 0),
-  )
-  const digitLen = `${maxUnits}`.length
-  const prefix = '0'.repeat(Math.max(0, digitLen - `${num}`.length))
-
-  return `${typeStr}${suffix}${prefix}${num}`
+  const padded = `${num}`.padStart(form.digitLen, '0')
+  return `${form.prefix}${padded}`
 }
 
 const typeSelect = () => {
+  pageNum.value = 1
   if (props.project) {
-    projectDataStore.fetchKeyUnitList(props.project, form.unit_type || undefined)
+    projectDataStore.fetchKeyUnitList(props.project, form.unit_type || undefined, 1)
+  }
+  // 타입 선택 시 타입명 기반 기본 접두어 설정
+  if (selectedType.value) {
+    form.prefix = selectedType.value.name.replace(/[^0-9a-zA-Z]/g, '')
+  } else {
+    form.prefix = ''
+  }
+}
+
+const pageSelect = (page: number) => {
+  pageNum.value = page
+  if (props.project) {
+    projectDataStore.fetchKeyUnitList(props.project, form.unit_type || undefined, page)
   }
 }
 
@@ -104,7 +108,11 @@ const modalAction = () => {
         unit_code: generateUnitCode(i),
       })
     }
-    projectDataStore.createKeyUnitBulk(payloads).then(() => emit('key-unit-created'))
+    projectDataStore.createKeyUnitBulk(payloads).then(() => {
+      pageNum.value = 1
+      projectDataStore.fetchKeyUnitList(props.project!, form.unit_type!, 1)
+      emit('key-unit-created')
+    })
     form.startNum = null
     form.endNum = null
   }
@@ -112,7 +120,8 @@ const modalAction = () => {
 }
 
 const deleteUnit = (pk: number) => {
-  if (props.project) projectDataStore.deleteKeyUnit(pk, props.project, form.unit_type || undefined)
+  if (props.project)
+    projectDataStore.deleteKeyUnit(pk, props.project, form.unit_type || undefined, pageNum.value)
 }
 </script>
 
@@ -134,6 +143,24 @@ const deleteUnit = (pk: number) => {
       </CCol>
 
       <template v-if="write_project && form.unit_type">
+        <CCol md="2" class="mb-2">
+          <CRow>
+            <CFormLabel class="col-sm-4 col-form-label">접두어</CFormLabel>
+            <CCol sm="8">
+              <CFormInput v-model="form.prefix" placeholder="접두어" maxlength="10" />
+            </CCol>
+          </CRow>
+        </CCol>
+
+        <CCol md="1" class="mb-2">
+          <CRow>
+            <CFormLabel class="col-sm-5 col-form-label">자리</CFormLabel>
+            <CCol sm="7">
+              <CFormInput v-model.number="form.digitLen" type="number" min="1" max="6" />
+            </CCol>
+          </CRow>
+        </CCol>
+
         <CCol md="2" class="mb-2">
           <CRow>
             <CFormLabel class="col-sm-4 col-form-label">시작</CFormLabel>
@@ -189,7 +216,7 @@ const deleteUnit = (pk: number) => {
   <CAlert :color="AlertLight" variant="solid">
     <strong>유닛 목록</strong>
     <span v-if="form.unit_type"> - {{ typeName(form.unit_type) }}</span>
-    (총 {{ filteredKeyUnits.length }}건)
+    (총 {{ keyUnitCount }}건)
   </CAlert>
 
   <v-table density="compact">
@@ -203,8 +230,8 @@ const deleteUnit = (pk: number) => {
       </tr>
     </thead>
     <tbody>
-      <tr v-for="(ku, i) in filteredKeyUnits" :key="ku.pk">
-        <td class="text-center">{{ i + 1 }}</td>
+      <tr v-for="(ku, i) in keyUnitList" :key="ku.pk">
+        <td class="text-center">{{ listNo - i }}</td>
         <td class="text-center">{{ ku.unit_code }}</td>
         <td class="text-center">{{ typeName(ku.unit_type) }}</td>
         <td class="text-center">
@@ -224,13 +251,21 @@ const deleteUnit = (pk: number) => {
           </v-btn>
         </td>
       </tr>
-      <tr v-if="filteredKeyUnits.length === 0">
+      <tr v-if="keyUnitList.length === 0">
         <td :colspan="write_project ? 5 : 4" class="text-center text-grey py-4">
           등록된 유닛이 없습니다.
         </td>
       </tr>
     </tbody>
   </v-table>
+
+  <Pagination
+    :active-page="pageNum"
+    :limit="8"
+    :pages="keyUnitPages"
+    class="mt-3"
+    @active-page-change="pageSelect"
+  />
 
   <ConfirmModal ref="refConfirmModal">
     <template #header>유닛 일괄등록</template>

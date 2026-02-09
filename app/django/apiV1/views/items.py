@@ -44,6 +44,8 @@ class KeyUnitViewSet(viewsets.ModelViewSet):
     serializer_class = KeyUnitSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
     filterset_class = KeyUnitListFilterSet
+    ordering_fields = ('pk', 'unit_code', 'unit_type')
+    ordering = ('-pk',)
 
 
 class BuildingUnitViewSet(viewsets.ModelViewSet):
