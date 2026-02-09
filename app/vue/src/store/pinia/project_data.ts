@@ -233,6 +233,18 @@ export const useProjectData = defineStore('projectData', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
+  const createKeyUnitBulk = async (payloads: CreateKeyUnit[]) => {
+    if (!payloads.length) return
+    const { project, unit_type } = payloads[0]
+    for (const payload of payloads) {
+      await api
+        .post(`/key-unit/`, payload)
+        .catch(err => errorHandle(err.response.data))
+    }
+    await fetchKeyUnitList(project, unit_type)
+    message()
+  }
+
   const deleteKeyUnit = (pk: number, project: number, unit_type?: number) =>
     api
       .delete(`/key-unit/${pk}/`)
@@ -343,6 +355,7 @@ export const useProjectData = defineStore('projectData', () => {
     keyUnitList,
     fetchKeyUnitList,
     createKeyUnit,
+    createKeyUnitBulk,
     deleteKeyUnit,
 
     createUnit,
