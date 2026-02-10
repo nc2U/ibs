@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, computed, watch, onBeforeMount } from 'vue'
+import { ref, computed, onBeforeMount } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
 import { pageTitle, navMenu } from '@/views/projects/_menu/headermixin5'
 import { useProject } from '@/store/pinia/project'
@@ -12,26 +12,15 @@ import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ProjectAuthGuard from '@/components/AuthGuard/ProjectAuthGuard.vue'
 import UnitController from '@/views/projects/Unit/components/UnitController.vue'
 import UnitTable from '@/views/projects/Unit/components/UnitTable.vue'
-import KeyUnitController from '@/views/projects/Unit/components/KeyUnitController.vue'
 
 const alertModal = ref()
 const refUnitController = ref()
-const refKeyUnitController = ref()
 
 const bldgPk = ref<null | number>(null)
 const bldgName = ref('')
 
 const projStore = useProject()
 const project = computed(() => (projStore.project as Project)?.pk)
-const isUnitSet = computed(() => (projStore.project as Project)?.is_unit_set)
-
-// 'house' = 동/호 등록 (UnitController), 'key' = 유닛만 등록 (KeyUnitController)
-const viewMode = ref<'house' | 'key'>(isUnitSet.value === false ? 'key' : 'house')
-
-// isUnitSet 변경 시 기본값 반영 (프로젝트 전환 등)
-watch(isUnitSet, val => {
-  viewMode.value = val === false ? 'key' : 'house'
-})
 
 const pDataStore = useProjectData()
 const numUnitByType = computed(() => pDataStore.numUnitByType)
@@ -150,37 +139,19 @@ const onDelete = (payload: { pk: number; type: number }) =>
 
 const dataSetup = (pk: number) => {
   fetchTypeList(pk)
-  if (viewMode.value === 'house') {
-    fetchFloorTypeList(pk)
-    fetchBuildingList(pk)
-  } else {
-    pDataStore.fetchKeyUnitList(pk)
-  }
+  fetchFloorTypeList(pk)
+  fetchBuildingList(pk)
 }
-
-// viewMode 전환 시 필요한 데이터 로드
-watch(viewMode, mode => {
-  const pk = project.value || projStore.initProjId
-  if (!pk) return
-  if (mode === 'house') {
-    if (!pDataStore.floorTypeList.length) fetchFloorTypeList(pk)
-    if (!pDataStore.buildingList.length) fetchBuildingList(pk)
-  } else {
-    if (!pDataStore.keyUnitList.length) pDataStore.fetchKeyUnitList(pk)
-  }
-})
 
 const dataReset = () => {
   pDataStore.unitTypeList = []
   pDataStore.floorTypeList = []
   pDataStore.buildingList = []
   pDataStore.houseUnitList = []
-  pDataStore.keyUnitList = []
 }
 
 const projSelect = (target: number | null) => {
   if (refUnitController.value) refUnitController.value.projReset()
-  if (refKeyUnitController.value) refKeyUnitController.value.projReset()
   dataReset()
   if (!!target) dataSetup(target)
 }
@@ -209,24 +180,14 @@ onBeforeRouteLeave(async () => {
 
     <ContentBody>
       <CCardBody class="pb-5">
-        <v-btn-toggle v-model="viewMode" mandatory density="compact" class="mb-3">
-          <v-btn value="house" size="small">동/호 등록</v-btn>
-          <v-btn value="key" size="small">유닛 등록</v-btn>
-        </v-btn-toggle>
-
-        <template v-if="viewMode === 'house'">
-          <UnitController
-            ref="refUnitController"
-            :project="project as number"
-            @bldg-select="bldgSelect"
-            @dong-register="dongRegister"
-            @unit-register="unitRegister"
-          />
-          <UnitTable :bldg-name="bldgName" @on-update="onUpdate" @on-delete="onDelete" />
-        </template>
-        <template v-else>
-          <KeyUnitController ref="refKeyUnitController" :project="project as number" />
-        </template>
+        <UnitController
+          ref="refUnitController"
+          :project="project as number"
+          @bldg-select="bldgSelect"
+          @dong-register="dongRegister"
+          @unit-register="unitRegister"
+        />
+        <UnitTable :bldg-name="bldgName" @on-update="onUpdate" @on-delete="onDelete" />
       </CCardBody>
     </ContentBody>
 
