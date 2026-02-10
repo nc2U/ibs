@@ -850,7 +850,7 @@ class ContractUpdateService:
         """
         # 1. 기본 계약 정보 업데이트
         instance.order_group_id = data.get('order_group', instance.order_group_id)
-        instance.unit_type_id = data.get('unit_type', instance.unit_type_id)
+        instance.unit_type_id = data.get('unit_type') or None
 
         # unit_type 일관성 검증: key_unit이 변경되지 않는 경우 기존 key_unit과 비교
         new_unit_pk = data.get('key_unit')
@@ -919,8 +919,9 @@ class ContractUpdateService:
                     data.get('houseunit')
                 )
 
-        # 3. 계약 가격 재계산
-        self.price_service.update_single_contract_price(instance)
+        # 3. 계약 가격 재계산 (unit_type이 없는 청약은 가격 로직 스킵)
+        if instance.unit_type_id:
+            self.price_service.update_single_contract_price(instance)
 
         # 4. 계약자 정보 수정
         contractor = instance.contractor
