@@ -72,7 +72,7 @@ class ContractPriceBulkUpdateService:
             try:
                 # 동호수 지정 여부 확인
                 try:
-                    house_unit = contract.key_unit.houseunit
+                    house_unit = contract.key_unit.houseunit if contract.key_unit else None
                 except ObjectDoesNotExist:
                     house_unit = None
 
@@ -276,7 +276,7 @@ class ContractPriceUpdateService:
             tuple: (ContractPrice 인스턴스, created 여부)
         """
         try:
-            house_unit = contract.key_unit.houseunit
+            house_unit = contract.key_unit.houseunit if contract.key_unit else None
         except ObjectDoesNotExist:
             house_unit = None
 
@@ -767,8 +767,9 @@ class ContractCreationService:
             data.get('houseunit')
         )
 
-        # 3. 계약 가격 설정
-        self.price_service.update_single_contract_price(contract)
+        # 3. 계약 가격 설정 (unit_type이 없는 청약은 가격 로직 스킵)
+        if contract.unit_type_id:
+            self.price_service.update_single_contract_price(contract)
 
         # 4. 계약자 등록
         contractor = self.contractor_service.register_contractor(contract, data)

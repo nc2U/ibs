@@ -54,6 +54,7 @@ const refConfirmModal = ref()
 
 const sameAddr = ref(false)
 const validated = ref(false)
+const noPriceData = ref(false)
 const form = reactive({
   // contract
   pk: null as number | null,
@@ -266,6 +267,7 @@ const typeSelect = () => {
 
     form.key_unit = null
     form.houseunit = null
+    noPriceData.value = false
 
     // unitSet이 true일 때만 KeyUnit과 HouseUnit 목록을 가져옴
     if (props.project && props.unitSet) {
@@ -276,6 +278,20 @@ const typeSelect = () => {
     // unitSet이 false일 때는 임시 serial_number 생성
     if (!props.unitSet) {
       form.serial_number = `TEMP-${form.order_group}-${Date.now()}`
+    }
+
+    // unit_type 선택 시 가격 데이터 존재 여부 확인
+    if (form.unit_type && props.project) {
+      await contStore.fetchSalePriceList({
+        project: props.project as number,
+        unit_type: form.unit_type as number,
+      })
+      const hasSalePrice = contStore.salesPriceList.length > 0
+      const selectedType = projectDataStore.unitTypeList.find(
+        t => t.pk === form.unit_type,
+      )
+      const hasAvgPrice = !!selectedType?.average_price
+      noPriceData.value = !hasSalePrice && !hasAvgPrice
     }
   })
 }
@@ -330,6 +346,7 @@ const formDataReset = () => {
   form.email = ''
   contStore.removeContract()
   sameAddr.value = false
+  noPriceData.value = false
 }
 
 const formDataSetup = () => {
@@ -581,6 +598,11 @@ onBeforeRouteLeave(() => formDataReset())
             </option>
           </CFormSelect>
           <CFormFeedback invalid>유니트 타입을 선택하세요.</CFormFeedback>
+          <div v-if="noPriceData" class="text-warning small mt-1">
+            선택한 타입의 공급가격 정보가 등록되어 있지 않습니다.
+            계약가격이 0원으로 등록되며, 추후 기준 공급가격 또는 타입 평균가격 등록 후
+            계약가격 일괄 업데이트를 통해 반영할 수 있습니다.
+          </div>
         </CCol>
 
         <CFormLabel v-if="unitSet" class="col-sm-2 col-lg-1 col-form-label required">
