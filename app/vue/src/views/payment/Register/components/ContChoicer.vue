@@ -105,7 +105,7 @@ onMounted(() => pageInit())
             {{ contract.serial_number }}
           </router-link>
           ] (타입 :
-          {{ contract.unit_type_desc.name }}
+          {{ contract.unit_type_desc?.name ?? '미정' }}
           {{
             contract.key_unit?.houseunit
               ? contract.key_unit.houseunit.__str__

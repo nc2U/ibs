@@ -50,13 +50,16 @@ const contChk = (ctorPk: number) => {
     </CTableDataCell>
 
     <CTableDataCell class="text-left">
-      <CIcon
-        name="cibDiscover"
-        :style="'color:' + contract.unit_type_desc.color"
-        size="sm"
-        class="mr-1"
-      />
-      {{ contract.unit_type_desc.name }}
+      <template v-if="contract.unit_type_desc">
+        <CIcon
+          name="cibDiscover"
+          :style="'color:' + contract.unit_type_desc.color"
+          size="sm"
+          class="mr-1"
+        />
+        {{ contract.unit_type_desc.name }}
+      </template>
+      <span v-else class="text-medium-emphasis">미정</span>
     </CTableDataCell>
     <CTableDataCell>
       {{ contract.serial_number }}

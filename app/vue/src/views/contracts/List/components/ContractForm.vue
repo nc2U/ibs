@@ -462,11 +462,11 @@ const saveContract = (payload: any) => {
 
   for (const key in getData) form.set(key, getData[key] ?? '')
 
-  if (!pk) contStore.createContractSet(form)
-  else contStore.updateContractSet(pk, form)
+  if (!pk) return contStore.createContractSet(form)
+  else return contStore.updateContractSet(pk, form)
 }
 
-const modalAction = () => {
+const modalAction = async () => {
   // 신규 청약 생성 여부 확인
   const isNewSubscription = !form.pk && form.status === '1'
 
@@ -474,7 +474,7 @@ const modalAction = () => {
   const isContractConversion =
     props.contract && contractor.value?.status === '1' && form.status === '2'
 
-  saveContract({
+  await saveContract({
     ...form,
     newFile: newFile.value,
     editFile: editFile.value,

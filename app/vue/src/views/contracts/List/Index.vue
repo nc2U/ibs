@@ -118,13 +118,23 @@ const onContFiltering = (payload: ContFilter) => {
 const setItems = (arr: string[]) => (printItems.value = arr)
 
 const handleSubscription = async () => {
-  // 청약 목록으로 전환 (실제 목록은 pinia에서 이미 로드됨)
   curr_status.value = '1'
+  await nextTick()
+  listControl.value.listFiltering(1)
+  if (project.value?.pk) {
+    await fetchSubsSummaryList(project.value.pk)
+    await fetchContSummaryList(project.value.pk)
+  }
 }
 
 const handleContract = async () => {
-  // 계약 목록으로 전환 (청약을 계약으로 전환했을 때)
   curr_status.value = '2'
+  await nextTick()
+  listControl.value.listFiltering(1)
+  if (project.value?.pk) {
+    await fetchSubsSummaryList(project.value.pk)
+    await fetchContSummaryList(project.value.pk)
+  }
 }
 
 const scrollToHighlight = async () => {

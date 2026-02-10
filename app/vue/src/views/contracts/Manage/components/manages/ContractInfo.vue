@@ -156,13 +156,16 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
       <CRow class="mb-2">
         <CCol :sm="6">
           <strong>타입 :</strong>
-          <CIcon
-            name="cibDiscover"
-            :style="'color:' + contract.unit_type_desc.color"
-            size="sm"
-            class="ml-2 mr-1"
-          />
-          <span>{{ contract.unit_type_desc.name }}</span>
+          <template v-if="contract.unit_type_desc">
+            <CIcon
+              name="cibDiscover"
+              :style="'color:' + contract.unit_type_desc.color"
+              size="sm"
+              class="ml-2 mr-1"
+            />
+            <span>{{ contract.unit_type_desc.name }}</span>
+          </template>
+          <span v-else class="ml-2 text-medium-emphasis">미정</span>
         </CCol>
         <CCol :sm="6">
           <strong>호수 :</strong>

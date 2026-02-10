@@ -50,7 +50,7 @@ const thisPrice = computed(() => {
       return priceList.value
         .filter((p: Price) => p.unit_floor_type === props.contract?.key_unit?.houseunit?.floor_type)
         .map((p: Price) => p.price)[0]
-    else if (!!props.contract.unit_type_desc.average_price)
+    else if (!!props.contract.unit_type_desc?.average_price)
       return Math.ceil(props.contract.unit_type_desc.average_price / 10000) * 10000
     else return 0
   }

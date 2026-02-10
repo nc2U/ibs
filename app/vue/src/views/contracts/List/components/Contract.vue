@@ -52,13 +52,16 @@ const getColor = (q: '1' | '2' | '3' | '4' | undefined) =>
       {{ contract.order_group_desc.name }}
     </CTableDataCell>
     <CTableDataCell class="text-left">
-      <CIcon
-        name="cibDiscover"
-        :style="'color:' + contract.unit_type_desc.color"
-        size="sm"
-        class="mr-1"
-      />
-      {{ contract.unit_type_desc.name }}
+      <template v-if="contract.unit_type_desc">
+        <CIcon
+          name="cibDiscover"
+          :style="'color:' + contract.unit_type_desc.color"
+          size="sm"
+          class="mr-1"
+        />
+        {{ contract.unit_type_desc.name }}
+      </template>
+      <span v-else class="text-medium-emphasis">미정</span>
     </CTableDataCell>
     <CTableDataCell>
       <router-link
