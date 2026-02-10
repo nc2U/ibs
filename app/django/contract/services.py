@@ -343,12 +343,15 @@ class UnitAssignmentService:
 
         Args:
             contract: Contract 인스턴스
-            unit_pk: KeyUnit PK
+            unit_pk: KeyUnit PK (None인 경우 유닛 할당 건너뜀)
             house_unit_pk: HouseUnit PK (선택사항)
 
         Returns:
             HouseUnit 인스턴스 또는 None
         """
+        # unitSet=false인 경우 unit_pk가 None일 수 있음
+        if not unit_pk:
+            return None
 
         key_unit = KeyUnit.objects.get(pk=unit_pk)
 
@@ -799,9 +802,17 @@ class ContractCreationService:
             except ValueError:
                 sup_cont_date_value = None
 
+        # Handle case where serial_number might be empty or missing
+        serial_number = data.get('serial_number')
+        if not serial_number or serial_number.startswith('TEMP-'):
+            # Generate a temporary serial number if none provided or temporary format
+            project_id = data.get('project')
+            order_group_id = data.get('order_group')
+            serial_number = f'TEMP-{project_id}-{order_group_id}-{timezone.now().microsecond}'
+
         return Contract.objects.create(
             project_id=data.get('project'),
-            serial_number=data.get('serial_number'),
+            serial_number=serial_number,
             order_group_id=data.get('order_group'),
             unit_type_id=data.get('unit_type'),
             activation=activation_value,
@@ -869,12 +880,25 @@ class ContractUpdateService:
         new_unit_pk = data.get('key_unit')
 
         if current_unit_pk != new_unit_pk:
-            self.unit_service.reassign_unit(
-                instance,
-                new_unit_pk,
-                data.get('houseunit')
-            )
-        elif data.get('houseunit'):
+            if new_unit_pk:  # 새 유닛이 있는 경우에만 재할당
+                self.unit_service.reassign_unit(
+                    instance,
+                    new_unit_pk,
+                    data.get('houseunit')
+                )
+            elif current_unit_pk:  # 기존 유닛을 제거하는 경우
+                # 기존 연결 해제만 수행
+                if instance.key_unit:
+                    try:
+                        old_house_unit = instance.key_unit.houseunit
+                        if old_house_unit:
+                            old_house_unit.key_unit = None
+                            old_house_unit.save()
+                    except ObjectDoesNotExist:
+                        pass
+                instance.key_unit = None
+                instance.save()
+        elif data.get('houseunit') and new_unit_pk:
             # 유닛은 같지만 동호수만 변경된 경우
             try:
                 current_house_unit = instance.key_unit.houseunit

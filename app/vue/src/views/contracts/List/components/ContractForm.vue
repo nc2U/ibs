@@ -235,7 +235,7 @@ const setKeyCode = () => {
   nextTick(() => {
     form.houseunit = null
     form.key_unit_code = form.key_unit ? getKUCode(Number(form.key_unit)) : ''
-    form.serial_number = form.key_unit ? `${form.key_unit_code}-${form.order_group}` : ''
+    form.serial_number = form.key_unit ? `${form.key_unit_code}-${form.order_group}` : `TEMP-${form.order_group}-${Date.now()}`
   })
 }
 
@@ -261,9 +261,16 @@ const typeSelect = () => {
 
     form.key_unit = null
     form.houseunit = null
-    if (props.project) {
+
+    // unitSet이 true일 때만 KeyUnit과 HouseUnit 목록을 가져옴
+    if (props.project && props.unitSet) {
       await fetchKeyUnitList({ project: props.project as number, ...payload })
       await fetchHouseUnitList({ project: props.project as number, ...payload })
+    }
+
+    // unitSet이 false일 때는 임시 serial_number 생성
+    if (!props.unitSet) {
+      form.serial_number = `TEMP-${form.order_group}-${Date.now()}`
     }
   })
 }
@@ -566,10 +573,10 @@ onBeforeRouteLeave(() => formDataReset())
           <CFormFeedback invalid>유니트 타입을 선택하세요.</CFormFeedback>
         </CCol>
 
-        <CFormLabel class="col-sm-2 col-lg-1 col-form-label required">
+        <CFormLabel v-if="unitSet" class="col-sm-2 col-lg-1 col-form-label required">
           {{ contLabel }}코드
         </CFormLabel>
-        <CCol sm="10" lg="2" class="mb-sm-3 mb-lg-0">
+        <CCol v-if="unitSet" sm="10" lg="2" class="mb-sm-3 mb-lg-0">
           <CFormSelect
             v-model.number="form.key_unit"
             required
