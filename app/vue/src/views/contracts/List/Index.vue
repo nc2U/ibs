@@ -41,8 +41,6 @@ const urlPage = computed(() => {
   return page ? parseInt(page as string, 10) : null
 })
 
-const currentFilters = ref<ContFilter>({ project: null })
-
 const visible = ref(false)
 
 const filteredStr = ref(`&status=${curr_status.value}`)
@@ -110,9 +108,6 @@ const onContFiltering = (payload: ContFilter) => {
   curr_status.value = status as '1' | '2'
   filteredStr.value = `&limit=${limit.value}&status=${status}&group=${order_group}&type=${unit_type}&dong=${building}&is_null=${is_unit}&quali=${qualification}&sup=${is_sup_cont}&sdate=${from_date}&edate=${to_date}&q=${search}`
 
-  // 현재 필터 상태 저장
-  currentFilters.value = { ...payload }
-
   if (payload.project) fetchContractList(payload)
 }
 const setItems = (arr: string[]) => (printItems.value = arr)
@@ -153,7 +148,7 @@ const loadHighlightPage = async (projectId: number) => {
     try {
       // 기본 필터 조건으로 해당 항목이 몇 번째 페이지에 있는지 찾기
       const filters = {
-        ...currentFilters.value,
+        ...contStore.contractFilter,
         project: projectId,
         limit: limit.value,
         status: curr_status.value,
@@ -161,7 +156,6 @@ const loadHighlightPage = async (projectId: number) => {
 
       // 해당 페이지로 이동 (1페이지여도 page 값 명시적 설정)
       filters.page = await findContractPage(highlightId.value, filters)
-      currentFilters.value = { ...filters }
       await fetchContractList(filters)
     } catch (error) {
       console.error('Error finding highlight page:', error)
@@ -180,7 +174,7 @@ const dataSetup = async (proj: number, initialPage?: number) => {
   await fetchHouseUnitList({ project: proj })
 
   // 초기 필터 설정 (URL에서 page가 있으면 해당 페이지로)
-  currentFilters.value = {
+  const filters: ContFilter = {
     project: proj,
     limit: limit.value,
     status: curr_status.value,
@@ -194,7 +188,7 @@ const dataSetup = async (proj: number, initialPage?: number) => {
     await loadHighlightPage(proj)
   } else {
     // page가 명시되었거나 highlight_id가 없을 때: 지정된 페이지 로드
-    await fetchContractList(currentFilters.value)
+    await fetchContractList(filters)
   }
 
   // 하이라이트 처리 후에도 목록이 비어있다면 기본 목록 로드
@@ -233,8 +227,7 @@ const projSelect = async (target: number | null, skipClearQuery = false) => {
       await fetchOrderGroupList(target)
       await fetchTypeList(target)
       await fetchBuildingList(target)
-      currentFilters.value = { project: target, limit: limit.value, status: curr_status.value }
-      await fetchContractList({ project: target })
+      await fetchContractList({ project: target, limit: limit.value, status: curr_status.value })
       await fetchSubsSummaryList(target)
       await fetchContSummaryList(target)
     } else {
@@ -292,6 +285,15 @@ onBeforeRouteLeave(() => {
 
 const loading = ref(true)
 onBeforeMount(async () => {
+  // store에 저장된 필터 상태 복원 (페이지 재진입 시)
+  const storedFilter = contStore.contractFilter
+  if (storedFilter.status) {
+    curr_status.value = storedFilter.status as '1' | '2'
+  }
+  if (storedFilter.limit) {
+    limit.value = storedFilter.limit
+  }
+
   if (route.query?.status) {
     await router.replace({ name: '계약 내역 조회' })
     curr_status.value = '1'
@@ -358,7 +360,7 @@ onBeforeMount(async () => {
           :limit="limit"
           :unit-set="unitSet"
           :highlight-id="highlightId ?? undefined"
-          :current-page="currentFilters.page || 1"
+          :current-page="contStore.contractFilter.page || 1"
           @page-select="pageSelect"
           @contract-converted="handleContract"
         />
