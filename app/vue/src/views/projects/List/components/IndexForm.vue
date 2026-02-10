@@ -42,8 +42,8 @@ const form = reactive<Project>({
   kind: '',
   start_year: '',
   is_direct_manage: false,
-  is_returned_area: false,
   is_unit_set: false,
+  is_returned_area: false,
   // 사업 일정 필드 (필수)
   monthly_aggr_start_date: '',
   construction_start_date: '',
@@ -89,8 +89,8 @@ const formsCheck = computed(() => {
     const d = form.kind === props.project.kind
     const e = form.start_year === props.project.start_year
     const f = form.is_direct_manage === props.project.is_direct_manage
-    const g = form.is_returned_area === props.project.is_returned_area
-    const h = form.is_unit_set === props.project.is_unit_set
+    const g = form.is_unit_set === props.project.is_unit_set
+    const h = form.is_returned_area === props.project.is_returned_area
     const i = form.monthly_aggr_start_date === props.project.monthly_aggr_start_date
     const j = form.construction_start_date === props.project.construction_start_date
     const k = form.construction_period_months === props.project.construction_period_months
@@ -121,9 +121,6 @@ const formsCheck = computed(() => {
 const refDelModal = ref()
 const refAlertModal = ref()
 const refConfirmModal = ref()
-const refPostCode = ref()
-
-const address2 = ref()
 
 const store = useStore()
 
@@ -161,8 +158,8 @@ const formDataSetup = () => {
     form.kind = props.project.kind
     form.start_year = props.project.start_year
     form.is_direct_manage = props.project.is_direct_manage
-    form.is_returned_area = props.project.is_returned_area
     form.is_unit_set = props.project.is_unit_set
+    form.is_returned_area = props.project.is_returned_area
     // 사업 일정 필드
     form.monthly_aggr_start_date = props.project.monthly_aggr_start_date
     form.construction_start_date = props.project.construction_start_date
@@ -293,13 +290,13 @@ onUpdated(() => formDataSetup())
             <CFormLabel class="col-md-2 col-lg-1 col-form-label"></CFormLabel>
             <CCol class="mb-md-3">
               <CFormSwitch
-                id="is_returned_area"
-                v-model="form.is_returned_area"
-                label="토지환지여부"
-                :checked="project && project.is_returned_area"
+                id="is_unit_set"
+                v-model="form.is_unit_set"
+                label="동호지정여부"
+                :checked="project && project.is_unit_set"
               />
               <CFormText class="text-grey">
-                해당 사업부지가 환지방식 도시개발사업구역인 경우 체크
+                현재 동호수를 지정하지 않는 경우 체크하지 않음
               </CFormText>
             </CCol>
           </CRow>
@@ -308,13 +305,13 @@ onUpdated(() => formDataSetup())
             <CFormLabel class="col-md-2 col-lg-1 col-form-label"></CFormLabel>
             <CCol class="mb-md-3">
               <CFormSwitch
-                id="is_unit_set"
-                v-model="form.is_unit_set"
-                label="동호지정여부"
-                :checked="project && project.is_unit_set"
+                id="is_returned_area"
+                v-model="form.is_returned_area"
+                label="토지환지여부"
+                :checked="project && project.is_returned_area"
               />
               <CFormText class="text-grey">
-                현재 동호수를 지정하지 않는 경우 체크하지 않음
+                해당 사업부지가 환지방식 도시개발사업구역인 경우 체크
               </CFormText>
             </CCol>
           </CRow>
