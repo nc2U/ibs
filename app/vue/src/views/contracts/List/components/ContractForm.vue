@@ -557,11 +557,13 @@ onBeforeRouteLeave(() => formDataReset())
           <CFormFeedback invalid>차수그룹을 선택하세요.</CFormFeedback>
         </CCol>
 
-        <CFormLabel class="col-sm-2 col-lg-1 col-form-label required"> 타입</CFormLabel>
+        <CFormLabel class="col-sm-2 col-lg-1 col-form-label" :class="{ required: unitSet }">
+          타입
+        </CFormLabel>
         <CCol sm="10" lg="2" class="mb-sm-3 mb-lg-0">
           <CFormSelect
             v-model.number="form.unit_type"
-            required
+            :required="unitSet"
             :disabled="form.order_group === null && !contract"
             @change="typeSelect"
           >

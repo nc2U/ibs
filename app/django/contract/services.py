@@ -850,7 +850,7 @@ class ContractUpdateService:
 
         # unit_type 일관성 검증: key_unit이 변경되지 않는 경우 기존 key_unit과 비교
         new_unit_pk = data.get('key_unit')
-        if not new_unit_pk and instance.key_unit_id:
+        if not new_unit_pk and instance.key_unit_id and instance.unit_type_id:
             if instance.key_unit.unit_type_id != instance.unit_type_id:
                 raise serializers.ValidationError(
                     '계약의 타입과 유닛의 타입이 일치하지 않습니다.'
