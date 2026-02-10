@@ -11,7 +11,7 @@ from contract.models import (OrderGroup, DocumentType, RequiredDocument, Contrac
                              Succession, ContractorRelease)
 from contract.services import (ContractPriceUpdateService, ContractCreationService,
                                ContractUpdateService, ContractorReleaseService)
-from items.models import HouseUnit, KeyUnit
+from items.models import HouseUnit, KeyUnit, UnitType
 from payment.models import InstallmentPaymentOrder
 from .accounts import SimpleUserSerializer
 from .items import SimpleUnitTypeSerializer
@@ -230,6 +230,10 @@ class ContractFileInContractSetSerializer(serializers.ModelSerializer):
 class ContractSetSerializer(serializers.ModelSerializer):
     order_group_sort = serializers.SerializerMethodField(read_only=True)
     unit_type_desc = SimpleUnitTypeSerializer(source='unit_type', read_only=True)
+    serial_number = serializers.CharField(required=False, allow_blank=True)
+    unit_type = serializers.PrimaryKeyRelatedField(
+        queryset=UnitType.objects.all(), required=False, allow_null=True,
+    )
     key_unit = KeyUnitInContractSerializer(read_only=True)
     contractprice = ContPriceInContractSerializer(read_only=True)
     contractor = ContractorInContractSerializer(read_only=True)

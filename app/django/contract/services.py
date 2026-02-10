@@ -810,11 +810,14 @@ class ContractCreationService:
             order_group_id = data.get('order_group')
             serial_number = f'TEMP-{project_id}-{order_group_id}-{timezone.now().microsecond}'
 
+        # Handle case where unit_type might be empty string from FormData
+        unit_type_id = data.get('unit_type') or None
+
         return Contract.objects.create(
             project_id=data.get('project'),
             serial_number=serial_number,
             order_group_id=data.get('order_group'),
-            unit_type_id=data.get('unit_type'),
+            unit_type_id=unit_type_id,
             activation=activation_value,
             is_sup_cont=is_sup_cont_value,
             sup_cont_date=sup_cont_date_value
