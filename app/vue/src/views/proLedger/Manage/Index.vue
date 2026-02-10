@@ -71,9 +71,6 @@ const getAllContractors = computed(() => contStore.getAllContractors)
 const fetchAllContracts = (projId: number) => contStore.fetchAllContracts(projId)
 const fetchAllContractors = (projId: number) => contStore.fetchAllContractors(projId)
 
-const comLedgerStore = useComLedger()
-const fetchBankCodeList = () => comLedgerStore.fetchBankCodeList()
-
 const proLedgerStore = useProLedger()
 const proAccounts = computed(() => proLedgerStore.proAccounts)
 const transferFeePk = computed(() => proLedgerStore.transferFeePk)
@@ -205,7 +202,6 @@ onBeforeMount(async () => {
 
   imprest.value = Cookies.get('get-imprest') === 'all' // 기본값 false
 
-  await fetchBankCodeList()
   await fetchProjectAccounts()
 
   // 하이라이트 항목이 있으면 해당 페이지로 이동 후 스크롤

@@ -32,6 +32,7 @@ import FormModal from '@/components/Modals/FormModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AddressForm from '@/views/contracts/List/components/AddressForm.vue'
+import BankAcc from '@/views/proLedger/Manage/components/BankAcc.vue'
 
 const props = defineProps({
   project: { type: Number, default: null },
@@ -44,6 +45,7 @@ const props = defineProps({
 const emit = defineEmits(['on-submit', 'close', 'subscription-created', 'contract-converted'])
 
 const refPostCode = ref()
+const refBankAcc = ref()
 const address21 = ref()
 const address22 = ref()
 const refChangeAddr = ref()
@@ -130,6 +132,9 @@ const getTypes = computed(() => projectDataStore.getTypes)
 
 const proLedgerStore = useProLedger()
 const allProBankList = computed(() => proLedgerStore.allProBankList)
+
+const onBankCreate = (payload: any) => proLedgerStore.createProBankAcc({ ...payload, project: props.project })
+const onBankUpdate = (payload: any) => proLedgerStore.updateProBankAcc(payload)
 
 const paymentStore = usePayment()
 const payOrderList = computed(() => paymentStore.payOrderList)
@@ -880,16 +885,19 @@ onBeforeRouteLeave(() => formDataReset())
               <CFormFeedback invalid>입금액을 입력하세요.</CFormFeedback>
             </CCol>
             <CCol sm="12" md="6" lg="2" class="mb-3">
-              <CFormSelect
-                v-model="form.bank_account"
-                :required="form.deal_date"
-                :disabled="noStatus"
-              >
-                <option value="">납부계좌 선택</option>
-                <option v-for="pb in allProBankList" :key="pb.pk as number" :value="pb.pk">
-                  {{ pb.alias_name }}
-                </option>
-              </CFormSelect>
+              <div class="d-flex align-items-center">
+                <CFormSelect
+                  v-model="form.bank_account"
+                  :required="form.deal_date"
+                  :disabled="noStatus"
+                >
+                  <option value="">납부계좌 선택</option>
+                  <option v-for="pb in allProBankList" :key="pb.pk as number" :value="pb.pk">
+                    {{ pb.alias_name }}
+                  </option>
+                </CFormSelect>
+                <CIcon name="cilCog" class="ms-1" role="button" @click="refBankAcc.callModal()" />
+              </div>
               <CFormFeedback invalid>납부계좌를 선택하세요.</CFormFeedback>
             </CCol>
             <CCol sm="12" md="6" lg="2" class="mb-3">
@@ -1111,4 +1119,6 @@ onBeforeRouteLeave(() => formDataReset())
   </ConfirmModal>
 
   <AlertModal ref="refAlertModal" />
+
+  <BankAcc ref="refBankAcc" @on-bank-create="onBankCreate" @on-bank-update="onBankUpdate" />
 </template>

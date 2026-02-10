@@ -1,9 +1,9 @@
 <script lang="ts" setup>
 import { ref, reactive, computed, onMounted, onUpdated, type PropType } from 'vue'
-import { useComLedger } from '@/store/pinia/comLedger.ts'
 import { write_project_cash } from '@/utils/pageAuth'
 import type { ProjectBank } from '@/store/types/proLedger.ts'
-import { isValidate } from '@/utils/helper'
+import { isValidate, errorHandle } from '@/utils/helper'
+import api from '@/api'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
@@ -50,8 +50,13 @@ const formsCheck = computed(() => {
   } else return false
 })
 
-const comLedgerStore = useComLedger()
-const bankCodeList = computed(() => comLedgerStore.bankCodeList)
+const bankCodeList = ref<{ pk: number; code: string; name: string }[]>([])
+
+const fetchBankCodeList = () =>
+  api
+    .get('/ledger/bank-code/')
+    .then(res => (bankCodeList.value = res.data.results))
+    .catch(err => errorHandle(err.response.data))
 
 const onSubmit = (event: Event) => {
   if (isValidate(event)) {
@@ -103,7 +108,10 @@ const formDataReset = () => {
   form.is_imprest = false
 }
 
-onMounted(() => formDataSetup())
+onMounted(() => {
+  fetchBankCodeList()
+  formDataSetup()
+})
 onUpdated(() => formDataSetup())
 </script>
 
