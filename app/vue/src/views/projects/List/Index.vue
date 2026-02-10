@@ -26,9 +26,10 @@ const resetForm = () => (compName.value = 'IndexDetail')
 
 const toCreate = (payload: Project) => createProject(payload)
 const toUpdate = (payload: Project) => updateProject(payload)
-const toSubmit = (payload: Project) => {
-  if (payload.pk) toUpdate(payload)
-  else toCreate(payload)
+const toSubmit = async (payload: Project) => {
+  if (payload.pk) await toUpdate(payload)
+  else await toCreate(payload)
+  compName.value = 'IndexDetail'
 }
 
 const workStore = useWork()
