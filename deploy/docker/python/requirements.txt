@@ -24,7 +24,7 @@ gunicorn>=21.2
 psycopg2==2.9.11
 
 openpyxl==3.1.5
-Pillow==12.0.0
+Pillow==12.1.1
 
 python-decouple==3.8
 python-magic==0.4.27
