@@ -429,7 +429,7 @@ class SubsSummaryViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return Contract.objects.filter(activation=True, contractor__status=1) \
             .values('unit_type') \
-            .annotate(num_cont=Count('unit_type'))
+            .annotate(num_cont=Count('pk'))
 
 
 class ContSumFilter(FilterSet):

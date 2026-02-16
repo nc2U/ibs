@@ -20,13 +20,17 @@ const subsSummaryList = computed(() => contractStore.subsSummaryList)
 const contSummaryList = computed(() => contractStore.contSummaryList)
 const unitTypeList = computed(() => projectDataStore.unitTypeList)
 
-const subsNum = (type?: number) => {
+const subsNum = (type?: number | null) => {
   // 청약 수
   let subs: SubsSummary[] | number[] = subsSummaryList.value
-  subs = type ? subs.filter((s: SubsSummary) => s.unit_type === type) : subs
+  if (type !== undefined) {
+    subs = subs.filter((s: SubsSummary) => s.unit_type === type)
+  }
   subs = subs.map((s: SubsSummary) => s.num_cont)
   return subs.reduce((o: number, n: number) => o + n, 0)
 }
+
+const untypedSubsNum = computed(() => subsNum(null))
 
 const contNum = (order: number | null, type?: number) => {
   // 계약 수
@@ -69,7 +73,7 @@ const contNum = (order: number | null, type?: number) => {
         <CTableHeaderCell
           v-if="props.project && i === 0"
           class="text-center"
-          :rowspan="unitTypeList.length"
+          :rowspan="unitTypeList.length + (untypedSubsNum > 0 ? 1 : 0)"
         >
           {{ props.project.name }}
         </CTableHeaderCell>
@@ -109,6 +113,20 @@ const contNum = (order: number | null, type?: number) => {
             )
           }}
         </CTableDataCell>
+      </CTableRow>
+
+      <CTableRow v-if="untypedSubsNum > 0" class="text-right" align="middle">
+        <CTableHeaderCell v-if="unitTypeList.length === 0" class="text-center">
+          {{ props.project.name }}
+        </CTableHeaderCell>
+        <CTableDataCell class="text-left pl-2 text-medium-emphasis"> 미지정 </CTableDataCell>
+        <CTableDataCell>-</CTableDataCell>
+        <CTableDataCell>{{ numFormat(untypedSubsNum) }}</CTableDataCell>
+        <CTableDataCell v-for="order in orderGroupList" :key="order.pk">-</CTableDataCell>
+        <CTableDataCell v-if="orderGroupList.length > 1">-</CTableDataCell>
+        <CTableDataCell>-</CTableDataCell>
+        <CTableDataCell>-</CTableDataCell>
+        <CTableDataCell>-</CTableDataCell>
       </CTableRow>
 
       <CTableRow class="text-right" :color="TableSecondary">

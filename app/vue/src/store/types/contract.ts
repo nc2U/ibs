@@ -289,7 +289,7 @@ interface SimpleSuccession {
 }
 
 export interface SubsSummary {
-  unit_type: number
+  unit_type: number | null
   num_cont: number
 }
 

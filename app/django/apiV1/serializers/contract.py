@@ -357,7 +357,7 @@ class ContractPriceSerializer(serializers.ModelSerializer):
 
 
 class SubsSummarySerializer(serializers.ModelSerializer):
-    unit_type = serializers.IntegerField()
+    unit_type = serializers.IntegerField(allow_null=True)
     num_cont = serializers.IntegerField()
 
     class Meta:
