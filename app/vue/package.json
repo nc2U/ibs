@@ -64,6 +64,11 @@
     "vuetify": "^3.12.1",
     "webfontloader": "^1.6.28"
   },
+  "pnpm": {
+    "overrides": {
+      "serialize-javascript": ">=7.0.3"
+    }
+  },
   "devDependencies": {
     "@pinia/testing": "^1.0.3",
     "@rushstack/eslint-patch": "^1.16.1",
