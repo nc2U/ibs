@@ -7,8 +7,8 @@
     </a>
     <ul class="side-nav-second-level" aria-expanded="false">
       <li>
-        <a href="{% url 'ibs:docs:pr.general_list' %}">일반 문서 관리
-          <span class="badge badge-pill badge-success-lighten font-10 float-right">ok</span>
+        <a href="javascript:void(0);">일반 문서 관리 (API 전용)
+          <span class="badge badge-pill badge-warning-lighten font-10 float-right">API</span>
         </a>
       </li>
       {% if 'project/general/add' in request.path %}
@@ -48,8 +48,8 @@
         </a>
         <ul class="side-nav-third-level" aria-expanded="false">
           <li>
-            <a href="{% url 'ibs:docs:pr.lawsuit_list' %}">소송 문서 관리
-              <span class="badge badge-pill badge-success-lighten font-10 float-right">ok</span>
+            <a href="javascript:void(0);">소송 문서 관리 (API 전용)
+              <span class="badge badge-pill badge-warning-lighten font-10 float-right">API</span>
             </a>
           </li>
           {% if 'project/lawsuit/add' in request.path %}
@@ -83,8 +83,8 @@
             {% endif %}
           {% endif %}
           <li>
-            <a href="{% url 'ibs:docs:pr.case_list' %}">소송 사건 관리
-              <span class="badge badge-pill badge-success-lighten font-10 float-right">ok</span>
+            <a href="javascript:void(0);">소송 사건 관리 (API 전용)
+              <span class="badge badge-pill badge-warning-lighten font-10 float-right">API</span>
             </a>
           </li>
 
