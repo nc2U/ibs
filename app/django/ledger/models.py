@@ -802,6 +802,19 @@ class ProjectAccountingEntry(AccountingEntry):
             models.Index(fields=['contract']),
         ]
 
+    def clean_fields(self, exclude=None):
+        """
+        FK 유효성 검증 오버라이드
+
+        신규 생성 시 contract FK 검증 제외:
+        Django FK.validate()는 router.db_for_read()를 사용하므로 replica를 조회함.
+        동일 트랜잭션 내 생성된 contract는 아직 replica에 반영되지 않아 검증 실패 가능.
+        DB 수준의 FK 제약 조건이 무결성을 보장하므로 안전하게 제외 가능.
+        """
+        if self.pk is None and self.contract_id is not None:
+            exclude = list(exclude or []) + ['contract']
+        super().clean_fields(exclude=exclude)
+
     def clean(self):
         """유효성 검증"""
         super().clean()
