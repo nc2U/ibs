@@ -597,12 +597,13 @@ class PaymentProcessingService:
 
     @staticmethod
     @transaction.atomic
-    def process_initial_payment(contract, data, user):
+    def process_initial_payment(contract, contractor, data, user):
         """
         초기 계약금 납부 처리
 
         Args:
             contract: Contract 인스턴스
+            contractor: Contractor 인스턴스
             data: 납부 정보 딕셔너리
                 - deal_date: 거래일
                 - amount: 입금액
@@ -619,7 +620,6 @@ class PaymentProcessingService:
 
         # 기본 정보 조회
         project = Project.objects.get(pk=data.get('project'))
-        contractor = Contractor.objects.get(contract=contract)
         order_group_sort = int(data.get('order_group_sort'))
 
         # is_payment=True인 계정 선택 (order_group_sort 에 따라 출자금 / 매출금=분양대금)
@@ -692,6 +692,8 @@ class PaymentProcessingService:
 
         payment_id = data.get('payment')
 
+        contractor = Contractor.objects.using('default').get(contract=contract)
+
         if payment_id:
             # 기존 납부 수정
             try:
@@ -701,7 +703,6 @@ class PaymentProcessingService:
                 bank_tx = accounting_entry.related_transaction
 
                 # 기본 정보 조회
-                contractor = Contractor.objects.get(contract=contract)
                 order_group_sort = int(data.get('order_group_sort'))
 
                 # 계정 선택
@@ -728,10 +729,10 @@ class PaymentProcessingService:
 
             except ContractPayment.DoesNotExist:
                 # payment_id가 잘못되었거나 삭제된 경우 - 새로 생성
-                PaymentProcessingService.process_initial_payment(contract, data, user)
+                PaymentProcessingService.process_initial_payment(contract, contractor, data, user)
         else:
             # 새 납부 생성
-            PaymentProcessingService.process_initial_payment(contract, data, user)
+            PaymentProcessingService.process_initial_payment(contract, contractor, data, user)
 
 
 # 메인 Contract 관리 서비스
@@ -778,7 +779,7 @@ class ContractCreationService:
         self.file_service.handle_new_file(contractor, data.get('newFile'), user)
 
         # 6. 초기 납부 처리
-        self.payment_service.process_initial_payment(contract, data, user)
+        self.payment_service.process_initial_payment(contract, contractor, data, user)
 
         return contract
 
