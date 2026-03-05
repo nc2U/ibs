@@ -8,7 +8,6 @@ from .views import work
 from .views import project
 from .views import items
 from .views import payment
-from .views import cash
 from .views import contract
 from .views import notice
 from .views import board
@@ -110,8 +109,6 @@ router.register(r'price', payment.SalesPriceViewSet)
 router.register(r'pay-order', payment.InstallmentOrderViewSet)
 router.register(r'payment-installment', payment.PaymentPerInstallmentViewSet)
 router.register(r'down-payment', payment.DownPaymentViewSet)
-router.register(r'payment', payment.PaymentViewSet, basename='payment')  # only list
-router.register(r'all-payment', payment.AllPaymentViewSet, basename='all-payment')  # only list
 router.register(r'payment-summary', payment.PaymentSummaryViewSet, basename='payment-summary')  # only list
 router.register(r'payment-status-by-unit-type', payment.PaymentStatusByUnitTypeViewSet,
                 basename='payment-status-by-unit-type')  # only list
@@ -126,10 +123,6 @@ router.register(r'ledger/payment-status-by-unit-type', payment.ContractPaymentSt
                 basename='ledger-payment-status-by-unit-type')
 router.register(r'ledger/overall-summary', payment.ContractPaymentOverallSummaryViewSet,
                 basename='ledger-overall-summary')
-
-# cash
-router.register(r'bank-code', cash.BankCodeViewSet)
-router.register(r'company-bank-account', cash.ComBankAccountViewSet)
 
 # ledger (new architecture)
 router.register(r'ledger/company-account', ledger.CompanyAccountViewSet, basename='ledger-company-account')
@@ -156,20 +149,6 @@ router.register(r'ledger/company-calculation', ledger.CompanyLedgerCalculationVi
 router.register(r'ledger/project-calculation', ledger.ProjectLedgerCalculationViewSet)
 router.register(r'ledger/company-last-deal-date', ledger.CompanyLedgerLastDealDateViewSet)
 router.register(r'ledger/project-last-deal-date', ledger.ProjectLedgerLastDealDateViewSet)
-
-# cash
-router.register(r'balance-by-acc', cash.BalanceByAccountViewSet, basename='balance-by-acc')  # only list
-router.register(r'cashbook', cash.CashBookViewSet)
-router.register(r'com-cash-calc', cash.CompanyCashCalcViewSet)
-router.register(r'com-last-deal', cash.CompanyLastDealDateViewSet, basename='com-last-deal')  # only list
-router.register(r'date-cashbook', cash.DateCashBookViewSet, basename='date-cashbook')  # only list
-router.register(r'project-bank-account', cash.ProjectBankAccountViewSet)
-router.register(r'pr-balance-by-acc', cash.PrBalanceByAccountViewSet, basename='pr-balance-by-acc')  # only list
-router.register(r'project-cashbook', cash.ProjectCashBookViewSet)
-router.register(r'pro-cash-calc', cash.ProjectCashCalcViewSet)
-router.register(r'pro-last-deal', cash.ProjectLastDealDateViewSet, basename='pro-last-deal')  # only list
-router.register(r'pr-date-cashbook', cash.ProjectDateCashBookViewSet, basename='pr-date-cashbook')  # only list
-router.register(r'project-imprest', cash.ProjectImprestViewSet, basename='pr-imprest')  # only list
 
 # contract
 router.register(r'order-group', contract.OrderGroupViewSet)

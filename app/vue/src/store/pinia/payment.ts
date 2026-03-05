@@ -2,7 +2,7 @@ import api from '@/api'
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { cleanupParams, errorHandle, message } from '@/utils/helper'
-import { type CashBookFilter } from '@/store/types/proCash'
+import { type CashBookFilter } from '@/store/types/payment'
 import type {
   AllPayment,
   ContractPaymentPayload,

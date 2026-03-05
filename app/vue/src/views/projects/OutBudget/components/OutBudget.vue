@@ -2,7 +2,7 @@
 import { ref, reactive, computed, onBeforeMount, inject } from 'vue'
 import { useAccount } from '@/store/pinia/account'
 import { write_project } from '@/utils/pageAuth'
-import { type ProjectAccountD2, type ProjectAccountD3 } from '@/store/types/proCash'
+import { type ProjectAccountD2, type ProjectAccountD3 } from '@/store/types/project'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 import { CTableRow } from '@coreui/vue'
