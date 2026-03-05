@@ -1,6 +1,5 @@
 from rest_framework import serializers
 
-from cash.models import ProjectBankAccount, ProjectCashBook
 from contract.models import OrderGroup, Contract, Contractor
 from ledger.models import ProjectBankTransaction, ProjectAccountingEntry
 from payment.models import (InstallmentPaymentOrder, SalesPriceByGT, DownPayment,
@@ -110,35 +109,6 @@ class SimpleInstallmentOrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = InstallmentPaymentOrder
         fields = ('pk', 'pay_sort', 'pay_time', 'pay_name', '__str__')
-
-
-class SimpleProjectBankAccountSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ProjectBankAccount
-        fields = ('pk', 'alias_name')
-
-
-# will be deprecated - use ProjectCashBook
-class PaymentSerializer(serializers.ModelSerializer):
-    contract = SimpleContractSerializer()
-    installment_order = SimpleInstallmentOrderSerializer()
-    bank_account = SimpleProjectBankAccountSerializer()
-
-    class Meta:
-        model = ProjectCashBook
-        fields = ('pk', 'deal_date', 'contract', 'income', 'installment_order',
-                  'bank_account', 'trader', 'note')
-
-
-# will be deprecated - use ProjectCashBook
-class PaymentSummarySerializer(serializers.ModelSerializer):
-    order_group = serializers.IntegerField()
-    unit_type = serializers.IntegerField()
-    paid_sum = serializers.IntegerField()
-
-    class Meta:
-        model = ProjectCashBook
-        fields = ('order_group', 'unit_type', 'paid_sum')
 
 
 class PayOrderCollectionSerializer(serializers.Serializer):

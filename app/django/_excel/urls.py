@@ -1,8 +1,5 @@
 from django.urls import path
 
-from cash.exports import (ExportProjectBalance, ExportProjectDateCashbook, ExportBalanceByAcc,
-                          ExportBudgetExecutionStatus, ExportCashFlowForm, ExportDateCashbook,
-                          export_cashbook_xls, export_project_cash_xls)
 # 앱별 내보내기 모듈에서 가져오기
 from company.exports import ExportStaffs, ExportDeparts, ExportPositions, ExportDuties, ExportGrades
 from contract.exports import ExportContracts, ExportSuccessions, ExportReleases, ExportUnitStatus
@@ -10,8 +7,7 @@ from docs.exports import ExportSuitCases, ExportSuitCase
 from ledger.exports import (ExportLedgerBalanceByAcc, ExportLedgerDateCashbook, export_com_transaction_xls,
                             ExportProjectLedgerBalance, ExportProjectLedgerDateCashbook,
                             ExportLedgerBudgetExecutionStatus, ExportLedgerCashFlowForm, export_pro_transaction_xls)
-from payment.exports import (ExportPayments, ExportPaymentsByCont, ExportPaymentStatus, ExportOverallSummary,
-                             ExportLedgerPayments, ExportLedgerPaymentsByCont, ExportLedgerPaymentStatus,
+from payment.exports import (ExportLedgerPayments, ExportLedgerPaymentsByCont, ExportLedgerPaymentStatus,
                              ExportLedgerOverallSummary)
 from project.exports import ExportSites, ExportSitesByOwner, ExportSitesContracts
 
@@ -36,12 +32,7 @@ urlpatterns = [
     path('releases/', ExportReleases.as_view(), name='releases'),
     path('status/', ExportUnitStatus.as_view(), name='unit-status'),
 
-    # Payment 관련 (새 모듈)
-    path('payments/', ExportPayments.as_view(), name='payments'),
-    path('paid-by-cont/', ExportPaymentsByCont.as_view(), name='paid-by-cont'),
-    path('paid-status/', ExportPaymentStatus.as_view(), name='paid-status'),
-    path('overall-sum/', ExportOverallSummary.as_view(), name='overall-summary'),
-
+    # Payment 관련
     path('ledger/payment/', ExportLedgerPayments.as_view(), name='ledger-payment'),
     path('ledger/paid-by-cont/', ExportLedgerPaymentsByCont.as_view(), name='ledger-paid-by-cont'),
     path('ledger/paid-status/', ExportLedgerPaymentStatus.as_view(), name='ledger-paid-status'),

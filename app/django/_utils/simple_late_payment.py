@@ -11,7 +11,6 @@
 
 from datetime import date
 from django.db.models import Sum
-from cash.models import ProjectCashBook
 
 
 def calculate_simple_late_payment(contract, installment, as_of_date=None):
@@ -48,47 +47,24 @@ def calculate_simple_late_payment(contract, installment, as_of_date=None):
     # 납부기한 결정: extra_due_date 우선, 없으면 pay_due_date
     due_date = installment.extra_due_date or installment.pay_due_date
 
-    # 납부기일이 None인 경우에도 전체 납부액은 계산
+    # 납부기일이 None인 경우
     if not due_date:
-        # 전체 납부액 계산
-        total_paid_result = ProjectCashBook.objects.filter(
-            contract=contract,
-            installment_order=installment,
-            project_account_d3__is_payment=True
-        ).aggregate(total=Sum('income'))['total']
-        total_paid = total_paid_result or 0
-
-        is_fully_paid = total_paid >= promised_amount
-
         return {
             'promised_amount': promised_amount,
             'due_date': None,
-            'paid_on_time': total_paid,  # 납부기일이 없으면 전체 납부액
-            'late_payment_amount': 0,    # 납부기일이 없으면 지연 없음
+            'paid_on_time': 0,
+            'late_payment_amount': 0,
             'late_days': 0,
-            'is_fully_paid': is_fully_paid,
-            'total_paid': total_paid
+            'is_fully_paid': False,
+            'total_paid': 0
         }
 
-    # 2. 납부기일까지 납부된 금액
-    paid_on_time_result = ProjectCashBook.objects.filter(
-        contract=contract,
-        installment_order=installment,
-        deal_date__lte=due_date,
-        project_account_d3__is_payment=True
-    ).aggregate(total=Sum('income'))['total']
-    paid_on_time = paid_on_time_result or 0
+    paid_on_time = 0
 
     # 3. 지연납부금액 = 약정금액 - 납부기일까지 납부액
     late_payment_amount = max(0, promised_amount - paid_on_time)
 
-    # 4. 전체 납부액
-    total_paid_result = ProjectCashBook.objects.filter(
-        contract=contract,
-        installment_order=installment,
-        project_account_d3__is_payment=True
-    ).aggregate(total=Sum('income'))['total']
-    total_paid = total_paid_result or 0
+    total_paid = 0
 
     is_fully_paid = total_paid >= promised_amount
 

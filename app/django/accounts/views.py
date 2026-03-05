@@ -9,7 +9,6 @@ from django.urls import reverse_lazy
 from django.views.generic import TemplateView
 from django.views.generic.edit import CreateView
 
-from cash.models import CompanyCashBookCalculation, ProjectCashBookCalculation
 from company.models import Company
 from ibs.models import ProjectAccountD3
 from project.models import Project
@@ -84,7 +83,6 @@ def create_company(request):
                                          ceo=ceo,
                                          org_number=org_number)
         company.save()
-        CompanyCashBookCalculation.objects.create(company=company, calculated=datetime.date.today(), creator_id=1)
         return redirect('/install/create/project/')
     else:
         is_d3 = ProjectAccountD3.objects.exists()
@@ -172,7 +170,6 @@ def create_project(request):
                                          area_usage=area_usage,
                                          build_size=build_size)
         project.save()
-        ProjectCashBookCalculation.objects.create(project=project, calculated=datetime.date.today(), creator_id=1)
         return redirect('/')
     else:
         if d3:

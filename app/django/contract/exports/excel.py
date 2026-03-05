@@ -12,7 +12,6 @@ from django.db.models import Q, Max, OuterRef, Subquery
 from django.http import HttpResponse
 
 from _excel.mixins import ExcelExportMixin
-from cash.models import ProjectCashBook
 from contract.models import Contract, Succession, ContractorRelease
 from contract.models import ContractorAddress
 from items.models import HouseUnit, BuildingUnit
@@ -224,10 +223,7 @@ class ExportContracts(ExcelExportMixin):
                 is_left.append(col_num)
 
         paid_params = ['contract', 'income']
-        paid_data = ProjectCashBook.objects.filter(project_account_d3__is_payment=True,
-                                                   income__isnull=False,
-                                                   contract__activation=True)
-        paid_dict = paid_data.values_list(*paid_params)
+        paid_dict = []
 
         quali_str = {'1': '일반분양', '2': '미인가', '3': '인가', '4': '부적격', }
 

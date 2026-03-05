@@ -12,7 +12,6 @@ from django.test import TestCase
 from django.contrib.auth import get_user_model
 
 from _utils.payment_adjustment import aggregate_installment_adjustments
-from cash.models import ProjectCashBook
 from contract.models import Contract
 from payment.models import InstallmentPaymentOrder
 from payment.exports.pdf import PdfExportPayments

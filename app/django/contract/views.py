@@ -11,11 +11,9 @@ from .models import (OrderGroup, Contract, Contractor,
                      ContractorAddress, ContractorContact, ContractorRelease)
 from project.models import Project
 from items.models import UnitType, KeyUnit, BuildingUnit, HouseUnit
-from cash.models import ProjectBankAccount, ProjectCashBook
 from payment.models import InstallmentPaymentOrder
-from ibs.models import AccountSort, ProjectAccountD2, ProjectAccountD3
 
-from .forms import ContractRegisterForm, ContractPaymentForm, ContractorReleaseForm
+from .forms import ContractRegisterForm, ContractorReleaseForm
 
 
 class ContractLV(LoginRequiredMixin, ListView):
@@ -127,12 +125,6 @@ class ContractLV(LoginRequiredMixin, ListView):
 class ContractRegisterView(LoginRequiredMixin, FormView):
     form_class = ContractRegisterForm
     template_name = 'contract/contract_form.html'
-    PaymentInlineFormSet = forms.models.inlineformset_factory(
-        Contract,
-        ProjectCashBook,
-        form=ContractPaymentForm,
-        extra=0
-    )
 
     def get_project(self):
         try:
@@ -231,21 +223,13 @@ class ContractRegisterView(LoginRequiredMixin, FormView):
                                                               Q(project=self.get_project(),
                                                                 unit_type=self.request.GET.get('type'),
                                                                 key_unit__isnull=True))
-        context['project_bank_accounts'] = ProjectBankAccount.objects.filter(project=self.get_project())
         pay_code = '4' if cont_id else '2'
         context['installment_orders'] = InstallmentPaymentOrder.objects.filter(project=self.get_project(),
                                                                                pay_code__lte=pay_code)
-        context['formset'] = self.PaymentInlineFormSet(queryset=ProjectCashBook.objects.none(),
-                                                       form_kwargs={'project': self.get_project()})
         if cont_id:
             contract = context['contract'] = Contract.objects.get(pk=cont_id)
             contractor = context['contractor'] = contract.contractor
             context['task'] = contractor.status if contractor.status >= '3' else '3'
-            context['formset'] = self.PaymentInlineFormSet(instance=contract,
-                                                           queryset=ProjectCashBook.objects.filter(contract=contract,
-                                                                                                   installment_order__pay_sort='1').order_by(
-                                                               'deal_date'),
-                                                           form_kwargs={'project': self.get_project()})
         return context
 
     def post(self, request, *args, **kwargs):
@@ -386,33 +370,9 @@ class ContractRegisterView(LoginRequiredMixin, FormView):
                     contractorContact.creator = self.request.user
                 contractorContact.save()
 
-                # 7. 계약금 -- 수납 정보 테이블 입력 -- PaymentInlineFormSet 처리
-                if not cont_id:
-                    formset = self.PaymentInlineFormSet(self.request.POST,
-                                                        form_kwargs={'project': self.request.POST.get('project')})
-                else:
-                    formset = self.PaymentInlineFormSet(self.request.POST,
-                                                        form_kwargs={'project': self.request.POST.get('project')},
-                                                        instance=contract)
-
-                if formset.is_valid():
-                    cont_note = form.cleaned_data.get('note')
-                    for form in formset:
-                        pCashbook = form.save(commit=False)
-                        pCashbook.project = Project.objects.get(pk=self.request.POST.get('project'))
-                        pCashbook.sort = AccountSort.objects.get(pk=1)
-                        dSort = int(contract.order_group.sort)
-                        pCashbook.project_account_d2 = ProjectAccountD2.objects.get(pk=dSort)
-                        pCashbook.project_account_d3 = ProjectAccountD3.objects.get(pk=dSort)
-                        if not cont_id:
-                            pCashbook.contract = contract
-                        pCashbook.note = cont_note
-                        pCashbook.user = self.request.user
-                        pCashbook.save()
-
                 return redirect(self.get_back_url())
         else:
-            return render(request, 'contract/contract_form.html', {'formset': formset})
+            return render(request, 'contract/contract_form.html', {})
 
 
 class ContractorUpdate(LoginRequiredMixin, FormView):
@@ -527,22 +487,7 @@ class ContractorReleaseRegister(LoginRequiredMixin, ListView, FormView):
                     contract.key_unit = None
                     contract.save()
 
-                    # 5. 해당 납부분담금 환불처리
-                    sort = AccountSort.objects.get(pk=1)
-                    projectCash = ProjectCashBook.objects.filter(sort=sort, contract=contractor.contract)
-                    for pc in projectCash:
-                        if not released_done:
-                            refund_d2 = pc.project_account_d3.id + 1  # 분양대금 or 분담금 환불 건
-                            pc.project_account_d3 = ProjectAccountD3.objects.get(pk=refund_d2)
-                            pc.refund_contractor = contractor  # 환불 계약자 등록
-                        if form.cleaned_data.get('completion_date'):
-                            refund_date = str(completion_date)
-                            msg = f'환불 계약 건 - {pc.contract.serial_number} ({refund_date} 환불완료)'
-                            append_note = ', ' + msg if pc.note else msg
-                            pc.note = pc.note + append_note
-                        pc.save()
-
-                    # 6. 최종 해지상태로 변경
+                    # 5. 최종 해지상태로 변경
                     if contractor.qualification == '3':
                         contractor.qualification = '2'  # 인가 등록 취소
                     contractor.status = '4'  # 해지 상태로 변경

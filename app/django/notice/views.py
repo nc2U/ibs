@@ -12,7 +12,6 @@ from .forms import SalesBillIssueForm
 from project.models import Project
 from items.models import UnitType, BuildingUnit, HouseUnit
 from contract.models import OrderGroup, Contractor
-from cash.models import ProjectCashBook
 from payment.models import SalesPriceByGT, InstallmentPaymentOrder, DownPayment
 
 TODAY = datetime.today().strftime('%Y-%m-%d')
@@ -120,10 +119,7 @@ class BillManageView(LoginRequiredMixin, ListView, FormView):
         paid_order = []
         for contractor in paginate_queryset:
             contract = contractor.contract
-            payment_by_cont = ProjectCashBook.objects.filter(income__isnull=False,
-                                                             project_account_d3__is_payment=True,
-                                                             contract=contract).aggregate(Sum('income'))['income__sum']
-            total_pay_by_contract.append(payment_by_cont)  # 계약자별 총 납입액 배열화
+            total_pay_by_contract.append(None)  # 계약자별 총 납입액 배열화
             try:  # 동호수 지정여부
                 unit_set = contract.keyunit.houseunit
             except:

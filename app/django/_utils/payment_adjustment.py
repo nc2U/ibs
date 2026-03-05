@@ -113,7 +113,7 @@ def calculate_all_installments_payment_allocation(contract) -> Dict[int, Dict[st
             }
         }
     """
-    from cash.models import ProjectCashBook
+    from payment.models import ContractPayment
 
     # 모든 회차 조회 (순서대로)
     all_installments = InstallmentPaymentOrder.objects.filter(
@@ -122,9 +122,9 @@ def calculate_all_installments_payment_allocation(contract) -> Dict[int, Dict[st
     ).order_by('pay_code')
 
     # 모든 납부 내역 조회 (시간순)
-    all_payments = ProjectCashBook.objects.payment_records().filter(
+    all_payments = ContractPayment.objects.valid_payments().filter(
         contract=contract
-    ).exclude(income__isnull=True).order_by('deal_date', 'id')
+    ).order_by('deal_date', 'id').select_related('accounting_entry')
 
     # 회차별 상태 초기화
     installment_status = {}
@@ -148,7 +148,7 @@ def calculate_all_installments_payment_allocation(contract) -> Dict[int, Dict[st
 
     # 시간순으로 납부 처리 (Waterfall Allocation)
     for payment in all_payments:
-        payment_amount = payment.income
+        payment_amount = payment.accounting_entry.amount
         payment_date = payment.deal_date
         target_installment = payment.installment_order
 
@@ -395,7 +395,7 @@ def calculate_segmented_late_penalty(contract, installment, as_of_date=None) -> 
         >>> # 2024-12-20: 20M 납부 → 구간2: 20M × 66일
         >>> # 총 연체료: 구간1 + 구간2
     """
-    from cash.models import ProjectCashBook
+    from payment.models import ContractPayment
 
     if as_of_date is None:
         as_of_date = date.today()
@@ -426,10 +426,10 @@ def calculate_segmented_late_penalty(contract, installment, as_of_date=None) -> 
     penalty_rate = installment.late_penalty_ratio
 
     # 해당 회차로 등록된 납부 내역 조회 (시간순)
-    payments = ProjectCashBook.objects.payment_records().filter(
+    payments = ContractPayment.objects.valid_payments().filter(
         contract=contract,
         installment_order=installment
-    ).exclude(income__isnull=True).order_by('deal_date')
+    ).order_by('deal_date').select_related('accounting_entry')
 
     segments = []
     cumulative_paid = 0
@@ -454,7 +454,7 @@ def calculate_segmented_late_penalty(contract, installment, as_of_date=None) -> 
                 'penalty': penalty
             })
 
-        cumulative_paid += payment.income or 0
+        cumulative_paid += payment.accounting_entry.amount or 0
         prev_date = payment.deal_date
 
     # 아직 미완납이면 현재(발행일)까지 구간 추가
@@ -538,19 +538,17 @@ def calculate_installment_paid_status(
         - 완납 여부: 약정금액 ≤ 실제 납부금액 합계
         - 완납일: 누적 납부금액이 약정금액 이상이 된 최초 날짜
     """
-    from cash.models import ProjectCashBook
+    from payment.models import ContractPayment
 
     # 약정금액 계산
     promised_amount = get_payment_amount(contract, installment_order)
 
     # 납부내역 조회 (payment_records() 사용으로 최적화)
     if payments_qs is None:
-        payments_qs = ProjectCashBook.objects.payment_records().filter(
+        payments_qs = ContractPayment.objects.valid_payments().filter(
             contract=contract,
             installment_order=installment_order
-        ).exclude(
-            income__isnull=True
-        ).order_by('deal_date', 'id')
+        ).order_by('deal_date', 'id').select_related('accounting_entry')
 
     # 실제 납부금액 및 완납일 계산
     paid_amount = 0
@@ -558,8 +556,8 @@ def calculate_installment_paid_status(
     payment_count = 0
 
     for payment in payments_qs:
-        if payment.income:
-            paid_amount += payment.income
+        if payment.accounting_entry.amount:
+            paid_amount += payment.accounting_entry.amount
             payment_count += 1
 
             # 완납일 체크 (누적 납부금액이 약정금액 이상이 된 최초 날짜)
@@ -752,11 +750,12 @@ def calculate_late_penalty(payment) -> Optional[Dict[str, Any]]:
         return None
 
     # 3. 납부일 및 납부금액 확인
-    if not payment.deal_date or not payment.income or payment.income <= 0:
+    payment_income = payment.accounting_entry.amount
+    if not payment.deal_date or not payment_income or payment_income <= 0:
         return None
 
     payment_date = payment.deal_date
-    payment_amount = payment.income
+    payment_amount = payment_income
 
     # 4. 계약일 확인 (계약일 이후 회차만 가산금 대상)
     try:
@@ -1040,15 +1039,13 @@ def get_installment_adjustment_summary(
         3. 각 납부건별 연체 가산금 계산
         4. 종합 집계
     """
-    from cash.models import ProjectCashBook
+    from payment.models import ContractPayment
 
     # 납부내역 조회 (payment_records() 사용으로 최적화)
-    payments_qs = ProjectCashBook.objects.payment_records().filter(
+    payments_qs = ContractPayment.objects.valid_payments().filter(
         contract=contract,
         installment_order=installment_order
-    ).exclude(
-        income__isnull=True
-    ).order_by('deal_date', 'id')
+    ).order_by('deal_date', 'id').select_related('accounting_entry')
 
     # 1. 완납 상태 조회
     paid_status = calculate_installment_paid_status(contract, installment_order, payments_qs)

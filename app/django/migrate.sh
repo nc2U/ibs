@@ -4,7 +4,7 @@
 #   sh migrate.sh                      # migrate only (production/container)
 #   sh migrate.sh --makemigrations     # makemigrations + migrate (local development)
 
-APPS="accounts board book cash company contract docs ibs items ledger notice payment project work"
+APPS="accounts board book company contract docs ibs items ledger notice payment project work"
 
 if [ "$1" = "--makemigrations" ] || [ "$1" = "-m" ]; then
     echo "=========================================="

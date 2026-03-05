@@ -1,7 +1,6 @@
 from django import forms
 
 from .models import ContractorRelease
-from cash.models import ProjectBankAccount, ProjectCashBook
 from payment.models import InstallmentPaymentOrder
 
 
@@ -50,15 +49,3 @@ class ContractorReleaseForm(forms.ModelForm):
         }
 
 
-class ContractPaymentForm(forms.ModelForm):
-    class Meta:
-        model = ProjectCashBook
-        fields = ('deal_date', 'income', 'bank_account', 'trader', 'installment_order')
-
-    def __init__(self, project, *args, **kwargs):
-        super(ContractPaymentForm, self).__init__(*args, **kwargs)
-        self.fields['bank_account'].queryset = ProjectBankAccount.objects.filter(project=project)
-        self.fields['bank_account'].empty_label = '납부계좌선택'
-        self.fields['installment_order'].queryset = InstallmentPaymentOrder.objects.filter(project=project,
-                                                                                           pay_code__lte='4')
-        self.fields['installment_order'].empty_label = '납부회차선택'

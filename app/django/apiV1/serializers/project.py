@@ -4,7 +4,6 @@ from django.db import transaction
 from rest_framework import serializers
 
 from apiV1.serializers.accounts import SimpleUserSerializer
-from cash.models import ProjectCashBook
 from contract.models import DocumentType, RequiredDocument
 from ibs.models import ProjectAccountD2, ProjectAccountD3
 from ledger.models import ProjectAccount
@@ -222,16 +221,6 @@ class StatusOutBudgetSerializer(serializers.ModelSerializer):
         model = ProjectOutBudget
         fields = ('pk', 'project', 'order', 'account', 'account_d2', 'account_d3',
                   'account_opt', 'basis_calc', 'budget', 'revised_budget')
-
-
-class ExecAmountToBudget(serializers.ModelSerializer):
-    acc_d3 = serializers.IntegerField()
-    all_sum = serializers.IntegerField()
-    month_sum = serializers.IntegerField()
-
-    class Meta:
-        model = ProjectCashBook
-        fields = ('acc_d3', 'all_sum', 'month_sum')
 
 
 class LedgerExecAmountToBudgetSerializer(serializers.Serializer):

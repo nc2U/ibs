@@ -10,6 +10,7 @@ from rest_framework import viewsets
 
 from _utils.contract_price import get_contract_payment_plan
 from contract.models import ContractPrice
+from payment.models import ContractPayment
 from items.models import KeyUnit
 from items.models import UnitType, HouseUnit
 from project.models import Project
@@ -947,15 +948,14 @@ class OverallSummaryViewSet(viewsets.ViewSet):
 
         # 모든 납부 회차의 수납 데이터를 한 번에 조회 (payment_records() 사용으로 최적화)
         order_ids = [order.pk for order in pay_orders]
-        payments_data = ProjectCashBook.objects.payment_records().filter(
+        payments_data = ContractPayment.objects.valid_payments().filter(
             project_id=project_id,
             installment_order__in=order_ids,
-            income__isnull=False,
             contract__isnull=False,
             contract__activation=True,
             deal_date__lte=date
         ).values('installment_order').annotate(
-            total_collected=Sum('income')
+            total_collected=Sum('accounting_entry__amount')
         )
 
         # 수납 데이터를 딕셔너리로 변환
@@ -1115,14 +1115,13 @@ class OverallSummaryViewSet(viewsets.ViewSet):
     def _get_collection_data(self, order, project_id, date):
         """수납 관련 데이터 집계 (레거시 메서드 - 사용하지 않음)"""
         # 이 메서드는 이제 사용하지 않지만 호환성을 위해 유지
-        payments = ProjectCashBook.objects.payment_records().filter(
+        payments = ContractPayment.objects.valid_payments().filter(
             project_id=project_id,
             installment_order=order,
-            income__isnull=False,
             deal_date__lte=date
         )
 
-        collected_amount = payments.aggregate(total=Sum('income'))['total'] or 0
+        collected_amount = payments.aggregate(total=Sum('accounting_entry__amount'))['total'] or 0
         discount_amount = 0
         overdue_fee = 0
         actual_collected = collected_amount + overdue_fee - discount_amount
@@ -1143,12 +1142,11 @@ class OverallSummaryViewSet(viewsets.ViewSet):
         # 이 메서드는 이제 사용하지 않지만 호환성을 위해 유지
         contract_amount = self._get_contract_amount(order, project_id)
 
-        collected_amount = ProjectCashBook.objects.payment_records().filter(
+        collected_amount = ContractPayment.objects.valid_payments().filter(
             project_id=project_id,
             installment_order=order,
-            income__isnull=False,
             deal_date__lte=date
-        ).aggregate(total=Sum('income'))['total'] or 0
+        ).aggregate(total=Sum('accounting_entry__amount'))['total'] or 0
 
         unpaid_amount = contract_amount - collected_amount  # 음수 포함 - 초과납부 반영
         unpaid_rate = (unpaid_amount / contract_amount * 100) if contract_amount > 0 else 0
@@ -1201,12 +1199,11 @@ class OverallSummaryViewSet(viewsets.ViewSet):
         contract_amount = OverallSummaryViewSet._get_contract_amount(order, project_id)
 
         # 수납금액 조회
-        collected_amount = ProjectCashBook.objects.payment_records().filter(
+        collected_amount = ContractPayment.objects.valid_payments().filter(
             project_id=project_id,
             installment_order=order,
-            income__isnull=False,
             deal_date__lte=date
-        ).aggregate(total=Sum('income'))['total'] or 0
+        ).aggregate(total=Sum('accounting_entry__amount'))['total'] or 0
 
         # 미수금 = 계약금액 - 수납금액 (음수 포함 - 초과납부 반영)
         return contract_amount - collected_amount

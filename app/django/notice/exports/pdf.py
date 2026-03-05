@@ -11,7 +11,6 @@ from weasyprint import HTML
 from _pdf.utils import get_contract, get_due_date_per_order
 from _utils.contract_price import get_contract_payment_plan, get_contract_price
 from _utils.payment_adjustment import aggregate_installment_adjustments
-from cash.models import ProjectCashBook
 from notice.models import SalesBillIssue
 from payment.models import InstallmentPaymentOrder
 
@@ -183,15 +182,7 @@ class PdfExportBill(View):
         }
         """
 
-        # 회차별 납부 내역 집계 (payment_records 사용)
-        payment_summary = ProjectCashBook.objects.payment_records().filter(
-            contract=contract,
-            income__isnull=False,
-            installment_order__isnull=False
-        ).values('installment_order').annotate(
-            total_paid=Sum('income'),
-            last_payment_date=Max('deal_date')
-        )
+        payment_summary = []
 
         # 회차별 딕셔너리 생성 {order_id: {'paid_amt': amount, 'paid_date': date}}
         payment_by_order = {

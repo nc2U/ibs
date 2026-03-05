@@ -12,7 +12,6 @@ from django.template.loader import render_to_string
 from django.views.generic import View
 from weasyprint import HTML
 
-from cash.models import ProjectCashBook
 from contract.models import Contract
 from payment.models import InstallmentPaymentOrder
 
@@ -86,20 +85,7 @@ class PaymentPdfMixin:
     def get_paid_list(contract, pub_date=None):
         """기 납부 목록 가져오기"""
 
-        queryset = ProjectCashBook.objects.filter(
-            income__isnull=False,
-            project_account_d3__is_payment=True,
-            contract=contract,
-        )
-
-        if pub_date:
-            queryset = queryset.filter(deal_date__lte=pub_date)
-
-        paid_list = queryset.order_by('deal_date', 'id')
-        paid_sum_total = paid_list.aggregate(Sum('income'))['income__sum']
-        paid_sum_total = paid_sum_total if paid_sum_total else 0
-
-        return paid_list, paid_sum_total
+        return [], 0
 
 
 class DateUtilMixin:

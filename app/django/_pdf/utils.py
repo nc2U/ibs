@@ -3,7 +3,6 @@ from itertools import accumulate
 
 from django.db.models import Sum, Q
 
-from cash.models import ProjectCashBook
 from contract.models import Contract
 from payment.models import OverDueRule, SpecialOverDueRule
 
@@ -186,17 +185,11 @@ def get_paid(contract: Contract, simple_orders, pub_date, **kwargs):
     """
 
     calc_start_pay_code = simple_orders[0].get('calc_start') if simple_orders else 2  # 연체/가산 적용 시작 회차 코드
-    paid_list = ProjectCashBook.objects.filter(
-        income__isnull=False,
-        project_account_d3__is_payment=True,  # 분(부)담금 or 분양수입금
-        contract=contract,
-        deal_date__lte=pub_date
-    ).order_by('deal_date', 'id')  # 해당 계약 건 납부 데이터
+    paid_list = []
 
     is_past = True if kwargs.get('is_past') else False
-    paid_list = paid_list.filter(installment_order__pay_sort='1') if is_past else paid_list
 
-    pay_list = [p.income for p in paid_list]  # 입금액 추출 리스트
+    pay_list = []  # 입금액 추출 리스트
     paid_sum_list = list(accumulate(pay_list))  # 입금액 리스트를 시간 순 누계액 리스트로 변경
 
     zip_pay_list = list(zip(paid_list, paid_sum_list))

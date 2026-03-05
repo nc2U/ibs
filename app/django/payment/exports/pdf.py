@@ -15,8 +15,7 @@ from _utils.contract_price import get_contract_payment_plan, get_contract_price
 from _utils.payment_adjustment import (calculate_all_installments_payment_allocation,
                                        get_installment_adjustment_summary,
                                        calculate_daily_interest, get_unpaid_installments)
-from cash.models import ProjectCashBook
-from payment.models import InstallmentPaymentOrder, SpecialPaymentOrder, SpecialDownPay
+from payment.models import ContractPayment, InstallmentPaymentOrder, SpecialPaymentOrder, SpecialDownPay
 
 TODAY = date.today()
 
@@ -150,7 +149,7 @@ class PdfExportPayments(View):
         all_status = calculate_all_installments_payment_allocation(contract)
 
         # 2. 실제 납부 내역
-        paid_payments = ProjectCashBook.objects.payment_records().filter(
+        paid_payments = ContractPayment.objects.valid_payments().filter(
             contract=contract,
             deal_date__lte=pub_date
         ).order_by('deal_date', 'id')
