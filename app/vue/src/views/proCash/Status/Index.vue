@@ -92,7 +92,7 @@ const excelUrl = computed(() => {
   const dt = date.value
   let url = ''
   if (comp === 'StatusByAccount')
-    url = `/excel/p-balance/?project=${pj}&date=${dt}&bank_account__directpay=${dr}`
+    url = `/excel/p-balance/?project=${pj}&date=${dt}&bank_account__directpay=${dr}&is_balance=${isBalance.value}`
   else if (comp === 'CashListByDate') url = `/excel/p-daily-cash/?project=${pj}&date=${dt}`
   else if (comp === 'SummaryForBudget')
     url = `/excel/p-budget/?project=${pj}&date=${dt}&revised=${revised.value}`
@@ -112,10 +112,14 @@ const comp: { [key: number]: string } = {
 
 const filename = computed(() => {
   switch (compName.value) {
-    case 'StatusByAccount': return '계좌별_자금현황.xlsx'
-    case 'CashListByDate': return '당일_입출금내역.xlsx'
-    case 'SummaryForBudget': return '예산대비_집계.xlsx'
-    default: return ''
+    case 'StatusByAccount':
+      return '계좌별_자금현황.xlsx'
+    case 'CashListByDate':
+      return '당일_입출금내역.xlsx'
+    case 'SummaryForBudget':
+      return '예산대비_집계.xlsx'
+    default:
+      return ''
   }
 })
 
