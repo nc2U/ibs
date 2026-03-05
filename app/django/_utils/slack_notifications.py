@@ -4,7 +4,6 @@ from django.conf import settings
 from django.contrib.humanize.templatetags.humanize import intcomma
 from django.db.models import Q
 
-from cash.models import CashBook, ProjectCashBook
 from contract.models import Contract, Succession, ContractorRelease
 from docs.models import LawsuitCase, Document
 from ledger.models import CompanyBankTransaction, ProjectBankTransaction
@@ -245,11 +244,7 @@ def get_service_url(model_instance):
 
     prefix = '' if (issue_project and issue_project.sort == '1') else 'project-'
 
-    if isinstance(model_instance, CashBook):
-        return f"{base_url}/#/cashes/index?highlight_id={model_instance.id}&company={model_instance.company_id}"
-    elif isinstance(model_instance, ProjectCashBook):
-        return f"{base_url}/#/project-cash/index?highlight_id={model_instance.id}&project={model_instance.project_id}"
-    elif isinstance(model_instance, CompanyBankTransaction):
+    if isinstance(model_instance, CompanyBankTransaction):
         return f"{base_url}/#/ledger/index?highlight_id={model_instance.id}&company={model_instance.company_id}"
     elif isinstance(model_instance, ProjectBankTransaction):
         return f"{base_url}/#/project-ledger/index?highlight_id={model_instance.id}&project={model_instance.project_id}"
@@ -310,7 +305,7 @@ def get_service_url(model_instance):
 def get_target_issue_project(model_instance):
     """모델 인스턴스에서 대상 IssueProject 추출"""
 
-    if hasattr(model_instance, 'company'):  # CashBook
+    if hasattr(model_instance, 'company'):  # CompanyBankTransaction
         # Company의 본사관리 IssueProject 찾기
         return IssueProject.objects.filter(
             company=model_instance.company,
@@ -428,56 +423,6 @@ class SlackMessageBuilder:
                 }],
                 'footer': f'{SYSTEM_NAME}',
                 'ts': int(instance.updated_at.timestamp())
-            }]
-        }
-
-    @staticmethod
-    def build_cashbook_message(instance, action, user):
-        """CashBook 또는 ProjectCashBook 간소화된 메시지 등록"""
-        service_url = get_service_url(instance)
-        income = instance.income
-        outlay = instance.outlay
-        main_content = f'[입금][{income:,}]' if income else f'[출금][{outlay:,}]'
-
-        if isinstance(instance, CashBook):
-            # 본사 입출금
-            sort_name = instance.company.name
-            title = f"💵 [{sort_name}]-{main_content} - {instance.content or '------'}"
-        elif isinstance(instance, ProjectCashBook):
-            # 프로젝트 입출금
-            sort_name = instance.project.issue_project.name
-            title = f"🏗️ [{sort_name}]-{main_content} - {instance.content or '------'}"
-        else:
-            return None
-
-        color = 'good' if action == '등록' else '#ff9500' if action == '편집' else 'danger'
-        # 거래일 정보 포맷팅 (YYYY-MM-DD -> MM/DD 형식으로 변환)
-        deal_date_str = instance.deal_date.strftime('%Y-%m-%d') if instance.deal_date else '미정'
-
-        # 편집 시 updator와 creator 정보 표시
-        if action == '편집' and hasattr(instance, 'updator') and instance.updator:
-            user_text = f"편집자: {instance.updator.username}"
-            if hasattr(instance, 'creator') and instance.creator:
-                user_text += f" (등록자: {instance.creator.username})"
-        else:
-            # 등록 시나 updator가 없는 경우 기존 방식
-            user_text = f"등록자: {user.username if user else '시스템'}"
-        user_text = f"""거래일: {deal_date_str} {user_text}"""
-
-        return {
-            'attachments': [{
-                'color': color,
-                'title': f"{title} ({action})",
-                'title_link': service_url,
-                'text': user_text,
-                'actions': [{
-                    'type': 'button',
-                    'text': '상세보기',
-                    'url': service_url,
-                    'style': 'primary'
-                }],
-                'footer': f'{SYSTEM_NAME}',
-                'ts': int(instance.updated.timestamp())
             }]
         }
 
@@ -832,9 +777,7 @@ def send_slack_notification(instance, action, user=None):
 
     # 메시지 등록
     message_data = None
-    if isinstance(instance, (CashBook, ProjectCashBook)):
-        message_data = SlackMessageBuilder.build_cashbook_message(instance, action, user)
-    elif isinstance(instance, (CompanyBankTransaction, ProjectBankTransaction)):
+    if isinstance(instance, (CompanyBankTransaction, ProjectBankTransaction)):
         message_data = SlackMessageBuilder.build_bank_transaction_message(instance, action, user)
     elif isinstance(instance, LawsuitCase):
         message_data = SlackMessageBuilder.build_lawsuitcase_message(instance, action, user)
