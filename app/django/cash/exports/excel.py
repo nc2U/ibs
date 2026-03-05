@@ -115,7 +115,7 @@ class ExportProjectBalance(ExcelExportMixin):
         is_directpay = directpay == 'i'
 
         qs = ProjectCashBook.objects.filter(
-            project=project,
+            bank_account__project=project,
             is_separate=False,
             bank_account__directpay=is_directpay,
             deal_date__lte=date
@@ -125,14 +125,14 @@ class ExportProjectBalance(ExcelExportMixin):
             bank_acc=F('bank_account__alias_name'),
             bank_num=F('bank_account__number')
         ).values('bank_acc', 'bank_num').annotate(
-            inc_sum=Sum('income'),
-            out_sum=Sum('outlay'),
+            inc_sum=Sum('income', default=0),
+            out_sum=Sum('outlay', default=0),
             date_inc=Sum(Case(When(deal_date=date, then=F('income')), default=0)),
             date_out=Sum(Case(When(deal_date=date, then=F('outlay')), default=0))
         )
 
         if is_balance:
-            result = result.filter(inc_sum__gt=F('out_sum'))
+            result = result.annotate(balance=F('inc_sum') - F('out_sum')).filter(balance__gt=0)
 
         return result
 

@@ -453,6 +453,8 @@ class ExportProjectLedgerBalance(ExcelExportMixin):
         # 데이터 조회
         project = Project.objects.get(pk=request.GET.get('project'))
         date = request.GET.get('date') or TODAY
+        directpay = request.GET.get('bank_account__directpay', '0')
+        is_balance = request.GET.get('is_balance', '')
 
         # 포맷 생성
         title_format = self.create_title_format(workbook)
@@ -488,7 +490,7 @@ class ExportProjectLedgerBalance(ExcelExportMixin):
         row_num += 1
 
         # 4. 데이터 조회
-        balance_set = self._get_balance_data(date)
+        balance_set = self._get_balance_data(project.pk, date, directpay, is_balance)
         worksheet.ignore_errors({'number_stored_as_text': 'B:C'})
 
         # 5. 데이터 작성
@@ -532,14 +534,17 @@ class ExportProjectLedgerBalance(ExcelExportMixin):
         return self.create_response(output, workbook, filename)
 
     @staticmethod
-    def _get_balance_data(date):
+    def _get_balance_data(project, date, directpay='0', is_balance=''):
         """잔고 데이터 조회"""
+        is_directpay = directpay == 'i'
+
         qs = ProjectBankTransaction.objects.filter(
-            bank_account__directpay=False,
+            project=project,
+            bank_account__directpay=is_directpay,
             deal_date__lte=date
         ).order_by('bank_account')
 
-        return qs.annotate(
+        result = qs.annotate(
             bank_acc=F('bank_account__alias_name'),
             bank_num=F('bank_account__number')
         ).values('bank_acc', 'bank_num').annotate(
@@ -548,6 +553,11 @@ class ExportProjectLedgerBalance(ExcelExportMixin):
             date_inc=Sum(Case(When(sort_id=1, deal_date=date, then=F('amount')), default=0)),
             date_out=Sum(Case(When(sort_id=2, deal_date=date, then=F('amount')), default=0))
         )
+
+        if is_balance:
+            result = result.annotate(balance=F('inc_sum') - F('out_sum')).filter(balance__gt=0)
+
+        return result
 
 
 class ExportProjectLedgerDateCashbook(ExcelExportMixin):
