@@ -109,7 +109,7 @@ class ExportProjectBalance(ExcelExportMixin):
         return self.create_response(output, workbook, filename)
 
     @staticmethod
-    def _get_balance_data(project, date, directpay):
+    def _get_balance_data(project, date, directpay, is_balance=''):
         """잔고 데이터 조회"""
         # directpay 파라미터를 boolean으로 변환 ('i' -> True, others -> False)
         is_directpay = directpay == 'i'
@@ -121,7 +121,7 @@ class ExportProjectBalance(ExcelExportMixin):
             deal_date__lte=date
         ).order_by('bank_account')
 
-        return qs.annotate(
+        result = qs.annotate(
             bank_acc=F('bank_account__alias_name'),
             bank_num=F('bank_account__number')
         ).values('bank_acc', 'bank_num').annotate(
@@ -130,6 +130,11 @@ class ExportProjectBalance(ExcelExportMixin):
             date_inc=Sum(Case(When(deal_date=date, then=F('income')), default=0)),
             date_out=Sum(Case(When(deal_date=date, then=F('outlay')), default=0))
         )
+
+        if is_balance:
+            result = result.filter(inc_sum__gt=F('out_sum'))
+
+        return result
 
 
 class ExportProjectDateCashbook(ExcelExportMixin):

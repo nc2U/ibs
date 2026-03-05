@@ -26,7 +26,7 @@ const isBalance = ref<'' | 'true'>('true')
 const compName = ref('StatusByAccount')
 
 const { downloadExcel } = useDownload()
-const handleDownload = (url, fileName) => {
+const handleDownload = (url: string, fileName: string) => {
   downloadExcel(url, fileName)
 }
 
