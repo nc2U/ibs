@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { ref, reactive, inject, watch } from 'vue'
 import { write_project } from '@/utils/pageAuth'
-import { type ProjectAccountD2, type ProjectAccountD3 } from '@/store/types/proCash'
+import { type ProjectAccountD2, type ProjectAccountD3 } from '@/store/types/project'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 

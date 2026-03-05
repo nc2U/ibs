@@ -358,3 +358,20 @@ export interface OptionItem {
   opt_deposit: number | null
   opt_balance: number | null
 }
+
+export interface ProjectAccountD2 {
+  pk: number
+  d1: string
+  code: string
+  name: string
+  description: string
+}
+
+export interface ProjectAccountD3 {
+  pk: number
+  d2: number
+  code: string
+  is_related_contract: boolean
+  name: string
+  description: string
+}
