@@ -64,7 +64,7 @@ const AppSidebarNav = defineComponent({
 
     // Pinia store
     const account = useAccount()
-    const { workManager, isStaff, isComCash, userInfo } = storeToRefs(account)
+    const { workManager, isStaff, isComLedger, userInfo } = storeToRefs(account)
 
     const predicates = computed(() => {
       const list: ((it: Item) => boolean)[] = []
@@ -72,7 +72,7 @@ const AppSidebarNav = defineComponent({
       if (!isStaff.value) {
         const companyMenus = new Set(['본사 문서 관리', '본사 인사 관리'])
         list.push(it => (it.name || '') !== '본사 관리' && !companyMenus.has(it.name || ''))
-      } else if (!isComCash.value) {
+      } else if (!isComLedger.value) {
         // list.push(it => (it.name || '') !== '본사 자금 관리')
         list.push(it => (it.name || '') !== '본사 회계 관리')
       }

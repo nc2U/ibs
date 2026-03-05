@@ -204,12 +204,12 @@ export const useAccount = defineStore('account', () => {
   const writeProDocs = computed(
     () => superAuth.value || writeComDocs.value || staffAuth.value?.project_docs == '2',
   )
-  const isComCash = computed(
+  const isComLedger = computed(
     () => superAuth.value || Number(staffAuth.value?.company_ledger || null),
   )
-  const writeComCash = computed(() => superAuth.value || staffAuth.value?.company_ledger == '2')
-  const writeProCash = computed(
-    () => superAuth.value || writeComCash.value || staffAuth.value?.project_ledger == '2',
+  const writeComLedger = computed(() => superAuth.value || staffAuth.value?.company_ledger == '2')
+  const writeProLedger = computed(
+    () => superAuth.value || writeComLedger.value || staffAuth.value?.project_ledger == '2',
   )
 
   // actions
@@ -444,9 +444,9 @@ export const useAccount = defineStore('account', () => {
     isStaff,
     writeComDocs,
     writeProDocs,
-    isComCash,
-    writeComCash,
-    writeProCash,
+    isComLedger,
+    writeComLedger,
+    writeProLedger,
 
     createAuth,
     patchAuth,
