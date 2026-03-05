@@ -2,7 +2,7 @@
 import { computed, onBeforeMount, onBeforeUpdate, type PropType, reactive, ref } from 'vue'
 import { useCompany } from '@/store/pinia/company'
 import { useComLedger } from '@/store/pinia/comLedger.ts'
-import type { CompanyBank } from '@/store/types/comCash'
+import type { CompanyBank } from '@/store/types/comLedger'
 import { write_company_cash } from '@/utils/pageAuth'
 import { isValidate } from '@/utils/helper'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'

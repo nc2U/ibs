@@ -2,7 +2,7 @@ import api from '@/api'
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { errorHandle, message } from '@/utils/helper'
-import { type AccountSort } from '@/store/types/comCash'
+import { type AccountSort } from '@/store/types/ibs'
 import {
   type BalanceByAccount,
   type CashBookFilter,
@@ -216,7 +216,9 @@ export const useProCash = defineStore('proCash', () => {
   // 계약자 이름 검색 시 자식까지 포함한 통합 검색
   const searchWithChildren = async (project: number, search: string) => {
     try {
-      const response = await api.get(`/project-cashbook/search_with_children/?project=${project}&search=${encodeURIComponent(search)}`)
+      const response = await api.get(
+        `/project-cashbook/search_with_children/?project=${project}&search=${encodeURIComponent(search)}`,
+      )
       return response.data.parents_with_children
     } catch (err: any) {
       errorHandle(err.response?.data)
@@ -277,185 +279,185 @@ export const useProCash = defineStore('proCash', () => {
 
   const paymentStore = usePayment()
 
-  const createPrCashBook = async (
-    payload: ProjectCashBook & { sepData: ProjectCashBook | null } & {
-      filters: CashBookFilter
-    },
-  ) => {
-    const { filters, ...formData } = payload
-    return await api
-      .post(`/project-cashbook/`, formData)
-      .then(async res => {
-        // 캐시 무효화 (부모가 생성되었을 수 있음)
-        invalidateChildrenCache()
-
-        await fetchProjectCashList({
-          project: res.data.project,
-          ...filters,
-        })
-        await fetchProjectImprestList({
-          project: res.data.project,
-          ...filters,
-        })
-        await paymentStore.fetchAllPaymentList({
-          project: res.data.project,
-          contract: res.data.contract,
-          ordering: 'deal_date',
-        })
-        await paymentStore.fetchPaymentList({
-          project: res.data.project,
-          ...filters,
-        })
-        message()
-      })
-      .catch(err => errorHandle(err.response.data))
-  }
-
-  const updatePrCashBook = async (
-    payload: ProjectCashBook & { sepData: ProjectCashBook | null } & {
-      isPayment?: boolean
-    } & {
-      filters: CashBookFilter
-    },
-  ) => {
-    const cont = payload.contract
-    const { pk, isPayment, filters, ...formData } = payload
-    if (formData.rmCont) formData.contract = null
-    return await api
-      .put(`/project-cashbook/${pk}/`, formData)
-      .then(async res => {
-        // 자식 레코드를 수정한 경우
-        if (res.data.separated) {
-          const parentPk = res.data.separated
-          // 1. 캐시된 자식 레코드 업데이트
-          updateCachedChild(parentPk, res.data)
-
-          // 2. 부모 레코드도 다시 fetch해서 is_balanced 등 갱신
-          try {
-            const parentRes = await api.get(`/project-cashbook/${parentPk}/`)
-            updateParentInList(parentPk, parentRes.data)
-          } catch (err) {
-            console.error('부모 레코드 갱신 실패:', err)
-          }
-        } else {
-          // 부모 레코드를 수정한 경우 - 목록에서 업데이트
-          updateParentInList(pk || 0, res.data)
-          // 자식 캐시 무효화 (다음 열 때 다시 로드)
-          invalidateChildrenCache(pk || undefined)
-        }
-
-        if (isPayment) {
-          await paymentStore.fetchAllPaymentList({
-            project: res.data.project,
-            contract: cont || undefined,
-            ordering: 'deal_date',
-            ...filters,
-          })
-          await paymentStore
-            .fetchPaymentList({
-              project: res.data.project,
-              ...filters,
-            })
-            .then(() => message())
-        } else
-          await fetchProjectCashList({
-            project: res.data.project,
-            ...filters,
-          }).then(() => message())
-      })
-      .catch(err => errorHandle(err.response.data))
-  }
-
-  const patchPrCashBook = async (
-    payload: ProjectCashBook & { isPayment?: boolean } & {
-      filters: CashBookFilter
-    },
-  ) => {
-    const cont = payload.contract
-    const { pk, isPayment, filters, ...formData } = payload
-    if (formData.rmCont) formData.contract = null
-    return await api
-      .patch(`/project-cashbook/${pk}/`, formData)
-      .then(async res => {
-        // 캐시 무효화
-        if (res.data.separated) {
-          invalidateChildrenCache(res.data.separated)
-        }
-        invalidateChildrenCache(pk || undefined)
-
-        if (isPayment) {
-          await paymentStore.fetchAllPaymentList({
-            project: res.data.project,
-            contract: cont || undefined,
-            ordering: 'deal_date',
-            ...filters,
-          })
-          await paymentStore
-            .fetchPaymentList({
-              project: res.data.project,
-              ...filters,
-            })
-            .then(() => message())
-        } else
-          await fetchProjectCashList({
-            project: res.data.project,
-            ...filters,
-          }).then(() => message())
-      })
-      .catch(err => errorHandle(err.response.data))
-  }
-
-  const deletePrCashBook = async (
-    payload: {
-      pk: number
-      project: number
-      contract?: number | null
-      parentPk?: number | null  // 삭제할 레코드가 자식인 경우 부모 PK
-    } & {
-      filters?: CashBookFilter
-    },
-  ) => {
-    const { pk, project, filters, contract, parentPk } = payload
-
-    return await api
-      .delete(`/project-cashbook/${pk}/`)
-      .then(async () => {
-        // 자식 레코드 삭제 시에만 특정 부모의 캐시 무효화
-        if (parentPk) {
-          // 자식 레코드 삭제: 해당 부모의 캐시만 무효화
-          invalidateChildrenCache(parentPk)
-
-          // 부모 레코드 갱신 (is_balanced 등 업데이트)
-          try {
-            const parentRes = await api.get(`/project-cashbook/${parentPk}/`)
-            updateParentInList(parentPk, parentRes.data)
-          } catch (err) {
-            console.error('부모 레코드 갱신 실패:', err)
-          }
-        } else {
-          // 부모 레코드 삭제: 전체 캐시 클리어 (기존 동작 유지)
-          invalidateChildrenCache()
-        }
-
-        await fetchProjectCashList({
-          project,
-          ...filters,
-        })
-        if (contract) {
-          await paymentStore.fetchAllPaymentList({
-            project,
-            contract,
-            ordering: 'deal_date',
-          })
-          await paymentStore.fetchPaymentList({
-            project,
-            ...filters,
-          })
-          message('warning', '알림!', '해당 오브젝트가 삭제되었습니다.')
-        }
-      })
-      .catch(err => errorHandle(err.response.data))
-  }
+  // const createPrCashBook = async (
+  //   payload: ProjectCashBook & { sepData: ProjectCashBook | null } & {
+  //     filters: CashBookFilter
+  //   },
+  // ) => {
+  //   const { filters, ...formData } = payload
+  //   return await api
+  //     .post(`/project-cashbook/`, formData)
+  //     .then(async res => {
+  //       // 캐시 무효화 (부모가 생성되었을 수 있음)
+  //       invalidateChildrenCache()
+  //
+  //       await fetchProjectCashList({
+  //         project: res.data.project,
+  //         ...filters,
+  //       })
+  //       await fetchProjectImprestList({
+  //         project: res.data.project,
+  //         ...filters,
+  //       })
+  //       await paymentStore.fetchAllPaymentList({
+  //         project: res.data.project,
+  //         contract: res.data.contract,
+  //         ordering: 'deal_date',
+  //       })
+  //       await paymentStore.fetchPaymentList({
+  //         project: res.data.project,
+  //         ...filters,
+  //       })
+  //       message()
+  //     })
+  //     .catch(err => errorHandle(err.response.data))
+  // }
+  //
+  // const updatePrCashBook = async (
+  //   payload: ProjectCashBook & { sepData: ProjectCashBook | null } & {
+  //     isPayment?: boolean
+  //   } & {
+  //     filters: CashBookFilter
+  //   },
+  // ) => {
+  //   const cont = payload.contract
+  //   const { pk, isPayment, filters, ...formData } = payload
+  //   if (formData.rmCont) formData.contract = null
+  //   return await api
+  //     .put(`/project-cashbook/${pk}/`, formData)
+  //     .then(async res => {
+  //       // 자식 레코드를 수정한 경우
+  //       if (res.data.separated) {
+  //         const parentPk = res.data.separated
+  //         // 1. 캐시된 자식 레코드 업데이트
+  //         updateCachedChild(parentPk, res.data)
+  //
+  //         // 2. 부모 레코드도 다시 fetch해서 is_balanced 등 갱신
+  //         try {
+  //           const parentRes = await api.get(`/project-cashbook/${parentPk}/`)
+  //           updateParentInList(parentPk, parentRes.data)
+  //         } catch (err) {
+  //           console.error('부모 레코드 갱신 실패:', err)
+  //         }
+  //       } else {
+  //         // 부모 레코드를 수정한 경우 - 목록에서 업데이트
+  //         updateParentInList(pk || 0, res.data)
+  //         // 자식 캐시 무효화 (다음 열 때 다시 로드)
+  //         invalidateChildrenCache(pk || undefined)
+  //       }
+  //
+  //       if (isPayment) {
+  //         await paymentStore.fetchAllPaymentList({
+  //           project: res.data.project,
+  //           contract: cont || undefined,
+  //           ordering: 'deal_date',
+  //           ...filters,
+  //         })
+  //         await paymentStore
+  //           .fetchPaymentList({
+  //             project: res.data.project,
+  //             ...filters,
+  //           })
+  //           .then(() => message())
+  //       } else
+  //         await fetchProjectCashList({
+  //           project: res.data.project,
+  //           ...filters,
+  //         }).then(() => message())
+  //     })
+  //     .catch(err => errorHandle(err.response.data))
+  // }
+  //
+  // const patchPrCashBook = async (
+  //   payload: ProjectCashBook & { isPayment?: boolean } & {
+  //     filters: CashBookFilter
+  //   },
+  // ) => {
+  //   const cont = payload.contract
+  //   const { pk, isPayment, filters, ...formData } = payload
+  //   if (formData.rmCont) formData.contract = null
+  //   return await api
+  //     .patch(`/project-cashbook/${pk}/`, formData)
+  //     .then(async res => {
+  //       // 캐시 무효화
+  //       if (res.data.separated) {
+  //         invalidateChildrenCache(res.data.separated)
+  //       }
+  //       invalidateChildrenCache(pk || undefined)
+  //
+  //       if (isPayment) {
+  //         await paymentStore.fetchAllPaymentList({
+  //           project: res.data.project,
+  //           contract: cont || undefined,
+  //           ordering: 'deal_date',
+  //           ...filters,
+  //         })
+  //         await paymentStore
+  //           .fetchPaymentList({
+  //             project: res.data.project,
+  //             ...filters,
+  //           })
+  //           .then(() => message())
+  //       } else
+  //         await fetchProjectCashList({
+  //           project: res.data.project,
+  //           ...filters,
+  //         }).then(() => message())
+  //     })
+  //     .catch(err => errorHandle(err.response.data))
+  // }
+  //
+  // const deletePrCashBook = async (
+  //   payload: {
+  //     pk: number
+  //     project: number
+  //     contract?: number | null
+  //     parentPk?: number | null  // 삭제할 레코드가 자식인 경우 부모 PK
+  //   } & {
+  //     filters?: CashBookFilter
+  //   },
+  // ) => {
+  //   const { pk, project, filters, contract, parentPk } = payload
+  //
+  //   return await api
+  //     .delete(`/project-cashbook/${pk}/`)
+  //     .then(async () => {
+  //       // 자식 레코드 삭제 시에만 특정 부모의 캐시 무효화
+  //       if (parentPk) {
+  //         // 자식 레코드 삭제: 해당 부모의 캐시만 무효화
+  //         invalidateChildrenCache(parentPk)
+  //
+  //         // 부모 레코드 갱신 (is_balanced 등 업데이트)
+  //         try {
+  //           const parentRes = await api.get(`/project-cashbook/${parentPk}/`)
+  //           updateParentInList(parentPk, parentRes.data)
+  //         } catch (err) {
+  //           console.error('부모 레코드 갱신 실패:', err)
+  //         }
+  //       } else {
+  //         // 부모 레코드 삭제: 전체 캐시 클리어 (기존 동작 유지)
+  //         invalidateChildrenCache()
+  //       }
+  //
+  //       await fetchProjectCashList({
+  //         project,
+  //         ...filters,
+  //       })
+  //       if (contract) {
+  //         await paymentStore.fetchAllPaymentList({
+  //           project,
+  //           contract,
+  //           ordering: 'deal_date',
+  //         })
+  //         await paymentStore.fetchPaymentList({
+  //           project,
+  //           ...filters,
+  //         })
+  //         message('warning', '알림!', '해당 오브젝트가 삭제되었습니다.')
+  //       }
+  //     })
+  //     .catch(err => errorHandle(err.response.data))
+  // }
 
   const proImprestList = ref<ProjectCashBook[]>([])
   const proImprestCount = ref<number>(0)
@@ -670,10 +672,10 @@ export const useProCash = defineStore('proCash', () => {
     fetchProjectCashList,
     findProjectCashBookPage,
     proCashPages,
-    createPrCashBook,
-    updatePrCashBook,
-    patchPrCashBook,
-    deletePrCashBook,
+    // createPrCashBook,
+    // updatePrCashBook,
+    // patchPrCashBook,
+    // deletePrCashBook,
     fetchChildrenRecords,
     searchWithChildren,
     getCachedChildren,
