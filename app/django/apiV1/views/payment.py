@@ -14,7 +14,6 @@ from items.models import KeyUnit
 from items.models import UnitType, HouseUnit
 from project.models import Project
 from project.models import ProjectIncBudget
-from .cash import ProjectCashBookViewSet
 from ..pagination import *
 from ..permission import *
 from ..serializers.payment import *
@@ -85,28 +84,6 @@ class OverDueRuleViewSet(viewsets.ModelViewSet):
     serializer_class = OverDueRuleSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
 
-
-# will be deprecated - use ProjectCashBook
-class PaymentViewSet(ProjectCashBookViewSet):
-    serializer_class = PaymentSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
-    pagination_class = PageNumberPaginationTen
-
-    def get_queryset(self):
-        """
-        유효 계약자 납부내역 조회 (ORM 최적화 적용)
-
-        payment_records(): is_payment=True (유효 계약자 입금만)
-        - 포함: 111 (분담금), 811 (분양매출금)
-        - 제외: is_payment=False인 모든 계정 (해지 입금, 환불, 기타 출금 등)
-        - select_related 자동 적용으로 N+1 쿼리 방지
-        - 선납 할인 및 연체 가산금 계산 대상
-        """
-        return ProjectCashBook.objects.payment_records()
-
-
-class AllPaymentViewSet(PaymentViewSet):
-    pagination_class = PageNumberPaginationOneHundred
 
 
 class PaymentSummaryViewSet(viewsets.ViewSet):
