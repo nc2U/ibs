@@ -38,21 +38,10 @@ urlpatterns = [
     path('ledger/paid-status/', ExportLedgerPaymentStatus.as_view(), name='ledger-paid-status'),
     path('ledger/overall-sum/', ExportLedgerOverallSummary.as_view(), name='ledger-overall-summary'),
 
-    # Cash 관련 (새 모듈)
-    # path('balance/', ExportBalanceByAcc.as_view(), name='balance'),
-    # path('daily-cash/', ExportDateCashbook.as_view(), name='daily-cash'),
-    # path('cashbook/', export_cashbook_xls, name='cashbook'),
-
     # ledger
     path('com-balance/', ExportLedgerBalanceByAcc.as_view(), name='com-balance'),
     path('com-daily-cash/', ExportLedgerDateCashbook.as_view(), name='com-daily-cash'),
     path('com-trans/', export_com_transaction_xls, name='com-trans'),
-
-    # path('p-balance/', ExportProjectBalance.as_view(), name='project-balance'),
-    # path('p-daily-cash/', ExportProjectDateCashbook.as_view(), name='project-daily-cash'),
-    # path('p-budget/', ExportBudgetExecutionStatus.as_view(), name='budget'),
-    # path('cash-flow-form/', ExportCashFlowForm.as_view(), name='cash-flow-form'),
-    # path('pro-cashbook/', export_project_cash_xls, name='pro-cashbook'),
 
     # ledger
     path('pro-balance/', ExportProjectLedgerBalance.as_view(), name='ledger-pro-balance'),
