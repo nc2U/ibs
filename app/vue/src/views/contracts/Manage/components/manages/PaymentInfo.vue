@@ -159,7 +159,7 @@ const handleExcelDownload = (url: string, fileName: string) => {
                 <button
                   @click="
                     handleFileDownload(
-                      `/pdf/payments/?project=${contract.project}&contract=${contract.pk}&is_calc=1`,
+                      `/pdf/ledger/payment/?project=${contract.project}&contract=${contract.pk}&is_calc=1`,
                       '납부내역_확인서_일반.pdf',
                     )
                   "
@@ -179,7 +179,7 @@ const handleExcelDownload = (url: string, fileName: string) => {
                 <button
                   @click="
                     handleFileDownload(
-                      `/pdf/payments/?project=${contract.project}&contract=${contract.pk}`,
+                      `/pdf/ledger/payment/?project=${contract.project}&contract=${contract.pk}`,
                       '납부내역_확인서_확인.pdf',
                     )
                   "
@@ -199,7 +199,7 @@ const handleExcelDownload = (url: string, fileName: string) => {
                 <button
                   @click="
                     handleFileDownload(
-                      `/pdf/calculation/?project=${contract.project}&contract=${contract.pk}`,
+                      `/pdf/ledger/calculation/?project=${contract.project}&contract=${contract.pk}`,
                       '할인_가산금 내역서.pdf',
                     )
                   "
@@ -219,7 +219,7 @@ const handleExcelDownload = (url: string, fileName: string) => {
                 <button
                   @click="
                     handleFileDownload(
-                      `/pdf/daily-late-fee/?contract=${contract.pk}`,
+                      `/pdf/ledger/daily-late-fee/?contract=${contract.pk}`,
                       '일자별_연체료_내역.pdf',
                     )
                   "
