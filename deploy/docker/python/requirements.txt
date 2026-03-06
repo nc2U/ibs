@@ -4,7 +4,7 @@ crispy-bootstrap4==2025.6
 Django==6.0.3
 
 django-admin-rangefilter==0.13.3
-django-allauth==65.13.1
+django-allauth==65.14.1
 django-crispy-forms==2.5
 django-filter==25.2
 django-import-export==4.3.14
