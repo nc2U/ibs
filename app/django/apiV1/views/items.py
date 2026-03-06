@@ -1,14 +1,13 @@
 from datetime import datetime
+
 from django.db.models import Q
-from rest_framework import viewsets
-from django_filters.rest_framework import FilterSet
 from django_filters import BooleanFilter
+from django_filters.rest_framework import FilterSet
+from rest_framework import viewsets
 
-from ..permission import *
 from ..pagination import *
+from ..permission import *
 from ..serializers.items import *
-
-from items.models import UnitType, UnitFloorType, KeyUnit, BuildingUnit, HouseUnit
 
 TODAY = datetime.today().strftime('%Y-%m-%d')
 

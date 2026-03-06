@@ -1,9 +1,6 @@
 import datetime
-import io
 
-import xlsxwriter
 from django.db.models import Q
-from django.http import HttpResponse
 
 from _excel.mixins import ExcelExportMixin, AdvancedExcelMixin
 from project.models import Project, Site, SiteOwner, SiteContract

@@ -1,8 +1,9 @@
 from django.contrib import admin
 from django.db import models
-from mdeditor.widgets import MDEditorWidget
 from import_export.admin import ImportExportMixin
-from . models import Book, Subject, Image
+from mdeditor.widgets import MDEditorWidget
+
+from .models import Book, Subject, Image
 
 
 class BooksAdmin(ImportExportMixin, admin.ModelAdmin):
@@ -14,9 +15,11 @@ class BooksAdmin(ImportExportMixin, admin.ModelAdmin):
         models.TextField: {'widget': MDEditorWidget}
     }
 
+
 class ImagesInline(admin.StackedInline):
     model = Image
     extra = 1
+
 
 class SubjectAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('id', 'book', 'seq', 'title', 'level', 'created', 'updated')
@@ -24,6 +27,7 @@ class SubjectAdmin(ImportExportMixin, admin.ModelAdmin):
     search_fields = ('title', 'content')
     list_filter = ('book',)
     inlines = (ImagesInline,)
+
 
 admin.site.register(Book, BooksAdmin)
 admin.site.register(Subject, SubjectAdmin)

@@ -1,4 +1,5 @@
 from django.db.models import Q
+
 from ledger.models import CompanyBankTransaction, CompanyAccount, CompanyAccountingEntry
 
 
@@ -35,7 +36,8 @@ def get_company_transactions(params):
     # is_balanced 필터링
     is_balanced = params.get('is_balanced')
     if is_balanced is not None:
-        is_balanced_bool = is_balanced.lower() in ('true', '1', 'yes') if isinstance(is_balanced, str) else bool(is_balanced)
+        is_balanced_bool = is_balanced.lower() in ('true', '1', 'yes') if isinstance(is_balanced, str) else bool(
+            is_balanced)
         qs = qs.filter(is_balanced=is_balanced_bool)
 
     # 회계분개 모델을 참조해야 하는 복합 필터링
@@ -84,7 +86,7 @@ def get_company_transactions(params):
         transaction_ids = CompanyAccountingEntry.objects.filter(
             entry_filters
         ).values_list('transaction_id', flat=True).distinct()
-        
+
         # search가 있는 경우 OR 조건, 없는 경우 AND 조건
         if search:
             # trader 검색을 위한 추가 transaction_ids
@@ -121,4 +123,3 @@ def get_company_transactions(params):
     return qs.select_related(
         'company', 'bank_account', 'sort', 'creator'
     ).order_by('-deal_date', '-created_at')
-

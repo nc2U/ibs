@@ -2,17 +2,17 @@ from django.urls import path
 from rest_framework.routers import DefaultRouter
 
 from .views import accounts
-from .views import company
-from .views import ibs
-from .views import work
-from .views import project
-from .views import items
-from .views import payment
-from .views import contract
-from .views import notice
 from .views import board
+from .views import company
+from .views import contract
 from .views import docs
+from .views import ibs
+from .views import items
 from .views import ledger
+from .views import notice
+from .views import payment
+from .views import project
+from .views import work
 
 app_name = 'api'
 

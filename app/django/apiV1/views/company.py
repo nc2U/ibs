@@ -1,10 +1,8 @@
 from rest_framework import viewsets
 
-from ..permission import *
 from ..pagination import *
+from ..permission import *
 from ..serializers.company import *
-
-from company.models import Company, Logo, Department, JobGrade, Position, DutyTitle, Staff
 
 
 # Company --------------------------------------------------------------------------

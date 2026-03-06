@@ -5,13 +5,13 @@ from django.contrib.auth.models import UserManager, PermissionsMixin
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.core.mail import send_mail
 from django.db import models
-from django.dispatch import receiver
 from django.db.models.signals import pre_save, post_delete
+from django.dispatch import receiver
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from docs.models import Document
 from board.models import Post, Comment
+from docs.models import Document
 from work.models.project import IssueProject
 
 

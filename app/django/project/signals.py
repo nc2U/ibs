@@ -1,8 +1,8 @@
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 
-from .models import Site, SiteOwner, SiteContract
 from _utils.slack_notifications import send_slack_notification
+from .models import Site, SiteOwner, SiteContract
 
 
 @receiver(post_save, sender=Site, dispatch_uid="site_slack_notification")

@@ -1,19 +1,17 @@
-from django import forms
-from django.shortcuts import redirect, render
-from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from django.db.models import Q, Max
-from django.core.exceptions import ObjectDoesNotExist
+from django.shortcuts import redirect, render
+from django.urls import reverse_lazy
 from django.views.generic import ListView, FormView, TemplateView
 
-from .models import (OrderGroup, Contract, Contractor,
-                     ContractorAddress, ContractorContact, ContractorRelease)
-from project.models import Project
 from items.models import UnitType, KeyUnit, BuildingUnit, HouseUnit
 from payment.models import InstallmentPaymentOrder
-
+from project.models import Project
 from .forms import ContractRegisterForm, ContractorReleaseForm
+from .models import (OrderGroup, Contract, Contractor,
+                     ContractorAddress, ContractorContact, ContractorRelease)
 
 
 class ContractLV(LoginRequiredMixin, ListView):

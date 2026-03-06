@@ -6,7 +6,6 @@ PDF Export Common Mixins
 from datetime import date, datetime
 
 from django.core.files.storage import FileSystemStorage
-from django.db.models import Sum
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.views.generic import View

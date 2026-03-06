@@ -1,7 +1,6 @@
 from django import forms
 
 from .models import ContractorRelease
-from payment.models import InstallmentPaymentOrder
 
 
 class ContractRegisterForm(forms.Form):
@@ -47,5 +46,3 @@ class ContractorReleaseForm(forms.ModelForm):
             'project': forms.HiddenInput(), 'contractor': forms.HiddenInput(),
             'status': forms.HiddenInput(), 'user': forms.HiddenInput()
         }
-
-

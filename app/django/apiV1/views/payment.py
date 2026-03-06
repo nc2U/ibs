@@ -10,7 +10,6 @@ from rest_framework import viewsets
 
 from _utils.contract_price import get_contract_payment_plan
 from contract.models import ContractPrice
-from payment.models import ContractPayment
 from items.models import KeyUnit
 from items.models import UnitType, HouseUnit
 from project.models import Project
@@ -84,7 +83,6 @@ class OverDueRuleViewSet(viewsets.ModelViewSet):
     queryset = OverDueRule.objects.all()
     serializer_class = OverDueRuleSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
-
 
 
 class PaymentSummaryViewSet(viewsets.ViewSet):

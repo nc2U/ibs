@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 import magic
 from django.conf import settings
 from django.db import models
-from django.utils import timezone
 
 from _utils.file_cleanup import file_cleanup_signals, related_file_cleanup
 from _utils.file_upload import get_board_file_path, get_board_image_path

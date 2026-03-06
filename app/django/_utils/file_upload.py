@@ -8,6 +8,7 @@ Django 6.0과 Python 3.14 환경에서 한글 파일명 인코딩 문제를 해�
 import hashlib
 import os
 import uuid
+
 from django.utils import timezone
 
 
@@ -115,7 +116,8 @@ def get_project_upload_path(instance, filename, subfolder=''):
         elif hasattr(instance, 'issue_project') and hasattr(instance.issue_project, 'slug'):
             project_slug = instance.issue_project.slug
         # docs.issue_project 속성이 있는 경우 (파일 모델처럼)
-        elif hasattr(instance, 'docs') and hasattr(instance.docs, 'issue_project') and hasattr(instance.docs.issue_project, 'slug'):
+        elif hasattr(instance, 'docs') and hasattr(instance.docs, 'issue_project') and hasattr(
+                instance.docs.issue_project, 'slug'):
             project_slug = instance.docs.issue_project.slug
         # 기본 slug 생성
         else:

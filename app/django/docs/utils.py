@@ -2,9 +2,11 @@
 공문 PDF 생성 유틸리티
 """
 import io
+
 from django.core.files.base import ContentFile
 from django.template.loader import render_to_string
 from weasyprint import HTML
+
 from company.models import Logo
 
 

@@ -12,7 +12,7 @@ from rest_framework.views import APIView
 
 from _utils.contract_price import get_project_payment_summary, get_multiple_projects_payment_summary, get_contract_price
 from contract.services import ContractPriceBulkUpdateService
-from items.models import BuildingUnit, UnitType
+from items.models import BuildingUnit
 from project.models import Project
 from ..pagination import PageNumberPaginationThreeThousand, PageNumberPaginationFifteen, PageNumberPaginationFifty
 from ..permission import *

@@ -1,18 +1,18 @@
+from datetime import datetime
+
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Sum
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
-from datetime import datetime
-from django.core.paginator import Paginator
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import ListView, FormView
 
-from .models import SalesBillIssue
-from .forms import SalesBillIssueForm
-from project.models import Project
-from items.models import UnitType, BuildingUnit, HouseUnit
 from contract.models import OrderGroup, Contractor
+from items.models import UnitType, BuildingUnit
 from payment.models import SalesPriceByGT, InstallmentPaymentOrder, DownPayment
+from project.models import Project
+from .forms import SalesBillIssueForm
+from .models import SalesBillIssue
 
 TODAY = datetime.today().strftime('%Y-%m-%d')
 

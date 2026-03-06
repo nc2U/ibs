@@ -1,7 +1,8 @@
 import os
+
+from django.db.models import FileField, ImageField
 from django.db.models.signals import pre_save, pre_delete
 from django.dispatch import receiver
-from django.db.models import FileField, ImageField
 
 
 def delete_file_field(instance, field_name):

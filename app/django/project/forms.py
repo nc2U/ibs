@@ -1,12 +1,11 @@
 from django import forms
 from django.forms.models import modelformset_factory
 from django.forms.widgets import TextInput
-from .models import Project, Site, SiteOwner, SiteContract
-from items.models import UnitType, UnitFloorType
 
 from contract.models import OrderGroup
-
+from items.models import UnitType, UnitFloorType
 from payment.models import SalesPriceByGT, InstallmentPaymentOrder, DownPayment
+from .models import Project, Site, SiteOwner, SiteContract
 
 
 class ProjectForm(forms.ModelForm):

@@ -18,7 +18,6 @@ from project.models import ProjectIncBudget
 TODAY = datetime.date.today().strftime('%Y-%m-%d')
 
 
-
 class ExportLedgerPayments(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMixin):
     """수납건별 수납내역 리스트 (Ledger 기반 - Mixins 사용)"""
 

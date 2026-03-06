@@ -1,4 +1,5 @@
 from django.urls import path
+
 from .views import (install_check_step, create_superuser, create_company,
                     create_project, pass_create_project)
 

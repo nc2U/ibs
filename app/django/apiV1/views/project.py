@@ -6,7 +6,6 @@ from rest_framework import viewsets
 from rest_framework.decorators import action
 
 from ledger.models import ProjectAccountingEntry
-
 from ..pagination import *
 from ..permission import *
 from ..serializers.project import *

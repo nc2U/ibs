@@ -3,15 +3,14 @@ from datetime import datetime
 
 from django.db.models import Q
 from django.utils import timezone
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
+from rest_framework.filters import OrderingFilter
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
-from rest_framework.filters import OrderingFilter
-from django_filters.rest_framework import DjangoFilterBackend
 
 from contract.models import ContractorContact, Contractor, Contract
-from notice.models import MessageSendHistory
 from notice.utils import IwinvSMSService
 from ..permission import *
 from ..serializers.notice import *

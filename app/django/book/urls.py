@@ -1,4 +1,5 @@
 from django.urls import path
+
 from .views import (BooksListView, BooksDetailView, BooksCreateView,
                     BooksUpdateView, BooksDeleteView, SubjectsIndexView,
                     SubjectsDetailView, SubjectsCreateView, SubjectsUpdateView,

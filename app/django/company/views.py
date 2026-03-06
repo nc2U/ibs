@@ -1,8 +1,9 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic.list import ListView
-from django.views.generic.edit import CreateView, FormView
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
+from django.views.generic.edit import CreateView, FormView
+from django.views.generic.list import ListView
+
 from .forms import CompanyForm
 from .models import Company
 

@@ -1,5 +1,4 @@
 import json
-import os
 from urllib.parse import urlparse
 
 from django.conf import settings
@@ -221,7 +220,7 @@ class DocumentSerializer(serializers.ModelSerializer):
 
         validated_data['ip'] = request.META.get('REMOTE_ADDR')
         validated_data['device'] = request.META.get('HTTP_USER_AGENT')
-        
+
         # updator 설정
         if hasattr(request, 'user') and request.user:
             instance.updator = request.user

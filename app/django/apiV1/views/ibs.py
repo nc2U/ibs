@@ -1,11 +1,8 @@
 from rest_framework import viewsets
 
-from ..permission import *
 from ..pagination import *
+from ..permission import *
 from ..serializers.ibs import *
-
-from ibs.models import (AccountSort, AccountSubD1, AccountSubD2, AccountSubD3,
-                        ProjectAccountD2, ProjectAccountD3, CalendarSchedule, WiseSaying)
 
 
 # Ibs --------------------------------------------------------------------------

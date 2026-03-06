@@ -7,13 +7,13 @@ from collections import defaultdict
 
 import xlwt
 from dateutil.relativedelta import relativedelta
-from django.db.models import Q, Sum, When, F, PositiveBigIntegerField, Case
+from django.db.models import Sum, When, F, PositiveBigIntegerField, Case
 from django.http import HttpResponse
 
 from _excel.mixins import ExcelExportMixin, XlwtStyleMixin
 from company.models import Company
 from ledger.models import CompanyBankTransaction, CompanyAccountingEntry, ProjectBankTransaction, \
-    ProjectAccountingEntry, ProjectAccount
+    ProjectAccountingEntry
 from ledger.services.company_transaction import get_company_transactions
 from ledger.services.project_transaction import get_project_transactions
 from project.models import Project, ProjectOutBudget

@@ -1,8 +1,8 @@
 from django.db.models.signals import pre_save, post_save, post_delete
 from django.dispatch import receiver
 
-from .models import LawsuitCase, Document
 from _utils.slack_notifications import send_slack_notification
+from .models import LawsuitCase, Document
 
 
 @receiver(post_save, sender=LawsuitCase, dispatch_uid="lawsuitcase_slack_notification")

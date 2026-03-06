@@ -1,14 +1,13 @@
-from django.db.models import Q
-from django.db import transaction
-from django.urls import reverse_lazy, reverse
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
-
+from django.db import transaction
+from django.db.models import Q
+from django.urls import reverse_lazy, reverse
 from django.views.generic import TemplateView, ListView, DetailView
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
 
-from . forms import ImageFormSet
-from . models import Book, Subject, Image
+from .forms import ImageFormSet
+from .models import Book, Subject, Image
 
 
 class BooksListView(LoginRequiredMixin, ListView):

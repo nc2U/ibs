@@ -14,8 +14,8 @@ from _pdf.utils import (get_contract, get_simple_orders, get_due_date_per_order,
 from _utils.contract_price import get_contract_payment_plan, get_contract_price
 from _utils.payment_adjustment import (calculate_all_installments_payment_allocation,
                                        get_installment_adjustment_summary,
-                                       calculate_daily_interest, get_unpaid_installments)
-from payment.models import ContractPayment, InstallmentPaymentOrder, SpecialPaymentOrder, SpecialDownPay
+                                       calculate_daily_interest)
+from payment.models import InstallmentPaymentOrder, SpecialPaymentOrder, SpecialDownPay
 
 TODAY = date.today()
 

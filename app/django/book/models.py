@@ -1,10 +1,10 @@
 import hashlib
 from datetime import datetime
+
+from django.conf import settings
 from django.db import models
 from django.urls import reverse_lazy
 from mdeditor.fields import MDTextField
-
-from django.conf import settings
 
 
 class Book(models.Model):

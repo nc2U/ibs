@@ -7,9 +7,6 @@ from work.models.issue import (IssueCategory, Tracker, CodeActivity, Issue)
 from work.models.project import IssueProject, Role, Member, Module, Version
 
 
-# from work.models.project import IssueProject, Role, Permission, Member, Module, Version
-
-
 # Work --------------------------------------------------------------------------
 class SimpleIssueProjectSerializer(serializers.ModelSerializer):
     visible = serializers.SerializerMethodField(read_only=True)

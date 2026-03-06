@@ -1,7 +1,8 @@
+import logging
+import threading
+
 from django.apps import apps
 from django.db import transaction
-import threading
-import logging
 
 from payment.models import ContractPayment
 

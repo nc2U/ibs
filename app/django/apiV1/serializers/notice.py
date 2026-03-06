@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
-from notice.models import SalesBillIssue, RegisteredSenderNumber, MessageTemplate, MessageSendHistory
 from apiV1.serializers.accounts import SimpleUserSerializer
+from notice.models import SalesBillIssue, RegisteredSenderNumber, MessageTemplate, MessageSendHistory
 
 
 # Notice --------------------------------------------------------------------------

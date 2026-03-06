@@ -2,7 +2,7 @@ from datetime import date, datetime
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.storage import FileSystemStorage
-from django.db.models import Sum, Q, Max
+from django.db.models import Q
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.views.generic import View
