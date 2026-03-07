@@ -92,7 +92,7 @@ const excelUrl = computed(() => {
   const dt = date.value
   let url = ''
   if (comp === 'StatusByAccount')
-    url = `/excel/pro-balance/?project=${pj}&date=${dt}&bank_account__directpay=${dr}`
+    url = `/excel/pro-balance/?project=${pj}&date=${dt}&bank_account__directpay=${dr}&is_balance=${isBalance.value}`
   else if (comp === 'CashListByDate') url = `/excel/pro-daily-cash/?project=${pj}&date=${dt}`
   else if (comp === 'SummaryForBudget')
     url = `/excel/pro-budget/?project=${pj}&date=${dt}&revised=${revised.value}`

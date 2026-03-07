@@ -10,7 +10,6 @@ import {
 import { navMenu, pageTitle } from '@/views/proLedger/_menu/headermixin'
 import { useProject } from '@/store/pinia/project.ts'
 import { useContract } from '@/store/pinia/contract.ts'
-import { useComLedger } from '@/store/pinia/comLedger.ts'
 import { write_project_cash } from '@/utils/pageAuth'
 import { useProLedger } from '@/store/pinia/proLedger'
 import { type DataFilter as Filter } from '@/store/types/proLedger'

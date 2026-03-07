@@ -540,9 +540,11 @@ class ExportProjectLedgerBalance(ExcelExportMixin):
 
         qs = ProjectBankTransaction.objects.filter(
             project=project,
-            bank_account__directpay=is_directpay,
             deal_date__lte=date
         ).order_by('bank_account')
+
+        if not is_directpay:
+            qs = qs.filter(bank_account__directpay=False)
 
         result = qs.annotate(
             bank_acc=F('bank_account__alias_name'),
@@ -551,11 +553,16 @@ class ExportProjectLedgerBalance(ExcelExportMixin):
             inc_sum=Sum(Case(When(sort_id=1, then=F('amount')), default=0)),
             out_sum=Sum(Case(When(sort_id=2, then=F('amount')), default=0)),
             date_inc=Sum(Case(When(sort_id=1, deal_date=date, then=F('amount')), default=0)),
-            date_out=Sum(Case(When(sort_id=2, deal_date=date, then=F('amount')), default=0))
+            date_out=Sum(Case(When(sort_id=2, deal_date=date, then=F('amount')), default=0)),
+            balance=Sum(Case(
+                When(sort_id=1, then=F('amount')),
+                When(sort_id=2, then=F('amount') * -1),
+                default=0
+            ))
         )
 
         if is_balance:
-            result = result.annotate(balance=F('inc_sum') - F('out_sum')).filter(balance__gt=0)
+            result = result.filter(balance__gt=0)
 
         return result
 
