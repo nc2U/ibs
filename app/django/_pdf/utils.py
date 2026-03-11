@@ -4,6 +4,7 @@ from itertools import accumulate
 from django.db.models import Sum, Q
 
 from contract.models import Contract
+from payment.models import ContractPayment
 from payment.models import OverDueRule, SpecialOverDueRule
 
 TODAY = date.today()
@@ -185,11 +186,14 @@ def get_paid(contract: Contract, simple_orders, pub_date, **kwargs):
     """
 
     calc_start_pay_code = simple_orders[0].get('calc_start') if simple_orders else 2  # 연체/가산 적용 시작 회차 코드
-    paid_list = []
+
+    # ContractPayment 쿼리셋으로 납부 내역 조회
+    paid_list = ContractPayment.objects.filter(contract=contract).valid_payments()
 
     is_past = True if kwargs.get('is_past') else False
 
-    pay_list = []  # 입금액 추출 리스트
+    # 납부 금액 리스트 추출 (amount 속성 사용)
+    pay_list = [payment.amount for payment in paid_list]  # ContractPayment.amount는 accounting_entry.amount 참조
     paid_sum_list = list(accumulate(pay_list))  # 입금액 리스트를 시간 순 누계액 리스트로 변경
 
     zip_pay_list = list(zip(paid_list, paid_sum_list))
@@ -267,7 +271,7 @@ def get_paid(contract: Contract, simple_orders, pub_date, **kwargs):
                     if paid_pay_code >= calc_start_pay_code:
                         is_first_pre = False  # 최초 선납의 경우에만 계산하기 위해 이후 False로 변경
                 else:
-                    diff = -paid[0].income
+                    diff = -paid[0].amount
                 # --------------------------------
 
                 try:
@@ -337,7 +341,7 @@ def get_paid(contract: Contract, simple_orders, pub_date, **kwargs):
             }
             paid_dict_list.append(paid_dict)
 
-    paid_sum_total = paid_list.aggregate(Sum('income'))['income__sum']  # 완납 총금액
+    paid_sum_total = paid_list.aggregate(Sum('accounting_entry__amount'))['accounting_entry__amount__sum']  # 완납 총금액
     paid_sum_total = paid_sum_total if paid_sum_total else 0
     calc_sums = (penalty_sum, discount_sum, ord_i_list)
 

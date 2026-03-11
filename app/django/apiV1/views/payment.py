@@ -453,22 +453,23 @@ class PaymentStatusByUnitTypeViewSet(viewsets.ViewSet):
                 params = [project_id, order_group_id, unit_type_id]
 
                 if date:
-                    date_filter = "AND pcb.deal_date <= %s"
+                    date_filter = "AND cp.deal_date <= %s"
                     params.append(date)
 
                 # ExportPaymentStatus와 동일한 표준화된 방식: installment_order 조건 없이 차수×타입별 직접 집계
                 query = f"""
-                        SELECT COALESCE(SUM(pcb.income), 0) as paid_amount
-                        FROM cash_projectcashbook pcb
-                        INNER JOIN contract_contract c ON pcb.contract_id = c.id
-                        WHERE pcb.project_id = %s
+                        SELECT COALESCE(SUM(pae.amount), 0) as paid_amount
+                        FROM payment_contractpayment cp
+                        INNER JOIN ledger_projectaccountingentry pae ON cp.accounting_entry_id = pae.id
+                        INNER JOIN ledger_projectaccount pa ON pae.account_id = pa.id
+                        INNER JOIN contract_contract c ON cp.contract_id = c.id
+                        WHERE cp.project_id = %s
                           AND c.order_group_id = %s
                           AND c.unit_type_id = %s
                           AND c.activation = true
-                          AND pcb.income IS NOT NULL
-                          AND pcb.project_account_d3_id IN (
-                              SELECT id FROM ibs_projectaccountd3 WHERE is_payment = true
-                          )
+                          AND pae.amount IS NOT NULL
+                          AND pa.is_payment = true
+                          AND cp.is_payment_mismatch = false
                           {date_filter}
                         """
 
