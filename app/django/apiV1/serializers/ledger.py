@@ -645,7 +645,7 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
             # trigger_sync_contract_payment()가 ContractPayment를 생성한 후 처리
             if 'installment_order' in entry_data:
                 self._update_contract_payment_installment(
-                    accounting_entry, entry_data['installment_order']
+                    accounting_entry, entry_data['installment_order'], bank_tx.deal_date
                 )
 
             accounting_entries.append(accounting_entry)
@@ -736,7 +736,7 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
                         # PUT/PATCH 모두 installment_order 처리
                         if 'installment_order' in entry_data:
                             self._update_contract_payment_installment(
-                                accounting_entry, entry_data['installment_order']
+                                accounting_entry, entry_data['installment_order'], instance.deal_date
                             )
 
                         accounting_entries.append(accounting_entry)
@@ -783,31 +783,47 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
         )
 
     @staticmethod
-    def _update_contract_payment_installment(accounting_entry, installment_order_id):
-        """
-        ContractPayment의 installment_order를 직접 업데이트하는 헬퍼 메서드
-
-        PUT/PATCH 요청 모두 사용됨 (사용자가 회차를 수정할 때)
-        ProjectAccountingEntry.installment_order는 폐기 예정 컬럼이므로 사용 안 함
-
-        Args:
-            accounting_entry: ProjectAccountingEntry 인스턴스
-            installment_order_id: 수정할 회차 ID
-        """
+    def _update_contract_payment_installment(accounting_entry, installment_order_id, bank_transaction_deal_date):
         if not installment_order_id:
             return
 
-        try:
-            contract_payment = ContractPayment.objects.get(accounting_entry=accounting_entry)
+        # Only create/update ContractPayment if the associated account is a payment account
+        if not accounting_entry.account.is_payment:
+            return
 
-            # installment_order만 업데이트
+        contract_payment, created = ContractPayment.objects.get_or_create(
+            accounting_entry=accounting_entry,
+            defaults={
+                'project': accounting_entry.project,
+                'contract': accounting_entry.contract,
+                'installment_order_id': installment_order_id,
+                'deal_date': bank_transaction_deal_date,
+                'amount': accounting_entry.amount,
+            }
+        )
+
+        if not created:
+            # If it already existed, update relevant fields
+            update_fields = []
             if contract_payment.installment_order_id != installment_order_id:
                 contract_payment.installment_order_id = installment_order_id
-                contract_payment.save(update_fields=['installment_order', 'updated_at'])
+                update_fields.append('installment_order')
+            if contract_payment.amount != accounting_entry.amount:
+                contract_payment.amount = accounting_entry.amount
+                update_fields.append('amount')
+            if contract_payment.deal_date != bank_transaction_deal_date:
+                contract_payment.deal_date = bank_transaction_deal_date
+                update_fields.append('deal_date')
+            if contract_payment.contract != accounting_entry.contract:
+                contract_payment.contract = accounting_entry.contract
+                update_fields.append('contract')
+            if contract_payment.project != accounting_entry.project:
+                contract_payment.project = accounting_entry.project
+                update_fields.append('project')
 
-        except ContractPayment.DoesNotExist:
-            # is_payment=False 계정인 경우 ContractPayment가 없을 수 있음
-            pass
+            if update_fields:
+                update_fields.append('updated_at') # Always update updated_at
+                contract_payment.save(update_fields=update_fields)
 
 
 # ============================================

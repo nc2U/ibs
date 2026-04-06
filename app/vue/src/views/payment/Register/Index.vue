@@ -138,13 +138,13 @@ const deleteContractPayment = (bankTransactionId: number) =>
 
 // Phase 7: Updated handlers for ledger-based payment system
 const onCreate = (payload: any) => {
-  // Set project from current context
+  // Set the project from the current context
   if (project.value) payload.project = project.value
   createContractPayment(payload)
 }
 
 const onUpdate = (bankTransactionId: number, payload: any) => {
-  // Set project from current context
+  // Set the project from the current context
   if (project.value) payload.project = project.value
   updateContractPayment(bankTransactionId, payload)
 }
