@@ -30,11 +30,13 @@ class AsyncImportExportMixin(ImportExportMixin):
     async_threshold_size = 0.5 * 1024 * 1024  # 0.5MB
 
     def import_action(self, request, *args, **kwargs):
-        """기존 import 버튼을 async-import로 리다이렉트"""
-        return redirect('admin:%s_%s_async_import' % (
-            self.model._meta.app_label,
-            self.model._meta.model_name
-        ))
+        """기존 import 버튼을 async-import로 리다이렉트 (GET 요청 시에만)"""
+        if request.method == 'GET':
+            return redirect('admin:%s_%s_async_import' % (
+                self.model._meta.app_label,
+                self.model._meta.model_name
+            ))
+        return super().import_action(request, *args, **kwargs)
 
     def get_urls(self):
         urls = super().get_urls()
@@ -66,7 +68,7 @@ class AsyncImportExportMixin(ImportExportMixin):
             'app_label': self.model._meta.app_label,
             'opts': self.model._meta,
             'has_view_permission': self.has_view_permission(request),
-            'async_threshold_mb': self.async_threshold_size // (1024 * 1024),
+            'async_threshold_mb': self.async_threshold_size / (1024 * 1024),
         }
 
         if request.method == 'POST':
@@ -81,12 +83,9 @@ class AsyncImportExportMixin(ImportExportMixin):
                 # 비동기 처리
                 return self._handle_async_import(request, import_file)
             else:
-                # 동기 처리 (기존 방식)
+                # 동기 처리 (리다이렉트 대신 부모의 로직을 직접 실행하여 POST 데이터 유지)
                 messages.info(request, '파일 크기가 작아 일반 가져오기로 처리됩니다.')
-                return redirect('admin:%s_%s_import' % (
-                    self.model._meta.app_label,
-                    self.model._meta.model_name
-                ))
+                return super().import_action(request)
 
         return TemplateResponse(request, self.async_import_template, context)
 
