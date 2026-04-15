@@ -565,6 +565,8 @@ const saveMultipleTransactions = async () => {
       .filter(e => (e.amount || 0) > 0)
       .map(entry => ({
         ...entry,
+        contract: entry.contract ?? null,
+        contractor: entry.contractor ?? null,
         evidence_type: entry.evidence_type === '' ? null : entry.evidence_type,
       }))
 

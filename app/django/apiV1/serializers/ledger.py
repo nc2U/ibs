@@ -751,7 +751,7 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
                     # installment_order가 있으면 ContractPayment에 설정
                     if 'installment_order' in entry_data:
                         self._update_contract_payment_installment(
-                            accounting_entry, entry_data['installment_order']
+                            accounting_entry, entry_data['installment_order'], instance.deal_date
                         )
 
                     accounting_entries.append(accounting_entry)

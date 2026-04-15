@@ -689,12 +689,13 @@ class AccountingEntry(models.Model):
     def related_transaction(self):
         """연관된 BankTransaction 조회"""
         # 클래스 타입으로 구분하여 적절한 BankTransaction 모델 조회
+        db = self._state.db or 'default'
         if isinstance(self, CompanyAccountingEntry):
-            return CompanyBankTransaction.objects.filter(
+            return CompanyBankTransaction.objects.using(db).filter(
                 transaction_id=self.transaction_id
             ).first()
         elif isinstance(self, ProjectAccountingEntry):
-            return ProjectBankTransaction.objects.filter(
+            return ProjectBankTransaction.objects.using(db).filter(
                 transaction_id=self.transaction_id
             ).first()
         return None

@@ -44,7 +44,8 @@ def _sync_contract_payment_for_entry(instance):
     # ✅ PK 기준 재조회 (import-export FK validation 문제 해결)
     if instance.pk:  # Only try to fetch if it has been saved (i.e., has a primary key)
         try:
-            instance = ProjectAccountingEntry.objects.select_related(
+            db = instance._state.db or 'default'
+            instance = ProjectAccountingEntry.objects.using(db).select_related(
                 'account', 'contract', 'project'
             ).get(pk=instance.pk)
         except ProjectAccountingEntry.DoesNotExist:

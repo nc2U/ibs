@@ -84,10 +84,14 @@ watch(
         // account가 없거나 requires_contract가 false인 경우 contract를 null로 초기화
         if (!account || !account.requires_contract) {
           row.contract = null
+        } else if (row.contract === undefined) {
+          row.contract = null
         }
 
         // account가 없거나 is_related_contractor가 false인 경우 contractor를 null로 초기화
         if (!account || !account.is_related_contractor) {
+          row.contractor = null
+        } else if (row.contractor === undefined) {
           row.contractor = null
         }
       }
