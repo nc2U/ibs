@@ -227,33 +227,39 @@ class CompanyAccountingEntryResource(BaseTransactionResource):
 class ProjectAccountingEntryResource(BaseTransactionResource):
     """Resource for ProjectAccountingEntry with bulk operations and ContractPayment sync"""
 
+    installment_order = fields.Field(column_name='installment_order', attribute=None)
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._imported_payment_entries = []
+        self._imported_installment_map = {}  # pk -> installment_order_id 매핑
+
+    def before_import_row(self, row, **kwargs):
+        """Pre-process row data before import"""
+        # BaseTransactionResource의 ID 처리 로직 호출
+        row = super().before_import_row(row, **kwargs)
+        return row
 
     def after_save_instance(self, instance, row, using_transactions, dry_run, **kwargs):
         """
         Track ALL entries during import for later batch processing.
-        개별 저장 시에는 ContractPayment 생성을 skip하고 나중에 일괄 처리.
-
-        모든 entry를 추적하는 이유:
-        - 신규: is_payment=True면 ContractPayment 생성 필요
-        - 업데이트: is_payment 변경 시 ContractPayment 동기화 필요
-          - True → False: is_payment_mismatch 설정
-          - False → True: ContractPayment 생성
         """
         if dry_run:
             return
 
-        # 모든 entry를 추적 (is_payment 여부 무관)
-        # _sync_contract_payment_for_entry가 알아서 필요한 경우만 처리
         if instance.pk:
             self._imported_payment_entries.append(instance.pk)
+            # installment_order 값 추적 (모델 필드가 아니므로 row에서 직접 획득)
+            inst_order = row.get('installment_order')
+            if inst_order:
+                try:
+                    self._imported_installment_map[instance.pk] = int(float(inst_order))
+                except (ValueError, TypeError):
+                    pass
 
     def after_import(self, dataset, result, **kwargs):
         """
         Import 완료 후 모든 payment entries에 대해 ContractPayment를 일괄 생성.
-        이렇게 하면 bulk import 성능을 유지하면서 데이터 일관성도 보장됨.
         """
         # Bulk import flag 해제
         set_bulk_import_active(False)
@@ -268,13 +274,15 @@ class ProjectAccountingEntryResource(BaseTransactionResource):
             print(f"🔧 ContractPayment 동기화 시작: {len(self._imported_payment_entries)}건")
 
             with transaction.atomic():
-                entries = ProjectAccountingEntry.objects.filter(
+                entries = ProjectAccountingEntry.objects.using('default').filter(
                     pk__in=self._imported_payment_entries
                 ).select_related('account', 'contract', 'project')
 
                 synced_count = 0
                 for entry in entries:
-                    _sync_contract_payment_for_entry(entry)
+                    # 매핑된 installment_order_id 가져오기
+                    inst_order_id = self._imported_installment_map.get(entry.pk)
+                    _sync_contract_payment_for_entry(entry, installment_order_id=inst_order_id)
                     synced_count += 1
 
                     if synced_count % 1000 == 0:
@@ -282,8 +290,9 @@ class ProjectAccountingEntryResource(BaseTransactionResource):
 
                 print(f"✅ ContractPayment 동기화 완료: {synced_count}건")
 
-            # 추적 리스트 초기화
+            # 추적 데이터 초기화
             self._imported_payment_entries = []
+            self._imported_installment_map = {}
 
         return super().after_import(dataset, result, **kwargs)
 
@@ -295,11 +304,11 @@ class ProjectAccountingEntryResource(BaseTransactionResource):
         import_id_fields = ('id',)
         fields = (
             'id', 'transaction_id', 'project', 'sort', 'account', 'contract',
-            'amount', 'trader', 'evidence_type', 'installment_order'
+            'amount', 'trader', 'evidence_type'
         )
         export_order = (
             'id', 'transaction_id', 'project', 'sort', 'account', 'contract',
-            'amount', 'trader', 'evidence_type', 'installment_order'
+            'amount', 'trader', 'evidence_type'
         )
 
     def skip_row(self, instance, original, row, import_validation_errors=None):

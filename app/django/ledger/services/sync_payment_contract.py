@@ -22,12 +22,12 @@ def is_bulk_import_active():
 
 
 def set_bulk_import_active(active=True):
-    """Set bulk import flag for current thread"""
+    """Set a bulk import flag for the current thread"""
     _thread_locals.bulk_import_active = active
 
 
 @transaction.atomic
-def _sync_contract_payment_for_entry(instance):
+def _sync_contract_payment_for_entry(instance, installment_order_id=None):
     """
     Helper function to synchronize ContractPayment based on a ProjectAccountingEntry instance.
     """
@@ -42,15 +42,15 @@ def _sync_contract_payment_for_entry(instance):
     # Re-fetch an instance to ensure it's fully committed/loaded from the current transaction's perspective.
     # This helps prevent "not a valid choice" errors in OneToOneField assignments during bulk imports.
     # ✅ PK 기준 재조회 (import-export FK validation 문제 해결)
+    # ✅ 복제본 지연(Replica lag) 방지를 위해 마스터 DB('default') 명시적 사용
     if instance.pk:  # Only try to fetch if it has been saved (i.e., has a primary key)
         try:
-            db = instance._state.db or 'default'
-            instance = ProjectAccountingEntry.objects.using(db).select_related(
+            instance = ProjectAccountingEntry.objects.using('default').select_related(
                 'account', 'contract', 'project'
             ).get(pk=instance.pk)
         except ProjectAccountingEntry.DoesNotExist:
             logger.warning(
-                f"ProjectAccountingEntry(pk={instance.pk}) not found. Skip sync."
+                f"ProjectAccountingEntry(pk={instance.pk}) not found in master DB. Skip sync."
             )
             return
 
@@ -64,10 +64,11 @@ def _sync_contract_payment_for_entry(instance):
             'project': instance.project,
             'contract': instance.contract,
             'deal_date': deal_date,
+            'installment_order_id': installment_order_id,
             'is_payment_mismatch': False,
             'creator': creator,
         }
-        contract_payment, created = ContractPayment.objects.get_or_create(
+        contract_payment, created = ContractPayment.objects.using('default').get_or_create(
             accounting_entry=instance,
             defaults=defaults
         )
@@ -83,6 +84,11 @@ def _sync_contract_payment_for_entry(instance):
             if contract_payment.contract_id != instance.contract_id:
                 contract_payment.contract = instance.contract
                 update_fields.append('contract')
+
+            # installment_order 동기화
+            if installment_order_id and contract_payment.installment_order_id != installment_order_id:
+                contract_payment.installment_order_id = installment_order_id
+                update_fields.append('installment_order')
 
             # deal_date 동기화
             if bank_transaction and contract_payment.deal_date != bank_transaction.deal_date:
