@@ -212,7 +212,7 @@ class CompanyAccountAdmin(BaseAccountAdmin):
 class ProjectAccountAdmin(BaseAccountAdmin):
     """프로젝트 계정 과목 Admin"""
     list_display = (
-        'code', 'indented_name', 'category_display', 'direction_display',
+        'id', 'code', 'indented_name', 'category_display', 'direction_display',
         'depth', 'is_category_only', 'is_transfer_fee', 'is_active', 'is_payment',
         'requires_contract', 'is_related_contractor', 'order')
     list_editable = ('order', 'is_category_only', 'is_transfer_fee', 'is_active',
