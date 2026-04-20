@@ -64,9 +64,7 @@
                     </a>
                 </td>
                 <td class="text-right" data-toggle="tooltip" data-placement="right" title="건별 수납 관리 [{{ object.name }}]">
-                    <a href="{% url 'ibs:cash-inout:payment-register' %}?project={{ this_project.id }}&type={{ object.contract.keyunit.unit_type.id }}&contract={{ object.contract.id }}">
-                        {{ paid_amount|default:"-"|intcomma }}
-                    </a>
+                    {{ paid_amount|default:"-"|intcomma }}
                 </td>
                     <td class="text-center">
                         {% if paid_amount >= due_pay %}<span class="text-success">완납 중</span>
