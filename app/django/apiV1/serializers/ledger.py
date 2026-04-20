@@ -791,39 +791,37 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
         if not accounting_entry.account.is_payment:
             return
 
-        contract_payment, created = ContractPayment.objects.get_or_create(
+        # ✅ 복제 지연 방지를 위해 Master DB('default') 명시적 사용
+        contract_payment, created = ContractPayment.objects.using('default').get_or_create(
             accounting_entry=accounting_entry,
             defaults={
                 'project': accounting_entry.project,
                 'contract': accounting_entry.contract,
                 'installment_order_id': installment_order_id,
                 'deal_date': bank_transaction_deal_date,
-                'amount': accounting_entry.amount,
             }
         )
 
         if not created:
-            # If it already existed, update relevant fields
             update_fields = []
             if contract_payment.installment_order_id != installment_order_id:
                 contract_payment.installment_order_id = installment_order_id
                 update_fields.append('installment_order')
-            if contract_payment.amount != accounting_entry.amount:
-                contract_payment.amount = accounting_entry.amount
-                update_fields.append('amount')
+
             if contract_payment.deal_date != bank_transaction_deal_date:
                 contract_payment.deal_date = bank_transaction_deal_date
                 update_fields.append('deal_date')
-            if contract_payment.contract != accounting_entry.contract:
+
+            if contract_payment.contract_id != accounting_entry.contract_id:
                 contract_payment.contract = accounting_entry.contract
                 update_fields.append('contract')
-            if contract_payment.project != accounting_entry.project:
+
+            if contract_payment.project_id != accounting_entry.project_id:
                 contract_payment.project = accounting_entry.project
                 update_fields.append('project')
 
             if update_fields:
-                update_fields.append('updated_at') # Always update updated_at
-                contract_payment.save(update_fields=update_fields)
+                contract_payment.save(update_fields=update_fields + ['updated_at'])
 
 
 # ============================================

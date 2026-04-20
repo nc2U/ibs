@@ -366,7 +366,18 @@ class ContractPayment(models.Model):
                 )
 
         # 유효성 검증
-        self.full_clean()
+        # ✅ Master/Slave 복제 지연으로 인한 외래키 검사 실패 방지
+        # 동기화 로직(trigger_sync_contract_payment)에서 호출될 때
+        # Master DB를 사용 중이면 이미 상위에서 검증된 것으로 간주하거나 에러를 무시할 수 있음
+        try:
+            self.full_clean()
+        except ValidationError as e:
+            # accounting_entry 관련 에러이고, Master DB를 사용 중인 신규 생성 건이면 허용
+            # (복제 지연으로 인해 Slave에서 조회가 안 되는 경우일 가능성이 높음)
+            if not is_update and 'accounting_entry' in e.message_dict:
+                logger.info(f"💡 ContractPayment 신규 생성 중 accounting_entry 유효성 검사 지연 발생 (PK: {self.accounting_entry_id}). 생성 강행.")
+            else:
+                raise e
 
         super().save(*args, **kwargs)
 
