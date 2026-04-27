@@ -57,7 +57,21 @@ def _sync_contract_payment_for_entry(instance, installment_order_id=None):
     is_payment_account = instance.account.is_payment
 
     if is_payment_account:
-        bank_transaction = instance.related_transaction
+        # ✅ ProjectBankTransaction을 Master DB에서 명시적으로 재조회하여 최신 deal_date를 보장
+        ProjectBankTransaction = apps.get_model('ledger', 'ProjectBankTransaction')
+        bank_transaction = None
+        if instance.transaction_id:
+            try:
+                bank_transaction = ProjectBankTransaction.objects.using('default').get(
+                    transaction_id=instance.transaction_id
+                )
+            except ProjectBankTransaction.DoesNotExist:
+                logger.warning(
+                    f"ProjectBankTransaction(transaction_id={instance.transaction_id}) not found in master DB. "
+                    f"Cannot sync ContractPayment deal_date."
+                )
+                pass
+
         creator = bank_transaction.creator if bank_transaction else None
         deal_date = bank_transaction.deal_date if bank_transaction else None
         defaults = {
@@ -120,7 +134,20 @@ def _sync_contract_payment_for_entry(instance, installment_order_id=None):
             update_fields.append('contract')
 
         # deal_date 동기화
-        bank_transaction = instance.related_transaction
+        # ✅ ProjectBankTransaction을 Master DB에서 명시적으로 재조회하여 최신 deal_date를 보장
+        ProjectBankTransaction = apps.get_model('ledger', 'ProjectBankTransaction')
+        bank_transaction = None
+        if instance.transaction_id:
+            try:
+                bank_transaction = ProjectBankTransaction.objects.using('default').get(
+                    transaction_id=instance.transaction_id
+                )
+            except ProjectBankTransaction.DoesNotExist:
+                logger.warning(
+                    f"ProjectBankTransaction(transaction_id={instance.transaction_id}) not found in master DB. "
+                    f"Cannot sync ContractPayment deal_date."
+                )
+                pass
         if bank_transaction and contract_payment.deal_date != bank_transaction.deal_date:
             contract_payment.deal_date = bank_transaction.deal_date
             update_fields.append('deal_date')
