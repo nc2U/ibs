@@ -313,7 +313,24 @@ class ContractPayment(models.Model):
                     })
 
             # deal_date 일치 검증
-            bank_transaction = self.accounting_entry.related_transaction
+            # ✅ ProjectBankTransaction을 Master DB에서 명시적으로 재조회하여 최신 deal_date를 보장
+            from django.apps import apps
+            ProjectBankTransaction = apps.get_model('ledger', 'ProjectBankTransaction')
+            bank_transaction = None
+            if self.accounting_entry.transaction_id: # accounting_entry의 transaction_id 사용
+                try:
+                    bank_transaction = ProjectBankTransaction.objects.using('default').get(
+                        transaction_id=self.accounting_entry.transaction_id
+                    )
+                except ProjectBankTransaction.DoesNotExist:
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.warning(
+                        f"ProjectBankTransaction(transaction_id={self.accounting_entry.transaction_id}) not found in master DB. "
+                        f"Cannot validate ContractPayment deal_date."
+                    )
+                    pass
+
             if bank_transaction and self.deal_date and self.deal_date != bank_transaction.deal_date:
                 raise ValidationError({
                     'deal_date': f'deal_date는 related_transaction.deal_date와 자동 동기화됩니다. '
