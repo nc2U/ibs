@@ -47,10 +47,10 @@ const onDeleteDownPay = (pk: number) => {
   if (project.value) deleteDownPay(pk, project.value)
 }
 
-const dataSetup = (pk: number) => {
-  fetchOrderGroupList(pk)
-  fetchTypeList(pk)
-  fetchDownPayList({ project: pk })
+const dataSetup = async (pk: number) => {
+  await fetchOrderGroupList(pk)
+  await fetchTypeList(pk)
+  await fetchDownPayList({ project: pk })
 }
 
 const dataReset = () => {
@@ -65,8 +65,8 @@ const projSelect = (target: number | null) => {
 }
 
 const loading = ref(true)
-onBeforeMount(async () => {
-  await dataSetup(project.value || projStore.initProjId)
+onBeforeMount(() => {
+  dataSetup(project.value || projStore.initProjId)
   loading.value = false
 })
 </script>

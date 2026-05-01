@@ -214,7 +214,7 @@ export const usePayment = defineStore('payment', () => {
       .delete(`/down-payment/${pk}/`)
       .then(() =>
         fetchDownPayList({ project }).then(() =>
-          message('danger', '알림!', '해당 오브젝트가 삭제되었습니다.'),
+          message('warning', '알림!', '해당 오브젝트가 삭제되었습니다.'),
         ),
       )
       .catch(err => errorHandle(err.response.data))
