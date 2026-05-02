@@ -376,7 +376,7 @@ export const useDocs = defineStore('docs', () => {
       .delete(`/docs-trash-can/${pk}/?hard=1`)
       .then(() =>
         fetchTrashDocsList(page).then(() =>
-          message('danger', '', '해당 게시물이 영구 삭제되었습니다.'),
+          message('warning', '', '해당 게시물이 영구 삭제되었습니다.'),
         ),
       )
       .catch(err => errorHandle(err.response.data))

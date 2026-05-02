@@ -105,7 +105,7 @@ export const useComLedger = defineStore('comLedger', () => {
       .then(async () => {
         await fetchAllComBankAccList(company)
         await fetchComBankAccList(company)
-        message('danger', '알림!', '해당 오브젝트가 삭제되었습니다.')
+        message('warning', '알림!', '해당 오브젝트가 삭제되었습니다.')
       })
       .catch(err => errorHandle(err.response.data))
 
