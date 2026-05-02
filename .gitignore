@@ -78,5 +78,6 @@ certificate.yml
 selenium-debug.log
 chromedriver.log
 
-# Claude 로컬 설정 파일 무시
+# ai agent 로컬 설정 파일 무시
 .claude/
+.junie/
