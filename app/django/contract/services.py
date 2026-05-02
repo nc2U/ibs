@@ -27,6 +27,16 @@ def clean_date_value(value):
     return value
 
 
+def clean_id_value(value):
+    """빈 문자열을 None으로 변환하고 정수로 변환하는 유틸리티 함수"""
+    if value == '' or value is None:
+        return None
+    try:
+        return int(value)
+    except (ValueError, TypeError):
+        return None
+
+
 class ContractPriceBulkUpdateService:
     """
     SalesPriceByGT 변경 시 프로젝트 내 모든 계약 가격 일괄 업데이트 서비스
@@ -400,6 +410,13 @@ class UnitAssignmentService:
 
         # 새 연결 설정
         new_key_unit = KeyUnit.objects.get(pk=new_unit_pk)
+
+        # unit_type 일관성 검증
+        if contract.unit_type_id and new_key_unit.unit_type_id != contract.unit_type_id:
+            raise serializers.ValidationError(
+                '계약의 타입과 유닛의 타입이 일치하지 않습니다.'
+            )
+
         contract.key_unit = new_key_unit
         contract.save()
 
@@ -764,8 +781,8 @@ class ContractCreationService:
         # 2. 유닛 할당
         self.unit_service.assign_unit(
             contract,
-            data.get('key_unit'),
-            data.get('houseunit')
+            clean_id_value(data.get('key_unit')),
+            clean_id_value(data.get('houseunit'))
         )
 
         # 3. 계약 가격 설정 (unit_type이 없는 청약은 가격 로직 스킵)
@@ -808,17 +825,17 @@ class ContractCreationService:
         serial_number = data.get('serial_number')
         if not serial_number or serial_number.startswith('TEMP-'):
             # Generate a temporary serial number if none provided or temporary format
-            project_id = data.get('project')
-            order_group_id = data.get('order_group')
+            project_id = clean_id_value(data.get('project'))
+            order_group_id = clean_id_value(data.get('order_group'))
             serial_number = f'TEMP-{project_id}-{order_group_id}-{timezone.now().microsecond}'
 
         # Handle case where unit_type might be empty string from FormData
-        unit_type_id = data.get('unit_type') or None
+        unit_type_id = clean_id_value(data.get('unit_type'))
 
         return Contract.objects.create(
-            project_id=data.get('project'),
+            project_id=clean_id_value(data.get('project')),
             serial_number=serial_number,
-            order_group_id=data.get('order_group'),
+            order_group_id=clean_id_value(data.get('order_group')),
             unit_type_id=unit_type_id,
             activation=activation_value,
             is_sup_cont=is_sup_cont_value,
@@ -850,12 +867,15 @@ class ContractUpdateService:
             Contract 인스턴스
         """
         # 1. 기본 계약 정보 업데이트
-        instance.order_group_id = data.get('order_group', instance.order_group_id)
-        instance.unit_type_id = data.get('unit_type') or None
+        instance.order_group_id = clean_id_value(data.get('order_group')) or instance.order_group_id
+        instance.unit_type_id = clean_id_value(data.get('unit_type'))
 
         # unit_type 일관성 검증: key_unit이 변경되지 않는 경우 기존 key_unit과 비교
-        new_unit_pk = data.get('key_unit')
-        if not new_unit_pk and instance.key_unit_id and instance.unit_type_id:
+        new_unit_pk = clean_id_value(data.get('key_unit'))
+        current_unit_pk = instance.key_unit_id
+
+        # 유닛이 변경되지 않고(유지되고), 유닛이 존재하며, 타입이 지정된 경우에만 검증
+        if new_unit_pk == current_unit_pk and current_unit_pk and instance.unit_type_id:
             if instance.key_unit.unit_type_id != instance.unit_type_id:
                 raise serializers.ValidationError(
                     '계약의 타입과 유닛의 타입이 일치하지 않습니다.'
@@ -881,15 +901,16 @@ class ContractUpdateService:
         instance.save()
 
         # 2. 유닛 재할당 (필요한 경우)
-        current_unit_pk = instance.key_unit.pk if instance.key_unit else None
-        new_unit_pk = data.get('key_unit')
+        current_unit_pk = instance.key_unit_id
+        new_unit_pk = clean_id_value(data.get('key_unit'))
+        house_unit_pk = clean_id_value(data.get('houseunit'))
 
         if current_unit_pk != new_unit_pk:
             if new_unit_pk:  # 새 유닛이 있는 경우에만 재할당
                 self.unit_service.reassign_unit(
                     instance,
                     new_unit_pk,
-                    data.get('houseunit')
+                    house_unit_pk
                 )
             elif current_unit_pk:  # 기존 유닛을 제거하는 경우
                 # 기존 연결 해제만 수행
@@ -903,21 +924,21 @@ class ContractUpdateService:
                         pass
                 instance.key_unit = None
                 instance.save()
-        elif data.get('houseunit') and new_unit_pk:
+        elif house_unit_pk and new_unit_pk:
             # 유닛은 같지만 동호수만 변경된 경우
             try:
                 current_house_unit = instance.key_unit.houseunit
-                if not current_house_unit or current_house_unit.pk != data.get('houseunit'):
+                if not current_house_unit or current_house_unit.pk != house_unit_pk:
                     self.unit_service.reassign_unit(
                         instance,
                         new_unit_pk,
-                        data.get('houseunit')
+                        house_unit_pk
                     )
             except ObjectDoesNotExist:
                 self.unit_service.reassign_unit(
                     instance,
                     new_unit_pk,
-                    data.get('houseunit')
+                    house_unit_pk
                 )
 
         # 3. 계약 가격 재계산 (unit_type이 없는 청약은 가격 로직 스킵)
