@@ -68,7 +68,8 @@
     "overrides": {
       "serialize-javascript": "^7.0.3",
       "dompurify": "3.4.0",
-      "uuid": "^14.0.0"
+      "exceljs>uuid": "14.0.0",
+      "@cypress/request>uuid": "14.0.0"
     }
   },
   "devDependencies": {
