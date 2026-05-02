@@ -67,7 +67,8 @@
   "pnpm": {
     "overrides": {
       "serialize-javascript": ">=7.0.3",
-      "dompurify": "3.4.0"
+      "dompurify": "3.4.0",
+      "uuid": ">=14.0.0"
     }
   },
   "devDependencies": {
