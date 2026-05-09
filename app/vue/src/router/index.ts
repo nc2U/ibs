@@ -1,4 +1,5 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
+import { useAccount } from '@/store/pinia/account'
 import Cookies from 'js-cookie'
 import routes from '@/router/routes'
 
@@ -14,8 +15,22 @@ const contractPageMapping: Record<string, string> = {
   '계약 해지 관리': '계약 해지 보기',
 }
 
-router.beforeEach((to, from, next) => {
-  if (!!to.meta.auth) Cookies.set('redirectPath', to.path)
+router.beforeEach(async (to, from, next) => {
+  const accountStore = useAccount()
+  const accessToken = Cookies.get('accessToken')
+
+  if (to.meta.auth) {
+    if (!accountStore.userInfo) {
+      if (accessToken) {
+        await accountStore.loginByToken(accessToken)
+      }
+
+      if (!accountStore.userInfo) {
+        Cookies.set('redirectPath', to.path)
+        return next({ name: 'Login' })
+      }
+    }
+  }
 
   // contractorId 자동 전달 로직
   const fromContractorId = from.params.contractorId
