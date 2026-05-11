@@ -114,7 +114,10 @@ class PdfExportLedgerPayment(View):
             amount_total += amount
 
             # Get payment_orders QuerySet for due date calculation
-            payment_orders = InstallmentPaymentOrder.objects.filter(project=contract.project)
+            payment_orders = InstallmentPaymentOrder.objects.filter(
+                project=contract.project,
+                type_sort=contract.unit_type.sort
+            ).exclude(excluded_order_groups=contract.order_group)
 
             ord_info = {
                 'name': order.alias_name if order.alias_name else order.pay_name,
@@ -161,7 +164,7 @@ class PdfExportLedgerPayment(View):
         all_installments = InstallmentPaymentOrder.objects.filter(
             project=contract.project,
             type_sort=contract.unit_type.sort
-        ).order_by('pay_code', 'pay_time')
+        ).exclude(excluded_order_groups=contract.order_group).order_by('pay_code', 'pay_time')
 
         # 도래한 회차 + 계약금(납부기한 없는 회차)
         paid_ids = paid_payments.values_list('installment_order_id', flat=True).distinct()

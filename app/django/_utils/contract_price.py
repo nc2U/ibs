@@ -314,12 +314,12 @@ def get_total_paid_down_payments(contract):
         return 0
 
     try:
-        # pay_sort='1'인 모든 회차 조회
+        # pay_sort='1'인 모든 회차 조회 (해당 차수 제외 항목 필터링)
         down_payment_orders = InstallmentPaymentOrder.objects.filter(
             project=contract.project,
             type_sort=contract.unit_type.sort,
             pay_sort='1'  # 계약금만
-        )
+        ).exclude(excluded_order_groups=contract.order_group)
 
         total_paid = 0
         for order in down_payment_orders:
@@ -400,6 +400,8 @@ def calculate_remain_payment(contract, remain_installment_order):
             pay_sort='3'  # Exclude 잔금
         ).exclude(
             id=remain_installment_order.id  # Exclude current remain installment
+        ).exclude(
+            excluded_order_groups=contract.order_group  # Exclude orders for this order_group
         )
 
         total_other_payments = 0
@@ -592,6 +594,8 @@ def get_contract_payment_plan(contract):
         installments = InstallmentPaymentOrder.objects.filter(
             project=contract.project,
             type_sort=contract.unit_type.sort
+        ).exclude(
+            excluded_order_groups=contract.order_group
         ).order_by('pay_code', 'pay_time')
 
         payment_plan = []
@@ -688,6 +692,8 @@ def get_project_payment_summary(project, order_group=None, unit_type=None):
 
         # Get all installment orders for this project
         installments_query = InstallmentPaymentOrder.objects.filter(project=project)
+        if order_group:
+            installments_query = installments_query.exclude(excluded_order_groups=order_group)
         if unit_type:
             installments_query = installments_query.filter(type_sort=unit_type.sort)
 

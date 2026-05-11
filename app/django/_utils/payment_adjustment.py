@@ -119,7 +119,7 @@ def calculate_all_installments_payment_allocation(contract) -> Dict[int, Dict[st
     all_installments = InstallmentPaymentOrder.objects.filter(
         project=contract.project,
         type_sort=contract.unit_type.sort
-    ).order_by('pay_code')
+    ).exclude(excluded_order_groups=contract.order_group).order_by('pay_code')
 
     # 모든 납부 내역 조회 (시간순)
     all_payments = ContractPayment.objects.valid_payments().filter(
@@ -695,9 +695,10 @@ def get_first_due_date_after_contract(contract, current_date=None) -> Optional[d
     # 계약일 이후 도래한 회차들 조회
     installments = InstallmentPaymentOrder.objects.filter(
         project=contract.project,
+        type_sort=contract.unit_type.sort,
         pay_due_date__gte=contract_date,  # 계약일 이후
         pay_due_date__lte=current_date  # 현재일까지 도래
-    ).order_by('pay_due_date')
+    ).exclude(excluded_order_groups=contract.order_group).order_by('pay_due_date')
 
     # 첫 번째 도래 회차의 납부기한일 반환
     first_installment = installments.first()
@@ -863,7 +864,7 @@ def calculate_late_penalty_for_all_unpaid(contract, current_date=None) -> list:
             project=contract.project,
             type_sort=contract.unit_type.sort,
             pay_due_date__lt=contract_date  # 계약일 이전
-        ).exists()
+        ).exclude(excluded_order_groups=contract.order_group).exists()
 
         if not pre_contract_installments:
             return []
@@ -882,7 +883,7 @@ def calculate_late_penalty_for_all_unpaid(contract, current_date=None) -> list:
     all_installments = InstallmentPaymentOrder.objects.filter(
         project=contract.project,
         type_sort=contract.unit_type.sort  # 계약 타입에 맞는 모든 회차
-    ).order_by('pay_code')
+    ).exclude(excluded_order_groups=contract.order_group).order_by('pay_code')
 
     late_penalties = []
 
@@ -1121,10 +1122,10 @@ def get_contract_adjustment_summary(contract) -> Dict[str, Any]:
     """
 
     # 해당 계약의 모든 회차 조회
-    installments = InstallmentPaymentOrder.objects.filter(
+    all_installments = InstallmentPaymentOrder.objects.filter(
         project=contract.project,
         type_sort=contract.unit_type.sort
-    ).order_by('pay_code', 'pay_time')
+    ).exclude(excluded_order_groups=contract.order_group).order_by('pay_code', 'pay_time')
 
     # 각 회차별 조정 정보 수집
     installment_summaries = []
@@ -1185,8 +1186,9 @@ def get_due_installments(contract, pub_date):
     # 기본 조건: pay_due_date <= pub_date
     queryset = InstallmentPaymentOrder.objects.filter(
         project=contract.project,
+        type_sort=contract.unit_type.sort,
         pay_due_date__lte=pub_date
-    )
+    ).exclude(excluded_order_groups=contract.order_group)
 
     # 계약일 이후 회차만 필터링 (계약일이 있는 경우)
     contract_date = get_effective_contract_date(contract)
@@ -1240,8 +1242,9 @@ def get_unpaid_installments(contract, pub_date):
     # 모든 기도래 회차 조회 (계약일 필터링 없이)
     due_installments = InstallmentPaymentOrder.objects.filter(
         project=contract.project,
+        type_sort=contract.unit_type.sort,
         pay_due_date__lte=pub_date
-    ).order_by('pay_code')
+    ).exclude(excluded_order_groups=contract.order_group).order_by('pay_code')
 
     unpaid_list = []
 

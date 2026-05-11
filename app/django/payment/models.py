@@ -34,6 +34,11 @@ class InstallmentPaymentOrder(models.Model):  # 분할 납부 차수 등록
     extra_due_date = models.DateField('연체 기준일', null=True, blank=True,
                                       help_text='연체료 계산 기준은 납부 약정일이 원칙이나 이 값이 있는 경우 연체 기준일로 우선 적용한다.')
 
+    # 이 회차를 적용하지 않을 차수들 (잔금 이월 등)
+    excluded_order_groups = models.ManyToManyField('contract.OrderGroup', blank=True, related_name='excluded_payments',
+                                                   verbose_name='제외 차수',
+                                                   help_text='특정 차수에서 이 회차를 건너뛸 경우(잔금 이월 등) 해당 차수를 선택하세요.')
+
     # 계약금 계산 방식 선택 (계약금에만 적용)
     CALCULATION_METHOD_CHOICES = (
         ('auto', '자동 (기존 우선순위)'),  # 기본값: PaymentPerInstallment → DownPayment → pay_ratio

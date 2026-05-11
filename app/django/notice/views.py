@@ -138,7 +138,10 @@ class BillManageView(LoginRequiredMixin, ListView, FormView):
             # now_pay = all_pay.filter(payment_order__pay_code__lte=now_pay_code) # 회차별 납입가 중 -> 현재 회차까지 그룹
             # -----
 
-            all_pay_order = InstallmentPaymentOrder.objects.filter(project=self.get_project())
+            all_pay_order = InstallmentPaymentOrder.objects.filter(
+                project=self.get_project(),
+                type_sort=contract.unit_type.sort
+            ).exclude(excluded_order_groups=contract.order_group)
             now_pay = 0
             now_pay_order = all_pay_order.filter(pay_code__lte=now_pay_code)
 

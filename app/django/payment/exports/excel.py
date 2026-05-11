@@ -421,15 +421,24 @@ class ExportLedgerPaymentsByCont(ExcelExportMixin, ProjectFilterMixin, AdvancedE
                 cont_price = price if price else 0  # 분양가
 
             for pi, po in enumerate(due_pay_orders):  # 회차별 납입 내역 삽입
-                dates = [p[3] for p in paid_dict if p[0] == row[0] and p[2] == po.pay_code]
-                paid_date = max(dates).strftime('%Y-%m-%d') if dates else None
-                paid_amount = sum([p[1] for p in paid_dict if p[0] == row[0] and p[2] == po.pay_code])
+                # 해당 차수 제외 여부 확인
+                is_excluded = po.excluded_order_groups.filter(id=contract.order_group_id).exists()
+
+                if is_excluded:
+                    paid_date = '-'
+                    paid_amount = 0
+                else:
+                    dates = [p[3] for p in paid_dict if p[0] == row[0] and p[2] == po.pay_code]
+                    paid_date = max(dates).strftime('%Y-%m-%d') if dates else None
+                    paid_amount = sum([p[1] for p in paid_dict if p[0] == row[0] and p[2] == po.pay_code])
 
                 row.insert(next_col + 1 + pi, paid_date)  # 거래일 정보 삽입
                 row.insert(next_col + 2 + pi, paid_amount)  # 납부 금액 정보 삽입
 
                 # due_amount adding
-                if po.pay_sort == '1':  # 계약금일 때
+                if is_excluded:
+                    due_amt = 0
+                elif po.pay_sort == '1':  # 계약금일 때
                     try:
                         down_pay = DownPayment.objects.get(
                             project_id=project,

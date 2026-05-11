@@ -324,7 +324,7 @@ class ContractPrice(models.Model):
             installments = InstallmentPaymentOrder.objects.filter(
                 project=project,
                 type_sort=self.house_unit.unit_type.sort
-            ).order_by('pay_code', 'pay_time')
+            ).exclude(excluded_order_groups=default_order_group).order_by('pay_code', 'pay_time')
 
             payment_amounts = {}
 
