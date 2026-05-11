@@ -21,6 +21,24 @@ class InstallmentPaymentOrderAdmin(ImportExportMixin, admin.ModelAdmin):
                      'pay_due_date', 'prep_ref_date', 'extra_due_date')
     list_display_links = ('project', 'pay_sort')
     list_filter = ('project', 'pay_sort')
+    filter_horizontal = ('excluded_order_groups',)
+
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        if db_field.name == "excluded_order_groups":
+            # 현재 수정 중인 객체의 ID를 URL에서 추출
+            object_id = request.resolver_match.kwargs.get('object_id')
+            if object_id:
+                obj = self.get_object(request, object_id)
+                if obj and obj.project:
+                    # 해당 회차의 프로젝트와 동일한 프로젝트의 차수만 필터링
+                    kwargs["queryset"] = db_field.related_model.objects.filter(project=obj.project)
+            else:
+                # 신규 등록 시, URL 파라미터에 project가 있다면 필터링
+                project_id = request.GET.get('project')
+                if project_id:
+                    kwargs["queryset"] = db_field.related_model.objects.filter(project_id=project_id)
+
+        return super().formfield_for_manytomany(db_field, request, **kwargs)
 
 
 class PaymentPerInstallmentInline(admin.TabularInline):
