@@ -1134,7 +1134,7 @@ def get_contract_adjustment_summary(contract) -> Dict[str, Any]:
     total_discount = 0
     fully_paid_count = 0
 
-    for installment in installments:
+    for installment in all_installments:
         summary = get_installment_adjustment_summary(contract, installment)
         installment_summaries.append(summary)
 
@@ -1161,7 +1161,7 @@ def get_contract_adjustment_summary(contract) -> Dict[str, Any]:
         'total_penalty': total_penalty,
         'net_adjustment': net_adjustment,
         'fully_paid_count': fully_paid_count,
-        'total_installment_count': installments.count(),
+        'total_installment_count': all_installments.count(),
         'all_unpaid_penalties': all_unpaid_penalties  # 새로운 연체 정보 추가
     }
 
