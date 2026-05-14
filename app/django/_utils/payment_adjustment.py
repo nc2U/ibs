@@ -19,7 +19,7 @@ from decimal import Decimal
 from typing import Dict, Optional, Any
 
 from _utils.contract_price import get_payment_amount
-from payment.models import InstallmentPaymentOrder
+from payment.models import InstallmentPaymentOrder, ContractPayment
 
 
 def get_effective_contract_date(contract) -> Optional[date]:
@@ -113,7 +113,7 @@ def calculate_all_installments_payment_allocation(contract) -> Dict[int, Dict[st
             }
         }
     """
-    from payment.models import ContractPayment
+    
 
     # 모든 회차 조회 (순서대로)
     all_installments = InstallmentPaymentOrder.objects.filter(
@@ -395,7 +395,7 @@ def calculate_segmented_late_penalty(contract, installment, as_of_date=None) -> 
         >>> # 2024-12-20: 20M 납부 → 구간2: 20M × 66일
         >>> # 총 연체료: 구간1 + 구간2
     """
-    from payment.models import ContractPayment
+    
 
     if as_of_date is None:
         as_of_date = date.today()
@@ -538,7 +538,7 @@ def calculate_installment_paid_status(
         - 완납 여부: 약정금액 ≤ 실제 납부금액 합계
         - 완납일: 누적 납부금액이 약정금액 이상이 된 최초 날짜
     """
-    from payment.models import ContractPayment
+    
 
     # 약정금액 계산
     promised_amount = get_payment_amount(contract, installment_order)
@@ -1040,7 +1040,7 @@ def get_installment_adjustment_summary(
         3. 각 납부건별 연체 가산금 계산
         4. 종합 집계
     """
-    from payment.models import ContractPayment
+    
 
     # 납부내역 조회 (payment_records() 사용으로 최적화)
     payments_qs = ContractPayment.objects.valid_payments().filter(
