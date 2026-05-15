@@ -78,6 +78,11 @@ class PdfExportBill(View):
         # 계약 건 객체
         bill_data['contract'] = contract = get_contract(cont_id)
 
+        # 해당 계약의 차수 제외 설정을 반영하여 payment_orders 필터링
+        payment_orders = payment_orders.filter(
+            type_sort=contract.unit_type.sort
+        ).exclude(excluded_order_groups=contract.order_group)
+
         try:
             unit = contract.key_unit.houseunit
         except ObjectDoesNotExist:

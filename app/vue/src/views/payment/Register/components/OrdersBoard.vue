@@ -18,6 +18,14 @@ const contractStore = useContract()
 const payOrderList = computed(() => paymentStore.payOrderList)
 const priceList = computed(() => paymentStore.priceList)
 
+// 계약의 차수(order_group)에 따라 제외된 회차를 필터링한 리스트
+const filteredPayOrderList = computed(() => {
+  if (!props.contract?.order_group) return payOrderList.value
+  return payOrderList.value.filter((po: PayOrder) => {
+    return !po.excluded_order_groups?.includes(props.contract?.order_group)
+  })
+})
+
 // Payment plan data from API (using high-performance price_payment_plan)
 const contractPriceData = ref<ContractPriceWithPaymentPlan | null>(null)
 const isLoadingPaymentPlan = ref(false)
@@ -70,7 +78,7 @@ const dueTotal = computed(() => {
   const commitment: number[] = []
   const today = getToday()
 
-  const dueOrder = payOrderList.value
+  const dueOrder = filteredPayOrderList.value
     .filter(
       (o: PayOrder) =>
         (o.pay_code ?? 0) === 1 ||
@@ -117,7 +125,7 @@ const getCommitsFromAPI = (payTime: number | undefined) => {
     </CTableHead>
 
     <CTableBody v-if="contract">
-      <CTableRow v-for="po in payOrderList" :key="po.pk" class="text-right">
+      <CTableRow v-for="po in filteredPayOrderList" :key="po.pk" class="text-right">
         <Order
           :contract="contract"
           :price="thisPrice"
