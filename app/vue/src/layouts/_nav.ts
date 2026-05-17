@@ -198,10 +198,10 @@ const payment = {
   name: '계약 납부 관리',
   to: '/payment',
   icon: 'cil-calculator',
-  badge: {
-    color: 'info',
-    text: 'new..',
-  },
+  // badge: {
+  //   color: 'info',
+  //   text: 'new..',
+  // },
   items: [
     {
       component: 'CNavItem',
@@ -296,10 +296,10 @@ const project_ledger = {
   name: 'PR 회계 관리',
   to: '/project-ledger',
   icon: 'cil-money',
-  badge: {
-    color: 'info',
-    text: 'new..',
-  },
+  // badge: {
+  //   color: 'info',
+  //   text: 'new..',
+  // },
   items: [
     {
       component: 'CNavItem',
