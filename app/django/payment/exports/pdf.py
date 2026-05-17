@@ -4,14 +4,13 @@ from decimal import Decimal
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.storage import FileSystemStorage
-from django.db import models
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.views.generic import View
 from weasyprint import HTML
 
 from _pdf.utils import (get_contract, get_simple_orders, get_paid)
-from _utils.contract_price import get_contract_payment_plan, get_contract_price, get_due_date_per_order
+from _utils.contract_price import get_contract_payment_plan, get_contract_price
 from _utils.payment_adjustment import (calculate_all_installments_payment_allocation,
                                        get_installment_adjustment_summary,
                                        calculate_daily_interest)
@@ -109,7 +108,7 @@ class PdfExportLedgerPayment(View):
                 'name': order.alias_name if order.alias_name else order.pay_name,
                 'pay_code': order.pay_code,
                 'calc_start': calc_start,
-                'due_date': plan_item.get('due_date'), # get_contract_payment_plan에서 계산된 날짜 사용
+                'due_date': plan_item.get('due_date'),  # get_contract_payment_plan에서 계산된 날짜 사용
                 'amount': amount,
                 'amount_total': amount_total,
             }
@@ -165,8 +164,8 @@ class PdfExportLedgerPayment(View):
             # 2. 기한은 없지만 실제 납부됐거나
             # 3. 계약금 회차이거나
             if (adj_due and adj_due <= pub_date) or \
-               (not adj_due and inst.id in paid_ids) or \
-               (inst.pay_sort == '1'):
+                    (not adj_due and inst.id in paid_ids) or \
+                    (inst.pay_sort == '1'):
                 display_ids.append(inst.id)
 
         display = all_installments.filter(id__in=display_ids)
