@@ -20,6 +20,7 @@ export interface PayOrder {
   is_late_penalty?: boolean
   late_penalty_ratio?: number | null
   extra_due_date?: string | null
+  excluded_order_groups?: number[]
 }
 
 export interface Price {
