@@ -10,12 +10,12 @@ from django.template.loader import render_to_string
 from django.views.generic import View
 from weasyprint import HTML
 
-from _pdf.utils import (get_contract, get_simple_orders, get_due_date_per_order, get_paid)
-from _utils.contract_price import get_contract_payment_plan, get_contract_price
+from _pdf.utils import (get_contract, get_simple_orders, get_paid)
+from _utils.contract_price import get_contract_payment_plan, get_contract_price, get_due_date_per_order
 from _utils.payment_adjustment import (calculate_all_installments_payment_allocation,
                                        get_installment_adjustment_summary,
                                        calculate_daily_interest)
-from payment.models import InstallmentPaymentOrder, SpecialPaymentOrder, SpecialDownPay
+from payment.models import InstallmentPaymentOrder, SpecialDownPay
 
 TODAY = date.today()
 
@@ -55,14 +55,6 @@ class PdfExportLedgerPayment(View):
 
         # 2. 정확한 결제 계획 가져오기 (get_contract_payment_plan 사용)
         payment_plan = get_contract_payment_plan(contract)
-
-        # Create amount dictionary from a payment plan for backward compatibility with existing functions
-        amount_by_sort = {}
-        for plan_item in payment_plan:
-            pay_sort = plan_item['installment_order'].pay_sort
-            if pay_sort not in amount_by_sort:
-                amount_by_sort[pay_sort] = 0
-            amount_by_sort[pay_sort] += plan_item['amount']
 
         # 약정금 누계 계산 (payment_plan 기반)
         context['due_amount'] = sum(plan_item['amount'] for plan_item in payment_plan)
@@ -113,17 +105,11 @@ class PdfExportLedgerPayment(View):
             amount = plan_item['amount']
             amount_total += amount
 
-            # Get payment_orders QuerySet for due date calculation
-            payment_orders = InstallmentPaymentOrder.objects.filter(
-                project=contract.project,
-                type_sort=contract.unit_type.sort
-            ).exclude(excluded_order_groups=contract.order_group)
-
             ord_info = {
                 'name': order.alias_name if order.alias_name else order.pay_name,
                 'pay_code': order.pay_code,
                 'calc_start': calc_start,
-                'due_date': get_due_date_per_order(contract, order, payment_orders),
+                'due_date': plan_item.get('due_date'), # get_contract_payment_plan에서 계산된 날짜 사용
                 'amount': amount,
                 'amount_total': amount_total,
             }
@@ -148,8 +134,8 @@ class PdfExportLedgerPayment(View):
 
         is_calc = kwargs.get('is_calc', False)
 
-        # 1. 우선순위 충당 계산 - 핵심!
-        all_status = calculate_all_installments_payment_allocation(contract)
+        # 1. 우선순위 충당 계산 (기준일 반영) - 핵심!
+        all_status = calculate_all_installments_payment_allocation(contract, pub_date)
 
         # 2. 실제 납부 내역 (Ledger 기반)
         paid_payments = ContractPayment.objects.select_related(
@@ -160,21 +146,30 @@ class PdfExportLedgerPayment(View):
             is_payment_mismatch=False  # 유효한 계약자 납부만
         ).order_by('deal_date', 'id')
 
-        # 3. 표시할 회차 (모든 도래한 회차 + 실제 납부된 회차)
+        # 3. 표시할 회차 결정 (조정된 날짜 기준)
         all_installments = InstallmentPaymentOrder.objects.filter(
             project=contract.project,
             type_sort=contract.unit_type.sort
         ).exclude(excluded_order_groups=contract.order_group).order_by('pay_code', 'pay_time')
 
-        # 도래한 회차 + 계약금(납부기한 없는 회차)
         paid_ids = paid_payments.values_list('installment_order_id', flat=True).distinct()
 
-        # 도래한 회차 또는 납부기한 없는 납부된 회차
-        display = all_installments.filter(
-            models.Q(pay_due_date__lte=pub_date) |  # pay_due_date 기준 도래
-            models.Q(pay_due_date__isnull=True, extra_due_date__lte=pub_date) |  # extra_due_date 기준 도래
-            models.Q(pay_due_date__isnull=True, extra_due_date__isnull=True, id__in=paid_ids)  # 계약금
-        )
+        display_ids = []
+        for inst in all_installments:
+            status = all_status.get(inst.id)
+            if not status:
+                continue
+
+            adj_due = status['due_date']
+            # 1. 기한이 도래했거나 (조정된 날짜 기준)
+            # 2. 기한은 없지만 실제 납부됐거나
+            # 3. 계약금 회차이거나
+            if (adj_due and adj_due <= pub_date) or \
+               (not adj_due and inst.id in paid_ids) or \
+               (inst.pay_sort == '1'):
+                display_ids.append(inst.id)
+
+        display = all_installments.filter(id__in=display_ids)
 
         # 4. 결과 초기화
         result = []
@@ -190,182 +185,102 @@ class PdfExportLedgerPayment(View):
                 continue
 
             is_paid = status['is_fully_paid']
-            paid_date = status['fully_paid_date']
             promised = status['promised_amount']
             paid = status['paid_amount']
             remaining = status['remaining_amount']
+            due_date = status['due_date']  # 조정된 납부 기한
 
-            # Waterfall 기준 지연일수 사용 (이미 계산됨)
-            days = status.get('late_days', 0)
+            # Waterfall 기준 지연 상세 정보 사용
+            late_payment_details = status.get('late_payment_details', [])
+            total_late_penalty = status.get('total_late_penalty', 0)
 
-            # 선납 할인 조회 (할인만 필요)
-            adj = get_installment_adjustment_summary(contract, inst)
+            # 선납 할인 조회
+            adj_summary = get_installment_adjustment_summary(contract, inst)
 
             # 실제 납부 내역 확인 (Ledger 기반)
             payments = paid_payments.filter(installment_order=inst)
 
             if payments.exists():
                 # 실제 납부 존재
-                # 지연금액 계산: 지연 완납이면 완납금액, 미완납이면 미납금액
-                if is_paid and days > 0:
-                    diff_amount = paid  # 지연 완납된 금액
-                elif is_paid:
-                    diff_amount = 0  # 정상 완납
-                else:
-                    diff_amount = remaining  # 미완납 금액
-
-                # 연체료 설정이 없으면 0으로
-                if not inst.is_late_penalty or not inst.late_penalty_ratio:
-                    display_days = 0
-                    display_diff = 0
-                    display_penalty = 0
-                else:
-                    display_days = days
-                    display_diff = diff_amount
-
-                total_penalty_added = 0
                 for p in payments:
-                    # Ledger 기반: accounting_entry.amount 사용
                     payment_amount = p.accounting_entry.amount if p.accounting_entry else 0
                     cumulative += payment_amount
 
-                    # 각 payment별 개별 지연일수 계산
-                    due_date = inst.extra_due_date or inst.pay_due_date
+                    # 해당 납부건의 지연 상세 정보 찾기 (waterfall 결과에서 추출)
+                    p_detail = next((d for d in late_payment_details if d.get('payment_id') == p.id), None)
 
-                    if due_date and p.deal_date > due_date:
-                        individual_days = (p.deal_date - due_date).days
-                        individual_diff = payment_amount
-                    else:
-                        individual_days = 0
-                        individual_diff = 0
+                    penalty = p_detail['late_penalty'] if p_detail and is_calc else 0
+                    days = p_detail['late_days'] if p_detail and is_calc else 0
+                    diff = p_detail['payment_amount'] if p_detail and is_calc else 0
 
-                    # is_late_penalty가 False면 표시값 0으로
-                    if not inst.is_late_penalty or not inst.late_penalty_ratio or individual_days <= 0:
-                        individual_penalty = 0
-                        individual_days = 0
-                        individual_diff = 0
-                    else:
-                        # 단순 직접 계산: diff × delay_days × 연이율 ÷ 365
-                        individual_penalty = calculate_daily_interest(
-                            individual_diff,
-                            inst.late_penalty_ratio,
-                            individual_days
-                        )
-
-                    # is_calc=False (확인용)일 때는 연체료, 할인료, 지연일수, 지연금액을 0으로 설정
-                    if not is_calc:
-                        individual_penalty = 0
-                        individual_days = 0
-                        individual_diff = 0
-                        discount_value = 0
-                    else:
-                        discount_value = adj['total_discount'] if len(payments) == 1 else 0
+                    # is_calc=True일 때만 할인료 적용
+                    discount_value = adj_summary['total_discount'] if is_calc and p == payments.last() else 0
 
                     result.append({
                         'paid': p,
                         'sum': cumulative,
                         'order': inst.pay_name,
                         'installment_order': inst,
+                        'due_date': due_date,
                         'paid_amount': payment_amount,
-                        'diff': individual_diff,  # 개별 payment의 지연금액
-                        'delay_days': individual_days,  # 개별 지연일수
-                        'penalty': individual_penalty,  # 개별 지연가산금
-                        'discount': discount_value,  # 할인은 마지막에만
+                        'diff': diff,
+                        'delay_days': days,
+                        'penalty': penalty,
+                        'discount': discount_value,
                         'is_fully_paid': is_paid,
                         'promised_amount': promised
                     })
 
-                    total_penalty_added += individual_penalty
-
-                penalty_total += total_penalty_added
-                # is_calc=True일 때만 할인료 누적
+                penalty_total += (total_late_penalty if is_calc else 0)
                 if is_calc:
-                    discount_total += adj['total_discount']
+                    discount_total += adj_summary['total_discount']
 
-                # 일부납부 시 미납 잔액 추가
+                # 일부납부 시 미납 잔액 추가 (기준일 시점)
                 if not is_paid and remaining > 0:
                     unpaid_indices.append(len(result))
 
-                    # 미납 부분의 연체료 계산
-                    if inst.is_late_penalty and inst.late_penalty_ratio and days > 0:
-                        unpaid_penalty = calculate_daily_interest(
-                            remaining,
-                            inst.late_penalty_ratio,
-                            days
-                        )
-                    else:
-                        unpaid_penalty = 0
-
-                    # is_calc=False (확인용)일 때는 연체료, 지연일수, 지연금액을 0으로 설정
-                    if not is_calc:
-                        unpaid_penalty = 0
-                        unpaid_days = 0
-                        unpaid_diff = 0
-                    else:
-                        unpaid_days = days
-                        unpaid_diff = remaining
+                    u_detail = next((d for d in late_payment_details if d['type'] == 'unpaid'), None)
+                    u_penalty = u_detail['late_penalty'] if u_detail and is_calc else 0
+                    u_days = u_detail['late_days'] if u_detail and is_calc else 0
 
                     result.append({
                         'paid': None,
                         'sum': cumulative,
                         'order': inst.pay_name,
                         'installment_order': inst,
-                        'paid_amount': 0,  # 미납이므로 0
-                        'diff': unpaid_diff,  # 미납 금액
-                        'delay_days': unpaid_days,  # 지연일수
-                        'penalty': unpaid_penalty,  # 미납 부분 연체료
+                        'due_date': due_date,
+                        'paid_amount': 0,
+                        'diff': remaining if is_calc else 0,
+                        'delay_days': u_days,
+                        'penalty': u_penalty,
                         'discount': 0,
                         'is_fully_paid': False,
                         'promised_amount': promised
                     })
-
-                    penalty_total += unpaid_penalty
             else:
                 # 실제 납부 없음 (미납 회차)
                 if not is_paid:
                     unpaid_indices.append(len(result))
 
-                # 미납 금액 = 실제 미납금액
-                diff_amount = remaining if not is_paid else 0
-
-                # 연체료 설정이 없으면 0으로
-                if not inst.is_late_penalty or not inst.late_penalty_ratio:
-                    display_days = 0
-                    display_diff = 0
-                    display_penalty = 0
-                else:
-                    display_days = days
-                    display_diff = diff_amount
-                    # 미납 회차 연체료: 미납금액 × 지연일수 × 연이율
-                    if diff_amount > 0 and display_days > 0:
-                        display_penalty = calculate_daily_interest(
-                            diff_amount,
-                            inst.late_penalty_ratio,
-                            display_days
-                        )
-                    else:
-                        display_penalty = 0
-
-                # is_calc=False (확인용)일 때는 연체료, 지연일수, 지연금액을 0으로 설정
-                if not is_calc:
-                    display_penalty = 0
-                    display_days = 0
-                    display_diff = 0
+                u_detail = next((d for d in late_payment_details if d['type'] == 'unpaid'), None)
+                u_penalty = u_detail['late_penalty'] if u_detail and is_calc else 0
+                u_days = u_detail['late_days'] if u_detail and is_calc else 0
 
                 result.append({
                     'paid': None,
                     'sum': cumulative,
                     'order': inst.pay_name,
                     'installment_order': inst,
-                    'paid_amount': 0,  # 실납부액 0원
-                    'diff': display_diff,  # 표시용
-                    'delay_days': display_days,  # 표시용
-                    'penalty': display_penalty,  # 표시용
+                    'due_date': due_date,
+                    'paid_amount': 0,
+                    'diff': remaining if is_calc else 0,
+                    'delay_days': u_days,
+                    'penalty': u_penalty,
                     'discount': 0,
                     'is_fully_paid': is_paid,
                     'promised_amount': promised
                 })
-                penalty_total += display_penalty
+                penalty_total += u_penalty
 
         return result, cumulative, (penalty_total, discount_total, unpaid_indices)
 
@@ -491,7 +406,7 @@ class PdfExportLedgerDailyLateFee(View):
             list: 미납 회차 정보 리스트
         """
         # 우선순위 충당 계산으로 각 회차별 납부 현황 파악
-        all_status = calculate_all_installments_payment_allocation(contract)
+        all_status = calculate_all_installments_payment_allocation(contract, as_of_date)
 
         # 도래한 회차 중 미완납 회차만 필터링
         unpaid_list = []
@@ -500,17 +415,14 @@ class PdfExportLedgerDailyLateFee(View):
             if not status['is_fully_paid'] and status['remaining_amount'] > 0:
                 installment = InstallmentPaymentOrder.objects.get(pk=inst_id)
 
-                # 기한 도래 여부 확인
-                due_date = installment.extra_due_date or installment.pay_due_date
+                # 기한 도래 여부 확인 (조정된 날짜 기준)
+                due_date = status['due_date']
 
                 if due_date and due_date <= as_of_date:
-                    # 지연일수 계산
-                    late_days = (as_of_date - due_date).days if as_of_date > due_date else 0
-
                     unpaid_list.append({
                         'installment_order': installment,
                         'remaining_amount': status['remaining_amount'],
-                        'late_days': late_days
+                        'late_days': status['late_days']
                     })
 
         return unpaid_list
@@ -608,7 +520,11 @@ class PdfExportLedgerCalculation(View):
         pub_date = datetime.strptime(pub_date, '%Y-%m-%d').date() if pub_date else TODAY
         context['pub_date'] = pub_date
 
-        payment_orders = SpecialPaymentOrder.objects.filter(project=project)  # 전체 납부회차 컬렉션
+        # 납부 회차 정보 (조정된 날짜 반영을 위해 필터링)
+        payment_orders = InstallmentPaymentOrder.objects.filter(
+            project=project,
+            type_sort=contract.unit_type.sort
+        ).exclude(excluded_order_groups=contract.order_group)
 
         try:
             unit = contract.key_unit.houseunit

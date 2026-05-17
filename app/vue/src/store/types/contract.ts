@@ -415,7 +415,13 @@ export interface ContractPricePaymentPlanItem {
     pay_sort: string
     pay_name: string
     pay_time: number
+    pay_code: number
+    alias_name: string
+    pay_due_date: string | null
+    extra_due_date: string | null
+    days_since_prev: number | null
   }
   amount: number
-  source: 'cached'
+  due_date: string | null
+  source: 'cached' | 'calculated' | 'payment_per_installment'
 }

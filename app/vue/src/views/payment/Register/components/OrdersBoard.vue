@@ -79,13 +79,12 @@ const dueTotal = computed(() => {
   const today = getToday()
 
   const dueOrder = filteredPayOrderList.value
-    .filter(
-      (o: PayOrder) =>
-        (o.pay_code ?? 0) === 1 ||
-        ((o.pay_code ?? 0) === 2 && o.days_since_prev) ||
-        (o.pay_due_date && o.pay_due_date <= today && !o.extra_due_date) ||
-        (o.extra_due_date && o.extra_due_date <= today),
-    )
+    .filter((o: PayOrder) => {
+      // 백엔드에서 조정된 날짜를 가져옴
+      const adjustedDate = getDueDateFromAPI(o.pay_time as number)
+      // 조정된 날짜가 있고 오늘 이전(또는 오늘)인 경우만 납부 의무가 발생한 것으로 간주
+      return adjustedDate && adjustedDate <= today
+    })
     .map((o: PayOrder) => o.pay_time)
 
   dueOrder.forEach((el: number | null | undefined) => {
@@ -98,9 +97,24 @@ const dueTotal = computed(() => {
 const getCommitsFromAPI = (payTime: number | undefined) => {
   if (!payTime || !contractPriceData.value) return 0
 
-  // Use cached payment_amounts for fastest lookup (6.7x performance improvement)
+  // 1. payment_plan에서 해당 회차의 조정된 금액을 먼저 찾음 (제외 차수 반영됨)
+  const planItem = contractPriceData.value.payment_plan.find(
+    item => item.installment_order.pay_time === payTime,
+  )
+  if (planItem) return planItem.amount
+
+  // 2. plan에 없으면 payment_amounts 캐시 확인
   const amount = contractPriceData.value.payment_amounts[payTime.toString()]
   return amount || 0
+}
+
+// Get adjusted due date from API data
+const getDueDateFromAPI = (payTime: number | undefined) => {
+  if (!payTime || !contractPriceData.value) return null
+  const planItem = contractPriceData.value.payment_plan.find(
+    item => item.installment_order.pay_time === payTime,
+  )
+  return planItem?.due_date || null
 }
 </script>
 
@@ -131,6 +145,7 @@ const getCommitsFromAPI = (payTime: number | undefined) => {
           :price="thisPrice"
           :order="po"
           :commit="getCommitsFromAPI(po.pay_time as number)"
+          :adjusted-due-date="getDueDateFromAPI(po.pay_time as number)"
           :payment-list="paymentList"
         />
       </CTableRow>

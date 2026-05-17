@@ -114,35 +114,34 @@ class ContractPriceWithPaymentPlanSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_payment_plan(obj):
-        """JSON payment_amounts를 납부 계획 형태로 변환"""
-        if not obj.payment_amounts or not obj.contract:
+        """get_contract_payment_plan 유틸리티를 사용하여 조정된 납부 계획 반환"""
+        if not obj.contract:
             return []
 
-        result = []
-        for pay_time_str, amount in obj.payment_amounts.items():
-            try:
-                installment = InstallmentPaymentOrder.objects.get(
-                    project=obj.contract.project,
-                    pay_time=int(pay_time_str)
-                )
-                result.append({
-                    'installment_order': {
-                        'pk': installment.pk,
-                        'pay_sort': installment.pay_sort,
-                        'pay_code': installment.pay_code,
-                        'pay_time': installment.pay_time,
-                        'pay_name': installment.pay_name,
-                        'alias_name': installment.alias_name,
-                        'pay_due_date': installment.pay_due_date,
-                    },
-                    'amount': amount,
-                    'source': 'cached'  # JSON 캐시에서 가져온 데이터임을 표시
-                })
-            except InstallmentPaymentOrder.DoesNotExist:
-                continue
+        from _utils.contract_price import get_contract_payment_plan
+        plan = get_contract_payment_plan(obj.contract)
 
-        # pay_time 순으로 정렬
-        return sorted(result, key=lambda x: x['installment_order']['pay_time'])
+        result = []
+        for item in plan:
+            installment = item['installment_order']
+            result.append({
+                'installment_order': {
+                    'pk': installment.pk,
+                    'pay_sort': installment.pay_sort,
+                    'pay_code': installment.pay_code,
+                    'pay_time': installment.pay_time,
+                    'pay_name': installment.pay_name,
+                    'alias_name': installment.alias_name,
+                    'pay_due_date': installment.pay_due_date,
+                    'extra_due_date': installment.extra_due_date,
+                    'days_since_prev': installment.days_since_prev,
+                },
+                'amount': item['amount'],
+                'due_date': item['due_date'],  # 비즈니스 로직에 의해 조정된 날짜
+                'source': item['source']
+            })
+
+        return result
 
 
 class ContractorInContractSerializer(serializers.ModelSerializer):

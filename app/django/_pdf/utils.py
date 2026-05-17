@@ -5,6 +5,7 @@ from django.db.models import Sum, Q, F
 
 from contract.models import Contract
 from payment.models import OverDueRule, SpecialOverDueRule
+from _utils.contract_price import get_due_date_per_order
 
 TODAY = date.today()
 
@@ -75,41 +76,6 @@ def is_due(due_date):
     :return: bool -> 기도래 기한 여부
     """
     return due_date and due_date <= TODAY
-
-
-def get_due_date_per_order(contract, order, payment_orders):
-    """
-    :: 회차 별 납부 일자 구하기
-    :param contract: 계약자 객체
-    :param order: 납부 회차 객체
-    :param payment_orders: 납부 회차 컬렉션
-    :return str(due_date): 회차 별 약정 납부 일자
-    """
-
-    cont_date = contract.contractor.contract_date  # 계약일 (default 납부기한 = 계약일)
-    due_date = cont_date
-
-    if type(order) is dict and order.get('pay_code') >= 2:
-        due_date = order.get('due_date', None)
-    elif order.pay_code >= 2:
-        si_date = order.days_since_prev
-        pd_date = order.pay_due_date
-        ed_date = order.extra_due_date
-
-        due_date = cont_date + timedelta(days=si_date) if si_date else ed_date or pd_date
-
-        if order.pay_code >= 3:
-            pre_ords = payment_orders.filter(pay_code__lt=order.pay_code)
-            pre_si = pre_ords.aggregate(total=Sum('days_since_prev'))['total']
-            si_due = cont_date + timedelta(days=pre_si) if pre_si else cont_date
-
-            due = ed_date or pd_date
-            if not due:
-                due_date = None
-            else:
-                due_date = due if due > si_due else si_due
-
-    return due_date
 
 
 def get_due_orders(contract, payment_orders):
