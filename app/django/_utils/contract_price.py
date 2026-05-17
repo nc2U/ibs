@@ -16,84 +16,81 @@ def get_due_date_per_order(contract, order, payment_orders=None):
     if not cont_date:
         return None
 
-    # 2. 계약일 이후 '최초로 도래하는' 미래 약정일 찾기 (ff_date)
+    # 2. 미래 기준점(ff_date) 찾기
     ff_date = getattr(contract, '_first_future_date', None)
 
     if ff_date is None:
-        # [수정] 타입 필터링 없이 프로젝트 전체 회차에서 미래 시점을 탐색하여 ff_date 신뢰도 확보
-        all_candidates = InstallmentPaymentOrder.objects.filter(
-            project=contract.project
-        ).exclude(pay_sort='1').exclude(excluded_order_groups=contract.order_group)
+        # [수정] ff_date 탐색 시에는 '제외 차수' 여부와 상관없이 프로젝트 전체 일정을 참조해야 함
+        future_middle = InstallmentPaymentOrder.objects.filter(
+            project=contract.project,
+            type_sort=contract.unit_type.sort, # 계약 타입 일치
+            pay_sort='2', # 중도금
+            pay_due_date__gte=cont_date # 계약일 이후
+        ).order_by('pay_due_date').first()
         
-        future_dates = []
-        for po in all_candidates:
-            # 지정 기한 확인
-            if po.extra_due_date: future_dates.append(po.extra_due_date)
-            elif po.pay_due_date: future_dates.append(po.pay_due_date)
-            # 상대 기한 확인
-            if po.days_since_prev: future_dates.append(cont_date + timedelta(days=po.days_since_prev))
-
-        # 계약일보다 미래인 날짜 중 가장 빠른 것 선택
-        valid_futures = [d for d in future_dates if d and d > cont_date]
-        ff_date = min(valid_futures) if valid_futures else None
+        if future_middle:
+            ff_date = future_middle.pay_due_date
+        else:
+            # 중도금이 없으면 잔금(3)에서 동일 로직 적용
+            future_remain = InstallmentPaymentOrder.objects.filter(
+                project=contract.project,
+                type_sort=contract.unit_type.sort,
+                pay_sort='3',
+                pay_due_date__gte=cont_date
+            ).order_by('pay_due_date').first()
+            ff_date = future_remain.pay_due_date if future_remain else None
+            
         contract._first_future_date = ff_date
 
     # 3. 현재 회차 정보 파악
     is_dict = isinstance(order, dict)
     pay_code = order.get('pay_code') if is_dict else order.pay_code
     pay_sort = order.get('pay_sort') if is_dict else order.pay_sort
+    
+    # 4. 현재 회차의 '원래(Natural)' 기한 계산
     due_date = None
-
-    # 4. 현재 회차의 '원래(Natural)' 약정일 계산
     if is_dict and order.get('due_date'):
         due_date = order.get('due_date')
     else:
-        # [주의] pay_sort가 '1'(계약금)인 경우에만 계약일을 기본값으로 사용
         if pay_sort == '1':
             due_date = cont_date
         else:
-            # 중도금/잔금 등은 DB 데이터로부터 날짜 도출
+            # DB 데이터로부터 날짜 도출
             si_date = order.get('days_since_prev') if is_dict else getattr(order, 'days_since_prev', None)
             pd_date = order.get('pay_due_date') if is_dict else getattr(order, 'pay_due_date', None)
             ed_date = order.get('extra_due_date') if is_dict else getattr(order, 'extra_due_date', None)
 
             if si_date:
-                due_date = cont_date + timedelta(days=si_date)
-            elif ed_date or pd_date:
-                due_date = ed_date or pd_date
+                # 상대 날짜 계산 시에도 전체 일정을 참조해야 정확한 누적 합산 가능
+                if payment_orders is None:
+                    payment_orders = InstallmentPaymentOrder.objects.filter(project=contract.project, type_sort=contract.unit_type.sort)
+                pre_si = payment_orders.filter(pay_code__lt=pay_code).aggregate(total=Sum('days_since_prev'))['total'] or 0
+                due_date = cont_date + timedelta(days=pre_si + (si_date or 0))
+            
+            fixed_date = ed_date or pd_date
+            if fixed_date:
+                due_date = max(due_date, fixed_date) if due_date else fixed_date
 
-            # 누적 경과일 보정 (잔금 이상 폴백)
-            if pay_sort != '2' and not ff_date and due_date and pay_code >= 3 and payment_orders and hasattr(payment_orders, 'filter'):
-                pre_ords = payment_orders.filter(pay_code__lt=pay_code)
-                pre_si = pre_ords.aggregate(total=Sum('days_since_prev'))['total']
-                if pre_si:
-                    si_due = cont_date + timedelta(days=pre_si)
-                    if due_date < si_due:
-                        due_date = si_due
-
-    # 5. 비즈니스 규칙 적용 (최종 조정 - Catch-up & Ceiling)
+    # 5. 비즈니스 규칙 적용 (최종 조정)
     if pay_sort == '1':
-        # 계약금: ff_date가 있으면 상한선 적용
+        # 계약금 Ceiling
         if ff_date and due_date and due_date > ff_date:
             due_date = ff_date
     elif pay_sort == '2':
-        # 중도금: 과거(또는 당일)라면 미래 일정(ff_date)으로 유예
-        # 만약 ff_date를 못 찾았다면 None을 반환하여 즉시 연체 방지
+        # 중도금 Catch-up: 원래 기한이 계약일 이전이면 ff_date로 유예.
         if not due_date or due_date <= cont_date:
-            return ff_date
+            due_date = ff_date
     elif pay_sort == '3':
-        # 잔금: 과거인 경우에만 ff_date 적용
+        # 잔금 유예
         if ff_date and due_date and due_date <= cont_date:
             due_date = ff_date
 
     return due_date
 
-
 def get_floor_type(contract):
     if not contract or not contract.key_unit: return None
     try: return contract.key_unit.houseunit.floor_type
     except AttributeError: return None
-
 
 def get_sales_price_by_gt(contract, houseunit=None):
     if not contract: return None
@@ -105,7 +102,6 @@ def get_sales_price_by_gt(contract, houseunit=None):
     try:
         return SalesPriceByGT.objects.get(project=contract.project, order_group=contract.order_group, unit_type=contract.unit_type, unit_floor_type=houseunit.floor_type)
     except Exception: return None
-
 
 def get_contract_price(contract, houseunit=None, is_set=False):
     if not contract: return 0, 0, 0, 0
@@ -127,10 +123,8 @@ def get_contract_price(contract, houseunit=None, is_set=False):
     except AttributeError: pass
     return 0, 0, 0, 0
 
-
 def get_fixed_payment_amount(installment_order):
     return installment_order.pay_amt if installment_order and installment_order.pay_amt else None
-
 
 def get_down_payment(contract, installment_order):
     if not contract or not installment_order or installment_order.pay_sort != '1': return None
@@ -153,7 +147,6 @@ def get_down_payment(contract, installment_order):
     except Exception: pass
     return None
 
-
 def get_total_paid_down_payments(contract):
     if not contract: return 0
     try:
@@ -161,13 +154,11 @@ def get_total_paid_down_payments(contract):
         return sum(filter(None, [get_down_payment(contract, o) for o in orders]))
     except Exception: return 0
 
-
 def get_down_payment_settlement(contract, installment_order):
     if not contract or not installment_order or not installment_order.pay_ratio: return 0
     price = get_contract_price(contract)[0]
     if not price: return 0
     return int(price * (installment_order.pay_ratio / 100)) - get_total_paid_down_payments(contract)
-
 
 def calculate_remain_payment(contract, remain_installment_order):
     if not contract or not remain_installment_order: return 0
@@ -180,7 +171,6 @@ def calculate_remain_payment(contract, remain_installment_order):
             total_other_payments += get_payment_amount(contract, installment)
         return max(0, price - total_other_payments)
     except Exception: return 0
-
 
 def get_payment_amount(contract, installment_order):
     if not contract or not installment_order: return 0
@@ -203,7 +193,6 @@ def get_payment_amount(contract, installment_order):
         except Exception: pass
     return 0
 
-
 def get_contract_payment_plan(contract):
     if not contract: return []
     cached = contract.get_cached_payment_plan()
@@ -222,7 +211,6 @@ def get_contract_payment_plan(contract):
     except Exception:
         contract.set_cached_payment_plan([])
         return []
-
 
 def get_project_payment_summary(project, order_group=None, unit_type=None):
     if not project: return {'installment_summaries': [], 'grand_total': 0, 'total_contracts': 0}
@@ -261,7 +249,6 @@ def get_project_payment_summary(project, order_group=None, unit_type=None):
         res.sort(key=lambda x: (x['installment_order'].pay_code, x['installment_order'].pay_time))
         return {'installment_summaries': res, 'grand_total': total, 'total_contracts': processed}
     except Exception: return {'installment_summaries': [], 'grand_total': 0, 'total_contracts': 0}
-
 
 def get_multiple_projects_payment_summary(projects, order_group=None, unit_type=None):
     if not projects: return {'installment_summaries': [], 'grand_total': 0, 'total_contracts': 0}
