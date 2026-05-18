@@ -2,7 +2,7 @@ from datetime import date, datetime
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.storage import FileSystemStorage
-from django.db.models import Q
+from django.db.models import Q, Sum, Max
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.views.generic import View
@@ -187,7 +187,11 @@ class PdfExportBill(View):
         }
         """
 
-        payment_summary = []
+        # 회차별 납부 내역 집계 (약정 회차가 지정된 항목들만)
+        payment_summary = contract.payments.filter(installment_order__isnull=False) \
+            .values('installment_order') \
+            .annotate(total_paid=Sum('accounting_entry__amount'),
+                      last_payment_date=Max('deal_date'))
 
         # 회차별 딕셔너리 생성 {order_id: {'paid_amt': amount, 'paid_date': date}}
         payment_by_order = {
@@ -198,8 +202,9 @@ class PdfExportBill(View):
             for p in payment_summary
         }
 
-        # 전체 납부 총액
-        paid_sum_total = sum(p['paid_amt'] for p in payment_by_order.values())
+        # 전체 납부 총액 (약정 회차 미지정 항목 포함 전체 납부액)
+        paid_sum_total = contract.payments.aggregate(
+            total=Sum('accounting_entry__amount'))['total'] or 0
 
         return payment_by_order, paid_sum_total
 
