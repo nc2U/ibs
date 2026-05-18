@@ -54,7 +54,6 @@ jobs:
       
       # node_modules 변화기 있으면 빌드
       - name: Install Dependencies
-        if: steps.cache_vue.outputs.cache-hit != 'true'
         run: cd app/vue && pnpm i --frozen-lockfile
       
       #      - run: pnpm lint

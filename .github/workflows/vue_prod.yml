@@ -49,12 +49,9 @@ jobs:
           key: pnpm-store-${{ runner.os }}-${{ hashFiles('app/vue/pnpm-lock.yaml') }}
           restore-keys: |
             pnpm-store-${{ runner.os }}-
-      
-      
-      
+
       # node_modules 변화기 있으면 빌드
       - name: Install Dependencies
-        if: steps.cache_vue.outputs.cache-hit != 'true'
         run: cd app/vue && pnpm i --frozen-lockfile
       
       #      - run: pnpm lint
