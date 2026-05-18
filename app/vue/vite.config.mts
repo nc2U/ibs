@@ -47,14 +47,7 @@ export default defineConfig({
     extensions: ['.js', '.json', '.jsx', '.mjs', '.ts', '.mts', '.tsx', '.vue'],
   },
   optimizeDeps: {
-    include: [
-      'vue',
-      'vue-router',
-      'pinia',
-      'vuetify',
-      'md-editor-v3',
-      'highlight.js',
-    ],
+    include: ['vue', 'vue-router', 'pinia', 'vuetify', 'md-editor-v3', 'highlight.js'],
     exclude: [],
   },
   server: {
