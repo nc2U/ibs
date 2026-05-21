@@ -124,7 +124,7 @@ const contract = {
   items: [
     {
       component: 'CNavItem',
-      name: '계약 내역 조회',
+      name: '계약 등록 조회',
       to: '/contracts/index',
     },
     {

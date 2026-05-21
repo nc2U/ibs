@@ -64,11 +64,11 @@ const getColSize = computed(() => {
 const goBack = () => {
   if (props.fromPage) {
     router.push({
-      name: '계약 내역 조회',
+      name: '계약 등록 조회',
       query: { page: props.fromPage, highlight_id: props.contract?.pk },
     })
   } else {
-    router.push({ name: '계약 내역 조회' })
+    router.push({ name: '계약 등록 조회' })
   }
 }
 </script>

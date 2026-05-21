@@ -12,10 +12,10 @@ const contract = {
   children: [
     {
       path: 'index',
-      name: '계약 내역 조회',
+      name: '계약 등록 조회',
       component: () => import('@/views/contracts/List/Index.vue'),
       meta: {
-        title: '계약 내역 조회',
+        title: '계약 등록 조회',
         auth: true,
         requiresContractAuth: true,
       },

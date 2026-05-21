@@ -56,7 +56,7 @@ export default defineConfig({
       {
         text: '계약 정보 관리',
         items: [
-          { text: '계약 등록 관리', link: '/contract/' },
+          { text: '계약 등록 조회', link: '/contract/' },
           { text: '계약 상세 관리', link: '/contract/details' },
           { text: '권리 의무 승계', link: '/contract/succession' },
           { text: '계약 해지 관리', link: '/contract/release' },

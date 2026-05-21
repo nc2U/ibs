@@ -295,7 +295,7 @@ onBeforeMount(async () => {
   }
 
   if (route.query?.status) {
-    await router.replace({ name: '계약 내역 조회' })
+    await router.replace({ name: '계약 등록 조회' })
     curr_status.value = '1'
   }
 
