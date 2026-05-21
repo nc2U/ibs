@@ -21,7 +21,7 @@ const comLedger = {
       },
     },
     {
-      path: 'index',
+      path: 'manage',
       name: '본사 거래 내역',
       component: () => import('@/views/comLedger/Manage/Index.vue'),
       meta: {

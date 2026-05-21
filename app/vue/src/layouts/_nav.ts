@@ -23,25 +23,6 @@ const work_admin = {
   icon: 'cil-code',
 }
 
-const company_cash = {
-  component: 'CNavGroup',
-  name: '본사 자금 관리',
-  to: '/cashes',
-  icon: 'cil-laptop',
-  items: [
-    {
-      component: 'CNavItem',
-      name: '본사 자금 현황',
-      to: '/cashes/status',
-    },
-    {
-      component: 'CNavItem',
-      name: '본사 출납 내역',
-      to: '/cashes/index',
-    },
-  ],
-}
-
 const company_ledger = {
   component: 'CNavGroup',
   name: '본사 회계 관리',
@@ -56,7 +37,7 @@ const company_ledger = {
     {
       component: 'CNavItem',
       name: '본사 거래 내역',
-      to: '/ledger/index',
+      to: '/ledger/manage',
     },
   ],
 }
@@ -169,39 +150,11 @@ const contract = {
   ],
 }
 
-const payments = {
-  component: 'CNavGroup',
-  name: '분양 수납 관리',
-  to: '/payments',
-  icon: 'cil-calculator',
-  items: [
-    {
-      component: 'CNavItem',
-      name: '전체 수납 내역',
-      to: '/payments/index',
-    },
-    {
-      component: 'CNavItem',
-      name: '건별 수납 관리',
-      to: '/payments/manage',
-    },
-    {
-      component: 'CNavItem',
-      name: '수납 현황 집계',
-      to: '/payments/status',
-    },
-  ],
-}
-
 const payment = {
   component: 'CNavGroup',
   name: '계약 납부 관리',
   to: '/payment',
   icon: 'cil-calculator',
-  // badge: {
-  //   color: 'info',
-  //   text: 'new..',
-  // },
   items: [
     {
       component: 'CNavItem',
@@ -267,39 +220,11 @@ const notice = {
   ],
 }
 
-const project_cash = {
-  component: 'CNavGroup',
-  name: 'PR 자금 관리',
-  to: '/project-cash',
-  icon: 'cil-money',
-  items: [
-    {
-      component: 'CNavItem',
-      name: 'PR 자금 현황',
-      to: '/project-cash/status',
-    },
-    {
-      component: 'CNavItem',
-      name: 'PR 출납 내역',
-      to: '/project-cash/index',
-    },
-    {
-      component: 'CNavItem',
-      name: '운영 비용 내역',
-      to: '/project-cash/imprest',
-    },
-  ],
-}
-
 const project_ledger = {
   component: 'CNavGroup',
   name: 'PR 회계 관리',
   to: '/project-ledger',
   icon: 'cil-money',
-  // badge: {
-  //   color: 'info',
-  //   text: 'new..',
-  // },
   items: [
     {
       component: 'CNavItem',
@@ -309,7 +234,7 @@ const project_ledger = {
     {
       component: 'CNavItem',
       name: 'PR 거래 내역',
-      to: '/project-ledger/index',
+      to: '/project-ledger/manage',
     },
     {
       component: 'CNavItem',
@@ -494,7 +419,6 @@ const nav = [
     component: 'CNavTitle',
     name: '본사 관리',
   },
-  // company_cash,
   company_ledger,
   company_docs,
   human_resource,
@@ -503,10 +427,8 @@ const nav = [
     name: '프로젝트 관리',
   },
   contract,
-  // payments,
   payment,
   notice,
-  // project_cash,
   project_ledger,
   project_docs,
   project,

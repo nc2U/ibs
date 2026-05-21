@@ -21,7 +21,7 @@ const proLedger = {
       },
     },
     {
-      path: 'index',
+      path: 'manage',
       name: 'PR 거래 내역',
       component: () => import('@/views/proLedger/Manage/Index.vue'),
       meta: {
