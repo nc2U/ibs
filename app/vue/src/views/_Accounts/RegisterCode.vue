@@ -4,6 +4,7 @@ import { useStore } from '@/store'
 import { useRouter } from 'vue-router'
 import { hashCode } from '@/utils/helper'
 import type { Company } from '@/store/types/settings'
+import AlertModal from '@/components/Modals/AlertModal.vue'
 
 const alertModal = ref()
 

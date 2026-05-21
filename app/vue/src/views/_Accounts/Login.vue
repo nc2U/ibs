@@ -45,7 +45,18 @@ const passwordReset = (payload: { email: string }) => {
                 @to-login="toLogin"
               />
 
-              <SocialLogin />
+              <!--              <SocialLogin />-->
+
+              <div class="mt-4 pt-3 border-top text-right">
+                <span class="mr-2 small text-muted">시스템이 처음이신가요?</span>
+                <a
+                  href="https://nc2u.github.io/ibs/"
+                  target="_blank"
+                  class="small text-decoration-none"
+                >
+                  사용자 매뉴얼 보기
+                </a>
+              </div>
             </CCardBody>
           </CCard>
         </CCol>
