@@ -286,7 +286,7 @@ onUpdated(() => dataSetup())
                   icon="mdi mdi-account-arrow-left"
                   :color="getColor(authData.project_docs)[0]"
                 />
-                PR 문서 관리
+                문서 소송 관리
               </CFormLabel>
               <CCol>
                 <CFormSelect
@@ -324,7 +324,7 @@ onUpdated(() => dataSetup())
             <CRow class="m-1">
               <CFormLabel class="col-md-4 col-form-label mb-2 mb-md-1 bg-grey-lighten-3">
                 <v-icon icon="mdi mdi-account-arrow-left" :color="getColor(authData.project)[0]" />
-                PR 등록 관리
+                프로젝트 관리
               </CFormLabel>
               <CCol>
                 <CFormSelect

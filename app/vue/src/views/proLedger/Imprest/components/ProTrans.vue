@@ -681,7 +681,7 @@ const handleUpdate = async () => {
                 size="18"
                 @click="
                   router.push({
-                    name: '운영 계좌 내역 - 수정',
+                    name: '운영비 내역 관리 - 수정',
                     params: { transId: proTrans.pk },
                   })
                 "

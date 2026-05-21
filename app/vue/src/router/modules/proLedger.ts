@@ -2,7 +2,7 @@ import { h, resolveComponent } from 'vue'
 
 const proLedger = {
   path: 'project-ledger',
-  name: 'PR 회계 관리',
+  name: '회계 자금 관리',
   redirect: '/project-ledger/status',
   component: {
     render() {
@@ -12,38 +12,38 @@ const proLedger = {
   children: [
     {
       path: 'status',
-      name: 'PR 정산 현황',
+      name: '정산 현황 관리',
       component: () => import('@/views/proLedger/Status/Index.vue'),
       meta: {
-        title: 'PR 정산 현황',
+        title: '정산 현황 관리',
         auth: true,
         requiresProjectCashAuth: true,
       },
     },
     {
       path: 'manage',
-      name: 'PR 거래 내역',
+      name: '거래 내역 관리',
       component: () => import('@/views/proLedger/Manage/Index.vue'),
       meta: {
-        title: 'PR 거래 내역',
+        title: '거래 내역 관리',
         auth: true,
         requiresProjectCashAuth: true,
       },
       children: [
         {
           path: 'create',
-          name: 'PR 거래 내역 - 생성',
+          name: '거래 내역 관리 - 생성',
           meta: {
-            title: 'PR 거래 내역',
+            title: '거래 내역 관리',
             auth: true,
             requiresCompanyCashAuth: true,
           },
         },
         {
           path: ':transId(\\d+)/update',
-          name: 'PR 거래 내역 - 수정',
+          name: '거래 내역 관리 - 수정',
           meta: {
-            title: 'PR 거래 내역',
+            title: '거래 내역 관리',
             auth: true,
             requiresCompanyCashAuth: true,
           },
@@ -52,28 +52,28 @@ const proLedger = {
     },
     {
       path: 'imprest',
-      name: '운영 계좌 내역',
+      name: '운영비 내역 관리',
       component: () => import('@/views/proLedger/Imprest/Index.vue'),
       meta: {
-        title: '운영 계좌 내역',
+        title: '운영비 내역 관리',
         auth: true,
         requiresProjectCashAuth: true,
       },
       children: [
         {
           path: 'create',
-          name: '운영 계좌 내역 - 생성',
+          name: '운영비 내역 관리 - 생성',
           meta: {
-            title: '운영 계좌 내역',
+            title: '운영비 내역 관리',
             auth: true,
             requiresCompanyCashAuth: true,
           },
         },
         {
           path: ':transId(\\d+)/update',
-          name: '운영 계좌 내역 - 수정',
+          name: '운영비 내역 관리 - 수정',
           meta: {
-            title: '운영 계좌 내역',
+            title: '운영비 내역 관리',
             auth: true,
             requiresCompanyCashAuth: true,
           },

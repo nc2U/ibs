@@ -267,7 +267,7 @@ onMounted(() => {
                 <td class="p-2 bg-blue-grey-lighten-4 text-center">관련사건</td>
                 <td class="p-2">
                   <router-link
-                    :to="{ name: 'PR 소송 사건 - 보기', params: { caseId: docs.lawsuit } }"
+                    :to="{ name: '소송 사건 관리 - 보기', params: { caseId: docs.lawsuit } }"
                   >
                     {{ docs.lawsuit_name }}
                   </router-link>

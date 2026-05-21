@@ -2,7 +2,7 @@ import { h, resolveComponent } from 'vue'
 
 const projects = {
   path: 'project',
-  name: 'PR 등록 관리',
+  name: '프로젝트 관리',
   redirect: '/project/manage/index',
   component: {
     render() {
@@ -12,10 +12,10 @@ const projects = {
   children: [
     {
       path: 'manage/index',
-      name: '신규 PR 등록',
+      name: '프로젝트 등록',
       component: () => import('@/views/projects/List/Index.vue'),
       meta: {
-        title: '신규 PR 등록',
+        title: '프로젝트 등록',
         auth: true,
         requiresProjectAuth: true,
       },

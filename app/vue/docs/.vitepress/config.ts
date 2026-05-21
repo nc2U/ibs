@@ -46,9 +46,9 @@ export default defineConfig({
         text: '프로젝트 관리',
         items: [
           { text: '프로젝트 등록', link: '/project/' },
-          { text: '차수 타입 관리', link: '/project/types' },
-          { text: '유닛 정보 관리', link: '/project/units' },
-          { text: '예산 등록 관리', link: '/project/budgets' },
+          { text: '차수 타입 설정', link: '/project/types' },
+          { text: '유닛 정보 설정', link: '/project/units' },
+          { text: '예산 정보 설정', link: '/project/budgets' },
           { text: '분양 조건 설정', link: '/project/settings' },
           { text: '부지 정보 관리', link: '/project/site-manage' },
         ],
@@ -60,6 +60,7 @@ export default defineConfig({
           { text: '계약 상세 관리', link: '/contract/details' },
           { text: '권리 의무 승계', link: '/contract/succession' },
           { text: '계약 해지 관리', link: '/contract/release' },
+          { text: '동호 배치 현황', link: '/contract/status' },
         ],
       },
       {
@@ -73,23 +74,23 @@ export default defineConfig({
       {
         text: '고객 고지 관리',
         items: [
-          { text: '수납 고지서 관리', link: '/notice/bill' },
+          { text: '수납 고지서 출력', link: '/notice/bill' },
           { text: 'SMS 발송 관리', link: '/notice/sms' },
         ],
       },
       {
-        text: '일반 입출금 관리',
+        text: '회계 자금 관리',
         items: [
           { text: '정산 현황 관리', link: '/ledger/status' },
           { text: '거래 내역 관리', link: '/ledger/manage' },
-          { text: '운영 계좌 관리', link: '/ledger/imprest' },
+          { text: '운영비 내역 관리', link: '/ledger/imprest' },
         ],
       },
       {
-        text: '문서 관리',
+        text: '문서 소송 관리',
         items: [
           { text: '일반 문서 관리', link: '/document/' },
-          { text: '소송 기록 관리', link: '/document/legal-docs' },
+          { text: '소송 문서 관리', link: '/document/legal-docs' },
           { text: '소송 사건 관리', link: '/document/legal-case' },
         ],
       },

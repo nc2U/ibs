@@ -2,7 +2,7 @@ import { h, resolveComponent } from 'vue'
 
 const contract = {
   path: 'contracts',
-  name: '공급 계약 관리',
+  name: '계약 정보 관리',
   redirect: '/contracts/index',
   component: {
     render() {

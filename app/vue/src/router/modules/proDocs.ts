@@ -2,7 +2,7 @@ import { h, resolveComponent } from 'vue'
 
 const proDocs = {
   path: 'project-docs',
-  name: 'PR 문서 관리',
+  name: '문서 소송 관리',
   redirect: '/project-docs/general/docs',
   component: {
     render() {
@@ -12,73 +12,73 @@ const proDocs = {
   children: [
     {
       path: 'general/docs',
-      name: 'PR 일반 문서',
+      name: '일반 문서 관리',
       component: () => import('@/views/proDocs/GeneralDocs/Index.vue'),
       meta: {
-        title: 'PR 일반 문서',
+        title: '일반 문서 관리',
         auth: true,
         requiresProjectDocsAuth: true,
       },
       children: [
         {
           path: ':docsId(\\d+)',
-          name: 'PR 일반 문서 - 보기',
+          name: '일반 문서 관리 - 보기',
         },
         {
           path: ':docsId(\\d+)/update',
-          name: 'PR 일반 문서 - 수정',
+          name: '일반 문서 관리 - 수정',
         },
         {
           path: 'create',
-          name: 'PR 일반 문서 - 작성',
+          name: '일반 문서 관리 - 작성',
         },
       ],
     },
     {
       path: 'lawsuit/docs',
-      name: 'PR 소송 문서',
+      name: '소송 문서 관리',
       component: () => import('@/views/proDocs/LawsuitDocs/Index.vue'),
       meta: {
-        title: 'PR 소송 문서',
+        title: '소송 문서 관리',
         auth: true,
         requiresProjectDocsAuth: true,
       },
       children: [
         {
           path: ':docsId(\\d+)',
-          name: 'PR 소송 문서 - 보기',
+          name: '소송 문서 관리 - 보기',
         },
         {
           path: ':docsId(\\d+)/update',
-          name: 'PR 소송 문서 - 수정',
+          name: '소송 문서 관리 - 수정',
         },
         {
           path: 'create',
-          name: 'PR 소송 문서 - 작성',
+          name: '소송 문서 관리 - 작성',
         },
       ],
     },
     {
       path: 'lawsuit/case',
-      name: 'PR 소송 사건',
+      name: '소송 사건 관리',
       component: () => import('@/views/proDocs/LawsuitCase/Index.vue'),
       meta: {
-        title: 'PR 소송 사건',
+        title: '소송 사건 관리',
         auth: true,
         requiresProjectDocsAuth: true,
       },
       children: [
         {
           path: ':caseId(\\d+)',
-          name: 'PR 소송 사건 - 보기',
+          name: '소송 사건 관리 - 보기',
         },
         {
           path: ':caseId(\\d+)/update',
-          name: 'PR 소송 사건 - 수정',
+          name: '소송 사건 관리 - 수정',
         },
         {
           path: 'create',
-          name: 'PR 소송 사건 - 작성',
+          name: '소송 사건 관리 - 작성',
         },
       ],
     },

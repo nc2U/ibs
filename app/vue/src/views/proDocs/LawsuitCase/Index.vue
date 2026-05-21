@@ -22,7 +22,7 @@ import CaseList from '@/components/LawSuitCase/CaseList.vue'
 import CaseForm from '@/components/LawSuitCase/CaseForm.vue'
 
 const fController = ref()
-const mainViewName = ref('PR 소송 사건')
+const mainViewName = ref('소송 사건 관리')
 const caseFilter = ref<cFilter>({
   company: '',
   project: '',
@@ -198,7 +198,7 @@ onBeforeMount(async () => {
           />
 
           <TableTitleRow
-            title="PR 소송 사건 목록"
+            title="소송 사건 관리 목록"
             excel
             :url="excelUrl"
             filename="PR소송_사건내역.xlsx"

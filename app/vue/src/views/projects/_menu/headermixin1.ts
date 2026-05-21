@@ -1,2 +1,2 @@
-export const pageTitle = 'PR 등록 관리'
-export const navMenu = ['신규 PR 등록']
+export const pageTitle = '프로젝트 관리'
+export const navMenu = ['프로젝트 등록']

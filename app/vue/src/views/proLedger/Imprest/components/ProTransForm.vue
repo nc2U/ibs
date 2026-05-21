@@ -26,7 +26,7 @@ watch(
   () => props.project,
   val => {
     if (isCreateMode.value) initializeCreateForm()
-    else router.push({ name: '운영 계좌 내역' })
+    else router.push({ name: '운영비 내역 관리' })
   },
 )
 
@@ -603,7 +603,7 @@ const saveTransaction = async (event: Event) => {
       }
 
       // 성공 시 거래 목록 페이지로 이동
-      await router.push({ name: '운영 계좌 내역' })
+      await router.push({ name: '운영비 내역 관리' })
     } catch (error: any) {
       console.error('저장 실패:', error)
       alert(error.message || '저장 중 오류가 발생했습니다.')
@@ -616,7 +616,7 @@ const saveTransaction = async (event: Event) => {
 const delTransaction = async () => {
   confirmModal.value.close()
   await proLedgerStore.deleteProBankTrans(transaction.value?.pk!)
-  await router.replace({ name: '운영 계좌 내역' })
+  await router.replace({ name: '운영비 내역 관리' })
 }
 
 const accCallModal = () => {
@@ -725,7 +725,7 @@ onBeforeRouteLeave((to, from, next) => {
           variant="tonal"
           size="small"
           :disabled="isSaving"
-          @click="router.push({ name: '운영 계좌 내역' })"
+          @click="router.push({ name: '운영비 내역 관리' })"
         >
           취소
         </v-btn>

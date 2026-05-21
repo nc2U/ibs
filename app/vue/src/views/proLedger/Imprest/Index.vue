@@ -220,7 +220,7 @@ onBeforeRouteLeave(() => {
     />
     <ContentBody>
       <CCardBody class="pb-5">
-        <div v-if="route.name === '운영 계좌 내역'">
+        <div v-if="route.name === '운영비 내역 관리'">
           <ListController
             ref="listControl"
             :project="project as number"
@@ -250,7 +250,7 @@ onBeforeRouteLeave(() => {
 
         <div
           v-else-if="
-            route.name === '운영 계좌 내역 - 수정' || route.name === '운영 계좌 내역 - 생성'
+            route.name === '운영비 내역 관리 - 수정' || route.name === '운영비 내역 관리 - 생성'
           "
         >
           <ProTransForm :project="project as number" />

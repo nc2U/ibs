@@ -14,7 +14,7 @@ TODAY = datetime.date.today().strftime('%Y-%m-%d')
 
 
 class ExportSuitCases(ExcelExportMixin):
-    """PR 소송 사건 목록"""
+    """프로젝트 소송 사건 목록"""
 
     def get(self, request):
         # 워크북 생성
@@ -171,7 +171,7 @@ class ExportSuitCases(ExcelExportMixin):
 
 
 class ExportSuitCase(ExcelExportMixin):
-    """PR 소송 사건 디테일"""
+    """프로젝트 소송 사건 디테일"""
 
     def get(self, request):
         # 워크북 생성
