@@ -43,13 +43,13 @@ export default defineConfig({
         ],
       },
       {
-        text: '프로젝트 설정',
+        text: '프로젝트 관리',
         items: [
           { text: '프로젝트 설정', link: '/project/' },
-          { text: '유닛정보 설정', link: '/project/units' },
-          { text: '예산정보 설정', link: '/project/budgets' },
-          { text: '계약정보 설정', link: '/project/settings' },
-          { text: '부지정보 관리', link: '/project/site-manage' },
+          { text: '유닛 정보 설정', link: '/project/units' },
+          { text: '예산 정보 설정', link: '/project/budgets' },
+          { text: '계약 정보 설정', link: '/project/settings' },
+          { text: '부지 정보 관리', link: '/project/site-manage' },
         ],
       },
       {
@@ -80,15 +80,15 @@ export default defineConfig({
         text: '일반 입출금 관리',
         items: [
           { text: '정산 현황 관리', link: '/ledger/status' },
-          { text: '거래 내역 관리', link: '/ledger/settings' },
-          { text: '운영 계좌 관리', link: '/ledger/manage' },
+          { text: '거래 내역 관리', link: '/ledger/manage' },
+          { text: '운영 계좌 관리', link: '/ledger/imprest' },
         ],
       },
       {
         text: '문서 관리',
         items: [
           { text: '일반 문서 관리', link: '/document/' },
-          { text: '소송 기록 관리', link: '/document/legal-case' },
+          { text: '소송 기록 관리', link: '/document/legal-docs' },
           { text: '소송 사건 관리', link: '/document/legal-case' },
         ],
       },
