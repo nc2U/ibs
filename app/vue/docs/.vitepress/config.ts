@@ -29,8 +29,8 @@ export default defineConfig({
       {
         text: '관련 사이트',
         items: [
-          { text: 'IBS', link: 'https://dyibs.com' },
-          { text: '관리자 페이지', link: 'https://dyibs.com/admin/' },
+          { text: 'IBS', link: 'https://ibs.dyibs.com' },
+          { text: '관리자 페이지', link: 'https://ibs.dyibs.com/admin/' },
         ],
       },
     ],
