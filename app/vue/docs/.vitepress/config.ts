@@ -43,34 +43,54 @@ export default defineConfig({
         ],
       },
       {
-        text: '기본 설정',
+        text: '프로젝트 설정',
         items: [
-          { text: '회사정보 설정', link: '/settings/company' },
-          { text: '프로젝트 설정', link: '/settings/project' },
-          { text: '세부정보 설정', link: '/settings/details' },
-          { text: '부지정보 관리', link: '/settings/site-manage' },
+          { text: '프로젝트 등록', link: '/project/' },
+          { text: '세부정보 설정', link: '/project/details' },
+          { text: '유닛정보 설정', link: '/project/units' },
+          { text: '예산정보 설정', link: '/project/budgets' },
+          { text: '계약정보 설정', link: '/project/settings' },
+          { text: '부지정보 관리', link: '/project/site-manage' },
         ],
       },
       {
-        text: '계약 수납 관리',
+        text: '계약 정보 관리',
         items: [
-          { text: '계약 관리', link: '/contract/' },
-          { text: '수납 관리', link: '/contract/payment' },
-          { text: '고지서 관리', link: '/contract/bill-notice' },
+          { text: '계약 등록 관리', link: '/contract/' },
+          { text: '계약 상세 관리', link: '/contract/details' },
+          { text: '권리 의무 승계', link: '/contract/succession' },
+          { text: '계약 해지 관리', link: '/contract/release' },
+        ],
+      },
+      {
+        text: '계약 납부 관리',
+        items: [
+          { text: '납부 내역 관리', link: '/payment/' },
+          { text: '건별 납부 관리', link: '/payment/manage' },
+          { text: '납부 현황 집계', link: '/payment/status' },
+        ],
+      },
+      {
+        text: '고객 고지 관리',
+        items: [
+          { text: '수납 고지서 관리', link: '/notice/bill' },
+          { text: 'SMS 발송 관리', link: '/notice/sms' },
         ],
       },
       {
         text: '일반 입출금 관리',
         items: [
-          { text: '기본 설정', link: '/cashes/settings' },
-          { text: '입출금 관리', link: '/cashes/manage' },
+          { text: '정산 현황 관리', link: '/ledger/status' },
+          { text: '거래 내역 관리', link: '/ledger/settings' },
+          { text: '운영 계좌 관리', link: '/ledger/manage' },
         ],
       },
       {
         text: '문서 관리',
         items: [
-          { text: '일반 문서', link: '/document/' },
-          { text: '소송 기록', link: '/document/legal-case' },
+          { text: '일반 문서 관리', link: '/document/' },
+          { text: '소송 기록 관리', link: '/document/legal-case' },
+          { text: '소송 사건 관리', link: '/document/legal-case' },
         ],
       },
       {
