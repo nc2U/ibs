@@ -45,10 +45,11 @@ export default defineConfig({
       {
         text: '프로젝트 관리',
         items: [
-          { text: '프로젝트 설정', link: '/project/' },
-          { text: '유닛 정보 설정', link: '/project/units' },
-          { text: '예산 정보 설정', link: '/project/budgets' },
-          { text: '계약 정보 설정', link: '/project/settings' },
+          { text: '프로젝트 등록', link: '/project/' },
+          { text: '차수 타입 관리', link: '/project/types' },
+          { text: '유닛 정보 관리', link: '/project/units' },
+          { text: '예산 등록 관리', link: '/project/budgets' },
+          { text: '분양 조건 설정', link: '/project/settings' },
           { text: '부지 정보 관리', link: '/project/site-manage' },
         ],
       },

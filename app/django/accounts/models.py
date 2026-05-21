@@ -111,7 +111,7 @@ class StaffAuth(models.Model):
     project_ledger = models.CharField('PR 회계 관리', max_length=1, choices=AUTH_CHOICE, default='0')
     project_docs = models.CharField('PR 문서 관리', max_length=1, choices=AUTH_CHOICE, default='0')
     project = models.CharField('신규 프로젝트', max_length=1, choices=AUTH_CHOICE, default='0')
-    project_site = models.CharField('사업 부지 관리', max_length=1, choices=AUTH_CHOICE, default='0')
+    project_site = models.CharField('부지 정보 관리', max_length=1, choices=AUTH_CHOICE, default='0')
     company_ledger = models.CharField('본사 회계 관리', max_length=1, choices=AUTH_CHOICE, default='0')
     company_docs = models.CharField('본사 문서 관리', max_length=1, choices=AUTH_CHOICE, default='0')
     human_resource = models.CharField('본사 인사 관리', max_length=1, choices=AUTH_CHOICE, default='0')

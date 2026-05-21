@@ -305,7 +305,7 @@ onUpdated(() => dataSetup())
             <CRow class="m-1">
               <CFormLabel class="col-md-4 col-form-label mb-2 mb-md-1 bg-grey-lighten-3">
                 <v-icon icon="mdi mdi-account-arrow-left" :color="getColor(authData.project)[0]" />
-                사업 부지 관리
+                부지 정보 관리
               </CFormLabel>
               <CCol>
                 <CFormSelect

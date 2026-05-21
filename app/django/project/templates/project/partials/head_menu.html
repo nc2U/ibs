@@ -9,6 +9,7 @@
     </li>
     <li class="nav-item">
         <a href="
+
                 {% url 'ibs:project:set-ordergroup' %}{% if request.GET.project %}?project={{ request.GET.project }}{% endif %}"
            aria-expanded="{% if menu_order == '2' %}true{% else %}false{% endif %}"
            class="nav-link  {% if menu_order == '2' %}active{% endif %}">
@@ -21,7 +22,7 @@
            aria-expanded="{% if menu_order == '3' %}true{% else %}false{% endif %}"
            class="nav-link  {% if menu_order == '3' %}active{% endif %}">
             <i class="mdi mdi-format-list-bulleted d-md-none d-block"></i>
-            <span class="d-none d-md-block">사업 부지 관리</span>
+            <span class="d-none d-md-block">부지 정보 관리</span>
         </a>
     </li>
 </ul>

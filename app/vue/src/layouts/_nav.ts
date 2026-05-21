@@ -303,7 +303,7 @@ const project = {
     },
     {
       component: 'CNavGroup',
-      name: '유닛 등록 관리',
+      name: '유닛 정보 관리',
       icon: 'cil-room',
       items: [
         {
@@ -337,7 +337,7 @@ const project = {
     },
     {
       component: 'CNavGroup',
-      name: '분양 계약 조건',
+      name: '분양 조건 설정',
       icon: 'cil-cog',
       items: [
         {
@@ -369,7 +369,7 @@ const project = {
     },
     {
       component: 'CNavGroup',
-      name: '사업 부지 관리',
+      name: '부지 정보 관리',
       icon: 'cil-location-pin',
       items: [
         {
