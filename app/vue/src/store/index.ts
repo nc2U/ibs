@@ -12,7 +12,7 @@ export const useStore = defineStore('store', () => {
   const sidebarUnfoldable = ref(Cookies.get('sidebarUnfoldable') === 'true')
   const theme = ref<Type>((Cookies.get('theme') as Type) || 'default')
   const LoadingStatus = ref(false)
-  const registerCode = ref('brdnc00')
+  const registerCode = ref('dyibs-staff')
 
   const toggleAside = () => (asideVisible.value = !asideVisible.value)
 
