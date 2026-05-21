@@ -45,8 +45,7 @@ export default defineConfig({
       {
         text: '프로젝트 설정',
         items: [
-          { text: '프로젝트 등록', link: '/project/' },
-          { text: '세부정보 설정', link: '/project/details' },
+          { text: '프로젝트 설정', link: '/project/' },
           { text: '유닛정보 설정', link: '/project/units' },
           { text: '예산정보 설정', link: '/project/budgets' },
           { text: '계약정보 설정', link: '/project/settings' },
