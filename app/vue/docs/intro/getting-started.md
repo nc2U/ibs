@@ -18,15 +18,7 @@
 
 IBS Platform은 부동산 개발사업의 전 과정에서 발생하는 데이터를 하나의 시스템에서 통합 관리합니다.
 
-```mermaid
-graph TD
-    A[<strong>프로젝트 관리</strong><br/>등록 / 세부 설정 / 부지 관리]
-    B[<strong>계약 정보 관리</strong><br/>등록 ・ 상세 / 승계 ・ 해지]
-C[<strong>계약 납부 관리</strong><br/>고지서 / SMS]
-D[<strong>회계 자금 관리</strong><br/>정산 / 예산 / 거래 / 운영비 관리]
-E[<strong>문서 소송 관리</strong><br/>일반 / 소송 문서 / 사건 관리]
-A --> B --> C --> D --> E
-```
+![업무 흐름](/intro/workflow.png)
 
 ### 주요 기능
 
