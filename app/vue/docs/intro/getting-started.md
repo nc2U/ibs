@@ -18,6 +18,7 @@
 
 IBS Platform은 부동산 개발사업의 전 과정에서 발생하는 데이터를 하나의 시스템에서 통합 관리합니다.
 
+<img src="/intro/workflow.png" alt="업무 흐름"  style="width: 200px">
 ![업무 흐름](/intro/workflow.png)
 
 ### 주요 기능
