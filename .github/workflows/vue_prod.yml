@@ -49,6 +49,10 @@ jobs:
           key: pnpm-store-${{ runner.os }}-${{ hashFiles('app/vue/pnpm-lock.yaml') }}
           restore-keys: |
             pnpm-store-${{ runner.os }}-
+      
+      # Disable pnpm minimumReleaseAge policy
+      - name: Disable pnpm minimumReleaseAge policy
+        run: cd app/vue && pnpm config set minimum-release-age 0
 
       # node_modules 변화기 있으면 빌드
       - name: Install Dependencies
