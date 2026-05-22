@@ -24,7 +24,11 @@ export default withMermaid(
       // lineNumbers: true,
     },
     themeConfig: {
-      logo: 'https://raw.githubusercontent.com/nc2U/ibs/a39d44a6f22b37ce7444a5102fa7bb4d9b00db66/app/vue/docs/favicon.svg',
+      logo: {
+        light:
+          'https://raw.githubusercontent.com/nc2U/ibs/a39d44a6f22b37ce7444a5102fa7bb4d9b00db66/app/vue/docs/favicon.svg',
+        dark: 'https://raw.githubusercontent.com/nc2U/ibs/a39d44a6f22b37ce7444a5102fa7bb4d9b00db66/app/vue/docs/favicon-dark-mode.svg',
+      },
       siteTitle: 'DAEYOUNG IBS',
       nav: [
         { text: '가이드', link: '/intro/getting-started' },
