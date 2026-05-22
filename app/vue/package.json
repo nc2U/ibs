@@ -64,11 +64,9 @@
     "vuetify": "^3.12.6",
     "webfontloader": "^1.6.28"
   },
-  "pnpm": {
-    "overrides": {
-      "serialize-javascript": "^7.0.3",
-      "dompurify": "3.4.0"
-    }
+  "overrides": {
+    "serialize-javascript": "^7.0.3",
+    "dompurify": "3.4.0"
   },
   "devDependencies": {
     "@pinia/testing": "^1.0.3",
