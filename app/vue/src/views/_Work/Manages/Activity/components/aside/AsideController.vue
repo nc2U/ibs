@@ -54,7 +54,7 @@ watch(
   { deep: true },
 )
 
-const pickSort = (sort: '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9') => {
+const pickSort = (sort: '1' | '2' | '4' | '5' | '6' | '7' | '8' | '9') => {
   actFilter.sort = [sort]
   filterActivity()
 }
@@ -154,8 +154,6 @@ onBeforeMount(async () => {
         @change="syncComment"
       />
       <a href="javascript:void(0)" @click="pickSort('1')" class="ml-2">업무</a> <br />
-      <CFormCheck v-model="actFilter.sort" value="3" id="changeset-filter" />
-      <a href="javascript:void(0)" @click="pickSort('3')" class="ml-2">변경묶음</a> <br />
       <CFormCheck v-model="actFilter.sort" value="4" id="news-filter" />
       <a href="javascript:void(0)" @click="pickSort('4')" class="ml-2">공지</a> <br />
       <CFormCheck v-model="actFilter.sort" value="5" id="docs-filter" />

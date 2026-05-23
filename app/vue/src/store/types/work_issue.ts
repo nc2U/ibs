@@ -6,48 +6,6 @@ export interface SimpleCategory {
   assigned_to: SimpleUser | null
 }
 
-interface IssueInGantt {
-  pk: number
-  tracker: string
-  subject: string
-  start_date: string
-  due_date: string | null
-  done_ratio: number
-}
-
-export interface GanttProject {
-  pk: number
-  company: number
-  name: string
-  slug: string
-  start_first: string
-  due_last: string | null
-  depth: number
-  sub_projects: GanttProject[]
-  issues: IssueInGantt[]
-}
-
-export interface Gantts {
-  isProj: boolean
-  depth: number
-  name: string
-  start: string
-  due: string
-  done_ratio?: number
-  ganttBarConfig: {
-    id: number
-    label: string
-    immobile: boolean
-    html: string
-    style: {
-      background?: string
-      color?: string
-      borderRadius?: string
-      fontSize?: string
-    }
-  }
-}
-
 // issue
 export interface SimpleIssue {
   pk: number

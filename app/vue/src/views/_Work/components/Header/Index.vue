@@ -44,13 +44,11 @@ const chkModules = (slug: string) => {
     if (routeName.includes('로드맵') && !project.versions?.length) return false
     else if (routeName.includes('업무') && !project.module?.issue) return false
     else if (routeName.includes('소요시간') && !project.module?.time) return false
-    else if (routeName.includes('간트차트') && !project.module?.gantt) return false
     else if (routeName.includes('달력') && !project.module?.calendar) return false
     else if (routeName.includes('공지') && !project.module?.news) return false
     else if (routeName.includes('문서') && !project.module?.document) return false
     else if (routeName.includes('위키') && !project.module?.wiki) return false
     else if (routeName.includes('파일') && !project.module?.file) return false
-    else if (routeName.includes('저장소') && !project.module?.repository) return false
     else return true
   }
 }

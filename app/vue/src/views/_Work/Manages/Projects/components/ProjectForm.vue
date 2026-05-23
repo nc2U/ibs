@@ -66,10 +66,8 @@ const module = reactive({
   document: true,
   file: true,
   wiki: true,
-  repository: false,
   forum: true,
   calendar: true,
-  gantt: true,
 })
 
 const formsCheck = computed(() => {
@@ -99,13 +97,11 @@ const formsCheck = computed(() => {
     const n = module.news === props.project.module?.news
     const o = module.document === props.project.module?.document
     const p = module.file === props.project.module?.file
-    const q = module.repository === props.project.module?.repository
     const r = module.forum === props.project.module?.forum
     const s = module.calendar === props.project.module?.calendar
-    const t = module.gantt === props.project.module?.gantt
 
     const first = a && b && c && d && e && f && g && h && i && j
-    const second = k && l && m && n && o && p && q && r && s && t
+    const second = k && l && m && n && o && p && r && s
     return first && second
   } else return false
 })
@@ -182,10 +178,8 @@ const dataSetup = () => {
     module.document = !!props.project.module?.document
     module.file = !!props.project.module?.file
     module.wiki = !!props.project.module?.wiki
-    module.repository = !!props.project.module?.repository
     module.forum = !!props.project.module?.forum
     module.calendar = !!props.project.module?.calendar
-    module.gantt = !!props.project.module?.gantt
   }
 }
 
@@ -408,16 +402,10 @@ onBeforeMount(() => {
             <CFormCheck v-model="module.wiki" id="wiki" label="위키" />
           </CCol>
           <CCol sm="6" md="4" lg="3" xl="2">
-            <CFormCheck v-model="module.repository" id="repository" label="저장소" />
-          </CCol>
-          <CCol sm="6" md="4" lg="3" xl="2">
             <CFormCheck v-model="module.forum" id="forum" label="게시판" />
           </CCol>
           <CCol sm="6" md="4" lg="3" xl="2">
             <CFormCheck v-model="module.calendar" id="calendar" label="달력" />
-          </CCol>
-          <CCol sm="6" md="4" lg="3" xl="2">
-            <CFormCheck v-model="module.gantt" id="gantt" label="간트차트" />
           </CCol>
         </CRow>
       </CCardBody>

@@ -5,7 +5,6 @@ import { type IssueProject } from '@/store/types/work_project.ts'
 import { type IssueCategory as ICategory } from '@/store/types/work_issue.ts'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
-import { useGitRepo } from '@/store/pinia/work_git_repo.ts'
 import { useRoute, useRouter } from 'vue-router'
 import Loading from '@/components/Loading/Index.vue'
 import ProjectForm from '@/views/_Work/Manages/Projects/components/ProjectForm.vue'
@@ -13,7 +12,6 @@ import Member from '@/views/_Work/Manages/Projects/components/Settings/component
 import IssueTracking from '@/views/_Work/Manages/Projects/components/Settings/components/IssueTracking.vue'
 import Version from '@/views/_Work/Manages/Projects/components/Settings/components/Version.vue'
 import IssueCategory from '@/views/_Work/Manages/Projects/components/Settings/components/IssueCategory.vue'
-import Repository from '@/views/_Work/Manages/Projects/components/Settings/components/Repository.vue'
 import Board from '@/views/_Work/Manages/Projects/components/Settings/components/Board.vue'
 import TimeTracking from '@/views/_Work/Manages/Projects/components/Settings/components/TimeTracking.vue'
 import CategoryForm from '@/views/_Work/Manages/Projects/components/Settings/category/CategoryForm.vue'
@@ -51,8 +49,6 @@ const settingMenus = computed(() => {
 
   if (!!workManager?.value && modules.value?.time)
     menus = [...new Set([...menus, ...[{ no: 8, menu: '시간추적' }]])]
-  if (!!workManager?.value && modules.value?.repository)
-    menus = [...new Set([...menus, ...[{ no: 6, menu: '저장소' }]])]
   if (!!workManager?.value && modules.value?.forum)
     menus = [...new Set([...menus, ...[{ no: 7, menu: '게시판' }]])]
 
@@ -102,23 +98,12 @@ const versionFilter = async (payload: { status?: '' | '1' | '2' | '3'; search?: 
   }
 }
 
-const gitStore = useGitRepo()
-const repositoryList = computed(() => gitStore.repositoryList)
-
-const submitRepo = (payload: any) => {
-  if (!payload.project) payload.project = issueProject.value?.pk
-  if (!payload.pk) gitStore.createRepo(payload)
-  else gitStore.patchRepo(payload)
-}
-const deleteRepo = (pk: number) => gitStore.deleteRepo(pk, issueProject.value?.pk)
-
 watch(
   () => route.params?.projId,
   async nVal => {
     if (nVal) {
       await workStore.fetchIssueProject(nVal as string)
       await workStore.fetchVersionList({ project: nVal as string })
-      await gitStore.fetchRepoList(issueProject.value?.pk ?? '')
     } else {
       workStore.removeIssueProject()
       await workStore.fetchIssueProjectList({ status: '1' })
@@ -135,7 +120,6 @@ onBeforeMount(async () => {
   await workStore.fetchRoleList()
   await issueStore.fetchTrackerList()
   await issueStore.fetchActivityList()
-  await gitStore.fetchRepoList(issueProject.value?.pk ?? '')
 
   if (route.params.projId) {
     const projId = route.params.projId as string
@@ -191,14 +175,6 @@ onBeforeMount(async () => {
           v-if="menu === '업무범주'"
           :categories="issueProject?.categories"
           @delete-category="deleteCategory"
-        />
-
-        <Repository
-          v-if="menu === '저장소'"
-          :proj-id="issueProject?.slug as string"
-          :repo-list="repositoryList"
-          @submit-repo="submitRepo"
-          @delete-repo="deleteRepo"
         />
 
         <Board v-if="menu === '게시판'" :project="issueProject?.pk as number" />

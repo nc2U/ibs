@@ -18,7 +18,6 @@ django-widget-tweaks
 djangorestframework
 djangorestframework-simplejwt
 
-GitPython
 gunicorn
 
 psycopg2

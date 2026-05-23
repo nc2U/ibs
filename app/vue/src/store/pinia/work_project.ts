@@ -51,7 +51,6 @@ export const useWork = defineStore('work', () => {
       status: i.status,
       depth: i.depth,
       parent_visible: i.parent_visible,
-      repo: i.module?.repository,
     })),
   )
 

@@ -33,7 +33,6 @@ const projectNavMenus = computed(() => {
   if (project?.versions?.length) menus = [...new Set([...menus, ...[{ no: 3, menu: '(로드맵)' }]])]
   if (modules.value?.issue) menus = [...new Set([...menus, ...[{ no: 4, menu: '(업무)' }]])]
   if (modules.value?.time) menus = [...new Set([...menus, ...[{ no: 5, menu: '(소요시간)' }]])]
-  if (modules.value?.gantt) menus = [...new Set([...menus, ...[{ no: 6, menu: '(간트차트)' }]])]
   if (modules.value?.calendar) menus = [...new Set([...menus, ...[{ no: 7, menu: '(달력)' }]])]
   if (modules.value?.news) menus = [...new Set([...menus, ...[{ no: 8, menu: '(공지)' }]])]
   if (modules.value?.document) menus = [...new Set([...menus, ...[{ no: 9, menu: '(문서)' }]])]
@@ -41,7 +40,6 @@ const projectNavMenus = computed(() => {
   if (modules.value?.forum && project.forums.length)
     menus = [...new Set([...menus, ...[{ no: 11, menu: '(게시판)' }]])]
   if (modules.value?.file) menus = [...new Set([...menus, ...[{ no: 12, menu: '(파일)' }]])]
-  if (modules.value?.repository) menus = [...new Set([...menus, ...[{ no: 13, menu: '(저장소)' }]])]
   if (issueProject.value?.status !== '9') menus = [...menus, ...[{ no: 14, menu: '(설정)' }]]
 
   return menus.sort((a, b) => a.no - b.no).map(m => m.menu)

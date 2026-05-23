@@ -66,8 +66,6 @@ const getSummary = (pk: number) => props.trackerSummary.filter(t => t.pk === pk)
       <router-link :to="{ name: '(업무) - 보고서' }"> 요약</router-link>
       <span class="px-2">|</span>
       <router-link :to="{ name: '(달력)' }"> 달력</router-link>
-      <span class="px-2">|</span>
-      <router-link :to="{ name: '(간트차트)' }"> Gantt 차트</router-link>
     </CCardText>
   </CCard>
 </template>

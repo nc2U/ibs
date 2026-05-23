@@ -7,7 +7,6 @@ import { iconsSet as icons } from '@/assets/icons'
 import router from '@/router'
 import CoreuiVue from '@coreui/vue'
 import vuetify from '@/plugins/vuetify'
-import ganttastic from '@infectoone/vue-ganttastic'
 import '@/styles/style.scss'
 import App from './App.vue'
 
@@ -20,7 +19,6 @@ app.use(pinia)
     app.use(router)
     app.use(vuetify)
     app.use(CoreuiVue, [])
-    app.use(ganttastic)
     app.provide('icons', icons)
     app.component('CIcon', CIcon)
     app.directive('maska', vMaska)

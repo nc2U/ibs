@@ -6,8 +6,6 @@ import { useLogging } from '@/store/pinia/work_logging.ts'
 import { useWork } from '@/store/pinia/work_project.ts'
 import type {
   CodeValue,
-  GanttProject,
-  Gantts,
   Issue,
   IssueCategory,
   IssueComment,
@@ -433,121 +431,6 @@ export const useIssue = defineStore('issue', () => {
       .then(res => (codeCategoryList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
-  // Gantt issues
-  const ganttIssues = ref<GanttProject[]>([])
-
-  const getBgColor = (ratio: number) => {
-    let color = ''
-    if (ratio > 80) color = '#C5E1A5'
-    else if (ratio >= 60) color = '#DCEDC8'
-    else if (ratio >= 40) color = '#F1F8E9'
-    else if (ratio >= 20) color = '#FFEBEE'
-    else color = '#FFCDD2'
-    return color
-  }
-
-  const getGantts = computed(() => {
-    const gantts = [] as Gantts[][]
-
-    ganttIssues.value.forEach(pj => {
-      if (pj.issues.length) {
-        gantts.push([
-          {
-            isProj: true,
-            depth: pj.depth,
-            name: pj.name,
-            start: pj.start_first,
-            due: pj.due_last ?? '',
-            ganttBarConfig: {
-              id: pj.pk,
-              label: pj.name,
-              immobile: false,
-              html: '',
-              style: {
-                color: '#fff',
-              },
-            },
-          },
-        ])
-
-        pj.issues.forEach(issue => {
-          gantts.push([
-            {
-              isProj: false,
-              depth: pj.depth,
-              name: `${issue.tracker} #${issue.pk}: ${issue.subject}`,
-              start: issue.start_date,
-              due: issue.due_date ?? '',
-              done_ratio: issue.done_ratio,
-              ganttBarConfig: {
-                id: issue.pk,
-                label: `${issue.done_ratio}%`,
-                immobile: false,
-                html: '',
-                style: {
-                  background: getBgColor(issue.done_ratio ?? 0),
-                },
-              },
-            },
-          ])
-        })
-      }
-
-      if (pj.sub_projects.length) {
-        pj.sub_projects.forEach(sub => {
-          gantts.push([
-            {
-              isProj: true,
-              depth: sub.depth,
-              name: sub.name,
-              start: sub.start_first,
-              due: sub.due_last ?? '',
-              ganttBarConfig: {
-                id: sub.pk,
-                label: sub.name,
-                immobile: false,
-                html: '',
-                style: {
-                  color: '#fff',
-                },
-              },
-            },
-          ])
-
-          sub.issues.forEach(issue => {
-            gantts.push([
-              {
-                isProj: false,
-                depth: sub.depth,
-                name: `${issue.tracker} #${issue.pk}: ${issue.subject}`,
-                start: issue.start_date,
-                due: issue.due_date ?? '',
-                done_ratio: issue.done_ratio,
-                ganttBarConfig: {
-                  id: issue.pk,
-                  label: `${issue.done_ratio}%`,
-                  immobile: false,
-                  html: '',
-                  style: {
-                    background: getBgColor(issue.done_ratio ?? 0),
-                  },
-                },
-              },
-            ])
-          })
-        })
-      }
-    })
-
-    return gantts
-  })
-
-  const fetchGanttIssues = async (proj?: string) =>
-    api
-      .get(`/gantt-issues/?project=${proj || ''}`)
-      .then(res => (ganttIssues.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
-
   return {
     issue,
     issueList,
@@ -618,9 +501,5 @@ export const useIssue = defineStore('issue', () => {
 
     codeCategoryList,
     fetchCodeCategoryList,
-
-    ganttIssues,
-    getGantts,
-    fetchGanttIssues,
   }
 })

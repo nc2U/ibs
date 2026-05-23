@@ -29,7 +29,6 @@ export interface getProject {
   status: '1' | '9'
   depth: number
   parent_visible: boolean
-  repo: boolean | undefined
 }
 
 export interface IssueProject {
@@ -91,10 +90,8 @@ export interface Module {
   document: boolean
   file: boolean
   wiki: boolean
-  repository: boolean
   forum: boolean
   calendar: boolean
-  gantt: boolean
 }
 
 export interface Role {
@@ -142,7 +139,6 @@ export interface Permission {
   document_delete: boolean
   file_read: boolean
   file_manage: boolean
-  gantt_read: boolean
   issue_read: boolean
   issue_create: boolean
   issue_update: boolean
@@ -166,11 +162,6 @@ export interface Permission {
   news_read: boolean
   news_manage: boolean
   news_comment: boolean
-  repo_changesets_read: boolean
-  repo_read: boolean
-  repo_commit_access: boolean
-  repo_rel_issue_manage: boolean
-  repo_manage: boolean
   time_read: boolean
   time_create: boolean
   time_update: boolean

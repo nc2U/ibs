@@ -18,7 +18,6 @@ django-widget-tweaks==1.5.1
 djangorestframework==3.17.1
 djangorestframework-simplejwt==5.5.1
 
-GitPython==3.1.50
 gunicorn>=21.2
 
 psycopg2==2.9.11

@@ -14,7 +14,6 @@ const isDark = inject('isDark')
 const getIcon = (sort: string, progress: boolean) => {
   if (sort === '1') return progress ? 'mdi-folder-check' : 'mdi-folder-edit'
   else if (sort === '2') return 'mdi-comment-text-multiple'
-  else if (sort === '3') return 'mdi-cog-outline'
   else if (sort === '4') return 'mdi-message-badge'
   else if (sort === '9') return 'mdi-folder-clock-outline'
   else return 'mdi-folder-plus'
@@ -89,25 +88,6 @@ const getIcon = (sort: string, progress: boolean) => {
                 v-html="markdownRender(cutString(act.comment?.content, 113))"
                 class="form-text"
               />
-            </div>
-          </span>
-
-          <span v-if="act.sort === '3'">
-            <router-link
-              :to="{
-                name: '(저장소) - 리비전 보기',
-                params: {
-                  projId: act.project.slug,
-                  repoId: act.change_set.repo.pk,
-                  sha: act.change_set.sha,
-                },
-              }"
-            >
-              리비전 {{ act.change_set.sha.substring(0, 8) }} ({{ act.change_set.repo.slug }})
-              {{ cutString(act.change_set.message, 50) }}
-            </router-link>
-            <div class="form-text ml-5 pl-3">
-              {{ act.creator.username }}
             </div>
           </span>
 

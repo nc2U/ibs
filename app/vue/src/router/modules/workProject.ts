@@ -99,11 +99,6 @@ const workProject = {
           ],
         },
         {
-          path: ':projId/gantt',
-          name: '(간트차트)',
-          component: () => import('@/views/_Work/Manages/Projects/components/Gantt/Index.vue'),
-        },
-        {
           path: ':projId/calendar',
           name: '(달력)',
           component: () => import('@/views/_Work/Manages/Projects/components/Calendar/Index.vue'),
@@ -178,25 +173,6 @@ const workProject = {
           component: () => import('@/views/_Work/Manages/Projects/components/Files/Index.vue'),
         },
         {
-          path: ':projId/repository',
-          name: '(저장소)',
-          component: () => import('@/views/_Work/Manages/Projects/components/Repository/Index.vue'),
-          children: [
-            {
-              path: ':repoId/sha/:sha',
-              name: '(저장소) - 리비전 보기',
-            },
-            {
-              path: ':repoId/sha/:sha/:path(.*)*',
-              name: '(저장소) - 파일 보기',
-            },
-            {
-              path: ':repoId/diff/:base/:head',
-              name: '(저장소) - 차이점 보기',
-            },
-          ],
-        },
-        {
           path: ':projId/setting',
           name: '(설정)',
           component: () => import('@/views/_Work/Manages/Projects/components/Settings/Index.vue'),
@@ -251,11 +227,6 @@ const workProject = {
         //   name: '소요시간 - 삭제',
         // },
       ],
-    },
-    {
-      path: 'gantt',
-      name: '간트차트',
-      component: () => import('@/views/_Work/Manages/Gantt/Index.vue'),
     },
     {
       path: 'calendar',
