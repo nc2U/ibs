@@ -38,7 +38,6 @@ jobs:
             cd ${{ secrets.NFS_PATH }}/dev && \
             mkdir -p ./app/django/media && \
             mkdir -p ./volume/backups && \
-            mkdir -p ./volume/repos && \
             echo '${{ secrets.NFS_PASS }}' | sudo -S chmod -R 775 ./app/django
 
       # Step 3: Build and push Django Docker image

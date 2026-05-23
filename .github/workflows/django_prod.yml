@@ -121,7 +121,7 @@ jobs:
           echo "Checking for existing PV/PVC resources without Helm labels..."
 
           # Add Helm labels/annotations to existing PVCs
-          for pvc in ibs-nginx-prod-static-pvc ibs-nginx-prod-media-pvc ibs-web-prod-django-pvc ibs-web-prod-git-repos-pvc; do
+          for pvc in ibs-nginx-prod-static-pvc ibs-nginx-prod-media-pvc ibs-web-prod-django-pvc; do
             if kubectl get pvc $pvc -n ${KUBE_NAMESPACE} >/dev/null 2>&1; then
               echo "Adopting PVC: $pvc"
               kubectl label pvc $pvc -n ${KUBE_NAMESPACE} \
@@ -135,7 +135,7 @@ jobs:
           done
 
           # Add Helm labels/annotations to existing PVs
-          for pv in ibs-nginx-prod-static-pv ibs-nginx-prod-media-pv ibs-web-prod-django-pv ibs-web-prod-git-repos-pv; do
+          for pv in ibs-nginx-prod-static-pv ibs-nginx-prod-media-pv ibs-web-prod-django-pv; do
             if kubectl get pv $pv >/dev/null 2>&1; then
               echo "Adopting PV: $pv"
               kubectl label pv $pv \
