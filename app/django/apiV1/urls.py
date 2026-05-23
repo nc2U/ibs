@@ -48,15 +48,11 @@ router.register(r'wise-say', ibs.WiseSayViewSet)
 
 # work
 router.register(r'issue-project', work.IssueProjectViewSet)
-router.register(r'gantt-issues', work.IssueProjectForGanttViewSet, basename='gantt-issues')
 router.register(r'role', work.RoleViewSet)
 # router.register(r'permission', work.PermissionViewSet)
 router.register(r'member', work.MemberViewSet)
 router.register(r'module', work.ModuleViewSet)
 router.register(r'version', work.VersionViewSet)
-router.register(r'repository', work.RepositoryViewSet)
-router.register(r'branch', work.BranchViewSet)
-router.register(r'commit', work.CommitViewSet)
 router.register(r'tracker', work.TrackerViewSet)
 router.register(r'issue-by-tracker-summary', work.IssueCountByTrackerViewSet, basename='issue-by-tracker-summary')
 router.register(r'issue-status', work.IssueStatusViewSet)
@@ -224,13 +220,3 @@ urlpatterns += [path('password-reset-confirm/<str:user_id>/<str:token>/', accoun
 urlpatterns += [path('post/<int:pk>/copy/', board.PostViewSet.as_view({'post': 'copy_and_create'}), name='post-copy')]
 urlpatterns += [path('docs/<int:pk>/copy/', docs.DocumentViewSet.as_view({'docs': 'copy_and_create'}),
                      name='docs-copy')]
-
-# github custom api
-urlpatterns += [path('repo/<int:pk>/', work.GitRepoApiView.as_view(), name='git-repo')]
-urlpatterns += [path('repo/<int:pk>/branches/', work.GitBranchesView.as_view(), name='git-branches')]
-urlpatterns += [path('repo/<int:pk>/tags/', work.GitTagsView.as_view(), name='git-tags')]
-urlpatterns += [path('repo/<int:pk>/tree/', work.GitTreeView.as_view(), name='git-root-tree')]
-urlpatterns += [path('repo/<int:pk>/tree/<path:path>', work.GitTreeView.as_view(), name='git-sub-tree')]
-urlpatterns += [path('repo/<int:pk>/file/<path:path>', work.GitFileContentView.as_view(), name='git-file')]
-urlpatterns += [path('repo/<int:pk>/compare/', work.CompareCommitsView.as_view(), name='compare-commits')]
-urlpatterns += [path('repo/<int:pk>/changed/', work.GetChangedFilesView.as_view(), name='get-changed-files')]

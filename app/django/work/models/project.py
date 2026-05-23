@@ -2,6 +2,10 @@ from django.conf import settings
 from django.db import models
 
 
+class IssueProjectManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().select_related('parent', 'company', 'creator')
+
 class IssueProject(models.Model):
     company = models.ForeignKey('company.Company', on_delete=models.CASCADE, verbose_name="회사")
     SORT_CHOICES = (('1', '본사관리'), ('2', '부동산개발'), ('3', '기타 프로젝트'))
@@ -30,6 +34,8 @@ class IssueProject(models.Model):
     updated = models.DateTimeField('수정일', auto_now=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name='작성자')
 
+    objects = IssueProjectManager()
+
     def __str__(self):
         return self.name
 
@@ -51,60 +57,41 @@ class IssueProject(models.Model):
     def all_members(self):
         """
         멤버와 조상 멤버를 user 기준으로 유니크하게 합치고,
-        멤버의 역할(Role)도 유니크하게 합치는 함수
+        멤버의 역할(Role)도 유니크하게 합치는 함수 (최적화 버전)
         """
-        members = self.members.all()  # 자신의 모든 멤버
+        projects_to_fetch = [self]
+        curr = self
+        while curr.is_inherit_members and curr.parent:
+            projects_to_fetch.append(curr.parent)
+            curr = curr.parent
 
-        # 부모 프로젝트의 멤버를 재귀적으로 가져옴
-        def get_all_parent_members(project):
-            p_members = {}
-            if project.is_inherit_members and project.parent:
-                p_members.update(get_all_parent_members(project.parent))
-            for member in project.members.all():
-                if member.user.pk not in p_members:
-                    p_members[member.user.pk] = {
-                        'pk': member.pk,
-                        'user': {'pk': member.user.pk, 'username': member.user.username},
-                        'roles': {role.pk: {'pk': role.pk, 'name': role.name, 'inherited': True} for role in
-                                  member.roles.all()},
-                        'created': member.created,
-                    }
-                else:
-                    p_members[member.user.pk]['roles'] \
-                        .update(
-                        {role.pk: {'pk': role.pk, 'name': role.name, 'inherited': True} for role in member.roles.all()})
-            return p_members
+        from work.models.project import Member
+        all_mems = Member.objects.filter(project__in=projects_to_fetch).select_related('user').prefetch_related('roles')
 
-        parent_members = get_all_parent_members(self)
-
-        # 현재 프로젝트의 멤버와 부모 프로젝트의 멤버를 합침
-        for mem in members:
-            if mem.user.pk in parent_members:
-                parent_roles = parent_members[mem.user.pk]['roles']
-                union_roles = parent_roles.copy()
-                union_roles.update(
-                    {role.pk: {'pk': role.pk, 'name': role.name, 'inherited': False} for role in mem.roles.all()})
-                parent_members[mem.user.pk]['roles'] = union_roles
-            else:
-                parent_members[mem.user.pk] = {
+        member_data = {}
+        for mem in all_mems:
+            is_inherited = mem.project_id != self.id
+            if mem.user_id not in member_data:
+                member_data[mem.user_id] = {
                     'pk': mem.pk,
-                    'user': {'pk': mem.user.pk, 'username': mem.user.username},
-                    'roles': {role.pk: {'pk': role.pk, 'name': role.name, 'inherited': False} for role in
-                              mem.roles.all()},
+                    'user': {'pk': mem.user_id, 'username': mem.user.username},
+                    'roles': {role.pk: {'pk': role.pk, 'name': role.name, 'inherited': is_inherited} for role in mem.roles.all()},
                     'created': mem.created,
                 }
+            else:
+                member_data[mem.user_id]['roles'].update(
+                    {role.pk: {'pk': role.pk, 'name': role.name, 'inherited': is_inherited} for role in mem.roles.all()}
+                )
 
-        all_members = [
+        return [
             {
-                'pk': mem['pk'],
-                'user': mem['user'],
-                'roles': list(mem['roles'].values()),
-                'created': mem['created']
+                'pk': data['pk'],
+                'user': data['user'],
+                'roles': list(data['roles'].values()),
+                'created': data['created']
             }
-            for mem in parent_members.values()
+            for data in member_data.values()
         ]
-
-        return all_members
 
     class Meta:
         ordering = ('order', 'id')
@@ -120,10 +107,8 @@ class Module(models.Model):
     document = models.BooleanField('문서', default=True)
     file = models.BooleanField('파일', default=True)
     wiki = models.BooleanField('위키', default=True)
-    repository = models.BooleanField('저장소', default=False)
     forum = models.BooleanField('게시판', default=True)
     calendar = models.BooleanField('달력', default=True)
-    gantt = models.BooleanField('Gantt 차트', default=True)
 
     def __str__(self):
         return f'{self.project.name}'
@@ -158,7 +143,7 @@ class Role(models.Model):
 class Permission(models.Model):
     MODULE_CHOICES = (('project', '프로젝트'), ('issue', '업무관리'), ('time', '시간추적'),
                       ('news', '공지'), ('docs', '문서'), ('file', '파일'), ('wiki', '위키'),
-                      ('repo', '저장소'), ('forum', '게시판'), ('calendar', '달력'), ('gantt', '간트차트'))
+                      ('forum', '게시판'), ('calendar', '달력'))
     sort = models.CharField('모듈', max_length=10, choices=MODULE_CHOICES, db_index=True)
     code = models.CharField('코드', max_length=30, unique=True)
     name = models.CharField('이름', max_length=20)

@@ -1,5 +1,3 @@
-from heapq import merge
-
 from django.core.cache import cache
 from django.db import connection
 from django.db.models import Q
@@ -9,7 +7,7 @@ from rest_framework import viewsets
 from apiV1.pagination import *
 from apiV1.permission import *
 from apiV1.serializers.work.logging import *
-from work.models import IssueProject, Commit
+from work.models import IssueProject
 
 
 def get_sub_project_ids(parent):
@@ -58,7 +56,7 @@ class ActivityLogFilter(FilterSet):
 
     @staticmethod
     def filter_by_sort_code(queryset, name, value):
-        valid_sorts = {'1', '2', '3', '4', '5', '6', '7', '8', '9'}
+        valid_sorts = {'1', '2', '4', '5', '6', '7', '8', '9'}
         sort_values = [v for v in value.split(",") if v in valid_sorts]
         if sort_values:
             queryset = queryset.filter(sort__in=sort_values)
@@ -77,55 +75,15 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
         user = self.request.user
         work_auth = user.work_manager or user.is_superuser
         projects = user.assigned_projects().values_list('pk', flat=True)
-        if work_auth:
-            return self.queryset
-        return self.queryset.filter(
-            Q(project__is_public=True) |
-            Q(project__in=projects)).select_related('project', 'creator')
-
-    def get_commits(self):
-        user = self.request.user
-
-        work_auth = user.work_manager or user.is_superuser
-        projects = user.assigned_projects().values_list('id', flat=True)
-
-        # 필터 파라미터 가져오기
-        # fields = ('sort', 'project__slug', 'from_act_date', 'to_act_date')
-        query_params = self.request.query_params
-        sort = query_params.get('sort')
-        project_slug = query_params.get('project__slug')
-        from_date = query_params.get('from_act_date')
-        to_date = query_params.get('to_act_date')
-
-        # 기본 쿼리셋
-        if not sort or '3' in sort:
-            queryset = Commit.objects.all()
-
-            if not work_auth:
-                queryset = queryset.filter(
-                    Q(repo__project__is_public=True) |
-                    Q(repo__project__in=projects))
-
-            # project__slug → IssueProject id 목록
-            if project_slug:
-                try:
-                    project = IssueProject.objects.get(slug=project_slug)
-                    project_ids = [project.pk] + [pk for pk in get_sub_project_ids(project)]
-                    queryset = queryset.filter(repo__project__id__in=project_ids)
-                except IssueProject.DoesNotExist:
-                    return Commit.objects.none()
-
-            if from_date:
-                queryset = queryset.filter(date__gte=from_date)
-            if to_date:
-                queryset = queryset.filter(date__lte=to_date)
-
-            return queryset.select_related('repo').order_by('-date')
-        else:
-            return Commit.objects.none()
+        queryset = self.queryset
+        if not work_auth:
+            queryset = queryset.filter(
+                Q(project__is_public=True) |
+                Q(project__in=projects))
+        return queryset.select_related('project', 'creator', 'issue', 'comment', 'news', 'spent_time')
 
     def list(self, request, *args, **kwargs):
-        """ActivityLogEntry와 Commit 데이터를 병합하여 반환"""
+        """ActivityLogEntry 데이터를 반환"""
 
         # ActivityLogEntry 조회
         logs = self.filter_queryset(self.get_queryset()).values(
@@ -136,13 +94,8 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
             'news__summary', 'news__author', 'spent_time__hours', 'spent_time__comment',
             'act_date', 'timestamp', 'creator__id', 'creator__username')
 
-        # Commit 조회
-        commits = self.get_commits().values(
-            'repo__id', 'repo__slug', 'repo__project__name',
-            'repo__project__slug', 'commit_hash', 'message', 'date', 'author')
-
-        # 데이터 병합 (제너레이터)
-        log_iter = ({
+        # 데이터 변환 (제너레이터)
+        log_data = [{
             'pk': log['pk'],
             'sort': log['sort'],
             'project': {
@@ -168,30 +121,11 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
             'act_date': log['act_date'],
             'timestamp': log['timestamp'],
             'creator': {'pk': log['creator__id'], 'username': log['creator__username']},
-        } for log in logs)
-        commit_iter = ({
-            'pk': 0,
-            'sort': '3',
-            'project': {'name': c['repo__project__name'], 'slug': c['repo__project__slug']},
-            'issue': None,
-            'status_log': None,  # c['message'][:30],
-            'comment': None,
-            'spent_time': None,
-            'change_set': {
-                'repo': {'pk': c['repo__id'], 'slug': c['repo__slug']},
-                'sha': c['commit_hash'],
-                'message': c['message'],
-            },
-            'act_date': c['date'].date(),  # datetime.fromtimestamp(c['date']).date(),
-            'timestamp': c['date'],
-            'user': {'pk': f"commit:{c['commit_hash'][:8]}", 'username': c['author']},
-        } for c in commits)
-
-        combined = list(merge(log_iter, commit_iter, key=lambda x: x['timestamp'], reverse=True))
+        } for log in logs]
 
         # 페이지네이션
         paginator = self.pagination_class()
-        page = paginator.paginate_queryset(combined, request)
+        page = paginator.paginate_queryset(log_data, request)
         return paginator.get_paginated_response(page)
 
 

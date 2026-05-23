@@ -2,7 +2,6 @@ from django.contrib import admin
 from import_export.admin import ImportExportMixin
 
 from work.models import IssueProject, Module, Role, Permission, Member, Version
-from work.models.git_repo import Repository
 from work.models.issue import IssueCategory
 
 
@@ -26,18 +25,13 @@ class IssueCategoryInline(admin.TabularInline):
     extra = 0
 
 
-class RepositoryInline(admin.TabularInline):
-    model = Repository
-    extra = 0
-
-
 @admin.register(IssueProject)
 class IssueProjectAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('pk', 'company', 'sort', 'name', 'homepage', 'is_public', 'parent', 'slug', 'status',
                     'slack_notifications_enabled', 'order')
     list_display_links = ('name',)
     list_editable = ('company', 'sort', 'slack_notifications_enabled', 'order')
-    inlines = (ModuleInline, MemberInline, VersionInline, IssueCategoryInline, RepositoryInline)
+    inlines = (ModuleInline, MemberInline, VersionInline, IssueCategoryInline)
     list_filter = ('company', 'sort', 'is_public', 'status', 'slack_notifications_enabled')
 
     fieldsets = (

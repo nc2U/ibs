@@ -9,6 +9,14 @@ from django.dispatch import receiver
 from work.models.project import IssueProject, Role, Version
 
 
+class IssueManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().select_related(
+            'project', 'tracker', 'status', 'priority', 'category',
+            'fixed_version', 'assigned_to', 'parent', 'creator', 'updater'
+        )
+
+
 class Issue(models.Model):
     project = models.ForeignKey(IssueProject, on_delete=models.PROTECT, verbose_name='프로젝트')
     tracker = models.ForeignKey('Tracker', on_delete=models.PROTECT, verbose_name='유형')
@@ -36,6 +44,8 @@ class Issue(models.Model):
                                 related_name='updater', null=True, blank=True)
     created = models.DateTimeField('등록일', auto_now_add=True)
     updated = models.DateTimeField('수정일', auto_now=True)
+
+    objects = IssueManager()
 
     def __str__(self):
         return f'#{self.pk}-{self.subject}'
@@ -137,6 +147,11 @@ class TimeEntry(models.Model):
         verbose_name_plural = '07. 소요 시간'
 
 
+class TrackerManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().select_related('default_status')
+
+
 class Tracker(models.Model):
     name = models.CharField('이름', max_length=100, db_index=True)
     description = models.CharField('설명', max_length=255, blank=True, default='')
@@ -146,6 +161,8 @@ class Tracker(models.Model):
     created = models.DateTimeField('등록일', auto_now_add=True)
     updated = models.DateTimeField('수정일', auto_now=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name='작성자')
+
+    objects = TrackerManager()
 
     def __str__(self):
         return self.name

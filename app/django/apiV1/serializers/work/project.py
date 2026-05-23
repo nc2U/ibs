@@ -49,7 +49,7 @@ class ModuleInIssueProjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = Module
         fields = ('pk', 'project', 'issue', 'time', 'news', 'document',
-                  'file', 'wiki', 'repository', 'forum', 'calendar', 'gantt')
+                  'file', 'wiki', 'forum', 'calendar')
 
 
 class RoleInIssueProjectSerializer(serializers.ModelSerializer):
@@ -400,10 +400,8 @@ class IssueProjectSerializer(serializers.ModelSerializer):
                               document=self.initial_data.get('document', True),
                               file=self.initial_data.get('file', True),
                               wiki=self.initial_data.get('wiki', True),
-                              repository=self.initial_data.get('repository', False),
                               forum=self.initial_data.get('forum', True),
-                              calendar=self.initial_data.get('calendar', True),
-                              gantt=self.initial_data.get('gantt', True))
+                              calendar=self.initial_data.get('calendar', True))
         return project
 
     @transaction.atomic
@@ -426,7 +424,7 @@ class IssueProjectSerializer(serializers.ModelSerializer):
 
         # 모듈 필드 업데이트
         module = instance.module
-        for field in ['issue', 'time', 'news', 'document', 'file', 'wiki', 'repository', 'forum', 'calendar', 'gantt']:
+        for field in ['issue', 'time', 'news', 'document', 'file', 'wiki', 'forum', 'calendar']:
             if field in self.initial_data:
                 setattr(module, field, self.initial_data[field])
         module.save()
@@ -454,123 +452,11 @@ class IssueProjectSerializer(serializers.ModelSerializer):
         return super().update(instance, validated_data)
 
 
-class IssueProjectForGanttSerializer(serializers.ModelSerializer):
-    start_first = serializers.SerializerMethodField()
-    due_last = serializers.SerializerMethodField()
-    sub_projects = serializers.SerializerMethodField()
-    issues = serializers.SerializerMethodField()
-
-    class Meta:
-        model = IssueProject
-        fields = ('pk', 'company', 'name', 'slug', 'start_first',
-                  'due_last', 'depth', 'sub_projects', 'issues')
-
-    @staticmethod
-    def get_start_first(obj):
-        start = obj.issue_set.filter(closed=None).order_by('start_date').first()
-        return start.start_date if start else None
-
-    @staticmethod
-    def get_due_last(obj):
-        due = obj.issue_set.filter(closed=None).order_by('due_date').last()
-        return due.due_date if due else None
-
-    def get_sub_projects(self, obj):
-        sub_projects = obj.issueproject_set.exclude(status='9')
-        request = self.context.get('request')
-
-        # Create a new serializer class without the 'my_perms' field
-        class SubProjectSerializer(self.__class__):
-            class Meta(self.__class__.Meta):
-                fields = tuple(
-                    f for f in self.__class__.Meta.fields if
-                    f not in ('company',))
-
-        return SubProjectSerializer(sub_projects, many=True, read_only=True, context=self.context).data
-
-    def get_issues(self, obj):
-        issues = obj.issue_set.filter(closed=None)
-
-        class IssuesSerializer(serializers.ModelSerializer):
-            tracker = serializers.SlugRelatedField(slug_field='name', read_only=True)
-
-            class Meta:
-                model = Issue
-                fields = ('pk', 'tracker', 'subject', 'start_date', 'due_date', 'done_ratio')
-
-        return IssuesSerializer(issues, many=True, read_only=True, context=self.context).data
-
-
-# class PermissionSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Permission
-#         fields = ('pk', 'project_update', 'project_close', 'project_delete',
-#                   'project_public', 'project_module', 'project_member', 'project_version',
-#                   'project_create_sub', 'project_pub_query', 'project_save_query',
-#                   'forum_read', 'forum_create', 'forum_update', 'forum_own_update',
-#                   'forum_delete', 'forum_own_delete', 'forum_watcher_read',
-#                   'forum_watcher_create', 'forum_watcher_delete', 'forum_manage',
-#                   'calendar_read',
-#                   'document_read', 'document_create', 'document_update', 'document_delete',
-#                   'file_read', 'file_manage',
-#                   'gantt_read',
-#                   'issue_read', 'issue_create', 'issue_update', 'issue_own_update', 'issue_copy',
-#                   'issue_rel_manage', 'issue_sub_manage', 'issue_public', 'issue_own_public',
-#                   'issue_comment_create', 'issue_comment_update', 'issue_comment_own_update',
-#                   'issue_private_comment_read', 'issue_private_comment_set', 'issue_delete',
-#                   'issue_watcher_read', 'issue_watcher_create', 'issue_watcher_delete', 'issue_import',
-#                   'issue_category_manage',
-#                   'news_read', 'news_manage', 'news_manage', 'news_comment',
-#                   'repo_changesets_read', 'repo_read', 'repo_commit_access', 'repo_rel_issue_manage', 'repo_manage',
-#                   'time_read', 'time_create', 'time_update', 'time_own_update',
-#                   'time_pro_act_manage', 'time_other_user_log', 'time_entries_import',
-#                   'wiki_read', 'wiki_history_read', 'wiki_page_export', 'wiki_page_update',
-#                   'wiki_page_rename', 'wiki_page_delete', 'wiki_attachment_delete', 'wiki_watcher_read',
-#                   'wiki_watcher_create', 'wiki_watcher_delete', 'wiki_page_project', 'wiki_manage')
-
-
-class RoleSerializer(serializers.ModelSerializer):
-    # permission = PermissionSerializer(read_only=True)
-
-    class Meta:
-        model = Role
-        fields = ('pk', 'name', 'assignable', 'issue_visible', 'time_entry_visible', 'user_visible',
-                  'default_time_activity', 'order', 'creator', 'created', 'updated')  # , 'permission'
-
-
-class MemberSerializer(serializers.ModelSerializer):
-    user = SimpleUserSerializer(read_only=True)
-    project = SimpleIssueProjectSerializer(read_only=True)
-    roles = RoleInMemberSerializer(many=True, read_only=True)
-
-    class Meta:
-        model = Member
-        fields = ('pk', 'user', 'project', 'roles', 'created')
-
-    def create(self, validated_data):
-        user = self.initial_data.get('user', None)
-        slug = self.initial_data.get('slug', None)
-        project = IssueProject.objects.get(slug=slug)
-        member = Member(user_id=user, project=project)
-        member.save()
-        roles = self.initial_data.get('roles', [])
-        member.roles.set(roles)
-        return member
-
-    def update(self, instance, validated_data):
-        user = self.initial_data.get('user', None)
-        roles = self.initial_data.get('roles', [])
-        instance.user_id = user if user else instance.user.id
-        instance.roles.set(roles)
-        instance.save()
-        return instance
-
-
 class ModuleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Module
         fields = ('pk', 'project', 'issue', 'time', 'news', 'document',
-                  'file', 'wiki', 'repository', 'forum', 'calendar', 'gantt')
+                  'file', 'wiki', 'forum', 'calendar')
 
 
 class IssueInVersionSerializer(serializers.ModelSerializer):
