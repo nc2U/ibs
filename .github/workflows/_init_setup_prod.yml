@@ -234,17 +234,21 @@ jobs:
             --set postgres.auth.password=${{ secrets.DATABASE_PASS }} \
             --set postgres.auth.replicationPassword=${{ secrets.DATABASE_PASS }} \
             --set 'nginx.ingress.hosts[0].host'=erp.${{ secrets.DOMAIN_NAME }} \
-            --set 'nginx.ingress.hosts[1].host'=erp.dyibs.co.kr \
-            --set 'nginx.ingress.hosts[2].host'=erp.brdnc.co.kr \
+            --set 'nginx.ingress.hosts[1].host'=ibs.${{ secrets.DOMAIN_NAME }} \
+            --set 'nginx.ingress.hosts[2].host'=ibs.dyibs.co.kr \
+            --set 'nginx.ingress.hosts[3].host'=ibs.brdnc.co.kr \
             --set 'nginx.ingress.hosts[0].paths[0].path'=/ \
             --set 'nginx.ingress.hosts[0].paths[0].pathType'=Prefix \
             --set 'nginx.ingress.hosts[1].paths[0].path'=/ \
             --set 'nginx.ingress.hosts[1].paths[0].pathType'=Prefix \
             --set 'nginx.ingress.hosts[2].paths[0].path'=/ \
             --set 'nginx.ingress.hosts[2].paths[0].pathType'=Prefix \
+            --set 'nginx.ingress.hosts[3].paths[0].path'=/ \
+            --set 'nginx.ingress.hosts[3].paths[0].pathType'=Prefix \
             --set 'nginx.ingress.tls[0].hosts[0]'=erp.${{ secrets.DOMAIN_NAME }} \
-            --set 'nginx.ingress.tls[0].hosts[1]'=erp.dyibs.co.kr \
-            --set 'nginx.ingress.tls[0].hosts[2]'=erp.brdnc.co.kr \
+            --set 'nginx.ingress.tls[0].hosts[1]'=ibs.${{ secrets.DOMAIN_NAME }} \
+            --set 'nginx.ingress.tls[0].hosts[2]'=ibs.dyibs.co.kr \
+            --set 'nginx.ingress.tls[0].hosts[3]'=ibs.brdnc.co.kr \
             --set 'nginx.ingress.tls[0].secretName'=web-devbox-kr-cert \
             --cleanup-on-fail
 

@@ -149,6 +149,8 @@ jobs:
                 --set 'nginx.ingress.hosts[1].paths[0].pathType'=Prefix \
                 --set 'nginx.ingress.hosts[2].paths[0].path'=/ \
                 --set 'nginx.ingress.hosts[2].paths[0].pathType'=Prefix \
+                --set 'nginx.ingress.hosts[3].paths[0].path'=/ \
+                --set 'nginx.ingress.hosts[3].paths[0].pathType'=Prefix \
                 --set 'nginx.ingress.tls[0].hosts[0]'=erp.${{ secrets.DOMAIN_NAME }} \
                 --set 'nginx.ingress.tls[0].hosts[1]'=ibs.${{ secrets.DOMAIN_NAME }} \
                 --set 'nginx.ingress.tls[0].hosts[2]'=ibs.dyibs.co.kr \
