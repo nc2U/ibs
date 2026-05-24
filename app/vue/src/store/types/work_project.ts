@@ -88,8 +88,6 @@ export interface Module {
   time: boolean
   news: boolean
   document: boolean
-  file: boolean
-  wiki: boolean
   forum: boolean
   calendar: boolean
 }
@@ -137,8 +135,6 @@ export interface Permission {
   document_create: boolean
   document_update: boolean
   document_delete: boolean
-  file_read: boolean
-  file_manage: boolean
   issue_read: boolean
   issue_create: boolean
   issue_update: boolean
@@ -169,18 +165,6 @@ export interface Permission {
   time_pro_act_manage: boolean
   time_other_user_log: boolean
   time_entries_import: boolean
-  wiki_read: boolean
-  wiki_history_read: boolean
-  wiki_page_export: boolean
-  wiki_page_update: boolean
-  wiki_page_rename: boolean
-  wiki_page_delete: boolean
-  wiki_attachment_delete: boolean
-  wiki_watcher_read: boolean
-  wiki_watcher_create: boolean
-  wiki_watcher_delete: boolean
-  wiki_page_project: boolean
-  wiki_manage: boolean
 }
 
 export interface Member {
@@ -206,7 +190,6 @@ export interface Version {
     | '모든 프로젝트'
   effective_date: string | null
   description: string
-  wiki_page_title: string
   issues?: SimpleIssue[]
   is_default?: boolean
 }

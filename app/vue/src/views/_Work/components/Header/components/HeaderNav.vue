@@ -36,8 +36,6 @@ const getTitle = (title: string) => title.replace(/[() ]/gim, '')
         </CDropdownItem>
         <CDropdownItem v-if="workManager" disabled>새 뉴스</CDropdownItem>
         <CDropdownItem v-if="workManager" disabled>새 문서</CDropdownItem>
-        <CDropdownItem v-if="workManager" disabled>새 위키</CDropdownItem>
-        <CDropdownItem v-if="workManager" disabled>파일추가</CDropdownItem>
       </CDropdownMenu>
     </CDropdown>
     <CNavItem v-for="(menu, i) in menus" :key="i">

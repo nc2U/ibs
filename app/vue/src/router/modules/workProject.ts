@@ -134,17 +134,6 @@ const workProject = {
           ],
         },
         {
-          path: ':projId/wiki',
-          name: '(위키)',
-          component: () => import('@/views/_Work/Manages/Projects/components/Wiki/Index.vue'),
-          children: [
-            {
-              path: ':title',
-              name: '(위키) - 제목',
-            },
-          ],
-        },
-        {
           path: ':projId/boards',
           name: '(게시판)',
           component: () => import('@/views/_Work/Manages/Projects/components/Board/Index.vue'),
@@ -166,11 +155,6 @@ const workProject = {
               ],
             },
           ],
-        },
-        {
-          path: ':projId/file',
-          name: '(파일)',
-          component: () => import('@/views/_Work/Manages/Projects/components/Files/Index.vue'),
         },
         {
           path: ':projId/setting',

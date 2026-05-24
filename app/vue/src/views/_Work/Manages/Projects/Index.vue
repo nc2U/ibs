@@ -36,10 +36,8 @@ const projectNavMenus = computed(() => {
   if (modules.value?.calendar) menus = [...new Set([...menus, ...[{ no: 7, menu: '(달력)' }]])]
   if (modules.value?.news) menus = [...new Set([...menus, ...[{ no: 8, menu: '(공지)' }]])]
   if (modules.value?.document) menus = [...new Set([...menus, ...[{ no: 9, menu: '(문서)' }]])]
-  if (modules.value?.wiki) menus = [...new Set([...menus, ...[{ no: 10, menu: '(위키)' }]])]
   if (modules.value?.forum && project.forums.length)
     menus = [...new Set([...menus, ...[{ no: 11, menu: '(게시판)' }]])]
-  if (modules.value?.file) menus = [...new Set([...menus, ...[{ no: 12, menu: '(파일)' }]])]
   if (issueProject.value?.status !== '9') menus = [...menus, ...[{ no: 14, menu: '(설정)' }]]
 
   return menus.sort((a, b) => a.no - b.no).map(m => m.menu)

@@ -16,7 +16,6 @@ const form = ref({
   name: '',
   description: '',
   status: '1' as '1' | '2' | '3',
-  wiki_page_title: '',
   effective_date: null as string | null,
   sharing: '0' as '0' | '1' | '2' | '3' | '4',
   is_default: false,
@@ -27,11 +26,10 @@ const formsCheck = computed(() => {
     const a = version.value.name === form.value.name
     const b = version.value.description === form.value.description
     const c = version.value.status === form.value.status
-    const d = version.value.wiki_page_title === form.value.wiki_page_title
     const e = version.value.effective_date === form.value.effective_date
     const f = version.value.sharing === form.value.sharing
     const g = version.value.is_default === form.value.is_default
-    return a && b && c && d && e && f && g
+    return a && b && c && e && f && g
   } else return false
 })
 
@@ -56,7 +54,6 @@ const setupForm = () => {
     form.value.name = version.value.name
     form.value.description = version.value.description
     form.value.status = version.value.status
-    form.value.wiki_page_title = version.value.wiki_page_title
     form.value.effective_date = version.value.effective_date
     form.value.sharing = version.value.sharing
     form.value.is_default = !!version.value.is_default
@@ -69,7 +66,6 @@ const resetForm = () => {
   form.value.name = ''
   form.value.status = '1'
   form.value.description = ''
-  form.value.wiki_page_title = ''
   form.value.effective_date = null
   form.value.sharing = '0'
   form.value.is_default = false
@@ -119,16 +115,6 @@ onBeforeMount(async () => {
                 <option value="2">잠김</option>
                 <option value="3">닫힘</option>
               </CFormSelect>
-            </CCol>
-          </CRow>
-
-          <CRow class="mb-3">
-            <CFormLabel for="name" class="col-sm-2 col-form-label text-right">
-              위키 페이지
-            </CFormLabel>
-
-            <CCol sm="10" lg="6">
-              <CFormInput v-model="form.wiki_page_title" placeholder="위키 페이지 제목" />
             </CCol>
           </CRow>
 

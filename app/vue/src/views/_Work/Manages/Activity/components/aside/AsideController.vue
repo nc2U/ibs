@@ -39,7 +39,7 @@ const actFilter = reactive<ActLogEntryFilter & { subProjects: boolean }>({
   to_act_date: '',
   from_act_date: '',
   creator: '',
-  sort: ['1', '2', '4', '5', '6', '9'],
+  sort: ['1', '2', '4', '5', '9'],
   subProjects: true,
 })
 
@@ -158,10 +158,6 @@ onBeforeMount(async () => {
       <a href="javascript:void(0)" @click="pickSort('4')" class="ml-2">공지</a> <br />
       <CFormCheck v-model="actFilter.sort" value="5" id="docs-filter" />
       <a href="javascript:void(0)" @click="pickSort('5')" class="ml-2">문서</a> <br />
-      <CFormCheck v-model="actFilter.sort" value="6" id="file-filter" />
-      <a href="javascript:void(0)" @click="pickSort('6')" class="ml-2">파일</a> <br />
-      <CFormCheck v-model="actFilter.sort" value="7" id="wiki-filter" />
-      <a href="javascript:void(0)" @click="pickSort('7')" class="ml-2">위키 편집</a> <br />
       <CFormCheck v-model="actFilter.sort" value="8" id="message-filter" />
       <a href="javascript:void(0)" @click="pickSort('8')" class="ml-2">글</a> <br />
       <CFormCheck v-model="actFilter.sort" value="9" id="spent-time-filter" />

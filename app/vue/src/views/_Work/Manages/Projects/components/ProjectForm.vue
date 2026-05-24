@@ -64,8 +64,6 @@ const module = reactive({
   time: true,
   news: true,
   document: true,
-  file: true,
-  wiki: true,
   forum: true,
   calendar: true,
 })
@@ -176,8 +174,6 @@ const dataSetup = () => {
     module.time = !!props.project.module?.time
     module.news = !!props.project.module?.news
     module.document = !!props.project.module?.document
-    module.file = !!props.project.module?.file
-    module.wiki = !!props.project.module?.wiki
     module.forum = !!props.project.module?.forum
     module.calendar = !!props.project.module?.calendar
   }
@@ -394,12 +390,6 @@ onBeforeMount(() => {
           </CCol>
           <CCol sm="6" md="4" lg="3" xl="2">
             <CFormCheck v-model="module.document" id="document" label="문서" />
-          </CCol>
-          <CCol sm="6" md="4" lg="3" xl="2">
-            <CFormCheck v-model="module.file" id="file" label="파일" />
-          </CCol>
-          <CCol sm="6" md="4" lg="3" xl="2">
-            <CFormCheck v-model="module.wiki" id="wiki" label="위키" />
           </CCol>
           <CCol sm="6" md="4" lg="3" xl="2">
             <CFormCheck v-model="module.forum" id="forum" label="게시판" />

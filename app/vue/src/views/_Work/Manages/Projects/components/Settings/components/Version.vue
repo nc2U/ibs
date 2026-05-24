@@ -112,12 +112,11 @@ const deleteSubmit = () => {
       <v-divider class="my-0" />
       <CTable small striped responsive hover>
         <colgroup>
+          <col style="width: 15%" />
           <col style="width: 10%" />
-          <col style="width: 5%" />
           <col style="width: 15%" />
           <col style="width: 20%" />
-          <col style="width: 5%" />
-          <col style="width: 15%" />
+          <col style="width: 10%" />
           <col style="width: 20%" />
           <col style="width: 10%" />
         </colgroup>
@@ -129,7 +128,6 @@ const deleteSubmit = () => {
             <CTableHeaderCell>설명</CTableHeaderCell>
             <CTableHeaderCell>상태</CTableHeaderCell>
             <CTableHeaderCell>공유</CTableHeaderCell>
-            <CTableHeaderCell>위키 페이지</CTableHeaderCell>
             <CTableHeaderCell></CTableHeaderCell>
           </CTableRow>
         </CTableHead>
@@ -156,14 +154,6 @@ const deleteSubmit = () => {
             </CTableDataCell>
             <CTableDataCell :class="{ 'text-secondary': ver.status === '3' }">
               {{ ver.sharing_desc }}
-            </CTableDataCell>
-            <CTableDataCell class="text-left" :class="{ 'text-secondary': ver.status === '3' }">
-              <router-link
-                v-if="ver.wiki_page_title"
-                :to="{ name: '(위키) - 제목', params: { title: ver.wiki_page_title } }"
-              >
-                {{ ver.wiki_page_title }}
-              </router-link>
             </CTableDataCell>
             <CTableDataCell class="form-text">
               <span class="mr-2">

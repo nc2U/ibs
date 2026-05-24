@@ -77,4 +77,4 @@ class VersionViewSet(viewsets.ModelViewSet):
     serializer_class = VersionSerializer
     permission_classes = (permissions.IsAuthenticated,)
     filterset_class = VersionFilter
-    search_fields = ('name', 'description', 'wiki_page_title')
+    search_fields = ('name', 'description')

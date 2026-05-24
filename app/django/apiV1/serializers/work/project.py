@@ -49,7 +49,7 @@ class ModuleInIssueProjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = Module
         fields = ('pk', 'project', 'issue', 'time', 'news', 'document',
-                  'file', 'wiki', 'forum', 'calendar')
+                  'forum', 'calendar')
 
 
 class RoleInIssueProjectSerializer(serializers.ModelSerializer):
@@ -72,7 +72,7 @@ class VersionInIssueProjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = Version
         fields = ('pk', 'name', 'status', 'status_desc', 'sharing', 'sharing_desc',
-                  'is_default', 'effective_date', 'description', 'wiki_page_title')
+                  'is_default', 'effective_date', 'description')
 
     @staticmethod
     def get_is_default(obj):
@@ -200,8 +200,6 @@ class IssueProjectSerializer(serializers.ModelSerializer):
                               time=self.initial_data.get('time', True),
                               news=self.initial_data.get('news', True),
                               document=self.initial_data.get('document', True),
-                              file=self.initial_data.get('file', True),
-                              wiki=self.initial_data.get('wiki', True),
                               forum=self.initial_data.get('forum', True),
                               calendar=self.initial_data.get('calendar', True))
         return project
@@ -226,7 +224,7 @@ class IssueProjectSerializer(serializers.ModelSerializer):
 
         # 모듈 필드 업데이트
         module = instance.module
-        for field in ['issue', 'time', 'news', 'document', 'file', 'wiki', 'forum', 'calendar']:
+        for field in ['issue', 'time', 'news', 'document', 'forum', 'calendar']:
             if field in self.initial_data:
                 setattr(module, field, self.initial_data[field])
         module.save()
@@ -291,7 +289,7 @@ class ModuleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Module
         fields = ('pk', 'project', 'issue', 'time', 'news', 'document',
-                  'file', 'wiki', 'forum', 'calendar')
+                  'forum', 'calendar')
 
 
 class IssueInVersionSerializer(serializers.ModelSerializer):
@@ -321,7 +319,7 @@ class VersionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Version
         fields = ('pk', 'project', 'name', 'status', 'status_desc', 'sharing', 'sharing_desc',
-                  'effective_date', 'description', 'wiki_page_title', 'issues', 'is_default')
+                  'effective_date', 'description', 'issues', 'is_default')
 
     @staticmethod
     def get_is_default(obj):

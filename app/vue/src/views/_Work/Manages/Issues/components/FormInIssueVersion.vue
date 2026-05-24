@@ -12,7 +12,6 @@ const nVersion = ref({
   name: '',
   description: '',
   status: '1' as '1' | '2' | '3',
-  wiki_page_title: '',
   effective_date: null as string | null,
   sharing: '0' as '0' | '1' | '2' | '3' | '4',
   is_default: false,
@@ -61,14 +60,6 @@ const closeModal = () => emit('close')
             <option value="2">잠김</option>
             <option value="3">닫힘</option>
           </CFormSelect>
-        </CCol>
-      </CRow>
-
-      <CRow class="mb-3">
-        <CFormLabel for="name" class="col-sm-3 col-form-label text-right"> 위키 페이지</CFormLabel>
-
-        <CCol class="col-7">
-          <CFormInput v-model="nVersion.wiki_page_title" placeholder="위키 페이지 제목" />
         </CCol>
       </CRow>
 

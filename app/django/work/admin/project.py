@@ -111,6 +111,6 @@ class MemberAdmin(ImportExportMixin, admin.ModelAdmin):
 
 @admin.register(Version)
 class VersionAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('pk', 'name', 'project', 'status', 'get_sharing_display', 'effective_date', 'wiki_page_title')
+    list_display = ('pk', 'name', 'project', 'status', 'get_sharing_display', 'effective_date')
     list_display_links = ('name',)
     list_filter = ('project', 'status', 'sharing')

@@ -111,8 +111,6 @@ class Search(models.Model):
     issue = models.BooleanField('업무 포함 여부', default=False)
     news = models.BooleanField('공지 포함 여부', default=False)
     document = models.BooleanField('문서 포함 여부', default=False)
-    changeset = models.BooleanField('변경 집합 포함 여부', default=False)
-    wiki = models.BooleanField('위키 포함 여부', default=False)
     forum = models.BooleanField('게시판 포함 여부', default=False)
     project = models.BooleanField('프로젝트 포함 여부', default=False)
     open_issue = models.BooleanField('미해결 업무 검색', default=False)

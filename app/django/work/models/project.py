@@ -105,8 +105,6 @@ class Module(models.Model):
     time = models.BooleanField('시간추적', default=True)
     news = models.BooleanField('공지', default=True)
     document = models.BooleanField('문서', default=True)
-    file = models.BooleanField('파일', default=True)
-    wiki = models.BooleanField('위키', default=True)
     forum = models.BooleanField('게시판', default=True)
     calendar = models.BooleanField('달력', default=True)
 
@@ -142,7 +140,7 @@ class Role(models.Model):
 
 class Permission(models.Model):
     MODULE_CHOICES = (('project', '프로젝트'), ('issue', '업무관리'), ('time', '시간추적'),
-                      ('news', '공지'), ('docs', '문서'), ('file', '파일'), ('wiki', '위키'),
+                      ('news', '공지'), ('docs', '문서'),
                       ('forum', '게시판'), ('calendar', '달력'))
     sort = models.CharField('모듈', max_length=10, choices=MODULE_CHOICES, db_index=True)
     code = models.CharField('코드', max_length=30, unique=True)
@@ -183,7 +181,6 @@ class Version(models.Model):
     sharing = models.CharField('공유', max_length=1, choices=SHARING_CHOICES, default='1')
     effective_date = models.DateField(verbose_name='버전 출시 기한', blank=True, null=True)
     description = models.CharField('설명', max_length=255, blank=True, default='')
-    wiki_page_title = models.CharField('위키 페이지', max_length=200, blank=True, default='')
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
