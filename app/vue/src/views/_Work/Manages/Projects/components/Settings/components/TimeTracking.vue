@@ -28,7 +28,7 @@ onBeforeMount(() => {
 
       <span class="ml-2">
         <v-icon icon="mdi-cog" color="secondary" size="15" />
-        <router-link :to="{ name: '코드값' }" class="ml-1">관리</router-link>
+        코드값 관리
       </span>
     </CCol>
   </CRow>

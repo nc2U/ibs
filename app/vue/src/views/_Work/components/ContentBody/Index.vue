@@ -18,7 +18,8 @@ const isDark = computed(() => useStore().theme === 'dark')
 const baseColor = computed(() => (isDark.value ? '#fff' : '#333'))
 const bgColor = computed(() => (isDark.value ? '#24252F' : '#fefefe'))
 const isActive = (menu: string) =>
-  (route.name as string).includes(menu) || (route.meta as any).title.includes(menu)
+  ((route.name as string) ?? '').includes(menu) ||
+  ((route.meta as any)?.title ?? '').includes(menu)
 
 const accStore = useAccount()
 const userInfo = computed(() => accStore.userInfo as User)

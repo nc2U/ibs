@@ -14,7 +14,7 @@ const sideNavCAll = () => cBody.value.toggle()
 
 const route = useRoute()
 
-const routeName = computed(() => route.name as string)
+const routeName = computed(() => (route.name as string) ?? '')
 const company = inject<ComputedRef<Company | null>>('company')
 const comName = computed(() => company?.value?.name)
 

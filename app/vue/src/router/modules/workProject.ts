@@ -171,10 +171,6 @@ const workProject = {
             },
           ],
         },
-        {
-          path: ':projId/search',
-          name: '(검색)',
-        },
       ],
     },
     {

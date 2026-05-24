@@ -3,7 +3,7 @@ import { h, resolveComponent } from 'vue'
 const workSetting = {
   path: 'manage',
   name: '설 정 관 리',
-  redirect: '/manage/project',
+  redirect: '/manage/user',
   component: {
     render() {
       return h(resolveComponent('router-view'))
