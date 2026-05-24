@@ -47,8 +47,6 @@ const chkModules = (slug: string) => {
     else if (routeName.includes('달력') && !project.module?.calendar) return false
     else if (routeName.includes('공지') && !project.module?.news) return false
     else if (routeName.includes('문서') && !project.module?.document) return false
-    else if (routeName.includes('위키') && !project.module?.wiki) return false
-    else if (routeName.includes('파일') && !project.module?.file) return false
     else return true
   }
 }

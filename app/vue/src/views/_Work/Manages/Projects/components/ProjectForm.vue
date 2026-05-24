@@ -94,12 +94,11 @@ const formsCheck = computed(() => {
     const m = module.time === props.project.module?.time
     const n = module.news === props.project.module?.news
     const o = module.document === props.project.module?.document
-    const p = module.file === props.project.module?.file
     const r = module.forum === props.project.module?.forum
     const s = module.calendar === props.project.module?.calendar
 
     const first = a && b && c && d && e && f && g && h && i && j
-    const second = k && l && m && n && o && p && r && s
+    const second = k && l && m && n && o && r && s
     return first && second
   } else return false
 })
