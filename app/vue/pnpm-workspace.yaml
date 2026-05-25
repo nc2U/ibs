@@ -9,3 +9,5 @@ overrides:
   serialize-javascript: '^7.0.3'
   dompurify: 3.4.0
   qs: 6.15.2
+  uuid: 14.0.0
+  esbuild: 0.25.0
