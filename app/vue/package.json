@@ -104,9 +104,6 @@
     "vitepress-plugin-mermaid": "^2.0.17",
     "vitest": "^3.2.4",
     "vue-cli-plugin-vuetify": "^2.5.8",
-    "vue-tsc": "^2.2.12",
-    "esbuild": "0.28.0",
-    "uuid": "14.0.0",
-    "qs": "6.15.2"
+    "vue-tsc": "^2.2.12"
   }
 }
