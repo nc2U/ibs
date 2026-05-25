@@ -32,7 +32,6 @@ class ActivityLogEntrySerializer(serializers.ModelSerializer):
         model = ActivityLogEntry
         fields = ('pk', 'sort', 'project', 'issue', 'status_log', 'comment',
                   'news', 'spent_time', 'act_date', 'timestamp', 'creator')
-        # 'change_sets', 'news', 'document', 'file', 'wiki', 'message',
 
 
 class SimpleCommentInIssueLogEntrySerializer(serializers.ModelSerializer):

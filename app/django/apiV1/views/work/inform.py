@@ -29,7 +29,7 @@ class NewsViewSet(viewsets.ModelViewSet):
 
 class NewsFileViewSet(viewsets.ModelViewSet):
     queryset = NewsFile.objects.all()
-    serializer_class = None
+    serializer_class = NewsFileSerializer
     permission_classes = (permissions.IsAuthenticated,)
     filterset_fields = ('news',)
     search_fields = ('file_name', 'description')

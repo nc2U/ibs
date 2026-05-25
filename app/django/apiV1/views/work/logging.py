@@ -91,7 +91,7 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
             'issue__id', 'issue__tracker__name', 'issue__status__name',
             'issue__status__closed', 'issue__subject', 'issue__description',
             'status_log', 'comment__id', 'comment__content', 'news__title',
-            'news__summary', 'news__author', 'spent_time__hours', 'spent_time__comment',
+            'news__summary', 'spent_time__hours', 'spent_time__comment',
             'act_date', 'timestamp', 'creator__id', 'creator__username')
 
         # 데이터 변환 (제너레이터)
@@ -117,7 +117,6 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
             },
             'news': {'title': log['news__title'], 'summary': log['news__summary']},
             'spent_time': {'hours': log['spent_time__hours'], 'comment': log['spent_time__comment']},
-            'change_set': None,
             'act_date': log['act_date'],
             'timestamp': log['timestamp'],
             'creator': {'pk': log['creator__id'], 'username': log['creator__username']},

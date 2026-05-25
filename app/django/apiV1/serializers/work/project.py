@@ -175,6 +175,22 @@ class IssueProjectSerializer(serializers.ModelSerializer):
         return total_hours
 
     def get_my_perms(self, obj):
+        request = self.context.get('request')
+        if request and hasattr(request, 'user'):
+            user = request.user
+            if user.is_superuser or user.work_manager:
+                return list(Permission.objects.values_list('code', flat=True))
+
+            # Find user in all members (including inherited)
+            all_members = obj.all_members()
+            user_member = next((m for m in all_members if m['user']['pk'] == user.pk), None)
+            
+            if user_member:
+                # Extract role PKs from user_member
+                role_pks = [role['pk'] for role in user_member['roles']]
+                # Get unique permission codes associated with these roles
+                perms = Permission.objects.filter(roles__in=role_pks).values_list('code', flat=True).distinct()
+                return list(perms)
         return []
 
     @transaction.atomic
