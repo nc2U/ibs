@@ -4,3 +4,8 @@ allowBuilds:
   cypress: true
   esbuild: true
   vue-demi: true
+
+overrides:
+  serialize-javascript: '^7.0.3'
+  dompurify: 3.4.0
+  qs: 6.15.2
