@@ -6,6 +6,7 @@ class IssueProjectManager(models.Manager):
     def get_queryset(self):
         return super().get_queryset().select_related('parent', 'company', 'creator')
 
+
 class IssueProject(models.Model):
     company = models.ForeignKey('company.Company', on_delete=models.CASCADE, verbose_name="회사")
     SORT_CHOICES = (('1', '본사관리'), ('2', '부동산개발'), ('3', '기타 프로젝트'))
@@ -26,7 +27,7 @@ class IssueProject(models.Model):
     status = models.CharField('사용여부', max_length=1, default='1', choices=(('1', '사용'), ('9', '잠금보관(모든 접근이 차단됨)')))
     order = models.PositiveSmallIntegerField('정렬순서', default=0)
     slack_notifications_enabled = models.BooleanField(
-        'Slack 알림 활성화', 
+        'Slack 알림 활성화',
         default=False,
         help_text='이 프로젝트의 Slack 알림 사용 여부. 웹훅 URL은 환경변수로 관리: 본사관리(sort=1)는 "com_slack_key", 개별 프로젝트는 "{slug}_slack_key"'
     )
@@ -79,7 +80,8 @@ class IssueProject(models.Model):
                 member_data[mem.user_id] = {
                     'pk': mem.pk,
                     'user': {'pk': mem.user_id, 'username': mem.user.username},
-                    'roles': {role.pk: {'pk': role.pk, 'name': role.name, 'inherited': is_inherited} for role in mem.roles.all()},
+                    'roles': {role.pk: {'pk': role.pk, 'name': role.name, 'inherited': is_inherited} for role in
+                              mem.roles.all()},
                     'created': mem.created,
                 }
             else:
@@ -151,9 +153,8 @@ class Role(models.Model):
 
 
 class Permission(models.Model):
-    MODULE_CHOICES = (('project', '프로젝트'), ('issue', '업무관리'), ('time', '시간추적'),
-                      ('news', '공지'), ('docs', '문서'),
-                      ('forum', '게시판'), ('calendar', '달력'))
+    MODULE_CHOICES = (('project', '프로젝트'), ('meeting', '회의록'), ('issue', '업무관리'), ('time', '시간추적'),
+                      ('news', '공지'), ('docs', '문서'), ('forum', '게시판'), ('calendar', '달력'))
     sort = models.CharField('모듈', max_length=10, choices=MODULE_CHOICES, db_index=True)
     code = models.CharField('코드', max_length=30, unique=True)
     name = models.CharField('이름', max_length=20)

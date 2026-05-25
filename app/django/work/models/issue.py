@@ -32,6 +32,8 @@ class Issue(models.Model):
     parent = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='상위 업무')
     watchers = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, verbose_name='업무 관람자',
                                       related_name='watchers')
+    meeting = models.ForeignKey('Meeting', on_delete=models.SET_NULL, null=True, blank=True,
+                                verbose_name='회의록', related_name='issues')
     is_private = models.BooleanField('비공개', default=False)
     estimated_hours = models.DecimalField('추정 소요시간', max_digits=5, decimal_places=2, null=True, blank=True)
     start_date = models.DateField('시작 일자')
