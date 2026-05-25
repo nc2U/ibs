@@ -83,10 +83,17 @@ class IssueProject(models.Model):
                     'created': mem.created,
                 }
             else:
-                # Merge roles if user is already in member_data
-                member_data[mem.user_id]['roles'].update(
-                    {role.pk: {'pk': role.pk, 'name': role.name, 'inherited': is_inherited} for role in mem.roles.all()}
-                )
+                # Merge roles if user is already in member_data, but don't overwrite local roles with inherited ones
+                for role in mem.roles.all():
+                    if role.pk not in member_data[mem.user_id]['roles']:
+                        member_data[mem.user_id]['roles'][role.pk] = {
+                            'pk': role.pk,
+                            'name': role.name,
+                            'inherited': is_inherited
+                        }
+                    elif not is_inherited:
+                        # If we found a local (non-inherited) version of an already existing role, update it
+                        member_data[mem.user_id]['roles'][role.pk]['inherited'] = False
 
         return [
             {

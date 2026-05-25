@@ -57,7 +57,7 @@ export const useWork = defineStore('work', () => {
   // actions
   const fetchIssueProjectList = async (payload: ProjectFilter) => {
     let url = `/issue-project/?1=1`
-    if (payload.company) `&company=${payload.company}`
+    if (payload.company) url += `&company=${payload.company}`
     if (payload?.status) url += `&status=${payload?.status}`
     else if (payload?.status__exclude) url += `&status__exclude=${payload?.status__exclude}`
     if (payload?.parent) url += `&parent__slug=${payload.parent}`
