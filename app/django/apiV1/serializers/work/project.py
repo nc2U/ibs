@@ -4,7 +4,7 @@ from rest_framework import serializers
 
 from apiV1.serializers.accounts import SimpleUserSerializer
 from work.models.issue import (IssueCategory, Tracker, CodeActivity, Issue)
-from work.models.project import IssueProject, Role, Member, Module, Version
+from work.models.project import IssueProject, Role, Member, Module, Version, Permission
 
 
 # Work --------------------------------------------------------------------------
@@ -94,6 +94,17 @@ class CodeActivityInIssueProjectSerializer(serializers.ModelSerializer):
         fields = ('pk', 'name', 'active', 'default', 'order')
 
 
+class IssueProjectListSerializer(serializers.ModelSerializer):
+    company = serializers.SlugRelatedField('name', read_only=True)
+    module = ModuleInIssueProjectSerializer(read_only=True)
+    creator = serializers.SlugRelatedField('username', read_only=True)
+
+    class Meta:
+        model = IssueProject
+        fields = ('pk', 'company', 'sort', 'name', 'slug', 'status', 'depth', 'is_public',
+                  'module', 'creator', 'created', 'updated')
+
+
 class IssueProjectSerializer(serializers.ModelSerializer):
     family_tree = SimpleIssueProjectSerializer(many=True, read_only=True)
     module = ModuleInIssueProjectSerializer(read_only=True)
@@ -144,10 +155,11 @@ class IssueProjectSerializer(serializers.ModelSerializer):
 
         if request and hasattr(request, 'user'):
             user = request.user
-            visible_auth = user.work_manager or user.is_superuser
+            if user.is_superuser or user.work_manager:
+                return True
             all_members = obj.all_members()
             members = [m['user']['pk'] for m in all_members]
-            return obj.is_public or user.pk in members or visible_auth
+            return obj.is_public or user.pk in members
         else:
             return False
 
@@ -155,6 +167,9 @@ class IssueProjectSerializer(serializers.ModelSerializer):
         return self.get_visible(obj.parent) if obj.parent else False
 
     def get_total_estimated_hours(self, obj):
+        # Use annotated value if available
+        if hasattr(obj, 'annotated_estimated_hours'):
+            return obj.annotated_estimated_hours
         return self.recursive_estimated_hours(obj)
 
     def recursive_estimated_hours(self, project):
@@ -165,6 +180,9 @@ class IssueProjectSerializer(serializers.ModelSerializer):
         return total_hours
 
     def get_total_time_spent(self, obj):
+        # Use annotated value if available
+        if hasattr(obj, 'annotated_time_spent'):
+            return obj.annotated_time_spent
         return self.recursive_time_spent(obj)
 
     def recursive_time_spent(self, project):

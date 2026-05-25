@@ -30,6 +30,22 @@ class IssueProjectViewSet(viewsets.ModelViewSet):
     pagination_class = PageNumberPaginationTwenty
     filterset_class = IssueProjectFilter
 
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        if self.action == 'list':
+            return queryset.select_related('company', 'module', 'creator')
+        
+        # For detail view, we can add non-recursive annotations as a hint
+        return queryset.annotate(
+            annotated_estimated_hours=Sum('issue__estimated_hours'),
+            annotated_time_spent=Sum('timeentry__hours')
+        ).select_related('company', 'module', 'creator', 'parent', 'default_version')
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return IssueProjectListSerializer
+        return IssueProjectSerializer
+
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
 

@@ -6,6 +6,13 @@ from work.models.issue import IssueComment, TimeEntry, Issue
 from work.models.project import IssueProject
 
 
+class ActivityLogEntryManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().select_related(
+            'project', 'issue', 'comment', 'news', 'spent_time', 'creator'
+        )
+
+
 class ActivityLogEntry(models.Model):
     SORT_CHOICES = (('1', '업무'), ('2', '댓글'), ('4', '공지'), ('5', '문서'),
                     ('8', '글'), ('9', '작업시간'))
@@ -20,6 +27,8 @@ class ActivityLogEntry(models.Model):
     timestamp = models.DateTimeField('로그 시간', auto_now_add=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
                              verbose_name='작성자')
+
+    objects = ActivityLogEntryManager()
 
     def __str__(self):
         return f"{self.creator.__str__()} - {self.timestamp}"

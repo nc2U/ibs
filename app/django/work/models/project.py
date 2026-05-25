@@ -62,10 +62,14 @@ class IssueProject(models.Model):
         projects_to_fetch = [self]
         curr = self
         while curr.is_inherit_members and curr.parent:
+            # Avoid infinite loop if parent is self (though unlikely with Django models)
+            if curr.parent in projects_to_fetch:
+                break
             projects_to_fetch.append(curr.parent)
             curr = curr.parent
 
         from work.models.project import Member
+        # optimization: select_related('user') and prefetch_related('roles')
         all_mems = Member.objects.filter(project__in=projects_to_fetch).select_related('user').prefetch_related('roles')
 
         member_data = {}
@@ -79,6 +83,7 @@ class IssueProject(models.Model):
                     'created': mem.created,
                 }
             else:
+                # Merge roles if user is already in member_data
                 member_data[mem.user_id]['roles'].update(
                     {role.pk: {'pk': role.pk, 'name': role.name, 'inherited': is_inherited} for role in mem.roles.all()}
                 )

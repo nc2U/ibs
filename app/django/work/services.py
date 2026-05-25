@@ -102,35 +102,6 @@ class IssueService:
 
     @staticmethod
     def send_issue_mail(instance, user, mail_type):
-        """이슈 관련 메일 발송 유틸리티"""
-        watchers = set(instance.watchers.all())
-        # 수신자 목록 구성
-        if mail_type == "create":
-            addresses = [user.email]
-            if instance.assigned_to:
-                addresses.append(instance.assigned_to.email)
-            subject = f'『 {instance.project} 』 - 새 업무 :: [#{instance.pk}] "{instance.subject}"이(가) 배정되었습니다.' if instance.assigned_to else f'『 {instance.project} 』 - 새 업무 :: [#{instance.pk}] "{instance.subject}"이(가) 생성되었습니다.'
-            template = 'mail/issue_create.html'
-        elif mail_type == "progress":
-            addresses = [watcher.email for watcher in watchers]
-            subject = f'『 {instance.project} 』 - 업무 :: [#{instance.pk}] "{instance.subject}"의 상태가 {instance.status}(으)로 변경되었습니다.'
-            template = 'mail/issue_progress.html'
-        elif mail_type == "reassign":
-            addresses = [watcher.email for watcher in watchers]
-            subject = f'『 {instance.project} 』 - 업무 :: [#{instance.pk}] "{instance.subject}"의 담당자가 변경되었습니다.'
-            template = 'mail/issue_reassign.html'
-        else:
-            return
-
-        context = {
-            'instance': instance,
-            'settings': settings,
-            'user': user,
-            'watchers': watchers if mail_type != "create" else None,
-        }
-        message = render_to_string(template, context)
-
-        try:
-            send_mail(subject=subject, message=message, html_message=message, from_email=settings.DEFAULT_FROM_EMAIL, recipient_list=addresses)
-        except Exception as e:
-            print(f"❌ 이메일 전송 실패: {e}")
+        """이슈 관련 메일 발송 유틸리티 (Celery 비동기 호출)"""
+        from work.tasks import send_issue_mail_task
+        send_issue_mail_task.delay(instance.pk, user.pk, mail_type)
