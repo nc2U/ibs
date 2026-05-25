@@ -1,8 +1,5 @@
-import smtplib
-from django.conf import settings
-from django.core.mail import send_mail
-from django.template.loader import render_to_string
 from work.models.logging import ActivityLogEntry, IssueLogEntry
+
 
 class IssueService:
     @staticmethod
@@ -50,10 +47,10 @@ class IssueService:
             if hasattr(instance, old_attr):
                 old_val = getattr(instance, old_attr)
                 new_val = getattr(instance, field)
-                
+
                 if field == 'status':
                     status_log = instance.status.name
-                
+
                 if field == 'description':
                     details += f"|- **{label}**이 변경되었습니다."
                     diff += f"**변경전 :**\n{old_val}\n---\n**변경후 :**\n{new_val}"
@@ -91,12 +88,14 @@ class IssueService:
             if details:
                 IssueLogEntry.objects.create(issue=instance, action=action, details=details, diff=diff, creator=user)
                 if hasattr(instance, 'old_parent') and parent_details and instance.parent:
-                    IssueLogEntry.objects.create(issue=instance.parent, action=action, details=parent_details, diff=diff, creator=user)
-                
+                    IssueLogEntry.objects.create(issue=instance.parent, action=action, details=parent_details,
+                                                 diff=diff, creator=user)
+
                 if hasattr(instance, 'old_status'):
-                    ActivityLogEntry.objects.create(sort='1', project=instance.project, issue=instance, status_log=status_log, creator=user)
+                    ActivityLogEntry.objects.create(sort='1', project=instance.project, issue=instance,
+                                                    status_log=status_log, creator=user)
                     IssueService.send_issue_mail(instance, user, "progress")
-                
+
                 if hasattr(instance, 'old_assigned_to'):
                     IssueService.send_issue_mail(instance, user, "reassign")
 
