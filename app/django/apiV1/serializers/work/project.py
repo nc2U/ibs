@@ -17,15 +17,14 @@ class SimpleIssueProjectSerializer(serializers.ModelSerializer):
 
     def get_visible(self, obj):
         request = self.context.get('request')
-
         if request and hasattr(request, 'user'):
             user = request.user
-            visible_auth = user.work_manager or user.is_superuser
+            if user.is_superuser or user.work_manager:
+                return True
             all_members = obj.all_members()
             members = [m['user']['pk'] for m in all_members]
-            return obj.is_public or user.pk in members or visible_auth
-        else:
-            return False
+            return obj.is_public or user.pk in members
+        return False
 
 
 class RoleInMemberSerializer(serializers.ModelSerializer):
@@ -98,11 +97,50 @@ class IssueProjectListSerializer(serializers.ModelSerializer):
     company = serializers.SlugRelatedField('name', read_only=True)
     module = ModuleInIssueProjectSerializer(read_only=True)
     creator = serializers.SlugRelatedField('username', read_only=True)
+    visible = serializers.SerializerMethodField(read_only=True)
+    my_perms = serializers.SerializerMethodField(read_only=True)
+    sub_projects = serializers.SerializerMethodField()
+    all_members = MemberInIssueProjectSerializer(many=True, read_only=True)
+    parent_visible = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = IssueProject
-        fields = ('pk', 'company', 'sort', 'name', 'slug', 'status', 'depth', 'is_public',
-                  'module', 'creator', 'created', 'updated')
+        fields = ('pk', 'company', 'sort', 'name', 'slug', 'description', 'status', 'depth', 'is_public',
+                  'module', 'creator', 'visible', 'my_perms', 'sub_projects', 'all_members',
+                  'parent', 'parent_visible', 'created', 'updated')
+
+    def get_visible(self, obj):
+        request = self.context.get('request')
+        if request and hasattr(request, 'user'):
+            user = request.user
+            if user.is_superuser or user.work_manager:
+                return True
+            all_members = obj.all_members()
+            members = [m['user']['pk'] for m in all_members]
+            return obj.is_public or user.pk in members
+        return False
+
+    def get_my_perms(self, obj):
+        request = self.context.get('request')
+        if request and hasattr(request, 'user'):
+            user = request.user
+            if user.is_superuser or user.work_manager:
+                return list(Permission.objects.values_list('code', flat=True))
+            all_members = obj.all_members()
+            user_member = next((m for m in all_members if m['user']['pk'] == user.pk), None)
+            if user_member:
+                role_pks = [role['pk'] for role in user_member['roles']]
+                perms = Permission.objects.filter(roles__in=role_pks).values_list('code', flat=True).distinct()
+                return list(perms)
+        return []
+
+    def get_sub_projects(self, obj):
+        sub_projects = obj.issueproject_set.exclude(status='9')
+        # Recursive serialization for subprojects
+        return IssueProjectListSerializer(sub_projects, many=True, read_only=True, context=self.context).data
+
+    def get_parent_visible(self, obj):
+        return self.get_visible(obj.parent) if obj.parent else False
 
 
 class IssueProjectSerializer(serializers.ModelSerializer):
