@@ -65,7 +65,6 @@ services:
       DJANGO_SETTINGS_MODULE: _config.settings # Django settings 모드 지정
     volumes:
       - ../app/django:/app/django
-      - ../app/repos:/app/repos
     depends_on:
       - redis
       - postgres
@@ -93,7 +92,6 @@ services:
       DJANGO_SETTINGS_MODULE: _config.settings
     volumes:
       - ../app/django:/app/django
-      - ../app/repos:/app/repos
     depends_on:
       - redis
       - postgres
