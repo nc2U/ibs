@@ -2,7 +2,7 @@ import { h, resolveComponent } from 'vue'
 
 const projects = {
   path: 'project',
-  name: '프로젝트 관리',
+  name: '프로젝트 설정',
   redirect: '/project/manage/index',
   component: {
     render() {

@@ -81,7 +81,7 @@ export default withMermaid(
           text: 'PJT 관리 시스템',
           items: [
             {
-              text: '프로젝트 관리',
+              text: '프로젝트 설정',
               collapsed: true,
               items: [
                 { text: '프로젝트 등록', link: '/project/' },

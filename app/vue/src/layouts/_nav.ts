@@ -270,7 +270,7 @@ const project_docs = {
 
 const project = {
   component: 'CNavGroup',
-  name: '프로젝트 관리',
+  name: '프로젝트 설정',
   to: '/project',
   icon: 'cil-building',
   items: [

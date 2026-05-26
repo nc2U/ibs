@@ -170,7 +170,7 @@ const totals = computed(() => ({
         <CTableDataCell colspan="10">
           [
           <router-link :to="{ name: '수입 예산 등록' }"> 수입 예산 등록</router-link>
-          ] >> [ 프로젝트 관리 ] > [ 예산 정보 설정 ]에서 데이터를 등록하세요.
+          ] >> [ 프로젝트 설정 ] > [ 예산 정보 설정 ]에서 데이터를 등록하세요.
         </CTableDataCell>
       </CTableRow>
     </CTableBody>

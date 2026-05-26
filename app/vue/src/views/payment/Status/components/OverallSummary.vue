@@ -253,7 +253,7 @@ const total_total_unpaid = computed(() =>
         <CTableDataCell colspan="13" style="height: 200px; text-align: center">
           [
           <router-link :to="{ name: '납부 회차 등록' }"> 납부 회차 등록</router-link>
-          ] >> [ 프로젝트 관리 ] > [ 분양 조건 설정 ]에서 데이터를 등록하세요.
+          ] >> [ 프로젝트 설정 ] > [ 분양 조건 설정 ]에서 데이터를 등록하세요.
         </CTableDataCell>
       </CTableRow>
     </CTableBody>

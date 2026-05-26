@@ -203,7 +203,7 @@ onUpdated(() => dataSetup())
             <CRow class="m-1">
               <CFormLabel class="col-md-4 col-form-label mb-2 mb-md-1 bg-grey-lighten-3">
                 <v-icon icon="mdi mdi-account-arrow-left" :color="getColor(authData.contract)[0]" />
-                분양 계약 관리
+                계약 정보 관리
               </CFormLabel>
               <CCol>
                 <CFormSelect
@@ -222,7 +222,7 @@ onUpdated(() => dataSetup())
             <CRow class="m-1">
               <CFormLabel class="col-md-4 col-form-label mb-2 mb-md-1 bg-grey-lighten-3">
                 <v-icon icon="mdi mdi-account-arrow-left" :color="getColor(authData.payment)[0]" />
-                분양 수납 관리
+                계약 납부 관리
               </CFormLabel>
               <CCol>
                 <CFormSelect
@@ -264,7 +264,7 @@ onUpdated(() => dataSetup())
                   icon="mdi mdi-account-arrow-left"
                   :color="getColor(authData.project_ledger)[0]"
                 />
-                PR 자금 관리
+                회계 자금 관리
               </CFormLabel>
               <CCol>
                 <CFormSelect
@@ -305,15 +305,15 @@ onUpdated(() => dataSetup())
             <CRow class="m-1">
               <CFormLabel class="col-md-4 col-form-label mb-2 mb-md-1 bg-grey-lighten-3">
                 <v-icon icon="mdi mdi-account-arrow-left" :color="getColor(authData.project)[0]" />
-                부지 정보 관리
+                프로젝트 설정
               </CFormLabel>
               <CCol>
                 <CFormSelect
-                  v-model="authData.project_site"
+                  v-model="authData.project"
                   :options="auths"
                   :disabled="isPrInActive || !write_auth_manage"
                   :style="{
-                    backgroundColor: isDark ? '' : getColor(authData.project_site)[1],
+                    backgroundColor: isDark ? '' : getColor(authData.project)[1],
                   }"
                   @change="selectAuth"
                 />
@@ -324,15 +324,15 @@ onUpdated(() => dataSetup())
             <CRow class="m-1">
               <CFormLabel class="col-md-4 col-form-label mb-2 mb-md-1 bg-grey-lighten-3">
                 <v-icon icon="mdi mdi-account-arrow-left" :color="getColor(authData.project)[0]" />
-                프로젝트 관리
+                부지 정보 관리
               </CFormLabel>
               <CCol>
                 <CFormSelect
-                  v-model="authData.project"
+                  v-model="authData.project_site"
                   :options="auths"
                   :disabled="isPrInActive || !write_auth_manage"
                   :style="{
-                    backgroundColor: isDark ? '' : getColor(authData.project)[1],
+                    backgroundColor: isDark ? '' : getColor(authData.project_site)[1],
                   }"
                   @change="selectAuth"
                 />
