@@ -82,7 +82,7 @@ export default withMermaid(
           ],
         },
         {
-          text: '프로젝트 관리 시스템',
+          text: 'PJT 관리 시스템',
           items: [
             {
               text: '프로젝트 관리',
@@ -146,7 +146,6 @@ export default withMermaid(
         },
         {
           text: '관리자 메뉴얼',
-          collapsed: true,
           items: [
             { text: '사용자 권한 관리', link: '/authority/' },
             { text: '관리자 페이지', link: '/authority/admin-page' },
