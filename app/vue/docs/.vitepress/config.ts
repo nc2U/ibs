@@ -29,7 +29,7 @@ export default withMermaid(
           'https://raw.githubusercontent.com/nc2U/ibs/refs/heads/master/app/vue/docs/favicon.svg',
         dark: 'https://raw.githubusercontent.com/nc2U/ibs/refs/heads/master/app/vue/docs/favicon-dark-mode.svg',
       },
-      siteTitle: 'DAEYOUNG IBS',
+      siteTitle: 'IBS Platform',
       nav: [
         { text: '가이드', link: '/intro/getting-started' },
         {
@@ -55,7 +55,7 @@ export default withMermaid(
               text: '업무 관리',
               collapsed: true,
               items: [
-                { text: '업무 프로젝트', link: '/work-manage/project' },
+                { text: '업무프로젝트', link: '/work-manage/project' },
                 { text: '작업내역', link: '/work-manage/activity' },
                 { text: '로드맵', link: '/work-manage/roadmap' },
                 { text: '업무', link: '/work-manage/issue' },
