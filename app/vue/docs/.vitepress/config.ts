@@ -49,56 +49,99 @@ export default withMermaid(
           ],
         },
         {
-          text: '프로젝트 관리',
+          text: '업무관리 시스템',
           items: [
-            { text: '프로젝트 등록', link: '/project/' },
-            { text: '차수 타입 설정', link: '/project/types' },
-            { text: '유닛 정보 설정', link: '/project/units' },
-            { text: '예산 정보 설정', link: '/project/budgets' },
-            { text: '분양 조건 설정', link: '/project/settings' },
-            { text: '부지 정보 관리', link: '/project/site-manage' },
+            {
+              text: '업무 관리',
+              collapsed: true,
+              items: [
+                { text: '프로젝트', link: '/work-manage/' },
+                { text: '작업내역', link: '/work-manage/types' },
+                { text: '로드맵', link: '/work-manage/types' },
+                { text: '업무', link: '/work-manage/units' },
+                { text: '소요시간', link: '/work-manage/budgets' },
+                { text: '달력', link: '/work-manage/settings' },
+                { text: '공지', link: '/work-manage/site-manage' },
+                { text: '문서', link: '/work-manage/site-manage' },
+                { text: '게시판', link: '/work-manage/site-manage' },
+                { text: '설정', link: '/work-manage/site-manage' },
+              ],
+            },
+            {
+              text: '설정 관리',
+              collapsed: true,
+              items: [
+                { text: '프로젝트 등록', link: '/work-setting/' },
+                { text: '차수 타입 설정', link: '/work-setting/types' },
+                { text: '유닛 정보 설정', link: '/work-setting/units' },
+                { text: '예산 정보 설정', link: '/work-setting/budgets' },
+                { text: '분양 조건 설정', link: '/work-setting/settings' },
+                { text: '부지 정보 관리', link: '/work-setting/site-manage' },
+              ],
+            },
           ],
         },
         {
-          text: '계약 정보 관리',
+          text: '프로젝트 관리 시스템',
           items: [
-            { text: '계약 등록 조회', link: '/contract/' },
-            { text: '계약 상세 관리', link: '/contract/details' },
-            { text: '권리 의무 승계', link: '/contract/succession' },
-            { text: '계약 해지 관리', link: '/contract/release' },
-            { text: '동호 배치 현황', link: '/contract/status' },
-          ],
-        },
-        {
-          text: '계약 납부 관리',
-          items: [
-            { text: '납부 내역 관리', link: '/payment/' },
-            { text: '건별 납부 관리', link: '/payment/manage' },
-            { text: '납부 현황 집계', link: '/payment/status' },
-          ],
-        },
-        {
-          text: '고객 고지 관리',
-          collapsed: true,
-          items: [
-            { text: '수납 고지서 출력', link: '/notice/bill' },
-            { text: 'SMS 발송 관리', link: '/notice/sms' },
-          ],
-        },
-        {
-          text: '회계 자금 관리',
-          items: [
-            { text: '정산 현황 관리', link: '/ledger/status' },
-            { text: '거래 내역 관리', link: '/ledger/manage' },
-            { text: '운영비 내역 관리', link: '/ledger/imprest' },
-          ],
-        },
-        {
-          text: '문서 소송 관리',
-          items: [
-            { text: '일반 문서 관리', link: '/document/' },
-            { text: '소송 문서 관리', link: '/document/legal-docs' },
-            { text: '소송 사건 관리', link: '/document/legal-case' },
+            {
+              text: '프로젝트 관리',
+              collapsed: true,
+              items: [
+                { text: '프로젝트 등록', link: '/project/' },
+                { text: '차수 타입 설정', link: '/project/types' },
+                { text: '유닛 정보 설정', link: '/project/units' },
+                { text: '예산 정보 설정', link: '/project/budgets' },
+                { text: '분양 조건 설정', link: '/project/settings' },
+                { text: '부지 정보 관리', link: '/project/site-manage' },
+              ],
+            },
+            {
+              text: '계약 정보 관리',
+              collapsed: true,
+              items: [
+                { text: '계약 등록 조회', link: '/contract/' },
+                { text: '계약 상세 관리', link: '/contract/details' },
+                { text: '권리 의무 승계', link: '/contract/succession' },
+                { text: '계약 해지 관리', link: '/contract/release' },
+                { text: '동호 배치 현황', link: '/contract/status' },
+              ],
+            },
+            {
+              text: '계약 납부 관리',
+              collapsed: true,
+              items: [
+                { text: '납부 내역 관리', link: '/payment/' },
+                { text: '건별 납부 관리', link: '/payment/manage' },
+                { text: '납부 현황 집계', link: '/payment/status' },
+              ],
+            },
+            {
+              text: '고객 고지 관리',
+              collapsed: true,
+              items: [
+                { text: '수납 고지서 출력', link: '/notice/bill' },
+                { text: 'SMS 발송 관리', link: '/notice/sms' },
+              ],
+            },
+            {
+              text: '회계 자금 관리',
+              collapsed: true,
+              items: [
+                { text: '정산 현황 관리', link: '/ledger/status' },
+                { text: '거래 내역 관리', link: '/ledger/manage' },
+                { text: '운영비 내역 관리', link: '/ledger/imprest' },
+              ],
+            },
+            {
+              text: '문서 소송 관리',
+              collapsed: true,
+              items: [
+                { text: '일반 문서 관리', link: '/document/' },
+                { text: '소송 문서 관리', link: '/document/legal-docs' },
+                { text: '소송 사건 관리', link: '/document/legal-case' },
+              ],
+            },
           ],
         },
         {
