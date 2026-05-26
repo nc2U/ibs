@@ -79,6 +79,7 @@ export default withMermaid(
         },
         {
           text: '고객 고지 관리',
+          collapsed: true,
           items: [
             { text: '수납 고지서 출력', link: '/notice/bill' },
             { text: 'SMS 발송 관리', link: '/notice/sms' },
@@ -102,6 +103,7 @@ export default withMermaid(
         },
         {
           text: '관리자 메뉴얼',
+          collapsed: true,
           items: [
             { text: '사용자 권한 관리', link: '/authority/' },
             { text: '관리자 페이지', link: '/authority/admin-page' },
