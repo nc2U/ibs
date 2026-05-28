@@ -93,11 +93,11 @@ const issueProjects = computed(() => props.issueProjects.slice())
             <h5 style="font-size: 1.15em">
               <router-link
                 :to="{
-                  name: '작업내역',
+                  name: '실행기록',
                   query: { user: route.params.userId },
                 }"
               >
-                작업내역
+                실행기록
               </router-link>
             </h5>
           </CCol>

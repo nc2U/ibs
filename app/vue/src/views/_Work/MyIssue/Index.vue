@@ -16,7 +16,7 @@ const selectOptions = [
   { value: 7, label: '달력' },
   { value: 8, label: '문서' },
   { value: 9, label: '소요시간' },
-  { value: 10, label: '작업내역' },
+  { value: 10, label: '실행기록' },
 ]
 
 const getTitle = (n: number | string) =>

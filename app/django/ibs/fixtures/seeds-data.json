@@ -10868,7 +10868,7 @@
     "fields": {
       "sort": "time",
       "code": "time.pro_act_manage",
-      "name": "프로젝트 작업내역 관리",
+      "name": "프로젝트 실행기록 관리",
       "is_default": false,
       "description": ""
     }

@@ -19,9 +19,7 @@ const props = defineProps({
 const emit = defineEmits(['to-move'])
 
 const cookieSort = computed(() => Cookies.get('cookieSort')?.split('-') as any)
-const sort = computed(() =>
-  cookieSort.value?.length ? cookieSort : ['1', '2', '4', '5', '9'],
-)
+const sort = computed(() => (cookieSort.value?.length ? cookieSort : ['1', '2', '4', '5', '9']))
 
 const toBack = () => {
   if (props.toDate)
@@ -37,7 +35,7 @@ const toNext = () => {
 <template>
   <CRow class="py-2">
     <CCol>
-      <h5>작업내역</h5>
+      <h5>실행기록</h5>
     </CCol>
   </CRow>
 

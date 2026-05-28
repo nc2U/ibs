@@ -27,7 +27,7 @@ const navMenus = computed(() => (!issueProjects.value.length ? navMenu1 : navMen
 const projectNavMenus = computed(() => {
   let menus = [
     { no: 1, menu: '(개요)' },
-    { no: 2, menu: '(작업내역)' },
+    { no: 2, menu: '(실행기록)' },
   ]
   const project = issueProject.value
   if (project?.versions?.length) menus = [...new Set([...menus, ...[{ no: 3, menu: '(로드맵)' }]])]

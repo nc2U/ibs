@@ -28,7 +28,7 @@ const isDark = inject('isDark')
               </router-link>
               이(가)
               <router-link
-                :to="{ name: '(작업내역)', query: { from: news.created.substring(0, 10) } }"
+                :to="{ name: '(실행기록)', query: { from: news.created.substring(0, 10) } }"
               >
                 {{ elapsedTime(news.created) }}
               </router-link>

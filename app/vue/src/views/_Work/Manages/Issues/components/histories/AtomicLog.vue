@@ -27,7 +27,7 @@ const route = useRoute()
           <span>
             <router-link
               :to="{
-                name: '(작업내역)',
+                name: '(실행기록)',
                 query: { from: log.timestamp.substring(0, 10) },
               }"
             >

@@ -35,7 +35,7 @@ const deleteFile = (pk: number) => {
           {{ news.author?.username }}
         </router-link>
         이(가)
-        <router-link :to="{ name: '(작업내역)', params: { projId: news.project?.slug } }">
+        <router-link :to="{ name: '(실행기록)', params: { projId: news.project?.slug } }">
           {{ elapsedTime(news.created) }}
         </router-link>
         에 추가함
