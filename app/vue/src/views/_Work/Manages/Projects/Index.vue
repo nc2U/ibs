@@ -25,20 +25,23 @@ const headerTitle = computed(() =>
 const navMenus = computed(() => (!issueProjects.value.length ? navMenu1 : navMenu2))
 
 const projectNavMenus = computed(() => {
-  let menus = [
+  const project = issueProject.value
+  const menus = [
     { no: 1, menu: '(개요)' },
     { no: 2, menu: '(실행기록)' },
   ]
-  const project = issueProject.value
-  if (project?.versions?.length) menus = [...new Set([...menus, ...[{ no: 3, menu: '(로드맵)' }]])]
-  if (modules.value?.issue) menus = [...new Set([...menus, ...[{ no: 4, menu: '(업무)' }]])]
-  if (modules.value?.time) menus = [...new Set([...menus, ...[{ no: 5, menu: '(소요시간)' }]])]
-  if (modules.value?.calendar) menus = [...new Set([...menus, ...[{ no: 7, menu: '(달력)' }]])]
-  if (modules.value?.news) menus = [...new Set([...menus, ...[{ no: 8, menu: '(공지)' }]])]
-  if (modules.value?.document) menus = [...new Set([...menus, ...[{ no: 9, menu: '(문서)' }]])]
-  if (modules.value?.forum && project.forums.length)
-    menus = [...new Set([...menus, ...[{ no: 11, menu: '(게시판)' }]])]
-  if (issueProject.value?.status !== '9') menus = [...menus, ...[{ no: 14, menu: '(설정)' }]]
+
+  if (project) {
+    const mods = project.module
+    if (project.versions?.length) menus.push({ no: 3, menu: '(로드맵)' })
+    if (mods?.issue) menus.push({ no: 4, menu: '(업무)' })
+    if (mods?.time) menus.push({ no: 5, menu: '(소요시간)' })
+    if (mods?.calendar) menus.push({ no: 7, menu: '(달력)' })
+    if (mods?.news) menus.push({ no: 8, menu: '(공지)' })
+    if (mods?.document) menus.push({ no: 9, menu: '(문서)' })
+    if (mods?.forum && project.forums?.length) menus.push({ no: 11, menu: '(게시판)' })
+    if (project.status !== '9') menus.push({ no: 14, menu: '(설정)' })
+  }
 
   return menus.sort((a, b) => a.no - b.no).map(m => m.menu)
 })
@@ -54,8 +57,6 @@ const workStore = useWork()
 const issueProject = computed(() => workStore.issueProject as IssueProject)
 provide('iProject', issueProject)
 const issueProjects = computed(() => workStore.issueProjects)
-
-const modules = computed(() => issueProject.value?.module)
 
 const infStore = useInform()
 onBeforeRouteUpdate(async to => {

@@ -33,24 +33,17 @@ watch(route, newVal => {
 const initMenu = computed(() => (!!workManager?.value ? '프로젝트' : '버전'))
 
 const settingMenus = computed(() => {
-  let menus = [{ no: 4, menu: '버전' }]
+  const menus = [{ no: 4, menu: '버전' }]
+  const perms = my_perms.value
+  const isManager = !!workManager?.value
+  const mods = modules.value
 
-  if (!!workManager?.value || my_perms.value?.project_update) {
-    menus = [...new Set([...menus, ...[{ no: 1, menu: '프로젝트' }]])]
-  }
-
-  if (!!workManager?.value || my_perms.value?.project_member) {
-    menus = [...new Set([...menus, ...[{ no: 2, menu: '구성원' }]])]
-  }
-
-  if (!!workManager?.value && modules.value?.issue)
-    menus = [...new Set([...menus, ...[{ no: 3, menu: '업무추적' }]])]
-  if (modules.value?.issue) menus = [...new Set([...menus, ...[{ no: 5, menu: '업무범주' }]])]
-
-  if (!!workManager?.value && modules.value?.time)
-    menus = [...new Set([...menus, ...[{ no: 8, menu: '시간추적' }]])]
-  if (!!workManager?.value && modules.value?.forum)
-    menus = [...new Set([...menus, ...[{ no: 7, menu: '게시판' }]])]
+  if (isManager || perms?.project_update) menus.push({ no: 1, menu: '프로젝트' })
+  if (isManager || perms?.project_member) menus.push({ no: 2, menu: '구성원' })
+  if (isManager && mods?.issue) menus.push({ no: 3, menu: '업무추적' })
+  if (mods?.issue) menus.push({ no: 5, menu: '업무범주' })
+  if (isManager && mods?.time) menus.push({ no: 8, menu: '시간추적' })
+  if (isManager && mods?.forum) menus.push({ no: 7, menu: '게시판' })
 
   return menus.sort((a, b) => a.no - b.no).map(m => m.menu)
 })
