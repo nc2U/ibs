@@ -38,6 +38,8 @@ class Meeting(models.Model):
     meeting_date = models.DateTimeField('회의 일시', null=True, blank=True)
     attendees = models.ManyToManyField(settings.AUTH_USER_MODEL, verbose_name='참석자', related_name='meetings_attended',
                                        blank=True)
+    other_attendees = models.CharField('기타 참석자', max_length=255, blank=True, default='',
+                                      help_text='사용자(멤버)가 아닌 외부 참석자 명단')
 
     created = models.DateTimeField('등록일', auto_now_add=True)
     updated = models.DateTimeField('수정일', auto_now=True)
