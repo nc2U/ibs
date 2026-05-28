@@ -119,12 +119,12 @@ class StaffAuth(models.Model):
     auth_manage = models.CharField('권한 설정 관리', max_length=1, choices=AUTH_CHOICE, default='0')
 
     def __str__(self):
-        return f'{self.user} :: 권한'
+        return f'{self.user}'
 
     class Meta:
         ordering = ('-id',)
-        verbose_name = '스태프 권한'
-        verbose_name_plural = '스태프 권한'
+        verbose_name = '사용자 정의 권한'
+        verbose_name_plural = '사용자 정의 권한'
 
 
 class Profile(models.Model):
