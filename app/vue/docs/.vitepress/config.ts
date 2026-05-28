@@ -143,7 +143,8 @@ export default withMermaid(
         {
           text: '관리자 메뉴얼',
           items: [
-            { text: '권한 설정 관리', link: '/authority/' },
+            { text: '회사 정보 관리', link: '/authority/' },
+            { text: '권한 설정 관리', link: '/authority/manage' },
             { text: '관리자 페이지', link: '/authority/admin-page' },
           ],
         },
