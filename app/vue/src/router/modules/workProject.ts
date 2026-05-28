@@ -33,6 +33,11 @@ const workProject = {
           component: () => import('@/views/_Work/Manages/Projects/components/Overview/Index.vue'),
         },
         {
+          path: ':projId/meeting',
+          name: '(회의)',
+          component: () => import('@/views/_Work/Manages/Projects/components/Meetings/Index.vue'),
+        },
+        {
           path: ':projId/activity',
           name: '(실행기록)',
           component: () => import('@/views/_Work/Manages/Projects/components/Activity/Index.vue'),
@@ -172,6 +177,11 @@ const workProject = {
           ],
         },
       ],
+    },
+    {
+      path: 'meeting',
+      name: '회의',
+      component: () => import('@/views/_Work/Manages/Meetings/Index.vue'),
     },
     {
       path: 'activity',

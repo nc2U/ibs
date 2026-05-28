@@ -28,19 +28,20 @@ const projectNavMenus = computed(() => {
   const project = issueProject.value
   const menus = [
     { no: 1, menu: '(개요)' },
-    { no: 2, menu: '(실행기록)' },
+    { no: 2, menu: '(회의)' },
+    { no: 3, menu: '(실행기록)' },
   ]
 
   if (project) {
     const mods = project.module
-    if (project.versions?.length) menus.push({ no: 3, menu: '(로드맵)' })
-    if (mods?.issue) menus.push({ no: 4, menu: '(업무)' })
-    if (mods?.time) menus.push({ no: 5, menu: '(소요시간)' })
+    if (project.versions?.length) menus.push({ no: 4, menu: '(로드맵)' })
+    if (mods?.issue) menus.push({ no: 5, menu: '(업무)' })
+    if (mods?.time) menus.push({ no: 6, menu: '(소요시간)' })
     if (mods?.calendar) menus.push({ no: 7, menu: '(달력)' })
     if (mods?.news) menus.push({ no: 8, menu: '(공지)' })
     if (mods?.document) menus.push({ no: 9, menu: '(문서)' })
-    if (mods?.forum && project.forums?.length) menus.push({ no: 11, menu: '(게시판)' })
-    if (project.status !== '9') menus.push({ no: 14, menu: '(설정)' })
+    if (mods?.forum && project.forums?.length) menus.push({ no: 10, menu: '(게시판)' })
+    if (project.status !== '9') menus.push({ no: 99, menu: '(설정)' })
   }
 
   return menus.sort((a, b) => a.no - b.no).map(m => m.menu)
