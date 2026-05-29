@@ -22,7 +22,8 @@ export interface SimpleIssue {
   category: number | null
   assigned_to: number | null
   watchers: SimpleUser[]
-  estimated_hours: number | null
+  expected_duration: string | null
+  expected_duration_display: string
   spent_times: number
   done_ratio: number
   closed: string | null
@@ -84,7 +85,8 @@ export interface SubIssue {
   status: string
   assigned_to: SimpleUser
   start_date: string
-  estimated_hours: string | null
+  expected_duration: string | null
+  expected_duration_display: string
   done_ratio: number
   closed: string | null
 }
@@ -103,7 +105,8 @@ export interface Issue {
   parent: number | null
   watchers: SimpleUser[]
   is_private: boolean
-  estimated_hours: number | null
+  expected_duration: string | null
+  expected_duration_display: string
   start_date: string
   due_date: string | null
   done_ratio: number

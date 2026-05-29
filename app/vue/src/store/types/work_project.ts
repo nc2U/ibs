@@ -54,7 +54,6 @@ export interface IssueProject {
   members: SimpleMember[]
   activities: CodeValue[]
   visible?: boolean
-  total_estimated_hours?: number
   total_time_spent?: number
   family_tree: SimpleProject[]
   parent: number | null

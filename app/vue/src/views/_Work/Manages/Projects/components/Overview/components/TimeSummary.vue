@@ -17,7 +17,6 @@ const isDark = inject('isDark')
       </CCardSubtitle>
 
       <ul class="pl-4 mb-0">
-        <li>추정시간 : {{ numberToHour(project?.total_estimated_hours ?? 0) }} 시간</li>
         <li>소요시간 : {{ numberToHour(project?.total_time_spent ?? 0) }} 시간</li>
       </ul>
     </CCardBody>

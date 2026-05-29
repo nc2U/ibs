@@ -62,12 +62,6 @@ const doneRatio = computed(() => {
   } else return props.issue?.done_ratio
 })
 
-const estimatedHours = computed(
-  () =>
-    props.issue?.sub_issues.map(s => Number(s.estimated_hours ?? 0)).reduce((a, b) => a + b) +
-    (props.issue?.estimated_hours ?? 0),
-)
-
 const numToTime = (n: number | null) => {
   const hours = Math.floor(n ?? 0)
   const minutes = Math.round(((n ?? 0) - hours) * 60)
@@ -322,12 +316,9 @@ onBeforeMount(async () => {
             </CCol>
           </CRow>
           <CRow>
-            <CCol class="title">추정시간:</CCol>
-            <CCol v-if="issue?.sub_issues.length">
-              (합계 : {{ numToTime(estimatedHours) }} 시간)
-            </CCol>
-            <CCol v-else-if="issue?.estimated_hours">
-              {{ numToTime(issue?.estimated_hours as number) }} 시간
+            <CCol class="title">예상 처리기간:</CCol>
+            <CCol>
+              {{ issue?.expected_duration_display }}
             </CCol>
           </CRow>
           <CRow v-if="issue?.spent_time">

@@ -66,7 +66,7 @@ const form = ref({
   assigned_to: null as number | null,
   due_date: null as string | null,
   category: null as number | null,
-  estimated_hours: null as number | string | null,
+  expected_duration: '0' as string | null,
   fixed_version: null as number | null,
   done_ratio: 0,
   watchers: [] as number[],
@@ -167,7 +167,7 @@ const formsCheck = computed(() => {
     const j = form.value.assigned_to === props.issue.assigned_to?.pk
     const k = form.value.due_date === props.issue.due_date
     const l = form.value.category === props.issue.category
-    const m = form.value.estimated_hours === numToTime(props.issue.estimated_hours)
+    const m = form.value.expected_duration === props.issue.expected_duration
     const n = form.value.fixed_version === props.issue.fixed_version?.pk
     const o = form.value.done_ratio === props.issue.done_ratio
     const p = !form.value.files?.map(f => f.del).some(f => f === true)
@@ -219,6 +219,19 @@ watch(versions, nVal => {
   if (!!def_vers.length) form.value.fixed_version = def_vers[0].pk ?? null
 })
 
+const durationOptions = [
+  { value: '0', label: '당일처리' },
+  { value: '1', label: '1일 이내' },
+  { value: '3', label: '3일 이내' },
+  { value: '5', label: '5일 이내' },
+  { value: '10', label: '10일 이내' },
+  { value: '30', label: '30일 이내' },
+  { value: '90', label: '3개월 이내' },
+  { value: '180', label: '6개월 이내' },
+  { value: '365', label: '1년 이내' },
+  { value: '366', label: '1년 이상' },
+]
+
 const activities = computed(() =>
   props.issueProject?.activities ? props.issueProject.activities : [],
 )
@@ -237,14 +250,8 @@ const onSubmit = (event: Event) => {
   } else {
     let noSubmit = false
     if (!!timeEntry.value.hours) {
-      const time_entry_hours = timeToNum(timeEntry.value.hours, false)
+      const time_entry_hours = timeToNum(timeEntry.value.hours)
       if (time_entry_hours) timeEntry.value.hours = time_entry_hours
-      else noSubmit = true
-    }
-
-    if (!!form.value.estimated_hours) {
-      const estimated_hours = timeToNum(form.value.estimated_hours, true)
-      if (estimated_hours) form.value.estimated_hours = estimated_hours
       else noSubmit = true
     }
 
@@ -320,7 +327,7 @@ const numToTime = (n: number | null) => {
   }
 }
 
-const timeToNum = (n: number | string | null, estimated: boolean) => {
+const timeToNum = (n: number | string | null) => {
   const timeNum = Number(n)
 
   if (!!timeNum) {
@@ -336,15 +343,9 @@ const timeToNum = (n: number | string | null, estimated: boolean) => {
       )
     } else {
       validated.value = true
-      if (estimated) {
-        form.value.estimated_hours = ''
-        document.getElementById('estimated_hours')?.setAttribute('required', 'true')
-        return null
-      } else {
-        timeEntry.value.hours = ''
-        document.getElementById('hours')?.setAttribute('required', 'true')
-        return null
-      }
+      timeEntry.value.hours = ''
+      document.getElementById('hours')?.setAttribute('required', 'true')
+      return null
     }
   }
 }
@@ -370,7 +371,7 @@ onBeforeMount(() => {
     form.value.assigned_to = props.issue.assigned_to?.pk ?? null
     form.value.due_date = props.issue.due_date
     form.value.category = props.issue.category
-    form.value.estimated_hours = numToTime(props.issue.estimated_hours)
+    form.value.expected_duration = props.issue.expected_duration
     form.value.fixed_version = props.issue.fixed_version?.pk ?? null
     form.value.done_ratio = props.issue.done_ratio
     form.value.files = props.issue.files
@@ -622,22 +623,16 @@ onBeforeMount(() => {
                 </CRow>
 
                 <CRow class="mb-3">
-                  <CFormLabel for="estimated_hours" class="col-sm-4 col-form-label text-right">
-                    추정시간
+                  <CFormLabel for="expected_duration" class="col-sm-4 col-form-label text-right">
+                    예상 처리기간
                   </CFormLabel>
-                  <CCol sm="6">
-                    <CFormInput
-                      v-model="form.estimated_hours"
-                      id="estimated_hours"
-                      maxlength="6"
-                      type="text"
-                      class="form-control"
-                      placeholder="1시간 30분 (1.5 or 1:30)"
-                      @input="removeProperty"
-                      feedbackInvalid="999 이하의 정수, 실수 또는 '12:59' 과 같이 시간 형식을 입력하세요."
-                    />
+                  <CCol sm="8">
+                    <CFormSelect v-model="form.expected_duration" id="expected_duration">
+                      <option v-for="dur in durationOptions" :value="dur.value" :key="dur.value">
+                        {{ dur.label }}
+                      </option>
+                    </CFormSelect>
                   </CCol>
-                  <CCol style="padding-top: 6px">시간</CCol>
                 </CRow>
 
                 <CRow class="mb-3">

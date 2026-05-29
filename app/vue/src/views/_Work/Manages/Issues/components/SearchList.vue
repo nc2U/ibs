@@ -67,7 +67,7 @@ const searchOptions = reactive([
   {
     label: '시간추적',
     options: [
-      { value: 'estimated_hours', label: '추정시간', disabled: true },
+      { value: 'expected_duration', label: '예상 처리기간', disabled: true },
       { value: 'spent_time', label: '소요시간', disabled: true },
     ],
     disabled: true,
