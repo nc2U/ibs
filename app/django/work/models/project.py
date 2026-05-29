@@ -116,8 +116,8 @@ class IssueProject(models.Model):
 class Module(models.Model):
     project = models.OneToOneField(IssueProject, on_delete=models.CASCADE, verbose_name='프로젝트')
     meeting = models.BooleanField('회의', default=True)
-    issue = models.BooleanField('업무관리', default=True)
-    time = models.BooleanField('시간추적', default=True)
+    issue = models.BooleanField('업무', default=True)
+    time = models.BooleanField('소요시간', default=True)
     news = models.BooleanField('공지', default=True)
     document = models.BooleanField('문서', default=True)
     forum = models.BooleanField('게시판', default=True)
