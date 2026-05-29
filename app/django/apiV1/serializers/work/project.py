@@ -1,9 +1,8 @@
 from django.db import transaction
-from django.db.models import Sum
 from rest_framework import serializers
 
 from apiV1.serializers.accounts import SimpleUserSerializer
-from work.models.issue import (IssueCategory, Tracker, CodeActivity, Issue)
+from work.models.issue import (IssueCategory, Tracker, Issue)
 from work.models.project import IssueProject, Role, Member, Module, Version, Permission
 
 
@@ -73,7 +72,7 @@ class MemberInIssueProjectSerializer(serializers.ModelSerializer):
 class ModuleInIssueProjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = Module
-        fields = ('pk', 'project', 'issue', 'time', 'news', 'document',
+        fields = ('pk', 'project', 'issue', 'news', 'document',
                   'forum', 'calendar')
 
 
@@ -113,12 +112,6 @@ class IssueCategoryInIssueProjectSerializer(serializers.ModelSerializer):
         fields = ('pk', 'name', 'assigned_to')
 
 
-class CodeActivityInIssueProjectSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CodeActivity
-        fields = ('pk', 'name', 'active', 'default', 'order')
-
-
 class IssueProjectListSerializer(ProjectPermissionMixin, serializers.ModelSerializer):
     company = serializers.SlugRelatedField('name', read_only=True)
     module = ModuleInIssueProjectSerializer(read_only=True)
@@ -152,9 +145,7 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
     trackers = TrackerInIssueProjectSerializer(many=True, read_only=True)
     versions = serializers.SerializerMethodField(read_only=True)
     categories = IssueCategoryInIssueProjectSerializer(many=True, read_only=True)
-    activities = CodeActivityInIssueProjectSerializer(many=True, read_only=True)
     visible = serializers.SerializerMethodField(read_only=True)
-    total_time_spent = serializers.SerializerMethodField(read_only=True)
     parent_visible = serializers.SerializerMethodField(read_only=True)
     sub_projects = serializers.SerializerMethodField()
     creator = serializers.SlugRelatedField('username', read_only=True)
@@ -165,7 +156,7 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
         fields = ('pk', 'company', 'sort', 'name', 'slug', 'description', 'homepage', 'is_public',
                   'module', 'is_inherit_members', 'allowed_roles', 'trackers', 'forums', 'versions',
                   'default_version', 'categories', 'status', 'depth', 'all_members', 'members',
-                  'activities', 'visible', 'total_time_spent', 'family_tree',
+                  'visible', 'family_tree',
                   'parent', 'parent_visible', 'sub_projects', 'creator', 'my_perms', 'created', 'updated')
         read_only_fields = ('forums',)
 
@@ -183,23 +174,10 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
     def get_parent_visible(self, obj):
         return self.get_visible(obj.parent) if obj.parent else False
 
-    def get_total_time_spent(self, obj):
-        if hasattr(obj, 'annotated_time_spent') and obj.annotated_time_spent is not None:
-            return obj.annotated_time_spent
-        return self.recursive_time_spent(obj)
-
-    def recursive_time_spent(self, project):
-        total_hours = project.timeentry_set.aggregate(total=Sum('hours'))['total'] or 0
-        sub_projects = project.issueproject_set.exclude(status='9')
-        for sub_project in sub_projects:
-            total_hours += self.recursive_time_spent(sub_project)
-        return total_hours
-
     @transaction.atomic
     def create(self, validated_data):
         allowed_roles = self.initial_data.get('allowed_roles', [])
         trackers = self.initial_data.get('trackers', [])
-        activities = self.initial_data.get('activities', [])
 
         project = IssueProject.objects.create(**validated_data)
 
@@ -207,12 +185,9 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
             project.allowed_roles.set(allowed_roles)
         if trackers:
             project.trackers.set(trackers)
-        if activities:
-            project.activities.set(activities)
 
         Module.objects.create(project=project,
                               issue=self.initial_data.get('issue', True),
-                              time=self.initial_data.get('time', True),
                               news=self.initial_data.get('news', True),
                               document=self.initial_data.get('document', True),
                               forum=self.initial_data.get('forum', True),
@@ -232,12 +207,8 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
         if trackers and ids_differ(instance.trackers, trackers):
             instance.trackers.set(trackers)
 
-        activities = self.initial_data.get('activities', [])
-        if activities and ids_differ(instance.activities, activities):
-            instance.activities.set(activities)
-
         module = instance.module
-        for field in ['issue', 'time', 'news', 'document', 'forum', 'calendar']:
+        for field in ['issue', 'news', 'document', 'forum', 'calendar']:
             if field in self.initial_data:
                 setattr(module, field, self.initial_data[field])
         module.save()
@@ -263,8 +234,8 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
 class RoleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Role
-        fields = ('pk', 'name', 'assignable', 'issue_visible', 'time_entry_visible', 'user_visible',
-                  'default_time_activity', 'order', 'creator', 'created', 'updated')
+        fields = ('pk', 'name', 'assignable', 'issue_visible', 'user_visible',
+                  'order', 'creator', 'created', 'updated')
 
 
 class MemberSerializer(serializers.ModelSerializer):
@@ -298,7 +269,7 @@ class MemberSerializer(serializers.ModelSerializer):
 class ModuleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Module
-        fields = ('pk', 'project', 'issue', 'time', 'news', 'document',
+        fields = ('pk', 'project', 'issue', 'news', 'document',
                   'forum', 'calendar')
 
 
@@ -306,18 +277,13 @@ class IssueInVersionSerializer(serializers.ModelSerializer):
     project = SimpleIssueProjectSerializer(read_only=True)
     tracker = TrackerInIssueProjectSerializer(read_only=True)
     watchers = SimpleUserSerializer(many=True, read_only=True)
-    spent_times = serializers.SerializerMethodField()
     expected_duration_display = serializers.CharField(source='get_expected_duration_display', read_only=True)
 
     class Meta:
         model = Issue
         fields = ('pk', 'project', 'subject', 'status', 'tracker', 'priority',
                   'fixed_version', 'category', 'assigned_to', 'watchers',
-                  'expected_duration', 'expected_duration_display', 'spent_times', 'done_ratio', 'closed')
-
-    @staticmethod
-    def get_spent_times(obj):
-        return obj.timeentry_set.aggregate(total=Sum('hours'))['total'] or 0
+                  'expected_duration', 'expected_duration_display', 'done_ratio', 'closed')
 
 
 class VersionSerializer(serializers.ModelSerializer):

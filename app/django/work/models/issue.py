@@ -6,7 +6,7 @@ from django.db import models
 from django.db.models.signals import pre_delete
 from django.dispatch import receiver
 
-from work.models.project import IssueProject, Role, Version
+from work.models.project import IssueProject, Version
 
 
 class IssueManager(models.Manager):
@@ -143,26 +143,6 @@ class IssueComment(models.Model):
         return self.content
 
 
-class TimeEntry(models.Model):
-    project = models.ForeignKey(IssueProject, on_delete=models.CASCADE, verbose_name='프로젝트')
-    issue = models.ForeignKey(Issue, on_delete=models.CASCADE, verbose_name='업무')
-    spent_on = models.DateField('작업일자', auto_now_add=True)
-    hours = models.DecimalField('시간', max_digits=5, decimal_places=2)
-    activity = models.ForeignKey('CodeActivity', on_delete=models.PROTECT, verbose_name='작업분류(시간추적)')
-    comment = models.CharField('설명', max_length=255, blank=True, default='')
-    created = models.DateTimeField('등록일', auto_now_add=True)
-    updated = models.DateTimeField('수정일', auto_now=True)
-    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name='작성자')
-
-    def __str__(self):
-        return f'{self.issue} - {self.hours}'
-
-    class Meta:
-        ordering = ('-id',)
-        verbose_name = '07. 소요 시간'
-        verbose_name_plural = '07. 소요 시간'
-
-
 class TrackerManager(models.Manager):
     def get_queryset(self):
         return super().get_queryset().select_related('default_status')
@@ -223,7 +203,7 @@ class IssueStatus(models.Model):
 
 
 class Workflow(models.Model):
-    role = models.ForeignKey(Role, on_delete=models.CASCADE, verbose_name='역할')
+    role = models.ForeignKey('work.Role', on_delete=models.CASCADE, verbose_name='역할')
     tracker = models.ForeignKey(Tracker, on_delete=models.CASCADE, verbose_name='업무 유형')
     old_status = models.OneToOneField(IssueStatus, on_delete=models.CASCADE, verbose_name='업무 상태',
                                       related_name='each_status')
@@ -235,24 +215,6 @@ class Workflow(models.Model):
     class Meta:
         verbose_name = '11. 업무 흐름'
         verbose_name_plural = '11. 업무 흐름'
-
-
-class CodeActivity(models.Model):
-    name = models.CharField('이름', max_length=50, db_index=True)
-    active = models.BooleanField('사용중', default=True)
-    default = models.BooleanField('기본값', default=False)
-    order = models.PositiveSmallIntegerField('정렬', default=1)
-    created = models.DateTimeField('등록일', auto_now_add=True)
-    updated = models.DateTimeField('수정일', auto_now=True)
-    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name='작성자')
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        ordering = ('order', 'id',)
-        verbose_name = '12. 작업 분류(시간추적)'
-        verbose_name_plural = '12. 작업 분류(시간추적)'
 
 
 class CodeIssuePriority(models.Model):

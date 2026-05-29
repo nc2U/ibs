@@ -1,5 +1,5 @@
 from django.db.models import Q
-from django_filters.rest_framework import FilterSet, BooleanFilter, DateFilter, CharFilter
+from django_filters.rest_framework import FilterSet, BooleanFilter, CharFilter
 from rest_framework import viewsets
 from rest_framework.views import APIView
 
@@ -147,66 +147,6 @@ class IssueCommentViewSet(viewsets.ModelViewSet):
         serializer.save(creator=self.request.user)
 
 
-class TimeEntryFilter(FilterSet):
-    project__search = CharFilter(field_name='project__slug', label='프로젝트-검색')
-    project__exclude = CharFilter(field_name='project__slug', exclude=True, label='프로젝트-제외')
-    from_spent_on = DateFilter(field_name='spent_on', lookup_expr='gte', label='작업일자부터')
-    to_spent_on = DateFilter(field_name='spent_on', lookup_expr='lte', label='작업일자부터')
-    creator__exclude = CharFilter(field_name='creator', exclude=True, label='사용자-제외')
-    issue__fixed_version__exclude = CharFilter(field_name='issue__fixed_version', exclude=True, label='목표버전-제외')
-
-    class Meta:
-        model = TimeEntry
-        fields = ('project__slug', 'spent_on', 'issue', 'creator', 'activity', 'hours',
-                  'issue__tracker', 'issue__parent', 'issue__fixed_version', 'issue__category')
-
-    def filter_queryset(self, queryset):
-
-        for name, value in self.form.cleaned_data.items():
-            if name == 'project__slug':
-                try:
-                    project = IssueProject.objects.get(slug=value)
-                    subs = self.get_sub_projects(project)
-                    queryset = queryset.filter(
-                        Q(project__slug=project.slug) | Q(project__slug__in=[sub.slug for sub in subs]))
-                except IssueProject.DoesNotExist:
-                    pass
-            elif value is not None:
-                # Apply other filters
-                queryset = self.filters[name].filter(queryset, value)
-
-        return queryset
-
-    def get_sub_projects(self, parent):
-        sub_projects = []
-        children = IssueProject.objects.filter(parent=parent)
-        for child in children:
-            sub_projects.append(child)
-            sub_projects.extend(self.get_sub_projects(child))
-        return sub_projects
-
-
-class TimeEntryViewSet(viewsets.ModelViewSet):
-    queryset = TimeEntry.objects.all()
-    serializer_class = TimeEntrySerializer
-    permission_classes = (permissions.IsAuthenticated,)
-    pagination_class = PageNumberPaginationTwenty
-    filterset_class = TimeEntryFilter
-    search_fields = ('issue__subject', 'comment')
-
-    def get_queryset(self):
-        user = self.request.user
-        work_auth = user.work_manager or user.is_superuser
-        projects = user.assigned_projects()
-        return self.queryset \
-            if work_auth \
-            else self.queryset.filter(Q(issue__project__is_public=True) |
-                                      Q(issue__project__in=projects))
-
-    def perform_create(self, serializer):
-        serializer.save(creator=self.request.user)
-
-
 class TrackerViewSet(viewsets.ModelViewSet):
     queryset = Tracker.objects.all()
     serializer_class = TrackerSerializer
@@ -252,17 +192,6 @@ class WorkflowViewSet(viewsets.ModelViewSet):
     queryset = Workflow.objects.all()
     serializer_class = WorkflowSerializer
     permission_classes = (permissions.IsAuthenticated,)
-
-
-class CodeActivityViewSet(viewsets.ModelViewSet):
-    queryset = CodeActivity.objects.all()
-    serializer_class = CodeActivitySerializer
-    permission_classes = (permissions.IsAuthenticated,)
-    pagination_class = PageNumberPaginationTwenty
-    search_fields = ('id',)
-
-    def perform_create(self, serializer):
-        serializer.save(creator=self.request.user)
 
 
 class CodeIssuePriorityViewSet(viewsets.ModelViewSet):

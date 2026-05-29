@@ -2,7 +2,6 @@ import json
 import os.path
 
 from django.db import transaction, IntegrityError
-from django.db.models import Sum
 from django.utils import timezone
 from rest_framework import serializers
 
@@ -10,8 +9,8 @@ from accounts.models import User
 from apiV1.serializers.accounts import SimpleUserSerializer
 from apiV1.serializers.work.project import SimpleIssueProjectSerializer, TrackerInIssueProjectSerializer
 from work.models.issue import (IssueCategory, Tracker, IssueStatus, Workflow,
-                               CodeActivity, CodeIssuePriority, Issue, IssueRelation,
-                               IssueFile, IssueComment, TimeEntry)
+                               CodeIssuePriority, Issue, IssueRelation,
+                               IssueFile, IssueComment)
 from work.models.project import IssueProject, Version
 
 
@@ -69,7 +68,6 @@ class IssueSerializer(serializers.ModelSerializer):
     fixed_version = VersionInIssueSerializer(read_only=True)
     assigned_to = SimpleUserSerializer(read_only=True)
     watchers = SimpleUserSerializer(many=True, read_only=True)
-    spent_time = serializers.SerializerMethodField(read_only=True)
     files = IssueFileInIssueSerializer(many=True, read_only=True)
     sub_issues = serializers.SerializerMethodField()
     related_issues = serializers.SerializerMethodField()
@@ -83,12 +81,8 @@ class IssueSerializer(serializers.ModelSerializer):
         fields = ('pk', 'project', 'tracker', 'status', 'priority', 'subject',
                   'description', 'category', 'fixed_version', 'assigned_to',
                   'parent', 'watchers', 'is_private', 'expected_duration', 'expected_duration_display',
-                  'start_date', 'due_date', 'done_ratio', 'closed', 'spent_time', 'files', 'sub_issues',
+                  'start_date', 'due_date', 'done_ratio', 'closed', 'files', 'sub_issues',
                   'related_issues', 'creator', 'updater', 'created', 'updated')
-
-    @staticmethod
-    def get_spent_time(obj):
-        return obj.timeentry_set.all().aggregate(Sum('hours'))['hours__sum']
 
     @staticmethod
     def get_sub_issues(obj):
@@ -172,17 +166,9 @@ class IssueSerializer(serializers.ModelSerializer):
             child.parent = None
             child.save()
 
-        # time entry logic
-        hours = self.initial_data.get('hours', None)
-        activity = self.initial_data.get('activity', None)
-        comment = self.initial_data.get('comment', None)
-        creator = self.context['request'].user
-        if hours and activity:
-            activity = CodeActivity.objects.get(pk=activity)
-            TimeEntry.objects.create(project=instance.project, issue=instance, hours=hours,
-                                     activity=activity, comment=comment, creator=creator)
         # issue_comment logic
         comment_content = self.initial_data.get('comment_content', None)
+        creator = self.context['request'].user
         if comment_content:
             IssueComment.objects.create(issue=instance, content=comment_content, creator=creator)
 
@@ -278,49 +264,6 @@ class IssueCommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = IssueComment
         fields = ('pk', 'issue', 'content', 'is_private', 'created', 'updated', 'creator')
-
-
-class SimpleCodeActivitySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CodeActivity
-        fields = ('pk', 'name')
-
-
-class TimeEntrySerializer(serializers.ModelSerializer):
-    issue = IssueInRelatedSerializer(read_only=True)
-    activity = SimpleCodeActivitySerializer(read_only=True)
-    creator = SimpleUserSerializer(read_only=True)
-    total_hours = serializers.SerializerMethodField()
-
-    class Meta:
-        model = TimeEntry
-        fields = ('pk', 'issue', 'spent_on', 'hours', 'activity', 'comment',
-                  'created', 'updated', 'creator', 'total_hours')
-
-    def get_total_hours(self, obj):
-        # Access the filtered queryset from the view context
-        filtered_queryset = self.context['view'].filter_queryset(self.context['view'].get_queryset())
-        total_hours = filtered_queryset.aggregate(total_hours=Sum('hours'))
-        return total_hours['total_hours'] or 0
-
-    @transaction.atomic
-    def create(self, validated_data):
-        issue = self.initial_data.get('issue', None)
-        activity = self.initial_data.get('activity', None)
-
-        time_entry = TimeEntry.objects.create(project=issue.project,
-                                              issue_id=issue,
-                                              activity_id=activity,
-                                              **validated_data)
-        return time_entry
-
-    @transaction.atomic
-    def update(self, instance, validated_data):
-        instance.__dict__.update(**validated_data)
-        instance.issue = Issue.objects.get(pk=self.initial_data.get('issue'))
-        instance.project = instance.issue.project
-        instance.activity = CodeActivity.objects.get(pk=self.initial_data.get('activity'))
-        return super().update(instance, validated_data)
 
 
 class TrackerSerializer(serializers.ModelSerializer):
@@ -425,14 +368,6 @@ class WorkflowSerializer(serializers.ModelSerializer):
     class Meta:
         model = Workflow
         fields = ('pk', 'role', 'tracker', 'old_status', 'new_statuses')
-
-
-class CodeActivitySerializer(serializers.ModelSerializer):
-    creator = SimpleUserSerializer(read_only=True)
-
-    class Meta:
-        model = CodeActivity
-        fields = ('pk', 'name', 'active', 'default', 'order', 'creator', 'created', 'updated')
 
 
 class CodeIssuePrioritySerializer(serializers.ModelSerializer):

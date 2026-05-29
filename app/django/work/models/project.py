@@ -23,7 +23,6 @@ class IssueProject(models.Model):
                                         verbose_name='기본 단계', help_text='기존 공유 단계에서만 작동합니다.')
     allowed_roles = models.ManyToManyField('Role', blank=True, related_name='projects', verbose_name='허용 역할')
     trackers = models.ManyToManyField('Tracker', blank=True, related_name='projects', verbose_name='허용유형')
-    activities = models.ManyToManyField('CodeActivity', blank=True, verbose_name='작업분류(시간추적)')
     status = models.CharField('사용여부', max_length=1, default='1', choices=(('1', '사용'), ('9', '잠금보관(모든 접근이 차단됨)')))
     order = models.PositiveSmallIntegerField('정렬순서', default=0)
     slack_notifications_enabled = models.BooleanField(
@@ -117,7 +116,6 @@ class Module(models.Model):
     project = models.OneToOneField(IssueProject, on_delete=models.CASCADE, verbose_name='프로젝트')
     meeting = models.BooleanField('회의', default=True)
     issue = models.BooleanField('업무', default=True)
-    time = models.BooleanField('소요시간', default=True)
     news = models.BooleanField('공지', default=True)
     document = models.BooleanField('문서', default=True)
     forum = models.BooleanField('게시판', default=True)
@@ -132,12 +130,8 @@ class Role(models.Model):
     assignable = models.BooleanField('업무 위탁 권한', default=True)
     ISSUE_VIEW_PERM = (('ALL', '모든 업무'), ('PUB', '비공개 업무 제외'), ('PRI', '직접 생성 또는 담당한 업무'), ('NOP', '없음'))
     issue_visible = models.CharField('업무 보기 권한', max_length=3, choices=ISSUE_VIEW_PERM, default='PUB')
-    TIME_VIEW_PERM = (('ALL', '모든 시간기록'), ('PRI', '직접 생성한 시간기록'), ('NOP', '없음'))
-    time_entry_visible = models.CharField('소요시간 보기 권한', max_length=3, choices=TIME_VIEW_PERM, default='ALL')
     USER_VIEW_PERM = (('ALL', '모든 활성 사용자'), ('PRJ', '보이는 프로젝트 사용자'), ('NOP', '없음'))
     user_visible = models.CharField('사용자 보기 권한', max_length=3, choices=USER_VIEW_PERM, default='ALL')
-    default_time_activity = models.ForeignKey('CodeActivity', on_delete=models.SET_NULL, null=True, blank=True,
-                                              verbose_name='기본 활동')
     permissions = models.ManyToManyField('work.Permission', related_name='roles')
     order = models.PositiveSmallIntegerField('정렬', default=1)
     created = models.DateTimeField('등록일', auto_now_add=True)
@@ -154,7 +148,7 @@ class Role(models.Model):
 
 
 class Permission(models.Model):
-    MODULE_CHOICES = (('project', '프로젝트'), ('meeting', '회의'), ('issue', '업무'), ('time', '소요시간'),
+    MODULE_CHOICES = (('project', '프로젝트'), ('meeting', '회의'), ('issue', '업무'),
                       ('news', '공지'), ('docs', '문서'), ('forum', '게시판'), ('calendar', '달력'))
     sort = models.CharField('모듈', max_length=10, choices=MODULE_CHOICES, db_index=True)
     code = models.CharField('코드', max_length=30, unique=True)

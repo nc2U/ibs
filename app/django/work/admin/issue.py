@@ -3,8 +3,8 @@ from import_export.admin import ImportExportMixin
 from rangefilter.filters import DateRangeFilter
 
 from work.models import (Issue, IssueRelation, IssueFile, IssueComment,
-                         TimeEntry, Tracker, IssueCategory, IssueStatus,
-                         Workflow, CodeActivity, CodeIssuePriority)
+                         Tracker, IssueCategory, IssueStatus,
+                         Workflow, CodeIssuePriority)
 
 
 class IssueFileInline(admin.TabularInline):
@@ -14,11 +14,6 @@ class IssueFileInline(admin.TabularInline):
 
 class IssueCommentInline(admin.TabularInline):
     model = IssueComment
-    extra = 1
-
-
-class TimeEntryInline(admin.TabularInline):
-    model = TimeEntry
     extra = 1
 
 
@@ -36,14 +31,7 @@ class IssueAdmin(ImportExportMixin, admin.ModelAdmin):
     list_filter = ('project', 'tracker', 'status', 'priority',
                    ('start_date', DateRangeFilter), ('due_date', DateRangeFilter))
     search_fields = ('subject',)
-    inlines = (IssueFileInline, IssueCommentInline, TimeEntryInline, IssueRelationInline)
-
-
-@admin.register(TimeEntry)
-class TimeEntryAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('pk', 'project', 'issue', 'spent_on', 'hours', 'activity')
-    list_display_links = ('project', 'issue')
-    list_filter = ('project', 'activity', ('spent_on', DateRangeFilter))
+    inlines = (IssueFileInline, IssueCommentInline, IssueRelationInline)
 
 
 @admin.register(Tracker)
@@ -76,14 +64,6 @@ class WorkflowAdmin(ImportExportMixin, admin.ModelAdmin):
         return ", ".join([status.name for status in obj.new_statuses.all()]) if obj.new_statuses.all() else '-'
 
     get_new_statuses.short_description = '허용 업무 상태'
-
-
-@admin.register(CodeActivity)
-class CodeActivityAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('pk', 'name', 'active', 'default', 'order', 'creator')
-    list_display_links = ('name',)
-    list_editable = ('active', 'default', 'order')
-    list_filter = ('active', 'default')
 
 
 @admin.register(CodeIssuePriority)

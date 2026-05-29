@@ -68,8 +68,7 @@ class IssueProjectAdmin(ImportExportMixin, admin.ModelAdmin):
 
 @admin.register(Role)
 class RoleAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('pk', 'name', 'issue_visible', 'time_entry_visible',
-                    'user_visible', 'default_time_activity')
+    list_display = ('pk', 'name', 'issue_visible', 'user_visible')
     list_display_links = ('name',)
     filter_horizontal = ('permissions',)  # ✅ 이렇게 하면 UI에서 다중 선택 가능
 
@@ -113,4 +112,6 @@ class MemberAdmin(ImportExportMixin, admin.ModelAdmin):
 class VersionAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('pk', 'name', 'project', 'status', 'get_sharing_display', 'effective_date')
     list_display_links = ('name',)
+    list_filter = ('project', 'status', 'sharing')
+
     list_filter = ('project', 'status', 'sharing')

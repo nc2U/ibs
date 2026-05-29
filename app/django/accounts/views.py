@@ -11,7 +11,7 @@ from django.views.generic.edit import CreateView
 from company.models import Company
 from ibs.models import ProjectAccountD3
 from project.models import Project
-from work.models import Role, Tracker, CodeActivity
+from work.models import Role, Tracker
 from work.models.project import IssueProject, Module
 from .forms import UserCreationForm
 from .models import User
@@ -148,13 +148,9 @@ def create_project(request):
         existing_trackers = list(Tracker.objects.filter(pk__in=[4, 5, 6, 7]).values_list('pk', flat=True))
         if existing_trackers:
             issue_project.trackers.add(*existing_trackers)
-
-        existing_activities = list(CodeActivity.objects.filter(pk__in=[3, 4, 5, 6, 7, 8]).values_list('pk', flat=True))
-        if existing_activities:
-            issue_project.activities.add(*existing_activities)
         issue_project.save()
 
-        Module(project=issue_project, issue=True, time=True, news=True,
+        Module(project=issue_project, issue=True, news=True,
                document=True, file=True, wiki=True, repository=False,
                forum=True, calendar=True, gantt=True).save()
 

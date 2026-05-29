@@ -36,9 +36,7 @@ class IssueProjectViewSet(viewsets.ModelViewSet):
             return queryset.select_related('company', 'module', 'creator')
         
         # For detail view, we can add non-recursive annotations as a hint
-        return queryset.annotate(
-            annotated_time_spent=Sum('timeentry__hours')
-        ).select_related('company', 'module', 'creator', 'parent', 'default_version')
+        return queryset.select_related('company', 'module', 'creator', 'parent', 'default_version')
 
     def get_serializer_class(self):
         if self.action == 'list':

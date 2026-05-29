@@ -2,7 +2,7 @@ from django.db.models.signals import pre_save, post_save, pre_delete
 from django.dispatch import receiver
 
 from work.models.inform import News
-from work.models.issue import Issue, IssueRelation, IssueComment, TimeEntry
+from work.models.issue import Issue, IssueRelation, IssueComment
 from work.models.logging import ActivityLogEntry, IssueLogEntry
 from work.services import IssueService
 
@@ -66,16 +66,3 @@ def news_log_changes(sender, instance, created, **kwargs):
 @receiver(pre_delete, sender=News)
 def news_log_delete(sender, instance, **kwargs):
     ActivityLogEntry.objects.filter(news=instance).delete()
-
-
-@receiver(post_save, sender=TimeEntry)
-def time_log_changes(sender, instance, created, **kwargs):
-    if created:
-        ActivityLogEntry.objects.create(sort='9', project=instance.issue.project,
-                                        issue=instance.issue, spent_time=instance,
-                                        creator=instance.creator)
-
-
-@receiver(pre_delete, sender=TimeEntry)
-def time_log_delete(sender, instance, **kwargs):
-    ActivityLogEntry.objects.filter(spent_time=instance).delete()
