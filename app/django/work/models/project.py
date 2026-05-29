@@ -20,7 +20,7 @@ class IssueProject(models.Model):
     parent = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='상위 프로젝트')
     is_inherit_members = models.BooleanField('상위 프로젝트 멤버 상속', default=False)
     default_version = models.ForeignKey('Version', on_delete=models.SET_NULL, null=True, blank=True,
-                                        verbose_name='기본 버전', help_text='기존 공유 버전에서만 작동합니다.')
+                                        verbose_name='기본 단계', help_text='기존 공유 단계에서만 작동합니다.')
     allowed_roles = models.ManyToManyField('Role', blank=True, related_name='projects', verbose_name='허용 역할')
     trackers = models.ManyToManyField('Tracker', blank=True, related_name='projects', verbose_name='허용유형')
     activities = models.ManyToManyField('CodeActivity', blank=True, verbose_name='작업분류(시간추적)')
@@ -193,7 +193,7 @@ class Version(models.Model):
     SHARING_CHOICES = (('0', '공유 없음'), ('1', '하위 프로젝트'), ('2', '상위 및 하위 프로젝트'),
                        ('3', '최상위 및 모든 하위 프로젝트'), ('4', '모든 프로젝트'))
     sharing = models.CharField('공유', max_length=1, choices=SHARING_CHOICES, default='1')
-    effective_date = models.DateField(verbose_name='버전 출시 기한', blank=True, null=True)
+    effective_date = models.DateField(verbose_name='단계 완료 기한', blank=True, null=True)
     description = models.CharField('설명', max_length=255, blank=True, default='')
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
@@ -203,5 +203,5 @@ class Version(models.Model):
 
     class Meta:
         ordering = ('project', 'id')
-        verbose_name = '05. 버전'
-        verbose_name_plural = '05. 버전'
+        verbose_name = '05. 단계'
+        verbose_name_plural = '05. 단계'
