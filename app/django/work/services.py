@@ -12,7 +12,7 @@ class IssueService:
                 fields_to_track = [
                     'project', 'tracker', 'status', 'priority', 'subject',
                     'description', 'category', 'fixed_version', 'assigned_to',
-                    'parent', 'watchers', 'is_private', 'estimated_hours',
+                    'parent', 'watchers', 'is_private', 'expected_duration',
                     'start_date', 'due_date', 'done_ratio', 'closed'
                 ]
                 for field in fields_to_track:
@@ -38,7 +38,7 @@ class IssueService:
             'priority': '우선순위', 'subject': '제목', 'description': '설명',
             'category': '범주', 'fixed_version': '목표 단계', 'assigned_to': '담당자',
             'parent': '상위 업무', 'watchers': '업무 관람자', 'is_private': '비공개 설정',
-            'estimated_hours': '추정시간', 'start_date': '시작 일자',
+            'expected_duration': '예상 처리기간', 'start_date': '시작 일자',
             'due_date': '완료일', 'done_ratio': '진척도', 'closed': '해당 업무'
         }
 
@@ -54,6 +54,14 @@ class IssueService:
                 if field == 'description':
                     details += f"|- **{label}**이 변경되었습니다."
                     diff += f"**변경전 :**\n{old_val}\n---\n**변경후 :**\n{new_val}"
+                elif field == 'expected_duration':
+                    old_display = instance.get_expected_duration_display() if not old_val else next(
+                        (c[1] for c in instance._meta.get_field('expected_duration').choices if c[0] == old_val),
+                        old_val)
+                    new_display = instance.get_expected_duration_display()
+                    desc = f" *{old_display}*에서 " if old_val else ""
+                    act = "변경" if old_val else "지정"
+                    details += f"|- **{label}**가 {desc}*{new_display}*(으)로 {act}되었습니다."
                 elif field == 'parent':
                     desc = f" *{old_val}*에서 " if old_val else ""
                     act = "변경" if old_val else "지정"

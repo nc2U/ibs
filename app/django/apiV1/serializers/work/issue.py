@@ -44,10 +44,12 @@ class IssueFileInIssueSerializer(serializers.ModelSerializer):
 class IssueInIssueSerializer(serializers.ModelSerializer):
     status = serializers.SlugRelatedField(read_only=True, slug_field='name')
     assigned_to = SimpleUserSerializer(read_only=True)
+    expected_duration_display = serializers.CharField(source='get_expected_duration_display', read_only=True)
 
     class Meta:
         model = Issue
-        fields = ('pk', 'subject', 'status', 'assigned_to', 'start_date', 'estimated_hours', 'done_ratio', 'closed')
+        fields = ('pk', 'subject', 'status', 'assigned_to', 'start_date',
+                  'expected_duration', 'expected_duration_display', 'done_ratio', 'closed')
 
 
 class IssueRelationInIssueSerializer(serializers.ModelSerializer):
@@ -72,6 +74,7 @@ class IssueSerializer(serializers.ModelSerializer):
     sub_issues = serializers.SerializerMethodField()
     related_issues = serializers.SerializerMethodField()
     creator = SimpleUserSerializer(read_only=True)
+    expected_duration_display = serializers.CharField(source='get_expected_duration_display', read_only=True)
 
     # updater = SimpleUserSerializer(read_only=True)
 
@@ -79,8 +82,8 @@ class IssueSerializer(serializers.ModelSerializer):
         model = Issue
         fields = ('pk', 'project', 'tracker', 'status', 'priority', 'subject',
                   'description', 'category', 'fixed_version', 'assigned_to',
-                  'parent', 'watchers', 'is_private', 'estimated_hours', 'start_date',
-                  'due_date', 'done_ratio', 'closed', 'spent_time', 'files', 'sub_issues',
+                  'parent', 'watchers', 'is_private', 'expected_duration', 'expected_duration_display',
+                  'start_date', 'due_date', 'done_ratio', 'closed', 'spent_time', 'files', 'sub_issues',
                   'related_issues', 'creator', 'updater', 'created', 'updated')
 
     @staticmethod
@@ -412,7 +415,7 @@ class IssueCountByTrackerSerializer(serializers.ModelSerializer):
 
 class IssueStatusSerializer(serializers.ModelSerializer):
     creator = SimpleUserSerializer(read_only=True)
-    
+
     class Meta:
         model = IssueStatus
         fields = ('pk', 'name', 'description', 'closed', 'order', 'creator', 'created', 'updated')
@@ -426,7 +429,7 @@ class WorkflowSerializer(serializers.ModelSerializer):
 
 class CodeActivitySerializer(serializers.ModelSerializer):
     creator = SimpleUserSerializer(read_only=True)
-    
+
     class Meta:
         model = CodeActivity
         fields = ('pk', 'name', 'active', 'default', 'order', 'creator', 'created', 'updated')
@@ -434,7 +437,7 @@ class CodeActivitySerializer(serializers.ModelSerializer):
 
 class CodeIssuePrioritySerializer(serializers.ModelSerializer):
     creator = SimpleUserSerializer(read_only=True)
-    
+
     class Meta:
         model = CodeIssuePriority
         fields = ('pk', 'name', 'active', 'default', 'order', 'creator', 'created', 'updated')

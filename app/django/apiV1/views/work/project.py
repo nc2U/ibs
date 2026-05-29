@@ -37,7 +37,6 @@ class IssueProjectViewSet(viewsets.ModelViewSet):
         
         # For detail view, we can add non-recursive annotations as a hint
         return queryset.annotate(
-            annotated_estimated_hours=Sum('issue__estimated_hours'),
             annotated_time_spent=Sum('timeentry__hours')
         ).select_related('company', 'module', 'creator', 'parent', 'default_version')
 

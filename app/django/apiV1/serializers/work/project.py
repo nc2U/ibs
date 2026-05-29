@@ -154,7 +154,6 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
     categories = IssueCategoryInIssueProjectSerializer(many=True, read_only=True)
     activities = CodeActivityInIssueProjectSerializer(many=True, read_only=True)
     visible = serializers.SerializerMethodField(read_only=True)
-    total_estimated_hours = serializers.SerializerMethodField(read_only=True)
     total_time_spent = serializers.SerializerMethodField(read_only=True)
     parent_visible = serializers.SerializerMethodField(read_only=True)
     sub_projects = serializers.SerializerMethodField()
@@ -166,7 +165,7 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
         fields = ('pk', 'company', 'sort', 'name', 'slug', 'description', 'homepage', 'is_public',
                   'module', 'is_inherit_members', 'allowed_roles', 'trackers', 'forums', 'versions',
                   'default_version', 'categories', 'status', 'depth', 'all_members', 'members',
-                  'activities', 'visible', 'total_estimated_hours', 'total_time_spent', 'family_tree',
+                  'activities', 'visible', 'total_time_spent', 'family_tree',
                   'parent', 'parent_visible', 'sub_projects', 'creator', 'my_perms', 'created', 'updated')
         read_only_fields = ('forums',)
 
@@ -183,18 +182,6 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
 
     def get_parent_visible(self, obj):
         return self.get_visible(obj.parent) if obj.parent else False
-
-    def get_total_estimated_hours(self, obj):
-        if hasattr(obj, 'annotated_estimated_hours') and obj.annotated_estimated_hours is not None:
-            return obj.annotated_estimated_hours
-        return self.recursive_estimated_hours(obj)
-
-    def recursive_estimated_hours(self, project):
-        total_hours = project.issue_set.aggregate(total=Sum('estimated_hours'))['total'] or 0
-        sub_projects = project.issueproject_set.exclude(status='9')
-        for sub_project in sub_projects:
-            total_hours += self.recursive_estimated_hours(sub_project)
-        return total_hours
 
     def get_total_time_spent(self, obj):
         if hasattr(obj, 'annotated_time_spent') and obj.annotated_time_spent is not None:
@@ -320,12 +307,13 @@ class IssueInVersionSerializer(serializers.ModelSerializer):
     tracker = TrackerInIssueProjectSerializer(read_only=True)
     watchers = SimpleUserSerializer(many=True, read_only=True)
     spent_times = serializers.SerializerMethodField()
+    expected_duration_display = serializers.CharField(source='get_expected_duration_display', read_only=True)
 
     class Meta:
         model = Issue
         fields = ('pk', 'project', 'subject', 'status', 'tracker', 'priority',
                   'fixed_version', 'category', 'assigned_to', 'watchers',
-                  'estimated_hours', 'spent_times', 'done_ratio', 'closed')
+                  'expected_duration', 'expected_duration_display', 'spent_times', 'done_ratio', 'closed')
 
     @staticmethod
     def get_spent_times(obj):

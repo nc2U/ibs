@@ -17,6 +17,19 @@ class IssueManager(models.Manager):
         )
 
 
+class ExpectedDuration(models.TextChoices):
+    SAME_DAY = '0', '당일처리'
+    DAY_1 = '1', '1일 이내'
+    DAY_3 = '3', '3일 이내'
+    DAY_5 = '5', '5일 이내'
+    DAY_10 = '10', '10일 이내'
+    DAY_30 = '30', '30일 이내'
+    MONTH_3 = '90', '3개월 이내'
+    MONTH_6 = '180', '6개월 이내'
+    YEAR_1 = '365', '1년 이내'
+    OVER_YEAR = '366', '1년 이상'
+
+
 class Issue(models.Model):
     project = models.ForeignKey(IssueProject, on_delete=models.PROTECT, verbose_name='프로젝트')
     tracker = models.ForeignKey('Tracker', on_delete=models.PROTECT, verbose_name='유형')
@@ -33,9 +46,10 @@ class Issue(models.Model):
     watchers = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, verbose_name='업무 관람자',
                                       related_name='watchers')
     meeting = models.ForeignKey('Meeting', on_delete=models.SET_NULL, null=True, blank=True,
-                                verbose_name='회의록', related_name='issues')
+                                verbose_name='회의', related_name='issues')
     is_private = models.BooleanField('비공개', default=False)
-    estimated_hours = models.DecimalField('추정 소요시간', max_digits=5, decimal_places=2, null=True, blank=True)
+    expected_duration = models.CharField('예상 처리기간', max_length=3, choices=ExpectedDuration, null=True, blank=True,
+                                         default=ExpectedDuration.SAME_DAY)
     start_date = models.DateField('시작 일자')
     due_date = models.DateField('완료 기한', null=True, blank=True)
     done_ratio = models.PositiveSmallIntegerField('진척도', default=0)
