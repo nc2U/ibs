@@ -82,7 +82,7 @@ onBeforeMount(async () => {
 <template>
   <CRow class="py-2">
     <CCol>
-      <h5><span v-if="route.name === '(로드맵) - 추가'">새</span> 버전</h5>
+      <h5><span v-if="route.name === '(추진현황) - 추가'">새</span> 단계</h5>
     </CCol>
 
     <CForm class="needs-validation" novalidate :validated="validated" @submit.prevent="onSubmit">
@@ -94,7 +94,7 @@ onBeforeMount(async () => {
             </CFormLabel>
 
             <CCol sm="10" lg="6">
-              <CFormInput v-model="form.name" placeholder="새 버전 이름" required />
+              <CFormInput v-model="form.name" placeholder="새 단계 이름" required />
             </CCol>
           </CRow>
 
@@ -102,7 +102,7 @@ onBeforeMount(async () => {
             <CFormLabel for="name" class="col-sm-2 col-form-label text-right"> 설명</CFormLabel>
 
             <CCol sm="10" lg="6">
-              <CFormInput v-model="form.description" placeholder="새 버전에 대한 설명" />
+              <CFormInput v-model="form.description" placeholder="새 단계에 대한 설명" />
             </CCol>
           </CRow>
 
@@ -122,7 +122,7 @@ onBeforeMount(async () => {
             <CFormLabel for="name" class="col-sm-2 col-form-label text-right"> 날짜</CFormLabel>
 
             <CCol sm="6">
-              <DatePicker v-model="form.effective_date" placeholder="버전 출시 기한" />
+              <DatePicker v-model="form.effective_date" placeholder="단계 완료 기한" />
             </CCol>
           </CRow>
 
@@ -142,7 +142,7 @@ onBeforeMount(async () => {
 
           <CRow class="mb-3">
             <CFormLabel for="name" class="col-sm-2 col-form-label text-right">
-              기본 버전
+              기본 단계
             </CFormLabel>
 
             <CCol sm="6" class="pt-2">

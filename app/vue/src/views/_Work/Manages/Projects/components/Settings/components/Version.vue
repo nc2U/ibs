@@ -29,7 +29,7 @@ const formReset = () => {
 
 const toDelete = (ver: number) => {
   deleteVersion.value = ver
-  RefVersionConfirm.value.callModal('', '이 버전 삭제를 계속 진행 하시겠습니까?', '', 'warning')
+  RefVersionConfirm.value.callModal('', '이 단계 삭제를 계속 진행 하시겠습니까?', '', 'warning')
 }
 
 const deleteSubmit = () => {
@@ -43,8 +43,8 @@ const deleteSubmit = () => {
     <CCol>
       <span class="mr-2 form-text">
         <v-icon icon="mdi-plus-circle" color="success" size="15" />
-        <router-link :to="{ name: '(로드맵) - 추가', query: { back: 1 } }" class="ml-1">
-          새 버전
+        <router-link :to="{ name: '(추진현황) - 추가', query: { back: 1 } }" class="ml-1">
+          새 단계
         </router-link>
       </span>
     </CCol>
@@ -52,7 +52,7 @@ const deleteSubmit = () => {
     <CCol class="text-right">
       <span class="mr-2 form-text">
         <v-icon icon="mdi-lock" color="warning" size="15" />
-        <router-link to="" class="ml-1">완료된 버전 닫기 </router-link>
+        <router-link to="" class="ml-1">완료된 단계 닫기 </router-link>
       </span>
     </CCol>
   </CRow>
@@ -84,7 +84,7 @@ const deleteSubmit = () => {
             </CCol>
 
             <CFormLabel for="inputEmail3" class="col-sm-1 col-form-label text-right">
-              버전
+              단계
             </CFormLabel>
             <CCol sm="2">
               <CFormInput v-model="search" placeholder="검색어 입력" />
@@ -122,8 +122,8 @@ const deleteSubmit = () => {
         </colgroup>
         <CTableHead>
           <CTableRow class="text-center">
-            <CTableHeaderCell>버전</CTableHeaderCell>
-            <CTableHeaderCell>기본 버전</CTableHeaderCell>
+            <CTableHeaderCell>단계</CTableHeaderCell>
+            <CTableHeaderCell>기본 단계</CTableHeaderCell>
             <CTableHeaderCell>날짜</CTableHeaderCell>
             <CTableHeaderCell>설명</CTableHeaderCell>
             <CTableHeaderCell>상태</CTableHeaderCell>
@@ -159,7 +159,7 @@ const deleteSubmit = () => {
               <span class="mr-2">
                 <v-icon icon="mdi-pencil" color="amber" size="sm" class="mr-1" />
                 <router-link
-                  :to="{ name: '(로드맵) - 수정', params: { verId: ver.pk }, query: { back: 1 } }"
+                  :to="{ name: '(추진현황) - 수정', params: { verId: ver.pk }, query: { back: 1 } }"
                 >
                   편집
                 </router-link>

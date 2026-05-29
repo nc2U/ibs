@@ -559,7 +559,7 @@ onBeforeMount(() => {
 
                 <CRow v-if="versions?.length" class="mb-3">
                   <CFormLabel for="fixed_version" class="col-sm-4 col-form-label text-right">
-                    목표버전
+                    목표단계
                   </CFormLabel>
                   <CCol :sm="workManager ? 6 : 8">
                     <CFormSelect v-model.number="form.fixed_version" id="fixed_version">
@@ -577,7 +577,7 @@ onBeforeMount(() => {
                         class="pointer"
                         @click="RefVersionModal.callModal()"
                       />
-                      <v-tooltip location="top" activator="parent">새 버전</v-tooltip>
+                      <v-tooltip location="top" activator="parent">새 단계</v-tooltip>
                     </span>
                   </CCol>
                 </CRow>
@@ -857,7 +857,7 @@ onBeforeMount(() => {
   </FormModal>
 
   <FormModal ref="RefVersionModal">
-    <template #header>새 버전</template>
+    <template #header>새 단계</template>
     <template #default>
       <FormInIssueVersion @close="RefVersionModal.close()" @create-version="createVersion" />
     </template>

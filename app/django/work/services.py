@@ -36,7 +36,7 @@ class IssueService:
         tracked_fields = {
             'project': '프로젝트', 'tracker': '유형', 'status': '상태',
             'priority': '우선순위', 'subject': '제목', 'description': '설명',
-            'category': '범주', 'fixed_version': '목표 버전', 'assigned_to': '담당자',
+            'category': '범주', 'fixed_version': '목표 단계', 'assigned_to': '담당자',
             'parent': '상위 업무', 'watchers': '업무 관람자', 'is_private': '비공개 설정',
             'estimated_hours': '추정시간', 'start_date': '시작 일자',
             'due_date': '완료일', 'done_ratio': '진척도', 'closed': '해당 업무'

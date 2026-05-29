@@ -30,10 +30,10 @@ watch(route, newVal => {
   if (newVal.query?.menu) menu.value = newVal.query.menu as string
 })
 
-const initMenu = computed(() => (!!workManager?.value ? '프로젝트' : '버전'))
+const initMenu = computed(() => (!!workManager?.value ? '프로젝트' : '단계'))
 
 const settingMenus = computed(() => {
-  const menus = [{ no: 4, menu: '버전' }]
+  const menus = [{ no: 4, menu: '단계' }]
   const perms = my_perms.value
   const isManager = !!workManager?.value
   const mods = modules.value
@@ -158,7 +158,7 @@ onBeforeMount(async () => {
         <IssueTracking v-if="menu === '업무추적'" />
 
         <Version
-          v-if="menu === '버전'"
+          v-if="menu === '단계'"
           :versions="versionList"
           @version-filter="versionFilter"
           @delete-version="deleteVersion"

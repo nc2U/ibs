@@ -12,13 +12,13 @@ const [route, router] = [useRoute(), useRouter()]
 <template>
   <CRow class="py-2">
     <CCol>
-      <h5>로드맵</h5>
+      <h5>추진현황</h5>
     </CCol>
 
     <CCol class="text-right">
       <span class="mr-2 form-text">
         <v-icon icon="mdi-plus-circle" color="success" size="sm" />
-        <router-link :to="{ name: '(로드맵) - 추가' }" class="ml-1"> 새 버전 </router-link>
+        <router-link :to="{ name: '(추진현황) - 추가' }" class="ml-1"> 새 단계 </router-link>
       </span>
 
       <span>
@@ -37,7 +37,7 @@ const [route, router] = [useRoute(), useRouter()]
             <CDropdownItem
               v-if="route.params.projId"
               class="form-text"
-              @click="router.push({ name: '(설정)', query: { menu: '버전' } })"
+              @click="router.push({ name: '(설정)', query: { menu: '단계' } })"
             >
               <router-link to="">
                 <v-icon icon="mdi-cog" color="grey" size="sm" class="mr-2" />

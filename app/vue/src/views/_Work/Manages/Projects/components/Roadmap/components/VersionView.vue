@@ -52,7 +52,7 @@ const RefVersionConfirm = ref()
 const deleteSubmit = () => {
   RefVersionConfirm.value.close()
   workStore.deleteVersion(props.version?.pk as number, props.version.project?.slug as string)
-  router.replace({ name: '(로드맵)' })
+  router.replace({ name: '(추진현황)' })
 }
 
 onBeforeMount(() => {
@@ -70,7 +70,7 @@ onBeforeMount(() => {
     <CCol class="text-right form-text">
       <span class="mr-3">
         <v-icon icon="mdi-pencil" color="amber" size="16" class="mr-1" />
-        <router-link :to="{ name: '(로드맵) - 수정', params: { verId: version?.pk } }">
+        <router-link :to="{ name: '(추진현황) - 수정', params: { verId: version?.pk } }">
           편집
         </router-link>
       </span>
@@ -79,7 +79,7 @@ onBeforeMount(() => {
         <router-link
           to=""
           @click="
-            RefVersionConfirm.callModal('', '이 버전 삭제를 계속 진행 하시겠습니까?', '', 'warning')
+            RefVersionConfirm.callModal('', '이 단계 삭제를 계속 진행 하시겠습니까?', '', 'warning')
           "
         >
           삭제
@@ -87,7 +87,7 @@ onBeforeMount(() => {
       </span>
       <span class="mr-3">
         <v-icon icon="mdi-plus-circle" color="success" size="16" class="mr-1" />
-        <router-link :to="{ name: '(로드맵) - 추가' }">새 업무 만들기</router-link>
+        <router-link :to="{ name: '(추진현황) - 추가' }">새 업무 만들기</router-link>
       </span>
     </CCol>
   </CRow>
@@ -97,7 +97,7 @@ onBeforeMount(() => {
   </CRow>
 
   <template v-if="!version?.issues?.length">
-    <div class="form-text mb-3">이 버전에 해당하는 업무 없음</div>
+    <div class="form-text mb-3">이 단계에 해당하는 업무 없음</div>
   </template>
 
   <template v-else>

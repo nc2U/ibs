@@ -55,7 +55,7 @@ export default defineConfig({
             items: [
               { text: '업무프로젝트', link: '/work-manage/project' },
               { text: '실행기록', link: '/work-manage/activity' },
-              { text: '로드맵', link: '/work-manage/roadmap' },
+              { text: '추진현황', link: '/work-manage/roadmap' },
               { text: '업무', link: '/work-manage/issue' },
               { text: '소요시간', link: '/work-manage/time-entry' },
               { text: '달력', link: '/work-manage/calendar' },

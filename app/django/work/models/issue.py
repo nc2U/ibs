@@ -25,7 +25,7 @@ class Issue(models.Model):
     subject = models.CharField(max_length=100, verbose_name='제목', db_index=True)
     description = models.TextField(verbose_name='설명', blank=True, default='')
     category = models.ForeignKey('IssueCategory', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='범주')
-    fixed_version = models.ForeignKey(Version, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='목표 버전',
+    fixed_version = models.ForeignKey(Version, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='목표 단계',
                                       related_name='issues')
     assigned_to = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
                                     null=True, blank=True, verbose_name='담당자', related_name='assignees')
@@ -157,7 +157,7 @@ class TrackerManager(models.Manager):
 class Tracker(models.Model):
     name = models.CharField('이름', max_length=100, db_index=True)
     description = models.CharField('설명', max_length=255, blank=True, default='')
-    is_in_roadmap = models.BooleanField('로드맵에 표시', default=True)
+    is_in_roadmap = models.BooleanField('추진현황에 표시', default=True)
     default_status = models.ForeignKey('IssueStatus', on_delete=models.PROTECT, verbose_name='초기 상태')
     order = models.PositiveSmallIntegerField('정렬', default=1)
     created = models.DateTimeField('등록일', auto_now_add=True)

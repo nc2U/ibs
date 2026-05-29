@@ -52,7 +52,7 @@ const searchOptions = reactive([
       { value: 'tracker', label: '업무의 유형', disabled: true },
       { value: 'parent', label: '업무의 상위업무', disabled: true },
       { value: 'status', label: '업무의 상태', disabled: true },
-      { value: 'target_version', label: '업무의 목표버전' },
+      { value: 'target_version', label: '업무의 목표단계' },
       { value: 'subject', label: '업무의 제목', disabled: true },
     ],
   },
@@ -336,7 +336,7 @@ onBeforeMount(() => {
 
             <CRow v-if="searchCond.includes('target_version')">
               <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="업무의 목표버전" id="issue_version" readonly />
+                <CFormCheck checked="true" label="업무의 목표단계" id="issue_version" readonly />
               </CCol>
 
               <CCol class="col-4 col-lg-3 col-xl-2">
@@ -351,7 +351,7 @@ onBeforeMount(() => {
                   v-if="cond.issue_target_version"
                   v-model="form.version"
                   :options="getVersions"
-                  placeholder="버전 선택"
+                  placeholder="단계 선택"
                   searchable
                 />
               </CCol>

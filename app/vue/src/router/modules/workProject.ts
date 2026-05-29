@@ -44,24 +44,24 @@ const workProject = {
         },
         {
           path: ':projId/roadmap',
-          name: '(로드맵)',
+          name: '(추진현황)',
           component: () => import('@/views/_Work/Manages/Projects/components/Roadmap/Index.vue'),
           children: [
             {
               path: ':verId',
-              name: '(로드맵) - 보기',
+              name: '(추진현황) - 보기',
             },
             {
               path: 'create',
-              name: '(로드맵) - 추가',
+              name: '(추진현황) - 추가',
             },
             {
               path: ':verId/update',
-              name: '(로드맵) - 수정',
+              name: '(추진현황) - 수정',
             },
             // {
             //   path: ':verId/delete',
-            //   name: '(로드맵) - 삭제',
+            //   name: '(추진현황) - 삭제',
             // },
           ],
         },

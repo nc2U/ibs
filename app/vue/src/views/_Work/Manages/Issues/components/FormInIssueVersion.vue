@@ -39,7 +39,7 @@ const closeModal = () => emit('close')
         </CFormLabel>
 
         <CCol class="col-7">
-          <CFormInput v-model="nVersion.name" placeholder="새 버전 이름" required />
+          <CFormInput v-model="nVersion.name" placeholder="새 단계 이름" required />
         </CCol>
       </CRow>
 
@@ -47,7 +47,7 @@ const closeModal = () => emit('close')
         <CFormLabel for="description" class="col-sm-3 col-form-label text-right"> 설명</CFormLabel>
 
         <CCol class="col-7">
-          <CFormInput v-model="nVersion.description" placeholder="새 버전에 대한 설명" />
+          <CFormInput v-model="nVersion.description" placeholder="새 단계에 대한 설명" />
         </CCol>
       </CRow>
 
@@ -67,7 +67,7 @@ const closeModal = () => emit('close')
         <CFormLabel for="name" class="col-sm-3 col-form-label text-right"> 날짜</CFormLabel>
 
         <CCol class="col-7">
-          <DatePicker v-model="nVersion.effective_date" placeholder="버전 출시 기한" />
+          <DatePicker v-model="nVersion.effective_date" placeholder="단계 완료 기한" />
         </CCol>
       </CRow>
 
@@ -86,7 +86,7 @@ const closeModal = () => emit('close')
       </CRow>
 
       <CRow class="mb-3">
-        <CFormLabel for="name" class="col-sm-3 col-form-label text-right"> 기본 버전</CFormLabel>
+        <CFormLabel for="name" class="col-sm-3 col-form-label text-right"> 기본 단계</CFormLabel>
 
         <CCol class="col-7 pt-2">
           <CFormCheck v-model="nVersion.is_default" />

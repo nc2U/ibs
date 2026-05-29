@@ -48,7 +48,7 @@ const light = computed(() => (!isDark?.value ? 'light' : ''))
         <CCardBody>
           <CRow class="mb-2">
             <CFormLabel for="inputEmail3" class="col-sm-2 col-form-label text-right">
-              기본 버전
+              기본 단계
             </CFormLabel>
             <CCol sm="4">
               <CFormSelect>
