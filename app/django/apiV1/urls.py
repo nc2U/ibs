@@ -71,6 +71,9 @@ router.register(r'news-comment', work.NewsCommentViewSet)
 router.register(r'act-entry', work.ActivityLogEntryViewSet)
 router.register(r'log-entry', work.IssueLogEntryViewSet)
 router.register(r'issue-search', work.SearchViewSet)
+router.register(r'meeting-category', work.MeetingCategoryViewSet)
+router.register(r'meeting', work.MeetingViewSet)
+router.register(r'meeting-file', work.MeetingFileViewSet)
 
 # project
 router.register(r'project', project.ProjectViewSet)
