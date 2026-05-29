@@ -154,7 +154,7 @@ class Role(models.Model):
 
 
 class Permission(models.Model):
-    MODULE_CHOICES = (('project', '프로젝트'), ('meeting', '회의'), ('issue', '업무관리'), ('time', '시간추적'),
+    MODULE_CHOICES = (('project', '프로젝트'), ('meeting', '회의'), ('issue', '업무'), ('time', '소요시간'),
                       ('news', '공지'), ('docs', '문서'), ('forum', '게시판'), ('calendar', '달력'))
     sort = models.CharField('모듈', max_length=10, choices=MODULE_CHOICES, db_index=True)
     code = models.CharField('코드', max_length=30, unique=True)
