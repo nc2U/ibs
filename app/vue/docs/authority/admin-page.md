@@ -2,7 +2,7 @@
 
 시스템의 로우 레벨 데이터 관리, 마스터 데이터 복구 및 프론트엔드에서 지원하지 않는 세부 설정을 수행하는 기술 관리자용 백오피스 도구입니다.
 
-- **위치**: [ibs.dyibs.com/admin/](ibs.dyibs.com/admin/) (스태프 권한 및 로그인 필요)
+- **위치**: [ibs.dyibs.com/admin/](https://ibs.dyibs.com/admin/) (스태프 권한 및 로그인 필요)
 
 ## 개요
 
