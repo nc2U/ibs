@@ -15,7 +15,6 @@ const selectOptions = [
   { value: 6, label: '최근 뉴스' },
   { value: 7, label: '달력' },
   { value: 8, label: '문서' },
-  { value: 9, label: '소요시간' },
   { value: 10, label: '실행기록' },
 ]
 
@@ -32,7 +31,6 @@ const item5 = reactive({ x: 0, y: 0, w: 12, h: 3, i: 5 })
 const item6 = reactive({ x: 0, y: 0, w: 12, h: 3, i: 6 })
 const item7 = reactive({ x: 0, y: 0, w: 12, h: 3, i: 7 })
 const item8 = reactive({ x: 0, y: 0, w: 12, h: 3, i: 8 })
-const item9 = reactive({ x: 0, y: 0, w: 12, h: 3, i: 9 })
 const item10 = reactive({ x: 0, y: 0, w: 12, h: 3, i: 10 })
 
 const itemPush = (i: number) => {
@@ -45,7 +43,6 @@ const itemPush = (i: number) => {
   if (i === 6) layouts.push(item6)
   if (i === 7) layouts.push(item7)
   if (i === 8) layouts.push(item8)
-  if (i === 9) layouts.push(item9)
   if (i === 10) layouts.push(item10)
 }
 

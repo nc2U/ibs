@@ -31,9 +31,6 @@ const getTitle = (title: string) => title.replace(/[() ]/gim, '')
         <CDropdownItem v-if="workManager" @click="router.push({ name: '(추진현황) - 추가' })">
           새 단계
         </CDropdownItem>
-        <CDropdownItem v-if="workManager" @click="router.push({ name: '(소요시간) - 추가' })">
-          작업시간 기록
-        </CDropdownItem>
         <CDropdownItem v-if="workManager" disabled>새 뉴스</CDropdownItem>
         <CDropdownItem v-if="workManager" disabled>새 문서</CDropdownItem>
       </CDropdownMenu>

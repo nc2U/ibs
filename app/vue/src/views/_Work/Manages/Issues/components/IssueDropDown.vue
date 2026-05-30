@@ -103,20 +103,6 @@ onBeforeMount(() => (isWatcher.value = isCumputedWatcher.value as any))
           class="form-text"
           @click="
             router.push({
-              name: route.params.projId ? '(소요시간) - 추가' : '소요시간 - 추가',
-              query: { issue_id: issue.pk },
-            })
-          "
-        >
-          <router-link to="">
-            <v-icon icon="mdi-calendar-clock" color="secondary" size="sm" />
-            작업시간 기록
-          </router-link>
-        </CDropdownItem>
-        <CDropdownItem
-          class="form-text"
-          @click="
-            router.push({
               name: '(업무) - 추가',
               query: { parent: issue.pk, tracker: issue.tracker.pk },
             })
