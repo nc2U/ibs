@@ -7,7 +7,6 @@ import type {
   IssueComment,
   IssueStatus,
   SubIssue,
-  TimeEntry,
 } from '@/store/types/work_issue.ts'
 import { useRoute, useRouter } from 'vue-router'
 import { useIssue } from '@/store/pinia/work_issue.ts'
@@ -28,7 +27,6 @@ const props = defineProps({
   issue: { type: Object as PropType<Issue>, required: true },
   allProjects: { type: Array as PropType<getProject[]>, default: () => [] },
   issueCommentList: { type: Array as PropType<IssueComment[]>, default: () => [] },
-  timeEntryList: { type: Array as PropType<TimeEntry[]>, default: () => [] },
 
   statusList: { type: Array as PropType<IssueStatus[]>, default: () => [] },
   priorityList: { type: Array as PropType<CodeValue[]>, default: () => [] },
@@ -61,13 +59,6 @@ const doneRatio = computed(() => {
     )
   } else return props.issue?.done_ratio
 })
-
-const numToTime = (n: number | null) => {
-  const hours = Math.floor(n ?? 0)
-  const minutes = Math.round(((n ?? 0) - hours) * 60)
-  const str = minutes >= 10 ? '' : '0'
-  return `${hours}:${str}${minutes}`
-}
 
 const onSubmit = (payload: any) => {
   emit('on-submit', payload)
@@ -158,9 +149,6 @@ onBeforeMount(async () => {
       :proj-status="issueProject.status"
       :watchers="issue.watchers"
       @call-edit-form="callEditForm"
-      @go-time-entry="
-        () => router.push({ name: '(소요시간) - 추가', query: { issue_id: issue.pk } })
-      "
       @watch-control="watchControl"
     />
   </CRow>
@@ -321,14 +309,6 @@ onBeforeMount(async () => {
               {{ issue?.expected_duration_display }}
             </CCol>
           </CRow>
-          <CRow v-if="issue?.spent_time">
-            <CCol class="title">소요시간:</CCol>
-            <CCol>
-              <router-link :to="{ name: '(소요시간)', query: { issue_id: issue.pk } }">
-                {{ numToTime(issue?.spent_time as number) }} 시간
-              </router-link>
-            </CCol>
-          </CRow>
         </CCol>
       </CRow>
 
@@ -397,23 +377,6 @@ onBeforeMount(async () => {
           <router-link to="" @click="addRIssue = !addRIssue">추가</router-link>
         </CCol>
       </CRow>
-
-      <!--      <Relations-->
-      <!--        v-if="issue.related_issues.length"-->
-      <!--        :add-r-issue="addRIssue"-->
-      <!--        :related-issues="issue.related_issues"-->
-      <!--        :get-issues="getIssues"-->
-      <!--        @delete-relation="deleteRelation"-->
-      <!--        class="mt-2"-->
-      <!--      />-->
-
-      <!--      <AddRelationForm-->
-      <!--        v-if="addRIssue"-->
-      <!--        :issue-pk="issue.pk"-->
-      <!--        :get-issues="getIssues"-->
-      <!--        @add-form-ctl="addFormCtl"-->
-      <!--        @add-rel-issue="addRelIssue"-->
-      <!--      />-->
     </CCardBody>
   </CCard>
 
@@ -421,7 +384,6 @@ onBeforeMount(async () => {
     v-if="issueLogList.length"
     :issue-log-list="issueLogList"
     :issue-comment-list="issueCommentList"
-    :time-entry-list="timeEntryList"
     @call-reply="callReply"
     @del-submit="delSubmit"
   />
@@ -431,9 +393,6 @@ onBeforeMount(async () => {
       :proj-status="issueProject.status"
       :watchers="issue.watchers"
       @call-edit-form="callEditForm"
-      @go-time-entry="
-        () => router.push({ name: '(소요시간) - 추가', query: { issue_id: issue.pk } })
-      "
       @watch-control="watchControl"
     />
   </div>

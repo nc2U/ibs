@@ -12,8 +12,6 @@ import type {
   IssueFilter,
   IssueRelation,
   IssueStatus,
-  TimeEntry,
-  TimeEntryFilter,
   Tracker,
 } from '@/store/types/work_issue.ts'
 
@@ -128,7 +126,6 @@ export const useIssue = defineStore('issue', () => {
       .then(async () => {
         await fetchIssue(pk)
         await logStore.fetchIssueLogList({ issue: pk })
-        await fetchTimeEntryList({ issue: pk, ordering: 'pk' })
         message()
       })
       .catch(err => errorHandle(err.response.data))
@@ -139,7 +136,6 @@ export const useIssue = defineStore('issue', () => {
       .then(async () => {
         await fetchIssue(pk)
         await logStore.fetchIssueLogList({ issue: pk })
-        await fetchTimeEntryList({ issue: pk, ordering: 'pk' })
         message()
       })
       .catch(err => errorHandle(err.response.data))
@@ -239,81 +235,6 @@ export const useIssue = defineStore('issue', () => {
           await fetchIssueCommentList({ issue })
           await logStore.fetchIssueLogList({ issue })
         }
-        message('warning', '알림!', '해당 오브젝트가 삭제되었습니다.')
-      })
-      .catch(err => errorHandle(err.response.data))
-
-  // time-entry states & getters
-  const timeEntry = ref<TimeEntry | null>(null)
-  const timeEntryList = ref<TimeEntry[]>([])
-  const timeEntryCount = ref<number>(0)
-
-  const timeEntryPages = (itemsPerPage: number) => Math.ceil(timeEntryCount.value / itemsPerPage)
-
-  const fetchTimeEntry = (pk: number) =>
-    api
-      .get(`/time-entry/${pk}/`)
-      .then(res => (timeEntry.value = res.data))
-      .catch(err => errorHandle(err.response.data))
-
-  const fetchTimeEntryList = async (payload: TimeEntryFilter) => {
-    let url = `/time-entry/?ordering=${payload.ordering ?? ''}&page=${payload.page ?? 1}`
-    if (payload.project) url += `&project__slug=${payload.project}`
-    if (payload.project__search) url += `&project__search=${payload.project__search}`
-    if (payload.project__exclude) url += `&project__exclude=${payload.project__exclude}`
-    if (payload.spent_on) url += `&spent_on=${payload.spent_on}`
-    if (payload.from_spent_on) url += `&from_spent_on=${payload.from_spent_on}`
-    if (payload.to_spent_on) url += `&to_spent_on=${payload.to_spent_on}`
-    if (payload.issue) url += `&issue=${payload.issue}`
-    if (payload.issue__keyword) url += `&search=${payload.issue__keyword}`
-    if (payload.creator) url += `&user=${payload.creator}`
-    if (payload.creator__exclude) url += `&creator__exclude=${payload.creator__exclude}`
-    // if (payload.activity) url += `&activity=${payload.activity}`
-    // if (payload.hours) url += `&hours=${payload.hours}`
-    // if (payload.from_spent_on) url += `&from_spent_on=${payload.from_spent_on}`
-    // if (payload.to_spent_on) url += `&to_spent_on=${payload.to_spent_on}`
-    // if (payload.issue__tracker) url += `&issue__tracker=${payload.issue__tracker}`
-    // if (payload.issue__parent) url += `&issue__parent=${payload.issue__parent}`
-    // if (payload.issue__status) url += `&issue__status=${payload.issue__status}`
-    if (payload.version) url += `&issue__fixed_version=${payload.version}`
-    if (payload.version__exclude)
-      url += `&issue__fixed_version__exclude=${payload.version__exclude}`
-    // if (payload.issue__category) url += `&issue__category=${payload.issue__category}`
-
-    return await api
-      .get(url)
-      .then(res => {
-        timeEntryList.value = res.data.results
-        timeEntryCount.value = res.data.count
-      })
-      .catch(err => errorHandle(err.response.data))
-  }
-
-  const createTimeEntry = (payload: TimeEntry, ord = '') =>
-    api
-      .post(`/time-entry/`, payload)
-      .then(async res => {
-        await fetchTimeEntry(res.data.pk)
-        await fetchTimeEntryList({ ordering: ord })
-        message()
-      })
-      .catch(err => errorHandle(err.response.data))
-
-  const updateTimeEntry = (payload: TimeEntry, ord = '') =>
-    api
-      .put(`/time-entry/${payload.pk}/`, payload)
-      .then(async () => {
-        await fetchTimeEntry(payload.pk)
-        await fetchTimeEntryList({ ordering: ord })
-        message()
-      })
-      .catch(err => errorHandle(err.response.data))
-
-  const deleteTimeEntry = (pk: number, ord = '') =>
-    api
-      .delete(`/time-entry/${pk}/`)
-      .then(async () => {
-        await fetchTimeEntryList({ ordering: ord })
         message('warning', '알림!', '해당 오브젝트가 삭제되었습니다.')
       })
       .catch(err => errorHandle(err.response.data))
@@ -463,16 +384,6 @@ export const useIssue = defineStore('issue', () => {
     fetchIssueCommentList,
     patchIssueComment,
     deleteIssueComment,
-
-    timeEntry,
-    timeEntryList,
-    timeEntryCount,
-    timeEntryPages,
-    fetchTimeEntry,
-    fetchTimeEntryList,
-    createTimeEntry,
-    updateTimeEntry,
-    deleteTimeEntry,
 
     trackerList,
     getTrackers,

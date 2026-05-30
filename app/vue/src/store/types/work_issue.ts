@@ -24,7 +24,6 @@ export interface SimpleIssue {
   watchers: SimpleUser[]
   expected_duration: string | null
   expected_duration_display: string
-  spent_times: number
   done_ratio: number
   closed: string | null
 }
@@ -111,7 +110,6 @@ export interface Issue {
   due_date: string | null
   done_ratio: number
   closed: string | null
-  spent_time: number | null
   files: Array<IssueFile>
   sub_issues: SubIssue[]
   related_issues: IssueRelation[]
@@ -180,50 +178,4 @@ export interface IssueComment {
     pk: number
     username: string
   }
-}
-
-export interface TimeEntry {
-  pk: number
-  issue: {
-    pk: number
-    project: SimpleProject
-    tracker: string
-    status: { pk: number; name: string; closed: boolean }
-    subject: string
-    description: string
-  }
-  spent_on: string
-  hours: string
-  activity: { pk: number; name: string }
-  comment: string
-  created: string
-  updated: string
-  creator: SimpleUser
-  total_hours: number
-}
-
-export interface TimeEntryFilter {
-  ordering?: string
-  project?: string
-  project__search?: string
-  project__exclude?: string
-  spent_on?: string
-  from_spent_on?: string
-  to_spent_on?: string
-  issue?: number | ''
-  issue__keyword?: string
-  creator?: number | ''
-  creator__exclude?: number | ''
-  author?: number | ''
-  activity?: number | ''
-  hours?: number
-  comment?: string
-  tracker?: number | ''
-  parent?: number | ''
-  status?: number | ''
-  version?: number | ''
-  version__exclude?: number | ''
-  subject?: string
-  project_status?: number | ''
-  page?: number
 }

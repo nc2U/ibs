@@ -84,25 +84,25 @@ const workProject = {
             },
           ],
         },
-        {
-          path: ':projId/time_entry',
-          name: '(소요시간)',
-          component: () => import('@/views/_Work/Manages/Projects/components/SpentTime/Index.vue'),
-          children: [
-            {
-              path: 'create',
-              name: '(소요시간) - 추가',
-            },
-            {
-              path: ':timeId/update',
-              name: '(소요시간) - 편집',
-            },
-            // {
-            //   path: ':timeId/delete',
-            //   name: '(소요시간) - 삭제',
-            // },
-          ],
-        },
+        // {
+        //   path: ':projId/time_entry',
+        //   name: '(소요시간)',
+        //   component: () => import('@/views/_Work/Manages/Projects/components/SpentTime/Index.vue'),
+        //   children: [
+        //     {
+        //       path: 'create',
+        //       name: '(소요시간) - 추가',
+        //     },
+        //     {
+        //       path: ':timeId/update',
+        //       name: '(소요시간) - 편집',
+        //     },
+        //     // {
+        //     //   path: ':timeId/delete',
+        //     //   name: '(소요시간) - 삭제',
+        //     // },
+        //   ],
+        // },
         {
           path: ':projId/calendar',
           name: '(달력)',
@@ -199,25 +199,25 @@ const workProject = {
         },
       ],
     },
-    {
-      path: 'time_entry',
-      name: '소요시간',
-      component: () => import('@/views/_Work/Manages/SpentTime/Index.vue'),
-      children: [
-        {
-          path: 'create',
-          name: '소요시간 - 추가',
-        },
-        {
-          path: ':timeId/update',
-          name: '소요시간 - 편집',
-        },
-        // {
-        //   path: ':timeId/delete',
-        //   name: '소요시간 - 삭제',
-        // },
-      ],
-    },
+    // {
+    //   path: 'time_entry',
+    //   name: '소요시간',
+    //   component: () => import('@/views/_Work/Manages/SpentTime/Index.vue'),
+    //   children: [
+    //     {
+    //       path: 'create',
+    //       name: '소요시간 - 추가',
+    //     },
+    //     {
+    //       path: ':timeId/update',
+    //       name: '소요시간 - 편집',
+    //     },
+    //     // {
+    //     //   path: ':timeId/delete',
+    //     //   name: '소요시간 - 삭제',
+    //     // },
+    //   ],
+    // },
     {
       path: 'calendar',
       name: '달력',

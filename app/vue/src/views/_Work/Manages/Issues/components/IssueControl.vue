@@ -10,7 +10,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['call-edit-form', 'go-time-entry', 'watch-control'])
+const emit = defineEmits(['call-edit-form', 'watch-control'])
 
 const userInfo = inject<ComputedRef<User>>('userInfo')
 
@@ -26,7 +26,6 @@ const watchControl = () => {
 }
 
 const callEditForm = () => emit('call-edit-form')
-const goTimeEntry = () => emit('go-time-entry')
 </script>
 
 <template>
@@ -34,11 +33,6 @@ const goTimeEntry = () => emit('go-time-entry')
     <span v-if="projStatus !== '9'" class="mr-2">
       <v-icon icon="mdi-pencil" color="amber" size="sm" />
       <router-link to="" class="ml-1" @click="callEditForm">편집</router-link>
-    </span>
-
-    <span v-if="projStatus !== '9'" class="mr-2">
-      <v-icon icon="mdi-timer-edit-outline" color="grey" size="sm" />
-      <router-link to="" class="ml-1" @click="goTimeEntry">작업시간 기록</router-link>
     </span>
 
     <span class="mr-2">

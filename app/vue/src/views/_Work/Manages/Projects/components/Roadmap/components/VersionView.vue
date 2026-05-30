@@ -167,8 +167,6 @@ onBeforeMount(() => {
       </CCol>
 
       <CCol md="4" class="mb-4">
-        <VersionTimes :issues="version.issues" :version-pk="version.pk as number" />
-
         <VersionSummary />
       </CCol>
     </CRow>

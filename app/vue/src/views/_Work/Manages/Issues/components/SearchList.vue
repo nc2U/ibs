@@ -65,14 +65,6 @@ const searchOptions = reactive([
     disabled: true,
   },
   {
-    label: '시간추적',
-    options: [
-      { value: 'expected_duration', label: '예상 처리기간', disabled: true },
-      { value: 'spent_time', label: '소요시간', disabled: true },
-    ],
-    disabled: true,
-  },
-  {
     label: '파일',
     options: [
       { value: 'file', label: '파일', disabled: true },

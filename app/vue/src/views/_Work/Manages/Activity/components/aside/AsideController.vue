@@ -39,7 +39,7 @@ const actFilter = reactive<ActLogEntryFilter & { subProjects: boolean }>({
   to_act_date: '',
   from_act_date: '',
   creator: '',
-  sort: ['1', '2', '4', '5', '9'],
+  sort: ['1', '2', '4', '5'],
   subProjects: true,
 })
 
@@ -54,7 +54,7 @@ watch(
   { deep: true },
 )
 
-const pickSort = (sort: '1' | '2' | '4' | '5' | '6' | '7' | '8' | '9') => {
+const pickSort = (sort: '1' | '2' | '4' | '5' | '6' | '7' | '8') => {
   actFilter.sort = [sort]
   filterActivity()
 }
@@ -159,9 +159,7 @@ onBeforeMount(async () => {
       <CFormCheck v-model="actFilter.sort" value="5" id="docs-filter" />
       <a href="javascript:void(0)" @click="pickSort('5')" class="ml-2">문서</a> <br />
       <CFormCheck v-model="actFilter.sort" value="8" id="message-filter" />
-      <a href="javascript:void(0)" @click="pickSort('8')" class="ml-2">글</a> <br />
-      <CFormCheck v-model="actFilter.sort" value="9" id="spent-time-filter" />
-      <a href="javascript:void(0)" @click="pickSort('9')" class="ml-2">작업시간</a>
+      <a href="javascript:void(0)" @click="pickSort('8')" class="ml-2">글</a>
     </CCol>
   </CRow>
 

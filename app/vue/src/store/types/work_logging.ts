@@ -2,7 +2,7 @@ import type { SimpleProject } from '@/store/types/work_project.ts'
 
 export interface ActLogEntry {
   pk: number
-  sort: '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
+  sort: '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8'
   project: SimpleProject
   issue: {
     pk: number
@@ -13,12 +13,6 @@ export interface ActLogEntry {
   } | null
   status_log: string
   comment: { pk: number; content: string } | null
-  spent_time: { pk: number; hours: string; comment: '' } | null
-  change_set: {
-    repo: { pk: number; slug: string }
-    sha: string
-    message: string
-  }
   news: { title: string; summary: string } | null
   // document: string
   // file: string
@@ -35,7 +29,7 @@ export interface ActLogEntryFilter {
   to_act_date?: string
   from_act_date?: string
   creator?: string
-  sort?: Array<'1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'>
+  sort?: Array<'1' | '2' | '3' | '4' | '5' | '6' | '7' | '8'>
   limit?: number
 }
 

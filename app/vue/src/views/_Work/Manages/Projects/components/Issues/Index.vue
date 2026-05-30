@@ -34,7 +34,6 @@ const issueStore = useIssue()
 const issue = computed<Issue | null>(() => issueStore.issue)
 const issueList = computed(() => issueStore.issueList)
 const issueCommentList = computed(() => issueStore.issueCommentList)
-const timeEntryList = computed(() => issueStore.timeEntryList)
 
 const statusList = computed(() => issueStore.statusList)
 const trackerList = computed(() => issueStore.trackerList)
@@ -98,7 +97,6 @@ watch(
     if (nVal) {
       await issueStore.fetchIssue(Number(nVal))
       await logStore.fetchIssueLogList({ issue: Number(nVal) })
-      await issueStore.fetchTimeEntryList({ ordering: 'pk', issue: Number(nVal) })
     } else issueStore.removeIssue()
   },
   { deep: true },
@@ -113,7 +111,6 @@ onBeforeMount(async () => {
   if (issueId.value) {
     await issueStore.fetchIssue(Number(issueId.value))
     await logStore.fetchIssueLogList({ issue: Number(issueId.value) })
-    await issueStore.fetchTimeEntryList({ ordering: 'pk', issue: Number(issueId.value) })
   }
 
   await workStore.fetchMemberList()
@@ -151,7 +148,6 @@ onBeforeMount(async () => {
         :status-list="statusList"
         :priority-list="priorityList"
         :issue-comment-list="issueCommentList"
-        :time-entry-list="timeEntryList"
         @on-submit="onSubmit"
       />
 

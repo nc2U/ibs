@@ -1,15 +1,12 @@
 <script setup lang="ts">
 import { onBeforeMount, type PropType, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import type { TimeEntry } from '@/store/types/work_issue.ts'
 import type { IssueLogEntry } from '@/store/types/work_logging.ts'
 import AtomicLog from './histories/AtomicLog.vue'
 import AtomicComment from './histories/AtomicComment.vue'
-import AtomicTimeEntry from './histories/AtomicTimeEntry.vue'
 
 defineProps({
   issueLogList: { type: Array as PropType<IssueLogEntry[]>, default: () => [] },
-  timeEntryList: { type: Array as PropType<TimeEntry[]>, default: () => [] },
 })
 
 const tabPaneActiveKey = ref(1)
@@ -54,15 +51,6 @@ onBeforeMount(() => {
         항목 변경이력
       </CNavLink>
     </CNavItem>
-    <CNavItem v-if="timeEntryList.length">
-      <CNavLink
-        href="javascript:void(0);"
-        :active="tabPaneActiveKey === 4"
-        @click="tabPaneActiveKey = 4"
-      >
-        작업시간
-      </CNavLink>
-    </CNavItem>
   </CNav>
 
   <CCard
@@ -93,12 +81,6 @@ onBeforeMount(() => {
         <CTabPane role="tabpanel" aria-labelledby="contact-tab" :visible="tabPaneActiveKey === 3">
           <div v-for="log in issueLogList" :key="log.pk">
             <AtomicLog v-if="log.action === 'Updated' && !log.comment" :log="log" />
-          </div>
-        </CTabPane>
-
-        <CTabPane role="tabpanel" aria-labelledby="profile-tab" :visible="tabPaneActiveKey === 4">
-          <div v-for="time in timeEntryList" :key="time.pk">
-            <AtomicTimeEntry :time-entry="time" />
           </div>
         </CTabPane>
       </CTabContent>
