@@ -24,8 +24,8 @@ class CodeDocsCategory(models.Model):
 
     class Meta:
         ordering = ('order', 'id',)
-        verbose_name = '14. 문서 범주'
-        verbose_name_plural = '14. 문서 범주'
+        verbose_name = '12. 문서 범주'
+        verbose_name_plural = '12. 문서 범주'
 
 
 class News(models.Model):
@@ -47,8 +47,8 @@ class News(models.Model):
 
     class Meta:
         ordering = ('-created',)
-        verbose_name = '15. 공지'
-        verbose_name_plural = '15. 공지'
+        verbose_name = '13. 공지'
+        verbose_name_plural = '13. 공지'
 
 
 def get_news_file_path(instance, filename):
@@ -65,7 +65,7 @@ class NewsFile(models.Model):
     description = models.CharField('부가설명', max_length=255, blank=True, default='')
     created = models.DateTimeField('등록일', auto_now_add=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
-                             null=True, blank=True, verbose_name='등록자')
+                                null=True, blank=True, verbose_name='등록자')
 
     def __str__(self):
         return settings.MEDIA_URL

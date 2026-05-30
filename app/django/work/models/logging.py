@@ -25,7 +25,7 @@ class ActivityLogEntry(models.Model):
     act_date = models.DateField('로그 일자', auto_now_add=True)
     timestamp = models.DateTimeField('로그 시간', auto_now_add=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
-                             verbose_name='작성자')
+                                verbose_name='작성자')
 
     objects = ActivityLogEntryManager()
 
@@ -34,8 +34,8 @@ class ActivityLogEntry(models.Model):
 
     class Meta:
         ordering = ('-id',)
-        verbose_name = '19. 작업 내역'
-        verbose_name_plural = '19. 작업 내역'
+        verbose_name = '14. 작업 내역'
+        verbose_name_plural = '14. 작업 내역'
         indexes = [models.Index(fields=['timestamp', 'project'])]
 
 
@@ -65,11 +65,11 @@ class IssueLogEntry(models.Model):
     diff = models.TextField('차이점', blank=True, default='')
     timestamp = models.DateTimeField('로그 시간', auto_now_add=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
-                             verbose_name='작성자')
+                                verbose_name='작성자')
 
     def __str__(self):
         return f"{self.action} - {self.timestamp}"
 
     class Meta:
-        verbose_name = '20. 업무 로그'
-        verbose_name_plural = '20. 업무 로그'
+        verbose_name = '15. 업무 로그'
+        verbose_name_plural = '15. 업무 로그'
