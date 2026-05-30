@@ -56,7 +56,7 @@ class ActivityLogFilter(FilterSet):
 
     @staticmethod
     def filter_by_sort_code(queryset, name, value):
-        valid_sorts = {'1', '2', '4', '5', '8', '9'}
+        valid_sorts = {'1', '2', '4', '5', '8'}
         sort_values = [v for v in value.split(",") if v in valid_sorts]
         if sort_values:
             queryset = queryset.filter(sort__in=sort_values)
@@ -80,7 +80,7 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(
                 Q(project__is_public=True) |
                 Q(project__in=projects))
-        return queryset.select_related('project', 'creator', 'issue', 'comment', 'news', 'spent_time')
+        return queryset.select_related('project', 'creator', 'issue', 'comment', 'news')
 
     def list(self, request, *args, **kwargs):
         """ActivityLogEntry 데이터를 반환"""
@@ -91,8 +91,7 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
             'issue__id', 'issue__tracker__name', 'issue__status__name',
             'issue__status__closed', 'issue__subject', 'issue__description',
             'status_log', 'comment__id', 'comment__content', 'news__title',
-            'news__summary', 'spent_time__hours', 'spent_time__comment',
-            'act_date', 'timestamp', 'creator__id', 'creator__username')
+            'news__summary', 'act_date', 'timestamp', 'creator__id', 'creator__username')
 
         # 데이터 변환 (제너레이터)
         log_data = [{
@@ -116,7 +115,6 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
                 'content': log['comment__content'],
             },
             'news': {'title': log['news__title'], 'summary': log['news__summary']},
-            'spent_time': {'hours': log['spent_time__hours'], 'comment': log['spent_time__comment']},
             'act_date': log['act_date'],
             'timestamp': log['timestamp'],
             'creator': {'pk': log['creator__id'], 'username': log['creator__username']},
