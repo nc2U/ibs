@@ -373,7 +373,6 @@ CELERY_TASK_ACKS_LATE = True
 CELERY_WORKER_MAX_TASKS_PER_CHILD = 1000
 
 APP_ORDER = [
-    'accounts',
     'company',
     'work',
     'project',
@@ -386,6 +385,7 @@ APP_ORDER = [
     'docs',
     'board',
     'book',
+    'accounts',
 ]
 
 # Slack Notifications Settings
