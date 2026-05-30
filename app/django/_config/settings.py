@@ -375,6 +375,7 @@ CELERY_WORKER_MAX_TASKS_PER_CHILD = 1000
 APP_ORDER = [
     'accounts',
     'company',
+    'work',
     'project',
     'items',
     'contract',
@@ -385,7 +386,6 @@ APP_ORDER = [
     'docs',
     'board',
     'book',
-    'work',
 ]
 
 # Slack Notifications Settings
