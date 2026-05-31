@@ -14,8 +14,7 @@ class ActivityLogEntryManager(models.Manager):
 
 
 class ActivityLogEntry(models.Model):
-    SORT_CHOICES = (('1', '업무'), ('2', '댓글'), ('4', '공지'), ('5', '문서'),
-                    ('8', '글'))
+    SORT_CHOICES = (('1', '업무'), ('2', '댓글'), ('4', '공지'), ('5', '문서'), ('8', '글'))
     sort = models.CharField('구분', max_length=1, choices=SORT_CHOICES, default='1')
     project = models.ForeignKey(IssueProject, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='프로젝트')
     issue = models.ForeignKey(Issue, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='업무')
