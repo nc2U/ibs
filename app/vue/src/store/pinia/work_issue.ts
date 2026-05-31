@@ -322,18 +322,6 @@ export const useIssue = defineStore('issue', () => {
       .then(res => (statusList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
-  // code-activity states & getters
-  const activityList = ref<CodeValue[]>([])
-  const getActivities = computed(() =>
-    activityList.value.map(a => ({ value: a.pk, label: a.name })),
-  )
-
-  const fetchActivityList = () =>
-    api
-      .get(`/code-activity/`)
-      .then(res => (activityList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
-
   // code-priority states & getters
   const priorityList = ref<CodeValue[]>([])
 
@@ -402,10 +390,6 @@ export const useIssue = defineStore('issue', () => {
 
     statusList,
     fetchStatusList,
-
-    activityList,
-    getActivities,
-    fetchActivityList,
 
     priorityList,
     fetchPriorityList,

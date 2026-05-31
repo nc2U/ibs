@@ -43,7 +43,6 @@ onBeforeMount(async () => {
   await workStore.fetchAllIssueProjectList('', '2', '')
   await workStore.fetchRoleList()
   await issueStore.fetchTrackerList()
-  await issueStore.fetchActivityList()
   loading.value = false
 })
 </script>

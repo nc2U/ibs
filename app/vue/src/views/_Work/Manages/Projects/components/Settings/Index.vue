@@ -13,7 +13,6 @@ import IssueTracking from '@/views/_Work/Manages/Projects/components/Settings/co
 import Version from '@/views/_Work/Manages/Projects/components/Settings/components/Version.vue'
 import IssueCategory from '@/views/_Work/Manages/Projects/components/Settings/components/IssueCategory.vue'
 import Board from '@/views/_Work/Manages/Projects/components/Settings/components/Board.vue'
-import TimeTracking from '@/views/_Work/Manages/Projects/components/Settings/components/TimeTracking.vue'
 import CategoryForm from '@/views/_Work/Manages/Projects/components/Settings/category/CategoryForm.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 
@@ -42,7 +41,6 @@ const settingMenus = computed(() => {
   if (isManager || perms?.project_member) menus.push({ no: 2, menu: '구성원' })
   if (isManager && mods?.issue) menus.push({ no: 3, menu: '업무추적' })
   if (mods?.issue) menus.push({ no: 5, menu: '업무범주' })
-  if (isManager && mods?.time) menus.push({ no: 8, menu: '시간추적' })
   if (isManager && mods?.forum) menus.push({ no: 7, menu: '게시판' })
 
   return menus.sort((a, b) => a.no - b.no).map(m => m.menu)
@@ -64,7 +62,6 @@ const memberList = computed(() =>
 const deleteVersion = (pk: number) => workStore.deleteVersion(pk, issueProject.value?.slug)
 
 const issueStore = useIssue()
-const activityList = computed(() => issueStore.activityList)
 
 const categorySubmit = (payload: ICategory) => {
   if (payload.pk) issueStore.updateCategory(payload)
@@ -72,16 +69,6 @@ const categorySubmit = (payload: ICategory) => {
   router.push({ name: '(설정)' })
 }
 const deleteCategory = (pk: number) => issueStore.deleteCategory(pk, issueProject.value?.slug)
-
-const submitActs = (payload: number[]) => {
-  const activities = payload.sort((a, b) => a - b)
-  workStore.patchIssueProject({
-    slug: issueProject.value?.slug as string,
-    activities,
-    users: [],
-    roles: [],
-  })
-}
 
 const versionFilter = async (payload: { status?: '' | '1' | '2' | '3'; search?: string }) => {
   const { status, search } = payload
@@ -112,7 +99,6 @@ onBeforeMount(async () => {
   await workStore.fetchIssueProjectList({})
   await workStore.fetchRoleList()
   await issueStore.fetchTrackerList()
-  await issueStore.fetchActivityList()
 
   if (route.params.projId) {
     const projId = route.params.projId as string
@@ -171,13 +157,6 @@ onBeforeMount(async () => {
         />
 
         <Board v-if="menu === '게시판'" :project="issueProject?.pk as number" />
-
-        <TimeTracking
-          v-if="menu === '시간추적'"
-          :activities="issueProject?.activities"
-          :activity-list="activityList"
-          @submit-acts="submitActs"
-        />
       </template>
 
       <template v-if="route.name === '(설정) - 범주추가' || route.name === '(설정) - 범주수정'">

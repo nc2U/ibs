@@ -7,7 +7,8 @@ from rest_framework import viewsets
 from apiV1.pagination import *
 from apiV1.permission import *
 from apiV1.serializers.work.logging import *
-from work.models import IssueProject
+from work.models.logging import ActivityLogEntry, IssueLogEntry
+from work.models.project import IssueProject
 
 
 def get_sub_project_ids(parent):
@@ -56,7 +57,7 @@ class ActivityLogFilter(FilterSet):
 
     @staticmethod
     def filter_by_sort_code(queryset, name, value):
-        valid_sorts = {'1', '2', '4', '5', '8'}
+        valid_sorts = {'1', '2', '4', '5', '8', '9'}
         sort_values = [v for v in value.split(",") if v in valid_sorts]
         if sort_values:
             queryset = queryset.filter(sort__in=sort_values)
@@ -74,56 +75,13 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
         """ActivityLogEntry 필터링: 사용자 권한 기반"""
         user = self.request.user
         work_auth = user.work_manager or user.is_superuser
-        projects = user.assigned_projects().values_list('pk', flat=True)
         queryset = self.queryset
         if not work_auth:
+            projects = user.assigned_projects().values_list('pk', flat=True)
             queryset = queryset.filter(
                 Q(project__is_public=True) |
                 Q(project__in=projects))
         return queryset.select_related('project', 'creator', 'issue', 'comment', 'news')
-
-    def list(self, request, *args, **kwargs):
-        """ActivityLogEntry 데이터를 반환"""
-
-        # ActivityLogEntry 조회
-        logs = self.filter_queryset(self.get_queryset()).values(
-            'pk', 'sort', 'project__id', 'project__name', 'project__slug',
-            'issue__id', 'issue__tracker__name', 'issue__status__name',
-            'issue__status__closed', 'issue__subject', 'issue__description',
-            'status_log', 'comment__id', 'comment__content', 'news__title',
-            'news__summary', 'act_date', 'timestamp', 'creator__id', 'creator__username')
-
-        # 데이터 변환 (제너레이터)
-        log_data = [{
-            'pk': log['pk'],
-            'sort': log['sort'],
-            'project': {
-                'pk': log['project__id'],
-                'name': log['project__name'],
-                'slug': log['project__slug'],
-            },
-            'issue': {
-                'pk': log['issue__id'],
-                'tracker': log['issue__tracker__name'],
-                'status': {'name': log['issue__status__name'], 'closed': log['issue__status__closed']},
-                'subject': log['issue__subject'],
-                'description': log['issue__description'],
-            },
-            'status_log': log['status_log'],
-            'comment': {
-                'pk': log['comment__id'],
-                'content': log['comment__content'],
-            },
-            'news': {'title': log['news__title'], 'summary': log['news__summary']},
-            'act_date': log['act_date'],
-            'timestamp': log['timestamp'],
-            'creator': {'pk': log['creator__id'], 'username': log['creator__username']},
-        } for log in logs]
-
-        # 페이지네이션
-        paginator = self.pagination_class()
-        page = paginator.paginate_queryset(log_data, request)
-        return paginator.get_paginated_response(page)
 
 
 class IssueLogEntryViewSet(viewsets.ModelViewSet):

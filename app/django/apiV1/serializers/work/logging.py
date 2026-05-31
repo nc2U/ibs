@@ -14,10 +14,16 @@ class NewsInActLogSerializer(serializers.ModelSerializer):
         fields = ('title', 'summary')
 
 
+class SimpleCommentInActLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = IssueComment
+        fields = ('pk', 'content')
+
+
 class ActivityLogEntrySerializer(serializers.ModelSerializer):
     project = SimpleIssueProjectSerializer(read_only=True)
     issue = IssueInRelatedSerializer(read_only=True)
-    comment = IssueCommentSerializer(read_only=True)
+    comment = SimpleCommentInActLogSerializer(read_only=True)
     news = NewsInActLogSerializer(read_only=True)
     creator = SimpleUserSerializer(read_only=True)
 

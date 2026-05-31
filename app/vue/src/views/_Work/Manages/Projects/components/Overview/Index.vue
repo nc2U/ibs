@@ -6,7 +6,6 @@ import { useInform } from '@/store/pinia/work_inform.ts'
 import type { IssueProject, SimpleMember } from '@/store/types/work_project.ts'
 import Loading from '@/components/Loading/Index.vue'
 import OverViewHeader from './components/OverViewHeader.vue'
-import TimeSummary from './components/TimeSummary.vue'
 import IssueTracker from './components/IssueTracker.vue'
 import NewsBox from './components/NewsBox.vue'
 import MemberBox from './components/MemberBox.vue'
@@ -115,10 +114,6 @@ onBeforeMount(async () => {
         <CCol lg="6">
           <CRow class="mb-3">
             <IssueTracker :trackers="iProject?.trackers" :tracker-summary="trackerSum" />
-          </CRow>
-
-          <CRow class="mb-3">
-            <TimeSummary :project="iProject as IssueProject" />
           </CRow>
         </CCol>
 

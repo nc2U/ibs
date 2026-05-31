@@ -41,7 +41,6 @@ const allRoles = computed(() => workStore.getRoles)
 
 const issueStore = useIssue()
 const allTrackers = computed(() => issueStore.getTrackers)
-const getActivities = computed(() => issueStore.getActivities)
 
 const form = reactive({
   pk: undefined as number | undefined,
@@ -56,12 +55,10 @@ const form = reactive({
   is_inherit_members: false,
   allowed_roles: [6, 7, 8],
   trackers: [4, 5, 6, 7],
-  activities: [3, 4, 5, 6, 7, 8],
 })
 
 const module = reactive({
   issue: true,
-  time: true,
   news: true,
   document: true,
   forum: true,
@@ -86,19 +83,14 @@ const formsCheck = computed(() => {
       // eslint-disable-next-line vue/no-side-effects-in-computed-properties
       JSON.stringify(form.trackers.sort((a, b) => a - b)) ===
       JSON.stringify(props.project.trackers?.map(t => t.pk).sort((a, b) => a - b))
-    const k =
-      // eslint-disable-next-line vue/no-side-effects-in-computed-properties
-      JSON.stringify(form.activities.sort((a, b) => a - b)) ===
-      JSON.stringify(props.project.activities?.map(a => a.pk).sort((a, b) => a - b))
     const l = module.issue === props.project.module?.issue
-    const m = module.time === props.project.module?.time
     const n = module.news === props.project.module?.news
     const o = module.document === props.project.module?.document
     const r = module.forum === props.project.module?.forum
     const s = module.calendar === props.project.module?.calendar
 
     const first = a && b && c && d && e && f && g && h && i && j
-    const second = k && l && m && n && o && r && s
+    const second = l && n && o && r && s
     return first && second
   } else return false
 })
@@ -167,10 +159,8 @@ const dataSetup = () => {
     form.is_inherit_members = props.project.is_inherit_members
     form.allowed_roles = props.project.allowed_roles?.map(r => r.pk) ?? []
     form.trackers = props.project.trackers?.map(t => t.pk) ?? []
-    form.activities = props.project.activities?.map(t => t.pk) ?? []
 
     module.issue = !!props.project.module?.issue
-    module.time = !!props.project.module?.time
     module.news = !!props.project.module?.news
     module.document = !!props.project.module?.document
     module.forum = !!props.project.module?.forum
@@ -194,7 +184,6 @@ onBeforeMount(() => {
   comStore.fetchCompanyList()
   workStore.fetchRoleList()
   issueStore.fetchTrackerList()
-  issueStore.fetchActivityList()
 })
 </script>
 
@@ -356,18 +345,6 @@ onBeforeMount(() => {
             />
           </CCol>
         </CRow>
-
-        <CRow class="mb-3">
-          <CFormLabel class="col-form-label text-right col-2">시간 추적</CFormLabel>
-          <CCol>
-            <MultiSelect
-              v-model="form.activities"
-              id="trackers"
-              :options="getActivities"
-              placeholder="시간 추적 항목 선택"
-            />
-          </CCol>
-        </CRow>
       </CCardBody>
     </CCard>
 
@@ -380,9 +357,6 @@ onBeforeMount(() => {
         <CRow>
           <CCol sm="6" md="4" lg="3" xl="2">
             <CFormCheck v-model="module.issue" id="issue" label="업무관리" />
-          </CCol>
-          <CCol sm="6" md="4" lg="3" xl="2">
-            <CFormCheck v-model="module.time" id="time" label="시간추적" />
           </CCol>
           <CCol sm="6" md="4" lg="3" xl="2">
             <CFormCheck v-model="module.news" id="news" label="공지" />
