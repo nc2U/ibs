@@ -6,7 +6,6 @@ import { useWork } from '@/store/pinia/work_project.ts'
 import IssueDropDown from '@/views/_Work/Manages/Issues/components/IssueDropDown.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import VersionSummary from '@/views/_Work/Manages/Projects/components/Roadmap/components/VersionSummary.vue'
-import VersionTimes from '@/views/_Work/Manages/Projects/components/Roadmap/components/VersionTimes.vue'
 
 const props = defineProps({ version: { type: Object as PropType<Version>, required: true } })
 
