@@ -57,7 +57,6 @@ export default defineConfig({
               { text: '실행기록', link: '/work-manage/activity' },
               { text: '추진현황', link: '/work-manage/roadmap' },
               { text: '업무', link: '/work-manage/issue' },
-              { text: '소요시간', link: '/work-manage/time-entry' },
               { text: '달력', link: '/work-manage/calendar' },
               { text: '공지', link: '/work-manage/notice' },
               { text: '문서', link: '/work-manage/docs' },
