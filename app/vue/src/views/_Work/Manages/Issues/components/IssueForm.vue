@@ -153,10 +153,6 @@ const durationOptions = [
   { value: '366', label: '1년 이상' },
 ]
 
-const activities = computed(() =>
-  props.issueProject?.activities ? props.issueProject.activities : [],
-)
-
 const watcherAddSubmit = (payload: { pk: number; username: string }[]) => {
   form.value.watchers = [...new Set([...form.value.watchers, ...payload.map(p => p.pk)])]
   payload.forEach(p => {
