@@ -90,7 +90,7 @@ const delSubmit = () => {
             <router-link
               :to="{
                 name: '(실행기록)',
-                params: { projId: 'redmine' },
+                params: { projId: route.params.projId },
                 query: { from: log.timestamp.substring(0, 10) },
               }"
             >

@@ -136,12 +136,6 @@ const unlinkSubIssue = () => {
             </CDropdownItem>
             <CDropdownItem class="form-text" disabled>
               <!--                    <router-link to="">-->
-              <v-icon icon="mdi-timer-edit-outline" color="grey" size="sm" />
-              작업시간 기록
-              <!--                    </router-link>-->
-            </CDropdownItem>
-            <CDropdownItem class="form-text" disabled>
-              <!--                    <router-link to="">-->
               <v-icon icon="mdi-link-plus" color="grey" size="sm" />
               링크 복사
               <!--                    </router-link>-->
