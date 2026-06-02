@@ -145,8 +145,12 @@ const workProject = {
           children: [
             {
               path: ':brdId',
-              name: '(게시판) - 보기', // 새 글 쓰기는 여기서
+              name: '(게시판) - 보기',
               children: [
+                {
+                  path: 'create',
+                  name: '(게시판) - 게시물 작성',
+                },
                 {
                   path: ':postId',
                   name: '(게시판) - 게시물 보기',
