@@ -26,10 +26,10 @@ class MeetingCategory(models.Model):
 
 
 class Meeting(models.Model):
-    project = models.ForeignKey(IssueProject, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='프로젝트',
-                                related_name='meetings')
     # 본사 회의 등을 위해 회사 외래키 필수 설정
     company = models.ForeignKey('company.Company', on_delete=models.CASCADE, verbose_name='회사', related_name='meetings')
+    project = models.ForeignKey(IssueProject, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='프로젝트',
+                                related_name='meetings')
     category = models.ForeignKey(MeetingCategory, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='카테고리',
                                  related_name='meetings')
 
