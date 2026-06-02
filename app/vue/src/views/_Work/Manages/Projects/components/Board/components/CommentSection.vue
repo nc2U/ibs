@@ -14,8 +14,9 @@ const props = defineProps({
 const brdStore = useBoard()
 
 const onSubmitComment = (payload: any) => {
-  if (payload.pk) brdStore.patchComment(payload)
-  else brdStore.createComment({ ...payload, post: { pk: props.postId, board: props.brdId } })
+  const data = typeof payload === 'string' ? { content: payload } : payload
+  if (data.pk) brdStore.patchComment(data)
+  else brdStore.createComment({ ...data, post: props.postId })
 }
 
 const onDeleteComment = (pk: number) => {
