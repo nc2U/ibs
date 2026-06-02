@@ -31,10 +31,10 @@ const page = ref(1)
 
 const heatedPage = ref<number[]>([])
 
-const postHit = async (pk: number) => {
+const fetchPostData = async (pk: number) => {
+  await brdStore.fetchPost(pk)
   if (!heatedPage.value.includes(pk)) {
     heatedPage.value.push(pk)
-    await brdStore.fetchPost(pk)
     const hit = ((post.value as Post)?.hit ?? 0) + 1
     await brdStore.patchPost({ pk, hit })
   }
@@ -60,6 +60,7 @@ const onLikePost = (pk: number) => brdStore.patchPostLike(pk)
 const onBlamePost = (pk: number) => brdStore.patchPostBlame(pk)
 
 const dataSetup = async () => {
+  loading.value = true
   const projId = route.params.projId as string
   const brdId = route.params.brdId ? Number(route.params.brdId) : null
   const postId = route.params.postId ? Number(route.params.postId) : null
@@ -70,12 +71,13 @@ const dataSetup = async () => {
       await brdStore.fetchBoard(brdId)
       await brdStore.fetchCategoryList(brdId)
       if (postId) {
-        await brdStore.fetchPost(postId)
+        await fetchPostData(postId)
       } else {
         await brdStore.fetchPostList({ board: brdId, page: page.value })
       }
     }
   }
+  loading.value = false
 }
 
 const onPageSelect = (p: number) => {
@@ -86,45 +88,56 @@ const onPageSelect = (p: number) => {
 }
 
 watch(
-  () => route.params.brdId,
-  async nVal => {
-    if (nVal && !route.params.postId) {
-      page.value = 1
-      await brdStore.fetchBoard(Number(nVal))
-      await brdStore.fetchCategoryList(Number(nVal))
-      await brdStore.fetchPostList({ board: Number(nVal), page: 1 })
+  () => route.params,
+  async (newParams, oldParams) => {
+    if (newParams.projId !== oldParams?.projId) {
+      await dataSetup()
+    } else if (newParams.brdId !== oldParams?.brdId) {
+      if (newParams.brdId) {
+        page.value = 1
+        loading.value = true
+        await brdStore.fetchBoard(Number(newParams.brdId))
+        await brdStore.fetchCategoryList(Number(newParams.brdId))
+        await brdStore.fetchPostList({ board: Number(newParams.brdId), page: 1 })
+        loading.value = false
+      }
+    } else if (newParams.postId !== oldParams?.postId) {
+      if (newParams.postId) {
+        brdStore.removePost() // Clear old post data
+        loading.value = true
+        await fetchPostData(Number(newParams.postId))
+        loading.value = false
+      } else {
+        brdStore.removePost()
+        // 목록으로 돌아왔을 때 목록 로드 보장
+        if (route.name === '(게시판) - 보기' && newParams.brdId) {
+          loading.value = true
+          await brdStore.fetchPostList({ board: Number(newParams.brdId), page: page.value })
+          loading.value = false
+        }
+      }
     }
   },
-)
-
-watch(
-  () => route.params.postId,
-  async nVal => {
-    if (nVal) {
-      await postHit(Number(nVal))
-    } else {
-      brdStore.removePost()
-    }
-  },
+  { deep: true },
 )
 
 const loading = ref(true)
 onBeforeMount(async () => {
   await dataSetup()
-  loading.value = false
 })
 </script>
 
 <template>
-  <Loading v-model:active="loading" />
   <ContentBody ref="cBody">
     <template v-slot:default>
+      <Loading v-model:active="loading" />
+
       <!-- 게시판 메인 인덱스 -->
       <BoardIndex v-if="route.name === '(게시판)'" :board-list="boardList" />
 
       <!-- 게시물 목록 -->
       <BoardList
-        v-else-if="route.name === '(게시판) - 보기'"
+        v-else-if="route.name === '(게시판) - 보기' && !route.params.postId"
         :board="board"
         :post-list="postList"
         :page="page"
@@ -133,7 +146,7 @@ onBeforeMount(async () => {
 
       <!-- 게시물 상세 -->
       <BoardView
-        v-else-if="route.name === '(게시판) - 게시물 보기' && post"
+        v-else-if="route.name === '(게시판) - 게시물 보기' && (post || loading)"
         :post="post as Post"
         :comments="commentList"
         @delete-post="onDeletePost"
@@ -150,7 +163,7 @@ onBeforeMount(async () => {
 
       <!-- 게시물 수정 -->
       <BoardForm
-        v-else-if="route.name === '(게시판) - 게시물 수정' && post"
+        v-else-if="route.name === '(게시판) - 게시물 수정' && (post || loading)"
         :post="post"
         :brd-id="Number(route.params.brdId)"
         :categories="categoryList"
