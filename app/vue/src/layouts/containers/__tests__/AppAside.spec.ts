@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { computed } from 'vue'
 import { shallowMount } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
 import { createVuetify } from 'vuetify'
@@ -14,6 +15,9 @@ describe('AppAside Component Test', () => {
       global: {
         plugins: [createTestingPinia(), vuetify, CoreuiVue],
         stubs: ['CIcon'],
+        provide: {
+          company: computed(() => ({ name: 'Test Company' })),
+        },
       },
       props: {
         position: 'fixed',
