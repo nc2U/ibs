@@ -33,8 +33,8 @@ class ActivityLogEntry(models.Model):
 
     class Meta:
         ordering = ('-id',)
-        verbose_name = '14. 작업 내역'
-        verbose_name_plural = '14. 작업 내역'
+        verbose_name = '14. 실행 기록'
+        verbose_name_plural = '14. 실행 기록'
         indexes = [models.Index(fields=['timestamp', 'project'])]
 
 
