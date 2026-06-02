@@ -5,16 +5,17 @@ import viteConfig from './vite.config.mts'
 
 export default mergeConfig(
   viteConfig,
-  // @ts-ignore
   defineConfig({
     test: {
+      globals: true,
       environment: 'jsdom',
       exclude: [...configDefaults.exclude, 'e2e/*'],
       root: fileURLToPath(new URL('./', import.meta.url)),
-      // @ts-ignore
-      transformMode: {
-        web: [/\.[jt]sx$/],
+      server: {
+        deps: {
+          inline: ['vuetify'],
+        },
       },
     },
-  }),
+  }) as any,
 )

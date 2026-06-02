@@ -8,18 +8,18 @@ import AppHeaderDropdown from '@/layouts/containers/AppHeaderDropdown.vue'
 
 const vuetify = createVuetify()
 
+vi.mock('vue-router', async () => {
+  const actual = await vi.importActual('vue-router')
+  return {
+    ...(actual as object),
+    useRouter: vi.fn(() => ({
+      push: () => {},
+    })),
+  }
+})
+
 describe('AppHeaderDropdownAccnt Component Test', () => {
   it('should ', async () => {
-    vi.mock('vue-router', async () => {
-      const actual = await vi.importActual('vue-router')
-      return {
-        ...(actual as object),
-        useRouter: vi.fn(() => ({
-          push: () => {},
-        })),
-      }
-    })
-
     const wrapper = mount(AppHeaderDropdown, {
       global: {
         plugins: [createTestingPinia(), vuetify, CoreuiVue],

@@ -6,27 +6,30 @@ import { createVuetify } from 'vuetify'
 import TagsView from '@/layouts/containers/TagsView.vue'
 
 const vuetify = createVuetify()
-const ResizeObserverMock = vi.fn(() => ({
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-  disconnect: vi.fn(),
+
+vi.stubGlobal(
+  'ResizeObserver',
+  class {
+    observe = vi.fn()
+    unobserve = vi.fn()
+    disconnect = vi.fn()
+  },
+)
+
+vi.mock('vue-router', () => ({
+  useRoute: vi.fn(() => ({
+    path: '/dashboard',
+    meta: {
+      title: '대 시 보 드',
+    },
+  })),
+  useRouter: vi.fn(() => ({
+    push: () => {},
+  })),
 }))
-vi.stubGlobal('ResizeObserver', ResizeObserverMock)
 
 describe('TagsView Component Test', () => {
   it('TagsView test', () => {
-    vi.mock('vue-router', () => ({
-      useRoute: vi.fn().mockImplementationOnce(() => ({
-        path: '/dashboard',
-        meta: {
-          title: '대 시 보 드',
-        },
-      })),
-      useRouter: vi.fn(() => ({
-        push: () => {},
-      })),
-    }))
-
     const wrapper = mount(TagsView, {
       global: {
         plugins: [createTestingPinia(), vuetify],
