@@ -9,6 +9,14 @@ export interface MeetingCategory {
   order: number
 }
 
+export interface SimpleIssueInMeeting {
+  pk: number
+  subject: string
+  status: string
+  assigned_to: SimpleUser | null
+  closed: string | null
+}
+
 export interface Meeting {
   pk: number
   project: number | null
@@ -17,12 +25,16 @@ export interface Meeting {
   category: number | null
   category_desc: MeetingCategory | null
   title: string
+  agenda: string
   content: string
+  decisions: string
+  action_items: string
   meeting_date: string | null
   attendees: number[]
   attendees_desc: SimpleUser[]
   other_attendees: string
   files: MeetingFile[]
+  issues: SimpleIssueInMeeting[]
   created: string
   updated: string
   creator: SimpleUser

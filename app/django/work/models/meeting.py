@@ -34,12 +34,18 @@ class Meeting(models.Model):
                                  related_name='meetings')
 
     title = models.CharField('회의 제목', max_length=255)
+    agenda = models.TextField('회의 아젠다', blank=True, default='',
+                              help_text='회의에서 논의할 주요 의제 (사전 공유용)')
     content = models.TextField('회의 내용', blank=True, default='')
+    decisions = models.TextField('주요 결정 사항', blank=True, default='',
+                                 help_text='회의를 통해 확정된 합의 내용')
+    action_items = models.TextField('후속 조치 사항', blank=True, default='',
+                                    help_text='누가, 언제까지, 무엇을 할 것인가?')
     meeting_date = models.DateTimeField('회의 일시', null=True, blank=True)
     attendees = models.ManyToManyField(settings.AUTH_USER_MODEL, verbose_name='참석자', related_name='meetings_attended',
                                        blank=True)
     other_attendees = models.CharField('기타 참석자', max_length=255, blank=True, default='',
-                                      help_text='사용자(멤버)가 아닌 외부 참석자 명단')
+                                       help_text='사용자(멤버)가 아닌 외부 참석자 명단')
 
     created = models.DateTimeField('등록일', auto_now_add=True)
     updated = models.DateTimeField('수정일', auto_now=True)
