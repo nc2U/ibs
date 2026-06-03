@@ -17,7 +17,7 @@ const cBody = ref()
 const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
 
-const typeNumber = ref<1 | 2>(1)
+const typeNumber = ref<1 | 2 | 3>(1)
 const refDocsForm = ref()
 
 const types = ref<any[]>([
@@ -59,10 +59,10 @@ const categories = computed(() => getCategories.value)
 const getDocsList = (target: unknown) => {
   if (target === 1 || target === 2) {
     docsFilter.value.page = 1
-    docsFilter.value.doc_type = target
-    fetchCategoryList(target)
+    docsFilter.value.doc_type = target as number
+    fetchCategoryList(target as 1 | 2 | 3)
     fetchDocsList(docsFilter.value)
-    if (route.name === '(문서) - 추가') refDocsForm.value.setDocType(target)
+    if (route.name === '(문서) - 추가') refDocsForm.value.setDocType(target as number)
   }
 }
 
@@ -93,6 +93,13 @@ const dataSetup = async (docId?: string | string[]) => {
     const projId = route.params.projId as string
     await workStore.fetchIssueProject(projId)
   }
+
+  if (issueProject.value?.sort === '3') {
+    typeNumber.value = 3
+  } else if (typeNumber.value === 3) {
+    typeNumber.value = 1
+  }
+  docsFilter.value.doc_type = typeNumber.value
 
   docsFilter.value.issue_project = (issueProject.value as IssueProject)?.pk
   await fetchDocTypeList()
