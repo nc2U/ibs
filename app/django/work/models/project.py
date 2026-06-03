@@ -197,5 +197,5 @@ class Version(models.Model):
 
     class Meta:
         ordering = ('project', 'id')
-        verbose_name = '05. 단계'
-        verbose_name_plural = '05. 단계'
+        verbose_name = '07. 단계'
+        verbose_name_plural = '07. 단계'

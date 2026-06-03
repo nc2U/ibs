@@ -47,8 +47,8 @@ class News(models.Model):
 
     class Meta:
         ordering = ('-created',)
-        verbose_name = '13. 공지'
-        verbose_name_plural = '13. 공지'
+        verbose_name = '14. 공지'
+        verbose_name_plural = '14. 공지'
 
 
 def get_news_file_path(instance, filename):

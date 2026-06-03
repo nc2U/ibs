@@ -18,8 +18,8 @@ class MeetingCategory(models.Model):
 
     class Meta:
         ordering = ('order', 'id')
-        verbose_name = '14. 회의록 카테고리'
-        verbose_name_plural = '14. 회의록 카테고리'
+        verbose_name = '05. 회의록 카테고리'
+        verbose_name_plural = '05. 회의록 카테고리'
 
     def __str__(self):
         return self.name
@@ -56,8 +56,8 @@ class Meeting(models.Model):
 
     class Meta:
         ordering = ('-meeting_date', '-created')
-        verbose_name = '15. 회의록'
-        verbose_name_plural = '15. 회의록'
+        verbose_name = '06. 회의록'
+        verbose_name_plural = '06. 회의록'
 
     def __str__(self):
         return self.title
