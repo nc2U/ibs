@@ -331,15 +331,6 @@ export const useIssue = defineStore('issue', () => {
       .then(res => (priorityList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
-  // code-docs-categories
-  const codeCategoryList = ref<CodeValue[]>([])
-
-  const fetchCodeCategoryList = () =>
-    api
-      .get(`/code-docs-category/`)
-      .then(res => (codeCategoryList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
-
   return {
     issue,
     issueList,
@@ -393,8 +384,5 @@ export const useIssue = defineStore('issue', () => {
 
     priorityList,
     fetchPriorityList,
-
-    codeCategoryList,
-    fetchCodeCategoryList,
   }
 })

@@ -58,7 +58,6 @@ router.register(r'issue-by-tracker-summary', work.IssueCountByTrackerViewSet, ba
 router.register(r'issue-status', work.IssueStatusViewSet)
 router.register(r'workflow', work.WorkflowViewSet)
 router.register(r'code-priority', work.CodeIssuePriorityViewSet)
-router.register(r'code-docs-category', work.CodeDocsCategoryViewSet)
 router.register(r'issue-category', work.IssueCategoryViewSet)
 router.register(r'issue', work.IssueViewSet)
 router.register(r'issue-relation', work.IssueRelationViewSet)

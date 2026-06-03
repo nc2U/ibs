@@ -10,24 +10,6 @@ from _utils.file_cleanup import file_cleanup_signals, related_file_cleanup
 from work.models.project import IssueProject, Member
 
 
-class CodeDocsCategory(models.Model):
-    name = models.CharField('이름', max_length=20, db_index=True)
-    active = models.BooleanField('사용중', default=True)
-    default = models.BooleanField('기본값', default=False)
-    order = models.PositiveSmallIntegerField('정렬', default=1)
-    created = models.DateTimeField('등록일시', auto_now_add=True)
-    updated = models.DateTimeField('편집일시', auto_now=True)
-    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name='등록자')
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        ordering = ('order', 'id',)
-        verbose_name = '12. 문서 범주'
-        verbose_name_plural = '12. 문서 범주'
-
-
 class News(models.Model):
     project = models.ForeignKey(IssueProject, on_delete=models.CASCADE, verbose_name='프로젝트')
     title = models.CharField('제목', max_length=255, db_index=True)

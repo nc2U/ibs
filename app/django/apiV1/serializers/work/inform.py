@@ -7,14 +7,8 @@ from rest_framework import serializers
 from apiV1.serializers.accounts import SimpleUserSerializer
 from apiV1.serializers.work.project import SimpleIssueProjectSerializer
 from work.models import NewsFile
-from work.models.inform import CodeDocsCategory, News, NewsComment, Search
+from work.models.inform import News, NewsComment, Search
 from work.models.project import IssueProject
-
-
-class CodeDocsCategorySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CodeDocsCategory
-        fields = ('pk', 'name', 'active', 'default', 'order')
 
 
 class FilesInNewsSerializer(serializers.ModelSerializer):

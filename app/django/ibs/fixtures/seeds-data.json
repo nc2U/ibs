@@ -11657,31 +11657,5 @@
       "updated": "2024-02-29T04:29:24.243Z",
       "creator": 1
     }
-  },
-  {
-    "model": "work.codedocscategory",
-    "pk": 1,
-    "fields": {
-      "name": "사용자 문서",
-      "active": true,
-      "default": false,
-      "order": 1,
-      "created": "2024-02-29T04:29:40.571Z",
-      "updated": "2024-02-29T04:29:40.571Z",
-      "creator": 1
-    }
-  },
-  {
-    "model": "work.codedocscategory",
-    "pk": 2,
-    "fields": {
-      "name": "기술 문서",
-      "active": true,
-      "default": false,
-      "order": 1,
-      "created": "2024-02-29T04:29:46.856Z",
-      "updated": "2024-02-29T04:29:46.856Z",
-      "creator": 1
-    }
   }
 ]

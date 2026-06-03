@@ -1,15 +1,7 @@
 from django.contrib import admin
 from import_export.admin import ImportExportMixin
 
-from work.models import CodeDocsCategory, News, NewsFile, NewsComment
-
-
-@admin.register(CodeDocsCategory)
-class CodeDocsCategoryAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('pk', 'name', 'active', 'default', 'order', 'creator')
-    list_display_links = ('name',)
-    list_editable = ('active', 'default', 'order')
-    list_filter = ('active', 'default')
+from work.models import News, NewsFile, NewsComment
 
 
 class NewsFileInline(admin.TabularInline):

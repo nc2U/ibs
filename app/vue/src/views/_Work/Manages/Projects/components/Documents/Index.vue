@@ -54,13 +54,7 @@ const fetchCategoryList = (type: number) => docStore.fetchCategoryList(type)
 const fetchAllSuitCaseList = (payload: SuitCaseFilter) => docStore.fetchAllSuitCaseList(payload)
 const patchDocs = (payload: PatchDocs & { filter: DocsFilter }) => docStore.patchDocs(payload)
 
-const issueStore = useIssue()
-const codeCategoryList = computed(() => issueStore.codeCategoryList)
-const fetchCodeCategoryList = () => issueStore.fetchCodeCategoryList()
-
-const categories = computed(() =>
-  (issueProject.value as IssueProject)?.sort !== '3' ? getCategories.value : codeCategoryList.value,
-)
+const categories = computed(() => getCategories.value)
 
 const getDocsList = (target: unknown) => {
   if (target === 1 || target === 2) {
@@ -102,7 +96,6 @@ const dataSetup = async (docId?: string | string[]) => {
 
   docsFilter.value.issue_project = (issueProject.value as IssueProject)?.pk
   await fetchDocTypeList()
-  await fetchCodeCategoryList()
   await fetchCategoryList(typeNumber.value)
   await fetchDocsList(docsFilter.value)
   await fetchAllSuitCaseList({ issue_project: docsFilter.value.issue_project })
