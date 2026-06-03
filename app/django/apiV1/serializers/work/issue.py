@@ -9,9 +9,9 @@ from accounts.models import User
 from apiV1.serializers.accounts import SimpleUserSerializer
 from apiV1.serializers.work.project import SimpleIssueProjectSerializer, TrackerInIssueProjectSerializer
 from work.models.issue import (IssueCategory, Tracker, IssueStatus, Workflow,
-                               CodeIssuePriority, Issue, IssueRelation,
-                               IssueFile, IssueComment)
-from work.models.project import IssueProject, Version
+                                CodeIssuePriority, Issue, IssueRelation,
+                                IssueFile, IssueComment, Version)
+from work.models.project import IssueProject
 
 
 class IssueStatusInIssueSerializer(serializers.ModelSerializer):

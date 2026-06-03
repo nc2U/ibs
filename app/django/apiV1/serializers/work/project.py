@@ -2,8 +2,8 @@ from django.db import transaction
 from rest_framework import serializers
 
 from apiV1.serializers.accounts import SimpleUserSerializer
-from work.models.issue import (IssueCategory, Tracker, Issue)
-from work.models.project import IssueProject, Role, Member, Module, Version, Permission
+from work.models.issue import (IssueCategory, Tracker, Issue, Version)
+from work.models.project import IssueProject, Role, Member, Module, Permission
 
 
 class ProjectPermissionMixin:
