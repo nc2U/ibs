@@ -22,11 +22,30 @@ const totalAttendees = computed(() => {
     : 0
   return usersCount + otherCount
 })
+
+const statusColor = computed(() => {
+  if (props.meeting.status === '1') return 'primary'
+  if (props.meeting.status === '2') return 'success'
+  if (props.meeting.status === '3') return 'danger'
+  return 'secondary'
+})
+
+const statusText = computed(() => {
+  if (props.meeting.status === '1') return '준비중'
+  if (props.meeting.status === '2') return '완료됨'
+  if (props.meeting.status === '3') return '취소됨'
+  return '-'
+})
 </script>
 
 <template>
   <CTableDataCell>{{ meeting.pk }}</CTableDataCell>
   <CTableDataCell v-if="!route.params.projId">{{ meeting.project_desc?.name }}</CTableDataCell>
+  <CTableDataCell>
+    <v-chip :color="statusColor" size="x-small" variant="flat">
+      {{ statusText }}
+    </v-chip>
+  </CTableDataCell>
   <CTableDataCell>{{ meeting.category_desc?.name }}</CTableDataCell>
   <CTableDataCell class="text-left">
     <router-link to="">{{ meeting.title }}</router-link>

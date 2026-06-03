@@ -16,6 +16,7 @@ export const useMeeting = defineStore('meeting', () => {
     let url = `/meeting/?page=${payload.page ?? 1}`
     if (payload.project) url += `&project__slug=${payload.project}`
     if (payload.category) url += `&category=${payload.category}`
+    if (payload.status) url += `&status=${payload.status}`
     if (payload.meeting_date) url += `&meeting_date=${payload.meeting_date}`
     if (payload.meeting_date__range) url += `&meeting_date__range=${payload.meeting_date__range}`
     if (payload.search) url += `&search=${payload.search}`

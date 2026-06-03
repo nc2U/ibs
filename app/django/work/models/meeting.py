@@ -33,6 +33,12 @@ class Meeting(models.Model):
     category = models.ForeignKey(MeetingCategory, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='카테고리',
                                  related_name='meetings')
 
+    MEETING_STATUS_CHOICES = (
+        ('1', '준비중'),
+        ('2', '완료됨'),
+        ('3', '취소됨'),
+    )
+    status = models.CharField('회의 상태', max_length=1, choices=MEETING_STATUS_CHOICES, default='1')
     title = models.CharField('회의 제목', max_length=255)
     agenda = models.TextField('회의 아젠다', blank=True, default='',
                               help_text='회의에서 논의할 주요 의제 (사전 공유용)')

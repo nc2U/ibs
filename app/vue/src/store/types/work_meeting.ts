@@ -24,6 +24,7 @@ export interface Meeting {
   company: number
   category: number | null
   category_desc: MeetingCategory | null
+  status: '1' | '2' | '3'
   title: string
   agenda: string
   content: string
@@ -56,6 +57,7 @@ export interface MeetingFile {
 export interface MeetingFilter {
   project?: string
   category?: number
+  status?: string
   meeting_date?: string
   meeting_date__range?: string
   search?: string

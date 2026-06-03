@@ -15,6 +15,7 @@ const emit = defineEmits(['filter-submit'])
 const filter = reactive<MeetingFilter>({
   project: '',
   category: undefined,
+  status: '',
   meeting_date: '',
   search: '',
 })
@@ -51,6 +52,18 @@ onBeforeMount(async () => {
     <CFormLabel for="meeting-date" class="col-sm-4 col-form-label">회의 일시</CFormLabel>
     <CCol class="col-xxl-8">
       <DatePicker v-model="filter.meeting_date" id="meeting-date" />
+    </CCol>
+  </CRow>
+
+  <CRow class="mb-3">
+    <CFormLabel for="meeting-status" class="col-sm-4 col-form-label">회의 상태</CFormLabel>
+    <CCol class="col-xxl-8">
+      <CFormSelect v-model="filter.status" id="meeting-status" size="sm">
+        <option value="">---------</option>
+        <option value="1">준비중</option>
+        <option value="2">완료됨</option>
+        <option value="3">취소됨</option>
+      </CFormSelect>
     </CCol>
   </CRow>
 

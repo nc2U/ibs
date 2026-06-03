@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useMeeting } from '@/store/pinia/work_meeting.ts'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { timeFormat } from '@/utils/baseMixins.ts'
+import { markdownRender } from '@/utils/helper.ts'
 import type { Meeting } from '@/store/types/work_meeting.ts'
 import FileDisplay from '@/views/_Work/components/atomics/FileDisplay.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
@@ -14,6 +15,20 @@ const meetingStore = useMeeting()
 const workStore = useWork()
 
 const meeting = computed(() => meetingStore.meeting)
+
+const statusColor = computed(() => {
+  if (meeting.value?.status === '1') return 'primary'
+  if (meeting.value?.status === '2') return 'success'
+  if (meeting.value?.status === '3') return 'danger'
+  return 'secondary'
+})
+
+const statusText = computed(() => {
+  if (meeting.value?.status === '1') return '준비중'
+  if (meeting.value?.status === '2') return '완료됨'
+  if (meeting.value?.status === '3') return '취소됨'
+  return '-'
+})
 
 const fetchMeeting = async (pk: number) => {
   await meetingStore.fetchMeeting(pk)
@@ -63,6 +78,13 @@ const refConfirmModal = ref()
         <h4>
           <v-icon icon="mdi-account-group" class="mr-2" />
           {{ meeting.title }}
+          <v-badge
+            :color="statusColor"
+            :content="statusText"
+            inline
+            rounded="1"
+            class="ml-2"
+          />
         </h4>
       </CCol>
       <CCol class="text-right">
@@ -90,8 +112,18 @@ const refConfirmModal = ref()
         <CTableRow>
           <CTableHeaderCell>카테고리</CTableHeaderCell>
           <CTableDataCell>{{ meeting.category_desc?.name || '-' }}</CTableDataCell>
+          <CTableHeaderCell>상태</CTableHeaderCell>
+          <CTableDataCell>
+            <v-chip :color="statusColor" size="x-small" variant="flat">
+              {{ statusText }}
+            </v-chip>
+          </CTableDataCell>
+        </CTableRow>
+        <CTableRow>
           <CTableHeaderCell>작성자</CTableHeaderCell>
           <CTableDataCell>{{ meeting.creator.username }}</CTableDataCell>
+          <CTableHeaderCell></CTableHeaderCell>
+          <CTableDataCell></CTableDataCell>
         </CTableRow>
         <CTableRow>
           <CTableHeaderCell>참석자</CTableHeaderCell>
@@ -117,24 +149,24 @@ const refConfirmModal = ref()
       <h6 class="text-primary mb-2">
         <v-icon icon="mdi-bullseye-arrow" size="small" /> 회의 아젠다
       </h6>
-      <div class="pre-wrap">{{ meeting.agenda }}</div>
+      <div v-html="markdownRender(meeting.agenda)" class="markdown-body" />
     </div>
 
     <div v-if="meeting.content" class="mb-4 p-3 border rounded">
       <h6 class="text-primary mb-2"><v-icon icon="mdi-text-box-outline" size="small" /> 회의 내용</h6>
-      <div class="pre-wrap">{{ meeting.content }}</div>
+      <div v-html="markdownRender(meeting.content)" class="markdown-body" />
     </div>
 
     <div v-if="meeting.decisions" class="mb-4 p-3 border rounded border-success bg-light-success">
       <h6 class="text-success mb-2"><v-icon icon="mdi-check-circle" size="small" /> 주요 결정 사항</h6>
-      <div class="pre-wrap text-success">{{ meeting.decisions }}</div>
+      <div v-html="markdownRender(meeting.decisions)" class="markdown-body text-success" />
     </div>
 
     <div v-if="meeting.action_items" class="mb-4 p-3 border rounded border-warning">
       <h6 class="text-warning mb-2">
         <v-icon icon="mdi-clipboard-list-outline" size="small" /> 후속 조치 사항
       </h6>
-      <div class="pre-wrap text-warning">{{ meeting.action_items }}</div>
+      <div v-html="markdownRender(meeting.action_items)" class="markdown-body text-warning" />
     </div>
 
     <div v-if="meeting.files.length" class="mb-4">
@@ -161,8 +193,7 @@ const refConfirmModal = ref()
 </template>
 
 <style scoped>
-.pre-wrap {
-  white-space: pre-wrap;
+.markdown-body {
   word-break: break-all;
 }
 .bg-light-success {
