@@ -11,7 +11,7 @@ export const WIDGET_REGISTRY: WidgetConfig[] = [
     id: 'main-carousel',
     type: 'main-carousel',
     title: 'Main Carousel',
-    titleKo: '메인 캐러셀',
+    titleKo: '메인 슬라이드',
     icon: 'mdi-image-multiple',
     defaultLayout: { x: 0, y: 0, w: 12, h: 5 },
     minW: 6,
@@ -21,7 +21,7 @@ export const WIDGET_REGISTRY: WidgetConfig[] = [
     id: 'wise-word',
     type: 'wise-word',
     title: 'Wise Word',
-    titleKo: '명언',
+    titleKo: '동기부여 한마디',
     icon: 'mdi-format-quote-open',
     defaultLayout: { x: 0, y: 5, w: 12, h: 2 },
     minW: 4,
@@ -108,21 +108,21 @@ export const WIDGET_REGISTRY: WidgetConfig[] = [
     minH: 3,
   },
   {
-    id: 'my-issue',
-    type: 'my-issue',
-    title: 'My Issues',
-    titleKo: '내 업무',
-    icon: 'mdi-account-check-outline',
-    defaultLayout: { x: 0, y: 7, w: 6, h: 4 },
-    minW: 6,
-    minH: 3,
-  },
-  {
     id: 'notice-list',
     type: 'notice-list',
     title: 'Notice List',
     titleKo: '공지 목록',
     icon: 'mdi-bulletin-board',
+    defaultLayout: { x: 0, y: 7, w: 6, h: 4 },
+    minW: 6,
+    minH: 3,
+  },
+  {
+    id: 'my-issue',
+    type: 'my-issue',
+    title: 'My Issues',
+    titleKo: '내 업무',
+    icon: 'mdi-account-check-outline',
     defaultLayout: { x: 6, y: 7, w: 6, h: 4 },
     minW: 6,
     minH: 3,
@@ -130,7 +130,7 @@ export const WIDGET_REGISTRY: WidgetConfig[] = [
 ]
 
 // 기본 표시 위젯
-const DEFAULT_VISIBLE_WIDGETS = ['main-carousel', 'wise-word', 'my-issue', 'notice-list']
+const DEFAULT_VISIBLE_WIDGETS = ['main-carousel', 'wise-word', 'notice-list', 'my-issue']
 
 export const useDashboard = defineStore('dashboard', () => {
   // State
