@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { type PropType, ref, watchEffect } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useMeeting } from '@/store/pinia/work_meeting.ts'
 import type { Meeting } from '@/store/types/work_meeting.ts'
 import NoData from '@/components/NoData/Index.vue'
@@ -15,6 +15,7 @@ defineProps({
 const emit = defineEmits(['page-select'])
 
 const route = useRoute()
+const router = useRouter()
 
 const meetingStore = useMeeting()
 const meetingPages = (limit: number) => meetingStore.meetingPages(limit)
@@ -28,6 +29,12 @@ watchEffect(() => {
   if (selectedRow.value) document.addEventListener('click', handleClickOutside)
   else document.removeEventListener('click', handleClickOutside)
 })
+
+const goDetail = (pk: number) => {
+  if (route.params.projId)
+    router.push({ name: '(회의) - 보기', params: { projId: route.params.projId, meetingId: pk } })
+  else router.push({ name: '회의 - 보기', params: { meetingId: pk } })
+}
 
 const pageSelect = (page: number) => emit('page-select', page)
 </script>
@@ -64,7 +71,8 @@ const pageSelect = (page: number) => emit('page-select', page)
       <CTableBody>
         <CTableRow
           v-for="meeting in meetingList"
-          @click="selectedRow = meeting.pk"
+          @click="goDetail(meeting.pk)"
+          @mouseover="selectedRow = meeting.pk"
           :color="selectedRow === meeting.pk ? 'primary' : ''"
           class="text-center table-row cursor-menu"
           :key="meeting.pk"
