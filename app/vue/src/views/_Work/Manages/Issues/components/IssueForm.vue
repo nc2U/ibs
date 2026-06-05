@@ -10,6 +10,7 @@ import { isValidate } from '@/utils/helper.ts'
 import { timeFormat } from '@/utils/baseMixins'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
+import Multiselect from '@vueform/multiselect'
 import FormInIssueVersion from '@/views/_Work/Manages/Issues/components/FormInIssueVersion.vue'
 import FormInIssueCategory from '@/views/_Work/Manages/Issues/components/FormInIssueCategory.vue'
 import WatcherAdd from '@/views/_Work/Manages/Issues/components/aside/WatcherAdd.vue'
@@ -129,12 +130,12 @@ watch(
 
 const issueStore = useIssue()
 const trackers = computed(() =>
-  workStore.issueProject ? issueProject.value?.trackers : issueStore.trackerList,
+  props.issueProject ? props.issueProject.trackers : issueStore.trackerList,
 )
 
-const categories = computed(() => (issueProject.value?.categories as SimpleCategory[]) ?? [])
+const categories = computed(() => (props.issueProject?.categories as SimpleCategory[]) ?? [])
 const default_version = ref<number | null>(null)
-const versions = computed(() => issueProject.value?.versions ?? [])
+const versions = computed(() => props.issueProject?.versions ?? [])
 watch(versions, nVal => {
   const def_vers = nVal.filter(v => v.is_default)
   if (!!def_vers.length) form.value.fixed_version = def_vers[0].pk ?? null

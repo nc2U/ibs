@@ -114,7 +114,10 @@ onBeforeMount(async () => {
   await issueStore.fetchTrackerList()
   if (route.params.projId) {
     const proj = workStore.issueProjectList.find(p => p.slug === route.params.projId)
-    if (proj) form.value.project = proj.pk as number
+    if (proj) {
+      form.value.project = proj.pk as number
+      await issueStore.fetchAllIssueList(proj.slug)
+    }
     await meetingStore.fetchCategoryList(route.params.projId as string)
   } else {
     await meetingStore.fetchCategoryList()
@@ -124,6 +127,19 @@ onBeforeMount(async () => {
     await fetchMeeting(Number(route.params.meetingId))
   }
 })
+
+watch(
+  () => form.value.project,
+  async newProjPk => {
+    if (newProjPk) {
+      const proj = workStore.issueProjectList.find(p => p.pk === newProjPk)
+      if (proj) {
+        await workStore.fetchIssueProject(proj.slug)
+        await issueStore.fetchAllIssueList(proj.slug)
+      }
+    }
+  },
+)
 
 const userOptions = computed(() =>
   users.value.map(u => ({
@@ -370,7 +386,7 @@ const userOptions = computed(() =>
     <template #header>회의 관련 업무 생성</template>
     <template #default>
       <IssueForm
-        :issue-project="workStore.issueProjectList.find(p => p.pk === form.project)"
+        :issue-project="workStore.issueProject as any"
         :all-projects="workStore.issueProjectList"
         :status-list="statusList"
         :priority-list="priorityList"

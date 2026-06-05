@@ -85,10 +85,15 @@ const goEdit = () => {
 onBeforeMount(async () => {
   if (route.params.meetingId) {
     await fetchMeeting(Number(route.params.meetingId))
+    if (meeting.value?.project_desc) {
+      await workStore.fetchIssueProject(meeting.value.project_desc.slug)
+      await issueStore.fetchAllIssueList(meeting.value.project_desc.slug)
+    }
   }
   await issueStore.fetchStatusList()
   await issueStore.fetchPriorityList()
   await issueStore.fetchTrackerList()
+  await workStore.fetchIssueProjectList({})
 })
 
 watch(
@@ -329,7 +334,7 @@ const refConfirmModal = ref()
     <template #header>회의 관련 업무 생성</template>
     <template #default>
       <IssueForm
-        :issue-project="workStore.issueProjectList.find(p => p.pk === meeting?.project)"
+        :issue-project="workStore.issueProject as any"
         :all-projects="workStore.issueProjectList"
         :status-list="statusList"
         :priority-list="priorityList"
