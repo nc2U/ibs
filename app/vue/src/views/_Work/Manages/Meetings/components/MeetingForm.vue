@@ -1,12 +1,13 @@
 <script lang="ts" setup>
-import { computed, inject, onBeforeMount, ref, watch } from 'vue'
+import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { bgLight } from '@/utils/cssMixins.ts'
 import { useAccount } from '@/store/pinia/account'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useMeeting } from '@/store/pinia/work_meeting.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
 import { timeFormat } from '@/utils/baseMixins.ts'
-import { isValidate, message } from '@/utils/helper.ts'
+import { isValidate } from '@/utils/helper.ts'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import MdEditor from '@/components/MdEditor/Index.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
@@ -171,9 +172,9 @@ const userOptions = computed(() =>
             </CRow>
 
             <CRow class="mb-3">
-              <CFormLabel for="agenda" class="col-sm-2 col-form-label text-right"
-                >아젠다</CFormLabel
-              >
+              <CFormLabel for="agenda" class="col-sm-2 col-form-label text-right">
+                아젠다
+              </CFormLabel>
               <CCol sm="10">
                 <CFormTextarea
                   v-model="form.agenda"
@@ -196,9 +197,9 @@ const userOptions = computed(() =>
             </CRow>
 
             <CRow class="mb-3">
-              <CFormLabel for="decisions" class="col-sm-2 col-form-label text-right"
-                >결정사항</CFormLabel
-              >
+              <CFormLabel for="decisions" class="col-sm-2 col-form-label text-right">
+                결정사항
+              </CFormLabel>
               <CCol sm="10">
                 <CFormTextarea
                   v-model="form.decisions"
@@ -210,9 +211,16 @@ const userOptions = computed(() =>
             </CRow>
 
             <CRow class="mb-3">
-              <CFormLabel for="action_items" class="col-sm-2 col-form-label text-right">조치사항</CFormLabel>
+              <CFormLabel for="action_items" class="col-sm-2 col-form-label text-right">
+                조치사항
+              </CFormLabel>
               <CCol sm="10">
-                <CFormTextarea v-model="form.action_items" id="action_items" rows="4" placeholder="누가, 언제까지, 무엇을 할 것인가?" />
+                <CFormTextarea
+                  v-model="form.action_items"
+                  id="action_items"
+                  rows="4"
+                  placeholder="누가, 언제까지, 무엇을 할 것인가?"
+                />
               </CCol>
             </CRow>
 
@@ -227,20 +235,30 @@ const userOptions = computed(() =>
                       <CTableBody>
                         <CTableRow v-for="issue in meeting.issues" :key="issue.pk">
                           <CTableDataCell style="width: 70%">
-                            <v-icon icon="mdi-checkbox-marked-circle-outline" size="small" class="mr-1" color="success" />
+                            <v-icon
+                              icon="mdi-checkbox-marked-circle-outline"
+                              size="small"
+                              class="mr-1"
+                              color="success"
+                            />
                             {{ issue.subject }}
                           </CTableDataCell>
                           <CTableDataCell style="width: 15%" class="text-center">
                             <v-chip size="x-small" label>{{ issue.status }}</v-chip>
                           </CTableDataCell>
                           <CTableDataCell style="width: 15%" class="text-right">
-                            <span v-if="issue.assigned_to" class="small text-muted">{{ issue.assigned_to.username }}</span>
+                            <span v-if="issue.assigned_to" class="small text-muted">
+                              {{ issue.assigned_to.username }}
+                            </span>
                           </CTableDataCell>
                         </CTableRow>
                       </CTableBody>
                     </CTable>
                   </div>
-                  <div v-else class="text-muted small p-2 text-center border rounded border-dashed mb-2">
+                  <div
+                    v-else
+                    class="text-muted small p-2 text-center border rounded border-dashed mb-2"
+                  >
                     연결된 업무가 없습니다.
                   </div>
                   <v-btn
@@ -252,7 +270,10 @@ const userOptions = computed(() =>
                     <v-icon icon="mdi-plus" size="small" class="mr-1" /> 새 업무 추가
                   </v-btn>
                 </div>
-                <div v-else class="text-muted small p-3 text-center border rounded border-dashed bg-light">
+                <div
+                  v-else
+                  class="text-muted small p-3 text-center border rounded border-dashed bg-light"
+                >
                   <v-icon icon="mdi-information-outline" size="small" class="mr-1" />
                   회의 관련 업무 등록은 회의록을 먼저 <strong>저장</strong>한 후 가능합니다.
                 </div>
@@ -261,11 +282,11 @@ const userOptions = computed(() =>
           </CCol>
 
           <!-- Sidebar Column (Meta Info) -->
-          <CCol md="4" style="background-color: #f6f8fa">
+          <CCol md="4" :class="bgLight" class="p-4">
             <CRow class="mb-3">
-              <CFormLabel for="project" class="col-sm-4 col-form-label text-right"
-                >프로젝트</CFormLabel
-              >
+              <CFormLabel for="project" class="col-sm-4 col-form-label text-right">
+                프로젝트
+              </CFormLabel>
               <CCol sm="8">
                 <CFormSelect v-model="form.project" id="project" :disabled="!!route.params.projId">
                   <option :value="null">회사 본사</option>
@@ -277,9 +298,9 @@ const userOptions = computed(() =>
             </CRow>
 
             <CRow class="mb-3">
-              <CFormLabel for="meeting_date" class="col-sm-4 col-form-label text-right"
-                >회의일시</CFormLabel
-              >
+              <CFormLabel for="meeting_date" class="col-sm-4 col-form-label text-right">
+                회의일시
+              </CFormLabel>
               <CCol sm="8">
                 <DatePicker
                   v-model="form.meeting_date"
@@ -290,9 +311,9 @@ const userOptions = computed(() =>
             </CRow>
 
             <CRow class="mb-3">
-              <CFormLabel for="category" class="col-sm-4 col-form-label text-right"
-                >카테고리</CFormLabel
-              >
+              <CFormLabel for="category" class="col-sm-4 col-form-label text-right">
+                카테고리
+              </CFormLabel>
               <CCol sm="8">
                 <CFormSelect v-model="form.category" id="category">
                   <option :value="null">---------</option>
@@ -332,9 +353,9 @@ const userOptions = computed(() =>
             </CRow>
 
             <CRow class="mb-3">
-              <CFormLabel for="other_attendees" class="col-sm-4 col-form-label text-right"
-                >기타참석</CFormLabel
-              >
+              <CFormLabel for="other_attendees" class="col-sm-4 col-form-label text-right">
+                기타참석
+              </CFormLabel>
               <CCol sm="8">
                 <CFormInput
                   v-model="form.other_attendees"
@@ -372,9 +393,9 @@ const userOptions = computed(() =>
 
         <CRow class="mt-4">
           <CCol class="text-right">
-            <v-btn type="submit" color="primary" variant="flat">{{
-              form.pk ? '확인' : '저장'
-            }}</v-btn>
+            <v-btn type="submit" color="primary" variant="flat">
+              {{ form.pk ? '확인' : '저장' }}
+            </v-btn>
             <v-btn color="secondary" variant="flat" class="ml-2" @click="router.back()">취소</v-btn>
           </CCol>
         </CRow>
