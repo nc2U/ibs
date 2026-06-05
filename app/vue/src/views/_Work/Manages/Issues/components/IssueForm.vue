@@ -3,9 +3,8 @@ import { computed, inject, onBeforeMount, type PropType, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
-import type { User } from '@/store/types/accounts'
-import type { IssueProject, Member, Version } from '@/store/types/work_project.ts'
-import type { Issue, IssueCategory, SimpleCategory, Tracker } from '@/store/types/work_issue.ts'
+import type { IssueProject, Member } from '@/store/types/work_project.ts'
+import type { Issue, SimpleCategory } from '@/store/types/work_issue.ts'
 import { isValidate } from '@/utils/helper.ts'
 import { timeFormat } from '@/utils/baseMixins'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
@@ -15,6 +14,7 @@ import FormInIssueVersion from '@/views/_Work/Manages/Issues/components/FormInIs
 import FormInIssueCategory from '@/views/_Work/Manages/Issues/components/FormInIssueCategory.vue'
 import WatcherAdd from '@/views/_Work/Manages/Issues/components/aside/WatcherAdd.vue'
 import MdEditor from '@/components/MdEditor/Index.vue'
+import { CCard } from '@coreui/vue'
 
 const props = defineProps({
   issueProject: { type: Object as PropType<IssueProject>, default: null },
@@ -229,12 +229,7 @@ defineExpose({ callComment, callReply })
   <CCard id="edit-form">
     <CCardHeader v-if="issue">업무 수정</CCardHeader>
     <CCardBody>
-      <CForm
-        class="needs-validation"
-        novalidate
-        :validated="validated"
-        @submit.prevent="onSubmit"
-      >
+      <CForm class="needs-validation" novalidate :validated="validated" @submit.prevent="onSubmit">
         <div v-if="!issue || isAssigned(issue.project.pk)">
           <CRow class="mb-3">
             <CCol md="8">
@@ -275,10 +270,65 @@ defineExpose({ callComment, callReply })
                   />
                 </CCol>
               </CRow>
+
+              <CRow v-if="!issue" class="mt-3">
+                <div v-for="n in newFiles.length + 1" :key="n">
+                  <CRow :id="`row-fn-${n}`" class="mb-2">
+                    <CFormLabel :for="`file-${n}`" class="col-sm-2 col-form-label text-right">
+                      <span v-if="n === 1">파일</span>
+                    </CFormLabel>
+                    <CCol sm="5">
+                      <CFormInput :id="`file-${n}`" type="file" @change="loadFile" />
+                    </CCol>
+                    <CCol v-if="newFiles[n - 1]?.file" sm="5">
+                      <CInputGroup>
+                        <CFormInput
+                          v-model="newFiles[n - 1].description"
+                          placeholder="부가적인 설명"
+                        />
+                        <CInputGroupText
+                          v-if="newFiles.length === n"
+                          @click="removeFile(n)"
+                          :disabled="true"
+                        >
+                          <v-icon icon="mdi-trash-can-outline" size="16" />
+                        </CInputGroupText>
+                      </CInputGroup>
+                    </CCol>
+                  </CRow>
+                </div>
+
+                <CRow v-if="workManager" class="mb-3">
+                  <CFormLabel for="watcher" class="col-sm-2 col-form-label text-right">
+                    업무 관람자
+                  </CFormLabel>
+                  <CCol sm="10" style="padding-top: 8px">
+                    <span v-for="user in watcherList" :key="user.pk" class="mr-3">
+                      <input
+                        v-model="form.watchers"
+                        :id="`user-${user.pk}`"
+                        :value="user.pk"
+                        type="checkbox"
+                        class="form-check-input"
+                      />
+                      <label :for="`user-${user.pk}`" class="form-label form-check-label ml-2">
+                        {{ user.username }}
+                      </label>
+                    </span>
+                  </CCol>
+                  <CCol class="col-sm-2"></CCol>
+                  <CCol class="form-text">
+                    <v-icon icon="mdi-plus-circle" color="success" size="sm" class="mr-2" />
+                    <router-link to="" @click="refWatcherAdd.callModal()">
+                      추가할 업무 관람자 검색
+                    </router-link>
+                  </CCol>
+                </CRow>
+              </CRow>
             </CCol>
 
-            <CCol md="4" style="background-color: #f6f8fa">
-              <CRow class="mb-3 mt-3">
+            <CCol md="4" class="bg-more-light p-4">
+              <CRow class="mb-3">
                 <CFormLabel for="status" class="col-sm-4 col-form-label text-right">
                   상태
                 </CFormLabel>
@@ -448,59 +498,7 @@ defineExpose({ callComment, callReply })
           </CRow>
         </div>
 
-        <div v-if="!issue">
-          <div v-for="n in newFiles.length + 1" :key="n">
-            <CRow :id="`row-fn-${n}`" class="mb-2">
-              <CFormLabel :for="`file-${n}`" class="col-sm-2 col-form-label text-right">
-                <span v-if="n === 1">파일</span>
-              </CFormLabel>
-              <CCol sm="4">
-                <CFormInput :id="`file-${n}`" type="file" @change="loadFile" />
-              </CCol>
-              <CCol v-if="newFiles[n - 1]?.file" sm="6">
-                <CInputGroup>
-                  <CFormInput v-model="newFiles[n - 1].description" placeholder="부가적인 설명" />
-                  <CInputGroupText
-                    v-if="newFiles.length === n"
-                    @click="removeFile(n)"
-                    :disabled="true"
-                  >
-                    <v-icon icon="mdi-trash-can-outline" size="16" />
-                  </CInputGroupText>
-                </CInputGroup>
-              </CCol>
-            </CRow>
-          </div>
-
-          <CRow v-if="workManager" class="mb-3">
-            <CFormLabel for="watcher" class="col-sm-2 col-form-label text-right">
-              업무 관람자
-            </CFormLabel>
-            <CCol sm="10" style="padding-top: 8px">
-              <span v-for="user in watcherList" :key="user.pk" class="mr-3">
-                <input
-                  v-model="form.watchers"
-                  :id="`user-${user.pk}`"
-                  :value="user.pk"
-                  type="checkbox"
-                  class="form-check-input"
-                />
-                <label :for="`user-${user.pk}`" class="form-label form-check-label ml-2">
-                  {{ user.username }}
-                </label>
-              </span>
-            </CCol>
-            <CCol class="col-sm-2"></CCol>
-            <CCol class="form-text">
-              <v-icon icon="mdi-plus-circle" color="success" size="sm" class="mr-2" />
-              <router-link to="" @click="refWatcherAdd.callModal()">
-                추가할 업무 관람자 검색
-              </router-link>
-            </CCol>
-          </CRow>
-        </div>
-
-        <div v-else>
+        <div v-if="issue">
           <CRow class="mb-3">
             <CCol>
               <h6>댓글</h6>
@@ -519,20 +517,10 @@ defineExpose({ callComment, callReply })
 
         <CRow>
           <CCol class="text-right">
-            <v-btn
-              type="submit"
-              color="primary"
-              variant="flat"
-              :disabled="formsCheck"
-            >
+            <v-btn type="submit" color="primary" variant="flat" :disabled="formsCheck">
               확인
             </v-btn>
-            <v-btn
-              color="secondary"
-              variant="flat"
-              class="ml-2"
-              @click="emit('close-form')"
-            >
+            <v-btn color="secondary" variant="flat" class="ml-2" @click="emit('close-form')">
               취소
             </v-btn>
           </CCol>

@@ -181,12 +181,16 @@ a.page-link,
   background-color: lightyellow !important;
 }
 
+.bg-more-light {
+  background-color: #f8f9fa !important;
+}
+
 .dark-theme {
   .accent {
     background-color: #393907 !important;
   }
 
-  .bg-light {
+  .bg-more-light {
     background-color: #2E2F39 !important;
   }
 
