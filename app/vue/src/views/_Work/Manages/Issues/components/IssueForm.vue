@@ -45,7 +45,7 @@ const form = ref({
   assigned_to: null as number | null,
   fixed_version: null as number | null,
   category: null as number | null,
-  expected_duration: null as string | null,
+  expected_duration: '',
   done_ratio: 0,
   watchers: [] as number[],
   files: [] as any[],
@@ -210,7 +210,7 @@ onBeforeMount(() => {
     form.value.assigned_to = props.issue.assigned_to?.pk ?? null
     form.value.fixed_version = props.issue.fixed_version?.pk ?? null
     form.value.category = props.issue.category
-    form.value.expected_duration = props.issue.expected_duration
+    form.value.expected_duration = props.issue.expected_duration ?? ''
     form.value.done_ratio = props.issue.done_ratio
     form.value.files = props.issue.files
   } else if (route.query.parent) {
@@ -455,6 +455,7 @@ defineExpose({ callComment, callReply })
                 </CFormLabel>
                 <CCol sm="8">
                   <CFormSelect v-model="form.expected_duration" id="expected_duration">
+                    <option value="">---------</option>
                     <option v-for="dur in durationOptions" :value="dur.value" :key="dur.value">
                       {{ dur.label }}
                     </option>
