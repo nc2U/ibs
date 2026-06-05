@@ -152,7 +152,7 @@ const userOptions = computed(() =>
 
 <template>
   <CCard>
-    <CCardHeader>{{ form.pk ? '회의록 수정' : '새 회의록' }}</CCardHeader>
+    <CCardHeader>{{ !form?.pk ? '새 회의록' : '회의록 수정' }}</CCardHeader>
     <CCardBody>
       <CForm class="needs-validation" novalidate :validated="validated" @submit.prevent="onSubmit">
         <CRow class="mb-3">
@@ -180,7 +180,7 @@ const userOptions = computed(() =>
                   v-model="form.agenda"
                   id="agenda"
                   rows="3"
-                  placeholder="논의할 주요 의제"
+                  placeholder="논의할 주요 의제를 입력하세요"
                 />
               </CCol>
             </CRow>
@@ -190,7 +190,7 @@ const userOptions = computed(() =>
               <CCol sm="10">
                 <MdEditor
                   v-model="form.content"
-                  placeholder="회의 진행 내용"
+                  placeholder="회의 진행 내용을 입력하세요"
                   style="height: 400px"
                 />
               </CCol>
@@ -205,7 +205,7 @@ const userOptions = computed(() =>
                   v-model="form.decisions"
                   id="decisions"
                   rows="4"
-                  placeholder="확정된 합의 내용"
+                  placeholder="확정된 합의 내용을 입력하세요"
                 />
               </CCol>
             </CRow>

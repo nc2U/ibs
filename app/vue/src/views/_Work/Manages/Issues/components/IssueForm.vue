@@ -227,7 +227,7 @@ defineExpose({ callComment, callReply })
 
 <template>
   <CCard id="edit-form">
-    <CCardHeader v-if="issue">업무 수정</CCardHeader>
+    <CCardHeader>{{ !issue?.pk ? '새 업무' : '업무 수정' }}</CCardHeader>
     <CCardBody>
       <CForm class="needs-validation" novalidate :validated="validated" @submit.prevent="onSubmit">
         <div v-if="!issue || isAssigned(issue.project.pk)">
@@ -254,7 +254,12 @@ defineExpose({ callComment, callReply })
                   제목
                 </CFormLabel>
                 <CCol sm="10">
-                  <CFormInput v-model="form.subject" id="subject" required />
+                  <CFormInput
+                    v-model="form.subject"
+                    id="subject"
+                    required
+                    placeholder="업무 제목을 입력하세요"
+                  />
                 </CCol>
               </CRow>
 
@@ -265,7 +270,7 @@ defineExpose({ callComment, callReply })
                 <CCol sm="10">
                   <MdEditor
                     v-model="form.description"
-                    placeholder="Description"
+                    placeholder="업무 내용을 입력하세요(마크다운 문법 지원)"
                     style="height: 350px"
                   />
                 </CCol>
