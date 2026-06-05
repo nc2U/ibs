@@ -23,7 +23,7 @@ const issueStore = useIssue()
 const company = inject<ComputedRef<Company | null>>('company')
 
 const meeting = computed(() => meetingStore.meeting)
-const issueProjects = computed(() => workStore.issueProjectList)
+const allProjects = computed(() => workStore.getAllProjects)
 const users = computed(() => accStore.usersList)
 const categories = computed(() => meetingStore.categoryList)
 
@@ -90,7 +90,16 @@ const createRelatedIssue = async (payload: any) => {
       if (val === null || val === undefined) continue // Skip null/undefined values
 
       // Skip empty strings for foreign key/numeric fields to prevent backend 500 errors
-      const fkFields = ['project', 'tracker', 'status', 'priority', 'category', 'fixed_version', 'parent', 'assigned_to']
+      const fkFields = [
+        'project',
+        'tracker',
+        'status',
+        'priority',
+        'category',
+        'fixed_version',
+        'parent',
+        'assigned_to',
+      ]
       if (fkFields.includes(key) && val === '') continue
 
       if (key === 'watchers' || key === 'files')
@@ -134,21 +143,19 @@ const fetchMeeting = async (pk: number) => {
       attendees: meeting.value.attendees,
       other_attendees: meeting.value.other_attendees,
     }
-    if (meeting.value.project_desc) {
-      await workStore.fetchIssueProject(meeting.value.project_desc.slug)
+    if (meeting.value.project_desc)
       await issueStore.fetchAllIssueList(meeting.value.project_desc.slug)
-    }
   }
 }
 
 onBeforeMount(async () => {
   await accStore.fetchUsersList()
-  await workStore.fetchIssueProjectList({})
+  await workStore.fetchAllIssueProjectList()
   await issueStore.fetchStatusList()
   await issueStore.fetchPriorityList()
   await issueStore.fetchTrackerList()
   if (route.params.projId) {
-    const proj = workStore.issueProjectList.find(p => p.slug === route.params.projId)
+    const proj = workStore.AllIssueProjects.find(p => p.slug === route.params.projId)
     if (proj) {
       form.value.project = proj.pk as number
       await issueStore.fetchAllIssueList(proj.slug)
@@ -167,11 +174,8 @@ watch(
   () => form.value.project,
   async newProjPk => {
     if (newProjPk) {
-      const proj = workStore.issueProjectList.find(p => p.pk === newProjPk)
-      if (proj) {
-        await workStore.fetchIssueProject(proj.slug)
-        await issueStore.fetchAllIssueList(proj.slug)
-      }
+      const proj = workStore.AllIssueProjects.find(p => p.pk === newProjPk)
+      if (proj) await issueStore.fetchAllIssueList(proj.slug)
     }
   },
 )
@@ -344,8 +348,11 @@ const userOptions = computed(() =>
               <CCol sm="8">
                 <CFormSelect v-model="form.project" id="project" :disabled="!!route.params.projId">
                   <option :value="null">회사 본사</option>
-                  <option v-for="proj in issueProjects" :key="proj.pk" :value="proj.pk">
-                    {{ proj.name }}
+                  <option v-for="proj in allProjects" :key="proj.pk" :value="proj.pk">
+                    <span v-if="!!proj.depth && proj.parent_visible">
+                      {{ '&nbsp;'.repeat(proj.depth) }} »
+                    </span>
+                    {{ proj.label }}
                   </option>
                 </CFormSelect>
               </CCol>
@@ -437,8 +444,8 @@ const userOptions = computed(() =>
     <template #header>회의 관련 업무 생성</template>
     <template #default>
       <IssueForm
-        :issue-project="workStore.issueProjectList.find(p => p.pk === form.project)"
-        :all-projects="workStore.issueProjectList"
+        :issue-project="workStore.AllIssueProjects.find(p => p.pk === form.project)"
+        :all-projects="allProjects"
         :status-list="statusList"
         :priority-list="priorityList"
         :get-issues="getIssues"

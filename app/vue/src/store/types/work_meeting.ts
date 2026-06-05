@@ -11,6 +11,7 @@ export interface MeetingCategory {
 
 export interface SimpleIssueInMeeting {
   pk: number
+  project: string
   subject: string
   status: string
   assigned_to: SimpleUser | null

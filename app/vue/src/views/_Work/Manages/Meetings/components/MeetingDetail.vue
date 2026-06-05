@@ -328,8 +328,8 @@ const refConfirmModal = ref()
                   <CTableDataCell>
                     <router-link
                       :to="{
-                        name: route.params.projId ? '(업무) - 보기' : '업무 - 보기',
-                        params: { projId: route.params.projId, issueId: issue.pk },
+                        name: '(업무) - 보기',
+                        params: { projId: issue.project, issueId: issue.pk },
                       }"
                     >
                       {{ issue.subject }}

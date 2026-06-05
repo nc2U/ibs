@@ -21,12 +21,13 @@ class MeetingFileSerializer(serializers.ModelSerializer):
 
 
 class IssueInMeetingSerializer(serializers.ModelSerializer):
+    project = serializers.SlugRelatedField(read_only=True, slug_field='slug')
     status = serializers.SlugRelatedField(read_only=True, slug_field='name')
     assigned_to = SimpleUserSerializer(read_only=True)
 
     class Meta:
         model = Issue
-        fields = ('pk', 'subject', 'status', 'assigned_to', 'closed')
+        fields = ('pk', 'project', 'subject', 'status', 'assigned_to', 'closed')
 
 
 class MeetingSerializer(serializers.ModelSerializer):

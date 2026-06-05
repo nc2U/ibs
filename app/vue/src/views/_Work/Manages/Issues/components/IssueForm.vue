@@ -337,7 +337,10 @@ defineExpose({ callComment, callReply })
                   >
                     <option value="">---------</option>
                     <option v-for="proj in allProjects" :key="proj.pk" :value="proj.slug">
-                      {{ proj.name }}
+                      <span v-if="!!proj.depth && proj.parent_visible">
+                        {{ '&nbsp;'.repeat(proj.depth) }} »
+                      </span>
+                      {{ proj.label }}
                     </option>
                   </CFormSelect>
                 </CCol>
