@@ -1,7 +1,6 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { bgLight } from '@/utils/cssMixins.ts'
 import { useAccount } from '@/store/pinia/account'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useMeeting } from '@/store/pinia/work_meeting.ts'
@@ -85,21 +84,22 @@ const createRelatedIssue = async (payload: any) => {
     getData.meeting = form.value.pk
 
     for (const key in getData) {
+      const val = getData[key]
+      if (val === null || val === undefined) continue // Skip null/undefined values
+
       if (key === 'watchers' || key === 'files')
-        getData[key]?.forEach((val: number | string) => formData.append(key, JSON.stringify(val)))
+        val?.forEach((v: number | string) => formData.append(key, JSON.stringify(v)))
       else if (key === 'newFiles') {
-        getData[key].forEach((val: any) => {
-          formData.append('new_files', val.file as string | Blob)
-          formData.append('descriptions', val.description ?? '')
+        val.forEach((v: any) => {
+          formData.append('new_files', v.file as string | Blob)
+          formData.append('descriptions', v.description ?? '')
         })
       } else {
-        const val = getData[key]
         if (key === 'project' && !val) {
-          // If project is missing in payload, try to get it from the meeting object or store
           const projectSlug = workStore.issueProject?.slug || ''
           formData.append(key, projectSlug)
         } else {
-          formData.append(key, val === null || val === undefined ? '' : (val as string))
+          formData.append(key, val as string)
         }
       }
     }

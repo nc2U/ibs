@@ -1,12 +1,11 @@
 <script lang="ts" setup>
-import { computed, inject, onBeforeMount, ref, watch } from 'vue'
+import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useMeeting } from '@/store/pinia/work_meeting.ts'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
 import { elapsedTime, timeFormat } from '@/utils/baseMixins.ts'
 import { markdownRender } from '@/utils/helper.ts'
-import type { Meeting } from '@/store/types/work_meeting.ts'
 import FileDisplay from '@/views/_Work/components/atomics/FileDisplay.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
@@ -52,26 +51,29 @@ const createRelatedIssue = async (payload: any) => {
     getData.meeting = meeting.value.pk
 
     for (const key in getData) {
+      const val = getData[key]
+      if (val === null || val === undefined) continue
+
       if (key === 'watchers' || key === 'files')
-        getData[key]?.forEach((val: number | string) => formData.append(key, JSON.stringify(val)))
+        val?.forEach((v: number | string) => formData.append(key, JSON.stringify(v)))
       else if (key === 'newFiles') {
-        getData[key].forEach((val: any) => {
-          formData.append('new_files', val.file as string | Blob)
-          formData.append('descriptions', val.description ?? '')
+        val.forEach((v: any) => {
+          formData.append('new_files', v.file as string | Blob)
+          formData.append('descriptions', v.description ?? '')
         })
       } else {
-        const val = getData[key]
         if (key === 'project' && !val) {
-          const projectSlug = meeting.value?.project_desc?.slug || workStore.issueProject?.slug || ''
+          const projectSlug =
+            meeting.value?.project_desc?.slug || workStore.issueProject?.slug || ''
           formData.append(key, projectSlug)
         } else {
-          formData.append(key, val === null || val === undefined ? '' : (val as string))
+          formData.append(key, val as string)
         }
       }
     }
 
     await issueStore.createIssue(formData)
-    await meetingStore.fetchMeeting(meeting.value.pk) // Refresh meeting to get updated issues list
+    await meetingStore.fetchMeeting(meeting.value.pk)
     refIssueModal.value.close()
   }
 }
@@ -79,7 +81,7 @@ const createRelatedIssue = async (payload: any) => {
 const deleteMeeting = async () => {
   if (meeting.value) {
     await meetingStore.deleteMeeting(meeting.value.pk, route.params.projId as string)
-    router.push({ name: route.params.projId ? '(회의)' : '회의' })
+    await router.push({ name: route.params.projId ? '(회의)' : '회의' })
   }
 }
 
@@ -136,25 +138,23 @@ const refConfirmModal = ref()
         <h5>
           <v-icon icon="mdi-account-group" class="mr-2" />
           <span>회의록 #{{ meeting.pk }}</span>
-          <v-badge
-            :color="statusColor"
-            :content="statusText"
-            inline
-            rounded="1"
-            class="ml-2"
-          />
+          <v-badge :color="statusColor" :content="statusText" inline rounded="1" class="ml-2" />
         </h5>
       </CCol>
       <CCol class="text-right">
         <v-btn color="info" size="small" variant="outlined" class="mr-2" @click="goEdit">
           수정
         </v-btn>
-        <v-btn color="danger" size="small" variant="outlined" class="mr-2" @click="refConfirmModal.callModal()">
+        <v-btn
+          color="danger"
+          size="small"
+          variant="outlined"
+          class="mr-2"
+          @click="refConfirmModal.callModal()"
+        >
           삭제
         </v-btn>
-        <v-btn color="secondary" size="small" variant="outlined" @click="goList">
-          목록으로
-        </v-btn>
+        <v-btn color="secondary" size="small" variant="outlined" @click="goList"> 목록으로 </v-btn>
       </CCol>
     </CRow>
 
@@ -245,14 +245,20 @@ const refConfirmModal = ref()
           <h6 class="title mb-2 text-primary">
             <v-icon icon="mdi-bullseye-arrow" size="small" class="mr-1" /> 회의 아젠다
           </h6>
-          <div class="markdown-content bg-white p-3 border rounded" v-html="markdownRender(meeting.agenda)" />
+          <div
+            class="markdown-content bg-white p-3 border rounded"
+            v-html="markdownRender(meeting.agenda)"
+          />
         </div>
 
         <div v-if="meeting.content" class="mb-5">
           <h6 class="title mb-2 text-primary">
             <v-icon icon="mdi-text-box-outline" size="small" class="mr-1" /> 회의 내용
           </h6>
-          <div class="markdown-content bg-white p-3 border rounded" v-html="markdownRender(meeting.content)" />
+          <div
+            class="markdown-content bg-white p-3 border rounded"
+            v-html="markdownRender(meeting.content)"
+          />
         </div>
 
         <CRow>
@@ -261,15 +267,22 @@ const refConfirmModal = ref()
               <h6 class="title mb-2 text-success">
                 <v-icon icon="mdi-check-circle" size="small" class="mr-1" /> 주요 결정 사항
               </h6>
-              <div class="markdown-content bg-light-success p-3 border border-success rounded text-success" v-html="markdownRender(meeting.decisions)" />
+              <div
+                class="markdown-content bg-light-success p-3 border border-success rounded text-success"
+                v-html="markdownRender(meeting.decisions)"
+              />
             </div>
           </CCol>
           <CCol md="6" v-if="meeting.action_items">
             <div class="mb-4">
               <h6 class="title mb-2 text-warning">
-                <v-icon icon="mdi-clipboard-list-outline" size="small" class="mr-1" /> 후속 조치 사항
+                <v-icon icon="mdi-clipboard-list-outline" size="small" class="mr-1" /> 후속 조치
+                사항
               </h6>
-              <div class="markdown-content bg-light-warning p-3 border border-warning rounded text-warning" v-html="markdownRender(meeting.action_items)" />
+              <div
+                class="markdown-content bg-light-warning p-3 border border-warning rounded text-warning"
+                v-html="markdownRender(meeting.action_items)"
+              />
             </div>
           </CCol>
         </CRow>
@@ -278,7 +291,8 @@ const refConfirmModal = ref()
           <CRow class="mb-2">
             <CCol>
               <h6 class="title">
-                <v-icon icon="mdi-checkbox-marked-circle-outline" size="small" class="mr-1" /> 관련 업무
+                <v-icon icon="mdi-checkbox-marked-circle-outline" size="small" class="mr-1" />
+                관련 업무
               </h6>
             </CCol>
             <CCol class="text-right">
@@ -308,12 +322,19 @@ const refConfirmModal = ref()
                 <CTableRow v-for="issue in meeting.issues" :key="issue.pk">
                   <CTableDataCell class="text-center small">{{ issue.pk }}</CTableDataCell>
                   <CTableDataCell>
-                    <router-link :to="{ name: route.params.projId ? '(업무) - 보기' : '업무 - 보기', params: { projId: route.params.projId, issueId: issue.pk } }">
+                    <router-link
+                      :to="{
+                        name: route.params.projId ? '(업무) - 보기' : '업무 - 보기',
+                        params: { projId: route.params.projId, issueId: issue.pk },
+                      }"
+                    >
                       {{ issue.subject }}
                     </router-link>
                   </CTableDataCell>
                   <CTableDataCell class="text-center">
-                    <v-chip size="x-small" label :color="issue.closed ? 'success' : 'primary'">{{ issue.status }}</v-chip>
+                    <v-chip size="x-small" label :color="issue.closed ? 'success' : 'primary'">{{
+                      issue.status
+                    }}</v-chip>
                   </CTableDataCell>
                   <CTableDataCell class="text-center small">
                     {{ issue.assigned_to?.username || '-' }}
@@ -330,7 +351,9 @@ const refConfirmModal = ref()
         <v-divider v-if="meeting.files.length" class="my-4" />
 
         <div v-if="meeting.files.length">
-          <h6 class="title mb-3"><v-icon icon="mdi-paperclip" size="small" class="mr-1" /> 첨부 파일</h6>
+          <h6 class="title mb-3">
+            <v-icon icon="mdi-paperclip" size="small" class="mr-1" /> 첨부 파일
+          </h6>
           <CRow>
             <FileDisplay
               v-for="file in meeting.files"
@@ -383,7 +406,8 @@ const refConfirmModal = ref()
   :deep(p) {
     margin-bottom: 0.5rem;
   }
-  :deep(ul), :deep(ol) {
+  :deep(ul),
+  :deep(ol) {
     padding-left: 1.5rem;
     margin-bottom: 0.5rem;
   }

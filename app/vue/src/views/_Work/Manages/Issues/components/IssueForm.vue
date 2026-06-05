@@ -14,7 +14,6 @@ import FormInIssueVersion from '@/views/_Work/Manages/Issues/components/FormInIs
 import FormInIssueCategory from '@/views/_Work/Manages/Issues/components/FormInIssueCategory.vue'
 import WatcherAdd from '@/views/_Work/Manages/Issues/components/aside/WatcherAdd.vue'
 import MdEditor from '@/components/MdEditor/Index.vue'
-import { CCard } from '@coreui/vue'
 
 const props = defineProps({
   issueProject: { type: Object as PropType<IssueProject>, default: null },
@@ -242,6 +241,7 @@ defineExpose({ callComment, callReply })
                 </CFormLabel>
                 <CCol sm="4">
                   <CFormSelect v-model="form.tracker" id="tracker" required>
+                    <option :value="null">---------</option>
                     <option v-for="tracker in trackers" :value="tracker.pk" :key="tracker.pk">
                       {{ tracker.name }}
                     </option>
