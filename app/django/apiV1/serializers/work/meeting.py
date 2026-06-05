@@ -44,10 +44,10 @@ class MeetingSerializer(serializers.ModelSerializer):
                   'status', 'title', 'agenda', 'content', 'decisions', 'action_items',
                   'meeting_date', 'attendees', 'attendees_desc',
                   'other_attendees', 'files', 'issues', 'created', 'updated', 'creator', 'updater')
-        read_only_fields = ('company',)
+        # read_only_fields = ('company',)
 
     def create(self, validated_data):
-        # project가 있으면 company를 자동 설정 (모델 save에서도 처리하지만 시리얼라이저에서도 보강)
+        # project가 있으면 company를 해당 프로젝트의 회사로 강제 설정
         project = validated_data.get('project')
         if project:
             validated_data['company'] = project.company

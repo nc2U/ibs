@@ -39,6 +39,10 @@ const statusText = computed(() => {
 
 const fetchMeeting = async (pk: number) => {
   await meetingStore.fetchMeeting(pk)
+  if (meeting.value?.project_desc) {
+    await workStore.fetchIssueProject(meeting.value.project_desc.slug)
+    await issueStore.fetchAllIssueList(meeting.value.project_desc.slug)
+  }
 }
 
 const refIssueModal = ref()
@@ -54,6 +58,10 @@ const createRelatedIssue = async (payload: any) => {
       const val = getData[key]
       if (val === null || val === undefined) continue
 
+      // Skip empty strings for foreign key/numeric fields to prevent backend 500 errors
+      const fkFields = ['project', 'tracker', 'status', 'priority', 'category', 'fixed_version', 'parent', 'assigned_to']
+      if (fkFields.includes(key) && val === '') continue
+
       if (key === 'watchers' || key === 'files')
         val?.forEach((v: number | string) => formData.append(key, JSON.stringify(v)))
       else if (key === 'newFiles') {
@@ -65,7 +73,7 @@ const createRelatedIssue = async (payload: any) => {
         if (key === 'project' && !val) {
           const projectSlug =
             meeting.value?.project_desc?.slug || workStore.issueProject?.slug || ''
-          formData.append(key, projectSlug)
+          if (projectSlug) formData.append(key, projectSlug)
         } else {
           formData.append(key, val as string)
         }
@@ -110,10 +118,6 @@ const goEdit = () => {
 onBeforeMount(async () => {
   if (route.params.meetingId) {
     await fetchMeeting(Number(route.params.meetingId))
-    if (meeting.value?.project_desc) {
-      await workStore.fetchIssueProject(meeting.value.project_desc.slug)
-      await issueStore.fetchAllIssueList(meeting.value.project_desc.slug)
-    }
   }
   await issueStore.fetchStatusList()
   await issueStore.fetchPriorityList()
@@ -380,7 +384,7 @@ const refConfirmModal = ref()
     <template #header>회의 관련 업무 생성</template>
     <template #default>
       <IssueForm
-        :issue-project="workStore.issueProject as any"
+        :issue-project="meeting?.project_desc as any"
         :all-projects="workStore.issueProjectList"
         :status-list="statusList"
         :priority-list="priorityList"

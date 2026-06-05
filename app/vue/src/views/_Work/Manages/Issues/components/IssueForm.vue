@@ -325,6 +325,25 @@ defineExpose({ callComment, callReply })
 
             <CCol md="4" class="bg-more-light p-4">
               <CRow class="mb-3">
+                <CFormLabel for="issue-project" class="col-sm-4 col-form-label text-right">
+                  프로젝트
+                </CFormLabel>
+                <CCol sm="8">
+                  <CFormSelect
+                    v-model="form.project"
+                    id="issue-project"
+                    required
+                    :disabled="!!props.issueProject || !!issue"
+                  >
+                    <option value="">---------</option>
+                    <option v-for="proj in allProjects" :key="proj.pk" :value="proj.slug">
+                      {{ proj.name }}
+                    </option>
+                  </CFormSelect>
+                </CCol>
+              </CRow>
+
+              <CRow class="mb-3">
                 <CFormLabel for="status" class="col-sm-4 col-form-label text-right">
                   상태
                 </CFormLabel>

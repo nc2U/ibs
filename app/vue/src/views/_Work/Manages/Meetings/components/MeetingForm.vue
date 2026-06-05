@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, ref, watch } from 'vue'
+import { computed, inject, onBeforeMount, ref, watch, type ComputedRef } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAccount } from '@/store/pinia/account'
 import { useWork } from '@/store/pinia/work_project.ts'
@@ -7,6 +7,7 @@ import { useMeeting } from '@/store/pinia/work_meeting.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
 import { dateFormat } from '@/utils/baseMixins.ts'
 import { isValidate } from '@/utils/helper.ts'
+import type { Company } from '@/store/types/settings'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import MdEditor from '@/components/MdEditor/Index.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
@@ -18,6 +19,8 @@ const accStore = useAccount()
 const workStore = useWork()
 const meetingStore = useMeeting()
 const issueStore = useIssue()
+
+const company = inject<ComputedRef<Company | null>>('company')
 
 const meeting = computed(() => meetingStore.meeting)
 const issueProjects = computed(() => workStore.issueProjectList)
@@ -32,7 +35,7 @@ const validated = ref(false)
 const form = ref({
   pk: null as number | null,
   project: null as number | null,
-  company: 1, // Default company
+  company: company?.value?.pk as number,
   category: null as number | null,
   status: '1' as '1' | '2' | '3',
   title: '',
@@ -86,6 +89,10 @@ const createRelatedIssue = async (payload: any) => {
       const val = getData[key]
       if (val === null || val === undefined) continue // Skip null/undefined values
 
+      // Skip empty strings for foreign key/numeric fields to prevent backend 500 errors
+      const fkFields = ['project', 'tracker', 'status', 'priority', 'category', 'fixed_version', 'parent', 'assigned_to']
+      if (fkFields.includes(key) && val === '') continue
+
       if (key === 'watchers' || key === 'files')
         val?.forEach((v: number | string) => formData.append(key, JSON.stringify(v)))
       else if (key === 'newFiles') {
@@ -96,7 +103,7 @@ const createRelatedIssue = async (payload: any) => {
       } else {
         if (key === 'project' && !val) {
           const projectSlug = workStore.issueProject?.slug || ''
-          formData.append(key, projectSlug)
+          if (projectSlug) formData.append(key, projectSlug)
         } else {
           formData.append(key, val as string)
         }
@@ -126,6 +133,10 @@ const fetchMeeting = async (pk: number) => {
       meeting_date: meeting.value.meeting_date ? dateFormat(meeting.value.meeting_date) : '',
       attendees: meeting.value.attendees,
       other_attendees: meeting.value.other_attendees,
+    }
+    if (meeting.value.project_desc) {
+      await workStore.fetchIssueProject(meeting.value.project_desc.slug)
+      await issueStore.fetchAllIssueList(meeting.value.project_desc.slug)
     }
   }
 }
@@ -426,7 +437,7 @@ const userOptions = computed(() =>
     <template #header>회의 관련 업무 생성</template>
     <template #default>
       <IssueForm
-        :issue-project="workStore.issueProject as any"
+        :issue-project="workStore.issueProjectList.find(p => p.pk === form.project)"
         :all-projects="workStore.issueProjectList"
         :status-list="statusList"
         :priority-list="priorityList"
