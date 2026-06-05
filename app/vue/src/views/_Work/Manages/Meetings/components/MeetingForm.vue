@@ -79,8 +79,32 @@ const refIssueModal = ref()
 
 const createRelatedIssue = async (payload: any) => {
   if (form.value.pk) {
-    payload.meeting = form.value.pk
-    await issueStore.createIssue(payload)
+    const { pk, ...getData } = payload
+    const formData = new FormData()
+
+    getData.meeting = form.value.pk
+
+    for (const key in getData) {
+      if (key === 'watchers' || key === 'files')
+        getData[key]?.forEach((val: number | string) => formData.append(key, JSON.stringify(val)))
+      else if (key === 'newFiles') {
+        getData[key].forEach((val: any) => {
+          formData.append('new_files', val.file as string | Blob)
+          formData.append('descriptions', val.description ?? '')
+        })
+      } else {
+        const val = getData[key]
+        if (key === 'project' && !val) {
+          // If project is missing in payload, try to get it from the meeting object or store
+          const projectSlug = workStore.issueProject?.slug || ''
+          formData.append(key, projectSlug)
+        } else {
+          formData.append(key, val === null || val === undefined ? '' : (val as string))
+        }
+      }
+    }
+
+    await issueStore.createIssue(formData)
     await meetingStore.fetchMeeting(form.value.pk) // Refresh meeting to get updated issues list
     refIssueModal.value.close()
   }

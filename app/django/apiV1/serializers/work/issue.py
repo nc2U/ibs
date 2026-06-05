@@ -82,7 +82,7 @@ class IssueSerializer(serializers.ModelSerializer):
                   'description', 'category', 'fixed_version', 'assigned_to',
                   'parent', 'watchers', 'is_private', 'expected_duration', 'expected_duration_display',
                   'start_date', 'due_date', 'done_ratio', 'closed', 'files', 'sub_issues',
-                  'related_issues', 'creator', 'updater', 'created', 'updated')
+                  'related_issues', 'creator', 'updater', 'created', 'updated', 'meeting')
 
     @staticmethod
     def get_sub_issues(obj):

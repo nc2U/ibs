@@ -198,6 +198,9 @@ const createCategory = (payload: any) => issueStore.createCategory(payload)
 const createVersion = (payload: any) => workStore.createVersion(payload)
 
 onBeforeMount(() => {
+  if (props.issueProject) {
+    form.value.project = props.issueProject.slug as string
+  }
   if (props.issue) {
     form.value.pk = props.issue.pk
     form.value.project = props.issue.project.slug
