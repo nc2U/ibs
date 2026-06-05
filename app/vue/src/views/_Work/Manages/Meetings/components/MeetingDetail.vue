@@ -3,18 +3,26 @@ import { computed, inject, onBeforeMount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useMeeting } from '@/store/pinia/work_meeting.ts'
 import { useWork } from '@/store/pinia/work_project.ts'
-import { timeFormat } from '@/utils/baseMixins.ts'
+import { useIssue } from '@/store/pinia/work_issue.ts'
+import { elapsedTime, timeFormat } from '@/utils/baseMixins.ts'
 import { markdownRender } from '@/utils/helper.ts'
 import type { Meeting } from '@/store/types/work_meeting.ts'
 import FileDisplay from '@/views/_Work/components/atomics/FileDisplay.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
+import FormModal from '@/components/Modals/FormModal.vue'
+import IssueForm from '@/views/_Work/Manages/Issues/components/IssueForm.vue'
 
 const route = useRoute()
 const router = useRouter()
 const meetingStore = useMeeting()
 const workStore = useWork()
+const issueStore = useIssue()
 
 const meeting = computed(() => meetingStore.meeting)
+
+const statusList = computed(() => issueStore.statusList)
+const priorityList = computed(() => issueStore.priorityList)
+const getIssues = computed(() => issueStore.getIssues)
 
 const statusColor = computed(() => {
   if (meeting.value?.status === '1') return 'primary'
@@ -34,10 +42,29 @@ const fetchMeeting = async (pk: number) => {
   await meetingStore.fetchMeeting(pk)
 }
 
+const refIssueModal = ref()
+
+const createRelatedIssue = async (payload: any) => {
+  if (meeting.value) {
+    payload.meeting = meeting.value.pk
+    await issueStore.createIssue(payload)
+    await meetingStore.fetchMeeting(meeting.value.pk) // Refresh meeting to get updated issues list
+    refIssueModal.value.close()
+  }
+}
+
 const deleteMeeting = async () => {
   if (meeting.value) {
     await meetingStore.deleteMeeting(meeting.value.pk, route.params.projId as string)
     router.push({ name: route.params.projId ? '(회의)' : '회의' })
+  }
+}
+
+const goList = () => {
+  if (route.params.projId) {
+    router.push({ name: '(회의)', params: { projId: route.params.projId } })
+  } else {
+    router.push({ name: '회의' })
   }
 }
 
@@ -55,10 +82,13 @@ const goEdit = () => {
   }
 }
 
-onBeforeMount(() => {
+onBeforeMount(async () => {
   if (route.params.meetingId) {
-    fetchMeeting(Number(route.params.meetingId))
+    await fetchMeeting(Number(route.params.meetingId))
   }
+  await issueStore.fetchStatusList()
+  await issueStore.fetchPriorityList()
+  await issueStore.fetchTrackerList()
 })
 
 watch(
@@ -73,11 +103,11 @@ const refConfirmModal = ref()
 
 <template>
   <div v-if="meeting" class="p-3">
-    <CRow class="mb-4">
+    <CRow class="mb-2">
       <CCol>
-        <h4>
+        <h5>
           <v-icon icon="mdi-account-group" class="mr-2" />
-          {{ meeting.title }}
+          <span>회의록 #{{ meeting.pk }}</span>
           <v-badge
             :color="statusColor"
             :content="statusText"
@@ -85,103 +115,207 @@ const refConfirmModal = ref()
             rounded="1"
             class="ml-2"
           />
-        </h4>
+        </h5>
       </CCol>
       <CCol class="text-right">
         <v-btn color="info" size="small" variant="outlined" class="mr-2" @click="goEdit">
           수정
         </v-btn>
-        <v-btn color="danger" size="small" variant="outlined" @click="refConfirmModal.callModal()">
+        <v-btn color="danger" size="small" variant="outlined" class="mr-2" @click="refConfirmModal.callModal()">
           삭제
+        </v-btn>
+        <v-btn color="secondary" size="small" variant="outlined" @click="goList">
+          목록으로
         </v-btn>
       </CCol>
     </CRow>
 
-    <CTable small striped borderless class="mb-4 border-top">
-      <CTableBody>
-        <CTableRow>
-          <CTableHeaderCell style="width: 15%">프로젝트</CTableHeaderCell>
-          <CTableDataCell style="width: 35%">
-            {{ meeting.project_desc?.name || '회사 본사' }}
-          </CTableDataCell>
-          <CTableHeaderCell style="width: 15%">회의 일시</CTableHeaderCell>
-          <CTableDataCell style="width: 35%">
-            {{ meeting.meeting_date ? timeFormat(meeting.meeting_date) : '-' }}
-          </CTableDataCell>
-        </CTableRow>
-        <CTableRow>
-          <CTableHeaderCell>카테고리</CTableHeaderCell>
-          <CTableDataCell>{{ meeting.category_desc?.name || '-' }}</CTableDataCell>
-          <CTableHeaderCell>상태</CTableHeaderCell>
-          <CTableDataCell>
-            <v-chip :color="statusColor" size="x-small" variant="flat">
-              {{ statusText }}
-            </v-chip>
-          </CTableDataCell>
-        </CTableRow>
-        <CTableRow>
-          <CTableHeaderCell>작성자</CTableHeaderCell>
-          <CTableDataCell>{{ meeting.creator.username }}</CTableDataCell>
-          <CTableHeaderCell></CTableHeaderCell>
-          <CTableDataCell></CTableDataCell>
-        </CTableRow>
-        <CTableRow>
-          <CTableHeaderCell>참석자</CTableHeaderCell>
-          <CTableDataCell colspan="3">
-            <v-chip
-              v-for="user in meeting.attendees_desc"
-              :key="user.pk"
-              size="x-small"
-              color="primary"
-              class="mr-1"
-            >
-              {{ user.username }}
-            </v-chip>
-            <span v-if="meeting.other_attendees" class="text-muted ml-2">
-              (기타: {{ meeting.other_attendees }})
-            </span>
-          </CTableDataCell>
-        </CTableRow>
-      </CTableBody>
-    </CTable>
+    <CCard color="yellow-lighten-5" class="mb-4 shadow-sm">
+      <CCardBody>
+        <CRow class="mb-3">
+          <CCol>
+            <span class="sub-title">{{ meeting.title }}</span>
+          </CCol>
+        </CRow>
 
-    <div v-if="meeting.agenda" class="mb-4 p-3 border rounded bg-light">
-      <h6 class="text-primary mb-2">
-        <v-icon icon="mdi-bullseye-arrow" size="small" /> 회의 아젠다
-      </h6>
-      <div v-html="markdownRender(meeting.agenda)" class="markdown-body" />
-    </div>
+        <CRow>
+          <CCol>
+            <p class="mt-1 form-text text-muted">
+              <strong>{{ meeting.creator.username }}</strong> 이(가)
+              <span>
+                {{ elapsedTime(meeting.created) }}
+                <v-tooltip activator="parent" location="top">
+                  {{ timeFormat(meeting.created) }}
+                </v-tooltip>
+              </span>
+              전에 추가함.
+              <span v-if="meeting.updater">
+                <span class="mx-1">/</span>
+                <strong>{{ meeting.updater.username }}</strong> 이(가)
+                {{ elapsedTime(meeting.updated) }}
+                <v-tooltip activator="parent" location="top">
+                  {{ timeFormat(meeting.updated) }}
+                </v-tooltip>
+                전에 마지막으로 수정함.
+              </span>
+            </p>
+          </CCol>
+        </CRow>
 
-    <div v-if="meeting.content" class="mb-4 p-3 border rounded">
-      <h6 class="text-primary mb-2"><v-icon icon="mdi-text-box-outline" size="small" /> 회의 내용</h6>
-      <div v-html="markdownRender(meeting.content)" class="markdown-body" />
-    </div>
+        <v-divider class="my-3" />
 
-    <div v-if="meeting.decisions" class="mb-4 p-3 border rounded border-success bg-light-success">
-      <h6 class="text-success mb-2"><v-icon icon="mdi-check-circle" size="small" /> 주요 결정 사항</h6>
-      <div v-html="markdownRender(meeting.decisions)" class="markdown-body text-success" />
-    </div>
+        <CRow>
+          <CCol md="6">
+            <CRow class="mb-2">
+              <CCol class="title" sm="4">프로젝트 :</CCol>
+              <CCol sm="8">{{ meeting.project_desc?.name || '회사 본사' }}</CCol>
+            </CRow>
+            <CRow class="mb-2">
+              <CCol class="title" sm="4">카테고리 :</CCol>
+              <CCol sm="8">{{ meeting.category_desc?.name || '-' }}</CCol>
+            </CRow>
+            <CRow class="mb-2">
+              <CCol class="title" sm="4">회의 상태 :</CCol>
+              <CCol sm="8">
+                <v-chip :color="statusColor" size="x-small" variant="flat" class="px-2">
+                  {{ statusText }}
+                </v-chip>
+              </CCol>
+            </CRow>
+          </CCol>
 
-    <div v-if="meeting.action_items" class="mb-4 p-3 border rounded border-warning">
-      <h6 class="text-warning mb-2">
-        <v-icon icon="mdi-clipboard-list-outline" size="small" /> 후속 조치 사항
-      </h6>
-      <div v-html="markdownRender(meeting.action_items)" class="markdown-body text-warning" />
-    </div>
+          <CCol md="6">
+            <CRow class="mb-2">
+              <CCol class="title" sm="4">회의 일시 :</CCol>
+              <CCol sm="8">
+                {{ meeting.meeting_date ? timeFormat(meeting.meeting_date) : '-' }}
+              </CCol>
+            </CRow>
+            <CRow class="mb-2">
+              <CCol class="title" sm="4">참석자 :</CCol>
+              <CCol sm="8">
+                <v-chip
+                  v-for="user in meeting.attendees_desc"
+                  :key="user.pk"
+                  size="x-small"
+                  color="primary"
+                  class="mr-1 mb-1"
+                >
+                  {{ user.username }}
+                </v-chip>
+                <div v-if="meeting.other_attendees" class="text-muted small mt-1">
+                  (외부: {{ meeting.other_attendees }})
+                </div>
+              </CCol>
+            </CRow>
+          </CCol>
+        </CRow>
 
-    <div v-if="meeting.files.length" class="mb-4">
-      <h6 class="mb-2"><v-icon icon="mdi-paperclip" size="small" /> 첨부 파일</h6>
-      <CRow>
-        <FileDisplay
-          v-for="file in meeting.files"
-          :key="file.pk"
-          :file="{
-            ...file,
-            creator: meeting.attendees_desc.find(u => u.pk === file.creator) || meeting.creator,
-          }"
-        />
-      </CRow>
-    </div>
+        <v-divider class="my-4" />
+
+        <div v-if="meeting.agenda" class="mb-5">
+          <h6 class="title mb-2 text-primary">
+            <v-icon icon="mdi-bullseye-arrow" size="small" class="mr-1" /> 회의 아젠다
+          </h6>
+          <div class="markdown-content bg-white p-3 border rounded" v-html="markdownRender(meeting.agenda)" />
+        </div>
+
+        <div v-if="meeting.content" class="mb-5">
+          <h6 class="title mb-2 text-primary">
+            <v-icon icon="mdi-text-box-outline" size="small" class="mr-1" /> 회의 내용
+          </h6>
+          <div class="markdown-content bg-white p-3 border rounded" v-html="markdownRender(meeting.content)" />
+        </div>
+
+        <CRow>
+          <CCol md="6" v-if="meeting.decisions">
+            <div class="mb-4">
+              <h6 class="title mb-2 text-success">
+                <v-icon icon="mdi-check-circle" size="small" class="mr-1" /> 주요 결정 사항
+              </h6>
+              <div class="markdown-content bg-light-success p-3 border border-success rounded text-success" v-html="markdownRender(meeting.decisions)" />
+            </div>
+          </CCol>
+          <CCol md="6" v-if="meeting.action_items">
+            <div class="mb-4">
+              <h6 class="title mb-2 text-warning">
+                <v-icon icon="mdi-clipboard-list-outline" size="small" class="mr-1" /> 후속 조치 사항
+              </h6>
+              <div class="markdown-content bg-light-warning p-3 border border-warning rounded text-warning" v-html="markdownRender(meeting.action_items)" />
+            </div>
+          </CCol>
+        </CRow>
+
+        <div class="mb-5">
+          <CRow class="mb-2">
+            <CCol>
+              <h6 class="title">
+                <v-icon icon="mdi-checkbox-marked-circle-outline" size="small" class="mr-1" /> 관련 업무
+              </h6>
+            </CCol>
+            <CCol class="text-right">
+              <v-btn
+                color="success"
+                size="x-small"
+                variant="outlined"
+                @click="refIssueModal.callModal()"
+              >
+                <v-icon icon="mdi-plus" size="12" class="mr-1" /> 업무 추가
+              </v-btn>
+            </CCol>
+          </CRow>
+          <v-divider class="mt-0 mb-3" />
+
+          <div v-if="meeting.issues?.length">
+            <CTable small striped hover class="border-bottom">
+              <CTableHead>
+                <CTableRow class="text-center bg-light">
+                  <CTableHeaderCell style="width: 10%">번호</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 60%">제목</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 15%">상태</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 15%">담당자</CTableHeaderCell>
+                </CTableRow>
+              </CTableHead>
+              <CTableBody>
+                <CTableRow v-for="issue in meeting.issues" :key="issue.pk">
+                  <CTableDataCell class="text-center small">{{ issue.pk }}</CTableDataCell>
+                  <CTableDataCell>
+                    <router-link :to="{ name: route.params.projId ? '(업무) - 보기' : '업무 - 보기', params: { projId: route.params.projId, issueId: issue.pk } }">
+                      {{ issue.subject }}
+                    </router-link>
+                  </CTableDataCell>
+                  <CTableDataCell class="text-center">
+                    <v-chip size="x-small" label :color="issue.closed ? 'success' : 'primary'">{{ issue.status }}</v-chip>
+                  </CTableDataCell>
+                  <CTableDataCell class="text-center small">
+                    {{ issue.assigned_to?.username || '-' }}
+                  </CTableDataCell>
+                </CTableRow>
+              </CTableBody>
+            </CTable>
+          </div>
+          <div v-else class="text-muted small p-3 text-center border rounded border-dashed">
+            연결된 업무가 없습니다. 우측 상단의 '업무 추가' 버튼을 눌러 새 업무를 등록하세요.
+          </div>
+        </div>
+
+        <v-divider v-if="meeting.files.length" class="my-4" />
+
+        <div v-if="meeting.files.length">
+          <h6 class="title mb-3"><v-icon icon="mdi-paperclip" size="small" class="mr-1" /> 첨부 파일</h6>
+          <CRow>
+            <FileDisplay
+              v-for="file in meeting.files"
+              :key="file.pk"
+              :file="{
+                ...file,
+                creator: meeting.attendees_desc.find(u => u.pk === file.creator) || meeting.creator,
+              }"
+            />
+          </CRow>
+        </div>
+      </CCardBody>
+    </CCard>
   </div>
 
   <ConfirmModal ref="refConfirmModal">
@@ -190,13 +324,54 @@ const refConfirmModal = ref()
       <v-btn color="danger" size="small" @click="deleteMeeting">삭제</v-btn>
     </template>
   </ConfirmModal>
+
+  <FormModal ref="refIssueModal" size="xl">
+    <template #header>회의 관련 업무 생성</template>
+    <template #default>
+      <IssueForm
+        :issue-project="workStore.issueProjectList.find(p => p.pk === meeting?.project)"
+        :all-projects="workStore.issueProjectList"
+        :status-list="statusList"
+        :priority-list="priorityList"
+        :get-issues="getIssues"
+        @on-submit="createRelatedIssue"
+        @close-form="refIssueModal.close()"
+      />
+    </template>
+  </FormModal>
 </template>
 
-<style scoped>
-.markdown-body {
-  word-break: break-all;
+<style lang="scss" scoped>
+.title {
+  font-weight: bold;
+}
+.sub-title {
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #0f192a;
+}
+.markdown-content {
+  line-height: 1.6;
+  :deep(p) {
+    margin-bottom: 0.5rem;
+  }
+  :deep(ul), :deep(ol) {
+    padding-left: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+  :deep(pre) {
+    background-color: #f1f5f9;
+    padding: 0.75rem;
+    border-radius: 4px;
+  }
 }
 .bg-light-success {
-  background-color: #f0fdf4;
+  background-color: #f0fdf4 !important;
+}
+.bg-light-warning {
+  background-color: #fffbeb !important;
+}
+.border-dashed {
+  border-style: dashed !important;
 }
 </style>

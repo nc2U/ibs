@@ -4,21 +4,29 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAccount } from '@/store/pinia/account'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useMeeting } from '@/store/pinia/work_meeting.ts'
+import { useIssue } from '@/store/pinia/work_issue.ts'
 import { timeFormat } from '@/utils/baseMixins.ts'
 import { isValidate, message } from '@/utils/helper.ts'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import MdEditor from '@/components/MdEditor/Index.vue'
+import FormModal from '@/components/Modals/FormModal.vue'
+import IssueForm from '@/views/_Work/Manages/Issues/components/IssueForm.vue'
 
 const route = useRoute()
 const router = useRouter()
 const accStore = useAccount()
 const workStore = useWork()
 const meetingStore = useMeeting()
+const issueStore = useIssue()
 
 const meeting = computed(() => meetingStore.meeting)
 const issueProjects = computed(() => workStore.issueProjectList)
 const users = computed(() => accStore.usersList)
 const categories = computed(() => meetingStore.categoryList)
+
+const statusList = computed(() => issueStore.statusList)
+const priorityList = computed(() => issueStore.priorityList)
+const getIssues = computed(() => issueStore.getIssues)
 
 const validated = ref(false)
 const form = ref({
@@ -66,6 +74,17 @@ const onSubmit = (event: Event) => {
   }
 }
 
+const refIssueModal = ref()
+
+const createRelatedIssue = async (payload: any) => {
+  if (form.value.pk) {
+    payload.meeting = form.value.pk
+    await issueStore.createIssue(payload)
+    await meetingStore.fetchMeeting(form.value.pk) // Refresh meeting to get updated issues list
+    refIssueModal.value.close()
+  }
+}
+
 const fetchMeeting = async (pk: number) => {
   await meetingStore.fetchMeeting(pk)
   if (meeting.value) {
@@ -90,6 +109,9 @@ const fetchMeeting = async (pk: number) => {
 onBeforeMount(async () => {
   await accStore.fetchUsersList()
   await workStore.fetchIssueProjectList({})
+  await issueStore.fetchStatusList()
+  await issueStore.fetchPriorityList()
+  await issueStore.fetchTrackerList()
   if (route.params.projId) {
     const proj = workStore.issueProjectList.find(p => p.slug === route.params.projId)
     if (proj) form.value.project = proj.pk as number
@@ -172,16 +194,52 @@ const userOptions = computed(() =>
             </CRow>
 
             <CRow class="mb-3">
-              <CFormLabel for="action_items" class="col-sm-2 col-form-label text-right"
-                >조치사항</CFormLabel
-              >
+              <CFormLabel for="action_items" class="col-sm-2 col-form-label text-right">조치사항</CFormLabel>
               <CCol sm="10">
-                <CFormTextarea
-                  v-model="form.action_items"
-                  id="action_items"
-                  rows="4"
-                  placeholder="누가, 언제까지, 무엇을 할 것인가?"
-                />
+                <CFormTextarea v-model="form.action_items" id="action_items" rows="4" placeholder="누가, 언제까지, 무엇을 할 것인가?" />
+              </CCol>
+            </CRow>
+
+            <!-- Related Issues Section -->
+            <CRow class="mb-3">
+              <CFormLabel class="col-sm-2 col-form-label text-right">관련 업무</CFormLabel>
+              <CCol sm="10">
+                <v-divider class="mt-0 mb-2" />
+                <div v-if="form.pk">
+                  <div v-if="meeting?.issues?.length" class="mb-2">
+                    <CTable small striped borderless class="border-bottom">
+                      <CTableBody>
+                        <CTableRow v-for="issue in meeting.issues" :key="issue.pk">
+                          <CTableDataCell style="width: 70%">
+                            <v-icon icon="mdi-checkbox-marked-circle-outline" size="small" class="mr-1" color="success" />
+                            {{ issue.subject }}
+                          </CTableDataCell>
+                          <CTableDataCell style="width: 15%" class="text-center">
+                            <v-chip size="x-small" label>{{ issue.status }}</v-chip>
+                          </CTableDataCell>
+                          <CTableDataCell style="width: 15%" class="text-right">
+                            <span v-if="issue.assigned_to" class="small text-muted">{{ issue.assigned_to.username }}</span>
+                          </CTableDataCell>
+                        </CTableRow>
+                      </CTableBody>
+                    </CTable>
+                  </div>
+                  <div v-else class="text-muted small p-2 text-center border rounded border-dashed mb-2">
+                    연결된 업무가 없습니다.
+                  </div>
+                  <v-btn
+                    color="success"
+                    size="small"
+                    variant="outlined"
+                    @click="refIssueModal.callModal()"
+                  >
+                    <v-icon icon="mdi-plus" size="small" class="mr-1" /> 새 업무 추가
+                  </v-btn>
+                </div>
+                <div v-else class="text-muted small p-3 text-center border rounded border-dashed bg-light">
+                  <v-icon icon="mdi-information-outline" size="small" class="mr-1" />
+                  회의 관련 업무 등록은 회의록을 먼저 <strong>저장</strong>한 후 가능합니다.
+                </div>
               </CCol>
             </CRow>
           </CCol>
@@ -307,6 +365,21 @@ const userOptions = computed(() =>
       </CForm>
     </CCardBody>
   </CCard>
+
+  <FormModal ref="refIssueModal" size="xl">
+    <template #header>회의 관련 업무 생성</template>
+    <template #default>
+      <IssueForm
+        :issue-project="workStore.issueProjectList.find(p => p.pk === form.project)"
+        :all-projects="workStore.issueProjectList"
+        :status-list="statusList"
+        :priority-list="priorityList"
+        :get-issues="getIssues"
+        @on-submit="createRelatedIssue"
+        @close-form="refIssueModal.close()"
+      />
+    </template>
+  </FormModal>
 </template>
 
 <style lang="scss" scoped>
