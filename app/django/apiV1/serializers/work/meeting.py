@@ -41,7 +41,7 @@ class MeetingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Meeting
         fields = ('pk', 'project', 'project_desc', 'company', 'category', 'category_desc',
-                  'title', 'agenda', 'content', 'decisions', 'action_items',
+                  'status', 'title', 'agenda', 'content', 'decisions', 'action_items',
                   'meeting_date', 'attendees', 'attendees_desc',
                   'other_attendees', 'files', 'issues', 'created', 'updated', 'creator', 'updater')
         read_only_fields = ('company',)

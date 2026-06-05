@@ -20,7 +20,7 @@ class MeetingFilter(FilterSet):
 
     class Meta:
         model = Meeting
-        fields = ('company', 'project', 'project__slug', 'category', 'meeting_date', 'search')
+        fields = ('company', 'project', 'project__slug', 'category', 'status', 'meeting_date', 'search')
 
     def search_filter(self, queryset, name, value):
         return queryset.filter(title__icontains=value) | queryset.filter(content__icontains=value)
