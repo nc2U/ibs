@@ -60,20 +60,16 @@ const comment = ref({
 
 const newFiles = ref<{ file: File; description: string }[]>([])
 
-const loadFile = (data: Event) => {
-  const el = data.target as HTMLInputElement
-  if (el.files && el.files[0]) newFiles.value.push({ file: el.files[0], description: '' })
+const loadFile = (event: Event) => {
+  const el = event.target as HTMLInputElement
+  if (el.files) {
+    newFiles.value.push(...Array.from(el.files).map(file => ({ file, description: '' })))
+    el.value = ''
+  }
 }
 
-const removeFile = (n: number) => {
-  if (n - 1 === 0) {
-    const file_form = document.getElementById(`file-${n}`) as HTMLInputElement
-    file_form.value = ''
-  } else {
-    const file_row = document.getElementById(`row-fn-${n}`)
-    if (file_row !== null) file_row?.parentNode?.removeChild(file_row)
-  }
-  newFiles.value.splice(n - 1, 1)
+const removeFile = (index: number) => {
+  newFiles.value.splice(index, 1)
 }
 
 const formsCheck = computed(() => {
@@ -240,7 +236,7 @@ defineExpose({ callComment, callReply })
                 </CFormLabel>
                 <CCol sm="4">
                   <CFormSelect v-model="form.tracker" id="tracker" required>
-                    <option :value="null">---------</option>
+                    <option value="">---------</option>
                     <option v-for="tracker in trackers" :value="tracker.pk" :key="tracker.pk">
                       {{ tracker.name }}
                     </option>
@@ -279,25 +275,18 @@ defineExpose({ callComment, callReply })
               </CRow>
 
               <CRow v-if="!issue" class="mt-3">
-                <div v-for="n in newFiles.length + 1" :key="n">
-                  <CRow :id="`row-fn-${n}`" class="mb-2">
-                    <CFormLabel :for="`file-${n}`" class="col-sm-2 col-form-label text-right">
-                      <span v-if="n === 1">파일</span>
+                <div v-for="(f, i) in newFiles.length + 1" :key="i">
+                  <CRow :id="`row-fn-${i + 1}`" class="mb-2">
+                    <CFormLabel :for="`file-${i + 1}`" class="col-sm-2 col-form-label text-right">
+                      <span v-if="i === 0">파일</span>
                     </CFormLabel>
                     <CCol sm="5">
-                      <CFormInput :id="`file-${n}`" type="file" @change="loadFile" />
+                      <CFormInput :id="`file-${i + 1}`" type="file" @change="loadFile" multiple />
                     </CCol>
-                    <CCol v-if="newFiles[n - 1]?.file" sm="5">
+                    <CCol v-if="newFiles[i]?.file" sm="5">
                       <CInputGroup>
-                        <CFormInput
-                          v-model="newFiles[n - 1].description"
-                          placeholder="부가적인 설명"
-                        />
-                        <CInputGroupText
-                          v-if="newFiles.length === n"
-                          @click="removeFile(n)"
-                          style="cursor: pointer"
-                        >
+                        <CFormInput v-model="newFiles[i].description" placeholder="부가적인 설명" />
+                        <CInputGroupText @click="removeFile(i)" style="cursor: pointer">
                           <v-icon icon="mdi-trash-can-outline" size="16" />
                         </CInputGroupText>
                       </CInputGroup>
