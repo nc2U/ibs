@@ -109,13 +109,13 @@ watch(props, nVal => {
 
 const watcherList = ref<{ pk: number; username: string }[]>([])
 
-const memberList = computed(() =>
-  (
-    (props.issueProject
-      ? props.issueProject.all_members
-      : [...new Map((workStore.memberList as Member[]).map(m => [m.user.pk, m])).values()]) as any
-  ).map(m => m.user),
-)
+const memberList = computed<{ pk: number; username: string }[]>(() => {
+  if (props.issueProject) {
+    return props.issueProject.all_members.map(m => m.user)
+  }
+
+  return [...new Map(workStore.memberList.map(m => [m.user.pk, m.user])).values()]
+})
 
 watch(
   () => memberList.value,
@@ -128,7 +128,6 @@ const trackers = computed(() =>
 )
 
 const categories = computed(() => (props.issueProject?.categories as SimpleCategory[]) ?? [])
-const default_version = ref<number | null>(null)
 const versions = computed(() => props.issueProject?.versions ?? [])
 watch(versions, nVal => {
   const def_vers = nVal.filter(v => v.is_default)
