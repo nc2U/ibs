@@ -56,8 +56,15 @@ const loadFile = (event: Event) => {
   }
 }
 
-const removeFile = (index: number) => {
-  newFiles.value.splice(index, 1)
+const removeFile = (n: number) => {
+  if (n - 1 === 0) {
+    const file_form = document.getElementById(`file-${n}`) as HTMLInputElement
+    file_form.value = ''
+  } else {
+    const file_row = document.getElementById(`row-fn-${n}`)
+    if (file_row !== null) file_row?.parentNode?.removeChild(file_row)
+  }
+  newFiles.value.splice(n - 1, 1)
 }
 
 const onSubmit = (event: Event) => {
@@ -306,20 +313,23 @@ const userOptions = computed(() =>
 
             <CRow>
               <!-- File Upload Section (matches IssueForm style) -->
-              <CCol v-for="(f, i) in newFiles.length + 1" :key="i">
-                <CRow :id="`row-fn-${i + 1}`" class="mb-2">
-                  <CFormLabel :for="`file-${i + 1}`" class="col-sm-2 col-form-label text-right">
-                    <span v-if="i === 0">파일</span>
+              <div v-for="n in newFiles.length + 1" :key="n">
+                <CRow :id="`row-fn-${n}`" class="mb-2">
+                  <CFormLabel :for="`file-${n}`" class="col-sm-2 col-form-label text-right">
+                    <span v-if="n === 1">파일</span>
                   </CFormLabel>
-                  <CCol sm="10">
-                    <CFormInput :id="`file-${i + 1}`" type="file" @change="loadFile" />
+                  <CCol sm="5">
+                    <CFormInput :id="`file-${n}`" type="file" @change="loadFile" />
                   </CCol>
-                  <CCol v-if="newFiles[i]?.file" sm="6">
+                  <CCol v-if="newFiles[n - 1]?.file" sm="5">
                     <CInputGroup>
-                      <CFormInput v-model="newFiles[i].description" placeholder="부가적인 설명" />
+                      <CFormInput
+                        v-model="newFiles[n - 1].description"
+                        placeholder="부가적인 설명"
+                      />
                       <CInputGroupText
-                        v-if="newFiles.length === i + 1"
-                        @click="removeFile(i)"
+                        v-if="newFiles.length === n"
+                        @click="removeFile(n)"
                         style="cursor: pointer"
                       >
                         <v-icon icon="mdi-trash-can-outline" size="16" />
@@ -327,7 +337,7 @@ const userOptions = computed(() =>
                     </CInputGroup>
                   </CCol>
                 </CRow>
-              </CCol>
+              </div>
             </CRow>
           </CCol>
 

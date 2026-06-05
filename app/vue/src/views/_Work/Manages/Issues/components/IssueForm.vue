@@ -58,7 +58,6 @@ const comment = ref({
   is_private: false,
 })
 
-const fileEdit = ref(false)
 const newFiles = ref<{ file: File; description: string }[]>([])
 
 const loadFile = (data: Event) => {
@@ -297,7 +296,7 @@ defineExpose({ callComment, callReply })
                         <CInputGroupText
                           v-if="newFiles.length === n"
                           @click="removeFile(n)"
-                          :disabled="true"
+                          style="cursor: pointer"
                         >
                           <v-icon icon="mdi-trash-can-outline" size="16" />
                         </CInputGroupText>
