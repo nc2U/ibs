@@ -5,7 +5,7 @@ import { useAccount } from '@/store/pinia/account'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useMeeting } from '@/store/pinia/work_meeting.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
-import { timeFormat } from '@/utils/baseMixins.ts'
+import { dateFormat } from '@/utils/baseMixins.ts'
 import { isValidate } from '@/utils/helper.ts'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import MdEditor from '@/components/MdEditor/Index.vue'
@@ -40,7 +40,7 @@ const form = ref({
   content: '',
   decisions: '',
   action_items: '',
-  meeting_date: timeFormat(new Date()),
+  meeting_date: dateFormat(new Date()),
   attendees: [] as number[],
   other_attendees: '',
 })
@@ -124,7 +124,7 @@ const fetchMeeting = async (pk: number) => {
       content: meeting.value.content,
       decisions: meeting.value.decisions,
       action_items: meeting.value.action_items,
-      meeting_date: meeting.value.meeting_date ? timeFormat(meeting.value.meeting_date) : '',
+      meeting_date: meeting.value.meeting_date ? dateFormat(meeting.value.meeting_date) : '',
       attendees: meeting.value.attendees,
       other_attendees: meeting.value.other_attendees,
     }

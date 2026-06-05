@@ -6,7 +6,7 @@ import { useIssue } from '@/store/pinia/work_issue.ts'
 import type { IssueProject, Member } from '@/store/types/work_project.ts'
 import type { Issue, SimpleCategory } from '@/store/types/work_issue.ts'
 import { isValidate } from '@/utils/helper.ts'
-import { timeFormat } from '@/utils/baseMixins'
+import { dateFormat } from '@/utils/baseMixins'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
 import Multiselect from '@vueform/multiselect'
@@ -40,7 +40,7 @@ const form = ref({
   status: 1,
   parent: null as number | null,
   priority: 2,
-  start_date: timeFormat(new Date()),
+  start_date: dateFormat(new Date()),
   due_date: null as string | null,
   assigned_to: null as number | null,
   fixed_version: null as number | null,
@@ -210,8 +210,8 @@ onBeforeMount(() => {
     form.value.status = props.issue.status.pk
     form.value.parent = props.issue.parent
     form.value.priority = props.issue.priority.pk
-    form.value.start_date = props.issue.start_date
-    form.value.due_date = props.issue.due_date
+    form.value.start_date = dateFormat(props.issue.start_date)
+    form.value.due_date = props.issue.due_date ? dateFormat(props.issue.due_date) : null
     form.value.assigned_to = props.issue.assigned_to?.pk ?? null
     form.value.fixed_version = props.issue.fixed_version?.pk ?? null
     form.value.category = props.issue.category
