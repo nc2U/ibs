@@ -50,7 +50,7 @@ const pageSelect = (page: number) => emit('page-select', page)
 const watchControl = (payload: any) => {
   const form = new FormData()
   if (payload.watchers)
-    payload.watchers.forEach(val => form.append('watchers', JSON.stringify(val)))
+    payload.watchers.forEach((val: any) => form.append('watchers', JSON.stringify(val)))
   else if (payload.del_watcher) form.append('del_watcher', JSON.stringify(payload.del_watcher))
   issueStore.patchIssue(payload.issue, form)
 }
