@@ -57,7 +57,7 @@ const getIcon = (sort: string, progress: boolean) => {
                 params: { projId: act.project?.slug, issueId: act.issue?.pk },
               }"
             >
-              {{ act.issue?.tracker }} #{{ act.issue?.pk }} ({{
+              [업무] {{ act.issue?.tracker }} #{{ act.issue?.pk }} ({{
                 act.status_log || act.issue?.status.name
               }})
               {{ act.issue?.subject }}
@@ -85,7 +85,7 @@ const getIcon = (sort: string, progress: boolean) => {
                 hash: `#note-${act.comment?.pk}`,
               }"
             >
-              {{ act.issue?.tracker }} #{{ act.issue?.pk }}
+              [의견] {{ act.issue?.tracker }} #{{ act.issue?.pk }}
               {{ act.issue?.subject }}
             </router-link>
 
@@ -105,7 +105,7 @@ const getIcon = (sort: string, progress: boolean) => {
                 params: { projId: act.project?.slug, meetingId: act.meeting?.pk },
               }"
             >
-              회의록 #{{ act.meeting?.pk }} ({{ act.status_log || '등록' }})
+              [회의록] #{{ act.meeting?.pk }} ({{ act.status_log || '등록' }})
               {{ act.meeting?.title }}
             </router-link>
 
@@ -117,7 +117,14 @@ const getIcon = (sort: string, progress: boolean) => {
           </span>
 
           <span v-if="act.sort === '4'">
-            <router-link to="">{{ act.news?.title }}</router-link>
+            <router-link
+              :to="{
+                name: '(공지) - 보기',
+                params: { projId: act.project?.slug, newsId: act.news?.pk },
+              }"
+            >
+              [공지] {{ act.news?.title }}
+            </router-link>
 
             <div class="ml-5 pl-2 fst-italic">{{ act.news?.summary }}</div>
 
@@ -129,8 +136,13 @@ const getIcon = (sort: string, progress: boolean) => {
           </span>
 
           <span v-if="act.sort === '5'">
-            <router-link :to="{ name: '(문서) - 보기', params: { docId: act.document?.pk } }">
-              {{ act.document?.title }}
+            <router-link
+              :to="{
+                name: '(문서) - 보기',
+                params: { projId: act.project?.slug, docId: act.document?.pk },
+              }"
+            >
+              [문서] {{ act.document?.title }}
             </router-link>
 
             <div v-if="act.creator" class="form-text ml-5 pl-2">
@@ -144,10 +156,14 @@ const getIcon = (sort: string, progress: boolean) => {
             <router-link
               :to="{
                 name: '(게시판) - 게시물 보기',
-                params: { postId: act.post?.pk },
+                params: {
+                  projId: act.project?.slug,
+                  brdId: act.post?.board,
+                  postId: act.post?.pk,
+                },
               }"
             >
-              {{ act.post?.title }}
+              [게시물] {{ act.post?.title }}
             </router-link>
 
             <div v-if="act.creator" class="form-text ml-5 pl-2">

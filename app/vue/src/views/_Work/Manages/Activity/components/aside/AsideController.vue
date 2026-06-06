@@ -44,36 +44,38 @@ const actFilter = reactive<ActLogEntryFilter & { subProjects: boolean }>({
 })
 
 watch(
-  () => actFilter.sort as string[],
+  () => actFilter.sort,
   nVal => {
-    if (actFilter.sort) {
-      // 업무('1') 항목 선택 상태에 따라 댓글('2') 항목 동기화
-      const hasIssue = nVal.includes('1')
-      const hasComment = nVal.includes('2')
+    if (!nVal) return
 
-      if (hasIssue && !hasComment) {
-        actFilter.sort.push('2')
-        return
-      } else if (!hasIssue && hasComment) {
-        actFilter.sort = actFilter.sort.filter(s => s !== '2')
-        return
-      }
+    const currentSort = [...nVal]
+    const hasIssue = currentSort.includes('1')
+    const hasComment = currentSort.includes('2')
 
-      if (nVal.length === 0) {
-        actFilter.sort = ['1', '2', '3', '4', '5', '6'] as typeof actFilter.sort
-        Cookies.remove('cookieSort')
-      } else {
-        Cookies.set('cookieSort', [...nVal].sort().join('-'))
-        filterActivity()
-      }
+    if (hasIssue && !hasComment) {
+      actFilter.sort.push('2')
+      return
+    } else if (!hasIssue && hasComment) {
+      const filtered = actFilter.sort.filter(s => s !== '2')
+      actFilter.sort.splice(0, actFilter.sort.length, ...filtered)
+      return
+    }
+
+    if (nVal.length === 0) {
+      const defaults = ['1', '2', '3', '4', '5', '6']
+      actFilter.sort.splice(0, actFilter.sort.length, ...defaults)
+      Cookies.remove('cookieSort')
+    } else {
+      Cookies.set('cookieSort', [...nVal].sort().join('-'))
+      filterActivity()
     }
   },
   { deep: true },
 )
 
 const pickSort = (sort: '1' | '2' | '3' | '4' | '5' | '6') => {
-  if (sort === '1') actFilter.sort = ['1', '2']
-  else actFilter.sort = [sort]
+  const nextSort = sort === '1' ? ['1', '2'] : [sort]
+  actFilter.sort.splice(0, actFilter.sort.length, ...nextSort)
 }
 
 const route = useRoute()
@@ -114,14 +116,6 @@ const getUsers = computed(() =>
       }))
     : accStore.getUsers,
 )
-
-const syncComment = () => {
-  nextTick(() => {
-    if ((actFilter.sort as any[])?.includes('1')) {
-      if (!(actFilter.sort as any[])?.includes('2')) (actFilter.sort as any[]).push('2')
-    } else actFilter.sort = (actFilter.sort as any[])?.filter(item => item !== '2')
-  })
-}
 
 onBeforeMount(async () => {
   await accStore.fetchUsersList()

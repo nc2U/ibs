@@ -20,7 +20,7 @@ class MeetingInActLogSerializer(serializers.ModelSerializer):
 class NewsInActLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = News
-        fields = ('title', 'summary')
+        fields = ('pk', 'title', 'summary')
 
 
 class DocInActLogSerializer(serializers.ModelSerializer):
@@ -32,7 +32,7 @@ class DocInActLogSerializer(serializers.ModelSerializer):
 class PostInActLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
-        fields = ('pk', 'title')
+        fields = ('pk', 'board', 'title')
 
 
 class SimpleCommentInActLogSerializer(serializers.ModelSerializer):
