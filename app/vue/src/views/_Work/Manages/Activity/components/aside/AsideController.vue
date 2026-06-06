@@ -46,36 +46,38 @@ const actFilter = reactive<ActLogEntryFilter & { subProjects: boolean }>({
 watch(
   () => actFilter.sort,
   nVal => {
-    if (!nVal) return
+    if (nVal && actFilter.sort) {
+      const currentSort = [...nVal]
+      const hasIssue = currentSort.includes('1')
+      const hasComment = currentSort.includes('2')
 
-    const currentSort = [...nVal]
-    const hasIssue = currentSort.includes('1')
-    const hasComment = currentSort.includes('2')
+      if (hasIssue && !hasComment) {
+        actFilter.sort.push('2')
+        return
+      } else if (!hasIssue && hasComment) {
+        const filtered = actFilter.sort.filter(s => s !== '2')
+        actFilter.sort.splice(0, actFilter.sort.length, ...filtered)
+        return
+      }
 
-    if (hasIssue && !hasComment) {
-      actFilter.sort.push('2')
-      return
-    } else if (!hasIssue && hasComment) {
-      const filtered = actFilter.sort.filter(s => s !== '2')
-      actFilter.sort.splice(0, actFilter.sort.length, ...filtered)
-      return
-    }
-
-    if (nVal.length === 0) {
-      const defaults = ['1', '2', '3', '4', '5', '6']
-      actFilter.sort.splice(0, actFilter.sort.length, ...defaults)
-      Cookies.remove('cookieSort')
-    } else {
-      Cookies.set('cookieSort', [...nVal].sort().join('-'))
-      filterActivity()
+      if (nVal.length === 0) {
+        const defaults: Array<'1' | '2' | '3' | '4' | '5' | '6'> = ['1', '2', '3', '4', '5', '6']
+        actFilter.sort.splice(0, actFilter.sort.length, ...defaults)
+        Cookies.remove('cookieSort')
+      } else {
+        Cookies.set('cookieSort', [...nVal].sort().join('-'))
+        filterActivity()
+      }
     }
   },
   { deep: true },
 )
 
 const pickSort = (sort: '1' | '2' | '3' | '4' | '5' | '6') => {
-  const nextSort = sort === '1' ? ['1', '2'] : [sort]
-  actFilter.sort.splice(0, actFilter.sort.length, ...nextSort)
+  if (actFilter.sort) {
+    const nextSort: Array<'1' | '2' | '3' | '4' | '5' | '6'> = sort === '1' ? ['1', '2'] : [sort]
+    actFilter.sort.splice(0, actFilter.sort.length, ...nextSort)
+  }
 }
 
 const route = useRoute()
