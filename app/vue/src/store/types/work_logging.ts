@@ -13,7 +13,7 @@ export interface ActLogEntry {
   } | null
   comment: { pk: number; content: string } | null
   meeting: { pk: number; title: string } | null
-  news: { title: string; summary: string } | null
+  news: { pk: number; title: string; summary: string } | null
   document: { pk: number; title: string } | null
   post: { pk: number; board: string; title: string } | null
   status_log: string
