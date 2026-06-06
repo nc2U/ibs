@@ -10,6 +10,7 @@ import FileDisplay from '@/views/_Work/components/atomics/FileDisplay.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
 import IssueForm from '@/views/_Work/Manages/Issues/components/IssueForm.vue'
+import { btnLight } from '@/utils/cssMixins.ts'
 
 const route = useRoute()
 const router = useRouter()
@@ -154,24 +155,9 @@ const refConfirmModal = ref()
           <v-badge :color="statusColor" :content="statusText" inline rounded="1" class="ml-2" />
         </h5>
       </CCol>
-      <CCol class="text-right">
-        <v-btn color="info" size="small" variant="outlined" class="mr-2" @click="goEdit">
-          수정
-        </v-btn>
-        <v-btn
-          color="danger"
-          size="small"
-          variant="outlined"
-          class="mr-2"
-          @click="refConfirmModal.callModal()"
-        >
-          삭제
-        </v-btn>
-        <v-btn color="secondary" size="small" variant="outlined" @click="goList"> 목록으로 </v-btn>
-      </CCol>
     </CRow>
 
-    <CCard color="yellow-lighten-5" class="mb-4 shadow-sm">
+    <CCard class="mb-4 shadow-sm meeting-card">
       <CCardBody>
         <CRow class="mb-3">
           <CCol>
@@ -255,23 +241,23 @@ const refConfirmModal = ref()
         <v-divider class="my-4" />
 
         <div v-if="meeting.agenda" class="mb-5">
-          <h6 class="title mb-2 text-black">
+          <h6 class="title mb-2">
             <v-icon icon="mdi-bullseye-arrow" color="text-primary" size="small" class="mr-1" /> 회의
             아젠다
           </h6>
           <div
-            class="markdown-content bg-white p-3 border rounded"
+            class="markdown-content p-3 border rounded"
             v-html="markdownRender(meeting.agenda)"
           />
         </div>
 
         <div v-if="meeting.content" class="mb-5">
-          <h6 class="title mb-2 text-black">
+          <h6 class="title mb-2">
             <v-icon icon="mdi-text-box-outline" color="text-primary" size="small" class="mr-1" />
             회의 내용
           </h6>
           <div
-            class="markdown-content bg-white p-3 border rounded"
+            class="markdown-content p-3 border rounded"
             v-html="markdownRender(meeting.content)"
           />
         </div>
@@ -279,7 +265,7 @@ const refConfirmModal = ref()
         <CRow>
           <CCol md="6" v-if="meeting.decisions">
             <div class="mb-4">
-              <h6 class="title mb-2 text-black">
+              <h6 class="title mb-2">
                 <v-icon color="text-success" icon="mdi-check-circle" size="small" class="mr-1" />
                 주요 결정 사항
               </h6>
@@ -291,7 +277,7 @@ const refConfirmModal = ref()
           </CCol>
           <CCol md="6" v-if="meeting.action_items">
             <div class="mb-4">
-              <h6 class="title mb-2 text-black">
+              <h6 class="title mb-2">
                 <v-icon
                   icon="mdi-clipboard-list-outline"
                   color="text-warning"
@@ -311,7 +297,7 @@ const refConfirmModal = ref()
         <div class="mb-5">
           <CRow class="mb-2">
             <CCol>
-              <h6 class="title text-black">
+              <h6 class="title">
                 <v-icon
                   icon="mdi-checkbox-marked-circle-outline"
                   color="success"
@@ -332,16 +318,16 @@ const refConfirmModal = ref()
           <div v-if="meeting.issues?.length">
             <CTable small striped hover class="border-bottom">
               <CTableHead>
-                <CTableRow class="text-center bg-light">
-                  <CTableHeaderCell style="width: 10%" class="text-black">번호</CTableHeaderCell>
-                  <CTableHeaderCell style="width: 60%" class="text-black">제목</CTableHeaderCell>
-                  <CTableHeaderCell style="width: 15%" class="text-black">상태</CTableHeaderCell>
-                  <CTableHeaderCell style="width: 15%" class="text-black">담당자</CTableHeaderCell>
+                <CTableRow class="text-center">
+                  <CTableHeaderCell style="width: 10%">번호</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 60%">제목</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 15%">상태</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 15%">담당자</CTableHeaderCell>
                 </CTableRow>
               </CTableHead>
               <CTableBody>
                 <CTableRow v-for="issue in meeting.issues" :key="issue.pk">
-                  <CTableDataCell class="text-center small text-black">
+                  <CTableDataCell class="text-center small">
                     {{ issue.pk }}
                   </CTableDataCell>
                   <CTableDataCell>
@@ -359,7 +345,7 @@ const refConfirmModal = ref()
                       {{ issue.status }}
                     </v-chip>
                   </CTableDataCell>
-                  <CTableDataCell class="text-center small text-black">
+                  <CTableDataCell class="text-center small">
                     {{ issue.assigned_to?.username || '-' }}
                   </CTableDataCell>
                 </CTableRow>
@@ -390,12 +376,22 @@ const refConfirmModal = ref()
         </div>
       </CCardBody>
     </CCard>
+
+    <CRow class="mb-2">
+      <CCol class="text-right">
+        <v-btn :color="btnLight" size="small" @click="goList"> 목록으로 </v-btn>
+        <v-btn color="success" size="small" class="mr-2" @click="goEdit"> 수정 </v-btn>
+        <v-btn color="warning" size="small" class="mr-2" @click="refConfirmModal.callModal()">
+          삭제
+        </v-btn>
+      </CCol>
+    </CRow>
   </div>
 
   <ConfirmModal ref="refConfirmModal">
     이 회의록을 정말 삭제하시겠습니까?
     <template #footer>
-      <v-btn color="danger" size="small" @click="deleteMeeting">삭제</v-btn>
+      <v-btn color="warning" size="small" @click="deleteMeeting">삭제</v-btn>
     </template>
   </ConfirmModal>
 
@@ -425,7 +421,11 @@ const refConfirmModal = ref()
   font-weight: bold;
   color: #0f192a;
 }
+.meeting-card {
+  background-color: #fefce8 !important;
+}
 .markdown-content {
+  background-color: #ffffff;
   line-height: 1.6;
   :deep(p) {
     margin-bottom: 0.5rem;
@@ -449,5 +449,40 @@ const refConfirmModal = ref()
 }
 .border-dashed {
   border-style: dashed !important;
+}
+
+.dark-theme {
+  .sub-title {
+    color: #eceff1;
+  }
+  .meeting-card {
+    background-color: #37474f !important;
+    color: #eceff1;
+  }
+  .markdown-content {
+    background-color: #263238;
+    border-color: #455a64 !important;
+    color: #cfd8dc;
+    :deep(pre) {
+      background-color: #37474f;
+      color: #eceff1;
+    }
+  }
+  .bg-light-success {
+    background-color: #1b5e20 !important;
+    color: #a5d6a7 !important;
+    border-color: #2e7d32 !important;
+  }
+  .bg-light-warning {
+    background-color: #453505 !important;
+    color: #ffe082 !important;
+    border-color: #634d07 !important;
+  }
+  .border {
+    border-color: #455a64 !important;
+  }
+  .table {
+    color: #cfd8dc;
+  }
 }
 </style>
