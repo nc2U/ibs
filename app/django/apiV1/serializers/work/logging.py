@@ -1,17 +1,24 @@
 from rest_framework import serializers
 
 from apiV1.serializers.accounts import SimpleUserSerializer
-from apiV1.serializers.work.issue import IssueInRelatedSerializer, IssueCommentSerializer
+from apiV1.serializers.work.issue import IssueInRelatedSerializer
 from apiV1.serializers.work.project import SimpleIssueProjectSerializer
 from work.models.inform import News
-from work.models.issue import (IssueComment)
+from work.models.issue import IssueComment
 from work.models.logging import ActivityLogEntry, IssueLogEntry
+from work.models.meeting import Meeting
 
 
 class NewsInActLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = News
         fields = ('title', 'summary')
+
+
+class MeetingInActLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Meeting
+        fields = ('pk', 'title')
 
 
 class SimpleCommentInActLogSerializer(serializers.ModelSerializer):
@@ -24,13 +31,14 @@ class ActivityLogEntrySerializer(serializers.ModelSerializer):
     project = SimpleIssueProjectSerializer(read_only=True)
     issue = IssueInRelatedSerializer(read_only=True)
     comment = SimpleCommentInActLogSerializer(read_only=True)
+    meeting = MeetingInActLogSerializer(read_only=True)
     news = NewsInActLogSerializer(read_only=True)
     creator = SimpleUserSerializer(read_only=True)
 
     class Meta:
         model = ActivityLogEntry
         fields = ('pk', 'sort', 'project', 'issue', 'status_log', 'comment',
-                  'news', 'act_date', 'timestamp', 'creator')
+                  'news', 'meeting', 'act_date', 'timestamp', 'creator')
 
 
 class SimpleCommentInIssueLogEntrySerializer(serializers.ModelSerializer):

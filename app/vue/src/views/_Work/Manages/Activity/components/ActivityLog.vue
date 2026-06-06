@@ -14,6 +14,7 @@ const isDark = inject('isDark')
 const getIcon = (sort: string, progress: boolean) => {
   if (sort === '1') return progress ? 'mdi-folder-check' : 'mdi-folder-edit'
   else if (sort === '2') return 'mdi-comment-text-multiple'
+  else if (sort === '3') return 'mdi-account-group'
   else if (sort === '4') return 'mdi-message-badge'
   else return 'mdi-folder-plus'
 }
@@ -29,17 +30,21 @@ const getIcon = (sort: string, progress: boolean) => {
       </CAlert>
 
       <CRow v-for="(act, i) in activity" :key="act.pk" class="pl-3">
-        <CCol :class="{ 'ml-5': i > 0 && act.sort !== '3' }">
+        <CCol :class="{ 'ml-5': i > 0 && act.sort !== '3' && act.sort !== '2' }">
           <v-icon
             :icon="getIcon(act.sort, act.status_log === '종료')"
             size="15"
-            :color="act.sort === '1' && act.status_log === '종료' ? 'success' : 'brown-lighten-3'"
+            :color="
+              (act.sort === '1' && act.status_log === '종료') || (act.sort === '3' && act.status_log === '완료됨')
+                ? 'success'
+                : 'brown-lighten-3'
+            "
             class="mr-1"
           />
           <span class="form-text underline mr-2">{{ timeFormat(act.timestamp, true) }}</span>
 
           <span v-if="!$route.params.projId || act.project?.slug !== $route.params.projId">
-            {{ act.project?.name }} -
+            {{ act.project?.name || '회사 본사' }} -
           </span>
 
           <span v-if="act.sort === '1'">
@@ -87,6 +92,24 @@ const getIcon = (sort: string, progress: boolean) => {
                 v-html="markdownRender(cutString(act.comment?.content, 113))"
                 class="form-text"
               />
+            </div>
+          </span>
+
+          <span v-if="act.sort === '3'">
+            <router-link
+              :to="{
+                name: act.project?.slug ? '(회의) - 보기' : '회의 - 보기',
+                params: { projId: act.project?.slug, meetingId: act.meeting?.pk },
+              }"
+            >
+              회의록 #{{ act.meeting?.pk }} ({{ act.status_log || '등록' }})
+              {{ act.meeting?.title }}
+            </router-link>
+
+            <div v-if="act.creator" class="form-text ml-5 pl-2">
+              <router-link :to="{ name: '사용자 - 보기', params: { userId: act.creator.pk } }">
+                {{ act.creator.username }}
+              </router-link>
             </div>
           </span>
 

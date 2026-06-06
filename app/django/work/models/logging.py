@@ -9,18 +9,19 @@ from work.models.project import IssueProject
 class ActivityLogEntryManager(models.Manager):
     def get_queryset(self):
         return super().get_queryset().select_related(
-            'project', 'issue', 'comment', 'news', 'creator'
+            'project', 'issue', 'comment', 'meeting', 'news', 'creator'
         )
 
 
 class ActivityLogEntry(models.Model):
-    SORT_CHOICES = (('1', '업무'), ('2', '댓글'), ('4', '공지'), ('5', '문서'), ('8', '글'))
+    SORT_CHOICES = (('1', '업무'), ('2', '댓글'), ('3', '회의'), ('4', '공지'), ('5', '문서'), ('8', '글'))
     sort = models.CharField('구분', max_length=1, choices=SORT_CHOICES, default='1')
     project = models.ForeignKey(IssueProject, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='프로젝트')
     issue = models.ForeignKey(Issue, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='업무')
     comment = models.ForeignKey(IssueComment, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='댓글')
-    status_log = models.CharField('상태 기록', max_length=30, blank=True, default='')
+    meeting = models.ForeignKey('work.Meeting', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='회의')
     news = models.ForeignKey(News, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='공지')
+    status_log = models.CharField('상태 기록', max_length=30, blank=True, default='')
     act_date = models.DateField('로그 일자', auto_now_add=True)
     timestamp = models.DateTimeField('로그 시간', auto_now_add=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,

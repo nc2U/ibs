@@ -11,13 +11,14 @@ export interface ActLogEntry {
     subject: string
     description: string
   } | null
-  status_log: string
   comment: { pk: number; content: string } | null
+  meeting: { pk: number; title: string } | null
   news: { title: string; summary: string } | null
   // document: string
   // file: string
   // wiki: string
   // message: string
+  status_log: string
   act_date: string
   timestamp: string
   creator: { pk: number; username: string }
