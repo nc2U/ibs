@@ -31,7 +31,7 @@ onMounted(async () => {
   isDark.value
     ? document.body.classList.add('dark-theme')
     : document.body.classList.remove('dark-theme')
-  if (accStore.isAuthorized) await comStore.fetchCompany(company.value?.pk ?? comStore.initComId)
+  if (!company.value) await comStore.fetchCompany(comStore.initComId)
 })
 </script>
 
