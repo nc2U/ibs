@@ -3,10 +3,18 @@ from rest_framework import serializers
 from apiV1.serializers.accounts import SimpleUserSerializer
 from apiV1.serializers.work.issue import IssueInRelatedSerializer
 from apiV1.serializers.work.project import SimpleIssueProjectSerializer
+from board.models import Post
+from docs.models import Document
 from work.models.inform import News
 from work.models.issue import IssueComment
 from work.models.logging import ActivityLogEntry, IssueLogEntry
 from work.models.meeting import Meeting
+
+
+class MeetingInActLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Meeting
+        fields = ('pk', 'title')
 
 
 class NewsInActLogSerializer(serializers.ModelSerializer):
@@ -15,9 +23,15 @@ class NewsInActLogSerializer(serializers.ModelSerializer):
         fields = ('title', 'summary')
 
 
-class MeetingInActLogSerializer(serializers.ModelSerializer):
+class DocInActLogSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Meeting
+        model = Document
+        fields = ('pk', 'title')
+
+
+class PostInActLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Post
         fields = ('pk', 'title')
 
 
@@ -33,12 +47,14 @@ class ActivityLogEntrySerializer(serializers.ModelSerializer):
     comment = SimpleCommentInActLogSerializer(read_only=True)
     meeting = MeetingInActLogSerializer(read_only=True)
     news = NewsInActLogSerializer(read_only=True)
+    document = DocInActLogSerializer(read_only=True)
+    post = PostInActLogSerializer(read_only=True)
     creator = SimpleUserSerializer(read_only=True)
 
     class Meta:
         model = ActivityLogEntry
-        fields = ('pk', 'sort', 'project', 'issue', 'status_log', 'comment',
-                  'news', 'meeting', 'act_date', 'timestamp', 'creator')
+        fields = ('pk', 'sort', 'project', 'issue', 'status_log', 'comment', 'meeting',
+                  'news', 'document', 'post', 'act_date', 'timestamp', 'creator')
 
 
 class SimpleCommentInIssueLogEntrySerializer(serializers.ModelSerializer):

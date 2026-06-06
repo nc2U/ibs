@@ -1,6 +1,8 @@
 from django.db.models.signals import pre_save, post_save, pre_delete
 from django.dispatch import receiver
 
+from board.models import Post
+from docs.models import Document
 from work.models.inform import News
 from work.models.issue import Issue, IssueRelation, IssueComment
 from work.models.logging import ActivityLogEntry, IssueLogEntry
@@ -94,3 +96,28 @@ def news_log_changes(sender, instance, created, **kwargs):
 @receiver(pre_delete, sender=News)
 def news_log_delete(sender, instance, **kwargs):
     ActivityLogEntry.objects.filter(news=instance).delete()
+
+
+@receiver(post_save, sender=Document)
+def document_log_changes(sender, instance, created, **kwargs):
+    if created and instance.issue_project.status == '1':
+        ActivityLogEntry.objects.create(sort='5', project=instance.issue_project,
+                                        document=instance, creator=instance.creator)
+
+
+@receiver(pre_delete, sender=Document)
+def document_log_delete(sender, instance, **kwargs):
+    ActivityLogEntry.objects.filter(document=instance).delete()
+
+
+@receiver(post_save, sender=Post)
+def post_log_changes(sender, instance, created, **kwargs):
+    project = instance.board.project
+    if created and project and project.status == '1':
+        ActivityLogEntry.objects.create(sort='6', project=project,
+                                        post=instance, creator=instance.creator)
+
+
+@receiver(pre_delete, sender=Post)
+def post_log_delete(sender, instance, **kwargs):
+    ActivityLogEntry.objects.filter(post=instance).delete()

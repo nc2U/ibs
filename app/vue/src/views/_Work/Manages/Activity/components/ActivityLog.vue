@@ -16,6 +16,8 @@ const getIcon = (sort: string, progress: boolean) => {
   else if (sort === '2') return 'mdi-comment-text-multiple'
   else if (sort === '3') return 'mdi-account-group'
   else if (sort === '4') return 'mdi-message-badge'
+  else if (sort === '5') return 'mdi-file-document'
+  else if (sort === '6') return 'mdi-text-box-multiple'
   else return 'mdi-folder-plus'
 }
 </script>
@@ -35,7 +37,8 @@ const getIcon = (sort: string, progress: boolean) => {
             :icon="getIcon(act.sort, act.status_log === '종료')"
             size="15"
             :color="
-              (act.sort === '1' && act.status_log === '종료') || (act.sort === '3' && act.status_log === '완료됨')
+              (act.sort === '1' && act.status_log === '종료') ||
+              (act.sort === '3' && act.status_log === '완료됨')
                 ? 'success'
                 : 'brown-lighten-3'
             "
@@ -117,6 +120,35 @@ const getIcon = (sort: string, progress: boolean) => {
             <router-link to="">{{ act.news?.title }}</router-link>
 
             <div class="ml-5 pl-2 fst-italic">{{ act.news?.summary }}</div>
+
+            <div v-if="act.creator" class="form-text ml-5 pl-2">
+              <router-link :to="{ name: '사용자 - 보기', params: { userId: act.creator.pk } }">
+                {{ act.creator.username }}
+              </router-link>
+            </div>
+          </span>
+
+          <span v-if="act.sort === '5'">
+            <router-link :to="{ name: '(문서) - 보기', params: { docId: act.document?.pk } }">
+              {{ act.document?.title }}
+            </router-link>
+
+            <div v-if="act.creator" class="form-text ml-5 pl-2">
+              <router-link :to="{ name: '사용자 - 보기', params: { userId: act.creator.pk } }">
+                {{ act.creator.username }}
+              </router-link>
+            </div>
+          </span>
+
+          <span v-if="act.sort === '6'">
+            <router-link
+              :to="{
+                name: '(게시판) - 게시물 보기',
+                params: { postId: act.post?.pk },
+              }"
+            >
+              {{ act.post?.title }}
+            </router-link>
 
             <div v-if="act.creator" class="form-text ml-5 pl-2">
               <router-link :to="{ name: '사용자 - 보기', params: { userId: act.creator.pk } }">

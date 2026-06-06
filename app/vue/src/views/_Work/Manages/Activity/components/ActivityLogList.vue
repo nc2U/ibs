@@ -18,7 +18,9 @@ const props = defineProps({
 const emit = defineEmits(['to-move'])
 
 const cookieSort = computed(() => Cookies.get('cookieSort')?.split('-') as any)
-const sort = computed(() => (cookieSort.value?.length ? cookieSort : ['1', '2', '3', '4', '5']))
+const sort = computed(() =>
+  cookieSort.value?.length ? cookieSort : ['1', '2', '3', '4', '5', '6'],
+)
 
 const toBack = () => {
   if (props.toDate)

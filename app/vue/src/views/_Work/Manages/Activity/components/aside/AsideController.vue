@@ -39,7 +39,7 @@ const actFilter = reactive<ActLogEntryFilter & { subProjects: boolean }>({
   to_act_date: '',
   from_act_date: '',
   creator: '',
-  sort: ['1', '2', '3', '4', '5'],
+  sort: ['1', '2', '3', '4', '5', '6'],
   subProjects: true,
 })
 
