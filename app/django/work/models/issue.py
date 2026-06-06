@@ -34,7 +34,7 @@ class IssueManager(models.Manager):
     def get_queryset(self):
         return super().get_queryset().select_related(
             'project', 'tracker', 'status', 'priority', 'category',
-            'fixed_version', 'assigned_to', 'parent', 'creator', 'updater'
+            'fixed_version', 'assigned_to', 'parent', 'creator', 'updater', 'meeting'
         )
 
 

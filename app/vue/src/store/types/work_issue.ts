@@ -108,6 +108,8 @@ export interface Issue {
   expected_duration_display: string
   start_date: string
   due_date: string | null
+  meeting: number | null
+  meeting_desc: { pk: number; title: string } | null
   done_ratio: number
   closed: string | null
   files: Array<IssueFile>

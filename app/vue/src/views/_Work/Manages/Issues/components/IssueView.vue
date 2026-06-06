@@ -96,6 +96,18 @@ const callReply = (payload?: { id: number; user: string; content: string }) => {
   }, 100)
 }
 
+const goMeeting = () => {
+  if (props.issue?.meeting_desc) {
+    const meetingId = props.issue.meeting_desc.pk
+    const projId = props.issueProject?.slug
+    if (projId) {
+      router.push({ name: '(회의) - 보기', params: { projId, meetingId } })
+    } else {
+      router.push({ name: '회의 - 보기', params: { meetingId } })
+    }
+  }
+}
+
 // 지켜보기 / 관심끄기
 const watchControl = (payload: any) => {
   const form = new FormData()
@@ -146,7 +158,7 @@ onBeforeMount(async () => {
     </CCol>
 
     <IssueControl
-      :proj-status="issueProject.status"
+      :proj-status="issueProject?.status"
       :watchers="issue.watchers"
       @call-edit-form="callEditForm"
       @watch-control="watchControl"
@@ -218,7 +230,7 @@ onBeforeMount(async () => {
               <router-link
                 :to="{
                   name: '(실행기록)',
-                  params: { projId: issueProject.slug ?? '' },
+                  params: { projId: issueProject?.slug ?? '' },
                   query: { from: issue.updated.substring(0, 10) },
                 }"
               >
@@ -255,7 +267,7 @@ onBeforeMount(async () => {
             </CCol>
           </CRow>
 
-          <CRow v-if="issueProject.categories?.length">
+          <CRow v-if="issueProject?.categories?.length">
             <CCol class="title">범주 :</CCol>
             <CCol>{{ issue.category }}</CCol>
           </CRow>
@@ -318,7 +330,7 @@ onBeforeMount(async () => {
       <CRow class="mb-2">
         <CCol class="title">설명</CCol>
         <CCol
-          v-if="issueProject.status !== '9' && (workManager || my_perms?.issue_comment_create)"
+          v-if="issueProject?.status !== '9' && (workManager || my_perms?.issue_comment_create)"
           class="text-right form-text"
         >
           <v-icon icon="mdi-comment-text-outline" size="sm" color="grey" class="mr-2" />
@@ -330,16 +342,16 @@ onBeforeMount(async () => {
         <CCol v-html="markdownRender(issue.description)" />
       </CRow>
 
-      <v-divider v-if="issueProject.status !== '9' || issue.files.length" />
+      <v-divider v-if="issueProject?.status !== '9' || issue.files.length" />
 
       <IssueFiles
         v-if="issue.files?.length"
-        :proj-status="issueProject.status"
+        :proj-status="issueProject?.status"
         :issue-pk="issue.pk"
         :issue-files="issue.files"
       />
 
-      <CRow v-if="issueProject.status !== '9'" class="mb-2">
+      <CRow v-if="issueProject?.status !== '9'" class="mb-2">
         <CCol class="col-10">
           <span class="title mr-2">하위 업무</span>
           <SubSummary
@@ -363,9 +375,9 @@ onBeforeMount(async () => {
         @unlink-sub-issue="unlinkSubIssue"
       />
 
-      <v-divider v-if="issueProject.status !== '9'" />
+      <v-divider v-if="issueProject?.status !== '9'" />
 
-      <CRow v-if="issueProject.status !== '9'">
+      <CRow v-if="issueProject?.status !== '9'">
         <CCol class="col-10">
           <span class="title mr-2">연결된 업무</span>
           <RelSummary
@@ -376,6 +388,17 @@ onBeforeMount(async () => {
         </CCol>
         <CCol class="text-right form-text">
           <router-link to="" @click="addRIssue = !addRIssue">추가</router-link>
+        </CCol>
+      </CRow>
+
+      <v-divider v-if="issue.meeting_desc" />
+
+      <CRow v-if="issue.meeting_desc">
+        <CCol>
+          <span class="title mr-2">관련 회의</span>
+          <a href="javascript:void(0)" @click="goMeeting">
+            {{ issue.meeting_desc?.title }}
+          </a>
         </CCol>
       </CRow>
     </CCardBody>
@@ -391,7 +414,7 @@ onBeforeMount(async () => {
 
   <div>
     <IssueControl
-      :proj-status="issueProject.status"
+      :proj-status="issueProject?.status"
       :watchers="issue.watchers"
       @call-edit-form="callEditForm"
       @watch-control="watchControl"

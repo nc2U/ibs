@@ -9,9 +9,17 @@ from accounts.models import User
 from apiV1.serializers.accounts import SimpleUserSerializer
 from apiV1.serializers.work.project import SimpleIssueProjectSerializer, TrackerInIssueProjectSerializer
 from work.models.issue import (IssueCategory, Tracker, IssueStatus, Workflow,
-                                CodeIssuePriority, Issue, IssueRelation,
-                                IssueFile, IssueComment, Version)
+                               CodeIssuePriority, Issue, IssueRelation,
+                               IssueFile, IssueComment, Version)
 from work.models.project import IssueProject
+
+from work.models.meeting import Meeting
+
+
+class MeetingInIssueSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Meeting
+        fields = ('pk', 'title')
 
 
 class IssueStatusInIssueSerializer(serializers.ModelSerializer):
@@ -69,6 +77,7 @@ class IssueSerializer(serializers.ModelSerializer):
     assigned_to = SimpleUserSerializer(read_only=True)
     watchers = SimpleUserSerializer(many=True, read_only=True)
     files = IssueFileInIssueSerializer(many=True, read_only=True)
+    meeting_desc = MeetingInIssueSerializer(source='meeting', read_only=True)
     sub_issues = serializers.SerializerMethodField()
     related_issues = serializers.SerializerMethodField()
     creator = SimpleUserSerializer(read_only=True)
@@ -82,7 +91,7 @@ class IssueSerializer(serializers.ModelSerializer):
                   'description', 'category', 'fixed_version', 'assigned_to',
                   'parent', 'watchers', 'is_private', 'expected_duration', 'expected_duration_display',
                   'start_date', 'due_date', 'done_ratio', 'closed', 'files', 'sub_issues',
-                  'related_issues', 'creator', 'updater', 'created', 'updated', 'meeting')
+                  'related_issues', 'creator', 'updater', 'created', 'updated', 'meeting', 'meeting_desc')
 
     @staticmethod
     def get_sub_issues(obj):
