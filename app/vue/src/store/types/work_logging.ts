@@ -12,10 +12,10 @@ export interface ActLogEntry {
     description: string
   } | null
   comment: { pk: number; content: string } | null
-  meeting: { pk: number; title: string } | null
+  meeting: { pk: number; title: string; agenda: string } | null
   news: { pk: number; title: string; summary: string } | null
-  document: { pk: number; title: string } | null
-  post: { pk: number; board: string; title: string } | null
+  document: { pk: number; title: string; content: string } | null
+  post: { pk: number; board: string; title: string; content: string } | null
   status_log: string
   act_date: string
   timestamp: string

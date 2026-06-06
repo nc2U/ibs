@@ -109,6 +109,14 @@ const getIcon = (sort: string, progress: boolean) => {
               {{ act.meeting?.title }}
             </router-link>
 
+            <div class="ml-5 pl-4 fst-italic">
+              <div
+                v-if="act.meeting?.agenda"
+                v-html="markdownRender(cutString(act.meeting.agenda, 113))"
+                class="form-text"
+              />
+            </div>
+
             <div v-if="act.creator" class="form-text ml-5 pl-2">
               <router-link :to="{ name: '사용자 - 보기', params: { userId: act.creator.pk } }">
                 {{ act.creator.username }}
@@ -126,7 +134,13 @@ const getIcon = (sort: string, progress: boolean) => {
               [공지] {{ act.news?.title }}
             </router-link>
 
-            <div class="ml-5 pl-2 fst-italic">{{ act.news?.summary }}</div>
+            <div class="ml-5 pl-4 fst-italic">
+              <div
+                v-if="act.news?.summary"
+                v-html="markdownRender(cutString(act.news.summary, 113))"
+                class="form-text"
+              />
+            </div>
 
             <div v-if="act.creator" class="form-text ml-5 pl-2">
               <router-link :to="{ name: '사용자 - 보기', params: { userId: act.creator.pk } }">
@@ -144,6 +158,14 @@ const getIcon = (sort: string, progress: boolean) => {
             >
               [문서] {{ act.document?.title }}
             </router-link>
+
+            <div class="ml-5 pl-4 fst-italic">
+              <div
+                v-if="act.document?.content"
+                v-html="markdownRender(cutString(act.document.content, 113))"
+                class="form-text"
+              />
+            </div>
 
             <div v-if="act.creator" class="form-text ml-5 pl-2">
               <router-link :to="{ name: '사용자 - 보기', params: { userId: act.creator.pk } }">
@@ -165,6 +187,14 @@ const getIcon = (sort: string, progress: boolean) => {
             >
               [게시물] {{ act.post?.title }}
             </router-link>
+
+            <div class="ml-5 pl-4 fst-italic">
+              <div
+                v-if="act.post?.content"
+                v-html="markdownRender(cutString(act.post.content, 113))"
+                class="form-text"
+              />
+            </div>
 
             <div v-if="act.creator" class="form-text ml-5 pl-2">
               <router-link :to="{ name: '사용자 - 보기', params: { userId: act.creator.pk } }">

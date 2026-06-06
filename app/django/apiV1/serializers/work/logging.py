@@ -14,7 +14,7 @@ from work.models.meeting import Meeting
 class MeetingInActLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = Meeting
-        fields = ('pk', 'title')
+        fields = ('pk', 'title', 'agenda')
 
 
 class NewsInActLogSerializer(serializers.ModelSerializer):
@@ -26,13 +26,13 @@ class NewsInActLogSerializer(serializers.ModelSerializer):
 class DocInActLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = Document
-        fields = ('pk', 'title')
+        fields = ('pk', 'title', 'content')
 
 
 class PostInActLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
-        fields = ('pk', 'board', 'title')
+        fields = ('pk', 'board', 'title', 'content')
 
 
 class SimpleCommentInActLogSerializer(serializers.ModelSerializer):
