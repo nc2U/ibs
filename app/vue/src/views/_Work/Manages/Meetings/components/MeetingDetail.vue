@@ -59,7 +59,16 @@ const createRelatedIssue = async (payload: any) => {
       if (val === null || val === undefined) continue
 
       // Skip empty strings for foreign key/numeric fields to prevent backend 500 errors
-      const fkFields = ['project', 'tracker', 'status', 'priority', 'category', 'fixed_version', 'parent', 'assigned_to']
+      const fkFields = [
+        'project',
+        'tracker',
+        'status',
+        'priority',
+        'category',
+        'fixed_version',
+        'parent',
+        'assigned_to',
+      ]
       if (fkFields.includes(key) && val === '') continue
 
       if (key === 'watchers' || key === 'files')
@@ -300,13 +309,8 @@ const refConfirmModal = ref()
               </h6>
             </CCol>
             <CCol class="text-right">
-              <v-btn
-                color="success"
-                size="x-small"
-                variant="outlined"
-                @click="refIssueModal.callModal()"
-              >
-                <v-icon icon="mdi-plus" size="12" class="mr-1" /> 업무 추가
+              <v-btn color="info" size="x-small" @click="refIssueModal.callModal()">
+                <v-icon icon="mdi-plus" size="12" class="mr-1" /> 관련 업무 추가
               </v-btn>
             </CCol>
           </CRow>
@@ -384,11 +388,12 @@ const refConfirmModal = ref()
     <template #header>회의 관련 업무 생성</template>
     <template #default>
       <IssueForm
-        :issue-project="meeting?.project_desc as any"
-        :all-projects="workStore.issueProjectList"
+        :issue-project="workStore.issueProject ?? undefined"
+        :all-projects="workStore.getAllProjects"
         :status-list="statusList"
         :priority-list="priorityList"
         :get-issues="getIssues"
+        :btn-size="'small'"
         @on-submit="createRelatedIssue"
         @close-form="refIssueModal.close()"
       />

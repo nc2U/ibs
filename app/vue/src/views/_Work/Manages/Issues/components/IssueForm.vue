@@ -111,7 +111,7 @@ watch(props, nVal => {
 const watcherList = ref<{ pk: number; username: string }[]>([])
 
 const memberList = computed<{ pk: number; username: string }[]>(() => {
-  if (props.issueProject) {
+  if (props.issueProject?.all_members) {
     return props.issueProject.all_members.map(m => m.user)
   }
 
@@ -125,7 +125,7 @@ watch(
 
 const issueStore = useIssue()
 const trackers = computed(() =>
-  props.issueProject ? props.issueProject.trackers : issueStore.trackerList,
+  props.issueProject?.trackers ? props.issueProject.trackers : issueStore.trackerList,
 )
 
 const categories = computed(() => (props.issueProject?.categories as SimpleCategory[]) ?? [])

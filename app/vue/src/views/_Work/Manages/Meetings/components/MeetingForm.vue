@@ -299,14 +299,11 @@ const userOptions = computed(() =>
                   >
                     연결된 업무가 없습니다.
                   </div>
-                  <v-btn
-                    color="success"
-                    size="small"
-                    variant="outlined"
-                    @click="refIssueModal.callModal()"
-                  >
-                    <v-icon icon="mdi-plus" size="small" class="mr-1" /> 새 업무 추가
-                  </v-btn>
+                  <CCol class="text-right">
+                    <v-btn color="info" size="x-small" @click="refIssueModal.callModal()">
+                      <v-icon icon="mdi-plus" size="small" class="mr-1" /> 관련 업무 추가
+                    </v-btn>
+                  </CCol>
                 </div>
                 <div
                   v-else
