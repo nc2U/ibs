@@ -77,13 +77,25 @@ const onSubmit = (event: Event) => {
 }
 
 const refIssueModal = ref()
+const selectedIssue = ref<any>(null)
+const modalKey = ref(0)
+
+const callIssueModal = async (pk?: number) => {
+  if (pk) {
+    await issueStore.fetchIssue(pk)
+    selectedIssue.value = issueStore.issue
+  } else selectedIssue.value = null
+
+  modalKey.value++
+  refIssueModal.value.callModal()
+}
 
 const createRelatedIssue = async (payload: any) => {
   if (form.value.pk) {
     const { pk, ...getData } = payload
     const formData = new FormData()
 
-    getData.meeting = form.value.pk
+    formData.append('meeting', form.value.pk.toString())
 
     for (const key in getData) {
       const val = getData[key]
@@ -113,13 +125,13 @@ const createRelatedIssue = async (payload: any) => {
         if (key === 'project' && !val) {
           const projectSlug = workStore.issueProject?.slug || ''
           if (projectSlug) formData.append(key, projectSlug)
-        } else {
-          formData.append(key, val as string)
-        }
+        } else formData.append(key, val as string)
       }
     }
 
-    await issueStore.createIssue(formData)
+    if (pk) await issueStore.updateIssue(pk, formData)
+    else await issueStore.createIssue(formData)
+
     await meetingStore.fetchMeeting(form.value.pk) // Refresh meeting to get updated issues list
     refIssueModal.value.close()
   }
@@ -161,13 +173,9 @@ onBeforeMount(async () => {
       await issueStore.fetchAllIssueList(proj.slug)
     }
     await meetingStore.fetchCategoryList(route.params.projId as string)
-  } else {
-    await meetingStore.fetchCategoryList()
-  }
+  } else await meetingStore.fetchCategoryList()
 
-  if (route.params.meetingId) {
-    await fetchMeeting(Number(route.params.meetingId))
-  }
+  if (route.params.meetingId) await fetchMeeting(Number(route.params.meetingId))
 })
 
 watch(
@@ -272,7 +280,7 @@ const userOptions = computed(() =>
                     <CTable small striped borderless class="border-bottom">
                       <CTableBody>
                         <CTableRow v-for="issue in meeting.issues" :key="issue.pk">
-                          <CTableDataCell style="width: 70%">
+                          <CTableDataCell style="width: 60%">
                             <v-icon
                               icon="mdi-checkbox-marked-circle-outline"
                               size="small"
@@ -289,6 +297,17 @@ const userOptions = computed(() =>
                               {{ issue.assigned_to.username }}
                             </span>
                           </CTableDataCell>
+                          <CTableDataCell style="width: 10%" class="text-right">
+                            <v-btn
+                              icon
+                              size="x-small"
+                              variant="text"
+                              color="info"
+                              @click="callIssueModal(issue.pk)"
+                            >
+                              <v-icon icon="mdi-pencil" />
+                            </v-btn>
+                          </CTableDataCell>
                         </CTableRow>
                       </CTableBody>
                     </CTable>
@@ -300,7 +319,7 @@ const userOptions = computed(() =>
                     연결된 업무가 없습니다.
                   </div>
                   <CCol class="text-right">
-                    <v-btn color="info" size="x-small" @click="refIssueModal.callModal()">
+                    <v-btn color="info" size="x-small" @click="callIssueModal()">
                       <v-icon icon="mdi-plus" size="small" class="mr-1" /> 관련 업무 추가
                     </v-btn>
                   </CCol>
@@ -438,9 +457,13 @@ const userOptions = computed(() =>
   </CCard>
 
   <FormModal ref="refIssueModal" size="xl">
-    <template #header>회의 관련 업무 생성</template>
+    <template #header>
+      {{ !selectedIssue ? '회의 관련 업무 생성' : '회의 관련 업무 수정' }}
+    </template>
     <template #default>
       <IssueForm
+        :key="modalKey"
+        :issue="selectedIssue"
         :issue-project="workStore.AllIssueProjects.find(p => p.pk === form.project)"
         :all-projects="allProjects"
         :status-list="statusList"
