@@ -22,6 +22,7 @@ const props = defineProps({
   statusList: { type: Array as PropType<any[]>, default: () => [] },
   priorityList: { type: Array as PropType<any[]>, default: () => [] },
   getIssues: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },
+  btnSize: { type: String, default: 'default' },
 })
 
 const emit = defineEmits(['on-submit', 'close-form'])
@@ -535,10 +536,22 @@ defineExpose({ callComment, callReply })
 
         <CRow>
           <CCol class="text-right">
-            <v-btn type="submit" color="primary" variant="flat" :disabled="formsCheck">
+            <v-btn
+              type="submit"
+              :size="btnSize"
+              color="primary"
+              variant="flat"
+              :disabled="formsCheck"
+            >
               확인
             </v-btn>
-            <v-btn color="secondary" variant="flat" class="ml-2" @click="emit('close-form')">
+            <v-btn
+              color="secondary"
+              :size="btnSize"
+              variant="flat"
+              class="ml-2"
+              @click="emit('close-form')"
+            >
               취소
             </v-btn>
           </CCol>

@@ -449,13 +449,10 @@ const userOptions = computed(() =>
         :status-list="statusList"
         :priority-list="priorityList"
         :get-issues="getIssues"
+        :btn-size="'small'"
         @on-submit="createRelatedIssue"
         @close-form="refIssueModal.close()"
       />
     </template>
   </FormModal>
 </template>
-
-<style lang="scss" scoped>
-/* Optional styling to match IssueForm exactly if needed */
-</style>
