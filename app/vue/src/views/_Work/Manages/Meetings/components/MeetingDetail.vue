@@ -24,9 +24,9 @@ const priorityList = computed(() => issueStore.priorityList)
 const getIssues = computed(() => issueStore.getIssues)
 
 const statusColor = computed(() => {
-  if (meeting.value?.status === '1') return 'primary'
+  if (meeting.value?.status === '1') return 'info'
   if (meeting.value?.status === '2') return 'success'
-  if (meeting.value?.status === '3') return 'danger'
+  if (meeting.value?.status === '3') return 'secondary'
   return 'secondary'
 })
 
@@ -255,8 +255,9 @@ const refConfirmModal = ref()
         <v-divider class="my-4" />
 
         <div v-if="meeting.agenda" class="mb-5">
-          <h6 class="title mb-2 text-primary">
-            <v-icon icon="mdi-bullseye-arrow" size="small" class="mr-1" /> 회의 아젠다
+          <h6 class="title mb-2 text-black">
+            <v-icon icon="mdi-bullseye-arrow" color="text-primary" size="small" class="mr-1" /> 회의
+            아젠다
           </h6>
           <div
             class="markdown-content bg-white p-3 border rounded"
@@ -265,8 +266,9 @@ const refConfirmModal = ref()
         </div>
 
         <div v-if="meeting.content" class="mb-5">
-          <h6 class="title mb-2 text-primary">
-            <v-icon icon="mdi-text-box-outline" size="small" class="mr-1" /> 회의 내용
+          <h6 class="title mb-2 text-black">
+            <v-icon icon="mdi-text-box-outline" color="text-primary" size="small" class="mr-1" />
+            회의 내용
           </h6>
           <div
             class="markdown-content bg-white p-3 border rounded"
@@ -277,8 +279,9 @@ const refConfirmModal = ref()
         <CRow>
           <CCol md="6" v-if="meeting.decisions">
             <div class="mb-4">
-              <h6 class="title mb-2 text-success">
-                <v-icon icon="mdi-check-circle" size="small" class="mr-1" /> 주요 결정 사항
+              <h6 class="title mb-2 text-black">
+                <v-icon color="text-success" icon="mdi-check-circle" size="small" class="mr-1" />
+                주요 결정 사항
               </h6>
               <div
                 class="markdown-content bg-light-success p-3 border border-success rounded text-success"
@@ -288,9 +291,14 @@ const refConfirmModal = ref()
           </CCol>
           <CCol md="6" v-if="meeting.action_items">
             <div class="mb-4">
-              <h6 class="title mb-2 text-warning">
-                <v-icon icon="mdi-clipboard-list-outline" size="small" class="mr-1" /> 후속 조치
-                사항
+              <h6 class="title mb-2 text-black">
+                <v-icon
+                  icon="mdi-clipboard-list-outline"
+                  color="text-warning"
+                  size="small"
+                  class="mr-1"
+                />
+                후속 조치 사항
               </h6>
               <div
                 class="markdown-content bg-light-warning p-3 border border-warning rounded text-warning"
@@ -303,8 +311,13 @@ const refConfirmModal = ref()
         <div class="mb-5">
           <CRow class="mb-2">
             <CCol>
-              <h6 class="title">
-                <v-icon icon="mdi-checkbox-marked-circle-outline" size="small" class="mr-1" />
+              <h6 class="title text-black">
+                <v-icon
+                  icon="mdi-checkbox-marked-circle-outline"
+                  color="success"
+                  size="small"
+                  class="mr-1"
+                />
                 관련 업무
               </h6>
             </CCol>

@@ -24,9 +24,9 @@ const totalAttendees = computed(() => {
 })
 
 const statusColor = computed(() => {
-  if (props.meeting.status === '1') return 'primary'
+  if (props.meeting.status === '1') return 'info'
   if (props.meeting.status === '2') return 'success'
-  if (props.meeting.status === '3') return 'danger'
+  if (props.meeting.status === '3') return 'secondary'
   return 'secondary'
 })
 
