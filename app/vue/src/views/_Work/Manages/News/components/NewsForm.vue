@@ -128,7 +128,9 @@ onBeforeMount(() => {
       </CCardBody>
     </CCard>
 
-    <v-btn type="submit" :color="news ? 'success' : 'primary'" size="small">저장</v-btn>
-    <v-btn :color="btnLight" @click="emit('close-form')" size="small">취소</v-btn>
+    <CCol class="mt-4 mb-5 text-right">
+      <v-btn type="submit" :color="news ? 'success' : 'primary'" size="small">저장</v-btn>
+      <v-btn :color="btnLight" @click="emit('close-form')" size="small">취소</v-btn>
+    </CCol>
   </CForm>
 </template>
