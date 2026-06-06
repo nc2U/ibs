@@ -135,7 +135,7 @@ onBeforeMount(async () => {
       <h5>
         <span>{{ issue?.tracker.name }} #{{ issue?.pk }}</span>
         <v-badge
-          :color="isClosed ? 'success' : 'primary'"
+          :color="isClosed ? 'success' : 'info'"
           :content="isClosed ? '완료됨' : '진행중'"
           inline
           rounded="1"
@@ -153,7 +153,7 @@ onBeforeMount(async () => {
     />
   </CRow>
 
-  <CCard color="yellow-lighten-5 mb-3">
+  <CCard class="mb-3 shadow-sm issue-card">
     <CCardBody>
       <CRow>
         <CCol>
@@ -186,7 +186,8 @@ onBeforeMount(async () => {
                 issueId: issueNums[issueNums.indexOf(issue.pk) + 1],
               },
             }"
-            >다음 »
+          >
+            다음 »
           </router-link>
         </CCol>
       </CRow>
@@ -421,5 +422,22 @@ onBeforeMount(async () => {
   font-size: 1.1em;
   font-weight: bold;
   color: #0f192a;
+}
+
+.issue-card {
+  background-color: #fefce8 !important;
+}
+
+.dark-theme {
+  .sub-title {
+    color: #eceff1;
+  }
+  .issue-card {
+    background-color: #37474f !important;
+    color: #eceff1;
+  }
+  .title {
+    color: #cfd8dc;
+  }
 }
 </style>

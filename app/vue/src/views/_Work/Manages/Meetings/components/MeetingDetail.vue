@@ -422,7 +422,7 @@ const refConfirmModal = ref()
   color: #0f192a;
 }
 .meeting-card {
-  background-color: #fefce8 !important;
+  background-color: #f7fff9 !important;
 }
 .markdown-content {
   background-color: #ffffff;
@@ -442,10 +442,14 @@ const refConfirmModal = ref()
   }
 }
 .bg-light-success {
-  background-color: #f0fdf4 !important;
+  background-color: #ecfdf5 !important;
+  border-color: #10b981 !important;
+  color: #065f46 !important;
 }
 .bg-light-warning {
-  background-color: #fffbeb !important;
+  background-color: #f0fdfa !important;
+  border-color: #14b8a6 !important;
+  color: #0f766e !important;
 }
 .border-dashed {
   border-style: dashed !important;
@@ -453,36 +457,46 @@ const refConfirmModal = ref()
 
 .dark-theme {
   .sub-title {
-    color: #eceff1;
+    color: #ffffff;
   }
   .meeting-card {
-    background-color: #37474f !important;
-    color: #eceff1;
+    background-color: #444e49 !important;
+    color: #ffffff;
   }
   .markdown-content {
-    background-color: #263238;
-    border-color: #455a64 !important;
-    color: #cfd8dc;
+    background-color: #363e3a;
+    border-color: #2b322f !important;
+    color: #f1f5f9;
     :deep(pre) {
-      background-color: #37474f;
-      color: #eceff1;
+      background-color: #2b322f;
+      color: #ffffff;
     }
   }
   .bg-light-success {
-    background-color: #1b5e20 !important;
-    color: #a5d6a7 !important;
-    border-color: #2e7d32 !important;
+    background-color: #283630 !important;
+    color: #a7f3d0 !important;
+    border-color: #3eb37c !important;
   }
   .bg-light-warning {
-    background-color: #453505 !important;
-    color: #ffe082 !important;
-    border-color: #634d07 !important;
+    background-color: #28363c !important;
+    color: #99f6e4 !important;
+    border-color: #3a8a7c !important;
   }
   .border {
-    border-color: #455a64 !important;
+    border-color: #2b322f !important;
   }
   .table {
-    color: #cfd8dc;
+    color: #f1f5f9;
+    :deep(th), :deep(td) {
+      color: #f1f5f9 !important;
+      border-color: rgba(255, 255, 255, 0.1) !important;
+    }
+  }
+  .text-muted {
+    color: #d1d5db !important;
+  }
+  :deep(.v-divider) {
+    border-color: rgba(255, 255, 255, 0.1) !important;
   }
 }
 </style>
