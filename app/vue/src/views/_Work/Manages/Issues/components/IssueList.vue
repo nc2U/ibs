@@ -69,7 +69,7 @@ const watchControl = (payload: any) => {
       >
         <v-icon icon="mdi-plus-circle" color="success" size="15" class="mr-1" />
         <router-link :to="{ name: `${String(route.name)} - 추가` }" class="ml-1">
-          새 업무 만들기
+          새 업무
         </router-link>
       </span>
 

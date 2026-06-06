@@ -86,7 +86,7 @@ onBeforeMount(() => {
       </span>
       <span class="mr-3">
         <v-icon icon="mdi-plus-circle" color="success" size="16" class="mr-1" />
-        <router-link :to="{ name: '(추진현황) - 추가' }">새 업무 만들기</router-link>
+        <router-link :to="{ name: '(추진현황) - 추가' }">새 업무</router-link>
       </span>
     </CCol>
   </CRow>

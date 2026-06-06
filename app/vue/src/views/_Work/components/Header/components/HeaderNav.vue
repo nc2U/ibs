@@ -22,9 +22,7 @@ const getTitle = (title: string) => title.replace(/[() ]/gim, '')
     <CDropdown v-if="route.params['projId']">
       <CDropdownToggle :color="isDark ? 'dark' : 'light'" />
       <CDropdownMenu>
-        <CDropdownItem @click="router.push({ name: '(업무) - 추가' })">
-          새 업무 만들기
-        </CDropdownItem>
+        <CDropdownItem @click="router.push({ name: '(업무) - 추가' })"> 새 업무 </CDropdownItem>
         <CDropdownItem v-if="workManager" @click="router.push({ name: '(설정) - 범주추가' })">
           새 업무 범주
         </CDropdownItem>

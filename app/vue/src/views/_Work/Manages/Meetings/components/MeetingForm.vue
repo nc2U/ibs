@@ -310,7 +310,7 @@ const userOptions = computed(() =>
                 </div>
                 <div
                   v-else
-                  class="text-muted small p-3 text-center border rounded border-dashed bg-light"
+                  class="text-muted small p-3 text-center border rounded border-dashed bg-more-light"
                 >
                   <v-icon icon="mdi-information-outline" size="small" class="mr-1" />
                   회의 관련 업무 등록은 회의록을 먼저 <strong>저장</strong>한 후 가능합니다.
