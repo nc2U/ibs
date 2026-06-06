@@ -2,7 +2,7 @@ import type { SimpleProject } from '@/store/types/work_project.ts'
 
 export interface ActLogEntry {
   pk: number
-  sort: '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8'
+  sort: '1' | '2' | '3' | '4' | '5' | '6'
   project: SimpleProject
   issue: {
     pk: number
@@ -28,7 +28,7 @@ export interface ActLogEntryFilter {
   to_act_date?: string
   from_act_date?: string
   creator?: string
-  sort?: Array<'1' | '2' | '3' | '4' | '5' | '6' | '7' | '8'>
+  sort?: Array<'1' | '2' | '3' | '4' | '5' | '6'>
   limit?: number
 }
 

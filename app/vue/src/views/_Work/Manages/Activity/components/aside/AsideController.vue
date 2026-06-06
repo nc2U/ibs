@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import Cookies from 'js-cookie'
-import { reactive, computed, inject, onBeforeMount, type ComputedRef, nextTick, watch } from 'vue'
+import { computed, type ComputedRef, inject, nextTick, onBeforeMount, reactive, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { dateFormat } from '@/utils/baseMixins'
 import { useAccount } from '@/store/pinia/account'
@@ -47,14 +47,14 @@ watch(
   () => actFilter.sort as string[],
   nVal => {
     if ((nVal as string[]).length === 0) {
-      actFilter.sort = ['1', '2', '3'] as typeof actFilter.sort
+      actFilter.sort = ['1', '2', '3', '4', '5', '6'] as typeof actFilter.sort
       Cookies.remove('cookieSort')
     } else Cookies.set('cookieSort', nVal?.sort().join('-'))
   },
   { deep: true },
 )
 
-const pickSort = (sort: '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8') => {
+const pickSort = (sort: '1' | '2' | '3' | '4' | '5' | '6') => {
   actFilter.sort = [sort]
   filterActivity()
 }
@@ -160,8 +160,8 @@ onBeforeMount(async () => {
       <a href="javascript:void(0)" @click="pickSort('4')" class="ml-2">공지</a> <br />
       <CFormCheck v-model="actFilter.sort" value="5" id="docs-filter" />
       <a href="javascript:void(0)" @click="pickSort('5')" class="ml-2">문서</a> <br />
-      <CFormCheck v-model="actFilter.sort" value="8" id="message-filter" />
-      <a href="javascript:void(0)" @click="pickSort('8')" class="ml-2">글</a>
+      <CFormCheck v-model="actFilter.sort" value="6" id="message-filter" />
+      <a href="javascript:void(0)" @click="pickSort('6')" class="ml-2">글</a>
     </CCol>
   </CRow>
 
