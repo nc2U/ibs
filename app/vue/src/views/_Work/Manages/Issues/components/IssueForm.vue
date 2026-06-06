@@ -539,7 +539,7 @@ defineExpose({ callComment, callReply })
             <v-btn
               type="submit"
               :size="btnSize"
-              color="primary"
+              :color="!issue?.pk ? 'primary' : 'success'"
               variant="flat"
               :disabled="formsCheck"
             >

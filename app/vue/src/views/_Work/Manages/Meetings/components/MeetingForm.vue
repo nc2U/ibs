@@ -287,7 +287,9 @@ const userOptions = computed(() =>
                               class="mr-1"
                               color="success"
                             />
-                            {{ issue.subject }}
+                            <a href="javascript:void(0)" @click="callIssueModal(issue.pk)">
+                              {{ issue.subject }}
+                            </a>
                           </CTableDataCell>
                           <CTableDataCell style="width: 15%" class="text-center">
                             <v-chip size="x-small" label>{{ issue.status }}</v-chip>
@@ -302,7 +304,7 @@ const userOptions = computed(() =>
                               icon
                               size="x-small"
                               variant="text"
-                              color="info"
+                              color="success"
                               @click="callIssueModal(issue.pk)"
                             >
                               <v-icon icon="mdi-pencil" />
