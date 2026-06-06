@@ -333,15 +333,17 @@ const refConfirmModal = ref()
             <CTable small striped hover class="border-bottom">
               <CTableHead>
                 <CTableRow class="text-center bg-light">
-                  <CTableHeaderCell style="width: 10%">번호</CTableHeaderCell>
-                  <CTableHeaderCell style="width: 60%">제목</CTableHeaderCell>
-                  <CTableHeaderCell style="width: 15%">상태</CTableHeaderCell>
-                  <CTableHeaderCell style="width: 15%">담당자</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 10%" class="text-black">번호</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 60%" class="text-black">제목</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 15%" class="text-black">상태</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 15%" class="text-black">담당자</CTableHeaderCell>
                 </CTableRow>
               </CTableHead>
               <CTableBody>
                 <CTableRow v-for="issue in meeting.issues" :key="issue.pk">
-                  <CTableDataCell class="text-center small">{{ issue.pk }}</CTableDataCell>
+                  <CTableDataCell class="text-center small text-black">
+                    {{ issue.pk }}
+                  </CTableDataCell>
                   <CTableDataCell>
                     <router-link
                       :to="{
@@ -353,11 +355,11 @@ const refConfirmModal = ref()
                     </router-link>
                   </CTableDataCell>
                   <CTableDataCell class="text-center">
-                    <v-chip size="x-small" label :color="issue.closed ? 'success' : 'primary'">{{
-                      issue.status
-                    }}</v-chip>
+                    <v-chip size="x-small" label :color="issue.closed ? 'success' : 'primary'">
+                      {{ issue.status }}
+                    </v-chip>
                   </CTableDataCell>
-                  <CTableDataCell class="text-center small">
+                  <CTableDataCell class="text-center small text-black">
                     {{ issue.assigned_to?.username || '-' }}
                   </CTableDataCell>
                 </CTableRow>
