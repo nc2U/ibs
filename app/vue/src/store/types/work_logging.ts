@@ -15,7 +15,7 @@ export interface ActLogEntry {
   meeting: { pk: number; title: string; agenda: string } | null
   news: { pk: number; title: string; summary: string } | null
   document: { pk: number; title: string; content: string } | null
-  post: { pk: number; board: string; title: string; content: string } | null
+  post: { pk: number; forum: string; title: string; content: string } | null
   status_log: string
   act_date: string
   timestamp: string
