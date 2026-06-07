@@ -62,6 +62,6 @@ const downloadPdf = (event: Event) => {
   <CTableDataCell>{{ totalAttendees }}</CTableDataCell>
   <CTableDataCell>{{ createdDate }}</CTableDataCell>
   <CTableDataCell class="text-center">
-    <v-icon icon="mdi-file-pdf-box" color="success" size="20" @click="downloadPdf" />
+    <v-icon icon="mdi-file-pdf-box" color="blue-grey-lighten-3" size="20" @click="downloadPdf" />
   </CTableDataCell>
 </template>
