@@ -9,9 +9,9 @@ from _utils.file_cleanup import file_cleanup_signals, related_file_cleanup
 from _utils.file_upload import get_forum_file_path, get_forum_image_path
 
 
-class Board(models.Model):
+class Forum(models.Model):
     project = models.ForeignKey('work.IssueProject', on_delete=models.CASCADE,
-                                verbose_name='업무 프로젝트', related_name='boards_legacy')
+                                verbose_name='업무 프로젝트', related_name='forums')
     name = models.CharField('이름', max_length=255, db_index=True)
     description = models.CharField('설명', max_length=255, blank=True, default='')
     parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
@@ -28,7 +28,7 @@ class Board(models.Model):
 
 
 class PostCategory(models.Model):
-    board = models.ForeignKey(Board, on_delete=models.CASCADE, verbose_name='게시판')
+    forum = models.ForeignKey(Forum, on_delete=models.CASCADE, verbose_name='게시판')
     color = models.CharField('색상', max_length=21, null=True, blank=True)
     name = models.CharField('이름', max_length=100, db_index=True)
     parent = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='상위 카테고리')
@@ -44,7 +44,7 @@ class PostCategory(models.Model):
 
 
 class Post(models.Model):
-    board = models.ForeignKey(Board, on_delete=models.PROTECT, verbose_name='게시판')
+    forum = models.ForeignKey(Forum, on_delete=models.PROTECT, verbose_name='게시판')
     category = models.ForeignKey(PostCategory, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='카테고리')
     title = models.CharField('제목', max_length=255, db_index=True)
     content = models.TextField('내용', blank=True, default='')
@@ -59,7 +59,7 @@ class Post(models.Model):
     is_notice = models.BooleanField('공지', default=False)
     is_blind = models.BooleanField('숨김', default=False)
     deleted = models.DateTimeField('휴지통', null=True, blank=True, default=None)
-    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자', related_name='board_posts')
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자')
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
@@ -170,7 +170,7 @@ class Comment(models.Model):
     ip = models.GenericIPAddressField('아이피', null=True, blank=True)
     device = models.CharField('등록기기', max_length=255, blank=True)
     secret = models.BooleanField('비밀글', default=False)
-    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name='등록자', related_name='board_comments')
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name='등록자')
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
@@ -182,7 +182,7 @@ class Comment(models.Model):
 
 
 class Tag(models.Model):
-    board = models.ForeignKey(Board, on_delete=models.CASCADE, verbose_name='게시판')
+    forum = models.ForeignKey(Forum, on_delete=models.CASCADE, verbose_name='게시판')
     post = models.ManyToManyField(Post, blank=True, verbose_name='게시물')
     name = models.CharField('태그', max_length=100, db_index=True)
 

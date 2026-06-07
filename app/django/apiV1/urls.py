@@ -6,6 +6,7 @@ from .views import board
 from .views import company
 from .views import contract
 from .views import docs
+from .views import forum
 from .views import ibs
 from .views import items
 from .views import ledger
@@ -201,6 +202,21 @@ router.register(r'image', docs.ImageViewSet)
 router.register(r'docs-trash-can', docs.DocsInTrashViewSet, basename='docs-trash-can')
 router.register(r'official-letter', docs.OfficialLetterViewSet)
 
+# forum
+router.register(r'forum', forum.ForumViewSet)
+router.register(r'forum/post-category', forum.CategoryViewSet, basename='forum-post-category')
+router.register(r'forum/post', forum.PostViewSet, basename='forum-post')
+router.register(r'forum/post-like', forum.PostLikeViewSet, basename='forum-post-like')
+router.register(r'forum/post-blame', forum.PostBlameViewSet, basename='forum-post-blame')
+router.register(r'forum/post-link', forum.PostLinkViewSet, basename='forum-post-link')
+router.register(r'forum/post-file', forum.PostFileViewSet, basename='forum-post-file')
+router.register(r'forum/post-image', forum.PostImageViewSet, basename='forum-post-image')
+router.register(r'forum/comment', forum.CommentViewSet, basename='forum-comment')
+router.register(r'forum/comment-like', forum.CommentLikeViewSet, basename='forum-comment-like')
+router.register(r'forum/comment-blame', forum.CommentBlameViewSet, basename='forum-comment-blame')
+router.register(r'forum/tag', forum.TagViewSet, basename='forum-tag')
+router.register(r'forum/post-trash-can', forum.PostInTrashViewSet, basename='forum-post-trash-can')
+
 urlpatterns = router.urls
 urlpatterns += [path('cont-aggregate/<int:project_id>/', contract.ContractAggreateView.as_view(),
                      name='cont-aggregate')]
@@ -217,6 +233,8 @@ urlpatterns += [path('change-password/', accounts.ChangePasswordView.as_view(), 
 urlpatterns += [path('password-reset/', accounts.PasswordResetRequestView.as_view(), name='password-reset')]
 urlpatterns += [path('password-reset-confirm/<str:user_id>/<str:token>/', accounts.PasswordResetConfirmView.as_view(),
                      name='password-reset-confirm')]
-urlpatterns += [path('post/<int:pk>/copy/', board.PostViewSet.as_view({'post': 'copy_and_create'}), name='post-copy')]
+urlpatterns += [
+    path('post/<int:pk>/copy/', board.PostViewSet.as_view({'post': 'copy_and_create'}), name='board-post-copy')]
+urlpatterns += [path('forum/post/<int:pk>/copy/', forum.PostViewSet.as_view({'post': 'copy_and_create'}), name='forum-post-copy')]
 urlpatterns += [path('docs/<int:pk>/copy/', docs.DocumentViewSet.as_view({'docs': 'copy_and_create'}),
                      name='docs-copy')]

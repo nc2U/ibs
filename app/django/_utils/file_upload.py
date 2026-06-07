@@ -152,14 +152,14 @@ def get_docs_image_path(instance, filename):
     return get_project_upload_path(instance, filename, 'images')
 
 
-def get_board_file_path(instance, filename):
-    """board 앱 파일 업로드 경로"""
-    return get_project_upload_path(instance, filename, 'board/files')
+def get_forum_file_path(instance, filename):
+    """forum 앱 파일 업로드 경로"""
+    return get_project_upload_path(instance, filename, 'forum/files')
 
 
-def get_board_image_path(instance, filename):
-    """board 앱 이미지 업로드 경로"""
-    return get_project_upload_path(instance, filename, 'board/images')
+def get_forum_image_path(instance, filename):
+    """forum 앱 이미지 업로드 경로"""
+    return get_project_upload_path(instance, filename, 'forum/images')
 
 
 def get_work_file_path(instance, filename):
