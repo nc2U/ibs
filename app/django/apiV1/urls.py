@@ -49,7 +49,7 @@ router.register(r'wise-say', ibs.WiseSayViewSet)
 # work
 router.register(r'issue-project', work.IssueProjectViewSet)
 router.register(r'role', work.RoleViewSet)
-# router.register(r'permission', work.PermissionViewSet)
+router.register(r'permission', work.PermissionViewSet)
 router.register(r'member', work.MemberViewSet)
 router.register(r'module', work.ModuleViewSet)
 router.register(r'version', work.VersionViewSet)

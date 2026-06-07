@@ -160,6 +160,46 @@ export const useWork = defineStore('work', () => {
       .then(res => (roleList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
+  const createRole = (payload: Role) =>
+    api
+      .post(`/role/`, payload)
+      .then(res => {
+        fetchRoleList().then(() => message())
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const updateRole = (payload: Role) =>
+    api
+      .put(`/role/${payload.pk}/`, payload)
+      .then(res => {
+        fetchRoleList().then(() => message())
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const patchRole = (payload: { pk: number; permissions: number[] }) =>
+    api
+      .patch(`/role/${payload.pk}/`, payload)
+      .then(res => {
+        fetchRoleList().then(() => message())
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const deleteRole = (pk: number) =>
+    api
+      .delete(`/role/${pk}/`)
+      .then(() => {
+        fetchRoleList().then(() => message('warning', '알림!', '해당 오브젝트가 삭제되었습니다.'))
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const permissionList = ref<Permission[]>([])
+
+  const fetchPermissionList = () =>
+    api
+      .get(`/permission/`)
+      .then(res => (permissionList.value = res.data.results))
+      .catch(err => errorHandle(err.response.data))
+
   // member states & getters
   const member = ref<Member | null>(null)
   const memberList = ref<Member[]>([])
@@ -281,6 +321,13 @@ export const useWork = defineStore('work', () => {
     getRoles,
     fetchRole,
     fetchRoleList,
+    createRole,
+    updateRole,
+    patchRole,
+    deleteRole,
+
+    permissionList,
+    fetchPermissionList,
 
     member,
     memberList,

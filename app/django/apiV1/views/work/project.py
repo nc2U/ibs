@@ -58,10 +58,11 @@ class RoleViewSet(viewsets.ModelViewSet):
         serializer.save(creator=self.request.user)
 
 
-# class PermissionViewSet(viewsets.ModelViewSet):
-#     queryset = Permission.objects.all()
-#     serializer_class = PermissionSerializer
-#     permission_classes = (permissions.IsAuthenticated,)
+class PermissionViewSet(viewsets.ModelViewSet):
+    queryset = Permission.objects.all()
+    serializer_class = PermissionSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+    pagination_class = PageNumberPaginationOneHundred
 
 
 class MemberViewSet(viewsets.ModelViewSet):

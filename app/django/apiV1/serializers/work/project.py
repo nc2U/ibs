@@ -231,11 +231,17 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
         return super().update(instance, validated_data)
 
 
+class PermissionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Permission
+        fields = ('pk', 'sort', 'code', 'name', 'description')
+
+
 class RoleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Role
         fields = ('pk', 'name', 'assignable', 'issue_visible', 'user_visible',
-                  'order', 'creator', 'created', 'updated')
+                  'permissions', 'order', 'creator', 'created', 'updated')
 
 
 class MemberSerializer(serializers.ModelSerializer):

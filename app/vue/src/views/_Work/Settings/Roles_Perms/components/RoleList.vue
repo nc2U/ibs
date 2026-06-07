@@ -1,0 +1,57 @@
+<script setup lang="ts">
+import type { Role } from '@/store/types/work_project'
+
+defineProps<{ roleList: Role[] }>()
+const emit = defineEmits(['show-modal', 'delete-role'])
+</script>
+
+<template>
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h5>역할 목록</h5>
+    <CButton color="primary" size="sm" @click="emit('show-modal')">새 역할</CButton>
+  </div>
+  <CTable hover responsive align="middle">
+    <CTableHead color="light">
+      <CTableRow>
+        <CTableHeaderCell scope="col">역할</CTableHeaderCell>
+        <CTableHeaderCell scope="col" class="text-center">업무 위탁</CTableHeaderCell>
+        <CTableHeaderCell scope="col"></CTableHeaderCell>
+      </CTableRow>
+    </CTableHead>
+    <CTableBody>
+      <CTableRow v-for="role in roleList" :key="role.pk">
+        <CTableHeaderCell scope="row">
+          <a
+            href="javascript:void(0)"
+            class="text-decoration-none"
+            @click="emit('show-modal', role)"
+          >
+            {{ role.name }}
+          </a>
+        </CTableHeaderCell>
+        <CTableDataCell class="text-center">
+          <CIcon v-if="role.assignable" name="cil-check" class="text-success" />
+        </CTableDataCell>
+        <CTableDataCell class="text-end">
+          <v-btn
+            color="info"
+            size="x-small"
+            variant="outlined"
+            class="me-1"
+            @click="emit('show-modal', role)"
+          >
+            수정
+          </v-btn>
+          <v-btn
+            color="danger"
+            size="x-small"
+            variant="outlined"
+            @click="emit('delete-role', role.pk)"
+          >
+            삭제
+          </v-btn>
+        </CTableDataCell>
+      </CTableRow>
+    </CTableBody>
+  </CTable>
+</template>

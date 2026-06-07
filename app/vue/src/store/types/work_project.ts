@@ -60,7 +60,7 @@ export interface IssueProject {
   parent_visible: boolean
   sub_projects: IssueProject[]
   creator?: string
-  my_perms?: Permission
+  my_perms?: string[]
   created?: string
   updated?: string
 }
@@ -95,75 +95,21 @@ export interface Role {
   pk: number
   name: string
   assignable: boolean
-  issue_visible: 'ALL' | 'PUB' | 'PRI'
-  time_entry_visible: 'ALL' | 'PRI'
-  user_visible: 'ALL' | 'PRJ'
-  default_time_activity: number | null
-  permission: Permission
+  issue_visible: 'ALL' | 'PUB' | 'PRI' | 'NOP'
+  user_visible: 'ALL' | 'PRJ' | 'NOP'
+  permissions: number[]
   order: number
-  user: number
+  creator: number
   created: string
   updated: string
 }
 
 export interface Permission {
-  pk?: number
-  project_create: boolean
-  project_update: boolean
-  project_close: boolean
-  project_delete: boolean
-  project_public: boolean
-  project_module: boolean
-  project_member: boolean
-  project_version: boolean
-  project_create_sub: boolean
-  project_pub_query: boolean
-  project_save_query: boolean
-  forum_read: boolean
-  forum_create: boolean
-  forum_update: boolean
-  forum_own_update: boolean
-  forum_delete: boolean
-  forum_own_delete: boolean
-  forum_watcher_read: boolean
-  forum_watcher_create: boolean
-  forum_watcher_delete: boolean
-  forum_manage: boolean
-  calendar_read: boolean
-  document_read: boolean
-  document_create: boolean
-  document_update: boolean
-  document_delete: boolean
-  issue_read: boolean
-  issue_create: boolean
-  issue_update: boolean
-  issue_own_update: boolean
-  issue_copy: boolean
-  issue_rel_manage: boolean
-  issue_sub_manage: boolean
-  issue_public: boolean
-  issue_own_public: boolean
-  issue_comment_create: boolean
-  issue_comment_update: boolean
-  issue_comment_own_update: boolean
-  issue_private_comment_read: boolean
-  issue_private_comment_set: boolean
-  issue_delete: boolean
-  issue_watcher_read: boolean
-  issue_watcher_create: boolean
-  issue_watcher_delete: boolean
-  issue_import: boolean
-  issue_category_manage: boolean
-  news_read: boolean
-  news_manage: boolean
-  news_comment: boolean
-  time_read: boolean
-  time_create: boolean
-  time_update: boolean
-  time_own_update: boolean
-  time_pro_act_manage: boolean
-  time_other_user_log: boolean
-  time_entries_import: boolean
+  pk: number
+  sort: 'project' | 'meeting' | 'issue' | 'news' | 'docs' | 'forum' | 'calendar'
+  code: string
+  name: string
+  description: string
 }
 
 export interface Member {
