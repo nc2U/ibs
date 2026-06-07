@@ -50,11 +50,12 @@ const pageSelect = (page: number) => emit('page-select', page)
         <col v-if="!route.params.projId" style="width: 15%" />
         <col style="width: 10%" />
         <col style="width: 10%" />
-        <col :style="{ width: route.params.projId ? '35%' : '20%' }" />
+        <col :style="{ width: route.params.projId ? '30%' : '20%' }" />
         <col style="width: 10%" />
         <col style="width: 10%" />
+        <col style="width: 5%" />
         <col style="width: 10%" />
-        <col style="width: 10%" />
+        <col style="width: 5%" />
       </colgroup>
       <CTableHead>
         <CTableRow class="text-center">
@@ -65,8 +66,9 @@ const pageSelect = (page: number) => emit('page-select', page)
           <CTableHeaderCell scope="col">제목</CTableHeaderCell>
           <CTableHeaderCell scope="col">회의 일시</CTableHeaderCell>
           <CTableHeaderCell scope="col">작성자</CTableHeaderCell>
-          <CTableHeaderCell scope="col">참석자 수</CTableHeaderCell>
+          <CTableHeaderCell scope="col">참석</CTableHeaderCell>
           <CTableHeaderCell scope="col">등록일</CTableHeaderCell>
+          <CTableHeaderCell scope="col">PDF</CTableHeaderCell>
         </CTableRow>
       </CTableHead>
 

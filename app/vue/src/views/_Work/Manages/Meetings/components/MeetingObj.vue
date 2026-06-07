@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, type PropType } from 'vue'
 import { useRoute } from 'vue-router'
+import { useMeeting } from '@/store/pinia/work_meeting.ts'
 import type { Meeting } from '@/store/types/work_meeting.ts'
 
 const props = defineProps({
@@ -8,6 +9,7 @@ const props = defineProps({
 })
 
 const route = useRoute()
+const meetingStore = useMeeting()
 
 const meetingDate = computed(() =>
   props.meeting.meeting_date ? props.meeting.meeting_date.substring(0, 10) : '',
@@ -36,6 +38,11 @@ const statusText = computed(() => {
   if (props.meeting.status === '3') return '취소됨'
   return '-'
 })
+
+const downloadPdf = (event: Event) => {
+  event.stopPropagation()
+  meetingStore.generatePdf(props.meeting.pk)
+}
 </script>
 
 <template>
@@ -54,4 +61,7 @@ const statusText = computed(() => {
   <CTableDataCell>{{ meeting.creator.username }}</CTableDataCell>
   <CTableDataCell>{{ totalAttendees }}</CTableDataCell>
   <CTableDataCell>{{ createdDate }}</CTableDataCell>
+  <CTableDataCell class="text-center">
+    <v-icon icon="mdi-file-pdf-box" color="success" size="20" @click="downloadPdf" />
+  </CTableDataCell>
 </template>

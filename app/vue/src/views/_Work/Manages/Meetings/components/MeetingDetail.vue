@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { btnLight } from '@/utils/cssMixins.ts'
 import { useMeeting } from '@/store/pinia/work_meeting.ts'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
@@ -10,7 +11,6 @@ import FileDisplay from '@/views/_Work/components/atomics/FileDisplay.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
 import IssueForm from '@/views/_Work/Manages/Issues/components/IssueForm.vue'
-import { btnLight } from '@/utils/cssMixins.ts'
 
 const route = useRoute()
 const router = useRouter()
@@ -160,6 +160,12 @@ const refConfirmModal = ref()
           <span>회의록 #{{ meeting.pk }}</span>
           <v-badge :color="statusColor" :content="statusText" inline rounded="1" class="ml-2" />
         </h5>
+      </CCol>
+
+      <CCol class="text-right">
+        <v-btn color="primary" size="small" class="ml-2" @click="downloadPdf">
+          <v-icon icon="mdi-file-pdf-box" size="small" class="mr-1" /> PDF 출력
+        </v-btn>
       </CCol>
     </CRow>
 
@@ -386,9 +392,6 @@ const refConfirmModal = ref()
     <CRow class="mb-2">
       <CCol class="text-right">
         <v-btn :color="btnLight" size="small" @click="goList"> 목록으로 </v-btn>
-        <v-btn color="primary" size="small" class="ml-2" @click="downloadPdf">
-          <v-icon icon="mdi-file-pdf-box" size="small" class="mr-1" /> PDF 출력
-        </v-btn>
         <v-btn color="success" size="small" class="ml-2" @click="goEdit"> 수정 </v-btn>
         <v-btn color="warning" size="small" class="ml-2" @click="refConfirmModal.callModal()">
           삭제
@@ -496,7 +499,8 @@ const refConfirmModal = ref()
   }
   .table {
     color: #f1f5f9;
-    :deep(th), :deep(td) {
+    :deep(th),
+    :deep(td) {
       color: #f1f5f9 !important;
       border-color: rgba(255, 255, 255, 0.1) !important;
     }
