@@ -2,7 +2,6 @@ from django.urls import path
 from rest_framework.routers import DefaultRouter
 
 from .views import accounts
-from .views import board
 from .views import company
 from .views import contract
 from .views import docs
@@ -175,21 +174,6 @@ router.register(r'registered-sender-numbers', notice.RegisteredSenderNumberViewS
 router.register(r'message-templates', notice.MessageTemplateViewSet)
 router.register(r'message-send-history', notice.MessageSendHistoryViewSet)
 
-# board
-router.register(r'board', board.BoardViewSet)
-router.register(r'post-category', board.CategoryViewSet)
-router.register(r'post', board.PostViewSet, basename='post')
-router.register(r'post-like', board.PostLikeViewSet, basename='post-like')
-router.register(r'post-blame', board.PostBlameViewSet, basename='post-blame')
-router.register(r'post-link', board.PostLinkViewSet)
-router.register(r'post-file', board.PostFileViewSet)
-router.register(r'post-image', board.PostImageViewSet)
-router.register(r'comment', board.CommentViewSet)
-router.register(r'comment-like', board.CommentLikeViewSet, basename='comment-like')
-router.register(r'comment-blame', board.CommentBlameViewSet, basename='comment-blame')
-router.register(r'tag', board.TagViewSet)
-router.register(r'post-trash-can', board.PostInTrashViewSet, basename='post-trash-can')
-
 # docs
 router.register(r'doc-type', docs.DocTypeViewSet)
 router.register(r'category', docs.CategoryViewSet)
@@ -233,8 +217,8 @@ urlpatterns += [path('change-password/', accounts.ChangePasswordView.as_view(), 
 urlpatterns += [path('password-reset/', accounts.PasswordResetRequestView.as_view(), name='password-reset')]
 urlpatterns += [path('password-reset-confirm/<str:user_id>/<str:token>/', accounts.PasswordResetConfirmView.as_view(),
                      name='password-reset-confirm')]
+
 urlpatterns += [
-    path('post/<int:pk>/copy/', board.PostViewSet.as_view({'post': 'copy_and_create'}), name='board-post-copy')]
-urlpatterns += [path('forum/post/<int:pk>/copy/', forum.PostViewSet.as_view({'post': 'copy_and_create'}), name='forum-post-copy')]
+    path('forum/post/<int:pk>/copy/', forum.PostViewSet.as_view({'post': 'copy_and_create'}), name='post-copy')]
 urlpatterns += [path('docs/<int:pk>/copy/', docs.DocumentViewSet.as_view({'docs': 'copy_and_create'}),
                      name='docs-copy')]

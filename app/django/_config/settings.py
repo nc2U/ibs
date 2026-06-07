@@ -86,7 +86,7 @@ INSTALLED_APPS += [  # app
     'apiV1.apps.ApiV1Config',
     'accounts.apps.AccountsConfig',
     'book.apps.BookConfig',
-    'board.apps.BoardConfig',
+    # 'board.apps.BoardConfig',
     'forum.apps.ForumConfig',
     'company.apps.CompanyConfig',
     'contract.apps.ContractConfig',

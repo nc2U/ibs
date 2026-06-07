@@ -10,7 +10,7 @@ from django.dispatch import receiver
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from board.models import Post, Comment
+from forum.models import Post, Comment
 from docs.models import Document
 from work.models.project import IssueProject
 

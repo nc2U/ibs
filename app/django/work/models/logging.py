@@ -22,7 +22,7 @@ class ActivityLogEntry(models.Model):
     meeting = models.ForeignKey('work.Meeting', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='회의')
     news = models.ForeignKey(News, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='공지')
     document = models.ForeignKey('docs.Document', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='문서')
-    post = models.ForeignKey('board.Post', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='게시글')
+    post = models.ForeignKey('forum.Post', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='게시글')
     status_log = models.CharField('상태 기록', max_length=30, blank=True, default='')
     act_date = models.DateField('로그 일자', auto_now_add=True)
     timestamp = models.DateTimeField('로그 시간', auto_now_add=True)

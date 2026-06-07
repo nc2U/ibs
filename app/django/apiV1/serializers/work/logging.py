@@ -3,7 +3,7 @@ from rest_framework import serializers
 from apiV1.serializers.accounts import SimpleUserSerializer
 from apiV1.serializers.work.issue import IssueInRelatedSerializer
 from apiV1.serializers.work.project import SimpleIssueProjectSerializer
-from board.models import Post
+from forum.models import Post
 from docs.models import Document
 from work.models.inform import News
 from work.models.issue import IssueComment

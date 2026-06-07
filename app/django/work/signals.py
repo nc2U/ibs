@@ -1,7 +1,7 @@
 from django.db.models.signals import pre_save, post_save, pre_delete
 from django.dispatch import receiver
 
-from board.models import Post
+from forum.models import Post
 from docs.models import Document
 from work.models.inform import News
 from work.models.issue import Issue, IssueRelation, IssueComment
