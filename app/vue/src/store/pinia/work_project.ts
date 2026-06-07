@@ -8,6 +8,7 @@ import type {
   Member,
   ProjectFilter,
   Role,
+  Permission,
   Version,
 } from '@/store/types/work_project.ts'
 

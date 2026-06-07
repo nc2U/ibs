@@ -64,7 +64,7 @@ const watchControl = (payload: any) => {
 
     <CCol class="text-right">
       <span
-        v-if="projStatus !== '9' && (workManager || my_perms?.issue_create)"
+        v-if="projStatus !== '9' && (workManager || my_perms?.includes('issue_create'))"
         class="mr-2 form-text"
       >
         <v-icon icon="mdi-plus-circle" color="success" size="15" class="mr-1" />

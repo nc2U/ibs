@@ -101,7 +101,7 @@ const delSubmit = () => {
           에 변경
         </CCol>
         <CCol class="text-right">
-          <span v-if="workManager || my_perms?.issue_comment_create">
+          <span v-if="workManager || my_perms?.includes('issue_comment_create')">
             <v-icon
               icon="mdi-comment-processing-outline"
               color="info"
@@ -120,7 +120,8 @@ const delSubmit = () => {
           <span
             v-if="
               workManager ||
-              (my_perms?.issue_comment_own_update && userInfo?.pk === log.comment?.creator.pk)
+              (my_perms?.includes('issue_comment_own_update') &&
+                userInfo?.pk === log.comment?.creator.pk)
             "
           >
             <v-icon

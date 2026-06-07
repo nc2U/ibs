@@ -37,8 +37,8 @@ const settingMenus = computed(() => {
   const isManager = !!workManager?.value
   const mods = modules.value
 
-  if (isManager || perms?.project_update) menus.push({ no: 1, menu: '프로젝트' })
-  if (isManager || perms?.project_member) menus.push({ no: 2, menu: '구성원' })
+  if (isManager || perms?.includes('project_update')) menus.push({ no: 1, menu: '프로젝트' })
+  if (isManager || perms?.includes('project_member')) menus.push({ no: 2, menu: '구성원' })
   if (isManager && mods?.issue) menus.push({ no: 3, menu: '업무추적' })
   if (mods?.issue) menus.push({ no: 5, menu: '업무범주' })
   if (isManager && mods?.forum) menus.push({ no: 7, menu: '게시판' })

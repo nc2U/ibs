@@ -330,7 +330,9 @@ onBeforeMount(async () => {
       <CRow class="mb-2">
         <CCol class="title">설명</CCol>
         <CCol
-          v-if="issueProject?.status !== '9' && (workManager || my_perms?.issue_comment_create)"
+          v-if="
+            issueProject?.status !== '9' && (workManager || my_perms?.includes('issue_comment_create'))
+          "
           class="text-right form-text"
         >
           <v-icon icon="mdi-comment-text-outline" size="sm" color="grey" class="mr-2" />
