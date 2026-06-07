@@ -94,7 +94,7 @@ export interface Issue {
   pk: number
   project: SimpleProject
   tracker: { pk: number; name: string; description: string }
-  status: { pk: number; name: string }
+  status: { pk: number; name: string; closed: boolean }
   priority: { pk: number; name: string }
   subject: string
   description: string
