@@ -14,6 +14,13 @@ export default defineConfig({
         href: 'https://github.com/nc2U/ibs/blob/master/app/vue/docs/favicon.png?raw=true',
       },
     ],
+    [
+      'link',
+      {
+        rel: 'stylesheet',
+        href: 'https://cdn.jsdelivr.net/npm/@mdi/font@latest/css/materialdesignicons.min.css',
+      },
+    ],
   ],
   lastUpdated: true,
   markdown: {
