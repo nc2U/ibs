@@ -6,6 +6,7 @@ from notice.exports.pdf import PdfExportBill
 from payment.exports.pdf import (
     PdfExportLedgerPayment, PdfExportLedgerDailyLateFee, PdfExportLedgerCalculation
 )
+from work.exports.pdf import PdfExportMeeting
 
 app_name = 'pdf'
 
@@ -20,4 +21,7 @@ urlpatterns = [
 
     # Contract 관련
     path('cert-occupancy/', PdfExportCertOccupancy.as_view(), name='cert-occupancy'),
+
+    # Work 관련
+    path('work/meeting/<int:pk>/', PdfExportMeeting.as_view(), name='work-meeting'),
 ]

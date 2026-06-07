@@ -125,6 +125,12 @@ const goEdit = () => {
   }
 }
 
+const downloadPdf = () => {
+  if (meeting.value) {
+    meetingStore.generatePdf(meeting.value.pk)
+  }
+}
+
 onBeforeMount(async () => {
   if (route.params.meetingId) {
     await fetchMeeting(Number(route.params.meetingId))
@@ -380,8 +386,11 @@ const refConfirmModal = ref()
     <CRow class="mb-2">
       <CCol class="text-right">
         <v-btn :color="btnLight" size="small" @click="goList"> 목록으로 </v-btn>
-        <v-btn color="success" size="small" class="mr-2" @click="goEdit"> 수정 </v-btn>
-        <v-btn color="warning" size="small" class="mr-2" @click="refConfirmModal.callModal()">
+        <v-btn color="primary" size="small" class="ml-2" @click="downloadPdf">
+          <v-icon icon="mdi-file-pdf-box" size="small" class="mr-1" /> PDF 출력
+        </v-btn>
+        <v-btn color="success" size="small" class="ml-2" @click="goEdit"> 수정 </v-btn>
+        <v-btn color="warning" size="small" class="ml-2" @click="refConfirmModal.callModal()">
           삭제
         </v-btn>
       </CCol>

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+            @bottom-right {
+                content: counter(page) " / " counter(pages);
+                font-size: 9pt;
+            }
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Nanum Gothic', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+            font-size: 10pt;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #2c3e50;
+        }
+
+        .header h1 {
+            font-size: 20pt;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .header-info {
+            font-size: 9pt;
+            color: #666;
+        }
+
+        .section {
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            font-size: 12pt;
+            font-weight: bold;
+            color: #2c3e50;
+            background-color: #f8f9fa;
+            padding: 5px 10px;
+            border-left: 4px solid #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .info-table td {
+            padding: 8px;
+            border: 1px solid #dee2e6;
+        }
+
+        .info-table .label {
+            width: 100px;
+            background-color: #f1f3f5;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .markdown-content {
+            padding: 5px 10px;
+            text-align: justify;
+        }
+
+        .markdown-content p {
+            margin-bottom: 8px;
+        }
+
+        .markdown-content ul, .markdown-content ol {
+            margin-left: 20px;
+            margin-bottom: 8px;
+        }
+
+        .highlight-box {
+            background-color: #fdfdfe;
+            border: 1px solid #e1e7ff;
+            padding: 15px;
+            border-radius: 4px;
+        }
+
+        .footer {
+            margin-top: 40px;
+            text-align: right;
+            font-size: 9pt;
+            color: #999;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+        }
+
+        .attendee-chip {
+            background-color: #e9ecef;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 9pt;
+            display: inline-block;
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+    </style>
+    <title>회의록 - {{ meeting.title }}</title>
+</head>
+<body>
+    <div class="header">
+        <h1>회 의 록</h1>
+        <div class="header-info">
+            {{ meeting.project.name|default:"회사 본사" }} | {{ meeting.meeting_date|date:"Y년 m월 d일 H:i" }}
+        </div>
+    </div>
+
+    <div class="section">
+        <table class="info-table">
+            <tr>
+                <td class="label">회의 제목</td>
+                <td colspan="3"><strong>{{ meeting.title }}</strong></td>
+            </tr>
+            <tr>
+                <td class="label">일 시</td>
+                <td>{{ meeting.meeting_date|date:"Y-m-d H:i" }}</td>
+                <td class="label">회의 장소</td>
+                <td>{{ meeting.project.name|default:"본사" }}</td>
+            </tr>
+            <tr>
+                <td class="label">작성자</td>
+                <td>{{ meeting.creator.username }}</td>
+                <td class="label">카테고리</td>
+                <td>{{ meeting.category.name|default:"-" }}</td>
+            </tr>
+            <tr>
+                <td class="label">참석자</td>
+                <td colspan="3">
+                    {% for attendee in meeting.attendees.all %}
+                        <span class="attendee-chip">{{ attendee.username }}</span>
+                    {% endfor %}
+                    {% if meeting.other_attendees %}
+                        <span class="header-info">(외부: {{ meeting.other_attendees }})</span>
+                    {% endif %}
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    {% if meeting.agenda %}
+    <div class="section">
+        <div class="section-title">회의 아젠다</div>
+        <div class="markdown-content">
+            {{ meeting.agenda|linebreaks }}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="section">
+        <div class="section-title">회의 내용</div>
+        <div class="markdown-content">
+            {% load markdown_filters %}
+            {{ meeting.content|markdown|safe }}
+        </div>
+    </div>
+
+    {% if meeting.decisions %}
+    <div class="section">
+        <div class="section-title">주요 결정 사항</div>
+        <div class="markdown-content highlight-box" style="border-color: #d1e7dd; background-color: #f8fff9;">
+            {{ meeting.decisions|markdown|safe }}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if meeting.action_items %}
+    <div class="section">
+        <div class="section-title">후속 조치 사항</div>
+        <div class="markdown-content highlight-box" style="border-color: #fff3cd; background-color: #fffcf0;">
+            {{ meeting.action_items|markdown|safe }}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if meeting.issues.all %}
+    <div class="section">
+        <div class="section-title">관련 업무</div>
+        <table class="info-table" style="font-size: 9pt;">
+            <tr style="background-color: #f8f9fa; font-weight: bold; text-align: center;">
+                <td style="width: 10%;">번호</td>
+                <td>업무 제목</td>
+                <td style="width: 15%;">상태</td>
+                <td style="width: 15%;">담당자</td>
+            </tr>
+            {% for issue in meeting.issues.all %}
+            <tr>
+                <td style="text-align: center;">{{ issue.pk }}</td>
+                <td>{{ issue.subject }}</td>
+                <td style="text-align: center;">{{ issue.status.name }}</td>
+                <td style="text-align: center;">{{ issue.assigned_to.username|default:"-" }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+    {% endif %}
+
+    <div class="footer">
+        출력일시: {% now "Y-m-d H:i:s" %} | {{ company.name }}
+    </div>
+</body>
+</html>

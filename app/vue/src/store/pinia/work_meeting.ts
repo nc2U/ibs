@@ -74,6 +74,11 @@ export const useMeeting = defineStore('meeting', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
+  const generatePdf = (pk: number) => {
+    const url = `/pdf/work/meeting/${pk}/`
+    window.open(url, '_blank')
+  }
+
   return {
     meeting,
     meetingList,
@@ -86,5 +91,6 @@ export const useMeeting = defineStore('meeting', () => {
     updateMeeting,
     deleteMeeting,
     fetchCategoryList,
+    generatePdf,
   }
 })
