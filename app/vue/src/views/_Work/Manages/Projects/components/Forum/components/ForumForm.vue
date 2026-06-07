@@ -16,9 +16,9 @@ const props = defineProps({
 
 const [route, router] = [useRoute(), useRouter()]
 
-const brdStore = useForum()
-const createPost = (payload: { form: FormData }) => brdStore.createPost(payload)
-const updatePost = (payload: { pk: number; form: FormData }) => brdStore.updatePost(payload)
+const frmStore = useForum()
+const createPost = (payload: { form: FormData }) => frmStore.createPost(payload)
+const updatePost = (payload: { pk: number; form: FormData }) => frmStore.updatePost(payload)
 
 const refFileForms = ref()
 const refLinkForms = ref()

@@ -14,8 +14,8 @@ defineProps({
 
 const emit = defineEmits(['page-select'])
 
-const brdStore = useForum()
-const postPages = (limit: number) => brdStore.postPages(limit)
+const frmStore = useForum()
+const postPages = (limit: number) => frmStore.postPages(limit)
 
 const pageSelect = (page: number) => emit('page-select', page)
 </script>

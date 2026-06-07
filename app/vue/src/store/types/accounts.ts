@@ -78,8 +78,8 @@ export interface Scrape {
 
 interface Post {
   pk: number
-  board: number
-  board_name: string
+  forum: number
+  forum_name: string
   project: number | null
   title: string
 }

@@ -67,9 +67,9 @@ export const useForum = defineStore('forum', () => {
 
   const categoryList = ref<PostCategory[]>([])
 
-  const fetchCategoryList = (forum: number) =>
+  const fetchCategoryList = (forumId: number) =>
     api
-      .get(`/post-category/?forum=${forum}`)
+      .get(`/forum/post-category/?forum=${forumId}`)
       .then(res => (categoryList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
@@ -94,7 +94,7 @@ export const useForum = defineStore('forum', () => {
 
   const fetchPost = async (pk: number) =>
     api
-      .get(`/post/${pk}/`)
+      .get(`/forum/post/${pk}/`)
       .then(res => {
         post.value = res.data
         fetchCommentList({ post: pk })
@@ -104,9 +104,9 @@ export const useForum = defineStore('forum', () => {
   const removePost = () => (post.value = null)
 
   const fetchPostList = async (payload: PostFilter) => {
-    const { forum, page } = payload
-    let url = `/post/?page=${page ?? 1}`
-    if (payload.forum) url += `&forum=${forum}`
+    const { forum: forumId, page } = payload
+    let url = `/forum/post/?page=${page ?? 1}`
+    if (forumId) url += `&forum=${forumId}`
     if (payload.project) url += `&forum_project=${payload.project}`
     if (payload.category) url += `&category=${payload.category}`
     if (payload.is_notice) url += `&is_notice=${payload.is_notice}`
@@ -134,7 +134,7 @@ export const useForum = defineStore('forum', () => {
     },
   ) =>
     api
-      .post(`/post/`, payload.form, config_headers)
+      .post(`/forum/post/`, payload.form, config_headers)
       .then(async res => {
         await fetchPostList({
           forum: res.data.forum,
@@ -153,7 +153,7 @@ export const useForum = defineStore('forum', () => {
     },
   ) =>
     api
-      .put(`/post/${payload.pk}/`, payload.form, config_headers)
+      .put(`/forum/post/${payload.pk}/`, payload.form, config_headers)
       .then(async res => {
         await fetchPostList({
           forum: res.data.forum,
@@ -171,7 +171,7 @@ export const useForum = defineStore('forum', () => {
   ) => {
     const { filter, ...data } = payload
     return await api
-      .patch(`/post/${data.pk}/`, data)
+      .patch(`/forum/post/${data.pk}/`, data)
       .then(res =>
         fetchPostList({
           ...filter,
@@ -182,25 +182,25 @@ export const useForum = defineStore('forum', () => {
 
   const patchPostLike = (pk: number) =>
     api
-      .patch(`/post-like/${pk}/`, { pk })
+      .patch(`/forum/post-like/${pk}/`, { pk })
       .then(() => accStore.fetchProfile().then(() => fetchPost(pk)))
       .catch(err => errorHandle(err.response.data))
 
   const patchPostBlame = (pk: number) =>
     api
-      .patch(`/post-blame/${pk}/`, { pk })
+      .patch(`/forum/post-blame/${pk}/`, { pk })
       .then(() => accStore.fetchProfile().then(() => fetchPost(pk)))
       .catch(err => errorHandle(err.response.data))
 
   const copyPost = (payload: { post: number; forum: number }) =>
     api
-      .post(`post/${payload.post}/copy/`, payload)
+      .post(`forum/post/${payload.post}/copy/`, payload)
       .then(() => message('success', '', '게시물 복사가 완료되었습니다.'))
       .catch(err => errorHandle(err.response.data))
 
   const deletePost = (pk: number, filter: PostFilter) =>
     api
-      .delete(`/post/${pk}/`)
+      .delete(`/forum/post/${pk}/`)
       .then(() =>
         fetchPostList(filter).then(() =>
           message('warning', '', '해당 게시물이 휴지통으로 삭제되었습니다.'),
@@ -217,7 +217,7 @@ export const useForum = defineStore('forum', () => {
 
   const fetchTrashPost = async (pk: number) =>
     api
-      .get(`/post-trash-can/${pk}/`)
+      .get(`/forum/post-trash-can/${pk}/`)
       .then(res => {
         trashPost.value = res.data
         fetchCommentList({ post: pk })
@@ -226,7 +226,7 @@ export const useForum = defineStore('forum', () => {
 
   const fetchTrashPostList = (page = 1) =>
     api
-      .get(`/post-trash-can/?page=${page}`)
+      .get(`/forum/post-trash-can/?page=${page}`)
       .then(res => {
         trashPostList.value = res.data.results
         trashPostCount.value = res.data.count
@@ -235,7 +235,7 @@ export const useForum = defineStore('forum', () => {
 
   const restorePost = (pk: number, isProject = false) =>
     api
-      .patch(`/post-trash-can/${pk}/`)
+      .patch(`/forum/post-trash-can/${pk}/`)
       .then(res =>
         fetchPostList({
           forum: res.data.forum,
@@ -252,13 +252,13 @@ export const useForum = defineStore('forum', () => {
 
   const fetchLink = (pk: number) =>
     api
-      .get(`/post-link/${pk}/`)
+      .get(`/forum/post-link/${pk}/`)
       .then(res => (link.value = res.data))
       .catch(err => errorHandle(err.response.data))
 
   const patchLink = (payload: PostLink) =>
     api
-      .patch(`/post-link/${payload.pk}/`, payload)
+      .patch(`/forum/post-link/${payload.pk}/`, payload)
       .then(res => fetchPost(res.data.post))
       .catch(err => errorHandle(err.response.data))
 
@@ -266,13 +266,13 @@ export const useForum = defineStore('forum', () => {
 
   const fetchFile = (pk: number) =>
     api
-      .get(`/post-file/${pk}/`)
+      .get(`/forum/post-file/${pk}/`)
       .then(res => (file.value = res.data))
       .catch(err => errorHandle(err.response.data))
 
   const patchFile = (payload: PostFile) =>
     api
-      .patch(`/post-file/${payload.pk}/`, payload)
+      .patch(`/forum/post-file/${payload.pk}/`, payload)
       .then(res => fetchPost(res.data.post))
       .catch(err => errorHandle(err.response.data))
 
@@ -282,14 +282,14 @@ export const useForum = defineStore('forum', () => {
 
   const fetchComment = (pk: number) =>
     api
-      .get(`/comment/${pk}/`)
+      .get(`/forum/comment/${pk}/`)
       .then(res => (comment.value = res.data))
       .catch(err => errorHandle(err.response.data))
 
   const fetchCommentList = async (payload: { post?: number; user?: number; page?: number }) => {
-    const { post, user, page } = payload
-    let url = `/comment/?page=${page ?? 1}`
-    url = post ? `${url}&post=${post}&is_comment=true` : url
+    const { post: postId, user, page } = payload
+    let url = `/forum/comment/?page=${page ?? 1}`
+    url = postId ? `${url}&post=${postId}&is_comment=true` : url
     url = user ? `${url}&user=${user}` : url
 
     return await api
@@ -303,31 +303,31 @@ export const useForum = defineStore('forum', () => {
 
   const createComment = (payload: Cm) =>
     api
-      .post(`/comment/`, payload)
+      .post(`/forum/comment/`, payload)
       .then(res => fetchPost(res.data.post.pk).then(() => message()))
       .catch(err => errorHandle(err.response.data))
 
   const patchComment = (payload: Cm) =>
     api
-      .patch(`/comment/${payload.pk}/`, payload)
+      .patch(`/forum/comment/${payload.pk}/`, payload)
       .then(res => fetchPost(res.data.post.pk).then(() => message()))
       .catch(err => errorHandle(err.response.data))
 
   const patchCommentLike = (pk: number, post: number, page = 1) =>
     api
-      .patch(`/comment-like/${pk}/`, { pk })
+      .patch(`/forum/comment-like/${pk}/`, { pk })
       .then(() => accStore.fetchProfile().then(() => fetchCommentList({ post, page })))
       .catch(err => errorHandle(err.response.data))
 
   const patchCommentBlame = (pk: number, post: number, page = 1) =>
     api
-      .patch(`/comment-blame/${pk}/`, { pk })
+      .patch(`/forum/comment-blame/${pk}/`, { pk })
       .then(() => accStore.fetchProfile().then(() => fetchCommentList({ post, page })))
       .catch(err => errorHandle(err.response.data))
 
   const deleteComment = (payload: { pk: number; post: number }) =>
     api
-      .delete(`/comment/${payload.pk}/`)
+      .delete(`/forum/comment/${payload.pk}/`)
       .then(() => fetchPost(payload.post).then(() => message()))
       .catch(err => errorHandle(err.response.data))
 

@@ -153,7 +153,7 @@ const workProject = {
           ],
         },
         {
-          path: ':projId/boards',
+          path: ':projId/forum',
           name: '(게시판)',
           component: () => import('@/views/_Work/Manages/Projects/components/Forum/Index.vue'),
           children: [
