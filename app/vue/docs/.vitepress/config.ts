@@ -77,7 +77,7 @@ export default defineConfig({
             collapsed: true,
             items: [
               { text: '사용자', link: '/work-setting/user' },
-              { text: '역할 및 권한', link: '/work-setting/roll' },
+              { text: '역할 및 권한', link: '/work-setting/roll-perm' },
             ],
           },
         ],
