@@ -4,14 +4,23 @@ import type { getProject, ProjectFilter } from '@/store/types/work_project.ts'
 import Multiselect from '@vueform/multiselect'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import IProjectSelect from '@/views/_Work/components/IProjectSelect.vue'
+import { CCollapse, CRow } from '@coreui/vue'
 
 const props = defineProps({
   allProjects: { type: Array as PropType<getProject[]>, default: () => [] },
 })
 
-const emit = defineEmits(['filter-submit'])
+const emit = defineEmits(['filter-submit', 'change-view-mode'])
 
-const viewMode = ref<'board' | 'list'>('board')
+const viewMode = ref<'board' | 'list'>(
+  (localStorage.getItem('project-view-mode') as 'board' | 'list') || 'board',
+)
+
+watch(viewMode, nVal => {
+  localStorage.setItem('project-view-mode', nVal)
+  emit('change-view-mode', nVal)
+})
+
 const condVisible = ref(true)
 const optVisible = ref(false)
 
@@ -289,6 +298,7 @@ onBeforeMount(() => {
               v-model="viewMode"
               label="보드"
               name="viewMode"
+              id="board-view-mode"
               value="board"
               inline
               type="radio"
@@ -297,10 +307,10 @@ onBeforeMount(() => {
               v-model="viewMode"
               label="목록"
               name="viewMode"
+              id="list-view-mode"
               value="list"
               inline
               type="radio"
-              disabled
             />
           </CCol>
         </CRow>

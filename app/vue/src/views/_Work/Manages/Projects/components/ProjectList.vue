@@ -5,6 +5,7 @@ import { useWork } from '@/store/pinia/work_project.ts'
 import type { IssueProject, ProjectFilter } from '@/store/types/work_project.ts'
 import SearchList from './SearchList.vue'
 import ProjectCard from './ProjectCard.vue'
+import ProjectTable from './ProjectTable.vue'
 import NoData from '@/components/NoData/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 
@@ -16,7 +17,16 @@ const workManager = inject<ComputedRef<boolean>>('workManager')
 
 const workStore = useWork()
 const projectList = computed<IssueProject[]>(() => workStore.issueProjects)
+const allIssueProjects = computed<IssueProject[]>(() => workStore.AllIssueProjects)
 const allProjects = computed(() => workStore.getAllProjects)
+
+const viewMode = ref<'board' | 'list'>(
+  (localStorage.getItem('project-view-mode') as 'board' | 'list') || 'board',
+)
+const onChangeViewMode = (mode: 'board' | 'list') => {
+  viewMode.value = mode
+  localStorage.setItem('project-view-mode', mode)
+}
 
 const filterSubmit = (payload: ProjectFilter) => workStore.fetchIssueProjectList(payload)
 
@@ -55,9 +65,17 @@ onBeforeUnmount(() => window.removeEventListener('resize', updateBreakpoint))
         </CCol>
       </CRow>
 
-      <SearchList :all-projects="allProjects" @filter-submit="filterSubmit" />
+      <SearchList
+        :all-projects="allProjects"
+        @filter-submit="filterSubmit"
+        @change-view-mode="onChangeViewMode"
+      />
 
       <NoData v-if="!projectList.length" />
+
+      <div v-else-if="viewMode === 'list'" class="mb-4">
+        <ProjectTable :projects="allIssueProjects" />
+      </div>
 
       <CRow v-else>
         <CCol v-if="breakpoint === 'sm'">
