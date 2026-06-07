@@ -158,7 +158,7 @@ const workProject = {
           component: () => import('@/views/_Work/Manages/Projects/components/Forum/Index.vue'),
           children: [
             {
-              path: ':brdId',
+              path: ':forumId',
               name: '(게시판) - 보기',
               children: [
                 {

@@ -1,17 +1,17 @@
 <script lang="ts" setup>
 import { computed, type PropType } from 'vue'
 import { timeFormat } from '@/utils/baseMixins'
-import type { Board, Comment as Cm } from '@/store/types/board'
+import type { Forum, Comment as Cm } from '@/store/types/forum'
 
 const props = defineProps({
-  boardList: { type: Array as PropType<Board[]>, default: () => [] },
+  forumList: { type: Array as PropType<Forum[]>, default: () => [] },
   comment: { type: Object as PropType<Cm>, default: null },
 })
 
 const viewRoute = computed(() => {
-  const board = props.boardList.filter(b => b.pk === props.comment?.post?.board)[0]
+  const forum = props.forumList.filter(b => b.pk === props.comment?.post?.forum)[0]
 
-  return board && board.name ? board.name : '공지 사항'
+  return forum && forum.name ? forum.name : '공지 사항'
 })
 </script>
 

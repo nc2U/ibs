@@ -1,20 +1,20 @@
 <script lang="ts" setup>
-import { computed, type PropType } from 'vue'
-import type { Board, Post } from '@/store/types/board'
-import { useBoard } from '@/store/pinia/board'
+import { type PropType } from 'vue'
+import type { Forum, Post } from '@/store/types/forum'
+import { useForum } from '@/store/pinia/forum'
 import NoData from '@/components/NoData/Index.vue'
 import Pagination from '@/components/Pagination'
 import PostObj from './PostObj.vue'
 
-const props = defineProps({
-  board: { type: Object as PropType<Board | null>, default: null },
+defineProps({
+  forum: { type: Object as PropType<Forum | null>, default: null },
   postList: { type: Array as PropType<Post[]>, default: () => [] },
   page: { type: Number, default: 1 },
 })
 
 const emit = defineEmits(['page-select'])
 
-const brdStore = useBoard()
+const brdStore = useForum()
 const postPages = (limit: number) => brdStore.postPages(limit)
 
 const pageSelect = (page: number) => emit('page-select', page)
@@ -23,21 +23,24 @@ const pageSelect = (page: number) => emit('page-select', page)
 <template>
   <CRow class="py-2">
     <CCol>
-      <h5>{{ board?.name }}</h5>
+      <h5>{{ forum?.name }}</h5>
     </CCol>
     <CCol class="text-right">
       <v-btn
         color="primary"
         size="small"
         variant="flat"
-        :to="{ name: '(게시판) - 게시물 작성', params: { projId: $route.params.projId, brdId: board?.pk } }"
+        :to="{
+          name: '(게시판) - 게시물 작성',
+          params: { projId: $route.params.projId, forumId: forum?.pk },
+        }"
       >
         새 게시물
       </v-btn>
     </CCol>
   </CRow>
 
-  <p class="text-body-2 text-muted mb-4">{{ board?.description }}</p>
+  <p class="text-body-2 text-muted mb-4">{{ forum?.description }}</p>
 
   <NoData v-if="!postList.length" />
 

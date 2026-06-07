@@ -1,10 +1,10 @@
 <script lang="ts" setup>
 import { type PropType } from 'vue'
 import { useRoute } from 'vue-router'
-import type { Board } from '@/store/types/board'
+import type { Forum } from '@/store/types/forum'
 
 defineProps({
-  boardList: { type: Array as PropType<Board[]>, default: () => [] },
+  forumList: { type: Array as PropType<Forum[]>, default: () => [] },
 })
 
 const route = useRoute()
@@ -35,12 +35,12 @@ const route = useRoute()
       </CTableRow>
     </CTableHead>
     <CTableBody>
-      <CTableRow v-for="brd in boardList" :key="brd.pk as number">
+      <CTableRow v-for="brd in forumList" :key="brd.pk as number">
         <CTableDataCell class="pl-4">
           <router-link
             :to="{
               name: '(게시판) - 보기',
-              params: { projId: route.params.projId, brdId: brd.pk },
+              params: { projId: route.params.projId, forumId: brd.pk },
             }"
             class="bold"
           >

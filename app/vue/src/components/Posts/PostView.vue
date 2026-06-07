@@ -3,21 +3,21 @@ import type { ComputedRef, PropType } from 'vue'
 import { ref, computed, watch, inject, onBeforeMount, onMounted } from 'vue'
 import { btnLight } from '@/utils/cssMixins.ts'
 import type { User } from '@/store/types/accounts'
-import { type Post } from '@/store/types/board'
+import { type Post } from '@/store/types/forum'
 import type { Company } from '@/store/types/settings'
 import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
-import { type PostFilter, useBoard } from '@/store/pinia/board'
+import { type PostFilter, useForum } from '@/store/pinia/forum'
 import { cutString, timeFormat } from '@/utils/baseMixins'
 import { toPrint, toPostLike, toPostBlame, postManageItems, toPostManage } from '@/utils/postMixins'
 import DOMPurify from 'dompurify'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
-import BoardListModal from '@/components/Posts/components/BoardListModal.vue'
+import ForumListModal from './components/ForumListModal.vue'
 import CateListModal from '@/components/Posts/components/CateListModal.vue'
 import Comments from '@/components/Comments/Index.vue'
 
 const props = defineProps({
-  boardNum: { type: Number, default: 2 },
+  forumNum: { type: Number, default: 2 },
   heatedPage: { type: Array as PropType<number[]>, default: () => [] },
   reOrder: { type: Boolean, default: false },
   category: { type: Number, default: undefined },
@@ -33,7 +33,7 @@ const emit = defineEmits(['post-hit', 'link-hit', 'file-hit', 'post-scrape', 'po
 const refDelModal = ref()
 const refBlameModal = ref()
 const refAlertModal = ref()
-const refBoardListModal = ref()
+const refForumListModal = ref()
 const isCopy = ref(false)
 const refCateListModal = ref()
 const refTrashModal = ref()
@@ -48,14 +48,14 @@ const next = ref<number | null>()
 
 const company = inject<ComputedRef<Company | null>>('company')
 
-const sortName = computed(() => props.post?.board_name || '본사 문서')
+const sortName = computed(() => props.post?.forum_name || '본사 문서')
 const postId = computed(() => Number(route.params.postId))
 
-const boardStore = useBoard()
-const boardList = computed(() => boardStore.boardList)
-const categoryList = computed(() => boardStore.categoryList)
-const commentList = computed(() => boardStore.commentList)
-const getPostNav = computed(() => boardStore.getPostNav)
+const forumStore = useForum()
+const forumList = computed(() => forumStore.forumList)
+const categoryList = computed(() => forumStore.categoryList)
+const commentList = computed(() => forumStore.commentList)
+const getPostNav = computed(() => forumStore.getPostNav)
 
 const getPrev = (pk: number) => getPostNav.value.filter(p => p.pk === pk).map(p => p.prev_pk)[0]
 const getNext = (pk: number) => getPostNav.value.filter(p => p.pk === pk).map(p => p.next_pk)[0]
@@ -129,10 +129,10 @@ const toManage = (fn: number, el?: { nBrd?: number; nCate?: number }) => {
   if (fn < 4) {
     if (fn === 1) {
       isCopy.value = true
-      refBoardListModal.value.callModal()
+      refForumListModal.value.callModal()
     } else if (fn === 2) {
       isCopy.value = false
-      refBoardListModal.value.callModal()
+      refForumListModal.value.callModal()
     } else if (fn === 3) {
       refCateListModal.value.callModal()
     }
@@ -153,8 +153,8 @@ const toManage = (fn: number, el?: { nBrd?: number; nCate?: number }) => {
       router.replace({ name: props.viewRoute })
     }
     const payload = {
-      board: el?.nBrd,
-      board_name: props.post?.board_name,
+      forum: el?.nBrd,
+      forum_name: props.post?.forum_name,
       category: el?.nCate,
       content: props.post?.content,
       post: post as number,
@@ -527,10 +527,10 @@ onMounted(() => {
     </template>
   </ConfirmModal>
 
-  <BoardListModal
-    ref="refBoardListModal"
-    :now-board="post?.board ?? undefined"
-    :board-list="boardList"
+  <ForumListModal
+    ref="refForumListModal"
+    :now-forum="post?.forum ?? undefined"
+    :forum-list="forumList"
     :is-copy="isCopy"
     @copy-post="copyPost"
     @move-post="movePost"

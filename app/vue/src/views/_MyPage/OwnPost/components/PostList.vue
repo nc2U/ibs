@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { PropType } from 'vue'
-import { useBoard } from '@/store/pinia/board'
+import { useForum } from '@/store/pinia/forum'
 import { TableSecondary } from '@/utils/cssMixins'
-import type { Post as P } from '@/store/types/board'
+import type { Post as P } from '@/store/types/forum'
 import Post from './Post.vue'
 import Pagination from '@/components/Pagination'
 
@@ -14,9 +14,9 @@ defineProps({
 
 const emit = defineEmits(['page-select'])
 
-const boardStore = useBoard()
+const forumStore = useForum()
 
-const postPages = (num: number) => boardStore.postPages(num)
+const postPages = (num: number) => forumStore.postPages(num)
 const pageSelect = (page: number) => emit('page-select', page)
 </script>
 

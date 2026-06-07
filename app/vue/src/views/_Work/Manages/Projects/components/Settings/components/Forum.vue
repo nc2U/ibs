@@ -3,9 +3,9 @@ import { computed, onBeforeMount, ref, watch } from 'vue'
 import { btnLight } from '@/utils/cssMixins.ts'
 import { useRoute } from 'vue-router'
 import { isValidate } from '@/utils/helper.ts'
-import { useBoard } from '@/store/pinia/board.ts'
+import { useForum } from '@/store/pinia/forum'
 import { getOrderedList, setLocalStorage } from '@/utils/helper.ts'
-import type { Board } from '@/store/types/board.ts'
+import type { Forum } from '@/store/types/forum'
 import Draggable from 'vuedraggable'
 import NoData from '@/components/NoData/Index.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
@@ -19,7 +19,7 @@ const RefForumForm = ref()
 const RefDelConfirm = ref()
 
 const validated = ref(false)
-const form = ref<Board>({
+const form = ref<Forum>({
   pk: null as number | null,
   project: null as number | null,
   name: '',
@@ -34,27 +34,27 @@ const resetForm = () => {
   form.value.parent = null
 }
 
-const brdStore = useBoard()
+const frmStore = useForum()
 // 1. 원본 목록
-const boardList = computed(() => brdStore.boardList as Board[])
-const fetchBoardList = (payload: any) => brdStore.fetchBoardList(payload)
+const forumList = computed(() => frmStore.forumList as Forum[])
+const fetchForumList = (payload: any) => frmStore.fetchForumList(payload)
 
 // 프로젝트 변경 시 목록 다시 불러오기
 const projId = computed(() => route.params.projId as string)
 watch(projId, async nVal => {
   if (nVal) {
-    await fetchBoardList({ project: nVal })
+    await fetchForumList({ project: nVal })
     form.value.project = props.project as number
   }
 })
 
 // 2. 정렬본 목록
-const STORAGE_KEY = 'boardList'
-const orderedList = ref<Board[]>([])
+const STORAGE_KEY = 'forumList'
+const orderedList = ref<Forum[]>([])
 
 // 원본 목록 변경 시 정렬본 다시 불러오기
 watch(
-  boardList,
+  forumList,
   nVal => {
     orderedList.value = getOrderedList(nVal as any[], STORAGE_KEY)
   },
@@ -62,12 +62,12 @@ watch(
 )
 
 // 게시판 등록 수정
-const crateBoard = () => {
+const crateForum = () => {
   resetForm()
   RefForumForm.value.callModal()
 }
 
-const modifyCall = (brd: Board) => {
+const modifyCall = (brd: Forum) => {
   form.value.pk = brd.pk
   form.value.project = brd.project
   form.value.name = brd.name
@@ -81,8 +81,8 @@ const onSubmit = (event: Event) => {
   else {
     if (form.value.pk) {
       const { pk, ...rest } = form.value
-      brdStore.updateBoard(pk as number, rest, projId.value)
-    } else brdStore.createBoard({ ...form.value }, projId.value)
+      frmStore.updateForum(pk as number, rest, projId.value)
+    } else frmStore.createForum({ ...form.value }, projId.value)
     validated.value = false
     RefForumForm.value.close()
     resetForm()
@@ -90,21 +90,21 @@ const onSubmit = (event: Event) => {
 }
 
 // 게시판 삭제 로직
-const delBoardPk = ref<number | null>(null)
+const delForumPk = ref<number | null>(null)
 const deleteModalCall = (pk: number) => {
-  delBoardPk.value = pk
+  delForumPk.value = pk
   RefDelConfirm.value.callModal()
 }
-const deleteBoard = () => {
-  brdStore.deleteBoard(delBoardPk.value as number, route.params.projId as string)
+const deleteForum = () => {
+  frmStore.deleteForum(delForumPk.value as number, route.params.projId as string)
   RefDelConfirm.value.close()
 }
 
 onBeforeMount(async () => {
   form.value.project = props.project as number
-  await fetchBoardList({ project: projId.value })
-  if (boardList.value.length)
-    orderedList.value = getOrderedList(boardList.value as any[], STORAGE_KEY)
+  await fetchForumList({ project: projId.value })
+  if (forumList.value.length)
+    orderedList.value = getOrderedList(forumList.value as any[], STORAGE_KEY)
 })
 </script>
 
@@ -113,12 +113,12 @@ onBeforeMount(async () => {
     <CCol>
       <span class="mr-2 form-text">
         <v-icon icon="mdi-plus-circle" color="success" size="15" />
-        <router-link to="" class="ml-1" @click="crateBoard">새 게시판</router-link>
+        <router-link to="" class="ml-1" @click="crateForum">새 게시판</router-link>
       </span>
     </CCol>
   </CRow>
 
-  <NoData v-if="!boardList.length" />
+  <NoData v-if="!forumList.length" />
 
   <CRow v-else>
     <CCol class="mt-3">
@@ -141,7 +141,7 @@ onBeforeMount(async () => {
           <template #item="{ element }">
             <CTableRow class="asdfasdf">
               <CTableDataCell class="pl-3">
-                <router-link :to="{ name: '(게시판) - 보기', params: { brdId: element.pk } }">
+                <router-link :to="{ name: '(게시판) - 보기', params: { forumId: element.pk } }">
                   {{ element.name }}
                 </router-link>
               </CTableDataCell>
@@ -205,7 +205,7 @@ onBeforeMount(async () => {
             <CCol sm="9">
               <CFormSelect v-model="form.parent" id="parent">
                 <option value="">---------</option>
-                <option v-for="brd in boardList" :value="brd.pk" :key="brd.pk as number">
+                <option v-for="brd in forumList" :value="brd.pk" :key="brd.pk as number">
                   {{ brd.name }}
                 </option>
               </CFormSelect>
@@ -226,7 +226,7 @@ onBeforeMount(async () => {
       계속 진행 하시겠습니까?
     </template>
     <template #footer>
-      <v-btn color="warning" size="small" @click="deleteBoard">삭제</v-btn>
+      <v-btn color="warning" size="small" @click="deleteForum">삭제</v-btn>
     </template>
   </ConfirmModal>
 </template>

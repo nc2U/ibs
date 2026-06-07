@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { type PropType } from 'vue'
-import type { Comment } from '@/store/types/board'
+import type { Comment } from '@/store/types/forum'
 import CommentObj from './CommentObj.vue'
 
 defineProps({

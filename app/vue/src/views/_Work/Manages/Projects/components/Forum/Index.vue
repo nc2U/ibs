@@ -1,14 +1,14 @@
 <script lang="ts" setup>
-import { computed, inject, onBeforeMount, ref, watch, type ComputedRef } from 'vue'
+import { computed, type ComputedRef, inject, onBeforeMount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useBoard } from '@/store/pinia/board.ts'
-import type { Board, Post } from '@/store/types/board.ts'
+import { useForum } from '@/store/pinia/forum.ts'
+import type { Post } from '@/store/types/forum.ts'
 import Loading from '@/components/Loading/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
-import BoardIndex from './components/BoardIndex.vue'
-import BoardList from './components/BoardList.vue'
-import BoardView from './components/BoardView.vue'
-import BoardForm from './components/BoardForm.vue'
+import ForumIndex from './components/ForumIndex.vue'
+import ForumList from './components/ForumList.vue'
+import ForumView from './components/ForumView.vue'
+import ForumForm from './components/ForumForm.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 const cBody = ref()
@@ -17,13 +17,13 @@ defineExpose({ toggle })
 
 const workManager = inject<ComputedRef<boolean>>('workManager')
 
-const brdStore = useBoard()
-const board = computed(() => brdStore.board)
-const boardList = computed(() => brdStore.boardList)
-const categoryList = computed(() => brdStore.categoryList)
-const postList = computed(() => brdStore.postList)
-const post = computed(() => brdStore.post)
-const commentList = computed(() => brdStore.commentList)
+const forumStore = useForum()
+const forum = computed(() => forumStore.forum)
+const forumList = computed(() => forumStore.forumList)
+const categoryList = computed(() => forumStore.categoryList)
+const postList = computed(() => forumStore.postList)
+const post = computed(() => forumStore.post)
+const commentList = computed(() => forumStore.commentList)
 
 const [route, router] = [useRoute(), useRouter()]
 
@@ -32,11 +32,11 @@ const page = ref(1)
 const heatedPage = ref<number[]>([])
 
 const fetchPostData = async (pk: number) => {
-  await brdStore.fetchPost(pk)
+  await forumStore.fetchPost(pk)
   if (!heatedPage.value.includes(pk)) {
     heatedPage.value.push(pk)
     const hit = ((post.value as Post)?.hit ?? 0) + 1
-    await brdStore.patchPost({ pk, hit })
+    await forumStore.patchPost({ pk, hit })
   }
 }
 
@@ -50,30 +50,36 @@ const onDeletePost = (pk: number) => {
 
 const deletePostConfirm = async () => {
   if (delPk.value) {
-    await brdStore.deletePost(delPk.value, { board: Number(route.params.brdId), page: page.value })
-    router.replace({ name: '(게시판) - 보기', params: { projId: route.params.projId, brdId: route.params.brdId } })
+    await forumStore.deletePost(delPk.value, {
+      forum: Number(route.params.forumId),
+      page: page.value,
+    })
+    await router.replace({
+      name: '(게시판) - 보기',
+      params: { projId: route.params.projId, forumId: route.params.forumId },
+    })
   }
   refConfirmModal.value.close()
 }
 
-const onLikePost = (pk: number) => brdStore.patchPostLike(pk)
-const onBlamePost = (pk: number) => brdStore.patchPostBlame(pk)
+const onLikePost = (pk: number) => forumStore.patchPostLike(pk)
+const onBlamePost = (pk: number) => forumStore.patchPostBlame(pk)
 
 const dataSetup = async () => {
   loading.value = true
   const projId = route.params.projId as string
-  const brdId = route.params.brdId ? Number(route.params.brdId) : null
+  const forumId = route.params.forumId ? Number(route.params.forumId) : null
   const postId = route.params.postId ? Number(route.params.postId) : null
 
   if (projId) {
-    await brdStore.fetchBoardList({ project: projId })
-    if (brdId) {
-      await brdStore.fetchBoard(brdId)
-      await brdStore.fetchCategoryList(brdId)
+    await forumStore.fetchForumList({ project: projId })
+    if (forumId) {
+      await forumStore.fetchForum(forumId)
+      await forumStore.fetchCategoryList(forumId)
       if (postId) {
         await fetchPostData(postId)
       } else {
-        await brdStore.fetchPostList({ board: brdId, page: page.value })
+        await forumStore.fetchPostList({ forum: forumId, page: page.value })
       }
     }
   }
@@ -82,8 +88,8 @@ const dataSetup = async () => {
 
 const onPageSelect = (p: number) => {
   page.value = p
-  if (route.params.brdId) {
-    brdStore.fetchPostList({ board: Number(route.params.brdId), page: p })
+  if (route.params.forumId) {
+    forumStore.fetchPostList({ forum: Number(route.params.forumId), page: p })
   }
 }
 
@@ -92,27 +98,27 @@ watch(
   async (newParams, oldParams) => {
     if (newParams.projId !== oldParams?.projId) {
       await dataSetup()
-    } else if (newParams.brdId !== oldParams?.brdId) {
-      if (newParams.brdId) {
+    } else if (newParams.forumId !== oldParams?.forumId) {
+      if (newParams.forumId) {
         page.value = 1
         loading.value = true
-        await brdStore.fetchBoard(Number(newParams.brdId))
-        await brdStore.fetchCategoryList(Number(newParams.brdId))
-        await brdStore.fetchPostList({ board: Number(newParams.brdId), page: 1 })
+        await forumStore.fetchForum(Number(newParams.forumId))
+        await forumStore.fetchCategoryList(Number(newParams.forumId))
+        await forumStore.fetchPostList({ forum: Number(newParams.forumId), page: 1 })
         loading.value = false
       }
     } else if (newParams.postId !== oldParams?.postId) {
       if (newParams.postId) {
-        brdStore.removePost() // Clear old post data
+        forumStore.removePost() // Clear old post data
         loading.value = true
         await fetchPostData(Number(newParams.postId))
         loading.value = false
       } else {
-        brdStore.removePost()
+        forumStore.removePost()
         // 목록으로 돌아왔을 때 목록 로드 보장
-        if (route.name === '(게시판) - 보기' && newParams.brdId) {
+        if (route.name === '(게시판) - 보기' && newParams.forumId) {
           loading.value = true
-          await brdStore.fetchPostList({ board: Number(newParams.brdId), page: page.value })
+          await forumStore.fetchPostList({ forum: Number(newParams.forumId), page: page.value })
           loading.value = false
         }
       }
@@ -133,19 +139,19 @@ onBeforeMount(async () => {
       <Loading v-model:active="loading" />
 
       <!-- 게시판 메인 인덱스 -->
-      <BoardIndex v-if="route.name === '(게시판)'" :board-list="boardList" />
+      <ForumIndex v-if="route.name === '(게시판)'" :forum-list="forumList" />
 
       <!-- 게시물 목록 -->
-      <BoardList
+      <ForumList
         v-else-if="route.name === '(게시판) - 보기' && !route.params.postId"
-        :board="board"
+        :forum="forum"
         :post-list="postList"
         :page="page"
         @page-select="onPageSelect"
       />
 
       <!-- 게시물 상세 -->
-      <BoardView
+      <ForumView
         v-else-if="route.name === '(게시판) - 게시물 보기' && (post || loading)"
         :post="post as Post"
         :comments="commentList"
@@ -155,17 +161,17 @@ onBeforeMount(async () => {
       />
 
       <!-- 게시물 작성 -->
-      <BoardForm
+      <ForumForm
         v-else-if="route.name === '(게시판) - 게시물 작성'"
-        :brd-id="Number(route.params.brdId)"
+        :forum-id="Number(route.params.forumId)"
         :categories="categoryList"
       />
 
       <!-- 게시물 수정 -->
-      <BoardForm
+      <ForumForm
         v-else-if="route.name === '(게시판) - 게시물 수정' && (post || loading)"
         :post="post"
-        :brd-id="Number(route.params.brdId)"
+        :forum-id="Number(route.params.forumId)"
         :categories="categoryList"
       />
     </template>

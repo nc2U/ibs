@@ -1,27 +1,27 @@
 <script lang="ts" setup>
-import { computed, type PropType } from 'vue'
-import { useBoard } from '@/store/pinia/board'
-import type { Comment } from '@/store/types/board'
+import { type PropType } from 'vue'
+import { useForum } from '@/store/pinia/forum'
+import type { Comment } from '@/store/types/forum'
 import CommentList from './CommentList.vue'
 import CommentForm from './CommentForm.vue'
 
 const props = defineProps({
   postId: { type: Number, required: true },
-  brdId: { type: Number, required: true },
+  forumId: { type: Number, required: true },
   comments: { type: Array as PropType<Comment[]>, default: () => [] },
 })
 
-const brdStore = useBoard()
+const frmStore = useForum()
 
 const onSubmitComment = (payload: any) => {
   const data = typeof payload === 'string' ? { content: payload } : payload
-  if (data.pk) brdStore.patchComment(data)
-  else brdStore.createComment({ ...data, post: props.postId })
+  if (data.pk) frmStore.patchComment(data)
+  else frmStore.createComment({ ...data, post: props.postId })
 }
 
 const onDeleteComment = (pk: number) => {
   if (confirm('이 댓글을 삭제하시겠습니까?')) {
-    brdStore.deleteComment({ pk, post: props.postId })
+    frmStore.deleteComment({ pk, post: props.postId })
   }
 }
 </script>

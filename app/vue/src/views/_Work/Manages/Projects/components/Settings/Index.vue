@@ -12,7 +12,7 @@ import Member from '@/views/_Work/Manages/Projects/components/Settings/component
 import IssueTracking from '@/views/_Work/Manages/Projects/components/Settings/components/IssueTracking.vue'
 import Version from '@/views/_Work/Manages/Projects/components/Settings/components/Version.vue'
 import IssueCategory from '@/views/_Work/Manages/Projects/components/Settings/components/IssueCategory.vue'
-import Board from '@/views/_Work/Manages/Projects/components/Settings/components/Board.vue'
+import Forum from './components/Forum.vue'
 import CategoryForm from '@/views/_Work/Manages/Projects/components/Settings/category/CategoryForm.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 
@@ -156,7 +156,7 @@ onBeforeMount(async () => {
           @delete-category="deleteCategory"
         />
 
-        <Board v-if="menu === '게시판'" :project="issueProject?.pk as number" />
+        <Forum v-if="menu === '게시판'" :project="issueProject?.pk as number" />
       </template>
 
       <template v-if="route.name === '(설정) - 범주추가' || route.name === '(설정) - 범주수정'">

@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { ref, computed, type PropType } from 'vue'
-import { useBoard } from '@/store/pinia/board'
-import type { Comment as Cm } from '@/store/types/board'
+import { useForum } from '@/store/pinia/forum'
+import type { Comment as Cm } from '@/store/types/forum'
 import { toCommentLike, toCommentBlame } from '@/utils/postMixins'
 import Pagination from '@/components/Pagination'
 import Comment from './Comment.vue'
@@ -14,8 +14,8 @@ const emit = defineEmits(['vision-toggle', 'on-submit', 'form-reset', 'page-sele
 
 const page = ref(1)
 
-const boardStore = useBoard()
-const commentCount = computed(() => boardStore.commentCount)
+const forumStore = useForum()
+const commentCount = computed(() => forumStore.commentCount)
 
 const visionToggle = (payload: { num: number; sts: boolean }) => emit('vision-toggle', payload)
 

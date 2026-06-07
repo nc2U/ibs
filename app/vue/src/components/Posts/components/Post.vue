@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { type ComputedRef, inject, type PropType } from 'vue'
 import type { User } from '@/store/types/accounts'
-import type { Post } from '@/store/types/board'
+import type { Post } from '@/store/types/forum'
 import { cutString, timeFormat } from '@/utils/baseMixins'
 
 defineProps({

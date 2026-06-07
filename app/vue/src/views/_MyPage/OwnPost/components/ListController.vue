@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { reactive, computed, nextTick, onBeforeMount } from 'vue'
-import { type PostFilter, useBoard } from '@/store/pinia/board'
+import { type PostFilter, useForum } from '@/store/pinia/forum'
 import { numFormat } from '@/utils/baseMixins'
 import { bgLight } from '@/utils/cssMixins'
 
@@ -21,8 +21,8 @@ const formsCheck = computed(() => {
   return a && b
 })
 
-const boardStore = useBoard()
-const postCount = computed(() => boardStore.postCount)
+const forumStore = useForum()
+const postCount = computed(() => forumStore.postCount)
 
 const listFiltering = (page = 1) => {
   nextTick(() => {

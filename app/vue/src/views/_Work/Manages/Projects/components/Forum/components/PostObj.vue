@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { type PropType } from 'vue'
 import { useRoute } from 'vue-router'
-import type { Post } from '@/store/types/board'
+import type { Post } from '@/store/types/forum'
 import { timeFormat } from '@/utils/baseMixins'
 
 defineProps({
@@ -20,7 +20,7 @@ const route = useRoute()
         name: '(게시판) - 게시물 보기',
         params: {
           projId: route.params.projId,
-          brdId: route.params.brdId,
+          forumId: route.params.forumId,
           postId: post.pk,
         },
       }"
@@ -28,9 +28,7 @@ const route = useRoute()
       {{ post.title }}
     </router-link>
     <CBadge v-if="post.is_new" color="success" class="ml-2" size="sm">new</CBadge>
-    <span v-if="post.comments?.length" class="ml-2 text-grey">
-      ({{ post.comments.length }})
-    </span>
+    <span v-if="post.comments?.length" class="ml-2 text-grey"> ({{ post.comments.length }}) </span>
   </CTableDataCell>
   <CTableDataCell class="text-center">{{ post.creator?.username }}</CTableDataCell>
   <CTableDataCell class="text-center">{{ timeFormat(post.created as string) }}</CTableDataCell>

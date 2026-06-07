@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { reactive, onMounted, onUpdated, type PropType } from 'vue'
-import type { Comment as Cm } from '@/store/types/board'
+import type { Comment as Cm } from '@/store/types/forum'
 
 const props = defineProps({
   post: { type: Number, required: true },

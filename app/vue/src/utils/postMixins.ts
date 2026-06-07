@@ -1,20 +1,20 @@
 import { computed } from 'vue'
 import { message } from '@/utils/helper'
 import { timeFormat } from '@/utils/baseMixins'
-import type { PatchPost } from '@/store/types/board'
-import { type PostFilter, useBoard } from '@/store/pinia/board'
+import type { PatchPost } from '@/store/types/forum'
+import { type PostFilter, useForum } from '@/store/pinia/forum'
 
-const boardStore = useBoard()
-const patchPost = (payload: PatchPost & { filter: PostFilter }) => boardStore.patchPost(payload)
-const patchPostLike = (pk: number) => boardStore.patchPostLike(pk)
-const patchPostBlame = (pk: number) => boardStore.patchPostBlame(pk)
+const forumStore = useForum()
+const patchPost = (payload: PatchPost & { filter: PostFilter }) => forumStore.patchPost(payload)
+const patchPostLike = (pk: number) => forumStore.patchPostLike(pk)
+const patchPostBlame = (pk: number) => forumStore.patchPostBlame(pk)
 
 const patchCommentLike = (pk: number, post: number, page?: number) =>
-  boardStore.patchCommentLike(pk, post, page)
+  forumStore.patchCommentLike(pk, post, page)
 const patchCommentBlame = (pk: number, post: number, page?: number) =>
-  boardStore.patchCommentBlame(pk, post, page)
-const copyCreatePost = (payload: { post: number; board: number }) => boardStore.copyPost(payload)
-const deletePost = (pk: number, filter: PostFilter) => boardStore.deletePost(pk, filter)
+  forumStore.patchCommentBlame(pk, post, page)
+const copyCreatePost = (payload: { post: number; forum: number }) => forumStore.copyPost(payload)
+const deletePost = (pk: number, filter: PostFilter) => forumStore.deletePost(pk, filter)
 
 export const toPrint = (title: string) => {
   // Clone the specific area to be printed
@@ -50,17 +50,17 @@ export const toCommentLike = (pk: number, post: number, page = 1) =>
 export const toCommentBlame = (pk: number, post: number, page = 1) =>
   patchCommentBlame(pk, post, page)
 
-const is_secret = computed(() => boardStore.post?.is_secret)
+const is_secret = computed(() => forumStore.post?.is_secret)
 const secretTitle = computed(() => (is_secret.value ? '비밀글 해제' : '비밀글로'))
 const secretIcon = computed(() => (is_secret.value ? 'lock-open-variant' : 'lock'))
 
-const is_hide_cmt = computed(() => boardStore.post?.is_hide_comment)
+const is_hide_cmt = computed(() => forumStore.post?.is_hide_comment)
 const hideCmtTitle = computed(() => (is_hide_cmt.value ? '댓글숨김 해제' : '댓글숨김'))
 
-const is_notice = computed(() => boardStore.post?.is_notice)
+const is_notice = computed(() => forumStore.post?.is_notice)
 const notiTitle = computed(() => (is_notice.value ? '공지내림' : '공지올림'))
 
-const is_blind = computed(() => boardStore.post?.is_blind)
+const is_blind = computed(() => forumStore.post?.is_blind)
 
 export const postManageItems = computed(() => [
   { title: '복사하기', icon: 'content-copy' },
@@ -129,8 +129,8 @@ const toTrashCan = async (post: number, state: boolean, filter: PostFilter) => {
 }
 
 interface ManagePayload {
-  board: number | undefined
-  board_name: string | undefined
+  forum: number | undefined
+  forum_name: string | undefined
   category: number | undefined
   content: string
   post: number
@@ -140,9 +140,9 @@ interface ManagePayload {
 }
 
 export const toPostManage = (fn: number, payload: ManagePayload) => {
-  const { post, board, category, content, board_name, manager, state, filter } = payload
-  if (fn === 11) return copyPost(post, board as number)
-  if (fn === 22) return movePost(post, board as number, board_name, content, manager, filter)
+  const { post, forum, category, content, forum_name, manager, state, filter } = payload
+  if (fn === 11) return copyPost(post, forum as number)
+  if (fn === 22) return movePost(post, forum as number, forum_name, content, manager, filter)
   if (fn === 33) return changeCate(post, category, filter)
   if (fn === 4) return toSecretPost(post, state, filter)
   if (fn === 5) return hideComments(post, state, filter)
@@ -151,20 +151,20 @@ export const toPostManage = (fn: number, payload: ManagePayload) => {
   if (fn === 88) return toTrashCan(post, state, filter)
 }
 
-const copyPost = (post: number, board: number) => copyCreatePost({ post, board })
+const copyPost = (post: number, forum: number) => copyCreatePost({ post, forum })
 
 const movePost = (
   post: number,
-  board: number,
-  board_name: string | undefined,
+  forum: number,
+  forum_name: string | undefined,
   org_content: string,
   manager: string,
   filter: PostFilter,
 ) => {
   const content = `${org_content}<br /><br /><p>[이 게시물은 ${manager} 님에 의해 ${timeFormat(
     new Date(),
-  )} ${board_name} 에서 이동됨]</p>`
-  patchPost({ pk: post, board, content, filter }).then(() =>
+  )} ${forum_name} 에서 이동됨]</p>`
+  patchPost({ pk: post, forum, content, filter }).then(() =>
     message('success', '', '게시물 이동이 완료되었습니다.'),
   )
 }

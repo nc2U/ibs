@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { type PropType, ref } from 'vue'
-import type { PostCategory } from '@/store/types/board'
 import { btnLight } from '@/utils/cssMixins.ts'
+import type { PostCategory } from '@/store/types/forum'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
 defineProps({

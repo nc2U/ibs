@@ -1,22 +1,22 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, onBeforeUpdate, type PropType, ref } from 'vue'
+import { onBeforeMount, onBeforeUpdate, type PropType, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useBoard } from '@/store/pinia/board'
-import type { Post, PostFile, PostLink, PostCategory } from '@/store/types/board'
+import { useForum } from '@/store/pinia/forum'
 import { btnLight, colorLight } from '@/utils/cssMixins'
+import type { Post, PostCategory } from '@/store/types/forum'
 import MdEditor from '@/components/MdEditor/Index.vue'
 import FileForms from '@/components/OtherParts/FileForms.vue'
 import LinkForms from '@/components/OtherParts/LinkForms.vue'
 
 const props = defineProps({
   post: { type: Object as PropType<Post | null>, default: null },
-  brdId: { type: Number, required: true },
+  forumId: { type: Number, required: true },
   categories: { type: Array as PropType<PostCategory[]>, default: () => [] },
 })
 
 const [route, router] = [useRoute(), useRouter()]
 
-const brdStore = useBoard()
+const brdStore = useForum()
 const createPost = (payload: { form: FormData }) => brdStore.createPost(payload)
 const updatePost = (payload: { pk: number; form: FormData }) => brdStore.updatePost(payload)
 
@@ -26,7 +26,7 @@ const refLinkForms = ref()
 const validated = ref(false)
 const form = ref<Post>({
   pk: undefined,
-  board: props.brdId,
+  forum: props.forumId,
   category: null,
   title: '',
   content: '',
@@ -86,13 +86,13 @@ const onSubmit = async () => {
     await updatePost({ pk: form.value.pk, form: formData })
     await router.replace({
       name: '(게시판) - 게시물 보기',
-      params: { projId: route.params.projId, brdId: props.brdId, postId: form.value.pk },
+      params: { projId: route.params.projId, forumId: props.forumId, postId: form.value.pk },
     })
   } else {
     await createPost({ form: formData })
     await router.replace({
       name: '(게시판) - 보기',
-      params: { projId: route.params.projId, brdId: props.brdId },
+      params: { projId: route.params.projId, forumId: props.forumId },
     })
   }
 }
@@ -100,7 +100,7 @@ const onSubmit = async () => {
 const dataSetup = () => {
   if (props.post) {
     form.value.pk = props.post.pk
-    form.value.board = props.post.board
+    form.value.forum = props.post.forum
     form.value.category = props.post.category
     form.value.title = props.post.title
     form.value.content = props.post.content
@@ -162,7 +162,11 @@ onBeforeUpdate(() => dataSetup())
         <CRow class="mb-3">
           <CFormLabel class="col-form-label text-right col-2">내용</CFormLabel>
           <CCol class="col-sm-10">
-            <MdEditor v-model="form.content" placeholder="내용을 입력하세요" style="height: 450px" />
+            <MdEditor
+              v-model="form.content"
+              placeholder="내용을 입력하세요"
+              style="height: 450px"
+            />
           </CCol>
         </CRow>
 

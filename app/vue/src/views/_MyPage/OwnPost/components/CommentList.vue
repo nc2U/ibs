@@ -1,19 +1,19 @@
 <script lang="ts" setup>
 import { ref, computed, type PropType } from 'vue'
-import { useBoard } from '@/store/pinia/board'
+import { useForum } from '@/store/pinia/forum'
 import { TableSecondary } from '@/utils/cssMixins'
-import type { Board, Comment as Cm } from '@/store/types/board'
+import type { Forum, Comment as Cm } from '@/store/types/forum'
 import Pagination from '@/components/Pagination'
 import Comment from './Comment.vue'
 
 defineProps({
-  boardList: { type: Array as PropType<Board[]>, default: () => [] },
+  forumList: { type: Array as PropType<Forum[]>, default: () => [] },
   comments: { type: Array as PropType<Cm[]>, default: () => [] },
 })
 const emit = defineEmits(['vision-toggle', 'to-like', 'on-submit', 'form-reset', 'page-select'])
 
-const boardStore = useBoard()
-const commentCount = computed(() => boardStore.commentCount)
+const forumStore = useForum()
+const commentCount = computed(() => forumStore.commentCount)
 
 const pageSelect = (page: number) => emit('page-select', page)
 
@@ -38,7 +38,7 @@ const commentPages = (pages: number) => Math.ceil(commentCount.value / pages)
     </CTableHead>
 
     <CTableBody>
-      <Comment v-for="cmt in comments" :key="cmt.pk" :board-list="boardList" :comment="cmt" />
+      <Comment v-for="cmt in comments" :key="cmt.pk" :forum-list="forumList" :comment="cmt" />
     </CTableBody>
   </CTable>
 

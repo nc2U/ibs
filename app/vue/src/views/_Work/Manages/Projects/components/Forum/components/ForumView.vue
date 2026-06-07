@@ -1,8 +1,8 @@
 <script lang="ts" setup>
-import { computed, type PropType } from 'vue'
+import { type PropType } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import type { Post } from '@/store/types/board'
-import { elapsedTime, timeFormat } from '@/utils/baseMixins'
+import type { Post } from '@/store/types/forum'
+import { elapsedTime } from '@/utils/baseMixins'
 import { markdownRender } from '@/utils/helper'
 import CommentSection from './CommentSection.vue'
 
@@ -19,7 +19,7 @@ const router = useRouter()
 const goList = () =>
   router.push({
     name: '(게시판) - 보기',
-    params: { projId: route.params.projId, brdId: props.post.board },
+    params: { projId: route.params.projId, forumId: props.post.forum },
   })
 </script>
 
@@ -40,7 +40,7 @@ const goList = () =>
           class="mr-2"
           :to="{
             name: '(게시판) - 게시물 수정',
-            params: { projId: route.params.projId, brdId: post.board, postId: post.pk },
+            params: { projId: route.params.projId, forumId: post.forum, postId: post.pk },
           }"
         >
           수정
@@ -100,7 +100,11 @@ const goList = () =>
       <v-btn color="secondary" size="small" variant="outlined" @click="goList">목록으로</v-btn>
     </div>
 
-    <CommentSection :post-id="post.pk as number" :brd-id="post.board as number" :comments="comments" />
+    <CommentSection
+      :post-id="post.pk as number"
+      :forum-id="post.forum as number"
+      :comments="comments"
+    />
   </template>
 </template>
 

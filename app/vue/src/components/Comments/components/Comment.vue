@@ -2,7 +2,7 @@
 import { ref, watch, inject, type ComputedRef, type PropType } from 'vue'
 import { elapsedTime } from '@/utils/baseMixins'
 import type { User } from '@/store/types/accounts'
-import type { Comment as Cm } from '@/store/types/board'
+import type { Comment as Cm } from '@/store/types/forum'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import CommentForm from './CommentForm.vue'
 

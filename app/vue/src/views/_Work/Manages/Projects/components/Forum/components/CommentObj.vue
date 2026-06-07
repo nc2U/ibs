@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { inject, ref, type PropType } from 'vue'
-import type { Comment } from '@/store/types/board'
+import type { Comment } from '@/store/types/forum'
 import { elapsedTime, timeFormat } from '@/utils/baseMixins'
 import { markdownRender } from '@/utils/helper'
 import CommentForm from './CommentForm.vue'
@@ -35,7 +35,9 @@ const onEdit = (content: string) => {
           <div class="text-body-2">
             <span class="fw-bold mr-2">{{ comment.creator?.username }}</span>
             <span class="text-muted">{{ elapsedTime(comment.created as string) }} 전</span>
-            <v-tooltip activator="parent" location="top">{{ timeFormat(comment.created as string) }}</v-tooltip>
+            <v-tooltip activator="parent" location="top">{{
+              timeFormat(comment.created as string)
+            }}</v-tooltip>
           </div>
           <div class="actions">
             <v-btn
@@ -48,17 +50,31 @@ const onEdit = (content: string) => {
               답글
             </v-btn>
             <template v-if="userInfo?.pk === comment.creator?.pk">
-              <v-btn variant="text" size="x-small" color="amber" @click="showEditForm = !showEditForm">
+              <v-btn
+                variant="text"
+                size="x-small"
+                color="amber"
+                @click="showEditForm = !showEditForm"
+              >
                 수정
               </v-btn>
-              <v-btn variant="text" size="x-small" color="danger" @click="emit('delete-comment', comment.pk)">
+              <v-btn
+                variant="text"
+                size="x-small"
+                color="danger"
+                @click="emit('delete-comment', comment.pk)"
+              >
                 삭제
               </v-btn>
             </template>
           </div>
         </div>
 
-        <div v-if="!showEditForm" v-html="markdownRender(comment.content)" class="comment-content" />
+        <div
+          v-if="!showEditForm"
+          v-html="markdownRender(comment.content)"
+          class="comment-content"
+        />
         <CommentForm
           v-else
           :content="comment.content"

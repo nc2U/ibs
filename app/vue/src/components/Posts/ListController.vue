@@ -3,7 +3,7 @@ import { computed, nextTick, onBeforeMount, ref } from 'vue'
 import { bgLight } from '@/utils/cssMixins'
 import { numFormat } from '@/utils/baseMixins'
 import { useProject } from '@/store/pinia/project'
-import { type PostFilter, useBoard } from '@/store/pinia/board'
+import { type PostFilter, useForum } from '@/store/pinia/forum'
 
 const props = defineProps({
   comFrom: { type: Boolean, default: false },
@@ -26,8 +26,8 @@ const formsCheck = computed(() => {
   return a && b && c
 })
 
-const boardStore = useBoard()
-const postCount = computed(() => boardStore.postCount)
+const forumStore = useForum()
+const postCount = computed(() => forumStore.postCount)
 
 const listFiltering = (page = 1) => {
   nextTick(() => {

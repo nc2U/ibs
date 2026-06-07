@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { type PropType } from 'vue'
-import type { Post } from '@/store/types/board'
+import type { Post } from '@/store/types/forum'
 import { cutString, timeFormat } from '@/utils/baseMixins'
 
 defineProps({
@@ -12,7 +12,7 @@ defineProps({
   <CTableRow v-if="post" class="text-center">
     <CTableDataCell>{{ post.pk }}</CTableDataCell>
     <CTableDataCell>
-      <router-link :to="{ name: post.board_name || '공지 사항' }" target="_blank">
+      <router-link :to="{ name: post.forum_name || '공지 사항' }" target="_blank">
         {{ post.board_name }}
       </router-link>
     </CTableDataCell>

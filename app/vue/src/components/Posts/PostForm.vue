@@ -2,7 +2,7 @@
 import type { PropType } from 'vue'
 import { computed, defineAsyncComponent, onMounted, onUpdated, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import type { Post, PostLink } from '@/store/types/board'
+import type { Post, PostLink } from '@/store/types/forum'
 import { AlertSecondary, btnLight } from '@/utils/cssMixins'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
@@ -11,7 +11,7 @@ const QuillEditor = defineAsyncComponent(() => import('@/components/QuillEditor/
 
 const props = defineProps({
   sortName: { type: String, default: '【본사】' },
-  boardNum: { type: Number, default: 2 },
+  forumNum: { type: Number, default: 2 },
   categoryList: { type: Object, required: true },
   getSuitCase: { type: Object, default: null },
   post: { type: Object as PropType<Post>, default: null },
@@ -30,7 +30,7 @@ const validated = ref(false)
 const form = reactive<Post>({
   pk: undefined,
   issue_project: null,
-  board: props.boardNum,
+  forum: props.forumNum,
   category: null,
   title: '',
   content: '',
@@ -137,7 +137,7 @@ const dataSetup = () => {
   if (props.post) {
     form.pk = props.post.pk
     form.issue_project = props.post.issue_project
-    form.board = props.post.board
+    form.forum = props.post.forum
     form.category = props.post.category
     form.title = props.post.title
     form.content = props.post.content
@@ -182,10 +182,10 @@ onUpdated(() => dataSetup())
   >
     <CRow class="mb-3">
       <CFormLabel for="title" class="col-md-2 col-form-label">제목</CFormLabel>
-      <CCol :md="boardNum === 3 ? 9 : 8">
+      <CCol :md="forumNum === 3 ? 9 : 8">
         <CFormInput id="title" v-model="form.title" required placeholder="게시물 제목" />
       </CCol>
-      <CCol v-if="boardNum !== 3">
+      <CCol v-if="forumNum !== 3">
         <v-checkbox-btn v-model="form.is_notice" label="공지글" />
       </CCol>
     </CRow>
@@ -194,11 +194,11 @@ onUpdated(() => dataSetup())
       <CFormLabel
         for="category"
         class="col-sm-2 col-form-label"
-        :class="{ 'col-lg-1': boardNum === 3 }"
+        :class="{ 'col-lg-1': forumNum === 3 }"
       >
         카테고리
       </CFormLabel>
-      <CCol :md="boardNum === 3 ? 2 : 3">
+      <CCol :md="forumNum === 3 ? 2 : 3">
         <CFormSelect id="category" v-model="form.category" required>
           <option value="">카테고리 선택</option>
           <option v-for="cate in categoryList" :key="cate.pk" :value="cate.pk">

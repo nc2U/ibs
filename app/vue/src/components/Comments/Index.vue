@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { ref, type PropType } from 'vue'
-import { useBoard } from '@/store/pinia/board'
-import type { Comment } from '@/store/types/board'
+import { useForum } from '@/store/pinia/forum'
+import type { Comment } from '@/store/types/forum'
 import CommentList from './components/CommentList.vue'
 import CommentForm from './components/CommentForm.vue'
 
@@ -14,11 +14,11 @@ const props = defineProps({
 const formVision = ref<boolean>(true)
 const actForm = ref<number | undefined>(undefined)
 
-const boardStore = useBoard()
-const createComment = (payload: Comment) => boardStore.createComment(payload)
-const patchComment = (payload: Comment) => boardStore.patchComment(payload)
+const forumStore = useForum()
+const createComment = (payload: Comment) => forumStore.createComment(payload)
+const patchComment = (payload: Comment) => forumStore.patchComment(payload)
 const patchCommentLike = (pk: number, post: number, page?: number) =>
-  boardStore.patchCommentLike(pk, post, page)
+  forumStore.patchCommentLike(pk, post, page)
 
 const toLike = (pk: number) => patchCommentLike(pk, props.post)
 
@@ -38,7 +38,7 @@ const visionToggle = (payload: { num: number; sts: boolean }) => {
   if (!payload.sts) actForm.value = payload.num
 }
 
-const pageSelect = (page: number) => boardStore.fetchCommentList({ post: props.post, page })
+const pageSelect = (page: number) => forumStore.fetchCommentList({ post: props.post, page })
 </script>
 
 <template>

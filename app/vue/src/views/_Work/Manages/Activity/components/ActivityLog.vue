@@ -180,7 +180,7 @@ const getIcon = (sort: string, progress: boolean) => {
                 name: '(게시판) - 게시물 보기',
                 params: {
                   projId: act.project?.slug,
-                  brdId: act.post?.board,
+                  forumId: act.post?.forum,
                   postId: act.post?.pk,
                 },
               }"

@@ -2,7 +2,7 @@
 import { computed, type ComputedRef, inject, onBeforeMount, ref } from 'vue'
 import { pageTitle, navMenu } from '@/views/_MyPage/_menu/headermixin'
 import type { User } from '@/store/types/accounts'
-import { type PostFilter, useBoard } from '@/store/pinia/board'
+import { type PostFilter, useForum } from '@/store/pinia/forum'
 import Loading from '@/components/Loading/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
@@ -33,18 +33,18 @@ const pageSelect = (page: number) => {
   listFiltering(postFilter.value)
 }
 
-const boardStore = useBoard()
-const boardList = computed(() => boardStore.boardList)
-const postList = computed(() => boardStore.postList)
-const commentList = computed(() => boardStore.commentList)
+const frmStore = useForum()
+const forumList = computed(() => frmStore.forumList)
+const postList = computed(() => frmStore.postList)
+const commentList = computed(() => frmStore.commentList)
 
-const fetchBoardList = () => boardStore.fetchBoardList({})
-const fetchPostList = (payload: PostFilter) => boardStore.fetchPostList(payload)
-const fetchCommentList = (payload: any) => boardStore.fetchCommentList(payload)
+const fetchForumList = () => frmStore.fetchForumList({})
+const fetchPostList = (payload: PostFilter) => frmStore.fetchPostList(payload)
+const fetchCommentList = (payload: any) => frmStore.fetchCommentList(payload)
 
 const dataSetup = (pk: number) => {
   postFilter.value.user = pk
-  fetchBoardList()
+  fetchForumList()
   fetchPostList(postFilter.value)
   fetchCommentList({ user: userInfo?.value.pk })
 }
@@ -105,13 +105,13 @@ onBeforeMount(() => {
 
         <PostList
           v-if="sort === 'post'"
-          :board-list="boardList"
+          :forum-list="forumList"
           :post-list="postList"
           :view-route="mainViewName"
           @page-select="pageSelect"
         />
 
-        <CommentList v-if="sort === 'comment'" :board-list="boardList" :comments="commentList" />
+        <CommentList v-if="sort === 'comment'" :forum-list="forumList" :comments="commentList" />
       </div>
     </CCardBody>
   </ContentBody>
