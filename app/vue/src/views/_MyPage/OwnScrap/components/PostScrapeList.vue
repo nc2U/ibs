@@ -8,7 +8,7 @@ import PostScrape from './PostScrape.vue'
 import Pagination from '@/components/Pagination'
 
 defineProps({
-  sort: { type: String as PropType<'docs' | 'board'>, default: 'docs' },
+  sort: { type: String as PropType<'docs' | 'forum'>, default: 'docs' },
   scrapeList: { type: Array as PropType<S[]>, default: () => [] },
   scrapeCount: { type: Number, default: 0 },
   viewRoute: { type: String, required: true },
