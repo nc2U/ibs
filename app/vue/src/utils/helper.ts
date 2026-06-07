@@ -98,7 +98,7 @@ export const getOrderedList = (objectList: Item[], key: string) => {
   }[]
 
   if (savedOrder.length) {
-    // pk -> Board 매핑
+    // pk -> Forum 매핑
     const objectMap = new Map(objectList.map(obj => [obj.pk, obj]))
     const ordered = savedOrder.map(item => objectMap.get(item.pk)).filter(Boolean) as any[]
 
