@@ -1,11 +1,27 @@
 {% load markdown_filters %}
 
 <style>
+    /* Default styles for light mode */
+    .logo-light {
+        display: block !important;
+    }
+    .logo-dark {
+        display: none !important;
+    }
+
+    /* Dark mode styles */
     @media (prefers-color-scheme: dark) {
-        .logo {
-            content: url('{{ settings.DOMAIN_HOST }}/static/ibs/images/logo-dark.png');
+        .logo-light {
+            display: none !important;
+        }
+        .logo-dark {
+            display: block !important;
         }
     }
+
+    /* Outlook specific dark mode handling (optional but good practice) */
+    [data-ogsc] .logo-light { display: none !important; }
+    [data-ogsc] .logo-dark { display: block !important; }
 </style>
 
 <table width="720" border="0" cellpadding="0" cellspacing="0"
@@ -14,7 +30,10 @@
   <tr>
     <td colspan="2"
         style="font-size:12px;padding:20px 30px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-      <img src="{{ settings.DOMAIN_HOST }}/static/ibs/images/logo.png" alt height="35" />
+      <!-- Light mode logo (default) -->
+      <img class="logo-light" src="{{ settings.DOMAIN_HOST }}/static/ibs/images/logo.png" alt="Light Logo" height="35" style="display:block;">
+      <!-- Dark mode logo (hidden by default) -->
+      <img class="logo-dark" src="{{ settings.DOMAIN_HOST }}/static/ibs/images/logo-dark.png" alt="Dark Logo" height="35" style="display:none;">
       <p style="margin-top: 25px;">[{{ user.username }}]님이 <b>{{ instance.project }}</b> 프로젝트의 <b>새 업무 [#{{ instance.pk }}]
         "{{ instance.subject }}"</b>을(를) 생성 {% if instance.assigned_to %}하여 &lt;"{{ instance.assigned_to.username }}"&gt; 님에게 배정(요청){% endif %} 하였습니다.</p>
     </td>
