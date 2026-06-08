@@ -139,7 +139,7 @@ watch(
         await workStore.fetchIssueProject(newProjectSlug)
         selectedProjectData.value = workStore.issueProject
         // NEW: Fetch issues for the selected project
-        await issueStore.fetchAllIssueList({ project: newProjectSlug as string })
+        await issueStore.fetchAllIssueList(newProjectSlug)
       } else {
         // If project is unselected, clear selectedProjectData
         selectedProjectData.value = null
