@@ -34,7 +34,7 @@ export default defineConfig({
         'https://raw.githubusercontent.com/nc2U/ibs/refs/heads/master/app/vue/docs/favicon.svg',
       dark: 'https://raw.githubusercontent.com/nc2U/ibs/refs/heads/master/app/vue/docs/favicon-dark-mode.svg',
     },
-    siteTitle: 'IBS Platform',
+    siteTitle: 'IBS 워크스페이스',
     nav: [
       { text: '가이드', link: '/intro/getting-started' },
       {
