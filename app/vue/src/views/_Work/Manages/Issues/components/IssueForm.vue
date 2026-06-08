@@ -124,15 +124,92 @@ watch(
 )
 
 const issueStore = useIssue()
-const trackers = computed(() =>
-  props.issueProject?.trackers ? props.issueProject.trackers : issueStore.trackerList,
+
+// New ref to hold project data when selected in global context
+const selectedProjectData = ref<IssueProject | null>(null)
+
+// Watcher for form.project to fetch project-specific trackers in global context
+watch(
+  () => form.value.project,
+  async newProjectSlug => {
+    // Only execute this logic if issueProject prop is NOT provided (i.e., in global context)
+    if (!props.issueProject) {
+      if (newProjectSlug) {
+        // Fetch the specific project data. Assuming workStore.fetchIssueProject updates workStore.issueProject
+        await workStore.fetchIssueProject(newProjectSlug)
+        selectedProjectData.value = workStore.issueProject
+        // NEW: Fetch issues for the selected project
+        await issueStore.fetchAllIssueList({ project: newProjectSlug as string })
+      } else {
+        // If project is unselected, clear selectedProjectData
+        selectedProjectData.value = null
+        // NEW: If project is unselected, fetch all issues again
+        await issueStore.fetchAllIssueList()
+      }
+    }
+  },
+  { immediate: true }, // Run immediately on component mount to handle initial state
 )
+
+// Modified trackers computed property to use selectedProjectData if available
+const trackers = computed(() => {
+  if (props.issueProject?.trackers) {
+    // If issueProject prop is provided (project-specific context)
+    return props.issueProject.trackers
+  } else if (selectedProjectData.value?.trackers) {
+    // If a project is selected in global context and its data is fetched
+    return selectedProjectData.value.trackers
+  } else {
+    // Default to all trackers (initial global context or no project selected)
+    return issueStore.trackerList
+  }
+})
+
+// form.status 변경 감시
+watch(
+  () => form.value.status,
+  newStatus => {
+    // 새로운 상태가 '종료'(PK 5) 또는 '거절'(PK 6)이고 진척도가 100이 아니면 진척도를 100으로 설정
+    if (newStatus >= 5 && form.value.done_ratio !== 100) {
+      form.value.done_ratio = 100
+    }
+  },
+)
+
+// form.done_ratio 변경 감시
+watch(
+  () => form.value.done_ratio,
+  newDoneRatio => {
+    // 진척도가 100이고 현재 상태가 '완료'(PK 5)가 아니면 상태를 '완료'(PK 5)로 설정
+    if (newDoneRatio === 100 && form.value.status < 5) {
+      // 5: 완료
+      form.value.status = 5
+    }
+  },
+)
+
+const newIssueStatusList = computed(() => {
+  if (!props.issue) {
+    // 신규 생성 모드
+    // '신규'와 '진행' 상태만 필터링 (이름으로 식별)
+    return props.statusList.filter(status => status.pk <= 2)
+  }
+  return props.statusList // 수정 모드일 때는 모든 상태 반환
+})
 
 const categories = computed(() => (props.issueProject?.categories as SimpleCategory[]) ?? [])
 const versions = computed(() => props.issueProject?.versions ?? [])
 watch(versions, nVal => {
   const def_vers = nVal.filter(v => v.is_default)
   if (!!def_vers.length) form.value.fixed_version = def_vers[0].pk ?? null
+})
+
+const filteredParentIssues = computed(() => {
+  if (props.issue?.pk) {
+    // If in edit mode, filter out the current issue from the list
+    return props.getIssues.filter(issue => issue.value !== props.issue?.pk)
+  }
+  return props.getIssues
 })
 
 const durationOptions = [
@@ -351,8 +428,12 @@ defineExpose({ callComment, callReply })
                   상태
                 </CFormLabel>
                 <CCol sm="8">
-                  <CFormSelect v-model="form.status" id="status" required>
-                    <option v-for="status in statusList" :value="status.pk" :key="status.pk">
+                  <CFormSelect v-model.number="form.status" id="status" required>
+                    <option
+                      v-for="status in newIssueStatusList"
+                      :value="Number(status.pk)"
+                      :key="status.pk"
+                    >
                       {{ status.name }}
                     </option>
                   </CFormSelect>
@@ -399,7 +480,7 @@ defineExpose({ callComment, callReply })
                   <Multiselect
                     v-model="form.parent"
                     id="parent"
-                    :options="getIssues"
+                    :options="filteredParentIssues"
                     placeholder="상위업무"
                     searchable
                     class="multiselect-blue"
