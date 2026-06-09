@@ -31,7 +31,7 @@ export const logoNegative = [
 <path fill="#4FAAB0" stroke="#4FAAB0" stroke-width="1" opacity="0.5098039215686274" d="M 297.5 144 L 409 255.5 L 409 494.5 L 408 494.5 L 408 255.5 L 297.5 144 Z " />
 <path fill="#4FAAB0" stroke="#4FAAB0" stroke-width="1" opacity="0.5098039215686274" d="M 269.5 277 L 270 494.5 L 269 494.5 L 269.5 277 Z " />
 </g>
-<text x="320" y="165" font-family="Helvetica, Arial, sans-serif" font-weight="900" font-size="130" fill="white">IBS <tspan fill="#ffffff" font-weight="400">워크스페이스</tspan></text></svg>`,
+<text x="320" y="165" font-family="Helvetica, Arial, sans-serif" font-weight="900" font-size="120" fill="white">IBS <tspan fill="#ffffff" font-weight="400">워크스페이스</tspan></text></svg>`,
 ]
 
 export const sygnet = [
