@@ -58,9 +58,7 @@ nginx:
   ingress:
     hosts:
       - host: my-host.com # Host address
-        paths:
-          - path: /
-            pathType: Prefix
+        paths: [{ path: "/", pathType: Prefix }]
     tls:
       - secretName: web-devbox-kr-cert
         hosts:
