@@ -5,7 +5,7 @@ export default defineConfig({
   title: 'IBS',
   titleTemplate: 'IBS - Intelligent Build System',
   description: '부동산 개발관리 프로그램 매뉴얼',
-  base: process.env.NODE_ENV === 'production' ? '/ibs/' : '',
+  base: '/',
   head: [
     [
       'link',
