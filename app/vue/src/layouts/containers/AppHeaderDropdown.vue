@@ -73,10 +73,7 @@ const logout = async () => {
         관리자 페이지
       </CDropdownItem>
 
-      <CDropdownItem
-        v-if="userInfo.is_superuser"
-        @click="locationBlank('https://nc2u.github.io/ibs/')"
-      >
+      <CDropdownItem v-if="userInfo.is_superuser" @click="locationBlank('https://docs.dyibs.com/')">
         <v-icon icon="mdi mdi-file-document-outline" size="small" />
         사용자 매뉴얼
       </CDropdownItem>
