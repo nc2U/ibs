@@ -13,8 +13,8 @@ metadata:
     {{- else }}
     kubernetes.io/ingress.class: "nginx"
     {{- end }}
-    # 보안상 금지된 snippet 대신 안전한 전용 리다이렉트 어노테이션 사용
-    nginx.ingress.kubernetes.io/permanent-redirect: https://ibs.dyibs.com$request_uri
+    # 변수 없이 도메인만 적어도 경로는 자동으로 유지됩니다.
+    nginx.ingress.kubernetes.io/permanent-redirect: https://ibs.dyibs.com
 spec:
   # 최신 방식의 IngressClassName 추가
   {{- if and .Values.nginx.ingress.className (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion) }}
