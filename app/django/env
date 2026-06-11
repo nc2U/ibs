@@ -10,6 +10,8 @@ DATABASE_PASSWORD=            # default='', set the helm chart values.global.dbP
 
 DOMAIN_HOST=                  # default=http://localhost/, set the helm chart values.global.domainHost
 DOMAIN_NAME=                  # default=localhost, Representative domain when using multiple hosts via Ingress
+SESSION_COOKIE_DOMAIN =       # ".domain.com" // 서브도메인간 이동 시 세션 유지
+CSRF_COOKIE_DOMAIN =          # ".domain.com" // 서브도메인간 이동 시 세션 유지
 
 EMAIL_HOST=                   # required, set the helm chart values.global.emailHost
 EMAIL_HOST_USER=              # required, set the helm chart values.global.emailHostUser
