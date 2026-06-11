@@ -1,14 +1,25 @@
 {{- if and .Values.erpRedirect .Values.erpRedirect.enabled -}}
+{{- $fullName := include "hibs.fullname" . | lower -}}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ include "hibs.fullname" . | lower }}-erp-redirect
+  name: {{ $fullName }}-erp-redirect
+  labels:
+    {{- include "hibs.labels" . | nindent 4 }}
   annotations:
-    kubernetes.io/ingress.class: nginx
-    # 전용 인그레스이므로 if문 없이 즉시 리다이렉트 (성능 최적화 및 경로 보존)
-    nginx.ingress.kubernetes.io/configuration-snippet: |
-      return 301 https://ibs.dyibs.com$request_uri;
+    # 기존 어노테이션 방식 유지
+    {{- if .Values.nginx.ingress.className }}
+    kubernetes.io/ingress.class: {{ .Values.nginx.ingress.className | quote }}
+    {{- else }}
+    kubernetes.io/ingress.class: "nginx"
+    {{- end }}
+    # 보안상 금지된 snippet 대신 안전한 전용 리다이렉트 어노테이션 사용
+    nginx.ingress.kubernetes.io/permanent-redirect: https://ibs.dyibs.com$request_uri
 spec:
+  # 최신 방식의 IngressClassName 추가
+  {{- if and .Values.nginx.ingress.className (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion) }}
+  ingressClassName: {{ .Values.nginx.ingress.className }}
+  {{- end }}
   {{- if .Values.nginx.ingress.tls }}
   tls:
     - hosts:
@@ -20,7 +31,7 @@ spec:
       http:
         paths:
           - path: /
-            pathType: ImplementationSpecific
+            pathType: Prefix
             backend:
               service:
                 name: {{ printf "%s-%s" .Release.Name "nginx" | trunc 63 | trimSuffix "-" }}
