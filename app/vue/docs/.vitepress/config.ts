@@ -26,6 +26,14 @@ export default defineConfig({
     build: {
       target: 'ESNext',
     },
+    esbuild: {
+      target: 'ESNext',
+    },
+    optimizeDeps: {
+      esbuildOptions: {
+        target: 'ESNext',
+      },
+    },
   },
   lastUpdated: true,
   markdown: {
