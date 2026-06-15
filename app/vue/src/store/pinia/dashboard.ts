@@ -1,5 +1,7 @@
+import api from '@/api'
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { errorHandle } from '@/utils/helper.ts'
 import type {
   WidgetConfig,
   DashboardLayoutItem,
@@ -150,9 +152,16 @@ export const useDashboard = defineStore('dashboard', () => {
   })
   const visibleWidgets = ref<string[]>([...DEFAULT_VISIBLE_WIDGETS])
   const currentBreakpoint = ref<Breakpoint>('lg')
+  const configPk = ref<number | null>(null)
+  const isSyncing = ref(false)
+
+  // Debounce timer for API sync
+  let syncTimer: ReturnType<typeof setTimeout> | null = null
 
   // Getters
-  const activeLayouts = computed(() => layouts.value[currentBreakpoint.value].filter(l => l.visible))
+  const activeLayouts = computed(() =>
+    layouts.value[currentBreakpoint.value].filter(l => l.visible),
+  )
 
   const availableWidgets = computed(() => {
     return WIDGET_REGISTRY.map(widget => ({
@@ -164,7 +173,12 @@ export const useDashboard = defineStore('dashboard', () => {
   const getWidgetConfig = (id: string) => WIDGET_REGISTRY.find(w => w.id === id)
 
   // Actions
-  const loadDashboardState = () => {
+  const loadDashboardState = async () => {
+    // 1. Try DB first
+    const dbLoaded = await fetchDashboardFromDB()
+    if (dbLoaded) return
+
+    // 2. Fallback to LocalStorage
     try {
       const saved = localStorage.getItem(STORAGE_KEY)
       if (saved) {
@@ -173,7 +187,7 @@ export const useDashboard = defineStore('dashboard', () => {
         // Migration logic: old format (array) to new format (record)
         if (Array.isArray(parsed.layouts)) {
           console.info('Migrating dashboard layout from old format...')
-          resetToDefaults() // Initialize with defaults for all breakpoints
+          resetToDefaults(false) // Don't save to DB yet
           layouts.value.lg = parsed.layouts // Preserve old layout as 'lg'
           visibleWidgets.value = parsed.visibleWidgets
           saveDashboardState()
@@ -188,22 +202,79 @@ export const useDashboard = defineStore('dashboard', () => {
         }
       }
     } catch (e) {
-      console.warn('Failed to load dashboard state:', e)
+      console.warn('Failed to load dashboard state from LocalStorage:', e)
     }
-    // 기본값으로 초기화
+
+    // 3. Last resort: Defaults
     resetToDefaults()
   }
 
-  const saveDashboardState = () => {
+  const fetchDashboardFromDB = async () => {
+    try {
+      const res = await api.get('/user-widget-config/')
+      if (res.data.results && res.data.results.length > 0) {
+        const config = res.data.results[0]
+        configPk.value = config.pk
+        layouts.value = config.layouts
+        visibleWidgets.value = config.visible_widgets
+        // Update LocalStorage to keep in sync
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify({
+            layouts: config.layouts,
+            visibleWidgets: config.visible_widgets,
+            version: config.version,
+          }),
+        )
+        return true
+      }
+    } catch (e) {
+      console.warn('Failed to fetch dashboard config from DB:', e)
+    }
+    return false
+  }
+
+  const saveDashboardState = (syncToDB = true) => {
+    // 1. Immediate save to LocalStorage
     const state: DashboardState = {
       layouts: layouts.value,
       visibleWidgets: visibleWidgets.value,
       version: CURRENT_VERSION,
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+
+    // 2. Debounced sync to DB
+    if (syncToDB) {
+      if (syncTimer) clearTimeout(syncTimer)
+      syncTimer = setTimeout(async () => {
+        await syncDashboardToDB()
+      }, 2000) // 2 second debounce
+    }
   }
 
-  const resetToDefaults = () => {
+  const syncDashboardToDB = async () => {
+    isSyncing.value = true
+    const payload = {
+      layouts: layouts.value,
+      visible_widgets: visibleWidgets.value,
+      version: CURRENT_VERSION,
+    }
+
+    try {
+      if (configPk.value) {
+        await api.put(`/user-widget-config/${configPk.value}/`, payload)
+      } else {
+        const res = await api.post('/user-widget-config/', payload)
+        configPk.value = res.data.pk
+      }
+    } catch (e: any) {
+      errorHandle(e.response?.data)
+    } finally {
+      isSyncing.value = false
+    }
+  }
+
+  const resetToDefaults = (syncToDB = true) => {
     visibleWidgets.value = [...DEFAULT_VISIBLE_WIDGETS]
     BREAKPOINTS.forEach(bp => {
       layouts.value[bp] = DEFAULT_VISIBLE_WIDGETS.map(id => {
@@ -217,7 +288,7 @@ export const useDashboard = defineStore('dashboard', () => {
         }
       })
     })
-    saveDashboardState()
+    saveDashboardState(syncToDB)
   }
 
   const toggleWidgetVisibility = (widgetId: string) => {
@@ -284,6 +355,7 @@ export const useDashboard = defineStore('dashboard', () => {
     layouts,
     visibleWidgets,
     currentBreakpoint,
+    isSyncing,
 
     // Getters
     activeLayouts,
