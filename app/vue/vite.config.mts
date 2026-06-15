@@ -74,8 +74,10 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    deps: {
-      inline: ['vuetify'],
+    server: {
+      deps: {
+        inline: ['vuetify'],
+      },
     },
   },
 })
