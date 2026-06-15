@@ -22,6 +22,11 @@ export default defineConfig({
       },
     ],
   ],
+  vite: {
+    build: {
+      target: 'ESNext',
+    },
+  },
   lastUpdated: true,
   markdown: {
     theme: 'material-theme-palenight',
