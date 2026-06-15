@@ -95,6 +95,22 @@ class ProjectAccountD3(models.Model):
         verbose_name_plural = "06. 프로젝트 세부계정"
 
 
+class UserWidgetConfig(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='dashboard_config')
+    layouts = models.JSONField('레이아웃 설정', default=dict, help_text='브레이크포인트별(lg, md, sm 등) 위젯 배치 및 크기 정보')
+    visible_widgets = models.JSONField('표시 위젯 목록', default=list, help_text='현재 활성화되어 화면에 노출되는 위젯 ID 리스트')
+    version = models.PositiveIntegerField('데이터 버전', default=1, help_text='포맷 변경 시 하위 호환성 관리를 위한 버전 번호')
+    created = models.DateTimeField('생성일시', auto_now_add=True)
+    updated = models.DateTimeField('편집일시', auto_now=True)
+
+    def __str__(self):
+        return f'{self.user.username}의 대시보드 설정'
+
+    class Meta:
+        verbose_name = '07. 대시보드 위젯 설정'
+        verbose_name_plural = '07. 대시보드 위젯 설정'
+
+
 class CalendarSchedule(models.Model):
     title = models.CharField('일정 제목', max_length=100, db_index=True)
     all_day = models.BooleanField(default=True)
