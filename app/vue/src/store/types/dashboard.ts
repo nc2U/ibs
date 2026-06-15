@@ -39,8 +39,10 @@ export interface DashboardLayoutItem {
   minH?: number
 }
 
+export type Breakpoint = 'lg' | 'md' | 'sm' | 'xs' | 'xxs'
+
 export interface DashboardState {
-  layouts: DashboardLayoutItem[]
+  layouts: Record<Breakpoint, DashboardLayoutItem[]>
   visibleWidgets: string[]
   version: number
 }

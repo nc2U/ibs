@@ -1,9 +1,16 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { WidgetConfig, DashboardLayoutItem, DashboardState } from '@/store/types/dashboard.ts'
+import type {
+  WidgetConfig,
+  DashboardLayoutItem,
+  DashboardState,
+  Breakpoint,
+} from '@/store/types/dashboard.ts'
 
 const STORAGE_KEY = 'ibs-dashboard-layout'
 const CURRENT_VERSION = 1
+
+const BREAKPOINTS: Breakpoint[] = ['lg', 'md', 'sm', 'xs', 'xxs']
 
 // Widget Registry - 모든 위젯 정의
 export const WIDGET_REGISTRY: WidgetConfig[] = [
@@ -134,11 +141,18 @@ const DEFAULT_VISIBLE_WIDGETS = ['main-carousel', 'wise-word', 'notice-list', 'm
 
 export const useDashboard = defineStore('dashboard', () => {
   // State
-  const layouts = ref<DashboardLayoutItem[]>([])
+  const layouts = ref<Record<Breakpoint, DashboardLayoutItem[]>>({
+    lg: [],
+    md: [],
+    sm: [],
+    xs: [],
+    xxs: [],
+  })
   const visibleWidgets = ref<string[]>([...DEFAULT_VISIBLE_WIDGETS])
+  const currentBreakpoint = ref<Breakpoint>('lg')
 
   // Getters
-  const activeLayouts = computed(() => layouts.value.filter(l => l.visible))
+  const activeLayouts = computed(() => layouts.value[currentBreakpoint.value].filter(l => l.visible))
 
   const availableWidgets = computed(() => {
     return WIDGET_REGISTRY.map(widget => ({
@@ -154,7 +168,19 @@ export const useDashboard = defineStore('dashboard', () => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY)
       if (saved) {
-        const state: DashboardState = JSON.parse(saved)
+        const parsed = JSON.parse(saved)
+
+        // Migration logic: old format (array) to new format (record)
+        if (Array.isArray(parsed.layouts)) {
+          console.info('Migrating dashboard layout from old format...')
+          resetToDefaults() // Initialize with defaults for all breakpoints
+          layouts.value.lg = parsed.layouts // Preserve old layout as 'lg'
+          visibleWidgets.value = parsed.visibleWidgets
+          saveDashboardState()
+          return
+        }
+
+        const state: DashboardState = parsed
         if (state.version === CURRENT_VERSION) {
           layouts.value = state.layouts
           visibleWidgets.value = state.visibleWidgets
@@ -179,15 +205,17 @@ export const useDashboard = defineStore('dashboard', () => {
 
   const resetToDefaults = () => {
     visibleWidgets.value = [...DEFAULT_VISIBLE_WIDGETS]
-    layouts.value = DEFAULT_VISIBLE_WIDGETS.map(id => {
-      const widget = WIDGET_REGISTRY.find(w => w.id === id)!
-      return {
-        ...widget.defaultLayout,
-        i: id,
-        visible: true,
-        minW: widget.minW,
-        minH: widget.minH,
-      }
+    BREAKPOINTS.forEach(bp => {
+      layouts.value[bp] = DEFAULT_VISIBLE_WIDGETS.map(id => {
+        const widget = WIDGET_REGISTRY.find(w => w.id === id)!
+        return {
+          ...widget.defaultLayout,
+          i: id,
+          visible: true,
+          minW: widget.minW,
+          minH: widget.minH,
+        }
+      })
     })
     saveDashboardState()
   }
@@ -197,37 +225,42 @@ export const useDashboard = defineStore('dashboard', () => {
     if (index > -1) {
       // 위젯 숨기기
       visibleWidgets.value.splice(index, 1)
-      const layoutIndex = layouts.value.findIndex(l => l.i === widgetId)
-      if (layoutIndex > -1) {
-        layouts.value[layoutIndex].visible = false
-      }
+      BREAKPOINTS.forEach(bp => {
+        const layoutIndex = layouts.value[bp].findIndex(l => l.i === widgetId)
+        if (layoutIndex > -1) {
+          layouts.value[bp][layoutIndex].visible = false
+        }
+      })
     } else {
       // 위젯 표시
       visibleWidgets.value.push(widgetId)
-      const existingLayout = layouts.value.find(l => l.i === widgetId)
-      if (existingLayout) {
-        existingLayout.visible = true
-      } else {
-        // 새 레이아웃 추가
-        const widget = WIDGET_REGISTRY.find(w => w.id === widgetId)
-        if (widget) {
-          layouts.value.push({
-            ...widget.defaultLayout,
-            i: widgetId,
-            visible: true,
-            minW: widget.minW,
-            minH: widget.minH,
-          })
+      BREAKPOINTS.forEach(bp => {
+        const existingLayout = layouts.value[bp].find(l => l.i === widgetId)
+        if (existingLayout) {
+          existingLayout.visible = true
+        } else {
+          // 새 레이아웃 추가
+          const widget = WIDGET_REGISTRY.find(w => w.id === widgetId)
+          if (widget) {
+            layouts.value[bp].push({
+              ...widget.defaultLayout,
+              i: widgetId,
+              visible: true,
+              minW: widget.minW,
+              minH: widget.minH,
+            })
+          }
         }
-      }
+      })
     }
     saveDashboardState()
   }
 
-  const updateLayout = (newLayouts: DashboardLayoutItem[]) => {
+  const updateLayout = (newLayouts: DashboardLayoutItem[], breakpoint?: Breakpoint) => {
+    const bp = breakpoint || currentBreakpoint.value
     // 레이아웃 업데이트 시 visible 상태 유지
     newLayouts.forEach(newLayout => {
-      const existingLayout = layouts.value.find(l => l.i === newLayout.i)
+      const existingLayout = layouts.value[bp].find(l => l.i === newLayout.i)
       if (existingLayout) {
         existingLayout.x = newLayout.x
         existingLayout.y = newLayout.y
@@ -238,6 +271,10 @@ export const useDashboard = defineStore('dashboard', () => {
     saveDashboardState()
   }
 
+  const setCurrentBreakpoint = (bp: Breakpoint) => {
+    currentBreakpoint.value = bp
+  }
+
   const removeWidget = (widgetId: string) => {
     toggleWidgetVisibility(widgetId)
   }
@@ -246,6 +283,7 @@ export const useDashboard = defineStore('dashboard', () => {
     // State
     layouts,
     visibleWidgets,
+    currentBreakpoint,
 
     // Getters
     activeLayouts,
@@ -258,6 +296,7 @@ export const useDashboard = defineStore('dashboard', () => {
     resetToDefaults,
     toggleWidgetVisibility,
     updateLayout,
+    setCurrentBreakpoint,
     removeWidget,
   }
 })

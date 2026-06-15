@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted, watch, markRaw, type Component } from 'vue'
+import { computed, onMounted, markRaw, type Component } from 'vue'
 import { GridLayout, type LayoutItem } from 'grid-layout-plus'
 import { useDashboard, WIDGET_REGISTRY } from '@/store/pinia/dashboard.ts'
+import type { Breakpoint } from '@/store/types/dashboard.ts'
 
 // Widget components
 import ProjectStatusWidget from './widgets/ProjectStatusWidget.vue'
@@ -19,6 +20,10 @@ import NoticeListWidget from './widgets/NoticeListWidget.vue'
 
 const dashboardStore = useDashboard()
 
+// Responsive configuration
+const breakpoints: Record<Breakpoint, number> = { lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }
+const cols: Record<Breakpoint, number> = { lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }
+
 // Widget component mapping
 const widgetComponents: Record<string, Component> = {
   'project-status': markRaw(ProjectStatusWidget),
@@ -35,7 +40,7 @@ const widgetComponents: Record<string, Component> = {
   'notice-list': markRaw(NoticeListWidget),
 }
 
-// Computed layouts for grid-layout-plus (needs a mutable array)
+// Computed layouts for grid-layout-plus
 const gridLayouts = computed({
   get: () =>
     dashboardStore.activeLayouts.map(l => ({
@@ -72,6 +77,10 @@ const getWidgetIcon = (widgetId: string) => {
   return widget?.icon
 }
 
+const handleBreakpointChange = (newBreakpoint: string) => {
+  dashboardStore.setCurrentBreakpoint(newBreakpoint as Breakpoint)
+}
+
 const handleLayoutUpdated = (newLayout: LayoutItem[]) => {
   dashboardStore.updateLayout(
     newLayout.map(item => ({
@@ -85,27 +94,22 @@ const handleLayoutUpdated = (newLayout: LayoutItem[]) => {
 onMounted(() => {
   dashboardStore.loadDashboardState()
 })
-
-watch(
-  () => dashboardStore.activeLayouts,
-  () => {
-    // Layout changed, handled by computed setter
-  },
-  { deep: true },
-)
 </script>
 
 <template>
   <div class="dashboard-grid">
     <GridLayout
       v-model:layout="gridLayouts"
-      :col-num="12"
+      :responsive="true"
+      :breakpoints="breakpoints"
+      :cols="cols"
       :row-height="100"
       is-draggable
       is-resizable
       vertical-compact
       use-css-transforms
       :margin="[12, 12]"
+      @breakpoint-change="handleBreakpointChange"
       @layout-updated="handleLayoutUpdated"
     >
       <template #item="{ item }">
