@@ -50,6 +50,12 @@ export default defineConfig({
   optimizeDeps: {
     include: ['vue', 'vue-router', 'pinia', 'vuetify', 'md-editor-v3', 'highlight.js'],
     exclude: [],
+    esbuildOptions: {
+      target: 'ESNext',
+    },
+  },
+  esbuild: {
+    target: 'ESNext',
   },
   server: {
     proxy: {
