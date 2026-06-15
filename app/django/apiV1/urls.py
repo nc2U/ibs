@@ -44,6 +44,7 @@ router.register(r'account-depth2', ibs.AccountSubD2ViewSet)  # only list
 router.register(r'account-depth3', ibs.AccountSubD3ViewSet)  # only list
 router.register(r'project-account-depth2', ibs.ProjectAccountD2ViewSet)  # only list
 router.register(r'project-account-depth3', ibs.ProjectAccountD3ViewSet)  # only list
+router.register(r'user-widget-config', ibs.UserWidgetConfigViewSet)
 router.register(r'wise-say', ibs.WiseSayViewSet)
 
 # work

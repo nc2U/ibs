@@ -56,6 +56,18 @@ class ProjectAccountD3ViewSet(viewsets.ModelViewSet):
     filterset_fields = ('sort', 'd2__d1', 'd2')
 
 
+class UserWidgetConfigViewSet(viewsets.ModelViewSet):
+    queryset = UserWidgetConfig.objects.all()
+    serializer_class = UserWidgetConfigSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get_queryset(self):
+        return UserWidgetConfig.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
 class WiseSayViewSet(viewsets.ModelViewSet):
     queryset = WiseSaying.objects.all()
     serializer_class = WiseSaySerializer
