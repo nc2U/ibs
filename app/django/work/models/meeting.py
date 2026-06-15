@@ -40,7 +40,7 @@ class Meeting(models.Model):
     )
     status = models.CharField('회의 상태', max_length=1, choices=MEETING_STATUS_CHOICES, default='1')
     title = models.CharField('회의 제목', max_length=255)
-    agenda = models.TextField('회의 아젠다', blank=True, default='',
+    agenda = models.TextField('회의 의제', blank=True, default='',
                               help_text='회의에서 논의할 주요 의제 (사전 공유용)')
     content = models.TextField('회의 내용', blank=True, default='')
     decisions = models.TextField('주요 결정 사항', blank=True, default='',

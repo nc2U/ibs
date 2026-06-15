@@ -205,7 +205,9 @@ const userOptions = computed(() =>
           <!-- Main Content Column -->
           <CCol md="8">
             <CRow class="mb-3">
-              <CFormLabel for="title" class="col-sm-2 col-form-label text-right">제목</CFormLabel>
+              <CFormLabel for="title" class="col-sm-2 col-form-label text-right">
+                회의 제목
+              </CFormLabel>
               <CCol sm="10">
                 <CFormInput
                   v-model="form.title"
@@ -219,7 +221,7 @@ const userOptions = computed(() =>
 
             <CRow class="mb-3">
               <CFormLabel for="agenda" class="col-sm-2 col-form-label text-right">
-                아젠다
+                회의 의제
               </CFormLabel>
               <CCol sm="10">
                 <CFormTextarea
@@ -232,7 +234,9 @@ const userOptions = computed(() =>
             </CRow>
 
             <CRow class="mb-3">
-              <CFormLabel for="content" class="col-sm-2 col-form-label text-right">내용</CFormLabel>
+              <CFormLabel for="content" class="col-sm-2 col-form-label text-right">
+                회의 내용
+              </CFormLabel>
               <CCol sm="10">
                 <MdEditor
                   v-model="form.content"
@@ -244,7 +248,7 @@ const userOptions = computed(() =>
 
             <CRow class="mb-3">
               <CFormLabel for="decisions" class="col-sm-2 col-form-label text-right">
-                결정사항
+                주요 결정 사항
               </CFormLabel>
               <CCol sm="10">
                 <CFormTextarea
@@ -258,7 +262,7 @@ const userOptions = computed(() =>
 
             <CRow class="mb-3">
               <CFormLabel for="action_items" class="col-sm-2 col-form-label text-right">
-                조치사항
+                후속 조치 사항
               </CFormLabel>
               <CCol sm="10">
                 <CFormTextarea

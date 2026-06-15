@@ -67,7 +67,7 @@ class Issue(models.Model):
     watchers = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, verbose_name='업무 관람자',
                                       related_name='watchers')
     meeting = models.ForeignKey('Meeting', on_delete=models.SET_NULL, null=True, blank=True,
-                                verbose_name='회의', related_name='issues')
+                                verbose_name='관련 회의', related_name='issues')
     is_private = models.BooleanField('비공개', default=False)
     expected_duration = models.CharField('예상 처리기간', max_length=3, choices=ExpectedDuration, null=True, blank=True,
                                          default=ExpectedDuration.SAME_DAY)

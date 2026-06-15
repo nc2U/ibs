@@ -254,8 +254,8 @@ const refConfirmModal = ref()
 
         <div v-if="meeting.agenda" class="mb-5">
           <h6 class="title mb-2">
-            <v-icon icon="mdi-bullseye-arrow" color="text-primary" size="small" class="mr-1" /> 회의
-            아젠다
+            <v-icon icon="mdi-bullseye-arrow" color="text-primary" size="small" class="mr-1" />
+            회의 의제
           </h6>
           <div
             class="markdown-content p-3 border rounded"
