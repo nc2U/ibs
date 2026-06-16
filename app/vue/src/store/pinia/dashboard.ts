@@ -149,14 +149,7 @@ export const WIDGET_REGISTRY: WidgetConfig[] = [
 ]
 
 // 기본 표시 위젯
-const DEFAULT_VISIBLE_WIDGETS = [
-  'main-carousel',
-  'wise-word',
-  'notice-list',
-  'my-issue',
-  'meeting-minutes',
-  'project-status',
-]
+const DEFAULT_VISIBLE_WIDGETS = ['wise-word', 'notice-list', 'my-issue', 'meeting-minutes', 'project-status']
 
 export const useDashboard = defineStore('dashboard', () => {
   // State
@@ -304,6 +297,13 @@ export const useDashboard = defineStore('dashboard', () => {
           minH: widget.minH,
         }
       })
+
+      // WIDGET_REGISTRY 순서대로 정렬
+      layouts.value[bp].sort((a, b) => {
+        const indexA = WIDGET_REGISTRY.findIndex(w => w.id === a.i)
+        const indexB = WIDGET_REGISTRY.findIndex(w => w.id === b.i)
+        return indexA - indexB
+      })
     })
     saveDashboardState(syncToDB)
   }
@@ -339,6 +339,13 @@ export const useDashboard = defineStore('dashboard', () => {
             })
           }
         }
+
+        // 레이아웃 배열을 WIDGET_REGISTRY 순서대로 정렬하여 시각적 위계 유지
+        layouts.value[bp].sort((a, b) => {
+          const indexA = WIDGET_REGISTRY.findIndex(w => w.id === a.i)
+          const indexB = WIDGET_REGISTRY.findIndex(w => w.id === b.i)
+          return indexA - indexB
+        })
       })
     }
     saveDashboardState()
