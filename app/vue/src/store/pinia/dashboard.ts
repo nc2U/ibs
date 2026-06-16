@@ -30,7 +30,7 @@ export const WIDGET_REGISTRY: WidgetConfig[] = [
     id: 'wise-word',
     type: 'wise-word',
     title: 'Wise Word',
-    titleKo: '동기부여 한마디',
+    titleKo: '오늘의 한마디',
     icon: 'mdi-format-quote-open',
     defaultLayout: { x: 0, y: 5, w: 12, h: 2 },
     minW: 4,
