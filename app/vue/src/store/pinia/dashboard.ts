@@ -47,12 +47,23 @@ export const WIDGET_REGISTRY: WidgetConfig[] = [
     minH: 3,
   },
   {
+    id: 'project-status',
+    type: 'project-status',
+    title: 'Project Status',
+    titleKo: '프로젝트 현황',
+    icon: 'mdi-folder-outline',
+    defaultLayout: { x: 6, y: 7, w: 6, h: 4 },
+
+    minW: 4,
+    minH: 3,
+  },
+  {
     id: 'my-issue',
     type: 'my-issue',
     title: 'My Issues',
     titleKo: '내 업무',
     icon: 'mdi-account-check-outline',
-    defaultLayout: { x: 6, y: 7, w: 6, h: 4 },
+    defaultLayout: { x: 0, y: 11, w: 6, h: 4 },
     minW: 6,
     minH: 3,
   },
@@ -62,16 +73,6 @@ export const WIDGET_REGISTRY: WidgetConfig[] = [
     title: 'Meeting Minutes',
     titleKo: '회의록',
     icon: 'mdi-account-group-outline',
-    defaultLayout: { x: 0, y: 11, w: 6, h: 4 },
-    minW: 4,
-    minH: 3,
-  },
-  {
-    id: 'project-status',
-    type: 'project-status',
-    title: 'Project Status',
-    titleKo: '프로젝트 현황',
-    icon: 'mdi-folder-outline',
     defaultLayout: { x: 6, y: 11, w: 6, h: 4 },
     minW: 4,
     minH: 3,
@@ -149,7 +150,13 @@ export const WIDGET_REGISTRY: WidgetConfig[] = [
 ]
 
 // 기본 표시 위젯
-const DEFAULT_VISIBLE_WIDGETS = ['wise-word', 'notice-list', 'my-issue', 'meeting-minutes', 'project-status']
+const DEFAULT_VISIBLE_WIDGETS = [
+  'wise-word',
+  'notice-list',
+  'my-issue',
+  'meeting-minutes',
+  'project-status',
+]
 
 export const useDashboard = defineStore('dashboard', () => {
   // State
