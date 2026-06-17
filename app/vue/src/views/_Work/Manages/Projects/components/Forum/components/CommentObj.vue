@@ -34,7 +34,7 @@ const onEdit = (content: string) => {
         <div class="d-flex justify-content-between align-items-center mb-2">
           <div class="text-body-2">
             <span class="fw-bold mr-2">{{ comment.creator?.username }}</span>
-            <span class="text-muted">{{ elapsedTime(comment.created as string) }} 전</span>
+            <span class="text-muted">{{ elapsedTime(comment.created as string) }}</span>
             <v-tooltip activator="parent" location="top">{{
               timeFormat(comment.created as string)
             }}</v-tooltip>
@@ -43,8 +43,8 @@ const onEdit = (content: string) => {
             <v-btn
               v-if="!comment.parent"
               variant="text"
-              size="x-small"
-              color="info"
+              size="small"
+              color="primary"
               @click="showReplyForm = !showReplyForm"
             >
               답글
@@ -52,15 +52,15 @@ const onEdit = (content: string) => {
             <template v-if="userInfo?.pk === comment.creator?.pk">
               <v-btn
                 variant="text"
-                size="x-small"
-                color="amber"
+                size="small"
+                color="success"
                 @click="showEditForm = !showEditForm"
               >
                 수정
               </v-btn>
               <v-btn
                 variant="text"
-                size="x-small"
+                size="small"
                 color="danger"
                 @click="emit('delete-comment', comment.pk)"
               >

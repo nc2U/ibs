@@ -1,9 +1,10 @@
 <script lang="ts" setup>
 import { type PropType } from 'vue'
+import { btnLight } from '@/utils/cssMixins.ts'
 import { useRoute, useRouter } from 'vue-router'
-import type { Post } from '@/store/types/forum'
 import { elapsedTime } from '@/utils/baseMixins'
 import { markdownRender } from '@/utils/helper'
+import type { Post } from '@/store/types/forum'
 import CommentSection from './CommentSection.vue'
 
 const props = defineProps({
@@ -32,29 +33,12 @@ const goList = () =>
           {{ post.title }}
         </h5>
       </CCol>
-      <CCol class="text-right">
-        <v-btn
-          color="amber"
-          size="small"
-          variant="flat"
-          class="mr-2"
-          :to="{
-            name: '(게시판) - 게시물 수정',
-            params: { projId: route.params.projId, forumId: post.forum, postId: post.pk },
-          }"
-        >
-          수정
-        </v-btn>
-        <v-btn color="danger" size="small" variant="flat" @click="emit('delete-post', post.pk)">
-          삭제
-        </v-btn>
-      </CCol>
     </CRow>
 
     <CCard class="mb-4">
       <CCardHeader class="text-body-2 text-muted">
         <router-link to="">{{ post.creator?.username }}</router-link>
-        님이 {{ elapsedTime(post.created as string) }} 전 작성
+        님이 {{ elapsedTime(post.created as string) }} 작성
         <span class="mx-2">|</span>
         조회수 {{ post.hit }}
       </CCardHeader>
@@ -97,7 +81,24 @@ const goList = () =>
     </CCard>
 
     <div class="mb-4">
-      <v-btn color="secondary" size="small" variant="outlined" @click="goList">목록으로</v-btn>
+      <CCol class="text-right">
+        <v-btn :color="btnLight" size="small" @click="goList">목록으로</v-btn>
+        <v-btn
+          color="success"
+          size="small"
+          variant="flat"
+          class="mr-2"
+          :to="{
+            name: '(게시판) - 게시물 수정',
+            params: { projId: route.params.projId, forumId: post.forum, postId: post.pk },
+          }"
+        >
+          수정
+        </v-btn>
+        <v-btn color="warning" size="small" variant="flat" @click="emit('delete-post', post.pk)">
+          삭제
+        </v-btn>
+      </CCol>
     </div>
 
     <CommentSection

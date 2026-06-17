@@ -28,14 +28,14 @@ const onSubmit = () => {
     />
     <div class="text-right">
       <v-btn
-        color="primary"
+        :color="content ? 'success' : 'primary'"
         size="small"
         variant="flat"
         :disabled="!commentContent.trim()"
         @click="onSubmit"
         class="mr-2"
       >
-        등록
+        {{ content ? '수정' : '등록' }}
       </v-btn>
       <v-btn variant="text" size="small" @click="emit('cancel')">취소</v-btn>
     </div>
