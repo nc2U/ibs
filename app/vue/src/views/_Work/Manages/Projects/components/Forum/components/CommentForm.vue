@@ -37,7 +37,7 @@ const onSubmit = () => {
       >
         {{ content ? '수정' : '등록' }}
       </v-btn>
-      <v-btn variant="text" size="small" @click="emit('cancel')">취소</v-btn>
+      <v-btn v-if="content" variant="text" size="small" @click="emit('cancel')">취소</v-btn>
     </div>
   </div>
 </template>
