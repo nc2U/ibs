@@ -27,9 +27,9 @@ const account = useAccount()
 const itemsCount = computed(() => account.myTodos.length)
 
 const [route, router] = [useRoute(), useRouter()]
-const logout = async () => {
-  await account.logout()
-  await router.push({ name: 'Login', query: { redirect: route.fullPath } })
+const logout = () => {
+  account.logout()
+  router.push({ name: 'Login', query: { redirect: route.fullPath } })
 }
 </script>
 
@@ -73,7 +73,7 @@ const logout = async () => {
         관리자 페이지
       </CDropdownItem>
 
-      <CDropdownItem v-if="userInfo.is_superuser" @click="locationBlank('https://docs.dyibs.com/')">
+      <CDropdownItem @click="locationBlank('https://docs.dyibs.com/')">
         <v-icon icon="mdi mdi-file-document-outline" size="small" />
         사용자 매뉴얼
       </CDropdownItem>
