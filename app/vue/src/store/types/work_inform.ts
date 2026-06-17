@@ -6,6 +6,7 @@ export interface News {
   title: string
   summary: string
   content: string
+  is_important: boolean
   files: NewsFile[]
   author: SimpleUser
   comments: BaseComment[]

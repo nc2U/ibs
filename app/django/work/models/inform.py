@@ -15,6 +15,7 @@ class News(models.Model):
     title = models.CharField('제목', max_length=255, db_index=True)
     summary = models.CharField('요약', max_length=255, blank=True, default='')
     content = models.TextField('내용', blank=True, default='')
+    is_important = models.BooleanField('중요 공지', default=False)
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name='저자')
     created = models.DateTimeField('등록일시', auto_now_add=True)
     updated = models.DateTimeField('편집일시', auto_now=True)
@@ -28,7 +29,7 @@ class News(models.Model):
         return today < new_period.strftime('%Y-%m-%d %H:%M')
 
     class Meta:
-        ordering = ('-created',)
+        ordering = ('-is_important', '-created',)
         verbose_name = '14. 공지'
         verbose_name_plural = '14. 공지'
 

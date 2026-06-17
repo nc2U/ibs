@@ -16,6 +16,7 @@ class NewsCommentInline(admin.TabularInline):
 
 @admin.register(News)
 class NewsAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('pk', 'project', 'title', 'summary', 'author')
+    list_display = ('pk', 'project', 'title', 'is_important', 'author', 'created')
     list_display_links = ('title',)
+    list_editable = ('is_important',)
     inlines = (NewsFileInline, NewsCommentInline)

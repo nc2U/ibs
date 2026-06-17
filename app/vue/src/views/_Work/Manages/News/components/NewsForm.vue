@@ -17,6 +17,7 @@ const form = ref({
   title: '',
   summary: '',
   content: '',
+  is_important: false,
   files: [] as any,
   newFiles: [] as File[],
   cngFiles: [] as { pk: number; file: File }[],
@@ -53,6 +54,7 @@ onBeforeMount(() => {
     form.value.title = props.news?.title as string
     form.value.summary = props.news?.summary as string
     form.value.content = props.news?.content as string
+    form.value.is_important = props.news?.is_important
     form.value.files = props.news.files
   }
 })
@@ -109,6 +111,18 @@ onBeforeMount(() => {
 
           <CCol sm="10">
             <MdEditor v-model="form.content" placeholder="공지 내용" />
+          </CCol>
+        </CRow>
+
+        <CRow class="mb-2">
+          <CFormLabel class="col-sm-2 col-form-label text-right"> 설정</CFormLabel>
+
+          <CCol sm="10" class="pt-2">
+            <CFormCheck
+              id="is_important"
+              v-model="form.is_important"
+              label="중요 공지 (최상단 고정)"
+            />
           </CCol>
         </CRow>
 
