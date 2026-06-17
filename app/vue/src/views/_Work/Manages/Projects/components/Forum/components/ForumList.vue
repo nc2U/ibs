@@ -67,7 +67,7 @@ const pageSelect = (page: number) => emit('page-select', page)
         </CTableRow>
       </CTableHead>
       <CTableBody>
-        <CTableRow v-for="post in postList" :key="post.pk">
+        <CTableRow v-for="post in postList" :key="post.pk" :class="{ strong: post.is_notice }">
           <PostObj :post="post" />
         </CTableRow>
       </CTableBody>

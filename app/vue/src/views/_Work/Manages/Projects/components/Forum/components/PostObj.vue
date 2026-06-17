@@ -14,7 +14,7 @@ const route = useRoute()
 <template>
   <CTableDataCell class="text-center">{{ post.pk }}</CTableDataCell>
   <CTableDataCell class="text-left">
-    <CBadge v-if="post.is_notice" color="warning" class="mr-2">공지</CBadge>
+    <CBadge v-if="post.is_notice" color="primary" class="mr-2">공지</CBadge>
     <router-link
       :to="{
         name: '(게시판) - 게시물 보기',
