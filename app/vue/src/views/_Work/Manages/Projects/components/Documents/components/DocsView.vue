@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, onMounted, type PropType, ref } from 'vue'
+import { computed, inject, onBeforeMount, onMounted, type PropType, ref } from 'vue'
 import { btnLight } from '@/utils/cssMixins.ts'
 import type { Docs } from '@/store/types/docs'
 import { useDocs } from '@/store/pinia/docs'
@@ -22,6 +22,8 @@ const refConfirmModal = ref()
 
 const docStore = useDocs()
 const [route, router] = [useRoute(), useRouter()]
+
+const userInfo = inject<any>('userInfo')
 
 const docId = computed(() => Number(route.params.docId))
 
@@ -49,20 +51,6 @@ onMounted(() => {
     <CRow class="pt-3">
       <CCol>
         <h5>{{ docs.title }}</h5>
-      </CCol>
-
-      <CCol class="text-right">
-        <span class="mr-2 form-text">
-          <v-icon icon="mdi-pencil" color="warning" size="15" class="mr-1" />
-          <router-link :to="{ name: '(문서) - 편집' }" class="ml-1">편집</router-link>
-        </span>
-
-        <span class="mr-2 form-text">
-          <v-icon icon="mdi-trash-can-outline" color="secondary" size="15" class="mr-1" />
-          <router-link to="#" @click.prevent="refConfirmModal.callModal()" class="ml-1"
-            >삭제</router-link
-          >
-        </span>
       </CCol>
     </CRow>
 
@@ -107,6 +95,23 @@ onMounted(() => {
         <v-btn :color="btnLight" @click="router.replace({ name: '(문서)' })" size="small">
           목록으로
         </v-btn>
+        <span
+          v-if="userInfo.is_superuser || userInfo.pk === docs.creator?.pk"
+          class="mr-2 form-text"
+        >
+          <v-icon icon="mdi-pencil" color="warning" size="15" class="mr-1" />
+          <router-link :to="{ name: '(문서) - 편집' }" class="ml-1">편집</router-link>
+        </span>
+
+        <span
+          v-if="userInfo.is_superuser || userInfo.pk === docs.creator?.pk"
+          class="mr-2 form-text"
+        >
+          <v-icon icon="mdi-trash-can-outline" color="secondary" size="15" class="mr-1" />
+          <router-link to="#" @click.prevent="refConfirmModal.callModal()" class="ml-1">
+            삭제
+          </router-link>
+        </span>
       </CCol>
     </CRow>
   </div>
@@ -115,7 +120,7 @@ onMounted(() => {
     <template #header>알림!</template>
     <template #default> 이 문서를 삭제 합니다. 계속 진행 하시겠습니까?</template>
     <template #footer>
-      <v-btn color="warning" @click="modalAction">저장</v-btn>
+      <v-btn color="warning" size="small" @click="modalAction">저장</v-btn>
     </template>
   </ConfirmModal>
 </template>

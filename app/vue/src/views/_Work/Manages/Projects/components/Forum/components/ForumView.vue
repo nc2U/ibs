@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { type PropType } from 'vue'
+import { inject, type PropType } from 'vue'
 import { btnLight } from '@/utils/cssMixins.ts'
 import { useRoute, useRouter } from 'vue-router'
 import { elapsedTime } from '@/utils/baseMixins'
@@ -16,6 +16,8 @@ const emit = defineEmits(['delete-post', 'like-post', 'blame-post'])
 
 const route = useRoute()
 const router = useRouter()
+
+const userInfo = inject<any>('userInfo')
 
 const goList = () =>
   router.push({
@@ -84,6 +86,7 @@ const goList = () =>
       <CCol class="text-right">
         <v-btn :color="btnLight" size="small" @click="goList">목록으로</v-btn>
         <v-btn
+          v-if="userInfo.is_superuser || userInfo?.pk === post.creator?.pk"
           color="success"
           size="small"
           variant="flat"
@@ -95,7 +98,13 @@ const goList = () =>
         >
           수정
         </v-btn>
-        <v-btn color="warning" size="small" variant="flat" @click="emit('delete-post', post.pk)">
+        <v-btn
+          v-if="userInfo.is_superuser || userInfo?.pk === post.creator?.pk"
+          color="warning"
+          size="small"
+          variant="flat"
+          @click="emit('delete-post', post.pk)"
+        >
           삭제
         </v-btn>
       </CCol>

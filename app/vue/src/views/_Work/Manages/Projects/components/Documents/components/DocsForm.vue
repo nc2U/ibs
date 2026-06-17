@@ -267,10 +267,8 @@ onBeforeMount(() => dataSetup())
 
     <CRow class="mb-5">
       <CCol>
-        <v-btn type="submit" color="primary" variant="outlined" size="small"> 저장</v-btn>
-        <v-btn :color="btnLight" size="small" @click="router.replace({ name: '(문서)' })"
-          >취소
-        </v-btn>
+        <v-btn type="submit" :color="docs?.pk ? 'success' : 'primary'" size="small"> 저장</v-btn>
+        <v-btn :color="btnLight" size="small" @click="router.back()"> 취소 </v-btn>
       </CCol>
     </CRow>
   </CForm>
