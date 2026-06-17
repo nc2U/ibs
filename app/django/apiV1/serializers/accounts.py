@@ -175,11 +175,11 @@ class DocScrapeSerializer(serializers.ModelSerializer):
 
 
 class PostInScrapeSerializer(serializers.ModelSerializer):
-    board_name = serializers.SlugField(source='board', read_only=True)
+    forum_name = serializers.SlugField(source='forum', read_only=True)
 
     class Meta:
         model = Post
-        fields = ('pk', 'board', 'board_name', 'title')
+        fields = ('pk', 'forum', 'forum_name', 'title')
 
 
 class PostScrapeSerializer(serializers.ModelSerializer):

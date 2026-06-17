@@ -32,7 +32,7 @@ class DocInActLogSerializer(serializers.ModelSerializer):
 class PostInActLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
-        fields = ('pk', 'board', 'title', 'content')
+        fields = ('pk', 'forum', 'title', 'content')
 
 
 class SimpleCommentInActLogSerializer(serializers.ModelSerializer):
