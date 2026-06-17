@@ -11,3 +11,5 @@ overrides:
   qs: 6.15.2
   uuid: 14.0.0
   esbuild: 0.28.1
+
+minimumReleaseAge: 0
