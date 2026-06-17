@@ -35,9 +35,9 @@ const onEdit = (content: string) => {
           <div class="text-body-2">
             <span class="fw-bold mr-2">{{ comment.creator?.username }}</span>
             <span class="text-muted">{{ elapsedTime(comment.created as string) }}</span>
-            <v-tooltip activator="parent" location="top">{{
-              timeFormat(comment.created as string)
-            }}</v-tooltip>
+            <v-tooltip activator="parent" location="top">
+              {{ timeFormat(comment.created as string) }}
+            </v-tooltip>
           </div>
           <div class="actions">
             <v-btn
