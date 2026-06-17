@@ -150,7 +150,10 @@ onBeforeMount(async () => {
 
         <CRow class="py-2">
           <CCol>
-            <h5>문서</h5>
+            <h5>
+              <v-icon icon="mdi-file-document-multiple-outline" color="info" class="mr-2" />
+              문서
+            </h5>
           </CCol>
 
           <AddNewDoc v-if="route.name !== '(문서) - 추가'" :proj-status="issueProject?.status" />
@@ -182,6 +185,55 @@ onBeforeMount(async () => {
       </template>
     </template>
 
-    <template v-slot:aside></template>
+    <template v-slot:aside>
+      <CRow class="mb-4">
+        <CCol>
+          <h6 class="asideTitle">문서 카테고리</h6>
+          <v-divider class="mt-0" />
+          <v-list density="compact" nav class="pa-0 aside-menu">
+            <v-list-item
+              :active="docsFilter.category === '' || docsFilter.category === 0"
+              @click="selectCate(0)"
+              rounded="lg"
+            >
+              <template v-slot:prepend>
+                <v-icon icon="mdi-folder-outline" size="small" />
+              </template>
+              <v-list-item-title>전체 문서</v-list-item-title>
+            </v-list-item>
+
+            <v-list-item
+              v-for="cate in categoryList"
+              :key="cate.pk"
+              :active="docsFilter.category === cate.pk"
+              @click="selectCate(cate.pk as number)"
+              rounded="lg"
+            >
+              <template v-slot:prepend>
+                <v-icon
+                  icon="mdi-folder-text-outline"
+                  size="small"
+                  :color="cate.color ?? 'secondary'"
+                />
+              </template>
+              <v-list-item-title>{{ cate.name }}</v-list-item-title>
+            </v-list-item>
+          </v-list>
+        </CCol>
+      </CRow>
+
+      <CRow v-if="getSuitCase.length" class="mb-4">
+        <CCol>
+          <h6 class="asideTitle">관련 사건</h6>
+          <v-divider class="mt-0" />
+          <ul class="list-unstyled aside-menu">
+            <li v-for="sc in getSuitCase" :key="sc.value" class="mb-2 text-truncate">
+              <v-icon icon="mdi-gavel" size="x-small" class="mr-1" />
+              <span class="text-body-2">{{ sc.label }}</span>
+            </li>
+          </ul>
+        </CCol>
+      </CRow>
+    </template>
   </ContentBody>
 </template>

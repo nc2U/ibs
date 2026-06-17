@@ -23,13 +23,17 @@ const pageSelect = (page: number) => emit('page-select', page)
 <template>
   <CRow class="py-2">
     <CCol>
-      <h5>{{ forum?.name }}</h5>
+      <h5>
+        <v-icon icon="mdi-forum-outline" color="info" class="mr-2" />
+        {{ forum?.name }}
+      </h5>
     </CCol>
     <CCol class="text-right">
       <v-btn
-        color="primary"
+        color="success"
         size="small"
         variant="flat"
+        prepend-icon="mdi-pencil-plus"
         :to="{
           name: '(게시판) - 게시물 작성',
           params: { projId: $route.params.projId, forumId: forum?.pk },

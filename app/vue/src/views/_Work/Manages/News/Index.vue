@@ -65,11 +65,14 @@ onBeforeMount(async () => {
   <Loading v-model:active="loading" />
   <Header :page-title="comName" :nav-menu="navMenu" @side-nav-call="sideNavCAll" />
 
-  <ContentBody ref="cBody" :nav-menu="navMenu" :query="route?.query" :aside="false">
+  <ContentBody ref="cBody" :nav-menu="navMenu" :query="route?.query" :aside="true">
     <template v-slot:default>
       <CRow class="py-2">
         <CCol>
-          <h5>{{ ($route?.name as string).replace(/^\((.*)\)$/, '$1') }}</h5>
+          <h5>
+            <v-icon icon="mdi-bullhorn-variant" color="info" class="mr-2" />
+            {{ ($route?.name as string).replace(/^\((.*)\)$/, '$1') }}
+          </h5>
         </CCol>
 
         <CCol class="text-right">
@@ -96,6 +99,27 @@ onBeforeMount(async () => {
       />
     </template>
 
-    <template v-slot:aside></template>
+    <template v-slot:aside>
+      <CRow class="mb-4">
+        <CCol>
+          <h6 class="asideTitle">최근 공지</h6>
+          <v-divider class="mt-0" />
+          <ul class="list-unstyled aside-menu">
+            <li v-for="news in newsList.slice(0, 5)" :key="news.pk" class="mb-2 text-truncate">
+              <v-icon icon="mdi-chevron-right" size="x-small" class="mr-1" />
+              <router-link
+                :to="{
+                  name: '(공지) - 보기',
+                  params: { projId: news.project?.slug, newsId: news.pk },
+                }"
+                class="text-body-2"
+              >
+                {{ news.title }}
+              </router-link>
+            </li>
+          </ul>
+        </CCol>
+      </CRow>
+    </template>
   </ContentBody>
 </template>

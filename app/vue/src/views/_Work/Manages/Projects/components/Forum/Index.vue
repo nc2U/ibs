@@ -177,6 +177,32 @@ onBeforeMount(async () => {
     </template>
 
     <template v-slot:aside>
+      <CRow v-if="postList.length" class="mb-4">
+        <CCol>
+          <h6 class="asideTitle">최근 게시물</h6>
+          <v-divider class="mt-0" />
+          <ul class="list-unstyled aside-menu">
+            <li v-for="p in postList.slice(0, 5)" :key="p.pk" class="mb-2 text-truncate">
+              <v-icon icon="mdi-comment-text-outline" size="x-small" class="mr-1" />
+              <router-link
+                :to="{
+                  name: '(게시판) - 게시물 보기',
+                  params: {
+                    projId: route.params.projId,
+                    forumId: p.forum,
+                    postId: p.pk,
+                  },
+                }"
+                class="text-body-2"
+              >
+                {{ p.title }}
+                <span v-if="p.comments_count" class="text-info small">({{ p.comments_count }})</span>
+              </router-link>
+            </li>
+          </ul>
+        </CCol>
+      </CRow>
+
       <CRow class="mb-4">
         <CCol>
           <h6 class="asideTitle">게시판 관리</h6>

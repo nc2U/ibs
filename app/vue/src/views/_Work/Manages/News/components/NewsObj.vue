@@ -13,48 +13,49 @@ const isProj = computed(() => !!route.params.projId)
 </script>
 
 <template>
-  <CRow>
-    <CCol>
-      <h6>
-        <span v-if="!isProj">
-          <router-link :to="{ name: '(개요)', params: { projId: news.project?.slug } }">
-            {{ news.project?.name }}
+  <v-card variant="flat" border class="mb-4 pa-4 news-card">
+    <CRow>
+      <CCol>
+        <h6 class="mb-1">
+          <span v-if="!isProj">
+            <router-link
+              :to="{ name: '(개요)', params: { projId: news.project?.slug } }"
+              class="text-info"
+            >
+              [{{ news.project?.name }}]
+            </router-link>
+          </span>
+          <router-link
+            :to="{ name: '(공지) - 보기', params: { projId: news.project?.slug, newsId: news.pk } }"
+            class="text-decoration-none font-weight-bold"
+          >
+            {{ news.title }}
+
+            <CBadge v-if="news.is_new" color="warning" size="sm" class="ml-2">new</CBadge>
+            <CBadge v-if="news.comments?.length" color="info" size="sm" class="ml-1">
+              <v-icon icon="mdi-comment-outline" size="x-small" /> {{ news.comments.length }}
+            </CBadge>
           </router-link>
-          :
-        </span>
-        <router-link
-          :to="{ name: '(공지) - 보기', params: { projId: news.project?.slug, newsId: news.pk } }"
-        >
-          {{ news.title }}
+        </h6>
+      </CCol>
+    </CRow>
 
-          <CBadge v-if="news.is_new" color="warning" size="sm" class="ml-2">new</CBadge>
-          <CBadge v-if="news.comments?.length" color="warning" size="sm" class="ml-1">
-            +{{ news.comments.length }} 개의 댓글
-          </CBadge>
-          <!--          <span v-if="news.comments?.length" class="strong">-->
-          <!--            ({{ news.comments.length }} 개의 댓글)-->
-          <!--          </span>-->
+    <CRow class="mb-3 text-grey small">
+      <CCol>
+        <v-icon icon="mdi-account-outline" size="small" class="mr-1" />
+        <router-link :to="{ name: '사용자 - 보기', params: { userId: news.author?.pk } }">
+          Austin Kho
         </router-link>
-      </h6>
-    </CCol>
-  </CRow>
+        <span class="mx-2">|</span>
+        <v-icon icon="mdi-clock-outline" size="small" class="mr-1" />
+        <router-link :to="{ name: '(실행기록)', params: { projId: news.project?.slug } }">
+          {{ elapsedTime(news.created) }}
+        </router-link>
+      </CCol>
+    </CRow>
 
-  <CRow class="mb-4 text-grey">
-    <CCol>
-      <router-link :to="{ name: '사용자 - 보기', params: { userId: news.author?.pk } }">
-        Austin Kho
-      </router-link>
-      이(가)
-      <router-link :to="{ name: '(실행기록)', params: { projId: news.project?.slug } }">
-        {{ elapsedTime(news.created) }}
-      </router-link>
-      에 추가함
-    </CCol>
-  </CRow>
-
-  <CRow class="mb-0">
-    <CCol v-html="markdownRender(news.content)" />
-  </CRow>
-
-  <v-divider class="mb-4" />
+    <CRow class="mb-0">
+      <CCol v-html="markdownRender(news.content)" class="news-content" />
+    </CRow>
+  </v-card>
 </template>

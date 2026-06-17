@@ -25,13 +25,6 @@ const selectCate = (cate: number) => emit('select-cate', cate)
 </script>
 
 <template>
-  <CategoryTabs
-    :category="category"
-    :category-list="categoryList"
-    @select-cate="selectCate"
-    class="mb-4"
-  />
-
   <NoData v-if="!docsList.length" class="mt-5" />
 
   <CRow v-else>
