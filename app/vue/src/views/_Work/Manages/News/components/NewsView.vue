@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, inject, type PropType } from 'vue'
+import { type PropType } from 'vue'
 import type { News } from '@/store/types/work_inform.ts'
 import { markdownRender } from '@/utils/helper.ts'
 import { elapsedTime } from '@/utils/baseMixins.ts'
@@ -11,10 +11,6 @@ const props = defineProps({
   news: { type: Object as PropType<News>, required: true },
   viewForm: { type: Boolean, default: false },
 })
-
-const userInfo = inject<any>('userInfo')
-
-const isAuthor = computed(() => userInfo.is_superuser || userInfo?.pk === props.news?.author?.pk)
 
 const infStore = useInform()
 
@@ -33,7 +29,7 @@ const deleteFile = (pk: number) => {
         <h5 class="font-weight-bold color-dark">
           <v-chip
             v-if="news.is_important"
-            color="error"
+            color="primary"
             size="small"
             variant="flat"
             class="mr-2 mb-1"
@@ -109,7 +105,7 @@ const deleteFile = (pk: number) => {
     <v-sheet border rounded="lg" class="pa-5">
       <div class="d-flex align-center mb-6">
         <v-icon icon="mdi-comment-text-multiple-outline" size="20" class="mr-3 text-primary" />
-        <h5 class="font-weight-bold mb-0">댓글</h5>
+        <h6 class="font-weight-bold mb-0">댓글</h6>
         <v-badge
           v-if="news.comments?.length"
           :content="news.comments.length"
