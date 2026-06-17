@@ -92,15 +92,15 @@ onBeforeMount(async () => {
 
       <NewsForm v-if="viewForm" @on-submit="onSubmit" @close-form="viewForm = false" />
 
-      <CAlert
+      <v-alert
         v-if="importantNews.length && !viewForm"
-        color="danger"
-        variant="accent"
+        color="primary"
+        variant="tonal"
         class="mb-4 py-2"
       >
         <v-icon icon="mdi-alert-decagram" class="mr-2" />
         <strong>중요 공지사항이 {{ importantNews.length }}건 있습니다.</strong>
-      </CAlert>
+      </v-alert>
 
       <NewsList
         :page="page"
