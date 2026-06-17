@@ -30,6 +30,7 @@ export interface NewsFile {
 export interface BaseComment {
   pk?: number
   parent: number | null
+  content: string
   creator?: SimpleUser
   created: string
   updated: string

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { type PropType } from 'vue'
+import { computed, inject, type PropType } from 'vue'
 import type { News } from '@/store/types/work_inform.ts'
 import { markdownRender } from '@/utils/helper.ts'
 import { elapsedTime } from '@/utils/baseMixins.ts'
@@ -12,6 +12,10 @@ const props = defineProps({
   viewForm: { type: Boolean, default: false },
 })
 
+const userInfo = inject<any>('userInfo')
+
+const isAuthor = computed(() => userInfo.is_superuser || userInfo?.pk === props.news?.author?.pk)
+
 const infStore = useInform()
 
 const deleteFile = (pk: number) => {
@@ -22,42 +26,168 @@ const deleteFile = (pk: number) => {
 </script>
 
 <template>
-  <template v-if="news">
-    <CRow class="mb-3">
-      <CCol class="text-50 fst-italic">
-        {{ news.summary || '요약 내용이 없습니다.' }}
-      </CCol>
-    </CRow>
+  <div v-if="news" class="news-view">
+    <v-card variant="flat" border class="pa-5 mb-5 rounded-lg">
+      <!-- Title Section -->
+      <div class="d-flex justify-space-between align-start mb-3">
+        <h5 class="font-weight-bold color-dark">
+          <v-chip
+            v-if="news.is_important"
+            color="error"
+            size="small"
+            variant="flat"
+            class="mr-2 mb-1"
+          >
+            중요 공지
+          </v-chip>
+          {{ news.title }}
+        </h5>
+      </div>
 
-    <CRow>
-      <CCol class="text-grey">
-        <router-link :to="{ name: '사용자 - 보기', params: { userId: news.author?.pk } }">
-          {{ news.author?.username }}
-        </router-link>
-        이(가)
-        <router-link :to="{ name: '(실행기록)', params: { projId: news.project?.slug } }">
-          {{ elapsedTime(news.created) }}
-        </router-link>
-        에 추가함
-      </CCol>
-    </CRow>
+      <!-- Metadata Section -->
+      <div class="metadata d-flex flex-wrap align-center text-grey-darken-1 mb-5">
+        <div class="d-flex align-center mr-4">
+          <v-avatar size="24" color="grey-lighten-3" class="mr-2">
+            <v-icon icon="mdi-account" size="18" color="grey-darken-1" />
+          </v-avatar>
+          <router-link
+            :to="{ name: '사용자 - 보기', params: { userId: news.author?.pk } }"
+            class="text-decoration-none text-primary font-weight-medium"
+          >
+            {{ news.author?.username }}
+          </router-link>
+        </div>
+        <div class="d-flex align-center mr-4">
+          <v-icon icon="mdi-clock-outline" size="18" class="mr-1" />
+          <router-link
+            :to="{ name: '(실행기록)', params: { projId: news.project?.slug } }"
+            class="text-decoration-none text-grey-darken-1"
+          >
+            {{ elapsedTime(news.created) }}
+          </router-link>
+          <span class="ml-1">에 추가됨</span>
+        </div>
+        <div v-if="news.updated !== news.created" class="d-flex align-center">
+          <v-icon icon="mdi-update" size="18" class="mr-1" />
+          <span class="small">수정됨: {{ elapsedTime(news.updated) }}</span>
+        </div>
+      </div>
 
-    <v-divider />
+      <v-divider />
 
-    <CRow class="my-5">
-      <CCol v-html="markdownRender(news.content)" />
-    </CRow>
+      <!-- Summary Section -->
+      <div v-if="news.summary" class="summary-box my-6 pa-4 bg-grey-lighten-5 rounded-e-lg">
+        <div class="text-subtitle-2 text-grey-darken-2 mb-1 font-weight-bold">요약</div>
+        <div class="text-body-1 text-secondary fst-italic">
+          {{ news.summary }}
+        </div>
+      </div>
+      <div v-else class="my-6 text-grey-lighten-2 fst-italic text-center small">
+        요약 내용이 없습니다.
+      </div>
 
-    <div v-if="news.files.length" class="mb-5">
-      <CRow v-for="(file, index) in news.files" :key="index">
-        <FileDisplay :file="file" @delete-file="deleteFile" />
-      </CRow>
-    </div>
+      <!-- Content Section -->
+      <div class="content-body py-4 mb-6" v-html="markdownRender(news.content)" />
 
-    <CRow>
-      <CCol>
-        <CommentList />
-      </CCol>
-    </CRow>
-  </template>
+      <!-- Files Section -->
+      <div v-if="news.files.length" class="files-section mt-6 pt-6 border-t-sm">
+        <div class="d-flex align-center mb-4">
+          <v-icon icon="mdi-attachment" size="20" class="mr-2 text-grey" />
+          <span class="text-h6 font-weight-bold text-grey-darken-1">
+            첨부 파일 ({{ news.files.length }})
+          </span>
+        </div>
+        <v-list density="compact" class="bg-transparent pa-0">
+          <CRow v-for="(file, index) in news.files" :key="index" class="mb-2 no-gutters">
+            <FileDisplay :file="file" @delete-file="deleteFile" />
+          </CRow>
+        </v-list>
+      </div>
+    </v-card>
+
+    <!-- Comments Section -->
+    <v-sheet border rounded="lg" class="pa-5">
+      <div class="d-flex align-center mb-6">
+        <v-icon icon="mdi-comment-text-multiple-outline" size="20" class="mr-3 text-primary" />
+        <h5 class="font-weight-bold mb-0">댓글</h5>
+        <v-badge
+          v-if="news.comments?.length"
+          :content="news.comments.length"
+          color="primary"
+          inline
+          class="ml-2"
+        />
+      </div>
+      <CommentList />
+    </v-sheet>
+  </div>
 </template>
+
+<style scoped>
+.news-view {
+  max-width: 100%;
+}
+
+.color-dark {
+  color: #2c3e50;
+}
+
+.metadata {
+  font-size: 0.9rem;
+}
+
+.summary-box {
+  border-left: 5px solid #1867c0; /* Vuetify primary blue */
+}
+
+.content-body {
+  font-size: 1.05rem;
+  line-height: 1.8;
+  color: #34495e;
+}
+
+.content-body :deep(h1),
+.content-body :deep(h2),
+.content-body :deep(h3) {
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+  font-weight: 700;
+}
+
+.content-body :deep(p) {
+  margin-bottom: 1.25rem;
+}
+
+.content-body :deep(img) {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  margin: 1.5rem 0;
+}
+
+.content-body :deep(code) {
+  background-color: #f8f9fa;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  color: #e83e8c;
+  font-size: 0.9em;
+}
+
+.content-body :deep(pre) {
+  background-color: #282c34;
+  color: #abb2bf;
+  padding: 1rem;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin-bottom: 1.5rem;
+}
+
+.files-section {
+  border-top: 1px dashed #dee2e6;
+}
+
+.border-t-sm {
+  border-top: 1px solid #e0e0e0;
+}
+</style>
