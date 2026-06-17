@@ -14,9 +14,36 @@ from forum.models import Forum, PostCategory, Post, PostLink, PostFile, PostImag
 
 # Forum --------------------------------------------------------------------------
 class ForumSerializer(serializers.ModelSerializer):
+    post_count = serializers.SerializerMethodField(read_only=True)
+    all_post_count = serializers.SerializerMethodField(read_only=True)
+    last_post = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = Forum
-        fields = ('pk', 'project', 'name', 'description', 'parent', 'search_able', 'manager')
+        fields = ('pk', 'project', 'name', 'description', 'parent',
+                  'search_able', 'manager', 'post_count', 'all_post_count', 'last_post')
+
+    @staticmethod
+    def get_post_count(obj):
+        return obj.post_set.count()
+
+    @staticmethod
+    def get_all_post_count(obj):
+        post_count = obj.post_set.count()
+        comment_count = Comment.objects.filter(post__forum=obj).count()
+        return post_count + comment_count
+
+    @staticmethod
+    def get_last_post(obj):
+        last_post = obj.post_set.order_by('-created').first()
+        if last_post:
+            return {
+                'pk': last_post.pk,
+                'title': last_post.title,
+                'creator': last_post.creator.username if last_post.creator else None,
+                'created': last_post.created
+            }
+        return None
 
 
 class CategorySerializer(serializers.ModelSerializer):

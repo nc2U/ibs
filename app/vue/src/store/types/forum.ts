@@ -7,6 +7,14 @@ export interface Forum {
   search_able?: boolean
   manager?: number[]
   order?: number
+  post_count?: number
+  all_post_count?: number
+  last_post?: {
+    pk: number
+    title: string
+    creator: string
+    created: string
+  } | null
 }
 
 export interface PostCategory {
