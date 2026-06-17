@@ -114,7 +114,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
             # 기존 행을 가져와서 복사한다.
             org_instance = Document.objects.get(pk=origin_pk)
 
-            add_text = f'<br /><br /><p>[이 게시물은 {self.request.user.username} 님에 의해 {datetime.now()} {org_instance.board.name} 에서 복사됨]</p>'
+            add_text = f'<br /><br /><p>[이 게시물은 {self.request.user.username} 님에 의해 {datetime.now()} {org_instance.issue_project.name} 에서 복사됨]</p>'
 
             # 기존 행의 정보를 사용하여 새로운 행을 생성한다.
             new_instance_data = {

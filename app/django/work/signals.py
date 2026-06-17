@@ -112,7 +112,7 @@ def document_log_delete(sender, instance, **kwargs):
 
 @receiver(post_save, sender=Post)
 def post_log_changes(sender, instance, created, **kwargs):
-    project = instance.board.project
+    project = instance.forum.project
     if created and project and project.status == '1':
         ActivityLogEntry.objects.create(sort='6', project=project,
                                         post=instance, creator=instance.creator)
