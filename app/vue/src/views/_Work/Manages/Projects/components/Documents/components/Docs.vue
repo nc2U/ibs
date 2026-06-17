@@ -17,6 +17,13 @@ defineProps({ docs: { type: Object as PropType<Docs>, required: true } })
             :to="{ name: '(문서) - 보기', params: { docId: docs.pk } }"
             class="text-decoration-none font-weight-medium text-body-1"
           >
+            <span
+              v-if="docs.cate_name"
+              class="mr-1"
+              :style="{ color: docs.cate_color || 'inherit' }"
+            >
+              [{{ docs.cate_name }}]
+            </span>
             {{ cutString(docs.title, 50) }}
           </router-link>
         </CCol>
