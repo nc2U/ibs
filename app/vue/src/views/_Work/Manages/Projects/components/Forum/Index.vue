@@ -98,29 +98,23 @@ watch(
   async (newParams, oldParams) => {
     if (newParams.projId !== oldParams?.projId) {
       await dataSetup()
-    } else if (newParams.forumId !== oldParams?.forumId) {
+    } else if (newParams.forumId !== oldParams?.forumId || newParams.postId !== oldParams?.postId) {
       if (newParams.forumId) {
-        page.value = 1
         loading.value = true
-        await forumStore.fetchForum(Number(newParams.forumId))
-        await forumStore.fetchCategoryList(Number(newParams.forumId))
-        await forumStore.fetchPostList({ forum: Number(newParams.forumId), page: 1 })
-        loading.value = false
-      }
-    } else if (newParams.postId !== oldParams?.postId) {
-      if (newParams.postId) {
-        forumStore.removePost() // Clear old post data
-        loading.value = true
-        await fetchPostData(Number(newParams.postId))
-        loading.value = false
-      } else {
-        forumStore.removePost()
-        // 목록으로 돌아왔을 때 목록 로드 보장
-        if (route.name === '(게시판) - 보기' && newParams.forumId) {
-          loading.value = true
-          await forumStore.fetchPostList({ forum: Number(newParams.forumId), page: page.value })
-          loading.value = false
+        if (newParams.forumId !== oldParams?.forumId) {
+          page.value = 1
+          await forumStore.fetchForum(Number(newParams.forumId))
+          await forumStore.fetchCategoryList(Number(newParams.forumId))
         }
+
+        if (newParams.postId) {
+          forumStore.removePost() // Clear old post data
+          await fetchPostData(Number(newParams.postId))
+        } else {
+          forumStore.removePost()
+          await forumStore.fetchPostList({ forum: Number(newParams.forumId), page: page.value })
+        }
+        loading.value = false
       }
     }
   },
