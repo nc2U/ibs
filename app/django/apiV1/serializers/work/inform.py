@@ -116,9 +116,11 @@ class NewsFileSerializer(serializers.ModelSerializer):
 
 
 class NewsCommentSerializer(serializers.ModelSerializer):
+    creator = SimpleUserSerializer(read_only=True)
+
     class Meta:
         model = NewsComment
-        fields = '__all__'
+        fields = ('pk', 'news', 'content', 'parent', 'creator', 'created', 'updated')
 
 
 class SearchSerializer(serializers.ModelSerializer):

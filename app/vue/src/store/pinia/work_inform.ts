@@ -75,31 +75,34 @@ export const useInform = defineStore('inform', () => {
 
   const fetchNewsComment = (pk: number) =>
     api
-      .get(`/news-comment/${pk}`)
+      .get(`/news-comment/${pk}/`)
       .then(res => (newsComment.value = res.data))
       .catch(err => errorHandle(err.response.data))
 
   const fetchNewsCommentList = (payload: any) =>
     api
-      .get(`/news-comments/?news=${payload.news}`)
+      .get(`/news-comment/?news=${payload.news}`)
       .then(res => (newsCommentList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
   const createNewsComment = (payload: NewsComment) =>
     api
-      .post(`/news-comment`, payload)
-      .then(() => message())
+      .post(`/news-comment/`, payload)
+      .then(async () => {
+        if (payload.news) await fetchNews(payload.news)
+        message()
+      })
       .catch(err => errorHandle(err.response.data))
 
   const patchNewsComment = (payload: any) =>
     api
-      .patch(`/news-comment/${payload.pk}`, payload)
+      .patch(`/news-comment/${payload.pk}/`, payload)
       .then(() => message())
       .catch(err => errorHandle(err.response.data))
 
   const deleteNewsComment = (pk: number) =>
     api
-      .delete(`/news-comment/${pk}`)
+      .delete(`/news-comment/${pk}/`)
       .then(() => message('warning', '알림', 'deleted!!'))
       .catch(err => errorHandle(err.response.data))
 

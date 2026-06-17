@@ -1,8 +1,10 @@
 <script lang="ts" setup>
-import { computed, ref } from 'vue'
+import { computed, inject, ref } from 'vue'
 import { useInform } from '@/store/pinia/work_inform.ts'
 import type { News } from '@/store/types/work_inform.ts'
 import Comment from './Comment.vue'
+
+const userInfo = inject<any>('userInfo')
 
 const infStore = useInform()
 const news = computed(() => infStore.news as News | null)
@@ -29,7 +31,8 @@ const onSubmit = () => {
     <div class="comment-form mb-6">
       <v-textarea
         v-model="commentContent"
-        placeholder="댓글을 입력하세요..."
+        :placeholder="userInfo ? '댓글을 입력하세요...' : '댓글을 작성하려면 로그인이 필요합니다.'"
+        :disabled="!userInfo"
         variant="outlined"
         density="comfortable"
         rows="2"
@@ -43,7 +46,7 @@ const onSubmit = () => {
             variant="flat"
             size="small"
             class="ml-2"
-            :disabled="!commentContent.trim()"
+            :disabled="!commentContent.trim() || !userInfo"
             @click="onSubmit"
           >
             등록
