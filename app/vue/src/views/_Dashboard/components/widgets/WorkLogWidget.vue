@@ -72,8 +72,13 @@ const targetHours = ref(40)
 
       <div class="text-caption text-medium-emphasis mb-2">최근 기록</div>
 
-      <v-list density="compact" class="pa-0">
-        <v-list-item v-for="log in mockWorkLogs.slice(0, 4)" :key="log.id" class="px-0" lines="two">
+      <v-list density="compact" class="pa-0 bg-transparent">
+        <v-list-item
+          v-for="log in mockWorkLogs.slice(0, 4)"
+          :key="log.id"
+          lines="two"
+          class="mb-1 rounded-sm list-item"
+        >
           <v-list-item-title class="text-body-2">{{ log.task }}</v-list-item-title>
           <v-list-item-subtitle class="text-caption">
             {{ log.project }} · {{ log.date }}
@@ -90,5 +95,24 @@ const targetHours = ref(40)
 <style scoped>
 .work-log-widget {
   height: 100%;
+}
+
+.list-item {
+  background-color: #ffffff;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+  transition: all 0.2s;
+}
+
+.list-item:hover {
+  background-color: rgba(var(--v-theme-on-surface), 0.04);
+}
+
+body.dark-theme .list-item {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: transparent;
+}
+
+body.dark-theme .list-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
 }
 </style>

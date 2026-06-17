@@ -34,8 +34,12 @@ const summaryItems = computed(() => [
 <template>
   <WidgetWrapper :widget-id="widgetId" :title="title" :icon="icon" refreshable>
     <div class="financial-status-widget">
-      <v-list density="compact" class="pa-0">
-        <v-list-item v-for="item in summaryItems" :key="item.label" class="px-0">
+      <v-list density="compact" class="pa-0 bg-transparent">
+        <v-list-item
+          v-for="item in summaryItems"
+          :key="item.label"
+          class="mb-1 rounded-sm list-item"
+        >
           <template #prepend>
             <v-avatar size="32" :color="item.color" variant="tonal">
               <v-icon :icon="item.icon" size="small" />
@@ -68,5 +72,24 @@ const summaryItems = computed(() => [
 <style scoped>
 .financial-status-widget {
   height: 100%;
+}
+
+.list-item {
+  background-color: #ffffff;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+  transition: all 0.2s;
+}
+
+.list-item:hover {
+  background-color: rgba(var(--v-theme-on-surface), 0.04);
+}
+
+body.dark-theme .list-item {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: transparent;
+}
+
+body.dark-theme .list-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
 }
 </style>

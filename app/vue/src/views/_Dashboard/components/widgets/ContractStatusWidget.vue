@@ -54,8 +54,13 @@ const formatAmount = (value: number) => {
         <span class="text-caption text-medium-emphasis">활성 계약</span>
       </div>
 
-      <v-list density="compact" class="pa-0">
-        <v-list-item v-for="contract in mockContracts" :key="contract.id" class="px-0" lines="two">
+      <v-list density="compact" class="pa-0 bg-transparent">
+        <v-list-item
+          v-for="contract in mockContracts"
+          :key="contract.id"
+          lines="two"
+          class="mb-1 rounded-sm list-item"
+        >
           <v-list-item-title class="text-body-2 font-weight-medium">
             {{ contract.name }}
           </v-list-item-title>
@@ -81,5 +86,24 @@ const formatAmount = (value: number) => {
 <style scoped>
 .contract-status-widget {
   height: 100%;
+}
+
+.list-item {
+  background-color: #ffffff;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+  transition: all 0.2s;
+}
+
+.list-item:hover {
+  background-color: rgba(var(--v-theme-on-surface), 0.04);
+}
+
+body.dark-theme .list-item {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: transparent;
+}
+
+body.dark-theme .list-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
 }
 </style>

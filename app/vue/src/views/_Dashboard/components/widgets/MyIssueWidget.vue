@@ -74,7 +74,7 @@ const getPriorityColor = (priority: string) => {
           <tr>
             <th class="text-left">제목</th>
             <th class="text-center" style="width: 80px">상태</th>
-            <th class="text-center" style="width: 80px">우선순위</th>
+            <th class="text-center" style="width: 100px">우선순위</th>
             <th class="text-right" style="width: 100px">기한</th>
           </tr>
         </thead>

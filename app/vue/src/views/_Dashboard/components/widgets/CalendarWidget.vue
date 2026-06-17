@@ -53,10 +53,14 @@ const upcomingEvents = ref([
 
       <div class="text-caption text-medium-emphasis mb-2">다가오는 일정</div>
 
-      <v-list density="compact" class="pa-0">
-        <v-list-item v-for="(event, index) in upcomingEvents" :key="index" class="px-0">
+      <v-list density="compact" class="pa-0 bg-transparent">
+        <v-list-item
+          v-for="(event, index) in upcomingEvents"
+          :key="index"
+          class="mb-1 rounded-sm list-item"
+        >
           <template #prepend>
-            <v-avatar :color="event.color" size="8" class="mr-2" />
+            <v-avatar :color="event.color" size="8" />
           </template>
           <v-list-item-title class="text-body-2">{{ event.title }}</v-list-item-title>
           <template #append>
@@ -71,18 +75,37 @@ const upcomingEvents = ref([
         전체 일정 보기
         <v-icon icon="mdi-chevron-right" size="small" />
       </v-btn>
-    </div>
-  </WidgetWrapper>
-</template>
+      </div>
+      </WidgetWrapper>
+      </template>
 
-<style scoped>
-.calendar-widget {
-  height: 100%;
-}
+      <style scoped>
+      .calendar-widget {
+      height: 100%;
+      }
 
-.calendar-header {
-  background: rgb(var(--v-theme-surface-variant));
-  border-radius: 8px;
-  padding: 8px;
-}
-</style>
+      .calendar-header {
+      background: rgba(var(--v-theme-on-surface), 0.05);
+      border-radius: 8px;
+      padding: 4px;
+      }
+
+      .list-item {
+        background-color: #ffffff;
+        border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+        transition: all 0.2s;
+      }
+
+      .list-item:hover {
+        background-color: rgba(var(--v-theme-on-surface), 0.04);
+      }
+
+      body.dark-theme .list-item {
+        background-color: rgba(255, 255, 255, 0.05);
+        border-color: transparent;
+      }
+
+      body.dark-theme .list-item:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+      }
+      </style>

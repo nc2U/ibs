@@ -60,10 +60,15 @@ const priorityColor = (priority: string) => {
 
       <div class="text-caption text-medium-emphasis mb-2">최근 이슈</div>
 
-      <v-list density="compact" class="pa-0">
-        <v-list-item v-for="issue in recentIssues" :key="issue.id" class="px-0" lines="one">
+      <v-list density="compact" class="pa-0 bg-transparent">
+        <v-list-item
+          v-for="issue in recentIssues"
+          :key="issue.id"
+          lines="one"
+          class="mb-1 rounded-sm list-item"
+        >
           <template #prepend>
-            <v-avatar :color="priorityColor(issue.priority)" size="8" class="mr-2" />
+            <v-avatar :color="priorityColor(issue.priority)" size="8" />
           </template>
           <v-list-item-title class="text-body-2">
             #{{ issue.id }} {{ issue.subject }}
@@ -80,5 +85,24 @@ const priorityColor = (priority: string) => {
 <style scoped>
 .issue-tracker-widget {
   height: 100%;
+}
+
+.list-item {
+  background-color: #ffffff;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+  transition: all 0.2s;
+}
+
+.list-item:hover {
+  background-color: rgba(var(--v-theme-on-surface), 0.04);
+}
+
+body.dark-theme .list-item {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: transparent;
+}
+
+body.dark-theme .list-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
 }
 </style>
