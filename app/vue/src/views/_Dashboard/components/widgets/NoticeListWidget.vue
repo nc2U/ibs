@@ -34,14 +34,14 @@ onBeforeMount(() => {
       <v-table v-else density="compact" hover>
         <thead>
           <tr>
-            <th class="text-left" style="width: 120px">프로젝트</th>
+            <th class="text-left" style="width: 190px">프로젝트</th>
             <th class="text-left">제목</th>
             <th class="text-right" style="width: 100px">날짜</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="item in newsList.slice(0, 5)" :key="item.pk ?? 0">
-            <td>
+            <td class="truncate">
               <router-link
                 v-if="item.project"
                 :to="{ name: '(개요)', params: { projId: item.project?.slug } }"
@@ -50,7 +50,7 @@ onBeforeMount(() => {
                 {{ item.project?.name }}
               </router-link>
             </td>
-            <td>
+            <td class="truncate">
               <router-link
                 :to="{
                   name: '(공지) - 보기',
@@ -65,7 +65,7 @@ onBeforeMount(() => {
                 +{{ item.comments.length }}
               </CBadge>
             </td>
-            <td class="text-right text-caption text-medium-emphasis">
+            <td class="text-right text-caption text-medium-emphasis truncate">
               {{ timeFormat(item.created ?? '').substring(0, 10) }}
             </td>
           </tr>
