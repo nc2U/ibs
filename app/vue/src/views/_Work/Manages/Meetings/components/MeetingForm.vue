@@ -31,7 +31,7 @@ const getIssues = computed(() => issueStore.getIssues)
 const validated = ref(false)
 const form = ref({
   pk: null as number | null,
-  project: '' as '' | number,
+  project: 6 as number,
   category: null as number | null,
   status: '1' as '1' | '2' | '3',
   title: '',
@@ -189,6 +189,31 @@ const userOptions = computed(() =>
     title: u.username,
   })),
 )
+
+const refCategoryModal = ref()
+const categoryForm = ref({
+  project: 6 as number,
+  name: '',
+  color: '',
+  order: 1,
+})
+
+const callCategoryModal = () => {
+  categoryForm.value.project = form.value.project as number
+  categoryForm.value.name = ''
+  categoryForm.value.color = ''
+  categoryForm.value.order = (categories.value.length || 0) + 1
+  refCategoryModal.value.callModal()
+}
+
+const onCategorySubmit = (event: Event) => {
+  if (isValidate(event)) {
+    validated.value = true
+  } else {
+    meetingStore.createCategory(categoryForm.value as any)
+    refCategoryModal.value.close()
+  }
+}
 </script>
 
 <template>
@@ -399,12 +424,17 @@ const userOptions = computed(() =>
                 카테고리
               </CFormLabel>
               <CCol sm="8">
-                <CFormSelect v-model="form.category" id="category">
-                  <option :value="null">---------</option>
-                  <option v-for="cat in categories" :key="cat.pk" :value="cat.pk">
-                    {{ cat.name }}
-                  </option>
-                </CFormSelect>
+                <CInputGroup>
+                  <CFormSelect v-model="form.category" id="category">
+                    <option :value="null">---------</option>
+                    <option v-for="cat in categories" :key="cat.pk" :value="cat.pk">
+                      {{ cat.name }}
+                    </option>
+                  </CFormSelect>
+                  <CInputGroupText @click="callCategoryModal" style="cursor: pointer">
+                    <v-icon icon="mdi-plus-circle" color="success" size="18" />
+                  </CInputGroupText>
+                </CInputGroup>
               </CCol>
             </CRow>
 
@@ -422,7 +452,7 @@ const userOptions = computed(() =>
             <CRow class="mb-3">
               <CFormLabel class="col-sm-4 col-form-label text-right">참석자</CFormLabel>
               <CCol sm="8">
-                <v-select
+                <v-autocomplete
                   v-model="form.attendees"
                   :items="userOptions"
                   multiple
@@ -430,7 +460,7 @@ const userOptions = computed(() =>
                   closable-chips
                   density="compact"
                   variant="outlined"
-                  placeholder="참석자 선택"
+                  placeholder="참석자 검색 및 선택"
                   hide-details
                 />
               </CCol>
@@ -480,6 +510,66 @@ const userOptions = computed(() =>
         @on-submit="createRelatedIssue"
         @close-form="refIssueModal.close()"
       />
+    </template>
+  </FormModal>
+
+  <FormModal ref="refCategoryModal">
+    <template #header> 회의록 카테고리 추가 </template>
+    <template #default>
+      <CForm
+        class="needs-validation p-4"
+        novalidate
+        :validated="validated"
+        @submit.prevent="onCategorySubmit"
+      >
+        <CRow class="mb-3">
+          <CFormLabel for="cat-project" class="col-sm-3 col-form-label">프로젝트</CFormLabel>
+          <CCol sm="9">
+            <CFormSelect v-model="categoryForm.project" id="cat-project" disabled>
+              <option v-for="proj in allProjects" :key="proj.pk" :value="proj.pk">
+                {{ proj.label }}
+              </option>
+            </CFormSelect>
+          </CCol>
+        </CRow>
+
+        <CRow class="mb-3">
+          <CFormLabel for="cat-name" class="col-sm-3 col-form-label">카테고리명</CFormLabel>
+          <CCol sm="9">
+            <CFormInput v-model="categoryForm.name" id="cat-name" required />
+            <CFormFeedback invalid>카테고리명을 입력해 주세요.</CFormFeedback>
+          </CCol>
+        </CRow>
+
+        <CRow class="mb-3">
+          <CFormLabel for="cat-color" class="col-sm-3 col-form-label">색상</CFormLabel>
+          <CCol sm="9">
+            <CFormInput v-model="categoryForm.color" type="color" id="cat-color" class="w-100" />
+          </CCol>
+        </CRow>
+
+        <CRow class="mb-3">
+          <CFormLabel for="cat-order" class="col-sm-3 col-form-label">정렬</CFormLabel>
+          <CCol sm="9">
+            <CFormInput v-model="categoryForm.order" id="cat-order" type="number" />
+          </CCol>
+        </CRow>
+
+        <CRow>
+          <CCol class="text-right">
+            <v-btn type="submit" color="primary" variant="flat" size="small"> 저장 </v-btn>
+            <v-btn
+              color="secondary"
+              variant="flat"
+              size="small"
+              class="ml-2"
+              @click="refCategoryModal.close()"
+            >
+              취소
+            </v-btn>
+          </CCol>
+        </CRow>
+      </CForm>
     </template>
   </FormModal>
 </template>

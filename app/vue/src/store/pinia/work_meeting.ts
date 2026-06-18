@@ -74,6 +74,15 @@ export const useMeeting = defineStore('meeting', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
+  const createCategory = async (payload: MeetingCategory) =>
+    await api
+      .post(`/meeting-category/`, payload)
+      .then(res => {
+        fetchCategoryList(res.data.project_slug)
+        message()
+      })
+      .catch(err => errorHandle(err.response.data))
+
   const generatePdf = (pk: number) => {
     const url = `/pdf/work/meeting/${pk}/`
     window.open(url, '_blank')
@@ -91,6 +100,7 @@ export const useMeeting = defineStore('meeting', () => {
     updateMeeting,
     deleteMeeting,
     fetchCategoryList,
+    createCategory,
     generatePdf,
   }
 })

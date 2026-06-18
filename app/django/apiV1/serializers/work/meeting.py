@@ -7,9 +7,11 @@ from work.models.meeting import MeetingCategory, Meeting, MeetingFile
 
 
 class MeetingCategorySerializer(serializers.ModelSerializer):
+    project_slug = serializers.ReadOnlyField(source='project.slug')
+
     class Meta:
         model = MeetingCategory
-        fields = ('pk', 'project', 'name', 'color', 'order')
+        fields = ('pk', 'project', 'project_slug', 'name', 'color', 'order')
 
 
 class MeetingFileSerializer(serializers.ModelSerializer):
