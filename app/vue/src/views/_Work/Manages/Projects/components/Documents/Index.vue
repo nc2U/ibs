@@ -204,7 +204,7 @@ onBeforeMount(async () => {
 
             <v-list-item
               v-for="cate in categoryList"
-              :key="cate.pk"
+              :key="cate.pk as number"
               :active="docsFilter.category === cate.pk"
               @click="selectCate(cate.pk as number)"
               rounded="lg"
