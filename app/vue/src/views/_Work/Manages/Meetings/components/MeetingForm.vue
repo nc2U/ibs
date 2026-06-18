@@ -34,8 +34,7 @@ const getIssues = computed(() => issueStore.getIssues)
 const validated = ref(false)
 const form = ref({
   pk: null as number | null,
-  project: null as number | null,
-  company: company?.value?.pk as number,
+  project: 6 as number,
   category: null as number | null,
   status: '1' as '1' | '2' | '3',
   title: '',
@@ -143,7 +142,6 @@ const fetchMeeting = async (pk: number) => {
     form.value = {
       pk: meeting.value.pk,
       project: meeting.value.project,
-      company: meeting.value.company,
       category: meeting.value.category,
       status: meeting.value.status,
       title: meeting.value.title,
@@ -368,8 +366,12 @@ const userOptions = computed(() =>
                 프로젝트
               </CFormLabel>
               <CCol sm="8">
-                <CFormSelect v-model="form.project" id="project" :disabled="!!route.params.projId">
-                  <option :value="null">회사 본사</option>
+                <CFormSelect
+                  v-model="form.project"
+                  id="project"
+                  required
+                  :disabled="!!route.params.projId"
+                >
                   <option v-for="proj in allProjects" :key="proj.pk" :value="proj.pk">
                     <span v-if="!!proj.depth && proj.parent_visible">
                       {{ '&nbsp;'.repeat(proj.depth) }} »
@@ -377,6 +379,7 @@ const userOptions = computed(() =>
                     {{ proj.label }}
                   </option>
                 </CFormSelect>
+                <CFormFeedback invalid>프로젝트를 선택해 주세요.</CFormFeedback>
               </CCol>
             </CRow>
 

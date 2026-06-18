@@ -2,8 +2,7 @@ import type { SimpleUser, SimpleProject } from '@/store/types/work_project.ts'
 
 export interface MeetingCategory {
   pk: number
-  company: number
-  project: number | null
+  project: number
   name: string
   color: string
   order: number
@@ -20,9 +19,8 @@ export interface SimpleIssueInMeeting {
 
 export interface Meeting {
   pk: number
-  project: number | null
-  project_desc: SimpleProject | null
-  company: number
+  project: number
+  project_desc: SimpleProject
   category: number | null
   category_desc: MeetingCategory | null
   status: '1' | '2' | '3'
