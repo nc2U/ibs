@@ -77,8 +77,7 @@ const pageSelect = (page: number) => emit('page-select', page)
           v-for="meeting in meetingList"
           @click="goDetail(meeting.pk)"
           @mouseover="selectedRow = meeting.pk"
-          :color="selectedRow === meeting.pk ? 'primary' : ''"
-          class="text-center table-row cursor-menu"
+          class="text-center table-row pointer"
           :key="meeting.pk"
         >
           <MeetingObj :meeting="meeting" />
@@ -95,9 +94,3 @@ const pageSelect = (page: number) => emit('page-select', page)
     />
   </CCol>
 </template>
-
-<style lang="scss" scoped>
-.cursor-menu {
-  cursor: pointer;
-}
-</style>
