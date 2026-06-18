@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, inject, onBeforeMount, ref, watch, type ComputedRef } from 'vue'
+import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAccount } from '@/store/pinia/account'
 import { useWork } from '@/store/pinia/work_project.ts'
@@ -7,7 +7,6 @@ import { useMeeting } from '@/store/pinia/work_meeting.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
 import { dateFormat } from '@/utils/baseMixins.ts'
 import { isValidate } from '@/utils/helper.ts'
-import type { Company } from '@/store/types/settings'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import MdEditor from '@/components/MdEditor/Index.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
@@ -19,8 +18,6 @@ const accStore = useAccount()
 const workStore = useWork()
 const meetingStore = useMeeting()
 const issueStore = useIssue()
-
-const company = inject<ComputedRef<Company | null>>('company')
 
 const meeting = computed(() => meetingStore.meeting)
 const allProjects = computed(() => workStore.getAllProjects)
@@ -34,7 +31,7 @@ const getIssues = computed(() => issueStore.getIssues)
 const validated = ref(false)
 const form = ref({
   pk: null as number | null,
-  project: 6 as number,
+  project: '' as '' | number,
   category: null as number | null,
   status: '1' as '1' | '2' | '3',
   title: '',
@@ -372,6 +369,7 @@ const userOptions = computed(() =>
                   required
                   :disabled="!!route.params.projId"
                 >
+                  <option value="">---------</option>
                   <option v-for="proj in allProjects" :key="proj.pk" :value="proj.pk">
                     <span v-if="!!proj.depth && proj.parent_visible">
                       {{ '&nbsp;'.repeat(proj.depth) }} »
