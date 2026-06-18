@@ -73,7 +73,7 @@ const logout = () => {
         관리자 페이지
       </CDropdownItem>
 
-      <CDropdownItem @click="locationBlank('https://docs.dyibs.com/')">
+      <CDropdownItem v-if="userInfo.is_superuser" @click="locationBlank('https://docs.dyibs.com/')">
         <v-icon icon="mdi mdi-file-document-outline" size="small" />
         사용자 매뉴얼
       </CDropdownItem>
