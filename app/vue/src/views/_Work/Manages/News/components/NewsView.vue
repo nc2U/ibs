@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { type PropType } from 'vue'
+import { inject, type PropType } from 'vue'
 import type { News } from '@/store/types/work_inform.ts'
 import { markdownRender } from '@/utils/helper.ts'
 import { elapsedTime } from '@/utils/baseMixins.ts'
@@ -12,6 +12,7 @@ const props = defineProps({
   viewForm: { type: Boolean, default: false },
 })
 
+const isDark = inject('isDark')
 const infStore = useInform()
 
 const deleteFile = (pk: number) => {
@@ -23,10 +24,15 @@ const deleteFile = (pk: number) => {
 
 <template>
   <div v-if="news" class="news-view">
-    <v-card variant="flat" border class="pa-5 mb-5 rounded-lg">
+    <v-card
+      variant="flat"
+      border
+      class="pa-5 mb-5 rounded-lg"
+      :class="isDark ? 'bg-grey-darken-4' : 'bg-white'"
+    >
       <!-- Title Section -->
       <div class="d-flex justify-space-between align-start mb-3">
-        <h5 class="font-weight-bold color-dark">
+        <h5 class="font-weight-bold" :class="isDark ? 'text-white' : 'text-grey-darken-4'">
           <v-chip
             v-if="news.is_important"
             color="primary"
@@ -41,10 +47,17 @@ const deleteFile = (pk: number) => {
       </div>
 
       <!-- Metadata Section -->
-      <div class="metadata d-flex flex-wrap align-center text-grey-darken-1 mb-5">
+      <div
+        class="metadata d-flex flex-wrap align-center mb-5"
+        :class="isDark ? 'text-grey-lighten-1' : 'text-grey-darken-1'"
+      >
         <div class="d-flex align-center mr-4">
-          <v-avatar size="24" color="grey-lighten-3" class="mr-2">
-            <v-icon icon="mdi-account" size="18" color="grey-darken-1" />
+          <v-avatar size="24" :color="isDark ? 'grey-darken-3' : 'grey-lighten-3'" class="mr-2">
+            <v-icon
+              icon="mdi-account"
+              size="18"
+              :color="isDark ? 'grey-lighten-1' : 'grey-darken-1'"
+            />
           </v-avatar>
           <router-link
             :to="{ name: '사용자 - 보기', params: { userId: news.author?.pk } }"
@@ -57,7 +70,8 @@ const deleteFile = (pk: number) => {
           <v-icon icon="mdi-clock-outline" size="18" class="mr-1" />
           <router-link
             :to="{ name: '(실행기록)', params: { projId: news.project?.slug } }"
-            class="text-decoration-none text-grey-darken-1"
+            class="text-decoration-none"
+            :class="isDark ? 'text-grey-lighten-1' : 'text-grey-darken-1'"
           >
             {{ elapsedTime(news.created) }}
           </router-link>
@@ -72,9 +86,9 @@ const deleteFile = (pk: number) => {
       <v-divider />
 
       <!-- Summary Section -->
-      <div v-if="news.summary" class="summary-box my-6 pa-4 bg-grey-lighten-5 rounded-e-lg">
-        <div class="text-subtitle-2 text-grey-darken-2 mb-1 font-weight-bold">요약</div>
-        <div class="text-body-1 text-secondary fst-italic">
+      <div v-if="news.summary" class="summary-box my-6 pa-4 rounded-e-lg bg-more-light">
+        <div class="text-subtitle-2 mb-1 font-weight-bold">요약</div>
+        <div class="text-body-1 fst-italic">
           {{ news.summary }}
         </div>
       </div>
@@ -83,13 +97,24 @@ const deleteFile = (pk: number) => {
       </div>
 
       <!-- Content Section -->
-      <div class="content-body py-4 mb-6" v-html="markdownRender(news.content)" />
+      <div
+        class="content-body py-4 mb-6"
+        :class="isDark ? 'text-grey-lighten-3' : 'text-grey-darken-3'"
+        v-html="markdownRender(news.content)"
+      />
 
       <!-- Files Section -->
-      <div v-if="news.files.length" class="files-section mt-6 pt-6 border-t-sm">
+      <div
+        v-if="news.files.length"
+        class="files-section mt-6 pt-6"
+        :class="isDark ? 'border-t-dark' : 'border-t-sm'"
+      >
         <div class="d-flex align-center mb-4">
           <v-icon icon="mdi-attachment" size="20" class="mr-2 text-grey" />
-          <span class="text-h6 font-weight-bold text-grey-darken-1">
+          <span
+            class="text-h6 font-weight-bold"
+            :class="isDark ? 'text-grey-lighten-1' : 'text-grey-darken-1'"
+          >
             첨부 파일 ({{ news.files.length }})
           </span>
         </div>
@@ -102,7 +127,12 @@ const deleteFile = (pk: number) => {
     </v-card>
 
     <!-- Comments Section -->
-    <v-sheet border rounded="lg" class="pa-5">
+    <v-sheet
+      border
+      rounded="lg"
+      class="pa-5"
+      :class="isDark ? 'bg-blue-grey-darken-4' : 'bg-white'"
+    >
       <div class="d-flex align-center mb-6">
         <v-icon icon="mdi-comment-text-multiple-outline" size="20" class="mr-3 text-primary" />
         <h6 class="font-weight-bold mb-0">댓글</h6>
@@ -124,10 +154,6 @@ const deleteFile = (pk: number) => {
   max-width: 100%;
 }
 
-.color-dark {
-  color: #2c3e50;
-}
-
 .metadata {
   font-size: 0.9rem;
 }
@@ -139,7 +165,6 @@ const deleteFile = (pk: number) => {
 .content-body {
   font-size: 1.05rem;
   line-height: 1.8;
-  color: #34495e;
 }
 
 .content-body :deep(h1),
@@ -170,6 +195,11 @@ const deleteFile = (pk: number) => {
   font-size: 0.9em;
 }
 
+.dark-theme .content-body :deep(code) {
+  background-color: #2d2d2d;
+  color: #ff79c6;
+}
+
 .content-body :deep(pre) {
   background-color: #282c34;
   color: #abb2bf;
@@ -185,5 +215,9 @@ const deleteFile = (pk: number) => {
 
 .border-t-sm {
   border-top: 1px solid #e0e0e0;
+}
+
+.border-t-dark {
+  border-top: 1px solid #444;
 }
 </style>

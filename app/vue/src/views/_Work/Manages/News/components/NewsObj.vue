@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, type PropType } from 'vue'
+import { computed, type PropType, inject } from 'vue'
 import { useRoute } from 'vue-router'
 import { markdownRender } from '@/utils/helper.ts'
 import { elapsedTime } from '@/utils/baseMixins.ts'
@@ -9,6 +9,7 @@ defineProps({ news: { type: Object as PropType<News>, required: true } })
 
 const route = useRoute()
 
+const isDark = inject('isDark')
 const isProj = computed(() => !!route.params.projId)
 </script>
 
@@ -17,7 +18,11 @@ const isProj = computed(() => !!route.params.projId)
     variant="flat"
     border
     class="mb-4 pa-4 news-card"
-    :class="{ 'bg-yellow-lighten-5': news.is_important }"
+    :class="{
+      'bg-yellow-lighten-5': news.is_important && !isDark,
+      'bg-teal-darken-4': news.is_important && isDark,
+      'bg-blue-grey-darken-4': !news.is_important && isDark,
+    }"
   >
     <CRow>
       <CCol>

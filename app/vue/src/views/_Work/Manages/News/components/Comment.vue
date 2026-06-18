@@ -15,7 +15,7 @@ defineProps({
         <v-icon icon="mdi-account" color="primary" size="20" />
       </v-avatar>
       <div class="flex-grow-1">
-        <v-card variant="flat" border class="pa-3 rounded-lg bg-white">
+        <v-card variant="flat" border class="pa-3 rounded-lg">
           <div class="d-flex justify-space-between align-center mb-1">
             <router-link
               :to="{ name: '사용자 - 보기', params: { userId: comment.creator?.pk } }"

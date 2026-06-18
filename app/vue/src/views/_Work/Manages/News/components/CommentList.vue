@@ -38,7 +38,6 @@ const onSubmit = () => {
         rows="2"
         auto-grow
         hide-details
-        class="bg-white rounded-lg"
       >
         <template #append-inner>
           <v-btn
