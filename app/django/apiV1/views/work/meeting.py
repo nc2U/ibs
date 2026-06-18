@@ -22,7 +22,8 @@ class MeetingFilter(FilterSet):
         model = Meeting
         fields = ('company', 'project', 'project__slug', 'category', 'status', 'meeting_date', 'search')
 
-    def search_filter(self, queryset, name, value):
+    @staticmethod
+    def search_filter(queryset, name, value):
         return queryset.filter(title__icontains=value) | queryset.filter(content__icontains=value)
 
 
