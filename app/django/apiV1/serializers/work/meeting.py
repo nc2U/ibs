@@ -9,7 +9,7 @@ from work.models.meeting import MeetingCategory, Meeting, MeetingFile
 class MeetingCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = MeetingCategory
-        fields = ('pk', 'company', 'project', 'name', 'color', 'order')
+        fields = ('pk', 'project', 'name', 'color', 'order')
 
 
 class MeetingFileSerializer(serializers.ModelSerializer):
@@ -41,18 +41,12 @@ class MeetingSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Meeting
-        fields = ('pk', 'project', 'project_desc', 'company', 'category', 'category_desc',
+        fields = ('pk', 'project', 'project_desc', 'category', 'category_desc',
                   'status', 'title', 'agenda', 'content', 'decisions', 'action_items',
                   'meeting_date', 'attendees', 'attendees_desc',
                   'other_attendees', 'files', 'issues', 'created', 'updated', 'creator', 'updater')
-        # read_only_fields = ('company',)
 
     def create(self, validated_data):
-        # project가 있으면 company를 해당 프로젝트의 회사로 강제 설정
-        project = validated_data.get('project')
-        if project:
-            validated_data['company'] = project.company
-        
         attendees = validated_data.pop('attendees', [])
         meeting = Meeting.objects.create(**validated_data)
         meeting.attendees.set(attendees)

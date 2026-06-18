@@ -8,9 +8,7 @@ from work.models.project import IssueProject
 
 
 class MeetingCategory(models.Model):
-    company = models.ForeignKey('company.Company', on_delete=models.CASCADE, verbose_name='회사',
-                                related_name='meeting_categories')
-    project = models.ForeignKey(IssueProject, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='프로젝트',
+    project = models.ForeignKey(IssueProject, on_delete=models.CASCADE, verbose_name='프로젝트',
                                 related_name='meeting_categories')
     name = models.CharField('카테고리명', max_length=100)
     color = models.CharField('색상', max_length=20, blank=True, default='')
@@ -26,9 +24,7 @@ class MeetingCategory(models.Model):
 
 
 class Meeting(models.Model):
-    # 본사 회의 등을 위해 회사 외래키 필수 설정
-    company = models.ForeignKey('company.Company', on_delete=models.CASCADE, verbose_name='회사', related_name='meetings')
-    project = models.ForeignKey(IssueProject, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='프로젝트',
+    project = models.ForeignKey(IssueProject, on_delete=models.CASCADE, verbose_name='프로젝트',
                                 related_name='meetings')
     category = models.ForeignKey(MeetingCategory, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='카테고리',
                                  related_name='meetings')
@@ -67,12 +63,6 @@ class Meeting(models.Model):
 
     def __str__(self):
         return self.title
-
-    def save(self, *args, **kwargs):
-        # 프로젝트가 설정되어 있으면 해당 프로젝트의 회사로 자동 설정
-        if self.project and not self.company_id:
-            self.company = self.project.company
-        super().save(*args, **kwargs)
 
 
 def get_meeting_file_path(instance, filename):

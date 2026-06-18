@@ -10,7 +10,7 @@ class MeetingCategoryViewSet(viewsets.ModelViewSet):
     queryset = MeetingCategory.objects.all()
     serializer_class = MeetingCategorySerializer
     permission_classes = (permissions.IsAuthenticated,)
-    filterset_fields = ('company', 'project')
+    filterset_fields = ('project',)
 
 
 class MeetingFilter(FilterSet):
@@ -20,7 +20,7 @@ class MeetingFilter(FilterSet):
 
     class Meta:
         model = Meeting
-        fields = ('company', 'project', 'project__slug', 'category', 'status', 'meeting_date', 'search')
+        fields = ('project', 'project__slug', 'category', 'status', 'meeting_date', 'search')
 
     @staticmethod
     def search_filter(queryset, name, value):
@@ -36,7 +36,7 @@ class MeetingViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return super().get_queryset().select_related(
-            'project', 'company', 'category', 'creator', 'updater'
+            'project', 'category', 'creator', 'updater'
         ).prefetch_related('attendees', 'files')
 
     def perform_create(self, serializer):

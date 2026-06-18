@@ -7,10 +7,10 @@ from work.models.meeting import MeetingCategory, Meeting, MeetingFile
 
 @admin.register(MeetingCategory)
 class MeetingCategoryAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('pk', 'company', 'project', 'name', 'color', 'order')
+    list_display = ('pk', 'project', 'name', 'color', 'order')
     list_display_links = ('name',)
     list_editable = ('color', 'order')
-    list_filter = ('company', 'project')
+    list_filter = ('project',)
 
 
 class MeetingFileInline(admin.TabularInline):
@@ -29,7 +29,7 @@ class MeetingAdmin(ImportExportMixin, admin.ModelAdmin):
 
     fieldsets = (
         ('기본 정보', {
-            'fields': ('company', 'project', 'category', 'title', 'meeting_date')
+            'fields': ('project', 'category', 'title', 'meeting_date')
         }),
         ('회의 준비 (Agenda)', {
             'fields': ('agenda',)

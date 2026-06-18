@@ -10,13 +10,13 @@ class PdfExportMeeting(LoginRequiredMixin, PdfExportMixin, PdfUtilsMixin):
     def get(self, request, pk):
         # 회의록 데이터 조회
         meeting = Meeting.objects.select_related(
-            'company', 'project', 'category', 'creator'
+            'project', 'category', 'creator'
         ).prefetch_related('attendees', 'issues').get(pk=pk)
 
         # 기본 컨텍스트 및 데이터 구성
         context = self.get_base_context(
             meeting=meeting,
-            company=meeting.company
+            company=meeting.project.company
         )
 
         # 파일명 생성
