@@ -551,7 +551,7 @@ const onCategorySubmit = (event: Event) => {
         <CRow class="mb-3">
           <CFormLabel for="cat-order" class="col-sm-3 col-form-label">정렬</CFormLabel>
           <CCol sm="9">
-            <CFormInput v-model="categoryForm.order" id="cat-order" type="number" />
+            <CFormInput v-model="categoryForm.order" id="cat-order" type="number" min="0" />
           </CCol>
         </CRow>
 
