@@ -4,23 +4,23 @@ body.dark-theme {
 }
 
 .bg-primary-lighten {
-  background: #ede3fe;
+  background: #ede3fe !important;
 }
 
 .bg-success-lighten {
-  background: #ebf5eb;
+  background: #ebf5eb !important;
 }
 
 .bg-info-lighten {
-  background: #ebedef;
+  background: #ebedef !important;
 }
 
 .bg-warning-lighten {
-  background: #fff2e6;
+  background: #fff2e6 !important;
 }
 
 .bg-danger-lighten {
-  background: #fdebeb;
+  background: #fdebeb !important;
 }
 
 // NProgress css
@@ -177,8 +177,39 @@ a.page-link,
   text-overflow: ellipsis;
 }
 
+.markdown-content {
+  background-color: #ffffff;
+  line-height: 1.6;
+
+  :deep(p) {
+    margin-bottom: 0.5rem;
+  }
+
+  ul,
+  ol {
+    padding-left: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  pre {
+    background-color: #f1f5f9;
+    padding: 0.75rem;
+    border-radius: 4px;
+  }
+}
+
 .accent {
   background-color: lightyellow !important;
+}
+
+.title {
+  font-weight: bold;
+}
+
+.sub-title {
+  font-size: 1.25em;
+  font-weight: bold;
+  color: #0f192a;
 }
 
 .bg-more-light {
@@ -198,8 +229,27 @@ a.page-link,
 }
 
 .dark-theme {
+  .markdown-content {
+    background-color: #1c1d26;
+    border-color: #2b322f !important;
+    color: #f1f5f9;
+
+    pre {
+      background-color: #2b322f;
+      color: #ffffff;
+    }
+  }
+
   .accent {
     background-color: #393907 !important;
+  }
+
+  .sub-title {
+    color: #eceff1;
+  }
+
+  .title {
+    color: #cfd8dc;
   }
 
   .bg-more-light {
@@ -217,7 +267,7 @@ a.page-link,
   }
 
   .card-yellow {
-    background-color: #37474F !important;
+    background-color: #32332a !important;
     color: white;
   }
 

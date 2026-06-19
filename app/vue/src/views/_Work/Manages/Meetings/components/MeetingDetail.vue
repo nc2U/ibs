@@ -169,7 +169,7 @@ const refConfirmModal = ref()
       </CCol>
     </CRow>
 
-    <CCard class="mb-4 shadow-sm meeting-card">
+    <CCard class="mb-4 shadow-sm card-white">
       <CCardBody>
         <CRow class="mb-3">
           <CCol>
@@ -282,7 +282,7 @@ const refConfirmModal = ref()
                 주요 결정 사항
               </h6>
               <div
-                class="markdown-content bg-light-success p-3 border border-success rounded text-success"
+                class="markdown-content bg-success-lighten p-3 border border-success rounded text-success"
                 v-html="markdownRender(meeting.decisions)"
               />
             </div>
@@ -299,7 +299,7 @@ const refConfirmModal = ref()
                 후속 조치 사항
               </h6>
               <div
-                class="markdown-content bg-light-warning p-3 border border-warning rounded text-warning"
+                class="markdown-content bg-warning-lighten p-3 border border-warning rounded text-warning"
                 v-html="markdownRender(meeting.action_items)"
               />
             </div>
@@ -423,93 +423,3 @@ const refConfirmModal = ref()
     </template>
   </FormModal>
 </template>
-
-<style lang="scss" scoped>
-.title {
-  font-weight: bold;
-}
-.sub-title {
-  font-size: 1.25rem;
-  font-weight: bold;
-  color: #0f192a;
-}
-.meeting-card {
-  background-color: #f7fff9 !important;
-}
-.markdown-content {
-  background-color: #ffffff;
-  line-height: 1.6;
-  :deep(p) {
-    margin-bottom: 0.5rem;
-  }
-  :deep(ul),
-  :deep(ol) {
-    padding-left: 1.5rem;
-    margin-bottom: 0.5rem;
-  }
-  :deep(pre) {
-    background-color: #f1f5f9;
-    padding: 0.75rem;
-    border-radius: 4px;
-  }
-}
-.bg-light-success {
-  background-color: #ecfdf5 !important;
-  border-color: #10b981 !important;
-  color: #065f46 !important;
-}
-.bg-light-warning {
-  background-color: #f0fdfa !important;
-  border-color: #14b8a6 !important;
-  color: #0f766e !important;
-}
-.border-dashed {
-  border-style: dashed !important;
-}
-
-.dark-theme {
-  .sub-title {
-    color: #ffffff;
-  }
-  .meeting-card {
-    background-color: #444e49 !important;
-    color: #ffffff;
-  }
-  .markdown-content {
-    background-color: #363e3a;
-    border-color: #2b322f !important;
-    color: #f1f5f9;
-    :deep(pre) {
-      background-color: #2b322f;
-      color: #ffffff;
-    }
-  }
-  .bg-light-success {
-    background-color: #283630 !important;
-    color: #a7f3d0 !important;
-    border-color: #3eb37c !important;
-  }
-  .bg-light-warning {
-    background-color: #28363c !important;
-    color: #99f6e4 !important;
-    border-color: #3a8a7c !important;
-  }
-  .border {
-    border-color: #2b322f !important;
-  }
-  .table {
-    color: #f1f5f9;
-    :deep(th),
-    :deep(td) {
-      color: #f1f5f9 !important;
-      border-color: rgba(255, 255, 255, 0.1) !important;
-    }
-  }
-  .text-muted {
-    color: #d1d5db !important;
-  }
-  :deep(.v-divider) {
-    border-color: rgba(255, 255, 255, 0.1) !important;
-  }
-}
-</style>

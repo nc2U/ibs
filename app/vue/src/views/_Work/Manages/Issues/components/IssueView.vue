@@ -165,7 +165,7 @@ onBeforeMount(async () => {
     />
   </CRow>
 
-  <CCard class="mb-3 shadow-sm issue-card">
+  <CCard class="mb-3 shadow-sm card-yellow">
     <CCardBody>
       <CRow>
         <CCol>
@@ -331,7 +331,8 @@ onBeforeMount(async () => {
         <CCol class="title">설명</CCol>
         <CCol
           v-if="
-            issueProject?.status !== '9' && (workManager || my_perms?.includes('issue_comment_create'))
+            issueProject?.status !== '9' &&
+            (workManager || my_perms?.includes('issue_comment_create'))
           "
           class="text-right form-text"
         >
@@ -437,32 +438,3 @@ onBeforeMount(async () => {
     />
   </div>
 </template>
-
-<style lang="scss" scoped>
-.title {
-  font-weight: bold;
-}
-
-.sub-title {
-  font-size: 1.1em;
-  font-weight: bold;
-  color: #0f192a;
-}
-
-.issue-card {
-  background-color: #fefce8 !important;
-}
-
-.dark-theme {
-  .sub-title {
-    color: #eceff1;
-  }
-  .issue-card {
-    background-color: #37474f !important;
-    color: #eceff1;
-  }
-  .title {
-    color: #cfd8dc;
-  }
-}
-</style>
