@@ -190,7 +190,7 @@ onBeforeMount(async () => {
         <CCol>
           <h6 class="asideTitle">문서 카테고리</h6>
           <v-divider class="mt-0" />
-          <v-list density="compact" nav class="pa-0 aside-menu">
+          <v-list density="compact" nav class="pa-0 aside-menu card-white">
             <v-list-item
               :active="docsFilter.category === '' || docsFilter.category === 0"
               @click="selectCate(0)"

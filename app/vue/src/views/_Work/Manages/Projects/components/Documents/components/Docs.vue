@@ -8,7 +8,7 @@ defineProps({ docs: { type: Object as PropType<Docs>, required: true } })
 </script>
 
 <template>
-  <v-card variant="flat" border class="mb-2 w-100 docs-item">
+  <v-card variant="flat" border class="mb-2 w-100 docs-item card-white">
     <v-card-text class="pa-3">
       <CRow align="center">
         <CCol sm="8" class="d-flex align-center">
