@@ -276,33 +276,27 @@ const refConfirmModal = ref()
 
         <CRow>
           <CCol md="6" v-if="meeting.decisions">
-            <div class="mb-4">
-              <h6 class="title mb-2">
-                <v-icon color="text-success" icon="mdi-check-circle" size="small" class="mr-1" />
-                주요 결정 사항
-              </h6>
-              <div
-                class="markdown-content bg-success-lighten p-3 border border-success rounded text-success"
-                v-html="markdownRender(meeting.decisions)"
-              />
-            </div>
+            <CCallout color="success" class="mb-4 border-start-4">
+              <div class="d-flex align-items-center mb-2">
+                <v-icon color="success" icon="mdi-check-circle" size="small" class="mr-1" />
+                <span class="fw-bold text-success">주요 결정 사항</span>
+              </div>
+              <div class="markdown-content bg-transparent" v-html="markdownRender(meeting.decisions)"></div>
+            </CCallout>
           </CCol>
           <CCol md="6" v-if="meeting.action_items">
-            <div class="mb-4">
-              <h6 class="title mb-2">
+            <CCallout color="warning" class="mb-4 border-start-4">
+              <div class="d-flex align-items-center mb-2">
                 <v-icon
                   icon="mdi-clipboard-list-outline"
-                  color="text-warning"
+                  color="warning"
                   size="small"
                   class="mr-1"
                 />
-                후속 조치 사항
-              </h6>
-              <div
-                class="markdown-content bg-warning-lighten p-3 border border-warning rounded text-warning"
-                v-html="markdownRender(meeting.action_items)"
-              />
-            </div>
+                <span class="fw-bold text-warning">후속 조치 사항</span>
+              </div>
+              <div class="markdown-content bg-transparent" v-html="markdownRender(meeting.action_items)"></div>
+            </CCallout>
           </CCol>
         </CRow>
 
