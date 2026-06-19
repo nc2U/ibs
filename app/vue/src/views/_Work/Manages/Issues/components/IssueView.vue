@@ -21,6 +21,7 @@ import IssueFiles from './issueFiles/Index.vue'
 import SubIssues from './subIssues/Index.vue'
 import SubSummary from './subIssues/Summary.vue'
 import RelSummary from './relations/Summary.vue'
+import AddRelationForm from './relations/AddRelationForm.vue'
 
 const props = defineProps({
   issueProject: { type: Object as PropType<IssueProject>, default: null },
@@ -59,6 +60,14 @@ const doneRatio = computed(() => {
     )
   } else return props.issue?.done_ratio
 })
+
+const predecessors = computed(
+  () => props.issue?.relation_issues?.map(i => ({ pk: i.issue }) as SubIssue) ?? [],
+)
+
+const successors = computed(
+  () => props.issue?.related_issues?.map(i => i.issue_to as SubIssue) ?? [],
+)
 
 const onSubmit = (payload: any) => {
   emit('on-submit', payload)
@@ -124,7 +133,10 @@ const unlinkSubIssue = (del_child: number) =>
 // 연결된 업무 관련 코드
 const addRIssue = ref(false)
 const addFormCtl = (bool: boolean) => (addRIssue.value = bool)
-const addRelIssue = (payload: any) => issueStore.createIssueRelation(payload)
+const addRelIssue = (payload: any) => {
+  issueStore.createIssueRelation(payload)
+  addRIssue.value = false
+}
 const deleteRelation = (pk: number) => issueStore.deleteIssueRelation(pk, props.issue?.pk as number)
 
 // issue comment 관련
@@ -380,19 +392,27 @@ onBeforeMount(async () => {
 
       <v-divider v-if="issueProject?.status !== '9'" />
 
-      <CRow v-if="issueProject?.status !== '9'">
+      <CRow v-if="issueProject?.status !== '9'" class="mb-2">
         <CCol class="col-10">
           <span class="title mr-2">연결된 업무</span>
           <RelSummary
-            v-if="issue.related_issues.length"
+            v-if="predecessors.length || successors.length"
             :issue-pk="issue.pk"
-            :rel-issue-tos="issue.related_issues.map(i => i.issue_to as SubIssue)"
+            :rel-issue-tos="[...predecessors, ...successors]"
           />
         </CCol>
         <CCol class="text-right form-text">
           <router-link to="" @click="addRIssue = !addRIssue">추가</router-link>
         </CCol>
       </CRow>
+
+      <AddRelationForm
+        v-if="addRIssue"
+        :issue-pk="issue.pk"
+        :get-issues="getIssues"
+        @add-rel-issue="addRelIssue"
+        @add-form-ctl="addFormCtl"
+      />
 
       <v-divider v-if="issue.meeting_desc" />
 

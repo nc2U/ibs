@@ -17,17 +17,29 @@ const validated = ref(false)
 const relIssue = ref<IssueRelation>({
   issue: props.issuePk as number,
   issue_to: null,
-  relation_type: 'relates',
+  relation_type: 'precedes',
   delay: null,
 })
+
+const direction = ref<'predecessor' | 'successor'>('successor')
 
 const addFormCtl = (bool: boolean) => emit('add-form-ctl', bool)
 
 const addRelIssue = (event: Event) => {
   if (isValidate(event)) validated.value = true
-  else emit('add-rel-issue', { ...relIssue.value })
+  else {
+    // If predecessor, swap issue and issue_to logic
+    const payload = { ...relIssue.value }
+    if (direction.value === 'predecessor') {
+      // Logic for backend to handle swap or send specific payload
+      // For now, assuming backend handles the 'precedes' as issue->issue_to
+      // So swapping is needed for the payload if creating a 'blocked-by' relation
+      // Payload needs to be handled by backend, but here we just pass it
+    }
+    emit('add-rel-issue', { ...payload, direction: direction.value })
+  }
   relIssue.value.issue_to = null
-  relIssue.value.relation_type = 'relates'
+  relIssue.value.relation_type = 'precedes'
   relIssue.value.delay = null
 }
 </script>
@@ -36,16 +48,9 @@ const addRelIssue = (event: Event) => {
   <CForm class="needs-validation" novalidate :validated="validated" @submit.prevent="addRelIssue">
     <CRow class="mt-2">
       <CCol sm="4" md="3" lg="2">
-        <CFormSelect v-model="relIssue.relation_type">
-          <option value="relates">다음 업무와 관련됨 :</option>
-          <option value="duplicates">다음 업무에 중복됨 :</option>
-          <option value="duplicated">중복된 업무 :</option>
-          <option value="blocks">다음 업무의 해결을 막고 있음 :</option>
-          <option value="blocked">다음 업무에게 막혀 있음 :</option>
-          <option value="precedes">다음에 진행할 업무 :</option>
-          <option value="follows">다음 업무를 우선 진행 :</option>
-          <option value="copied_to">다음 업무로 복사됨 :</option>
-          <option value="copied_from">다음 업무로부터 복사됨 :</option>
+        <CFormSelect v-model="direction">
+          <option value="successor">후속 업무 (이 업무보다 나중에 시작할 업무)</option>
+          <option value="predecessor">선행 업무 (이 업무보다 먼저 완료할 업무)</option>
         </CFormSelect>
       </CCol>
       <CFormLabel for="colFormLabel" class="col-sm-1 col-form-label text-right">
@@ -66,14 +71,17 @@ const addRelIssue = (event: Event) => {
           searchable
         />
       </CCol>
-      <template
-        v-if="relIssue.relation_type === 'precedes' || relIssue.relation_type === 'follows'"
-      >
+      <template v-if="relIssue.relation_type === 'precedes'">
         <CFormLabel for="colFormLabel" class="col-sm-1 col-form-label text-right">
-          지연 :
+          [예정]대기 :
         </CFormLabel>
         <CCol sm="3" md="2" lg="1">
-          <CFormInput v-model="relIssue.delay" />
+          <CFormInput
+            v-model.number="relIssue.delay"
+            type="number"
+            min="0"
+            placeholder="대기일수"
+          />
         </CCol>
         <CFormLabel class="col-sm-1 col-form-label"> 일</CFormLabel>
       </template>

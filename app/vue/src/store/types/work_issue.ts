@@ -114,7 +114,8 @@ export interface Issue {
   closed: string | null
   files: Array<IssueFile>
   sub_issues: SubIssue[]
-  related_issues: IssueRelation[]
+  related_issues: IssueRelation[] // Tasks where 'this' is 'issue'
+  relation_issues: IssueRelation[] // Tasks where 'this' is 'issue_to'
   creator: SimpleUser
   updater: SimpleUser | null
   created: string
@@ -148,16 +149,7 @@ export interface IssueRelation {
   pk?: number
   issue: number
   issue_to: SubIssue | null
-  relation_type:
-    | 'relates'
-    | 'duplicates'
-    | 'duplicated'
-    | 'blocks'
-    | 'blocked'
-    | 'precedes'
-    | 'follows'
-    | 'copied_to'
-    | 'copied_from'
+  relation_type: 'precedes'
   type_display?: string
   delay: number | null
 }

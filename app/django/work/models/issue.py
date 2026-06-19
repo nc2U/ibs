@@ -98,17 +98,10 @@ class IssueRelation(models.Model):
     issue_to = models.OneToOneField(Issue, on_delete=models.CASCADE, verbose_name='연결된 업무',
                                     related_name='relation_issue_to')
     RELATION_CHOICES = (
-        ('relates', '다음 업무와 관련됨'),
-        ('duplicates', '다음 업무에 중복됨'),
-        ('duplicated', '중복된 업무'),
-        ('blocks', '다음 업무의 해결을 막고 있음'),
-        ('blocked', '다음 업무에게 막혀 있음'),
-        ('precedes', '다음에 진행할 업무'),
-        ('follows', '다음 업무를 우선 진행'),
-        ('copied_to', '다음 업무로 복사됨'),
-        ('copied_from', '다음 업무로부터 복사됨'))
-    relation_type = models.CharField('관계 유형', max_length=20, choices=RELATION_CHOICES, default='relates')
-    delay = models.PositiveSmallIntegerField('지연일수', null=True, blank=True)
+        ('precedes', '선행 업무'),
+    )
+    relation_type = models.CharField('관계 유형', max_length=20, choices=RELATION_CHOICES, default='precedes')
+    delay = models.PositiveSmallIntegerField('대기일수', null=True, blank=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, models.SET_NULL, null=True, blank=True, verbose_name='작성자')
 
     def __str__(self):

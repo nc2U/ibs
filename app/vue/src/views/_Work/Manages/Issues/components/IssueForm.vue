@@ -3,7 +3,7 @@ import { computed, inject, onBeforeMount, type PropType, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
-import type { IssueProject, Member } from '@/store/types/work_project.ts'
+import type { IssueProject } from '@/store/types/work_project.ts'
 import type { Issue, SimpleCategory } from '@/store/types/work_issue.ts'
 import { isValidate } from '@/utils/helper.ts'
 import { dateFormat } from '@/utils/baseMixins'
@@ -478,7 +478,11 @@ defineExpose({ callComment, callReply })
                         {{ member.username }}
                       </option>
                     </CFormSelect>
-                    <CInputGroupText class="pointer" @click="assignedToMe">
+                    <CInputGroupText
+                      v-if="form.assigned_to !== userInfo?.pk"
+                      class="pointer"
+                      @click="assignedToMe"
+                    >
                       « 나에게
                     </CInputGroupText>
                   </CInputGroup>
@@ -654,6 +658,13 @@ defineExpose({ callComment, callReply })
     </CCardBody>
   </CCard>
 
+  <FormModal ref="RefVersionModal">
+    <template #header>새 단계</template>
+    <template #default>
+      <FormInIssueVersion @close="RefVersionModal.close()" @create-version="createVersion" />
+    </template>
+  </FormModal>
+
   <FormModal ref="RefCategoryModal">
     <template #header>새 업무 범주</template>
     <template #default>
@@ -662,13 +673,6 @@ defineExpose({ callComment, callReply })
         @close="RefCategoryModal.close()"
         @create-category="createCategory"
       />
-    </template>
-  </FormModal>
-
-  <FormModal ref="RefVersionModal">
-    <template #header>새 단계</template>
-    <template #default>
-      <FormInIssueVersion @close="RefVersionModal.close()" @create-version="createVersion" />
     </template>
   </FormModal>
 
