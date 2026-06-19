@@ -30,36 +30,66 @@ const goList = () =>
   <template v-if="post">
     <CRow class="py-2">
       <CCol>
-        <h5>
-          <CBadge v-if="post.is_notice" color="warning" class="mr-2">공지</CBadge>
+        <h4 class="font-weight-bold">
+          <v-chip v-if="post.is_notice" color="warning" size="small" class="mr-2">공지</v-chip>
           {{ post.title }}
-        </h5>
+        </h4>
       </CCol>
     </CRow>
 
-    <CCard class="mb-4">
-      <CCardHeader class="text-body-2 text-muted">
-        <router-link to="">{{ post.creator?.username }}</router-link>
-        님이 {{ elapsedTime(post.created as string) }} 작성
-        <span class="mx-2">|</span>
-        조회수 {{ post.hit }}
-      </CCardHeader>
-      <CCardBody>
+    <v-card class="mb-6 card-white" flat border>
+      <!-- v-card로 변경, mb-6으로 하단 간격, flat border 추가 -->
+      <v-card-text class="py-2">
+        <!-- CCardHeader 대신 v-card-text 사용 -->
+        <v-row no-gutters align="center" class="text-caption text-grey">
+          <v-col cols="auto" class="mr-3">
+            <v-icon icon="mdi-account-circle-outline" size="small" class="mr-1" />
+            <router-link
+              :to="{
+                name: '(게시판) - 보기',
+                params: { projId: route.params.projId, forumId: post.forum },
+              }"
+              class="text-decoration-none text-grey"
+            >
+              {{ post.creator?.username }}
+            </router-link>
+          </v-col>
+          <v-col cols="auto" class="mr-3">
+            <v-icon icon="mdi-clock-outline" size="small" class="mr-1" />
+            {{ elapsedTime(post.created as string) }}
+          </v-col>
+          <v-col cols="auto">
+            <v-icon icon="mdi-eye-outline" size="small" class="mr-1" />
+            조회수 {{ post.hit }}
+          </v-col>
+        </v-row>
+      </v-card-text>
+
+      <v-divider />
+
+      <v-card-text>
+        <!-- CCardBody 대신 v-card-text 사용 -->
         <div v-html="markdownRender(post.content)" class="post-content" />
 
-        <div v-if="post.links?.length || post.files?.length" class="mt-4">
-          <v-divider />
-          <div v-for="link in post.links" :key="link.pk as number" class="mt-2">
-            <v-icon icon="mdi-link-variant" size="small" class="mr-2" />
-            <a :href="link.link" target="_blank">{{ link.link }}</a>
-          </div>
-          <div v-for="file in post.files" :key="file.pk as number" class="mt-2">
+        <div v-if="post.links?.length || post.files?.length" class="mt-6 pt-6 files-section">
+          <!-- 상단 간격 조정 -->
+          <h6 v-if="post.files?.length" class="text-h6 mb-2">첨부 파일</h6>
+          <div v-for="file in post.files" :key="file.pk as number" class="mb-2">
             <v-icon icon="mdi-attachment" size="small" class="mr-2" />
             <a :href="file.file" target="_blank">{{ file.file?.split('/').pop() }}</a>
           </div>
+          <h6 v-if="post.links?.length" class="text-h6 mt-4 mb-2">관련 링크</h6>
+          <div v-for="link in post.links" :key="link.pk as number" class="mb-2">
+            <v-icon icon="mdi-link-variant" size="small" class="mr-2" />
+            <a :href="link.link" target="_blank">{{ link.link }}</a>
+          </div>
         </div>
-      </CCardBody>
-      <CCardFooter class="text-right">
+      </v-card-text>
+
+      <v-divider />
+
+      <v-card-actions class="justify-end py-3">
+        <!-- CCardFooter 대신 v-card-actions 사용 -->
         <v-btn
           :prepend-icon="post.my_like ? 'mdi-thumb-up' : 'mdi-thumb-up-outline'"
           size="small"
@@ -74,40 +104,41 @@ const goList = () =>
           :prepend-icon="post.my_blame ? 'mdi-alert-octagon' : 'mdi-alert-octagon-outline'"
           size="small"
           :variant="post.my_blame ? 'flat' : 'outlined'"
-          color="danger"
+          color="error"
           @click="emit('blame-post', post.pk)"
         >
           신고
         </v-btn>
-      </CCardFooter>
-    </CCard>
+      </v-card-actions>
+    </v-card>
 
-    <div class="mb-4">
-      <CCol class="text-right">
-        <v-btn :color="btnLight" size="small" @click="goList">목록으로</v-btn>
-        <v-btn
-          v-if="userInfo.is_superuser || userInfo?.pk === post.creator?.pk"
-          color="success"
-          size="small"
-          variant="flat"
-          class="mr-2"
-          :to="{
-            name: '(게시판) - 게시물 수정',
-            params: { projId: route.params.projId, forumId: post.forum, postId: post.pk },
-          }"
-        >
-          수정
-        </v-btn>
-        <v-btn
-          v-if="userInfo.is_superuser || userInfo?.pk === post.creator?.pk"
-          color="warning"
-          size="small"
-          variant="flat"
-          @click="emit('delete-post', post.pk)"
-        >
-          삭제
-        </v-btn>
-      </CCol>
+    <div class="text-right mb-6">
+      <!-- 하단 간격 조정 -->
+      <v-btn :color="btnLight" size="small" class="mr-2" @click="goList"> 목록으로 </v-btn>
+      <v-btn
+        v-if="userInfo.is_superuser || userInfo?.pk === post.creator?.pk"
+        color="success"
+        variant="outlined"
+        size="small"
+        class="mr-2"
+        :to="{
+          name: '(게시판) - 게시물 수정',
+          params: { projId: route.params.projId, forumId: post.forum, postId: post.pk },
+        }"
+      >
+        <v-icon icon="mdi-pencil" size="small" class="mr-1" />
+        수정
+      </v-btn>
+      <v-btn
+        v-if="userInfo.is_superuser || userInfo?.pk === post.creator?.pk"
+        color="error"
+        variant="outlined"
+        size="small"
+        @click="emit('delete-post', post.pk)"
+      >
+        <v-icon icon="mdi-trash-can-outline" size="small" class="mr-1" />
+        삭제
+      </v-btn>
     </div>
 
     <CommentSection
