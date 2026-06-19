@@ -91,7 +91,7 @@ const deleteFile = (pk: number) => {
           <v-icon icon="mdi-attachment" size="20" class="mr-2 text-grey" />
           <span class="font-weight-bold"> 첨부 파일 ({{ news.files.length }}) </span>
         </div>
-        <v-list density="compact" class="bg-transparent pa-0">
+        <v-list density="compact" class="bg-transparent pa-0" style="overflow-x: hidden">
           <CRow v-for="(file, index) in news.files" :key="index" class="mb-2 no-gutters">
             <FileDisplay :file="file" @delete-file="deleteFile" />
           </CRow>
@@ -131,7 +131,7 @@ const deleteFile = (pk: number) => {
 }
 
 .content-body {
-  font-size: 1.05rem;
+  font-size: 1rem;
   line-height: 1.8;
 }
 
@@ -179,6 +179,10 @@ const deleteFile = (pk: number) => {
 
 .files-section {
   border-top: 1px dashed #dee2e6;
+}
+
+.dark-theme .files-section {
+  border-top: 1px dashed #64696d;
 }
 
 .border-t-sm {

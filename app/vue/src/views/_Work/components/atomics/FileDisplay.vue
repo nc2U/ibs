@@ -30,7 +30,7 @@ const projStatus = computed(() => iProject?.value?.status)
 </script>
 
 <template>
-  <div class="col-12">
+  <CCol class="col-10">
     <v-icon icon="mdi-paperclip" size="sm" color="grey" class="mr-2" />
     <span>
       <a :href="file.file" target="_blank"> {{ cutString(file.file_name, 25) }} </a>
@@ -46,7 +46,6 @@ const projStatus = computed(() => iProject?.value?.status)
     <span v-if="file.description" class="mr-2">{{ file.description }}</span>
     <span class="file-desc2 mr-1 text-grey"> {{ file.creator?.username }}, </span>
     <span class="file-desc2 mr-2 text-grey">{{ timeFormat(file.created) }}</span>
-
     <span v-if="projStatus !== '9'">
       <router-link to="">
         <v-icon
@@ -59,7 +58,7 @@ const projStatus = computed(() => iProject?.value?.status)
         <v-tooltip activator="parent" location="top">삭제</v-tooltip>
       </router-link>
     </span>
-  </div>
+  </CCol>
 
   <ConfirmModal ref="RefDelFile">
     <template #default>이 파일의 삭제를 계속 진행하시겠습니까?</template>
