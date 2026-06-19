@@ -177,14 +177,6 @@ const deleteFile = (pk: number) => {
   margin-bottom: 1.5rem;
 }
 
-.files-section {
-  border-top: 1px dashed #dee2e6;
-}
-
-.dark-theme .files-section {
-  border-top: 1px dashed #64696d;
-}
-
 .border-t-sm {
   border-top: 1px solid #e0e0e0;
 }

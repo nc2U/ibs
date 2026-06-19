@@ -47,71 +47,78 @@ onMounted(() => {
 </script>
 
 <template>
-  <div v-if="docs">
-    <CRow class="pt-3">
+  <div v-if="docs" class="pa-4">
+    <CRow class="mb-2">
       <CCol>
-        <h5>{{ docs.title }}</h5>
+        <h4 class="font-weight-bold mb-1">{{ docs.title }}</h4>
       </CCol>
     </CRow>
 
-    <CRow class="text-grey">
+    <CRow class="text-grey text-caption mb-3">
       <CCol>
-        {{ docs.proj_name }} ➤ {{ docs.cate_name }} ➤ ({{
-          timeFormat(docs.created as string, true, '/')
-        }})
+        <span>{{ docs.proj_name }}</span>
+        <v-icon icon="mdi-chevron-right" size="small" class="mx-1" />
+        <span>{{ docs.cate_name }}</span>
+        <v-icon icon="mdi-calendar-range" size="small" class="ml-3 mr-1" />
+        <span>{{ timeFormat(docs.created as string, true, '/') }}</span>
       </CCol>
     </CRow>
 
-    <v-divider />
+    <v-divider class="mb-3" />
 
-    <PostInfo :docs="docs" />
+    <PostInfo :docs="docs" class="mb-4" />
 
-    <PostContent :content="docs.content" />
+    <PostContent :content="docs.content" class="mb-5" />
 
-    <CRow class="mb-3">
-      <CCol>
-        <CRow v-if="docs.files?.length">
-          <CCol><h5>파일</h5></CCol>
-        </CRow>
+    <div class="files-section">
+      <CRow class="mb-3 pt-4">
+        <CCol>
+          <h6 class="mb-2">첨부 파일</h6>
+          <PostedFile :docs="docs.pk as number" :files="docs.files" />
+        </CCol>
+      </CRow>
 
-        <PostedFile :docs="docs.pk as number" :files="docs.files" />
-      </CCol>
-    </CRow>
+      <CRow class="mb-3">
+        <CCol>
+          <h6 class="mb-2">관련 링크</h6>
+          <PostedLink :docs="docs.pk as number" :links="docs.links" />
+        </CCol>
+      </CRow>
+    </div>
 
-    <CRow class="mb-3">
-      <CCol>
-        <CRow v-if="docs.links?.length">
-          <CCol><h5>링크</h5></CCol>
-        </CRow>
-
-        <PostedLink :docs="docs.pk as number" :links="docs.links" />
-      </CCol>
-    </CRow>
-
-    <v-divider />
+    <v-divider class="mb-3" />
 
     <CRow class="mt-4">
       <CCol class="text-right">
-        <v-btn :color="btnLight" @click="router.replace({ name: '(문서)' })" size="small">
+        <v-btn
+          :color="btnLight"
+          @click="router.replace({ name: '(문서)' })"
+          size="small"
+          class="mr-2"
+        >
           목록으로
         </v-btn>
-        <span
-          v-if="userInfo.is_superuser || userInfo.pk === docs.creator?.pk"
-          class="mr-2 form-text"
-        >
-          <v-icon icon="mdi-pencil" color="warning" size="15" class="mr-1" />
-          <router-link :to="{ name: '(문서) - 편집' }" class="ml-1">편집</router-link>
-        </span>
 
-        <span
+        <v-btn
           v-if="userInfo.is_superuser || userInfo.pk === docs.creator?.pk"
-          class="mr-2 form-text"
+          color="success"
+          size="small"
+          class="mr-2"
+          :to="{ name: '(문서) - 편집' }"
         >
-          <v-icon icon="mdi-trash-can-outline" color="secondary" size="15" class="mr-1" />
-          <router-link to="#" @click.prevent="refConfirmModal.callModal()" class="ml-1">
-            삭제
-          </router-link>
-        </span>
+          <v-icon icon="mdi-pencil" size="small" class="mr-1" />
+          편집
+        </v-btn>
+
+        <v-btn
+          v-if="userInfo.is_superuser || userInfo.pk === docs.creator?.pk"
+          color="warning"
+          size="small"
+          @click.prevent="refConfirmModal.callModal()"
+        >
+          <v-icon icon="mdi-trash-can-outline" size="small" class="mr-1" />
+          삭제
+        </v-btn>
       </CCol>
     </CRow>
   </div>
@@ -120,7 +127,7 @@ onMounted(() => {
     <template #header>알림!</template>
     <template #default> 이 문서를 삭제 합니다. 계속 진행 하시겠습니까?</template>
     <template #footer>
-      <v-btn color="warning" size="small" @click="modalAction">저장</v-btn>
+      <v-btn color="warning" size="small" @click="modalAction">삭제</v-btn>
     </template>
   </ConfirmModal>
 </template>
