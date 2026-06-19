@@ -185,6 +185,18 @@ a.page-link,
   background-color: #f8f9fa !important;
 }
 
+.card-white {
+  background-color: white;
+}
+
+.card-yellow {
+  background-color: lightyellow !important;
+}
+
+.card-yellow {
+  background-color: #F7FFF9 !important;
+}
+
 .dark-theme {
   .accent {
     background-color: #393907 !important;
@@ -192,6 +204,20 @@ a.page-link,
 
   .bg-more-light {
     background-color: #2E2F39 !important;
+  }
+
+  .card-white {
+    background-color: #2A2B36;
+    color: #f1f1f1;
+  }
+
+  .card-yellow {
+    background-color: #37474F !important;
+    color: white;
+  }
+
+  .card-yellow {
+    background-color: #444E49 !important;
   }
 
   .alert-warning {
