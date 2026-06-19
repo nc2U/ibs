@@ -15,7 +15,7 @@ defineProps({
         <v-icon icon="mdi-account" color="primary" size="20" />
       </v-avatar>
       <div class="flex-grow-1">
-        <v-card variant="flat" border class="pa-3 rounded-lg">
+        <v-card variant="flat" border class="pa-3 rounded-lg card-deep">
           <div class="d-flex justify-space-between align-center mb-1">
             <router-link
               :to="{ name: '사용자 - 보기', params: { userId: comment.creator?.pk } }"
@@ -25,9 +25,9 @@ defineProps({
             </router-link>
             <span class="text-caption text-grey">{{ elapsedTime(comment.created) }}</span>
           </div>
-          <div class="comment-content text-body-2 text-grey-darken-3">
+          <span class="comment-content">
             {{ comment.content }}
-          </div>
+          </span>
         </v-card>
         <div class="d-flex mt-1 ml-1">
           <v-btn variant="text" size="x-small" density="comfortable" color="primary" class="mr-2">

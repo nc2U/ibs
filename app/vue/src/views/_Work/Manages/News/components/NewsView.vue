@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { inject, type PropType } from 'vue'
+import { type PropType } from 'vue'
 import type { News } from '@/store/types/work_inform.ts'
 import { markdownRender } from '@/utils/helper.ts'
 import { elapsedTime } from '@/utils/baseMixins.ts'
@@ -12,7 +12,6 @@ const props = defineProps({
   viewForm: { type: Boolean, default: false },
 })
 
-const isDark = inject('isDark')
 const infStore = useInform()
 
 const deleteFile = (pk: number) => {
@@ -24,15 +23,10 @@ const deleteFile = (pk: number) => {
 
 <template>
   <div v-if="news" class="news-view">
-    <v-card
-      variant="flat"
-      border
-      class="pa-5 mb-5 rounded-lg"
-      :class="isDark ? 'bg-grey-darken-4' : 'bg-white'"
-    >
+    <v-card variant="flat" border class="pa-5 mb-5 rounded-lg card-white">
       <!-- Title Section -->
       <div class="d-flex justify-space-between align-start mb-3">
-        <h5 class="font-weight-bold" :class="isDark ? 'text-white' : 'text-grey-darken-4'">
+        <h5 class="font-weight-bold">
           <v-chip
             v-if="news.is_important"
             color="primary"
@@ -47,17 +41,10 @@ const deleteFile = (pk: number) => {
       </div>
 
       <!-- Metadata Section -->
-      <div
-        class="metadata d-flex flex-wrap align-center mb-5"
-        :class="isDark ? 'text-grey-lighten-1' : 'text-grey-darken-1'"
-      >
+      <div class="metadata d-flex flex-wrap align-center mb-5">
         <div class="d-flex align-center mr-4">
-          <v-avatar size="24" :color="isDark ? 'grey-darken-3' : 'grey-lighten-3'" class="mr-2">
-            <v-icon
-              icon="mdi-account"
-              size="18"
-              :color="isDark ? 'grey-lighten-1' : 'grey-darken-1'"
-            />
+          <v-avatar size="24" class="mr-2">
+            <v-icon icon="mdi-account" size="18" />
           </v-avatar>
           <router-link
             :to="{ name: '사용자 - 보기', params: { userId: news.author?.pk } }"
@@ -71,7 +58,6 @@ const deleteFile = (pk: number) => {
           <router-link
             :to="{ name: '(실행기록)', params: { projId: news.project?.slug } }"
             class="text-decoration-none"
-            :class="isDark ? 'text-grey-lighten-1' : 'text-grey-darken-1'"
           >
             {{ elapsedTime(news.created) }}
           </router-link>
@@ -97,26 +83,13 @@ const deleteFile = (pk: number) => {
       </div>
 
       <!-- Content Section -->
-      <div
-        class="content-body py-4 mb-6"
-        :class="isDark ? 'text-grey-lighten-3' : 'text-grey-darken-3'"
-        v-html="markdownRender(news.content)"
-      />
+      <div class="content-body py-4 mb-6" v-html="markdownRender(news.content)" />
 
       <!-- Files Section -->
-      <div
-        v-if="news.files.length"
-        class="files-section mt-6 pt-6"
-        :class="isDark ? 'border-t-dark' : 'border-t-sm'"
-      >
+      <div v-if="news.files.length" class="files-section mt-6 pt-6">
         <div class="d-flex align-center mb-4">
           <v-icon icon="mdi-attachment" size="20" class="mr-2 text-grey" />
-          <span
-            class="text-h6 font-weight-bold"
-            :class="isDark ? 'text-grey-lighten-1' : 'text-grey-darken-1'"
-          >
-            첨부 파일 ({{ news.files.length }})
-          </span>
+          <span class="font-weight-bold"> 첨부 파일 ({{ news.files.length }}) </span>
         </div>
         <v-list density="compact" class="bg-transparent pa-0">
           <CRow v-for="(file, index) in news.files" :key="index" class="mb-2 no-gutters">
@@ -127,12 +100,7 @@ const deleteFile = (pk: number) => {
     </v-card>
 
     <!-- Comments Section -->
-    <v-sheet
-      border
-      rounded="lg"
-      class="pa-5"
-      :class="isDark ? 'bg-blue-grey-darken-4' : 'bg-white'"
-    >
+    <v-sheet border rounded="lg" class="pa-5 card-white">
       <div class="d-flex align-center mb-6">
         <v-icon icon="mdi-comment-text-multiple-outline" size="20" class="mr-3 text-primary" />
         <h6 class="font-weight-bold mb-0">댓글</h6>
