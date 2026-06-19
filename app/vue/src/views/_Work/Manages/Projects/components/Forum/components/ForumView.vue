@@ -86,9 +86,7 @@ const goList = () =>
         </div>
       </v-card-text>
 
-      <v-divider />
-
-      <v-card-actions class="justify-end py-3">
+      <v-card-actions class="justify-end py-2 border-top">
         <!-- CCardFooter 대신 v-card-actions 사용 -->
         <v-btn
           :prepend-icon="post.my_like ? 'mdi-thumb-up' : 'mdi-thumb-up-outline'"
