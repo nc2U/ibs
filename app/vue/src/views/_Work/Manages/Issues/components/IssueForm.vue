@@ -188,6 +188,19 @@ watch(
   },
 )
 
+// form.category 변경 감시: 범주 선택 시 기본 담당자 자동 지정 로직
+watch(
+  () => form.value.category,
+  newCategoryId => {
+    if (newCategoryId) {
+      const selectedCategory = categories.value.find(c => c.pk === newCategoryId)
+      if (selectedCategory?.assigned_to && !form.value.assigned_to) {
+        form.value.assigned_to = selectedCategory.assigned_to.pk
+      }
+    }
+  },
+)
+
 const newIssueStatusList = computed(() => {
   if (!props.issue) {
     // 신규 생성 모드
