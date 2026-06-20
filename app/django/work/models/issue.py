@@ -94,18 +94,14 @@ class Issue(models.Model):
 
 
 class IssueRelation(models.Model):
-    issue = models.ForeignKey(Issue, on_delete=models.CASCADE, verbose_name='업무', related_name='relation_issues')
-    issue_to = models.OneToOneField(Issue, on_delete=models.CASCADE, verbose_name='연결된 업무',
-                                    related_name='relation_issue_to')
-    RELATION_CHOICES = (
-        ('precedes', '선행 업무'),
-    )
-    relation_type = models.CharField('관계 유형', max_length=20, choices=RELATION_CHOICES, default='precedes')
+    source = models.ForeignKey(Issue, on_delete=models.CASCADE, verbose_name='선행 업무', related_name='outgoing_relations')
+    target = models.OneToOneField(Issue, on_delete=models.CASCADE, verbose_name='후속 업무',
+                                  related_name='incoming_relation')
     delay = models.PositiveSmallIntegerField('대기일수', null=True, blank=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, models.SET_NULL, null=True, blank=True, verbose_name='작성자')
 
     def __str__(self):
-        return f'{self.issue.subject}-{self.relation_type}-{self.issue_to.subject}'
+        return f'#{self.source.pk} ({self.source.subject}) → #{self.target.pk} ({self.target.subject})'
 
 
 def get_issue_file_path(instance, filename):

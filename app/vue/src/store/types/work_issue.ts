@@ -90,6 +90,12 @@ export interface SubIssue {
   closed: string | null // DateTimeField
 }
 
+export interface IssueRelation {
+  pk?: number
+  issue: SubIssue | null
+  delay: number | null
+}
+
 export interface Issue {
   pk: number
   project: SimpleProject
@@ -114,8 +120,8 @@ export interface Issue {
   closed: string | null
   files: Array<IssueFile>
   sub_issues: SubIssue[]
-  related_issues: IssueRelation[] // Tasks where 'this' is 'issue'
-  relation_issues: IssueRelation[] // Tasks where 'this' is 'issue_to'
+  outgoing_relations: IssueRelation[] // Outgoing
+  incoming_relation: IssueRelation | null // Incoming
   creator: SimpleUser
   updater: SimpleUser | null
   created: string
@@ -143,7 +149,6 @@ export interface IssueFilter {
   id__gte?: number | null
   id__lte?: number | null
   id__between?: string // 'ID 범위 예: 10,20'
-  id__none?: string // 'ID 제외목록 예: 1,2,3'
   id__any?: string // 'ID 포함목록 예: 1,2,3'
   parent__subject?: string
   parent__isnull?: string
@@ -152,15 +157,6 @@ export interface IssueFilter {
   follows_issue?: number | null // 선행업무
   precedes_issue?: number | null // 후속업무
   page?: number
-}
-
-export interface IssueRelation {
-  pk?: number
-  issue: number
-  issue_to: SubIssue | null
-  relation_type: 'precedes'
-  type_display?: string
-  delay: number | null
 }
 
 export interface IssueComment {

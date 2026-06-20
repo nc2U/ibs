@@ -60,12 +60,19 @@ class IssueInIssueSerializer(serializers.ModelSerializer):
 
 
 class IssueRelationInIssueSerializer(serializers.ModelSerializer):
-    issue_to = IssueInIssueSerializer(read_only=True)
-    type_display = serializers.CharField(source='get_relation_type_display', read_only=True)
+    issue = IssueInIssueSerializer(source='issue_to', read_only=True)
 
     class Meta:
         model = IssueRelation
-        fields = ('pk', 'issue', 'issue_to', 'relation_type', 'type_display', 'delay')
+        fields = ('pk', 'issue', 'delay')
+
+
+class IssueRelationIncomingSerializer(serializers.ModelSerializer):
+    issue = IssueInIssueSerializer(read_only=True)
+
+    class Meta:
+        model = IssueRelation
+        fields = ('pk', 'issue', 'delay')
 
 
 class IssueSerializer(serializers.ModelSerializer):
@@ -79,7 +86,8 @@ class IssueSerializer(serializers.ModelSerializer):
     files = IssueFileInIssueSerializer(many=True, read_only=True)
     meeting_desc = MeetingInIssueSerializer(source='meeting', read_only=True)
     sub_issues = serializers.SerializerMethodField()
-    related_issues = serializers.SerializerMethodField()
+    outgoing_relations = serializers.SerializerMethodField()
+    incoming_relation = serializers.SerializerMethodField()
     creator = SimpleUserSerializer(read_only=True)
     expected_duration_display = serializers.CharField(source='get_expected_duration_display', read_only=True)
 
@@ -87,19 +95,26 @@ class IssueSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Issue
-        fields = ('pk', 'project', 'tracker', 'status', 'priority', 'subject',
-                  'description', 'category', 'fixed_version', 'assigned_to',
-                  'parent', 'watchers', 'is_private', 'expected_duration', 'expected_duration_display',
-                  'start_date', 'due_date', 'done_ratio', 'closed', 'files', 'sub_issues',
-                  'related_issues', 'creator', 'updater', 'created', 'updated', 'meeting', 'meeting_desc')
+        fields = ('pk', 'project', 'tracker', 'status', 'priority', 'subject', 'description',
+                  'category', 'fixed_version', 'assigned_to', 'parent', 'watchers', 'is_private',
+                  'expected_duration', 'expected_duration_display', 'start_date', 'due_date',
+                  'done_ratio', 'closed', 'files', 'sub_issues', 'outgoing_relations', 'incoming_relation',
+                  'creator', 'updater', 'created', 'updated', 'meeting', 'meeting_desc')
 
     @staticmethod
     def get_sub_issues(obj):
         return IssueInIssueSerializer(obj.issue_set.all().order_by('id'), many=True, read_only=True).data
 
     @staticmethod
-    def get_related_issues(obj):
-        return IssueRelationInIssueSerializer(obj.relation_issues.all().order_by('id'), many=True, read_only=True).data
+    def get_outgoing_relations(obj):
+        return IssueRelationInIssueSerializer(obj.outgoing_relations.all().order_by('id'), many=True,
+                                              read_only=True).data
+
+    @staticmethod
+    def get_incoming_relation(obj):
+        if hasattr(obj, 'incoming_relation'):
+            return IssueRelationIncomingSerializer(obj.incoming_relation, read_only=True).data
+        return None
 
     @transaction.atomic
     def create(self, validated_data):

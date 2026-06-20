@@ -19,7 +19,7 @@ class IssueCommentInline(admin.TabularInline):
 
 class IssueRelationInline(admin.TabularInline):
     model = IssueRelation
-    fk_name = 'issue'
+    fk_name = 'source'
     extra = 1
 
 
