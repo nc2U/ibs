@@ -413,14 +413,14 @@ onBeforeMount(async () => {
         @add-rel-issue="addRelIssue"
         @add-form-ctl="addFormCtl"
       />
-      {{ predecessors }}
+
       <!-- Outgoing relations -->
       <template v-for="rel in predecessors" :key="rel.pk">
         <Index :rel="rel" type="선행업무" @delete-relation="deleteRelation(rel.pk as number)" />
       </template>
 
       <!-- Incoming (reverse) relation -->
-      {{ successor }}
+
       <Index
         v-if="successor"
         :rel="successor"
