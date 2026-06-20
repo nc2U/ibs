@@ -247,20 +247,27 @@ class IssueCountByMemberSerializer(serializers.Serializer):
 
 
 class IssueRelationSerializer(serializers.ModelSerializer):
-    issue_to = IssueInIssueSerializer(read_only=True)
-    type_display = serializers.CharField(source='get_relation_type_display', read_only=True)
+    target = IssueInIssueSerializer(read_only=True)
 
     class Meta:
         model = IssueRelation
-        fields = ('pk', 'issue', 'issue_to', 'relation_type', 'type_display', 'delay')
+        fields = ('pk', 'source', 'target', 'delay')
 
     @transaction.atomic
     def create(self, validated_data):
-        issue_to = self.initial_data.get('issue_to', None)
-        issue_to = Issue.objects.get(pk=issue_to) if issue_to else None
+        target_pk = self.initial_data.get('target', None)
+        target = Issue.objects.get(pk=target_pk) if target_pk else None
         try:
-            issue_relation = IssueRelation.objects.create(issue_to=issue_to, **validated_data)
-            return issue_relation
+            # validated_data에 이미 source가 있다면 그 값을 사용하고,
+            # 없다면 initial_data에서 가져오도록 보완
+            source_pk = validated_data.get('source') or self.initial_data.get('source')
+            source = Issue.objects.get(pk=source_pk.pk if hasattr(source_pk, 'pk') else source_pk)
+
+            return IssueRelation.objects.create(
+                source=source,
+                target=target,
+                delay=validated_data.get('delay')
+            )
         except IntegrityError:
             raise serializers.ValidationError("해당 업무는 이미 등록되어 있는 연결된 업무입니다.")
 
