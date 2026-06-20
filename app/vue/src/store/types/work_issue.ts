@@ -87,7 +87,7 @@ export interface SubIssue {
   start_date: string
   due_date: string | null
   done_ratio: number
-  closed: string | null
+  closed: string | null // DateTimeField
 }
 
 export interface Issue {

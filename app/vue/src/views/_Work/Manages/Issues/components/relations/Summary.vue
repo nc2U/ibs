@@ -10,20 +10,20 @@ defineProps({
 
 <template>
   <span class="title mr-2">
-    <router-link :to="{ name: '(업무)', query: { parent: issuePk } }">
+    <router-link :to="{ name: '(업무)', query: { issueId: issuePk } }">
       {{ relIssueTos.length }}
     </router-link>
   </span>
   <span class="form-text">
     (<span v-if="relIssueTos.filter(i => !i.closed).length">
-      <router-link :to="{ name: '(업무)', query: { parent: issuePk, status: 'open' } }">
+      <router-link :to="{ name: '(업무)', query: { issueId: issuePk, status: 'open' } }">
         {{ relIssueTos.filter(i => !i.closed).length }} 건 진행 중
       </router-link>
     </span>
     <span v-else>모두 완료</span>
     -
     <span v-if="relIssueTos.filter(i => i.closed).length">
-      <router-link :to="{ name: '(업무)', query: { parent: issuePk, status: 'closed' } }">
+      <router-link :to="{ name: '(업무)', query: { issueId: issuePk, status: 'closed' } }">
         {{ relIssueTos.filter(i => i.closed).length }} 건 완료
       </router-link>
     </span>
