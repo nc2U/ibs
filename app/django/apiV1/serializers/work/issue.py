@@ -49,14 +49,14 @@ class IssueFileInIssueSerializer(serializers.ModelSerializer):
 
 
 class IssueInIssueSerializer(serializers.ModelSerializer):
-    status = serializers.SlugRelatedField(read_only=True, slug_field='name')
+    tracker = serializers.SlugRelatedField(slug_field='name', read_only=True)
+    status = serializers.SlugRelatedField(slug_field='name', read_only=True)
     assigned_to = SimpleUserSerializer(read_only=True)
-    expected_duration_display = serializers.CharField(source='get_expected_duration_display', read_only=True)
 
     class Meta:
         model = Issue
-        fields = ('pk', 'subject', 'status', 'assigned_to', 'start_date',
-                  'expected_duration', 'expected_duration_display', 'done_ratio', 'closed')
+        fields = ('pk', 'subject', 'tracker', 'status', 'assigned_to',
+                  'start_date', 'due_date', 'done_ratio', 'closed')
 
 
 class IssueRelationInIssueSerializer(serializers.ModelSerializer):

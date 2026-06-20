@@ -21,6 +21,7 @@ import IssueFiles from './issueFiles/Index.vue'
 import SubIssues from './subIssues/Index.vue'
 import SubSummary from './subIssues/Summary.vue'
 import RelSummary from './relations/Summary.vue'
+import Index from './relations/Index.vue'
 import AddRelationForm from './relations/AddRelationForm.vue'
 
 const props = defineProps({
@@ -68,6 +69,11 @@ const predecessors = computed(
 const successors = computed(
   () => props.issue?.related_issues?.map(i => i.issue_to as SubIssue) ?? [],
 )
+
+const allRelatedIssues = computed(() => [
+  ...(props.issue?.relation_issues ?? []),
+  ...(props.issue?.related_issues ?? []),
+])
 
 const onSubmit = (payload: any) => {
   emit('on-submit', payload)
@@ -412,6 +418,12 @@ onBeforeMount(async () => {
         :get-issues="getIssues"
         @add-rel-issue="addRelIssue"
         @add-form-ctl="addFormCtl"
+      />
+
+      <Index
+        v-if="allRelatedIssues.length"
+        :related-issues="allRelatedIssues"
+        @delete-relation="deleteRelation"
       />
 
       <v-divider v-if="issue.meeting_desc" />

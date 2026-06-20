@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { type PropType, ref, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
-import { cutString } from '@/utils/baseMixins'
+import { cutString, diffDate } from '@/utils/baseMixins'
 import type { IssueRelation } from '@/store/types/work_issue.ts'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
@@ -54,7 +54,7 @@ const deleteRelConfirm = () => {
         <span>{{ rel.type_display }} : </span>
         <span>
           <router-link :to="{ name: '(업무) - 보기', params: { issueId: rel.issue_to?.pk } }">
-            기능 #{{ rel.issue_to?.pk }}
+            {{ rel.issue_to?.tracker }} #{{ rel.issue_to?.pk }}
           </router-link>
           : {{ rel.issue_to?.subject }}
         </span>
@@ -69,6 +69,12 @@ const deleteRelConfirm = () => {
           </router-link>
         </span>
         <span class="mr-3">{{ rel.issue_to?.start_date }}</span>
+        <span
+          class="mr-3"
+          :class="{ 'text-danger': rel.issue_to?.due_date && diffDate(rel.issue_to.due_date) > 0 }"
+        >
+          {{ rel.issue_to?.due_date }}
+        </span>
       </CCol>
       <CCol class="col-sm-4 col-md-3 text-right">
         <span>

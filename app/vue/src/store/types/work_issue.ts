@@ -81,11 +81,11 @@ export interface IssueFile {
 export interface SubIssue {
   pk: number
   subject: string
+  tracker: string
   status: string
   assigned_to: SimpleUser
   start_date: string
-  expected_duration: string | null
-  expected_duration_display: string
+  due_date: string | null
   done_ratio: number
   closed: string | null
 }
