@@ -47,8 +47,12 @@ const workStore = useWork()
 const my_perms = computed(() => (workStore.issueProject as IssueProject)?.my_perms)
 
 const issueStore = useIssue()
-const issueNums = computed(() => issueStore.issueNums as number[])
-const getIssues = computed(() => issueStore.getIssues.filter(i => i.value !== props.issue?.pk))
+const issueNums = computed(() => issueStore.issueNums ?? [])
+const getIssues = computed(() => {
+  const issues = issueStore.getIssues
+  if (!props.issue) return issues
+  return issues.filter(i => i.value !== props.issue?.pk)
+})
 
 const logStore = useLogging()
 const issueLogList = computed(() => logStore.issueLogList)
@@ -62,18 +66,8 @@ const doneRatio = computed(() => {
   } else return props.issue?.done_ratio
 })
 
-const predecessors = computed(
-  () => props.issue?.relation_issues?.map(i => ({ pk: i.issue }) as SubIssue) ?? [],
-)
-
-const successors = computed(
-  () => props.issue?.related_issues?.map(i => i.issue_to as SubIssue) ?? [],
-)
-
-const allRelatedIssues = computed(() => [
-  ...(props.issue?.relation_issues ?? []),
-  ...(props.issue?.related_issues ?? []),
-])
+const predecessors = computed(() => props.issue?.outgoing_relations ?? [])
+const successor = computed(() => props.issue?.incoming_relation ?? null)
 
 const onSubmit = (payload: any) => {
   emit('on-submit', payload)
@@ -402,9 +396,9 @@ onBeforeMount(async () => {
         <CCol class="col-10">
           <span class="title mr-2">연결된 업무</span>
           <RelSummary
-            v-if="predecessors.length || successors.length"
+            v-if="predecessors.length || successor"
             :issue-pk="issue.pk"
-            :rel-issue-tos="[...predecessors, ...successors]"
+            :rel-issue-tos="[...predecessors, ...successor]"
           />
         </CCol>
         <CCol class="text-right form-text">
@@ -419,13 +413,20 @@ onBeforeMount(async () => {
         @add-rel-issue="addRelIssue"
         @add-form-ctl="addFormCtl"
       />
+      {{ predecessors }}
+      <!-- Outgoing relations -->
+      <template v-for="rel in predecessors" :key="rel.pk">
+        <Index :rel="rel" type="선행업무" @delete-relation="deleteRelation(rel.pk as number)" />
+      </template>
 
+      <!-- Incoming (reverse) relation -->
+      {{ successor }}
       <Index
-        v-if="allRelatedIssues.length"
-        :related-issues="allRelatedIssues"
-        @delete-relation="deleteRelation"
+        v-if="successor"
+        :rel="successor"
+        type="후행업무"
+        @delete-relation="deleteRelation(successor.pk as number)"
       />
-
       <v-divider v-if="issue.meeting_desc" />
 
       <CRow v-if="issue.meeting_desc">

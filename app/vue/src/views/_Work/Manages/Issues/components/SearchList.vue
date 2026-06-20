@@ -133,7 +133,6 @@ const form = ref<IssueFilter>({
   id__gte: null,
   id__lte: null,
   id__between: '',
-  id__none: '',
   id__any: '',
   parent__subject: '',
   parent__isnull: '0',

@@ -15,9 +15,7 @@ const emit = defineEmits(['add-rel-issue', 'add-form-ctl'])
 const validated = ref(false)
 
 const relIssue = ref<IssueRelation>({
-  issue: props.issuePk as number,
-  issue_to: null,
-  relation_type: 'precedes',
+  issue: null,
   delay: null,
 })
 
@@ -38,8 +36,7 @@ const addRelIssue = (event: Event) => {
     }
     emit('add-rel-issue', { ...payload, direction: direction.value })
   }
-  relIssue.value.issue_to = null
-  relIssue.value.relation_type = 'precedes'
+  relIssue.value.issue = null
   relIssue.value.delay = null
 }
 </script>
@@ -58,20 +55,20 @@ const addRelIssue = (event: Event) => {
       </CFormLabel>
       <CCol sm="4" md="3" lg="2">
         <Multiselect
-          v-model="relIssue.issue_to"
+          v-model="relIssue.issue"
           :options="getIssues"
           :classes="{
             caret: 'multiselect-caret mr-4',
             search: 'form-control multiselect-search',
             tagsSearch: 'form-control multiselect-tags-search',
           }"
-          :attrs="relIssue.issue_to ? {} : { required: true }"
+          :attrs="relIssue.issue ? {} : { required: true }"
           placeholder="업무 검색"
           :add-option-on="['enter', 'tab']"
           searchable
         />
       </CCol>
-      <template v-if="relIssue.relation_type === 'precedes'">
+      <template>
         <CFormLabel for="colFormLabel" class="col-sm-1 col-form-label text-right">
           [예정]대기 :
         </CFormLabel>
