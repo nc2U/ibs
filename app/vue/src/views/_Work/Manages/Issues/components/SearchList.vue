@@ -129,6 +129,12 @@ const form = ref<IssueFilter>({
   version: null,
   version__exclude: null,
   version__isnull: '0',
+  id: null,
+  id__gte: null,
+  id__lte: null,
+  id__between: '',
+  id__none: '',
+  id__any: '',
   parent__subject: '',
   parent__isnull: '0',
   parent_issue: null, // 상위업무
@@ -170,6 +176,13 @@ const filterSubmit = () => {
     else if (cond.value.version === 'none') filterData.version__isnull = '1'
     else if (cond.value.version === 'any') filterData.version__isnull = '0'
 
+  if (searchCond.value.includes('issue')) {
+    if (cond.value.issue === 'is') filterData.id = form.value.id
+    else if (cond.value.issue === 'gte') filterData.id__gte = form.value.id__gte
+    else if (cond.value.issue === 'lte') filterData.id__lte = form.value.id__lte
+    else if (cond.value.issue === 'between') filterData.id__between = form.value.id__between
+  }
+
   if (form.value.parent)
     if (cond.value.parent === 'is') filterData.parent = form.value.parent
     else if (cond.value.parent === 'contains')
@@ -177,9 +190,7 @@ const filterSubmit = () => {
     else if (cond.value.parent === 'none') filterData.parent__isnull = '1'
     else if (cond.value.parent === 'any') filterData.parent__isnull = '0'
 
-  if (form.value.parent_issue) filterData.parent_issue = form.value.parent_issue
-  if (form.value.precedes_issue) filterData.precedes_issue = form.value.precedes_issue
-  if (form.value.follows_issue) filterData.follows_issue = form.value.follows_issue
+  console.log(filterData)
 
   emit('filter-submit', filterData)
 }
@@ -375,22 +386,40 @@ onBeforeMount(async () => {
                 <CFormCheck checked="true" label="업무" id="issue" readonly />
               </CCol>
               <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.version" size="sm">
+                <CFormSelect v-model="cond.issue" size="sm">
                   <option value="is">이다</option>
                   <option value="gte">&gt;=</option>
                   <option value="lte">&lt;=</option>
                   <option value="between">사이</option>
-                  <option value="none">없음</option>
                   <option value="any">모두</option>
                 </CFormSelect>
               </CCol>
-              <CCol class="col-4 col-lg-3">
-                <Multiselect
-                  v-if="cond.issue === 'is' || cond.issue === 'exclude'"
-                  v-model="form.issue"
-                  :options="getVersions"
-                  placeholder="업무"
-                  searchable
+              <CCol class="col-4 col-lg-3" id="issue-search">
+                <CFormInput
+                  v-if="cond.issue === 'is'"
+                  v-model="form.id"
+                  placeholder="ID"
+                  size="sm"
+                  @keydown.enter="filterSubmit"
+                />
+                <CFormInput
+                  v-if="cond.issue === 'gte'"
+                  v-model="form.id__gte"
+                  placeholder="이상"
+                  size="sm"
+                  @keydown.enter="filterSubmit"
+                />
+                <CFormInput
+                  v-if="cond.issue === 'lte'"
+                  v-model="form.id__lte"
+                  placeholder="이하"
+                  size="sm"
+                  @keydown.enter="filterSubmit"
+                />
+                <CFormInput
+                  v-if="cond.issue === 'between'"
+                  v-model="form.id__between"
+                  placeholder="10,20"
                   size="sm"
                   @keydown.enter="filterSubmit"
                 />
@@ -415,11 +444,11 @@ onBeforeMount(async () => {
 
             <CRow v-if="searchCond.includes('parent')">
               <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="하위업무" id="precedes_issue" readonly />
+                <CFormCheck checked="true" label="하위업무" id="parent" readonly />
               </CCol>
               <CCol class="col-8 col-lg-3">
                 <Multiselect
-                  v-model="form.precedes_issue"
+                  v-model="form.parent"
                   :options="getIssues"
                   placeholder="하위업무 선택"
                   searchable
@@ -431,11 +460,11 @@ onBeforeMount(async () => {
 
             <CRow v-if="searchCond.includes('follows_issue')">
               <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="선행업무" id="parent_issue" readonly />
+                <CFormCheck checked="true" label="선행업무" id="follows_issue" readonly />
               </CCol>
               <CCol class="col-8 col-lg-3">
                 <Multiselect
-                  v-model="form.parent_issue"
+                  v-model="form.follows_issue"
                   :options="getIssues"
                   placeholder="선행업무 선택"
                   searchable

@@ -77,29 +77,47 @@ export const useIssue = defineStore('issue', () => {
       .catch(err => errorHandle(err.response.data))
 
   const fetchIssueList = async (payload: IssueFilter) => {
-    let url = `/issue/?page=${payload.page ?? 1}`
-    if (payload.status__closed) url += `&status__closed=${payload.status__closed}`
-    if (payload.status) url += `&status=${payload.status}`
-    if (payload.status__exclude) url += `&status__exclude=${payload.status__exclude}`
-    if (payload.project) url += `&project__slug=${payload.project}`
-    if (payload.project__search) url += `&project__search=${payload.project__search}`
-    if (payload.project__exclude) url += `&project__exclude=${payload.project__exclude}`
-    if (payload.tracker) url += `&tracker=${payload.tracker}`
-    if (payload.tracker__exclude) url += `&tracker__exclude=${payload.tracker__exclude}`
-    if (payload.author) url += `&creator=${payload.author}`
-    if (payload.author__exclude) url += `&creator__exclude=${payload.author__exclude}`
-    if (payload.assignee) url += `&assigned_to=${payload.assignee}`
-    if (payload.assignee__exclude) url += `&assigned_to__exclude=${payload.assignee__exclude}`
-    if (payload.assignee__isnull) url += `&assigned_to__isnull=${payload.assignee__isnull}`
-    if (payload.version) url += `&fixed_version=${payload.version}`
-    if (payload.version__exclude) url += `&fixed_version__exclude=${payload.version__exclude}`
-    if (payload.version__isnull) url += `&fixed_version__isnull=${payload.version__isnull}`
-    if (payload.parent) url += `&parent=${payload.parent}`
-    if (payload.parent__subject) url += `&parent__subject=${payload.parent__subject}`
-    if (payload.parent__isnull) url += `&parent__isnull=${payload.parent__isnull}`
+    const params = new URLSearchParams()
+    params.append('page', String(payload.page ?? 1))
+
+    const paramMap: Record<string, string> = {
+      project: 'project__slug',
+      project__search: 'project__search',
+      project__exclude: 'project__exclude',
+      status: 'status',
+      status__closed: 'status__closed',
+      status__exclude: 'status__exclude',
+      tracker: 'tracker',
+      tracker__exclude: 'tracker__exclude',
+      author: 'creator',
+      author__exclude: 'creator__exclude',
+      assignee: 'assigned_to',
+      assignee__exclude: 'assigned_to__exclude',
+      assignee__isnull: 'assigned_to__isnull',
+      version: 'fixed_version',
+      version__exclude: 'fixed_version__exclude',
+      version__isnull: 'fixed_version__isnull',
+      id: 'id',
+      id__gte: 'id__gte',
+      id__lte: 'id__lte',
+      id__between: 'id__between',
+      id__any: 'id__any',
+      parent: 'parent',
+      parent__subject: 'parent__subject',
+      parent__isnull: 'parent__isnull',
+      parent_issue: 'parent_issue',
+      follows_issue: 'follows_issue',
+      precedes_issue: 'precedes_issue',
+    }
+
+    Object.entries(payload).forEach(([key, value]) => {
+      if (value === undefined || value === null || value === '' || key === 'page') return
+      const apiParam = paramMap[key] || key
+      params.append(apiParam, String(value))
+    })
 
     return await api
-      .get(url)
+      .get(`/issue/?${params.toString()}`)
       .then(res => {
         issueList.value = res.data.results
         issueCount.value = res.data.count

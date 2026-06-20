@@ -139,6 +139,12 @@ export interface IssueFilter {
   version?: number | null
   version__exclude?: number | null
   version__isnull?: '0' | '1'
+  id?: number | null
+  id__gte?: number | null
+  id__lte?: number | null
+  id__between?: string // 'ID 범위 예: 10,20'
+  id__none?: string // 'ID 제외목록 예: 1,2,3'
+  id__any?: string // 'ID 포함목록 예: 1,2,3'
   parent__subject?: string
   parent__isnull?: string
   parent_issue?: number | null // 상위업무

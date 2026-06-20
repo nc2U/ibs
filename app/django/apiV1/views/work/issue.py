@@ -23,8 +23,7 @@ class IssueFilter(FilterSet):
     id__gte = NumberFilter(field_name='id', lookup_expr='gte', label='ID-이상')
     id__lte = NumberFilter(field_name='id', lookup_expr='lte', label='ID-이하')
     id__between = CharFilter(method='filter_id_between', label='ID-범위 (예: 10,20)')
-    id__none = CharFilter(method='filter_id_none', label='ID-제외 목록 (예: 1,2,3)')
-    id__any = CharFilter(method='filter_id_any', label='ID-포함 목록 (예: 1,2,3)')
+    id__any = CharFilter(method='filter_id_any', label='ID-모두보기')
 
     parent__subject = CharFilter(field_name='parent__subject', lookup_expr='icontains', label='상위업무-제목')
     parent__isnull = BooleanFilter(field_name='parent', lookup_expr='isnull', label='상위업무-유무')
@@ -36,7 +35,7 @@ class IssueFilter(FilterSet):
     class Meta:
         model = Issue
         fields = ('project__slug', 'status__closed', 'status', 'tracker', 'creator', 'assigned_to',
-                  'fixed_version', 'id', 'id__gte', 'id__lte', 'id__between', 'id__none', 'id__any',
+                  'fixed_version', 'id', 'id__gte', 'id__lte', 'id__between', 'id__any',
                   'parent', 'parent_issue', 'precedes_issue', 'follows_issue',)
 
     @staticmethod
@@ -48,20 +47,8 @@ class IssueFilter(FilterSet):
             return queryset
 
     @staticmethod
-    def filter_id_none(queryset, name, value):
-        try:
-            pks = [int(x.strip()) for x in value.split(',') if x.strip().isdigit()]
-            return queryset.exclude(id__in=pks) if pks else queryset
-        except Exception:
-            return queryset
-
-    @staticmethod
     def filter_id_any(queryset, name, value):
-        try:
-            pks = [int(x.strip()) for x in value.split(',') if x.strip().isdigit()]
-            return queryset.filter(id__in=pks) if pks else queryset.none()
-        except Exception:
-            return queryset.none()
+        return queryset
 
     @staticmethod
     def filter_parent_issue(queryset, name, value):
