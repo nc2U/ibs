@@ -66,8 +66,8 @@ const doneRatio = computed(() => {
   } else return props.issue?.done_ratio
 })
 
-const predecessors = computed(() => props.issue?.outgoing_relations ?? [])
-const successor = computed(() => props.issue?.incoming_relation ?? null)
+const outgoing_relations = computed(() => props.issue?.outgoing_relations ?? [])
+const incoming_relation = computed(() => props.issue?.incoming_relation ?? null)
 
 const onSubmit = (payload: any) => {
   emit('on-submit', payload)
@@ -118,7 +118,7 @@ const goMeeting = () => {
 }
 
 // 지켜보기 / 관심끄기
-const watchControl = (payload: any) => {
+const watchControl = (payload: { watchers: any[]; del_watcher?: number }) => {
   const form = new FormData()
   if (payload.watchers)
     payload.watchers.forEach(val => form.append('watchers', JSON.stringify(val)))
@@ -396,9 +396,9 @@ onBeforeMount(async () => {
         <CCol class="col-10">
           <span class="title mr-2">연결된 업무</span>
           <RelSummary
-            v-if="predecessors.length || successor"
+            v-if="outgoing_relations.length || incoming_relation"
             :issue-pk="issue.pk"
-            :rel-issue-tos="[...predecessors, ...successor]"
+            :rel-issue-tos="[...outgoing_relations, ...incoming_relation]"
           />
         </CCol>
         <CCol class="text-right form-text">
@@ -415,17 +415,16 @@ onBeforeMount(async () => {
       />
 
       <!-- Outgoing relations -->
-      <template v-for="rel in predecessors" :key="rel.pk">
+      <template v-for="rel in outgoing_relations" :key="rel.pk">
         <Index :rel="rel" type="선행업무" @delete-relation="deleteRelation(rel.pk as number)" />
       </template>
 
       <!-- Incoming (reverse) relation -->
-
       <Index
-        v-if="successor"
-        :rel="successor"
+        v-if="incoming_relation"
+        :rel="incoming_relation"
         type="후행업무"
-        @delete-relation="deleteRelation(successor.pk as number)"
+        @delete-relation="deleteRelation(incoming_relation.pk as number)"
       />
       <v-divider v-if="issue.meeting_desc" />
 
