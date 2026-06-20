@@ -31,17 +31,17 @@ def issue_log_delete(sender, instance, **kwargs):
 @receiver(post_save, sender=IssueRelation)
 def issue_relation_create(sender, instance, created, **kwargs):
     if created:
-        details = f"|- **{instance.get_relation_type_display()}** : 에 \
-        *{instance.issue_to.tracker} {instance.issue_to.pk} {instance.issue_to}*이(가) 추가되었습니다."
-        IssueLogEntry.objects.create(issue=instance.issue, action='Updated',
+        details = f"|- **연결된 업무** : 에 \
+        *{instance.target.tracker} {instance.target.pk} {instance.target}*이(가) 추가되었습니다."
+        IssueLogEntry.objects.create(issue=instance.source, action='Updated',
                                      details=details, creator=instance.creator)
 
 
 @receiver(pre_delete, sender=IssueRelation)
 def issue_relation_delete(sender, instance, **kwargs):
-    details = f"|- **{instance.get_relation_type_display()}** : 값이 삭제되었습니다. \
-    (*{instance.issue_to.tracker} {instance.issue_to.pk} {instance.issue_to}*)"
-    IssueLogEntry.objects.create(issue=instance.issue, action='Updated',
+    details = f"|- **연결된 업무** : 값이 삭제되었습니다. \
+    (*{instance.target.tracker} {instance.target.pk} {instance.target}*)"
+    IssueLogEntry.objects.create(issue=instance.source, action='Updated',
                                  details=details, creator=instance.creator)
 
 
