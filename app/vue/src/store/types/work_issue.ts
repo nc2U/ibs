@@ -139,9 +139,12 @@ export interface IssueFilter {
   version?: number | null
   version__exclude?: number | null
   version__isnull?: '0' | '1'
-  parent?: number | string
   parent__subject?: string
   parent__isnull?: string
+  parent_issue?: number | null // 상위업무
+  parent?: number | string // 하위업무
+  follows_issue?: number | null // 선행업무
+  precedes_issue?: number | null // 후속업무
   page?: number
 }
 

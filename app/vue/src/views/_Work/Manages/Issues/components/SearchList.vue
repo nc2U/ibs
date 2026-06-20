@@ -35,14 +35,14 @@ const searchOptions = reactive([
       { value: 'priority', label: '우선순위', disabled: true },
       { value: 'author', label: '작성자' },
       { value: 'assignee', label: '담당자' },
-      { value: 'version', label: '목표버전' },
+      { value: 'version', label: '목표단계' },
       { value: 'category', label: '범주', disabled: true },
       { value: 'done_ratio', label: '진척도', disabled: true },
       { value: 'is_private', label: '비공개', disabled: true },
       { value: 'watcher', label: '업무관람자', disabled: true },
       { value: 'updater', label: '수정자', disabled: true },
       { value: 'last_updater', label: '최근수정자', disabled: true },
-      { value: 'issue', label: '업무', disabled: true },
+      { value: 'issue', label: '업무' },
     ],
   },
   {
@@ -80,27 +80,20 @@ const searchOptions = reactive([
     ],
   },
   {
-    label: '목표버전',
+    label: '목표단계',
     options: [
-      { value: 'version_date', label: '목표버전의 날짜', disabled: true },
-      { value: 'version_status', label: '목표버전의 상태', disabled: true },
+      { value: 'version_date', label: '목표단계의 날짜', disabled: true },
+      { value: 'version_status', label: '목표단계의 상태', disabled: true },
     ],
     disabled: true,
   },
   {
     label: '관계',
     options: [
-      { value: 'related_to', label: '다음 업무와 관련됨:', disabled: true },
-      { value: 'is_duplicate_of', label: '다음 업무와 중복됨:', disabled: true },
-      { value: 'has_duplicate', label: '중복된 업무:', disabled: true },
-      { value: 'blocks', label: '다음 업무의 해결을 막고 있음:', disabled: true },
-      { value: 'blocked_by', label: '다음 업무에 막혀 있음:', disabled: true },
-      { value: 'precedes', label: '다음에 진행할 업무:', disabled: true },
-      { value: 'follows', label: '다음 업무를 우선 진행:', disabled: true },
-      { value: 'copied_to', label: '다음 업무로 복사됨:', disabled: true },
-      { value: 'copied_from', label: '다음 업무로부터 복사됨:', disabled: true },
-      { value: 'parent', label: '상위업무' },
-      { value: 'sub_issues', label: '하위업무', disabled: true },
+      { value: 'parent_issue', label: '상위업무' },
+      { value: 'parent', label: '하위업무' },
+      { value: 'follows_issue', label: '선행업무' },
+      { value: 'precedes_issue', label: '후속업무' },
     ],
   },
 ])
@@ -115,27 +108,33 @@ const cond = ref({
   // name: 'contains',
   // description: 'contains',
   version: 'is' as 'is' | 'exclude' | 'none' | 'any',
-
+  issue: 'is' as 'is' | 'gte' | 'lte' | 'between' | 'none' | 'any',
   parent: 'is' as 'is' | 'contains' | 'none' | 'any',
 })
 
 const route = useRoute()
 const form = ref<IssueFilter>({
+  status__closed: '',
   status: null,
   status__exclude: null,
   project: (route.params.projId as string) ?? '',
+  project__search: '',
+  project__exclude: '',
   tracker: null,
   tracker__exclude: null,
   author: null,
   author__exclude: null,
   assignee: null,
   assignee__exclude: null,
-
-  // name: '',
-  // description: '',
-
   version: null,
-  parent: '' as string | number,
+  version__exclude: null,
+  version__isnull: '0',
+  parent__subject: '',
+  parent__isnull: '0',
+  parent_issue: null, // 상위업무
+  parent: '' as string | number, // 하위업무
+  follows_issue: null, // 선행업무
+  precedes_issue: null, // 후속업무
 })
 
 const filterSubmit = () => {
@@ -165,12 +164,6 @@ const filterSubmit = () => {
     else if (cond.value.assignee === 'none') filterData.assignee__isnull = '1'
     else if (cond.value.assignee === 'any') filterData.assignee__isnull = '0'
 
-  // if (cond.value.is_public === 'is' && searchCond.value.includes('is_public'))
-  //   filterData.is_public = form.value.is_public
-  // else if (cond.value.is_public === 'exclude' && searchCond.value.includes('is_public'))
-  //   filterData.is_public__exclude = form.value.is_public
-  // if (form.value.name) filterData.name = form.value.name
-
   if (searchCond.value.includes('version'))
     if (cond.value.version === 'is') filterData.version = form.value.version
     else if (cond.value.version === 'exclude') filterData.version__exclude = form.value.version
@@ -183,6 +176,10 @@ const filterSubmit = () => {
       filterData.parent__subject = form.value.parent as string
     else if (cond.value.parent === 'none') filterData.parent__isnull = '1'
     else if (cond.value.parent === 'any') filterData.parent__isnull = '0'
+
+  if (form.value.parent_issue) filterData.parent_issue = form.value.parent_issue
+  if (form.value.precedes_issue) filterData.precedes_issue = form.value.precedes_issue
+  if (form.value.follows_issue) filterData.follows_issue = form.value.follows_issue
 
   emit('filter-submit', filterData)
 }
@@ -350,7 +347,7 @@ onBeforeMount(async () => {
 
             <CRow v-if="searchCond.includes('version')">
               <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="목표버전" id="version" readonly />
+                <CFormCheck checked="true" label="목표단계" id="version" readonly />
               </CCol>
               <CCol class="col-4 col-lg-3 col-xl-2">
                 <CFormSelect v-model="cond.version" size="sm">
@@ -365,7 +362,7 @@ onBeforeMount(async () => {
                   v-if="cond.version === 'is' || cond.version === 'exclude'"
                   v-model="form.version"
                   :options="getVersions"
-                  placeholder="목표버전"
+                  placeholder="목표단계"
                   searchable
                   size="sm"
                   @keydown.enter="filterSubmit"
@@ -373,108 +370,96 @@ onBeforeMount(async () => {
               </CCol>
             </CRow>
 
-            <!--            <CRow v-if="searchCond.includes('is_public')">-->
-            <!--              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">-->
-            <!--                <CFormCheck checked="true" label="공개여부" id="is_public" readonly />-->
-            <!--              </CCol>-->
-            <!--              <CCol class="col-4 col-lg-3 col-xl-2">-->
-            <!--                <CFormSelect v-model="cond.is_public" size="sm">-->
-            <!--                  <option value="is">is</option>-->
-            <!--                  <option value="exclude">is not</option>-->
-            <!--                </CFormSelect>-->
-            <!--              </CCol>-->
-            <!--              <CCol class="col-4 col-lg-3">-->
-            <!--                <CFormSelect v-model="form.is_public" size="sm">-->
-            <!--                  <option value="1">예</option>-->
-            <!--                  <option value="0">아니오</option>-->
-            <!--                </CFormSelect>-->
-            <!--              </CCol>-->
-            <!--            </CRow>-->
-
-            <!--            <CRow v-if="searchCond.includes('created')">-->
-            <!--              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">-->
-            <!--                <CFormCheck checked="true" label="등록일자" id="created" readonly />-->
-            <!--              </CCol>-->
-            <!--              <CCol class="col-4 col-lg-3 col-xl-2">-->
-            <!--                <CFormSelect size="sm">-->
-            <!--                  <option value="1">is</option>-->
-            <!--                  <option value="2">&gt;=</option>-->
-            <!--                  <option value="3">&lt;=</option>-->
-            <!--                  <option value="4">between</option>-->
-            <!--                  <option value="5">less than days ago</option>-->
-            <!--                  <option value="6">more than days ago</option>-->
-            <!--                  <option value="7">is the past</option>-->
-            <!--                  <option value="8">days ago</option>-->
-            <!--                  <option value="9">today</option>-->
-            <!--                  <option value="10">yesterday</option>-->
-            <!--                  <option value="11">this week</option>-->
-            <!--                  <option value="12">last week</option>-->
-            <!--                  <option value="13">last 2 weeks</option>-->
-            <!--                  <option value="14">this month</option>-->
-            <!--                  <option value="15">last month</option>-->
-            <!--                  <option value="16">this year</option>-->
-            <!--                  <option value="17">none</option>-->
-            <!--                  <option value="18">any</option>-->
-            <!--                </CFormSelect>-->
-            <!--              </CCol>-->
-            <!--              <CCol class="col-4 col-lg-3 col-xl-2">-->
-            <!--                <DatePicker size="sm" />-->
-            <!--              </CCol>-->
-            <!--            </CRow>-->
-
-            <CRow v-if="searchCond.includes('parent')">
+            <CRow v-if="searchCond.includes('issue')">
               <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="상위업무" id="parent" readonly />
+                <CFormCheck checked="true" label="업무" id="issue" readonly />
               </CCol>
               <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.parent" size="sm">
+                <CFormSelect v-model="cond.version" size="sm">
                   <option value="is">이다</option>
-                  <option value="contains">포함되는 키워드</option>
+                  <option value="gte">&gt;=</option>
+                  <option value="lte">&lt;=</option>
+                  <option value="between">사이</option>
                   <option value="none">없음</option>
                   <option value="any">모두</option>
                 </CFormSelect>
               </CCol>
-              <CCol
-                v-if="cond.parent === 'is' || cond.parent === 'contains'"
-                class="col-4 col-lg-3"
-              >
+              <CCol class="col-4 col-lg-3">
                 <Multiselect
-                  v-if="cond.parent === 'is'"
-                  v-model="form.parent"
-                  :options="getIssues"
-                  placeholder="상위 업무"
+                  v-if="cond.issue === 'is' || cond.issue === 'exclude'"
+                  v-model="form.issue"
+                  :options="getVersions"
+                  placeholder="업무"
                   searchable
-                  size="sm"
-                  @keydown.enter="filterSubmit"
-                />
-                <CFormInput
-                  v-if="cond.parent === 'contains'"
-                  v-model="form.parent"
                   size="sm"
                   @keydown.enter="filterSubmit"
                 />
               </CCol>
             </CRow>
 
-            <!--            <CRow v-if="searchCond.includes('description')">-->
-            <!--              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">-->
-            <!--                <CFormCheck checked="true" label="설명" id="description" readonly />-->
-            <!--              </CCol>-->
-            <!--              <CCol class="col-4 col-lg-3 col-xl-2">-->
-            <!--                <CFormSelect v-model="cond.description" size="sm">-->
-            <!--                  <option value="contains">contains</option>-->
-            <!--                  <option value="2">contains any of</option>-->
-            <!--                  <option value="3">doesn't contain</option>-->
-            <!--                  <option value="4">starts with</option>-->
-            <!--                  <option value="5">ends with</option>-->
-            <!--                  <option value="6">none</option>-->
-            <!--                  <option value="7">any</option>-->
-            <!--                </CFormSelect>-->
-            <!--              </CCol>-->
-            <!--              <CCol class="col-4 col-lg-3">-->
-            <!--                <CFormInput v-model="form.description" size="sm" />-->
-            <!--              </CCol>-->
-            <!--            </CRow>-->
+            <CRow v-if="searchCond.includes('parent_issue')">
+              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
+                <CFormCheck checked="true" label="상위업무" id="parent_issue" readonly />
+              </CCol>
+              <CCol class="col-8 col-lg-3">
+                <Multiselect
+                  v-model="form.parent_issue"
+                  :options="getIssues"
+                  placeholder="상위업무 선택"
+                  searchable
+                  size="sm"
+                  @keydown.enter="filterSubmit"
+                />
+              </CCol>
+            </CRow>
+
+            <CRow v-if="searchCond.includes('parent')">
+              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
+                <CFormCheck checked="true" label="하위업무" id="precedes_issue" readonly />
+              </CCol>
+              <CCol class="col-8 col-lg-3">
+                <Multiselect
+                  v-model="form.precedes_issue"
+                  :options="getIssues"
+                  placeholder="하위업무 선택"
+                  searchable
+                  size="sm"
+                  @keydown.enter="filterSubmit"
+                />
+              </CCol>
+            </CRow>
+
+            <CRow v-if="searchCond.includes('follows_issue')">
+              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
+                <CFormCheck checked="true" label="선행업무" id="parent_issue" readonly />
+              </CCol>
+              <CCol class="col-8 col-lg-3">
+                <Multiselect
+                  v-model="form.parent_issue"
+                  :options="getIssues"
+                  placeholder="선행업무 선택"
+                  searchable
+                  size="sm"
+                  @keydown.enter="filterSubmit"
+                />
+              </CCol>
+            </CRow>
+
+            <CRow v-if="searchCond.includes('precedes_issue')">
+              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
+                <CFormCheck checked="true" label="후속업무" id="precedes_issue" readonly />
+              </CCol>
+              <CCol class="col-8 col-lg-3">
+                <Multiselect
+                  v-model="form.precedes_issue"
+                  :options="getIssues"
+                  placeholder="후속업무 선택"
+                  searchable
+                  size="sm"
+                  @keydown.enter="filterSubmit"
+                />
+              </CCol>
+            </CRow>
           </CCol>
 
           <CCol md="4" class="text-right">

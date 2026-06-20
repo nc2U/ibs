@@ -1,5 +1,5 @@
 from django.db.models import Q
-from django_filters.rest_framework import FilterSet, BooleanFilter, CharFilter
+from django_filters.rest_framework import FilterSet, BooleanFilter, CharFilter, NumberFilter
 from rest_framework import viewsets
 from rest_framework.views import APIView
 
@@ -16,15 +16,76 @@ class IssueFilter(FilterSet):
     creator__exclude = CharFilter(field_name='creator', exclude=True, label='작성자-제외')
     assigned_to__exclude = CharFilter(field_name='assigned_to', exclude=True, label='담당자-제외')
     assigned_to__isnull = BooleanFilter(field_name='assigned_to', lookup_expr='isnull', label='담당자-유무')
-    fixed_version__exclude = CharFilter(field_name='fixed_version', exclude=True, label='목표버전-제외')
-    fixed_version__isnull = BooleanFilter(field_name='fixed_version', lookup_expr='isnull', label='목표버전-유무')
+    fixed_version__exclude = CharFilter(field_name='fixed_version', exclude=True, label='목표단계-제외')
+    fixed_version__isnull = BooleanFilter(field_name='fixed_version', lookup_expr='isnull', label='목표단계-유무')
+
+    id = NumberFilter(field_name='id', lookup_expr='exact', label='ID-일치')
+    id__gte = NumberFilter(field_name='id', lookup_expr='gte', label='ID-이상')
+    id__lte = NumberFilter(field_name='id', lookup_expr='lte', label='ID-이하')
+    id__between = CharFilter(method='filter_id_between', label='ID-범위 (예: 10,20)')
+    id__none = CharFilter(method='filter_id_none', label='ID-제외 목록 (예: 1,2,3)')
+    id__any = CharFilter(method='filter_id_any', label='ID-포함 목록 (예: 1,2,3)')
+
     parent__subject = CharFilter(field_name='parent__subject', lookup_expr='icontains', label='상위업무-제목')
     parent__isnull = BooleanFilter(field_name='parent', lookup_expr='isnull', label='상위업무-유무')
+    parent_issue = NumberFilter(method='filter_parent_issue', label='상위업무-검색')
+    parent = NumberFilter(method='filter_parent', label='하위업무-검색')
+    follows_issue = NumberFilter(method='filter_follows', label='선행업무-검색')
+    precedes_issue = NumberFilter(method='filter_precedes', label='후속업무-검색')
 
     class Meta:
         model = Issue
-        fields = ('project__slug', 'status__closed', 'status', 'tracker', 'creator',
-                  'assigned_to', 'fixed_version', 'parent')
+        fields = ('project__slug', 'status__closed', 'status', 'tracker', 'creator', 'assigned_to',
+                  'fixed_version', 'id', 'id__gte', 'id__lte', 'id__between', 'id__none', 'id__any',
+                  'parent', 'parent_issue', 'precedes_issue', 'follows_issue',)
+
+    @staticmethod
+    def filter_id_between(queryset, name, value):
+        try:
+            start, end = map(int, value.split(','))
+            return queryset.filter(id__range=(start, end))
+        except (ValueError, AttributeError):
+            return queryset
+
+    @staticmethod
+    def filter_id_none(queryset, name, value):
+        try:
+            pks = [int(x.strip()) for x in value.split(',') if x.strip().isdigit()]
+            return queryset.exclude(id__in=pks) if pks else queryset
+        except Exception:
+            return queryset
+
+    @staticmethod
+    def filter_id_any(queryset, name, value):
+        try:
+            pks = [int(x.strip()) for x in value.split(',') if x.strip().isdigit()]
+            return queryset.filter(id__in=pks) if pks else queryset.none()
+        except Exception:
+            return queryset.none()
+
+    @staticmethod
+    def filter_parent_issue(queryset, name, value):
+        try:
+            parent = Issue.objects.get(pk=value).parent
+            return queryset.filter(pk=parent.pk) if parent else queryset.none()
+        except Issue.DoesNotExist:
+            return queryset.none()
+
+    @staticmethod
+    def filter_parent(queryset, name, value):
+        return queryset.filter(parent=value)
+
+    @staticmethod
+    def filter_precedes(queryset, name, value):
+        # 내가 선행하는 업무들 (value가 issue인 것들)
+        pks = IssueRelation.objects.filter(issue_id=value).values_list('issue_to_id', flat=True)
+        return queryset.filter(pk__in=pks)
+
+    @staticmethod
+    def filter_follows(queryset, name, value):
+        # 내가 후속하는 업무들 (value가 issue_to인 것들)
+        pks = IssueRelation.objects.filter(issue_to_id=value).values_list('issue_id', flat=True)
+        return queryset.filter(pk__in=pks)
 
     def filter_queryset(self, queryset):
         for name, value in self.form.cleaned_data.items():
