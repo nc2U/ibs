@@ -54,7 +54,7 @@ const downloadPdf = (event: Event) => {
     </v-chip>
   </CTableDataCell>
   <CTableDataCell>{{ meeting.category_desc?.name }}</CTableDataCell>
-  <CTableDataCell class="text-left">
+  <CTableDataCell class="text-left" :class="{ closed: meeting.status === '3' }">
     <router-link to="">{{ meeting.title }}</router-link>
   </CTableDataCell>
   <CTableDataCell>{{ meetingDate }}</CTableDataCell>
