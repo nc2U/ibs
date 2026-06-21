@@ -227,7 +227,7 @@ const refConfirmModal = ref()
             <CRow class="mb-2">
               <CCol class="title" sm="4">회의 일시 :</CCol>
               <CCol sm="8">
-                {{ meeting.meeting_date ? timeFormat(meeting.meeting_date) : '-' }}
+                {{ meeting.meeting_date ? timeFormat(meeting.meeting_date, 'min') : '-' }}
               </CCol>
             </CRow>
             <CRow class="mb-2">
@@ -281,7 +281,10 @@ const refConfirmModal = ref()
                 <v-icon color="success" icon="mdi-check-circle" size="small" class="mr-1" />
                 <span class="fw-bold text-success">주요 결정 사항</span>
               </div>
-              <div class="markdown-content bg-transparent" v-html="markdownRender(meeting.decisions)"></div>
+              <div
+                class="markdown-content bg-transparent"
+                v-html="markdownRender(meeting.decisions)"
+              ></div>
             </CCallout>
           </CCol>
           <CCol md="6" v-if="meeting.action_items">
@@ -295,7 +298,10 @@ const refConfirmModal = ref()
                 />
                 <span class="fw-bold text-warning">후속 조치 사항</span>
               </div>
-              <div class="markdown-content bg-transparent" v-html="markdownRender(meeting.action_items)"></div>
+              <div
+                class="markdown-content bg-transparent"
+                v-html="markdownRender(meeting.action_items)"
+              ></div>
             </CCallout>
           </CCol>
         </CRow>
