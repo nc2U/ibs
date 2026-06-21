@@ -164,7 +164,7 @@ class IssueRelationViewSet(viewsets.ModelViewSet):
     serializer_class = IssueRelationSerializer
     permission_classes = (permissions.IsAuthenticated,)
     pagination_class = PageNumberPaginationTwenty
-    filterset_fields = ('issue',)
+    filterset_fields = ('source',)
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)

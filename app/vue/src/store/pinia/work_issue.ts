@@ -183,12 +183,12 @@ export const useIssue = defineStore('issue', () => {
       .then(res => (issueRelationList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
-  const createIssueRelation = (payload: IssueRelation) =>
+  const createIssueRelation = (payload: any) =>
     api
       .post(`/issue-relation/`, payload)
       .then(async res => {
-        await fetchIssue(res.data.issue)
-        await logStore.fetchIssueLogList({ issue: res.data.issue })
+        await fetchIssue(res.data.source.pk)
+        await logStore.fetchIssueLogList({ issue: res.data.source.pk })
         message()
       })
       .catch(err => errorHandle(err.response.data))

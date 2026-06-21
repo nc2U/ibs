@@ -60,7 +60,7 @@ class IssueInIssueSerializer(serializers.ModelSerializer):
 
 
 class IssueRelationInIssueSerializer(serializers.ModelSerializer):
-    issue = IssueInIssueSerializer(source='issue_to', read_only=True)
+    issue = IssueInIssueSerializer(source='target', read_only=True)
 
     class Meta:
         model = IssueRelation
@@ -68,7 +68,7 @@ class IssueRelationInIssueSerializer(serializers.ModelSerializer):
 
 
 class IssueRelationIncomingSerializer(serializers.ModelSerializer):
-    issue = IssueInIssueSerializer(read_only=True)
+    issue = IssueInIssueSerializer(source='source', read_only=True)
 
     class Meta:
         model = IssueRelation
@@ -248,6 +248,7 @@ class IssueCountByMemberSerializer(serializers.Serializer):
 
 class IssueRelationSerializer(serializers.ModelSerializer):
     target = IssueInIssueSerializer(read_only=True)
+    source = IssueInIssueSerializer(read_only=True)
 
     class Meta:
         model = IssueRelation
@@ -257,12 +258,11 @@ class IssueRelationSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         target_pk = self.initial_data.get('target', None)
         target = Issue.objects.get(pk=target_pk) if target_pk else None
-        try:
-            # validated_data에 이미 source가 있다면 그 값을 사용하고,
-            # 없다면 initial_data에서 가져오도록 보완
-            source_pk = validated_data.get('source') or self.initial_data.get('source')
-            source = Issue.objects.get(pk=source_pk.pk if hasattr(source_pk, 'pk') else source_pk)
 
+        source_pk = self.initial_data.get('source', None)
+        source = Issue.objects.get(pk=source_pk) if source_pk else None
+
+        try:
             return IssueRelation.objects.create(
                 source=source,
                 target=target,
