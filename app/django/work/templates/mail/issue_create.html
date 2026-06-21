@@ -80,14 +80,16 @@
       <span>{{ instance.status.name }}</span>
     </td>
   </tr>
+  {% if instance.project.versions.all %}
   <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
     <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
-      <strong>목표버전</strong>
+      <strong>목표단계</strong>
     </td>
     <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
       <span>{{ instance.fixed_version|default:"" }}</span>
     </td>
   </tr>
+  {% endif %}
   <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
     <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
       <strong>담당</strong>
