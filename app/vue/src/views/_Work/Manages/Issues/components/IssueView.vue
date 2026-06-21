@@ -403,14 +403,6 @@ onBeforeMount(async () => {
         </CCol>
       </CRow>
 
-      <AddRelationForm
-        v-if="addRIssue"
-        :issue-pk="issue.pk"
-        :get-issues="getIssues"
-        @add-rel-issue="addRelIssue"
-        @add-form-ctl="addFormCtl"
-      />
-
       <!-- Outgoing relations -->
       <template v-for="rel in issue.outgoing_relations" :key="rel.pk">
         <Index :rel="rel" type="선행업무" @delete-relation="deleteRelation(rel.pk as number)" />
@@ -423,6 +415,16 @@ onBeforeMount(async () => {
         type="후행업무"
         @delete-relation="deleteRelation(issue.incoming_relation.pk as number)"
       />
+
+      <AddRelationForm
+        v-if="addRIssue"
+        :issue-pk="issue.pk"
+        :get-issues="getIssues"
+        class="mt-4"
+        @add-rel-issue="addRelIssue"
+        @add-form-ctl="addFormCtl"
+      />
+
       <v-divider v-if="issue.meeting_desc" />
 
       <CRow v-if="issue.meeting_desc">

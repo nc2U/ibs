@@ -3,7 +3,6 @@ import Multiselect from '@vueform/multiselect'
 import { type PropType, ref } from 'vue'
 import { isValidate } from '@/utils/helper'
 import { btnLight } from '@/utils/cssMixins.ts'
-import type { IssueRelation } from '@/store/types/work_issue.ts'
 
 const props = defineProps({
   issuePk: { type: Number, required: true },
@@ -52,12 +51,12 @@ const addRelIssue = (event: Event) => {
     <CRow class="mt-2">
       <CCol sm="4" md="3" lg="2">
         <CFormSelect v-model="direction">
-          <option value="predecessor">선행 업무 (이 업무보다 먼저 완료할 업무)</option>
-          <option value="successor">후속 업무 (이 업무보다 나중에 시작할 업무)</option>
+          <option value="successor">후속 업무 (다음에 진행할 업무)</option>
+          <option value="predecessor">선행 업무 (다음 업무를 우선 진행)</option>
         </CFormSelect>
       </CCol>
       <CFormLabel for="colFormLabel" class="col-sm-1 col-form-label text-right">
-        업무 #
+        업무 :
       </CFormLabel>
       <CCol sm="4" md="3" lg="2">
         <Multiselect
