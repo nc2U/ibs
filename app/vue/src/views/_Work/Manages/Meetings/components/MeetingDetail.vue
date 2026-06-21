@@ -45,6 +45,12 @@ const confirmAlertColor = computed(() => {
   return diff > 10 ? 'danger' : 'warning'
 })
 
+const completedIssues = computed(() => meeting.value?.issues.filter(i => i.closed).length ?? 0)
+const completedRatio = computed(() => {
+  const total = meeting.value?.issues.length ?? 0
+  return total === 0 ? 0 : Math.round((completedIssues.value / total) * 100)
+})
+
 const fetchMeeting = async (pk: number) => {
   await meetingStore.fetchMeeting(pk)
   if (meeting.value?.project_desc) {
@@ -233,6 +239,14 @@ const refConfirmModal = ref()
                   {{ meeting.status_display }}
                 </v-chip>
 
+                <v-badge
+                  v-if="meeting.issues?.length"
+                  color="info"
+                  inline
+                  :content="`업무 ${completedIssues}/${meeting.issues.length}`"
+                  class="ml-1"
+                />
+
                 <v-chip
                   v-if="needConfirm"
                   :color="confirmAlertColor"
@@ -240,7 +254,7 @@ const refConfirmModal = ref()
                   variant="flat"
                   class="ml-1"
                 >
-                  상태를 확정으로 변경하세요.
+                  확정 필요
                 </v-chip>
               </CCol>
             </CRow>
@@ -254,7 +268,7 @@ const refConfirmModal = ref()
               </CCol>
             </CRow>
             <CRow class="mb-2">
-              <CCol class="title" sm="4">참석자 :</CCol>
+              <CCol class="title" sm="4">참 석 자 :</CCol>
               <CCol sm="8">
                 <v-chip
                   v-for="user in meeting.attendees_desc"
@@ -267,6 +281,21 @@ const refConfirmModal = ref()
                 </v-chip>
                 <div v-if="meeting.other_attendees" class="text-muted small mt-1">
                   (외부: {{ meeting.other_attendees }})
+                </div>
+              </CCol>
+            </CRow>
+            <CRow class="mb-2" v-if="meeting.issues?.length">
+              <CCol class="title" sm="4">관련 업무 :</CCol>
+              <CCol sm="8">
+                완료 {{ completedIssues }}건 / 전체 {{ meeting.issues.length }}건 ({{
+                  completedRatio
+                }}% 완료)
+                <div style="width: 182px">
+                  <v-progress-linear
+                    :model-value="completedRatio"
+                    height="6"
+                    :color="completedRatio === 100 ? 'success' : 'primary'"
+                  />
                 </div>
               </CCol>
             </CRow>
@@ -340,6 +369,11 @@ const refConfirmModal = ref()
                   class="mr-1"
                 />
                 관련 업무
+                {{
+                  meeting.issues?.length
+                    ? `[ ${completedIssues} / ${meeting.issues.length} 완료 ]`
+                    : ''
+                }}
               </h6>
             </CCol>
             <CCol class="text-right">

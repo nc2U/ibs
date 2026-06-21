@@ -154,21 +154,23 @@ class IssueSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        instance.__dict__.update(**validated_data)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
         if self.initial_data.get('project', None):
             instance.project = IssueProject.objects.get(slug=self.initial_data.get('project', None))
         if self.initial_data.get('tracker'):
             instance.tracker = Tracker.objects.get(pk=self.initial_data.get('tracker'))
         if self.initial_data.get('status'):
             instance.status = IssueStatus.objects.get(pk=self.initial_data.get('status'))
-        if instance.closed is None and instance.status.closed:
-            instance.closed = timezone.localtime()
-        elif instance.closed is not None and not instance.status.closed:
-            instance.closed = None
+            if instance.status.closed:
+                if not instance.closed:
+                    instance.closed = timezone.localtime()
+            else:
+                instance.closed = None
         if self.initial_data.get('priority'):
             instance.priority = CodeIssuePriority.objects.get(pk=self.initial_data.get('priority'))
-        if self.initial_data.get('fixed_version'):
-            instance.fixed_version = Version.objects.get(pk=self.initial_data.get('fixed_version'))
+        fixed_version = self.initial_data.get('fixed_version')
+        instance.fixed_version = Version.objects.get(pk=fixed_version) if fixed_version else None
         assigned_to = self.initial_data.get('assigned_to', None)
         instance.assigned_to = User.objects.get(pk=assigned_to) if assigned_to else None
 
@@ -234,7 +236,8 @@ class IssueSerializer(serializers.ModelSerializer):
             file = IssueFile.objects.get(pk=del_file)
             file.delete()
 
-        return super().update(instance, validated_data)
+        instance.save()
+        return instance
 
 
 class IssueCountByMemberSerializer(serializers.Serializer):
