@@ -33,7 +33,7 @@ const form = ref({
   pk: null as number | null,
   project: 6 as number,
   category: null as number | null,
-  status: '1' as '1' | '2' | '3',
+  status: '1' as '1' | '2' | '3' | '4',
   title: '',
   agenda: '',
   content: '',
