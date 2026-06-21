@@ -3,7 +3,7 @@ import { computed, type PropType } from 'vue'
 import { useRoute } from 'vue-router'
 import { useMeeting } from '@/store/pinia/work_meeting.ts'
 import type { Meeting } from '@/store/types/work_meeting.ts'
-import { diffDate, getMeetingStatusColor } from '@/utils/baseMixins.ts'
+import { timeFormat, diffDate, getMeetingStatusColor } from '@/utils/baseMixins.ts'
 
 const props = defineProps({
   meeting: { type: Object as PropType<Meeting>, required: true },
@@ -71,7 +71,7 @@ const downloadPdf = (event: Event) => {
   <CTableDataCell class="text-left" :class="{ closed: meeting.status === '4' }">
     <router-link to="">{{ meeting.title }}</router-link>
   </CTableDataCell>
-  <CTableDataCell>{{ meetingDate }}</CTableDataCell>
+  <CTableDataCell>{{ timeFormat(meeting.meeting_date as string, 'min') }}</CTableDataCell>
   <CTableDataCell>{{ meeting.creator.username }}</CTableDataCell>
   <CTableDataCell>{{ totalAttendees }}</CTableDataCell>
   <CTableDataCell>{{ createdDate }}</CTableDataCell>
