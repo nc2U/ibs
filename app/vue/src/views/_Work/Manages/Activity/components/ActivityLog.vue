@@ -44,7 +44,7 @@ const getIcon = (sort: string, progress: boolean) => {
             "
             class="mr-1"
           />
-          <span class="form-text underline mr-2">{{ timeFormat(act.timestamp, true) }}</span>
+          <span class="form-text underline mr-2">{{ timeFormat(act.timestamp, 'short') }}</span>
 
           <span v-if="!$route.params.projId || act.project?.slug !== $route.params.projId">
             {{ act.project?.name || '회사 본사' }} -

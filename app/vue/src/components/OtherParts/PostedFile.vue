@@ -125,7 +125,7 @@ const fileDelete = () => {
           </td>
           <td class="px-2">{{ file.description }}</td>
           <td class="text-secondary">
-            <span>{{ file.creator }}, {{ timeFormat(file.created as string, false, '/') }}</span>
+            <span>{{ file.creator }}, {{ timeFormat(file.created as string, 'full', '/') }}</span>
             <span class="ml-2">
               <router-link to="#" @click.prevent="editFormSet(file.pk as number)">
                 <v-icon icon="mdi-pencil" size="16" color="secondary" />

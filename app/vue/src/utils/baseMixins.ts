@@ -41,7 +41,11 @@ export const dateFormat = (date: Date | string, split: string = '-') => {
 export const getToday = () =>
   new Date(new Date().getTime() + 32400000).toISOString().replace(/T.*$/, '')
 
-export const timeFormat = (date: Date | string | number, short = false, split: string = '-') => {
+export const timeFormat = (
+  date: Date | string | number,
+  dp: 'short' | 'min' | 'full' = 'full',
+  split: string = '-',
+) => {
   const d = new Date(date instanceof Date ? date : new Date(date))
   const yyyy = d.getFullYear()
   const mm = String(d.getMonth() + 1).padStart(2, '0')
@@ -50,7 +54,8 @@ export const timeFormat = (date: Date | string | number, short = false, split: s
   const min = String(d.getMinutes()).padStart(2, '0')
   const ss = String(d.getSeconds()).padStart(2, '0')
 
-  if (short) return `${hh}:${min}`
+  if (dp === 'short') return `${hh}:${min}`
+  if (dp === 'min') return `${yyyy}${split}${mm}${split}${dd} ${hh}:${min}`
   return `${yyyy}${split}${mm}${split}${dd} ${hh}:${min}:${ss}`
 }
 

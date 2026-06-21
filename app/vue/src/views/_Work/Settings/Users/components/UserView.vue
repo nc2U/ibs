@@ -60,7 +60,7 @@ const issueProjects = computed(() => props.issueProjects.slice())
             <li>등록시각 : {{ user ? dateFormat(user.date_joined, '/') : '' }}</li>
             <li>
               마지막 로그인 :
-              {{ user?.last_login ? timeFormat(user.last_login, false, '/') : '' }}
+              {{ user?.last_login ? timeFormat(user.last_login, 'full', '/') : '' }}
               {{ user?.last_login ? `(${elapsedTime(user?.last_login)})` : '' }}
             </li>
           </ul>

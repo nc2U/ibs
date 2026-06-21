@@ -5,11 +5,11 @@ import { useAccount } from '@/store/pinia/account'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useMeeting } from '@/store/pinia/work_meeting.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
-import { dateFormat } from '@/utils/baseMixins.ts'
+import { timeFormat } from '@/utils/baseMixins.ts'
 import { isValidate } from '@/utils/helper.ts'
-import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import MdEditor from '@/components/MdEditor/Index.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
+import DateTimePicker from '@/components/DatePicker/DateTimePicker.vue'
 import IssueForm from '@/views/_Work/Manages/Issues/components/IssueForm.vue'
 
 const route = useRoute()
@@ -39,7 +39,7 @@ const form = ref({
   content: '',
   decisions: '',
   action_items: '',
-  meeting_date: dateFormat(new Date()),
+  meeting_date: timeFormat(new Date(), 'min'),
   attendees: [] as number[],
   other_attendees: '',
 })
@@ -146,7 +146,7 @@ const fetchMeeting = async (pk: number) => {
       content: meeting.value.content,
       decisions: meeting.value.decisions,
       action_items: meeting.value.action_items,
-      meeting_date: meeting.value.meeting_date ? dateFormat(meeting.value.meeting_date) : '',
+      meeting_date: meeting.value.meeting_date ? timeFormat(meeting.value.meeting_date, 'min') : '',
       attendees: meeting.value.attendees,
       other_attendees: meeting.value.other_attendees,
     }
@@ -411,7 +411,7 @@ const onCategorySubmit = (event: Event) => {
                 회의일시
               </CFormLabel>
               <CCol sm="8">
-                <DatePicker
+                <DateTimePicker
                   v-model="form.meeting_date"
                   id="meeting_date"
                   placeholder="회의 일시 선택"
@@ -483,7 +483,7 @@ const onCategorySubmit = (event: Event) => {
 
         <CRow class="mt-4">
           <CCol class="text-right">
-            <v-btn type="submit" color="primary" variant="flat">
+            <v-btn type="submit" :color="form.pk ? 'success' : 'primary'" variant="flat">
               {{ form.pk ? '확인' : '저장' }}
             </v-btn>
             <v-btn color="secondary" variant="flat" class="ml-2" @click="router.back()">취소</v-btn>

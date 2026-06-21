@@ -29,7 +29,7 @@ defineProps({ docs: { type: Object as PropType<Docs>, required: true } })
         </CCol>
         <CCol sm="4" class="text-right text-grey small">
           <v-icon icon="mdi-clock-outline" size="x-small" class="mr-1" />
-          {{ timeFormat(docs.created as string, true, '/') }}
+          {{ timeFormat(docs.created as string, 'short', '/') }}
         </CCol>
       </CRow>
       <CRow v-if="docs.content" class="mt-2">

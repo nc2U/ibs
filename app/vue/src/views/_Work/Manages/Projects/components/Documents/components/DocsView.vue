@@ -60,7 +60,7 @@ onMounted(() => {
         <v-icon icon="mdi-chevron-right" size="small" class="mx-1" />
         <span>{{ docs.cate_name }}</span>
         <v-icon icon="mdi-calendar-range" size="small" class="ml-3 mr-1" />
-        <span>{{ timeFormat(docs.created as string, true, '/') }}</span>
+        <span>{{ timeFormat(docs.created as string, 'short', '/') }}</span>
       </CCol>
     </CRow>
 
