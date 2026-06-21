@@ -50,7 +50,7 @@ const passwordReset = (payload: { email: string }) => {
               <div class="mt-4 pt-3 border-top text-right">
                 <span class="mr-2 small text-muted">시스템이 처음이신가요?</span>
                 <a
-                  href="https://nc2u.github.io/ibs/"
+                  href="https://docs.dyibs.com/"
                   target="_blank"
                   class="small text-decoration-none"
                 >
