@@ -239,14 +239,6 @@ const refConfirmModal = ref()
                   {{ meeting.status_display }}
                 </v-chip>
 
-                <v-badge
-                  v-if="meeting.issues?.length"
-                  color="info"
-                  inline
-                  :content="`업무 ${completedIssues}/${meeting.issues.length}`"
-                  class="ml-1"
-                />
-
                 <v-chip
                   v-if="needConfirm"
                   :color="confirmAlertColor"
@@ -369,11 +361,7 @@ const refConfirmModal = ref()
                   class="mr-1"
                 />
                 관련 업무
-                {{
-                  meeting.issues?.length
-                    ? `[ ${completedIssues} / ${meeting.issues.length} 완료 ]`
-                    : ''
-                }}
+                {{ meeting.issues?.length ? `(${meeting.issues.length} 건)` : '' }}
               </h6>
             </CCol>
             <CCol class="text-right">
