@@ -30,9 +30,10 @@ class Meeting(models.Model):
                                  related_name='meetings')
 
     MEETING_STATUS_CHOICES = (
-        ('1', '준비중'),
-        ('2', '완료됨'),
-        ('3', '취소됨'),
+        ('1', '준비'),
+        ('2', '종료'),
+        ('3', '확정'),
+        ('4', '취소'),
     )
     status = models.CharField('회의 상태', max_length=1, choices=MEETING_STATUS_CHOICES, default='1')
     title = models.CharField('회의 제목', max_length=255)

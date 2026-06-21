@@ -23,7 +23,7 @@ export interface Meeting {
   project_desc: SimpleProject
   category: number | null
   category_desc: MeetingCategory | null
-  status: '1' | '2' | '3'
+  status: '1' | '2' | '3' | '4'
   title: string
   agenda: string
   content: string

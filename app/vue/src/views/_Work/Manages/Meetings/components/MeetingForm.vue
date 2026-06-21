@@ -442,9 +442,10 @@ const onCategorySubmit = (event: Event) => {
               <CFormLabel for="status" class="col-sm-4 col-form-label text-right">상태</CFormLabel>
               <CCol sm="8">
                 <CFormSelect v-model="form.status" id="status" required>
-                  <option value="1">준비중</option>
-                  <option value="2">완료됨</option>
-                  <option value="3">취소됨</option>
+                  <option value="1">준비</option>
+                  <option value="2">종료</option>
+                  <option value="3">확정</option>
+                  <option value="4">취소</option>
                 </CFormSelect>
               </CCol>
             </CRow>
