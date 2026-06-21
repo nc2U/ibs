@@ -24,6 +24,7 @@ export interface Meeting {
   category: number | null
   category_desc: MeetingCategory | null
   status: '1' | '2' | '3' | '4'
+  status_display: '준비' | '종료' | '확정' | '취소'
   title: string
   agenda: string
   content: string

@@ -102,3 +102,10 @@ export const humanizeFileSize = (bytes?: number, decimals = 2) => {
 
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i]
 }
+
+export const getMeetingStatusColor = (status: string): string => {
+  if (status === '1') return 'info'
+  if (status === '2') return 'primary'
+  if (status === '3') return 'success'
+  return 'secondary'
+}

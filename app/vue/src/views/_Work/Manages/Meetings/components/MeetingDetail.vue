@@ -7,6 +7,7 @@ import { useWork } from '@/store/pinia/work_project.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
 import { elapsedTime, timeFormat } from '@/utils/baseMixins.ts'
 import { markdownRender } from '@/utils/helper.ts'
+import { diffDate, getMeetingStatusColor } from '@/utils/baseMixins.ts'
 import FileDisplay from '@/views/_Work/components/atomics/FileDisplay.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
@@ -24,18 +25,24 @@ const statusList = computed(() => issueStore.statusList)
 const priorityList = computed(() => issueStore.priorityList)
 const getIssues = computed(() => issueStore.getIssues)
 
-const statusColor = computed(() => {
-  if (meeting.value?.status === '1') return 'info'
-  if (meeting.value?.status === '2') return 'success'
-  if (meeting.value?.status === '3') return 'secondary'
-  return 'secondary'
+const statusColor = computed(() => getMeetingStatusColor(meeting.value?.status ?? '4'))
+
+const needConfirm = computed(() => {
+  return (
+    meeting.value?.status === '2' &&
+    meeting.value?.meeting_date &&
+    diffDate(meeting.value.meeting_date) > 5
+  )
 })
 
-const statusText = computed(() => {
-  if (meeting.value?.status === '1') return '준비중'
-  if (meeting.value?.status === '2') return '완료됨'
-  if (meeting.value?.status === '3') return '취소됨'
-  return '-'
+const confirmAlertColor = computed(() => {
+  const meetingDate = meeting.value?.meeting_date
+
+  if (!meetingDate) return ''
+
+  const diff = diffDate(meetingDate)
+
+  return diff > 10 ? 'danger' : 'warning'
 })
 
 const fetchMeeting = async (pk: number) => {
@@ -158,7 +165,13 @@ const refConfirmModal = ref()
         <h5>
           <v-icon icon="mdi-account-group" class="mr-2" />
           <span>회의록 #{{ meeting.pk }}</span>
-          <v-badge :color="statusColor" :content="statusText" inline rounded="1" class="ml-2" />
+          <v-badge
+            :color="statusColor"
+            :content="meeting.status_display"
+            inline
+            rounded="1"
+            class="ml-2"
+          />
         </h5>
       </CCol>
 
@@ -217,7 +230,17 @@ const refConfirmModal = ref()
               <CCol class="title" sm="4">회의 상태 :</CCol>
               <CCol sm="8">
                 <v-chip :color="statusColor" size="x-small" variant="flat" class="px-2">
-                  {{ statusText }}
+                  {{ meeting.status_display }}
+                </v-chip>
+
+                <v-chip
+                  v-if="needConfirm"
+                  :color="confirmAlertColor"
+                  size="x-small"
+                  variant="flat"
+                  class="ml-1"
+                >
+                  상태를 확정으로 변경하세요.
                 </v-chip>
               </CCol>
             </CRow>

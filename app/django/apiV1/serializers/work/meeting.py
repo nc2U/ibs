@@ -35,6 +35,7 @@ class IssueInMeetingSerializer(serializers.ModelSerializer):
 class MeetingSerializer(serializers.ModelSerializer):
     project_desc = SimpleIssueProjectSerializer(source='project', read_only=True)
     category_desc = MeetingCategorySerializer(source='category', read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
     attendees_desc = SimpleUserSerializer(source='attendees', many=True, read_only=True)
     files = MeetingFileSerializer(many=True, read_only=True)
     issues = IssueInMeetingSerializer(many=True, read_only=True)
@@ -44,8 +45,8 @@ class MeetingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Meeting
         fields = ('pk', 'project', 'project_desc', 'category', 'category_desc',
-                  'status', 'title', 'agenda', 'content', 'decisions', 'action_items',
-                  'meeting_date', 'attendees', 'attendees_desc',
+                  'status', 'status_display', 'title', 'agenda', 'content', 'decisions',
+                  'action_items', 'meeting_date', 'attendees', 'attendees_desc',
                   'other_attendees', 'files', 'issues', 'created', 'updated', 'creator', 'updater')
 
     def create(self, validated_data):

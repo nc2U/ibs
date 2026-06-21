@@ -61,7 +61,7 @@ const pageSelect = (page: number) => emit('page-select', page)
         <CTableRow class="text-center">
           <CTableHeaderCell scope="col">#</CTableHeaderCell>
           <CTableHeaderCell v-if="!route.params.projId" scope="col">프로젝트</CTableHeaderCell>
-          <CTableHeaderCell scope="col">상태</CTableHeaderCell>
+          <CTableHeaderCell scope="col" class="text-left">상태</CTableHeaderCell>
           <CTableHeaderCell scope="col">카테고리</CTableHeaderCell>
           <CTableHeaderCell scope="col">제목</CTableHeaderCell>
           <CTableHeaderCell scope="col">회의 일시</CTableHeaderCell>

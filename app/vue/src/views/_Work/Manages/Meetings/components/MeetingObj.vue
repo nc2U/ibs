@@ -3,6 +3,7 @@ import { computed, type PropType } from 'vue'
 import { useRoute } from 'vue-router'
 import { useMeeting } from '@/store/pinia/work_meeting.ts'
 import type { Meeting } from '@/store/types/work_meeting.ts'
+import { diffDate, getMeetingStatusColor } from '@/utils/baseMixins.ts'
 
 const props = defineProps({
   meeting: { type: Object as PropType<Meeting>, required: true },
@@ -20,23 +21,26 @@ const createdDate = computed(() => props.meeting.created.substring(0, 10))
 const totalAttendees = computed(() => {
   const usersCount = props.meeting.attendees.length
   const otherCount = props.meeting.other_attendees
-    ? props.meeting.other_attendees.split(',').length
+    ? props.meeting.other_attendees.split(',').filter(v => v.trim()).length
     : 0
   return usersCount + otherCount
 })
 
-const statusColor = computed(() => {
-  if (props.meeting.status === '1') return 'info'
-  if (props.meeting.status === '2') return 'success'
-  if (props.meeting.status === '3') return 'secondary'
-  return 'secondary'
+const statusColor = computed(() => getMeetingStatusColor(props.meeting.status))
+
+const needConfirm = computed(() => {
+  const meeting = props.meeting
+  return meeting.status === '2' && meeting?.meeting_date && diffDate(meeting.meeting_date) > 5
 })
 
-const statusText = computed(() => {
-  if (props.meeting.status === '1') return '준비중'
-  if (props.meeting.status === '2') return '완료됨'
-  if (props.meeting.status === '3') return '취소됨'
-  return '-'
+const confirmAlertColor = computed(() => {
+  const meetingDate = props.meeting.meeting_date
+
+  if (!meetingDate) return ''
+
+  const diff = diffDate(meetingDate)
+
+  return diff > 10 ? 'danger' : 'warning'
 })
 
 const downloadPdf = (event: Event) => {
@@ -48,9 +52,19 @@ const downloadPdf = (event: Event) => {
 <template>
   <CTableDataCell>{{ meeting.pk }}</CTableDataCell>
   <CTableDataCell v-if="!route.params.projId">{{ meeting.project_desc?.name }}</CTableDataCell>
-  <CTableDataCell>
+  <CTableDataCell class="text-left">
     <v-chip :color="statusColor" size="x-small" variant="flat">
-      {{ statusText }}
+      {{ meeting.status_display }}
+    </v-chip>
+
+    <v-chip
+      v-if="needConfirm"
+      :color="confirmAlertColor"
+      size="x-small"
+      variant="flat"
+      class="ml-1"
+    >
+      확정 필요
     </v-chip>
   </CTableDataCell>
   <CTableDataCell>{{ meeting.category_desc?.name }}</CTableDataCell>
