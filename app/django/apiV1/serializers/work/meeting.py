@@ -110,8 +110,13 @@ class MeetingSerializer(serializers.ModelSerializer):
                 file.description = edit_file_desc
             file.save()
 
+        # File 삭제 처리 (수정)
         del_file = self.initial_data.get('del_file', None)
         if del_file:
             file = MeetingFile.objects.get(pk=del_file)
             file.delete()
+        # 프론트엔드에서 체크박스 선택된 파일들의 PK 리스트를 'files_del'로 보낸다고 가정
+        files_del = self.initial_data.getlist('files_del')
+        if files_del:
+            MeetingFile.objects.filter(pk__in=files_del, meeting=instance).delete()
         return super().update(instance, validated_data)

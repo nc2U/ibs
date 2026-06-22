@@ -11,6 +11,7 @@ import MdEditor from '@/components/MdEditor/Index.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
 import DateTimePicker from '@/components/DatePicker/DateTimePicker.vue'
 import IssueForm from '@/views/_Work/Manages/Issues/components/IssueForm.vue'
+import { CFormCheck } from '@coreui/vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -321,33 +322,19 @@ const onCategorySubmit = (event: Event) => {
               <CCol sm="10">
                 <div v-if="meeting?.files?.length" class="mb-2">
                   <CTable small striped hover>
-                    <!--                    <CTableBody>-->
-                    <!--                      <CTableRow-->
-                    <!--                        v-for="(file, index) in meeting.files"-->
-                    <!--                        :key="file.pk"-->
-                    <!--                        :class="{ del: file.del }"-->
-                    <!--                      >-->
-                    <!--                        <CTableDataCell>-->
-                    <!--                          <a :href="file.file" target="_blank">{{ file.file_name }}</a>-->
-                    <!--                        </CTableDataCell>-->
-                    <!--                        <CTableDataCell class="text-right">-->
-                    <!--                          <v-btn-->
-                    <!--                            icon-->
-                    <!--                            size="x-small"-->
-                    <!--                            variant="text"-->
-                    <!--                            color="danger"-->
-                    <!--                            @click="file.del = !file.del"-->
-                    <!--                          >-->
-                    <!--                            <v-icon :icon="file.del ? 'mdi-undo' : 'mdi-trash-can-outline'" />-->
-                    <!--                          </v-btn>-->
-                    <!--                        </CTableDataCell>-->
-                    <!--                      </CTableRow>-->
-                    <!--                    </CTableBody>-->
+                    <CTableBody>
+                      <CTableRow v-for="(file, index) in meeting.files" :key="file.pk">
+                        <CTableDataCell class="cursor-not-allowed">
+                          {{ file.file_name }}
+                          <CFormCheck label="삭제" inline class="ml-2" :id="`del-${index}`" />
+                        </CTableDataCell>
+                      </CTableRow>
+                    </CTableBody>
                   </CTable>
                 </div>
                 <div
                   v-else
-                  class="text-muted small p-3 text-center border rounded border-dashed mb-2"
+                  class="text-muted small p-2 text-center border rounded border-dashed mb-2"
                 >
                   등록된 파일이 없습니다.
                 </div>
@@ -357,7 +344,6 @@ const onCategorySubmit = (event: Event) => {
             <!-- File Upload Section (matches IssueForm style) -->
             <CRow v-for="(f, i) in newFiles" :key="i" class="mb-2">
               <CFormLabel :for="`file-${i + 1}`" class="col-sm-2 col-form-label text-right">
-                <!--                <span v-if="i === 0">파일</span>-->
               </CFormLabel>
               <CCol sm="5">
                 <CFormInput type="file" @change="e => loadFile(e)" disabled />
@@ -382,7 +368,7 @@ const onCategorySubmit = (event: Event) => {
                   style="display: none"
                 />
                 <v-btn color="info" size="x-small" @click="fileInput?.click()">
-                  <v-icon icon="mdi-paperclip" size="small" class="mr-1" /> 파일추가
+                  <v-icon icon="mdi-paperclip" size="small" class="mr-1" /> 첨부 파일 추가
                 </v-btn>
               </CCol>
             </CRow>
@@ -433,7 +419,7 @@ const onCategorySubmit = (event: Event) => {
                   </div>
                   <div
                     v-else
-                    class="text-muted small p-3 text-center border rounded border-dashed mb-2"
+                    class="text-muted small p-2 text-center border rounded border-dashed mb-2"
                   >
                     연결된 업무가 없습니다.
                   </div>
