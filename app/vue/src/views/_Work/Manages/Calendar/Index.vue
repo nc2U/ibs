@@ -5,16 +5,16 @@ import { useRoute, useRouter } from 'vue-router'
 import { useStore } from '@/store'
 import { useIssue } from '@/store/pinia/work_issue'
 import { useWork } from '@/store/pinia/work_project'
+import { useMeeting } from '@/store/pinia/work_meeting'
 import { addDaysToDate, cutString, getToday } from '@/utils/baseMixins'
 import type { Company } from '@/store/types/settings'
-import type { Issue, IssueFilter } from '@/store/types/work_issue'
+import type { Issue, IssueFilter } from '@/store/types/issue'
+import type { Meeting } from '@/store/types/work_meeting'
 import Loading from '@/components/Loading/Index.vue'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import SearchList from '@/views/_Work/Manages/Projects/components/SearchList.vue'
-import FullCalendar from '@fullcalendar/vue3'
-import dayGridPlugin from '@fullcalendar/daygrid'
-import interactionPlugin from '@fullcalendar/interaction'
+import SharedCalendar from './components/SharedCalendar.vue'
 
 const cBody = ref()
 const company = inject<ComputedRef<Company | null>>('company')
@@ -25,121 +25,12 @@ const router = useRouter()
 const store = useStore()
 const issueStore = useIssue()
 const workStore = useWork()
+const meetingStore = useMeeting()
 
 provide('navMenu', navMenu)
 provide('query', route?.query)
 
 const allProjects = computed(() => workStore.getAllProjects)
-const isDark = computed(() => store.theme === 'dark')
-
-const getEventColor = (status: { pk: number; closed: boolean }) => {
-  const colors = {
-    light: {
-      1: '#e57373', // 신규 (Muted Red)
-      2: '#64b5f6', // 진행 (Muted Blue)
-      3: '#ffb74d', // 검토 (Muted Amber)
-      4: '#90a4ae', // 보류 (Muted Blue Grey)
-      5: '#81c784', // 종료 (Muted Green)
-      6: '#78909c', // 거절 (Deep Blue Grey)
-      default: '#cfd8dc',
-    },
-    dark: {
-      1: '#b35c5c', // 신규 (Muted Deep Red)
-      2: '#5c86b3', // 진행 (Muted Steel Blue)
-      3: '#b3915c', // 검토 (Muted Ochre)
-      4: '#64748b', // 보류 (Slate Grey)
-      5: '#5cb377', // 종료 (Muted Sage)
-      6: '#475569', // 거절 (Dark Slate)
-      default: '#475569',
-    },
-  }
-
-  const palette = isDark.value ? colors.dark : colors.light
-  return (palette as any)[status.pk] || palette.default
-}
-
-const calendarEvents = computed(() => {
-  return issueStore.issueList.map((issue: Issue) => {
-    const assignee = issue.assigned_to ? `(${issue.assigned_to.username})` : ''
-    return {
-      id: issue.pk.toString(),
-      title: `[${issue.tracker.name}] ${cutString(issue.subject, 15)}${assignee}`,
-      start: issue.start_date,
-      end: issue.due_date ? addDaysToDate(issue.due_date, 1) : addDaysToDate(issue.start_date, 1),
-      allDay: true,
-      backgroundColor: getEventColor(issue.status),
-      borderColor: getEventColor(issue.status),
-      extendedProps: {
-        project: issue.project.slug,
-        pk: issue.pk,
-        start: issue.start_date,
-        end: issue.due_date,
-        expected_duration: issue.expected_duration,
-      },
-    }
-  })
-})
-
-const handleEventClick = (info: any) => {
-  const { project, pk } = info.event.extendedProps
-  router.push({
-    name: '(업무) - 보기',
-    params: { projId: project, issueId: pk },
-  })
-}
-
-const renderEventContent = (eventInfo: any) => {
-  const { start, end, expected_duration } = eventInfo.event.extendedProps // start_date, due_date
-  const today = getToday()
-  const isStartToday = start === today
-  const isEndToday = !!end && end === today
-  const isSameDayTask = expected_duration === '0'
-
-  let icon = ''
-  let color = 'white'
-
-  // 우선순위 1: 오늘 시작하고 종료하는 업무 (기한이 오늘이거나 당일 처리인 경우)
-  if (isStartToday && (isEndToday || isSameDayTask)) {
-    icon = 'mdi-rhombus' // 오늘 시작하고 종료
-    color = '#f87171' // danger
-  }
-  // 우선순위 2: 오늘 시작하는 업무
-  else if (isStartToday) {
-    icon = 'mdi-arrow-right-bold' // 오늘 시작
-    color = '#4ade80' // success
-  }
-  // 우선순위 3: 오늘 종료하는 업무
-  else if (isEndToday) {
-    icon = 'mdi-arrow-left-bold' // 오늘 종료
-    color = '#f87171' // danger
-  }
-
-  return {
-    html: `
-      <div class="fc-event-main-frame" style="overflow: hidden; text-overflow: ellipsis;">
-        <div class="fc-event-title-container">
-          <div class="fc-event-title fc-sticky" style="font-size: 0.85em; white-space: nowrap;">
-            ${icon ? `<i class="mdi ${icon}" style="color: ${color}; font-size: 12px;"></i>` : ''}
-            ${eventInfo.event.title}
-          </div>
-        </div>
-      </div>
-    `,
-  }
-}
-
-const calendarOptions = computed(() => ({
-  timeZone: 'local',
-  plugins: [dayGridPlugin, interactionPlugin],
-  initialView: 'dayGridMonth',
-  weekends: true,
-  selectable: true,
-  height: 630,
-  showNonCurrentDates: false,
-  events: calendarEvents.value,
-  eventClick: handleEventClick,
-  eventContent: renderEventContent,
-}))
 
 const sideNavCAll = () => cBody.value.toggle()
 
@@ -161,6 +52,7 @@ const loading = ref(true)
 onBeforeMount(async () => {
   await workStore.fetchAllIssueProjectList()
   await issueStore.fetchIssueList({})
+  await meetingStore.fetchMeetingList({})
   loading.value = false
 })
 </script>
@@ -181,7 +73,7 @@ onBeforeMount(async () => {
 
       <CRow class="mb-3">
         <CCol>
-          <FullCalendar :options="calendarOptions" />
+          <SharedCalendar />
         </CCol>
       </CRow>
 
