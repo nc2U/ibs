@@ -63,7 +63,7 @@ const onSubmit = (event: Event) => {
     validated.value = true
   } else {
     const formData = new FormData()
-    
+
     // Append form fields
     for (const key in form.value) {
       const val = (form.value as any)[key]
@@ -75,7 +75,7 @@ const onSubmit = (event: Event) => {
     }
 
     // Append new files
-    newFiles.value.forEach((f) => {
+    newFiles.value.forEach(f => {
       formData.append('new_files', f.file)
       formData.append('descriptions', f.description)
     })
@@ -316,6 +316,26 @@ const onCategorySubmit = (event: Event) => {
               </CCol>
             </CRow>
 
+            <!-- File Upload Section (matches IssueForm style) -->
+            <div v-for="(f, i) in newFiles.length + 1" :key="i">
+              <CRow :id="`row-fn-${i + 1}`" class="mb-2">
+                <CFormLabel :for="`file-${i + 1}`" class="col-sm-2 col-form-label text-right">
+                  <span v-if="i === 0">파일</span>
+                </CFormLabel>
+                <CCol sm="5">
+                  <CFormInput :id="`file-${i + 1}`" type="file" @change="loadFile" multiple />
+                </CCol>
+                <CCol v-if="newFiles[i]?.file" sm="5">
+                  <CInputGroup>
+                    <CFormInput v-model="newFiles[i].description" placeholder="부가적인 설명" />
+                    <CInputGroupText @click="removeFile(i)" style="cursor: pointer">
+                      <v-icon icon="mdi-trash-can-outline" size="16" />
+                    </CInputGroupText>
+                  </CInputGroup>
+                </CCol>
+              </CRow>
+            </div>
+
             <!-- Related Issues Section -->
             <CRow class="mb-3">
               <CFormLabel class="col-sm-2 col-form-label text-right">관련 업무</CFormLabel>
@@ -381,26 +401,6 @@ const onCategorySubmit = (event: Event) => {
                 </div>
               </CCol>
             </CRow>
-
-            <!-- File Upload Section (matches IssueForm style) -->
-            <div v-for="(f, i) in newFiles.length + 1" :key="i">
-              <CRow :id="`row-fn-${i + 1}`" class="mb-2">
-                <CFormLabel :for="`file-${i + 1}`" class="col-sm-2 col-form-label text-right">
-                  <span v-if="i === 0">파일</span>
-                </CFormLabel>
-                <CCol sm="5">
-                  <CFormInput :id="`file-${i + 1}`" type="file" @change="loadFile" multiple />
-                </CCol>
-                <CCol v-if="newFiles[i]?.file" sm="5">
-                  <CInputGroup>
-                    <CFormInput v-model="newFiles[i].description" placeholder="부가적인 설명" />
-                    <CInputGroupText @click="removeFile(i)" style="cursor: pointer">
-                      <v-icon icon="mdi-trash-can-outline" size="16" />
-                    </CInputGroupText>
-                  </CInputGroup>
-                </CCol>
-              </CRow>
-            </div>
           </CCol>
 
           <!-- Sidebar Column (Meta Info) -->
