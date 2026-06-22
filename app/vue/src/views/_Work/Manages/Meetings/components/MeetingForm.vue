@@ -48,9 +48,8 @@ const newFiles = ref<{ file: File; description: string }[]>([])
 
 const loadFile = (event: Event) => {
   const el = event.target as HTMLInputElement
-  if (el.files) {
+  if (el.files && el.files.length > 0) {
     newFiles.value.push(...Array.from(el.files).map(file => ({ file, description: '' })))
-    el.value = ''
   }
 }
 
@@ -58,7 +57,7 @@ const removeFile = (index: number) => {
   newFiles.value.splice(index, 1)
 }
 
-const onSubmit = (event: Event) => {
+const onSubmit = async (event: Event) => {
   if (isValidate(event)) {
     validated.value = true
   } else {
@@ -80,15 +79,10 @@ const onSubmit = (event: Event) => {
       formData.append('descriptions', f.description)
     })
 
-    // (Optional) Handle deletions if meeting.files exists
-    // meeting.value?.files.forEach((f, index) => {
-    //   if (f.del) formData.append(`files_del`, f.pk.toString())
-    // })
-
     if (form.value.pk) {
-      meetingStore.updateMeeting(form.value.pk, formData as any)
+      await meetingStore.updateMeeting(form.value.pk, formData as any)
     } else {
-      meetingStore.createMeeting(formData as any)
+      await meetingStore.createMeeting(formData as any)
     }
     router.back()
   }

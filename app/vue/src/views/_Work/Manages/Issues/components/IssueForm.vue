@@ -63,9 +63,8 @@ const newFiles = ref<{ file: File; description: string }[]>([])
 
 const loadFile = (event: Event) => {
   const el = event.target as HTMLInputElement
-  if (el.files) {
+  if (el.files && el.files.length > 0) {
     newFiles.value.push(...Array.from(el.files).map(file => ({ file, description: '' })))
-    el.value = ''
   }
 }
 
