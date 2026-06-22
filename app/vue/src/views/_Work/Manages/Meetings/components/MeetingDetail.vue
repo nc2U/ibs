@@ -32,10 +32,10 @@ const isAttendee = computed(() =>
 const canEdit = computed(() => {
   if (!meeting.value) return false
   const status = meeting.value.status
-  
+
   // 확정(status '3') 회의록의 수정 권한: 관리자만 가능
   if (status === '3') return isManager.value
-  
+
   // 미확정(status '1', '2') 회의록의 수정 권한: 관리자/생성자/참석자
   if (['1', '2'].includes(status)) {
     return isManager.value || isCreator.value || isAttendee.value
@@ -46,10 +46,10 @@ const canEdit = computed(() => {
 const canDelete = computed(() => {
   if (!meeting.value) return false
   const status = meeting.value.status
-  
+
   // 확정(status '3') 회의록의 삭제 권한: 관리자만 가능
   if (status === '3') return isManager.value
-  
+
   // 미확정(status '1', '2') 회의록의 삭제 권한: 관리자/생성자
   if (['1', '2'].includes(status)) {
     return isManager.value || isCreator.value
@@ -386,6 +386,24 @@ const refConfirmModal = ref()
           </CCol>
         </CRow>
 
+        <v-divider v-if="meeting.files.length" class="my-4" />
+
+        <div v-if="meeting.files.length" class="mb-5">
+          <h6 class="title mb-3">
+            <v-icon icon="mdi-paperclip" size="small" class="mr-1" /> 첨부 파일
+          </h6>
+          <CRow>
+            <FileDisplay
+              v-for="file in meeting.files"
+              :key="file.pk"
+              :file="{
+                ...file,
+                creator: meeting.attendees_desc.find(u => u.pk === file.creator) || meeting.creator,
+              }"
+            />
+          </CRow>
+        </div>
+
         <div class="mb-5">
           <CRow class="mb-2">
             <CCol>
@@ -449,32 +467,22 @@ const refConfirmModal = ref()
             연결된 업무가 없습니다. 우측 상단의 '업무 추가' 버튼을 눌러 새 업무를 등록하세요.
           </div>
         </div>
-
-        <v-divider v-if="meeting.files.length" class="my-4" />
-
-        <div v-if="meeting.files.length">
-          <h6 class="title mb-3">
-            <v-icon icon="mdi-paperclip" size="small" class="mr-1" /> 첨부 파일
-          </h6>
-          <CRow>
-            <FileDisplay
-              v-for="file in meeting.files"
-              :key="file.pk"
-              :file="{
-                ...file,
-                creator: meeting.attendees_desc.find(u => u.pk === file.creator) || meeting.creator,
-              }"
-            />
-          </CRow>
-        </div>
       </CCardBody>
     </CCard>
 
     <CRow class="mb-2">
       <CCol class="text-right">
         <v-btn :color="btnLight" size="small" @click="goList"> 목록으로 </v-btn>
-        <v-btn v-if="canEdit" color="success" size="small" class="ml-2" @click="goEdit"> 수정 </v-btn>
-        <v-btn v-if="canDelete" color="warning" size="small" class="ml-2" @click="refConfirmModal.callModal()">
+        <v-btn v-if="canEdit" color="success" size="small" class="ml-2" @click="goEdit">
+          수정
+        </v-btn>
+        <v-btn
+          v-if="canDelete"
+          color="warning"
+          size="small"
+          class="ml-2"
+          @click="refConfirmModal.callModal()"
+        >
           삭제
         </v-btn>
       </CCol>
