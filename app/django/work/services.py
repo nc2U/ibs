@@ -1,5 +1,21 @@
 from work.models.logging import ActivityLogEntry, IssueLogEntry
-from work.tasks import send_issue_mail_task
+from work.tasks import send_issue_mail_task, send_meeting_mail_task
+
+
+class MeetingService:
+    @staticmethod
+    def notify_meeting_changes(instance, created, user, old_status=None):
+        """회의 생성 및 확정 상태 변경 알림"""
+        if created:
+            MeetingService.send_meeting_mail(instance, user, "create")
+        elif old_status != '3' and instance.status == '3':
+            # 확정('3') 상태로 변경된 경우
+            MeetingService.send_meeting_mail(instance, user, "confirm")
+
+    @staticmethod
+    def send_meeting_mail(instance, user, mail_type):
+        """회의 관련 메일 발송 유틸리티 (Celery 비동기 호출)"""
+        send_meeting_mail_task.delay(instance.pk, user.pk, mail_type)
 
 
 class IssueService:

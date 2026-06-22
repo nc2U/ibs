@@ -7,7 +7,40 @@ from work.models.inform import News
 from work.models.issue import Issue, IssueRelation, IssueComment
 from work.models.logging import ActivityLogEntry, IssueLogEntry
 from work.models.meeting import Meeting
-from work.services import IssueService
+from work.services import MeetingService, IssueService
+
+
+@receiver(pre_save, sender=Meeting)
+def meeting_track_changes(sender, instance, **kwargs):
+    if instance.pk:
+        try:
+            old_instance = Meeting.objects.get(pk=instance.pk)
+            if old_instance.status != instance.status:
+                setattr(instance, 'old_status', old_instance.status)
+        except Meeting.DoesNotExist:
+            pass
+
+
+@receiver(post_save, sender=Meeting)
+def meeting_log_changes(sender, instance, created, **kwargs):
+    user = instance.updater if not created else instance.creator
+    old_status = getattr(instance, 'old_status', None)
+
+    if created:
+        ActivityLogEntry.objects.create(sort='3', project=instance.project,
+                                        meeting=instance, creator=instance.creator)
+    elif hasattr(instance, 'old_status'):
+        ActivityLogEntry.objects.create(sort='3', project=instance.project,
+                                        meeting=instance, status_log=instance.get_status_display(),
+                                        creator=user)
+
+    # 메일 알림 서비스 호출
+    MeetingService.notify_meeting_changes(instance, created, user, old_status)
+
+
+@receiver(pre_delete, sender=Meeting)
+def meeting_log_delete(sender, instance, **kwargs):
+    ActivityLogEntry.objects.filter(meeting=instance).delete()
 
 
 @receiver(pre_save, sender=Issue)
@@ -57,33 +90,6 @@ def comment_log_changes(sender, instance, created, **kwargs):
 def comment_log_delete(sender, instance, **kwargs):
     IssueLogEntry.objects.filter(comment=instance).delete()
     ActivityLogEntry.objects.filter(comment=instance).delete()
-
-
-@receiver(pre_save, sender=Meeting)
-def meeting_track_changes(sender, instance, **kwargs):
-    if instance.pk:
-        try:
-            old_instance = Meeting.objects.get(pk=instance.pk)
-            if old_instance.status != instance.status:
-                setattr(instance, 'old_status', old_instance.status)
-        except Meeting.DoesNotExist:
-            pass
-
-
-@receiver(post_save, sender=Meeting)
-def meeting_log_changes(sender, instance, created, **kwargs):
-    if created:
-        ActivityLogEntry.objects.create(sort='3', project=instance.project,
-                                        meeting=instance, creator=instance.creator)
-    elif hasattr(instance, 'old_status'):
-        ActivityLogEntry.objects.create(sort='3', project=instance.project,
-                                        meeting=instance, status_log=instance.get_status_display(),
-                                        creator=instance.updater)
-
-
-@receiver(pre_delete, sender=Meeting)
-def meeting_log_delete(sender, instance, **kwargs):
-    ActivityLogEntry.objects.filter(meeting=instance).delete()
 
 
 @receiver(post_save, sender=News)
