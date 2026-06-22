@@ -93,8 +93,15 @@ onBeforeMount(() => {
             제목
           </CFormLabel>
 
-          <CCol sm="8">
+          <CCol sm="6">
             <CFormInput v-model="form.title" placeholder="공지 제목" required />
+          </CCol>
+          <CCol sm="4" class="pt-2">
+            <CFormCheck
+              id="is_important"
+              v-model="form.is_important"
+              label="중요 공지 (최상단 고정)"
+            />
           </CCol>
         </CRow>
 
@@ -111,18 +118,6 @@ onBeforeMount(() => {
 
           <CCol sm="10">
             <MdEditor v-model="form.content" placeholder="공지 내용" />
-          </CCol>
-        </CRow>
-
-        <CRow class="mb-2">
-          <CFormLabel class="col-sm-2 col-form-label text-right"> 설정</CFormLabel>
-
-          <CCol sm="10" class="pt-2">
-            <CFormCheck
-              id="is_important"
-              v-model="form.is_important"
-              label="중요 공지 (최상단 고정)"
-            />
           </CCol>
         </CRow>
 

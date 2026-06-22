@@ -45,6 +45,7 @@ export const useInform = defineStore('inform', () => {
       .put(`/news/${pk}/`, payload)
       .then(async res => {
         await fetchNews(res.data.pk)
+        await fetchNewsList({ project: res.data.project.slug || '' })
         message()
       })
       .catch(err => errorHandle(err.response.data))
@@ -54,6 +55,7 @@ export const useInform = defineStore('inform', () => {
       .patch(`/news/${pk}/`, payload)
       .then(async res => {
         await fetchNews(res.data.pk)
+        await fetchNewsList({ project: res.data.project.slug ?? '' })
         message()
       })
       .catch(err => errorHandle(err.response.data))
