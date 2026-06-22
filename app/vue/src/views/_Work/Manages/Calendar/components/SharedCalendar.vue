@@ -7,6 +7,7 @@ import { useMeeting } from '@/store/pinia/work_meeting'
 import { addDaysToDate, cutString, getToday } from '@/utils/baseMixins'
 import type { Issue } from '@/store/types/work_issue'
 import type { Meeting } from '@/store/types/work_meeting'
+import type { CalendarOptions } from '@fullcalendar/core'
 import FullCalendar from '@fullcalendar/vue3'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import interactionPlugin from '@fullcalendar/interaction'
@@ -70,7 +71,7 @@ const calendarEvents = computed(() => {
     return {
       id: `m-${meeting.pk}`,
       title: `[회의] ${cutString(meeting.title, 15)}`,
-      start: meeting.meeting_date,
+      start: meeting.meeting_date || undefined,
       allDay: false,
       backgroundColor: '#9575cd',
       borderColor: '#9575cd',
@@ -105,7 +106,7 @@ const renderEventContent = (eventInfo: any) => {
     return {
       html: `<div class="fc-event-main-frame" style="overflow: hidden; text-overflow: ellipsis;">
                <div class="fc-event-title" style="font-size: 0.85em; white-space: nowrap;">${eventInfo.event.title}</div>
-             </div>`
+             </div>`,
     }
   }
 
@@ -143,7 +144,7 @@ const renderEventContent = (eventInfo: any) => {
   }
 }
 
-const calendarOptions = computed(() => ({
+const calendarOptions = computed<CalendarOptions>(() => ({
   timeZone: 'local',
   plugins: [dayGridPlugin, interactionPlugin],
   initialView: 'dayGridMonth',
