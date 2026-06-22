@@ -38,18 +38,20 @@ export const useMeeting = defineStore('meeting', () => {
       .then(res => (meeting.value = res.data))
       .catch(err => errorHandle(err.response.data))
 
+  const config_headers = { headers: { 'Content-Type': 'multipart/form-data' } }
+
   const createMeeting = async (payload: Meeting) =>
     await api
-      .post(`/meeting/`, payload)
+      .post(`/meeting/`, payload, config_headers)
       .then(res => {
         fetchMeetingList({ page: 1 })
         message()
       })
       .catch(err => errorHandle(err.response.data))
 
-  const updateMeeting = async (payload: Meeting) =>
+  const updateMeeting = async (pk: number, payload: FormData) =>
     await api
-      .put(`/meeting/${payload.pk}/`, payload)
+      .put(`/meeting/${pk}/`, payload, config_headers)
       .then(res => {
         fetchMeeting(res.data.pk)
         message()

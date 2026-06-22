@@ -1,3 +1,7 @@
+import json
+import os.path
+
+from django.db import transaction
 from rest_framework import serializers
 
 from apiV1.serializers.accounts import SimpleUserSerializer
@@ -49,14 +53,65 @@ class MeetingSerializer(serializers.ModelSerializer):
                   'action_items', 'meeting_date', 'attendees', 'attendees_desc',
                   'other_attendees', 'files', 'issues', 'created', 'updated', 'creator', 'updater')
 
+    @transaction.atomic
     def create(self, validated_data):
         attendees = validated_data.pop('attendees', [])
         meeting = Meeting.objects.create(**validated_data)
         meeting.attendees.set(attendees)
+
+        # File 처리
+        creator = self.context['request'].user
+        new_files = self.initial_data.getlist('new_files', [])
+        descriptions = self.initial_data.getlist('descriptions', [])
+        if new_files:
+            for i, file in enumerate(new_files):
+                meeting_file = MeetingFile(meeting=meeting, file=file,
+                                           description=descriptions[i], creator=creator)
+                meeting_file.save()
         return meeting
 
+    @transaction.atomic
     def update(self, instance, validated_data):
         attendees = validated_data.pop('attendees', None)
         if attendees is not None:
             instance.attendees.set(attendees)
+
+        # File 처리
+        creator = self.context['request'].user
+        new_files = self.initial_data.getlist('new_files', [])
+        descriptions = self.initial_data.getlist('descriptions', [])
+
+        if new_files:
+            for i, file in enumerate(new_files):
+                meeting_file = MeetingFile(meeting=instance, file=file,
+                                           description=descriptions[i], creator=creator)
+                meeting_file.save()
+
+        old_files = self.initial_data.getlist('files', [])
+        if old_files:
+            for json_file in old_files:
+                file = json.loads(json_file)
+                file_object = MeetingFile.objects.get(pk=file.get('pk'))
+
+                if file.get('del'):
+                    file_object.delete()
+
+        edit_file = self.initial_data.get('edit_file', None)  # pk
+        cng_file = self.initial_data.get('cng_file', None)  # change file
+        edit_file_desc = self.initial_data.get('edit_file_desc', None)
+        if edit_file:
+            file = MeetingFile.objects.get(pk=edit_file)
+            if cng_file:
+                old_file = file.file
+                if os.path.isfile(old_file.path):
+                    os.remove(old_file.path)
+                file.file = cng_file
+            if edit_file_desc:
+                file.description = edit_file_desc
+            file.save()
+
+        del_file = self.initial_data.get('del_file', None)
+        if del_file:
+            file = MeetingFile.objects.get(pk=del_file)
+            file.delete()
         return super().update(instance, validated_data)

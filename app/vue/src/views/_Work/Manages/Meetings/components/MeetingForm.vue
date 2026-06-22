@@ -62,11 +62,33 @@ const onSubmit = (event: Event) => {
   if (isValidate(event)) {
     validated.value = true
   } else {
-    const payload = { ...form.value, newFiles: newFiles.value }
+    const formData = new FormData()
+    
+    // Append form fields
+    for (const key in form.value) {
+      const val = (form.value as any)[key]
+      if (key === 'attendees') {
+        val.forEach((v: number) => formData.append('attendees', v.toString()))
+      } else if (val !== null && val !== undefined && val !== '') {
+        formData.append(key, val as string)
+      }
+    }
+
+    // Append new files
+    newFiles.value.forEach((f) => {
+      formData.append('new_files', f.file)
+      formData.append('descriptions', f.description)
+    })
+
+    // (Optional) Handle deletions if meeting.files exists
+    // meeting.value?.files.forEach((f, index) => {
+    //   if (f.del) formData.append(`files_del`, f.pk.toString())
+    // })
+
     if (form.value.pk) {
-      meetingStore.updateMeeting(payload as any)
+      meetingStore.updateMeeting(form.value.pk, formData as any)
     } else {
-      meetingStore.createMeeting(payload as any)
+      meetingStore.createMeeting(formData as any)
     }
     router.back()
   }
