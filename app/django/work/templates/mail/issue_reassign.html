@@ -34,7 +34,7 @@
       <img class="logo-light" src="{{ settings.DOMAIN_HOST }}/static/ibs/images/logo.png" alt="Light Logo" height="35" style="display:block;">
       <!-- Dark mode logo (hidden by default) -->
       <img class="logo-dark" src="{{ settings.DOMAIN_HOST }}/static/ibs/images/logo-dark.png" alt="Dark Logo" height="35" style="display:none;">
-      <p style="margin-top: 25px;">[{{ user.username }}]님이 <b>{{ instance.project }}</b> 프로젝트의 업무 [#{{ instance.pk }}] "{{ instance.subject }}"의 담당자를 [{{ instance.old_assigned_to.username|default:"미배정" }}]에서 [{{ instance.assigned_to.username }}](으)로 변경하였습니다.</p>
+      <p style="margin-top: 25px;">[{{ user.username }}]님이 <b>{{ instance.project }}</b> 프로젝트의 업무 [#{{ instance.pk }}] "{{ instance.subject }}"의 담당자를 [{{ old_assigned_to|default:"미배정" }}]에서 [{{ instance.assigned_to.username }}](으)로 변경하였습니다.</p>
     </td>
   </tr>
   <tr style="border-top:1px solid #999; border-bottom:1px solid #999; background: #eee; height: 50px;">

@@ -7,14 +7,15 @@ from work.models.issue import Issue
 
 User = get_user_model()
 
+
 @shared_task
-def send_issue_mail_task(issue_pk, user_pk, mail_type):
+def send_issue_mail_task(issue_pk, user_pk, mail_type, old_status_name=None, old_assigned_to=None):
     """Celery task to send issue-related emails asynchronously"""
     try:
         instance = Issue.objects.select_related('project', 'tracker', 'status', 'assigned_to').get(pk=issue_pk)
         user = User.objects.get(pk=user_pk)
         watchers = list(instance.watchers.all())
-        
+
         # 수신자 목록 구성
         if mail_type == "create":
             addresses = [user.email]
@@ -37,6 +38,8 @@ def send_issue_mail_task(issue_pk, user_pk, mail_type):
             'instance': instance,
             'settings': settings,
             'user': user,
+            'old_status_name': old_status_name,
+            'old_assigned_to': old_assigned_to,
             'watchers': watchers if mail_type != "create" else None,
         }
         message = render_to_string(template, context)

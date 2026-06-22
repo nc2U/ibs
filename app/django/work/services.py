@@ -1,4 +1,5 @@
 from work.models.logging import ActivityLogEntry, IssueLogEntry
+from work.tasks import send_issue_mail_task
 
 
 class IssueService:
@@ -102,13 +103,13 @@ class IssueService:
                 if hasattr(instance, 'old_status'):
                     ActivityLogEntry.objects.create(sort='1', project=instance.project, issue=instance,
                                                     status_log=status_log, creator=user)
-                    IssueService.send_issue_mail(instance, user, "progress")
+                    IssueService.send_issue_mail(instance, user, "progress", instance.old_status.name)
 
                 if hasattr(instance, 'old_assigned_to'):
-                    IssueService.send_issue_mail(instance, user, "reassign")
+                    IssueService.send_issue_mail(instance, user, "reassign", None,
+                                                 instance.old_assigned_to.username)
 
     @staticmethod
-    def send_issue_mail(instance, user, mail_type):
+    def send_issue_mail(instance, user, mail_type, old_status_name=None, old_assigned_to=None):
         """이슈 관련 메일 발송 유틸리티 (Celery 비동기 호출)"""
-        from work.tasks import send_issue_mail_task
-        send_issue_mail_task.delay(instance.pk, user.pk, mail_type)
+        send_issue_mail_task.delay(instance.pk, user.pk, mail_type, old_status_name, old_assigned_to)

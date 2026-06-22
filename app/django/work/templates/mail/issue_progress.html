@@ -35,7 +35,7 @@
       <!-- Dark mode logo (hidden by default) -->
       <img class="logo-dark" src="{{ settings.DOMAIN_HOST }}/static/ibs/images/logo-dark.png" alt="Dark Logo" height="35" style="display:none;">
       <p style="margin-top: 25px;">[{{ user.username }}]님이 <b>{{ instance.project }}</b> 프로젝트의 업무 [#{{ instance.pk }}]
-        "{{ instance.subject }}"의 진행 상태를 [{{ instance.old_status }}]에서 [{{ instance.status }}](으)로 변경 하였습니다.</p>
+        "{{ instance.subject }}"의 진행 상태를 [{{ old_status_name }}]에서 [{{ instance.status }}](으)로 변경 하였습니다.</p>
     </td>
   </tr>
   <tr style="border-top:1px solid #999; border-bottom:1px solid #999; background: #eee; height: 50px;">
