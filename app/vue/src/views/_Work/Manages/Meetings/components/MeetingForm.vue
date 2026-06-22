@@ -320,30 +320,30 @@ const onCategorySubmit = (event: Event) => {
               <CFormLabel class="col-sm-2 col-form-label text-right">파일</CFormLabel>
               <CCol sm="10">
                 <div v-if="meeting?.files?.length" class="mb-2">
-                  <!--                <CTable small striped hover>-->
-                  <!--                  <CTableBody>-->
-                  <!--                    <CTableRow-->
-                  <!--                      v-for="(file, index) in meeting.files"-->
-                  <!--                      :key="file.pk"-->
-                  <!--                      :class="{ del: file.del }"-->
-                  <!--                    >-->
-                  <!--                      <CTableDataCell>-->
-                  <!--                        <a :href="file.file" target="_blank">{{ file.file_name }}</a>-->
-                  <!--                      </CTableDataCell>-->
-                  <!--                      <CTableDataCell class="text-right">-->
-                  <!--                        <v-btn-->
-                  <!--                          icon-->
-                  <!--                          size="x-small"-->
-                  <!--                          variant="text"-->
-                  <!--                          color="danger"-->
-                  <!--                          @click="file.del = !file.del"-->
-                  <!--                        >-->
-                  <!--                          <v-icon :icon="file.del ? 'mdi-undo' : 'mdi-trash-can-outline'" />-->
-                  <!--                        </v-btn>-->
-                  <!--                      </CTableDataCell>-->
-                  <!--                    </CTableRow>-->
-                  <!--                  </CTableBody>-->
-                  <!--                </CTable>-->
+                  <CTable small striped hover>
+                    <!--                    <CTableBody>-->
+                    <!--                      <CTableRow-->
+                    <!--                        v-for="(file, index) in meeting.files"-->
+                    <!--                        :key="file.pk"-->
+                    <!--                        :class="{ del: file.del }"-->
+                    <!--                      >-->
+                    <!--                        <CTableDataCell>-->
+                    <!--                          <a :href="file.file" target="_blank">{{ file.file_name }}</a>-->
+                    <!--                        </CTableDataCell>-->
+                    <!--                        <CTableDataCell class="text-right">-->
+                    <!--                          <v-btn-->
+                    <!--                            icon-->
+                    <!--                            size="x-small"-->
+                    <!--                            variant="text"-->
+                    <!--                            color="danger"-->
+                    <!--                            @click="file.del = !file.del"-->
+                    <!--                          >-->
+                    <!--                            <v-icon :icon="file.del ? 'mdi-undo' : 'mdi-trash-can-outline'" />-->
+                    <!--                          </v-btn>-->
+                    <!--                        </CTableDataCell>-->
+                    <!--                      </CTableRow>-->
+                    <!--                    </CTableBody>-->
+                  </CTable>
                 </div>
                 <div
                   v-else
