@@ -444,7 +444,7 @@ const onCategorySubmit = (event: Event) => {
                 <CFormSelect v-model="form.status" id="status" required>
                   <option value="1">준비</option>
                   <option value="2">종료</option>
-                  <option value="3">확정</option>
+                  <option v-if="accStore.workManager || form.status === '3'" value="3">확정</option>
                   <option value="4">취소</option>
                 </CFormSelect>
               </CCol>

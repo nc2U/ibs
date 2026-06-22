@@ -2,6 +2,7 @@
 import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { btnLight } from '@/utils/cssMixins.ts'
+import { useAccount } from '@/store/pinia/account'
 import { useMeeting } from '@/store/pinia/work_meeting.ts'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
@@ -15,11 +16,46 @@ import IssueForm from '@/views/_Work/Manages/Issues/components/IssueForm.vue'
 
 const route = useRoute()
 const router = useRouter()
+const accountStore = useAccount()
 const meetingStore = useMeeting()
 const workStore = useWork()
 const issueStore = useIssue()
 
 const meeting = computed(() => meetingStore.meeting)
+
+const isManager = computed(() => accountStore.workManager)
+const isCreator = computed(() => meeting.value?.creator.pk === accountStore.userInfo?.pk)
+const isAttendee = computed(() =>
+  meeting.value?.attendees_desc.some(user => user.pk === accountStore.userInfo?.pk),
+)
+
+const canEdit = computed(() => {
+  if (!meeting.value) return false
+  const status = meeting.value.status
+  
+  // 확정(status '3') 회의록의 수정 권한: 관리자만 가능
+  if (status === '3') return isManager.value
+  
+  // 미확정(status '1', '2') 회의록의 수정 권한: 관리자/생성자/참석자
+  if (['1', '2'].includes(status)) {
+    return isManager.value || isCreator.value || isAttendee.value
+  }
+  return false
+})
+
+const canDelete = computed(() => {
+  if (!meeting.value) return false
+  const status = meeting.value.status
+  
+  // 확정(status '3') 회의록의 삭제 권한: 관리자만 가능
+  if (status === '3') return isManager.value
+  
+  // 미확정(status '1', '2') 회의록의 삭제 권한: 관리자/생성자
+  if (['1', '2'].includes(status)) {
+    return isManager.value || isCreator.value
+  }
+  return false
+})
 
 const statusList = computed(() => issueStore.statusList)
 const priorityList = computed(() => issueStore.priorityList)
@@ -437,8 +473,8 @@ const refConfirmModal = ref()
     <CRow class="mb-2">
       <CCol class="text-right">
         <v-btn :color="btnLight" size="small" @click="goList"> 목록으로 </v-btn>
-        <v-btn color="success" size="small" class="ml-2" @click="goEdit"> 수정 </v-btn>
-        <v-btn color="warning" size="small" class="ml-2" @click="refConfirmModal.callModal()">
+        <v-btn v-if="canEdit" color="success" size="small" class="ml-2" @click="goEdit"> 수정 </v-btn>
+        <v-btn v-if="canDelete" color="warning" size="small" class="ml-2" @click="refConfirmModal.callModal()">
           삭제
         </v-btn>
       </CCol>
