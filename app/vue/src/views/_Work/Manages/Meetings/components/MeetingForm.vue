@@ -45,12 +45,17 @@ const form = ref({
 })
 
 const newFiles = ref<{ file: File; description: string }[]>([])
+const fileInput = ref<HTMLInputElement | null>(null)
 
 const loadFile = (event: Event) => {
   const el = event.target as HTMLInputElement
   if (el.files && el.files.length > 0) {
     newFiles.value.push(...Array.from(el.files).map(file => ({ file, description: '' })))
   }
+}
+
+const triggerFileSelect = () => {
+  fileInput.value?.click()
 }
 
 const removeFile = (index: number) => {
@@ -310,25 +315,77 @@ const onCategorySubmit = (event: Event) => {
               </CCol>
             </CRow>
 
+            <!-- Existing Files Section -->
+            <CRow class="mb-0">
+              <CFormLabel class="col-sm-2 col-form-label text-right">파일</CFormLabel>
+              <CCol sm="10">
+                <div v-if="meeting?.files?.length" class="mb-2">
+                  <!--                <CTable small striped hover>-->
+                  <!--                  <CTableBody>-->
+                  <!--                    <CTableRow-->
+                  <!--                      v-for="(file, index) in meeting.files"-->
+                  <!--                      :key="file.pk"-->
+                  <!--                      :class="{ del: file.del }"-->
+                  <!--                    >-->
+                  <!--                      <CTableDataCell>-->
+                  <!--                        <a :href="file.file" target="_blank">{{ file.file_name }}</a>-->
+                  <!--                      </CTableDataCell>-->
+                  <!--                      <CTableDataCell class="text-right">-->
+                  <!--                        <v-btn-->
+                  <!--                          icon-->
+                  <!--                          size="x-small"-->
+                  <!--                          variant="text"-->
+                  <!--                          color="danger"-->
+                  <!--                          @click="file.del = !file.del"-->
+                  <!--                        >-->
+                  <!--                          <v-icon :icon="file.del ? 'mdi-undo' : 'mdi-trash-can-outline'" />-->
+                  <!--                        </v-btn>-->
+                  <!--                      </CTableDataCell>-->
+                  <!--                    </CTableRow>-->
+                  <!--                  </CTableBody>-->
+                  <!--                </CTable>-->
+                </div>
+                <div
+                  v-else
+                  class="text-muted small p-3 text-center border rounded border-dashed mb-2"
+                >
+                  등록된 파일이 없습니다.
+                </div>
+              </CCol>
+            </CRow>
+
             <!-- File Upload Section (matches IssueForm style) -->
-            <div v-for="(f, i) in newFiles.length + 1" :key="i">
-              <CRow :id="`row-fn-${i + 1}`" class="mb-2">
-                <CFormLabel :for="`file-${i + 1}`" class="col-sm-2 col-form-label text-right">
-                  <span v-if="i === 0">파일</span>
-                </CFormLabel>
-                <CCol sm="5">
-                  <CFormInput :id="`file-${i + 1}`" type="file" @change="loadFile" multiple />
-                </CCol>
-                <CCol v-if="newFiles[i]?.file" sm="5">
-                  <CInputGroup>
-                    <CFormInput v-model="newFiles[i].description" placeholder="부가적인 설명" />
-                    <CInputGroupText @click="removeFile(i)" style="cursor: pointer">
-                      <v-icon icon="mdi-trash-can-outline" size="16" />
-                    </CInputGroupText>
-                  </CInputGroup>
-                </CCol>
-              </CRow>
-            </div>
+            <CRow v-for="(f, i) in newFiles" :key="i" class="mb-2">
+              <CFormLabel :for="`file-${i + 1}`" class="col-sm-2 col-form-label text-right">
+                <!--                <span v-if="i === 0">파일</span>-->
+              </CFormLabel>
+              <CCol sm="5">
+                <CFormInput type="file" @change="e => loadFile(e)" disabled />
+                <span class="small text-muted">{{ f.file.name }}</span>
+              </CCol>
+              <CCol sm="5">
+                <CInputGroup>
+                  <CFormInput v-model="f.description" placeholder="부가적인 설명" />
+                  <CInputGroupText @click="removeFile(i)" style="cursor: pointer">
+                    <v-icon icon="mdi-trash-can-outline" size="16" />
+                  </CInputGroupText>
+                </CInputGroup>
+              </CCol>
+            </CRow>
+            <CRow class="mb-3">
+              <CCol :sm="{ span: 10, offset: 2 }" class="text-right">
+                <input
+                  type="file"
+                  ref="fileInput"
+                  @change="loadFile"
+                  multiple
+                  style="display: none"
+                />
+                <v-btn color="info" size="x-small" @click="fileInput?.click()">
+                  <v-icon icon="mdi-paperclip" size="small" class="mr-1" /> 파일추가
+                </v-btn>
+              </CCol>
+            </CRow>
 
             <!-- Related Issues Section -->
             <CRow class="mb-3">
@@ -376,7 +433,7 @@ const onCategorySubmit = (event: Event) => {
                   </div>
                   <div
                     v-else
-                    class="text-muted small p-2 text-center border rounded border-dashed mb-2"
+                    class="text-muted small p-3 text-center border rounded border-dashed mb-2"
                   >
                     연결된 업무가 없습니다.
                   </div>
