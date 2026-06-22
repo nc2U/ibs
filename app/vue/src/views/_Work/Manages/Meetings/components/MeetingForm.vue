@@ -326,7 +326,7 @@ const onCategorySubmit = (event: Event) => {
                       <CTableRow v-for="(file, index) in meeting.files" :key="file.pk">
                         <CTableDataCell class="cursor-not-allowed">
                           {{ file.file_name }}
-                          <CFormCheck label="삭제" inline class="ml-2" :id="`del-${index}`" />
+                          <!--                          <CFormCheck label="삭제" inline class="ml-2" :id="`del-${index}`" />-->
                         </CTableDataCell>
                       </CTableRow>
                     </CTableBody>
