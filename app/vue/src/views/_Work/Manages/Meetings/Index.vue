@@ -2,6 +2,7 @@
 import { useRoute } from 'vue-router'
 import { computed, type ComputedRef, inject, onBeforeMount, provide, ref, watch } from 'vue'
 import { navMenu1, navMenu2 } from '@/views/_Work/_menu/headermixin1'
+import { useAccount } from '@/store/pinia/account'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useMeeting } from '@/store/pinia/work_meeting.ts'
 import type { Company } from '@/store/types/settings'
@@ -29,12 +30,15 @@ const sideNavCAll = () => cBody.value.toggle()
 
 const navMenu = computed(() => (!issueProjects.value.length ? navMenu1 : navMenu2))
 
+const accountStore = useAccount()
 const workStore = useWork()
 const issueProjects = computed(() => workStore.issueProjects)
 
 const meetingStore = useMeeting()
 const meetingList = computed(() => meetingStore.meetingList)
 const categories = computed(() => meetingStore.categoryList)
+
+const canCreate = computed(() => accountStore.workManager)
 
 provide('navMenu', navMenu)
 
@@ -90,7 +94,7 @@ watch(
           <h5>회의</h5>
         </CCol>
         <CCol class="text-right">
-          <span v-if="viewMode === 'list'" class="mr-2 form-text">
+          <span v-if="canCreate && viewMode === 'list'" class="mr-2 form-text">
             <v-icon icon="mdi-plus-circle" color="success" size="15" class="mr-1" />
             <router-link :to="{ name: '회의 - 추가' }" class="ml-1">새 회의록</router-link>
           </span>

@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, inject, onBeforeMount, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { useAccount } from '@/store/pinia/account'
 import { useMeeting } from '@/store/pinia/work_meeting.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import type { MeetingFilter } from '@/store/types/work_meeting.ts'
@@ -19,11 +20,17 @@ const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
 
 const route = useRoute()
-const workManager = inject('workManager')
+const accountStore = useAccount()
 
 const meetingStore = useMeeting()
 const meetingList = computed(() => meetingStore.meetingList)
 const categories = computed(() => meetingStore.categoryList)
+
+const canCreate = computed(() => {
+  if (accountStore.workManager) return true
+  if (!props.issueProject?.members) return false
+  return props.issueProject.members.some(member => member?.user.pk === accountStore.userInfo?.pk)
+})
 
 const viewMode = computed(() => {
   if (route.name === '(회의) - 추가' || route.name === '(회의) - 수정') return 'form'
@@ -63,7 +70,10 @@ watch(
   (newName, oldName) => {
     const isMeetingRoute = (name: any) => name && name.includes('(회의)')
     // Only fetch if entering meeting list or coming from outside meeting module
-    if ((newName === '(회의)' && oldName !== '(회의)') || (isMeetingRoute(newName) && !isMeetingRoute(oldName))) {
+    if (
+      (newName === '(회의)' && oldName !== '(회의)') ||
+      (isMeetingRoute(newName) && !isMeetingRoute(oldName))
+    ) {
       fetchMeetings()
     }
   },
@@ -82,11 +92,17 @@ onBeforeMount(fetchMeetings)
         </CCol>
 
         <CCol class="text-right">
-          <span v-if="issueProject?.status !== '9' && viewMode === 'list'" class="mr-2 form-text">
+          <span
+            v-if="issueProject?.status !== '9' && canCreate && viewMode === 'list'"
+            class="mr-2 form-text"
+          >
             <v-icon icon="mdi-plus-circle" color="success" size="15" class="mr-1" />
-            <router-link :to="{ name: '(회의) - 추가', params: { projId: route.params.projId } }" class="ml-1"
-              >새 회의록</router-link
+            <router-link
+              :to="{ name: '(회의) - 추가', params: { projId: route.params.projId } }"
+              class="ml-1"
             >
+              새 회의록
+            </router-link>
           </span>
         </CCol>
       </CRow>
