@@ -11,7 +11,7 @@ import MdEditor from '@/components/MdEditor/Index.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
 import DateTimePicker from '@/components/DatePicker/DateTimePicker.vue'
 import IssueForm from '@/views/_Work/Manages/Issues/components/IssueForm.vue'
-import { CFormCheck } from '@coreui/vue'
+import { CCard } from '@coreui/vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -45,18 +45,15 @@ const form = ref({
   other_attendees: '',
 })
 
-const newFiles = ref<{ file: File; description: string }[]>([])
 const fileInput = ref<HTMLInputElement | null>(null)
+const newFiles = ref<{ file: File; description: string }[]>([])
+const files_del = ref<string[]>([])
 
 const loadFile = (event: Event) => {
   const el = event.target as HTMLInputElement
   if (el.files && el.files.length > 0) {
     newFiles.value.push(...Array.from(el.files).map(file => ({ file, description: '' })))
   }
-}
-
-const triggerFileSelect = () => {
-  fileInput.value?.click()
 }
 
 const removeFile = (index: number) => {
@@ -84,6 +81,7 @@ const onSubmit = async (event: Event) => {
       formData.append('new_files', f.file)
       formData.append('descriptions', f.description)
     })
+    files_del.value?.forEach((dfn: string) => formData.append('files_del', dfn))
 
     if (form.value.pk) {
       await meetingStore.updateMeeting(form.value.pk, formData as any)
@@ -325,8 +323,15 @@ const onCategorySubmit = (event: Event) => {
                     <CTableBody>
                       <CTableRow v-for="(file, index) in meeting.files" :key="file.pk">
                         <CTableDataCell class="cursor-not-allowed">
-                          {{ file.file_name }}
-                          <!--                          <CFormCheck label="삭제" inline class="ml-2" :id="`del-${index}`" />-->
+                          {{ file.file_name }} {{ file.pk }}
+                          <CFormCheck
+                            label="삭제"
+                            v-model="files_del"
+                            :value="file.pk"
+                            inline
+                            class="ml-2"
+                            :id="`del-${index}`"
+                          />
                         </CTableDataCell>
                       </CTableRow>
                     </CTableBody>
@@ -346,7 +351,7 @@ const onCategorySubmit = (event: Event) => {
               <CFormLabel :for="`file-${i + 1}`" class="col-sm-2 col-form-label text-right">
               </CFormLabel>
               <CCol sm="5">
-                <CFormInput type="file" @change="e => loadFile(e)" disabled />
+                <CFormInput type="file" @change="(e: any) => loadFile(e)" disabled />
                 <span class="small text-muted">{{ f.file.name }}</span>
               </CCol>
               <CCol sm="5">
