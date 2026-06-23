@@ -11,7 +11,6 @@ import MdEditor from '@/components/MdEditor/Index.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
 import DateTimePicker from '@/components/DatePicker/DateTimePicker.vue'
 import IssueForm from '@/views/_Work/Manages/Issues/components/IssueForm.vue'
-import { CCard } from '@coreui/vue'
 
 const route = useRoute()
 const router = useRouter()
