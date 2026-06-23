@@ -394,7 +394,8 @@ const refConfirmModal = ref()
 
         <div v-if="meeting.files.length" class="my-5">
           <h6 class="title mb-3">
-            <v-icon icon="mdi-paperclip" size="small" class="mr-1" /> 첨부 파일
+            <v-icon icon="mdi-paperclip" color="blue-grey-lighten-1" size="small" class="mr-1" />
+            첨부 파일 ({{ meeting.files.length }}건)
           </h6>
           <CRow>
             <FileDisplay
@@ -422,7 +423,7 @@ const refConfirmModal = ref()
                   class="mr-1"
                 />
                 관련 업무
-                {{ meeting.issues?.length ? `(${meeting.issues.length} 건)` : '' }}
+                {{ meeting.issues?.length ? `(${meeting.issues.length}건)` : '' }}
               </h6>
             </CCol>
             <CCol class="text-right">
