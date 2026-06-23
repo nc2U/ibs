@@ -4,6 +4,7 @@ import { onBeforeMount, type PropType, ref } from 'vue'
 export interface RFile {
   pk: null | number
   file: string
+  file_name: string
   description?: string
   del?: boolean
   edit?: boolean
@@ -11,7 +12,6 @@ export interface RFile {
 
 const props = defineProps({
   file: { type: Object as PropType<RFile>, required: true },
-  fileName: { type: String, required: true },
 })
 
 const emit = defineEmits(['file-delete', 'file-change'])
@@ -48,8 +48,8 @@ onBeforeMount(() => {
 <template>
   <small>
     현재 :
-    <s v-if="(form.file as RFile)?.del || (form.file as RFile)?.edit">{{ fileName }}</s>
-    <a v-else :href="file.file" target="_blank">{{ fileName }}</a>
+    <s v-if="(form.file as RFile)?.del || (form.file as RFile)?.edit">{{ file.file_name }}</s>
+    <a v-else :href="file.file" target="_blank">{{ file.file_name }}</a>
 
     <span v-if="file?.description" class="pl-2"> ({{ file.description }}) </span>
 

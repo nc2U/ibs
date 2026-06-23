@@ -3,7 +3,7 @@ import { AlertSecondary } from '@/utils/cssMixins.ts'
 import type { RFile } from './components/RegFile.vue'
 import RegFile from './components/RegFile.vue'
 
-const props = defineProps({ files: { type: Array, default: () => [] } })
+defineProps({ files: { type: Array, default: () => [] } })
 
 const emit = defineEmits(['file-delete', 'file-change'])
 
@@ -20,7 +20,6 @@ const devideUri = (uri: string) => {
       <CCol v-for="(file, i) in files as RFile[]" :key="file.pk" xs="12" color="primary">
         <RegFile
           :file="file"
-          :file-name="devideUri(file.file)[1]"
           @file-delete="emit('file-delete', $event)"
           @file-change="emit('file-change', $event)"
         />
