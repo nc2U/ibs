@@ -61,7 +61,7 @@ class LinksInPostSerializer(serializers.ModelSerializer):
 class FilesInPostSerializer(serializers.ModelSerializer):
     class Meta:
         model = PostFile
-        fields = ('pk', 'post', 'file', 'hit')
+        fields = ('pk', 'post', 'file', 'file_name', 'file_size', 'hit')
 
 
 class PostSerializer(serializers.ModelSerializer):

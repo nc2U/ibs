@@ -88,6 +88,8 @@ export interface PostFile {
   pk: null | number
   post?: number
   file?: string
+  file_name: string
+  file_size: number
   newFile?: Blob
   hit: number
   del?: boolean

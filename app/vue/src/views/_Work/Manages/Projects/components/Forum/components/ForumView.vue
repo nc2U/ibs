@@ -2,7 +2,7 @@
 import { inject, type PropType } from 'vue'
 import { btnLight } from '@/utils/cssMixins.ts'
 import { useRoute, useRouter } from 'vue-router'
-import { elapsedTime } from '@/utils/baseMixins'
+import { elapsedTime, humanizeFileSize } from '@/utils/baseMixins'
 import { markdownRender } from '@/utils/helper'
 import type { Post } from '@/store/types/forum'
 import CommentSection from './CommentSection.vue'
@@ -73,10 +73,11 @@ const goList = () =>
 
         <div v-if="post.links?.length || post.files?.length" class="mt-6 pt-6 files-section">
           <!-- 상단 간격 조정 -->
-          <h6 v-if="post.files?.length" class="text-h6 mb-2">첨부 파일</h6>
+          <h6 v-if="post.files?.length" class="mb-2">첨부 파일</h6>
           <div v-for="file in post.files" :key="file.pk as number" class="mb-2">
             <v-icon icon="mdi-attachment" size="small" class="mr-2" />
-            <a :href="file.file" target="_blank">{{ file.file?.split('/').pop() }}</a>
+            <a :href="file.file" target="_blank">{{ file.file_name }}</a>
+            <span class="ml-2 text-muted">{{ humanizeFileSize(file.file_size) }}</span>
           </div>
           <h6 v-if="post.links?.length" class="text-h6 mt-4 mb-2">관련 링크</h6>
           <div v-for="link in post.links" :key="link.pk as number" class="mb-2">
