@@ -392,9 +392,7 @@ const refConfirmModal = ref()
           </CCol>
         </CRow>
 
-        <v-divider v-if="meeting.files.length" class="my-4" />
-
-        <div v-if="meeting.files.length" class="mb-5">
+        <div v-if="meeting.files.length" class="my-5">
           <h6 class="title mb-3">
             <v-icon icon="mdi-paperclip" size="small" class="mr-1" /> 첨부 파일
           </h6>
@@ -411,7 +409,9 @@ const refConfirmModal = ref()
           </CRow>
         </div>
 
-        <div class="mb-5">
+        <v-divider class="my-5" />
+
+        <div class="my-4">
           <CRow class="mb-2">
             <CCol>
               <h6 class="title">
