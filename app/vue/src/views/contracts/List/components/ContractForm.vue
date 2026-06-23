@@ -134,7 +134,8 @@ const getTypes = computed(() => projectDataStore.getTypes)
 const proLedgerStore = useProLedger()
 const allProBankList = computed(() => proLedgerStore.allProBankList)
 
-const onBankCreate = (payload: any) => proLedgerStore.createProBankAcc({ ...payload, project: props.project })
+const onBankCreate = (payload: any) =>
+  proLedgerStore.createProBankAcc({ ...payload, project: props.project })
 const onBankUpdate = (payload: any) => proLedgerStore.updateProBankAcc(payload)
 
 const paymentStore = usePayment()
@@ -241,7 +242,9 @@ const setKeyCode = () => {
   nextTick(() => {
     form.houseunit = null
     form.key_unit_code = form.key_unit ? getKUCode(Number(form.key_unit)) : ''
-    form.serial_number = form.key_unit ? `${form.key_unit_code}-${form.order_group}` : `TEMP-${form.order_group}-${Date.now()}`
+    form.serial_number = form.key_unit
+      ? `${form.key_unit_code}-${form.order_group}`
+      : `TEMP-${form.order_group}-${Date.now()}`
   })
 }
 
@@ -287,9 +290,7 @@ const typeSelect = () => {
         unit_type: form.unit_type as number,
       })
       const hasSalePrice = contStore.salesPriceList.length > 0
-      const selectedType = projectDataStore.unitTypeList.find(
-        t => t.pk === form.unit_type,
-      )
+      const selectedType = projectDataStore.unitTypeList.find(t => t.pk === form.unit_type)
       const hasAvgPrice = !!selectedType?.average_price
       noPriceData.value = !hasSalePrice && !hasAvgPrice
     }
@@ -599,9 +600,9 @@ onBeforeRouteLeave(() => formDataReset())
           </CFormSelect>
           <CFormFeedback invalid>유니트 타입을 선택하세요.</CFormFeedback>
           <div v-if="noPriceData" class="text-warning small mt-1">
-            선택한 타입의 공급가격 정보가 등록되어 있지 않습니다.
-            계약가격이 0원으로 등록되며, 추후 기준 공급가격 또는 타입 평균가격 등록 후
-            계약가격 일괄 업데이트를 통해 반영할 수 있습니다.
+            선택한 타입의 공급가격 정보가 등록되어 있지 않습니다. 계약가격이 0원으로 등록되며, 추후
+            기준 공급가격 또는 타입 평균가격 등록 후 계약가격 일괄 업데이트를 통해 반영할 수
+            있습니다.
           </div>
         </CCol>
 

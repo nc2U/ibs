@@ -132,7 +132,7 @@ const delFileSubmit = () => {
               :clearable="!!cngFile"
               @click:clear="removeFile('scan-edit-file')"
               :disabled="disabled"
-              label="계약서 파일"
+              :label="labelName"
               :variant="variant"
               :density="density"
               hide-details
@@ -149,7 +149,7 @@ const delFileSubmit = () => {
         :clearable="!!newFile"
         @click:clear="removeFile('scan-new-file')"
         :disabled="disabled"
-        label="계약서 파일"
+        :label="labelName"
         :variant="variant"
         :density="density"
         hide-details

@@ -156,11 +156,6 @@ const copyDocs = (nType?: number, nProj?: number) => toManage(11, { nType, nProj
 const moveDocs = (nType?: number, nProj?: number) => toManage(22, { nType, nProj })
 const changeCate = (nCate?: number) => toManage(33, { nCate })
 
-const getFileName = (file: string) => {
-  if (file) return decodeURI(file.split('/').slice(-1)[0])
-  else return
-}
-
 const toEdit = () => {
   router.push({
     name: `${props.viewRoute} - 수정`,
@@ -292,7 +287,7 @@ onMounted(() => {
                   class="d-flex justify-content-between align-items-center"
                 >
                   <a :href="f.file" target="_blank" @click="fileHitUp(f.pk as number)">
-                    {{ cutString(getFileName(f.file ?? ''), 45) }}
+                    {{ cutString(f.file_name, 45) }}
                   </a>
                   <small>
                     다운로드 :

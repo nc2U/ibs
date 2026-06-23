@@ -309,7 +309,7 @@ onBeforeMount(() => dataSetup())
 
         <AttatchFile
           ref="RefSiteInfoFile"
-          label-name="등기부 등본"
+          label-name="등기사항전부증명서"
           :attatch-files="form.site_info_files"
           :deleted="delFile"
           @file-control="fileControl"
