@@ -8,7 +8,7 @@ import { useIssue } from '@/store/pinia/work_issue.ts'
 import Pagination from '@/components/Pagination'
 import NoData from '@/components/NoData/Index.vue'
 import SearchList from './SearchList.vue'
-import IssueObj from './IssueObj.vue'
+import IssueItem from './IssueItem.vue'
 
 defineProps({
   projStatus: { type: String, default: '' },
@@ -168,7 +168,7 @@ const watchControl = (payload: any) => {
           class="text-center table-row cursor-menu"
           :key="issue.pk"
         >
-          <IssueObj :issue="issue" @watch-control="watchControl" />
+          <IssueItem :issue="issue" @watch-control="watchControl" />
         </CTableRow>
       </CTableBody>
     </CTable>

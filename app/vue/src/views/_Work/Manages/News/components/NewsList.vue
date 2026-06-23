@@ -2,7 +2,7 @@
 import { type PropType } from 'vue'
 import type { News } from '@/store/types/work_inform.ts'
 import { useInform } from '@/store/pinia/work_inform.ts'
-import NewsObj from './NewsObj.vue'
+import NewsItem from './NewsItem.vue'
 import NoData from '@/components/NoData/Index.vue'
 import Pagination from '@/components/Pagination'
 
@@ -27,7 +27,7 @@ const pageSelect = (page: number) => {
   </template>
 
   <template v-else>
-    <NewsObj v-for="news in newsList" :news="news" :key="news.pk" />
+    <NewsItem v-for="news in newsList" :news="news" :key="news.pk" />
   </template>
 
   <Pagination

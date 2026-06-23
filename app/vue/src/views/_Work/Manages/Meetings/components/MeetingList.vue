@@ -5,7 +5,7 @@ import { useMeeting } from '@/store/pinia/work_meeting.ts'
 import type { Meeting } from '@/store/types/work_meeting.ts'
 import NoData from '@/components/NoData/Index.vue'
 import Pagination from '@/components/Pagination'
-import MeetingObj from './MeetingObj.vue'
+import MeetingItem from './MeetingItem.vue'
 
 defineProps({
   meetingList: { type: Array as PropType<Meeting[]>, default: () => [] },
@@ -80,7 +80,7 @@ const pageSelect = (page: number) => emit('page-select', page)
           class="text-center table-row pointer"
           :key="meeting.pk"
         >
-          <MeetingObj :meeting="meeting" />
+          <MeetingItem :meeting="meeting" />
         </CTableRow>
       </CTableBody>
     </CTable>
