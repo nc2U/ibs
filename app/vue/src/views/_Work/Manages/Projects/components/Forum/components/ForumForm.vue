@@ -187,7 +187,7 @@ onBeforeUpdate(() => dataSetup())
       </CCardBody>
     </CCard>
 
-    <CRow class="mb-5">
+    <CRow class="mb-5 text-right">
       <CCol>
         <v-btn type="submit" color="primary" variant="flat" size="small" class="mr-2">저장</v-btn>
         <v-btn :color="btnLight" size="small" variant="flat" @click="router.go(-1)">취소</v-btn>

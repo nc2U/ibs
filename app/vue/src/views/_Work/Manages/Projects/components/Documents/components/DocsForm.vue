@@ -30,7 +30,6 @@ const updateDocs = (payload: { pk: number; form: FormData }) => docStore.updateD
 
 const refFileForms = ref()
 const refLinkForms = ref()
-const refConfirmModal = ref()
 
 const validated = ref(false)
 const form = ref<Docs>({
@@ -84,7 +83,7 @@ const submitCheck = (event: Event) => {
     refLinkForms.value.newLinkPush()
     onSubmit({ ...form.value, newLinks: newLinks.value })
     refFileForms.value.checkRelease()
-  } // refConfirmModal.value.callModal()
+  }
 }
 
 const onSubmit = async (payload: Docs & Attatches) => {
@@ -265,19 +264,11 @@ onBeforeMount(() => dataSetup())
       </CCard>
     </CRow>
 
-    <CRow class="mb-5">
+    <CRow class="mb-5 text-right">
       <CCol>
         <v-btn type="submit" :color="docs?.pk ? 'success' : 'primary'" size="small"> 저장</v-btn>
         <v-btn :color="btnLight" size="small" @click="router.back()"> 취소 </v-btn>
       </CCol>
     </CRow>
   </CForm>
-
-  <ConfirmModal ref="refConfirmModal">
-    <!--    <template #header> {{ viewRoute }}</template>-->
-    <!--    <template #default> {{ viewRoute }} 저장을 진행하시겠습니까?</template>-->
-    <!--    <template #footer>-->
-    <!--      <v-btn :color="btnClass" @click="modalAction">저장</v-btn>-->
-    <!--    </template>-->
-  </ConfirmModal>
 </template>
