@@ -52,8 +52,17 @@ export const useMeeting = defineStore('meeting', () => {
   const updateMeeting = async (pk: number, payload: FormData) =>
     await api
       .put(`/meeting/${pk}/`, payload, config_headers)
-      .then(res => {
-        fetchMeeting(res.data.pk)
+      .then(async res => {
+        await fetchMeeting(res.data.pk)
+        message()
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const patchMeeting = async (pk: number, payload: FormData) =>
+    await api
+      .patch(`/meeting/${pk}/`, payload, config_headers)
+      .then(async res => {
+        await fetchMeeting(res.data.pk)
         message()
       })
       .catch(err => errorHandle(err.response.data))
@@ -100,6 +109,7 @@ export const useMeeting = defineStore('meeting', () => {
     fetchMeeting,
     createMeeting,
     updateMeeting,
+    patchMeeting,
     deleteMeeting,
     fetchCategoryList,
     createCategory,

@@ -152,6 +152,12 @@ const deleteMeeting = async () => {
   }
 }
 
+const deleteFile = async (fileId: number) => {
+  const form = new FormData()
+  form.append('del_file', JSON.stringify(fileId))
+  if (meeting.value) await meetingStore.patchMeeting(meeting.value?.pk, form)
+}
+
 const goList = () => {
   if (route.params.projId) {
     router.push({ name: '(회의)', params: { projId: route.params.projId } })
@@ -400,6 +406,7 @@ const refConfirmModal = ref()
                 ...file,
                 creator: meeting.attendees_desc.find(u => u.pk === file.creator) || meeting.creator,
               }"
+              @delete-file="deleteFile(file.pk)"
             />
           </CRow>
         </div>
