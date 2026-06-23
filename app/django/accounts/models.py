@@ -1,17 +1,14 @@
-import os
-
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.auth.models import UserManager, PermissionsMixin
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.core.mail import send_mail
 from django.db import models
-from django.db.models.signals import pre_save, post_delete
-from django.dispatch import receiver
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from forum.models import Post, Comment
+from _utils.file_cleanup import file_cleanup_signals
 from docs.models import Document
+from forum.models import Post, Comment
 from work.models.project import IssueProject
 
 
@@ -147,26 +144,7 @@ class Profile(models.Model):
         verbose_name_plural = '사용자 프로필'
 
 
-@receiver(pre_save, sender=Profile)
-def delete_old_image(sender, instance, **kwargs):
-    if not instance.pk:
-        return False  # 신규 객체일 경우 무시
-
-    try:
-        old_image = sender.objects.get(pk=instance.pk).image
-    except sender.DoesNotExist:
-        return False
-
-    new_image = instance.image
-    if not old_image == new_image:
-        if old_image and os.path.isfile(old_image.path):
-            os.remove(old_image.path)
-
-
-@receiver(post_delete, sender=Profile)
-def delete_image_on_delete(sender, instance, **kwargs):
-    if instance.image and os.path.isfile(instance.image.path):
-        os.remove(instance.image.path)
+file_cleanup_signals(Profile)  # 첨부파일 삭제
 
 
 class DocScrape(models.Model):

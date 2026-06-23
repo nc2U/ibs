@@ -6,7 +6,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 
 from _utils.contract_price import get_contract_payment_plan
-from _utils.file_cleanup import file_cleanup_signals, related_file_cleanup
+from _utils.file_cleanup import file_cleanup_signals
 from _utils.file_upload import get_contract_file_path, get_upload_path
 from payment.models import InstallmentPaymentOrder
 
@@ -133,7 +133,7 @@ class Contract(models.Model):
     serial_number = models.CharField('계약 일련 번호', max_length=30, unique=True, db_index=True)
     order_group = models.ForeignKey(OrderGroup, on_delete=models.PROTECT, verbose_name='차수')
     unit_type = models.ForeignKey('items.UnitType', on_delete=models.PROTECT, verbose_name='타입',
-                                   null=True, blank=True)
+                                  null=True, blank=True)
     activation = models.BooleanField('계약 활성 여부', default=True)
     is_sup_cont = models.BooleanField('공급계약 체결여부', default=False)
     sup_cont_date = models.DateField('공급계약 체결일', null=True, blank=True)
@@ -468,7 +468,6 @@ class ContractFile(models.Model):
 
 
 file_cleanup_signals(ContractFile)  # ContractFile 파일인스턴스 직접 삭제시
-related_file_cleanup(Contractor, related_name='contractor_files', file_field_name='file')  # Contractor 연관 모델 삭제 시
 
 
 class ContractDocument(models.Model):
@@ -560,7 +559,6 @@ class ContractDocumentFile(models.Model):
 
 # 파일 삭제 시그널 설정
 file_cleanup_signals(ContractDocumentFile)
-related_file_cleanup(ContractDocument, related_name='files', file_field_name='file')
 
 
 class ContractorAddress(models.Model):

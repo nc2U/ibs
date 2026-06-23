@@ -4,7 +4,7 @@ import magic
 from django.conf import settings
 from django.db import models
 
-from _utils.file_cleanup import file_cleanup_signals, related_file_cleanup
+from _utils.file_cleanup import file_cleanup_signals
 from _utils.file_upload import get_project_file_path
 
 
@@ -165,7 +165,6 @@ class SiteInfoFile(models.Model):
 
 
 file_cleanup_signals(SiteInfoFile)  # 파일 인스턴스 직접 삭제시
-related_file_cleanup(Site, related_name='site_info_files', file_field_name='file')  # 연관 모델 삭제 시
 
 
 class SiteOwner(models.Model):
@@ -329,4 +328,3 @@ class SiteContractFile(models.Model):
 
 
 file_cleanup_signals(SiteContractFile)  # 파일 인스턴스 직접 삭제시
-related_file_cleanup(SiteContract, related_name='site_cont_files', file_field_name='file')  # 연관 모델 삭제 시
