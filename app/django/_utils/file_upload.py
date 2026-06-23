@@ -119,6 +119,18 @@ def get_project_upload_path(instance, filename, subfolder=''):
         elif hasattr(instance, 'docs') and hasattr(instance.docs, 'issue_project') and hasattr(
                 instance.docs.issue_project, 'slug'):
             project_slug = instance.docs.issue_project.slug
+        elif (hasattr(instance, 'site')
+              and hasattr(instance.site.project, 'issue_project')):
+            project_slug = instance.site.project.issue_project.slug
+        elif (hasattr(instance, 'site_contract')
+              and hasattr(instance.site_contract.project, 'issue_project')):
+            project_slug = instance.site_contract.project.issue_project.slug
+        elif hasattr(instance, 'news') and hasattr(instance.news, 'project'):
+            project_slug = instance.news.project.slug
+        elif hasattr(instance, 'issue') and hasattr(instance.issue, 'project'):
+            project_slug = instance.issue.project.slug
+        elif hasattr(instance, 'meeting') and hasattr(instance.meeting, 'project'):
+            project_slug = instance.meeting.project.slug
         # 기본 slug 생성
         else:
             project_slug = 'default-project'
@@ -162,9 +174,29 @@ def get_forum_image_path(instance, filename):
     return get_project_upload_path(instance, filename, 'forum/images')
 
 
+def get_site_file_path(instance, filename):
+    """project 앱 파일 업로드 경로"""
+    return get_project_upload_path(instance, filename, 'sites')
+
+
+def get_letter_pdf_path(instance, filename):
+    """공문 PDF 파일 저장 경로 생성"""
+    return get_upload_path(instance, filename, 'official', 'letters')
+
+
 def get_work_file_path(instance, filename):
     """work 앱 파일 업로드 경로"""
     return get_project_upload_path(instance, filename, 'work')
+
+
+def get_news_file_path(instance, filename):
+    """work 앱 파일 업로드 경로"""
+    return get_project_upload_path(instance, filename, 'news')
+
+
+def get_meeting_file_path(instance, filename):
+    """work 앱 파일 업로드 경로"""
+    return get_project_upload_path(instance, filename, 'meeting')
 
 
 def get_contract_file_path(instance, filename):
@@ -186,25 +218,24 @@ def get_project_file_path(instance, filename):
     """project 앱 파일 업로드 경로"""
     return get_upload_path(instance, filename, 'project', 'files')
 
-
-# 레거시 호환성을 위한 래퍼 함수들
-def legacy_safe_upload_path(instance, filename, base_dir, sub_dir=''):
-    """
-    기존 함수들과의 호환성을 위한 래퍼 함수
-
-    Args:
-        instance: 모델 인스턴스
-        filename: 원본 파일명
-        base_dir: 기본 디렉토리
-        sub_dir: 서브 디렉토리
-
-    Returns:
-        str: 안전한 업로드 경로
-    """
-    safe_filename = generate_safe_filename(filename)
-    date_path = timezone.now().strftime('%Y/%m')
-
-    if sub_dir:
-        return os.path.join(base_dir, sub_dir, date_path, safe_filename)
-    else:
-        return os.path.join(base_dir, date_path, safe_filename)
+# # 레거시 호환성을 위한 래퍼 함수들
+# def legacy_safe_upload_path(instance, filename, base_dir, sub_dir=''):
+#     """
+#     기존 함수들과의 호환성을 위한 래퍼 함수
+#
+#     Args:
+#         instance: 모델 인스턴스
+#         filename: 원본 파일명
+#         base_dir: 기본 디렉토리
+#         sub_dir: 서브 디렉토리
+#
+#     Returns:
+#         str: 안전한 업로드 경로
+#     """
+#     safe_filename = generate_safe_filename(filename)
+#     date_path = timezone.now().strftime('%Y/%m')
+#
+#     if sub_dir:
+#         return os.path.join(base_dir, sub_dir, date_path, safe_filename)
+#     else:
+#         return os.path.join(base_dir, date_path, safe_filename)

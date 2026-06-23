@@ -3,6 +3,7 @@ from django.conf import settings
 from django.db import models
 
 from _utils.file_cleanup import file_cleanup_signals
+from _utils.file_upload import get_work_file_path
 from work.models.project import IssueProject
 
 
@@ -101,14 +102,9 @@ class IssueRelation(models.Model):
         return f'#{self.source.pk} ({self.source.subject}) → #{self.target.pk} ({self.target.subject})'
 
 
-def get_issue_file_path(instance, filename):
-    from _utils.file_upload import get_work_file_path
-    return get_work_file_path(instance, filename)
-
-
 class IssueFile(models.Model):
     issue = models.ForeignKey(Issue, on_delete=models.CASCADE, default=None, verbose_name='업무', related_name='files')
-    file = models.FileField(upload_to=get_issue_file_path, verbose_name='파일')
+    file = models.FileField(upload_to=get_work_file_path, verbose_name='파일')
     file_name = models.CharField('파일명', max_length=100, blank=True, db_index=True)
     file_type = models.CharField('타입', max_length=100, blank=True)
     file_size = models.PositiveBigIntegerField('사이즈', blank=True, null=True)

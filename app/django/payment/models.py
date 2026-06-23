@@ -1,3 +1,4 @@
+from django.apps import apps
 from django.core.exceptions import ValidationError
 from django.db import models
 
@@ -319,10 +320,9 @@ class ContractPayment(models.Model):
 
             # deal_date 일치 검증
             # ✅ ProjectBankTransaction을 Master DB에서 명시적으로 재조회하여 최신 deal_date를 보장
-            from django.apps import apps
             ProjectBankTransaction = apps.get_model('ledger', 'ProjectBankTransaction')
             bank_transaction = None
-            if self.accounting_entry.transaction_id: # accounting_entry의 transaction_id 사용
+            if self.accounting_entry.transaction_id:  # accounting_entry의 transaction_id 사용
                 try:
                     bank_transaction = ProjectBankTransaction.objects.using('default').get(
                         transaction_id=self.accounting_entry.transaction_id
@@ -397,7 +397,8 @@ class ContractPayment(models.Model):
             # accounting_entry 관련 에러이고, Master DB를 사용 중인 신규 생성 건이면 허용
             # (복제 지연으로 인해 Slave에서 조회가 안 되는 경우일 가능성이 높음)
             if not is_update and 'accounting_entry' in e.message_dict:
-                logger.info(f"💡 ContractPayment 신규 생성 중 accounting_entry 유효성 검사 지연 발생 (PK: {self.accounting_entry_id}). 생성 강행.")
+                logger.info(
+                    f"💡 ContractPayment 신규 생성 중 accounting_entry 유효성 검사 지연 발생 (PK: {self.accounting_entry_id}). 생성 강행.")
             else:
                 raise e
 

@@ -94,13 +94,9 @@ class PostLink(models.Model):
         return self.link
 
 
-def get_post_file_path(instance, filename):
-    return get_forum_file_path(instance, filename)
-
-
 class PostFile(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, default=None, verbose_name='게시물', related_name='files')
-    file = models.FileField(upload_to=get_post_file_path, verbose_name='파일')
+    file = models.FileField(upload_to=get_forum_file_path, verbose_name='파일')
     file_name = models.CharField('파일명', max_length=255, blank=True, db_index=True)
     file_type = models.CharField('타입', max_length=80, blank=True)
     file_size = models.PositiveBigIntegerField('사이즈', blank=True, null=True)
@@ -130,13 +126,9 @@ class PostFile(models.Model):
 file_cleanup_signals(PostFile)  # 파일인스턴스 직접 삭제시
 
 
-def get_post_img_path(instance, filename):
-    return get_forum_image_path(instance, filename)
-
-
 class PostImage(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, default=None, verbose_name='게시물', related_name='images')
-    image = models.ImageField(upload_to=get_post_img_path, verbose_name='이미지')
+    image = models.ImageField(upload_to=get_forum_image_path, verbose_name='이미지')
     image_name = models.CharField('파일명', max_length=255, blank=True, db_index=True)
     image_type = models.CharField('타입', max_length=30, blank=True)
     image_size = models.PositiveBigIntegerField('사이즈', blank=True, null=True)

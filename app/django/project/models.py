@@ -5,7 +5,7 @@ from django.conf import settings
 from django.db import models
 
 from _utils.file_cleanup import file_cleanup_signals
-from _utils.file_upload import get_project_file_path
+from _utils.file_upload import get_site_file_path
 
 
 class Project(models.Model):
@@ -129,14 +129,10 @@ class Site(models.Model):
         verbose_name_plural = '04. 사업부지 목록'
 
 
-def get_info_file(instance, filename):
-    return get_project_file_path(instance, filename)
-
-
 class SiteInfoFile(models.Model):
     site = models.ForeignKey(Site, on_delete=models.CASCADE, default=None, verbose_name='등기사항전부증명서',
                              related_name='site_info_files')
-    file = models.FileField(upload_to=get_info_file, verbose_name='파일경로')
+    file = models.FileField(upload_to=get_site_file_path, verbose_name='파일경로')
     file_name = models.CharField('파일명', max_length=255, blank=True, db_index=True)
     file_type = models.CharField('타입', max_length=80, blank=True)
     file_size = models.PositiveBigIntegerField('사이즈', blank=True, null=True)
@@ -292,14 +288,10 @@ class SiteContract(models.Model):
         verbose_name_plural = '08. 사업부지 계약현황'
 
 
-def get_cont_file(instance, filename):
-    return get_project_file_path(instance, filename)
-
-
 class SiteContractFile(models.Model):
     site_contract = models.ForeignKey(SiteContract, on_delete=models.CASCADE, default=None, verbose_name='계약서',
                                       related_name='site_cont_files')
-    file = models.FileField(upload_to=get_cont_file, verbose_name='파일경로', max_length=150)
+    file = models.FileField(upload_to=get_site_file_path, verbose_name='파일경로', max_length=150)
     file_name = models.CharField('파일명', max_length=255, blank=True, db_index=True)
     file_type = models.CharField('타입', max_length=80, blank=True)
     file_size = models.PositiveBigIntegerField('사이즈', blank=True, null=True)

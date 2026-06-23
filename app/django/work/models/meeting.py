@@ -3,6 +3,7 @@ from django.conf import settings
 from django.db import models
 
 from _utils.file_cleanup import file_cleanup_signals
+from _utils.file_upload import get_meeting_file_path
 from work.models.project import IssueProject
 
 
@@ -27,13 +28,7 @@ class Meeting(models.Model):
                                 related_name='meetings')
     category = models.ForeignKey(MeetingCategory, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='카테고리',
                                  related_name='meetings')
-
-    MEETING_STATUS_CHOICES = (
-        ('1', '준비'),
-        ('2', '종료'),
-        ('3', '확정'),
-        ('4', '취소'),
-    )
+    MEETING_STATUS_CHOICES = (('1', '준비'), ('2', '종료'), ('3', '확정'), ('4', '취소'))
     status = models.CharField('회의 상태', max_length=1, choices=MEETING_STATUS_CHOICES, default='1')
     title = models.CharField('회의 제목', max_length=255)
     agenda = models.TextField('회의 의제', blank=True, default='',
@@ -63,11 +58,6 @@ class Meeting(models.Model):
 
     def __str__(self):
         return self.title
-
-
-def get_meeting_file_path(instance, filename):
-    from _utils.file_upload import get_work_file_path
-    return get_work_file_path(instance, filename)
 
 
 class MeetingFile(models.Model):

@@ -432,14 +432,10 @@ class Contractor(models.Model):
         verbose_name_plural = '06. 계약자 정보'
 
 
-def get_contract_file_name(instance, filename):
-    return get_contract_file_path(instance, filename)
-
-
 class ContractFile(models.Model):
     contractor = models.ForeignKey('Contractor', on_delete=models.CASCADE, verbose_name='계약자',
                                    related_name='contractor_files')
-    file = models.FileField(upload_to=get_contract_file_name, verbose_name='파일경로')
+    file = models.FileField(upload_to=get_contract_file_path, verbose_name='파일경로')
     file_name = models.CharField('파일명', max_length=255, blank=True, db_index=True)
     file_type = models.CharField('타입', max_length=80, blank=True)
     file_size = models.PositiveBigIntegerField('사이즈', null=True, blank=True)
@@ -520,16 +516,16 @@ class ContractDocument(models.Model):
         verbose_name_plural = '계약자 제출 서류'
 
 
-def get_contract_document_file_name(instance, filename):
+def get_contract_docs_file_name(instance, filename):
     """계약자 제출 서류 파일 업로드 경로"""
-    return get_upload_path(instance, filename, 'contract_documents', 'files')
+    return get_upload_path(instance, filename, 'documents', 'files')
 
 
 class ContractDocumentFile(models.Model):
     """계약자 제출 서류 첨부 파일"""
     contract_document = models.ForeignKey(ContractDocument, on_delete=models.CASCADE,
                                           verbose_name='계약 서류', related_name='files')
-    file = models.FileField(upload_to=get_contract_document_file_name, verbose_name='파일')
+    file = models.FileField(upload_to=get_contract_docs_file_name, verbose_name='파일')
     file_name = models.CharField('파일명', max_length=255, blank=True, db_index=True)
     file_type = models.CharField('파일 타입', max_length=80, blank=True)
     file_size = models.PositiveBigIntegerField('파일 크기', null=True, blank=True)

@@ -7,6 +7,7 @@ from django.db import models
 from django.utils import timezone
 
 from _utils.file_cleanup import file_cleanup_signals
+from _utils.file_upload import get_news_file_path
 from work.models.project import IssueProject, Member
 
 
@@ -32,11 +33,6 @@ class News(models.Model):
         ordering = ('-is_important', '-created',)
         verbose_name = '14. 공지'
         verbose_name_plural = '14. 공지'
-
-
-def get_news_file_path(instance, filename):
-    date_path = timezone.now().strftime('%Y/%m')
-    return os.path.join('work', f'{instance.news.project.slug}/news/{date_path}/', filename)
 
 
 class NewsFile(models.Model):

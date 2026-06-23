@@ -1,5 +1,7 @@
 from django.db import models
 
+from _utils.file_upload import get_company_image_path
+from _utils.file_cleanup import file_cleanup_signals
 from accounts.models import User
 from project.models import Project
 
@@ -26,19 +28,17 @@ class Company(models.Model):
         return self.name
 
 
-def get_image_filename(instance, filename):
-    from _utils.file_upload import get_company_image_path
-    return get_company_image_path(instance, filename)
-
-
 class Logo(models.Model):
     company = models.OneToOneField(Company, on_delete=models.CASCADE)
-    generic_logo = models.ImageField(upload_to=get_image_filename, null=True, help_text='4.5:1 ~ 5:1 크기 추천',
+    generic_logo = models.ImageField(upload_to=get_company_image_path, null=True, help_text='4.5:1 ~ 5:1 크기 추천',
                                      verbose_name='일반 로고')
-    dark_logo = models.ImageField(upload_to=get_image_filename, null=True, help_text='4.5:1 ~ 5:1 크기 추천',
+    dark_logo = models.ImageField(upload_to=get_company_image_path, null=True, help_text='4.5:1 ~ 5:1 크기 추천',
                                   verbose_name='다크 로고')
-    simple_logo = models.ImageField(upload_to=get_image_filename, null=True, help_text='1:1 크기 추천',
+    simple_logo = models.ImageField(upload_to=get_company_image_path, null=True, help_text='1:1 크기 추천',
                                     verbose_name='심플 로고')
+
+
+file_cleanup_signals(Logo)
 
 
 class Department(models.Model):

@@ -5,6 +5,8 @@ from django.conf import settings
 from django.db import models
 from django.urls import reverse_lazy
 from mdeditor.fields import MDTextField
+from _utils.file_upload import get_book_image_path
+from _utils.file_cleanup import file_cleanup_signals
 
 
 class Book(models.Model):
@@ -67,12 +69,9 @@ class Subject(models.Model):
         return Subject.objects.filter(book=self.book_id, seq__gt=self.seq).order_by('seq').first()
 
 
-def get_image_filename(instance, filename):
-    today = datetime.today().strftime('%Y-%m-%d')
-    hash_value = hashlib.md5().hexdigest()
-    return f"editor/{today}_{hash_value}_{filename}"
-
-
 class Image(models.Model):
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE, default=None)
-    image = models.ImageField(upload_to=get_image_filename, verbose_name='Image')
+    image = models.ImageField(upload_to=get_book_image_path, verbose_name='Image')
+
+
+file_cleanup_signals(Image)
