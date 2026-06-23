@@ -73,50 +73,67 @@ class MeetingSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def update(self, instance, validated_data):
         attendees = validated_data.pop('attendees', None)
+        instance = super().update(instance, validated_data)
         if attendees is not None:
             instance.attendees.set(attendees)
 
         # File 처리
         creator = self.context['request'].user
+
+        # 신규 파일 추가
         new_files = self.initial_data.getlist('new_files', [])
         descriptions = self.initial_data.getlist('descriptions', [])
 
-        if new_files:
-            for i, file in enumerate(new_files):
-                meeting_file = MeetingFile(meeting=instance, file=file,
-                                           description=descriptions[i], creator=creator)
-                meeting_file.save()
+        for i, upload_file in enumerate(new_files):
+            MeetingFile.objects.create(
+                meeting=instance,
+                file=upload_file,
+                description=descriptions[i] if i < len(descriptions) else None,
+                creator=creator)
 
+        # 기존 파일 수정/삭제
         old_files = self.initial_data.getlist('files', [])
-        if old_files:
-            for json_file in old_files:
-                file = json.loads(json_file)
-                file_object = MeetingFile.objects.get(pk=file.get('pk'))
 
-                if file.get('del'):
-                    file_object.delete()
+        for json_file in old_files:
+            file_data = json.loads(json_file)
 
-        edit_file = self.initial_data.get('edit_file', None)  # pk
-        cng_file = self.initial_data.get('cng_file', None)  # change file
-        edit_file_desc = self.initial_data.get('edit_file_desc', None)
+            if file_data.get('del'):
+                MeetingFile.objects.filter(
+                    pk=file_data.get('pk'),
+                    meeting=instance
+                ).delete()
+
+        # 단일 파일 수정
+        edit_file = self.initial_data.get('edit_file')
+        cng_file = self.initial_data.get('cng_file')
+        edit_file_desc = self.initial_data.get('edit_file_desc')
+
         if edit_file:
-            file = MeetingFile.objects.get(pk=edit_file)
+            meeting_file = MeetingFile.objects.get(pk=edit_file, meeting=instance)
+            old_file = None
             if cng_file:
-                old_file = file.file
-                if os.path.isfile(old_file.path):
-                    os.remove(old_file.path)
-                file.file = cng_file
-            if edit_file_desc:
-                file.description = edit_file_desc
-            file.save()
+                old_file = meeting_file.file
 
-        # File 삭제 처리 (수정)
-        del_file = self.initial_data.get('del_file', None)
+                # 새 파일 등록
+                meeting_file.file = cng_file
+
+            if edit_file_desc is not None:
+                meeting_file.description = edit_file_desc
+
+            meeting_file.save()
+
+            # DB 커밋 성공 후 기존 파일 삭제
+            if old_file and old_file.name:
+                transaction.on_commit(lambda f=old_file: f.delete(save=False))
+
+        # 단일 파일 삭제
+        del_file = self.initial_data.get('del_file')
         if del_file:
-            file = MeetingFile.objects.get(pk=del_file)
-            file.delete()
-        # 프론트엔드에서 체크박스 선택된 파일들의 PK 리스트를 'files_del'로 보낸다고 가정
+            MeetingFile.objects.get(pk=del_file, meeting=instance).delete()
+
+        # 다중 파일 삭제
         files_del = self.initial_data.getlist('files_del')
         if files_del:
             MeetingFile.objects.filter(pk__in=files_del, meeting=instance).delete()
-        return super().update(instance, validated_data)
+
+        return instance

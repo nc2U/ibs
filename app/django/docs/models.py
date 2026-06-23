@@ -6,7 +6,7 @@ from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
-from _utils.file_cleanup import file_cleanup_signals, related_file_cleanup
+from _utils.file_cleanup import file_cleanup_signals
 from _utils.file_upload import get_docs_file_path, get_docs_image_path
 
 
@@ -416,7 +416,6 @@ class File(models.Model):
 
 
 file_cleanup_signals(File)  # 파일인스턴스 직접 삭제시
-related_file_cleanup(Document, related_name='files', file_field_name='file')  # 연관 모델 삭제 시
 
 
 def get_post_img_path(instance, filename):
@@ -447,7 +446,6 @@ class Image(models.Model):
 
 
 file_cleanup_signals(Image)  # 파일인스턴스 직접 삭제시
-related_file_cleanup(Document, related_name='images', file_field_name='image')  # 연관 모델 삭제 시
 
 
 # ============================================================

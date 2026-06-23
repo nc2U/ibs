@@ -6,7 +6,7 @@ from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
-from _utils.file_cleanup import file_cleanup_signals, related_file_cleanup
+from _utils.file_cleanup import file_cleanup_signals
 from work.models.project import IssueProject, Member
 
 
@@ -65,7 +65,6 @@ class NewsFile(models.Model):
 
 
 file_cleanup_signals(NewsFile)  # 파일인스턴스 직접 삭제시
-related_file_cleanup(News, related_name='files', file_field_name='file')  # 연관 모델 삭제 시
 
 
 class NewsComment(models.Model):

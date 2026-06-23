@@ -1,9 +1,8 @@
-import os
 import magic
 from django.conf import settings
 from django.db import models
-from django.db.models.signals import pre_delete
-from django.dispatch import receiver
+
+from _utils.file_cleanup import file_cleanup_signals
 from work.models.project import IssueProject
 
 
@@ -95,11 +94,4 @@ class MeetingFile(models.Model):
         super().save(*args, **kwargs)
 
 
-@receiver(pre_delete, sender=MeetingFile)
-def delete_meeting_file_on_delete(sender, instance, **kwargs):
-    if instance.file:
-        try:
-            if os.path.isfile(instance.file.path):
-                os.remove(instance.file.path)
-        except Exception:
-            pass
+file_cleanup_signals(MeetingFile)  # 파일인스턴스 직접 삭제시

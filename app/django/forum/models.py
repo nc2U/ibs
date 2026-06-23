@@ -5,7 +5,7 @@ import magic
 from django.conf import settings
 from django.db import models
 
-from _utils.file_cleanup import file_cleanup_signals, related_file_cleanup
+from _utils.file_cleanup import file_cleanup_signals
 from _utils.file_upload import get_forum_file_path, get_forum_image_path
 
 
@@ -128,7 +128,6 @@ class PostFile(models.Model):
 
 
 file_cleanup_signals(PostFile)  # 파일인스턴스 직접 삭제시
-related_file_cleanup(Post, related_name='files', file_field_name='file')  # 연관 모델 삭제 시
 
 
 def get_post_img_path(instance, filename):
@@ -158,7 +157,6 @@ class PostImage(models.Model):
 
 
 file_cleanup_signals(PostImage)  # 파일인스턴스 직접 삭제시
-related_file_cleanup(Post, related_name='images', file_field_name='image')  # 연관 모델 삭제 시
 
 
 class Comment(models.Model):
