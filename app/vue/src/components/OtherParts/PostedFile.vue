@@ -222,7 +222,7 @@ const fileDelete = () => {
   <ConfirmModal ref="refDelFile">
     <template #default>이 파일을 삭제 하시겠습니까?</template>
     <template #footer>
-      <v-btn color="warning" @click="fileDelete">삭제</v-btn>
+      <v-btn color="warning" size="small" @click="fileDelete">삭제</v-btn>
     </template>
   </ConfirmModal>
 </template>

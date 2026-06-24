@@ -2,7 +2,7 @@
 import { type PropType, ref } from 'vue'
 import type { Link } from '@/store/types/docs'
 import { useDocs } from '@/store/pinia/docs'
-import { timeFormat } from '@/utils/baseMixins'
+import { cutString, timeFormat } from '@/utils/baseMixins'
 import { bgLight, btnLight } from '@/utils/cssMixins'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
@@ -102,7 +102,7 @@ const linkDelete = () => {
         <tr v-for="link in links" :key="link.pk as number">
           <td>
             <v-icon icon="mdi-link" size="sm" class="mr-2" />
-            <a :href="link.link" target="_blank">{{ link.link }}</a>
+            <a :href="link.link" target="_blank">{{ cutString(link.link, 25) }}</a>
           </td>
           <td class="px-2">{{ link.description }}</td>
           <td class="text-secondary">
@@ -189,7 +189,7 @@ const linkDelete = () => {
   <ConfirmModal ref="refDelLink">
     <template #default>이 링크를 삭제 하시겠습니까?</template>
     <template #footer>
-      <v-btn color="warning" @click="linkDelete">삭제</v-btn>
+      <v-btn color="warning" size="small" @click="linkDelete">삭제</v-btn>
     </template>
   </ConfirmModal>
 </template>
