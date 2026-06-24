@@ -35,9 +35,8 @@ const emit = defineEmits(['show-modal', 'delete-role'])
         </CTableDataCell>
         <CTableDataCell class="text-end">
           <v-btn
-            color="info"
+            color="success"
             size="x-small"
-            variant="outlined"
             class="me-1"
             :disabled="!workManager"
             @click="emit('show-modal', role)"
@@ -45,9 +44,8 @@ const emit = defineEmits(['show-modal', 'delete-role'])
             수정
           </v-btn>
           <v-btn
-            color="danger"
+            color="warning"
             size="x-small"
-            variant="outlined"
             :disabled="!workManager"
             @click="emit('delete-role', role.pk)"
           >
