@@ -143,6 +143,7 @@ onBeforeMount(() => {
               autocomplete="label"
               :classes="{ search: 'form-control multiselect-search' }"
               :add-option-on="['enter', 'tab']"
+              :disabled-options="courtChoices.filter(c => c.disabled).map(c => c.value)"
               searchable
               @change="listFiltering(1)"
               :disabled="disabled"

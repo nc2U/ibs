@@ -21,7 +21,7 @@ import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ComDocsAuthGuard from '@/components/AuthGuard/ComDocsAuthGuard.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import ListController from '@/components/LawSuitCase/ListController.vue'
-import CaseView from '@/components/LawSuitCase/CaseView.vue'
+import CaseDetail from '../../../components/LawSuitCase/CaseDetail.vue'
 import CaseList from '@/components/LawSuitCase/CaseList.vue'
 import CaseForm from '@/components/LawSuitCase/CaseForm.vue'
 
@@ -334,7 +334,7 @@ onBeforeRouteLeave(() => {
         </div>
 
         <div v-else-if="route.name.includes('보기')">
-          <CaseView
+          <CaseDetail
             :curr-page="caseFilter.page ?? 1"
             :suitcase="suitcase as SuitCase"
             :view-route="mainViewName"
