@@ -11,7 +11,6 @@ import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import MultiSelect from '@/components/MultiSelect/index.vue'
 import FileForms from '@/components/OtherParts/FileForms.vue'
 import LinkForms from '@/components/OtherParts/LinkForms.vue'
-import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AddNewDoc from './AddNewDoc.vue'
 
 const props = defineProps({

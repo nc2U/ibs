@@ -1,7 +1,6 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useWork } from '@/store/pinia/work_project.ts'
-import { useIssue } from '@/store/pinia/work_issue.ts'
 import { useRoute } from 'vue-router'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import { type DocsFilter, type SuitCaseFilter, useDocs } from '@/store/pinia/docs'
@@ -9,7 +8,7 @@ import type { Docs, PatchDocs } from '@/store/types/docs'
 import Loading from '@/components/Loading/Index.vue'
 import AddNewDoc from './components/AddNewDoc.vue'
 import DocsList from './components/DocsList.vue'
-import DocsView from './components/DocsView.vue'
+import DocsDetail from './components/DocsDetail.vue'
 import DocsForm from './components/DocsForm.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 
@@ -127,7 +126,7 @@ onBeforeMount(async () => {
   <Loading v-model:active="loading" />
   <ContentBody ref="cBody">
     <template v-slot:default>
-      <DocsView v-if="route.name === '(문서) - 보기'" :docs="docs as Docs" @docs-hit="docsHit" />
+      <DocsDetail v-if="route.name === '(문서) - 보기'" :docs="docs as Docs" @docs-hit="docsHit" />
 
       <DocsForm
         v-else-if="route.name === '(문서) - 편집'"

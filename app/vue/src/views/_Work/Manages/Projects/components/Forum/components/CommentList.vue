@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { type PropType } from 'vue'
 import type { Comment } from '@/store/types/forum'
-import CommentObj from './CommentObj.vue'
+import CommentItem from './CommentItem.vue'
 
 defineProps({
   comments: { type: Array as PropType<Comment[]>, default: () => [] },
@@ -12,7 +12,7 @@ const emit = defineEmits(['submit-comment', 'delete-comment'])
 
 <template>
   <div class="comment-list">
-    <CommentObj
+    <CommentItem
       v-for="cmt in comments"
       :key="cmt.pk"
       :comment="cmt"

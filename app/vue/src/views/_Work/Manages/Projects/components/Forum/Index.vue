@@ -7,7 +7,7 @@ import Loading from '@/components/Loading/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import ForumIndex from './components/ForumIndex.vue'
 import ForumList from './components/ForumList.vue'
-import ForumView from './components/ForumView.vue'
+import ForumDetail from './components/ForumDetail.vue'
 import ForumForm from './components/ForumForm.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
@@ -145,7 +145,7 @@ onBeforeMount(async () => {
       />
 
       <!-- 게시물 상세 -->
-      <ForumView
+      <ForumDetail
         v-else-if="route.name === '(게시판) - 게시물 보기' && (post || loading)"
         :post="post as Post"
         :comments="commentList"
@@ -190,7 +190,9 @@ onBeforeMount(async () => {
                 class="text-body-2"
               >
                 {{ p.title }}
-                <span v-if="p.comments_count" class="text-info small">({{ p.comments_count }})</span>
+                <span v-if="p.comments_count" class="text-info small"
+                  >({{ p.comments_count }})</span
+                >
               </router-link>
             </li>
           </ul>

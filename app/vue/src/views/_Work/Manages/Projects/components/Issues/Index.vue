@@ -7,19 +7,18 @@ import { useIssue } from '@/store/pinia/work_issue.ts'
 import { useLogging } from '@/store/pinia/work_logging.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import type { Issue, IssueFilter } from '@/store/types/work_issue.ts'
-import Loading from '@/components/Loading/Index.vue'
 import IssueList from '@/views/_Work/Manages/Issues/components/IssueList.vue'
-import IssueView from '@/views/_Work/Manages/Issues/components/IssueView.vue'
+import IssueDetail from '@/views/_Work/Manages/Issues/components/IssueDetail.vue'
 import IssueForm from '@/views/_Work/Manages/Issues/components/IssueForm.vue'
 import IssueReport from '@/views/_Work/Manages/Issues/components/IssueReport.vue'
 import AsideIssue from '@/views/_Work/Manages/Issues/components/aside/AsideIssue.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
+import Loading from '@/components/Loading/Index.vue'
 
 const cBody = ref()
 const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
 
-const aside = ref(true)
 const [route, router] = [useRoute(), useRouter()]
 
 const accStore = useAccount()
@@ -140,7 +139,7 @@ onBeforeMount(async () => {
         @page-select="pageSelect"
       />
 
-      <IssueView
+      <IssueDetail
         v-if="route.name === '(업무) - 보기' && issue"
         :issue-project="issueProject as IssueProject"
         :issue="issue"

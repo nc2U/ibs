@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, inject, onBeforeMount, ref, watch } from 'vue'
+import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAccount } from '@/store/pinia/account'
 import { useMeeting } from '@/store/pinia/work_meeting.ts'

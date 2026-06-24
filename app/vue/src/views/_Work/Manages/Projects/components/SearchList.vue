@@ -4,7 +4,6 @@ import type { getProject, ProjectFilter } from '@/store/types/work_project.ts'
 import Multiselect from '@vueform/multiselect'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import IProjectSelect from '@/views/_Work/components/IProjectSelect.vue'
-import { CCollapse, CRow } from '@coreui/vue'
 
 const props = defineProps({
   allProjects: { type: Array as PropType<getProject[]>, default: () => [] },

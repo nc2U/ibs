@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, inject, onBeforeMount, ref } from 'vue'
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useStore } from '@/store'
 import { useIssue } from '@/store/pinia/work_issue'
@@ -12,7 +12,7 @@ import FullCalendar from '@fullcalendar/vue3'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import interactionPlugin from '@fullcalendar/interaction'
 
-const props = defineProps({
+defineProps({
   projectId: { type: String, default: undefined },
 })
 

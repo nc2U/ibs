@@ -4,7 +4,7 @@ import type { Forum, Post } from '@/store/types/forum'
 import { useForum } from '@/store/pinia/forum'
 import NoData from '@/components/NoData/Index.vue'
 import Pagination from '@/components/Pagination'
-import PostObj from './PostObj.vue'
+import PostItem from './PostItem.vue'
 
 defineProps({
   forum: { type: Object as PropType<Forum | null>, default: null },
@@ -68,7 +68,7 @@ const pageSelect = (page: number) => emit('page-select', page)
       </CTableHead>
       <CTableBody>
         <CTableRow v-for="post in postList" :key="post.pk" :class="{ strong: post.is_notice }">
-          <PostObj :post="post" />
+          <PostItem :post="post" />
         </CTableRow>
       </CTableBody>
     </CTable>

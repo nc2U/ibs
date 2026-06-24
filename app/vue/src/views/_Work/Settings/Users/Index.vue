@@ -11,8 +11,8 @@ import Loading from '@/components/Loading/Index.vue'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import UserList from '@/views/_Work/Settings/Users/components/UserList.vue'
-import UserView from '@/views/_Work/Settings/Users/components/UserView.vue'
 import UserForm from '@/views/_Work/Settings/Users/components/UserForm.vue'
+import UserDetail from './components/UserDetail.vue'
 
 const cBody = ref()
 
@@ -64,7 +64,7 @@ onBeforeMount(async () => {
     <template v-slot:default>
       <UserList v-if="route.name === '사용자'" :user-list="usersList" />
 
-      <UserView
+      <UserDetail
         v-else-if="route.name === '사용자 - 보기'"
         :issue-projects="issueProjects"
         :issue-num="issueNumByMember"

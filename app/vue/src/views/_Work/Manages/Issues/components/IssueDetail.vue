@@ -1,13 +1,7 @@
 <script lang="ts" setup>
 import { computed, type ComputedRef, inject, onBeforeMount, type PropType, ref, watch } from 'vue'
-import type { IssueProject, getProject } from '@/store/types/work_project.ts'
-import type {
-  CodeValue,
-  Issue,
-  IssueComment,
-  IssueStatus,
-  SubIssue,
-} from '@/store/types/work_issue.ts'
+import type { getProject, IssueProject } from '@/store/types/work_project.ts'
+import type { CodeValue, Issue, IssueComment, IssueStatus } from '@/store/types/work_issue.ts'
 import { useRoute, useRouter } from 'vue-router'
 import { useIssue } from '@/store/pinia/work_issue.ts'
 import { useWork } from '@/store/pinia/work_project.ts'
@@ -29,7 +23,6 @@ const props = defineProps({
   issue: { type: Object as PropType<Issue>, required: true },
   allProjects: { type: Array as PropType<getProject[]>, default: () => [] },
   issueCommentList: { type: Array as PropType<IssueComment[]>, default: () => [] },
-
   statusList: { type: Array as PropType<IssueStatus[]>, default: () => [] },
   priorityList: { type: Array as PropType<CodeValue[]>, default: () => [] },
 })

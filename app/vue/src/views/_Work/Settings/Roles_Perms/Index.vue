@@ -3,6 +3,7 @@ import { onBeforeMount, ref, computed } from 'vue'
 import { pageTitle, navMenu } from '@/views/_Work/_menu/headermixin3'
 import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project'
+import { useAccount } from '@/store/pinia/account.ts'
 import { storeToRefs } from 'pinia'
 import Loading from '@/components/Loading/Index.vue'
 import Header from '@/views/_Work/components/Header/Index.vue'
@@ -12,7 +13,6 @@ import PermissionReport from './components/PermissionReport.vue'
 import RoleFormModal from './components/RoleFormModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import type { Role } from '@/store/types/work_project'
-import { useAccount } from '@/store/pinia/account.ts'
 
 const route = useRoute()
 

@@ -6,7 +6,7 @@ import type { Version } from '@/store/types/work_project.ts'
 import Loading from '@/components/Loading/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import RoadmapList from './components/RoadmapList.vue'
-import VersionView from './components/VersionView.vue'
+import VersionDetail from './components/VersionDetail.vue'
 import VersionForm from './components/VersionForm.vue'
 
 const cBody = ref()
@@ -50,7 +50,7 @@ onBeforeMount(async () => {
     <template v-slot:default>
       <RoadmapList v-if="route.name === '(추진현황)'" :version-list="versionList" />
 
-      <VersionView v-if="route.name === '(추진현황) - 보기'" :version="version as Version" />
+      <VersionDetail v-if="route.name === '(추진현황) - 보기'" :version="version as Version" />
 
       <VersionForm
         v-if="route.name === '(추진현황) - 추가' || route.name === '(추진현황) - 수정'"

@@ -1,6 +1,5 @@
 <script lang="ts" setup>
-import { ref, type PropType } from 'vue'
-import { useRouter } from 'vue-router'
+import { type PropType, ref } from 'vue'
 import { cutString, diffDate } from '@/utils/baseMixins'
 import type { IssueRelation } from '@/store/types/work_issue.ts'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'

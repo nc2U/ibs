@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import { type PropType } from 'vue'
 import { useRouter } from 'vue-router'
-import { timeFormat, elapsedTime } from '@/utils/baseMixins'
 import type { User } from '@/store/types/accounts'
+import { timeFormat, elapsedTime } from '@/utils/baseMixins'
 
 defineProps({
   userList: { type: Array as PropType<User[]>, default: () => [] },

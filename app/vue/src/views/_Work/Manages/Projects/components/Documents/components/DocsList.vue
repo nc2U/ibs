@@ -4,7 +4,6 @@ import { useDocs } from '@/store/pinia/docs'
 import type { Docs as Document } from '@/store/types/docs'
 import Pagination from '@/components/Pagination'
 import NoData from '@/components/NoData/Index.vue'
-import CategoryTabs from '@/components/Documents/CategoryTabs.vue'
 import Docs from './Docs.vue'
 
 defineProps({

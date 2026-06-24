@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { onBeforeMount, type PropType } from 'vue'
+import { type PropType } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { Version } from '@/store/types/work_project.ts'
 import Roadmap from './Roadmap.vue'

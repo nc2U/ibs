@@ -8,7 +8,7 @@ import Loading from '@/components/Loading/Index.vue'
 import NewsList from '@/views/_Work/Manages/News/components/NewsList.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import NewsForm from '@/views/_Work/Manages/News/components/NewsForm.vue'
-import NewsView from '@/views/_Work/Manages/News/components/NewsView.vue'
+import NewsDetail from '@/views/_Work/Manages/News/components/NewsDetail.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 defineProps({
@@ -165,7 +165,7 @@ onBeforeMount(async () => {
         @page-select="pageSelect"
       />
 
-      <NewsView
+      <NewsDetail
         v-else-if="route.name === '(공지) - 보기' && !!news"
         :news="news as News"
         :view-form="viewForm"
