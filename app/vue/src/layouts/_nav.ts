@@ -27,6 +27,7 @@ const company_ledger = {
   component: 'CNavGroup',
   name: '본사 회계 관리',
   to: '/ledger',
+  auth: 'com_ledger',
   icon: 'cil-laptop',
   items: [
     {
@@ -46,6 +47,7 @@ const company_docs = {
   component: 'CNavGroup',
   name: '본사 문서 관리',
   to: '/docs/general',
+  auth: 'com_docs',
   icon: 'cil-cloud-download',
   items: [
     {
@@ -79,6 +81,7 @@ const human_resource = {
   component: 'CNavGroup',
   name: '본사 인사 관리',
   to: '/hr-manage',
+  auth: 'hr_manage',
   icon: 'cilPeople',
   items: [
     {

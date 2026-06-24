@@ -18,6 +18,7 @@ import nav from '@/layouts/_nav'
 
 type Badge = { color?: string; text?: string }
 type Item = {
+  auth?: string
   badge?: Badge
   component: string | Component
   icon?: string
@@ -67,13 +68,21 @@ const AppSidebarNav = defineComponent({
     const { isStaff, isComLedger } = storeToRefs(account)
 
     const predicates = computed(() => {
-      const list: ((it: Item) => boolean)[] = []
-      if (!isStaff.value) {
-        // 본사 관리자가 아니면
-        const companyMenus = new Set(['본사 문서 관리', '본사 인사 관리'])
-        list.push(it => (it.name || '') !== '본사 관리' && !companyMenus.has(it.name || ''))
-      } else if (!isComLedger.value) list.push(it => (it.name || '') !== '본사 회계 관리')
-      return list
+      // 권한 키별 접근 제어 매핑
+      const authMap: Record<string, boolean> = {
+        com_ledger: !!isComLedger.value,
+        com_docs: !!account.writeComDocs,
+        hr_manage: !!isStaff.value,
+      }
+
+      return [
+        (it: Item) => {
+          // 타이틀과 권한이 없는 메뉴는 항상 표시
+          if (it.component === 'CNavTitle' || !it.auth) return true
+          // 권한 키가 설정된 경우 체크
+          return authMap[it.auth] ?? true
+        },
+      ]
     })
 
     const reactiveNav = computed(() =>

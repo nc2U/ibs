@@ -188,12 +188,6 @@ export const useAccount = defineStore('account', () => {
       .then(res => (resetTokenList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
-  // const fetchResetToken = (pk: number) =>
-  //   api
-  //     .get(`/pass-reset-token/${pk}/`)
-  //     .then(res => (resetToken.value = res.data))
-  //     .catch(err => errorHandle(err.response.data))
-
   // getters
   const superAuth = computed(() => userInfo.value?.is_superuser)
   const workManager = computed(() => userInfo.value?.work_manager || superAuth.value)
@@ -205,7 +199,7 @@ export const useAccount = defineStore('account', () => {
     () => superAuth.value || writeComDocs.value || staffAuth.value?.project_docs == '2',
   )
   const isComLedger = computed(
-    () => superAuth.value || Number(staffAuth.value?.company_ledger || null),
+    () => !!(superAuth.value || Number(staffAuth.value?.company_ledger || 0)),
   )
   const writeComLedger = computed(() => superAuth.value || staffAuth.value?.company_ledger == '2')
   const writeProLedger = computed(
