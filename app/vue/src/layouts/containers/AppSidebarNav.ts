@@ -49,11 +49,19 @@ const isActiveItem = (route: RouteLocationNormalized, item: Item): boolean => {
   return !!(item.name && metaTitle && item.name === metaTitle)
 }
 
-function filterNavItems(items: Item[], predicates: ((it: Item) => boolean)[]): Item[] {
+const filterNavItems = (items: Item[], predicates: ((it: Item) => boolean)[]): Item[] => {
   const passAllPredicates = (it: Item) => predicates.every(p => p(it))
+
   return items
-    .map(it => ({ ...it, items: it.items ? filterNavItems(it.items, predicates) : undefined }))
-    .filter(it => passAllPredicates(it) || (Array.isArray(it.items) && it.items.length > 0))
+    // 1. 먼저 현재 아이템(부모)이 권한을 통과하는지 확인
+    .filter(it => passAllPredicates(it))
+    // 2. 통과한 경우에만 자식들을 필터링
+    .map(it => ({
+      ...it,
+      items: it.items ? filterNavItems(it.items, predicates) : undefined,
+    }))
+    // 3. 자식이 있거나, CNavItem인 경우만 유지
+    .filter(it => it.component !== 'CNavGroup' || (Array.isArray(it.items) && it.items.length > 0))
 }
 
 const AppSidebarNav = defineComponent({
@@ -70,17 +78,16 @@ const AppSidebarNav = defineComponent({
     const predicates = computed(() => {
       // 권한 키별 접근 제어 매핑
       const authMap: Record<string, boolean> = {
-        com_ledger: !!isComLedger.value,
-        com_docs: !!account.writeComDocs,
-        hr_manage: !!isStaff.value,
+        comLedger: !!isComLedger.value,
+        isStaff: !!isStaff.value,
       }
 
       return [
         (it: Item) => {
-          // 타이틀과 권한이 없는 메뉴는 항상 표시
-          if (it.component === 'CNavTitle' || !it.auth) return true
-          // 권한 키가 설정된 경우 체크
-          return authMap[it.auth] ?? true
+          // 만약 현재 아이템에 auth가 설정되어 있다면, 권한 체크를 반드시 통과해야 함
+          if (it.auth) return authMap[it.auth] ?? false
+          // auth가 설정되어 있지 않으면 표시
+          return true
         },
       ]
     })

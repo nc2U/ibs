@@ -9,25 +9,25 @@ const dashboard = {
   },
 }
 
-const work_project = {
+const workProject = {
   component: 'CNavItem',
   name: '업 무 관 리',
   to: '/work',
   icon: 'cil-task',
 }
 
-const work_admin = {
+const workSetting = {
   component: 'CNavItem',
   name: '설 정 관 리',
   to: '/manage',
   icon: 'cil-code',
 }
 
-const company_ledger = {
+const companyLedger = {
   component: 'CNavGroup',
   name: '본사 회계 관리',
   to: '/ledger',
-  auth: 'com_ledger',
+  auth: 'comLedger',
   icon: 'cil-laptop',
   items: [
     {
@@ -43,11 +43,11 @@ const company_ledger = {
   ],
 }
 
-const company_docs = {
+const companyDocs = {
   component: 'CNavGroup',
   name: '본사 문서 관리',
   to: '/docs/general',
-  auth: 'com_docs',
+  auth: 'isStaff',
   icon: 'cil-cloud-download',
   items: [
     {
@@ -77,11 +77,11 @@ const company_docs = {
   ],
 }
 
-const human_resource = {
+const humanResource = {
   component: 'CNavGroup',
   name: '본사 인사 관리',
   to: '/hr-manage',
-  auth: 'hr_manage',
+  auth: 'isStaff',
   icon: 'cilPeople',
   items: [
     {
@@ -223,7 +223,7 @@ const notice = {
   ],
 }
 
-const project_ledger = {
+const projectLedger = {
   component: 'CNavGroup',
   name: '회계 자금 관리',
   to: '/project-ledger',
@@ -247,7 +247,7 @@ const project_ledger = {
   ],
 }
 
-const project_docs = {
+const projectDocs = {
   component: 'CNavGroup',
   name: '문서 소송 관리',
   to: '/project-docs',
@@ -416,15 +416,16 @@ const settings = {
 
 const nav = [
   dashboard,
-  work_project,
-  work_admin,
+  workProject,
+  workSetting,
   {
     component: 'CNavTitle',
     name: '본사 관리',
+    auth: 'isStaff',
   },
-  company_ledger,
-  company_docs,
-  human_resource,
+  companyLedger,
+  companyDocs,
+  humanResource,
   {
     component: 'CNavTitle',
     name: '프로젝트 관리',
@@ -432,8 +433,8 @@ const nav = [
   contract,
   payment,
   notice,
-  project_ledger,
-  project_docs,
+  projectLedger,
+  projectDocs,
   project,
   {
     component: 'CNavTitle',
