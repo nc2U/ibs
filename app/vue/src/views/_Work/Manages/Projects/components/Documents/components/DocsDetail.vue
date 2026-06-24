@@ -68,20 +68,38 @@ onMounted(() => {
 
     <PostInfo :docs="docs" class="mb-4" />
 
-    <PostContent :description="docs.description" class="mb-5" />
+    <CRow class="mb-5">
+      <CCol>
+        <span class="mr-3">
+          <small class="text-muted">카테고리: </small>
+          <strong>{{ docs.cate_name }}</strong>
+        </span>
+        <span v-if="docs.execution_date">
+          <small class="text-muted">시행일자: </small>
+          <strong>{{ docs.execution_date }}</strong>
+        </span>
+      </CCol>
+    </CRow>
+
+    <div v-if="docs.description" class="description-section mb-5">
+      <h6 class="mb-2 text-muted">문서 요약</h6>
+      <div class="p-3 bg-more-light rounded border">
+        <PostContent :description="docs.description" />
+      </div>
+    </div>
 
     <div class="files-section">
       <CRow class="mb-3 pt-4">
         <CCol>
           <h6 class="mb-2">첨부 파일</h6>
-          <PostedFile :docs="docs.pk as number" :files="docs.files" />
+          <PostedFile :docs="docs.pk as number" btn-direction="right" :files="docs.files" />
         </CCol>
       </CRow>
 
       <CRow class="mb-3">
         <CCol>
           <h6 class="mb-2">관련 링크</h6>
-          <PostedLink :docs="docs.pk as number" :links="docs.links" />
+          <PostedLink :docs="docs.pk as number" btn-direction="right" :links="docs.links" />
         </CCol>
       </CRow>
     </div>

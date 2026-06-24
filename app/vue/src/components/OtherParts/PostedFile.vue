@@ -9,6 +9,7 @@ import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 const props = defineProps({
   docs: { type: Number, required: true },
   files: { type: Object as PropType<AFile[]>, default: () => [] },
+  btnDirection: { type: String, default: 'left' },
 })
 
 const emit = defineEmits(['file-change', 'file-delete'])
@@ -211,9 +212,9 @@ const fileDelete = () => {
     </CCol>
   </CRow>
 
-  <CRow v-if="addFileForm">
+  <CRow v-if="addFileForm" :class="`text-${btnDirection}`">
     <CCol>
-      <v-btn color="success" size="small" @click="fileUpload">추가</v-btn>
+      <v-btn color="info" size="small" @click="fileUpload">추가</v-btn>
       <v-btn :color="btnLight" size="small" @click="clearFile">취소</v-btn>
     </CCol>
   </CRow>

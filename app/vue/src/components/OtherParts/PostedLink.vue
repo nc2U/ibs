@@ -9,6 +9,7 @@ import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 const props = defineProps({
   docs: { type: Number, required: true },
   links: { type: Array as PropType<Link[]>, default: () => [] },
+  btnDirection: { type: String, default: 'left' },
 })
 
 const docStore = useDocs()
@@ -178,9 +179,9 @@ const linkDelete = () => {
     </CCol>
   </CRow>
 
-  <CRow v-if="addLinkForm">
+  <CRow v-if="addLinkForm" :class="`text-${btnDirection}`">
     <CCol>
-      <v-btn color="success" size="small" @click="createLink">추가</v-btn>
+      <v-btn color="info" size="small" @click="createLink">추가</v-btn>
       <v-btn :color="btnLight" size="small" @click="clearLink">취소</v-btn>
     </CCol>
   </CRow>
