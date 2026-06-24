@@ -32,9 +32,9 @@ defineProps({ docs: { type: Object as PropType<Docs>, required: true } })
           {{ timeFormat(docs.created as string, 'short', '/') }}
         </CCol>
       </CRow>
-      <CRow v-if="docs.content" class="mt-2">
+      <CRow v-if="docs.description" class="mt-2">
         <CCol class="text-body-2 text-muted">
-          <div v-html="DOMPurify.sanitize(cutString(docs.content, 120))" />
+          <div v-html="DOMPurify.sanitize(cutString(docs.description, 120))" />
         </CCol>
       </CRow>
     </v-card-text>

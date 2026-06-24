@@ -58,7 +58,7 @@ class DocumentAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('id', 'doc_type', 'issue_project', 'category', 'title', 'execution_date')
     list_display_links = ('title',)
     list_editable = ('doc_type', 'issue_project', 'category', 'execution_date')
-    search_fields = ('title', 'content')
+    search_fields = ('title', 'description')
     list_filter = ('doc_type', 'issue_project__company', 'issue_project__project', 'issue_project', 'category')
     inlines = (LinkInline, FileInline, ImageInline)
 

@@ -113,7 +113,7 @@ class Document(BaseModel):
     lawsuit = models.ForeignKey(LawsuitCase, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='사건번호')
     title = models.CharField('제목', max_length=255, db_index=True)
     execution_date = models.DateField('문서 시행일자', null=True, blank=True, help_text='문서 발신/수신/시행일자')
-    content = models.TextField('내용', blank=True, default='')
+    description = models.CharField('설명', max_length=255, blank=True, default='')
     hit = models.PositiveIntegerField('조회수', default=0)
     ip = models.GenericIPAddressField('아이피', null=True, blank=True)
     device = models.CharField('등록기기', max_length=255, blank=True, default='')

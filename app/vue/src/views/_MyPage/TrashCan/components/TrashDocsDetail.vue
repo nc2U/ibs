@@ -55,7 +55,7 @@ const router = useRouter()
 
     <CRow class="my-5 p-3" id="print-area">
       <CCol>
-        <div v-html="DOMPurify.sanitize(docs.content)" />
+        <div v-html="DOMPurify.sanitize(docs.description)" />
       </CCol>
     </CRow>
 

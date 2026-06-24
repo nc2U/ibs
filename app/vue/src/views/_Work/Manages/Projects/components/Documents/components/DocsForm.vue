@@ -39,7 +39,7 @@ const form = ref<Docs>({
   lawsuit: null,
   execution_date: null,
   title: '',
-  content: '',
+  description: '',
   device: '',
   is_secret: false,
   password: '',
@@ -135,7 +135,7 @@ const dataSetup = () => {
     form.value.lawsuit = props.docs.lawsuit
     form.value.execution_date = props.docs.execution_date
     form.value.title = props.docs.title
-    form.value.content = props.docs.content
+    form.value.description = props.docs.description
     form.value.device = props.docs.device
     form.value.is_secret = props.docs.is_secret
     form.value.password = props.docs.password
@@ -238,7 +238,7 @@ onBeforeMount(() => dataSetup())
             <CFormLabel class="col-form-label text-right col-2">설명</CFormLabel>
             <CCol class="col-sm-10 mb-5">
               <QuillEditor
-                v-model:content="form.content"
+                v-model:content="form.description"
                 placeholder="문서 내용 설명"
                 style="background: white"
               />

@@ -5,7 +5,7 @@ import { useDocs } from '@/store/pinia/docs'
 import { TableSecondary } from '@/utils/cssMixins'
 import type { Docs as D } from '@/store/types/docs'
 import Pagination from '@/components/Pagination'
-import Docs from './components/Docs.vue'
+import DocsItem from './components/DocsItem.vue'
 import TopDocs from '@/components/Documents/components/TopDocs.vue'
 
 defineProps({
@@ -75,7 +75,7 @@ const pageSelect = (page: number) => emit('page-select', page)
         :view-route="viewRoute"
         :is-lawsuit="isLawsuit"
       />
-      <Docs
+      <DocsItem
         v-for="docs in docsList"
         :key="docs.pk"
         :docs="docs"

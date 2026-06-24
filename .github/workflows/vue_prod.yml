@@ -134,7 +134,7 @@ jobs:
         run: cd app/vue && pnpm test:unit
 
       # docs 배포
-      - name: Docs Deploy
+      - name: DocsItem Deploy
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}

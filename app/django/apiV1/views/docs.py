@@ -17,7 +17,7 @@ from ..permission import *
 from ..serializers.docs import *
 
 
-# Docs --------------------------------------------------------------------------
+# DocsItem --------------------------------------------------------------------------
 
 class DocTypeViewSet(viewsets.ModelViewSet):
     queryset = DocType.objects.all()
@@ -102,7 +102,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
     filterset_class = DocumentFilterSet
     search_fields = (
         'lawsuit__case_number', 'lawsuit__case_name', 'title',
-        'content', 'links__link', 'files__file', 'creator__username')
+        'description', 'links__link', 'files__file', 'creator__username')
 
     def copy_and_create(self, request, *args, **kwargs):
         # 복사할 행의 ID를 저장한다.
@@ -125,7 +125,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
                 'lawsuit': org_instance.lawsuit.pk if org_instance.lawsuit else None,
                 'title': org_instance.title,
                 'execution_date': org_instance.execution_date if org_instance.execution_date else None,
-                'content': org_instance.content + add_text,
+                'description': org_instance.description + add_text,
             }
 
             # Serializer를 사용해 새로운 행을 생성하고 저장한다.

@@ -142,7 +142,7 @@ const toManage = (fn: number, el?: { nType?: number; nProj?: number; nCate?: num
       type_name: props.docs?.type_name,
       issue_project: el?.nProj,
       category: el?.nCate,
-      content: props.docs?.content ?? '',
+      description: props.docs?.description ?? '',
       docs: docs as number,
       state,
       filter: props.docsFilter as DocsFilter,
@@ -325,7 +325,7 @@ onMounted(() => {
         </CCol>
       </CRow>
 
-      <PostContent :content="docs.content" />
+      <PostContent :description="docs.description" />
     </div>
 
     <CRow class="my-3 px-3">

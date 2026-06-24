@@ -50,7 +50,7 @@ urlpatterns = [
     path('ledger-cash-flow-form/', ExportLedgerCashFlowForm.as_view(), name='ledger-cash-flow-form'),
     path('pro-trans/', export_pro_transaction_xls, name='pro-trans'),
 
-    # Docs 관련 (새 모듈)
+    # DocsItem 관련 (새 모듈)
     path('suitcases/', ExportSuitCases.as_view(), name='suitcases'),
     path('suitcase/', ExportSuitCase.as_view(), name='suitcase'),
 ]

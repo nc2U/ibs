@@ -86,7 +86,7 @@ export type Docs = {
   lawsuit_name?: string
   title: string
   execution_date: string | null
-  content: string
+  description: string
   hit?: number
   scrape?: number
   my_scrape?: boolean
@@ -166,7 +166,7 @@ export interface PatchDocs {
   lawsuit?: number | null
   title?: string
   execution_date?: string | null
-  content?: string
+  description?: string
   hit?: number
   scrape?: number
   is_secret?: boolean
@@ -180,7 +180,7 @@ export interface TrashDocs {
   type_name: string
   cate_name: string
   title: string
-  content: string
+  description: string
   creator: string
   created: string
   deleted: string

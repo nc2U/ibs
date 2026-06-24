@@ -84,7 +84,7 @@ interface ManagePayload {
   doc_type: number | undefined
   type_name: string | undefined
   category: number | undefined
-  content: string
+  description: string
   docs: number
   state: boolean
   filter: DocsFilter
@@ -92,11 +92,28 @@ interface ManagePayload {
 }
 
 export const toDocsManage = (fn: number, payload: ManagePayload) => {
-  const { issue_project, docs, doc_type, category, content, type_name, manager, state, filter } =
-    payload
+  const {
+    issue_project,
+    docs,
+    doc_type,
+    category,
+    description,
+    type_name,
+    manager,
+    state,
+    filter,
+  } = payload
   if (fn === 11) return copyDocs(issue_project as number, docs, doc_type as number)
   if (fn === 22)
-    return moveDocs(docs, doc_type as number, type_name, issue_project, content, manager, filter)
+    return moveDocs(
+      docs,
+      doc_type as number,
+      type_name,
+      issue_project,
+      description,
+      manager,
+      filter,
+    )
   if (fn === 33) return changeCate(docs, category, filter)
   if (fn === 4) return toSecretDocs(docs, state, filter)
   if (fn === 7) return toBlind(docs, state, filter)
@@ -115,10 +132,10 @@ const moveDocs = (
   manager: string,
   filter: DocsFilter,
 ) => {
-  const content = `${org_content}<br /><br /><p>[이 게시물은 ${manager} 님에 의해 ${timeFormat(
+  const description = `${org_content}<br /><br /><p>[이 게시물은 ${manager} 님에 의해 ${timeFormat(
     new Date(),
   )} ${type_name} 에서 이동됨]</p>`
-  patchDocs({ pk: docs, doc_type, issue_project, content, filter }).then(() =>
+  patchDocs({ pk: docs, doc_type, issue_project, description, filter }).then(() =>
     message('success', '', '게시물 이동이 완료되었습니다.'),
   )
 }

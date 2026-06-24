@@ -68,7 +68,7 @@ onMounted(() => {
 
     <PostInfo :docs="docs" class="mb-4" />
 
-    <PostContent :content="docs.content" class="mb-5" />
+    <PostContent :description="docs.description" class="mb-5" />
 
     <div class="files-section">
       <CRow class="mb-3 pt-4">

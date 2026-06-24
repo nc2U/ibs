@@ -50,7 +50,7 @@ const form = reactive<Docs>({
   lawsuit: null,
   title: '',
   execution_date: null,
-  content: '',
+  description: '',
   device: '',
   is_secret: false,
   password: '',
@@ -73,7 +73,7 @@ const formsCheck = computed(() => {
     const b = form.lawsuit === props.docs.lawsuit
     const c = form.title === props.docs.title
     const d = form.execution_date === props.docs.execution_date
-    const e = form.content === props.docs.content
+    const e = form.description === props.docs.description
 
     return a && b && c && d && e && attach.value
   } else return false
@@ -144,7 +144,7 @@ const dataSetup = () => {
     form.lawsuit = props.docs.lawsuit
     form.title = props.docs.title
     form.execution_date = props.docs.execution_date
-    form.content = props.docs.content
+    form.description = props.docs.description
     form.device = props.docs.device
     form.is_secret = props.docs.is_secret
     form.password = props.docs.password
@@ -251,7 +251,7 @@ onBeforeUpdate(() => dataSetup())
     <CRow style="margin-bottom: 52px">
       <CFormLabel for="title" class="col-md-2 col-form-label text-right">내용</CFormLabel>
       <CCol md="10 mb-5">
-        <QuillEditor v-model:content="form.content" placeholder="본문 내용" />
+        <QuillEditor v-model:content="form.description" placeholder="본문 내용" />
       </CCol>
     </CRow>
 

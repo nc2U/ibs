@@ -4,7 +4,7 @@ import { useDocs } from '@/store/pinia/docs'
 import type { Docs as Document } from '@/store/types/docs'
 import Pagination from '@/components/Pagination'
 import NoData from '@/components/NoData/Index.vue'
-import Docs from './Docs.vue'
+import DocsItem from './DocsItem.vue'
 
 defineProps({
   limit: { type: Number, default: 10 },
@@ -27,7 +27,7 @@ const selectCate = (cate: number) => emit('select-cate', cate)
   <NoData v-if="!docsList.length" class="mt-5" />
 
   <CRow v-else>
-    <Docs v-for="docs in docsList" :key="docs.pk" :docs="docs" />
+    <DocsItem v-for="docs in docsList" :key="docs.pk" :docs="docs" />
   </CRow>
 
   <Pagination

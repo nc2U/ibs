@@ -10,7 +10,7 @@ from apiV1.serializers.accounts import SimpleUserSerializer
 from docs.models import DocType, Category, LawsuitCase, Document, Link, File, Image, OfficialLetter
 
 
-# Docs --------------------------------------------------------------------------
+# DocsItem --------------------------------------------------------------------------
 class DocTypeSerializer(serializers.ModelSerializer):
     name = serializers.SerializerMethodField()
 
@@ -153,7 +153,7 @@ class DocumentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Document
         fields = ('pk', 'issue_project', 'proj_name', 'proj_sort', 'doc_type', 'type_name', 'category',
-                  'cate_name', 'cate_color', 'lawsuit', 'lawsuit_name', 'title', 'execution_date', 'content',
+                  'cate_name', 'cate_color', 'lawsuit', 'lawsuit_name', 'title', 'execution_date', 'description',
                   'hit', 'scrape', 'my_scrape', 'ip', 'device', 'is_secret', 'password', 'is_blind', 'deleted',
                   'links', 'files', 'creator', 'updator', 'created', 'updated', 'is_new', 'prev_pk', 'next_pk')
         read_only_fields = ('ip',)
@@ -320,7 +320,7 @@ class DocumentInTrashSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Document
-        fields = ('pk', 'type_name', 'cate_name', 'title', 'content', 'creator', 'created', 'deleted')
+        fields = ('pk', 'type_name', 'cate_name', 'title', 'description', 'creator', 'created', 'deleted')
 
     @staticmethod
     def get_type_name(obj):

@@ -8,7 +8,7 @@ import Loading from '@/components/Loading/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import TrashDocsList from './components/TrashDocsList.vue'
-import TrashDocsView from './components/TrashDocsView.vue'
+import TrashDocsDetail from './components/TrashDocsDetail.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 const mainViewName = ref('휴지통')
@@ -133,7 +133,7 @@ onBeforeMount(async () => {
       </div>
 
       <div v-else-if="route.name.includes('보기')" class="pt-3">
-        <TrashDocsView
+        <TrashDocsDetail
           v-if="sort === 'docs'"
           :category="category as undefined"
           :docs="trashDocs as TP"
