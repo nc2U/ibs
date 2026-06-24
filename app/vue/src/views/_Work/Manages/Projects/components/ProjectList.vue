@@ -32,6 +32,17 @@ const filterSubmit = (payload: ProjectFilter) => workStore.fetchIssueProjectList
 
 const route = useRoute()
 
+// 권한 필터링 로직 추가
+const hasVisible = (project: IssueProject): boolean => {
+  if (project.visible) return true
+  if (project.sub_projects && project.sub_projects.length > 0)
+    for (let sub of project.sub_projects) {
+      if (hasVisible(sub)) return true
+    }
+  return false
+}
+
+// 반응형 설정 (breakpoint 로직 유지)
 const breakpoint = ref('xl')
 
 const updateBreakpoint = () => {
@@ -47,6 +58,16 @@ onMounted(() => {
   window.addEventListener('resize', updateBreakpoint)
 })
 onBeforeUnmount(() => window.removeEventListener('resize', updateBreakpoint))
+
+// 반응형 컬럼 설정 계산
+const colProps = computed(() => {
+  switch (breakpoint.value) {
+    case 'sm': return { xs: 12 }
+    case 'md': return { sm: 6 }
+    case 'lg': return { sm: 4 }
+    default: return { sm: 3 }
+  }
+})
 </script>
 
 <template>
@@ -78,63 +99,9 @@ onBeforeUnmount(() => window.removeEventListener('resize', updateBreakpoint))
       </div>
 
       <CRow v-else>
-        <CCol v-if="breakpoint === 'sm'">
-          <template v-for="proj in projectList" :key="proj.pk">
+        <template v-for="proj in projectList" :key="proj.pk">
+          <CCol v-if="hasVisible(proj)" v-bind="colProps">
             <ProjectCard :project="proj" />
-          </template>
-        </CCol>
-
-        <template v-else-if="breakpoint === 'md'">
-          <CCol sm="6">
-            <template v-for="(proj, i) in projectList" :key="proj.pk">
-              <ProjectCard v-if="(i + 1) % 2 == 1" :project="proj" />
-            </template>
-          </CCol>
-          <CCol sm="6">
-            <template v-for="(proj, i) in projectList" :key="proj.pk">
-              <ProjectCard v-if="(i + 1) % 2 == 0" :project="proj" />
-            </template>
-          </CCol>
-        </template>
-
-        <template v-else-if="breakpoint === 'lg'">
-          <CCol sm="4">
-            <template v-for="(proj, i) in projectList" :key="proj.pk">
-              <ProjectCard v-if="(i + 1) % 3 == 1" :project="proj" />
-            </template>
-          </CCol>
-          <CCol sm="4">
-            <template v-for="(proj, i) in projectList" :key="proj.pk">
-              <ProjectCard v-if="(i + 1) % 3 == 2" :project="proj" />
-            </template>
-          </CCol>
-          <CCol sm="4">
-            <template v-for="(proj, i) in projectList" :key="proj.pk">
-              <ProjectCard v-if="(i + 1) % 3 == 0" :project="proj" />
-            </template>
-          </CCol>
-        </template>
-
-        <template v-else>
-          <CCol sm="3">
-            <template v-for="(proj, i) in projectList" :key="proj.pk">
-              <ProjectCard v-if="(i + 1) % 4 == 1" :project="proj" />
-            </template>
-          </CCol>
-          <CCol sm="3">
-            <template v-for="(proj, i) in projectList" :key="proj.pk">
-              <ProjectCard v-if="(i + 1) % 4 == 2" :project="proj" />
-            </template>
-          </CCol>
-          <CCol sm="3">
-            <template v-for="(proj, i) in projectList" :key="proj.pk">
-              <ProjectCard v-if="(i + 1) % 4 == 3" :project="proj" />
-            </template>
-          </CCol>
-          <CCol sm="3">
-            <template v-for="(proj, i) in projectList" :key="proj.pk">
-              <ProjectCard v-if="(i + 1) % 4 == 0" :project="proj" />
-            </template>
           </CCol>
         </template>
       </CRow>
