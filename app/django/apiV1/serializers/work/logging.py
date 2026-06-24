@@ -26,7 +26,7 @@ class NewsInActLogSerializer(serializers.ModelSerializer):
 class DocInActLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = Document
-        fields = ('pk', 'title', 'content')
+        fields = ('pk', 'title', 'description')
 
 
 class PostInActLogSerializer(serializers.ModelSerializer):

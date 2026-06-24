@@ -161,8 +161,8 @@ const getIcon = (sort: string, progress: boolean) => {
 
             <div class="ml-5 pl-4 fst-italic">
               <div
-                v-if="act.document?.content"
-                v-html="markdownRender(cutString(act.document.content, 113))"
+                v-if="act.document?.description"
+                v-html="markdownRender(cutString(act.document.description, 113))"
                 class="form-text"
               />
             </div>
