@@ -106,8 +106,9 @@ const saveRole = async () => {
         size="small"
         :disabled="!workManager"
         @click="saveRole"
-        >저장</v-btn
       >
+        저장
+      </v-btn>
     </CModalFooter>
   </CModal>
 </template>
