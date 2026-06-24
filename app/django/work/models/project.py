@@ -79,7 +79,7 @@ class IssueProject(models.Model):
                 member_data[mem.user_id] = {
                     'pk': mem.pk,
                     'user': {'pk': mem.user_id, 'username': mem.user.username},
-                    'roles': {role.pk: {'pk': role.pk, 'name': role.name, 'inherited': is_inherited} for role in
+                    'roles': {role.pk: {'pk': role.pk, 'name': role.name, 'assignable': role.assignable, 'inherited': is_inherited} for role in
                               mem.roles.all()},
                     'created': mem.created,
                 }
@@ -90,6 +90,7 @@ class IssueProject(models.Model):
                         member_data[mem.user_id]['roles'][role.pk] = {
                             'pk': role.pk,
                             'name': role.name,
+                            'assignable': role.assignable,
                             'inherited': is_inherited
                         }
                     elif not is_inherited:
