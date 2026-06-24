@@ -64,22 +64,19 @@ const AppSidebarNav = defineComponent({
 
     // Pinia store
     const account = useAccount()
-    const { workManager, isStaff, isComLedger, userInfo } = storeToRefs(account)
+    const { isStaff, isComLedger } = storeToRefs(account)
 
     const predicates = computed(() => {
       const list: ((it: Item) => boolean)[] = []
-      if (!workManager.value) list.push(it => (it.name || '') !== '설 정 관 리')
       if (!isStaff.value) {
+        // 본사 관리자가 아니면
         const companyMenus = new Set(['본사 문서 관리', '본사 인사 관리'])
         list.push(it => (it.name || '') !== '본사 관리' && !companyMenus.has(it.name || ''))
-      } else if (!isComLedger.value) {
-        // list.push(it => (it.name || '') !== '본사 자금 관리')
-        list.push(it => (it.name || '') !== '본사 회계 관리')
-      }
+      } else if (!isComLedger.value) list.push(it => (it.name || '') !== '본사 회계 관리')
       return list
     })
 
-    const reactiveNav = reactive(
+    const reactiveNav = computed(() =>
       filterNavItems(Array.isArray(nav) ? (nav as Item[]) : [], predicates.value),
     )
 
@@ -171,14 +168,18 @@ const AppSidebarNav = defineComponent({
           return
         }
         await nextTick()
-        openActiveMenu(reactiveNav)
+        openActiveMenu(reactiveNav.value)
         sidebarKey.value++ // 강제 재렌더링
       },
       { immediate: true },
     )
 
     return () =>
-      h(CSidebarNav, { key: sidebarKey.value }, { default: () => reactiveNav.map(renderItem) })
+      h(
+        CSidebarNav,
+        { key: sidebarKey.value },
+        { default: () => reactiveNav.value.map(renderItem) },
+      )
   },
 })
 
