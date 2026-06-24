@@ -57,7 +57,7 @@ class RoleInMemberSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Role
-        fields = ('pk', 'name', 'inherited')
+        fields = ('pk', 'name', 'assignable', 'inherited')
 
 
 class MemberInIssueProjectSerializer(serializers.ModelSerializer):

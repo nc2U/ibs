@@ -9,7 +9,7 @@ export interface SimpleUser {
 export interface SimpleMember {
   pk: number
   user: SimpleUser
-  roles: { pk: number; name: string; inherited?: boolean }[]
+  roles: { pk: number; name: string; assignable: string; inherited?: boolean }[]
   add_roles?: { pk: number; name: string }[]
   created: string
 }
