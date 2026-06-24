@@ -51,7 +51,8 @@ class IssueCategoryAdmin(ImportExportMixin, admin.ModelAdmin):
 
 @admin.register(IssueStatus)
 class IssueStatusAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('pk', 'name', 'closed', 'order', 'creator')
+    list_display = ('pk', 'name', 'description', 'closed', 'order', 'creator')
+    list_editable = ('description', 'closed', 'order')
     list_display_links = ('name',)
 
 
