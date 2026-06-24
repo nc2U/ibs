@@ -18,7 +18,7 @@ const getTitle = (title: string) => title.replace(/[() ]/gim, '')
 </script>
 
 <template>
-  <CNav v-if="!route.path.startsWith('/manage') || workManager" variant="tabs" class="mb-0 pl-4">
+  <CNav variant="tabs" class="mb-0 pl-4">
     <CDropdown v-if="route.params['projId']">
       <CDropdownToggle :color="isDark ? 'dark' : 'light'" />
       <CDropdownMenu>

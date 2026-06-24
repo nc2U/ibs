@@ -7,6 +7,7 @@ const props = defineProps<{
   visible: boolean
   role: Role | null
   maxOrder: number
+  workManager: boolean
 }>()
 
 const emit = defineEmits(['close'])
@@ -100,7 +101,13 @@ const saveRole = async () => {
     </CModalBody>
     <CModalFooter>
       <v-btn color="secondary" size="small" @click="emit('close')">취소</v-btn>
-      <v-btn :color="form.pk ? 'success' : 'primary'" size="small" @click="saveRole">저장</v-btn>
+      <v-btn
+        :color="form.pk ? 'success' : 'primary'"
+        size="small"
+        :disabled="!workManager"
+        @click="saveRole"
+        >저장</v-btn
+      >
     </CModalFooter>
   </CModal>
 </template>

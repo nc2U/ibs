@@ -6,6 +6,7 @@ import type { Role, Permission } from '@/store/types/work_project'
 const props = defineProps<{
   roleList: Role[]
   permissionList: Permission[]
+  workManager: boolean
 }>()
 
 const workStore = useWork()
@@ -81,6 +82,7 @@ const togglePermission = async (role: Role, permissionPk: number) => {
               <CFormCheck
                 :id="`perm-${role.pk}-${perm.pk}`"
                 :checked="hasPermission(role, perm.pk)"
+                :disabled="!workManager"
                 @change="togglePermission(role, perm.pk)"
               />
             </td>

@@ -12,8 +12,13 @@ import PermissionReport from './components/PermissionReport.vue'
 import RoleFormModal from './components/RoleFormModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import type { Role } from '@/store/types/work_project'
+import { useAccount } from '@/store/pinia/account.ts'
 
 const route = useRoute()
+
+const accStore = useAccount()
+const workManager = computed(() => accStore.workManager)
+
 const workStore = useWork()
 const { roleList, permissionList } = storeToRefs(workStore)
 
@@ -83,11 +88,20 @@ onBeforeMount(async () => {
           </CNav>
 
           <div v-if="activeTab === 0">
-            <RoleList :role-list="roleList" @show-modal="showRoleModal" @delete-role="deleteRole" />
+            <RoleList
+              :role-list="roleList"
+              :work-manager="!!workManager"
+              @show-modal="showRoleModal"
+              @delete-role="deleteRole"
+            />
           </div>
 
           <div v-else-if="activeTab === 1">
-            <PermissionReport :role-list="roleList" :permission-list="permissionList" />
+            <PermissionReport
+              :role-list="roleList"
+              :work-manager="!!workManager"
+              :permission-list="permissionList"
+            />
           </div>
         </CCol>
       </CRow>
@@ -96,6 +110,7 @@ onBeforeMount(async () => {
         :visible="roleModal"
         :role="selectedRole"
         :max-order="maxOrder"
+        :work-manager="!!workManager"
         @close="roleModal = false"
       />
 

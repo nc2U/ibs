@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Role } from '@/store/types/work_project'
 
-defineProps<{ roleList: Role[] }>()
+defineProps<{ roleList: Role[]; workManager: boolean }>()
 const emit = defineEmits(['show-modal', 'delete-role'])
 </script>
 
@@ -10,6 +10,7 @@ const emit = defineEmits(['show-modal', 'delete-role'])
     <h5>역할 목록</h5>
     <CButton color="primary" size="sm" @click="emit('show-modal')">새 역할</CButton>
   </div>
+  {{ workManager }}
   <CTable hover responsive align="middle">
     <CTableHead color="light">
       <CTableRow>
@@ -38,6 +39,7 @@ const emit = defineEmits(['show-modal', 'delete-role'])
             size="x-small"
             variant="outlined"
             class="me-1"
+            :disabled="!workManager"
             @click="emit('show-modal', role)"
           >
             수정
@@ -46,6 +48,7 @@ const emit = defineEmits(['show-modal', 'delete-role'])
             color="danger"
             size="x-small"
             variant="outlined"
+            :disabled="!workManager"
             @click="emit('delete-role', role.pk)"
           >
             삭제
