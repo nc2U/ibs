@@ -110,7 +110,6 @@ thead th {
   position: sticky;
   top: 0;
   z-index: 20;
-  background-color: #f8f9fa !important;
 }
 
 thead th.sticky-col-header {
