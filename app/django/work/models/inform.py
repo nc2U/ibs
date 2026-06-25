@@ -31,8 +31,8 @@ class News(models.Model):
 
     class Meta:
         ordering = ('-is_important', '-created',)
-        verbose_name = '14. 공지'
-        verbose_name_plural = '14. 공지'
+        verbose_name = '15. 공지'
+        verbose_name_plural = '15. 공지'
 
 
 class NewsFile(models.Model):

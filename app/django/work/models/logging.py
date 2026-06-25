@@ -36,8 +36,8 @@ class ActivityLogEntry(models.Model):
 
     class Meta:
         ordering = ('-id',)
-        verbose_name = '15. 실행 기록'
-        verbose_name_plural = '15. 실행 기록'
+        verbose_name = '16. 실행 기록'
+        verbose_name_plural = '16. 실행 기록'
         indexes = [models.Index(fields=['timestamp', 'project'])]
 
 
@@ -73,5 +73,5 @@ class IssueLogEntry(models.Model):
         return f"{self.action} - {self.timestamp}"
 
     class Meta:
-        verbose_name = '16. 업무 로그'
-        verbose_name_plural = '16. 업무 로그'
+        verbose_name = '17. 업무 로그'
+        verbose_name_plural = '17. 업무 로그'

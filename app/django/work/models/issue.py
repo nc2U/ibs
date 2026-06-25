@@ -24,8 +24,8 @@ class Version(models.Model):
 
     class Meta:
         ordering = ('project', 'id')
-        verbose_name = '07. 단계'
-        verbose_name_plural = '07. 단계'
+        verbose_name = '08. 단계'
+        verbose_name_plural = '08. 단계'
 
 
 class IssueManager(models.Manager):
@@ -87,8 +87,8 @@ class Issue(models.Model):
 
     class Meta:
         ordering = ('-id',)
-        verbose_name = '08. 업무(작업)'
-        verbose_name_plural = '08. 업무(작업)'
+        verbose_name = '09. 업무(작업)'
+        verbose_name_plural = '09. 업무(작업)'
 
 
 class IssueRelation(models.Model):
@@ -163,23 +163,8 @@ class Tracker(models.Model):
 
     class Meta:
         ordering = ('order', 'id')
-        verbose_name = '09. 업무 유형'
-        verbose_name_plural = '09. 업무 유형'
-
-
-class IssueCategory(models.Model):
-    project = models.ForeignKey(IssueProject, on_delete=models.CASCADE, verbose_name='프로젝트', related_name='categories')
-    name = models.CharField('범주', max_length=100, db_index=True)
-    assigned_to = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
-                                    null=True, blank=True, verbose_name='담당자')
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        ordering = ('-project', 'id',)
-        verbose_name = '10. 업무 범주'
-        verbose_name_plural = '10. 업무 범주'
+        verbose_name = '10. 업무 유형'
+        verbose_name_plural = '10. 업무 유형'
 
 
 class IssueStatus(models.Model):
@@ -200,6 +185,21 @@ class IssueStatus(models.Model):
         verbose_name_plural = '11. 업무 상태'
 
 
+class IssueCategory(models.Model):
+    project = models.ForeignKey(IssueProject, on_delete=models.CASCADE, verbose_name='프로젝트', related_name='categories')
+    name = models.CharField('범주', max_length=100, db_index=True)
+    assigned_to = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                                    null=True, blank=True, verbose_name='담당자')
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ('-project', 'id',)
+        verbose_name = '12. 업무 범주'
+        verbose_name_plural = '12. 업무 범주'
+
+
 class Workflow(models.Model):
     role = models.ForeignKey('work.Role', on_delete=models.CASCADE, verbose_name='역할')
     tracker = models.ForeignKey(Tracker, on_delete=models.CASCADE, verbose_name='업무 유형')
@@ -211,8 +211,8 @@ class Workflow(models.Model):
         return f'{self.role} - {self.tracker}'
 
     class Meta:
-        verbose_name = '12. 업무 흐름'
-        verbose_name_plural = '12. 업무 흐름'
+        verbose_name = '13. 업무 흐름'
+        verbose_name_plural = '13. 업무 흐름'
 
 
 class CodeIssuePriority(models.Model):
@@ -229,5 +229,5 @@ class CodeIssuePriority(models.Model):
 
     class Meta:
         ordering = ('order', 'id',)
-        verbose_name = '13. 업무 우선 순위'
-        verbose_name_plural = '13. 업무 우선 순위'
+        verbose_name = '14. 업무 우선 순위'
+        verbose_name_plural = '14. 업무 우선 순위'

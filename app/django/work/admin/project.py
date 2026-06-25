@@ -66,6 +66,11 @@ class IssueProjectAdmin(ImportExportMixin, admin.ModelAdmin):
         return readonly
 
 
+@admin.register(Module)
+class ModuleAdmin(admin.ModelAdmin):
+    pass
+
+
 @admin.register(Role)
 class RoleAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('pk', 'name', 'issue_visible', 'user_visible')

@@ -126,6 +126,10 @@ class Module(models.Model):
     def __str__(self):
         return f'{self.project.name}'
 
+    class Meta:
+        verbose_name = '02. 모듈'
+        verbose_name_plural = '02. 모듈'
+
 
 class Role(models.Model):
     name = models.CharField('이름', max_length=20, db_index=True)
@@ -145,8 +149,8 @@ class Role(models.Model):
 
     class Meta:
         ordering = ('order', 'id',)
-        verbose_name = '02. 역할'
-        verbose_name_plural = '02. 역할'
+        verbose_name = '03. 역할'
+        verbose_name_plural = '03. 역할'
 
 
 class Permission(models.Model):
@@ -163,8 +167,8 @@ class Permission(models.Model):
 
     class Meta:
         ordering = ('id',)
-        verbose_name = '03. 권한'
-        verbose_name_plural = '03. 권한'
+        verbose_name = '04. 권한'
+        verbose_name_plural = '04. 권한'
 
 
 class Member(models.Model):
@@ -177,6 +181,6 @@ class Member(models.Model):
         return self.user.__str__()
 
     class Meta:
-        verbose_name = '04. 구성원'
-        verbose_name_plural = '04. 구성원'
+        verbose_name = '05. 구성원'
+        verbose_name_plural = '05. 구성원'
         unique_together = ('user', 'project')  # 한 프로젝트당 한 번만 속할 수 있음
