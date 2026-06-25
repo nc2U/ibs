@@ -16,6 +16,69 @@ from work.models.project import IssueProject
 from work.models.meeting import Meeting
 
 
+class IssueInVersionSerializer(serializers.ModelSerializer):
+    project = SimpleIssueProjectSerializer(read_only=True)
+    tracker = TrackerInIssueProjectSerializer(read_only=True)
+    watchers = SimpleUserSerializer(many=True, read_only=True)
+    expected_duration_display = serializers.CharField(source='get_expected_duration_display', read_only=True)
+
+    class Meta:
+        model = Issue
+        fields = ('pk', 'project', 'subject', 'status', 'tracker', 'priority',
+                  'fixed_version', 'category', 'assigned_to', 'watchers',
+                  'expected_duration', 'expected_duration_display', 'done_ratio', 'closed')
+
+
+class VersionSerializer(serializers.ModelSerializer):
+    project = SimpleIssueProjectSerializer(read_only=True)
+    status_desc = serializers.CharField(source='get_status_display', read_only=True)
+    sharing_desc = serializers.CharField(source='get_sharing_display', read_only=True)
+    is_default = serializers.SerializerMethodField(read_only=True)
+    issues = IssueInVersionSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Version
+        fields = ('pk', 'project', 'name', 'status', 'status_desc', 'sharing', 'sharing_desc',
+                  'effective_date', 'description', 'issues', 'is_default')
+
+    @staticmethod
+    def get_is_default(obj):
+        default_ver = obj.project.default_version
+        return True if default_ver and default_ver.pk == obj.pk else False
+
+    @transaction.atomic
+    def create(self, validated_data):
+        project_slug = self.initial_data.get('project')
+        try:
+            project = IssueProject.objects.get(slug=project_slug)
+        except IssueProject.DoesNotExist:
+            raise serializers.ValidationError({'project': 'Project does not exist'})
+
+        version = Version.objects.create(**validated_data, project=project)
+        is_default = self.initial_data.get('is_default', False)
+        if is_default:
+            project.default_version = version
+            project.save()
+        return version
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        project_slug = self.initial_data.get('project')
+        try:
+            project = IssueProject.objects.get(slug=project_slug)
+            is_default = self.initial_data.get('is_default', False)
+            default_version = instance if is_default else None
+            project.default_version = default_version
+            project.save()
+        except IssueProject.DoesNotExist:
+            raise serializers.ValidationError({'project': 'Project does not exist'})
+
+        instance.__dict__.update(validated_data)
+        instance.project = project
+        instance.save()
+        return instance
+
+
 class MeetingInIssueSerializer(serializers.ModelSerializer):
     class Meta:
         model = Meeting

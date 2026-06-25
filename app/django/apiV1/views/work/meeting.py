@@ -2,6 +2,7 @@ from django_filters.rest_framework import FilterSet, CharFilter, DateTimeFromToR
 from rest_framework import viewsets, permissions
 
 from apiV1.pagination import PageNumberPaginationTwenty
+from apiV1.permission import ProjectPermission
 from apiV1.serializers.work.meeting import MeetingCategorySerializer, MeetingSerializer, MeetingFileSerializer
 from work.models.meeting import MeetingCategory, Meeting, MeetingFile
 
@@ -9,7 +10,7 @@ from work.models.meeting import MeetingCategory, Meeting, MeetingFile
 class MeetingCategoryViewSet(viewsets.ModelViewSet):
     queryset = MeetingCategory.objects.all()
     serializer_class = MeetingCategorySerializer
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (permissions.IsAuthenticated, ProjectPermission)
     filterset_fields = ('project',)
 
 
@@ -30,7 +31,7 @@ class MeetingFilter(FilterSet):
 class MeetingViewSet(viewsets.ModelViewSet):
     queryset = Meeting.objects.all()
     serializer_class = MeetingSerializer
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (permissions.IsAuthenticated, ProjectPermission)
     pagination_class = PageNumberPaginationTwenty
     filterset_class = MeetingFilter
 
@@ -49,7 +50,7 @@ class MeetingViewSet(viewsets.ModelViewSet):
 class MeetingFileViewSet(viewsets.ModelViewSet):
     queryset = MeetingFile.objects.all()
     serializer_class = MeetingFileSerializer
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (permissions.IsAuthenticated, ProjectPermission)
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)

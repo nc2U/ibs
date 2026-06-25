@@ -8,6 +8,22 @@ from apiV1.permission import *
 from apiV1.serializers.work.issue import *
 
 
+class VersionFilter(FilterSet):
+    status__exclude = CharFilter(field_name='status', exclude=True, label='상태-제외')
+
+    class Meta:
+        model = Version
+        fields = ('project__slug', 'status')
+
+
+class VersionViewSet(viewsets.ModelViewSet):
+    queryset = Version.objects.all()
+    serializer_class = VersionSerializer
+    permission_classes = (permissions.IsAuthenticated, ProjectPermission)
+    filterset_class = VersionFilter
+    search_fields = ('name', 'description')
+
+
 class IssueFilter(FilterSet):
     status__exclude = CharFilter(field_name='status', exclude=True, label='사용여부-제외')
     project__exclude = CharFilter(field_name='project__slug', exclude=True, label='프로젝트-제외')
@@ -103,7 +119,7 @@ class IssueFilter(FilterSet):
 class IssueViewSet(viewsets.ModelViewSet):
     queryset = Issue.objects.all()
     serializer_class = IssueSerializer
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (permissions.IsAuthenticated, ProjectPermission)
     pagination_class = PageNumberPaginationTwenty
     filterset_class = IssueFilter
 
@@ -187,7 +203,7 @@ class IssueFileViewSet(viewsets.ModelViewSet):
 class IssueCommentViewSet(viewsets.ModelViewSet):
     queryset = IssueComment.objects.all()
     serializer_class = IssueCommentSerializer
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (permissions.IsAuthenticated, ProjectPermission)
     pagination_class = PageNumberPaginationTwenty
     search_fields = ('id',)
 
@@ -198,7 +214,7 @@ class IssueCommentViewSet(viewsets.ModelViewSet):
 class TrackerViewSet(viewsets.ModelViewSet):
     queryset = Tracker.objects.all()
     serializer_class = TrackerSerializer
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (permissions.IsAuthenticated, ProjectPermission)
     pagination_class = PageNumberPaginationTwenty
     filterset_fields = ('projects',)
 
@@ -209,7 +225,7 @@ class TrackerViewSet(viewsets.ModelViewSet):
 class IssueCategoryViewSet(viewsets.ModelViewSet):
     queryset = IssueCategory.objects.all()
     serializer_class = IssueCategorySerializer
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (permissions.IsAuthenticated, ProjectPermission)
     filterset_fields = ('project__slug',)
 
 

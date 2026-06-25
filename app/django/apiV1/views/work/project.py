@@ -26,7 +26,7 @@ class IssueProjectViewSet(viewsets.ModelViewSet):
     queryset = IssueProject.objects.all()
     serializer_class = IssueProjectSerializer
     lookup_field = 'slug'
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (permissions.IsAuthenticated, ProjectPermission)
     pagination_class = PageNumberPaginationTwenty
     filterset_class = IssueProjectFilter
 
@@ -34,7 +34,7 @@ class IssueProjectViewSet(viewsets.ModelViewSet):
         queryset = super().get_queryset()
         if self.action == 'list':
             return queryset.select_related('company', 'module', 'creator')
-        
+
         # For detail view, we can add non-recursive annotations as a hint
         return queryset.select_related('company', 'module', 'creator', 'parent', 'default_version')
 
@@ -45,6 +45,12 @@ class IssueProjectViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
+
+
+class ModuleViewSet(viewsets.ModelViewSet):
+    queryset = Module.objects.all()
+    serializer_class = ModuleSerializer
+    permission_classes = (permissions.IsAuthenticated, ProjectPermission)
 
 
 class RoleViewSet(viewsets.ModelViewSet):
@@ -68,27 +74,5 @@ class PermissionViewSet(viewsets.ModelViewSet):
 class MemberViewSet(viewsets.ModelViewSet):
     queryset = Member.objects.all()
     serializer_class = MemberSerializer
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (permissions.IsAuthenticated, ProjectPermission)
     filterset_fields = ('user',)
-
-
-class ModuleViewSet(viewsets.ModelViewSet):
-    queryset = Module.objects.all()
-    serializer_class = ModuleSerializer
-    permission_classes = (permissions.IsAuthenticated,)
-
-
-class VersionFilter(FilterSet):
-    status__exclude = CharFilter(field_name='status', exclude=True, label='상태-제외')
-
-    class Meta:
-        model = Version
-        fields = ('project__slug', 'status')
-
-
-class VersionViewSet(viewsets.ModelViewSet):
-    queryset = Version.objects.all()
-    serializer_class = VersionSerializer
-    permission_classes = (permissions.IsAuthenticated,)
-    filterset_class = VersionFilter
-    search_fields = ('name', 'description')

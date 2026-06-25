@@ -43,7 +43,8 @@ class ActivityLogFilter(FilterSet):
         model = ActivityLogEntry
         fields = ('project__slug', 'project__search', 'from_act_date', 'to_act_date', 'creator', 'sort')
 
-    def filter_by_project_with_sub(self, queryset, name, value):
+    @staticmethod
+    def filter_by_project_with_sub(queryset, name, value):
         try:
             project = IssueProject.objects.get(slug=value)
             project_ids = [project.pk] + get_sub_project_ids(project)

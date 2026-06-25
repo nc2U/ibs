@@ -8,7 +8,7 @@ from apiV1.serializers.work.inform import *
 class NewsViewSet(viewsets.ModelViewSet):
     queryset = News.objects.all()
     serializer_class = NewsSerializer
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (permissions.IsAuthenticated, ProjectPermission)
     pagination_class = PageNumberPaginationTen
     filterset_fields = ('project__slug', 'author')
 
@@ -27,7 +27,7 @@ class NewsFileViewSet(viewsets.ModelViewSet):
 class NewsCommentViewSet(viewsets.ModelViewSet):
     queryset = NewsComment.objects.all()
     serializer_class = NewsCommentSerializer
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (permissions.IsAuthenticated, ProjectPermission)
     pagination_class = PageNumberPaginationTen
     filterset_fields = ('news__project__slug', 'news', 'parent', 'creator')
 

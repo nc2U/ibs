@@ -1,10 +1,8 @@
-import os
 from datetime import datetime, timedelta
 
 import magic
 from django.conf import settings
 from django.db import models
-from django.utils import timezone
 
 from _utils.file_cleanup import file_cleanup_signals
 from _utils.file_upload import get_news_file_path
