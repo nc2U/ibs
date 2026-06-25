@@ -5,8 +5,6 @@ import { useAccount } from '@/store/pinia/account'
 
 const menu = ref<'일반' | '프로젝트'>('일반')
 
-const workManager = inject('workManager', false)
-
 const accStore = useAccount()
 const user = computed(() => accStore.user)
 
@@ -32,7 +30,7 @@ onBeforeMount(() => {
       <span class="h5">{{ user ? 'austin1' : '새 사용자' }}</span>
     </CCol>
 
-    <CCol class="text-right form-text">
+    <CCol v-if="user" class="text-right form-text">
       <span class="mr-2">
         <v-icon icon="mdi-account" color="success" size="sm" />
         <router-link :to="{ name: '사용자 - 보기', params: { userId: user.pk } }" class="ml-1">
