@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { errorHandle, message } from '@/utils/helper'
 import { useCompany } from '@/store/pinia/company.ts'
+import { usePermission } from '@/store/pinia/work_permission.ts'
 import type {
   IssueProject,
   Member,
@@ -13,6 +14,7 @@ import type {
 } from '@/store/types/work_project.ts'
 
 const comStore = useCompany()
+const permStore = usePermission()
 
 export const useWork = defineStore('work', () => {
   // Issue Project states & getters
@@ -94,6 +96,7 @@ export const useWork = defineStore('work', () => {
       .get(`/issue-project/${slug}/`)
       .then(async res => {
         issueProject.value = res.data
+        permStore.setPermissions(res.data.my_perms || [])
         await comStore.fetchCompany(res.data.company)
       })
       .catch(err => errorHandle(err.response.data))
