@@ -32,7 +32,7 @@ onBeforeMount(() => {
       <span class="h5">{{ user ? 'austin1' : '새 사용자' }}</span>
     </CCol>
 
-    <CCol v-if="user && workManager" class="text-right form-text">
+    <CCol class="text-right form-text">
       <span class="mr-2">
         <v-icon icon="mdi-account" color="success" size="sm" />
         <router-link :to="{ name: '사용자 - 보기', params: { userId: user.pk } }" class="ml-1">
