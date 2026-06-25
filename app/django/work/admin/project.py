@@ -40,7 +40,7 @@ class IssueProjectAdmin(ImportExportMixin, admin.ModelAdmin):
                        'is_inherit_members')
         }),
         ('프로젝트 설정', {
-            'fields': ('default_version', 'allowed_roles', 'trackers', 'activities', 'status', 'order')
+            'fields': ('default_version', 'allowed_roles', 'trackers', 'status', 'order')
         }),
         ('Slack 알림 설정', {
             'fields': ('slack_notifications_enabled',),
