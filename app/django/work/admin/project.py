@@ -68,7 +68,9 @@ class IssueProjectAdmin(ImportExportMixin, admin.ModelAdmin):
 
 @admin.register(Module)
 class ModuleAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('pk', 'project', 'meeting', 'issue', 'news', 'document', 'forum', 'calendar')
+    list_display_links = ('project',)
+    list_editable = ('meeting', 'issue', 'news', 'document', 'forum', 'calendar')
 
 
 @admin.register(Role)
@@ -93,9 +95,9 @@ class RoleAdmin(ImportExportMixin, admin.ModelAdmin):
 
 @admin.register(Permission)
 class PermissionAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('pk', 'module', 'code', 'name', 'is_default')
+    list_display = ('pk', 'module', 'code', 'name', 'is_default', 'description')
     list_display_links = ('pk', 'module')
-    list_editable = ('code', 'name', 'is_default')
+    list_editable = ('code', 'name', 'is_default', 'description')
     list_filter = ('module', 'is_default',)
     search_fields = ('code', 'name')
 
