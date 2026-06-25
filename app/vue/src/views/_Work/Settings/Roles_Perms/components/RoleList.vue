@@ -10,7 +10,7 @@ const emit = defineEmits(['show-modal', 'delete-role'])
     <h5>역할 목록</h5>
     <CButton color="primary" size="sm" @click="emit('show-modal')">새 역할</CButton>
   </div>
-  {{ workManager }}
+
   <CTable hover responsive align="middle">
     <CTableHead color="light">
       <CTableRow>
