@@ -9866,12 +9866,13 @@
       "user_visible": "ALL",
       "order": 0,
       "created": "2024-02-29T03:46:04Z",
-      "updated": "2026-06-25T03:20:36.502Z",
+      "updated": "2026-06-25T08:00:35.865Z",
       "creator": 1,
       "permissions": [
-        12,
-        32,
-        49
+        11,
+        18,
+        38,
+        55
       ]
     }
   },
@@ -9885,13 +9886,19 @@
       "user_visible": "ALL",
       "order": 0,
       "created": "2024-02-29T03:47:14Z",
-      "updated": "2026-06-25T03:20:37.183Z",
+      "updated": "2026-06-25T08:00:36.552Z",
       "creator": 1,
       "permissions": [
         11,
         12,
-        32,
-        49
+        18,
+        27,
+        29,
+        31,
+        33,
+        38,
+        45,
+        55
       ]
     }
   },
@@ -9905,7 +9912,7 @@
       "user_visible": "ALL",
       "order": 1,
       "created": "2024-02-29T03:48:04Z",
-      "updated": "2026-06-25T03:20:37.921Z",
+      "updated": "2026-06-25T08:01:29.746Z",
       "creator": 1,
       "permissions": [
         1,
@@ -9914,7 +9921,6 @@
         4,
         5,
         6,
-        7,
         8,
         9,
         10,
@@ -9956,7 +9962,13 @@
         46,
         47,
         48,
-        49
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55
       ]
     }
   },
@@ -9970,39 +9982,39 @@
       "user_visible": "ALL",
       "order": 1,
       "created": "2024-02-29T03:59:14Z",
-      "updated": "2026-06-25T03:20:40.785Z",
+      "updated": "2026-06-25T08:01:05.900Z",
       "creator": 1,
       "permissions": [
         8,
+        9,
+        10,
         11,
         12,
         13,
-        14,
         15,
-        16,
-        17,
         18,
-        20,
+        19,
         21,
+        22,
         23,
+        24,
+        26,
         27,
-        28,
         29,
         31,
-        32,
+        33,
         34,
-        35,
         36,
         37,
         38,
-        39,
         40,
+        41,
         42,
-        44,
         45,
         46,
-        47,
-        49
+        48,
+        50,
+        55
       ]
     }
   },
@@ -10016,23 +10028,36 @@
       "user_visible": "ALL",
       "order": 1,
       "created": "2024-02-29T03:59:24Z",
-      "updated": "2026-06-25T03:20:41.332Z",
+      "updated": "2026-06-25T08:01:05.272Z",
       "creator": 1,
       "permissions": [
         11,
         12,
         13,
         15,
+        18,
+        19,
         21,
+        22,
         23,
-        32,
+        24,
+        26,
+        27,
+        29,
+        31,
+        33,
         34,
-        35,
-        39,
+        36,
+        37,
+        38,
         40,
+        41,
         42,
-        44,
-        49
+        45,
+        46,
+        48,
+        50,
+        55
       ]
     }
   },
@@ -10046,7 +10071,7 @@
       "user_visible": "ALL",
       "order": 1,
       "created": "2024-05-07T06:50:23Z",
-      "updated": "2026-06-25T03:20:42.000Z",
+      "updated": "2026-06-25T08:01:30.632Z",
       "creator": 1,
       "permissions": [
         1,
@@ -10097,7 +10122,13 @@
         46,
         47,
         48,
-        49
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55
       ]
     }
   },
@@ -10111,39 +10142,39 @@
       "user_visible": "ALL",
       "order": 1,
       "created": "2024-07-14T00:09:41.184Z",
-      "updated": "2026-06-25T03:20:42.584Z",
+      "updated": "2026-06-25T08:01:07.466Z",
       "creator": 1,
       "permissions": [
         8,
+        9,
+        10,
         11,
         12,
         13,
-        14,
         15,
-        16,
-        17,
         18,
-        20,
+        19,
         21,
+        22,
         23,
+        24,
+        26,
         27,
-        28,
         29,
         31,
-        32,
+        33,
         34,
-        35,
         36,
         37,
         38,
-        39,
         40,
+        41,
         42,
-        44,
         45,
         46,
-        47,
-        49
+        48,
+        50,
+        55
       ]
     }
   },
@@ -10157,21 +10188,19 @@
       "user_visible": "ALL",
       "order": 1,
       "created": "2024-07-14T00:09:41.189Z",
-      "updated": "2026-06-25T03:20:43.357Z",
+      "updated": "2026-06-25T08:00:41.324Z",
       "creator": 1,
       "permissions": [
+        11,
         12,
-        15,
-        21,
-        23,
-        32,
-        34,
-        35,
-        39,
-        40,
-        42,
-        44,
-        49
+        18,
+        27,
+        29,
+        31,
+        33,
+        38,
+        45,
+        55
       ]
     }
   },
@@ -10179,7 +10208,7 @@
     "model": "work.permission",
     "pk": 1,
     "fields": {
-      "module": "",
+      "module": "project",
       "code": "project.create",
       "name": "프로젝트생성",
       "is_default": false,
@@ -10190,7 +10219,7 @@
     "model": "work.permission",
     "pk": 2,
     "fields": {
-      "module": "",
+      "module": "project",
       "code": "project.update",
       "name": "프로젝트 편집",
       "is_default": false,
@@ -10201,7 +10230,7 @@
     "model": "work.permission",
     "pk": 3,
     "fields": {
-      "module": "",
+      "module": "project",
       "code": "project.close",
       "name": "프로젝트 닫기/열기",
       "is_default": false,
@@ -10212,7 +10241,7 @@
     "model": "work.permission",
     "pk": 4,
     "fields": {
-      "module": "",
+      "module": "project",
       "code": "project.delete",
       "name": "프로젝트 삭제",
       "is_default": false,
@@ -10223,7 +10252,7 @@
     "model": "work.permission",
     "pk": 5,
     "fields": {
-      "module": "",
+      "module": "project",
       "code": "project.public",
       "name": "프로젝트 공개/비공개 설정",
       "is_default": false,
@@ -10234,7 +10263,7 @@
     "model": "work.permission",
     "pk": 6,
     "fields": {
-      "module": "",
+      "module": "project",
       "code": "project.module",
       "name": "프로젝트 모듈 선택",
       "is_default": false,
@@ -10245,7 +10274,7 @@
     "model": "work.permission",
     "pk": 7,
     "fields": {
-      "module": "",
+      "module": "project",
       "code": "project.member",
       "name": "구성원 관리",
       "is_default": false,
@@ -10256,7 +10285,7 @@
     "model": "work.permission",
     "pk": 8,
     "fields": {
-      "module": "",
+      "module": "project",
       "code": "project.version",
       "name": "버전 관리",
       "is_default": false,
@@ -10267,7 +10296,7 @@
     "model": "work.permission",
     "pk": 9,
     "fields": {
-      "module": "",
+      "module": "project",
       "code": "project.create_sub",
       "name": "하위 프로젝트 생성",
       "is_default": false,
@@ -10278,7 +10307,7 @@
     "model": "work.permission",
     "pk": 10,
     "fields": {
-      "module": "",
+      "module": "project",
       "code": "project.pub_query",
       "name": "공용 검색 양식 관리",
       "is_default": false,
@@ -10289,7 +10318,7 @@
     "model": "work.permission",
     "pk": 11,
     "fields": {
-      "module": "",
+      "module": "project",
       "code": "project.save_query",
       "name": "검색 양식 저장",
       "is_default": true,
@@ -10300,9 +10329,9 @@
     "model": "work.permission",
     "pk": 12,
     "fields": {
-      "module": "",
-      "code": "issue.read",
-      "name": "업무 보기",
+      "module": "meeting",
+      "code": "meeting.read",
+      "name": "회의록 보기",
       "is_default": true,
       "description": ""
     }
@@ -10311,10 +10340,10 @@
     "model": "work.permission",
     "pk": 13,
     "fields": {
-      "module": "",
-      "code": "issue.create",
-      "name": "업무 추가",
-      "is_default": true,
+      "module": "meeting",
+      "code": "meeting.create",
+      "name": "회의록 추가",
+      "is_default": false,
       "description": ""
     }
   },
@@ -10322,9 +10351,9 @@
     "model": "work.permission",
     "pk": 14,
     "fields": {
-      "module": "",
-      "code": "issue.update",
-      "name": "업무 편집",
+      "module": "meeting",
+      "code": "meeting.update",
+      "name": "회의록 편집",
       "is_default": false,
       "description": ""
     }
@@ -10333,9 +10362,9 @@
     "model": "work.permission",
     "pk": 15,
     "fields": {
-      "module": "",
-      "code": "issue.own_update",
-      "name": "내 업무 편집",
+      "module": "meeting",
+      "code": "meeting.own_update",
+      "name": "내 회의록 편집",
       "is_default": true,
       "description": ""
     }
@@ -10344,10 +10373,10 @@
     "model": "work.permission",
     "pk": 16,
     "fields": {
-      "module": "",
-      "code": "issue.copy",
-      "name": "업무 복사",
-      "is_default": true,
+      "module": "meeting",
+      "code": "meeting.delete",
+      "name": "회의록 삭제",
+      "is_default": false,
       "description": ""
     }
   },
@@ -10355,10 +10384,10 @@
     "model": "work.permission",
     "pk": 17,
     "fields": {
-      "module": "",
-      "code": "issue.rel_manage",
-      "name": "업무 관계 관리",
-      "is_default": true,
+      "module": "meeting",
+      "code": "meeting.confirm",
+      "name": "회의록 확정 승인",
+      "is_default": false,
       "description": ""
     }
   },
@@ -10366,9 +10395,9 @@
     "model": "work.permission",
     "pk": 18,
     "fields": {
-      "module": "",
-      "code": "issue.sub_manage",
-      "name": "하위 업무 관리",
+      "module": "issue",
+      "code": "issue.read",
+      "name": "업무 보기",
       "is_default": true,
       "description": ""
     }
@@ -10377,10 +10406,10 @@
     "model": "work.permission",
     "pk": 19,
     "fields": {
-      "module": "",
-      "code": "issue.public",
-      "name": "업무 공개/비공개 설정",
-      "is_default": false,
+      "module": "issue",
+      "code": "issue.create",
+      "name": "업무 추가",
+      "is_default": true,
       "description": ""
     }
   },
@@ -10388,10 +10417,10 @@
     "model": "work.permission",
     "pk": 20,
     "fields": {
-      "module": "",
-      "code": "issue.own_public",
-      "name": "내 업무 공개/비공개 설정",
-      "is_default": true,
+      "module": "issue",
+      "code": "issue.update",
+      "name": "업무 편집",
+      "is_default": false,
       "description": ""
     }
   },
@@ -10399,9 +10428,9 @@
     "model": "work.permission",
     "pk": 21,
     "fields": {
-      "module": "",
-      "code": "issue.comment_create",
-      "name": "댓글 추가",
+      "module": "issue",
+      "code": "issue.own_update",
+      "name": "내 업무 편집",
       "is_default": true,
       "description": ""
     }
@@ -10410,9 +10439,9 @@
     "model": "work.permission",
     "pk": 22,
     "fields": {
-      "module": "",
-      "code": "issue.comment_update",
-      "name": "댓글 편집",
+      "module": "issue",
+      "code": "issue.copy",
+      "name": "업무 복사",
       "is_default": false,
       "description": ""
     }
@@ -10421,9 +10450,9 @@
     "model": "work.permission",
     "pk": 23,
     "fields": {
-      "module": "",
-      "code": "issue.comment_own_update",
-      "name": "내 댓글 편집",
+      "module": "issue",
+      "code": "issue.rel_manage",
+      "name": "업무 관계 관리",
       "is_default": true,
       "description": ""
     }
@@ -10432,10 +10461,10 @@
     "model": "work.permission",
     "pk": 24,
     "fields": {
-      "module": "",
-      "code": "issue.private_comment_read",
-      "name": "비공개 댓글 보기",
-      "is_default": false,
+      "module": "issue",
+      "code": "issue.sub_manage",
+      "name": "하위 업무 관리",
+      "is_default": true,
       "description": ""
     }
   },
@@ -10443,9 +10472,9 @@
     "model": "work.permission",
     "pk": 25,
     "fields": {
-      "module": "",
-      "code": "issue.private_comment_set",
-      "name": "댓글 비공개 설정",
+      "module": "issue",
+      "code": "issue.public",
+      "name": "업무 공개/비공개 설정",
       "is_default": false,
       "description": ""
     }
@@ -10454,10 +10483,10 @@
     "model": "work.permission",
     "pk": 26,
     "fields": {
-      "module": "",
-      "code": "issue.delete",
-      "name": "업무 삭제",
-      "is_default": false,
+      "module": "issue",
+      "code": "issue.own_public",
+      "name": "내 업무 공개/비공개 설정",
+      "is_default": true,
       "description": ""
     }
   },
@@ -10465,10 +10494,10 @@
     "model": "work.permission",
     "pk": 27,
     "fields": {
-      "module": "",
-      "code": "issue.watcher_read",
-      "name": "업무 관람자 보기",
-      "is_default": false,
+      "module": "issue",
+      "code": "issue.comment_create",
+      "name": "댓글 추가",
+      "is_default": true,
       "description": ""
     }
   },
@@ -10476,9 +10505,9 @@
     "model": "work.permission",
     "pk": 28,
     "fields": {
-      "module": "",
-      "code": "issue.watcher_create",
-      "name": "업무 관람자 추가",
+      "module": "issue",
+      "code": "issue.comment_update",
+      "name": "댓글 편집",
       "is_default": false,
       "description": ""
     }
@@ -10487,10 +10516,10 @@
     "model": "work.permission",
     "pk": 29,
     "fields": {
-      "module": "",
-      "code": "issue.watcher_delete",
-      "name": "업무 관람자 삭제",
-      "is_default": false,
+      "module": "issue",
+      "code": "issue.comment_own_update",
+      "name": "내 댓글 편집",
+      "is_default": true,
       "description": ""
     }
   },
@@ -10498,9 +10527,9 @@
     "model": "work.permission",
     "pk": 30,
     "fields": {
-      "module": "",
-      "code": "issue.import",
-      "name": "업무 가져 오기",
+      "module": "issue",
+      "code": "issue.private_comment_read",
+      "name": "비공개 댓글 보기",
       "is_default": false,
       "description": ""
     }
@@ -10509,9 +10538,9 @@
     "model": "work.permission",
     "pk": 31,
     "fields": {
-      "module": "",
-      "code": "issue.category_manage",
-      "name": "업무 범주 관리",
+      "module": "issue",
+      "code": "issue.private_comment_set",
+      "name": "댓글 비공개 설정",
       "is_default": false,
       "description": ""
     }
@@ -10520,10 +10549,10 @@
     "model": "work.permission",
     "pk": 32,
     "fields": {
-      "module": "",
-      "code": "news.read",
-      "name": "공지 보기",
-      "is_default": true,
+      "module": "issue",
+      "code": "issue.delete",
+      "name": "업무 삭제",
+      "is_default": false,
       "description": ""
     }
   },
@@ -10531,9 +10560,9 @@
     "model": "work.permission",
     "pk": 33,
     "fields": {
-      "module": "",
-      "code": "news.manage",
-      "name": "공지 관리",
+      "module": "issue",
+      "code": "issue.watcher_read",
+      "name": "업무 관람자 보기",
       "is_default": false,
       "description": ""
     }
@@ -10542,10 +10571,10 @@
     "model": "work.permission",
     "pk": 34,
     "fields": {
-      "module": "",
-      "code": "news.comment",
-      "name": "공지 댓글 달기",
-      "is_default": true,
+      "module": "issue",
+      "code": "issue.watcher_create",
+      "name": "업무 관람자 추가",
+      "is_default": false,
       "description": ""
     }
   },
@@ -10553,10 +10582,10 @@
     "model": "work.permission",
     "pk": 35,
     "fields": {
-      "module": "",
-      "code": "docs.read",
-      "name": "문서 보기",
-      "is_default": true,
+      "module": "issue",
+      "code": "issue.watcher_delete",
+      "name": "업무 관람자 삭제",
+      "is_default": false,
       "description": ""
     }
   },
@@ -10564,9 +10593,9 @@
     "model": "work.permission",
     "pk": 36,
     "fields": {
-      "module": "",
-      "code": "docs.create",
-      "name": "문서 추가",
+      "module": "issue",
+      "code": "issue.import",
+      "name": "업무 가져 오기",
       "is_default": false,
       "description": ""
     }
@@ -10575,9 +10604,9 @@
     "model": "work.permission",
     "pk": 37,
     "fields": {
-      "module": "",
-      "code": "docs.update",
-      "name": "문서 편집",
+      "module": "issue",
+      "code": "issue.category_manage",
+      "name": "업무 범주 관리",
       "is_default": false,
       "description": ""
     }
@@ -10586,10 +10615,10 @@
     "model": "work.permission",
     "pk": 38,
     "fields": {
-      "module": "",
-      "code": "docs.delete",
-      "name": "문서 삭제",
-      "is_default": false,
+      "module": "news",
+      "code": "news.read",
+      "name": "공지 보기",
+      "is_default": true,
       "description": ""
     }
   },
@@ -10597,10 +10626,10 @@
     "model": "work.permission",
     "pk": 39,
     "fields": {
-      "module": "",
-      "code": "forum.read",
-      "name": "게시물 보기",
-      "is_default": true,
+      "module": "news",
+      "code": "news.manage",
+      "name": "공지 관리",
+      "is_default": false,
       "description": ""
     }
   },
@@ -10608,9 +10637,9 @@
     "model": "work.permission",
     "pk": 40,
     "fields": {
-      "module": "",
-      "code": "forum.create",
-      "name": "게시물 추가",
+      "module": "news",
+      "code": "news.comment",
+      "name": "공지 댓글 달기",
       "is_default": true,
       "description": ""
     }
@@ -10619,10 +10648,10 @@
     "model": "work.permission",
     "pk": 41,
     "fields": {
-      "module": "",
-      "code": "forum.update",
-      "name": "게시물 편집",
-      "is_default": false,
+      "module": "docs",
+      "code": "docs.read",
+      "name": "문서 보기",
+      "is_default": true,
       "description": ""
     }
   },
@@ -10630,10 +10659,10 @@
     "model": "work.permission",
     "pk": 42,
     "fields": {
-      "module": "",
-      "code": "forum.own_update",
-      "name": "내 게시물 편집",
-      "is_default": true,
+      "module": "docs",
+      "code": "docs.create",
+      "name": "문서 추가",
+      "is_default": false,
       "description": ""
     }
   },
@@ -10641,9 +10670,9 @@
     "model": "work.permission",
     "pk": 43,
     "fields": {
-      "module": "",
-      "code": "forum.delete",
-      "name": "게시물 삭제",
+      "module": "docs",
+      "code": "docs.update",
+      "name": "문서 편집",
       "is_default": false,
       "description": ""
     }
@@ -10652,9 +10681,9 @@
     "model": "work.permission",
     "pk": 44,
     "fields": {
-      "module": "",
-      "code": "forum.own_delete",
-      "name": "내 게시물 삭제",
+      "module": "docs",
+      "code": "docs.delete",
+      "name": "문서 삭제",
       "is_default": false,
       "description": ""
     }
@@ -10663,9 +10692,9 @@
     "model": "work.permission",
     "pk": 45,
     "fields": {
-      "module": "",
-      "code": "forum.watcher_read",
-      "name": "게시물 관람자 보기",
+      "module": "forum",
+      "code": "forum.read",
+      "name": "게시물 보기",
       "is_default": true,
       "description": ""
     }
@@ -10674,10 +10703,10 @@
     "model": "work.permission",
     "pk": 46,
     "fields": {
-      "module": "",
-      "code": "forum.watcher_create",
-      "name": "게시물 관람자 추가",
-      "is_default": false,
+      "module": "forum",
+      "code": "forum.create",
+      "name": "게시물 추가",
+      "is_default": true,
       "description": ""
     }
   },
@@ -10685,9 +10714,9 @@
     "model": "work.permission",
     "pk": 47,
     "fields": {
-      "module": "",
-      "code": "forum.watcher_delete",
-      "name": "게시물 관람자 삭제",
+      "module": "forum",
+      "code": "forum.update",
+      "name": "게시물 편집",
       "is_default": false,
       "description": ""
     }
@@ -10696,7 +10725,73 @@
     "model": "work.permission",
     "pk": 48,
     "fields": {
-      "module": "",
+      "module": "forum",
+      "code": "forum.own_update",
+      "name": "내 게시물 편집",
+      "is_default": true,
+      "description": ""
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 49,
+    "fields": {
+      "module": "forum",
+      "code": "forum.delete",
+      "name": "게시물 삭제",
+      "is_default": false,
+      "description": ""
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 50,
+    "fields": {
+      "module": "forum",
+      "code": "forum.own_delete",
+      "name": "내 게시물 삭제",
+      "is_default": false,
+      "description": ""
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 51,
+    "fields": {
+      "module": "forum",
+      "code": "forum.watcher_read",
+      "name": "게시물 관람자 보기",
+      "is_default": true,
+      "description": ""
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 52,
+    "fields": {
+      "module": "forum",
+      "code": "forum.watcher_create",
+      "name": "게시물 관람자 추가",
+      "is_default": false,
+      "description": ""
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 53,
+    "fields": {
+      "module": "forum",
+      "code": "forum.watcher_delete",
+      "name": "게시물 관람자 삭제",
+      "is_default": false,
+      "description": ""
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 54,
+    "fields": {
+      "module": "forum",
       "code": "forum.manage",
       "name": "게시판 관리",
       "is_default": false,
@@ -10705,9 +10800,9 @@
   },
   {
     "model": "work.permission",
-    "pk": 49,
+    "pk": 55,
     "fields": {
-      "module": "",
+      "module": "calendar",
       "code": "calendar.read",
       "name": "달력 보기",
       "is_default": true,
