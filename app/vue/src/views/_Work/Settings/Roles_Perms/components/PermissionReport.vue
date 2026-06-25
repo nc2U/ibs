@@ -14,8 +14,8 @@ const workStore = useWork()
 const permissionGroups = computed(() => {
   const groups: Record<string, Permission[]> = {}
   props.permissionList.forEach(p => {
-    if (!groups[p.sort]) groups[p.sort] = []
-    groups[p.sort].push(p)
+    if (!groups[p.module]) groups[p.module] = []
+    groups[p.module].push(p)
   })
   return groups
 })

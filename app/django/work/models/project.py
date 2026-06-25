@@ -79,7 +79,8 @@ class IssueProject(models.Model):
                 member_data[mem.user_id] = {
                     'pk': mem.pk,
                     'user': {'pk': mem.user_id, 'username': mem.user.username},
-                    'roles': {role.pk: {'pk': role.pk, 'name': role.name, 'assignable': role.assignable, 'inherited': is_inherited} for role in
+                    'roles': {role.pk: {'pk': role.pk, 'name': role.name, 'assignable': role.assignable,
+                                        'inherited': is_inherited} for role in
                               mem.roles.all()},
                     'created': mem.created,
                 }
@@ -151,7 +152,7 @@ class Role(models.Model):
 class Permission(models.Model):
     MODULE_CHOICES = (('project', '프로젝트'), ('meeting', '회의'), ('issue', '업무'),
                       ('news', '공지'), ('docs', '문서'), ('forum', '게시판'), ('calendar', '달력'))
-    sort = models.CharField('모듈', max_length=10, choices=MODULE_CHOICES, db_index=True)
+    module = models.CharField('모듈', max_length=10, choices=MODULE_CHOICES, db_index=True)
     code = models.CharField('코드', max_length=30, unique=True)
     name = models.CharField('이름', max_length=20)
     is_default = models.BooleanField('기본 활성여부', default=False)

@@ -106,7 +106,7 @@ export interface Role {
 
 export interface Permission {
   pk: number
-  sort: 'project' | 'meeting' | 'issue' | 'news' | 'docs' | 'forum' | 'calendar'
+  module: 'project' | 'meeting' | 'issue' | 'news' | 'docs' | 'forum' | 'calendar'
   code: string
   name: string
   description: string

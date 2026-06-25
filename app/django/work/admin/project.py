@@ -88,10 +88,10 @@ class RoleAdmin(ImportExportMixin, admin.ModelAdmin):
 
 @admin.register(Permission)
 class PermissionAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('pk', 'sort', 'code', 'name', 'is_default')
-    list_display_links = ('pk', 'sort')
+    list_display = ('pk', 'module', 'code', 'name', 'is_default')
+    list_display_links = ('pk', 'module')
     list_editable = ('code', 'name', 'is_default')
-    list_filter = ('sort', 'is_default',)
+    list_filter = ('module', 'is_default',)
     search_fields = ('code', 'name')
 
 

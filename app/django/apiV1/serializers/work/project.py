@@ -234,7 +234,7 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
 class PermissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Permission
-        fields = ('pk', 'sort', 'code', 'name', 'description')
+        fields = ('pk', 'module', 'code', 'name', 'description')
 
 
 class RoleSerializer(serializers.ModelSerializer):
