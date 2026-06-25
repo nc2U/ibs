@@ -108,6 +108,19 @@ class IssueProject(models.Model):
             for data in member_data.values()
         ]
 
+    def get_user_permissions(self, user):
+        """
+        사용자의 프로젝트 내 권한 코드 세트를 계산합니다.
+        """
+        all_members = self.all_members()
+        user_member = next((m for m in all_members if m['user']['pk'] == user.pk), None)
+
+        if not user_member:
+            return []
+
+        role_pks = [role['pk'] for role in user_member['roles']]
+        return list(Permission.objects.filter(roles__in=role_pks).values_list('code', flat=True).distinct())
+
     class Meta:
         ordering = ('order', 'id')
         verbose_name = '01. 프로젝트(업무)'
