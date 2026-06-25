@@ -417,5 +417,11 @@ LOGGING = {
             "level": "INFO",
             "propagate": True,
         },
+        # 🔍 범인인 weasyprint의 로그 레벨을 WARNING(경고) 이상으로 높여서 INFO/DEBUG 로그를 차단합니다.
+        "weasyprint": {
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": False,  # 상위 root 로거로 전달되어 출력되는 것을 방지
+        },
     },
 }

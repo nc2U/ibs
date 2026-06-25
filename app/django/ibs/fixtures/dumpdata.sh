@@ -6,4 +6,4 @@ python ../../manage.py dumpdata \
     ibs.accountsort ibs.accountsubd1 ibs.accountsubd2 ibs.accountsubd3 \
     ibs.projectaccountd2 ibs.projectaccountd3 ibs.wisesaying \
     work.role work.permission work.tracker work.issuestatus work.codeissuepriority  \
-    --indent 2 > seeds-data.json
+    --indent 2 --output seeds-data.json
