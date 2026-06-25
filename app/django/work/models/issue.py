@@ -185,19 +185,22 @@ class IssueStatus(models.Model):
         verbose_name_plural = '11. 업무 상태'
 
 
-class IssueCategory(models.Model):
-    project = models.ForeignKey(IssueProject, on_delete=models.CASCADE, verbose_name='프로젝트', related_name='categories')
-    name = models.CharField('범주', max_length=100, db_index=True)
-    assigned_to = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
-                                    null=True, blank=True, verbose_name='담당자')
+class CodeIssuePriority(models.Model):
+    name = models.CharField('이름', max_length=20, db_index=True)
+    active = models.BooleanField('사용중', default=True)
+    default = models.BooleanField('기본값', default=False)
+    order = models.PositiveSmallIntegerField('정렬', default=1)
+    created = models.DateTimeField('등록일', auto_now_add=True)
+    updated = models.DateTimeField('수정일', auto_now=True)
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name='작성자')
 
     def __str__(self):
         return self.name
 
     class Meta:
-        ordering = ('-project', 'id',)
-        verbose_name = '12. 업무 범주'
-        verbose_name_plural = '12. 업무 범주'
+        ordering = ('order', 'id',)
+        verbose_name = '12. 업무 우선 순위'
+        verbose_name_plural = '12. 업무 우선 순위'
 
 
 class Workflow(models.Model):
@@ -215,19 +218,16 @@ class Workflow(models.Model):
         verbose_name_plural = '13. 업무 흐름'
 
 
-class CodeIssuePriority(models.Model):
-    name = models.CharField('이름', max_length=20, db_index=True)
-    active = models.BooleanField('사용중', default=True)
-    default = models.BooleanField('기본값', default=False)
-    order = models.PositiveSmallIntegerField('정렬', default=1)
-    created = models.DateTimeField('등록일', auto_now_add=True)
-    updated = models.DateTimeField('수정일', auto_now=True)
-    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name='작성자')
+class IssueCategory(models.Model):
+    project = models.ForeignKey(IssueProject, on_delete=models.CASCADE, verbose_name='프로젝트', related_name='categories')
+    name = models.CharField('범주', max_length=100, db_index=True)
+    assigned_to = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                                    null=True, blank=True, verbose_name='담당자')
 
     def __str__(self):
         return self.name
 
     class Meta:
-        ordering = ('order', 'id',)
-        verbose_name = '14. 업무 우선 순위'
-        verbose_name_plural = '14. 업무 우선 순위'
+        ordering = ('-project', 'id',)
+        verbose_name = '14. 업무 범주'
+        verbose_name_plural = '14. 업무 범주'
