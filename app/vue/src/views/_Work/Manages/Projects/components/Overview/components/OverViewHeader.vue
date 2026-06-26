@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { type PropType, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { usePerms } from '@/composables/usePerms'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
@@ -13,6 +14,8 @@ const emit = defineEmits(['close-project', 'reopen-project', 'delete-project'])
 const RefProjectCloseConfirm = ref()
 const RefProjectDeleteConfirm = ref()
 const idForDelete = ref('')
+
+const { can, PERM } = usePerms() // 사용자 권한 데이터
 
 const router = useRouter()
 
@@ -55,13 +58,20 @@ const projectDelete = () => {
             <v-tooltip activator="parent" location="top">Actions</v-tooltip>
           </CDropdownToggle>
           <CDropdownMenu>
-            <CDropdownItem v-if="project?.status === '1'" class="form-text">
+            <CDropdownItem
+              v-if="project?.status === '1' && can(PERM.PROJECT_CREATE_SUB)"
+              class="form-text"
+            >
               <router-link :to="{ name: '프로젝트 - 추가', query: { parent: project?.pk } }">
                 <v-icon icon="mdi-plus-circle" color="success" size="sm" class="mr-2" />새 하위
                 프로젝트
               </router-link>
             </CDropdownItem>
-            <CDropdownItem class="form-text" @click="RefProjectCloseConfirm.callModal()">
+            <CDropdownItem
+              v-if="can(PERM.PROJECT_CLOSE)"
+              class="form-text"
+              @click="RefProjectCloseConfirm.callModal()"
+            >
               <router-link to="">
                 <v-icon
                   :icon="project?.status === '1' ? 'mdi-lock' : 'mdi-lock-open'"
@@ -71,7 +81,11 @@ const projectDelete = () => {
                 />{{ project?.status === '1' ? '닫기' : '다시 열기' }}
               </router-link>
             </CDropdownItem>
-            <CDropdownItem class="form-text" @click="RefProjectDeleteConfirm.callModal()">
+            <CDropdownItem
+              v-if="can(PERM.PROJECT_DELETE)"
+              class="form-text"
+              @click="RefProjectDeleteConfirm.callModal()"
+            >
               <router-link to="">
                 <v-icon icon="mdi-trash-can-outline" color="danger" size="sm" class="mr-1" />삭제
               </router-link>
