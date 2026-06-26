@@ -196,9 +196,11 @@ export const useAccount = defineStore('account', () => {
 
   const writeComDocs = computed(() => superAuth.value || staffAuth.value?.company_docs == '2')
   const writeProDocs = computed(() => superAuth.value || staffAuth.value?.project_docs == '2')
-  const isComLedger = computed(
-    () => !!(superAuth.value || Number(staffAuth.value?.company_ledger || 0)),
-  )
+  const isComLedger = computed(() => {
+    if (superAuth.value) return true
+    const comLedger = Number(staffAuth.value?.company_ledger || 0)
+    return !!(isStaff.value && comLedger)
+  })
   const writeComLedger = computed(() => superAuth.value || staffAuth.value?.company_ledger == '2')
   const writeProLedger = computed(() => superAuth.value || staffAuth.value?.project_ledger == '2')
 
