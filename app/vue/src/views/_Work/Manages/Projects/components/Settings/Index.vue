@@ -103,7 +103,7 @@ onBeforeMount(async () => {
   if (route.params.projId) {
     const projId = route.params.projId as string
     await workStore.fetchIssueProject(projId)
-    await workStore.fetchVersionList({ project: projId, status: '1' })
+    await workStore.fetchVersionList({ project: projId, status: '' })
   }
   loading.value = false
 })

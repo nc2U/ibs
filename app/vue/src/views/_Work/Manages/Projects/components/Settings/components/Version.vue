@@ -11,7 +11,7 @@ const emit = defineEmits(['version-filter', 'delete-version'])
 
 const RefVersionConfirm = ref()
 
-const status = ref('1')
+const status = ref('')
 const search = ref('')
 
 const deleteVersion = ref<number | null>(null)
@@ -22,7 +22,7 @@ const versionFilter = () => {
   nextTick(() => emit('version-filter', { status: status.value, search: search.value }))
 }
 const formReset = () => {
-  status.value = '1'
+  status.value = ''
   search.value = ''
   emit('version-filter', { status: status.value, search: search.value })
 }
