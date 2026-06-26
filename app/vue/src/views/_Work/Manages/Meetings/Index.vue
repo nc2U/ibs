@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { useRoute } from 'vue-router'
-import { computed, type ComputedRef, inject, onBeforeMount, provide, ref, watch } from 'vue'
+import { computed, onBeforeMount, provide, ref, watch } from 'vue'
 import { navMenu1, navMenu2 } from '@/views/_Work/_menu/headermixin1'
 import { useAccount } from '@/store/pinia/account'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useMeeting } from '@/store/pinia/work_meeting.ts'
+import { useCompany } from '@/store/pinia/company.ts'
 import type { Company } from '@/store/types/settings'
 import type { MeetingFilter } from '@/store/types/work_meeting.ts'
 import Loading from '@/components/Loading/Index.vue'
@@ -16,7 +17,8 @@ import MeetingDetail from './components/MeetingDetail.vue'
 import MeetingForm from './components/MeetingForm.vue'
 
 const cBody = ref()
-const company = inject<ComputedRef<Company | null>>('company')
+const comStore = useCompany()
+const company = computed<Company | null>(() => comStore.company)
 const comName = computed(() => company?.value?.name)
 
 const route = useRoute()

@@ -1,8 +1,9 @@
 <script lang="ts" setup>
-import { ref, computed, type PropType, watch, onBeforeMount, inject, type ComputedRef } from 'vue'
+import { computed, onBeforeMount, type PropType, ref, watch } from 'vue'
 import { useStore } from '@/store'
 import { useRoute, useRouter } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project.ts'
+import { useCompany } from '@/store/pinia/company.ts'
 import type { Company } from '@/store/types/settings.ts'
 import type { SimpleProject } from '@/store/types/work_project.ts'
 import HeaderSearch from './components/Search.vue'
@@ -19,7 +20,8 @@ const visible = ref(false)
 const [route, router] = [useRoute(), useRouter()]
 watch(route, () => (visible.value = false))
 
-const company = inject<ComputedRef<Company | null>>('company')
+const comStore = useCompany()
+const company = computed<Company | null>(() => comStore.company)
 
 const isDark = computed(() => useStore().theme === 'dark')
 const backGround = computed(() => (isDark.value ? 'bg-blue-grey-darken-5' : 'bg-indigo-lighten-5'))

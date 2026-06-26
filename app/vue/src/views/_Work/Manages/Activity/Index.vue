@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, type ComputedRef, inject, onBeforeMount, provide, ref } from 'vue'
+import { computed, onBeforeMount, provide, ref } from 'vue'
 import { navMenu1, navMenu2 } from '@/views/_Work/_menu/headermixin1'
 import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useLogging } from '@/store/pinia/work_logging.ts'
+import { useCompany } from '@/store/pinia/company.ts'
 import type { Company } from '@/store/types/settings'
 import type { ActLogEntry } from '@/store/types/work_logging.ts'
 import Loading from '@/components/Loading/Index.vue'
@@ -13,7 +14,8 @@ import ActivityLogList from './components/ActivityLogList.vue'
 import AsideController from './components/aside/AsideController.vue'
 
 const cBody = ref()
-const company = inject<ComputedRef<Company | null>>('company')
+const comStore = useCompany()
+const company = computed<Company | null>(() => comStore.company)
 const comName = computed(() => company?.value?.name)
 
 const sideNavCAll = () => cBody.value.toggle()

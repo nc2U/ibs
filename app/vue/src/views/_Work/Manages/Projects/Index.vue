@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, type ComputedRef, inject, onBeforeMount, provide, ref } from 'vue'
+import { computed, onBeforeMount, provide, ref } from 'vue'
 import { navMenu1, navMenu2 } from '@/views/_Work/_menu/headermixin1'
+import { useCompany } from '@/store/pinia/company.ts'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useInform } from '@/store/pinia/work_inform.ts'
 import { onBeforeRouteUpdate, useRoute } from 'vue-router'
@@ -15,7 +16,8 @@ const sideNavCAll = () => cBody.value.toggle()
 const route = useRoute()
 
 const routeName = computed(() => (route.name as string) ?? '')
-const company = inject<ComputedRef<Company | null>>('company')
+const comStore = useCompany()
+const company = computed<Company | null>(() => comStore.company)
 const comName = computed(() => company?.value?.name)
 
 const headerTitle = computed(() =>

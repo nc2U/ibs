@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import { computed, type ComputedRef, inject, onBeforeMount, ref, watch } from 'vue'
+import { computed, onBeforeMount, ref, watch } from 'vue'
 import { navMenu2 as navMenu } from '@/views/_Work/_menu/headermixin1'
 import { colorLight } from '@/utils/cssMixins'
-import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
+import { useCompany } from '@/store/pinia/company.ts'
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import type { Company } from '@/store/types/settings'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 
 const cBody = ref()
-const company = inject<ComputedRef<Company | null>>('company')
+const comStore = useCompany()
+const company = computed<Company | null>(() => comStore.company)
 const comName = computed(() => company?.value?.name)
 const sideNavCAll = () => cBody.value.toggle()
 

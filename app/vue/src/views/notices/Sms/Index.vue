@@ -1,7 +1,8 @@
 <script lang="ts" setup>
-import { onBeforeMount, ref, computed, inject, type ComputedRef } from 'vue'
-import { pageTitle, navMenu } from '@/views/notices/_menu/headermixin'
+import { computed, onBeforeMount, ref } from 'vue'
+import { navMenu, pageTitle } from '@/views/notices/_menu/headermixin'
 import { useNotice } from '@/store/pinia/notice.ts'
+import { useCompany } from '@/store/pinia/company.ts'
 import type { Company } from '@/store/types/settings.ts'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
@@ -34,7 +35,8 @@ const recipientsWithVariables = ref<Array<{ phone: string; variables: Record<str
 const attachedImages = ref<File[]>([])
 
 // 회사 정보
-const company = inject<ComputedRef<Company | null>>('company')
+const comStore = useCompany()
+const company = computed<Company | null>(() => comStore.company)
 
 // 폼 데이터
 const smsForm = ref({

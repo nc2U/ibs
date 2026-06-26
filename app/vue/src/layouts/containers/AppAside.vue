@@ -1,6 +1,7 @@
 <script lang="ts" setup>
-import { computed, type ComputedRef, inject, onBeforeMount, ref } from 'vue'
+import { computed, onBeforeMount, ref } from 'vue'
 import { useStore } from '@/store'
+import { useCompany } from '@/store/pinia/company.ts'
 import type { Company } from '@/store/types/settings'
 import avatar2 from '@/assets/images/avatars/2.jpg'
 import avatar3 from '@/assets/images/avatars/3.jpg'
@@ -12,7 +13,8 @@ import avatar8 from '@/assets/images/avatars/8.jpg'
 
 const activeKey = ref(1)
 
-const company = inject<ComputedRef<Company | null>>('company')
+const comStore = useCompany()
+const company = computed<Company | null>(() => comStore.company)
 
 const store = useStore()
 const isDark = computed(() => store.theme === 'dark')

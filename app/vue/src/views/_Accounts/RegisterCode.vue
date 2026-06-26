@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { type ComputedRef, inject, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useStore } from '@/store'
+import { useCompany } from '@/store/pinia/company.ts'
+import type { Company } from '@/store/types/settings'
 import { useRouter } from 'vue-router'
 import { hashCode } from '@/utils/helper'
-import type { Company } from '@/store/types/settings'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
 const alertModal = ref()
@@ -14,7 +15,8 @@ const validated = ref(false)
 const store = useStore()
 const router = useRouter()
 
-const company = inject<ComputedRef<Company | null>>('company')
+const comStore = useCompany()
+const company = computed<Company | null>(() => comStore.company)
 
 const onSubmit = (event: Event) => {
   const form = event.currentTarget as HTMLInputElement

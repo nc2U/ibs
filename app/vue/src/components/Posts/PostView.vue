@@ -1,14 +1,15 @@
 <script lang="ts" setup>
 import type { ComputedRef, PropType } from 'vue'
-import { ref, computed, watch, inject, onBeforeMount, onMounted } from 'vue'
+import { computed, inject, onBeforeMount, onMounted, ref, watch } from 'vue'
 import { btnLight } from '@/utils/cssMixins.ts'
+import { useCompany } from '@/store/pinia/company.ts'
 import type { User } from '@/store/types/accounts'
 import { type Post } from '@/store/types/forum'
 import type { Company } from '@/store/types/settings'
 import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
 import { type PostFilter, useForum } from '@/store/pinia/forum'
 import { cutString, timeFormat } from '@/utils/baseMixins'
-import { toPrint, toPostLike, toPostBlame, postManageItems, toPostManage } from '@/utils/postMixins'
+import { postManageItems, toPostBlame, toPostLike, toPostManage, toPrint } from '@/utils/postMixins'
 import DOMPurify from 'dompurify'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
@@ -46,7 +47,8 @@ const editAuth = computed(
 const prev = ref<number | null>()
 const next = ref<number | null>()
 
-const company = inject<ComputedRef<Company | null>>('company')
+const comStore = useCompany()
+const company = computed<Company | null>(() => comStore.company)
 
 const sortName = computed(() => props.post?.forum_name || '본사 문서')
 const postId = computed(() => Number(route.params.postId))

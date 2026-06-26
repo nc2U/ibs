@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, type ComputedRef, inject, onBeforeMount, provide, ref } from 'vue'
+import { computed, onBeforeMount, provide, ref } from 'vue'
 import { navMenu2 as navMenu } from '@/views/_Work/_menu/headermixin1'
-import type { Company } from '@/store/types/settings'
 import { useRoute, useRouter } from 'vue-router'
 import { useAccount } from '@/store/pinia/account'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
+import { useCompany } from '@/store/pinia/company.ts'
+import type { Company } from '@/store/types/settings'
 import type { Issue, IssueFilter } from '@/store/types/work_issue.ts'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
@@ -14,7 +15,8 @@ import IssueList from './components/IssueList.vue'
 import IssueForm from './components/IssueForm.vue'
 
 const cBody = ref()
-const company = inject<ComputedRef<Company | null>>('company')
+const comStore = useCompany()
+const company = computed<Company | null>(() => comStore.company)
 const comName = computed(() => company?.value?.name)
 
 const sideNavCAll = () => cBody.value.toggle()

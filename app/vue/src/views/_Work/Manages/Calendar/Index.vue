@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, type ComputedRef, inject, onBeforeMount, provide, ref } from 'vue'
+import { computed, onBeforeMount, provide, ref } from 'vue'
 import { navMenu2 as navMenu } from '@/views/_Work/_menu/headermixin1'
 import { useRoute } from 'vue-router'
 import { useIssue } from '@/store/pinia/work_issue'
 import { useWork } from '@/store/pinia/work_project'
 import { useMeeting } from '@/store/pinia/work_meeting'
+import { useCompany } from '@/store/pinia/company.ts'
 import type { Company } from '@/store/types/settings'
 import type { IssueFilter } from '@/store/types/work_issue'
 import Loading from '@/components/Loading/Index.vue'
@@ -14,7 +15,8 @@ import SearchList from '@/views/_Work/Manages/Projects/components/SearchList.vue
 import SharedCalendar from './components/SharedCalendar.vue'
 
 const cBody = ref()
-const company = inject<ComputedRef<Company | null>>('company')
+const comStore = useCompany()
+const company = computed<Company | null>(() => comStore.company)
 const comName = computed(() => company?.value?.name)
 
 const route = useRoute()

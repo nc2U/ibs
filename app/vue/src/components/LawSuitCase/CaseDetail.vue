@@ -1,12 +1,13 @@
 <script lang="ts" setup>
-import { ref, computed, type PropType, watch, onBeforeMount, inject, type ComputedRef } from 'vue'
+import { computed, type ComputedRef, inject, onBeforeMount, type PropType, ref, watch } from 'vue'
 import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
-import { useDocs } from '@/store/pinia/docs'
 import type { SuitCase } from '@/store/types/docs'
 import type { User } from '@/store/types/accounts'
 import type { Company } from '@/store/types/settings'
+import { useDocs } from '@/store/pinia/docs'
+import { useCompany } from '@/store/pinia/company.ts'
 import { btnLight, TableSecondary } from '@/utils/cssMixins'
-import { timeFormat, numFormat } from '@/utils/baseMixins'
+import { numFormat, timeFormat } from '@/utils/baseMixins'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
@@ -30,7 +31,8 @@ const editAuth = computed(
 const prev = ref<number | null>()
 const next = ref<number | null>()
 
-const company = inject<ComputedRef<Company | null>>('company')
+const comStore = useCompany()
+const company = computed<Company | null>(() => comStore.company)
 
 const sortName = computed(() => props.suitcase?.proj_name || '본사')
 const sortDesc = computed(() => props.suitcase.sort_desc)

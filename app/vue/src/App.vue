@@ -16,7 +16,6 @@ provide('workManager', workManager)
 
 const comStore = useCompany()
 const company = computed<Company | null>(() => comStore.company)
-provide('company', company)
 
 const store = useStore()
 const isDark = computed(() => store.theme === 'dark')

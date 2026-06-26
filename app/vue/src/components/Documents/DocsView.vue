@@ -2,12 +2,13 @@
 import type { ComputedRef, PropType } from 'vue'
 import { computed, inject, onBeforeMount, onMounted, ref, watch } from 'vue'
 import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
-import { type DocsFilter, useDocs } from '@/store/pinia/docs'
 import { cutString } from '@/utils/baseMixins'
 import { type Docs } from '@/store/types/docs'
-import { btnLight } from '@/utils/cssMixins.ts'
 import type { User } from '@/store/types/accounts'
 import type { Company } from '@/store/types/settings'
+import { type DocsFilter, useDocs } from '@/store/pinia/docs'
+import { btnLight } from '@/utils/cssMixins.ts'
+import { useCompany } from '@/store/pinia/company.ts'
 import { docsManageItems, toDocsManage } from '@/utils/docsMixins'
 import PostInfo from '@/components/OtherParts/PostInfo.vue'
 import PostContent from '@/components/OtherParts/PostContent.vue'
@@ -45,7 +46,8 @@ const editAuth = computed(
 const prev = ref<number | null>()
 const next = ref<number | null>()
 
-const company = inject<ComputedRef<Company | null>>('company')
+const comStore = useCompany()
+const company = computed<Company | null>(() => comStore.company)
 
 const sortName = computed(() => props.docs?.proj_name || '본사 문서')
 const docsId = computed(() => Number(route.params.docsId))
