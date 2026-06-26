@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { cutString, diffDate, numFormat } from '@/utils/baseMixins'
 import { write_project_cash } from '@/utils/pageAuth'
 import { useProLedger } from '@/store/pinia/proLedger.ts'
+import { useAccount } from '@/store/pinia/account.ts'
 import type { AccountPicker } from '@/store/types/comLedger.ts'
 import type { ProAccountingEntry, ProBankTrans } from '@/store/types/proLedger.ts'
 import LedgerAccountPicker from '@/components/LedgerAccount/Picker.vue'
@@ -20,7 +21,8 @@ const proLedgerStore = useProLedger()
 
 const rowColor = computed(() => (props.isHighlighted ? 'warning' : ''))
 
-const superAuth = inject('superAuth')
+const accStore = useAccount()
+const superAuth = computed(() => accStore.superAuth)
 const allowedPeriod = computed(
   () =>
     (superAuth as any).value ||

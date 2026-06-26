@@ -1,22 +1,15 @@
 <script lang="ts" setup>
-import { computed, provide, watch, onMounted } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import { useStore } from '@/store'
-import { useAccount } from '@/store/pinia/account'
 import { useCompany } from '@/store/pinia/company'
-import type { Company } from '@/store/types/settings.ts'
 import GlobalDownloadIndicator from '@/components/DownLoad/GlobalDownloadIndicator.vue'
 
-const accStore = useAccount()
-const userInfo = computed(() => accStore.userInfo)
-const superAuth = computed(() => accStore.superAuth)
-provide('userInfo', userInfo)
-provide('superAuth', superAuth)
-
 const comStore = useCompany()
-const company = computed<Company | null>(() => comStore.company)
+const company = computed(() => comStore.company)
 
 const store = useStore()
 const isDark = computed(() => store.theme === 'dark')
+
 watch(isDark, () => {
   isDark.value
     ? document.body.classList.add('dark-theme')

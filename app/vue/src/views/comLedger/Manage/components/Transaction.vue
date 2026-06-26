@@ -2,6 +2,7 @@
 import { computed, type ComputedRef, inject, nextTick, type PropType, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { cutString, diffDate, numFormat } from '@/utils/baseMixins'
+import { useAccount } from '@/store/pinia/account.ts'
 import { write_company_cash } from '@/utils/pageAuth'
 import { useComLedger } from '@/store/pinia/comLedger.ts'
 import type { AccountPicker, AccountingEntry, BankTransaction } from '@/store/types/comLedger'
@@ -19,7 +20,8 @@ const ledgerStore = useComLedger()
 
 const rowColor = computed(() => (props.isHighlighted ? 'warning' : ''))
 
-const superAuth = inject('superAuth')
+const accStore = useAccount()
+const superAuth = computed(() => accStore.superAuth)
 const allowedPeriod = computed(
   () =>
     (superAuth as any).value ||
