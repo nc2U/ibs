@@ -44,6 +44,7 @@ describe('AppHeaderDropdownAccnt Component Test', () => {
           profile: null,
           assigned_projects: [],
           last_login: '2023-01-30T19:16:53+09:00',
+          can_create_project: false,
         },
         profile: null,
       },
