@@ -75,7 +75,7 @@ const formsCheck = computed(() => {
   if (!!user.value) {
     const pa = projectAuth.value
     const ma = menuAuth.value
-    const sa = user.value.staffauth
+    const sa = user.value.staff_auth
 
     if (!!sa) {
       const a = comInfo.value.is_staff === sa.is_staff
@@ -125,14 +125,14 @@ const fetchCompany = async (pk: number) => await comStore.fetchCompany(pk)
 
 const accStore = useAccount()
 const user = computed<User | null>(() => accStore.user)
-const isStaffAuth = computed(() => !!user.value?.staffauth)
+const isStaffAuth = computed(() => !!user.value?.staff_auth)
 
 const adminCreateUser = (payload: UserByAdmin) => accStore.adminCreateUser(payload)
 
 const selectUser = (pk: number | null) => {
   if (!!pk) {
     accStore.fetchUser(pk).then(() => {
-      if (user.value && !user.value.staffauth) authReset()
+      if (user.value && !user.value.staff_auth) authReset()
     })
   } else {
     accStore.removeUser()
@@ -184,7 +184,7 @@ const modalAction = () => {
 }
 
 watch(
-  () => user.value?.staffauth,
+  () => user.value?.staff_auth,
   nVal => {
     if (nVal) {
       comInfo.value.is_staff = nVal.is_staff

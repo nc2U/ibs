@@ -20,8 +20,8 @@ export const useProject = defineStore('project', () => {
   const projectList = ref<Project[]>([])
   const projectsCount = ref(0)
   const allowed_projects = computed(() =>
-    accountStore.userInfo && accountStore.userInfo.staffauth
-      ? accountStore.userInfo.staffauth.allowed_projects
+    accountStore.userInfo && accountStore.userInfo.staff_auth
+      ? accountStore.userInfo.staff_auth.allowed_projects
       : [],
   )
   const projSelect = computed(() => {
@@ -49,8 +49,8 @@ export const useProject = defineStore('project', () => {
   // states & getters
   const project = ref<Project | null>(null)
   const assingedProject = computed(() =>
-    accountStore.userInfo?.staffauth?.assigned_project
-      ? accountStore.userInfo.staffauth.assigned_project
+    accountStore.userInfo?.staff_auth?.assigned_project
+      ? accountStore.userInfo.staff_auth.assigned_project
       : 0,
   )
 

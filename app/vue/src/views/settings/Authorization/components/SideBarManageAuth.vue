@@ -54,26 +54,26 @@ const getAssigned = (payload: number | null) => emit('get-assigned', payload)
 const selectAuth = () =>
   nextTick(() => {
     const auth = { ...authData.value }
-    if (!!props.user?.staffauth) auth.pk = props.user.staffauth.pk
+    if (!!props.user?.staff_auth) auth.pk = props.user.staff_auth.pk
     else auth.pk = undefined
     emit('select-auth', auth)
   })
 
 const dataSetup = () => {
-  if (props.user && props.user?.staffauth) {
-    authData.value.pk = props.user.staffauth.pk
-    authData.value.contract = props.user.staffauth.contract
-    authData.value.payment = props.user.staffauth.payment
-    authData.value.notice = props.user.staffauth.notice
-    authData.value.project_ledger = props.user.staffauth.project_ledger
-    authData.value.project_docs = props.user.staffauth.project_docs
-    authData.value.project = props.user.staffauth.project
-    authData.value.project_site = props.user.staffauth.project_site
-    authData.value.company_ledger = props.user.staffauth.company_ledger
-    authData.value.company_docs = props.user.staffauth.company_docs
-    authData.value.human_resource = props.user.staffauth.human_resource
-    authData.value.company_settings = props.user.staffauth.company_settings
-    authData.value.auth_manage = props.user.staffauth.auth_manage
+  if (props.user && props.user?.staff_auth) {
+    authData.value.pk = props.user.staff_auth.pk
+    authData.value.contract = props.user.staff_auth.contract
+    authData.value.payment = props.user.staff_auth.payment
+    authData.value.notice = props.user.staff_auth.notice
+    authData.value.project_ledger = props.user.staff_auth.project_ledger
+    authData.value.project_docs = props.user.staff_auth.project_docs
+    authData.value.project = props.user.staff_auth.project
+    authData.value.project_site = props.user.staff_auth.project_site
+    authData.value.company_ledger = props.user.staff_auth.company_ledger
+    authData.value.company_docs = props.user.staff_auth.company_docs
+    authData.value.human_resource = props.user.staff_auth.human_resource
+    authData.value.company_settings = props.user.staff_auth.company_settings
+    authData.value.auth_manage = props.user.staff_auth.auth_manage
   } else {
     authData.value.pk = undefined
     authData.value.contract = '0'
@@ -96,7 +96,7 @@ onUpdated(() => dataSetup())
 </script>
 
 <template>
-  <CRow v-if="user?.staffauth?.is_staff">
+  <CRow v-if="user?.staff_auth?.is_staff">
     <CCol>
       <CRow>
         <CCol>
@@ -178,7 +178,7 @@ onUpdated(() => dataSetup())
     </CCol>
   </CRow>
 
-  <v-divider v-if="user?.staffauth?.is_staff" />
+  <v-divider v-if="user?.staff_auth?.is_staff" />
 
   <CRow>
     <CCol>

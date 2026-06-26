@@ -67,7 +67,7 @@ class UserSerializer(serializers.ModelSerializer):
         help_text='변경할 필요가 없으면 비워 두십시오.',
         style={'input_type': 'password', 'placeholder': '비밀번호'}
     )
-    staffauth = StaffAuthInUserSerializer(read_only=True)
+    staff_auth = StaffAuthInUserSerializer(read_only=True)
     profile = ProfileInUserSerializer(read_only=True)
     assigned_projects = IssueProjectInUserSerializer(many=True, read_only=True)
     can_create_project = serializers.SerializerMethodField()
@@ -88,7 +88,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('pk', 'email', 'username', 'is_active', 'is_superuser', 'is_staff',
-                  'work_manager', 'date_joined', 'password', 'staffauth', 'profile',
+                  'work_manager', 'date_joined', 'password', 'staff_auth', 'profile',
                   'assigned_projects', 'last_login', 'can_create_project')
         read_only_fields = ('date_joined', 'last_login')
 

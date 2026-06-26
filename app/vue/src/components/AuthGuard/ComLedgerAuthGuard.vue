@@ -10,7 +10,7 @@ const isLoading = computed(() => account.userInfo === null || account.userInfo =
 const hasAuth = computed(
   () =>
     account.userInfo?.is_superuser ||
-    (account.userInfo?.staffauth && account.userInfo.staffauth?.company_ledger > '0'),
+    (account.userInfo?.staff_auth && account.userInfo.staff_auth?.company_ledger > '0'),
 )
 </script>
 

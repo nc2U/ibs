@@ -25,7 +25,7 @@ export const useCompany = defineStore('company', () => {
 
   const currentCompany = Number(Cookies.get('curr-company'))
   const userCompany = computed(() =>
-    accountStore.userInfo?.staffauth?.company ? accountStore.userInfo.staffauth.company : 1,
+    accountStore.userInfo?.staff_auth?.company ? accountStore.userInfo.staff_auth.company : 1,
   )
   const initComId = computed(() => (currentCompany ? currentCompany : userCompany.value))
 

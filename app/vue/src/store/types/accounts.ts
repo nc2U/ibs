@@ -7,7 +7,7 @@ export declare interface User {
   is_staff: boolean
   work_manager: boolean
   date_joined: string
-  staffauth: StaffAuth | null
+  staff_auth: StaffAuth | null
   profile: null | {
     pk: number
     name: string
