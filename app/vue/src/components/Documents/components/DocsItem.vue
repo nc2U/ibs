@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, type ComputedRef, inject, type PropType } from 'vue'
-import type { User } from '@/store/types/accounts'
-import type { Docs } from '@/store/types/docs'
+import { computed, type PropType } from 'vue'
+import { useAccount } from '@/store/pinia/account.ts'
 import { cutString, timeFormat } from '@/utils/baseMixins'
+import type { Docs } from '@/store/types/docs'
 
 const props = defineProps({
   docs: { type: Object as PropType<Docs>, default: null },
@@ -10,7 +10,8 @@ const props = defineProps({
   isLawsuit: { type: Boolean, default: false },
 })
 
-const userInfo = inject<ComputedRef<User>>('userInfo')
+const accStore = useAccount()
+const userInfo = computed(() => accStore.userInfo)
 
 const sortName = computed(() => props.docs?.proj_name || '본사 문서')
 const sortColor = computed(() => (props.docs?.proj_sort === '2' ? 'success' : 'info'))

@@ -1,11 +1,11 @@
 <script lang="ts" setup>
-import { computed, type ComputedRef, inject, onBeforeMount, type PropType, ref, watch } from 'vue'
+import { computed, onBeforeMount, type PropType, ref, watch } from 'vue'
 import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
 import type { SuitCase } from '@/store/types/docs'
-import type { User } from '@/store/types/accounts'
 import type { Company } from '@/store/types/settings'
 import { useDocs } from '@/store/pinia/docs'
 import { useCompany } from '@/store/pinia/company.ts'
+import { useAccount } from '@/store/pinia/account.ts'
 import { btnLight, TableSecondary } from '@/utils/cssMixins'
 import { numFormat, timeFormat } from '@/utils/baseMixins'
 import AlertModal from '@/components/Modals/AlertModal.vue'
@@ -23,7 +23,8 @@ const emit = defineEmits(['cases-renewal', 'link-hit', 'file-hit', 'post-delete'
 const refDelModal = ref()
 const refAlertModal = ref()
 
-const userInfo = inject<ComputedRef<User>>('userInfo')
+const accStore = useAccount()
+const userInfo = computed(() => accStore.userInfo)
 const editAuth = computed(
   () => userInfo?.value?.is_superuser || props.suitcase?.creator?.pk === userInfo?.value?.pk,
 )

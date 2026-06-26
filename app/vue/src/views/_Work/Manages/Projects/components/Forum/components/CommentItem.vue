@@ -1,5 +1,6 @@
 <script lang="ts" setup>
-import { inject, ref, type PropType } from 'vue'
+import { computed, type PropType, ref } from 'vue'
+import { useAccount } from '@/store/pinia/account.ts'
 import type { Comment } from '@/store/types/forum'
 import { elapsedTime, timeFormat } from '@/utils/baseMixins'
 import { markdownRender } from '@/utils/helper'
@@ -11,7 +12,8 @@ const props = defineProps({
 
 const emit = defineEmits(['submit-comment', 'delete-comment'])
 
-const userInfo = inject<any>('userInfo')
+const accStore = useAccount()
+const userInfo = computed(() => accStore.userInfo)
 
 const showReplyForm = ref(false)
 const showEditForm = ref(false)

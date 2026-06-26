@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import { computed, type ComputedRef, inject, type PropType } from 'vue'
-import type { User } from '@/store/types/accounts'
+import { computed, type PropType } from 'vue'
+import { useAccount } from '@/store/pinia/account.ts'
 
 const props = defineProps({
   projStatus: { type: String, default: '' },
@@ -12,7 +12,8 @@ const props = defineProps({
 
 const emit = defineEmits(['call-edit-form', 'watch-control'])
 
-const userInfo = inject<ComputedRef<User>>('userInfo')
+const accStore = useAccount()
+const userInfo = computed(() => accStore.userInfo)
 
 const isWatcher = computed(() =>
   props.watchers.map(w => w.pk).includes(userInfo?.value?.pk as number),

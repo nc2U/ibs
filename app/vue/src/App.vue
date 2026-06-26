@@ -7,12 +7,10 @@ import type { Company } from '@/store/types/settings.ts'
 import GlobalDownloadIndicator from '@/components/DownLoad/GlobalDownloadIndicator.vue'
 
 const accStore = useAccount()
-const workManager = computed(() => accStore.workManager)
 const userInfo = computed(() => accStore.userInfo)
 const superAuth = computed(() => accStore.superAuth)
 provide('userInfo', userInfo)
 provide('superAuth', superAuth)
-provide('workManager', workManager)
 
 const comStore = useCompany()
 const company = computed<Company | null>(() => comStore.company)

@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import { type ComputedRef, inject, type PropType } from 'vue'
-import type { User } from '@/store/types/accounts.ts'
+import { computed, type PropType } from 'vue'
+import { useAccount } from '@/store/pinia/account.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import { markdownRender } from '@/utils/helper.ts'
 
@@ -11,7 +11,8 @@ defineProps({
   },
 })
 
-const userInfo = inject<ComputedRef<User>>('userInfo')
+const accStore = useAccount()
+const userInfo = computed(() => accStore.userInfo)
 
 const hasVisible = (project: IssueProject) => {
   if (project.visible) return true

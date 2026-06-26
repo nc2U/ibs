@@ -1,6 +1,7 @@
 <script lang="ts" setup>
-import { inject, type PropType } from 'vue'
+import { computed, type PropType } from 'vue'
 import { btnLight } from '@/utils/cssMixins.ts'
+import { useAccount } from '@/store/pinia/account.ts'
 import { useRoute, useRouter } from 'vue-router'
 import { elapsedTime, humanizeFileSize } from '@/utils/baseMixins'
 import { markdownRender } from '@/utils/helper'
@@ -17,7 +18,8 @@ const emit = defineEmits(['delete-post', 'like-post', 'blame-post'])
 const route = useRoute()
 const router = useRouter()
 
-const userInfo = inject<any>('userInfo')
+const accStore = useAccount()
+const userInfo = computed(() => accStore.userInfo)
 
 const goList = () =>
   router.push({
@@ -115,7 +117,7 @@ const goList = () =>
       <!-- 하단 간격 조정 -->
       <v-btn :color="btnLight" size="small" class="mr-2" @click="goList"> 목록으로 </v-btn>
       <v-btn
-        v-if="userInfo.is_superuser || userInfo?.pk === post.creator?.pk"
+        v-if="userInfo?.is_superuser || userInfo?.pk === post.creator?.pk"
         color="success"
         variant="outlined"
         size="small"
@@ -129,7 +131,7 @@ const goList = () =>
         수정
       </v-btn>
       <v-btn
-        v-if="userInfo.is_superuser || userInfo?.pk === post.creator?.pk"
+        v-if="userInfo?.is_superuser || userInfo?.pk === post.creator?.pk"
         color="error"
         variant="outlined"
         size="small"

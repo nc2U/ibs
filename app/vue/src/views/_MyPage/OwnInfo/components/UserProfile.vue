@@ -1,9 +1,10 @@
 <script lang="ts" setup>
-import { type ComputedRef, inject } from 'vue'
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import type { User } from '@/store/types/accounts'
+import { useAccount } from '@/store/pinia/account.ts'
 
-const userInfo = inject<ComputedRef<User>>('userInfo')
+const accStore = useAccount()
+const userInfo = computed(() => accStore.userInfo)
 
 const router = useRouter()
 </script>

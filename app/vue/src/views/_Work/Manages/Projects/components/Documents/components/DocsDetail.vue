@@ -1,8 +1,9 @@
 <script lang="ts" setup>
-import { computed, inject, onBeforeMount, onMounted, type PropType, ref } from 'vue'
+import { computed, onBeforeMount, onMounted, type PropType, ref } from 'vue'
 import { btnLight } from '@/utils/cssMixins.ts'
-import type { Docs } from '@/store/types/docs'
+import { useAccount } from '@/store/pinia/account.ts'
 import { useDocs } from '@/store/pinia/docs'
+import type { Docs } from '@/store/types/docs'
 import { useRoute, useRouter } from 'vue-router'
 import { timeFormat } from '@/utils/baseMixins'
 import PostInfo from '@/components/OtherParts/PostInfo.vue'
@@ -23,7 +24,8 @@ const refConfirmModal = ref()
 const docStore = useDocs()
 const [route, router] = [useRoute(), useRouter()]
 
-const userInfo = inject<any>('userInfo')
+const accStore = useAccount()
+const userInfo = computed(() => accStore.userInfo)
 
 const docId = computed(() => Number(route.params.docId))
 
@@ -118,7 +120,7 @@ onMounted(() => {
         </v-btn>
 
         <v-btn
-          v-if="userInfo.is_superuser || userInfo.pk === docs.creator?.pk"
+          v-if="userInfo?.is_superuser || userInfo?.pk === docs.creator?.pk"
           color="success"
           size="small"
           class="mr-2"
@@ -129,7 +131,7 @@ onMounted(() => {
         </v-btn>
 
         <v-btn
-          v-if="userInfo.is_superuser || userInfo.pk === docs.creator?.pk"
+          v-if="userInfo?.is_superuser || userInfo?.pk === docs.creator?.pk"
           color="warning"
           size="small"
           @click.prevent="refConfirmModal.callModal()"

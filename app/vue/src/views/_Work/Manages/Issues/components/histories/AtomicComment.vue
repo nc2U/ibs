@@ -1,7 +1,6 @@
 <script lang="ts" setup>
-import { computed, type ComputedRef, inject, type PropType, ref } from 'vue'
+import { computed, type PropType, ref } from 'vue'
 import { btnLight } from '@/utils/cssMixins.ts'
-import type { User } from '@/store/types/accounts'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import type { IssueLogEntry } from '@/store/types/work_logging.ts'
 import { useRoute } from 'vue-router'
@@ -23,7 +22,7 @@ const delPk = ref<null | number>(null)
 const route = useRoute()
 
 const accStore = useAccount()
-const userInfo = inject<ComputedRef<User>>('userInfo')
+const userInfo = computed(() => accStore.userInfo)
 const workManager = computed(() => accStore.workManager)
 
 const callReply = (log_id: number, user: string, content: string) => {

@@ -1,7 +1,7 @@
 <script lang="ts" setup>
-import { computed, type ComputedRef, inject, onBeforeMount, ref } from 'vue'
-import { pageTitle, navMenu } from '@/views/_MyPage/_menu/headermixin'
-import type { User } from '@/store/types/accounts'
+import { computed, onBeforeMount, ref } from 'vue'
+import { navMenu, pageTitle } from '@/views/_MyPage/_menu/headermixin'
+import { useAccount } from '@/store/pinia/account.ts'
 import { type PostFilter, useForum } from '@/store/pinia/forum'
 import Loading from '@/components/Loading/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
@@ -12,7 +12,9 @@ import CommentList from './components/CommentList.vue'
 
 const mainViewName = ref('내 작성글')
 const sort = ref<'post' | 'comment'>('post')
-const userInfo = inject<ComputedRef<User>>('userInfo')
+
+const accStore = useAccount()
+const userInfo = computed(() => accStore.userInfo)
 
 const postFilter = ref<PostFilter>({
   user: '',
@@ -46,12 +48,12 @@ const dataSetup = (pk: number) => {
   postFilter.value.user = pk
   fetchForumList()
   fetchPostList(postFilter.value)
-  fetchCommentList({ user: userInfo?.value.pk })
+  fetchCommentList({ user: userInfo?.value?.pk })
 }
 
 const loading = ref(true)
 onBeforeMount(() => {
-  dataSetup(userInfo?.value.pk as number)
+  dataSetup(userInfo?.value?.pk as number)
   loading.value = false
 })
 </script>

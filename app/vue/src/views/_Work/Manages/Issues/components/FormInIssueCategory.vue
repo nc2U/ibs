@@ -1,14 +1,16 @@
 <script lang="ts" setup>
-import { type ComputedRef, inject, type PropType, ref } from 'vue'
+import { computed, type PropType, ref } from 'vue'
 import { isValidate } from '@/utils/helper'
 import { btnLight } from '@/utils/cssMixins.ts'
-import type { User } from '@/store/types/accounts'
+import { useAccount } from '@/store/pinia/account.ts'
 
 defineProps({
   memberList: { type: Array as PropType<{ pk: number; username: string }[]>, default: () => [] },
 })
 const emit = defineEmits(['create-category', 'close'])
-const userInfo = inject<ComputedRef<User>>('userInfo')
+
+const accStore = useAccount()
+const userInfo = computed(() => accStore.userInfo)
 
 const validated = ref(false)
 

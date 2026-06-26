@@ -1,14 +1,14 @@
 <script lang="ts" setup>
-import type { ComputedRef, PropType } from 'vue'
-import { computed, inject, onBeforeMount, onMounted, ref, watch } from 'vue'
+import type { PropType } from 'vue'
+import { computed, onBeforeMount, onMounted, ref, watch } from 'vue'
 import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
 import { cutString } from '@/utils/baseMixins'
 import { type Docs } from '@/store/types/docs'
-import type { User } from '@/store/types/accounts'
 import type { Company } from '@/store/types/settings'
 import { type DocsFilter, useDocs } from '@/store/pinia/docs'
 import { btnLight } from '@/utils/cssMixins.ts'
 import { useCompany } from '@/store/pinia/company.ts'
+import { useAccount } from '@/store/pinia/account.ts'
 import { docsManageItems, toDocsManage } from '@/utils/docsMixins'
 import PostInfo from '@/components/OtherParts/PostInfo.vue'
 import PostContent from '@/components/OtherParts/PostContent.vue'
@@ -38,7 +38,9 @@ const isCopy = ref(false)
 const refCateListModal = ref()
 const refTrashModal = ref()
 
-const userInfo = inject<ComputedRef<User>>('userInfo')
+const accStore = useAccount()
+const userInfo = computed(() => accStore.userInfo)
+const superAuth = computed(() => accStore.superAuth)
 const editAuth = computed(
   () => userInfo?.value?.is_superuser || props.docs?.creator?.pk === userInfo?.value?.pk,
 )
@@ -148,7 +150,7 @@ const toManage = (fn: number, el?: { nType?: number; nProj?: number; nCate?: num
       docs: docs as number,
       state,
       filter: props.docsFilter as DocsFilter,
-      manager: userInfo?.value.username as string,
+      manager: userInfo?.value?.username as string,
     }
     toDocsManage(fn, payload)
   }
@@ -168,7 +170,7 @@ const toEdit = () => {
 const deleteConfirm = () => refTrashModal.value.callModal()
 
 const toDelete = () => {
-  if (userInfo?.value.is_superuser) toManage(88)
+  if (superAuth.value) toManage(88)
   refDelModal.value.close()
 }
 
@@ -255,7 +257,7 @@ onMounted(() => {
       </CCol>
     </CRow>
 
-    <div v-show="!docs.is_blind || userInfo?.pk === docs.creator?.pk || userInfo?.is_superuser">
+    <div v-show="!docs.is_blind || userInfo?.pk === docs.creator?.pk || superAuth">
       <CRow class="py-2 justify-content-between">
         <CCol md="7" lg="6" xl="5">
           <table v-if="typeNum !== 1 && docs.execution_date" class="table table-bordered mt-2 mb-3">
@@ -358,13 +360,7 @@ onMounted(() => {
         >
           스크랩 {{ docs.scrape ? `+${docs.scrape}` : '' }}
         </v-btn>
-        <v-btn
-          v-if="userInfo?.is_superuser"
-          prepend-icon="mdi-cog"
-          variant="tonal"
-          size="small"
-          :rounded="0"
-        >
+        <v-btn v-if="superAuth" prepend-icon="mdi-cog" variant="tonal" size="small" :rounded="0">
           관리
           <v-menu activator="parent" open-on-hover>
             <v-list density="compact">

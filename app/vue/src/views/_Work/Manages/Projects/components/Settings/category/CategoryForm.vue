@@ -1,10 +1,10 @@
 <script lang="ts" setup>
-import { ref, onBeforeMount, inject, type ComputedRef, type PropType, computed } from 'vue'
-import type { User } from '@/store/types/accounts'
+import { computed, onBeforeMount, type PropType, ref } from 'vue'
 import { colorLight } from '@/utils/cssMixins'
+import { useAccount } from '@/store/pinia/account.ts'
+import { useIssue } from '@/store/pinia/work_issue.ts'
 import { useRoute } from 'vue-router'
 import { isValidate } from '@/utils/helper'
-import { useIssue } from '@/store/pinia/work_issue.ts'
 
 defineProps({
   memberList: { type: Array as PropType<{ pk: number; username: string }[]>, default: () => [] },
@@ -12,7 +12,8 @@ defineProps({
 
 const emit = defineEmits(['category-submit'])
 
-const userInfo = inject<ComputedRef<User>>('userInfo')
+const accStore = useAccount()
+const userInfo = computed(() => accStore.userInfo)
 
 const validated = ref(false)
 

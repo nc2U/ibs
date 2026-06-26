@@ -1,8 +1,8 @@
 <script lang="ts" setup>
-import { ref, computed, type ComputedRef, inject, type PropType, onBeforeMount } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed, onBeforeMount, type PropType, ref } from 'vue'
+import { useAccount } from '@/store/pinia/account.ts'
+import { useRouter } from 'vue-router'
 import type { Issue, SimpleIssue } from '@/store/types/work_issue.ts'
-import type { User } from '@/store/types/accounts'
 
 const props = defineProps({
   issue: { type: Object as PropType<Issue | SimpleIssue>, required: true },
@@ -10,9 +10,10 @@ const props = defineProps({
 
 const emit = defineEmits(['watch-control'])
 
-const [route, router] = [useRoute(), useRouter()]
+const router = useRouter()
 
-const userInfo = inject<ComputedRef<User>>('userInfo')
+const accStore = useAccount()
+const userInfo = computed(() => accStore.userInfo)
 
 const isWatcher = ref(false)
 

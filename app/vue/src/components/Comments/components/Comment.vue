@@ -1,7 +1,7 @@
 <script lang="ts" setup>
-import { ref, watch, inject, type ComputedRef, type PropType } from 'vue'
+import { computed, type PropType, ref, watch } from 'vue'
+import { useAccount } from '@/store/pinia/account.ts'
 import { elapsedTime } from '@/utils/baseMixins'
-import type { User } from '@/store/types/accounts'
 import type { Comment as Cm } from '@/store/types/forum'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import CommentForm from './CommentForm.vue'
@@ -24,7 +24,8 @@ const emit = defineEmits(['vision-toggle', 'to-like', 'to-blame', 'on-submit'])
 
 const refBlameModal = ref()
 
-const userInfo = inject<ComputedRef<User>>('userInfo')
+const accStore = useAccount()
+const userInfo = computed(() => accStore.userInfo)
 
 const isReplying = ref<boolean>(false)
 const isEditing = ref<boolean>(false)

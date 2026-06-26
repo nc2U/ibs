@@ -1,10 +1,12 @@
 <script lang="ts" setup>
-import { computed, inject, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useInform } from '@/store/pinia/work_inform.ts'
+import { useAccount } from '@/store/pinia/account.ts'
 import type { News } from '@/store/types/work_inform.ts'
 import Comment from './Comment.vue'
 
-const userInfo = inject<any>('userInfo')
+const accStore = useAccount()
+const userInfo = computed(() => accStore.userInfo)
 
 const infStore = useInform()
 const news = computed(() => infStore.news as News | null)

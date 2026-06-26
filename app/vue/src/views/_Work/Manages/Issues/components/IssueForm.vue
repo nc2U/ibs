@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, inject, onBeforeMount, type PropType, ref, watch } from 'vue'
+import { computed, onBeforeMount, type PropType, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
@@ -30,7 +30,7 @@ const emit = defineEmits(['on-submit', 'close-form'])
 
 const validated = ref(false)
 const accStore = useAccount()
-const userInfo = inject<any>('userInfo')
+const userInfo = computed(() => accStore.userInfo)
 const workManager = computed(() => accStore.workManager)
 
 const form = ref({
@@ -54,7 +54,7 @@ const form = ref({
   files: [] as any[],
 })
 
-const assignedToMe = () => (form.value.assigned_to = userInfo?.value.pk as number)
+const assignedToMe = () => (form.value.assigned_to = userInfo?.value?.pk as number)
 
 const comment = ref({
   content: '',
@@ -274,7 +274,7 @@ const removeProperty = (e: Event) => {
 }
 
 const isAssigned = (pk: number) =>
-  workStore.memberList.map(m => m.user.pk).includes(userInfo?.value.pk)
+  workStore.memberList.map(m => m.user.pk).includes(userInfo?.value?.pk as number)
 
 const cmtFocus = ref(false)
 const callComment = () => (cmtFocus.value = true)
