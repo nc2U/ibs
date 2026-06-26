@@ -114,14 +114,14 @@ const memberList = computed(() => {
     return props.issueProject.all_members.map(m => ({
       pk: m.user.pk,
       username: m.user.username,
-      isAssignable: m.roles.some(r => r.assignable)
+      isAssignable: m.roles.some(r => r.assignable),
     }))
   }
 
   return [...new Map(workStore.memberList.map(m => [m.user.pk, m.user])).values()].map(u => ({
     pk: u.pk,
     username: u.username,
-    isAssignable: true // Default to true if role info not available in global member list
+    isAssignable: true, // Default to true if role info not available in global member list
   }))
 })
 
@@ -480,10 +480,10 @@ defineExpose({ callComment, callReply })
                 <CCol sm="8">
                   <CInputGroup>
                     <CFormSelect v-model="form.assigned_to" id="assigned_to">
-                      <option :value="null">---------</option>
-                      <option 
-                        v-for="member in memberList" 
-                        :value="member.pk" 
+                      <option value="">---------</option>
+                      <option
+                        v-for="member in memberList"
+                        :value="member.pk"
                         :key="member.pk"
                         :disabled="!member.isAssignable && member.pk !== userInfo?.pk"
                       >
@@ -524,7 +524,7 @@ defineExpose({ callComment, callReply })
                 <CCol sm="8">
                   <CInputGroup>
                     <CFormSelect v-model="form.fixed_version" id="fixed_version">
-                      <option :value="null">---------</option>
+                      <option value="">---------</option>
                       <option v-for="ver in versions" :value="ver.pk" :key="ver.pk">
                         {{ ver.name }}
                       </option>
