@@ -188,9 +188,7 @@ onMounted(() => dataSetup())
 onUpdated(() => dataSetup())
 
 onBeforeMount(() => {
-  if (!!route.query.parent) {
-    form.parent = Number(route.query.parent)
-  }
+  if (!!route.query.parent) form.parent = Number(route.query.parent)
   comStore.fetchCompanyList()
   workStore.fetchRoleList()
   issueStore.fetchTrackerList()
@@ -307,7 +305,7 @@ onBeforeMount(() => {
               <option value="">---------</option>
               <option
                 v-for="proj in getAllProjects"
-                :value="proj.value"
+                :value="proj.pk"
                 :key="proj.value"
                 v-show="project?.pk !== proj.pk"
               >
