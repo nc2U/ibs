@@ -70,6 +70,7 @@ const module = reactive({
 
 const formsCheck = computed(() => {
   const canSubmit = props.project ? can(PERM.PROJECT_UPDATE) : can(PERM.PROJECT_CREATE)
+  // 1. 권한이 아예 없으면 무조건 비활성화
   if (!canSubmit) return true
 
   if (props.project) {
@@ -97,8 +98,10 @@ const formsCheck = computed(() => {
 
     const first = a && b && c && d && e && f && g && h && i && j
     const second = l && n && o && r && s
+    // 2. 권한은 있지만 변경 사항이 없으면 비활성화
     return first && second
   }
+  // 3. 생성의 경우 권한이 있다면 활성화(false 반환)
   return false
 })
 
