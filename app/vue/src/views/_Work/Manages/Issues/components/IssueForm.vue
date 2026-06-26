@@ -503,7 +503,7 @@ defineExpose({ callComment, callReply })
 
               <CRow class="mb-3">
                 <CFormLabel for="parent" class="col-sm-4 col-form-label text-right">
-                  상위업무 {{ form.parent }}
+                  상위업무
                 </CFormLabel>
                 <CCol sm="8">
                   <Multiselect
