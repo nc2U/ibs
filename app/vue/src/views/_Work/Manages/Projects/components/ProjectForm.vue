@@ -12,6 +12,7 @@ import {
   ref,
 } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { usePerms } from '@/composables/usePerms'
 import { useCompany } from '@/store/pinia/company'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
@@ -26,6 +27,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['modal-close'])
+
+const { can, PERM } = usePerms()
 
 const isDark = inject('isDark')
 const workManager = inject<ComputedRef<boolean>>('workManager')
@@ -66,6 +69,9 @@ const module = reactive({
 })
 
 const formsCheck = computed(() => {
+  const canSubmit = props.project ? can(PERM.PROJECT_UPDATE) : can(PERM.PROJECT_CREATE)
+  if (!canSubmit) return true
+
   if (props.project) {
     const a = form.company === props.project.company
     const b = form.sort === props.project.sort
@@ -92,7 +98,8 @@ const formsCheck = computed(() => {
     const first = a && b && c && d && e && f && g && h && i && j
     const second = l && n && o && r && s
     return first && second
-  } else return false
+  }
+  return false
 })
 
 const tempSpace = ref('')
