@@ -290,6 +290,7 @@ export const useWork = defineStore('work', () => {
       .put(`/version/${payload.pk}/`, payload)
       .then(async res => {
         await fetchVersion(res.data.pk)
+        await fetchVersionList(res.data.project.slug)
         message()
       })
       .catch(err => errorHandle(err.response.data))
