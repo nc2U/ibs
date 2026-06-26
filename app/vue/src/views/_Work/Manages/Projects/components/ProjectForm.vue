@@ -2,7 +2,6 @@
 import Cookies from 'js-cookie'
 import {
   computed,
-  type ComputedRef,
   inject,
   onBeforeMount,
   onMounted,
@@ -14,8 +13,9 @@ import {
 import { useRoute, useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
 import { useCompany } from '@/store/pinia/company'
-import { useWork } from '@/store/pinia/work_project.ts'
+import { useAccount } from '@/store/pinia/account.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
+import { useWork } from '@/store/pinia/work_project.ts'
 import { colorLight } from '@/utils/cssMixins'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import MdEditor from '@/components/MdEditor/Index.vue'
@@ -28,10 +28,15 @@ const props = defineProps({
 
 const emit = defineEmits(['modal-close'])
 
+const isDark = inject('isDark')
+
 const { can, PERM } = usePerms()
 
-const isDark = inject('isDark')
-const workManager = inject<ComputedRef<boolean>>('workManager')
+const accStore = useAccount()
+const workManager = computed(() => accStore.workManager)
+const canUpdatePublic = computed(() => {
+  return workManager.value || can(PERM.PROJECT_PUBLIC)
+})
 
 const validated = ref(false)
 
@@ -85,7 +90,10 @@ const formsCheck = computed(() => {
     const c = form.name === props.project.name
     const d = form.description === props.project.description
     const e = form.homepage === props.project.homepage
-    const f = form.is_public === props.project.is_public
+
+    // 공개여부 변경은 권한이 있을 때만 체크
+    const f = !canUpdatePublic.value || form.is_public === props.project.is_public
+
     const g = Number(form.parent) === Number(props.project.parent)
     const h = form.is_inherit_members === props.project.is_inherit_members
     const i =
@@ -298,7 +306,12 @@ onBeforeMount(() => {
         <CRow v-if="workManager || project?.my_perms?.includes('project_public')" class="mb-3">
           <CFormLabel class="col-form-label text-right col-2">공개여부</CFormLabel>
           <CCol class="pt-2">
-            <CFormSwitch v-model="form.is_public" id="is_public" label="프로젝트 공개 여부" />
+            <CFormSwitch
+              v-model="form.is_public"
+              id="is_public"
+              label="프로젝트 공개 여부"
+              :disabled="!canUpdatePublic"
+            />
             <div class="form-text">
               공개 프로젝트는 네트워크의 모든 사용자가 접속할 수 있습니다.
             </div>
