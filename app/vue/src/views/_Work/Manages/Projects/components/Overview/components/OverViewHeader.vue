@@ -2,6 +2,7 @@
 import { type PropType, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
+import { useWork } from '@/store/pinia/work_project.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
@@ -9,19 +10,18 @@ const props = defineProps({
   project: { type: Object as PropType<IssueProject>, required: true },
 })
 
-const emit = defineEmits(['close-project', 'reopen-project', 'delete-project'])
+const emit = defineEmits(['delete-project'])
 
 const RefProjectCloseConfirm = ref()
 const RefProjectDeleteConfirm = ref()
 const idForDelete = ref('')
 
 const { can, PERM } = usePerms() // 사용자 권한 데이터
-
 const router = useRouter()
 
-const patchProject = () => {
-  if (props.project?.status === '1') emit('close-project', props.project.slug)
-  else emit('reopen-project', props.project.slug)
+const workStore = useWork()
+const toggleStatus = async () => {
+  await workStore.toggleProjectStatus(props.project.slug as string)
   RefProjectCloseConfirm.value.close()
 }
 
@@ -123,7 +123,7 @@ const projectDelete = () => {
       <v-btn
         :color="project?.status === '1' ? 'warning' : 'success'"
         size="small"
-        @click="patchProject"
+        @click="toggleStatus"
       >
         확인
       </v-btn>

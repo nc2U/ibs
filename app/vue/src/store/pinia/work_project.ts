@@ -147,6 +147,24 @@ export const useWork = defineStore('work', () => {
       })
       .catch(err => errorHandle(err.response.data))
 
+  const toggleProjectStatus = (slug: string) =>
+    api
+      .post(`/issue-project/${slug}/toggle_status/`)
+      .then(async () => {
+        await fetchIssueProject(slug)
+        message()
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const toggleProjectPublic = (slug: string) =>
+    api
+      .post(`/issue-project/${slug}/toggle_public/`)
+      .then(async () => {
+        await fetchIssueProject(slug)
+        message()
+      })
+      .catch(err => errorHandle(err.response.data))
+
   // Role & Permission states & getters
   const role = ref<Role | null>(null)
   const roleList = ref<Role[]>([])
@@ -320,6 +338,8 @@ export const useWork = defineStore('work', () => {
     updateIssueProject,
     patchIssueProject,
     deleteIssueProject,
+    toggleProjectStatus,
+    toggleProjectPublic,
 
     role,
     roleList,
