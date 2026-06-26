@@ -127,18 +127,21 @@ class IssueViewSet(viewsets.ModelViewSet):
         user = self.request.user
         
         # 기본 쿼리셋에 관계형 필드를 미리 로딩하여 N+1 문제 방지
-        queryset = self.queryset.select_related('project', 'status', 'creator', 'assigned_to', 'tracker', 'fixed_version')
+        # + 프로젝트 상태가 '1'(사용)인 업무만 조회하도록 제한 (전역 조건)
+        queryset = self.queryset.filter(project__status='1').select_related(
+            'project', 'status', 'creator', 'assigned_to', 'tracker', 'fixed_version'
+        )
 
-        # 관리자는 모든 업무에 접근 가능
+        # 관리자는 모든 사용 중인 프로젝트의 업무에 접근 가능
         if user.work_manager or user.is_superuser:
             return queryset
 
         # 사용자가 멤버로 속한 프로젝트 ID 목록
         member_project_ids = user.member_project_ids()
         
-        # 접근 가능 범위 정의
-        # 1. 멤버인 프로젝트의 모든 업무 (비공개 프로젝트 포함)
-        # 2. 공개 프로젝트의 업무 (기본 열람 가능)
+        # 접근 가능 범위 정의 (프로젝트 상태 '1'은 위에서 이미 필터링됨)
+        # 1. 멤버인 프로젝트의 모든 업무
+        # 2. 공개 프로젝트의 업무
         # 3. 비공개 업무라도 사용자가 작성자(creator)이거나 담당자(assigned_to)인 경우
         return queryset.filter(
             Q(project__id__in=member_project_ids) |
