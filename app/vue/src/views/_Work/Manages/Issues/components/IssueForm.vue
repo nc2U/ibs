@@ -208,17 +208,6 @@ watch(
   },
 )
 
-// 부모 업무 리스트가 로드되었을 때 parent 값 동기화
-watch(
-  () => props.getIssues,
-  () => {
-    if (props.issue?.parent && !form.value.parent) {
-      form.value.parent = props.issue.parent
-    }
-  },
-  { immediate: true },
-)
-
 const newIssueStatusList = computed(() => {
   if (!props.issue) {
     // 신규 생성 모드
