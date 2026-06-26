@@ -70,9 +70,9 @@ export const useIssue = defineStore('issue', () => {
 
   const removeIssue = () => (issue.value = null)
 
-  const fetchAllIssueList = (project?: string) =>
+  const fetchAllIssueList = (project?: string, closed = '0') =>
     api
-      .get(`/issue/?project__slug=${project ?? ''}`)
+      .get(`/issue/?project__slug=${project ?? ''}&status__closed=${closed}&limit=1000`)
       .then(res => (allIssueList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
