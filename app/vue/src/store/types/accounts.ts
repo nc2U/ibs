@@ -20,6 +20,7 @@ export declare interface User {
     name: string
   }[]
   last_login: string | null
+  can_create_project: boolean
 }
 
 type Auth = '0' | '1' | '2'

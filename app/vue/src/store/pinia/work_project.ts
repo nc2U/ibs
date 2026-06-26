@@ -96,7 +96,7 @@ export const useWork = defineStore('work', () => {
       .get(`/issue-project/${slug}/`)
       .then(async res => {
         issueProject.value = res.data
-        permStore.setPermissions(res.data.my_perms || [])
+        permStore.setProjectPermissions(res.data.my_perms || [])
         await comStore.fetchCompany(res.data.company)
       })
       .catch(err => errorHandle(err.response.data))

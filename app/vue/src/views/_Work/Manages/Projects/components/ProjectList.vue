@@ -3,6 +3,8 @@ import { computed, type ComputedRef, inject, onBeforeUnmount, onMounted, ref } f
 import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project.ts'
 import type { IssueProject, ProjectFilter } from '@/store/types/work_project.ts'
+import { usePerms } from '@/composables/usePerms'
+import { usePermission } from '@/store/pinia/work_permission.ts'
 import SearchList from './SearchList.vue'
 import ProjectCard from './ProjectCard.vue'
 import ProjectTable from './ProjectTable.vue'
@@ -13,9 +15,8 @@ const cBody = ref()
 const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
 
-const workManager = inject<ComputedRef<boolean>>('workManager')
-
 const workStore = useWork()
+const { can, PERM } = usePerms() // 사용자 권한 데이터
 const projectList = computed<IssueProject[]>(() => workStore.issueProjects)
 const allIssueProjects = computed<IssueProject[]>(() => workStore.AllIssueProjects)
 const allProjects = computed(() => workStore.getAllProjects)
@@ -62,10 +63,14 @@ onBeforeUnmount(() => window.removeEventListener('resize', updateBreakpoint))
 // 반응형 컬럼 설정 계산
 const colProps = computed(() => {
   switch (breakpoint.value) {
-    case 'sm': return { xs: 12 }
-    case 'md': return { sm: 6 }
-    case 'lg': return { sm: 4 }
-    default: return { sm: 3 }
+    case 'sm':
+      return { xs: 12 }
+    case 'md':
+      return { sm: 6 }
+    case 'lg':
+      return { sm: 4 }
+    default:
+      return { sm: 3 }
   }
 })
 </script>
@@ -78,7 +83,7 @@ const colProps = computed(() => {
           <h5>프로젝트</h5>
         </CCol>
 
-        <CCol v-if="workManager" class="text-right form-text">
+        <CCol v-if="can(PERM.PROJECT_CREATE)" class="text-right form-text">
           <span v-show="route.name !== '프로젝트 - 추가'" class="mr-2">
             <v-icon icon="mdi-plus-circle" color="success" size="15" />
             <router-link :to="{ name: '프로젝트 - 추가' }" class="ml-1">새 프로젝트</router-link>

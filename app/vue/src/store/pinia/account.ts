@@ -3,8 +3,9 @@ import Cookies from 'js-cookie'
 import { Buffer } from 'buffer'
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
-import { useDocs } from '@/store/pinia/docs'
 import { errorHandle, message } from '@/utils/helper'
+import { useDocs } from '@/store/pinia/docs'
+import { usePermission } from '@/store/pinia/work_permission.ts'
 import type { LocationQueryValue } from 'vue-router'
 import type { User, StaffAuth, Profile, Scrape, Todo } from '@/store/types/accounts'
 
@@ -77,6 +78,10 @@ export const useAccount = defineStore('account', () => {
 
   const setUser = (user: User) => {
     userInfo.value = user
+    // 전역 프로젝트 생성 권한 설정
+    const permStore = usePermission()
+    permStore.setGlobalProjectCreatePerm(!!user.can_create_project)
+
     fetchTodoList().then(() => fetchProfile())
   }
 

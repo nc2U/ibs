@@ -1,23 +1,40 @@
-import { defineStore } from 'pinia';
-import { ref } from 'vue';
-import type { PermissionCode } from '@/store/constants/permissions';
+import { defineStore } from 'pinia'
+import { ref } from 'vue'
+import { PERM, type PermissionCode } from '@/store/constants/permissions'
 
 export const usePermission = defineStore('permission', () => {
-  // 권한을 Set으로 관리하여 검색 성능 O(1) 보장
-  const myPermSet = ref<Set<PermissionCode>>(new Set());
+  // 전역 프로젝트 생성 권한 플래그
+  const canCreateProject = ref(false)
+  const projectPermSet = ref<Set<PermissionCode>>(new Set())
 
-  // 권한 데이터 세팅 (프로젝트 로드 시 호출)
-  const setPermissions = (perms: PermissionCode[]) => {
-    myPermSet.value = new Set(perms);
-  };
+  // 전역 프로젝트 생성 권한 설정 (로그인 시/앱 시작 시 호출)
+  const setGlobalProjectCreatePerm = (can: boolean) => {
+    canCreateProject.value = can
+  }
+
+  // 프로젝트 권한 데이터 세팅 (프로젝트 로드 시 호출)
+  const setProjectPermissions = (perms: PermissionCode[]) => {
+    projectPermSet.value = new Set(perms)
+  }
 
   // 권한 체크 로직
   const can = (code: PermissionCode | PermissionCode[]) => {
-    if (Array.isArray(code)) {
-      return code.every(c => myPermSet.value.has(c));
+    const check = (c: PermissionCode) => {
+      // 전역 생성 권한 체크
+      if (c === PERM.PROJECT_CREATE && canCreateProject.value) return true
+      // 프로젝트별 권한 세트에서 체크
+      return projectPermSet.value.has(c)
     }
-    return myPermSet.value.has(code);
-  };
 
-  return { myPermSet, setPermissions, can };
-});
+    if (Array.isArray(code)) return code.every(c => check(c))
+    return check(code)
+  }
+
+  return {
+    canCreateProject,
+    projectPermSet,
+    setGlobalProjectCreatePerm,
+    setProjectPermissions,
+    can,
+  }
+})
