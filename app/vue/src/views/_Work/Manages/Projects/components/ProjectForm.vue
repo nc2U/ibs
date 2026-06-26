@@ -69,8 +69,14 @@ const module = reactive({
 })
 
 const formsCheck = computed(() => {
-  const canSubmit = props.project ? can(PERM.PROJECT_UPDATE) : can(PERM.PROJECT_CREATE)
-  // 1. 권한이 아예 없으면 무조건 비활성화
+  // 1. 권한 체크 로직: 수정 시에는 UPDATE, 생성 시에는 부모 유무에 따라 CREATE/CREATE_SUB 분기
+  const canSubmit = props.project
+    ? can(PERM.PROJECT_UPDATE)
+    : form.parent
+      ? can(PERM.PROJECT_CREATE_SUB)
+      : can(PERM.PROJECT_CREATE)
+
+  // 2. 권한이 아예 없으면 무조건 비활성화
   if (!canSubmit) return true
 
   if (props.project) {
@@ -98,10 +104,11 @@ const formsCheck = computed(() => {
 
     const first = a && b && c && d && e && f && g && h && i && j
     const second = l && n && o && r && s
-    // 2. 권한은 있지만 변경 사항이 없으면 비활성화
+
+    // 3. 권한은 있지만 변경 사항이 없으면 비활성화
     return first && second
   }
-  // 3. 생성의 경우 권한이 있다면 활성화(false 반환)
+  // 4. 생성의 경우 권한이 있다면 활성화(false 반환)
   return false
 })
 
@@ -301,7 +308,10 @@ onBeforeMount(() => {
         <CRow class="mb-3">
           <CFormLabel class="col-form-label text-right col-2">상위 프로젝트</CFormLabel>
           <CCol>
-            <CFormSelect v-model.number.lazy="form.parent">
+            <CFormSelect
+              v-model.number.lazy="form.parent"
+              :disabled="!can(PERM.PROJECT_CREATE_SUB)"
+            >
               <option value="">---------</option>
               <option
                 v-for="proj in getAllProjects"
