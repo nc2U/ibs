@@ -1,6 +1,7 @@
-from django.db.models import Q
+from django.db.models import Q, Model
 from django_filters.rest_framework import FilterSet, BooleanFilter, CharFilter
 from rest_framework import viewsets
+from rest_framework.decorators import action
 
 from apiV1.pagination import *
 from apiV1.permission import *
@@ -31,12 +32,29 @@ class IssueProjectViewSet(viewsets.ModelViewSet):
     pagination_class = PageNumberPaginationTwenty
     filterset_class = IssueProjectFilter
 
+    @action(detail=True, methods=['post'])
+    def toggle_status(self, request, slug=None):
+        project = self.get_object()
+        # 상태 전환 로직 (예: '1' -> '9', '9' -> '1')
+        project.status = '9' if project.status == '1' else '1'
+        project.save()
+        return Response({'status': project.status})
+
+    @action(detail=True, methods=['post'])
+    def toggle_public(self, request, slug=None):
+        project = self.get_object()
+        project.is_public = not project.is_public
+        project.save()
+        return Response({'is_public': project.is_public})
+
     @property
     def required_permission(self):
         mapping = {  # 매핑 로직 정의
             'create': 'project.create',
             'update': 'project.update',
             'partial_update': 'project.update',
+            'toggle_status': 'project.close',
+            'toggle_public': 'project.public',
             'destroy': 'project.delete'
         }
         # 정의되지 않은 액션에 대해 기본 권한 반환

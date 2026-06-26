@@ -158,7 +158,7 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
                   'default_version', 'categories', 'status', 'depth', 'all_members', 'members',
                   'visible', 'family_tree',
                   'parent', 'parent_visible', 'sub_projects', 'creator', 'my_perms', 'created', 'updated')
-        read_only_fields = ('forums',)
+        read_only_fields = ('status', 'is_public', 'forums')
 
     @staticmethod
     def get_versions(obj):
