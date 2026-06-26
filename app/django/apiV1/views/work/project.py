@@ -82,7 +82,23 @@ class IssueProjectViewSet(viewsets.ModelViewSet):
         return IssueProjectSerializer
 
     def perform_create(self, serializer):
-        serializer.save(creator=self.request.user)
+        parent_slug = self.request.data.get('parent_slug')
+        
+        if parent_slug:
+            # 하위 프로젝트 생성 권한 체크
+            try:
+                parent_project = IssueProject.objects.get(slug=parent_slug)
+            except IssueProject.DoesNotExist:
+                raise serializers.ValidationError({"parent_slug": "부모 프로젝트를 찾을 수 없습니다."})
+            
+            user_perms = parent_project.get_user_permissions(self.request.user)
+            if 'project.create_sub' not in user_perms:
+                raise serializers.PermissionDenied("하위 프로젝트를 생성할 권한이 없습니다.")
+            
+            serializer.save(creator=self.request.user, parent=parent_project)
+        else:
+            # 일반 프로젝트 생성
+            serializer.save(creator=self.request.user)
 
 
 class ModuleViewSet(viewsets.ModelViewSet):
