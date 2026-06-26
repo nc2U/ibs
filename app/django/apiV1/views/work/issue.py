@@ -125,14 +125,27 @@ class IssueViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        work_auth = user.work_manager or user.is_superuser
-        projects = user.assigned_projects()
+        
+        # 기본 쿼리셋에 관계형 필드를 미리 로딩하여 N+1 문제 방지
+        queryset = self.queryset.select_related('project', 'status', 'creator', 'assigned_to', 'tracker', 'fixed_version')
 
-        queryset = self.queryset.filter(project__in=projects)
+        # 관리자는 모든 업무에 접근 가능
+        if user.work_manager or user.is_superuser:
+            return queryset
 
-        return queryset if work_auth else self.queryset \
-            .filter(is_private=False) \
-            .filter(project__is_public=True)
+        # 사용자가 멤버로 속한 프로젝트 ID 목록
+        member_project_ids = user.member_project_ids()
+        
+        # 접근 가능 범위 정의
+        # 1. 멤버인 프로젝트의 모든 업무 (비공개 프로젝트 포함)
+        # 2. 공개 프로젝트의 업무 (기본 열람 가능)
+        # 3. 비공개 업무라도 사용자가 작성자(creator)이거나 담당자(assigned_to)인 경우
+        return queryset.filter(
+            Q(project__id__in=member_project_ids) |
+            Q(project__is_public=True) |
+            Q(creator=user) |
+            Q(assigned_to=user)
+        )
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)

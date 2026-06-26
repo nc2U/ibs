@@ -73,6 +73,10 @@ class User(AbstractBaseUser, PermissionsMixin):
                 project_list.append(project.pk)
         return IssueProject.objects.filter(pk__in=project_list)
 
+    def member_project_ids(self):
+        # assigned_projects가 반환하는 QuerySet에서 ID 목록만 추출
+        return self.assigned_projects().values_list('id', flat=True)
+
 
 class StaffAuth(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
