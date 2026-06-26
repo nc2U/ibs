@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, inject, type PropType } from 'vue'
+import { computed, type PropType } from 'vue'
 import type { ActLogEntry } from '@/store/types/work_logging.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import { dateFormat, elapsedTime, timeFormat } from '@/utils/baseMixins'
@@ -20,10 +20,9 @@ const props = defineProps({
 
 const route = useRoute()
 
-const workManager = inject('workManager', false)
-
 const accStore = useAccount()
 const user = computed(() => accStore.user)
+const workManager = computed(() => accStore.workManager)
 
 const logStore = useLogging()
 const groupedActivities = computed<{ [key: string]: ActLogEntry[] }>(

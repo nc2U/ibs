@@ -1,7 +1,8 @@
 <script lang="ts" setup>
-import { inject, type PropType, ref } from 'vue'
+import { computed, type PropType, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useIssue } from '@/store/pinia/work_issue.ts'
+import { useAccount } from '@/store/pinia/account.ts'
 import WatcherAdd from './WatcherAdd.vue'
 
 const props = defineProps({
@@ -11,7 +12,8 @@ const props = defineProps({
 
 const refWatcherAdd = ref()
 
-const workManager = inject('workManager')
+const accStore = useAccount()
+const workManager = computed(() => accStore.workManager)
 
 const route = useRoute()
 

@@ -1,7 +1,8 @@
 <script lang="ts" setup>
-import { inject, onBeforeMount, type PropType } from 'vue'
+import { computed, type PropType } from 'vue'
 import { useRoute } from 'vue-router'
 import type { User } from '@/store/types/accounts'
+import { useAccount } from '@/store/pinia/account.ts'
 import NoData from '@/components/NoData/Index.vue'
 import SearchList from '@/views/_Work/Manages/Projects/components/SearchList.vue'
 import UserTable from '@/views/_Work/Settings/Users/components/UserTable.vue'
@@ -12,7 +13,8 @@ defineProps({
 
 const route = useRoute()
 
-const workManager = inject('workManager', false)
+const accStore = useAccount()
+const workManager = computed(() => accStore.workManager)
 </script>
 
 <template>

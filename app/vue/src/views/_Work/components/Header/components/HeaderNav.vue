@@ -1,13 +1,15 @@
 <script lang="ts" setup>
-import { computed, type ComputedRef, inject } from 'vue'
+import { computed } from 'vue'
 import { useStore } from '@/store'
+import { useAccount } from '@/store/pinia/account.ts'
 import { type RouteRecordName, useRoute, useRouter } from 'vue-router'
 
 defineProps({
   menus: { type: Array, required: true },
 })
 
-const workManager = inject('workManager', false)
+const accStore = useAccount()
+const workManager = computed(() => accStore.workManager)
 
 const [route, router] = [useRoute(), useRouter()]
 

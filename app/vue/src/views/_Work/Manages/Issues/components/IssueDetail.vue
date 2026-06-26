@@ -1,8 +1,9 @@
 <script lang="ts" setup>
-import { computed, type ComputedRef, inject, onBeforeMount, type PropType, ref, watch } from 'vue'
+import { computed, onBeforeMount, type PropType, ref, watch } from 'vue'
 import type { getProject, IssueProject } from '@/store/types/work_project.ts'
 import type { CodeValue, Issue, IssueComment, IssueStatus } from '@/store/types/work_issue.ts'
 import { useRoute, useRouter } from 'vue-router'
+import { useAccount } from '@/store/pinia/account.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useLogging } from '@/store/pinia/work_logging.ts'
@@ -10,7 +11,7 @@ import { diffDate, elapsedTime, timeFormat } from '@/utils/baseMixins'
 import { markdownRender } from '@/utils/helper.ts'
 import IssueControl from './IssueControl.vue'
 import IssueHistory from './IssueHistory.vue'
-import IssueForm from '@/views/_Work/Manages/Issues/components/IssueForm.vue'
+import IssueForm from './IssueForm.vue'
 import IssueFiles from './issueFiles/Index.vue'
 import SubIssues from './subIssues/Index.vue'
 import SubSummary from './subIssues/Summary.vue'
@@ -32,7 +33,8 @@ const emit = defineEmits(['on-submit'])
 const issueFormRef = ref()
 const editForm = ref(false)
 
-const workManager = inject<ComputedRef<boolean>>('workManager')
+const accStore = useAccount()
+const workManager = computed(() => accStore.workManager)
 
 const isClosed = computed(() => props.issue?.closed)
 

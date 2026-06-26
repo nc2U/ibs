@@ -1,7 +1,8 @@
 <script lang="ts" setup>
-import { computed, type ComputedRef, inject, onBeforeMount, ref, watch } from 'vue'
+import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useForum } from '@/store/pinia/forum.ts'
+import { useAccount } from '@/store/pinia/account.ts'
 import type { Post } from '@/store/types/forum.ts'
 import Loading from '@/components/Loading/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
@@ -15,7 +16,8 @@ const cBody = ref()
 const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
 
-const workManager = inject<ComputedRef<boolean>>('workManager')
+const accStore = useAccount()
+const workManager = computed(() => accStore.workManager)
 
 const forumStore = useForum()
 const forum = computed(() => forumStore.forum)

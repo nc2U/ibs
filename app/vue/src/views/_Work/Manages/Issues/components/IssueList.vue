@@ -1,10 +1,11 @@
 <script lang="ts" setup>
-import { computed, inject, type PropType, ref, watchEffect } from 'vue'
+import { computed, type PropType, ref, watchEffect } from 'vue'
 import type { getProject, IssueProject } from '@/store/types/work_project.ts'
 import type { Issue, IssueFilter, IssueStatus, Tracker } from '@/store/types/work_issue.ts'
 import { useRoute, useRouter } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
+import { useAccount } from '@/store/pinia/account.ts'
 import Pagination from '@/components/Pagination'
 import NoData from '@/components/NoData/Index.vue'
 import SearchList from './SearchList.vue'
@@ -25,7 +26,8 @@ const emit = defineEmits(['filter-submit', 'page-select'])
 
 const [route, router] = [useRoute(), useRouter()]
 
-const workManager = inject('workManager')
+const accStore = useAccount()
+const workManager = computed(() => accStore.workManager)
 
 const selectedRow = ref<number | null>(null)
 const handleClickOutside = (event: any) => {

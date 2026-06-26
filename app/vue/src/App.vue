@@ -7,9 +7,9 @@ import type { Company } from '@/store/types/settings.ts'
 import GlobalDownloadIndicator from '@/components/DownLoad/GlobalDownloadIndicator.vue'
 
 const accStore = useAccount()
+const workManager = computed(() => accStore.workManager)
 const userInfo = computed(() => accStore.userInfo)
 const superAuth = computed(() => accStore.superAuth)
-const workManager = computed(() => accStore.workManager)
 provide('userInfo', userInfo)
 provide('superAuth', superAuth)
 provide('workManager', workManager)

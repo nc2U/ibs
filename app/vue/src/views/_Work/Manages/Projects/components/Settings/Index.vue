@@ -1,10 +1,11 @@
 <script lang="ts" setup>
 import Cookies from 'js-cookie'
-import { computed, type ComputedRef, inject, onBeforeMount, ref, watch } from 'vue'
+import { computed, onBeforeMount, ref, watch } from 'vue'
 import { type IssueProject } from '@/store/types/work_project.ts'
 import { type IssueCategory as ICategory } from '@/store/types/work_issue.ts'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
+import { useAccount } from '@/store/pinia/account.ts'
 import { useRoute, useRouter } from 'vue-router'
 import Loading from '@/components/Loading/Index.vue'
 import ProjectForm from '@/views/_Work/Manages/Projects/components/ProjectForm.vue'
@@ -22,7 +23,8 @@ defineExpose({ toggle })
 
 const menu = ref('프로젝트')
 
-const workManager = inject<ComputedRef<boolean>>('workManager')
+const accStore = useAccount()
+const workManager = computed(() => accStore.workManager)
 
 const [route, router] = [useRoute(), useRouter()]
 watch(route, newVal => {

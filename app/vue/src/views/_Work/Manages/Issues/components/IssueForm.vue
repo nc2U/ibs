@@ -3,6 +3,7 @@ import { computed, inject, onBeforeMount, type PropType, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
+import { useAccount } from '@/store/pinia/account.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import type { Issue, SimpleCategory } from '@/store/types/work_issue.ts'
 import { isValidate } from '@/utils/helper.ts'
@@ -10,10 +11,10 @@ import { dateFormat } from '@/utils/baseMixins'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
 import Multiselect from '@vueform/multiselect'
-import FormInIssueVersion from '@/views/_Work/Manages/Issues/components/FormInIssueVersion.vue'
-import FormInIssueCategory from '@/views/_Work/Manages/Issues/components/FormInIssueCategory.vue'
-import WatcherAdd from '@/views/_Work/Manages/Issues/components/aside/WatcherAdd.vue'
 import MdEditor from '@/components/MdEditor/Index.vue'
+import FormInIssueVersion from './FormInIssueVersion.vue'
+import FormInIssueCategory from './FormInIssueCategory.vue'
+import WatcherAdd from './aside/WatcherAdd.vue'
 
 const props = defineProps({
   issueProject: { type: Object as PropType<IssueProject>, default: null },
@@ -28,8 +29,9 @@ const props = defineProps({
 const emit = defineEmits(['on-submit', 'close-form'])
 
 const validated = ref(false)
+const accStore = useAccount()
 const userInfo = inject<any>('userInfo')
-const workManager = inject<any>('workManager')
+const workManager = computed(() => accStore.workManager)
 
 const form = ref({
   pk: null as number | null,

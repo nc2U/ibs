@@ -7,6 +7,7 @@ import type { IssueLogEntry } from '@/store/types/work_logging.ts'
 import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
+import { useAccount } from '@/store/pinia/account.ts'
 import { markdownRender } from '@/utils/helper.ts'
 import { elapsedTime, timeFormat } from '@/utils/baseMixins'
 import MdEditor from '@/components/MdEditor/Index.vue'
@@ -21,8 +22,9 @@ const delPk = ref<null | number>(null)
 
 const route = useRoute()
 
+const accStore = useAccount()
 const userInfo = inject<ComputedRef<User>>('userInfo')
-const workManager = inject<ComputedRef<boolean>>('workManager')
+const workManager = computed(() => accStore.workManager)
 
 const callReply = (log_id: number, user: string, content: string) => {
   return emit('call-reply', {
