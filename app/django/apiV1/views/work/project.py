@@ -1,3 +1,4 @@
+from django.db.models import Q
 from django_filters.rest_framework import FilterSet, BooleanFilter, CharFilter
 from rest_framework import viewsets
 
@@ -30,13 +31,32 @@ class IssueProjectViewSet(viewsets.ModelViewSet):
     pagination_class = PageNumberPaginationTwenty
     filterset_class = IssueProjectFilter
 
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        if self.action == 'list':
-            return queryset.select_related('company', 'module', 'creator')
+    @property
+    def required_permission(self):
+        mapping = {  # 매핑 로직 정의
+            'create': 'project.create',
+            'update': 'project.update',
+            'partial_update': 'project.update',
+            'destroy': 'project.delete'
+        }
+        # 정의되지 않은 액션에 대해 기본 권한 반환
+        return mapping.get(self.action, None)
 
+    def get_queryset(self):
+        user = self.request.user
+        queryset = super().get_queryset()
+
+        # 1. 슈퍼유저나 work_manager는 전체 프로젝트 조회 가능
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            base_qs = queryset
+        else:  # 2. 비공개 프로젝트는 멤버인 경우만, 공개 프로젝트는 모두 조회 가능
+            base_qs = queryset.filter(Q(is_public=True) | Q(members__user=user)).distinct()
+
+        # 3. 액션에 따른 추가 필드 로드 최적화
+        if self.action == 'list':
+            return base_qs.select_related('company', 'module', 'creator')
         # For detail view, we can add non-recursive annotations as a hint
-        return queryset.select_related('company', 'module', 'creator', 'parent', 'default_version')
+        return base_qs.select_related('company', 'module', 'creator', 'parent', 'default_version')
 
     def get_serializer_class(self):
         if self.action == 'list':
