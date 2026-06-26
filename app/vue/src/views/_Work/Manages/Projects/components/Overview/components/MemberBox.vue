@@ -1,14 +1,16 @@
 <script lang="ts" setup>
-import { inject, type PropType } from 'vue'
+import { computed, type PropType } from 'vue'
+import { useStore } from '@/store'
 
 defineProps({
-  projectMemgers: {
+  projectMembers: {
     type: Object as PropType<{ [key: string]: { pk: number; username: string }[] }>,
     default: () => null,
   },
 })
 
-const isDark = inject('isDark')
+const store = useStore()
+const isDark = computed(() => store.theme === 'dark')
 </script>
 
 <template>
@@ -19,7 +21,7 @@ const isDark = inject('isDark')
         구성원
       </CCardSubtitle>
       <CCardText>
-        <div v-for="(val, key) in projectMemgers" :key="key">
+        <div v-for="(val, key) in projectMembers" :key="key">
           {{ key }} :
 
           <span v-for="(u, i) in val" :key="u.pk">

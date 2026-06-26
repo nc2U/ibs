@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import ExcelJS from 'exceljs'
-import { inject, computed, ref, watch, nextTick } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
+import { useStore } from '@/store'
 import { useNotice } from '@/store/pinia/notice'
 import { useProject } from '@/store/pinia/project'
 import type { Project } from '@/store/types/project.ts'
@@ -27,7 +28,8 @@ const projectStore = useProject()
 const notiStore = useNotice()
 
 // 다크 테마 감지
-const isDark = inject<any>('isDark')
+const store = useStore()
+const isDark = computed(() => store.theme === 'dark')
 
 const refAlertModal = ref<InstanceType<typeof AlertModal>>()
 

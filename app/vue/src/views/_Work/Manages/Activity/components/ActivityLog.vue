@@ -1,5 +1,6 @@
 <script lang="ts" setup>
-import { inject, type PropType } from 'vue'
+import { computed, type PropType } from 'vue'
+import { useStore } from '@/store'
 import type { ActLogEntry } from '@/store/types/work_logging.ts'
 import { cutString, dateFormat, timeFormat } from '@/utils/baseMixins'
 import { markdownRender } from '@/utils/helper.ts'
@@ -9,7 +10,8 @@ defineProps({
   date: { type: String, required: true },
 })
 
-const isDark = inject('isDark')
+const store = useStore()
+const isDark = computed(() => store.theme === 'dark')
 
 const getIcon = (sort: string, progress: boolean) => {
   if (sort === '1') return progress ? 'mdi-folder-check' : 'mdi-folder-edit'

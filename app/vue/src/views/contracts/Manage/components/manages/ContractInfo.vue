@@ -1,5 +1,6 @@
 <script lang="ts" setup>
-import { computed, inject, type PropType, ref } from 'vue'
+import { computed, type PropType, ref } from 'vue'
+import { useStore } from '@/store'
 import { write_contract } from '@/utils/pageAuth'
 import { useContract } from '@/store/pinia/contract'
 import { bgLight } from '@/utils/cssMixins.ts'
@@ -15,7 +16,8 @@ const props = defineProps({
   pastAddresses: { type: Array as PropType<any[]>, default: () => [] },
 })
 
-const isDark = inject('isDark')
+const store = useStore()
+const isDark = computed(() => store.theme === 'dark')
 const contStore = useContract()
 
 // 과거 주소 히스토리 표시 토글

@@ -1,9 +1,5 @@
 <script lang="ts" setup>
-import { inject } from 'vue'
-
 defineProps({ align: { type: String, default: 'text-center' } })
-
-const isDark = inject('isDark')
 </script>
 
 <template>

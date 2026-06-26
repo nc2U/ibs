@@ -20,7 +20,6 @@ provide('company', company)
 
 const store = useStore()
 const isDark = computed(() => store.theme === 'dark')
-provide('isDark', isDark)
 watch(isDark, () => {
   isDark.value
     ? document.body.classList.add('dark-theme')

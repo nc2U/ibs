@@ -1,7 +1,9 @@
 <script lang="ts" setup>
-import { computed, type ComputedRef, inject } from 'vue'
+import { computed } from 'vue'
+import { useStore } from '@/store'
 
-const isDark = inject<ComputedRef<boolean>>('isDark')
+const store = useStore()
+const isDark = computed(() => store.theme === 'dark')
 
 const light = computed(() => (!isDark?.value ? 'light' : ''))
 </script>

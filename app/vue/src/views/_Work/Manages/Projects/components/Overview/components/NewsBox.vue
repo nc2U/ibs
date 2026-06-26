@@ -1,11 +1,13 @@
 <script lang="ts" setup>
-import { inject, type PropType } from 'vue'
+import { computed, type PropType } from 'vue'
+import { useStore } from '@/store'
 import type { News } from '@/store/types/work_inform.ts'
 import { elapsedTime } from '@/utils/baseMixins'
 
 defineProps({ newsList: { type: Array as PropType<News[]>, default: () => [] } })
 
-const isDark = inject('isDark')
+const store = useStore()
+const isDark = computed(() => store.theme === 'dark')
 </script>
 
 <template>

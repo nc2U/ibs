@@ -1,12 +1,14 @@
 <script lang="ts" setup="">
-import { inject, type PropType } from 'vue'
+import { computed, type PropType } from 'vue'
+import { useStore } from '@/store'
 import type { IssueProject } from '@/store/types/work_project.ts'
 
 defineProps({
   subProjects: { type: Array as PropType<IssueProject[]>, default: () => [] },
 })
 
-const isDark = inject('isDark')
+const store = useStore()
+const isDark = computed(() => store.theme === 'dark')
 </script>
 
 <template>

@@ -122,7 +122,7 @@ onBeforeMount(async () => {
 
           <MemberBox
             v-if="!!Object.keys(computedMembers).length"
-            :project-memgers="computedMembers"
+            :project-members="computedMembers"
           />
 
           <SubProjects

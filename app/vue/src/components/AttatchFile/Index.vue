@@ -1,5 +1,6 @@
 <script lang="ts" setup="">
-import { inject, type PropType, ref } from 'vue'
+import { computed, type PropType, ref } from 'vue'
+import { useStore } from '@/store'
 import { cutString, humanizeFileSize } from '@/utils/baseMixins'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
@@ -28,7 +29,8 @@ const props = defineProps({
 
 const emit = defineEmits(['file-control'])
 
-const isDark = inject('isDark')
+const store = useStore()
+const isDark = computed(() => store.theme === 'dark')
 
 const RefDelFile = ref()
 

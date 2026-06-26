@@ -1,7 +1,6 @@
 <script lang="ts" setup>
 import {
   computed,
-  inject,
   nextTick,
   onBeforeMount,
   onMounted,
@@ -12,6 +11,7 @@ import {
   watch,
 } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
+import { useStore } from '@/store'
 import { btnLight } from '@/utils/cssMixins.ts'
 import { write_contract } from '@/utils/pageAuth'
 import { useAccount } from '@/store/pinia/account'
@@ -121,7 +121,8 @@ const matchAddr = computed(() => {
 
 watch(matchAddr, val => sameAddrBtnSet(val))
 
-const isDark = inject('isDark')
+const store = useStore()
+const isDark = computed(() => store.theme === 'dark')
 
 const contStore = useContract()
 const getOrderGroups = computed(() => contStore.getOrderGroups)

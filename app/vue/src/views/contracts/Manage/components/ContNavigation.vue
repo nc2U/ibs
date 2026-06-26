@@ -1,5 +1,6 @@
 <script lang="ts" setup>
-import { computed, inject } from 'vue'
+import { computed } from 'vue'
+import { useStore } from '@/store'
 import { useRoute, useRouter } from 'vue-router'
 
 defineProps({
@@ -9,7 +10,8 @@ defineProps({
 
 const [route, router] = [useRoute(), useRouter()]
 
-const isDark = inject('isDark')
+const store = useStore()
+const isDark = computed(() => store.theme === 'dark')
 
 const isRegister = computed(
   () => route.name === '계약 상세 관리' || route.name === '계약 상세 보기',

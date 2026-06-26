@@ -1,5 +1,6 @@
 <script lang="ts" setup>
-import { inject, type PropType } from 'vue'
+import { computed, type PropType } from 'vue'
+import { useStore } from '@/store'
 
 const props = defineProps({
   trackers: { type: Array as PropType<{ pk: number; name: string }[]>, default: () => [] },
@@ -9,7 +10,8 @@ const props = defineProps({
   },
 })
 
-const isDark = inject('isDark')
+const store = useStore()
+const isDark = computed(() => store.theme === 'dark')
 
 const getSummary = (pk: number) => props.trackerSummary.filter(t => t.pk === pk)[0]
 </script>

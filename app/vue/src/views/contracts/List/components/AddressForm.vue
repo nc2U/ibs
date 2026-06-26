@@ -1,7 +1,8 @@
 <script lang="ts" setup>
-import { computed, inject, onBeforeMount, onBeforeUnmount, type PropType, ref } from 'vue'
+import { computed, onBeforeMount, onBeforeUnmount, type PropType, ref } from 'vue'
 import { isValidate } from '@/utils/helper.ts'
 import { dateFormat } from '@/utils/baseMixins.ts'
+import { useStore } from '@/store'
 import { btnLight } from '@/utils/cssMixins.ts'
 import { useContract } from '@/store/pinia/contract.ts'
 import type { AddressInContractor, ContractorAddress } from '@/store/types/contract.ts'
@@ -17,7 +18,8 @@ const props = defineProps({
 const refModalPost = ref()
 const refConfirmChk = ref()
 
-const isDark = inject('isDark')
+const store = useStore()
+const isDark = computed(() => store.theme === 'dark')
 
 const form = ref({
   contractor: null as number | null,

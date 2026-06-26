@@ -1,17 +1,9 @@
 <script lang="ts" setup>
 import Cookies from 'js-cookie'
-import {
-  computed,
-  inject,
-  onBeforeMount,
-  onMounted,
-  onUpdated,
-  type PropType,
-  reactive,
-  ref,
-} from 'vue'
+import { computed, onBeforeMount, onMounted, onUpdated, type PropType, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
+import { useStore } from '@/store'
 import { useCompany } from '@/store/pinia/company'
 import { useAccount } from '@/store/pinia/account.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
@@ -28,7 +20,8 @@ const props = defineProps({
 
 const emit = defineEmits(['modal-close'])
 
-const isDark = inject('isDark')
+const store = useStore()
+const isDark = computed(() => store.theme === 'dark')
 
 const { can, PERM } = usePerms()
 
