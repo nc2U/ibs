@@ -122,8 +122,8 @@ class IssueService:
                     IssueService.send_issue_mail(instance, user, "progress", instance.old_status.name)
 
                 if hasattr(instance, 'old_assigned_to'):
-                    IssueService.send_issue_mail(instance, user, "reassign", None,
-                                                 instance.old_assigned_to.username)
+                    old_name = instance.old_assigned_to.username if instance.old_assigned_to else None
+                    IssueService.send_issue_mail(instance, user, "reassign", None, old_name)
 
     @staticmethod
     def send_issue_mail(instance, user, mail_type, old_status_name=None, old_assigned_to=None):
