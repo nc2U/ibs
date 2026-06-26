@@ -110,16 +110,35 @@ class IssueProject(models.Model):
 
     def get_user_permissions(self, user):
         """
-        사용자의 프로젝트 내 권한 코드 세트를 계산합니다.
+        사용자의 프로젝트 내 권한 코드 세트를 계산합니다. (특정 사용자에 맞춘 최적화 쿼리 버전)
         """
-        all_members = self.all_members()
-        user_member = next((m for m in all_members if m['user']['pk'] == user.pk), None)
-
-        if not user_member:
+        if not user or not user.is_authenticated:
             return []
 
-        role_pks = [role['pk'] for role in user_member['roles']]
-        return list(Permission.objects.filter(roles__in=role_pks).values_list('code', flat=True).distinct())
+        # 1. 상속 가능한 상위 프로젝트 목록 계산
+        projects_to_fetch = [self]
+        curr = self
+        while curr.is_inherit_members and curr.parent:
+            if curr.parent in projects_to_fetch:
+                break
+            projects_to_fetch.append(curr.parent)
+            curr = curr.parent
+
+        # 2. 해당 사용자(user)가 속한 Member 정보와 Role만 한정하여 조회
+        from work.models.project import Member
+        user_members = Member.objects.filter(
+            project__in=projects_to_fetch,
+            user=user
+        ).prefetch_related('roles__permissions')
+
+        # 3. 모든 역할에 연결된 권한 코드 추출
+        permission_codes = set()
+        for member in user_members:
+            for role in member.roles.all():
+                for perm in role.permissions.all():
+                    permission_codes.add(perm.code)
+
+        return list(permission_codes)
 
     class Meta:
         ordering = ('order', 'id')

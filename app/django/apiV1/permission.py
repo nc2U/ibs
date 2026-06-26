@@ -89,9 +89,30 @@ class ProjectPermission(permissions.BasePermission):
         if request.user.is_superuser or getattr(request.user, 'work_manager', False):
             return True
             
-        # 객체 단위 체크가 아닌 경우(예: list, create)에는 True를 반환하여 
-        # 나중에 has_object_permission에서 처리되도록 하거나, 
-        # 필요시 여기서 프로젝트 slug 등으로 추가 체크가 가능합니다.
+        # create 액션의 경우, 전역 권한 체크 단계에서 선제 검증 필요
+        if getattr(view, 'action', None) == 'create':
+            # URL kwarg (예: /projects/<project_slug>/issues/) 또는 payload에서 project 추출
+            project_slug = view.kwargs.get('project_slug') or request.data.get('project')
+            if not project_slug:
+                return False  # 프로젝트 정보가 없으면 거부
+            
+            from work.models.project import IssueProject
+            try:
+                # Slug 또는 PK로 프로젝트 조회
+                if isinstance(project_slug, int) or (isinstance(project_slug, str) and project_slug.isdigit()):
+                    project = IssueProject.objects.get(pk=int(project_slug))
+                else:
+                    project = IssueProject.objects.get(slug=project_slug)
+            except IssueProject.DoesNotExist:
+                return False
+
+            # 해당 프로젝트에서 이 사용자의 권한 계산
+            user_perms = project.get_user_permissions(request.user)
+            required_perm = getattr(view, 'required_permission', None)
+            return required_perm in user_perms
+
+        # 객체 단위 체크가 아닌 경우(예: list)에는 True를 반환하여 
+        # get_queryset 등에서 필터링되도록 처리합니다.
         return True
 
     def has_object_permission(self, request, view, obj):
