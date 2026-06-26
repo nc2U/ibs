@@ -16,12 +16,12 @@ const searchWord = ref('')
 const searchCond = ref({
   all: true,
   subOnly: false,
+  project: false,
+  meeting: false,
   issue: false,
   news: false,
   document: false,
-  wiki: false,
   text: false,
-  project: false,
 
   opened: false,
   attatch: '1' as '1' | '2' | '3',
@@ -79,12 +79,17 @@ onBeforeRouteLeave((to, from, next) => {
           <CRow class="mt-3 m-1">
             <CCard class="mt-3" :color="colorLight">
               <CCardBody>
+                <CFormCheck v-model="searchCond.project" inline label="프로젝트" id="proj-search" />
+                <CFormCheck
+                  v-model="searchCond.meeting"
+                  inline
+                  label="회의록"
+                  id="meeting-search"
+                />
                 <CFormCheck v-model="searchCond.issue" inline label="업무" id="issue-search" />
                 <CFormCheck v-model="searchCond.news" inline label="공지" id="news-search" />
                 <CFormCheck v-model="searchCond.document" inline label="문서" id="docs-search" />
-                <CFormCheck v-model="searchCond.wiki" inline label="위키 페이지" id="wiki-search" />
                 <CFormCheck v-model="searchCond.text" inline label="글" id="text-search" />
-                <CFormCheck v-model="searchCond.project" inline label="프로젝트" id="proj-search" />
               </CCardBody>
             </CCard>
           </CRow>
