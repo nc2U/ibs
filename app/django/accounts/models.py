@@ -27,9 +27,8 @@ class User(AbstractBaseUser, PermissionsMixin):
                                 error_messages={'unique': _("A user with that username already exists.")})
     email = models.EmailField(_('email address'), max_length=255, unique=True)
     is_active = models.BooleanField(_('active'), default=True,
-                                    help_text=_(
-                                        'Designates whether this user should be treated as active. '
-                                        'Unselect this instead of deleting accounts.'))
+                                    help_text=_('Designates whether this user should be treated as active. '
+                                                'Unselect this instead of deleting accounts.'))
     is_staff = models.BooleanField(_('staff status'), default=False,
                                    help_text=_('Designates whether the user can log into this admin site.'))
     work_manager = models.BooleanField(_('업무 시스템 관리자'), default=False,
