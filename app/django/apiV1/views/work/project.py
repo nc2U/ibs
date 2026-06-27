@@ -157,7 +157,7 @@ class ModuleViewSet(viewsets.ModelViewSet):
 
 
 class RoleViewSet(viewsets.ModelViewSet):
-    queryset = Role.objects.all()
+    queryset = Role.objects.all().select_related('creator')
     serializer_class = RoleSerializer
     permission_classes = (permissions.IsAuthenticated,)
     pagination_class = PageNumberPaginationTwenty
@@ -167,7 +167,7 @@ class RoleViewSet(viewsets.ModelViewSet):
         serializer.save(creator=self.request.user)
 
 
-class PermissionViewSet(viewsets.ModelViewSet):
+class PermissionViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Permission.objects.all()
     serializer_class = PermissionSerializer
     permission_classes = (permissions.IsAuthenticated,)
