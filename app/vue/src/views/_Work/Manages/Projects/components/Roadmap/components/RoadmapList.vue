@@ -1,11 +1,13 @@
 <script lang="ts" setup>
 import { type PropType } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { usePerms } from '@/composables/usePerms.ts'
 import type { Version } from '@/store/types/work_project.ts'
-import Roadmap from './Roadmap.vue'
+import RoadmapItem from './RoadmapItem.vue'
 
 defineProps({ versionList: { type: Array as PropType<Version[]>, default: () => [] } })
 
+const { can, PERM } = usePerms()
 const [route, router] = [useRoute(), useRouter()]
 </script>
 
@@ -16,7 +18,7 @@ const [route, router] = [useRoute(), useRouter()]
     </CCol>
 
     <CCol class="text-right">
-      <span class="mr-2 form-text">
+      <span v-if="can(PERM.PROJECT_VERSION)" class="mr-2 form-text">
         <v-icon icon="mdi-plus-circle" color="success" size="sm" />
         <router-link :to="{ name: '(추진현황) - 추가' }" class="ml-1"> 새 단계 </router-link>
       </span>
@@ -50,5 +52,5 @@ const [route, router] = [useRoute(), useRouter()]
     </CCol>
   </CRow>
 
-  <Roadmap v-for="ver in versionList" :key="ver.pk" :version="ver" />
+  <RoadmapItem v-for="ver in versionList" :key="ver.pk" :version="ver" />
 </template>

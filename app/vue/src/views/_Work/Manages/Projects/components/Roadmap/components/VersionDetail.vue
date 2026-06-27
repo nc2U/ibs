@@ -1,13 +1,18 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, type PropType, ref, watchEffect } from 'vue'
-import type { Version } from '@/store/types/work_project.ts'
 import { useRoute, useRouter } from 'vue-router'
+import { usePerms } from '@/composables/usePerms.ts'
 import { useWork } from '@/store/pinia/work_project.ts'
+import type { Version } from '@/store/types/work_project.ts'
 import IssueDropDown from '@/views/_Work/Manages/Issues/components/IssueDropDown.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
-import VersionSummary from '@/views/_Work/Manages/Projects/components/Roadmap/components/VersionSummary.vue'
+import VersionSummary from './VersionSummary.vue'
 
 const props = defineProps({ version: { type: Object as PropType<Version>, required: true } })
+
+// 권한 설정 추가
+const { can, PERM } = usePerms()
+const canManageVersions = computed(() => can(PERM.PROJECT_VERSION))
 
 const workStore = useWork()
 
@@ -67,13 +72,13 @@ onBeforeMount(() => {
     </CCol>
 
     <CCol class="text-right form-text">
-      <span class="mr-3">
+      <span v-if="canManageVersions" class="mr-3">
         <v-icon icon="mdi-pencil" color="amber" size="16" class="mr-1" />
         <router-link :to="{ name: '(추진현황) - 수정', params: { verId: version?.pk } }">
           편집
         </router-link>
       </span>
-      <span class="mr-3">
+      <span v-if="canManageVersions" class="mr-3">
         <v-icon icon="mdi-trash-can-outline" color="grey" size="16" class="mr-1" />
         <router-link
           to=""
@@ -84,7 +89,7 @@ onBeforeMount(() => {
           삭제
         </router-link>
       </span>
-      <span class="mr-3">
+      <span v-if="canManageVersions" class="mr-3">
         <v-icon icon="mdi-plus-circle" color="success" size="16" class="mr-1" />
         <router-link :to="{ name: '(추진현황) - 추가' }">새 업무</router-link>
       </span>
@@ -103,7 +108,7 @@ onBeforeMount(() => {
     <CRow>
       <CCol class="col-sm-10 col-md-8 col-lg-6 col-xl-4 p-0 mx-2">
         <CProgress color="success" :value="done_ratio" :style="{ '--cui-border-radius': 0 }">
-          {{ done_ratio }}%
+          {{ done_ratio.toFixed(0) }}%
         </CProgress>
       </CCol>
     </CRow>

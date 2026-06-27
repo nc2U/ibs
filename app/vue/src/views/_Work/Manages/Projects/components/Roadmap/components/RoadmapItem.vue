@@ -1,16 +1,15 @@
 <script lang="ts" setup>
 import { computed, type PropType } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAccount } from '@/store/pinia/account'
+import { usePerms } from '@/composables/usePerms.ts'
 import type { Version } from '@/store/types/work_project.ts'
 
 const props = defineProps({ version: { type: Object as PropType<Version>, required: true } })
 
 const router = useRouter()
+const { can, PERM } = usePerms()
 
 const boxClass = ['primary-box', 'danger-box', 'success-box']
-
-const workManager = computed(() => useAccount().workManager)
 
 const closedNum = computed(() => props.version?.issues?.filter(i => i.closed).length ?? 0)
 const closedStr = computed(() => {
@@ -49,7 +48,7 @@ const done_ratio = computed(() => {
           {{ version.status_desc }}
         </span>
       </CCol>
-      <CCol v-if="workManager" class="text-right">
+      <CCol v-if="can(PERM.PROJECT_VERSION)" class="text-right">
         <!-- 관리자 권한 있을 때 렌더링 -->
         <v-icon
           icon="mdi-pencil"
@@ -72,7 +71,7 @@ const done_ratio = computed(() => {
       <CRow>
         <CCol class="col-sm-10 col-md-8 col-lg-6 col-xl-4 p-0 mx-2">
           <CProgress color="success" :value="done_ratio" :style="{ '--cui-border-radius': 0 }">
-            {{ done_ratio }}%
+            {{ done_ratio.toFixed(0) }}%
           </CProgress>
         </CCol>
       </CRow>
