@@ -70,6 +70,19 @@ class MeetingViewSet(viewsets.ModelViewSet):
             'project', 'category', 'creator', 'updater'
         ).prefetch_related('attendees', 'files')
 
+    @property
+    def required_permission(self):
+        mapping = {  # 매핑 로직 정의
+            'list': 'meeting.read',
+            'retrieve': 'meeting.read',
+            'create': 'meeting.create',
+            'update': 'meeting.update',
+            'partial_update': 'meeting.update',
+            'destroy': 'meeting.delete'
+        }
+        # 정의되지 않은 액션에 대해 기본 권한 반환
+        return mapping.get(self.action, None)
+
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
 
