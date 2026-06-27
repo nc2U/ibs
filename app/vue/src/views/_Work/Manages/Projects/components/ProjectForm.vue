@@ -149,8 +149,18 @@ const onSubmit = async (event: Event) => {
   } else {
     Cookies.set('workSettingMenu', '프로젝트')
 
-    if (form.pk) await workStore.updateIssueProject({ ...form, ...module } as any)
-    else {
+    if (form.pk) {
+      // 1. 일반 프로젝트 정보 업데이트 (is_public은 제외하고 업데이트)
+      const { is_public, ...projectData } = form
+      await workStore.updateIssueProject({ ...projectData, ...module } as any)
+
+      // 2. 공개 여부 변경 시 별도 액션 호출
+      if (props.project && form.is_public !== props.project.is_public) {
+        if (canUpdatePublic.value) {
+          await workStore.toggleProjectPublic(props.project.slug as string)
+        }
+      }
+    } else {
       await workStore.createIssueProject({ ...form, ...module } as any)
       if (props.redirect)
         await router.push({
