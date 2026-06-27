@@ -39,7 +39,7 @@ const done_ratio = computed(() => {
       <CCol>
         <v-icon icon="mdi-star-box-multiple" color="amber" class="mr-2" />
         <span class="mr-2 bold" style="font-size: large">
-          <router-link :to="{ name: '(추진현황) - 보기', params: { verId: version.pk } }">
+          <router-link :to="{ name: '(로드맵) - 보기', params: { verId: version.pk } }">
             {{ version.name }}
           </router-link>
         </span>
@@ -54,7 +54,7 @@ const done_ratio = computed(() => {
           icon="mdi-pencil"
           color="amber"
           size="18"
-          @click="router.push({ name: '(추진현황) - 수정', params: { verId: version.pk } })"
+          @click="router.push({ name: '(로드맵) - 수정', params: { verId: version.pk } })"
         />
       </CCol>
     </CRow>

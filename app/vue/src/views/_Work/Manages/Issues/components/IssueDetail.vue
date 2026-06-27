@@ -280,7 +280,7 @@ onBeforeMount(async () => {
             <CCol class="title">목표단계 :</CCol>
             <CCol>
               <router-link
-                :to="{ name: '(추진현황) - 보기', params: { verId: issue.fixed_version.pk } }"
+                :to="{ name: '(로드맵) - 보기', params: { verId: issue.fixed_version.pk } }"
               >
                 {{ issue.fixed_version?.name }}
               </router-link>

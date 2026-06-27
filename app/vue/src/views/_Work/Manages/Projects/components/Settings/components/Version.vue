@@ -48,7 +48,7 @@ const deleteSubmit = () => {
     <CCol>
       <span v-if="canManageVersions" class="mr-2 form-text">
         <v-icon icon="mdi-plus-circle" color="success" size="15" />
-        <router-link :to="{ name: '(추진현황) - 추가', query: { back: 1 } }" class="ml-1">
+        <router-link :to="{ name: '(로드맵) - 추가', query: { back: 1 } }" class="ml-1">
           새 단계
         </router-link>
       </span>
@@ -164,7 +164,7 @@ const deleteSubmit = () => {
               <span v-if="canManageVersions" class="mr-2">
                 <v-icon icon="mdi-pencil" color="amber" size="sm" class="mr-1" />
                 <router-link
-                  :to="{ name: '(추진현황) - 수정', params: { verId: ver.pk }, query: { back: 1 } }"
+                  :to="{ name: '(로드맵) - 수정', params: { verId: ver.pk }, query: { back: 1 } }"
                 >
                   편집
                 </router-link>

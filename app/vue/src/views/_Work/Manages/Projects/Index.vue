@@ -60,7 +60,7 @@ const projectNavMenus = computed(() => {
 
   if (project) {
     const mods = project.module
-    if (project.versions?.length) menus.push({ no: 4, menu: '(추진현황)' })
+    if (project.versions?.length) menus.push({ no: 4, menu: '(로드맵)' })
     if (mods?.issue) menus.push({ no: 5, menu: '(업무)' })
     if (mods?.calendar) menus.push({ no: 7, menu: '(달력)' })
     if (mods?.news) menus.push({ no: 8, menu: '(공지)' })

@@ -56,7 +56,7 @@ const RefVersionConfirm = ref()
 const deleteSubmit = () => {
   RefVersionConfirm.value.close()
   workStore.deleteVersion(props.version?.pk as number, props.version.project?.slug as string)
-  router.replace({ name: '(추진현황)' })
+  router.replace({ name: '(로드맵)' })
 }
 
 onBeforeMount(() => {
@@ -74,7 +74,7 @@ onBeforeMount(() => {
     <CCol class="text-right form-text">
       <span v-if="canManageVersions" class="mr-3">
         <v-icon icon="mdi-pencil" color="amber" size="16" class="mr-1" />
-        <router-link :to="{ name: '(추진현황) - 수정', params: { verId: version?.pk } }">
+        <router-link :to="{ name: '(로드맵) - 수정', params: { verId: version?.pk } }">
           편집
         </router-link>
       </span>
@@ -91,7 +91,7 @@ onBeforeMount(() => {
       </span>
       <span v-if="canManageVersions" class="mr-3">
         <v-icon icon="mdi-plus-circle" color="success" size="16" class="mr-1" />
-        <router-link :to="{ name: '(추진현황) - 추가' }">새 업무</router-link>
+        <router-link :to="{ name: '(로드맵) - 추가' }">새 업무</router-link>
       </span>
     </CCol>
   </CRow>

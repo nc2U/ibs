@@ -92,7 +92,7 @@ onBeforeMount(async () => {
 <template>
   <CRow class="py-2">
     <CCol>
-      <h5><span v-if="route.name === '(추진현황) - 추가'">새</span> 단계</h5>
+      <h5><span v-if="route.name === '(로드맵) - 추가'">새</span> 단계</h5>
     </CCol>
 
     <CForm class="needs-validation" novalidate :validated="validated" @submit.prevent="onSubmit">

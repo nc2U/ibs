@@ -128,7 +128,7 @@ class TrackerManager(models.Manager):
 class Tracker(models.Model):
     name = models.CharField('이름', max_length=100, db_index=True)
     description = models.CharField('설명', max_length=255, blank=True, default='')
-    is_in_roadmap = models.BooleanField('추진현황에 표시', default=True)
+    is_in_roadmap = models.BooleanField('로드맵에 표시', default=True)
     default_status = models.ForeignKey('IssueStatus', on_delete=models.PROTECT, verbose_name='초기 상태')
     order = models.PositiveSmallIntegerField('정렬', default=1)
     created = models.DateTimeField('등록일', auto_now_add=True)

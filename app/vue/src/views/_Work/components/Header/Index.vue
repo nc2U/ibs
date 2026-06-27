@@ -43,7 +43,7 @@ const chkModules = (slug: string) => {
   if ((route.meta as any)?.title === '설 정 관 리' || routeName.includes('프로젝트')) return false
   else if (!route?.params?.projId || !project) return true
   else {
-    if (routeName.includes('추진현황') && !project.versions?.length) return false
+    if (routeName.includes('로드맵') && !project.versions?.length) return false
     else if (routeName.includes('업무') && !project.module?.issue) return false
     else if (routeName.includes('달력') && !project.module?.calendar) return false
     else if (routeName.includes('공지') && !project.module?.news) return false

@@ -76,7 +76,7 @@ export default defineConfig({
               { text: '업무프로젝트', link: '/work-manage/project' },
               { text: '회의', link: '/work-manage/meeting' },
               { text: '실행기록', link: '/work-manage/activity' },
-              { text: '추진현황', link: '/work-manage/roadmap' },
+              { text: '로드맵', link: '/work-manage/roadmap' },
               { text: '업무', link: '/work-manage/issue' },
               { text: '달력', link: '/work-manage/calendar' },
               { text: '공지', link: '/work-manage/news' },
