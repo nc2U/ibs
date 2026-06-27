@@ -22,7 +22,8 @@ class MeetingFileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MeetingFile
-        fields = ('pk', 'meeting', 'file', 'file_name', 'file_type', 'file_size', 'description', 'created', 'creator')
+        fields = ('pk', 'meeting', 'file', 'file_name', 'file_type',
+                  'file_size', 'description', 'created', 'creator')
 
 
 class IssueInMeetingSerializer(serializers.ModelSerializer):
