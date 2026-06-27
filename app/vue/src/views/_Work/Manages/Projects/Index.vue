@@ -9,6 +9,8 @@ import type { Company } from '@/store/types/settings'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import Loading from '@/components/Loading/Index.vue'
 import Header from '@/views/_Work/components/Header/Index.vue'
+import { usePerms } from '@/composables/usePerms.ts'
+import { useAccount } from '@/store/pinia/account.ts'
 
 const cBody = ref()
 const sideNavCAll = () => cBody.value.toggle()
@@ -26,6 +28,28 @@ const headerTitle = computed(() =>
 
 const navMenus = computed(() => (!issueProjects.value.length ? navMenu1 : navMenu2))
 
+const { can, PERM } = usePerms()
+const accStore = useAccount()
+const workManager = computed(() => accStore.workManager)
+const canAccessSetting = computed(
+  () =>
+    !!workManager.value ||
+    can(PERM.PROJECT_CREATE) ||
+    can(PERM.PROJECT_UPDATE) ||
+    can(PERM.PROJECT_DELETE) ||
+    can(PERM.PROJECT_MEMBER) ||
+    can(PERM.ISSUE_READ) ||
+    can(PERM.ISSUE_CREATE) ||
+    can(PERM.ISSUE_UPDATE) ||
+    can(PERM.ISSUE_DELETE) ||
+    can(PERM.PROJECT_VERSION) ||
+    can(PERM.ISSUE_CATEGORY_MANAGE) ||
+    can(PERM.FORUM_READ) ||
+    can(PERM.FORUM_CREATE) ||
+    can(PERM.FORUM_UPDATE) ||
+    can(PERM.FORUM_DELETE),
+)
+
 const projectNavMenus = computed(() => {
   const project = issueProject.value
   const menus = [
@@ -42,7 +66,9 @@ const projectNavMenus = computed(() => {
     if (mods?.news) menus.push({ no: 8, menu: '(공지)' })
     if (mods?.document) menus.push({ no: 9, menu: '(문서)' })
     if (mods?.forum && project.forums?.length) menus.push({ no: 10, menu: '(게시판)' })
-    if (project.status !== '9') menus.push({ no: 99, menu: '(설정)' })
+
+    // 권한 검사: 프로젝트 설정에 접근 가능한 메뉴가 하나라도 있는지 확인
+    if (project.status !== '9' && canAccessSetting.value) menus.push({ no: 99, menu: '(설정)' })
   }
 
   return menus.sort((a, b) => a.no - b.no).map(m => m.menu)

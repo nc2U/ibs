@@ -6,16 +6,17 @@ import { type IssueCategory as ICategory } from '@/store/types/work_issue.ts'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
 import { useAccount } from '@/store/pinia/account.ts'
+import { usePerms } from '@/composables/usePerms.ts'
 import { useRoute, useRouter } from 'vue-router'
 import Loading from '@/components/Loading/Index.vue'
-import ProjectForm from '@/views/_Work/Manages/Projects/components/ProjectForm.vue'
-import Member from '@/views/_Work/Manages/Projects/components/Settings/components/Member.vue'
-import IssueTracking from '@/views/_Work/Manages/Projects/components/Settings/components/IssueTracking.vue'
-import Version from '@/views/_Work/Manages/Projects/components/Settings/components/Version.vue'
-import IssueCategory from '@/views/_Work/Manages/Projects/components/Settings/components/IssueCategory.vue'
-import Forum from './components/Forum.vue'
-import CategoryForm from '@/views/_Work/Manages/Projects/components/Settings/category/CategoryForm.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
+import ProjectForm from '@/views/_Work/Manages/Projects/components/ProjectForm.vue'
+import Member from './components/Member.vue'
+import IssueTracking from './components/IssueTracking.vue'
+import Version from './components/Version.vue'
+import IssueCategory from './components/IssueCategory.vue'
+import CategoryForm from './category/CategoryForm.vue'
+import Forum from './components/Forum.vue'
 
 const cBody = ref()
 const toggle = () => cBody.value.toggle()
@@ -23,35 +24,59 @@ defineExpose({ toggle })
 
 const menu = ref('프로젝트')
 
+const { can, PERM } = usePerms()
+
 const accStore = useAccount()
 const workManager = computed(() => accStore.workManager)
+
+const canAccessProject = computed(() => {
+  if (workManager.value) return true
+  return can(PERM.PROJECT_CREATE) || can(PERM.PROJECT_UPDATE) || can(PERM.PROJECT_DELETE)
+})
+
+const canAccessIssue = computed(() => {
+  if (workManager.value) return true
+  return (
+    can(PERM.ISSUE_READ) ||
+    can(PERM.ISSUE_CREATE) ||
+    can(PERM.ISSUE_UPDATE) ||
+    can(PERM.ISSUE_DELETE)
+  )
+})
+
+const canAccessForum = computed(() => {
+  if (workManager.value) return true
+  return (
+    can(PERM.FORUM_READ) ||
+    can(PERM.FORUM_CREATE) ||
+    can(PERM.FORUM_UPDATE) ||
+    can(PERM.FORUM_DELETE)
+  )
+})
 
 const [route, router] = [useRoute(), useRouter()]
 watch(route, newVal => {
   if (newVal.query?.menu) menu.value = newVal.query.menu as string
 })
 
-const initMenu = computed(() => (!!workManager?.value ? '프로젝트' : '단계'))
+const initMenu = computed(() => settingMenus.value[0] || '')
 
 const settingMenus = computed(() => {
-  const menus = [{ no: 4, menu: '단계' }]
-  const perms = my_perms.value
-  const isManager = !!workManager?.value
-  const mods = modules.value
+  const menus = []
 
-  if (isManager || perms?.includes('project_update')) menus.push({ no: 1, menu: '프로젝트' })
-  if (isManager || perms?.includes('project_member')) menus.push({ no: 2, menu: '구성원' })
-  if (isManager && mods?.issue) menus.push({ no: 3, menu: '업무추적' })
-  if (mods?.issue) menus.push({ no: 5, menu: '업무범주' })
-  if (isManager && mods?.forum) menus.push({ no: 7, menu: '게시판' })
+  // PERM 상수를 기반으로 권한 체크
+  if (canAccessProject.value) menus.push({ no: 1, menu: '프로젝트' })
+  if (workManager.value || can(PERM.PROJECT_MEMBER)) menus.push({ no: 2, menu: '구성원' })
+  if (canAccessIssue.value) menus.push({ no: 3, menu: '업무추적' })
+  if (workManager.value || can(PERM.PROJECT_VERSION)) menus.push({ no: 4, menu: '단계' })
+  if (workManager.value || can(PERM.ISSUE_CATEGORY_MANAGE)) menus.push({ no: 5, menu: '업무범주' })
+  if (canAccessForum.value) menus.push({ no: 7, menu: '게시판' })
 
   return menus.sort((a, b) => a.no - b.no).map(m => m.menu)
 })
 
 const workStore = useWork()
 const issueProject = computed<IssueProject | null>(() => workStore.issueProject)
-const my_perms = computed(() => (workStore.issueProject as IssueProject)?.my_perms)
-const modules = computed(() => issueProject.value?.module)
 const versionList = computed(() => workStore.versionList)
 const memberList = computed(() =>
   (
@@ -95,9 +120,6 @@ watch(
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  if (route.query.menu) menu.value = route.query.menu as string
-  else menu.value = Cookies.get('workSettingMenu') ?? initMenu.value
-
   await workStore.fetchIssueProjectList({})
   await workStore.fetchRoleList()
   await issueStore.fetchTrackerList()
@@ -107,6 +129,13 @@ onBeforeMount(async () => {
     await workStore.fetchIssueProject(projId)
     await workStore.fetchVersionList({ project: projId, status: '' })
   }
+
+  // 메뉴 초기화 로직 보완
+  const cookieMenu = Cookies.get('workSettingMenu')
+  if (route.query.menu) menu.value = route.query.menu as string
+  else if (cookieMenu && settingMenus.value.includes(cookieMenu)) menu.value = cookieMenu
+  else menu.value = initMenu.value
+
   loading.value = false
 })
 </script>
