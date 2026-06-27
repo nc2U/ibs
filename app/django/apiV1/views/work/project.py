@@ -64,7 +64,7 @@ class IssueProjectViewSet(viewsets.ModelViewSet):
         elif del_mem is not None:
             Member.objects.filter(pk=del_mem, project=project).delete()
             return Response({'status': 'member deleted'})
-        
+
         return Response({'status': 'no action taken'}, status=400)
 
     @property
@@ -220,3 +220,30 @@ class VersionViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated, ProjectPermission)
     filterset_class = VersionFilter
     search_fields = ('name', 'description')
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = Version.objects.all()
+
+        # 1. 슈퍼유저나 work_manager는 전체 버전 조회 가능
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            base_qs = queryset
+        else:
+            # 2. 접근 가능한 프로젝트의 버전만 조회
+            base_qs = queryset.filter(
+                Q(project__is_public=True) | Q(project__members__user=user)
+            ).distinct()
+
+        # 3. 성능 최적화
+        return base_qs.select_related('project').prefetch_related('issues__tracker', 'issues__project')
+
+    @property
+    def required_permission(self):
+        mapping = {  # 매핑 로직 정의
+            'create': 'project.version',
+            'update': 'project.version',
+            'partial_update': 'project.version',
+            'destroy': 'project.version'
+        }
+        # 정의되지 않은 액션에 대해 기본 권한 반환
+        return mapping.get(self.action, None)
