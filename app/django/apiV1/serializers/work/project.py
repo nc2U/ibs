@@ -231,10 +231,11 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
         return super().update(instance, validated_data)
 
 
-class PermissionSerializer(serializers.ModelSerializer):
+class ModuleSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Permission
-        fields = ('pk', 'module', 'code', 'name', 'description')
+        model = Module
+        fields = ('pk', 'project', 'issue', 'news', 'document',
+                  'forum', 'calendar')
 
 
 class RoleSerializer(serializers.ModelSerializer):
@@ -242,6 +243,12 @@ class RoleSerializer(serializers.ModelSerializer):
         model = Role
         fields = ('pk', 'name', 'assignable', 'issue_visible', 'user_visible',
                   'permissions', 'order', 'creator', 'created', 'updated')
+
+
+class PermissionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Permission
+        fields = ('pk', 'module', 'code', 'name', 'description')
 
 
 class MemberSerializer(serializers.ModelSerializer):
@@ -270,13 +277,6 @@ class MemberSerializer(serializers.ModelSerializer):
         instance.roles.set(roles)
         instance.save()
         return instance
-
-
-class ModuleSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Module
-        fields = ('pk', 'project', 'issue', 'news', 'document',
-                  'forum', 'calendar')
 
 
 class IssueInVersionSerializer(serializers.ModelSerializer):
