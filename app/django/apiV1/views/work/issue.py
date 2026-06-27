@@ -8,22 +8,6 @@ from apiV1.permission import *
 from apiV1.serializers.work.issue import *
 
 
-class VersionFilter(FilterSet):
-    status__exclude = CharFilter(field_name='status', exclude=True, label='상태-제외')
-
-    class Meta:
-        model = Version
-        fields = ('project__slug', 'status')
-
-
-class VersionViewSet(viewsets.ModelViewSet):
-    queryset = Version.objects.all()
-    serializer_class = VersionSerializer
-    permission_classes = (permissions.IsAuthenticated, ProjectPermission)
-    filterset_class = VersionFilter
-    search_fields = ('name', 'description')
-
-
 class IssueFilter(FilterSet):
     status__exclude = CharFilter(field_name='status', exclude=True, label='사용여부-제외')
     project__exclude = CharFilter(field_name='project__slug', exclude=True, label='프로젝트-제외')
@@ -125,7 +109,7 @@ class IssueViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        
+
         # 기본 쿼리셋에 관계형 필드를 미리 로딩하여 N+1 문제 방지
         # + 프로젝트 상태가 '1'(사용)인 업무만 조회하도록 제한 (전역 조건)
         queryset = self.queryset.filter(project__status='1').select_related(
@@ -138,7 +122,7 @@ class IssueViewSet(viewsets.ModelViewSet):
 
         # 사용자가 멤버로 속한 프로젝트 ID 목록
         member_project_ids = user.member_project_ids()
-        
+
         # 접근 가능 범위 정의 (프로젝트 상태 '1'은 위에서 이미 필터링됨)
         # 1. 멤버인 프로젝트의 모든 업무
         # 2. 공개 프로젝트의 업무

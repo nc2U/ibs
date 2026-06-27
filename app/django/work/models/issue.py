@@ -7,27 +7,6 @@ from _utils.file_upload import get_work_file_path
 from work.models.project import IssueProject
 
 
-class Version(models.Model):
-    project = models.ForeignKey(IssueProject, on_delete=models.CASCADE, verbose_name='프로젝트', related_name='versions')
-    name = models.CharField('이름', max_length=20, db_index=True)
-    status = models.CharField('상태', max_length=1, choices=(('1', '진행'), ('2', '잠김'), ('3', '닫힘')), default='1')
-    SHARING_CHOICES = (('0', '공유 없음'), ('1', '하위 프로젝트'), ('2', '상위 및 하위 프로젝트'),
-                       ('3', '최상위 및 모든 하위 프로젝트'), ('4', '모든 프로젝트'))
-    sharing = models.CharField('공유', max_length=1, choices=SHARING_CHOICES, default='1')
-    effective_date = models.DateField(verbose_name='단계 완료 기한', blank=True, null=True)
-    description = models.CharField('설명', max_length=255, blank=True, default='')
-    created = models.DateTimeField(auto_now_add=True)
-    updated = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        ordering = ('project', 'id')
-        verbose_name = '08. 단계'
-        verbose_name_plural = '08. 단계'
-
-
 class IssueManager(models.Manager):
     def get_queryset(self):
         return super().get_queryset().select_related(
@@ -57,8 +36,8 @@ class Issue(models.Model):
     subject = models.CharField(max_length=100, verbose_name='제목', db_index=True)
     description = models.TextField(verbose_name='설명', blank=True, default='')
     category = models.ForeignKey('IssueCategory', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='범주')
-    fixed_version = models.ForeignKey(Version, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='목표 단계',
-                                      related_name='issues')
+    fixed_version = models.ForeignKey('work.Version', on_delete=models.SET_NULL, null=True, blank=True,
+                                      verbose_name='목표 단계', related_name='issues')
     assigned_to = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
                                     null=True, blank=True, verbose_name='담당자', related_name='assignees')
     parent = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='상위 업무')

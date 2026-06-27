@@ -177,3 +177,19 @@ class MemberViewSet(viewsets.ModelViewSet):
         return queryset.filter(
             Q(project__is_public=True) | Q(project__members__user=user)
         ).distinct()
+
+
+class VersionFilter(FilterSet):
+    status__exclude = CharFilter(field_name='status', exclude=True, label='상태-제외')
+
+    class Meta:
+        model = Version
+        fields = ('project__slug', 'status')
+
+
+class VersionViewSet(viewsets.ModelViewSet):
+    queryset = Version.objects.all()
+    serializer_class = VersionSerializer
+    permission_classes = (permissions.IsAuthenticated, ProjectPermission)
+    filterset_class = VersionFilter
+    search_fields = ('name', 'description')
