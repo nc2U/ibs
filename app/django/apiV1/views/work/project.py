@@ -70,7 +70,14 @@ class IssueProjectViewSet(viewsets.ModelViewSet):
         else:  # 2. 비공개 프로젝트는 멤버인 경우만, 공개 프로젝트는 모두 조회 가능
             base_qs = queryset.filter(Q(is_public=True) | Q(members__user=user)).distinct()
 
-        # 3. 액션에 따른 추가 필드 로드 최적화
+        # 3. Prefetch 최적화 추가 (N+1 문제 해결)
+        base_qs = base_qs.prefetch_related(
+            'all_members__user', 'all_members__roles',
+            'trackers', 'versions', 'categories__assigned_to',
+            'allowed_roles'
+        )
+
+        # 4. 액션에 따른 추가 필드 로드 최적화
         if self.action == 'list':
             return base_qs.select_related('company', 'module', 'creator')
         # For detail view, we can add non-recursive annotations as a hint
