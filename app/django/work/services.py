@@ -1,5 +1,6 @@
 from work.models.logging import ActivityLogEntry, IssueLogEntry
 from work.tasks import send_issue_mail_task, send_meeting_mail_task
+from rest_framework.exceptions import PermissionDenied
 
 
 class MeetingService:
@@ -129,3 +130,11 @@ class IssueService:
     def send_issue_mail(instance, user, mail_type, old_status_name=None, old_assigned_to=None):
         """이슈 관련 메일 발송 유틸리티 (Celery 비동기 호출)"""
         send_issue_mail_task.delay(instance.pk, user.pk, mail_type, old_status_name, old_assigned_to)
+
+class PermissionService:
+    @staticmethod
+    def check_module_permission(user, project):
+        """모듈 수정 권한을 중앙에서 검증"""
+        perms = project.get_user_permissions(user)
+        if 'project.module' not in perms:
+            raise PermissionDenied("모듈을 수정할 권한이 없습니다.")

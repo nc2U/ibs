@@ -4,6 +4,7 @@ from rest_framework import serializers
 from apiV1.serializers.accounts import SimpleUserSerializer
 from work.models.issue import IssueCategory, Issue, Tracker
 from work.models.project import IssueProject, Role, Member, Module, Permission, Version
+from work.services import PermissionService
 
 
 class ProjectPermissionMixin:
@@ -193,6 +194,21 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
 
         project = IssueProject.objects.create(**validated_data)
 
+        # 권한 검증 서비스 호출 및 모듈 생성
+        module_fields = ['issue', 'news', 'document', 'forum', 'calendar']
+        if any(field in self.initial_data for field in module_fields):
+            request = self.context.get('request')
+            if request:
+                PermissionService.check_module_permission(request.user, project)
+
+            Module.objects.create(
+                project=project, issue=issue, news=news, 
+                document=document, forum=forum, calendar=calendar
+            )
+        else:
+            # 기본값으로 모듈 생성
+            Module.objects.create(project=project)
+
         allowed_roles = self.initial_data.get('allowed_roles')
         trackers = self.initial_data.get('trackers')
 
@@ -201,14 +217,6 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
         if trackers:
             project.trackers.set(trackers)
 
-        Module.objects.create(
-            project=project,
-            issue=issue,
-            news=news,
-            document=document,
-            forum=forum,
-            calendar=calendar
-        )
         return project
 
     @transaction.atomic
@@ -220,8 +228,13 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
         forum = validated_data.pop('forum', None)
         calendar = validated_data.pop('calendar', None)
 
-        # 2. 모듈 업데이트
-        if any([issue is not None, news is not None, document is not None, forum is not None, calendar is not None]):
+        # 2. 모듈 업데이트 (권한 검증 포함)
+        module_fields = ['issue', 'news', 'document', 'forum', 'calendar']
+        if any(field in self.initial_data for field in module_fields):
+            request = self.context.get('request')
+            if request:
+                PermissionService.check_module_permission(request.user, instance)
+
             module = instance.module
             if issue is not None: module.issue = issue
             if news is not None: module.news = news
