@@ -158,22 +158,13 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
     forum = serializers.BooleanField(write_only=True, default=True)
     calendar = serializers.BooleanField(write_only=True, default=True)
 
-    # m2m 업데이트용 쓰기 전용 필드
-    allowed_roles_ids = serializers.PrimaryKeyRelatedField(
-        source='allowed_roles', queryset=Role.objects.all(),
-        many=True, write_only=True, required=False)
-    trackers_ids = serializers.PrimaryKeyRelatedField(
-        source='trackers', queryset=Tracker.objects.all(),
-        many=True, write_only=True, required=False)
-
     class Meta:
         model = IssueProject
         fields = ('pk', 'company', 'sort', 'name', 'slug', 'description', 'homepage', 'is_public',
                   'module', 'is_inherit_members', 'allowed_roles', 'trackers', 'forums', 'versions',
                   'default_version', 'categories', 'status', 'depth', 'all_members', 'members',
                   'visible', 'family_tree', 'parent', 'parent_visible', 'sub_projects', 'creator',
-                  'my_perms', 'created', 'updated', 'issue', 'news', 'document', 'forum', 'calendar',
-                  'allowed_roles_ids', 'trackers_ids')
+                  'my_perms', 'created', 'updated', 'issue', 'news', 'document', 'forum', 'calendar')
         read_only_fields = ('status', 'is_public', 'forums')
 
     # 메서드 복구
@@ -200,10 +191,10 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
         forum = validated_data.pop('forum', True)
         calendar = validated_data.pop('calendar', True)
 
-        allowed_roles = validated_data.pop('allowed_roles', [])
-        trackers = validated_data.pop('trackers', [])
-
         project = IssueProject.objects.create(**validated_data)
+
+        allowed_roles = self.initial_data.get('allowed_roles')
+        trackers = self.initial_data.get('trackers')
 
         if allowed_roles:
             project.allowed_roles.set(allowed_roles)
@@ -222,35 +213,31 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        # validated_data에서 필드 추출
+        # 1. validated_data에서 모듈 필드 추출
         issue = validated_data.pop('issue', None)
         news = validated_data.pop('news', None)
         document = validated_data.pop('document', None)
         forum = validated_data.pop('forum', None)
         calendar = validated_data.pop('calendar', None)
 
-        allowed_roles = validated_data.pop('allowed_roles', None)
-        trackers = validated_data.pop('trackers', None)
+        # 2. 모듈 업데이트
+        if any([issue is not None, news is not None, document is not None, forum is not None, calendar is not None]):
+            module = instance.module
+            if issue is not None: module.issue = issue
+            if news is not None: module.news = news
+            if document is not None: module.document = document
+            if forum is not None: module.forum = forum
+            if calendar is not None: module.calendar = calendar
+            module.save()
 
-        # M2M 필드 업데이트
+        # 3. initial_data를 사용하여 M2M 관계 업데이트
+        allowed_roles = self.initial_data.get('allowed_roles')
         if allowed_roles is not None:
             instance.allowed_roles.set(allowed_roles)
+
+        trackers = self.initial_data.get('trackers')
         if trackers is not None:
             instance.trackers.set(trackers)
-
-        # 모듈 업데이트
-        module = instance.module
-        module_fields = {
-            'issue': issue,
-            'news': news,
-            'document': document,
-            'forum': forum,
-            'calendar': calendar
-        }
-        for field, value in module_fields.items():
-            if value is not None:
-                setattr(module, field, value)
-        module.save()
 
         validated_data['status'] = self.initial_data.get('status', instance.status)
 
