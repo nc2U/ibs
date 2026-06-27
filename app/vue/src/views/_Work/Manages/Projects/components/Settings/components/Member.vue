@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { ref, computed, onBeforeMount, inject, type ComputedRef } from 'vue'
+import { usePerms } from '@/composables/usePerms'
 import { btnLight } from '@/utils/cssMixins.ts'
 import { useAccount } from '@/store/pinia/account'
 import { useWork } from '@/store/pinia/work_project.ts'
@@ -10,6 +11,9 @@ import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 const memberConfirmModal = ref()
 const memberFormModal = ref()
+
+const { can, PERM } = usePerms()
+const canManageMembers = computed(() => can(PERM.PROJECT_MEMBER))
 
 const iProject = inject<ComputedRef<IssueProject>>('iProject')
 
@@ -148,7 +152,7 @@ onBeforeMount(() => accStore.fetchUsersList())
 <template>
   <CRow class="py-2">
     <CCol>
-      <span class="mr-2 form-text">
+      <span v-if="canManageMembers" class="mr-2 form-text">
         <v-icon icon="mdi-plus-circle" color="success" size="15" />
         <router-link to="" class="ml-1" @click="callModal"> 새 구성원 </router-link>
       </span>
@@ -207,9 +211,10 @@ onBeforeMount(() => accStore.fetchUsersList())
 
                 <v-btn
                   color="success"
-                  size="small"
+                  size="x-small"
                   type="button"
                   class="mt-2"
+                  :disabled="!canManageMembers"
                   @click="editSubmit(mem, memberRole)"
                 >
                   저장
@@ -217,7 +222,7 @@ onBeforeMount(() => accStore.fetchUsersList())
                 <v-btn
                   color="secondary"
                   variant="outlined"
-                  size="small"
+                  size="x-small"
                   type="button"
                   @click="cancelEdit"
                   class="mt-2"
@@ -238,16 +243,19 @@ onBeforeMount(() => accStore.fetchUsersList())
               </div>
             </CTableDataCell>
             <CTableDataCell class="px-3">
-              <span v-if="editMode === null || editMode !== mem.pk" class="mr-2">
+              <span
+                v-if="canManageMembers && (editMode === null || editMode !== mem.pk)"
+                class="mr-2"
+              >
                 <v-icon icon="mdi-pencil" color="amber" size="sm" />
                 <router-link to="" @click="toEdit(mem)">편집</router-link>
               </span>
-              <span v-else class="mr-2">
+              <span v-else-if="editMode === mem.pk" class="mr-2">
                 <v-icon icon="mdi-close-octagon-outline" color="grey" size="sm" class="mr-1" />
                 <router-link to="" @click="cancelEdit">취소</router-link>
               </span>
 
-              <span v-if="noInheritMem(mem.pk)">
+              <span v-if="canManageMembers && noInheritMem(mem.pk)">
                 <v-icon icon="mdi-trash-can-outline" color="grey" size="sm" class="mr-1" />
                 <router-link to="" @click="toDelete(mem.pk)">삭제</router-link>
               </span>
@@ -303,8 +311,10 @@ onBeforeMount(() => accStore.fetchUsersList())
           </CCard>
         </CModalBody>
         <CModalFooter>
-          <v-btn :color="btnLight" @click="memberFormModal.close"> 닫기</v-btn>
-          <v-btn color="primary" type="submit">추가</v-btn>
+          <v-btn :color="btnLight" size="small" @click="memberFormModal.close"> 닫기</v-btn>
+          <v-btn :disabled="!canManageMembers" color="primary" size="small" type="submit">
+            추가
+          </v-btn>
         </CModalFooter>
       </CForm>
     </template>
@@ -312,7 +322,9 @@ onBeforeMount(() => accStore.fetchUsersList())
 
   <ConfirmModal ref="memberConfirmModal">
     <template #footer>
-      <v-btn color="warning" size="small" @click="deleteSubmit">삭제</v-btn>
+      <v-btn color="warning" size="small" :disabled="!canManageMembers" @click="deleteSubmit">
+        삭제
+      </v-btn>
     </template>
   </ConfirmModal>
 </template>
