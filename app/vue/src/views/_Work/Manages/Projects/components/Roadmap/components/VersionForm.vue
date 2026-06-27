@@ -1,12 +1,17 @@
 <script lang="ts" setup>
 import { ref, computed, onBeforeMount } from 'vue'
 import { useRoute } from 'vue-router'
-import { useWork } from '@/store/pinia/work_project.ts'
 import { isValidate } from '@/utils/helper'
+import { usePerms } from '@/composables/usePerms.ts'
 import { colorLight } from '@/utils/cssMixins'
+import { useWork } from '@/store/pinia/work_project.ts'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 
 const emit = defineEmits(['on-submit'])
+
+// 권한 설정 추가
+const { can, PERM } = usePerms()
+const canManageVersions = computed(() => can(PERM.PROJECT_VERSION))
 
 const validated = ref(false)
 
@@ -22,15 +27,20 @@ const form = ref({
 })
 
 const formsCheck = computed(() => {
+  if (!canManageVersions.value) return true
+
   if (version.value) {
-    const a = version.value.name === form.value.name
-    const b = version.value.description === form.value.description
-    const c = version.value.status === form.value.status
-    const e = version.value.effective_date === form.value.effective_date
-    const f = version.value.sharing === form.value.sharing
-    const g = version.value.is_default === form.value.is_default
-    return a && b && c && e && f && g
-  } else return false
+    const v = version.value
+    return (
+      v.name === form.value.name &&
+      v.description === form.value.description &&
+      v.status === form.value.status &&
+      v.effective_date === form.value.effective_date &&
+      v.sharing === form.value.sharing &&
+      v.is_default === form.value.is_default
+    )
+  }
+  return false
 })
 
 const route = useRoute()

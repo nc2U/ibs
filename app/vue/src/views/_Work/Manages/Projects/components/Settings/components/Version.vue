@@ -1,13 +1,18 @@
 <script lang="ts" setup>
-import { ref, type PropType, nextTick } from 'vue'
-import type { Version } from '@/store/types/work_project.ts'
+import { ref, type PropType, nextTick, computed } from 'vue' // computed 추가
+import { usePerms } from '@/composables/usePerms' // 추가
 import { colorLight } from '@/utils/cssMixins'
+import type { Version } from '@/store/types/work_project.ts'
 import NoData from '@/components/NoData/Index.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 defineProps({ versions: { type: Array as PropType<Version[]>, default: () => [] } })
 
 const emit = defineEmits(['version-filter', 'delete-version'])
+
+// 권한 설정 추가
+const { can, PERM } = usePerms()
+const canManageVersions = computed(() => can(PERM.PROJECT_VERSION))
 
 const RefVersionConfirm = ref()
 
@@ -41,7 +46,7 @@ const deleteSubmit = () => {
 <template>
   <CRow class="py-2">
     <CCol>
-      <span class="mr-2 form-text">
+      <span v-if="canManageVersions" class="mr-2 form-text">
         <v-icon icon="mdi-plus-circle" color="success" size="15" />
         <router-link :to="{ name: '(추진현황) - 추가', query: { back: 1 } }" class="ml-1">
           새 단계
@@ -50,7 +55,7 @@ const deleteSubmit = () => {
     </CCol>
 
     <CCol class="text-right">
-      <span class="mr-2 form-text">
+      <span v-if="canManageVersions" class="mr-2 form-text">
         <v-icon icon="mdi-lock" color="warning" size="15" />
         <router-link to="" class="ml-1">완료된 단계 닫기 </router-link>
       </span>
@@ -156,7 +161,7 @@ const deleteSubmit = () => {
               {{ ver.sharing_desc }}
             </CTableDataCell>
             <CTableDataCell class="form-text">
-              <span class="mr-2">
+              <span v-if="canManageVersions" class="mr-2">
                 <v-icon icon="mdi-pencil" color="amber" size="sm" class="mr-1" />
                 <router-link
                   :to="{ name: '(추진현황) - 수정', params: { verId: ver.pk }, query: { back: 1 } }"
@@ -164,7 +169,7 @@ const deleteSubmit = () => {
                   편집
                 </router-link>
               </span>
-              <span>
+              <span v-if="canManageVersions">
                 <v-icon icon="mdi-trash-can" color="grey" size="sm" class="mr-1" />
                 <router-link to="" @click="toDelete(ver?.pk as number)">삭제</router-link>
               </span>
