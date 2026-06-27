@@ -1,3 +1,4 @@
+from django.db.models import Q
 from django_filters.rest_framework import FilterSet, CharFilter, DateTimeFromToRangeFilter
 from rest_framework import viewsets, permissions
 
@@ -12,6 +13,22 @@ class MeetingCategoryViewSet(viewsets.ModelViewSet):
     serializer_class = MeetingCategorySerializer
     permission_classes = (permissions.IsAuthenticated, ProjectPermission)
     filterset_fields = ('project',)
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = super().get_queryset()
+
+        # 1. 슈퍼유저나 work_manager는 전체 조회 가능
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            base_qs = queryset
+        else:
+            # 2. 공개 프로젝트 OR 사용자가 멤버인 프로젝트의 카테고리만 조회
+            base_qs = queryset.filter(
+                Q(project__is_public=True) | Q(project__members__user=user)
+            ).distinct()
+
+        # 3. 성능 최적화
+        return base_qs.select_related('project')
 
 
 class MeetingFilter(FilterSet):
@@ -36,7 +53,20 @@ class MeetingViewSet(viewsets.ModelViewSet):
     filterset_class = MeetingFilter
 
     def get_queryset(self):
-        return super().get_queryset().select_related(
+        user = self.request.user
+        queryset = super().get_queryset()
+
+        # 1. 슈퍼유저나 work_manager는 전체 조회 가능
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            base_qs = queryset
+        else:
+            # 2. 공개 프로젝트 OR 사용자가 멤버인 프로젝트의 회의만 조회
+            base_qs = queryset.filter(
+                Q(project__is_public=True) | Q(project__members__user=user)
+            ).distinct()
+
+        # 3. 성능 최적화
+        return base_qs.select_related(
             'project', 'category', 'creator', 'updater'
         ).prefetch_related('attendees', 'files')
 
@@ -51,6 +81,22 @@ class MeetingFileViewSet(viewsets.ModelViewSet):
     queryset = MeetingFile.objects.all()
     serializer_class = MeetingFileSerializer
     permission_classes = (permissions.IsAuthenticated, ProjectPermission)
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = super().get_queryset()
+
+        # 1. 슈퍼유저나 work_manager는 전체 조회 가능
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            base_qs = queryset
+        else:
+            # 2. 공개 프로젝트 OR 사용자가 멤버인 프로젝트의 회의 파일만 조회
+            base_qs = queryset.filter(
+                Q(meeting__project__is_public=True) | Q(meeting__project__members__user=user)
+            ).distinct()
+
+        # 3. 성능 최적화
+        return base_qs.select_related('meeting__project', 'creator')
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
