@@ -121,7 +121,7 @@ class ModuleViewSet(viewsets.ModelViewSet):
         # 1. 슈퍼유저나 work_manager는 전체 모듈 조회 가능
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset
-            
+
         # 2. 접근 가능한 프로젝트의 모듈만 조회
         # - 공개 프로젝트 OR 사용자가 멤버인 프로젝트
         return queryset.filter(
@@ -152,3 +152,28 @@ class MemberViewSet(viewsets.ModelViewSet):
     serializer_class = MemberSerializer
     permission_classes = (permissions.IsAuthenticated, ProjectPermission)
     filterset_fields = ('user',)
+
+    @property
+    def required_permission(self):
+        mapping = {  # 매핑 로직 정의
+            'create': 'project.member',
+            'update': 'project.member',
+            'partial_update': 'project.member',
+            'destroy': 'project.member'
+        }
+        # 정의되지 않은 액션에 대해 기본 권한 반환
+        return mapping.get(self.action, None)
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = super().get_queryset().select_related('project', 'user')
+
+        # 1. 슈퍼유저나 work_manager는 전체 멤버 조회 가능
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return queryset
+
+        # 2. 접근 가능한 프로젝트의 멤버만 조회
+        # - 공개 프로젝트 OR 사용자가 멤버인 프로젝트
+        return queryset.filter(
+            Q(project__is_public=True) | Q(project__members__user=user)
+        ).distinct()
