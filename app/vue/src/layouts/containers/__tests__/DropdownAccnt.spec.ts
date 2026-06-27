@@ -67,8 +67,9 @@ describe('AppHeaderDropdownAccnt Component Test', () => {
     expect(wrapper.find('.dropdown-header').text()).toBe('운영자님')
     expect(wrapper.find('.dropdown-menu').html()).toContain('할일 관리')
     expect(wrapper.find('.dropdown-menu').html()).toContain('마이페이지')
-    expect(wrapper.find('.dropdown-menu').html()).not.toContain('관리자 페이지')
-    expect(wrapper.find('.dropdown-menu').html()).not.toContain('사용자 매뉴얼')
+    expect(wrapper.find('.dropdown-menu').html()).toContain('사용자 매뉴얼') // 포함 확인
+    expect(wrapper.find('.dropdown-menu').html()).not.toContain('관리자 페이지') // 미포함 확인
+    expect(wrapper.find('.dropdown-menu').html()).toContain('로그아웃')
 
     await wrapper.setProps({
       userInfo: {
@@ -77,7 +78,7 @@ describe('AppHeaderDropdownAccnt Component Test', () => {
         username: 'admin',
         is_active: true,
         is_superuser: true,
-        is_staff: false,
+        is_staff: true, // 관리자로 변경
         work_manager: false,
         date_joined: '2022-01-30T19:16:53+09:00',
         staff_auth: null,
@@ -89,7 +90,7 @@ describe('AppHeaderDropdownAccnt Component Test', () => {
     })
 
     expect(wrapper.find('.dropdown-menu').html()).toContain('사용자 매뉴얼')
-    expect(wrapper.find('.dropdown-menu').html()).toContain('관리자 페이지')
+    expect(wrapper.find('.dropdown-menu').html()).toContain('관리자 페이지') // 포함 확인
     expect(wrapper.find('.dropdown-menu').html()).toContain('로그아웃')
   })
 })
