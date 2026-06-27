@@ -273,8 +273,20 @@ const removeProperty = (e: Event) => {
   el.classList.remove('is-invalid')
 }
 
-const isAssigned = (pk: number) =>
-  workStore.memberList.map(m => m.user.pk).includes(userInfo?.value?.pk as number)
+const canEditIssue = (issue: Issue | null) => {
+  if (!issue) return true // 신규 생성 시
+  if (workManager.value) return true // 관리자
+
+  const userId = userInfo?.value?.pk as number
+  // 1. 프로젝트 멤버
+  const isMember = workStore.memberList.map(m => m.user.pk).includes(userId)
+  // 2. 작성자
+  const isCreator = issue.creator.pk === userId
+  // 3. 담당자
+  const isAssignee = issue.assigned_to?.pk === userId
+
+  return isMember || isCreator || isAssignee
+}
 
 const cmtFocus = ref(false)
 const callComment = () => (cmtFocus.value = true)
@@ -326,7 +338,7 @@ defineExpose({ callComment, callReply })
     <CCardHeader>{{ !issue?.pk ? '새 업무' : '업무 수정' }}</CCardHeader>
     <CCardBody>
       <CForm class="needs-validation" novalidate :validated="validated" @submit.prevent="onSubmit">
-        <div v-if="!issue || isAssigned(issue.project.pk)">
+        <div v-if="!issue || canEditIssue(issue)">
           <CRow class="mb-3">
             <CCol md="8">
               <CRow class="mb-3">
