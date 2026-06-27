@@ -137,31 +137,59 @@ class IssueProjectListSerializer(ProjectPermissionMixin, serializers.ModelSerial
 
 
 class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer):
-    # ... (기존 필드들)
-    
+    family_tree = SimpleIssueProjectSerializer(many=True, read_only=True)
+    module = ModuleInIssueProjectSerializer(read_only=True)
+    all_members = MemberInIssueProjectSerializer(many=True, read_only=True)
+    members = MemberInIssueProjectSerializer(many=True, read_only=True)
+    allowed_roles = RoleInIssueProjectSerializer(many=True, read_only=True)
+    trackers = TrackerInIssueProjectSerializer(many=True, read_only=True)
+    versions = serializers.SerializerMethodField(read_only=True)
+    categories = IssueCategoryInIssueProjectSerializer(many=True, read_only=True)
+    visible = serializers.SerializerMethodField(read_only=True)
+    parent_visible = serializers.SerializerMethodField(read_only=True)
+    sub_projects = serializers.SerializerMethodField(read_only=True)
+    creator = serializers.SlugRelatedField('username', read_only=True)
+    my_perms = serializers.SerializerMethodField(read_only=True)
+
     # 모듈 설정을 위한 필드 추가 (write_only)
     issue = serializers.BooleanField(write_only=True, default=True)
     news = serializers.BooleanField(write_only=True, default=True)
     document = serializers.BooleanField(write_only=True, default=True)
     forum = serializers.BooleanField(write_only=True, default=True)
     calendar = serializers.BooleanField(write_only=True, default=True)
-    
-    # m2m 필드 명시 (write_only로 처리)
-    allowed_roles = serializers.PrimaryKeyRelatedField(many=True, queryset=Role.objects.all(), required=False)
-    trackers = serializers.PrimaryKeyRelatedField(many=True, queryset=Tracker.objects.all(), required=False)
+
+    # m2m 업데이트용 쓰기 전용 필드
+    allowed_roles_ids = serializers.PrimaryKeyRelatedField(
+        source='allowed_roles', queryset=Role.objects.all(),
+        many=True, write_only=True, required=False)
+    trackers_ids = serializers.PrimaryKeyRelatedField(
+        source='trackers', queryset=Tracker.objects.all(),
+        many=True, write_only=True, required=False)
 
     class Meta:
         model = IssueProject
-        # ... (기존 필드들)
         fields = ('pk', 'company', 'sort', 'name', 'slug', 'description', 'homepage', 'is_public',
                   'module', 'is_inherit_members', 'allowed_roles', 'trackers', 'forums', 'versions',
                   'default_version', 'categories', 'status', 'depth', 'all_members', 'members',
-                  'visible', 'family_tree',
-                  'parent', 'parent_visible', 'sub_projects', 'creator', 'my_perms', 'created', 'updated',
-                  'issue', 'news', 'document', 'forum', 'calendar')
+                  'visible', 'family_tree', 'parent', 'parent_visible', 'sub_projects', 'creator',
+                  'my_perms', 'created', 'updated', 'issue', 'news', 'document', 'forum', 'calendar',
+                  'allowed_roles_ids', 'trackers_ids')
         read_only_fields = ('status', 'is_public', 'forums')
 
-    # ... (나머지 메서드들)
+    # 메서드 복구
+    @staticmethod
+    def get_versions(obj):
+        versions = obj.versions.filter(status='1')
+        return VersionInIssueProjectSerializer(versions, many=True).data
+
+    def get_sub_projects(self, obj):
+        sub_projects = obj.issueproject_set.exclude(status='9')
+        # Create a new serializer class without the 'my_perms' field to avoid recursion bloat if needed,
+        # but for now reusing ListSerializer is fine as it's meant for tree view
+        return IssueProjectListSerializer(sub_projects, many=True, read_only=True, context=self.context).data
+
+    def get_parent_visible(self, obj):
+        return self.get_visible(obj.parent) if obj.parent else False
 
     @transaction.atomic
     def create(self, validated_data):
@@ -171,7 +199,7 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
         document = validated_data.pop('document', True)
         forum = validated_data.pop('forum', True)
         calendar = validated_data.pop('calendar', True)
-        
+
         allowed_roles = validated_data.pop('allowed_roles', [])
         trackers = validated_data.pop('trackers', [])
 
@@ -200,7 +228,7 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
         document = validated_data.pop('document', None)
         forum = validated_data.pop('forum', None)
         calendar = validated_data.pop('calendar', None)
-        
+
         allowed_roles = validated_data.pop('allowed_roles', None)
         trackers = validated_data.pop('trackers', None)
 
@@ -223,21 +251,6 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
             if value is not None:
                 setattr(module, field, value)
         module.save()
-
-        # 멤버 및 상태 처리는 아직 분리되지 않았으므로 유지하되, 
-        # 가능한 부분은 validated_data를 사용하도록 개선 (기존 로직 유지)
-        users = self.initial_data.get('users', [])
-        roles = self.initial_data.get('roles', [])
-        del_mem = self.initial_data.get('del_mem')
-
-        if users:
-            for user_id in users:
-                member, _ = Member.objects.get_or_create(user_id=user_id, project=instance)
-                if roles:
-                    member.roles.set(roles)
-                member.save()
-        elif del_mem is not None:
-            Member.objects.filter(pk=del_mem).delete()
 
         validated_data['status'] = self.initial_data.get('status', instance.status)
 

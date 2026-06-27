@@ -25,12 +25,12 @@ const allMembers = computed<SimpleMember[]>(
   () => (workStore.issueProject as IssueProject)?.all_members ?? [],
 )
 
-const patchIssueProject = (payload: {
+const updateMembers = (payload: {
   slug: string
   users: number[]
   roles: number[]
   del_mem?: number
-}) => workStore.patchIssueProject(payload)
+}) => workStore.updateMembers(payload)
 
 const createMember = (payload: { user?: number; roles?: number[]; slug: string }) =>
   workStore.createMember(payload)
@@ -91,7 +91,7 @@ const toDelete = (memPk: number) => {
 const deleteMember = ref<number | null>(null)
 
 const deleteSubmit = () => {
-  patchIssueProject({
+  updateMembers({
     slug: iProject?.value.slug as string,
     users: [],
     roles: [],
@@ -140,7 +140,7 @@ const onSubmit = (event: Event) => {
 const modalAction = () => {
   const _memList = [...users.value.sort((a, b) => a - b)]
   const _roles = [...roles.value.sort((a, b) => a - b)]
-  patchIssueProject({ slug: iProject?.value.slug as string, users: _memList, roles: _roles })
+  updateMembers({ slug: iProject?.value.slug as string, users: _memList, roles: _roles })
   users.value = []
   roles.value = []
 }

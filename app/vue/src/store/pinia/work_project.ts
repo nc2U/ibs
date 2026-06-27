@@ -138,6 +138,21 @@ export const useWork = defineStore('work', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
+  const updateMembers = async (payload: {
+    slug: string
+    users: number[]
+    roles: number[]
+    del_mem?: number
+  }) => {
+    return await api
+      .post(`/issue-project/${payload.slug}/update_members/`, payload)
+      .then(async () => {
+        await fetchIssueProject(payload.slug)
+        message('success', '성공!', '구성원 정보가 업데이트되었습니다.')
+      })
+      .catch(err => errorHandle(err.response.data))
+  }
+
   const deleteIssueProject = (pk: number) =>
     api
       .delete(`/issue-project/${pk}/`)
@@ -337,6 +352,7 @@ export const useWork = defineStore('work', () => {
     createIssueProject,
     updateIssueProject,
     patchIssueProject,
+    updateMembers,
     deleteIssueProject,
     toggleProjectStatus,
     toggleProjectPublic,

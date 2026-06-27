@@ -47,6 +47,26 @@ class IssueProjectViewSet(viewsets.ModelViewSet):
         project.save()
         return Response({'is_public': project.is_public})
 
+    @action(detail=True, methods=['post'])
+    def update_members(self, request, slug=None):
+        project = self.get_object()
+        users = request.data.get('users', [])
+        roles = request.data.get('roles', [])
+        del_mem = request.data.get('del_mem')
+
+        if users:
+            for user_id in users:
+                member, _ = Member.objects.get_or_create(user_id=user_id, project=project)
+                if roles:
+                    member.roles.set(roles)
+                member.save()
+            return Response({'status': 'members updated'})
+        elif del_mem is not None:
+            Member.objects.filter(pk=del_mem, project=project).delete()
+            return Response({'status': 'member deleted'})
+        
+        return Response({'status': 'no action taken'}, status=400)
+
     @property
     def required_permission(self):
         mapping = {  # 매핑 로직 정의
