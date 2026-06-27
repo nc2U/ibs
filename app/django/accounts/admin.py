@@ -24,20 +24,17 @@ class StaffAuthInline(admin.StackedInline):
 @admin.register(User)
 class UserAdmin(ImportExportMixin, BaseUserAdmin):
     actions = ['send_test_email']
-    # The forms to add and change user instances
-    form = UserChangeForm
-    add_form = UserCreationForm
 
-    # The fields to be used in displaying the User model.
-    # These override the definitions on the base UserAdmin
-    # that reference specific fields on auth.User.
-    list_display = ('username', 'email', 'is_active', 'is_superuser',
-                    'is_staff', 'work_manager', 'last_login', 'date_joined')
-    list_filter = ('is_superuser', 'is_active',)
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
         (_('Personal info'), {'fields': ('username',)}),
-        (_('Permissions'), {'fields': ('is_active', 'is_superuser', 'is_staff', 'work_manager')}),
+        (_('Permissions'), {'fields': ('is_active',
+                                       'is_superuser',
+                                       'is_staff',
+                                       'work_manager',
+                                       'groups',
+                                       'user_permissions')}),
+        (_("Important dates"), {"fields": ("last_login", "date_joined")}),
     )
     # add_fieldsets is not a standard ModelAdmin attribute. UserAdmin
     # overrides get_fieldsets to use this attribute when creating a user.
@@ -47,9 +44,18 @@ class UserAdmin(ImportExportMixin, BaseUserAdmin):
             'fields': ('email', 'username', 'password1', 'password2')}
          ),
     )
+    # The forms to add and change user instances
+    form = UserChangeForm
+    add_form = UserCreationForm
+    # The fields to be used in displaying the User model.
+    # These override the definitions on the base UserAdmin
+    # that reference specific fields on auth.User.
+    list_display = ('username', 'email', 'is_active', 'is_superuser',
+                    'is_staff', 'work_manager', 'last_login', 'date_joined')
+    list_filter = ('is_superuser', 'is_active',)
     search_fields = ('email', 'username')
     ordering = ('-date_joined',)
-    filter_horizontal = ()
+    filter_horizontal = ('groups', 'user_permissions',)
     inlines = (StaffAuthInline,)  # ProfileInline, TodosInline)
 
     def send_test_email(self, request, queryset):
