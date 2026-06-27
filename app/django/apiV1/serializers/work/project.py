@@ -5,7 +5,7 @@ from rest_framework import serializers
 from apiV1.serializers.accounts import SimpleUserSerializer
 from work.models.issue import IssueCategory, Issue, Tracker
 from work.models.project import IssueProject, Role, Member, Module, Permission, Version
-from work.services import PermissionService
+from work.services.work_services import PermissionService
 
 User = get_user_model()
 

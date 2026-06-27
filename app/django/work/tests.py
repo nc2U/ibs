@@ -5,7 +5,7 @@ from django.utils import timezone
 from company.models import Company
 from work.models.issue import Issue, Tracker, IssueStatus, CodeIssuePriority
 from work.models.project import IssueProject, Role, Member
-from work.services import IssueService
+from work.services.work_services import IssueService
 
 User = get_user_model()
 

@@ -7,7 +7,7 @@ from work.models.inform import News
 from work.models.issue import Issue, IssueRelation, IssueComment
 from work.models.logging import ActivityLogEntry, IssueLogEntry
 from work.models.meeting import Meeting
-from work.services import MeetingService, IssueService
+from work.services.work_services import MeetingService, IssueService
 
 
 @receiver(pre_save, sender=Meeting)
