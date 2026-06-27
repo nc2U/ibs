@@ -316,7 +316,7 @@ onBeforeMount(async () => {
                   style="width: 110px; float: left; margin-top: 2px"
                   height="16"
                 />
-                <span class="ml-2 pt-0">{{ doneRatio ?? 0 }}%</span>
+                <span class="ml-2 pt-0">{{ (doneRatio ?? 0).toFixed(2) }}%</span>
               </div>
             </CCol>
           </CRow>
