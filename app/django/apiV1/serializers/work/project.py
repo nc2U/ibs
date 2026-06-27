@@ -1,3 +1,4 @@
+from django.contrib.auth import get_user_model
 from django.db import transaction
 from rest_framework import serializers
 
@@ -5,6 +6,8 @@ from apiV1.serializers.accounts import SimpleUserSerializer
 from work.models.issue import IssueCategory, Issue, Tracker
 from work.models.project import IssueProject, Role, Member, Module, Permission, Version
 from work.services import PermissionService
+
+User = get_user_model()
 
 
 class ProjectPermissionMixin:
@@ -202,9 +205,8 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
                 PermissionService.check_module_permission(request.user, project)
 
             Module.objects.create(
-                project=project, issue=issue, news=news, 
-                document=document, forum=forum, calendar=calendar
-            )
+                project=project, issue=issue, news=news,
+                document=document, forum=forum, calendar=calendar)
         else:
             # 기본값으로 모듈 생성
             Module.objects.create(project=project)
@@ -282,25 +284,38 @@ class MemberSerializer(serializers.ModelSerializer):
     project = SimpleIssueProjectSerializer(read_only=True)
     roles = RoleInMemberSerializer(many=True, read_only=True)
 
+    # 업데이트용 쓰기 전용 필드
+    user_id = serializers.PrimaryKeyRelatedField(source='user', queryset=User.objects.all(),
+                                                 write_only=True, required=False)
+    slug = serializers.SlugField(write_only=True, required=False)
+    role_ids = serializers.PrimaryKeyRelatedField(source='roles', queryset=Role.objects.all(),
+                                                  many=True, write_only=True, required=False)
+
     class Meta:
         model = Member
-        fields = ('pk', 'user', 'project', 'roles', 'created')
+        fields = ('pk', 'user', 'project', 'roles', 'created', 'user_id', 'slug', 'role_ids')
 
     def create(self, validated_data):
-        user = self.initial_data.get('user', None)
-        slug = self.initial_data.get('slug', None)
+        slug = validated_data.pop('slug')
+        roles = validated_data.pop('roles', [])
+
         project = IssueProject.objects.get(slug=slug)
-        member = Member(user_id=user, project=project)
-        member.save()
-        roles = self.initial_data.get('roles', [])
-        member.roles.set(roles)
+        member = Member.objects.create(project=project, **validated_data)
+
+        if roles:
+            member.roles.set(roles)
         return member
 
     def update(self, instance, validated_data):
-        user = self.initial_data.get('user', None)
-        roles = self.initial_data.get('roles', [])
-        instance.user_id = user if user else instance.user.id
-        instance.roles.set(roles)
+        roles = validated_data.pop('roles', None)
+
+        # 유저 업데이트가 필요한 경우 처리
+        if 'user' in validated_data:
+            instance.user = validated_data['user']
+
+        if roles is not None:
+            instance.roles.set(roles)
+
         instance.save()
         return instance
 
@@ -325,9 +340,13 @@ class VersionSerializer(serializers.ModelSerializer):
     is_default = serializers.SerializerMethodField(read_only=True)
     issues = IssueInVersionSerializer(many=True, read_only=True)
 
+    project_slug = serializers.SlugRelatedField(
+        slug_field='slug', queryset=IssueProject.objects.all(),
+        source='project', write_only=True, required=False)
+
     class Meta:
         model = Version
-        fields = ('pk', 'project', 'name', 'status', 'status_desc', 'sharing', 'sharing_desc',
+        fields = ('pk', 'project', 'project_slug', 'name', 'status', 'status_desc', 'sharing', 'sharing_desc',
                   'effective_date', 'description', 'issues', 'is_default')
 
     @staticmethod
@@ -337,14 +356,13 @@ class VersionSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def create(self, validated_data):
-        project_slug = self.initial_data.get('project')
-        try:
-            project = IssueProject.objects.get(slug=project_slug)
-        except IssueProject.DoesNotExist:
-            raise serializers.ValidationError({'project': 'Project does not exist'})
-
-        version = Version.objects.create(**validated_data, project=project)
         is_default = self.initial_data.get('is_default', False)
+        project = validated_data.get('project')
+
+        if not project:
+            raise serializers.ValidationError({'project': 'Project is required'})
+
+        version = Version.objects.create(**validated_data)
         if is_default:
             project.default_version = version
             project.save()
@@ -352,17 +370,11 @@ class VersionSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        project_slug = self.initial_data.get('project')
-        try:
-            project = IssueProject.objects.get(slug=project_slug)
-            is_default = self.initial_data.get('is_default', False)
-            default_version = instance if is_default else None
-            project.default_version = default_version
-            project.save()
-        except IssueProject.DoesNotExist:
-            raise serializers.ValidationError({'project': 'Project does not exist'})
+        is_default = self.initial_data.get('is_default', False)
+        project = validated_data.get('project', instance.project)
 
-        instance.__dict__.update(validated_data)
-        instance.project = project
-        instance.save()
-        return instance
+        if is_default:
+            project.default_version = instance
+            project.save()
+
+        return super().update(instance, validated_data)
