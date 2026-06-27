@@ -62,7 +62,7 @@ watch(route, newVal => {
 const initMenu = computed(() => settingMenus.value[0] || '')
 
 const settingMenus = computed(() => {
-  const menus = []
+  const menus: { no: number; menu: string }[] = []
 
   // PERM 상수를 기반으로 권한 체크
   if (canAccessProject.value) menus.push({ no: 1, menu: '프로젝트' })
