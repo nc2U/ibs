@@ -1,4 +1,4 @@
-from django.db.models import Q, Model
+from django.db.models import Q
 from django_filters.rest_framework import FilterSet, BooleanFilter, CharFilter
 from rest_framework import viewsets
 from rest_framework.decorators import action
@@ -83,18 +83,15 @@ class IssueProjectViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         parent_slug = self.request.data.get('parent_slug')
-        
         if parent_slug:
             # 하위 프로젝트 생성 권한 체크
             try:
                 parent_project = IssueProject.objects.get(slug=parent_slug)
             except IssueProject.DoesNotExist:
                 raise serializers.ValidationError({"parent_slug": "부모 프로젝트를 찾을 수 없습니다."})
-            
             user_perms = parent_project.get_user_permissions(self.request.user)
             if 'project.create_sub' not in user_perms:
                 raise serializers.PermissionDenied("하위 프로젝트를 생성할 권한이 없습니다.")
-            
             serializer.save(creator=self.request.user, parent=parent_project)
         else:
             # 일반 프로젝트 생성
@@ -105,6 +102,31 @@ class ModuleViewSet(viewsets.ModelViewSet):
     queryset = Module.objects.all()
     serializer_class = ModuleSerializer
     permission_classes = (permissions.IsAuthenticated, ProjectPermission)
+
+    @property
+    def required_permission(self):
+        mapping = {  # 매핑 로직 정의
+            'create': 'project.module',
+            'update': 'project.module',
+            'partial_update': 'project.module',
+            'destroy': 'project.module'
+        }
+        # 정의되지 않은 액션에 대해 기본 권한 반환
+        return mapping.get(self.action, None)
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = super().get_queryset().select_related('project')
+
+        # 1. 슈퍼유저나 work_manager는 전체 모듈 조회 가능
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return queryset
+            
+        # 2. 접근 가능한 프로젝트의 모듈만 조회
+        # - 공개 프로젝트 OR 사용자가 멤버인 프로젝트
+        return queryset.filter(
+            Q(project__is_public=True) | Q(project__members__user=user)
+        ).distinct()
 
 
 class RoleViewSet(viewsets.ModelViewSet):
