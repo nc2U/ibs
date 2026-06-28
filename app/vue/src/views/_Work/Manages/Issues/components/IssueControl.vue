@@ -1,6 +1,8 @@
 <script lang="ts" setup>
 import { computed, type PropType } from 'vue'
+import { usePerms } from '@/composables/usePerms.ts'
 import { useAccount } from '@/store/pinia/account.ts'
+import type { Issue } from '@/store/types/work_issue.ts'
 
 const props = defineProps({
   projStatus: { type: String, default: '' },
@@ -8,12 +10,42 @@ const props = defineProps({
     type: Array as PropType<{ pk: number; username: string }[]>,
     default: () => [],
   },
+  issue: {
+    type: Object as PropType<Issue>,
+    required: true,
+  },
 })
 
-const emit = defineEmits(['call-edit-form', 'watch-control'])
+const emit = defineEmits(['call-edit-form', 'watch-control', 'call-delete-issue'])
 
 const accStore = useAccount()
 const userInfo = computed(() => accStore.userInfo)
+
+const { can, PERM } = usePerms()
+
+// 1. 본인이 생성자인지 여부
+const isCreator = computed(() => props.issue.creator?.pk === userInfo.value?.pk)
+
+// 2. 본인이 담당자인지 여부
+const isAssignee = computed(() => props.issue.assigned_to?.pk === userInfo.value?.pk)
+
+// 3. 일감 수정 권한
+const canEditIssue = computed(() => {
+  if (can(PERM.ISSUE_UPDATE)) return true
+  return can(PERM.ISSUE_OWN_UPDATE) && (isCreator.value || isAssignee.value)
+})
+
+// 4. 댓글 작성 권한
+const canCreateComment = computed(() => can(PERM.ISSUE_COMMENT_CREATE))
+
+// 5. 편집 버튼 노출 조건 (일감을 편집할 수 있거나 댓글을 달 수 있다면 활성화)
+const showEditButton = computed(() => canEditIssue.value || canCreateComment.value)
+
+// 6. 복사 버튼 노출 조건
+const showCopyButton = computed(() => can(PERM.ISSUE_COPY))
+
+// 7. 삭제 버튼 노출 조건
+const showDeleteButton = computed(() => can(PERM.ISSUE_DELETE) && props.projStatus !== '9')
 
 const isWatcher = computed(() =>
   props.watchers.map(w => w.pk).includes(userInfo?.value?.pk as number),
@@ -27,11 +59,12 @@ const watchControl = () => {
 }
 
 const callEditForm = () => emit('call-edit-form')
+const callDeleteIssue = () => emit('call-delete-issue')
 </script>
 
 <template>
   <CCol class="text-right form-text">
-    <span v-if="projStatus !== '9'" class="mr-2">
+    <span v-if="projStatus !== '9' && showEditButton" class="mr-2">
       <v-icon icon="mdi-pencil" color="amber" size="sm" />
       <router-link to="" class="ml-1" @click="callEditForm">편집</router-link>
     </span>
@@ -43,10 +76,10 @@ const callEditForm = () => emit('call-edit-form')
       </router-link>
     </span>
 
-    <!--    <span class="mr-2">-->
-    <!--      <v-icon icon="mdi-content-copy" color="grey" size="sm" />-->
-    <!--      <router-link to="" class="ml-1">복사</router-link>-->
-    <!--    </span>-->
+    <span v-if="projStatus !== '9' && showCopyButton" class="mr-2">
+      <v-icon icon="mdi-content-copy" color="grey" size="sm" />
+      <router-link to="" class="ml-1">복사</router-link>
+    </span>
 
     <span>
       <CDropdown color="secondary" variant="input-group" placement="bottom-end">
@@ -67,7 +100,7 @@ const callEditForm = () => emit('call-edit-form')
               링크 복사
             </router-link>
           </CDropdownItem>
-          <CDropdownItem v-if="projStatus !== '9'" class="form-text">
+          <CDropdownItem v-if="showDeleteButton" class="form-text" @click="callDeleteIssue">
             <router-link to="">
               <v-icon icon="mdi-trash-can-outline" color="grey" size="sm" />
               업무 삭제

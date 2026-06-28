@@ -18,6 +18,8 @@ import SubSummary from './subIssues/Summary.vue'
 import RelSummary from './relations/Summary.vue'
 import Index from './relations/Index.vue'
 import AddRelationForm from './relations/AddRelationForm.vue'
+import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
+import { btnLight } from '@/utils/cssMixins'
 
 const props = defineProps({
   issueProject: { type: Object as PropType<IssueProject>, default: null },
@@ -134,6 +136,27 @@ const deleteRelation = (pk: number) => issueStore.deleteIssueRelation(pk, props.
 // issue comment 관련
 const delSubmit = (pk: number) => issueStore.deleteIssueComment(pk, props.issue?.pk)
 
+const refDelModal = ref()
+
+const deleteIssue = () => {
+  refDelModal.value.callModal(
+    '업무 삭제',
+    '정말로 이 업무를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.',
+    'mdi-trash-can-outline',
+    'danger',
+  )
+}
+
+const confirmDelete = () => {
+  issueStore.deleteIssue(props.issue?.pk as number)
+  refDelModal.value.close()
+  if (route.params.projId) {
+    router.push({ name: '(업무)' })
+  } else {
+    router.push({ name: '업무' })
+  }
+}
+
 const [route, router] = [useRoute(), useRouter()]
 watch(route, async nVal => {
   if (nVal.query.edit) callEditForm()
@@ -164,8 +187,10 @@ onBeforeMount(async () => {
     <IssueControl
       :proj-status="issueProject?.status"
       :watchers="issue.watchers"
+      :issue="issue"
       @call-edit-form="callEditForm"
       @watch-control="watchControl"
+      @call-delete-issue="deleteIssue"
     />
   </CRow>
 
@@ -448,8 +473,10 @@ onBeforeMount(async () => {
     <IssueControl
       :proj-status="issueProject?.status"
       :watchers="issue.watchers"
+      :issue="issue"
       @call-edit-form="callEditForm"
       @watch-control="watchControl"
+      @call-delete-issue="deleteIssue"
     />
   </div>
 
@@ -466,4 +493,10 @@ onBeforeMount(async () => {
       @close-form="() => (editForm = false)"
     />
   </div>
+
+  <ConfirmModal ref="refDelModal">
+    <template #footer>
+      <v-btn size="small" color="warning" @click="confirmDelete">삭제</v-btn>
+    </template>
+  </ConfirmModal>
 </template>

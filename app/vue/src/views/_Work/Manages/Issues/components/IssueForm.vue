@@ -280,22 +280,14 @@ const removeProperty = (e: Event) => {
   const el = e.currentTarget as HTMLInputElement
   el.classList.remove('is-invalid')
 }
-
 const canEditIssue = (issue: Issue | null) => {
   if (!issue) return true // 신규 생성 시
-  if (workManager.value) return true // 관리자
 
-  const userId = userInfo?.value?.pk as number
-  // 1. 프로젝트 멤버
-  const isMember = workStore.memberList.map(m => m.user.pk).includes(userId)
-  // 2. 작성자
-  const isCreator = issue.creator.pk === userId
-  // 3. 담당자
-  const isAssignee = issue.assigned_to?.pk === userId
+  const isCreator = issue.creator.pk === userInfo?.value?.pk
+  const isAssignee = issue.assigned_to?.pk === userInfo?.value?.pk
 
-  return isMember || isCreator || isAssignee
+  return can(PERM.ISSUE_UPDATE) || (can(PERM.ISSUE_OWN_UPDATE) && (isCreator || isAssignee))
 }
-
 const cmtFocus = ref(false)
 const callComment = () => (cmtFocus.value = true)
 const callReply = (payload: any) => {
