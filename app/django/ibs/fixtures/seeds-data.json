@@ -10481,7 +10481,7 @@
     "pk": 26,
     "fields": {
       "module": "issue",
-      "code": "issue.public",
+      "code": "issue.private",
       "name": "업무 공개/비공개 설정",
       "is_default": false,
       "description": ""
@@ -10492,7 +10492,7 @@
     "pk": 27,
     "fields": {
       "module": "issue",
-      "code": "issue.own_public",
+      "code": "issue.own_private",
       "name": "내 업무 공개/비공개 설정",
       "is_default": true,
       "description": ""
