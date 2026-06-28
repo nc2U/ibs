@@ -23,6 +23,7 @@ export const useIssue = defineStore('issue', () => {
   const issue = ref<Issue | null>(null)
   const issueList = ref<Issue[]>([])
   const issueCount = ref<number>(0)
+  const issueFilter = ref<IssueFilter>({})
 
   const issuePages = (itemPerPage: number) => Math.ceil(issueCount.value / itemPerPage)
 
@@ -77,6 +78,7 @@ export const useIssue = defineStore('issue', () => {
       .catch(err => errorHandle(err.response.data))
 
   const fetchIssueList = async (payload: IssueFilter) => {
+    issueFilter.value = payload
     const params = new URLSearchParams()
     params.append('page', String(payload.page ?? 1))
 
@@ -132,7 +134,7 @@ export const useIssue = defineStore('issue', () => {
       .post(`/issue/`, payload, config_headers)
       .then(async res => {
         await fetchIssue(res.data.pk)
-        await fetchIssueList({ status__closed: '0', project: res.data.project.slug })
+        await fetchIssueList(issueFilter.value)
         await logStore.fetchIssueLogList({ issue: res.data.pk })
         message()
       })
@@ -143,6 +145,7 @@ export const useIssue = defineStore('issue', () => {
       .put(`/issue/${pk}/`, payload, config_headers)
       .then(async () => {
         await fetchIssue(pk)
+        await fetchIssueList(issueFilter.value)
         await logStore.fetchIssueLogList({ issue: pk })
         message()
       })
@@ -153,6 +156,7 @@ export const useIssue = defineStore('issue', () => {
       .patch(`/issue/${pk}/`, payload, config_headers)
       .then(async () => {
         await fetchIssue(pk)
+        await fetchIssueList(issueFilter.value)
         await logStore.fetchIssueLogList({ issue: pk })
         message()
       })
@@ -162,7 +166,7 @@ export const useIssue = defineStore('issue', () => {
     api
       .delete(`/issue/${pk}/`)
       .then(async () => {
-        await fetchIssueList({})
+        await fetchIssueList(issueFilter.value)
         message('warning', '알림!', '해당 오브젝트가 삭제되었습니다.')
       })
       .catch(err => errorHandle(err.response.data))
@@ -188,6 +192,7 @@ export const useIssue = defineStore('issue', () => {
       .post(`/issue-relation/`, payload)
       .then(async res => {
         await fetchIssue(res.data.source.pk)
+        await fetchIssueList(issueFilter.value)
         await logStore.fetchIssueLogList({ issue: res.data.source.pk })
         message()
       })
@@ -198,6 +203,7 @@ export const useIssue = defineStore('issue', () => {
       .put(`/issue-relation/${pk}/`, payload)
       .then(async res => {
         await fetchIssue(res.data.issue)
+        await fetchIssueList(issueFilter.value)
         await logStore.fetchIssueLogList({ issue: res.data.issue })
         message()
       })
@@ -208,6 +214,7 @@ export const useIssue = defineStore('issue', () => {
       .delete(`/issue-relation/${pk}/`)
       .then(async () => {
         await fetchIssue(issue)
+        await fetchIssueList(issueFilter.value)
         await logStore.fetchIssueLogList({ issue })
         message('warning', '알림!', '해당 업무와 연결 관계가 삭제되었습니다.')
       })
@@ -353,6 +360,7 @@ export const useIssue = defineStore('issue', () => {
     issue,
     issueList,
     issueCount,
+    issueFilter,
     issueNums,
     getIssues,
     issueNumByMember,
