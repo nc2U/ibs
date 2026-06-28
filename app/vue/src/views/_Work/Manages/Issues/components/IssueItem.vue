@@ -1,21 +1,22 @@
 <script lang="ts" setup>
-import { type PropType } from 'vue'
+import { computed, type PropType } from 'vue'
 import type { Issue } from '@/store/types/work_issue.ts'
 import { timeFormat } from '@/utils/baseMixins.ts'
 import { usePerms } from '@/composables/usePerms.ts'
 import IssueDropDown from './IssueDropDown.vue'
 
-defineProps({ issue: { type: Object as PropType<Issue>, required: true } })
+const props = defineProps({ issue: { type: Object as PropType<Issue>, required: true } })
 
 const emit = defineEmits(['watch-control'])
 
 const { can, PERM } = usePerms()
+const canIssueRead = computed(() => can(PERM.ISSUE_READ) && props.issue.project?.slug)
 </script>
 
 <template>
   <CTableDataCell>
     <router-link
-      v-if="can(PERM.ISSUE_READ)"
+      v-if="canIssueRead"
       :to="{
         name: '(업무) - 보기',
         params: { projId: issue.project.slug, issueId: issue.pk },
@@ -26,9 +27,13 @@ const { can, PERM } = usePerms()
     <span v-else>{{ issue.pk }}</span>
   </CTableDataCell>
   <CTableDataCell v-if="!$route.params.projId">
-    <router-link :to="{ name: '(개요)', params: { projId: issue.project.slug } }">
+    <router-link
+      v-if="issue.project?.slug"
+      :to="{ name: '(개요)', params: { projId: issue.project.slug } }"
+    >
       {{ issue.project.name }}
     </router-link>
+    <span v-else>{{ issue.project?.name }}</span>
   </CTableDataCell>
   <CTableDataCell>{{ issue.tracker.name }}</CTableDataCell>
   <CTableDataCell
@@ -52,15 +57,19 @@ const { can, PERM } = usePerms()
   </CTableDataCell>
   <CTableDataCell>
     <router-link
-      v-if="issue.fixed_version"
-      :to="{ name: '(로드맵) - 보기', params: { verId: issue.fixed_version.pk } }"
+      v-if="issue.fixed_version && issue.project?.slug"
+      :to="{
+        name: '(로드맵) - 보기',
+        params: { projId: issue.project.slug, verId: issue.fixed_version.pk },
+      }"
     >
       {{ issue.fixed_version.name }}
     </router-link>
+    <span v-else-if="issue.fixed_version">{{ issue.fixed_version.name }}</span>
   </CTableDataCell>
   <CTableDataCell class="text-left">
     <router-link
-      v-if="can(PERM.ISSUE_READ)"
+      v-if="canIssueRead"
       :to="{
         name: '(업무) - 보기',
         params: { projId: issue.project.slug, issueId: issue.pk },

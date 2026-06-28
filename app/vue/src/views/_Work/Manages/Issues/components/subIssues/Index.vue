@@ -1,17 +1,17 @@
 <script lang="ts" setup>
 import { ref, type PropType, watchEffect } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { cutString } from '@/utils/baseMixins'
-import { usePerms } from '@/composables/usePerms.ts'
 import type { SubIssue } from '@/store/types/work_issue.ts'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
+import { usePerms } from '@/composables/usePerms.ts'
 
 defineProps({ subIssues: { type: Array as PropType<SubIssue[]>, default: () => [] } })
 
 const emit = defineEmits(['unlink-sub-issue'])
 
+const route = useRoute()
 const router = useRouter()
-
 const { can, PERM } = usePerms()
 
 const selected = ref<number | null>(null)
@@ -38,6 +38,10 @@ const unlinkSubIssue = () => {
   child.value = null
   delSubRef.value.close()
 }
+
+const projId = route.params.projId as string
+const detailRouteName = projId ? '(업무) - 보기' : '업무 - 보기'
+const detailRouteParams = (id: number) => projId ? { projId, issueId: id } : { issueId: id }
 </script>
 
 <template>
@@ -51,7 +55,7 @@ const unlinkSubIssue = () => {
     <CCol md="6" lg="4" class="pt-1">
       <router-link
         v-if="can(PERM.ISSUE_READ)"
-        :to="{ name: '(업무) - 보기', params: { issueId: sub.pk } }"
+        :to="{ name: detailRouteName, params: detailRouteParams(sub.pk) }"
         :class="{ closed: sub.closed }"
       >
         기능 #{{ sub.pk }}
@@ -62,7 +66,9 @@ const unlinkSubIssue = () => {
     <CCol class="col-sm-6 col-md-3 col-lg-4 text-right pt-1">
       <span class="mr-3">{{ sub.status }}</span>
       <span v-if="sub.assigned_to" class="mr-3">
-        <router-link :to="{ name: '사용자 - 보기', params: { userId: sub.assigned_to.pk } }">
+        <router-link
+          :to="{ name: '사용자 - 보기', params: { userId: sub.assigned_to.pk } }"
+        >
           {{ cutString(sub.assigned_to.username, 9) }}
         </router-link>
       </span>
@@ -98,8 +104,8 @@ const unlinkSubIssue = () => {
               class="form-text"
               @click="
                 router.push({
-                  name: '(업무) - 보기',
-                  params: { issueId: sub.pk },
+                  name: detailRouteName,
+                  params: detailRouteParams(sub.pk),
                   query: { edit: '1' },
                 })
               "

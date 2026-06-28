@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import type { PropType } from 'vue'
+import { useRoute } from 'vue-router'
 import type { SubIssue } from '@/store/types/work_issue.ts'
 import { usePerms } from '@/composables/usePerms.ts'
 
@@ -8,14 +9,19 @@ defineProps({
   subIssues: { type: Array as PropType<SubIssue[]>, default: () => [] },
 })
 
+const route = useRoute()
 const { can, PERM } = usePerms()
+
+const projId = route.params.projId as string
+const routeName = projId ? '(업무)' : '업무'
+const routeParams = projId ? { projId } : {}
 </script>
 
 <template>
   <span class="title mr-2">
     <router-link
       v-if="can(PERM.ISSUE_READ)"
-      :to="{ name: '(업무)', query: { parent: issuePk } }"
+      :to="{ name: routeName, params: routeParams, query: { parent: issuePk } }"
     >
       {{ subIssues.length }}
     </router-link>
@@ -25,7 +31,7 @@ const { can, PERM } = usePerms()
     (<span v-if="subIssues.filter(i => !i.closed).length">
       <router-link
         v-if="can(PERM.ISSUE_READ)"
-        :to="{ name: '(업무)', query: { parent: issuePk, status: 'open' } }"
+        :to="{ name: routeName, params: routeParams, query: { parent: issuePk, status: 'open' } }"
       >
         {{ subIssues.filter(i => !i.closed).length }} 건 진행 중
       </router-link>
@@ -36,7 +42,7 @@ const { can, PERM } = usePerms()
     <span v-if="subIssues.filter(i => i.closed).length">
       <router-link
         v-if="can(PERM.ISSUE_READ)"
-        :to="{ name: '(업무)', query: { parent: issuePk, status: 'closed' } }"
+        :to="{ name: routeName, params: routeParams, query: { parent: issuePk, status: 'closed' } }"
       >
         {{ subIssues.filter(i => i.closed).length }} 건 완료
       </router-link>

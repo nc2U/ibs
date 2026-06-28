@@ -144,17 +144,23 @@ const deleteIssue = () => {
 const confirmDelete = () => {
   issueStore.deleteIssue(props.issue?.pk as number)
   refDelModal.value.close()
-  if (route.params.projId) {
-    router.push({ name: '(업무)' })
-  } else {
-    router.push({ name: '업무' })
-  }
+  if (route.params.projId) router.push({ name: '(업무)' })
+  else router.push({ name: '업무' })
 }
 
 const [route, router] = [useRoute(), useRouter()]
 watch(route, async nVal => {
   if (nVal.query.edit) callEditForm()
 })
+
+const projId = computed(() => route.params.projId as string)
+const listRouteName = computed(() => (projId.value ? '(업무)' : '업무'))
+const detailRouteName = computed(() => (projId.value ? '(업무) - 보기' : '업무 - 보기'))
+
+const getLinkParams = (id: number) =>
+  projId.value ? { projId: projId.value, issueId: id } : { issueId: id }
+
+const getListParams = () => (projId.value ? { projId: projId.value } : {})
 
 const relatedIssues = computed(() => {
   const list: any[] = []
@@ -213,15 +219,13 @@ onBeforeMount(async () => {
           <router-link
             v-else
             :to="{
-              name: '(업무) - 보기',
-              params: {
-                issueId: issueNums[issueNums.indexOf(issue.pk) - 1],
-              },
+              name: detailRouteName,
+              params: getLinkParams(issueNums[issueNums.indexOf(issue.pk) - 1]),
             }"
             >« 뒤로
           </router-link>
           <span class="mx-2">|</span>
-          <router-link :to="{ name: '(업무)' }">
+          <router-link :to="{ name: listRouteName, params: getListParams() }">
             {{ issueNums.indexOf(issue.pk) + 1 }}/{{ issueNums.length }}
           </router-link>
           <span class="mx-2">|</span>
@@ -229,10 +233,8 @@ onBeforeMount(async () => {
           <router-link
             v-else
             :to="{
-              name: '(업무) - 보기',
-              params: {
-                issueId: issueNums[issueNums.indexOf(issue.pk) + 1],
-              },
+              name: detailRouteName,
+              params: getLinkParams(issueNums[issueNums.indexOf(issue.pk) + 1]),
             }"
           >
             다음 »

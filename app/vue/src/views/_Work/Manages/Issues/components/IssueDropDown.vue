@@ -105,6 +105,7 @@ onBeforeMount(() => (isWatcher.value = isCumputedWatcher.value as any))
           @click="
             router.push({
               name: '(업무) - 추가',
+              params: { projId: issue.project.slug },
               query: { parent: issue.pk, tracker: issue.tracker.pk },
             })
           "

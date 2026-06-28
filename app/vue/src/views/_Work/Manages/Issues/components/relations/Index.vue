@@ -1,9 +1,10 @@
 <script lang="ts" setup>
 import { type PropType, ref } from 'vue'
-import { usePerms } from '@/composables/usePerms.ts'
+import { useRoute } from 'vue-router'
 import { cutString, diffDate } from '@/utils/baseMixins'
 import type { IssueRelation } from '@/store/types/work_issue.ts'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
+import { usePerms } from '@/composables/usePerms.ts'
 
 defineProps({
   rel: { type: Object as PropType<IssueRelation>, required: true },
@@ -12,16 +13,22 @@ defineProps({
 
 const emit = defineEmits(['delete-relation'])
 
+const route = useRoute()
+const { can, PERM } = usePerms()
 const delRelRef = ref()
 
-const { can, PERM } = usePerms()
-
-const deleteRelation = () => delRelRef.value.callModal()
+const deleteRelation = () => {
+  delRelRef.value.callModal()
+}
 
 const deleteRelConfirm = () => {
   emit('delete-relation')
   delRelRef.value.close()
 }
+
+const projId = route.params.projId as string
+const detailRouteName = projId ? '(업무) - 보기' : '업무 - 보기'
+const detailRouteParams = (id: number) => projId ? { projId, issueId: id } : { issueId: id }
 </script>
 
 <template>
@@ -31,7 +38,7 @@ const deleteRelConfirm = () => {
       <span v-if="rel.issue">
         <router-link
           v-if="can(PERM.ISSUE_READ)"
-          :to="{ name: '(업무) - 보기', params: { issueId: rel.issue.pk } }"
+          :to="{ name: detailRouteName, params: detailRouteParams(rel.issue.pk) }"
         >
           {{ rel.issue.tracker }} #{{ rel.issue.pk }}
         </router-link>
@@ -44,7 +51,9 @@ const deleteRelConfirm = () => {
       <span class="mr-3">{{ rel.issue.status }}</span>
       <span class="mr-3" v-if="rel.issue.assigned_to">
         담당자 :
-        <router-link :to="{ name: '사용자 - 보기', params: { userId: rel.issue.assigned_to?.pk } }">
+        <router-link
+          :to="{ name: '사용자 - 보기', params: { userId: rel.issue.assigned_to?.pk } }"
+        >
           {{ cutString(rel.issue.assigned_to?.username, 9) }}
         </router-link>
       </span>
@@ -69,7 +78,6 @@ const deleteRelConfirm = () => {
         v-if="can(PERM.ISSUE_REL_MANAGE)"
         variant="plain"
         size="small"
-        color="danger"
         @click="deleteRelation"
       >
         삭제

@@ -58,14 +58,7 @@ const onSubmit = (payload: any) => {
   if (pk) issueStore.updateIssue(pk, form)
   else {
     issueStore.createIssue(form)
-    if (route.params.projId) {
-      if (route.query.parent)
-        router.replace({
-          name: '(업무) - 보기',
-          params: { projId: route.params.projId, issueId: route.query.parent as string },
-        })
-      else router.replace({ name: '(업무)' })
-    } else router.replace({ name: '업무' })
+    router.replace({ name: '업무' })
   }
 }
 
@@ -88,11 +81,6 @@ onBeforeMount(async () => {
   await issueStore.fetchTrackerList()
   await issueStore.fetchStatusList()
   await issueStore.fetchPriorityList()
-  if (route.params.projId) {
-    await workStore.fetchIssueProject(route.params.projId as string)
-    await workStore.fetchVersionList({ project: route.params.projId as string })
-  }
-
   await accStore.fetchUsersList()
   loading.value = false
 })
@@ -119,7 +107,6 @@ onBeforeMount(async () => {
 
       <IssueForm
         v-if="route.name === '업무 - 추가'"
-        :issue-project="workStore.issueProject ?? undefined"
         :all-projects="allProjects"
         :status-list="statusList"
         :priority-list="priorityList"

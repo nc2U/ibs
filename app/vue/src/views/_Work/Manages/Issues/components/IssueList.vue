@@ -1,10 +1,9 @@
 <script lang="ts" setup>
 import { computed, type PropType, ref, watchEffect } from 'vue'
-import type { getProject, IssueProject } from '@/store/types/work_project.ts'
+import type { getProject } from '@/store/types/work_project.ts'
 import type { Issue, IssueFilter, IssueStatus, Tracker } from '@/store/types/work_issue.ts'
 import { useRoute, useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
-import { useWork } from '@/store/pinia/work_project.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
 import { useAccount } from '@/store/pinia/account.ts'
 import Pagination from '@/components/Pagination'
@@ -44,9 +43,6 @@ watchEffect(() => {
 })
 
 const filterSubmit = (payload: IssueFilter) => emit('filter-submit', payload)
-
-const workStore = useWork()
-const my_perms = computed(() => (workStore.issueProject as IssueProject)?.my_perms)
 
 const issueStore = useIssue()
 const issuePages = (pageNum: number) => issueStore.issuePages(pageNum)
