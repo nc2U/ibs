@@ -330,6 +330,11 @@ class IssueCommentPermission(ProjectPermission):
 
             # (B) 댓글 삭제 권한 처리
             if view.action == 'destroy':
-                return 'issue.comment_delete' in user_perms
+                if 'issue.comment_update' in user_perms:
+                    return True
+                if 'issue.comment_own_update' in user_perms:
+                    if obj.creator == user:
+                        return True
+                return False
             
         return True

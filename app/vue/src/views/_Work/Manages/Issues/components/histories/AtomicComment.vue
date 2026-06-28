@@ -1,14 +1,13 @@
 <script lang="ts" setup>
 import { computed, type PropType, ref } from 'vue'
 import { btnLight } from '@/utils/cssMixins.ts'
-import type { IssueProject } from '@/store/types/work_project.ts'
 import type { IssueLogEntry } from '@/store/types/work_logging.ts'
 import { useRoute } from 'vue-router'
-import { useWork } from '@/store/pinia/work_project.ts'
-import { useIssue } from '@/store/pinia/work_issue.ts'
-import { useAccount } from '@/store/pinia/account.ts'
-import { markdownRender } from '@/utils/helper.ts'
+import { usePerms } from '@/composables/usePerms'
+import { markdownRender, message } from '@/utils/helper.ts'
 import { elapsedTime, timeFormat } from '@/utils/baseMixins'
+import { useAccount } from '@/store/pinia/account.ts'
+import { useIssue } from '@/store/pinia/work_issue.ts'
 import MdEditor from '@/components/MdEditor/Index.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
@@ -21,9 +20,10 @@ const delPk = ref<null | number>(null)
 
 const route = useRoute()
 
+const { can, PERM } = usePerms()
+
 const accStore = useAccount()
 const userInfo = computed(() => accStore.userInfo)
-const workManager = computed(() => accStore.workManager)
 
 const callReply = (log_id: number, user: string, content: string) => {
   return emit('call-reply', {
@@ -42,9 +42,6 @@ const toEdit = (comment: string) => {
 
 const content = ref('')
 
-const workStore = useWork()
-const my_perms = computed(() => (workStore.issueProject as IssueProject)?.my_perms)
-
 const issueStore = useIssue()
 const commentSubmit = () => {
   const pk = props.log?.comment?.pk
@@ -53,14 +50,36 @@ const commentSubmit = () => {
   editMode.value = false
 }
 
+const fallbackCopy = (text: string) => {
+  const textArea = document.createElement('textarea')
+  textArea.value = text
+  textArea.style.position = 'fixed'
+  textArea.style.left = '-999999px'
+  textArea.style.top = '-999999px'
+  document.body.appendChild(textArea)
+  textArea.focus()
+  textArea.select()
+  try {
+    document.execCommand('copy')
+    message('success', '복사 완료', '댓글 링크가 클립보드에 복사되었습니다.')
+  } catch (err) {
+    message('danger', '오류!', '댓글 링크 복사에 실패했습니다.')
+  }
+  document.body.removeChild(textArea)
+}
+
 const copyLink = (path: string, hash: string) => {
-  // 가상의 textarea 엘리먼트를 생성하고 텍스트를 할당.
-  const textarea = document.createElement('textarea')
-  textarea.value = window.location.host + '/#' + path + hash
-  document.body.appendChild(textarea) // textarea를 DOM에 추가합니다.
-  textarea.select() // textarea의 텍스트를 선택합니다.
-  document.execCommand('copy') // 복사 명령을 실행합니다.
-  document.body.removeChild(textarea) // textarea를 삭제합니다.
+  const url = window.location.origin + '/#' + path + hash
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard
+      .writeText(url)
+      .then(() => {
+        message('success', '복사 완료', '댓글 링크가 클립보드에 복사되었습니다.')
+      })
+      .catch(() => fallbackCopy(url))
+  } else {
+    fallbackCopy(url)
+  }
 }
 
 const delConfirm = (pk: number) => {
@@ -102,7 +121,7 @@ const delSubmit = () => {
           에 변경
         </CCol>
         <CCol class="text-right">
-          <span v-if="workManager || my_perms?.includes('issue_comment_create')">
+          <span v-if="can(PERM.ISSUE_COMMENT_CREATE)">
             <v-icon
               icon="mdi-comment-processing-outline"
               color="info"
@@ -120,9 +139,8 @@ const delSubmit = () => {
           </span>
           <span
             v-if="
-              workManager ||
-              (my_perms?.includes('issue_comment_own_update') &&
-                userInfo?.pk === log.comment?.creator.pk)
+              can(PERM.ISSUE_COMMENT_UPDATE) ||
+              (can(PERM.ISSUE_COMMENT_OWN_UPDATE) && userInfo?.pk === log.comment?.creator.pk)
             "
           >
             <v-icon
@@ -156,7 +174,14 @@ const delSubmit = () => {
                     링크 복사
                   </router-link>
                 </CDropdownItem>
-                <CDropdownItem class="form-text" @click="delConfirm(log.comment?.pk as number)">
+                <CDropdownItem
+                  v-if="
+                    can(PERM.ISSUE_COMMENT_UPDATE) ||
+                    (can(PERM.ISSUE_COMMENT_OWN_UPDATE) && userInfo?.pk === log.comment?.creator.pk)
+                  "
+                  class="form-text"
+                  @click="delConfirm(log.comment?.pk as number)"
+                >
                   <router-link to="">
                     <v-icon icon="mdi-trash-can" color="grey" size="sm" />
                     삭제
