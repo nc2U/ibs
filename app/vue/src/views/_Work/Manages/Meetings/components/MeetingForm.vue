@@ -5,6 +5,7 @@ import { useAccount } from '@/store/pinia/account'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useMeeting } from '@/store/pinia/work_meeting.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
+import { usePerms } from '@/composables/usePerms.ts'
 import { timeFormat } from '@/utils/baseMixins.ts'
 import { isValidate } from '@/utils/helper.ts'
 import MdEditor from '@/components/MdEditor/Index.vue'
@@ -44,6 +45,15 @@ const form = ref({
   attendees: [] as number[],
   other_attendees: '',
 })
+
+const { can, PERM } = usePerms()
+const canIssueRead = computed(() => can(PERM.ISSUE_READ))
+const canIssueCreate = computed(() => can(PERM.ISSUE_CREATE))
+const canIssueUpdate = computed(() => can(PERM.ISSUE_UPDATE))
+
+const canMeetingCreate = computed(() => can(PERM.MEETING_CREATE))
+const canMeetingUpdate = computed(() => can(PERM.MEETING_UPDATE))
+const canMeetingConfirm = computed(() => can(PERM.MEETING_CONFIRM))
 
 const fileInput = ref<HTMLInputElement | null>(null)
 const newFiles = ref<{ file: File; description: string }[]>([])
@@ -400,9 +410,14 @@ const onConfirmToggle = async () => {
                               class="mr-1"
                               color="success"
                             />
-                            <a href="javascript:void(0)" @click="callIssueModal(issue.pk)">
+                            <a
+                              v-if="canIssueRead"
+                              href="javascript:void(0)"
+                              @click="callIssueModal(issue.pk)"
+                            >
                               {{ issue.subject }}
                             </a>
+                            <span v-else>{{ issue.subject }}</span>
                           </CTableDataCell>
                           <CTableDataCell style="width: 15%" class="text-center">
                             <v-chip size="x-small" label>{{ issue.status }}</v-chip>
@@ -414,6 +429,7 @@ const onConfirmToggle = async () => {
                           </CTableDataCell>
                           <CTableDataCell style="width: 10%" class="text-right">
                             <v-btn
+                              v-if="canIssueUpdate"
                               icon
                               size="x-small"
                               variant="text"
@@ -433,7 +449,7 @@ const onConfirmToggle = async () => {
                   >
                     연결된 업무가 없습니다.
                   </div>
-                  <CCol class="text-right">
+                  <CCol v-if="canIssueCreate" class="text-right">
                     <v-btn color="info" size="x-small" @click="callIssueModal()">
                       <v-icon icon="mdi-plus" size="small" class="mr-1" /> 관련 업무 추가
                     </v-btn>
@@ -548,7 +564,7 @@ const onConfirmToggle = async () => {
               </CCol>
             </CRow>
 
-            <CRow class="mt-5">
+            <CRow v-if="canMeetingConfirm" class="mt-5">
               <CFormLabel for="is_confirmed" class="col-sm-4 col-form-label text-right">
                 확정 여부
               </CFormLabel>
@@ -567,7 +583,12 @@ const onConfirmToggle = async () => {
 
         <CRow class="mt-4">
           <CCol class="text-right">
-            <v-btn type="submit" :color="form.pk ? 'success' : 'primary'" variant="flat">
+            <v-btn
+              type="submit"
+              :color="form.pk ? 'success' : 'primary'"
+              variant="flat"
+              :disabled="form.pk ? !canMeetingUpdate : !canMeetingCreate"
+            >
               {{ form.pk ? '확인' : '저장' }}
             </v-btn>
             <v-btn color="secondary" variant="flat" class="ml-2" @click="router.back()">취소</v-btn>

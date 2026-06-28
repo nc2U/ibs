@@ -2,10 +2,10 @@
 import { useRoute } from 'vue-router'
 import { computed, onBeforeMount, provide, ref, watch } from 'vue'
 import { navMenu1, navMenu2 } from '@/views/_Work/_menu/headermixin1'
-import { useAccount } from '@/store/pinia/account'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useMeeting } from '@/store/pinia/work_meeting.ts'
 import { useCompany } from '@/store/pinia/company.ts'
+import { usePerms } from '@/composables/usePerms.ts'
 import type { Company } from '@/store/types/settings'
 import type { MeetingFilter } from '@/store/types/work_meeting.ts'
 import Loading from '@/components/Loading/Index.vue'
@@ -32,15 +32,15 @@ const sideNavCAll = () => cBody.value.toggle()
 
 const navMenu = computed(() => (!issueProjects.value.length ? navMenu1 : navMenu2))
 
-const accountStore = useAccount()
+const { can, PERM } = usePerms()
+const canMeetingCreate = computed(() => can(PERM.MEETING_CREATE) && viewMode.value === 'list')
+
 const workStore = useWork()
 const issueProjects = computed(() => workStore.issueProjects)
 
 const meetingStore = useMeeting()
 const meetingList = computed(() => meetingStore.meetingList)
 const categories = computed(() => meetingStore.categoryList)
-
-const canCreate = computed(() => accountStore.workManager)
 
 provide('navMenu', navMenu)
 
@@ -96,7 +96,7 @@ watch(
           <h5>회의</h5>
         </CCol>
         <CCol class="text-right">
-          <span v-if="canCreate && viewMode === 'list'" class="mr-2 form-text">
+          <span v-if="canMeetingCreate" class="mr-2 form-text">
             <v-icon icon="mdi-plus-circle" color="success" size="15" class="mr-1" />
             <router-link :to="{ name: '회의 - 추가' }" class="ml-1">새 회의록</router-link>
           </span>

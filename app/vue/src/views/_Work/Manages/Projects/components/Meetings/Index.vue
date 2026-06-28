@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { useAccount } from '@/store/pinia/account'
+import { usePerms } from '@/composables/usePerms.ts'
 import { useMeeting } from '@/store/pinia/work_meeting.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import type { MeetingFilter } from '@/store/types/work_meeting.ts'
@@ -20,16 +20,17 @@ const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
 
 const route = useRoute()
-const accountStore = useAccount()
 
 const meetingStore = useMeeting()
 const meetingList = computed(() => meetingStore.meetingList)
 const categories = computed(() => meetingStore.categoryList)
 
-const canCreate = computed(() => {
-  if (accountStore.workManager) return true
-  if (!props.issueProject?.members) return false
-  return props.issueProject.members.some(member => member?.user.pk === accountStore.userInfo?.pk)
+const { can, PERM } = usePerms()
+
+const canMeetingCreate = computed(() => {
+  const opened = props.issueProject?.status !== '9'
+  const isList = viewMode.value === 'list'
+  return opened && can(PERM.MEETING_CREATE) && isList
 })
 
 const viewMode = computed(() => {
@@ -92,10 +93,7 @@ onBeforeMount(fetchMeetings)
         </CCol>
 
         <CCol class="text-right">
-          <span
-            v-if="issueProject?.status !== '9' && canCreate && viewMode === 'list'"
-            class="mr-2 form-text"
-          >
+          <span v-if="canMeetingCreate" class="mr-2 form-text">
             <v-icon icon="mdi-plus-circle" color="success" size="15" class="mr-1" />
             <router-link
               :to="{ name: '(회의) - 추가', params: { projId: route.params.projId } }"

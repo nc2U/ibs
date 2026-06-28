@@ -8,6 +8,7 @@ import type { IssueProject } from '@/store/types/work_project.ts'
 import type { Issue, SimpleCategory } from '@/store/types/work_issue.ts'
 import { isValidate } from '@/utils/helper.ts'
 import { dateFormat } from '@/utils/baseMixins'
+import { usePerms } from '@/composables/usePerms.ts'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
 import Multiselect from '@vueform/multiselect'
@@ -54,6 +55,10 @@ const form = ref({
   files: [] as any[],
 })
 
+const { can, PERM } = usePerms()
+const canIssueCreate = computed(() => can(PERM.ISSUE_CREATE))
+const canIssueUpdate = computed(() => can(PERM.ISSUE_UPDATE))
+
 const assignedToMe = () => (form.value.assigned_to = userInfo?.value?.pk as number)
 
 const comment = ref({
@@ -75,6 +80,8 @@ const removeFile = (index: number) => {
 }
 
 const formsCheck = computed(() => {
+  const canSubmit = props.issue ? canIssueUpdate.value : canIssueCreate.value
+  if (!canSubmit) return true
   if (props.issue) {
     const a = form.value.project === props.issue.project.slug
     const b = form.value.is_private === props.issue.is_private
@@ -98,7 +105,8 @@ const formsCheck = computed(() => {
     const first = a && b && c && d && e && f && g && h && i && j && k
     const second = l && m && n && o && p && q && u
     return first && second
-  } else return false
+  }
+  return false
 })
 
 const route = useRoute()

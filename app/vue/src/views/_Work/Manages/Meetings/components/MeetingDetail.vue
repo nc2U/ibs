@@ -6,6 +6,7 @@ import { useAccount } from '@/store/pinia/account'
 import { useMeeting } from '@/store/pinia/work_meeting.ts'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
+import { usePerms } from '@/composables/usePerms.ts'
 import { elapsedTime, timeFormat } from '@/utils/baseMixins.ts'
 import { markdownRender } from '@/utils/helper.ts'
 import { diffDate, getMeetingStatusColor } from '@/utils/baseMixins.ts'
@@ -23,39 +24,22 @@ const issueStore = useIssue()
 
 const meeting = computed(() => meetingStore.meeting)
 
-const isManager = computed(() => accountStore.workManager)
 const isCreator = computed(() => meeting.value?.creator.pk === accountStore.userInfo?.pk)
 const isAttendee = computed(() =>
   meeting.value?.attendees_desc.some(user => user.pk === accountStore.userInfo?.pk),
 )
 
-const canEdit = computed(() => {
-  if (!meeting.value) return false
-  const status = meeting.value.status
-
-  // 확정(status '3') 회의록의 수정 권한: 관리자만 가능
-  if (status === '3') return isManager.value
-
-  // 미확정(status '1', '2') 회의록의 수정 권한: 관리자/생성자/참석자
-  if (['1', '2'].includes(status)) {
-    return isManager.value || isCreator.value || isAttendee.value
+const { can, PERM } = usePerms()
+const canIssueCreate = computed(() => can(PERM.ISSUE_CREATE))
+const canMeetingUpdate = computed(() => {
+  if (meeting.value) {
+    if (meeting.value.is_confirmed) return can(PERM.MEETING_EDIT_CONFIRMED)
+    if (can(PERM.MEETING_UPDATE)) return true
+    if (can(PERM.MEETING_OWN_UPDATE)) return isCreator.value || isAttendee.value
   }
   return false
 })
-
-const canDelete = computed(() => {
-  if (!meeting.value) return false
-  const status = meeting.value.status
-
-  // 확정(status '3') 회의록의 삭제 권한: 관리자만 가능
-  if (status === '3') return isManager.value
-
-  // 미확정(status '1', '2') 회의록의 삭제 권한: 관리자/생성자
-  if (['1', '2'].includes(status)) {
-    return isManager.value || isCreator.value
-  }
-  return false
-})
+const canMeetingDelete = computed(() => can(PERM.MEETING_DELETE))
 
 const statusList = computed(() => issueStore.statusList)
 const priorityList = computed(() => issueStore.priorityList)
@@ -437,7 +421,12 @@ const refConfirmModal = ref()
               </h6>
             </CCol>
             <CCol class="text-right">
-              <v-btn color="info" size="x-small" @click="refIssueModal.callModal()">
+              <v-btn
+                v-if="canIssueCreate"
+                color="info"
+                size="x-small"
+                @click="refIssueModal.callModal()"
+              >
                 <v-icon icon="mdi-plus" size="12" class="mr-1" /> 관련 업무 추가
               </v-btn>
             </CCol>
@@ -491,11 +480,11 @@ const refConfirmModal = ref()
     <CRow class="mb-2">
       <CCol class="text-right">
         <v-btn :color="btnLight" size="small" @click="goList"> 목록으로 </v-btn>
-        <v-btn v-if="canEdit" color="success" size="small" class="ml-2" @click="goEdit">
+        <v-btn v-if="canMeetingUpdate" color="success" size="small" class="ml-2" @click="goEdit">
           수정
         </v-btn>
         <v-btn
-          v-if="canDelete"
+          v-if="canMeetingDelete"
           color="warning"
           size="small"
           class="ml-2"

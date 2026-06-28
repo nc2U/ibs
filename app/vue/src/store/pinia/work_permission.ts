@@ -1,8 +1,10 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { PERM, type PermissionCode } from '@/store/constants/permissions'
+import { useAccount } from '@/store/pinia/account'
 
 export const usePermission = defineStore('permission', () => {
+  const accountStore = useAccount()
   // 전역 프로젝트 생성 권한 플래그
   const canCreateProject = ref(false)
   const projectPermSet = ref<Set<PermissionCode>>(new Set())
@@ -19,6 +21,9 @@ export const usePermission = defineStore('permission', () => {
 
   // 권한 체크 로직
   const can = (code: PermissionCode | PermissionCode[]) => {
+    // 1. 업무 관리자(workManager)인 경우 무조건 모든 권한 허용
+    if (accountStore.workManager) return true
+
     const check = (c: PermissionCode) => {
       // 전역 생성 권한 체크
       if (c === PERM.PROJECT_CREATE && canCreateProject.value) return true
