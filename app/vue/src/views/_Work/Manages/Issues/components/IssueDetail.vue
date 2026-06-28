@@ -74,27 +74,24 @@ const scrollToId = (id: string) => {
 
 const callEditForm = () => {
   editForm.value = !editForm.value
-
   setTimeout(() => {
     scrollToId('edit-form')
   }, 100)
 }
 
 const callComment = () => {
-  editForm.value = !editForm.value
-
+  editForm.value = true
   setTimeout(() => {
     scrollToId('edit-form')
-    issueFormRef.value.callComment()
+    if (issueFormRef.value) issueFormRef.value.callComment()
   }, 100)
 }
 
 const callReply = (payload?: { id: number; user: string; content: string }) => {
-  editForm.value = !editForm.value
-
+  editForm.value = true
   setTimeout(() => {
     scrollToId('edit-form')
-    issueFormRef.value.callReply(payload)
+    if (issueFormRef.value) issueFormRef.value.callReply(payload)
   }, 100)
 }
 

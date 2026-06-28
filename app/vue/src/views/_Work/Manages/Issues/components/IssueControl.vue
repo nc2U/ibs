@@ -53,7 +53,7 @@ const showCopyButton = computed(() => can(PERM.ISSUE_COPY) && props.projStatus !
 const showDeleteButton = computed(() => can(PERM.ISSUE_DELETE) && props.projStatus !== '9')
 
 const isWatcher = computed(() =>
-  props.watchers.map(w => w.pk).includes(userInfo?.value?.pk as number),
+  (props.watchers || []).map(w => w.pk).includes(userInfo?.value?.pk as number),
 )
 
 const watchControl = () => {
