@@ -240,10 +240,24 @@ class IssueRelationSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def create(self, validated_data):
         target_pk = self.initial_data.get('target', None)
-        target = Issue.objects.get(pk=target_pk) if target_pk else None
+        try:
+            target = Issue.objects.get(pk=target_pk) if target_pk else None
+        except Issue.DoesNotExist:
+            raise serializers.ValidationError({'target': '존재하지 않는 업무입니다.'})
 
         source_pk = self.initial_data.get('source', None)
-        source = Issue.objects.get(pk=source_pk) if source_pk else None
+        try:
+            source = Issue.objects.get(pk=source_pk) if source_pk else None
+        except Issue.DoesNotExist:
+            raise serializers.ValidationError({'source': '존재하지 않는 업무입니다.'})
+
+        if not source:
+            raise serializers.ValidationError({'source': '이 필드는 필수입니다.'})
+        if not target:
+            raise serializers.ValidationError({'target': '이 필드는 필수입니다.'})
+
+        if source == target:
+            raise serializers.ValidationError("자기 자신과는 연결 관계를 맺을 수 없습니다.")
 
         try:
             return IssueRelation.objects.create(
@@ -301,7 +315,10 @@ class IssueCategorySerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         project_slug = self.initial_data.get('project')
         try:
-            project = IssueProject.objects.get(slug=project_slug)
+            if isinstance(project_slug, int) or (isinstance(project_slug, str) and project_slug.isdigit()):
+                project = IssueProject.objects.get(pk=int(project_slug))
+            else:
+                project = IssueProject.objects.get(slug=project_slug)
         except IssueProject.DoesNotExist:
             raise serializers.ValidationError({'project': 'Project does not exist'})
 
@@ -310,16 +327,18 @@ class IssueCategorySerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
+        instance = super().update(instance, validated_data)
         project_slug = self.initial_data.get('project')
-        try:
-            project = IssueProject.objects.get(slug=project_slug)
-        except IssueProject.DoesNotExist:
-            raise serializers.ValidationError({'project': 'Project does not exist'})
-
-        instance.__dict__.update(**validated_data)
-        instance.project = project
-        instance.assigned_to = validated_data.get('assigned_to', instance.assigned_to)
-        instance.save()
+        if project_slug:
+            try:
+                if isinstance(project_slug, int) or (isinstance(project_slug, str) and project_slug.isdigit()):
+                    project = IssueProject.objects.get(pk=int(project_slug))
+                else:
+                    project = IssueProject.objects.get(slug=project_slug)
+                instance.project = project
+                instance.save()
+            except IssueProject.DoesNotExist:
+                raise serializers.ValidationError({'project': 'Project does not exist'})
         return instance
 
 
@@ -345,27 +364,36 @@ class IssueCountByTrackerSerializer(serializers.ModelSerializer):
         issues = self.filter_project(request, issues)
         return issues.count()
 
-    def get_sub_projects(self, parent):
-        sub_projects = []
-
-        children = IssueProject.objects.filter(parent=parent)
-        for child in children:
-            sub_projects.append(child)
-            sub_projects.extend(self.get_sub_projects(child))
-        return sub_projects
-
     def filter_project(self, request, issues):
         project_id = request.query_params.get('projects')
         if not project_id:
             return issues  # 프로젝트 ID가 제공되지 않은 경우, 필터링 없이 반환
+
+        # 1. 이미 이전 루프에서 모아둔 캐시가 있다면 재사용
+        if hasattr(self, '_project_slugs_cache'):
+            return issues.filter(project__slug__in=self._project_slugs_cache)
 
         try:
             project = IssueProject.objects.get(pk=project_id)
         except IssueProject.DoesNotExist:
             return issues  # 유효하지 않은 프로젝트 ID인 경우, 필터링 없이 반환
 
-        sub_projects = self.get_sub_projects(project)
-        slugs = [project.slug] + [sub.slug for sub in sub_projects]
+        # 2. 단 한 번의 쿼리로 모든 프로젝트를 메모리에 로드
+        all_projects = list(IssueProject.objects.all())
+
+        # 3. DB 히트 없이 메모리에서 자식 노드 재귀 수집
+        sub_projects_slugs = []
+        def collect_children(parent_obj):
+            for p in all_projects:
+                if p.parent_id == parent_obj.id:
+                    sub_projects_slugs.append(p.slug)
+                    collect_children(p)
+
+        collect_children(project)
+        slugs = [project.slug] + sub_projects_slugs
+
+        # 4. 캐싱 처리
+        self._project_slugs_cache = slugs
 
         return issues.filter(project__slug__in=slugs)
 
