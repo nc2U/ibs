@@ -161,6 +161,13 @@ class MeetingPermission(ProjectPermission):
             
             user_perms = project.get_user_permissions(user)
 
+            # (A) 상태가 '3'(확정)인 경우 권한 제약
+            if obj.status == '3':
+                if user.is_superuser or getattr(user, 'work_manager', False) or user_perms.get('meeting.edit_confirmed', False):
+                    return True
+                return False
+
+            # (B) 일반 상태일 때의 권한 로직
             # (A) meeting.update 권한이 있으면 무조건 편집 가능
             if user_perms.get('meeting.update', False):
                 return True

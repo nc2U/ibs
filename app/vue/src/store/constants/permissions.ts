@@ -17,6 +17,7 @@ export const PERM = {
   MEETING_CREATE: 'meeting.create',
   MEETING_UPDATE: 'meeting.update',
   MEETING_OWN_UPDATE: 'meeting.own_update',
+  MEETING_EDIT_CONFIRMED: 'meeting.edit_confirmed',
   MEETING_DELETE: 'meeting.delete',
   MEETING_CONFIRM: 'meeting.confirm',
 
@@ -67,6 +68,6 @@ export const PERM = {
 
   // Calendar permissions
   CALENDAR_READ: 'calendar.read',
-} as const;
+} as const
 
-export type PermissionCode = typeof PERM[keyof typeof PERM];
+export type PermissionCode = (typeof PERM)[keyof typeof PERM]
