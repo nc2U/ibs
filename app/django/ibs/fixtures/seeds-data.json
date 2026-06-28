@@ -9866,13 +9866,13 @@
       "user_visible": "ALL",
       "order": 0,
       "created": "2024-02-29T03:46:04Z",
-      "updated": "2026-06-25T08:00:35.865Z",
+      "updated": "2026-06-28T04:54:11.968Z",
       "creator": 1,
       "permissions": [
         11,
-        18,
-        38,
-        55
+        19,
+        39,
+        56
       ]
     }
   },
@@ -9886,19 +9886,18 @@
       "user_visible": "ALL",
       "order": 0,
       "created": "2024-02-29T03:47:14Z",
-      "updated": "2026-06-25T08:00:36.552Z",
+      "updated": "2026-06-28T04:54:12.799Z",
       "creator": 1,
       "permissions": [
         11,
         12,
-        18,
-        27,
-        29,
-        31,
-        33,
-        38,
-        45,
-        55
+        19,
+        28,
+        30,
+        34,
+        39,
+        46,
+        56
       ]
     }
   },
@@ -9912,7 +9911,7 @@
       "user_visible": "ALL",
       "order": 1,
       "created": "2024-02-29T03:48:04Z",
-      "updated": "2026-06-25T12:05:28.777Z",
+      "updated": "2026-06-28T04:54:13.775Z",
       "creator": 1,
       "permissions": [
         1,
@@ -9969,7 +9968,8 @@
         52,
         53,
         54,
-        55
+        55,
+        56
       ]
     }
   },
@@ -9983,7 +9983,7 @@
       "user_visible": "ALL",
       "order": 1,
       "created": "2024-02-29T03:59:14Z",
-      "updated": "2026-06-27T12:27:53.828Z",
+      "updated": "2026-06-28T04:54:14.616Z",
       "creator": 1,
       "permissions": [
         8,
@@ -9992,29 +9992,29 @@
         12,
         13,
         15,
-        18,
         19,
-        21,
+        20,
         22,
         23,
         24,
-        26,
+        25,
         27,
-        29,
-        31,
-        33,
+        28,
+        30,
         34,
-        36,
+        35,
         37,
         38,
-        40,
+        39,
         41,
         42,
-        45,
+        43,
+        44,
         46,
-        48,
-        50,
-        55
+        47,
+        49,
+        51,
+        56
       ]
     }
   },
@@ -10028,36 +10028,36 @@
       "user_visible": "ALL",
       "order": 1,
       "created": "2024-02-29T03:59:24Z",
-      "updated": "2026-06-25T08:01:05.272Z",
+      "updated": "2026-06-28T04:54:16.137Z",
       "creator": 1,
       "permissions": [
         11,
         12,
         13,
         15,
-        18,
         19,
-        21,
+        20,
         22,
         23,
         24,
-        26,
+        25,
         27,
-        29,
-        31,
-        33,
+        28,
+        30,
         34,
-        36,
+        35,
         37,
         38,
-        40,
+        39,
         41,
         42,
-        45,
+        43,
+        44,
         46,
-        48,
-        50,
-        55
+        47,
+        49,
+        51,
+        56
       ]
     }
   },
@@ -10071,13 +10071,12 @@
       "user_visible": "ALL",
       "order": 1,
       "created": "2024-05-07T06:50:23Z",
-      "updated": "2026-06-25T08:01:30.632Z",
+      "updated": "2026-06-28T04:54:18.319Z",
       "creator": 1,
       "permissions": [
         1,
         2,
         3,
-        4,
         5,
         6,
         7,
@@ -10099,7 +10098,6 @@
         23,
         24,
         25,
-        26,
         27,
         28,
         29,
@@ -10128,7 +10126,8 @@
         52,
         53,
         54,
-        55
+        55,
+        56
       ]
     }
   },
@@ -10142,7 +10141,7 @@
       "user_visible": "ALL",
       "order": 1,
       "created": "2024-07-14T00:09:41.184Z",
-      "updated": "2026-06-27T12:27:54.871Z",
+      "updated": "2026-06-28T04:54:19.220Z",
       "creator": 1,
       "permissions": [
         8,
@@ -10151,29 +10150,29 @@
         12,
         13,
         15,
-        18,
         19,
-        21,
+        20,
         22,
         23,
         24,
-        26,
+        25,
         27,
-        29,
-        31,
-        33,
+        28,
+        30,
         34,
-        36,
+        35,
         37,
         38,
-        40,
+        39,
         41,
         42,
-        45,
+        43,
+        44,
         46,
-        48,
-        50,
-        55
+        47,
+        49,
+        51,
+        56
       ]
     }
   },
@@ -10187,19 +10186,18 @@
       "user_visible": "ALL",
       "order": 1,
       "created": "2024-07-14T00:09:41.189Z",
-      "updated": "2026-06-25T08:00:41.324Z",
+      "updated": "2026-06-28T04:54:20.157Z",
       "creator": 1,
       "permissions": [
         11,
         12,
-        18,
-        27,
-        29,
-        31,
-        33,
-        38,
-        45,
-        55
+        19,
+        28,
+        30,
+        34,
+        39,
+        46,
+        56
       ]
     }
   },
@@ -10373,6 +10371,17 @@
     "pk": 16,
     "fields": {
       "module": "meeting",
+      "code": "meeting.edit_confirmed",
+      "name": "확정된 회의록 편집",
+      "is_default": false,
+      "description": ""
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 17,
+    "fields": {
+      "module": "meeting",
       "code": "meeting.delete",
       "name": "회의록 삭제",
       "is_default": false,
@@ -10381,7 +10390,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 17,
+    "pk": 18,
     "fields": {
       "module": "meeting",
       "code": "meeting.confirm",
@@ -10392,7 +10401,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 18,
+    "pk": 19,
     "fields": {
       "module": "issue",
       "code": "issue.read",
@@ -10403,7 +10412,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 19,
+    "pk": 20,
     "fields": {
       "module": "issue",
       "code": "issue.create",
@@ -10414,7 +10423,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 20,
+    "pk": 21,
     "fields": {
       "module": "issue",
       "code": "issue.update",
@@ -10425,7 +10434,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 21,
+    "pk": 22,
     "fields": {
       "module": "issue",
       "code": "issue.own_update",
@@ -10436,7 +10445,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 22,
+    "pk": 23,
     "fields": {
       "module": "issue",
       "code": "issue.copy",
@@ -10447,7 +10456,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 23,
+    "pk": 24,
     "fields": {
       "module": "issue",
       "code": "issue.rel_manage",
@@ -10458,7 +10467,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 24,
+    "pk": 25,
     "fields": {
       "module": "issue",
       "code": "issue.sub_manage",
@@ -10469,7 +10478,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 25,
+    "pk": 26,
     "fields": {
       "module": "issue",
       "code": "issue.public",
@@ -10480,7 +10489,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 26,
+    "pk": 27,
     "fields": {
       "module": "issue",
       "code": "issue.own_public",
@@ -10491,7 +10500,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 27,
+    "pk": 28,
     "fields": {
       "module": "issue",
       "code": "issue.comment_create",
@@ -10502,7 +10511,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 28,
+    "pk": 29,
     "fields": {
       "module": "issue",
       "code": "issue.comment_update",
@@ -10513,18 +10522,18 @@
   },
   {
     "model": "work.permission",
-    "pk": 29,
+    "pk": 30,
     "fields": {
       "module": "issue",
       "code": "issue.comment_own_update",
-      "name": "내 댓글 편집",
+      "name": "내 댓글 편집(비공개 설정)",
       "is_default": true,
       "description": ""
     }
   },
   {
     "model": "work.permission",
-    "pk": 30,
+    "pk": 31,
     "fields": {
       "module": "issue",
       "code": "issue.private_comment_read",
@@ -10535,7 +10544,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 31,
+    "pk": 32,
     "fields": {
       "module": "issue",
       "code": "issue.private_comment_set",
@@ -10546,7 +10555,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 32,
+    "pk": 33,
     "fields": {
       "module": "issue",
       "code": "issue.delete",
@@ -10557,7 +10566,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 33,
+    "pk": 34,
     "fields": {
       "module": "issue",
       "code": "issue.watcher_read",
@@ -10568,7 +10577,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 34,
+    "pk": 35,
     "fields": {
       "module": "issue",
       "code": "issue.watcher_create",
@@ -10579,7 +10588,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 35,
+    "pk": 36,
     "fields": {
       "module": "issue",
       "code": "issue.watcher_delete",
@@ -10590,7 +10599,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 36,
+    "pk": 37,
     "fields": {
       "module": "issue",
       "code": "issue.import",
@@ -10601,7 +10610,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 37,
+    "pk": 38,
     "fields": {
       "module": "issue",
       "code": "issue.category_manage",
@@ -10612,7 +10621,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 38,
+    "pk": 39,
     "fields": {
       "module": "news",
       "code": "news.read",
@@ -10623,7 +10632,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 39,
+    "pk": 40,
     "fields": {
       "module": "news",
       "code": "news.manage",
@@ -10634,7 +10643,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 40,
+    "pk": 41,
     "fields": {
       "module": "news",
       "code": "news.comment",
@@ -10645,7 +10654,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 41,
+    "pk": 42,
     "fields": {
       "module": "docs",
       "code": "docs.read",
@@ -10656,7 +10665,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 42,
+    "pk": 43,
     "fields": {
       "module": "docs",
       "code": "docs.create",
@@ -10667,7 +10676,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 43,
+    "pk": 44,
     "fields": {
       "module": "docs",
       "code": "docs.update",
@@ -10678,7 +10687,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 44,
+    "pk": 45,
     "fields": {
       "module": "docs",
       "code": "docs.delete",
@@ -10689,7 +10698,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 45,
+    "pk": 46,
     "fields": {
       "module": "forum",
       "code": "forum.read",
@@ -10700,7 +10709,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 46,
+    "pk": 47,
     "fields": {
       "module": "forum",
       "code": "forum.create",
@@ -10711,7 +10720,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 47,
+    "pk": 48,
     "fields": {
       "module": "forum",
       "code": "forum.update",
@@ -10722,7 +10731,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 48,
+    "pk": 49,
     "fields": {
       "module": "forum",
       "code": "forum.own_update",
@@ -10733,7 +10742,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 49,
+    "pk": 50,
     "fields": {
       "module": "forum",
       "code": "forum.delete",
@@ -10744,7 +10753,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 50,
+    "pk": 51,
     "fields": {
       "module": "forum",
       "code": "forum.own_delete",
@@ -10755,7 +10764,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 51,
+    "pk": 52,
     "fields": {
       "module": "forum",
       "code": "forum.watcher_read",
@@ -10766,7 +10775,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 52,
+    "pk": 53,
     "fields": {
       "module": "forum",
       "code": "forum.watcher_create",
@@ -10777,7 +10786,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 53,
+    "pk": 54,
     "fields": {
       "module": "forum",
       "code": "forum.watcher_delete",
@@ -10788,7 +10797,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 54,
+    "pk": 55,
     "fields": {
       "module": "forum",
       "code": "forum.manage",
@@ -10799,7 +10808,7 @@
   },
   {
     "model": "work.permission",
-    "pk": 55,
+    "pk": 56,
     "fields": {
       "module": "calendar",
       "code": "calendar.read",
