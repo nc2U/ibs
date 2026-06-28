@@ -19,7 +19,6 @@ import RelSummary from './relations/Summary.vue'
 import Index from './relations/Index.vue'
 import AddRelationForm from './relations/AddRelationForm.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
-import { btnLight } from '@/utils/cssMixins'
 
 const props = defineProps({
   issueProject: { type: Object as PropType<IssueProject>, default: null },
