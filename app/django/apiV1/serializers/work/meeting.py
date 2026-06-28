@@ -54,6 +54,16 @@ class MeetingSerializer(serializers.ModelSerializer):
                   'action_items', 'meeting_date', 'attendees', 'attendees_desc', 'other_attendees',
                   'files', 'issues', 'created', 'updated', 'creator', 'updater')
 
+    def validate(self, attrs):
+        is_confirmed = attrs.get('is_confirmed', getattr(self.instance, 'is_confirmed', False) if self.instance else False)
+        status = attrs.get('status', getattr(self.instance, 'status', '1') if self.instance else '1')
+
+        if is_confirmed and status != '2':
+            raise serializers.ValidationError(
+                {'is_confirmed': "회의가 종료 상태(status='2')인 경우에만 확정할 수 있습니다."}
+            )
+        return attrs
+
     @transaction.atomic
     def create(self, validated_data):
         attendees = validated_data.pop('attendees', [])
