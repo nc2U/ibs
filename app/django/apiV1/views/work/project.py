@@ -1,11 +1,16 @@
 from django.db.models import Q
 from django_filters.rest_framework import FilterSet, BooleanFilter, CharFilter
-from rest_framework import viewsets
+from rest_framework import viewsets, serializers, permissions
 from rest_framework.decorators import action
+from rest_framework.response import Response
 
-from apiV1.pagination import *
-from apiV1.permission import *
-from apiV1.serializers.work.project import *
+from apiV1.pagination import PageNumberPaginationTwenty, PageNumberPaginationOneHundred
+from apiV1.permission import ProjectPermission
+from apiV1.serializers.work import (
+    IssueProjectSerializer, IssueProjectListSerializer,
+    ModuleSerializer, RoleSerializer, PermissionSerializer,
+    MemberSerializer, VersionSerializer)
+from work.models import IssueProject, Module, Role, Permission, Member, Version
 
 
 # Work --------------------------------------------------------------------------

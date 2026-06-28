@@ -1,6 +1,8 @@
 from django.db.models import Q
 from django_filters.rest_framework import FilterSet, CharFilter, DateTimeFromToRangeFilter
 from rest_framework import viewsets, permissions
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
 from apiV1.pagination import PageNumberPaginationTwenty
 from apiV1.permission import ProjectPermission, MeetingPermission
@@ -83,6 +85,21 @@ class MeetingViewSet(viewsets.ModelViewSet):
         }
         # 정의되지 않은 액션에 대해 기본 권한 반환
         return mapping.get(self.action, None)
+
+    @action(detail=True, methods=['post'])
+    def confirm(self, request, pk=None):
+        instance = self.get_object()
+        if instance.status == '3':
+            return Response({'status': 'already confirmed'}, status=400)
+
+        instance.status = '3'
+        instance.save()
+
+        # 회의 확정 메일 알림 서비스 호출
+        from work.services.work_services import MeetingService
+        MeetingService.notify_meeting_changes(instance, created=False, user=request.user, old_status=None)
+
+        return Response({'status': 'confirmed'})
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
