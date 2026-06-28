@@ -3,12 +3,11 @@ import { computed, onBeforeMount, type PropType, ref, watch } from 'vue'
 import type { getProject, IssueProject } from '@/store/types/work_project.ts'
 import type { CodeValue, Issue, IssueComment, IssueStatus } from '@/store/types/work_issue.ts'
 import { useRoute, useRouter } from 'vue-router'
-import { useAccount } from '@/store/pinia/account.ts'
-import { useIssue } from '@/store/pinia/work_issue.ts'
-import { useWork } from '@/store/pinia/work_project.ts'
-import { useLogging } from '@/store/pinia/work_logging.ts'
-import { diffDate, elapsedTime, timeFormat } from '@/utils/baseMixins'
+import { usePerms } from '@/composables/usePerms'
 import { markdownRender } from '@/utils/helper.ts'
+import { diffDate, elapsedTime, timeFormat } from '@/utils/baseMixins'
+import { useIssue } from '@/store/pinia/work_issue.ts'
+import { useLogging } from '@/store/pinia/work_logging.ts'
 import IssueControl from './IssueControl.vue'
 import IssueHistory from './IssueHistory.vue'
 import IssueForm from './IssueForm.vue'
@@ -34,13 +33,12 @@ const emit = defineEmits(['on-submit'])
 const issueFormRef = ref()
 const editForm = ref(false)
 
-const accStore = useAccount()
-const workManager = computed(() => accStore.workManager)
+const { can, PERM } = usePerms()
+const canCommentCreate = computed(
+  () => props.issueProject?.status !== '9' && can(PERM.ISSUE_COMMENT_CREATE),
+)
 
 const isClosed = computed(() => props.issue?.closed)
-
-const workStore = useWork()
-const my_perms = computed(() => (workStore.issueProject as IssueProject)?.my_perms)
 
 const issueStore = useIssue()
 const issueNums = computed(() => issueStore.issueNums ?? [])
@@ -357,13 +355,7 @@ onBeforeMount(async () => {
 
       <CRow class="mb-2">
         <CCol class="title">설명</CCol>
-        <CCol
-          v-if="
-            issueProject?.status !== '9' &&
-            (workManager || my_perms?.includes('issue_comment_create'))
-          "
-          class="text-right form-text"
-        >
+        <CCol v-if="canCommentCreate" class="text-right form-text">
           <v-icon icon="mdi-comment-text-outline" size="sm" color="grey" class="mr-2" />
           <router-link to="" @click="callComment">댓글달기</router-link>
         </CCol>
@@ -391,7 +383,7 @@ onBeforeMount(async () => {
             :sub-issues="issue.sub_issues"
           />
         </CCol>
-        <CCol class="text-right form-text">
+        <CCol v-if="can(PERM.ISSUE_SUB_MANAGE)" class="text-right form-text">
           <router-link
             :to="{ name: '(업무) - 추가', query: { parent: issue.pk, tracker: issue.tracker.pk } }"
           >
@@ -417,7 +409,7 @@ onBeforeMount(async () => {
             :rel-issue-tos="[]"
           />
         </CCol>
-        <CCol class="text-right form-text">
+        <CCol v-if="can(PERM.ISSUE_REL_MANAGE)" class="text-right form-text">
           <router-link to="" @click="addRIssue = !addRIssue">추가</router-link>
         </CCol>
       </CRow>
