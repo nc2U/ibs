@@ -116,7 +116,7 @@ class IssueViewSet(viewsets.ModelViewSet):
             'update': 'issue.update',
             'partial_update': 'issue.update',
             'destroy': 'issue.delete',
-            'toggle_private': 'issue.public'
+            'toggle_private': 'issue.private'
         }
         return mapping.get(self.action, None)
 

@@ -270,9 +270,9 @@ class IssuePermission(ProjectPermission):
 
             # (C) 공개/비공개 토글 권한 처리
             if view.action == 'toggle_private':
-                if 'issue.public' in user_perms:
+                if 'issue.private' in user_perms:
                     return True
-                if 'issue.own_public' in user_perms:
+                if 'issue.own_private' in user_perms:
                     if (obj.creator == user) or (obj.assigned_to == user):
                         return True
                 return False
