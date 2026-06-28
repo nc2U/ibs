@@ -306,6 +306,10 @@ onBeforeMount(() => {
   if (props.issueProject) {
     form.value.project = props.issueProject.slug as string
   }
+
+  const copyId = route.query.copy ? Number(route.query.copy) : null
+  const copyIssueObj = copyId ? issueStore.allIssueList.find(i => i.pk === copyId) : null
+
   if (props.issue) {
     form.value.pk = props.issue.pk
     form.value.project = props.issue.project.slug
@@ -324,6 +328,22 @@ onBeforeMount(() => {
     form.value.expected_duration = props.issue.expected_duration ?? ''
     form.value.done_ratio = props.issue.done_ratio
     form.value.files = props.issue.files
+  } else if (copyIssueObj) {
+    form.value.project = copyIssueObj.project.slug
+    form.value.tracker = copyIssueObj.tracker.pk
+    form.value.is_private = copyIssueObj.is_private
+    form.value.subject = copyIssueObj.subject
+    form.value.description = copyIssueObj.description
+    form.value.status = copyIssueObj.status.pk
+    form.value.parent = copyIssueObj.parent
+    form.value.priority = copyIssueObj.priority.pk
+    form.value.start_date = dateFormat(copyIssueObj.start_date)
+    form.value.due_date = copyIssueObj.due_date ? dateFormat(copyIssueObj.due_date) : null
+    form.value.assigned_to = copyIssueObj.assigned_to?.pk ?? null
+    form.value.fixed_version = copyIssueObj.fixed_version?.pk ?? null
+    form.value.category = copyIssueObj.category
+    form.value.expected_duration = copyIssueObj.expected_duration ?? ''
+    form.value.done_ratio = copyIssueObj.done_ratio
   } else if (route.query.parent) {
     form.value.parent = Number(route.query.parent)
     form.value.tracker = Number(route.query.tracker)

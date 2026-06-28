@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { computed, type PropType } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { message } from '@/utils/helper.ts'
 import { usePerms } from '@/composables/usePerms.ts'
 import { useAccount } from '@/store/pinia/account.ts'
@@ -18,6 +19,9 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['call-edit-form', 'watch-control', 'call-delete-issue'])
+
+const route = useRoute()
+const router = useRouter()
 
 const accStore = useAccount()
 const userInfo = computed(() => accStore.userInfo)
@@ -43,7 +47,7 @@ const canCreateComment = computed(() => can(PERM.ISSUE_COMMENT_CREATE))
 const showEditButton = computed(() => canEditIssue.value || canCreateComment.value)
 
 // 6. 복사 버튼 노출 조건
-const showCopyButton = computed(() => can(PERM.ISSUE_COPY))
+const showCopyButton = computed(() => can(PERM.ISSUE_COPY) && props.projStatus !== '9')
 
 // 7. 삭제 버튼 노출 조건
 const showDeleteButton = computed(() => can(PERM.ISSUE_DELETE) && props.projStatus !== '9')
@@ -57,6 +61,14 @@ const watchControl = () => {
     ? { del_watcher: userInfo?.value?.pk }
     : { watchers: [userInfo?.value?.pk] }
   emit('watch-control', payload)
+}
+
+const copyIssue = () => {
+  const routeName = route.params.projId ? '(업무) - 추가' : '업무 - 추가'
+  router.push({
+    name: routeName,
+    query: { copy: props.issue.pk },
+  })
 }
 
 const fallbackCopy = (text: string) => {
@@ -107,9 +119,9 @@ const callDeleteIssue = () => emit('call-delete-issue')
       </router-link>
     </span>
 
-    <span v-if="projStatus !== '9' && showCopyButton" class="mr-2">
+    <span v-if="showCopyButton" class="mr-2">
       <v-icon icon="mdi-content-copy" color="grey" size="sm" />
-      <router-link to="" class="ml-1">복사</router-link>
+      <router-link to="" class="ml-1" @click="copyIssue">복사</router-link>
     </span>
 
     <span>
