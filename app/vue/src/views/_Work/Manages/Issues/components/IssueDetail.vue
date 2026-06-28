@@ -284,6 +284,9 @@ onBeforeMount(async () => {
               >
                 {{ issue.fixed_version?.name }}
               </router-link>
+              <span v-if="issue.fixed_version.description">
+                ({{ issue.fixed_version.description }})
+              </span>
             </CCol>
           </CRow>
         </CCol>

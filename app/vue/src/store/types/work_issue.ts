@@ -105,7 +105,7 @@ export interface Issue {
   subject: string
   description: string
   category: number | null
-  fixed_version: { pk: number; name: string } | null
+  fixed_version: { pk: number; name: string; description: string } | null
   assigned_to: SimpleUser | null
   parent: number | null
   watchers: SimpleUser[]

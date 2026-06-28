@@ -36,7 +36,7 @@ class CodePriorityInIssueSerializer(serializers.ModelSerializer):
 class VersionInIssueSerializer(serializers.ModelSerializer):
     class Meta:
         model = Version
-        fields = ('pk', 'name')
+        fields = ('pk', 'name', 'description')
 
 
 class IssueFileInIssueSerializer(serializers.ModelSerializer):
