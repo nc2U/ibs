@@ -116,6 +116,24 @@ pnpm type-check
     - Pinia를 활용한 전역 상태 관리
     - Vitest 및 Cypress를 사용한 테스트 코드 작성
 
+### 업무 관리 시스템 (work 앱) 아키텍처
+
+부동산 시행 및 개발 프로세스를 '업무(Issue)'와 '회의(Meeting)' 단위로 관리하는 핵심 도메인입니다. 개발 및 수정 시 다음 규칙을 준수하십시오.
+
+#### 1. 데이터 모델 및 비즈니스 흐름
+* **회의록(Meeting) 중심 협업**: 단순 회의 기록 작성을 넘어 의제(`agenda`), 결정 사항(`decisions`), 후속 조치(`action_items`)를 자산화합니다. 외부인 참석자는 `other_attendees` 텍스트 필드로 기록합니다.
+* **회의와 업무의 유기적 매핑**: `Issue` 모델은 `meeting`을 외래키로 참조합니다. 회의 중 생성된 액션 아이템은 관련 업무(`Issue`)로 자동/수동 할당되어 진척률(`done_ratio`)과 완료율이 실시간 모니터링됩니다.
+* **통합 이력 추적**: `ActivityLogEntry`를 통해 프로젝트 내 전체 활동을 로깅하며, `IssueLogEntry`를 활용해 업무의 상태 변경 정보와 텍스트 차이점(`diff`)을 보관하여 변경 이력을 투명하게 보관합니다.
+
+#### 2. 백엔드 API & 권한 통제
+* **액션 기반 권한 매핑**: 각 ViewSet에는 `@property`로 `required_permission`을 정의하여 DRF 액션별 권한 코드(예: `meeting.read`, `issue.create`)를 명시합니다. 이 코드는 `ProjectPermission` 등의 커스텀 권한 클래스에서 요청 유저의 역할(`Role`)과 비교 검증됩니다.
+* **행 단위 데이터 보안 (Row-Level Security)**: 권한 검증과 별개로 목록 조회(`list`) 시 권한 없는 프로젝트의 데이터 유출을 막기 위해, `get_queryset()` 메서드에서 반드시 슈퍼유저/work_manager가 아닐 경우 **"공개 프로젝트이거나, 사용자가 속한 프로젝트이거나, 작성자/담당자인 데이터"**로만 필터링해야 합니다.
+* **Eager Loading 최적화**: N+1 쿼리 문제를 원천 차단하기 위해 `select_related` 및 `prefetch_related`를 통해 관계 테이블을 미리 로딩해야 합니다.
+
+#### 3. 프론트엔드 Pinia & 타입 연동
+* **상태 동기화**: Pinia 스토어(`useIssue`, `useMeeting` 등)에서 CRUD 완료 시, 연관된 타 스토어(`useLogging`, `useWork` 등)의 액션을 재조회하여 화면의 일관성을 맞춥니다. 파일이 첨부된 폼을 전송할 때는 `multipart/form-data` 헤더를 설정합니다.
+* **타입 안전성**: 프론트엔드 `store/types/work_*.ts` 파일 내 인터페이스는 백엔드 Serializer가 반환하는 필드 및 Nullable 옵션과 100% 일치하도록 일원화되어야 합니다.
+
 ### 설정 아키텍처 (Configuration)
 
 - `_config/settings.py` - 환경 변수 로드를 위해 `python-decouple`을 사용하는 Django 설정 파일
