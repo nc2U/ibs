@@ -16,6 +16,16 @@ class MeetingCategoryViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated, ProjectPermission)
     filterset_fields = ('project',)
 
+    @property
+    def required_permission(self):
+        mapping = {
+            'create': 'project.update',
+            'update': 'project.update',
+            'partial_update': 'project.update',
+            'destroy': 'project.update'
+        }
+        return mapping.get(self.action, None)
+
     def get_queryset(self):
         user = self.request.user
         queryset = super().get_queryset()
@@ -44,7 +54,7 @@ class MeetingFilter(FilterSet):
 
     @staticmethod
     def search_filter(queryset, name, value):
-        return queryset.filter(title__icontains=value) | queryset.filter(content__icontains=value)
+        return queryset.filter(Q(title__icontains=value) | Q(content__icontains=value)).distinct()
 
 
 class MeetingViewSet(viewsets.ModelViewSet):
@@ -115,6 +125,16 @@ class MeetingFileViewSet(viewsets.ModelViewSet):
     queryset = MeetingFile.objects.all()
     serializer_class = MeetingFileSerializer
     permission_classes = (permissions.IsAuthenticated, ProjectPermission)
+
+    @property
+    def required_permission(self):
+        mapping = {
+            'create': 'meeting.update',
+            'update': 'meeting.update',
+            'partial_update': 'meeting.update',
+            'destroy': 'meeting.update'
+        }
+        return mapping.get(self.action, None)
 
     def get_queryset(self):
         user = self.request.user
