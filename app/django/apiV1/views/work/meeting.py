@@ -89,17 +89,16 @@ class MeetingViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def confirm(self, request, pk=None):
         instance = self.get_object()
-        if instance.status == '3':
-            return Response({'status': 'already confirmed'}, status=400)
 
-        instance.status = '3'
+        # 토글: 확정 여부 반전
+        instance.is_confirmed = not instance.is_confirmed
         instance.save()
 
-        # 회의 확정 메일 알림 서비스 호출
+        # 필요 시 알림 로직 (상태 변화와 별개로 처리)
         from work.services.work_services import MeetingService
         MeetingService.notify_meeting_changes(instance, created=False, user=request.user, old_status=None)
 
-        return Response({'status': 'confirmed'})
+        return Response({'is_confirmed': instance.is_confirmed})
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)

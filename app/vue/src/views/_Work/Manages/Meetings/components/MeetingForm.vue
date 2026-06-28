@@ -235,6 +235,10 @@ const onCategorySubmit = (event: Event) => {
     refCategoryModal.value.close()
   }
 }
+
+const onConfirmToggle = async () => {
+  if (form.value.pk) await meetingStore.confirmMeeting(form.value.pk)
+}
 </script>
 
 <template>
@@ -509,8 +513,7 @@ const onCategorySubmit = (event: Event) => {
                 <CFormSelect v-model="form.status" id="status" required>
                   <option value="1">준비</option>
                   <option value="2">종료</option>
-                  <option v-if="accStore.workManager || form.status === '3'" value="3">확정</option>
-                  <option value="4">취소</option>
+                  <option value="3">취소</option>
                 </CFormSelect>
               </CCol>
             </CRow>
@@ -546,7 +549,7 @@ const onCategorySubmit = (event: Event) => {
             </CRow>
 
             <CRow class="mt-5">
-              <CFormLabel for="other_attendees" class="col-sm-4 col-form-label text-right">
+              <CFormLabel for="is_confirmed" class="col-sm-4 col-form-label text-right">
                 확정 여부
               </CFormLabel>
               <CCol sm="8" class="pt-2">
@@ -554,6 +557,8 @@ const onCategorySubmit = (event: Event) => {
                   v-model="form.is_confirmed"
                   id="is_confirmed"
                   label="최종 승인 - 확정"
+                  :disabled="form.status !== '2'"
+                  @change="onConfirmToggle"
                 />
               </CCol>
             </CRow>

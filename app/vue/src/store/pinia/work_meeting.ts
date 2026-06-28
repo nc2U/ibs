@@ -99,6 +99,19 @@ export const useMeeting = defineStore('meeting', () => {
     window.open(url, '_blank')
   }
 
+  const confirmMeeting = async (pk: number) =>
+    await api
+      .post(`/meeting/${pk}/confirm/`)
+      .then(async res => {
+        await fetchMeeting(pk)
+        message(
+          `${res.data.is_confirmed ? 'success' : 'warning'}`,
+          '알림!',
+          `회의가 ${res.data.is_confirmed ? '확정' : '확정 취소'}되었습니다.`,
+        )
+      })
+      .catch(err => errorHandle(err.response.data))
+
   return {
     meeting,
     meetingList,
@@ -111,6 +124,7 @@ export const useMeeting = defineStore('meeting', () => {
     updateMeeting,
     patchMeeting,
     deleteMeeting,
+    confirmMeeting,
     fetchCategoryList,
     createCategory,
     generatePdf,
