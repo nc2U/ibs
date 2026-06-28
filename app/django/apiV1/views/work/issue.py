@@ -64,40 +64,39 @@ class IssueFilter(FilterSet):
 
     @staticmethod
     def filter_precedes(queryset, name, value):
-        # 내가 선행하는 업무들 (value가 issue인 것들)
-        pks = IssueRelation.objects.filter(issue_id=value).values_list('issue_to_id', flat=True)
+        # 내가 선행하는 업무들 (내가 source이므로, 대상 target_id들을 찾음)
+        pks = IssueRelation.objects.filter(source_id=value).values_list('target_id', flat=True)
         return queryset.filter(pk__in=pks)
 
     @staticmethod
     def filter_follows(queryset, name, value):
-        # 내가 후속하는 업무들 (value가 issue_to인 것들)
-        pks = IssueRelation.objects.filter(issue_to_id=value).values_list('issue_id', flat=True)
+        # 내가 후속하는 업무들 (내가 target이므로, 대상 source_id들을 찾음)
+        pks = IssueRelation.objects.filter(target_id=value).values_list('source_id', flat=True)
         return queryset.filter(pk__in=pks)
 
     def filter_queryset(self, queryset):
         for name, value in self.form.cleaned_data.items():
-            if name == 'project__slug':
+            if name == 'project__slug' and value:
                 try:
                     project = IssueProject.objects.get(slug=value)
-                    subs = self.get_sub_projects(project)
-                    # Include activity log entries related to the specified project and its subprojects
-                    queryset = queryset.filter(
-                        Q(project__slug=project.slug) | Q(project__slug__in=[sub.slug for sub in subs]))
+                    all_projects = list(IssueProject.objects.all())
+                    sub_projects_slugs = []
+
+                    def collect_children(parent_obj):
+                        for p in all_projects:
+                            if p.parent_id == parent_obj.id:
+                                sub_projects_slugs.append(p.slug)
+                                collect_children(p)
+
+                    collect_children(project)
+                    slugs = [project.slug] + sub_projects_slugs
+                    queryset = queryset.filter(project__slug__in=slugs)
                 except IssueProject.DoesNotExist:
                     pass
-            elif value is not None:
-                # Apply other filters
+            elif value is not None and name != 'project__slug':
                 queryset = self.filters[name].filter(queryset, value)
 
         return queryset
-
-    def get_sub_projects(self, parent):
-        sub_projects = []
-        children = IssueProject.objects.filter(parent=parent)
-        for child in children:
-            sub_projects.append(child)
-            sub_projects.extend(self.get_sub_projects(child))
-        return sub_projects
 
 
 class IssueViewSet(viewsets.ModelViewSet):
@@ -106,6 +105,18 @@ class IssueViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated, ProjectPermission)
     pagination_class = PageNumberPaginationTwenty
     filterset_class = IssueFilter
+
+    @property
+    def required_permission(self):
+        mapping = {
+            'list': 'issue.read',
+            'retrieve': 'issue.read',
+            'create': 'issue.create',
+            'update': 'issue.update',
+            'partial_update': 'issue.update',
+            'destroy': 'issue.delete'
+        }
+        return mapping.get(self.action, None)
 
     def get_queryset(self):
         user = self.request.user
@@ -117,7 +128,7 @@ class IssueViewSet(viewsets.ModelViewSet):
         )
 
         # 관리자는 모든 사용 중인 프로젝트의 업무에 접근 가능
-        if user.work_manager or user.is_superuser:
+        if getattr(user, 'work_manager', False) or user.is_superuser:
             return queryset
 
         # 사용자가 멤버로 속한 프로젝트 ID 목록
@@ -132,7 +143,7 @@ class IssueViewSet(viewsets.ModelViewSet):
             Q(project__is_public=True) |
             Q(creator=user) |
             Q(assigned_to=user)
-        )
+        ).distinct()
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
@@ -178,9 +189,19 @@ class IssueCountByMemberView(APIView):
 class IssueRelationViewSet(viewsets.ModelViewSet):
     queryset = IssueRelation.objects.all()
     serializer_class = IssueRelationSerializer
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (permissions.IsAuthenticated, ProjectPermission)
     pagination_class = PageNumberPaginationTwenty
     filterset_fields = ('source',)
+
+    @property
+    def required_permission(self):
+        mapping = {
+            'create': 'issue.update',
+            'update': 'issue.update',
+            'partial_update': 'issue.update',
+            'destroy': 'issue.update'
+        }
+        return mapping.get(self.action, None)
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
@@ -192,9 +213,19 @@ class IssueRelationViewSet(viewsets.ModelViewSet):
 class IssueFileViewSet(viewsets.ModelViewSet):
     queryset = IssueFile.objects.all()
     serializer_class = IssueFileSerializer
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (permissions.IsAuthenticated, ProjectPermission)
     pagination_class = PageNumberPaginationTwenty
     search_fields = ('id',)
+
+    @property
+    def required_permission(self):
+        mapping = {
+            'create': 'issue.update',
+            'update': 'issue.update',
+            'partial_update': 'issue.update',
+            'destroy': 'issue.update'
+        }
+        return mapping.get(self.action, None)
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
