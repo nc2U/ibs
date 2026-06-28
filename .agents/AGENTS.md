@@ -146,7 +146,7 @@ pnpm type-check
 - **스토리지**: 영구 스토리지를 위한 NFS 서브디렉토리 외부 프로비저너 사용
 - **보안**: SSL 인증서 관리를 위한 `cert-manager` 적용
 - **수신 트래픽**: 트래픽 제어를 위한 `nginx-ingress` 설정
-- **데이터베이스**: 백업 및 복제를 지원하는 PostgreSQL 설정
+- **데이터베이스**: 백업 및 복제를 지원하는 PostgreSQL 설정들
 
 ## 테스트
 
@@ -173,21 +173,33 @@ pnpm test:e2e
 
 ## CI/CD 및 자동화
 
-### GitHub Actions 워크플로우
+### GitHub Actions 배포 자동화 구조
 
-- **운영 배포**: master 브랜치 병합 시 자동화 워크플로우 실행
-    - `django_prod.yml` - Django 백엔드 배포
-    - `vue_prod.yml` - Vue 프론트엔드 빌드 및 배포
-- **개발 배포**: 개발 브랜치 배포 워크플로우
-- **데이터베이스 작업**: 백업, 동기화 및 초기화 스크립트 실행
-- **Helm 배포**: Kubernetes 배포 자동화
-- **보안**: 취약점 스캔을 위한 CodeQL 분석
+이 프로젝트는 GitHub Actions와 Kubernetes(Helm)를 결합하여 개발(Dev) 및 운영(Prod) 환경으로의 자동화된 빌드 및 무중단 배포를 지원합니다.
 
-### 배포 프로세스 단계
+* **개발 환경 (Dev)**: `develop` 브랜치에 코드가 push되면 `ibs-dev` 네임스페이스에 자동 배포됩니다.
+* **운영 환경 (Prod)**: `master` 브랜치에 코드가 push되면 `ibs-prod` 네임스페이스에 자동 배포됩니다.
 
-1. **1단계**: `_init_setup_prod_1.yml` - 초기 인프라 setup
-2. **2단계**: `_init_setup_prod_2.yml` - 애플리케이션 배포 및 환경 설정
-3. **Slack 연동**: 배포 상태에 대한 실시간 Slack 알림 발송
+#### 1. 백엔드 배포 (`django_dev.yml`, `django_prod.yml`)
+* **컨테이너 이미지 빌드**: Git SHA 값을 태그(`dev-${SHA}` / `${SHA}`)로 지정하여 Dockerfile 기반 이미지를 빌드하고 Docker Hub(`nc2u/django`)에 푸시합니다.
+* **K8s 리소스 충돌 관리**: 배포 전 보류 중인 Helm 업그레이드 작업을 클리닝하고, 기존 PV/PVC를 Helm 릴리즈에 자동 편입(Adoption)합니다.
+* **Helm 배포**: `deploy/helm/` 차트를 사용하여 지정된 네임스페이스에 배포 및 마이그레이션 작업을 수행하며, 완료 시 롤아웃 상태를 검증합니다.
+
+#### 2. 프론트엔드 배포 (`vue_dev.yml`, `vue_prod.yml`)
+* **정적 파일 빌드**: Node.js와 pnpm을 사용하여 Vue.js SPA를 빌드하며, 빌드 무결성을 자동 검증합니다.
+* **무중단 원자적 배포**: 빌드 폴더(`dist_${TIMESTAMP}`)를 CI/CD 서버로 복사(SCP)한 뒤, `dist` 심볼릭 링크를 원자적으로 교체(Symlink Swap)하여 중단 없는 서비스를 실현합니다.
+* **리소싱 효율성**: 성공한 최신 3개의 빌드 디렉토리만 서버에 유지하고 이전 빌드는 자동 삭제합니다.
+* **캐시 갱신**: 프론트엔드 배포 후 Django 템플릿과 Nginx의 파일 변경이 즉시 반영되도록 관련 Pod를 재시작(`rollout restart`)합니다.
+
+#### 3. 헬름 배포 (`helm_dev.yml`, `helm_prod.yml`)
+* **인프라 변경**: `deploy/helm/**` 경로 수정 시 트리거되어 Helm 차트 구성을 서버와 동기화합니다.
+* **커스텀 설정 유지**: 서버에 보관된 커스텀 설정 파일(`values-dev-custom.yaml` / `values-prod-custom.yaml`)을 배포 시 백업 및 복원하여 설정 유실을 방지합니다.
+* **NFS 스토리지**: `nfs-subdir-external-provisioner` Helm 리포지토리를 추가 및 설치하여 NFS 스토리지 공유 볼륨 설정을 자동 연동합니다.
+
+#### 4. 기타 워크플로우 및 통합
+* **데이터베이스 작업**: `db_backup.yml`(백업), `db_sync.yml`(동기화) 등을 통해 정기 및 수동 데이터베이스 관리 스크립트 실행이 가능합니다.
+* **보안 검증**: `codeql-analysis.yml`을 통한 취약점 스캔을 지원합니다.
+* **Slack 연동**: 모든 주요 배포 워크플로우의 성공/실패 상태를 Slack 수신 웹훅(`secrets.SLACK_INCOMING_URL`)으로 즉시 알립니다.
 
 ## 중요 유의사항
 
