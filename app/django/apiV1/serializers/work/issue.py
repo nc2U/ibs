@@ -1,10 +1,8 @@
-import json
-import os.path
-
 from django.db import transaction, IntegrityError
 from django.utils import timezone
 from rest_framework import serializers
 
+from _utils.file_service import FileService
 from accounts.models import User
 from apiV1.serializers.accounts import SimpleUserSerializer
 from apiV1.serializers.work.project import SimpleIssueProjectSerializer, TrackerInIssueProjectSerializer
@@ -90,8 +88,6 @@ class IssueSerializer(serializers.ModelSerializer):
     creator = SimpleUserSerializer(read_only=True)
     expected_duration_display = serializers.CharField(source='get_expected_duration_display', read_only=True)
 
-    # updater = SimpleUserSerializer(read_only=True)
-
     class Meta:
         model = Issue
         fields = ('pk', 'project', 'tracker', 'status', 'priority', 'subject', 'description',
@@ -137,18 +133,23 @@ class IssueSerializer(serializers.ModelSerializer):
         # Set the watchers of the instance to the list of watchers
         creator = self.context['request'].user
         issue.watchers.add(creator.pk)
-        watchers = self.initial_data.getlist('watchers', [])
+
+        if hasattr(self.initial_data, 'getlist'):
+            watchers = self.initial_data.getlist('watchers')
+        else:
+            watchers = self.initial_data.get('watchers', [])
+
         if watchers:
             for watcher in watchers:
                 issue.watchers.add(watcher)
         # File 처리
-        new_files = self.initial_data.getlist('new_files', [])
-        descriptions = self.initial_data.getlist('descriptions', [])
-        if new_files:
-            for i, file in enumerate(new_files):
-                issue_file = IssueFile(issue=issue, file=file,
-                                       description=descriptions[i], creator=creator)
-                issue_file.save()
+        FileService.manage_files(
+            instance=issue,
+            initial_data=self.initial_data,
+            creator=creator,
+            file_model=IssueFile,
+            related_name='issue'
+        )
         return issue
 
     @transaction.atomic
@@ -168,13 +169,21 @@ class IssueSerializer(serializers.ModelSerializer):
                 instance.closed = None
         if self.initial_data.get('priority'):
             instance.priority = CodeIssuePriority.objects.get(pk=self.initial_data.get('priority'))
-        fixed_version = self.initial_data.get('fixed_version')
-        instance.fixed_version = Version.objects.get(pk=fixed_version) if fixed_version else None
-        assigned_to = self.initial_data.get('assigned_to', None)
-        instance.assigned_to = User.objects.get(pk=assigned_to) if assigned_to else None
+
+        if 'fixed_version' in self.initial_data:
+            fixed_version = self.initial_data.get('fixed_version')
+            instance.fixed_version = Version.objects.get(pk=fixed_version) if fixed_version else None
+
+        if 'assigned_to' in self.initial_data:
+            assigned_to = self.initial_data.get('assigned_to', None)
+            instance.assigned_to = User.objects.get(pk=assigned_to) if assigned_to else None
 
         # 공유자 업데이트
-        watchers = self.initial_data.getlist('watchers', [])
+        if hasattr(self.initial_data, 'getlist'):
+            watchers = self.initial_data.getlist('watchers')
+        else:
+            watchers = self.initial_data.get('watchers', [])
+
         if watchers:
             watcher_ids = [int(w) for w in watchers]
             valid_watchers = User.objects.filter(pk__in=watcher_ids)
@@ -187,9 +196,10 @@ class IssueSerializer(serializers.ModelSerializer):
         # sub_issue 관계 지우기
         del_child = self.initial_data.get('del_child', None)
         if del_child:
-            child = instance.issue_set.get(pk=del_child)
-            child.parent = None
-            child.save()
+            child = instance.issue_set.filter(pk=del_child).first()
+            if child:
+                child.parent = None
+                child.save()
 
         # issue_comment logic
         comment_content = self.initial_data.get('comment_content', None)
@@ -198,42 +208,13 @@ class IssueSerializer(serializers.ModelSerializer):
             IssueComment.objects.create(issue=instance, content=comment_content, creator=creator)
 
         # File 처리
-        new_files = self.initial_data.getlist('new_files', [])
-        descriptions = self.initial_data.getlist('descriptions', [])
-
-        if new_files:
-            for i, file in enumerate(new_files):
-                issue_file = IssueFile(issue=instance, file=file,
-                                       description=descriptions[i], creator=creator)
-                issue_file.save()
-
-        old_files = self.initial_data.getlist('files', [])
-        if old_files:
-            for json_file in old_files:
-                file = json.loads(json_file)
-                file_object = IssueFile.objects.get(pk=file.get('pk'))
-
-                if file.get('del'):
-                    file_object.delete()
-
-        edit_file = self.initial_data.get('edit_file', None)  # pk
-        cng_file = self.initial_data.get('cng_file', None)  # change file
-        edit_file_desc = self.initial_data.get('edit_file_desc', None)
-        if edit_file:
-            file = IssueFile.objects.get(pk=edit_file)
-            if cng_file:
-                old_file = file.file
-                if os.path.isfile(old_file.path):
-                    os.remove(old_file.path)
-                file.file = cng_file
-            if edit_file_desc:
-                file.description = edit_file_desc
-            file.save()
-
-        del_file = self.initial_data.get('del_file', None)
-        if del_file:
-            file = IssueFile.objects.get(pk=del_file)
-            file.delete()
+        FileService.manage_files(
+            instance=instance,
+            initial_data=self.initial_data,
+            creator=creator,
+            file_model=IssueFile,
+            related_name='issue'
+        )
 
         instance.save()
         return instance
