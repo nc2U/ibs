@@ -8,33 +8,22 @@ const route = useRoute()
 const workStore = useWork()
 const issueStore = useIssue()
 
-const loading = ref(true)
-
 // 프로젝트 식별자 추출 (Slug)
 const projSlug = computed(() => route.params.projId as string | undefined)
 
 onMounted(async () => {
-  loading.value = true
-  try {
-    // 공통 메타데이터 조회
-    await issueStore.fetchTrackerList()
-    await issueStore.fetchStatusList()
-    await issueStore.fetchPriorityList()
+  // 공통 메타데이터 조회
+  await issueStore.fetchTrackerList()
+  await issueStore.fetchStatusList()
+  await issueStore.fetchPriorityList()
 
-    if (projSlug.value) {
-      await workStore.fetchIssueProject(projSlug.value)
-      await workStore.fetchVersionList({ project: projSlug.value })
-      await issueStore.fetchCategoryList(projSlug.value)
-      // status__closed='' 로 진행중/완료 통합 전체 로드 (최대 1000개)
-      await issueStore.fetchAllIssueList(projSlug.value, '')
-    } else {
-      await issueStore.fetchAllIssueList('', '')
-    }
-  } catch (err) {
-    console.error('리포트 데이터를 불러오는 도중 오류 발생:', err)
-  } finally {
-    loading.value = false
-  }
+  if (projSlug.value) {
+    await workStore.fetchIssueProject(projSlug.value)
+    await workStore.fetchVersionList({ project: projSlug.value })
+    await issueStore.fetchCategoryList(projSlug.value)
+    // status__closed='' 로 진행중/완료 통합 전체 로드 (최대 1000개)
+    await issueStore.fetchAllIssueList(projSlug.value, '')
+  } else await issueStore.fetchAllIssueList('', '')
 })
 
 // 전체 이슈 목록 캐싱
@@ -191,15 +180,7 @@ const totalAll = computed(() => allIssues.value.length)
     </CCol>
   </CRow>
 
-  <!-- 로딩바 -->
-  <v-row v-if="loading">
-    <v-col cols="12" class="text-center py-5">
-      <v-progress-circular indeterminate color="primary" size="64" />
-      <div class="mt-3 text-grey-darken-1 font-weight-light">통계 데이터를 분석 중입니다...</div>
-    </v-col>
-  </v-row>
-
-  <div v-else>
+  <div>
     <!-- 상단 전체 종합 요약 카드 -->
     <v-row class="mb-4">
       <v-col cols="12" sm="4">
@@ -495,5 +476,82 @@ const totalAll = computed(() => allIssues.value.length)
 
 .hover-row:hover {
   background-color: rgba(24, 103, 192, 0.03) !important;
+}
+
+/* ---------------------------------------------------- */
+/* Dark Theme Customizations */
+/* ---------------------------------------------------- */
+
+:global(body.dark-theme) .summary-card {
+  background: #232736 !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  color: #e9ecef !important;
+}
+
+:global(body.dark-theme) .bg-open {
+  background: linear-gradient(135deg, #1b3d2b 0%, #232736 100%) !important;
+}
+
+:global(body.dark-theme) .bg-closed {
+  background: linear-gradient(135deg, #182e4e 0%, #232736 100%) !important;
+}
+
+:global(body.dark-theme) .bg-total {
+  background: linear-gradient(135deg, #2b2f3a 0%, #232736 100%) !important;
+}
+
+:global(body.dark-theme) .summary-card h3 {
+  color: #ffffff !important;
+}
+
+:global(body.dark-theme) .summary-card .text-grey-darken-1 {
+  color: #a6b0cf !important;
+}
+
+:global(body.dark-theme) .report-card {
+  background-color: #232736 !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+:global(body.dark-theme) .bg-light {
+  background-color: #2a3042 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+}
+
+:global(body.dark-theme) .report-card .v-card-title span {
+  color: #ffffff !important;
+}
+
+:global(body.dark-theme) .report-table {
+  background-color: transparent !important;
+  color: #a6b0cf !important;
+}
+
+:global(body.dark-theme) .report-table th {
+  border-bottom: 2px solid rgba(255, 255, 255, 0.08) !important;
+  color: #a6b0cf !important;
+}
+
+:global(body.dark-theme) .report-table td {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  color: #8f9bb3 !important;
+}
+
+:global(body.dark-theme) .report-table .text-success {
+  color: #34c38f !important;
+}
+
+:global(body.dark-theme) .report-table .text-blue {
+  color: #50a5f1 !important;
+}
+
+:global(body.dark-theme) .report-table .text-grey-darken-2,
+:global(body.dark-theme) .report-table .text-grey-darken-3 {
+  color: #a6b0cf !important;
+}
+
+:global(body.dark-theme) .hover-row:hover {
+  background-color: rgba(255, 255, 255, 0.02) !important;
 }
 </style>
