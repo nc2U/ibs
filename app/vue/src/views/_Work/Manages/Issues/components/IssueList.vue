@@ -138,17 +138,6 @@ const watchControl = (payload: any) => {
   <CCol v-else col="12">
     <v-divider class="mb-0" />
     <CTable striped hover small responsive>
-      <colgroup>
-        <col style="width: 8%" />
-        <col style="width: 16%" />
-        <col style="width: 8%" />
-        <col style="width: 8%" />
-        <col style="width: 8%" />
-        <col style="width: 20%" />
-        <col style="width: 12%" />
-        <col style="width: 15%" />
-        <col style="width: 5%" />
-      </colgroup>
       <CTableHead>
         <CTableRow class="text-center">
           <CTableHeaderCell scope="col">#</CTableHeaderCell>
@@ -156,6 +145,7 @@ const watchControl = (payload: any) => {
           <CTableHeaderCell scope="col">유형</CTableHeaderCell>
           <CTableHeaderCell scope="col">상태</CTableHeaderCell>
           <CTableHeaderCell scope="col">우선순위</CTableHeaderCell>
+          <CTableHeaderCell scope="col">단계</CTableHeaderCell>
           <CTableHeaderCell scope="col">제목</CTableHeaderCell>
           <CTableHeaderCell scope="col">담당자</CTableHeaderCell>
           <CTableHeaderCell scope="col">변경</CTableHeaderCell>

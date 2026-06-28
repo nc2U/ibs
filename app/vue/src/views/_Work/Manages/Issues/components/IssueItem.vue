@@ -4,6 +4,7 @@ import type { Issue } from '@/store/types/work_issue.ts'
 import { timeFormat } from '@/utils/baseMixins.ts'
 import { usePerms } from '@/composables/usePerms.ts'
 import IssueDropDown from './IssueDropDown.vue'
+import { CTableDataCell } from '@coreui/vue'
 
 defineProps({ issue: { type: Object as PropType<Issue>, required: true } })
 
@@ -49,6 +50,14 @@ const { can, PERM } = usePerms()
     }"
   >
     {{ issue.priority.name }}
+  </CTableDataCell>
+  <CTableDataCell>
+    <router-link
+      v-if="issue.fixed_version"
+      :to="{ name: '(로드맵) - 보기', params: { verId: issue.fixed_version.pk } }"
+    >
+      {{ issue.fixed_version.name }}
+    </router-link>
   </CTableDataCell>
   <CTableDataCell class="text-left">
     <router-link
