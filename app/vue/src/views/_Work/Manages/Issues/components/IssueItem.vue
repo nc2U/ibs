@@ -2,16 +2,20 @@
 import { type PropType, ref } from 'vue'
 import type { Issue } from '@/store/types/work_issue.ts'
 import { timeFormat } from '@/utils/baseMixins.ts'
+import { usePerms } from '@/composables/usePerms.ts'
 import IssueDropDown from './IssueDropDown.vue'
 
 defineProps({ issue: { type: Object as PropType<Issue>, required: true } })
 
 const emit = defineEmits(['watch-control'])
+
+const { can, PERM } = usePerms()
 </script>
 
 <template>
   <CTableDataCell>
     <router-link
+      v-if="can(PERM.ISSUE_READ)"
       :to="{
         name: '(업무) - 보기',
         params: { projId: issue.project.slug, issueId: issue.pk },
@@ -19,6 +23,7 @@ const emit = defineEmits(['watch-control'])
     >
       {{ issue.pk }}
     </router-link>
+    <span v-else>{{ issue.pk }}</span>
   </CTableDataCell>
   <CTableDataCell v-if="!$route.params.projId">
     <router-link :to="{ name: '(개요)', params: { projId: issue.project.slug } }">
@@ -47,6 +52,7 @@ const emit = defineEmits(['watch-control'])
   </CTableDataCell>
   <CTableDataCell class="text-left">
     <router-link
+      v-if="can(PERM.ISSUE_READ)"
       :to="{
         name: '(업무) - 보기',
         params: { projId: issue.project.slug, issueId: issue.pk },
@@ -54,6 +60,7 @@ const emit = defineEmits(['watch-control'])
     >
       {{ issue.subject }}
     </router-link>
+    <span v-else>{{ issue.subject }}</span>
   </CTableDataCell>
   <CTableDataCell class="text-center">
     <router-link
