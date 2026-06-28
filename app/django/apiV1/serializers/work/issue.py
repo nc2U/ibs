@@ -111,6 +111,89 @@ class IssueSerializer(serializers.ModelSerializer):
             return IssueRelationIncomingSerializer(obj.incoming_relation, read_only=True).data
         return None
 
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        user = self.context['request'].user
+        
+        # 슈퍼유저나 work_manager는 패스
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return ret
+            
+        # 해당 업무와 특별한 관계가 없고, 'issue.watcher_read' 권한도 없는 경우
+        user_perms = instance.project.get_user_permissions(user)
+        is_related = (
+            user == instance.creator or 
+            user == instance.assigned_to or 
+            instance.watchers.filter(pk=user.id).exists()
+        )
+        if not is_related and 'issue.watcher_read' not in user_perms:
+            ret['watchers'] = []
+            
+        return ret
+
+    def validate(self, attrs):
+        user = self.context['request'].user
+        
+        # 이미 생성된 업무의 관람자 변경 시도(Update) 시 검증 가드 작동
+        if self.instance:
+            project = self.instance.project
+            creator = self.instance.creator
+            assigned_to = self.instance.assigned_to
+            user_perms = project.get_user_permissions(user)
+
+            # 1. 요청으로 들어온 watchers 목록과 del_watcher 파싱
+            req_watchers = []
+            if hasattr(self.initial_data, 'getlist'):
+                req_watchers = self.initial_data.getlist('watchers')
+            else:
+                req_watchers = self.initial_data.get('watchers', [])
+                
+            del_watcher = self.initial_data.get('del_watcher', None)
+            
+            # ID 리스트 추출
+            req_watcher_ids = [int(w) for w in req_watchers if str(w).isdigit()]
+            del_watcher_id = int(del_watcher) if del_watcher and str(del_watcher).isdigit() else None
+
+            # 2. 정밀 대조: 이미 등록되어 있는 관람자를 제외한 '진짜 신규 추가 유저' 목록만 추출
+            existing_watcher_ids = set(self.instance.watchers.values_list('id', flat=True))
+            new_watcher_ids = [w_id for w_id in req_watcher_ids if w_id not in existing_watcher_ids]
+
+            # 3. 타인을 관람자로 신규 추가하려는지 여부 판별
+            adding_others = False
+            for w_id in new_watcher_ids:
+                if w_id != user.id:
+                    adding_others = True
+                    break
+
+            # 4. 타인을 관람자 목록에서 삭제하려는지 여부 판별
+            removing_others = False
+            if del_watcher_id and del_watcher_id != user.id:
+                removing_others = True
+
+            # 5. 권한 통제 판단
+            # 슈퍼유저, work_manager, 업무 생성자(creator), 업무 담당자(assigned_to)는 무조건 프리패스
+            is_responsible_user = (
+                user.is_superuser or 
+                getattr(user, 'work_manager', False) or 
+                user == creator or 
+                user == assigned_to
+            )
+
+            if not is_responsible_user:
+                # (A) 타인을 추가하려고 시도할 때 ☞ watcher_create 권한 필요
+                if adding_others:
+                    if 'issue.watcher_create' not in user_perms:
+                        from rest_framework.exceptions import ValidationError
+                        raise ValidationError("다른 사용자를 관람자로 추가할 권한이 없습니다.")
+
+                # (B) 타인을 삭제하려고 시도할 때 ☞ watcher_delete 권한 필요
+                if removing_others:
+                    if 'issue.watcher_delete' not in user_perms:
+                        from rest_framework.exceptions import ValidationError
+                        raise ValidationError("다른 사용자를 관람자에서 제거할 권한이 없습니다.")
+
+        return attrs
+
     @transaction.atomic
     def create(self, validated_data):
         project = IssueProject.objects.get(slug=self.initial_data.get('project', None))
