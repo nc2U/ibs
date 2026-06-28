@@ -240,7 +240,7 @@ class IssuePermission(ProjectPermission):
             return True
             
         # 3. 수정 및 삭제 관련 로직
-        if view.action in ['update', 'partial_update', 'destroy']:
+        if view.action in ['update', 'partial_update', 'destroy', 'toggle_private']:
             user = request.user
             project = getattr(obj, 'project', None)
             if not project:
@@ -267,5 +267,14 @@ class IssuePermission(ProjectPermission):
                 if obj.parent_id is not None:
                     return 'issue.sub_manage' in user_perms
                 return 'issue.delete' in user_perms
+
+            # (C) 공개/비공개 토글 권한 처리
+            if view.action == 'toggle_private':
+                if 'issue.public' in user_perms:
+                    return True
+                if 'issue.own_public' in user_perms:
+                    if (obj.creator == user) or (obj.assigned_to == user):
+                        return True
+                return False
             
         return True

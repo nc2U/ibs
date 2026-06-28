@@ -1,6 +1,7 @@
 from django.db.models import Q
 from django_filters.rest_framework import FilterSet, BooleanFilter, CharFilter, NumberFilter
 from rest_framework import viewsets
+from rest_framework.decorators import action
 from rest_framework.views import APIView
 
 from apiV1.pagination import *
@@ -114,9 +115,17 @@ class IssueViewSet(viewsets.ModelViewSet):
             'create': 'issue.create',
             'update': 'issue.update',
             'partial_update': 'issue.update',
-            'destroy': 'issue.delete'
+            'destroy': 'issue.delete',
+            'toggle_private': 'issue.public'
         }
         return mapping.get(self.action, None)
+
+    @action(detail=True, methods=['post'])
+    def toggle_private(self, request, pk=None):
+        issue = self.get_object()
+        issue.is_private = not issue.is_private
+        issue.save()
+        return Response({'is_private': issue.is_private})
 
     def get_queryset(self):
         user = self.request.user
