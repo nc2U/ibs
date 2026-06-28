@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { computed, type PropType } from 'vue'
+import { message } from '@/utils/helper.ts'
 import { usePerms } from '@/composables/usePerms.ts'
 import { useAccount } from '@/store/pinia/account.ts'
 import type { Issue } from '@/store/types/work_issue.ts'
@@ -58,6 +59,36 @@ const watchControl = () => {
   emit('watch-control', payload)
 }
 
+const fallbackCopy = (text: string) => {
+  const textArea = document.createElement('textarea')
+  textArea.value = text
+  textArea.style.position = 'fixed'
+  textArea.style.left = '-999999px'
+  textArea.style.top = '-999999px'
+  document.body.appendChild(textArea)
+  textArea.focus()
+  textArea.select()
+  try {
+    document.execCommand('copy')
+    message('success', '복사 완료', '업무 상세 링크가 클립보드에 복사되었습니다.')
+  } catch (err) {
+    message('danger', '오류!', '링크 복사에 실패했습니다.')
+  }
+  document.body.removeChild(textArea)
+}
+
+const issueLinkCopy = () => {
+  const url = window.location.href
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard
+      .writeText(url)
+      .then(() => {
+        message('success', '복사 완료', '업무 상세 링크가 클립보드에 복사되었습니다.')
+      })
+      .catch(() => fallbackCopy(url))
+  } else fallbackCopy(url)
+}
+
 const callEditForm = () => emit('call-edit-form')
 const callDeleteIssue = () => emit('call-delete-issue')
 </script>
@@ -94,7 +125,7 @@ const callDeleteIssue = () => emit('call-delete-issue')
           <v-tooltip activator="parent" location="top">Actions</v-tooltip>
         </CDropdownToggle>
         <CDropdownMenu>
-          <CDropdownItem class="form-text">
+          <CDropdownItem class="form-text" @click="issueLinkCopy">
             <router-link to="">
               <v-icon icon="mdi-link-plus" color="grey" size="sm" />
               링크 복사
