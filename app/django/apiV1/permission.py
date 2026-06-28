@@ -99,8 +99,12 @@ class ProjectPermission(permissions.BasePermission):
                 # (실제 권한 체크는 사용자 기반의 전역 권한 체크가 필요하다면 여기에 추가)
                 return True
                 
-            # 2. 하위 프로젝트 생성인 경우 ('project.create_sub')
-            project_slug = view.kwargs.get('project_slug') or request.data.get('parent_slug')
+            # 2. 리소스 생성 시 프로젝트 식별자 추출 (하위 프로젝트, 회의록, 업무 등)
+            project_slug = (
+                view.kwargs.get('project_slug') or 
+                request.data.get('project') or 
+                request.data.get('parent_slug')
+            )
             if not project_slug:
                 return False 
             
@@ -130,6 +134,10 @@ class ProjectPermission(permissions.BasePermission):
         if not project:
             return False
 
+        # 공개 프로젝트이고 단순 조회(SAFE_METHODS) 요청인 경우 즉시 허용 (목록/상세 조회 정합성 유지)
+        if project.is_public and request.method in permissions.SAFE_METHODS:
+            return True
+
         # 모델의 권한 계산 로직 사용
         user_perms = project.get_user_permissions(request.user)
         
@@ -152,8 +160,8 @@ class MeetingPermission(ProjectPermission):
         if request.method in permissions.SAFE_METHODS:
             return True
             
-        # 3. 수정 관련 로직
-        if view.action in ['update', 'partial_update']:
+        # 3. 수정 및 삭제 관련 로직
+        if view.action in ['update', 'partial_update', 'destroy']:
             user = request.user
             project = getattr(obj, 'project', None)
             if not project:
@@ -161,24 +169,24 @@ class MeetingPermission(ProjectPermission):
             
             user_perms = project.get_user_permissions(user)
 
-            # (A) 상태가 '3'(확정)인 경우 권한 제약
-            if obj.status == '3':
-                if user.is_superuser or getattr(user, 'work_manager', False) or user_perms.get('meeting.edit_confirmed', False):
+            # (A) 회의록이 확정(is_confirmed)된 상태인 경우 수정/삭제 제한
+            if obj.is_confirmed:
+                if user.is_superuser or getattr(user, 'work_manager', False) or 'meeting.edit_confirmed' in user_perms:
                     return True
                 return False
 
             # (B) 일반 상태일 때의 권한 로직
-            # (A) meeting.update 권한이 있으면 무조건 편집 가능
-            if user_perms.get('meeting.update', False):
-                return True
-                
-            # (B) meeting.own_update 권한이 있는 경우: 생성자 또는 참석자만 가능
-            if user_perms.get('meeting.own_update', False):
-                if (user == obj.creator) or (user in obj.attendees.all()):
+            # 수정 권한 처리
+            if view.action in ['update', 'partial_update']:
+                if 'meeting.update' in user_perms:
                     return True
+                if 'meeting.own_update' in user_perms:
+                    if (user == obj.creator) or (user in obj.attendees.all()):
+                        return True
                 return False
-                
-            # (C) 둘 다 없으면 편집 불가능
-            return False
+
+            # 삭제 권한 처리 (일반 상태일 때)
+            if view.action == 'destroy':
+                return 'meeting.delete' in user_perms
             
         return True

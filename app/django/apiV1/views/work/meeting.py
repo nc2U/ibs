@@ -90,6 +90,10 @@ class MeetingViewSet(viewsets.ModelViewSet):
     def confirm(self, request, pk=None):
         instance = self.get_object()
 
+        if instance.status != '2':
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError('회의 상태가 종료 상태인 경우에만 확정할 수 있습니다.')
+
         # 토글: 확정 여부 반전
         instance.is_confirmed = not instance.is_confirmed
         instance.save()
