@@ -141,3 +141,37 @@ class ProjectPermission(permissions.BasePermission):
             return request.method in permissions.SAFE_METHODS
 
         return required_perm in user_perms
+
+class MeetingPermission(ProjectPermission):
+    def has_object_permission(self, request, view, obj):
+        # 1. 기존 프로젝트 접근 권한 체크
+        if not super().has_object_permission(request, view, obj):
+            return False
+            
+        # 2. 안전한 메서드(GET, HEAD, OPTIONS)는 통과
+        if request.method in permissions.SAFE_METHODS:
+            return True
+            
+        # 3. 수정 관련 로직
+        if view.action in ['update', 'partial_update']:
+            user = request.user
+            project = getattr(obj, 'project', None)
+            if not project:
+                return False
+            
+            user_perms = project.get_user_permissions(user)
+
+            # (A) meeting.update 권한이 있으면 무조건 편집 가능
+            if user_perms.get('meeting.update', False):
+                return True
+                
+            # (B) meeting.own_update 권한이 있는 경우: 생성자 또는 참석자만 가능
+            if user_perms.get('meeting.own_update', False):
+                if (user == obj.creator) or (user in obj.attendees.all()):
+                    return True
+                return False
+                
+            # (C) 둘 다 없으면 편집 불가능
+            return False
+            
+        return True

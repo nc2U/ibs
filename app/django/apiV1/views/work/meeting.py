@@ -3,7 +3,7 @@ from django_filters.rest_framework import FilterSet, CharFilter, DateTimeFromToR
 from rest_framework import viewsets, permissions
 
 from apiV1.pagination import PageNumberPaginationTwenty
-from apiV1.permission import ProjectPermission
+from apiV1.permission import ProjectPermission, MeetingPermission
 from apiV1.serializers.work.meeting import MeetingCategorySerializer, MeetingSerializer, MeetingFileSerializer
 from work.models.meeting import MeetingCategory, Meeting, MeetingFile
 
@@ -48,7 +48,7 @@ class MeetingFilter(FilterSet):
 class MeetingViewSet(viewsets.ModelViewSet):
     queryset = Meeting.objects.all()
     serializer_class = MeetingSerializer
-    permission_classes = (permissions.IsAuthenticated, ProjectPermission)
+    permission_classes = (permissions.IsAuthenticated, MeetingPermission)
     pagination_class = PageNumberPaginationTwenty
     filterset_class = MeetingFilter
 
@@ -78,7 +78,8 @@ class MeetingViewSet(viewsets.ModelViewSet):
             'create': 'meeting.create',
             'update': 'meeting.update',
             'partial_update': 'meeting.update',
-            'destroy': 'meeting.delete'
+            'destroy': 'meeting.delete',
+            'confirm': 'meeting.confirm'
         }
         # 정의되지 않은 액션에 대해 기본 권한 반환
         return mapping.get(self.action, None)
