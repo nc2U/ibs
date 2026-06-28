@@ -15,17 +15,27 @@ class ProjectPermissionMixin:
     Mixin to provide consistent project-level visibility and permission logic.
     """
 
+    def _get_project_members(self, obj):
+        cache_key = f'_members_cache_{obj.pk}'
+        if not hasattr(self, cache_key):
+            setattr(self, cache_key, obj.all_members())
+        return getattr(self, cache_key)
+
     def get_visible(self, obj):
         if not obj:
             return False
         request = self.context.get('request')
         if request and hasattr(request, 'user'):
             user = request.user
-            if user.is_superuser or user.work_manager:
+            if not user.is_authenticated:
+                return obj.is_public
+            if user.is_superuser or getattr(user, 'work_manager', False):
                 return True
-            all_members = obj.all_members()
+            if obj.is_public:
+                return True
+            all_members = self._get_project_members(obj)
             members = [m['user']['pk'] for m in all_members]
-            return obj.is_public or user.pk in members
+            return user.pk in members
         return False
 
     def get_my_perms(self, obj):
@@ -34,16 +44,11 @@ class ProjectPermissionMixin:
         request = self.context.get('request')
         if request and hasattr(request, 'user'):
             user = request.user
-            if user.is_superuser or user.work_manager:
+            if not user.is_authenticated:
+                return []
+            if user.is_superuser or getattr(user, 'work_manager', False):
                 return list(Permission.objects.values_list('code', flat=True))
-
-            all_members = obj.all_members()
-            user_member = next((m for m in all_members if m['user']['pk'] == user.pk), None)
-
-            if user_member:
-                role_pks = [role['pk'] for role in user_member['roles']]
-                perms = Permission.objects.filter(roles__in=role_pks).values_list('code', flat=True).distinct()
-                return list(perms)
+            return obj.get_user_permissions(user)
         return []
 
 
@@ -211,8 +216,12 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
             # 기본값으로 모듈 생성
             Module.objects.create(project=project)
 
-        allowed_roles = self.initial_data.get('allowed_roles')
-        trackers = self.initial_data.get('trackers')
+        if hasattr(self.initial_data, 'getlist'):
+            allowed_roles = self.initial_data.getlist('allowed_roles')
+            trackers = self.initial_data.getlist('trackers')
+        else:
+            allowed_roles = self.initial_data.get('allowed_roles')
+            trackers = self.initial_data.get('trackers')
 
         if allowed_roles:
             project.allowed_roles.set(allowed_roles)
@@ -246,11 +255,15 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
             module.save()
 
         # 3. initial_data를 사용하여 M2M 관계 업데이트
-        allowed_roles = self.initial_data.get('allowed_roles')
+        if hasattr(self.initial_data, 'getlist'):
+            allowed_roles = self.initial_data.getlist('allowed_roles')
+            trackers = self.initial_data.getlist('trackers')
+        else:
+            allowed_roles = self.initial_data.get('allowed_roles')
+            trackers = self.initial_data.get('trackers')
+
         if allowed_roles is not None:
             instance.allowed_roles.set(allowed_roles)
-
-        trackers = self.initial_data.get('trackers')
         if trackers is not None:
             instance.trackers.set(trackers)
 
@@ -357,6 +370,8 @@ class VersionSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def create(self, validated_data):
         is_default = self.initial_data.get('is_default', False)
+        if isinstance(is_default, str):
+            is_default = is_default.lower() in ['true', '1']
         project = validated_data.get('project')
 
         if not project:
@@ -371,6 +386,8 @@ class VersionSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def update(self, instance, validated_data):
         is_default = self.initial_data.get('is_default', False)
+        if isinstance(is_default, str):
+            is_default = is_default.lower() in ['true', '1']
         project = validated_data.get('project', instance.project)
 
         if is_default:
