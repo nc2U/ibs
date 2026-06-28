@@ -360,6 +360,7 @@ export const useIssue = defineStore('issue', () => {
     issuePages,
     fetchIssue,
     removeIssue,
+    allIssueList,
     fetchAllIssueList,
     fetchIssueList,
     createIssue,

@@ -3,6 +3,7 @@ import { computed, type PropType, ref, watchEffect } from 'vue'
 import type { getProject, IssueProject } from '@/store/types/work_project.ts'
 import type { Issue, IssueFilter, IssueStatus, Tracker } from '@/store/types/work_issue.ts'
 import { useRoute, useRouter } from 'vue-router'
+import { usePerms } from '@/composables/usePerms'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
 import { useAccount } from '@/store/pinia/account.ts'
@@ -11,7 +12,7 @@ import NoData from '@/components/NoData/Index.vue'
 import SearchList from './SearchList.vue'
 import IssueItem from './IssueItem.vue'
 
-defineProps({
+const props = defineProps({
   projStatus: { type: String, default: '' },
   issueList: { type: Array as PropType<Issue[]>, default: () => [] },
   allProjects: { type: Array as PropType<getProject[]>, default: () => [] },
@@ -23,6 +24,9 @@ defineProps({
 })
 
 const emit = defineEmits(['filter-submit', 'page-select'])
+
+const { can, PERM } = usePerms()
+const canIssueCreate = computed(() => props.projStatus !== '9' && can(PERM.ISSUE_CREATE))
 
 const [route, router] = [useRoute(), useRouter()]
 
@@ -65,10 +69,7 @@ const watchControl = (payload: any) => {
     </CCol>
 
     <CCol class="text-right">
-      <span
-        v-if="projStatus !== '9' && (workManager || my_perms?.includes('issue_create'))"
-        class="mr-2 form-text"
-      >
+      <span v-if="canIssueCreate" class="mr-2 form-text">
         <v-icon icon="mdi-plus-circle" color="success" size="15" class="mr-1" />
         <router-link :to="{ name: `${String(route.name)} - 추가` }" class="ml-1">
           새 업무
