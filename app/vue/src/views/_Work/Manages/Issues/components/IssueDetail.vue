@@ -156,6 +156,19 @@ watch(route, async nVal => {
   if (nVal.query.edit) callEditForm()
 })
 
+const relatedIssues = computed(() => {
+  const list: any[] = []
+  if (props.issue?.outgoing_relations) {
+    props.issue.outgoing_relations.forEach(r => {
+      if (r.issue) list.push(r.issue)
+    })
+  }
+  if (props.issue?.incoming_relation && props.issue.incoming_relation.issue) {
+    list.push(props.issue.incoming_relation.issue)
+  }
+  return list
+})
+
 onBeforeMount(async () => {
   await logStore.fetchIssueLogList({ issue: props.issue?.pk })
   if (route.query.edit) callEditForm()
@@ -406,7 +419,7 @@ onBeforeMount(async () => {
           <RelSummary
             v-if="issue?.outgoing_relations.length || issue?.incoming_relation"
             :issue-pk="issue.pk"
-            :rel-issue-tos="[]"
+            :relations="relatedIssues"
           />
         </CCol>
         <CCol v-if="can(PERM.ISSUE_REL_MANAGE)" class="text-right form-text">
@@ -420,7 +433,7 @@ onBeforeMount(async () => {
       </template>
 
       <!-- Incoming (reverse) relation -->
-      <Index
+      <Relations
         v-if="issue?.incoming_relation"
         :rel="issue.incoming_relation"
         type="후행업무"
