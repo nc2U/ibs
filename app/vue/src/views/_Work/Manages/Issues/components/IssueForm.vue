@@ -564,7 +564,7 @@ defineExpose({ callComment, callReply })
                       </option>
                     </CFormSelect>
                     <CInputGroupText
-                      v-if="workManager"
+                      v-if="can(PERM.PROJECT_VERSION)"
                       class="pointer"
                       @click="RefVersionModal.callModal()"
                     >
