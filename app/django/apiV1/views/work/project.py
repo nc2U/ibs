@@ -80,6 +80,7 @@ class IssueProjectViewSet(viewsets.ModelViewSet):
             'partial_update': 'project.update',
             'toggle_status': 'project.close',
             'toggle_public': 'project.public',
+            'update_members': 'project.member',
             'destroy': 'project.delete'
         }
         # 정의되지 않은 액션에 대해 기본 권한 반환
@@ -97,7 +98,7 @@ class IssueProjectViewSet(viewsets.ModelViewSet):
 
         # 3. Prefetch 최적화 추가 (N+1 문제 해결)
         base_qs = base_qs.prefetch_related(
-            'all_members__user', 'all_members__roles',
+            'members__user', 'members__roles',
             'trackers', 'versions', 'categories__assigned_to',
             'allowed_roles'
         )
@@ -202,13 +203,13 @@ class MemberViewSet(viewsets.ModelViewSet):
 
         # 1. 슈퍼유저나 work_manager는 전체 멤버 조회 가능
         if user.is_superuser or getattr(user, 'work_manager', False):
-            return queryset
+            return queryset.prefetch_related('roles')
 
         # 2. 접근 가능한 프로젝트의 멤버만 조회
         # - 공개 프로젝트 OR 사용자가 멤버인 프로젝트
         return queryset.filter(
             Q(project__is_public=True) | Q(project__members__user=user)
-        ).distinct()
+        ).distinct().prefetch_related('roles')
 
 
 class VersionFilter(FilterSet):
