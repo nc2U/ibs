@@ -302,6 +302,18 @@ class IssueCategoryViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated, ProjectPermission)
     filterset_fields = ('project__slug',)
 
+    @property
+    def required_permission(self):
+        mapping = {
+            'list': 'issue.read',
+            'retrieve': 'issue.read',
+            'create': 'issue.category_manage',
+            'update': 'issue.category_manage',
+            'partial_update': 'issue.category_manage',
+            'destroy': 'issue.category_manage'
+        }
+        return mapping.get(self.action, None)
+
 
 class IssueCountByTrackerViewSet(viewsets.ModelViewSet):
     queryset = Tracker.objects.all()
