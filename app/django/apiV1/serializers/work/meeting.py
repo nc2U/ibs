@@ -49,10 +49,10 @@ class MeetingSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Meeting
-        fields = ('pk', 'project', 'project_desc', 'category', 'category_desc',
-                  'status', 'status_display', 'title', 'agenda', 'content', 'decisions',
-                  'action_items', 'meeting_date', 'attendees', 'attendees_desc',
-                  'other_attendees', 'files', 'issues', 'created', 'updated', 'creator', 'updater')
+        fields = ('pk', 'project', 'project_desc', 'title', 'category', 'category_desc',
+                  'status', 'status_display', 'is_confirmed', 'agenda', 'content', 'decisions',
+                  'action_items', 'meeting_date', 'attendees', 'attendees_desc', 'other_attendees',
+                  'files', 'issues', 'created', 'updated', 'creator', 'updater')
 
     @transaction.atomic
     def create(self, validated_data):

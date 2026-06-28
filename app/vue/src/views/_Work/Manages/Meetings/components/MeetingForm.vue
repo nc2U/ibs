@@ -33,7 +33,8 @@ const form = ref({
   pk: null as number | null,
   project: 6 as number,
   category: null as number | null,
-  status: '1' as '1' | '2' | '3' | '4',
+  status: '1' as '1' | '2' | '3',
+  is_confirmed: false,
   title: '',
   agenda: '',
   content: '',
@@ -160,6 +161,7 @@ const fetchMeeting = async (pk: number) => {
       project: meeting.value.project,
       category: meeting.value.category,
       status: meeting.value.status,
+      is_confirmed: meeting.value.is_confirmed,
       title: meeting.value.title,
       agenda: meeting.value.agenda,
       content: meeting.value.content,
@@ -539,6 +541,19 @@ const onCategorySubmit = (event: Event) => {
                   v-model="form.other_attendees"
                   id="other_attendees"
                   placeholder="외부 참석자"
+                />
+              </CCol>
+            </CRow>
+
+            <CRow class="mt-5">
+              <CFormLabel for="other_attendees" class="col-sm-4 col-form-label text-right">
+                확정 여부
+              </CFormLabel>
+              <CCol sm="8" class="pt-2">
+                <CFormSwitch
+                  v-model="form.is_confirmed"
+                  id="is_confirmed"
+                  label="최종 승인 - 확정"
                 />
               </CCol>
             </CRow>

@@ -26,11 +26,12 @@ class MeetingCategory(models.Model):
 class Meeting(models.Model):
     project = models.ForeignKey(IssueProject, on_delete=models.CASCADE, verbose_name='프로젝트',
                                 related_name='meetings')
+    title = models.CharField('회의 제목', max_length=255)
     category = models.ForeignKey(MeetingCategory, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='카테고리',
                                  related_name='meetings')
-    MEETING_STATUS_CHOICES = (('1', '준비'), ('2', '종료'), ('3', '확정'), ('4', '취소'))
+    MEETING_STATUS_CHOICES = (('1', '준비'), ('2', '종료'), ('3', '취소'))
     status = models.CharField('회의 상태', max_length=1, choices=MEETING_STATUS_CHOICES, default='1')
-    title = models.CharField('회의 제목', max_length=255)
+    is_confirmed = models.BooleanField('확정 여부', default=False)
     agenda = models.TextField('회의 의제', blank=True, default='',
                               help_text='회의에서 논의할 주요 의제 (사전 공유용)')
     content = models.TextField('회의 내용', blank=True, default='')

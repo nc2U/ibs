@@ -21,11 +21,12 @@ export interface Meeting {
   pk: number
   project: number
   project_desc: SimpleProject
+  title: string
   category: number | null
   category_desc: MeetingCategory | null
-  status: '1' | '2' | '3' | '4'
-  status_display: '준비' | '종료' | '확정' | '취소'
-  title: string
+  status: '1' | '2' | '3'
+  status_display: '준비' | '종료' | '취소'
+  is_confirmed: boolean
   agenda: string
   content: string
   decisions: string

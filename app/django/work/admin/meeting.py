@@ -20,16 +20,18 @@ class MeetingFileInline(admin.TabularInline):
 
 @admin.register(Meeting)
 class MeetingAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('pk', 'project', 'category', 'title', 'meeting_date', 'creator', 'created')
-    list_display_links = ('title',)
-    list_filter = ('project', 'category', ('meeting_date', DateRangeFilter))
+    list_display = ('pk', 'project', 'title', 'category', 'status',
+                    'is_confirmed', 'meeting_date', 'creator', 'created')
+    list_display_links = ('project', 'title',)
+    list_filter = ('project', 'category', 'status', 'is_confirmed', ('meeting_date', DateRangeFilter))
+    list_editable = ('category', 'status', 'is_confirmed')
     search_fields = ('title', 'agenda', 'content', 'decisions', 'action_items')
     filter_horizontal = ('attendees',)
     inlines = (MeetingFileInline,)
 
     fieldsets = (
         ('기본 정보', {
-            'fields': ('project', 'category', 'title', 'meeting_date')
+            'fields': ('project', 'title', 'category', 'status', 'is_confirmed', 'meeting_date')
         }),
         ('회의 준비 (Agenda)', {
             'fields': ('agenda',)
