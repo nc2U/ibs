@@ -1,10 +1,9 @@
 <script lang="ts" setup>
-import { type PropType, ref } from 'vue'
+import { type PropType } from 'vue'
 import type { Issue } from '@/store/types/work_issue.ts'
 import { timeFormat } from '@/utils/baseMixins.ts'
 import { usePerms } from '@/composables/usePerms.ts'
 import IssueDropDown from './IssueDropDown.vue'
-import { CTableDataCell } from '@coreui/vue'
 
 defineProps({ issue: { type: Object as PropType<Issue>, required: true } })
 
