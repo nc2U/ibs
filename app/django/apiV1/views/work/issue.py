@@ -102,7 +102,7 @@ class IssueFilter(FilterSet):
 class IssueViewSet(viewsets.ModelViewSet):
     queryset = Issue.objects.all()
     serializer_class = IssueSerializer
-    permission_classes = (permissions.IsAuthenticated, ProjectPermission)
+    permission_classes = (permissions.IsAuthenticated, IssuePermission)
     pagination_class = PageNumberPaginationTwenty
     filterset_class = IssueFilter
 
@@ -196,10 +196,10 @@ class IssueRelationViewSet(viewsets.ModelViewSet):
     @property
     def required_permission(self):
         mapping = {
-            'create': 'issue.update',
-            'update': 'issue.update',
-            'partial_update': 'issue.update',
-            'destroy': 'issue.update'
+            'create': 'issue.rel_manage',
+            'update': 'issue.rel_manage',
+            'partial_update': 'issue.rel_manage',
+            'destroy': 'issue.rel_manage'
         }
         return mapping.get(self.action, None)
 
