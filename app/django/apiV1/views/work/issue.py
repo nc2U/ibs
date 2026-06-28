@@ -243,9 +243,43 @@ class IssueFileViewSet(viewsets.ModelViewSet):
 class IssueCommentViewSet(viewsets.ModelViewSet):
     queryset = IssueComment.objects.all()
     serializer_class = IssueCommentSerializer
-    permission_classes = (permissions.IsAuthenticated, ProjectPermission)
+    permission_classes = (permissions.IsAuthenticated, IssueCommentPermission)
     pagination_class = PageNumberPaginationTwenty
     search_fields = ('id',)
+
+    @property
+    def required_permission(self):
+        mapping = {
+            'list': 'issue.read',
+            'retrieve': 'issue.read',
+            'create': 'issue.comment_create',
+            'update': 'issue.comment_update',
+            'partial_update': 'issue.comment_update',
+            'destroy': 'issue.comment_delete'
+        }
+        return mapping.get(self.action, None)
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = IssueComment.objects.all()
+        
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return queryset
+            
+        from work.models.project import IssueProject
+        allowed_project_ids = []
+        visible_projects = IssueProject.objects.all()
+        for proj in visible_projects:
+            if 'issue.private_comment_read' in proj.get_user_permissions(user):
+                allowed_project_ids.append(proj.id)
+                
+        from django.db.models import Q
+        queryset = queryset.filter(
+            Q(is_private=False) |
+            Q(creator=user) |
+            Q(issue__project_id__in=allowed_project_ids)
+        )
+        return queryset
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)

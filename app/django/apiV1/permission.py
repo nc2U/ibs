@@ -278,3 +278,58 @@ class IssuePermission(ProjectPermission):
                 return False
             
         return True
+
+
+class IssueCommentPermission(ProjectPermission):
+    def has_object_permission(self, request, view, obj):
+        # 1. 기본 프로젝트 레벨 권한 선제 검증
+        if not super().has_object_permission(request, view, obj):
+            return False
+            
+        user = request.user
+        project = None
+        if hasattr(obj, 'issue') and hasattr(obj.issue, 'project'):
+            project = obj.issue.project
+            
+        if not project:
+            return False
+            
+        user_perms = project.get_user_permissions(user)
+
+        # [비공개 댓글 가드] 작성자가 아니고 비공개 댓글 보기 권한이 없으면 접근 전면 차단
+        if obj.is_private and obj.creator != user:
+            if 'issue.private_comment_read' not in user_perms:
+                return False
+
+        # 2. 안전한 메서드(GET, HEAD, OPTIONS)는 통과
+        if request.method in permissions.SAFE_METHODS:
+            return True
+            
+        # 3. 수정 및 삭제 관련 로직
+        if view.action in ['update', 'partial_update', 'destroy']:
+            # (A) 댓글 수정 권한 처리
+            if view.action in ['update', 'partial_update']:
+                # 1) is_private 변경 시도 검증
+                if 'is_private' in request.data:
+                    req_private = request.data.get('is_private')
+                    if isinstance(req_private, str):
+                        req_private = req_private.lower() in ['true', '1']
+                    
+                    if req_private != obj.is_private:
+                        if 'issue.private_comment_set' not in user_perms:
+                            if not ('issue.comment_own_update' in user_perms and obj.creator == user):
+                                return False
+
+                # 2) 댓글 내용 수정 권한 검증
+                if 'issue.comment_update' in user_perms:
+                    return True
+                if 'issue.comment_own_update' in user_perms:
+                    if obj.creator == user:
+                        return True
+                return False
+
+            # (B) 댓글 삭제 권한 처리
+            if view.action == 'destroy':
+                return 'issue.comment_delete' in user_perms
+            
+        return True
