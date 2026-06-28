@@ -15,7 +15,7 @@ import IssueFiles from './issueFiles/Index.vue'
 import SubIssues from './subIssues/Index.vue'
 import SubSummary from './subIssues/Summary.vue'
 import RelSummary from './relations/Summary.vue'
-import Index from './relations/Index.vue'
+import Relations from './relations/Index.vue'
 import AddRelationForm from './relations/AddRelationForm.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
@@ -416,7 +416,7 @@ onBeforeMount(async () => {
 
       <!-- Outgoing relations -->
       <template v-for="rel in issue.outgoing_relations" :key="rel.pk">
-        <Index :rel="rel" type="선행업무" @delete-relation="deleteRelation(rel.pk as number)" />
+        <Relations :rel="rel" type="선행업무" @delete-relation="deleteRelation(rel.pk as number)" />
       </template>
 
       <!-- Incoming (reverse) relation -->

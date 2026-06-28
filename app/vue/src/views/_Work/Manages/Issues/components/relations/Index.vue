@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { type PropType, ref } from 'vue'
+import { usePerms } from '@/composables/usePerms.ts'
 import { cutString, diffDate } from '@/utils/baseMixins'
 import type { IssueRelation } from '@/store/types/work_issue.ts'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
@@ -13,23 +14,28 @@ const emit = defineEmits(['delete-relation'])
 
 const delRelRef = ref()
 
-const deleteRelation = () => {
-  delRelRef.value.callModal()
-}
+const { can, PERM } = usePerms()
+
+const deleteRelation = () => delRelRef.value.callModal()
 
 const deleteRelConfirm = () => {
   emit('delete-relation')
   delRelRef.value.close()
 }
 </script>
+
 <template>
   <CRow class="rel-issue" v-if="rel.issue">
     <CCol md="6" class="pt-1">
       <span>{{ type }} : </span>
       <span v-if="rel.issue">
-        <router-link :to="{ name: '(업무) - 보기', params: { issueId: rel.issue.pk } }">
+        <router-link
+          v-if="can(PERM.ISSUE_READ)"
+          :to="{ name: '(업무) - 보기', params: { issueId: rel.issue.pk } }"
+        >
           {{ rel.issue.tracker }} #{{ rel.issue.pk }}
         </router-link>
+        <span v-else>{{ rel.issue.tracker }} #{{ rel.issue.pk }}</span>
         : {{ rel.issue.subject }}
       </span>
     </CCol>
@@ -59,7 +65,15 @@ const deleteRelConfirm = () => {
           height="14"
         />
       </span>
-      <span class="pointer" @click="deleteRelation">삭제</span>
+      <v-btn
+        v-if="can(PERM.ISSUE_REL_MANAGE)"
+        variant="plain"
+        size="small"
+        color="danger"
+        @click="deleteRelation"
+      >
+        삭제
+      </v-btn>
     </CCol>
   </CRow>
 
