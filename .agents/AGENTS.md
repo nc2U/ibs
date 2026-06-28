@@ -1,0 +1,215 @@
+# AGENTS.md
+
+이 파일은 이 저장소의 코드를 다룰 때 개발 에이전트(Antigravity 등)에게 지침을 제공합니다.
+
+## 프로젝트 개요
+
+IBS는 Django 6.* 백엔드와 Vue 3.5 프론트엔드로 구축된 종합 건설 관리 시스템입니다.
+건설 회사의 건설 프로젝트, 계약, 기납부/미납금, 자금 흐름(캐시플로우) 및 문서 관리를 수행합니다.
+
+## 개발 명령어
+
+### Docker 개발 환경 (권장)
+
+```bash
+# Docker를 통한 Django 명령어 실행
+docker compose -f deploy/docker-compose.yml exec web python manage.py <command>
+
+# 예시:
+docker compose -f deploy/docker-compose.yml exec web python manage.py check
+docker compose -f deploy/docker-compose.yml exec web python manage.py showmigrations
+docker compose -f deploy/docker-compose.yml exec web python manage.py test <app_name>
+docker compose -f deploy/docker-compose.yml exec web sh migrate.sh
+```
+
+### Django 백엔드 (app/django/)
+
+```bash
+# 마이그레이션 실행 (모든 앱의 마이그레이션을 생성하고 마이그레이트 실행)
+sh migrate.sh -m
+
+# 정적 파일 수집 (static files)
+python manage.py collectstatic
+
+# 개발 서버 실행
+python manage.py runserver
+
+# 슈퍼유저(관리자) 생성
+python manage.py createsuperuser
+
+# 시드 데이터 로드
+cd ibs/fixtures && sh loaddata.sh
+
+# 테스트 실행
+python manage.py test
+python manage.py test <app_name>
+
+# 시스템 검사
+python manage.py check
+```
+
+### Vue 프론트엔드 (app/vue/)
+
+```bash
+# 의존성 패키지 설치
+pnpm install
+
+# 개발 서버 실행
+pnpm dev
+
+# 프로덕션 빌드
+pnpm build
+
+# 테스트 실행
+pnpm test:unit
+pnpm test:e2e
+
+# 린트 및 포맷팅
+pnpm lint
+pnpm format
+
+# 타입 검사
+pnpm type-check
+```
+
+## 아키텍처 개요
+
+### 백엔드 구조
+
+- **Django 앱**: 각 비즈니스 영역을 독립적인 Django 앱으로 구성하여 관리합니다.
+    - `accounts` - 사용자 관리 및 인증 (커스텀 User 모델)
+    - `apiV1` - 프론트엔드 연동을 위한 REST API 엔드포인트
+    - `book` - 도서 / 문서 관리
+    - `company` - 회사 및 회사 정보 관리
+    - `contract` - 계약 및 계약자 관리
+    - `docs` - 문서 등록 시스템
+    - `forum` - 게시판 기능
+    - `ibs` - 기초 회계 계정 / 대시보드 설정 / 달력 / 오늘의 한마디
+    - `items` - 분양 계약 유니트 및 타입 / 속성 관리
+    - `ledger` - 재무 거래 및 자금 흐름 관리
+    - `notice` - 고객 고지 및 알림 관리
+    - `payment` - 수납 처리 및 수납 청구 관리
+    - `project` - 건설 프로젝트(현장) 관리
+    - `work` - 레드마인 기반 업무(Issue) 및 회의 연동 관리
+
+### 데이터베이스 아키텍처
+
+- `DATABASE_TYPE` 환경 변수를 통해 PostgreSQL를 지원합니다.
+- `_config/database_router.py`에 마스터-슬레이브(Read/Write 분리) 라우팅이 설정되어 있습니다.
+- `KUBERNETES_SERVICE_HOST` 환경 변수가 감지되면 읽기 전용 복제본(Replica) 데이터베이스를 사용하여 조회 작업을 분산합니다.
+- 모든 쓰기 작업은 default 데이터베이스로 전송되며, 읽기 작업은 복제본으로 분산 가능합니다.
+- 개발/프로덕션 등 환경에 따른 멀티 데이터베이스 설정이 적용되어 있습니다.
+
+### API 구조
+
+- REST API 엔드포인트는 `apiV1/` 앱에 통합 관리됩니다.
+- `django-rest-framework-simplejwt`를 사용한 JWT 인증을 수행합니다.
+- 도메인 단위 코드 구성:
+    - Serializer 정의: `apiV1/serializers/` (accounts, company, project 등)
+    - ViewSet 정의: `apiV1/views/` (각 도메인에 대응)
+- 자동으로 URL을 생성하기 위해 `DefaultRouter`를 사용합니다.
+
+### 프론트엔드 통합
+
+- **Vue 3.5**: Vite 6.3 빌드 시스템, TypeScript 5.8, Vuetify 3.10 UI 프레임워크 기반의 메인 SPA입니다.
+    - 풍부한 컴포넌트 생태계 활용 (d3, 차트, 마크다운 에디터, 데이트 피커 등)
+    - Pinia를 활용한 전역 상태 관리
+    - Vitest 및 Cypress를 사용한 테스트 코드 작성
+
+### 설정 아키텍처 (Configuration)
+
+- `_config/settings.py` - 환경 변수 로드를 위해 `python-decouple`을 사용하는 Django 설정 파일
+- `_config/urls.py` - 헬스 체크(Health check) 및 API 엔드포인트를 포함한 메인 URL 라우팅
+- `_config/database_router.py` - 마스터-슬레이브 설정을 위한 데이터베이스 라우팅 로직
+- Django 루트 디렉토리의 `.env` 파일로부터 환경 변수를 로드합니다.
+- Docker 환경 변수는 `deploy/docker-compose.yml`에 정의되어 있습니다.
+
+## 배포 (Deployment)
+
+### Docker 배포 (운영 환경 대응)
+
+- **멀티 컨테이너 설정**: 5개 컨테이너 아키텍처
+    - `ibs-nginx` - Nginx 리버스 프록시 (포트 80)
+    - `ibs-web` - uWSGI 구동 Django 애플리케이션 (포트 8000)
+    - `ibs-postgres` - PostgreSQL 데이터베이스 (포트 5432)
+    - `ibs-redis` - 캐싱 및 세션 저장을 위한 Redis 7
+    - `ibs-celery` - 비동기 작업을 처리하는 Celery 워커
+- **구성**: 서비스 정의가 포함된 `deploy/docker-compose.yml`
+- **볼륨**: 영구 데이터(Persistent data), 정적/미디어 파일, DB 백업, Redis 데이터를 볼륨으로 유지
+- **환경 설정**: 타임존 `Asia/Seoul`, 한국어 지원 설정
+
+### Kubernetes 배포
+
+- **Helm 차트**: `deploy/helm/` 내에 전체 배포 설정 위치
+- **CI/CD**: 자동 배포를 위한 종합적인 GitHub Actions 워크플로우 구성
+    - Django 백엔드 및 Vue 컴포넌트 각각을 위한 워크플로우 분리
+- **스토리지**: 영구 스토리지를 위한 NFS 서브디렉토리 외부 프로비저너 사용
+- **보안**: SSL 인증서 관리를 위한 `cert-manager` 적용
+- **수신 트래픽**: 트래픽 제어를 위한 `nginx-ingress` 설정
+- **데이터베이스**: 백업 및 복제를 지원하는 PostgreSQL 설정
+
+## 테스트
+
+### Django 테스트
+
+```bash
+# 모든 테스트 실행
+python manage.py test
+
+# 특정 앱 테스트 실행
+python manage.py test accounts
+python manage.py test contract
+```
+
+### Vue 테스트
+
+```bash
+# Vitest를 사용한 유닛 테스트
+pnpm test:unit
+
+# Cypress를 사용한 E2E 테스트
+pnpm test:e2e
+```
+
+## CI/CD 및 자동화
+
+### GitHub Actions 워크플로우
+
+- **운영 배포**: master 브랜치 병합 시 자동화 워크플로우 실행
+    - `django_prod.yml` - Django 백엔드 배포
+    - `vue_prod.yml` - Vue 프론트엔드 빌드 및 배포
+- **개발 배포**: 개발 브랜치 배포 워크플로우
+- **데이터베이스 작업**: 백업, 동기화 및 초기화 스크립트 실행
+- **Helm 배포**: Kubernetes 배포 자동화
+- **보안**: 취약점 스캔을 위한 CodeQL 분석
+
+### 배포 프로세스 단계
+
+1. **1단계**: `_init_setup_prod_1.yml` - 초기 인프라 setup
+2. **2단계**: `_init_setup_prod_2.yml` - 애플리케이션 배포 및 환경 설정
+3. **Slack 연동**: 배포 상태에 대한 실시간 Slack 알림 발송
+
+## 중요 유의사항
+
+### 핵심 설정
+
+- 커스텀 사용자 모델 적용: `AUTH_USER_MODEL = 'accounts.User'`
+- 정적 파일은 `_assets/` 디렉토리에서 서비스됨
+- 미디어 파일 지원: 로컬 스토리지 및 S3 클라우드 스토리지 연동
+- 기본 언어/국가: 한국어(`ko`), 타임존 `Asia/Seoul`
+- SMTP 설정을 통한 이메일 연동
+
+### 개발 프랙티스
+
+- 모든 데이터베이스 마이그레이션이 항상 최신으로 반영되어야 함
+- 확장을 고려한 마스터-슬레이브 데이터베이스 라우팅
+- Redis 기반 캐싱 및 세션 관리 사용
+- 비동기 태스크 처리를 위한 Celery 사용
+- Git 커밋 및 이슈 추적을 위한 `work` 앱의 Git 연동 기능
+
+### 파일 구조 요약
+
+- Django 백엔드: `app/django/`
+- Vue 프론트엔드: `app/vue/` (TypeScript, Vuetify)
+- 배포 설정 파일: `deploy/`
+- 영구 보관용 볼륨 데이터: `volume/`
