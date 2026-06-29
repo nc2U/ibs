@@ -114,27 +114,58 @@ class IssueSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         ret = super().to_representation(instance)
         user = self.context['request'].user
-        
+
         # 슈퍼유저나 work_manager는 패스
         if user.is_superuser or getattr(user, 'work_manager', False):
             return ret
-            
+
         # 해당 업무와 특별한 관계가 없고, 'issue.watcher_read' 권한도 없는 경우
         user_perms = instance.project.get_user_permissions(user)
         is_related = (
-            user == instance.creator or 
-            user == instance.assigned_to or 
-            instance.watchers.filter(pk=user.id).exists()
+                user == instance.creator or
+                user == instance.assigned_to or
+                instance.watchers.filter(pk=user.id).exists()
         )
         if not is_related and 'issue.watcher_read' not in user_perms:
             ret['watchers'] = []
-            
+
         return ret
 
     def validate(self, attrs):
         user = self.context['request'].user
-        
-        # 이미 생성된 업무의 관람자 변경 시도(Update) 시 검증 가드 작동
+
+        # 1. 담당자(assigned_to) assignable 권한 검증
+        assigned_to_id = self.initial_data.get('assigned_to', None)
+        if assigned_to_id:
+            try:
+                assigned_user = User.objects.get(pk=assigned_to_id)
+            except User.DoesNotExist:
+                raise serializers.ValidationError({'assigned_to': '존재하지 않는 사용자입니다.'})
+
+            project = None
+            if self.instance:
+                project = self.instance.project
+            else:
+                project_slug = self.initial_data.get('project', None)
+                if project_slug:
+                    try:
+                        project = IssueProject.objects.get(slug=project_slug)
+                    except IssueProject.DoesNotExist:
+                        pass
+
+            if project:
+                is_admin_or_self = (
+                        assigned_user == user or
+                        assigned_user.is_superuser or
+                        getattr(assigned_user, 'work_manager', False)
+                )
+                if not is_admin_or_self:
+                    role_attrs = project.get_user_role_attributes(assigned_user)
+                    if not role_attrs.get('assignable', False):
+                        raise serializers.ValidationError(
+                            {'assigned_to': '지정된 담당자는 이 프로젝트에서 업무를 위탁받을 수 있는 역할이 없습니다.'})
+
+        # 2. 이미 생성된 업무의 관람자 변경 시도(Update) 시 검증 가드 작동
         if self.instance:
             project = self.instance.project
             creator = self.instance.creator
@@ -147,9 +178,9 @@ class IssueSerializer(serializers.ModelSerializer):
                 req_watchers = self.initial_data.getlist('watchers')
             else:
                 req_watchers = self.initial_data.get('watchers', [])
-                
+
             del_watcher = self.initial_data.get('del_watcher', None)
-            
+
             # ID 리스트 추출
             req_watcher_ids = [int(w) for w in req_watchers if str(w).isdigit()]
             del_watcher_id = int(del_watcher) if del_watcher and str(del_watcher).isdigit() else None
@@ -173,10 +204,10 @@ class IssueSerializer(serializers.ModelSerializer):
             # 5. 권한 통제 판단
             # 슈퍼유저, work_manager, 업무 생성자(creator), 업무 담당자(assigned_to)는 무조건 프리패스
             is_responsible_user = (
-                user.is_superuser or 
-                getattr(user, 'work_manager', False) or 
-                user == creator or 
-                user == assigned_to
+                    user.is_superuser or
+                    getattr(user, 'work_manager', False) or
+                    user == creator or
+                    user == assigned_to
             )
 
             if not is_responsible_user:
@@ -394,6 +425,38 @@ class IssueCategorySerializer(serializers.ModelSerializer):
         model = IssueCategory
         fields = ('pk', 'project', 'name', 'assigned_to')
 
+    def validate(self, attrs):
+        assigned_to = attrs.get('assigned_to')
+        if assigned_to:
+            project = None
+            if self.instance:
+                project = self.instance.project
+            else:
+                project_slug = self.initial_data.get('project')
+                if project_slug:
+                    try:
+                        if isinstance(project_slug, int) or (isinstance(project_slug, str) and project_slug.isdigit()):
+                            project = IssueProject.objects.get(pk=int(project_slug))
+                        else:
+                            project = IssueProject.objects.get(slug=project_slug)
+                    except IssueProject.DoesNotExist:
+                        pass
+
+            if project:
+                user = self.context['request'].user
+                is_admin_or_self = (
+                        assigned_to == user or
+                        assigned_to.is_superuser or
+                        getattr(assigned_to, 'work_manager', False)
+                )
+                if not is_admin_or_self:
+                    role_attrs = project.get_user_role_attributes(assigned_to)
+                    if not role_attrs.get('assignable', False):
+                        raise serializers.ValidationError(
+                            {'assigned_to': '지정된 담당자는 이 프로젝트에서 업무를 위탁받을 수 있는 역할이 없습니다.'}
+                        )
+        return attrs
+
     @transaction.atomic
     def create(self, validated_data):
         project_slug = self.initial_data.get('project')
@@ -466,6 +529,7 @@ class IssueCountByTrackerSerializer(serializers.ModelSerializer):
 
         # 3. DB 히트 없이 메모리에서 자식 노드 재귀 수집
         sub_projects_slugs = []
+
         def collect_children(parent_obj):
             for p in all_projects:
                 if p.parent_id == parent_obj.id:
