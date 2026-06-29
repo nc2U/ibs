@@ -11,14 +11,10 @@ export const usePermission = defineStore('permission', () => {
   const projectPermSet = ref<Set<PermissionCode>>(new Set())
 
   // 전역 프로젝트 생성 권한 설정 (로그인 시/앱 시작 시 호출)
-  const setGlobalProjectCreatePerm = (can: boolean) => {
-    canCreateProject.value = can
-  }
+  const setGlobalProjectCreatePerm = (can: boolean) => (canCreateProject.value = can)
 
   // 프로젝트 권한 데이터 세팅 (프로젝트 로드 시 호출)
-  const setProjectPermissions = (perms: PermissionCode[]) => {
-    projectPermSet.value = new Set(perms)
-  }
+  const setProjectPermissions = (perms: PermissionCode[]) => (projectPermSet.value = new Set(perms))
 
   // 권한 체크 로직
   const can = (code: PermissionCode | PermissionCode[], projectIdentifier?: number | string) => {
@@ -41,9 +37,8 @@ export const usePermission = defineStore('permission', () => {
 
       // active 프로젝트가 없는 상태(전역 구간)라면,
       // 사용자가 권한을 가진 프로젝트가 최소 하나라도 있으면 true로 반환
-      if (!workStore.issueProject) {
+      if (!workStore.issueProject)
         return workStore.AllIssueProjects.some((p: any) => p.my_perms && p.my_perms.includes(c))
-      }
 
       // 프로젝트별 권한 세트에서 체크
       return projectPermSet.value.has(c)

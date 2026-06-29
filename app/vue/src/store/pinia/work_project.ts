@@ -13,10 +13,10 @@ import type {
   Version,
 } from '@/store/types/work_project.ts'
 
-const comStore = useCompany()
-const permStore = usePermission()
-
 export const useWork = defineStore('work', () => {
+  const comStore = useCompany()
+  const permStore = usePermission()
+
   // Issue Project states & getters
   const issueProject = ref<IssueProject | null>(null)
   const issueProjectList = ref<IssueProject[]>([])
