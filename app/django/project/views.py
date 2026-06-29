@@ -51,7 +51,7 @@ class SettingsOrderGroup(LoginRequiredMixin, FormView):
 
     def get_project(self):
         try:
-            project = self.request.user.staffauth.assigned_project
+            project = self.request.user.staffauth.default_project
         except:
             project = Project.objects.first()
         gp = self.request.GET.get('project')
@@ -90,7 +90,7 @@ class SettingsUnitType(LoginRequiredMixin, FormView):
 
     def get_project(self):
         try:
-            project = self.request.user.staffauth.assigned_project
+            project = self.request.user.staffauth.default_project
         except:
             project = Project.objects.first()
         gp = self.request.GET.get('project')
@@ -129,7 +129,7 @@ class SettingsFloorType(LoginRequiredMixin, FormView):
 
     def get_project(self):
         try:
-            project = self.request.user.staffauth.assigned_project
+            project = self.request.user.staffauth.default_project
         except:
             project = Project.objects.first()
         gp = self.request.GET.get('project')
@@ -167,7 +167,7 @@ class SettingsSalesPrice(LoginRequiredMixin, TemplateView):
 
     def get_project(self):
         try:
-            project = self.request.user.staffauth.assigned_project
+            project = self.request.user.staffauth.default_project
         except:
             project = Project.objects.first()
         gp = self.request.GET.get('project')
@@ -248,7 +248,7 @@ class SettingsPaymentOrder(LoginRequiredMixin, FormView):
 
     def get_project(self):
         try:
-            project = self.request.user.staffauth.assigned_project
+            project = self.request.user.staffauth.default_project
         except:
             project = Project.objects.first()
         gp = self.request.GET.get('project')
@@ -287,7 +287,7 @@ class SettingsDownPayment(LoginRequiredMixin, TemplateView):
 
     def get_project(self):
         try:
-            project = self.request.user.staffauth.assigned_project
+            project = self.request.user.staffauth.default_project
         except:
             project = Project.objects.first()
         gp = self.request.GET.get('project')
@@ -329,7 +329,7 @@ class SiteManage(LoginRequiredMixin, ListView, FormView):
 
     def get_project(self):
         try:
-            project = self.request.user.staffauth.assigned_project
+            project = self.request.user.staffauth.default_project
         except:
             project = Project.objects.first()
         gp = self.request.GET.get('project')
@@ -394,7 +394,7 @@ class SiteOwnerManage(LoginRequiredMixin, ListView, FormView):
 
     def get_project(self):
         try:
-            project = self.request.user.staffauth.assigned_project
+            project = self.request.user.staffauth.default_project
         except:
             project = Project.objects.first()
         gp = self.request.GET.get('project')
@@ -486,7 +486,7 @@ class SiteContractManage(LoginRequiredMixin, ListView, FormView):
 
     def get_project(self):
         try:
-            project = self.request.user.staffauth.assigned_project
+            project = self.request.user.staffauth.default_project
         except:
             project = Project.objects.first()
         gp = self.request.GET.get('project')

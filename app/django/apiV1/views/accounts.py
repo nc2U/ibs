@@ -225,7 +225,7 @@ class AdminCreateUserView(APIView):
             user.save()
 
             # 2. 기본 스태프 권한 및 프로필 등록
-            StaffAuth.objects.create(user=user, company_id=1, is_project_staff=True)
+            StaffAuth.objects.create(user=user, company_id=1, is_pjt_staff=True)
             Profile.objects.create(user=user)
 
             if mail_sending is not None:

@@ -64,7 +64,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         """
         send_mail(subject, message, from_email, [self.email], **kwargs)
 
-    def assigned_projects(self):
+    def work_projects(self):
         from work.models.project import Member
         # 1. Get project IDs where the user is directly a member
         direct_project_ids = list(
@@ -90,19 +90,19 @@ class User(AbstractBaseUser, PermissionsMixin):
         return IssueProject.objects.filter(pk__in=assigned_ids)
 
     def member_project_ids(self):
-        # assigned_projects가 반환하는 QuerySet에서 ID 목록만 추출
-        return self.assigned_projects().values_list('id', flat=True)
+        # work_projects가 반환하는 QuerySet에서 ID 목록만 추출
+        return self.work_projects().values_list('id', flat=True)
 
 
 class StaffAuth(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='staff_auth')
     company = models.ForeignKey('company.Company', on_delete=models.PROTECT, verbose_name='회사정보')
-    is_staff = models.BooleanField('본사 관리자', default=False, help_text='외부 관계자가 아닌 본사 직원(관리자)일 경우 선택')
-    is_project_staff = models.BooleanField('프로젝트 관리자', default=False, help_text='본사 직원 외 프로젝트 관리 직원(관리자)일 경우 선택')
+    is_hq_staff = models.BooleanField('본사 근무 직원', default=False, help_text='외부 관계자가 아닌 본사 직원(관리자)일 경우 선택')
+    is_pjt_staff = models.BooleanField('프로젝트 관리자', default=False, help_text='본사 직원 외 프로젝트 관리 직원(관리자)일 경우 선택')
     allowed_projects = models.ManyToManyField('project.Project', related_name='allowed_projects',
                                               blank=True, verbose_name='허용 프로젝트',
                                               help_text='사용자가 조회 및 관리할 수 있는 프로젝트들을 선택합니다.')
-    assigned_project = models.ForeignKey('project.Project',
+    default_project = models.ForeignKey('project.Project',
                                          on_delete=models.SET_NULL, null=True,
                                          blank=True, verbose_name='담당 메인 프로젝트',
                                          help_text='선택한 프로젝트를 사용자의 각 화면에서 기본 프로젝트로 보여줍니다.')

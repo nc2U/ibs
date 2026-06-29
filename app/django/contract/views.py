@@ -22,7 +22,7 @@ class ContractLV(LoginRequiredMixin, ListView):
 
     def get_project(self):
         try:
-            project = self.request.user.staffauth.assigned_project
+            project = self.request.user.staffauth.default_project
         except:
             project = Project.objects.first()
         gp = self.request.GET.get('project')
@@ -126,7 +126,7 @@ class ContractRegisterView(LoginRequiredMixin, FormView):
 
     def get_project(self):
         try:
-            project = self.request.user.staffauth.assigned_project
+            project = self.request.user.staffauth.default_project
         except:
             project = Project.objects.first()
         gp = self.request.GET.get('project')
@@ -382,7 +382,7 @@ class ContractorTrans(LoginRequiredMixin, FormView):
 
     def get_project(self):
         try:
-            project = self.request.user.staffauth.assigned_project
+            project = self.request.user.staffauth.default_project
         except:
             project = Project.objects.first()
         gp = self.request.GET.get('project')
@@ -404,7 +404,7 @@ class ContractorReleaseRegister(LoginRequiredMixin, ListView, FormView):
 
     def get_project(self):
         try:
-            project = self.request.user.staffauth.assigned_project
+            project = self.request.user.staffauth.default_project
         except:
             project = Project.objects.first()
         gp = self.request.GET.get('project')
@@ -505,7 +505,7 @@ class BuildDashboard(LoginRequiredMixin, TemplateView):
 
     def get_project(self):
         try:
-            project = self.request.user.staffauth.assigned_project
+            project = self.request.user.staffauth.default_project
         except:
             project = Project.objects.first()
         gp = self.request.GET.get('project')

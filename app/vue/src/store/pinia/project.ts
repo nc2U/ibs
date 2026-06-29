@@ -49,8 +49,8 @@ export const useProject = defineStore('project', () => {
   // states & getters
   const project = ref<Project | null>(null)
   const assingedProject = computed(() =>
-    accountStore.userInfo?.staff_auth?.assigned_project
-      ? accountStore.userInfo.staff_auth.assigned_project
+    accountStore.userInfo?.staff_auth?.default_project
+      ? accountStore.userInfo.staff_auth.default_project
       : 0,
   )
 

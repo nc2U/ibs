@@ -78,7 +78,7 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
         work_auth = user.work_manager or user.is_superuser
         queryset = self.queryset
         if not work_auth:
-            projects = user.assigned_projects().values_list('pk', flat=True)
+            projects = user.work_projects().values_list('pk', flat=True)
             queryset = queryset.filter(
                 Q(project__is_public=True) |
                 Q(project__in=projects))

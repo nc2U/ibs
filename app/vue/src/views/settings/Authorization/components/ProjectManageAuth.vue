@@ -30,9 +30,9 @@ const getAssigned = () => nextTick(() => emit('get-assigned', assignedProject.va
 watch(
   () => props.user,
   newValue => {
-    if (newValue && newValue?.staffauth) {
-      allowedProjects.value = newValue.staffauth.allowed_projects
-      assignedProject.value = newValue.staffauth.assigned_project
+    if (newValue && newValue?.staff_auth) {
+      allowedProjects.value = newValue.staff_auth.allowed_projects
+      assignedProject.value = newValue.staff_auth.default_project
     } else {
       allowedProjects.value = []
       assignedProject.value = null

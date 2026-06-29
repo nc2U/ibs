@@ -197,7 +197,7 @@ export const useAccount = defineStore('account', () => {
   const superAuth = computed(() => userInfo.value?.is_superuser)
   const workManager = computed(() => userInfo.value?.work_manager || superAuth.value)
   const staffAuth = computed(() => (userInfo.value?.staff_auth ? userInfo.value.staff_auth : null)) // 장고 어드민 관리 권한
-  const isStaff = computed(() => !!superAuth.value || staffAuth.value?.is_staff) // 본사 관리 권한
+  const isStaff = computed(() => !!superAuth.value || staffAuth.value?.is_hq_staff) // 본사 관리 권한
 
   const writeComDocs = computed(() => superAuth.value || staffAuth.value?.company_docs == '2')
   const writeProDocs = computed(() => superAuth.value || staffAuth.value?.project_docs == '2')

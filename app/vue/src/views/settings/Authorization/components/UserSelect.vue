@@ -95,7 +95,7 @@ onBeforeMount(() => {
           v-model="staff"
           label="본사 관리자 (프로젝트 관리 가능)"
           @change="changeStaff"
-          id="is_staff"
+          id="is_hq_staff"
           :disabled="!superAuth"
         />
       </CCol>
@@ -104,7 +104,7 @@ onBeforeMount(() => {
           v-model="projectStaff"
           label="프로젝트 관리자"
           @change="changeProStaff"
-          id="is_project_staff"
+          id="is_pjt_staff"
           :disabled="!superAuth"
         />
       </CCol>

@@ -14,7 +14,7 @@ class IsStaffOnly(permissions.BasePermission):
             return True
         else:
             try:
-                return request.user.staffauth.is_staff
+                return request.user.staffauth.is_hq_staff
             except StaffAuth.DoesNotExist:
                 return False
 
@@ -41,7 +41,7 @@ class IsStaffOrReadOnly(permissions.BasePermission):
                 return True
             else:
                 try:
-                    return request.user.staffauth.is_staff
+                    return request.user.staffauth.is_hq_staff
                 except StaffAuth.DoesNotExist:
                     return False
 
@@ -55,7 +55,7 @@ class IsProjectStaffOrReadOnly(permissions.BasePermission):
                 return True
             else:
                 try:
-                    return request.user.staffauth.is_staff or request.user.staffauth.is_project_staff
+                    return request.user.staffauth.is_hq_staff or request.user.staffauth.is_pjt_staff
                 except StaffAuth.DoesNotExist:
                     return False
 

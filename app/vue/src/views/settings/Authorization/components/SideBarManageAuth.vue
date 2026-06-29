@@ -96,7 +96,7 @@ onUpdated(() => dataSetup())
 </script>
 
 <template>
-  <CRow v-if="user?.staff_auth?.is_staff">
+  <CRow v-if="user?.staff_auth?.is_hq_staff">
     <CCol>
       <CRow>
         <CCol>
@@ -178,7 +178,7 @@ onUpdated(() => dataSetup())
     </CCol>
   </CRow>
 
-  <v-divider v-if="user?.staff_auth?.is_staff" />
+  <v-divider v-if="user?.staff_auth?.is_hq_staff" />
 
   <CRow>
     <CCol>

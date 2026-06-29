@@ -34,7 +34,7 @@ class BillManageView(LoginRequiredMixin, ListView, FormView):
 
     def get_project(self):
         try:
-            project = self.request.user.staffauth.assigned_project
+            project = self.request.user.staffauth.default_project
         except:
             project = Project.objects.first()
         gp = self.request.GET.get('project')

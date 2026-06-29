@@ -18,25 +18,25 @@ const refFormModal = ref()
 const refAlertModal = ref()
 const refConfirmModal = ref()
 
-const comInfo = ref<{ company: number | null; is_staff: boolean }>({
+const comInfo = ref<{ company: number | null; is_hq_staff: boolean }>({
   company: null,
-  is_staff: false,
+  is_hq_staff: false,
 })
 
 const changeStaff = (val: boolean) => {
-  comInfo.value.is_staff = val
-  projectAuth.value.is_project_staff = !val
+  comInfo.value.is_hq_staff = val
+  projectAuth.value.is_pjt_staff = !val
 }
 
 const projectAuth = ref({
-  is_project_staff: false,
+  is_pjt_staff: false,
   allowed_projects: [] as number[],
-  assigned_project: null as number | null,
+  default_project: null as number | null,
 })
 
 const changeProStaff = (val: boolean) => {
-  projectAuth.value.is_project_staff = val
-  comInfo.value.is_staff = !val
+  projectAuth.value.is_pjt_staff = val
+  comInfo.value.is_hq_staff = !val
 }
 
 type Auth = '0' | '1' | '2'
@@ -78,10 +78,10 @@ const formsCheck = computed(() => {
     const sa = user.value.staff_auth
 
     if (!!sa) {
-      const a = comInfo.value.is_staff === sa.is_staff
-      const b = pa.is_project_staff === sa.is_project_staff
+      const a = comInfo.value.is_hq_staff === sa.is_hq_staff
+      const b = pa.is_pjt_staff === sa.is_pjt_staff
       const c = JSON.stringify(pa.allowed_projects) === JSON.stringify(sa.allowed_projects)
-      const d = pa.assigned_project === sa?.assigned_project
+      const d = pa.default_project === sa?.default_project
       const e = ma.contract === sa.contract
       const f = ma.payment === sa.payment
       const g = ma.notice === sa.notice
@@ -97,10 +97,10 @@ const formsCheck = computed(() => {
 
       return a && b && c && d && e && f && g && h && i && j && k && l && m && n && o && p
     } else {
-      const a = comInfo.value.is_staff === false
-      const b = pa.is_project_staff === false
+      const a = comInfo.value.is_hq_staff === false
+      const b = pa.is_pjt_staff === false
       const c = JSON.stringify(pa.allowed_projects) === JSON.stringify([])
-      const d = pa.assigned_project === null
+      const d = pa.default_project === null
       const e = ma.contract === '0'
       const f = ma.payment === '0'
       const g = ma.notice === '0'
@@ -141,13 +141,13 @@ const selectUser = (pk: number | null) => {
 }
 
 const getAllowed = (payload: number[]) => (projectAuth.value.allowed_projects = payload)
-const getAssigned = (payload: number | null) => (projectAuth.value.assigned_project = payload)
+const getAssigned = (payload: number | null) => (projectAuth.value.default_project = payload)
 const selectAuth = (payload: UserAuth) => (menuAuth.value = payload)
 
 const authReset = () => {
-  comInfo.value.is_staff = false
-  projectAuth.value.is_project_staff = false
-  projectAuth.value.assigned_project = null
+  comInfo.value.is_hq_staff = false
+  projectAuth.value.is_pjt_staff = false
+  projectAuth.value.default_project = null
   projectAuth.value.allowed_projects = []
   menuAuth.value.pk = undefined
   menuAuth.value.contract = '0'
@@ -187,9 +187,9 @@ watch(
   () => user.value?.staff_auth,
   nVal => {
     if (nVal) {
-      comInfo.value.is_staff = nVal.is_staff
-      projectAuth.value.is_project_staff = nVal.is_project_staff
-      projectAuth.value.assigned_project = nVal.assigned_project
+      comInfo.value.is_hq_staff = nVal.is_hq_staff
+      projectAuth.value.is_pjt_staff = nVal.is_pjt_staff
+      projectAuth.value.default_project = nVal.default_project
       projectAuth.value.allowed_projects = nVal.allowed_projects
       menuAuth.value.pk = nVal.pk
       menuAuth.value.contract = nVal.contract
@@ -234,8 +234,8 @@ onBeforeMount(async () => {
       <CCardBody>
         <UserSelect
           :sel-user="user?.pk"
-          :is-staff="comInfo.is_staff"
-          :is-project-staff="projectAuth.is_project_staff"
+          :is-staff="comInfo.is_hq_staff"
+          :is-project-staff="projectAuth.is_pjt_staff"
           @change-staff="changeStaff"
           @change-pro-staff="changeProStaff"
           @select-user="selectUser"
