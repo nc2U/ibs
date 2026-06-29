@@ -550,7 +550,10 @@ class CompanyBankTransaction(BankTransaction):
     @property
     def accounting_entries(self):
         """이 은행 거래에 연결된 모든 회계 분개 항목들을 반환합니다."""
-        return CompanyAccountingEntry.objects.filter(transaction_id=self.transaction_id)
+        entries = CompanyAccountingEntry.objects.filter(transaction_id=self.transaction_id)
+        for entry in entries:
+            entry._related_transaction = self
+        return entries
 
 
 class ProjectBankTransaction(BankTransaction):
@@ -635,7 +638,10 @@ class ProjectBankTransaction(BankTransaction):
     @property
     def accounting_entries(self):
         """이 은행 거래에 연결된 모든 회계 분개 항목들을 반환합니다."""
-        return ProjectAccountingEntry.objects.filter(transaction_id=self.transaction_id)
+        entries = ProjectAccountingEntry.objects.filter(transaction_id=self.transaction_id)
+        for entry in entries:
+            entry._related_transaction = self
+        return entries
 
 
 # ============================================
@@ -688,17 +694,19 @@ class AccountingEntry(models.Model):
     @property
     def related_transaction(self):
         """연관된 BankTransaction 조회"""
-        # 클래스 타입으로 구분하여 적절한 BankTransaction 모델 조회
-        db = self._state.db or 'default'
-        if isinstance(self, CompanyAccountingEntry):
-            return CompanyBankTransaction.objects.using(db).filter(
-                transaction_id=self.transaction_id
-            ).first()
-        elif isinstance(self, ProjectAccountingEntry):
-            return ProjectBankTransaction.objects.using(db).filter(
-                transaction_id=self.transaction_id
-            ).first()
-        return None
+        if not hasattr(self, '_related_transaction'):
+            db = self._state.db or 'default'
+            if isinstance(self, CompanyAccountingEntry):
+                self._related_transaction = CompanyBankTransaction.objects.using(db).filter(
+                    transaction_id=self.transaction_id
+                ).first()
+            elif isinstance(self, ProjectAccountingEntry):
+                self._related_transaction = ProjectBankTransaction.objects.using(db).filter(
+                    transaction_id=self.transaction_id
+                ).first()
+            else:
+                self._related_transaction = None
+        return self._related_transaction
 
     @property
     def sort(self):

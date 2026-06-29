@@ -2,7 +2,7 @@ from collections import defaultdict
 from datetime import datetime
 
 from django.db import transaction as db_transaction
-from django.db.models import Sum, F, Case, When
+from django.db.models import Sum, F, Case, When, Count, Q
 from django_filters import CharFilter
 from django_filters.rest_framework import FilterSet
 from rest_framework import permissions
@@ -85,7 +85,9 @@ class CompanyAccountFilter(FilterSet):
 
 class CompanyAccountViewSet(viewsets.ModelViewSet):
     """본사 계정 과목 ViewSet"""
-    queryset = CompanyAccount.objects.select_related('parent').all()
+    queryset = CompanyAccount.objects.select_related('parent').annotate(
+        children_count_annotated=Count('children', filter=Q(children__is_active=True))
+    ).all()
     serializer_class = CompanyAccountSerializer
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
     pagination_class = PageNumberPaginationThreeHundred
@@ -206,7 +208,9 @@ class ProjectAccountFilter(FilterSet):
 
 class ProjectAccountViewSet(viewsets.ModelViewSet):
     """프로젝트 계정 과목 ViewSet"""
-    queryset = ProjectAccount.objects.select_related('parent').all()
+    queryset = ProjectAccount.objects.select_related('parent').annotate(
+        children_count_annotated=Count('children', filter=Q(children__is_active=True))
+    ).all()
     serializer_class = ProjectAccountSerializer
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
     pagination_class = PageNumberPaginationThreeHundred
@@ -674,6 +678,31 @@ class CompanyAccountingEntryViewSet(viewsets.ModelViewSet):
     search_fields = ('transaction_id', 'account_code', 'trader')
     ordering = ['-created_at']
 
+    def preload_bank_transactions(self, instances):
+        transaction_ids = [inst.transaction_id for inst in instances if inst.transaction_id]
+        if not transaction_ids:
+            return
+        db = self.get_queryset().db or 'default'
+        transactions = CompanyBankTransaction.objects.using(db).filter(
+            transaction_id__in=transaction_ids
+        ).select_related('sort')
+        tx_map = {tx.transaction_id: tx for tx in transactions}
+        for inst in instances:
+            inst._related_transaction = tx_map.get(inst.transaction_id)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            self.preload_bank_transactions(page)
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        instances = list(queryset)
+        self.preload_bank_transactions(instances)
+        serializer = self.get_serializer(instances, many=True)
+        return Response(serializer.data)
+
 
 class ProjectAccountingEntryFilterSet(FilterSet):
     """프로젝트 회계 분개 필터셋"""
@@ -695,6 +724,31 @@ class ProjectAccountingEntryViewSet(viewsets.ModelViewSet):
     filterset_class = ProjectAccountingEntryFilterSet
     search_fields = ('transaction_id', 'account_code', 'trader', 'project__name')
     ordering = ['-created_at']
+
+    def preload_bank_transactions(self, instances):
+        transaction_ids = [inst.transaction_id for inst in instances if inst.transaction_id]
+        if not transaction_ids:
+            return
+        db = self.get_queryset().db or 'default'
+        transactions = ProjectBankTransaction.objects.using(db).filter(
+            transaction_id__in=transaction_ids
+        ).select_related('sort')
+        tx_map = {tx.transaction_id: tx for tx in transactions}
+        for inst in instances:
+            inst._related_transaction = tx_map.get(inst.transaction_id)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            self.preload_bank_transactions(page)
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        instances = list(queryset)
+        self.preload_bank_transactions(instances)
+        serializer = self.get_serializer(instances, many=True)
+        return Response(serializer.data)
 
 
 # ============================================
@@ -777,6 +831,15 @@ class CompanyCompositeTransactionViewSet(viewsets.ViewSet):
 
         # 삭제 전 정보 저장 (로깅용)
         transaction_id = bank_transaction.transaction_id
+
+        # 정산 마감일 검증
+        try:
+            cal = CompanyLedgerCalculation.objects.get(company_id=bank_transaction.company_id)
+            if cal.calculated and bank_transaction.deal_date <= cal.calculated:
+                return Response({'detail': f'정산 마감일({cal.calculated}) 이전의 거래는 삭제할 수 없습니다.'},
+                                status=status.HTTP_400_BAD_REQUEST)
+        except CompanyLedgerCalculation.DoesNotExist:
+            pass
 
         # 트랜잭션으로 묶어서 원자적으로 삭제
         with db_transaction.atomic():
@@ -890,6 +953,15 @@ class ProjectCompositeTransactionViewSet(viewsets.ViewSet):
 
         # 삭제 전 정보 저장 (로깅용)
         transaction_id = bank_transaction.transaction_id
+
+        # 정산 마감일 검증
+        try:
+            cal = ProjectLedgerCalculation.objects.get(project_id=bank_transaction.project_id)
+            if cal.calculated and bank_transaction.deal_date <= cal.calculated:
+                return Response({'detail': f'정산 마감일({cal.calculated}) 이전의 거래는 삭제할 수 없습니다.'},
+                                status=status.HTTP_400_BAD_REQUEST)
+        except ProjectLedgerCalculation.DoesNotExist:
+            pass
 
         # 트랜잭션으로 묶어서 원자적으로 삭제
         with db_transaction.atomic():

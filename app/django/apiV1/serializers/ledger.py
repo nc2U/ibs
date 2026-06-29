@@ -83,6 +83,8 @@ class CompanyAccountSerializer(serializers.ModelSerializer):
     @staticmethod
     def get_children_count(obj):
         """하위 계정 수"""
+        if hasattr(obj, 'children_count_annotated'):
+            return obj.children_count_annotated
         return obj.children.filter(is_active=True).count()
 
 
@@ -117,6 +119,8 @@ class ProjectAccountSerializer(serializers.ModelSerializer):
     @staticmethod
     def get_children_count(obj):
         """하위 계정 수"""
+        if hasattr(obj, 'children_count_annotated'):
+            return obj.children_count_annotated
         return obj.children.filter(is_active=True).count()
 
 
@@ -333,6 +337,24 @@ class CompanyCompositeTransactionSerializer(serializers.Serializer):
         """
         instance = self.instance
         is_update = instance is not None
+
+        # 정산 마감일 검증
+        try:
+            company_id = attrs.get('company', instance.company_id if instance else None)
+            if company_id:
+                cal = CompanyLedgerCalculation.objects.get(company_id=company_id)
+                if cal.calculated:
+                    deal_date = attrs.get('deal_date', instance.deal_date if instance else None)
+                    if deal_date and deal_date <= cal.calculated:
+                        raise serializers.ValidationError({
+                            'deal_date': f'정산 마감일({cal.calculated}) 이전 날짜로 거래를 생성하거나 수정할 수 없습니다.'
+                        })
+                    if instance and instance.deal_date <= cal.calculated:
+                        raise serializers.ValidationError({
+                            'deal_date': f'정산 마감일({cal.calculated}) 이전의 기존 거래는 수정할 수 없습니다.'
+                        })
+        except CompanyLedgerCalculation.DoesNotExist:
+            pass
 
         # 수정 요청일 경우, amount 관련 필드가 없으면 검증 불필요
         if is_update:
@@ -555,6 +577,24 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
         """
         instance = self.instance
         is_update = instance is not None
+
+        # 정산 마감일 검증
+        try:
+            project_id = attrs.get('project', instance.project_id if instance else None)
+            if project_id:
+                cal = ProjectLedgerCalculation.objects.get(project_id=project_id)
+                if cal.calculated:
+                    deal_date = attrs.get('deal_date', instance.deal_date if instance else None)
+                    if deal_date and deal_date <= cal.calculated:
+                        raise serializers.ValidationError({
+                            'deal_date': f'정산 마감일({cal.calculated}) 이전 날짜로 거래를 생성하거나 수정할 수 없습니다.'
+                        })
+                    if instance and instance.deal_date <= cal.calculated:
+                        raise serializers.ValidationError({
+                            'deal_date': f'정산 마감일({cal.calculated}) 이전의 기존 거래는 수정할 수 없습니다.'
+                        })
+        except ProjectLedgerCalculation.DoesNotExist:
+            pass
 
         # 수정 요청일 경우, amount 관련 필드가 없으면 검증 불필요
         if is_update:
