@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, reactive, ref, watch } from 'vue'
+import { computed, onBeforeMount, reactive, ref, watch, provide } from 'vue'
 import { isValidate } from '@/utils/helper.ts'
 import { getToday, numFormat } from '@/utils/baseMixins.ts'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
@@ -63,20 +63,21 @@ const { parseExcelFile, downloadTemplate } = useExcelUpload()
 interface BankTransactionForm {
   deal_date: string
   note: string
-  bank_account: number | null
+  bank_account: number | null | ''
   content: string
   sort: 1 | 2
   amount: number | null
 }
 
 const validated = ref(false)
+provide('validated', validated)
 const bankForm = reactive<BankTransactionForm>({
   deal_date: getToday(),
   sort: 2,
   amount: null,
   content: '',
   note: '',
-  bank_account: null,
+  bank_account: '',
 })
 
 // 입력 폼 데이터
@@ -100,7 +101,7 @@ const initializeCreateForm = () => {
   // 신규 모드: 기본값으로 초기화
   Object.assign(bankForm, {
     deal_date: getToday(),
-    bank_account: null,
+    bank_account: '',
     amount: null,
     sort: 2,
     content: '',
@@ -114,7 +115,7 @@ const initializeCreateForm = () => {
       bankForm: {
         deal_date: getToday(),
         note: '',
-        bank_account: null,
+        bank_account: '',
         content: '',
         sort: 2,
         amount: null,
@@ -401,7 +402,7 @@ const addBankTransaction = () => {
     bankForm: {
       deal_date: getToday(),
       note: '',
-      bank_account: null,
+      bank_account: '',
       content: '',
       sort: 2,
       amount: null,
@@ -474,6 +475,11 @@ const validateForm = () => {
   const validEntries = editableEntries.value.filter(e => (e.amount || 0) > 0)
   if (validEntries.length === 0) {
     throw new Error('최소 하나 이상의 분류 항목이 필요합니다.')
+  }
+
+  const anyMissingAccount = editableEntries.value.some(e => (e.amount || 0) > 0 && !e.account)
+  if (anyMissingAccount) {
+    throw new Error('분류 금액이 입력된 모든 항목에 회계 계정을 선택해야 합니다.')
   }
 }
 
@@ -580,8 +586,11 @@ const saveMultipleTransactions = async () => {
 
 // 저장 처리
 const saveTransaction = async (event: Event) => {
-  if (isValidate(event)) {
+  const isFormInvalid = isValidate(event) || !isFormValid.value
+  if (isFormInvalid) {
     validated.value = true
+    event.preventDefault()
+    event.stopPropagation()
   } else {
     if (isSaving.value) return
 
@@ -655,7 +664,14 @@ const isFormValid = computed(() => {
         trans.bankForm.bank_account &&
         trans.bankForm.amount
       )
-      const hasValidEntries = trans.entries.some(e => (e.amount || 0) > 0)
+      const hasValidEntries =
+        trans.entries.length > 0 &&
+        trans.entries.every(e => {
+          const hasAmount = (e.amount || 0) > 0
+          const hasAccount = !!e.account
+          return (hasAmount && hasAccount) || (!hasAmount && !hasAccount)
+        }) &&
+        trans.entries.some(e => (e.amount || 0) > 0)
       const isBalanced = isTransactionBalanced(trans.bankForm.amount, trans.entries)
 
       return hasRequiredFields && hasValidEntries && isBalanced
@@ -663,14 +679,21 @@ const isFormValid = computed(() => {
   } else {
     // 수정 모드: 기존 단일 거래건 검증
     const hasRequiredFields = !!(bankForm.deal_date && bankForm.bank_account && bankForm.amount)
-    const hasValidEntries = editableEntries.value.some(e => (e.amount || 0) > 0)
+    const hasValidEntries =
+      editableEntries.value.length > 0 &&
+      editableEntries.value.every(e => {
+        const hasAmount = (e.amount || 0) > 0
+        const hasAccount = !!e.account
+        return (hasAmount && hasAccount) || (!hasAmount && !hasAccount)
+      }) &&
+      editableEntries.value.some(e => (e.amount || 0) > 0)
     return hasRequiredFields && hasValidEntries && isBalanced.value
   }
 })
 
 // 저장 버튼 비활성화 상태
 const isSaveDisabled = computed(() => {
-  return isSaving.value || !isFormValid.value
+  return isSaving.value
 })
 
 // 네비게이션 가드
@@ -868,7 +891,7 @@ onBeforeRouteLeave((to, from, next) => {
             <!-- 거래계좌 -->
             <CTableDataCell>
               <CFormSelect v-model="bankForm.bank_account" required>
-                <option :value="null">---------</option>
+                <option value="">---------</option>
                 <option v-for="ba in formBankAccounts" :key="ba.value" :value="ba.value">
                   {{ ba.label }}
                 </option>

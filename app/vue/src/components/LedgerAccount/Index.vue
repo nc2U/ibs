@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, inject } from 'vue'
 import type { AccountPicker } from '@/store/types/comLedger.ts'
 
 interface Props {
@@ -9,11 +9,13 @@ interface Props {
   cateType?: 'asset' | 'liability' | 'equity' | 'revenue' | 'expense' | 'transfer' | 'cancel' | null
   sortType?: 'deposit' | 'withdraw' | null
   isSearch?: boolean
+  required?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   placeholder: '회계 계정',
   isSearch: false,
+  required: false,
 })
 
 interface Emits {
@@ -30,6 +32,11 @@ const searchInputRef = ref<HTMLInputElement | null>(null)
 const dropdownRef = ref<any>(null)
 const menuRef = ref<HTMLElement | null>(null)
 const toggleRef = ref<any>(null)
+
+const validated = inject<any>('validated', ref(false))
+const isInvalid = computed(() => {
+  return props.required && validated.value && !props.modelValue
+})
 
 // 드롭다운 상태
 const dropdownVisible = ref(false)
@@ -341,7 +348,7 @@ onUnmounted(() => {
       <CDropdownToggle
         ref="toggleRef"
         class="form-select text-start"
-        :class="{ 'text-muted': !selectedLabel }"
+        :class="{ 'text-muted': !selectedLabel, 'is-invalid': isInvalid }"
       >
         {{ selectedLabel || placeholder }}
       </CDropdownToggle>

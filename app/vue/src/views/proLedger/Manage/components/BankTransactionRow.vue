@@ -216,7 +216,7 @@ watch(
     <!-- 거래계좌 -->
     <CTableDataCell>
       <CFormSelect v-model="localBankForm.bank_account" required>
-        <option :value="null">---------</option>
+        <option value="">---------</option>
         <option v-for="ba in bankAccounts" :key="ba.value!" :value="ba.value">
           {{ ba.label }}
         </option>
