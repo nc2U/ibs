@@ -1,9 +1,7 @@
-import json
-
-from django.core.files.storage import default_storage
 from django.db import transaction
 from rest_framework import serializers
 
+from _utils.file_service import FileService
 from apiV1.serializers.accounts import SimpleUserSerializer
 from apiV1.serializers.work.project import SimpleIssueProjectSerializer
 from work.models import NewsFile
@@ -45,14 +43,15 @@ class NewsSerializer(serializers.ModelSerializer):
         if project_slug:
             validated_data['project'] = IssueProject.objects.get(slug=project_slug)
         news = super().create(validated_data)
-        # 파일 처리
-        request = self.context.get('request')
-        creator = request.user if request else None
-        new_files = request.FILES.getlist('new_files')
-        new_descs = request.data.getlist('new_descs')
 
-        for file, desc in zip(new_files, new_descs):
-            NewsFile.objects.create(news=news, file=file, description=desc, creator=creator)
+        # 파일 처리
+        FileService.manage_files(
+            instance=news,
+            initial_data=self.initial_data,
+            creator=self.context['request'].user if 'request' in self.context else None,
+            file_model=NewsFile,
+            related_name='news'
+        )
         return news
 
     @transaction.atomic
@@ -63,49 +62,14 @@ class NewsSerializer(serializers.ModelSerializer):
             instance.project = IssueProject.objects.get(slug=project_slug)
         instance.save()
 
-        try:
-            request = self.context['request']
-            creator = request.user
-
-            new_files = request.FILES.getlist('new_files')
-            new_descs = request.data.getlist('new_descs')
-
-            for file, desc in zip(new_files, new_descs):
-                NewsFile.objects.create(news=instance, file=file, description=desc, creator=creator)
-
-            old_files = self.initial_data.getlist('files')
-            cng_pks = self.initial_data.getlist('cngPks')
-            cng_files = self.initial_data.getlist('cngFiles')
-            cng_maps = dict(zip(cng_pks, cng_files))
-
-            for json_file in old_files:
-                file = json.loads(json_file)
-                pk = str(file.get('pk'))
-                file_obj = NewsFile.objects.get(pk=pk)
-
-                if file.get('del'):
-                    file_obj.delete()
-                    continue
-
-                cng_file = cng_maps.get(pk)
-                if cng_file:
-                    try:
-                        if default_storage.exists(file_obj.file.name):
-                            default_storage.delete(file_obj.file.name)
-                    except Exception as e:
-                        print(f"파일 처리 중 오류 발생: {e}")
-                    file_obj.file = cng_file
-                    file_obj.creator = creator
-                    file_obj.save()
-
-            del_file = self.initial_data.get('del_file', None)
-            if del_file:
-                file = NewsFile.objects.get(pk=del_file)
-                file.delete()
-
-        except Exception as e:
-            print(f"파일 처리 중 오류 발생: {e}")
-
+        # 파일 처리
+        FileService.manage_files(
+            instance=instance,
+            initial_data=self.initial_data,
+            creator=self.context['request'].user if 'request' in self.context else None,
+            file_model=NewsFile,
+            related_name='news'
+        )
         return instance
 
 

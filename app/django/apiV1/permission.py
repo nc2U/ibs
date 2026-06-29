@@ -143,6 +143,8 @@ class ProjectPermission(permissions.BasePermission):
             project = obj.issue.project
         elif hasattr(obj, 'meeting') and hasattr(obj.meeting, 'project'):
             project = obj.meeting.project
+        elif hasattr(obj, 'news') and hasattr(obj.news, 'project'):
+            project = obj.news.project
         
         if not project:
             return False

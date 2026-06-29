@@ -1,22 +1,22 @@
 import json
 from django.db import transaction
-from work.models.meeting import MeetingFile
+from django.core.files.storage import default_storage
 
 class FileService:
     @staticmethod
     def manage_files(instance, initial_data, creator, file_model, related_name='meeting'):
         """
         Generic file management for models with associated file models.
-        - instance: The model instance (e.g., Meeting)
+        - instance: The model instance (e.g., Meeting, News)
         - initial_data: The raw request data (QueryDict)
         - creator: The user performing the action
-        - file_model: The file model class (e.g., MeetingFile)
+        - file_model: The file model class (e.g., MeetingFile, NewsFile)
         - related_name: The field name in the file model pointing to the instance
         """
         
-        # 1. Add new files
+        # 1. Add new files (supports both descriptions and new_descs)
         new_files = initial_data.getlist('new_files', [])
-        descriptions = initial_data.getlist('descriptions', [])
+        descriptions = initial_data.getlist('descriptions', []) or initial_data.getlist('new_descs', [])
         
         for i, upload_file in enumerate(new_files):
             file_data = {
@@ -27,14 +27,34 @@ class FileService:
             }
             file_model.objects.create(**file_data)
 
-        # 2. Existing file modifications/deletions (via JSON)
+        # 2. Existing file modifications/deletions/replacements (via JSON)
         old_files = initial_data.getlist('files', [])
+        cng_pks = initial_data.getlist('cngPks', [])
+        cng_files = initial_data.getlist('cngFiles', [])
+        cng_maps = dict(zip([str(pk) for pk in cng_pks], cng_files))
+
         for json_file in old_files:
             file_data = json.loads(json_file)
+            pk = str(file_data.get('pk'))
+            
             if file_data.get('del'):
-                file_model.objects.filter(pk=file_data.get('pk'), **{related_name: instance}).delete()
+                file_model.objects.filter(pk=pk, **{related_name: instance}).delete()
+                continue
 
-        # 3. Single file edit
+            cng_file = cng_maps.get(pk)
+            if cng_file:
+                try:
+                    file_obj = file_model.objects.get(pk=pk, **{related_name: instance})
+                    old_file_name = file_obj.file.name
+                    file_obj.file = cng_file
+                    file_obj.creator = creator
+                    file_obj.save()
+                    if old_file_name:
+                        transaction.on_commit(lambda name=old_file_name: default_storage.delete(name))
+                except Exception as e:
+                    print(f"파일 처리 중 오류 발생: {e}")
+
+        # 3. Single file edit (Meeting/Issue pattern)
         edit_file = initial_data.get('edit_file')
         if edit_file:
             meeting_file = file_model.objects.get(pk=edit_file, **{related_name: instance})
