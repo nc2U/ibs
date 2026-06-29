@@ -111,9 +111,19 @@ class IssueProject(models.Model):
     def get_user_permissions(self, user):
         """
         사용자의 프로젝트 내 권한 코드 세트를 계산합니다. (특정 사용자에 맞춘 최적화 쿼리 버전)
+        로그인하지 않은 경우 '익명' 역할(pk=1)의 권한,
+        로그인했으나 멤버가 아닌 '회원' 역할(pk=2)의 권한을 반환합니다.
         """
+        permission_codes = set()
+
         if not user or not user.is_authenticated:
-            return []
+            try:
+                role = Role.objects.prefetch_related('permissions').get(pk=1)
+                for perm in role.permissions.all():
+                    permission_codes.add(perm.code)
+            except Role.DoesNotExist:
+                pass
+            return list(permission_codes)
 
         # 1. 상속 가능한 상위 프로젝트 목록 계산
         projects_to_fetch = [self]
@@ -132,11 +142,19 @@ class IssueProject(models.Model):
         ).prefetch_related('roles__permissions')
 
         # 3. 모든 역할에 연결된 권한 코드 추출
-        permission_codes = set()
-        for member in user_members:
-            for role in member.roles.all():
+        if user_members.exists():
+            for member in user_members:
+                for role in member.roles.all():
+                    for perm in role.permissions.all():
+                        permission_codes.add(perm.code)
+        else:
+            # 멤버가 아닌 경우 -> '비회원' 역할(pk=2)의 권한 추출
+            try:
+                role = Role.objects.prefetch_related('permissions').get(pk=2)
                 for perm in role.permissions.all():
                     permission_codes.add(perm.code)
+            except Role.DoesNotExist:
+                pass
 
         return list(permission_codes)
 
