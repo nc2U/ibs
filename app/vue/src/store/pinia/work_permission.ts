@@ -6,12 +6,7 @@ import { useWork } from '@/store/pinia/work_project'
 
 export const usePermission = defineStore('permission', () => {
   const accountStore = useAccount()
-  // 전역 프로젝트 생성 권한 플래그
-  const canCreateProject = ref(false)
   const projectPermSet = ref<Set<PermissionCode>>(new Set())
-
-  // 전역 프로젝트 생성 권한 설정 (로그인 시/앱 시작 시 호출)
-  const setGlobalProjectCreatePerm = (can: boolean) => (canCreateProject.value = can)
 
   // 프로젝트 권한 데이터 세팅 (프로젝트 로드 시 호출)
   const setProjectPermissions = (perms: PermissionCode[]) => (projectPermSet.value = new Set(perms))
@@ -22,9 +17,6 @@ export const usePermission = defineStore('permission', () => {
     if (accountStore.workManager) return true
 
     const check = (c: PermissionCode) => {
-      // 전역 생성 권한 체크
-      if (c === PERM.PROJECT_CREATE && canCreateProject.value) return true
-
       const workStore = useWork()
 
       // 특정 프로젝트 ID나 Slug가 주어졌을 때는 해당 프로젝트의 권한을 체크
@@ -49,9 +41,7 @@ export const usePermission = defineStore('permission', () => {
   }
 
   return {
-    canCreateProject,
     projectPermSet,
-    setGlobalProjectCreatePerm,
     setProjectPermissions,
     can,
   }

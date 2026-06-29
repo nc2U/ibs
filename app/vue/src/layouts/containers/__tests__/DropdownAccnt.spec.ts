@@ -43,7 +43,6 @@ describe('AppHeaderDropdownAccnt Component Test', () => {
           staff_auth: null,
           profile: null,
           last_login: '2023-01-30T19:16:53+09:00',
-          can_create_project: false,
         },
         profile: null,
       },
@@ -83,7 +82,6 @@ describe('AppHeaderDropdownAccnt Component Test', () => {
         staff_auth: null,
         profile: null,
         last_login: '2023-01-30T19:16:53+09:00',
-        can_create_project: false,
       },
     })
 

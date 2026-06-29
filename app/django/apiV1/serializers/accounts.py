@@ -69,26 +69,12 @@ class UserSerializer(serializers.ModelSerializer):
     )
     staff_auth = StaffAuthInUserSerializer(read_only=True)
     profile = ProfileInUserSerializer(read_only=True)
-    can_create_project = serializers.SerializerMethodField()
-
-    @staticmethod
-    def get_can_create_project(user):
-        # 1. 슈퍼유저/워크매니저는 무조건 True
-        if user.is_superuser or getattr(user, 'work_manager', False):
-            return True
-
-        # 2. 'project.create' 권한을 가진 Role을 하나라도 가지고 있는지 체크
-        from work.models.project import Member
-        return Member.objects.filter(
-            user=user,
-            roles__permissions__code='project.create'
-        ).exists()
 
     class Meta:
         model = User
-        fields = ('pk', 'email', 'username', 'is_active', 'is_superuser', 'is_staff',
-                  'work_manager', 'date_joined', 'password', 'staff_auth', 'profile',
-                  'last_login', 'can_create_project')
+        fields = ('pk', 'email', 'username', 'is_active', 'is_superuser',
+                  'is_staff', 'work_manager', 'date_joined', 'password',
+                  'staff_auth', 'profile', 'last_login')
         read_only_fields = ('date_joined', 'last_login')
 
     def create(self, validated_data):

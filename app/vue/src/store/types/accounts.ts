@@ -15,7 +15,6 @@ export declare interface User {
     cell_phone: string
   }
   last_login: string | null
-  can_create_project: boolean
 }
 
 type Auth = '0' | '1' | '2'
