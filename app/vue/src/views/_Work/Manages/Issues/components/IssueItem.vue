@@ -68,6 +68,7 @@ const canIssueRead = computed(() => can(PERM.ISSUE_READ) && props.issue.project?
     <span v-else-if="issue.fixed_version">{{ issue.fixed_version.name }}</span>
   </CTableDataCell>
   <CTableDataCell class="text-left">
+    <v-icon v-if="issue.is_private" icon="mdi-lock" size="x-small" color="warning" class="mr-2" />
     <router-link
       v-if="canIssueRead"
       :to="{
@@ -77,7 +78,9 @@ const canIssueRead = computed(() => can(PERM.ISSUE_READ) && props.issue.project?
     >
       {{ issue.subject }}
     </router-link>
-    <span v-else>{{ issue.subject }}</span>
+    <span v-else>
+      {{ issue.subject }}
+    </span>
   </CTableDataCell>
   <CTableDataCell class="text-center">
     <template v-if="issue.assigned_to">
