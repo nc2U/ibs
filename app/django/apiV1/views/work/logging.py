@@ -73,16 +73,100 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
     filterset_class = ActivityLogFilter
 
     def get_queryset(self):
-        """ActivityLogEntry 필터링: 사용자 권한 기반"""
+        """ActivityLogEntry 필터링: 사용자 권한 및 issue_visible 격리 적용"""
         user = self.request.user
-        work_auth = user.work_manager or user.is_superuser
         queryset = self.queryset
-        if not work_auth:
-            projects = user.work_projects().values_list('pk', flat=True)
-            queryset = queryset.filter(
-                Q(project__is_public=True) |
-                Q(project__in=projects))
-        return queryset.select_related('project', 'creator', 'issue', 'comment', 'meeting', 'news', 'document', 'post')
+
+        # 1. 슈퍼유저/work_manager는 전체 활동 조회
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return queryset.select_related('project', 'creator', 'issue', 'comment', 'meeting', 'news', 'document', 'post')
+
+        # 2. 일반 유저는 본인이 소속되었거나 공개 프로젝트의 활동만 조회 가능
+        from work.models.project import Member
+        user_members = Member.objects.filter(user=user).prefetch_related('roles')
+
+        member_all_pids = []
+        member_pub_pids = []
+        member_pri_pids = []
+        member_all_project_ids = []
+
+        for m in user_members:
+            member_all_project_ids.append(m.project_id)
+            roles = m.roles.all()
+            best_issue_visible = 'NOP'
+            visibility_order = {'ALL': 3, 'PUB': 2, 'PRI': 1, 'NOP': 0}
+            for role in roles:
+                if visibility_order.get(role.issue_visible, 0) > visibility_order.get(best_issue_visible, 0):
+                    best_issue_visible = role.issue_visible
+
+            if best_issue_visible == 'ALL':
+                member_all_pids.append(m.project_id)
+            elif best_issue_visible == 'PUB':
+                member_pub_pids.append(m.project_id)
+            elif best_issue_visible == 'PRI':
+                member_pri_pids.append(m.project_id)
+
+        base_filter = Q(project__is_public=True) | Q(project_id__in=member_all_project_ids)
+
+        # 업무 및 의견 로그에 대한 issue_visible 필터 적용
+        issue_filter = Q()
+
+        if member_all_pids:
+            issue_filter |= Q(project_id__in=member_all_pids)
+
+        if member_pub_pids:
+            issue_filter |= Q(
+                project_id__in=member_pub_pids,
+                issue__isnull=False
+            ) & (
+                Q(issue__is_private=False) |
+                Q(issue__assigned_to=user) |
+                Q(issue__creator=user)
+            )
+
+        if member_pri_pids:
+            issue_filter |= Q(
+                project_id__in=member_pri_pids,
+                issue__isnull=False
+            ) & (
+                Q(issue__assigned_to=user) |
+                Q(issue__creator=user)
+            )
+
+        from work.models.project import Role
+        try:
+            non_member_role = Role.objects.get(pk=2)
+            non_member_issue_visible = non_member_role.issue_visible
+        except Role.DoesNotExist:
+            non_member_issue_visible = 'PUB'
+
+        public_pids = IssueProject.objects.filter(is_public=True).exclude(pk__in=member_all_project_ids).values_list('pk', flat=True)
+        if public_pids:
+            if non_member_issue_visible == 'ALL':
+                issue_filter |= Q(project_id__in=public_pids)
+            elif non_member_issue_visible == 'PUB':
+                issue_filter |= Q(
+                    project_id__in=public_pids,
+                    issue__isnull=False
+                ) & (
+                    Q(issue__is_private=False) |
+                    Q(issue__assigned_to=user) |
+                    Q(issue__creator=user)
+                )
+            elif non_member_issue_visible == 'PRI':
+                issue_filter |= Q(
+                    project_id__in=public_pids,
+                    issue__isnull=False
+                ) & (
+                    Q(issue__assigned_to=user) |
+                    Q(issue__creator=user)
+                )
+
+        final_qs = queryset.filter(base_filter).filter(
+            ~Q(sort__in=['1', '2']) | issue_filter
+        )
+
+        return final_qs.select_related('project', 'creator', 'issue', 'comment', 'meeting', 'news', 'document', 'post')
 
 
 class IssueLogEntryViewSet(viewsets.ModelViewSet):
@@ -92,7 +176,85 @@ class IssueLogEntryViewSet(viewsets.ModelViewSet):
     pagination_class = PageNumberPaginationFifty
     filterset_fields = ('issue', 'creator')
 
-    # def get_queryset(self):
-    #     user = self.request.user
-    #     work_auth = user.work_manager or user.is_superuser
-    #     return self.queryset if work_auth else self.queryset.filter(issue__project__is_public=True)
+    def get_queryset(self):
+        """IssueLogEntry 필터링: 해당 사용자가 접근 권한이 있는 업무의 로그만 조회 가능"""
+        user = self.request.user
+        queryset = self.queryset.select_related('issue__project', 'comment', 'creator')
+
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return queryset
+
+        from work.models.project import Member
+        user_members = Member.objects.filter(user=user).prefetch_related('roles')
+
+        member_all_pids = []
+        member_pub_pids = []
+        member_pri_pids = []
+        member_all_project_ids = []
+
+        for m in user_members:
+            member_all_project_ids.append(m.project_id)
+            roles = m.roles.all()
+            best_issue_visible = 'NOP'
+            visibility_order = {'ALL': 3, 'PUB': 2, 'PRI': 1, 'NOP': 0}
+            for role in roles:
+                if visibility_order.get(role.issue_visible, 0) > visibility_order.get(best_issue_visible, 0):
+                    best_issue_visible = role.issue_visible
+
+            if best_issue_visible == 'ALL':
+                member_all_pids.append(m.project_id)
+            elif best_issue_visible == 'PUB':
+                member_pub_pids.append(m.project_id)
+            elif best_issue_visible == 'PRI':
+                member_pri_pids.append(m.project_id)
+
+        allowed_issues_filter = Q()
+
+        if member_all_pids:
+            allowed_issues_filter |= Q(issue__project_id__in=member_all_pids)
+
+        if member_pub_pids:
+            allowed_issues_filter |= Q(
+                issue__project_id__in=member_pub_pids
+            ) & (
+                Q(issue__is_private=False) |
+                Q(issue__assigned_to=user) |
+                Q(issue__creator=user)
+            )
+
+        if member_pri_pids:
+            allowed_issues_filter |= Q(
+                issue__project_id__in=member_pri_pids
+            ) & (
+                Q(issue__assigned_to=user) |
+                Q(issue__creator=user)
+            )
+
+        from work.models.project import Role
+        try:
+            non_member_role = Role.objects.get(pk=2)
+            non_member_issue_visible = non_member_role.issue_visible
+        except Role.DoesNotExist:
+            non_member_issue_visible = 'PUB'
+
+        public_pids = IssueProject.objects.filter(is_public=True).exclude(pk__in=member_all_project_ids).values_list('pk', flat=True)
+        if public_pids:
+            if non_member_issue_visible == 'ALL':
+                allowed_issues_filter |= Q(issue__project_id__in=public_pids)
+            elif non_member_issue_visible == 'PUB':
+                allowed_issues_filter |= Q(
+                    issue__project_id__in=public_pids
+                ) & (
+                    Q(issue__is_private=False) |
+                    Q(issue__assigned_to=user) |
+                    Q(issue__creator=user)
+                )
+            elif non_member_issue_visible == 'PRI':
+                allowed_issues_filter |= Q(
+                    issue__project_id__in=public_pids
+                ) & (
+                    Q(issue__assigned_to=user) |
+                    Q(issue__creator=user)
+                )
+
+        return queryset.filter(allowed_issues_filter)
