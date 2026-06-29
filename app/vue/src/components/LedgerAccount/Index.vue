@@ -480,6 +480,16 @@ onUnmounted(() => {
   border-color: #86b7fe;
   box-shadow: 0 0 0 0.25rem rgba(114, 114, 114, 0.25);
 }
+
+:deep(.dropdown-toggle.is-invalid) {
+  border-color: #dc3545 !important;
+  box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25) !important;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5' stroke-width='1'/%3e%3cpath d='M6 9h.01M6 3v4' stroke-width='1.5' stroke-linecap='round'/%3e%3c/svg%3e") !important;
+  background-repeat: no-repeat !important;
+  background-position: right calc(0.375em + 0.1875rem) center !important;
+  background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem) !important;
+  padding-right: calc(1.5em + 0.75rem) !important;
+}
 :deep(.keyboard-active) {
   background-color: rgba(27, 107, 100, 0.85) !important;
   font-weight: bold;
