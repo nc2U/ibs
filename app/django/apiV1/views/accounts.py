@@ -22,6 +22,63 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.AllowAny,)
     filterset_fields = ('is_staff', 'is_active',)
 
+    def get_queryset(self):
+        from django.db.models import Q
+        queryset = User.objects.all()
+        user = self.request.user
+        
+        # 로그인하지 않은 경우 목록 노출 방지
+        if not user or not user.is_authenticated:
+            return queryset.none()
+            
+        # 슈퍼유저나 work_manager는 전체 사용자 조회 가능
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return queryset
+            
+        try:
+            if hasattr(user, 'staff_auth') and user.staff_auth.is_hq_staff:
+                return queryset
+        except AttributeError:
+            pass
+
+        # 1. 사용자의 프로젝트별 user_visible 권한 수준 판별
+        from work.models.project import Member
+        user_members = Member.objects.filter(user=user).prefetch_related('roles')
+
+        user_visibility_order = {'ALL': 2, 'PRJ': 1, 'NOP': 0}
+        best_user_visible = 'NOP'
+
+        for member in user_members:
+            for role in member.roles.all():
+                if user_visibility_order.get(role.user_visible, 0) > user_visibility_order.get(best_user_visible, 0):
+                    best_user_visible = role.user_visible
+
+        # 비회원 역할 pk=2 참고
+        from work.models.project import Role
+        try:
+            non_member_role = Role.objects.get(pk=2)
+            non_member_user_visible = non_member_role.user_visible
+        except Role.DoesNotExist:
+            non_member_user_visible = 'NOP'
+
+        if not user_members.exists():
+            best_user_visible = non_member_user_visible
+
+        # 2. 수준별 필터링 적용
+        if best_user_visible == 'ALL':
+            return queryset
+        elif best_user_visible == 'PRJ':
+            member_project_ids = [m.project_id for m in user_members]
+            project_user_ids = Member.objects.filter(
+                project_id__in=member_project_ids
+            ).values_list('user_id', flat=True)
+            return queryset.filter(Q(pk__in=project_user_ids) | Q(pk=user.pk)).distinct()
+        elif best_user_visible == 'NOP':
+            return queryset.filter(pk=user.pk)
+
+        return queryset.none()
+
+
 
 class StaffAuthViewSet(viewsets.ModelViewSet):
     queryset = StaffAuth.objects.all()

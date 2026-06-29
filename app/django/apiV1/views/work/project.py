@@ -205,11 +205,41 @@ class MemberViewSet(viewsets.ModelViewSet):
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset.prefetch_related('roles')
 
-        # 2. 접근 가능한 프로젝트의 멤버만 조회
-        # - 공개 프로젝트 OR 사용자가 멤버인 프로젝트
-        return queryset.filter(
-            Q(project__is_public=True) | Q(project__members__user=user)
-        ).distinct().prefetch_related('roles')
+        # 2. 사용자의 프로젝트별 user_visible 권한 수준 판별
+        from work.models.project import Member as ProjectMember
+        user_members = ProjectMember.objects.filter(user=user).prefetch_related('roles')
+
+        user_visibility_order = {'ALL': 2, 'PRJ': 1, 'NOP': 0}
+        best_user_visible = 'NOP'
+
+        for member in user_members:
+            for role in member.roles.all():
+                if user_visibility_order.get(role.user_visible, 0) > user_visibility_order.get(best_user_visible, 0):
+                    best_user_visible = role.user_visible
+
+        from work.models.project import Role
+        try:
+            non_member_role = Role.objects.get(pk=2)
+            non_member_user_visible = non_member_role.user_visible
+        except Role.DoesNotExist:
+            non_member_user_visible = 'NOP'
+
+        if not user_members.exists():
+            best_user_visible = non_member_user_visible
+
+        # 3. 수준별 필터링 적용
+        member_project_ids = [m.project_id for m in user_members]
+
+        if best_user_visible == 'ALL':
+            return queryset.filter(
+                Q(project__is_public=True) | Q(project_id__in=member_project_ids)
+            ).distinct().prefetch_related('roles')
+        elif best_user_visible == 'PRJ':
+            return queryset.filter(project_id__in=member_project_ids).distinct().prefetch_related('roles')
+        elif best_user_visible == 'NOP':
+            return queryset.filter(user=user).prefetch_related('roles')
+
+        return queryset.none()
 
 
 class VersionFilter(FilterSet):
