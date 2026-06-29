@@ -236,11 +236,33 @@ class IssuePermission(ProjectPermission):
         # 1. 기존 프로젝트 접근 권한 체크
         if not super().has_object_permission(request, view, obj):
             return False
-            
-        # 2. 안전한 메서드(GET, HEAD, OPTIONS)는 통과
+
+        # 2. issue_visible에 의한 개별 업무 읽기 권한(SAFE_METHODS) 검사
         if request.method in permissions.SAFE_METHODS:
-            return True
+            if request.user.is_superuser or getattr(request.user, 'work_manager', False):
+                return True
+                
+            project = getattr(obj, 'project', None)
+            if not project:
+                return False
+                
+            role_attrs = project.get_user_role_attributes(request.user)
+            issue_visible = role_attrs.get('issue_visible', 'NOP')
             
+            if issue_visible == 'ALL':
+                pass  # super() 결과에 따름
+            elif issue_visible == 'PUB':
+                if obj.is_private:
+                    return False
+            elif issue_visible == 'PRI':
+                if obj.creator != request.user and obj.assigned_to != request.user:
+                    return False
+            elif issue_visible == 'NOP':
+                if obj.creator != request.user and obj.assigned_to != request.user:
+                    return False
+            
+            return True
+
         # 3. 수정 및 삭제 관련 로직
         if view.action in ['update', 'partial_update', 'destroy', 'toggle_private']:
             user = request.user
