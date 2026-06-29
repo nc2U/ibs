@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
+import { usePerms } from '@/composables/usePerms'
 import { useInform } from '@/store/pinia/work_inform.ts'
 import { useAccount } from '@/store/pinia/account.ts'
 import type { News } from '@/store/types/work_inform.ts'
@@ -7,6 +8,8 @@ import Comment from './Comment.vue'
 
 const accStore = useAccount()
 const userInfo = computed(() => accStore.userInfo)
+
+const { can, PERM } = usePerms()
 
 const infStore = useInform()
 const news = computed(() => infStore.news as News | null)
@@ -30,7 +33,7 @@ const onSubmit = () => {
 <template>
   <div class="comment-list-container">
     <!-- Comment Input -->
-    <div class="comment-form mb-6">
+    <div v-if="can(PERM.NEWS_COMMENT)" class="comment-form mb-6">
       <v-textarea
         v-model="commentContent"
         :placeholder="userInfo ? '댓글을 입력하세요...' : '댓글을 작성하려면 로그인이 필요합니다.'"

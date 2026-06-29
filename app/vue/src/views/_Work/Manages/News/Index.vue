@@ -5,6 +5,7 @@ import { useInform } from '@/store/pinia/work_inform.ts'
 import { useCompany } from '@/store/pinia/company.ts'
 import type { Company } from '@/store/types/settings'
 import { useRoute } from 'vue-router'
+import { usePerms } from '@/composables/usePerms'
 import Loading from '@/components/Loading/Index.vue'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
@@ -17,8 +18,9 @@ const company = computed<Company | null>(() => comStore.company)
 const comName = computed(() => company?.value?.name)
 
 const viewForm = ref(false)
-
 const route = useRoute()
+
+const { can, PERM } = usePerms()
 
 provide('navMenu', navMenu)
 provide('query', route?.query)
@@ -79,12 +81,12 @@ onBeforeMount(async () => {
         </CCol>
 
         <CCol class="text-right">
-          <span class="mr-2 form-text">
+          <span v-if="can(PERM.NEWS_MANAGE)" class="mr-2 form-text">
             <v-icon icon="mdi-plus-circle" color="success" size="15" class="mr-1" />
             <router-link to="" class="ml-1" @click="viewForm = true">새 공지</router-link>
           </span>
 
-          <span v-if="$route.params.projId" class="mr-2 form-text">
+          <span v-if="$route.params.projId && can(PERM.NEWS_READ)" class="mr-2 form-text">
             <v-icon icon="mdi-star" color="secondary" size="15" class="mr-1" />
             <!--  <router-link to="" class="ml-1" @click="">-->지켜보기
             <!--  </router-link>-->
@@ -121,6 +123,7 @@ onBeforeMount(async () => {
             <li v-for="news in newsList.slice(0, 5)" :key="news.pk" class="mb-2 text-truncate">
               <v-icon icon="mdi-chevron-right" size="x-small" class="mr-1" />
               <router-link
+                v-if="can(PERM.NEWS_READ)"
                 :to="{
                   name: '(공지) - 보기',
                   params: { projId: news.project?.slug, newsId: news.pk },
@@ -129,6 +132,7 @@ onBeforeMount(async () => {
               >
                 {{ news.title }}
               </router-link>
+              <span v-else class="text-body-2 text-muted">{{ news.title }}</span>
             </li>
           </ul>
         </CCol>

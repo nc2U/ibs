@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, type PropType } from 'vue'
 import { useRoute } from 'vue-router'
+import { usePerms } from '@/composables/usePerms'
 import { markdownRender } from '@/utils/helper.ts'
 import { elapsedTime } from '@/utils/baseMixins.ts'
 import type { News } from '@/store/types/work_inform.ts'
@@ -10,6 +11,8 @@ defineProps({ news: { type: Object as PropType<News>, required: true } })
 const route = useRoute()
 
 const isProj = computed(() => !!route.params.projId)
+
+const { can, PERM } = usePerms()
 </script>
 
 <template>
@@ -31,6 +34,7 @@ const isProj = computed(() => !!route.params.projId)
             </router-link>
           </span>
           <router-link
+            v-if="can(PERM.NEWS_READ)"
             :to="{ name: '(공지) - 보기', params: { projId: news.project?.slug, newsId: news.pk } }"
             class="text-decoration-none font-weight-bold"
           >
@@ -42,6 +46,15 @@ const isProj = computed(() => !!route.params.projId)
               <v-icon icon="mdi-comment-outline" size="x-small" /> {{ news.comments.length }}
             </CBadge>
           </router-link>
+          <span v-else class="font-weight-bold text-muted">
+            <CBadge v-if="news.is_important" color="primary" size="" class="mr-2">중요 공지</CBadge>
+            {{ news.title }}
+
+            <CBadge v-if="news.is_new" color="warning" size="sm" class="ml-2">new</CBadge>
+            <CBadge v-if="news.comments?.length" color="info" size="sm" class="ml-1">
+              <v-icon icon="mdi-comment-outline" size="x-small" /> {{ news.comments.length }}
+            </CBadge>
+          </span>
         </h6>
       </CCol>
     </CRow>

@@ -10,6 +10,7 @@ import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import NewsForm from '@/views/_Work/Manages/News/components/NewsForm.vue'
 import NewsDetail from '@/views/_Work/Manages/News/components/NewsDetail.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
+import { usePerms } from '@/composables/usePerms'
 
 defineProps({
   issueProject: { type: Object as PropType<IssueProject>, default: () => null },
@@ -20,7 +21,7 @@ const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
 
 const RefDelNews = ref()
-
+const { can, PERM } = usePerms()
 const viewForm = ref(false)
 
 const infStore = useInform()
@@ -122,12 +123,12 @@ onBeforeMount(async () => {
         </CCol>
 
         <CCol v-if="route.name === '(공지)'" class="text-right">
-          <span class="mr-2 form-text">
+          <span v-if="can(PERM.NEWS_MANAGE)" class="mr-2 form-text">
             <v-icon icon="mdi-plus-circle" color="success" size="15" />
             <router-link to="" class="ml-1" @click="viewForm = true">새 공지</router-link>
           </span>
 
-          <span v-if="$route.params.projId" class="mr-2 form-text">
+          <span v-if="$route.params.projId && can(PERM.NEWS_READ)" class="mr-2 form-text">
             <v-icon icon="mdi-star" color="secondary" size="15" />
             <!--  <router-link to="" class="ml-1" @click="">-->
             지켜보기
@@ -136,19 +137,19 @@ onBeforeMount(async () => {
         </CCol>
 
         <CCol v-else class="text-right">
-          <span class="mr-2 form-text">
+          <span v-if="can(PERM.NEWS_READ)" class="mr-2 form-text">
             <v-icon icon="mdi-star" color="amber" size="15" />
             <!--  <router-link to="" class="ml-1">-->
             관심끄기
             <!--  </router-link>-->
           </span>
 
-          <span class="mr-2 form-text">
+          <span v-if="can(PERM.NEWS_MANAGE)" class="mr-2 form-text">
             <v-icon icon="mdi-pencil" color="amber" size="15" />
             <router-link to="" class="ml-1" @click="viewForm = true">편집</router-link>
           </span>
 
-          <span class="mr-2 form-text">
+          <span v-if="can(PERM.NEWS_MANAGE)" class="mr-2 form-text">
             <v-icon icon="mdi-trash-can-outline" color="grey" size="15" />
             <router-link to="" class="ml-1" @click="RefDelNews.callModal()">삭제</router-link>
           </span>
