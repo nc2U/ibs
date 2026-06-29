@@ -31,6 +31,12 @@ export interface getProject {
   parent_visible: boolean
 }
 
+export interface MyRole {
+  assignable: boolean
+  issue_visible: 'ALL' | 'PUB' | 'PRI' | 'NOP'
+  user_visible: 'ALL' | 'PRJ' | 'NOP'
+}
+
 export interface IssueProject {
   pk?: number
   company: number | null
@@ -61,6 +67,7 @@ export interface IssueProject {
   sub_projects: IssueProject[]
   creator?: string
   my_perms?: string[]
+  my_role?: MyRole
   created?: string
   updated?: string
 }

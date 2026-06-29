@@ -158,6 +158,95 @@ class IssueProject(models.Model):
 
         return list(permission_codes)
 
+    def get_user_role_attributes(self, user):
+        """
+        사용자의 프로젝트 내 종합 역할(Role) 속성을 계산합니다.
+        반환 딕셔너리: {'assignable': bool, 'issue_visible': str, 'user_visible': str}
+        """
+        default_attrs = {
+            'assignable': False,
+            'issue_visible': 'NOP',
+            'user_visible': 'NOP'
+        }
+
+        if not user:
+            return default_attrs
+
+        # 1. 슈퍼유저 / work_manager 이면 최대 권한 반환
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return {
+                'assignable': True,
+                'issue_visible': 'ALL',
+                'user_visible': 'ALL'
+            }
+
+        # 2. 로그인하지 않은 익명 사용자인 경우 -> '익명(pk=1)' 역할의 속성 반환
+        if not user.is_authenticated:
+            try:
+                role = Role.objects.get(pk=1)
+                return {
+                    'assignable': role.assignable,
+                    'issue_visible': role.issue_visible,
+                    'user_visible': role.user_visible
+                }
+            except Role.DoesNotExist:
+                return default_attrs
+
+        # 3. 로그인된 사용자
+        # 3-A. 상속 가능한 상위 프로젝트 목록 계산
+        projects_to_fetch = [self]
+        curr = self
+        while curr.is_inherit_members and curr.parent:
+            if curr.parent in projects_to_fetch:
+                break
+            projects_to_fetch.append(curr.parent)
+            curr = curr.parent
+
+        # 3-B. 해당 사용자(user)가 속한 Member 정보 조회
+        from work.models.project import Member
+        user_members = Member.objects.filter(
+            project__in=projects_to_fetch,
+            user=user
+        ).prefetch_related('roles')
+
+        # 우선순위 정의 헬퍼
+        issue_visibility_order = {'ALL': 3, 'PUB': 2, 'PRI': 1, 'NOP': 0}
+        user_visibility_order = {'ALL': 2, 'PRJ': 1, 'NOP': 0}
+
+        if user_members.exists():
+            # 멤버인 경우 -> 멤버의 역할들을 수집하여 병합
+            assignable = False
+            best_issue_visible = 'NOP'
+            best_user_visible = 'NOP'
+
+            for member in user_members:
+                for role in member.roles.all():
+                    if role.assignable:
+                        assignable = True
+                    # issue_visible 우선순위 병합
+                    if issue_visibility_order.get(role.issue_visible, 0) > issue_visibility_order.get(best_issue_visible, 0):
+                        best_issue_visible = role.issue_visible
+                    # user_visible 우선순위 병합
+                    if user_visibility_order.get(role.user_visible, 0) > user_visibility_order.get(best_user_visible, 0):
+                        best_user_visible = role.user_visible
+
+            return {
+                'assignable': assignable,
+                'issue_visible': best_issue_visible,
+                'user_visible': best_user_visible
+            }
+        else:
+            # 멤버가 아닌 로그인 회원 -> '비회원(pk=2)' 역할의 속성 반환
+            try:
+                role = Role.objects.get(pk=2)
+                return {
+                    'assignable': role.assignable,
+                    'issue_visible': role.issue_visible,
+                    'user_visible': role.user_visible
+                }
+            except Role.DoesNotExist:
+                return default_attrs
+
     class Meta:
         ordering = ('order', 'id')
         verbose_name = '01. 프로젝트(업무)'

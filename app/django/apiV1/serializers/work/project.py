@@ -51,6 +51,23 @@ class ProjectPermissionMixin:
             return obj.get_user_permissions(user)
         return []
 
+    def get_my_role(self, obj):
+        if not obj:
+            return {
+                'assignable': False,
+                'issue_visible': 'NOP',
+                'user_visible': 'NOP'
+            }
+        request = self.context.get('request')
+        if request and hasattr(request, 'user'):
+            return obj.get_user_role_attributes(request.user)
+        return {
+            'assignable': False,
+            'issue_visible': 'NOP',
+            'user_visible': 'NOP'
+        }
+
+
 
 # Work --------------------------------------------------------------------------
 class SimpleIssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer):
@@ -127,6 +144,7 @@ class IssueProjectListSerializer(ProjectPermissionMixin, serializers.ModelSerial
     creator = serializers.SlugRelatedField('username', read_only=True)
     visible = serializers.SerializerMethodField(read_only=True)
     my_perms = serializers.SerializerMethodField(read_only=True)
+    my_role = serializers.SerializerMethodField(read_only=True)
     sub_projects = serializers.SerializerMethodField()
     all_members = MemberInIssueProjectSerializer(many=True, read_only=True)
     parent_visible = serializers.SerializerMethodField(read_only=True)
@@ -134,7 +152,7 @@ class IssueProjectListSerializer(ProjectPermissionMixin, serializers.ModelSerial
     class Meta:
         model = IssueProject
         fields = ('pk', 'company', 'sort', 'name', 'slug', 'description', 'status', 'depth', 'is_public',
-                  'module', 'creator', 'visible', 'my_perms', 'sub_projects', 'all_members',
+                  'module', 'creator', 'visible', 'my_perms', 'my_role', 'sub_projects', 'all_members',
                   'parent', 'parent_visible', 'created', 'updated')
 
     def get_sub_projects(self, obj):
@@ -159,6 +177,7 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
     sub_projects = serializers.SerializerMethodField(read_only=True)
     creator = serializers.SlugRelatedField('username', read_only=True)
     my_perms = serializers.SerializerMethodField(read_only=True)
+    my_role = serializers.SerializerMethodField(read_only=True)
 
     # 모듈 설정을 위한 필드 추가 (write_only)
     issue = serializers.BooleanField(write_only=True, default=True)
@@ -173,7 +192,7 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
                   'module', 'is_inherit_members', 'allowed_roles', 'trackers', 'forums', 'versions',
                   'default_version', 'categories', 'status', 'depth', 'all_members', 'members',
                   'visible', 'family_tree', 'parent', 'parent_visible', 'sub_projects', 'creator',
-                  'my_perms', 'created', 'updated', 'issue', 'news', 'document', 'forum', 'calendar')
+                  'my_perms', 'my_role', 'created', 'updated', 'issue', 'news', 'document', 'forum', 'calendar')
         read_only_fields = ('status', 'is_public', 'forums')
 
     # 메서드 복구
