@@ -194,7 +194,7 @@ const dataSetup = () => {
     form.allowed_roles = props.project.allowed_roles?.map(r => r.pk) ?? []
     form.trackers = props.project.trackers?.map(t => t.pk) ?? []
 
-    module.issue = !!props.project.module?.issue
+    module.issue = true
     module.news = !!props.project.module?.news
     module.document = !!props.project.module?.document
     module.forum = !!props.project.module?.forum
@@ -400,7 +400,7 @@ onBeforeMount(() => {
               v-model="module.issue"
               id="issue"
               label="업무관리"
-              :disabled="!canUpdateModule"
+              :disabled="true"
             />
           </CCol>
           <CCol sm="6" md="4" lg="3" xl="2">

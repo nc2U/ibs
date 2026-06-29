@@ -64,13 +64,15 @@ const initMenu = computed(() => settingMenus.value[0] || '')
 const settingMenus = computed(() => {
   const menus: { no: number; menu: string }[] = []
 
-  // PERM 상수를 기반으로 권한 체크
+  const isForumEnabled = !issueProject.value?.module || issueProject.value.module.forum
+
+  // PERM 상수를 기반으로 권한 체크 + 프로젝트 모듈 활성화 여부 반영
   if (canAccessProject.value) menus.push({ no: 1, menu: '프로젝트' })
   if (workManager.value || can(PERM.PROJECT_MEMBER)) menus.push({ no: 2, menu: '구성원' })
   if (canAccessIssue.value) menus.push({ no: 3, menu: '업무추적' })
   if (workManager.value || can(PERM.PROJECT_VERSION)) menus.push({ no: 4, menu: '단계' })
   if (workManager.value || can(PERM.ISSUE_CATEGORY_MANAGE)) menus.push({ no: 5, menu: '업무범주' })
-  if (canAccessForum.value) menus.push({ no: 7, menu: '게시판' })
+  if (isForumEnabled && canAccessForum.value) menus.push({ no: 7, menu: '게시판' })
 
   return menus.sort((a, b) => a.no - b.no).map(m => m.menu)
 })
