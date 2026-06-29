@@ -23,7 +23,7 @@ import ComDocsAuthGuard from '@/components/AuthGuard/ComDocsAuthGuard.vue'
 import ListController from '@/components/Documents/ListController.vue'
 import CategoryTabs from '@/components/Documents/CategoryTabs.vue'
 import DocsList from '@/components/Documents/DocsList.vue'
-import DocsView from '@/components/Documents/DocsView.vue'
+import DocsDetail from '../../../components/Documents/DocsDetail.vue'
 import DocsForm from '@/components/Documents/DocsForm.vue'
 
 const fController = ref()
@@ -394,7 +394,7 @@ onBeforeRouteLeave(() => {
         </div>
 
         <div v-else-if="route.name.includes('보기')">
-          <DocsView
+          <DocsDetail
             :type-num="typeNumber"
             :heated-page="heatedPage"
             :re-order="docsFilter.ordering !== '-created'"

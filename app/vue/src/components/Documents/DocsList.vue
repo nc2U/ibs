@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import type { PropType } from 'vue'
 import { useRouter } from 'vue-router'
+import { usePerms } from '@/composables/usePerms.ts'
 import { useDocs } from '@/store/pinia/docs'
 import { TableSecondary } from '@/utils/cssMixins'
-import type { Docs as D } from '@/store/types/docs'
 import Pagination from '@/components/Pagination'
+import type { Docs as D } from '@/store/types/docs'
 import DocsItem from './components/DocsItem.vue'
 import TopDocs from '@/components/Documents/components/TopDocs.vue'
 
@@ -27,6 +28,8 @@ const router = useRouter()
 const docsStore = useDocs()
 const docsPages = (num: number) => docsStore.docsPages(num)
 const pageSelect = (page: number) => emit('page-select', page)
+
+const { can, PERM } = usePerms()
 </script>
 
 <template>
@@ -97,7 +100,7 @@ const pageSelect = (page: number) => emit('page-select', page)
     </CCol>
     <CCol lg="4" class="text-right pt-3">
       <v-btn
-        v-if="writeAuth"
+        v-if="can(PERM.DOCS_CREATE)"
         color="primary"
         class="px-5"
         :disabled="!company && !project"

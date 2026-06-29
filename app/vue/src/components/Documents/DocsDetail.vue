@@ -3,6 +3,7 @@ import type { PropType } from 'vue'
 import { computed, onBeforeMount, onMounted, ref, watch } from 'vue'
 import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
 import { cutString } from '@/utils/baseMixins'
+import { usePerms } from '@/composables/usePerms.ts'
 import { type Docs } from '@/store/types/docs'
 import type { Company } from '@/store/types/settings'
 import { type DocsFilter, useDocs } from '@/store/pinia/docs'
@@ -40,10 +41,21 @@ const refTrashModal = ref()
 
 const accStore = useAccount()
 const userInfo = computed(() => accStore.userInfo)
-const superAuth = computed(() => accStore.superAuth)
-const editAuth = computed(
-  () => userInfo?.value?.is_superuser || props.docs?.creator?.pk === userInfo?.value?.pk,
-)
+
+const { can, PERM } = usePerms()
+const canDocsCreate = computed(() => can(PERM.DOCS_CREATE))
+const canDocsUpdate = computed(() => can(PERM.DOCS_UPDATE))
+const canDocsDelete = computed(() => can(PERM.DOCS_DELETE))
+
+const isContentVisible = computed(() => {
+  if (props.docs?.is_blind) {
+    return accStore.workManager
+  }
+  if (props.docs?.is_secret) {
+    return accStore.workManager || props.docs?.creator?.pk === userInfo?.value?.pk
+  }
+  return can(PERM.DOCS_READ)
+})
 
 const prev = ref<number | null>()
 const next = ref<number | null>()
@@ -170,7 +182,7 @@ const toEdit = () => {
 const deleteConfirm = () => refTrashModal.value.callModal()
 
 const toDelete = () => {
-  if (superAuth.value) toManage(88)
+  if (can(PERM.DOCS_DELETE)) toManage(88)
   refDelModal.value.close()
 }
 
@@ -252,12 +264,12 @@ onMounted(() => {
     <CRow v-if="docs.is_blind">
       <CCol>
         <CAlert color="danger">
-          이 글은 블라인드 처리된 글입니다. 작성자 본인과 관리자만 확인이 가능합니다.
+          이 글은 블라인드 처리된 글입니다. 관리자만 확인이 가능합니다.
         </CAlert>
       </CCol>
     </CRow>
 
-    <div v-show="!docs.is_blind || userInfo?.pk === docs.creator?.pk || superAuth">
+    <div v-show="isContentVisible">
       <CRow class="py-2 justify-content-between">
         <CCol md="7" lg="6" xl="5">
           <table v-if="typeNum !== 1 && docs.execution_date" class="table table-bordered mt-2 mb-3">
@@ -360,7 +372,13 @@ onMounted(() => {
         >
           스크랩 {{ docs.scrape ? `+${docs.scrape}` : '' }}
         </v-btn>
-        <v-btn v-if="superAuth" prepend-icon="mdi-cog" variant="tonal" size="small" :rounded="0">
+        <v-btn
+          v-if="canDocsUpdate"
+          prepend-icon="mdi-cog"
+          variant="tonal"
+          size="small"
+          :rounded="0"
+        >
           관리
           <v-menu activator="parent" open-on-hover>
             <v-list density="compact">
@@ -386,22 +404,8 @@ onMounted(() => {
     <CRow class="py-2">
       <CCol>
         <v-btn-group density="compact" role="group">
-          <v-btn
-            v-if="editAuth"
-            color="success"
-            size="small"
-            :disabled="!writeAuth"
-            @click="toEdit"
-          >
-            수정
-          </v-btn>
-          <v-btn
-            v-if="editAuth"
-            color="warning"
-            size="small"
-            :disabled="!writeAuth"
-            @click="deleteConfirm"
-          >
+          <v-btn v-if="canDocsUpdate" color="success" size="small" @click="toEdit"> 수정 </v-btn>
+          <v-btn v-if="canDocsDelete" color="warning" size="small" @click="deleteConfirm">
             삭제
           </v-btn>
           <v-btn :color="btnLight" size="small" @click="router.push({ name: `${viewRoute}` })">
@@ -436,7 +440,7 @@ onMounted(() => {
       </CCol>
       <CCol class="text-right">
         <v-btn
-          v-if="writeAuth"
+          v-if="canDocsCreate"
           color="primary"
           @click="router.push({ name: `${viewRoute} - 작성` })"
         >
@@ -468,7 +472,9 @@ onMounted(() => {
     <template #header>알림</template>
     <template #default>이 게시물을 휴지통으로 삭제 하시겠습니까?</template>
     <template #footer>
-      <v-btn color="warning" size="small" @click="toManage(88)">삭제</v-btn>
+      <v-btn color="warning" size="small" :disabled="!canDocsDelete" @click="toManage(88)">
+        삭제
+      </v-btn>
     </template>
   </ConfirmModal>
 
@@ -476,7 +482,7 @@ onMounted(() => {
     <template #header>알림</template>
     <template #default>한번 삭제한 자료는 복구할 수 없습니다. 정말 삭제하시겠습니까?</template>
     <template #footer>
-      <v-btn color="warning" size="small" @click="toDelete">삭제</v-btn>
+      <v-btn color="warning" size="small" :disabled="!canDocsDelete" @click="toDelete">삭제</v-btn>
     </template>
   </ConfirmModal>
 </template>

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, type PropType } from 'vue'
-import { useAccount } from '@/store/pinia/account.ts'
-import { cutString, timeFormat } from '@/utils/baseMixins'
 import type { Docs } from '@/store/types/docs'
+import { usePerms } from '@/composables/usePerms.ts'
+import { cutString, timeFormat } from '@/utils/baseMixins'
 
 const props = defineProps({
   docs: { type: Object as PropType<Docs>, default: null },
@@ -10,8 +10,7 @@ const props = defineProps({
   isLawsuit: { type: Boolean, default: false },
 })
 
-const accStore = useAccount()
-const userInfo = computed(() => accStore.userInfo)
+const { can, PERM } = usePerms()
 
 const sortName = computed(() => props.docs?.proj_name || '본사 문서')
 const sortColor = computed(() => (props.docs?.proj_sort === '2' ? 'success' : 'info'))
@@ -31,14 +30,15 @@ const sortColor = computed(() => (props.docs?.proj_sort === '2' ? 'success' : 'i
       {{ cutString(docs.lawsuit_name ?? '', 26) }}
     </CTableDataCell>
     <CTableDataCell class="text-left">
+      <v-icon v-if="docs.is_blind" icon="mdi-eye-off" size="sm" class="mr-1 text-danger" />
+      <v-icon v-if="docs.is_secret" icon="mdi-lock" size="sm" class="mr-1 text-grey" />
       <router-link
-        v-if="!docs.is_secret || userInfo?.is_superuser || userInfo?.pk === docs.creator?.pk"
+        v-if="can(PERM.DOCS_READ)"
         :to="{ name: `${viewRoute} - 보기`, params: { docsId: docs.pk } }"
       >
         {{ cutString(docs.title, 32) }}
       </router-link>
       <span v-else class="text-grey">{{ cutString(docs.title, 32) }}</span>
-      <v-icon v-if="docs.is_secret" icon="mdi-lock" size="sm" class="ml-2 text-grey" />
       <CBadge v-if="docs.is_new" color="warning" size="sm" class="ml-2">new</CBadge>
     </CTableDataCell>
     <CTableDataCell>{{ docs.creator?.username }}</CTableDataCell>

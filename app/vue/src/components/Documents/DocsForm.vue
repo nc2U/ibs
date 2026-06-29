@@ -9,6 +9,7 @@ import {
   ref,
 } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { usePerms } from '@/composables/usePerms.ts'
 import type { AFile, Docs, Link, SuitCase } from '@/store/types/docs'
 import { btnLight } from '@/utils/cssMixins'
 import Multiselect from '@vueform/multiselect'
@@ -67,8 +68,15 @@ const enableStore = (event: Event | any) => {
   attach.value = el.value ? !el.value : false
 }
 
+const { can, PERM } = usePerms()
+
+const canSave = computed(() =>
+  route.params.docsId ? can(PERM.DOCS_UPDATE) : can(PERM.DOCS_CREATE),
+)
+
 const formsCheck = computed(() => {
   if (props.docs) {
+    if (!can(PERM.DOCS_UPDATE)) return true
     const a = form.category === props.docs.category
     const b = form.lawsuit === props.docs.lawsuit
     const c = form.title === props.docs.title
@@ -76,7 +84,8 @@ const formsCheck = computed(() => {
     const e = form.description === props.docs.description
 
     return a && b && c && d && e && attach.value
-  } else return false
+  }
+  return !can(PERM.DOCS_CREATE)
 })
 
 const [route, router] = [useRoute(), useRouter()]
@@ -305,7 +314,7 @@ onBeforeUpdate(() => dataSetup())
     <template #header> {{ viewRoute }}</template>
     <template #default> {{ viewRoute }} 저장을 진행하시겠습니까?</template>
     <template #footer>
-      <v-btn :color="btnClass" size="small" @click="modalAction">저장</v-btn>
+      <v-btn :color="btnClass" size="small" :disabled="!canSave" @click="modalAction">저장</v-btn>
     </template>
   </ConfirmModal>
 
