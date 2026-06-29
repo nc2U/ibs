@@ -1,4 +1,4 @@
-{% if request.user.is_superuser or request.user.staffauth.notice > '0' %}
+{% if request.user.is_superuser or request.user.staff_auth.notice > '0' %}
     <li class="side-nav-item">
         <a href="javascript: void(0);" class="side-nav-link">
             <i class="uil-envelope-add"></i>

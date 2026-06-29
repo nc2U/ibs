@@ -83,14 +83,14 @@
                                             <div class="col-xs-12 col-lg-10 mb-1">
                                                 {{ form.rights_restrictions|add_class:"form-control"|attr:"placeholder:권리제한사항"|attr:"rows:2" }}
                                             </div>
-                                            {% if request.user.is_superuser or request.user.staffauth.project > '1' %}
+                                            {% if request.user.is_superuser or request.user.staff_auth.project > '1' %}
                                                 <div class="col-6 col-lg-1 text-center m-auto">
                                                     {% if request.GET.site %}<a href="
                                                             {% url 'ibs:project:site' %}{% if request.GET.page %}?page={{ request.GET.page }}{% endif %}">Reset</a>{% endif %}
                                                 </div>
                                             {% endif %}
-                                            <div class="col-6 col-lg-{% if request.user.is_superuser or request.user.staffauth.project > '1' %}1{% else %}2{% endif %} text-right m-auto">
-                                                {% if request.user.is_superuser or request.user.staffauth.project > '1' %}
+                                            <div class="col-6 col-lg-{% if request.user.is_superuser or request.user.staff_auth.project > '1' %}1{% else %}2{% endif %} text-right m-auto">
+                                                {% if request.user.is_superuser or request.user.staff_auth.project > '1' %}
                                                     <button type="submit"
                                                             class="btn btn-{% if request.GET.site %}success{% else %}primary{% endif %}">
                                                         {% if request.GET.site %}변경{% else %}신규{% endif %}등록

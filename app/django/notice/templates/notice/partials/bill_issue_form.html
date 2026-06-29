@@ -192,7 +192,7 @@
 
             <div class="col-12 row mt-2 bg-dragula border-top border-bottom">
         <div class="col-12 pt-2 pb-2 text-right">
-            {% if request.user.is_superuser or request.user.staffauth.notice > '1' %}
+            {% if request.user.is_superuser or request.user.staff_auth.notice > '1' %}
                 <button type="submit" class="btn btn-{% if bill_issue %}success{% else %}primary{% endif %}">
                     {% if bill_issue %}업데이트{% else %}등록하기{% endif %}
                 </button>

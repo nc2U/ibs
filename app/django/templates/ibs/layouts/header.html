@@ -202,7 +202,7 @@
                 <span class="account-position">
                     {% if user.is_superuser %}
                         Super User
-                    {% elif user.staffauth.is_staff or user.is_staff %}
+                    {% elif user.staff_auth.is_staff or user.is_staff %}
                         Staff
                     {% else %}
                         Guest

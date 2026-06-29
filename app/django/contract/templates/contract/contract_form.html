@@ -477,7 +477,7 @@
                             <div class="row">
                                 <div class="form-group mb-0 justify-content-end row">
                                     <div class="col-12">
-                                        {% if request.user.is_superuser or request.user.staffauth.contract > '1' %}
+                                        {% if request.user.is_superuser or request.user.staff_auth.contract > '1' %}
                                             {% if request.GET.key_unit %}
                                                 <button type="submit"
                                                         class="btn btn-{% if not request.GET.cont_id %}primary{% else %}success{% endif %}">등록하기</button>

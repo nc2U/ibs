@@ -55,7 +55,7 @@
 
                         <div class="row mt-2 mb-3 bg-dragula border-top border-bottom">
                             <div class="col-12 pt-2 pb-2 text-right">
-                                {% if request.user.is_superuser or request.user.staffauth.notice > '1' %}
+                                {% if request.user.is_superuser or request.user.staff_auth.notice > '1' %}
                                     <button type="button" class="btn btn-primary" onclick="print_bill()">선택 건별 고지서 다운로드하기</button>
                                 {% else %}
                                     <button type="button" class="btn btn-outline-secondary"

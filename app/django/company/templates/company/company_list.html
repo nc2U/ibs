@@ -261,7 +261,7 @@
                                 <div class="row">
                                     <div class="form-group mb-0 justify-content-end row">
                                         <div class="col-12">
-                                            {% if request.user.is_superuser or request.user.staffauth.company_cash > '1' %}
+                                            {% if request.user.is_superuser or request.user.staff_auth.company_cash > '1' %}
                                                 <button class="btn btn-success"
                                                     onclick=location.href="{% url 'ibs:company:index' %}?id={{ company.id }}">
                                                     수정하기

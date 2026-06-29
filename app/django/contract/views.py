@@ -22,7 +22,7 @@ class ContractLV(LoginRequiredMixin, ListView):
 
     def get_project(self):
         try:
-            project = self.request.user.staffauth.default_project
+            project = self.request.user.staff_auth.default_project
         except:
             project = Project.objects.first()
         gp = self.request.GET.get('project')
@@ -66,7 +66,7 @@ class ContractLV(LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super(ContractLV, self).get_context_data(**kwargs)
         user = self.request.user
-        context['project_list'] = Project.objects.all() if user.is_superuser else user.staffauth.allowed_projects.all()
+        context['project_list'] = Project.objects.all() if user.is_superuser else user.staff_auth.allowed_projects.all()
         context['this_project'] = self.get_project()
         context['groups'] = OrderGroup.objects.filter(project=self.get_project())
         context['types'] = UnitType.objects.filter(project=self.get_project())
@@ -126,7 +126,7 @@ class ContractRegisterView(LoginRequiredMixin, FormView):
 
     def get_project(self):
         try:
-            project = self.request.user.staffauth.default_project
+            project = self.request.user.staff_auth.default_project
         except:
             project = Project.objects.first()
         gp = self.request.GET.get('project')
@@ -199,7 +199,7 @@ class ContractRegisterView(LoginRequiredMixin, FormView):
     def get_context_data(self, **kwargs):
         context = super(ContractRegisterView, self).get_context_data(**kwargs)
         user = self.request.user
-        context['project_list'] = Project.objects.all() if user.is_superuser else user.staffauth.allowed_projects.all()
+        context['project_list'] = Project.objects.all() if user.is_superuser else user.staff_auth.allowed_projects.all()
         context['this_project'] = self.get_project()
         context['order_groups'] = OrderGroup.objects.filter(project=self.get_project())
         context['types'] = UnitType.objects.filter(project=self.get_project())
@@ -382,7 +382,7 @@ class ContractorTrans(LoginRequiredMixin, FormView):
 
     def get_project(self):
         try:
-            project = self.request.user.staffauth.default_project
+            project = self.request.user.staff_auth.default_project
         except:
             project = Project.objects.first()
         gp = self.request.GET.get('project')
@@ -391,7 +391,7 @@ class ContractorTrans(LoginRequiredMixin, FormView):
 
     def get_context_data(self, **kwargs):
         context = super(ContractorTrans, self).get_context_data(**kwargs)
-        context['project_list'] = self.request.user.staffauth.allowed_projects.all()
+        context['project_list'] = self.request.user.staff_auth.allowed_projects.all()
         context['this_project'] = self.get_project()
         return context
 
@@ -404,7 +404,7 @@ class ContractorReleaseRegister(LoginRequiredMixin, ListView, FormView):
 
     def get_project(self):
         try:
-            project = self.request.user.staffauth.default_project
+            project = self.request.user.staff_auth.default_project
         except:
             project = Project.objects.first()
         gp = self.request.GET.get('project')
@@ -433,7 +433,7 @@ class ContractorReleaseRegister(LoginRequiredMixin, ListView, FormView):
     def get_context_data(self, **kwargs):
         context = super(ContractorReleaseRegister, self).get_context_data(**kwargs)
         user = self.request.user
-        context['project_list'] = Project.objects.all() if user.is_superuser else user.staffauth.allowed_projects.all()
+        context['project_list'] = Project.objects.all() if user.is_superuser else user.staff_auth.allowed_projects.all()
         context['this_project'] = self.get_project()
         context['contractors'] = Contractor.objects.filter(contract__project=self.get_project(), status='2')
         if self.request.GET.get('contractor'):
@@ -505,7 +505,7 @@ class BuildDashboard(LoginRequiredMixin, TemplateView):
 
     def get_project(self):
         try:
-            project = self.request.user.staffauth.default_project
+            project = self.request.user.staff_auth.default_project
         except:
             project = Project.objects.first()
         gp = self.request.GET.get('project')
@@ -515,7 +515,7 @@ class BuildDashboard(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super(BuildDashboard, self).get_context_data(**kwargs)
         user = self.request.user
-        context['project_list'] = Project.objects.all() if user.is_superuser else user.staffauth.allowed_projects.all()
+        context['project_list'] = Project.objects.all() if user.is_superuser else user.staff_auth.allowed_projects.all()
         context['this_project'] = self.get_project()
         context['types'] = UnitType.objects.filter(project=self.get_project())
         context['max_floor'] = HouseUnit.objects.aggregate(Max('floor_no'))
