@@ -7,7 +7,7 @@ import JournalRow from './JournalRow.vue'
 interface BankForm {
   deal_date: string
   note: string
-  bank_account: number | null
+  bank_account: number | null | ''
   content: string
   sort: 1 | 2
   amount: number | null
