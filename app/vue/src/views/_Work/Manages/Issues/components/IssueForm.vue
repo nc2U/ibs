@@ -55,7 +55,7 @@ const form = ref({
   files: [] as any[],
 })
 
-const { can, PERM } = usePerms()
+const { can, isAssignable, PERM } = usePerms()
 const canIssueCreate = computed(() => can(PERM.ISSUE_CREATE))
 const canIssueUpdate = computed(() => can(PERM.ISSUE_UPDATE))
 
@@ -102,8 +102,8 @@ const formsCheck = computed(() => {
     const q = !newFiles.value.length
     const u = !comment.value.content
 
-    const first = a && b && c && d && e && f && g && h && i && j && k
-    const second = l && m && n && o && p && q && u
+    const first = a && b && c && d && e && f && g && h && i
+    const second = j && k && l && m && n && o && p && q && u
     return first && second
   }
   return false
@@ -120,19 +120,32 @@ watch(props, nVal => {
 const watcherList = ref<{ pk: number; username: string }[]>([])
 
 const memberList = computed(() => {
+  let list: { pk: number; username: string; isAssignable: boolean }[] = []
+
   if (props.issueProject?.all_members) {
-    return props.issueProject.all_members.map(m => ({
+    list = props.issueProject.all_members.map(m => ({
       pk: m.user.pk,
       username: m.user.username,
       isAssignable: m.roles.some(r => r.assignable),
     }))
+  } else {
+    list = [...new Map(workStore.memberList.map(m => [m.user.pk, m.user])).values()].map(u => ({
+      pk: u.pk,
+      username: u.username,
+      isAssignable: true,
+    }))
   }
 
-  return [...new Map(workStore.memberList.map(m => [m.user.pk, m.user])).values()].map(u => ({
-    pk: u.pk,
-    username: u.username,
-    isAssignable: true, // Default to true if role info not available in global member list
-  }))
+  // my_role.assignable 이 true 이거나 슈퍼유저/업무관리자라면 전체 멤버 반환
+  if (isAssignable(props.issueProject?.slug || '')) {
+    return list
+  }
+
+  // 그렇지 않다면, 자기 자신 및 (기존에 할당된 담당자가 있다면) 기존 담당자만 남김
+  const myPk = userInfo.value?.pk
+  const existingAssigneePk = props.issue?.assigned_to?.pk
+
+  return list.filter(m => m.pk === myPk || (existingAssigneePk && m.pk === existingAssigneePk))
 })
 
 watch(
