@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { PERM, type PermissionCode } from '@/store/constants/permissions'
+import { type PermissionCode } from '@/store/constants/permissions'
 import { useAccount } from '@/store/pinia/account'
 import { useWork } from '@/store/pinia/work_project'
 
