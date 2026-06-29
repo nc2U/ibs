@@ -65,13 +65,29 @@ class User(AbstractBaseUser, PermissionsMixin):
         send_mail(subject, message, from_email, [self.email], **kwargs)
 
     def assigned_projects(self):
-        projects = IssueProject.objects.filter(status='1')
-        project_list = []
-        for project in projects:
-            all_members = [m['user']['pk'] for m in project.all_members()]
-            if self.pk in all_members:
-                project_list.append(project.pk)
-        return IssueProject.objects.filter(pk__in=project_list)
+        from work.models.project import Member
+        # 1. Get project IDs where the user is directly a member
+        direct_project_ids = list(
+            Member.objects.filter(user=self, project__status='1').values_list('project_id', flat=True))
+        assigned_ids = set(direct_project_ids)
+        current_ids = set(direct_project_ids)
+
+        # 2. Recursively find child projects that inherit members
+        while current_ids:
+            child_ids = set(
+                IssueProject.objects.filter(
+                    parent_id__in=current_ids,
+                    is_inherit_members=True,
+                    status='1'
+                ).values_list('id', flat=True)
+            )
+            new_ids = child_ids - assigned_ids
+            if not new_ids:
+                break
+            assigned_ids.update(new_ids)
+            current_ids = new_ids
+
+        return IssueProject.objects.filter(pk__in=assigned_ids)
 
     def member_project_ids(self):
         # assigned_projects가 반환하는 QuerySet에서 ID 목록만 추출
@@ -90,19 +106,24 @@ class StaffAuth(models.Model):
                                          on_delete=models.SET_NULL, null=True,
                                          blank=True, verbose_name='담당 메인 프로젝트',
                                          help_text='선택한 프로젝트를 사용자의 각 화면에서 기본 프로젝트로 보여줍니다.')
-    AUTH_CHOICE = (('0', '권한없음'), ('1', '읽기권한'), ('2', '쓰기권한'))
-    contract = models.CharField('분양 계약 관리', max_length=1, choices=AUTH_CHOICE, default='0')
-    payment = models.CharField('분양 수납 관리', max_length=1, choices=AUTH_CHOICE, default='0')
-    notice = models.CharField('고객 고지 관리', max_length=1, choices=AUTH_CHOICE, default='0')
-    project_ledger = models.CharField('회계 자금 관리', max_length=1, choices=AUTH_CHOICE, default='0')
-    project_docs = models.CharField('문서 소송 관리', max_length=1, choices=AUTH_CHOICE, default='0')
-    project = models.CharField('신규 프로젝트', max_length=1, choices=AUTH_CHOICE, default='0')
-    project_site = models.CharField('부지 정보 관리', max_length=1, choices=AUTH_CHOICE, default='0')
-    company_ledger = models.CharField('본사 회계 관리', max_length=1, choices=AUTH_CHOICE, default='0')
-    company_docs = models.CharField('본사 문서 관리', max_length=1, choices=AUTH_CHOICE, default='0')
-    human_resource = models.CharField('본사 인사 관리', max_length=1, choices=AUTH_CHOICE, default='0')
-    company_settings = models.CharField('회사 관련설정', max_length=1, choices=AUTH_CHOICE, default='0')
-    auth_manage = models.CharField('권한 설정 관리', max_length=1, choices=AUTH_CHOICE, default='0')
+
+    class AuthChoice(models.TextChoices):
+        NONE = '0', '권한없음'
+        READ = '1', '읽기권한'
+        WRITE = '2', '쓰기권한'
+
+    contract = models.CharField('분양 계약 관리', max_length=1, choices=AuthChoice.choices, default='0')
+    payment = models.CharField('분양 수납 관리', max_length=1, choices=AuthChoice.choices, default='0')
+    notice = models.CharField('고객 고지 관리', max_length=1, choices=AuthChoice.choices, default='0')
+    project_ledger = models.CharField('회계 자금 관리', max_length=1, choices=AuthChoice.choices, default='0')
+    project_docs = models.CharField('문서 소송 관리', max_length=1, choices=AuthChoice.choices, default='0')
+    project = models.CharField('신규 프로젝트', max_length=1, choices=AuthChoice.choices, default='0')
+    project_site = models.CharField('부지 정보 관리', max_length=1, choices=AuthChoice.choices, default='0')
+    company_ledger = models.CharField('본사 회계 관리', max_length=1, choices=AuthChoice.choices, default='0')
+    company_docs = models.CharField('본사 문서 관리', max_length=1, choices=AuthChoice.choices, default='0')
+    human_resource = models.CharField('본사 인사 관리', max_length=1, choices=AuthChoice.choices, default='0')
+    company_settings = models.CharField('회사 관련설정', max_length=1, choices=AuthChoice.choices, default='0')
+    auth_manage = models.CharField('권한 설정 관리', max_length=1, choices=AuthChoice.choices, default='0')
 
     def __str__(self):
         return f'{self.user}'
@@ -187,6 +208,6 @@ class PasswordResetToken(models.Model):
     updated = models.DateTimeField('편집일시', auto_now=True)
 
     def is_expired(self):
-        # Check if 10 minutes have passed since the last update
-        time_diff = timezone.localtime() - self.updated
+        # Check if 10 minutes have passed since creation
+        time_diff = timezone.localtime() - self.created
         return time_diff.total_seconds() >= self.expired
