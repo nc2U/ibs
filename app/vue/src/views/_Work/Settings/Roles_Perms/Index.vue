@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { onBeforeMount, ref, computed } from 'vue'
 import { pageTitle, navMenu } from '@/views/_Work/_menu/headermixin3'
+import { storeToRefs } from 'pinia'
 import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project'
 import { useAccount } from '@/store/pinia/account.ts'
-import { storeToRefs } from 'pinia'
+import type { Role } from '@/store/types/work_project'
 import Loading from '@/components/Loading/Index.vue'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
@@ -12,7 +13,6 @@ import RoleList from './components/RoleList.vue'
 import PermissionReport from './components/PermissionReport.vue'
 import RoleFormModal from './components/RoleFormModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
-import type { Role } from '@/store/types/work_project'
 
 const route = useRoute()
 

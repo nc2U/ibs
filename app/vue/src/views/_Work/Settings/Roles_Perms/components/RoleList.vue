@@ -15,7 +15,9 @@ const emit = defineEmits(['show-modal', 'delete-role'])
     <CTableHead color="light">
       <CTableRow>
         <CTableHeaderCell scope="col">역할</CTableHeaderCell>
-        <CTableHeaderCell scope="col" class="text-center">업무 위탁</CTableHeaderCell>
+        <CTableHeaderCell scope="col" class="text-center">업무 위탁 권한</CTableHeaderCell>
+        <CTableHeaderCell scope="col" class="text-center">업무 보기 권한</CTableHeaderCell>
+        <CTableHeaderCell scope="col" class="text-center">사용자 보기 권한</CTableHeaderCell>
         <CTableHeaderCell scope="col"></CTableHeaderCell>
       </CTableRow>
     </CTableHead>
@@ -32,6 +34,12 @@ const emit = defineEmits(['show-modal', 'delete-role'])
         </CTableHeaderCell>
         <CTableDataCell class="text-center">
           <CIcon v-if="role.assignable" name="cil-check" class="text-success" />
+        </CTableDataCell>
+        <CTableDataCell class="text-center">
+          {{ role.issue_visible }}
+        </CTableDataCell>
+        <CTableDataCell class="text-center">
+          {{ role.user_visible }}
         </CTableDataCell>
         <CTableDataCell class="text-end">
           <v-btn
