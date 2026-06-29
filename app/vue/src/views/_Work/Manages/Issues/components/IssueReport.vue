@@ -31,7 +31,12 @@ const allIssues = computed(() => issueStore.allIssueList || [])
 
 // 1. 유형별 (Tracker)
 const trackerReport = computed(() => {
-  return issueStore.trackerList.map(t => {
+  const currentProjectPk = workStore.issueProject?.pk
+  const filteredTrackers = currentProjectPk
+    ? issueStore.trackerList.filter(t => t.projects?.map((p: any) => p.pk).includes(currentProjectPk))
+    : issueStore.trackerList
+
+  return filteredTrackers.map(t => {
     const list = allIssues.value.filter(i => i.tracker?.pk === t.pk)
     const open = list.filter(i => !i.status?.closed).length
     const closed = list.filter(i => i.status?.closed).length
@@ -114,7 +119,7 @@ const creatorReport = computed(() => {
   })
 })
 
-// 5. 버전별 (Version)
+// 5. 단계별 (Version)
 const versionReport = computed(() => {
   const versions = workStore.versionList || []
   const report = versions.map(v => {
@@ -130,7 +135,7 @@ const versionReport = computed(() => {
     return { name: v.name, open, closed, total: open + closed }
   })
 
-  // 미정 버전 추가
+  // 미정 단계 추가
   const noVersionList = allIssues.value.filter(i => !i.fixed_version)
   if (noVersionList.length > 0) {
     const open = noVersionList.filter(i => !i.status?.closed).length
@@ -348,17 +353,17 @@ const totalAll = computed(() => allIssues.value.length)
         </v-card>
       </v-col>
 
-      <!-- 5. 버전별 -->
+      <!-- 5. 단계별 -->
       <v-col cols="12" md="6" class="mb-4">
         <v-card class="report-card" elevation="2">
           <v-card-title class="bg-light d-flex align-center py-2 px-3">
             <v-icon icon="mdi-git-branch" color="indigo" class="mr-2" size="20" />
-            <span class="text-subtitle-1 font-weight-bold">버전별 요약</span>
+            <span class="text-subtitle-1 font-weight-bold">단계별 요약</span>
           </v-card-title>
           <v-table density="comfortable" class="report-table">
             <thead>
               <tr>
-                <th class="text-left font-weight-bold text-grey-darken-2">버전</th>
+                <th class="text-left font-weight-bold text-grey-darken-2">단계</th>
                 <th class="text-right font-weight-bold text-success">진행중</th>
                 <th class="text-right font-weight-bold text-blue">완료됨</th>
                 <th class="text-right font-weight-bold text-grey-darken-3">합계</th>
@@ -372,7 +377,7 @@ const totalAll = computed(() => allIssues.value.length)
                 <td class="text-right font-weight-bold">{{ item.total }}</td>
               </tr>
               <tr v-if="!versionReport.length">
-                <td colspan="4" class="text-center text-grey py-3">지정된 버전이 없습니다.</td>
+                <td colspan="4" class="text-center text-grey py-3">지정된 단계가 없습니다.</td>
               </tr>
             </tbody>
           </v-table>
@@ -421,6 +426,10 @@ const totalAll = computed(() => allIssues.value.length)
     box-shadow 0.3s ease;
   overflow: hidden;
   border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.summary-card h3 {
+  font-family: 'Outfit', 'Inter', 'Roboto', 'Noto Sans KR', sans-serif !important;
 }
 
 .summary-card:hover {
@@ -477,81 +486,84 @@ const totalAll = computed(() => allIssues.value.length)
 .hover-row:hover {
   background-color: rgba(24, 103, 192, 0.03) !important;
 }
+</style>
 
+<style>
 /* ---------------------------------------------------- */
 /* Dark Theme Customizations */
 /* ---------------------------------------------------- */
 
-:global(body.dark-theme) .summary-card {
+body.dark-theme .summary-card.v-card {
   background: #232736 !important;
   border: 1px solid rgba(255, 255, 255, 0.05) !important;
   color: #e9ecef !important;
 }
 
-:global(body.dark-theme) .bg-open {
+body.dark-theme .bg-open {
   background: linear-gradient(135deg, #1b3d2b 0%, #232736 100%) !important;
 }
 
-:global(body.dark-theme) .bg-closed {
+body.dark-theme .bg-closed {
   background: linear-gradient(135deg, #182e4e 0%, #232736 100%) !important;
 }
 
-:global(body.dark-theme) .bg-total {
+body.dark-theme .bg-total {
   background: linear-gradient(135deg, #2b2f3a 0%, #232736 100%) !important;
 }
 
-:global(body.dark-theme) .summary-card h3 {
+body.dark-theme .summary-card.v-card h3 {
   color: #ffffff !important;
+  font-family: 'Outfit', 'Inter', 'Roboto', 'Noto Sans KR', sans-serif !important;
 }
 
-:global(body.dark-theme) .summary-card .text-grey-darken-1 {
+body.dark-theme .summary-card.v-card .text-grey-darken-1 {
   color: #a6b0cf !important;
 }
 
-:global(body.dark-theme) .report-card {
+body.dark-theme .report-card.v-card {
   background-color: #232736 !important;
   border: 1px solid rgba(255, 255, 255, 0.05) !important;
 }
 
-:global(body.dark-theme) .bg-light {
+body.dark-theme .bg-light {
   background-color: #2a3042 !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
   color: #ffffff !important;
 }
 
-:global(body.dark-theme) .report-card .v-card-title span {
+body.dark-theme .report-card.v-card .v-card-title span {
   color: #ffffff !important;
 }
 
-:global(body.dark-theme) .report-table {
+body.dark-theme .report-table {
   background-color: transparent !important;
   color: #a6b0cf !important;
 }
 
-:global(body.dark-theme) .report-table th {
+body.dark-theme .report-table th {
   border-bottom: 2px solid rgba(255, 255, 255, 0.08) !important;
   color: #a6b0cf !important;
 }
 
-:global(body.dark-theme) .report-table td {
+body.dark-theme .report-table td {
   border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
   color: #8f9bb3 !important;
 }
 
-:global(body.dark-theme) .report-table .text-success {
+body.dark-theme .report-table .text-success {
   color: #34c38f !important;
 }
 
-:global(body.dark-theme) .report-table .text-blue {
+body.dark-theme .report-table .text-blue {
   color: #50a5f1 !important;
 }
 
-:global(body.dark-theme) .report-table .text-grey-darken-2,
-:global(body.dark-theme) .report-table .text-grey-darken-3 {
+body.dark-theme .report-table .text-grey-darken-2,
+body.dark-theme .report-table .text-grey-darken-3 {
   color: #a6b0cf !important;
 }
 
-:global(body.dark-theme) .hover-row:hover {
+body.dark-theme .hover-row:hover {
   background-color: rgba(255, 255, 255, 0.02) !important;
 }
 </style>
