@@ -64,7 +64,7 @@ const onSubmit = () => {
       <Comment v-for="comment in news.comments" :key="comment.pk" :comment="comment" />
     </div>
     <div v-else class="text-center py-6 text-grey-lighten-1 italic small">
-      아직 댓글이 없습니다. 첫 번째 댓글을 남겨보세요!
+      {{ can(PERM.NEWS_COMMENT) ? '아직 댓글이 없습니다. 첫 번째 댓글을 남겨보세요!' : '아직 등록된 댓글이 없습니다.' }}
     </div>
   </div>
 </template>
