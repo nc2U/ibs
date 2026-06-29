@@ -48,14 +48,22 @@ api.interceptors.response.use(
   async error => {
     close() // 에러 발생 시 진행바 닫기
 
-    // 500 이상 에러 처리 (validateStatus 설정으로 여기까지 오는 경우)
-    if (error.response && error.response.status === 401) {
-      const redirectPath = Cookies.get('redirectPath') || '/'
-      // 로그인 페이지로 리다이렉트
-      await router.push({
-        name: 'Login',
-        query: { redirect: redirectPath },
-      })
+    if (error.response) {
+      if (error.response.status === 401) {
+        const redirectPath = Cookies.get('redirectPath') || '/'
+        // 로그인 페이지로 리다이렉트
+        await router.push({
+          name: 'Login',
+          query: { redirect: redirectPath },
+        })
+      } else if (error.response.status === 403 || error.response.status === 404) {
+        // 403 Forbidden / 404 Not Found 발생 시 이전 페이지로 이동 (히스토리가 없으면 홈으로 이동)
+        if (window.history.state && window.history.state.back) {
+          router.go(-1)
+        } else {
+          await router.push('/')
+        }
+      }
     }
     return Promise.reject(error)
   },
