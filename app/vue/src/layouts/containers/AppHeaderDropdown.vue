@@ -15,7 +15,7 @@ const refsTodoModal = ref()
 
 const avatarSrc = computed(() => (props.profile?.image ? props.profile?.image : ''))
 const avatarText = computed(() =>
-  props.userInfo ? props.userInfo.username.substring(0, 1).toUpperCase() : 'A',
+  props.userInfo ? props.userInfo.username.substring(0, 2).toUpperCase() : 'AB',
 )
 
 const store = useStore()
@@ -37,7 +37,7 @@ const logout = () => {
   <CDropdown>
     <CDropdownToggle class="py-0" color="link" :caret="false">
       <CAvatar
-        color="secondary"
+        color="blue-accent-1"
         text-color="white"
         size="md"
         :src="avatarSrc as string"
