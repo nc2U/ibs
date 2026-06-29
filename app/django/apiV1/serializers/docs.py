@@ -2,10 +2,10 @@ import json
 from urllib.parse import urlparse
 
 from django.conf import settings
-from django.core.files.storage import default_storage
 from django.db import transaction
 from rest_framework import serializers
 
+from _utils.file_service import FileService
 from apiV1.serializers.accounts import SimpleUserSerializer
 from docs.models import DocType, Category, LawsuitCase, Document, Link, File, Image, OfficialLetter
 
@@ -65,31 +65,35 @@ class LawSuitCaseSerializer(serializers.ModelSerializer):
     @staticmethod
     def get_links(obj):
         links = []
-        documents = obj.document_set.all().order_by('id')
+        documents = obj.document_set.all().select_related('category').prefetch_related('links').order_by('id')
         for doc in documents:
-            category = Category.objects.get(pk=doc.category.id)
-            category_data = {'color': category.color, 'name': category.name}
-            for link in doc.links.values():
+            category_data = {
+                'color': doc.category.color if doc.category else '',
+                'name': doc.category.name if doc.category else ''
+            }
+            for link in doc.links.all():
                 links.append({
-                    'pk': link.get('id'),
+                    'pk': link.id,
                     'category': {'name': category_data.get('name'),
                                  'color': category_data.get('color')},
-                    'link': link.get('link')})
+                    'link': link.link})
         return links
 
     @staticmethod
     def get_files(obj):
         files = []
-        documents = obj.document_set.all().order_by('id')
+        documents = obj.document_set.all().select_related('category').prefetch_related('files').order_by('id')
         for doc in documents:
-            category = Category.objects.get(pk=doc.category.id)
-            category_data = {'color': category.color, 'name': category.name}
-            for file in doc.files.values():
+            category_data = {
+                'color': doc.category.color if doc.category else '',
+                'name': doc.category.name if doc.category else ''
+            }
+            for file in doc.files.all():
                 files.append({
-                    'pk': file.get('id'),
+                    'pk': file.id,
                     'category': {'name': category_data.get('name'),
                                  'color': category_data.get('color')},
-                    'file': settings.MEDIA_URL + file.get('file')})
+                    'file': settings.MEDIA_URL + file.file.name if file.file else ''})
         return files
 
     def get_prev_pk(self, obj):
@@ -141,8 +145,9 @@ class DocumentSerializer(serializers.ModelSerializer):
     cate_name = serializers.SlugField(source='category', read_only=True)
     cate_color = serializers.SerializerMethodField(read_only=True)
     lawsuit_name = serializers.SlugField(source='lawsuit', read_only=True)
-    links = LinksInDocumentSerializer(many=True, read_only=True)
-    files = FilesInDocumentSerializer(many=True, read_only=True)
+    links = serializers.SerializerMethodField(read_only=True)
+    files = serializers.SerializerMethodField(read_only=True)
+    description = serializers.SerializerMethodField()
     creator = SimpleUserSerializer(read_only=True)
     updator = SimpleUserSerializer(read_only=True)
     scrape = serializers.SerializerMethodField(read_only=True)
@@ -157,6 +162,9 @@ class DocumentSerializer(serializers.ModelSerializer):
                   'hit', 'scrape', 'my_scrape', 'ip', 'device', 'is_secret', 'password', 'is_blind', 'deleted',
                   'links', 'files', 'creator', 'updator', 'created', 'updated', 'is_new', 'prev_pk', 'next_pk')
         read_only_fields = ('ip',)
+        extra_kwargs = {
+            'password': {'write_only': True}
+        }
 
     @staticmethod
     def get_proj_sort(obj):
@@ -176,17 +184,56 @@ class DocumentSerializer(serializers.ModelSerializer):
 
     def get_my_scrape(self, obj):
         user = self.context['request'].user
-        scrapes = obj.docscrape_set.all()
-        users = [s.user for s in scrapes]
-        return user in users
+        if not user or not user.is_authenticated:
+            return False
+        return any(s.user_id == user.pk for s in obj.docscrape_set.all())
+
+    def get_description(self, obj):
+        user = self.context['request'].user
+        is_owner_or_admin = (
+                user.is_superuser or
+                getattr(user, 'work_manager', False) or
+                obj.creator == user
+        )
+        if obj.is_secret and not is_owner_or_admin:
+            return "비밀글입니다."
+        return obj.description
+
+    def get_links(self, obj):
+        user = self.context['request'].user
+        is_owner_or_admin = (
+                user.is_superuser or
+                getattr(user, 'work_manager', False) or
+                obj.creator == user
+        )
+        if obj.is_secret and not is_owner_or_admin:
+            return []
+        return LinksInDocumentSerializer(obj.links.all(), many=True).data
+
+    def get_files(self, obj):
+        user = self.context['request'].user
+        is_owner_or_admin = (
+                user.is_superuser or
+                getattr(user, 'work_manager', False) or
+                obj.creator == user
+        )
+        if obj.is_secret and not is_owner_or_admin:
+            return []
+        return FilesInDocumentSerializer(obj.files.all(), many=True).data
 
     def get_prev_pk(self, obj):
-        queryset = self.context['view'].filter_queryset(Document.objects.all())
+        view = self.context.get('view')
+        if view and view.action != 'retrieve':
+            return None
+        queryset = view.filter_queryset(Document.objects.all())
         prev_obj = queryset.filter(pk__lt=obj.pk).order_by('-pk').first()
         return prev_obj.pk if prev_obj else None
 
     def get_next_pk(self, obj):
-        queryset = self.context['view'].filter_queryset(Document.objects.all())
+        view = self.context.get('view')
+        if view and view.action != 'retrieve':
+            return None
+        queryset = view.filter_queryset(Document.objects.all())
         next_obj = queryset.filter(pk__gt=obj.pk).order_by('pk').first()
         return next_obj.pk if next_obj else None
 
@@ -205,12 +252,8 @@ class DocumentSerializer(serializers.ModelSerializer):
             for link in new_links:
                 Link.objects.create(docs=docs, link=validate_link(link))
 
-        # Files 처리
-        new_files = request.FILES.getlist('new_files')
-        new_descs = request.data.getlist('new_descs')
-        if new_files:
-            for file, desc in zip(new_files, new_descs):
-                File.objects.create(docs=docs, file=file, description=desc, creator=user)
+        # 파일 처리를 FileService로 위임
+        FileService.manage_files(docs, request.data, user, File, related_name='docs')
         return docs
 
     @transaction.atomic
@@ -245,41 +288,11 @@ class DocumentSerializer(serializers.ModelSerializer):
                 for link in new_links:
                     Link.objects.create(docs=instance, link=validate_link(link))
 
-            # --- Files 처리 ---
-            new_files = request.FILES.getlist('new_files')
-            new_descs = request.data.getlist('new_descs')
-
-            if new_files:
-                for file, desc in zip(new_files, new_descs):
-                    File.objects.create(docs=instance, file=file, description=desc, creator=user)
-
-            old_files = self.initial_data.getlist('files', [])
-            cng_pks = self.initial_data.getlist('cngPks', [])
-            cng_files = self.initial_data.getlist('cngFiles', [])
-            cng_maps = dict(zip(cng_pks, cng_files))
-
-            if old_files:
-                for json_file in old_files:
-                    file = json.loads(json_file)
-                    file_object = File.objects.get(pk=file.get('pk'))
-
-                    if file.get('del'):
-                        file_object.delete()
-                        continue
-
-                    cng_file = cng_maps.get(str(file.get('pk')))
-                    if cng_file:
-                        try:
-                            if default_storage.exists(file_object.file.name):
-                                default_storage.delete(file_object.file.name)
-                        except Exception as e:
-                            print(f"파일 처리 중 오류 발생: {e}")
-                        file_object.file = cng_file
-                        file_object.creator = user
-                        file_object.save()
+            # 파일 처리를 FileService로 위임
+            FileService.manage_files(instance, request.data, user, File, related_name='docs')
 
         except Exception as e:
-            print(f"링크 및 파일 처리 중 오류 발생: {e}")
+            print(f"링크 처리 중 오류 발생: {e}")
 
         return instance
 
@@ -349,12 +362,18 @@ class OfficialLetterSerializer(serializers.ModelSerializer):
         read_only_fields = ('document_number', 'pdf_file')
 
     def get_prev_pk(self, obj):
-        queryset = self.context['view'].filter_queryset(OfficialLetter.objects.all())
+        view = self.context.get('view')
+        if view and view.action != 'retrieve':
+            return None
+        queryset = view.filter_queryset(OfficialLetter.objects.all())
         prev_obj = queryset.filter(pk__lt=obj.pk).order_by('-issue_date', '-pk').first()
         return prev_obj.pk if prev_obj else None
 
     def get_next_pk(self, obj):
-        queryset = self.context['view'].filter_queryset(OfficialLetter.objects.all())
+        view = self.context.get('view')
+        if view and view.action != 'retrieve':
+            return None
+        queryset = view.filter_queryset(OfficialLetter.objects.all())
         next_obj = queryset.filter(pk__gt=obj.pk).order_by('issue_date', 'pk').first()
         return next_obj.pk if next_obj else None
 
