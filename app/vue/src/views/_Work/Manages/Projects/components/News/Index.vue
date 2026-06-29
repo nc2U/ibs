@@ -158,19 +158,25 @@ onBeforeMount(async () => {
 
       <NewsForm v-if="viewForm" :news="news" @on-submit="onSubmit" @close-form="viewForm = false" />
 
-      <NewsList
-        v-if="route.name === '(공지)'"
-        :page="page"
-        :view-form="viewForm"
-        :news-list="newsList"
-        @page-select="pageSelect"
-      />
+      <template v-if="can(PERM.NEWS_READ)">
+        <NewsList
+          v-if="route.name === '(공지)'"
+          :page="page"
+          :view-form="viewForm"
+          :news-list="newsList"
+          @page-select="pageSelect"
+        />
 
-      <NewsDetail
-        v-else-if="route.name === '(공지) - 보기' && !!news"
-        :news="news as News"
-        :view-form="viewForm"
-      />
+        <NewsDetail
+          v-else-if="route.name === '(공지) - 보기' && !!news"
+          :news="news as News"
+          :view-form="viewForm"
+        />
+      </template>
+      <v-alert v-else color="warning" class="mt-4" variant="tonal">
+        <v-icon icon="mdi-alert-circle" class="mr-2" />
+        공지사항을 조회할 수 있는 권한이 없습니다.
+      </v-alert>
 
       <ConfirmModal ref="RefDelNews">
         <template #default>이 공지의 삭제를 계속 진행하시겠습니까?</template>

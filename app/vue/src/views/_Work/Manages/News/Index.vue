@@ -107,11 +107,16 @@ onBeforeMount(async () => {
       </v-alert>
 
       <NewsList
+        v-if="can(PERM.NEWS_READ)"
         :page="page"
         :view-form="viewForm"
         :news-list="newsList"
         @page-select="pageSelect"
       />
+      <v-alert v-else color="warning" class="mt-4" variant="tonal">
+        <v-icon icon="mdi-alert-circle" class="mr-2" />
+        공지사항을 조회할 수 있는 권한이 없습니다.
+      </v-alert>
     </template>
 
     <template v-slot:aside>
