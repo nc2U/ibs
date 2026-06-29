@@ -14,11 +14,6 @@ export declare interface User {
     birth_date: string
     cell_phone: string
   }
-  assigned_projects: {
-    pk: number
-    slug: string
-    name: string
-  }[]
   last_login: string | null
   can_create_project: boolean
 }

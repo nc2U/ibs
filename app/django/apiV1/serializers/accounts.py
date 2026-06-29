@@ -69,7 +69,6 @@ class UserSerializer(serializers.ModelSerializer):
     )
     staff_auth = StaffAuthInUserSerializer(read_only=True)
     profile = ProfileInUserSerializer(read_only=True)
-    assigned_projects = IssueProjectInUserSerializer(many=True, read_only=True)
     can_create_project = serializers.SerializerMethodField()
 
     @staticmethod
@@ -89,7 +88,7 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ('pk', 'email', 'username', 'is_active', 'is_superuser', 'is_staff',
                   'work_manager', 'date_joined', 'password', 'staff_auth', 'profile',
-                  'assigned_projects', 'last_login', 'can_create_project')
+                  'last_login', 'can_create_project')
         read_only_fields = ('date_joined', 'last_login')
 
     def create(self, validated_data):
