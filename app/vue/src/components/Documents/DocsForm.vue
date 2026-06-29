@@ -214,7 +214,7 @@ onBeforeUpdate(() => dataSetup())
           searchable
         />
       </CCol>
-      <CCol v-if="typeNum === 2" md="1" style="padding-top: 7px">
+      <CCol v-if="typeNum === 2 && can(PERM.DOCS_CREATE)" md="1" style="padding-top: 7px">
         <div style="width: 20px">
           <v-icon
             icon="mdi-plus-circle"
@@ -297,7 +297,9 @@ onBeforeUpdate(() => dataSetup())
       <CCol class="text-right">
         <v-btn :color="btnLight" @click="router.push({ name: `${viewRoute}` })"> 목록으로</v-btn>
         <v-btn v-if="route.params.docsId" :color="btnLight" @click="router.go(-1)"> 뒤로</v-btn>
-        <v-btn :color="btnClass" type="submit" :disabled="formsCheck"> 저장하기</v-btn>
+        <v-btn v-if="can(PERM.DOCS_CREATE)" :color="btnClass" type="submit" :disabled="formsCheck">
+          저장하기
+        </v-btn>
       </CCol>
     </CRow>
   </CForm>

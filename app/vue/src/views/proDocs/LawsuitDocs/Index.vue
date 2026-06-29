@@ -9,6 +9,7 @@ import {
   useRoute,
   useRouter,
 } from 'vue-router'
+import { usePerms } from '@/composables/usePerms.ts'
 import type { User } from '@/store/types/accounts.ts'
 import type { Project } from '@/store/types/project.ts'
 import { type DocsFilter, type SuitCaseFilter, useDocs } from '@/store/pinia/docs'
@@ -22,6 +23,8 @@ import CategoryTabs from '@/components/Documents/CategoryTabs.vue'
 import DocsList from '@/components/Documents/DocsList.vue'
 import DocsDetail from '../../../components/Documents/DocsDetail.vue'
 import DocsForm from '@/components/Documents/DocsForm.vue'
+
+const { can, PERM } = usePerms()
 
 const fController = ref()
 const typeNumber = ref(2)
@@ -272,6 +275,7 @@ onBeforeMount(async () => {
 
         <div v-else-if="route.name.includes('작성')">
           <DocsForm
+            v-if="can(PERM.DOCS_CREATE)"
             :sort-name="projName"
             :type-num="typeNumber"
             :get-suit-case="getSuitCase"
@@ -281,10 +285,12 @@ onBeforeMount(async () => {
             @on-submit="onSubmit"
             @create-lawsuit="createLawSuit"
           />
+          <CAlert v-else color="danger" class="m-3">이 페이지에 접근할 권한이 없습니다.</CAlert>
         </div>
 
         <div v-else-if="route.name.includes('수정')">
           <DocsForm
+            v-if="can(PERM.DOCS_UPDATE)"
             :sort-name="projName"
             :type-num="typeNumber"
             :get-suit-case="getSuitCase"
@@ -295,6 +301,7 @@ onBeforeMount(async () => {
             @on-submit="onSubmit"
             @create-lawsuit="createLawSuit"
           />
+          <CAlert v-else color="danger" class="m-3">이 페이지에 접근할 권한이 없습니다.</CAlert>
         </div>
       </CCardBody>
     </ContentBody>

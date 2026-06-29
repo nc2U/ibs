@@ -7,6 +7,7 @@ import {
   useRoute,
   useRouter,
 } from 'vue-router'
+import { usePerms } from '@/composables/usePerms.ts'
 import { useAccount } from '@/store/pinia/account'
 import { useProject } from '@/store/pinia/project'
 import type { User } from '@/store/types/accounts.ts'
@@ -22,6 +23,8 @@ import CategoryTabs from '@/components/Documents/CategoryTabs.vue'
 import DocsList from '@/components/Documents/DocsList.vue'
 import DocsDetail from '../../../components/Documents/DocsDetail.vue'
 import DocsForm from '@/components/Documents/DocsForm.vue'
+
+const { can, PERM } = usePerms()
 
 const fController = ref()
 const typeNumber = ref(1)
@@ -255,6 +258,7 @@ onBeforeMount(async () => {
 
         <div v-else-if="route.name.includes('작성')">
           <DocsForm
+            v-if="can(PERM.DOCS_CREATE)"
             :sort-name="projName"
             :type-num="typeNumber"
             :category-list="categoryList"
@@ -262,10 +266,12 @@ onBeforeMount(async () => {
             :write-auth="writeAuth"
             @on-submit="onSubmit"
           />
+          <CAlert v-else color="danger" class="m-3">이 페이지에 접근할 권한이 없습니다.</CAlert>
         </div>
 
         <div v-else-if="route.name.includes('수정')">
           <DocsForm
+            v-if="can(PERM.DOCS_UPDATE)"
             :sort-name="projName"
             :type-num="typeNumber"
             :category-list="categoryList"
@@ -274,6 +280,7 @@ onBeforeMount(async () => {
             :write-auth="writeAuth"
             @on-submit="onSubmit"
           />
+          <CAlert v-else color="danger" class="m-3">이 페이지에 접근할 권한이 없습니다.</CAlert>
         </div>
       </CCardBody>
     </ContentBody>

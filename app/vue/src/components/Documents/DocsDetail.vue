@@ -131,6 +131,7 @@ const toManage = (fn: number, el?: { nType?: number; nProj?: number; nCate?: num
   const docs = props.docs?.pk
   let state: boolean = false
   if (fn < 4) {
+    if (!canDocsUpdate.value) return
     if (fn === 1) {
       isCopy.value = true
       refTypeListModal.value.callModal()
