@@ -34,13 +34,13 @@ defineProps({
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(255, 255, 255, 0.15);
+  background-color: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(0px);
   -webkit-backdrop-filter: blur(0px);
 }
 
 :global(body.dark-theme) .loading-container.full-page {
-  background-color: rgba(26, 29, 39, 0.25) !important;
+  background-color: rgba(26, 29, 39, 0.15) !important;
 }
 
 /* 컨테이너 내부 로컬 오버레이 스타일 */
@@ -50,7 +50,7 @@ defineProps({
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(255, 255, 255, 0.25);
+  background-color: rgba(255, 255, 255, 0.1);
   min-height: 250px;
 }
 
