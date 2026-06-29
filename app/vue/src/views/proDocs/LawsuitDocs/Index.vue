@@ -124,16 +124,17 @@ const onSubmit = async (payload: Docs & Attatches) => {
       if (key === 'links' || key === 'files') {
         ;(getData[key] as any[]).forEach(val => form.append(key, JSON.stringify(val)))
       } else if (key === 'newFiles') {
-        getData[key]?.forEach(val => {
+        getData[key]?.forEach((val: any) => {
           form.append('new_files', val.file as Blob)
           form.append('new_descs', val.description as string)
         })
       } else if (key === 'cngFiles') {
-        getData[key]?.forEach(val => {
+        getData[key]?.forEach((val: any) => {
           form.append('cngPks', val.pk as any)
           form.append('cngFiles', val.file as Blob)
         })
-      } else if (key === 'newLinks') getData[key].forEach(val => form.append(key, val as string))
+      } else if (key === 'newLinks')
+        getData[key].forEach((val: any) => form.append(key, val as string))
       else {
         // 기타 단일 값 처리
         const formValue = getData[key] === null ? '' : getData[key]
