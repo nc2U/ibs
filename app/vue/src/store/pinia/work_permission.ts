@@ -1,9 +1,9 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { type PermissionCode } from '@/store/constants/permissions'
-import { useAccount } from '@/store/pinia/account'
-import { useWork } from '@/store/pinia/work_project'
 import type { MyRole } from '@/store/types/work_project.ts'
+import { useWork } from '@/store/pinia/work_project'
+import { useAccount } from '@/store/pinia/account'
 
 export const usePermission = defineStore('permission', () => {
   const accountStore = useAccount()
@@ -34,18 +34,20 @@ export const usePermission = defineStore('permission', () => {
       const targetProj = workStore.AllIssueProjects.find(
         (p: any) => p.pk === projectIdentifier || p.slug === projectIdentifier,
       )
-      return targetProj?.my_role || {
-        assignable: false,
-        issue_visible: 'NOP',
-        user_visible: 'NOP',
-      }
+      return (
+        targetProj?.my_role || {
+          assignable: false,
+          issue_visible: 'NOP',
+          user_visible: 'NOP',
+        }
+      )
     }
 
     // 3. active 프로젝트가 없는 상태(전역 구간)라면,
     // 사용자가 가진 모든 프로젝트 중 가장 높은 수준의 옵션을 병합해 반환
     if (!workStore.issueProject) {
-      const issue_visibility_order = { ALL: 3, PUB: 2, PRI: 1, NOP: 0 }
-      const user_visibility_order = { ALL: 2, PRJ: 1, NOP: 0 }
+      const issue_visibility_order: Record<string, number> = { ALL: 3, PUB: 2, PRI: 1, NOP: 0 }
+      const user_visibility_order: Record<string, number> = { ALL: 2, PRJ: 1, NOP: 0 }
 
       let assignable = false
       let best_issue_visible: 'ALL' | 'PUB' | 'PRI' | 'NOP' = 'NOP'
@@ -54,10 +56,15 @@ export const usePermission = defineStore('permission', () => {
       workStore.AllIssueProjects.forEach((p: any) => {
         if (p.my_role) {
           if (p.my_role.assignable) assignable = true
-          if (issue_visibility_order[p.my_role.issue_visible] > issue_visibility_order[best_issue_visible]) {
+          if (
+            issue_visibility_order[p.my_role.issue_visible] >
+            issue_visibility_order[best_issue_visible]
+          ) {
             best_issue_visible = p.my_role.issue_visible
           }
-          if (user_visibility_order[p.my_role.user_visible] > user_visibility_order[best_user_visible]) {
+          if (
+            user_visibility_order[p.my_role.user_visible] > user_visibility_order[best_user_visible]
+          ) {
             best_user_visible = p.my_role.user_visible
           }
         }
@@ -71,11 +78,13 @@ export const usePermission = defineStore('permission', () => {
     }
 
     // 4. 활성 프로젝트가 있는 경우, 캐시된 projectRole 반환
-    return projectRole.value || {
-      assignable: false,
-      issue_visible: 'NOP',
-      user_visible: 'NOP',
-    }
+    return (
+      projectRole.value || {
+        assignable: false,
+        issue_visible: 'NOP',
+        user_visible: 'NOP',
+      }
+    )
   }
 
   // 개별 역할 속성에 접근하기 위한 헬퍼 함수들
@@ -87,6 +96,16 @@ export const usePermission = defineStore('permission', () => {
 
   const getUserVisible = (projectIdentifier?: number | string) =>
     getProjectRole(projectIdentifier).user_visible
+
+  const canViewUser = (userId?: number) => {
+    if (accountStore.workManager) return true
+    const visibility = getUserVisible()
+    if (visibility === 'ALL') return true
+    if (visibility === 'NOP') {
+      return userId !== undefined && userId === accountStore.userInfo?.pk
+    }
+    return true
+  }
 
   // 권한 체크 로직
   const can = (code: PermissionCode | PermissionCode[], projectIdentifier?: number | string) => {
@@ -126,6 +145,7 @@ export const usePermission = defineStore('permission', () => {
     isAssignable,
     getIssueVisible,
     getUserVisible,
+    canViewUser,
     can,
   }
 })

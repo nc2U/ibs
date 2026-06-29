@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, type PropType } from 'vue'
 import { useStore } from '@/store'
+import { usePerms } from '@/composables/usePerms.ts'
 
 defineProps({
   projectMembers: {
@@ -11,6 +12,8 @@ defineProps({
 
 const store = useStore()
 const isDark = computed(() => store.theme === 'dark')
+
+const { canViewUser } = usePerms()
 </script>
 
 <template>
@@ -25,9 +28,13 @@ const isDark = computed(() => store.theme === 'dark')
           {{ key }} :
 
           <span v-for="(u, i) in val" :key="u.pk">
-            <router-link :to="{ name: '사용자 - 보기', params: { userId: u.pk } }">
+            <router-link
+              v-if="canViewUser(u.pk)"
+              :to="{ name: '사용자 - 보기', params: { userId: u.pk } }"
+            >
               {{ u.username }}
             </router-link>
+            <span v-else>{{ u.username }}</span>
             <span v-if="Number(i) + 1 < val.length">, </span>
           </span>
         </div>

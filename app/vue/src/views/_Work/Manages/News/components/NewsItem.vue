@@ -12,7 +12,7 @@ const route = useRoute()
 
 const isProj = computed(() => !!route.params.projId)
 
-const { can, PERM } = usePerms()
+const { can, canViewUser, PERM } = usePerms()
 </script>
 
 <template>
@@ -62,9 +62,13 @@ const { can, PERM } = usePerms()
     <CRow class="mb-3 text-grey small">
       <CCol>
         <v-icon icon="mdi-account-outline" size="small" class="mr-1" />
-        <router-link :to="{ name: '사용자 - 보기', params: { userId: news.author?.pk } }">
-          Austin Kho
+        <router-link
+          v-if="canViewUser(news.author?.pk)"
+          :to="{ name: '사용자 - 보기', params: { userId: news.author?.pk } }"
+        >
+          {{ news.author?.username || 'Austin Kho' }}
         </router-link>
+        <span v-else>{{ news.author?.username || 'Austin Kho' }}</span>
         <span class="mx-2">|</span>
         <v-icon icon="mdi-clock-outline" size="small" class="mr-1" />
         <router-link :to="{ name: '(실행기록)', params: { projId: news.project?.slug } }">

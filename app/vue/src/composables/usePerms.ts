@@ -9,6 +9,7 @@ export function usePerms() {
   const isAssignable = permStore.isAssignable
   const getIssueVisible = permStore.getIssueVisible
   const getUserVisible = permStore.getUserVisible
+  const canViewUser = permStore.canViewUser
 
   return {
     can,
@@ -16,6 +17,7 @@ export function usePerms() {
     isAssignable,
     getIssueVisible,
     getUserVisible,
+    canViewUser,
     PERM,
   }
 }

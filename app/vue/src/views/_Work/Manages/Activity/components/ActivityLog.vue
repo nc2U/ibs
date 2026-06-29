@@ -4,6 +4,7 @@ import { useStore } from '@/store'
 import type { ActLogEntry } from '@/store/types/work_logging.ts'
 import { cutString, dateFormat, timeFormat } from '@/utils/baseMixins'
 import { markdownRender } from '@/utils/helper.ts'
+import { usePerms } from '@/composables/usePerms.ts'
 
 defineProps({
   activity: { type: Array as PropType<ActLogEntry[]>, required: true },
@@ -12,6 +13,8 @@ defineProps({
 
 const store = useStore()
 const isDark = computed(() => store.theme === 'dark')
+
+const { canViewUser } = usePerms()
 
 const getIcon = (sort: string, progress: boolean) => {
   if (sort === '1') return progress ? 'mdi-folder-check' : 'mdi-folder-edit'
@@ -72,9 +75,13 @@ const getIcon = (sort: string, progress: boolean) => {
               />
             </div>
             <div v-if="act.creator" class="form-text ml-5 pl-2">
-              <router-link :to="{ name: '사용자 - 보기', params: { userId: act.creator.pk } }">
+              <router-link
+                v-if="canViewUser(act.creator.pk)"
+                :to="{ name: '사용자 - 보기', params: { userId: act.creator.pk } }"
+              >
                 {{ act.creator.username }}
               </router-link>
+              <span v-else>{{ act.creator.username }}</span>
             </div>
           </span>
 
@@ -120,9 +127,13 @@ const getIcon = (sort: string, progress: boolean) => {
             </div>
 
             <div v-if="act.creator" class="form-text ml-5 pl-2">
-              <router-link :to="{ name: '사용자 - 보기', params: { userId: act.creator.pk } }">
+              <router-link
+                v-if="canViewUser(act.creator.pk)"
+                :to="{ name: '사용자 - 보기', params: { userId: act.creator.pk } }"
+              >
                 {{ act.creator.username }}
               </router-link>
+              <span v-else>{{ act.creator.username }}</span>
             </div>
           </span>
 
@@ -145,9 +156,13 @@ const getIcon = (sort: string, progress: boolean) => {
             </div>
 
             <div v-if="act.creator" class="form-text ml-5 pl-2">
-              <router-link :to="{ name: '사용자 - 보기', params: { userId: act.creator.pk } }">
+              <router-link
+                v-if="canViewUser(act.creator.pk)"
+                :to="{ name: '사용자 - 보기', params: { userId: act.creator.pk } }"
+              >
                 {{ act.creator.username }}
               </router-link>
+              <span v-else>{{ act.creator.username }}</span>
             </div>
           </span>
 
@@ -170,9 +185,13 @@ const getIcon = (sort: string, progress: boolean) => {
             </div>
 
             <div v-if="act.creator" class="form-text ml-5 pl-2">
-              <router-link :to="{ name: '사용자 - 보기', params: { userId: act.creator.pk } }">
+              <router-link
+                v-if="canViewUser(act.creator.pk)"
+                :to="{ name: '사용자 - 보기', params: { userId: act.creator.pk } }"
+              >
                 {{ act.creator.username }}
               </router-link>
+              <span v-else>{{ act.creator.username }}</span>
             </div>
           </span>
 
@@ -199,9 +218,13 @@ const getIcon = (sort: string, progress: boolean) => {
             </div>
 
             <div v-if="act.creator" class="form-text ml-5 pl-2">
-              <router-link :to="{ name: '사용자 - 보기', params: { userId: act.creator.pk } }">
+              <router-link
+                v-if="canViewUser(act.creator.pk)"
+                :to="{ name: '사용자 - 보기', params: { userId: act.creator.pk } }"
+              >
                 {{ act.creator.username }}
               </router-link>
+              <span v-else>{{ act.creator.username }}</span>
             </div>
           </span>
 

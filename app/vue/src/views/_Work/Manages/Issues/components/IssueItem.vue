@@ -9,7 +9,7 @@ const props = defineProps({ issue: { type: Object as PropType<Issue>, required: 
 
 const emit = defineEmits(['watch-control'])
 
-const { can, PERM } = usePerms()
+const { can, canViewUser, PERM } = usePerms()
 const canIssueRead = computed(() => can(PERM.ISSUE_READ) && props.issue.project?.slug)
 </script>
 
@@ -80,12 +80,15 @@ const canIssueRead = computed(() => can(PERM.ISSUE_READ) && props.issue.project?
     <span v-else>{{ issue.subject }}</span>
   </CTableDataCell>
   <CTableDataCell class="text-center">
-    <router-link
-      v-if="issue.assigned_to"
-      :to="{ name: '사용자 - 보기', params: { userId: issue.assigned_to?.pk } }"
-    >
-      {{ issue.assigned_to?.username }}
-    </router-link>
+    <template v-if="issue.assigned_to">
+      <router-link
+        v-if="canViewUser(issue.assigned_to.pk)"
+        :to="{ name: '사용자 - 보기', params: { userId: issue.assigned_to.pk } }"
+      >
+        {{ issue.assigned_to.username }}
+      </router-link>
+      <span v-else>{{ issue.assigned_to.username }}</span>
+    </template>
   </CTableDataCell>
   <CTableDataCell class="text-center">{{ timeFormat(issue.updated) }}</CTableDataCell>
   <CTableDataCell class="p-0">

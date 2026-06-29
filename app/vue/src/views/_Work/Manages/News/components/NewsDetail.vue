@@ -3,6 +3,7 @@ import { type PropType } from 'vue'
 import type { News } from '@/store/types/work_inform.ts'
 import { markdownRender } from '@/utils/helper.ts'
 import { elapsedTime } from '@/utils/baseMixins.ts'
+import { usePerms } from '@/composables/usePerms.ts'
 import { useInform } from '@/store/pinia/work_inform.ts'
 import FileDisplay from '@/views/_Work/components/atomics/FileDisplay.vue'
 import CommentList from './CommentList.vue'
@@ -13,6 +14,8 @@ const props = defineProps({
 })
 
 const infStore = useInform()
+
+const { canViewUser } = usePerms()
 
 const deleteFile = (pk: number) => {
   const form = new FormData()
@@ -47,11 +50,13 @@ const deleteFile = (pk: number) => {
             <v-icon icon="mdi-account" size="18" />
           </v-avatar>
           <router-link
+            v-if="canViewUser(news.author?.pk)"
             :to="{ name: '사용자 - 보기', params: { userId: news.author?.pk } }"
             class="text-decoration-none text-primary font-weight-medium"
           >
             {{ news.author?.username }}
           </router-link>
+          <span v-else class="text-primary font-weight-medium">{{ news.author?.username }}</span>
         </div>
         <div class="d-flex align-center mr-4">
           <v-icon icon="mdi-clock-outline" size="18" class="mr-1" />

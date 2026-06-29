@@ -19,7 +19,7 @@ const userInfo = computed(() => accStore.userInfo)
 const workManager = computed(() => accStore.workManager)
 
 const route = useRoute()
-const { can, PERM } = usePerms()
+const { can, canViewUser, PERM } = usePerms()
 
 // 1. 관람자 추가 자격 조건 (책임자군이거나 watcher_create 권한 소유자)
 const canAddWatcher = computed(() => {
@@ -75,9 +75,13 @@ const delWatcher = (pk: number) => {
     </CRow>
     <CRow v-for="watcher in watchers" :key="watcher.pk">
       <CCol class="col-xxl-5">
-        <router-link :to="{ name: '사용자 - 보기', params: { userId: watcher.pk } }">
+        <router-link
+          v-if="canViewUser(watcher.pk)"
+          :to="{ name: '사용자 - 보기', params: { userId: watcher.pk } }"
+        >
           {{ watcher.username }}
         </router-link>
+        <span v-else>{{ watcher.username }}</span>
         <span v-if="canDeleteWatcher(watcher.pk)" @click="delWatcher(watcher.pk)">
           <v-icon icon="mdi-trash-can-outline" size="sm" color="grey" class="ml-2 pointer" />
           <v-tooltip activator="parent" location="right">삭제</v-tooltip>

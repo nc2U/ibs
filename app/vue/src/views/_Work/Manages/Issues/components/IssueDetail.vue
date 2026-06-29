@@ -33,7 +33,7 @@ const emit = defineEmits(['on-submit'])
 const issueFormRef = ref()
 const editForm = ref(false)
 
-const { can, PERM } = usePerms()
+const { can, canViewUser, PERM } = usePerms()
 const canCommentCreate = computed(
   () => props.issueProject?.status !== '9' && can(PERM.ISSUE_COMMENT_CREATE),
 )
@@ -245,9 +245,13 @@ onBeforeMount(async () => {
       <CRow>
         <CCol>
           <p class="mt-1 form-text">
-            <router-link :to="{ name: '사용자 - 보기', params: { userId: issue.creator.pk } }">
+            <router-link
+              v-if="canViewUser(issue.creator.pk)"
+              :to="{ name: '사용자 - 보기', params: { userId: issue.creator.pk } }"
+            >
               {{ issue.creator.username }}
             </router-link>
+            <span v-else>{{ issue.creator.username }}</span>
             이(가)
             <span>
               <router-link
@@ -296,12 +300,15 @@ onBeforeMount(async () => {
           <CRow>
             <CCol class="title">담당자 :</CCol>
             <CCol>
-              <router-link
-                v-if="issue.assigned_to"
-                :to="{ name: '사용자 - 보기', params: { userId: issue?.assigned_to?.pk ?? 0 } }"
-              >
-                {{ issue?.assigned_to?.username }}
-              </router-link>
+              <template v-if="issue.assigned_to">
+                <router-link
+                  v-if="canViewUser(issue.assigned_to.pk)"
+                  :to="{ name: '사용자 - 보기', params: { userId: issue.assigned_to.pk } }"
+                >
+                  {{ issue.assigned_to.username }}
+                </router-link>
+                <span v-else>{{ issue.assigned_to.username }}</span>
+              </template>
             </CCol>
           </CRow>
 

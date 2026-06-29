@@ -1,11 +1,14 @@
 <script lang="ts" setup>
 import type { PropType } from 'vue'
 import type { BaseComment } from '@/store/types/work_inform.ts'
+import { usePerms } from '@/composables/usePerms.ts'
 import { elapsedTime } from '@/utils/baseMixins.ts'
 
 defineProps({
   comment: { type: Object as PropType<BaseComment>, required: true },
 })
+
+const { canViewUser } = usePerms()
 </script>
 
 <template>
@@ -18,11 +21,15 @@ defineProps({
         <v-card variant="flat" border class="pa-3 rounded-lg card-deep">
           <div class="d-flex justify-space-between align-center mb-1">
             <router-link
+              v-if="canViewUser(comment.creator?.pk)"
               :to="{ name: '사용자 - 보기', params: { userId: comment.creator?.pk } }"
               class="text-decoration-none text-subtitle-2 font-weight-bold"
             >
               {{ comment.creator?.username }}
             </router-link>
+            <span v-else class="text-subtitle-2 font-weight-bold">
+              {{ comment.creator?.username }}
+            </span>
             <span class="text-caption text-grey">{{ elapsedTime(comment.created) }}</span>
           </div>
           <span class="comment-content">

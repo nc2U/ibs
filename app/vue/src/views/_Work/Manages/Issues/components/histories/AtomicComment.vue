@@ -20,7 +20,7 @@ const delPk = ref<null | number>(null)
 
 const route = useRoute()
 
-const { can, PERM } = usePerms()
+const { can, canViewUser, PERM } = usePerms()
 
 const accStore = useAccount()
 const userInfo = computed(() => accStore.userInfo)
@@ -102,9 +102,13 @@ const delSubmit = () => {
         :class="{ 'bg-blue-lighten-5': route.hash == `#note-${log.log_id}` }"
       >
         <CCol v-if="log.creator" class="pt-1">
-          <router-link :to="{ name: '사용자 - 보기', params: { userId: log.creator.pk } }">
+          <router-link
+            v-if="canViewUser(log.creator.pk)"
+            :to="{ name: '사용자 - 보기', params: { userId: log.creator.pk } }"
+          >
             {{ log.creator.username }}
           </router-link>
+          <span v-else>{{ log.creator.username }}</span>
           이(가)
           <span>
             <router-link

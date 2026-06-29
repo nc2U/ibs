@@ -4,12 +4,14 @@ import { useRoute } from 'vue-router'
 import type { IssueLogEntry } from '@/store/types/work_logging.ts'
 import { elapsedTime, timeFormat } from '@/utils/baseMixins'
 import { markdownRender } from '@/utils/helper.ts'
+import { usePerms } from '@/composables/usePerms.ts'
 
 defineProps({ log: { type: Object as PropType<IssueLogEntry>, required: true } })
 
 const getHistory = (h: string) => h.split('|').filter(str => str.trim() !== '')
 
 const route = useRoute()
+const { canViewUser } = usePerms()
 </script>
 
 <template>
@@ -20,9 +22,13 @@ const route = useRoute()
         :class="{ 'bg-blue-lighten-5': route.hash == `#note-${log.log_id}` }"
       >
         <CCol v-if="log.creator">
-          <router-link :to="{ name: '사용자 - 보기', params: { userId: log.creator.pk } }">
+          <router-link
+            v-if="canViewUser(log.creator.pk)"
+            :to="{ name: '사용자 - 보기', params: { userId: log.creator.pk } }"
+          >
             {{ log.creator.username }}
           </router-link>
+          <span v-else>{{ log.creator.username }}</span>
           이(가)
           <span>
             <router-link
