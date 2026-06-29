@@ -3,8 +3,8 @@ defineProps({
   active: { type: Boolean, default: false },
   message: { type: String, default: '데이터를 불러오는 중입니다...' },
   isFullPage: { type: Boolean, default: true },
-  size: { type: [Number, String], default: 70 },
-  width: { type: [Number, String], default: 4 },
+  size: { type: [Number, String], default: 60 },
+  width: { type: [Number, String], default: 2 },
 })
 </script>
 
