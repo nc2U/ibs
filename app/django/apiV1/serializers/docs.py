@@ -162,9 +162,7 @@ class DocumentSerializer(serializers.ModelSerializer):
                   'hit', 'scrape', 'my_scrape', 'ip', 'device', 'is_secret', 'password', 'is_blind', 'deleted',
                   'links', 'files', 'creator', 'updator', 'created', 'updated', 'is_new', 'prev_pk', 'next_pk')
         read_only_fields = ('ip',)
-        extra_kwargs = {
-            'password': {'write_only': True}
-        }
+        extra_kwargs = {'password': {'write_only': True}}
 
     @staticmethod
     def get_proj_sort(obj):
