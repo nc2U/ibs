@@ -19,8 +19,6 @@ const emit = defineEmits(['page-select', 'select-cate'])
 const docsStore = useDocs()
 const docsPages = (num: number) => docsStore.docsPages(num)
 const pageSelect = (page: number) => emit('page-select', page)
-
-const selectCate = (cate: number) => emit('select-cate', cate)
 </script>
 
 <template>

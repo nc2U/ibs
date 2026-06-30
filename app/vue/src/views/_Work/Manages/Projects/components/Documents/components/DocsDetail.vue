@@ -1,11 +1,11 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, onMounted, type PropType, ref } from 'vue'
+import { computed, onMounted, type PropType, ref } from 'vue'
 import { btnLight } from '@/utils/cssMixins.ts'
-import { useAccount } from '@/store/pinia/account.ts'
 import { useDocs } from '@/store/pinia/docs'
 import type { Docs } from '@/store/types/docs'
 import { useRoute, useRouter } from 'vue-router'
 import { timeFormat } from '@/utils/baseMixins'
+import { usePerms } from '@/composables/usePerms.ts'
 import PostInfo from '@/components/OtherParts/PostInfo.vue'
 import PostContent from '@/components/OtherParts/PostContent.vue'
 import PostedFile from '@/components/OtherParts/PostedFile.vue'
@@ -24,8 +24,9 @@ const refConfirmModal = ref()
 const docStore = useDocs()
 const [route, router] = [useRoute(), useRouter()]
 
-const accStore = useAccount()
-const userInfo = computed(() => accStore.userInfo)
+const { can, PERM } = usePerms()
+const canDocsUpdate = computed(() => can(PERM.DOCS_UPDATE))
+const canDocsDelete = computed(() => can(PERM.DOCS_DELETE))
 
 const docId = computed(() => Number(route.params.docId))
 
@@ -34,7 +35,6 @@ const modalAction = () => {
   refConfirmModal.value.close()
   router.push({ name: '(문서)' })
 }
-
 
 onMounted(() => {
   if (docId.value && !props.heatedPage?.includes(docId.value)) {
@@ -92,9 +92,7 @@ onMounted(() => {
       <template v-if="docs.description === '비밀글입니다.'">
         이 문서는 <strong>비밀 문서</strong>입니다. 열람 권한이 없어 일부 내용이 제한됩니다.
       </template>
-      <template v-else>
-        이 문서는 <strong>비밀 문서</strong>입니다.
-      </template>
+      <template v-else> 이 문서는 <strong>비밀 문서</strong>입니다. </template>
     </v-alert>
 
     <PostInfo :docs="docs" class="mb-4" />
@@ -127,7 +125,8 @@ onMounted(() => {
             <PostedFile :docs="docs.pk as number" btn-direction="right" :files="docs.files" />
           </template>
           <p v-else-if="docs.is_secret" class="text-muted small">
-            <v-icon icon="mdi-lock" size="x-small" class="mr-1" />비밀 문서의 첨부 파일은 열람이 제한됩니다.
+            <v-icon icon="mdi-lock" size="x-small" class="mr-1" />비밀 문서의 첨부 파일은 열람이
+            제한됩니다.
           </p>
           <p v-else class="text-muted small">첨부 파일이 없습니다.</p>
         </CCol>
@@ -140,7 +139,8 @@ onMounted(() => {
             <PostedLink :docs="docs.pk as number" btn-direction="right" :links="docs.links" />
           </template>
           <p v-else-if="docs.is_secret" class="text-muted small">
-            <v-icon icon="mdi-lock" size="x-small" class="mr-1" />비밀 문서의 관련 링크는 열람이 제한됩니다.
+            <v-icon icon="mdi-lock" size="x-small" class="mr-1" />비밀 문서의 관련 링크는 열람이
+            제한됩니다.
           </p>
           <p v-else class="text-muted small">관련 링크가 없습니다.</p>
         </CCol>
@@ -161,7 +161,7 @@ onMounted(() => {
         </v-btn>
 
         <v-btn
-          v-if="userInfo?.is_superuser || userInfo?.pk === docs.creator?.pk"
+          v-if="canDocsUpdate"
           color="success"
           size="small"
           class="mr-2"
@@ -172,7 +172,7 @@ onMounted(() => {
         </v-btn>
 
         <v-btn
-          v-if="userInfo?.is_superuser || userInfo?.pk === docs.creator?.pk"
+          v-if="canDocsDelete"
           color="warning"
           size="small"
           @click.prevent="refConfirmModal.callModal()"
