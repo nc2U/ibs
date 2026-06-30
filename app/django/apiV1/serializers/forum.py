@@ -120,13 +120,28 @@ class PostSerializer(serializers.ModelSerializer):
         user = self.context['request'].user
         return obj.postscrape_set.filter(user=user).exists()
 
+    def _get_cached_profile(self, user):
+        """context를 활용하여 동일 요청 내 Profile 재조회 방지 캐시"""
+        if not user or not user.is_authenticated:
+            return None
+        if '_cached_profile' not in self.context:
+            profile, _ = Profile.objects.get_or_create(user=user)
+            self.context['_cached_profile'] = profile
+        return self.context['_cached_profile']
+
     def get_my_like(self, obj):
         user = self.context['request'].user
-        return user.profile.like_posts.filter(pk=obj.pk).exists()
+        profile = self._get_cached_profile(user)
+        if not profile:
+            return False
+        return profile.like_posts.filter(pk=obj.pk).exists()
 
     def get_my_blame(self, obj):
         user = self.context['request'].user
-        return user.profile.blame_posts.filter(pk=obj.pk).exists()
+        profile = self._get_cached_profile(user)
+        if not profile:
+            return False
+        return profile.blame_posts.filter(pk=obj.pk).exists()
 
     def get_prev_pk(self, obj):
         prev_obj = self._get_filtered_queryset().filter(created__lt=obj.created).first()
@@ -293,21 +308,39 @@ class CommentSerializer(serializers.ModelSerializer):
         read_only_fields = ('ip',)
 
     def get_replies(self, instance):
-        serializer = self.__class__(instance.replies, many=True)
-        serializer.bind('', self)
+        # 개선: bind 대신 인스턴스화 시 context를 직접 넘겨주어 DRF context 유실 예방
+        serializer = self.__class__(instance.replies, many=True, context=self.context)
         return serializer.data
+
+    def _get_cached_profile(self, user):
+        if not user or not user.is_authenticated:
+            return None
+        if '_cached_profile' not in self.context:
+            profile, _ = Profile.objects.get_or_create(user=user)
+            self.context['_cached_profile'] = profile
+        return self.context['_cached_profile']
 
     def get_my_like(self, obj):
         user = self.context['request'].user
-        return user.profile.like_comments.filter(pk=obj.pk).exists()
+        profile = self._get_cached_profile(user)
+        if not profile:
+            return False
+        return profile.like_comments.filter(pk=obj.pk).exists()
 
     def get_my_blame(self, obj):
         user = self.context['request'].user
-        return user.profile.blame_comments.filter(pk=obj.pk).exists()
+        profile = self._get_cached_profile(user)
+        if not profile:
+            return False
+        return profile.blame_comments.filter(pk=obj.pk).exists()
 
     @transaction.atomic
     def create(self, validated_data):
-        validated_data['post_id'] = self.initial_data.get('post')
+        post_id = self.initial_data.get('post')
+        # 개선: post_id 데이터 부재 시 500 에러 방지를 위한 밸리데이션 추가
+        if not post_id:
+            raise serializers.ValidationError({'post': '게시글 정보가 누락되었습니다.'})
+        validated_data['post_id'] = post_id
         validated_data['ip'] = self.context.get('request').META.get('REMOTE_ADDR')
         validated_data['device'] = self.context.get('request').META.get('HTTP_USER_AGENT')
         comment = Comment.objects.create(**validated_data)
