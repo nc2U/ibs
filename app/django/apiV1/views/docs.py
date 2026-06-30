@@ -5,15 +5,14 @@ from django_filters import BooleanFilter, ModelChoiceFilter, CharFilter, DateFil
 from django_filters.rest_framework import FilterSet
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 
+from apiV1.permissions.auth_perms import permissions, IsProjectStaffOrReadOnly, IsWorkManagerReadOnly, IsStaffOrReadOnly
+from apiV1.permissions.work_perms import ProjectPermission, DocumentPermission
 from company.models import Company
 from docs.models import LetterSequence, DocType, Category, LawsuitCase, Document, Link, File, Image, OfficialLetter
 from docs.utils import generate_official_letter_pdf
 from ..pagination import PageNumberPaginationOneHundred, PageNumberPaginationThreeThousand
-from apiV1.permissions.auth_perms import permissions, IsProjectStaffOrReadOnly
-from apiV1.permissions.work_perms import ProjectPermission
 from ..serializers.docs import DocTypeSerializer, CategorySerializer, LawSuitCaseSerializer, \
     SimpleLawSuitCaseSerializer, DocumentSerializer, LinkSerializer, FileSerializer, ImageSerializer, \
     DocumentInTrashSerializer, OfficialLetterSerializer
@@ -24,13 +23,13 @@ from ..serializers.docs import DocTypeSerializer, CategorySerializer, LawSuitCas
 class DocTypeViewSet(viewsets.ModelViewSet):
     queryset = DocType.objects.all()
     serializer_class = DocTypeSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsWorkManagerReadOnly)
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsWorkManagerReadOnly)
     filterset_fields = ('doc_type', 'active')
 
 
@@ -70,12 +69,25 @@ class LawSuitCaseViewSet(viewsets.ModelViewSet):
         'document_set__files'
     )
     serializer_class = LawSuitCaseSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, ProjectPermission)
     pagination_class = PageNumberPaginationOneHundred
     filterset_class = LawSuitCaseFilterSet
     search_fields = ('other_agency', 'case_number', 'case_name', 'plaintiff',
                      'plaintiff_attorney', 'defendant', 'defendant_attorney',
                      'case_start_date', 'case_end_date', 'summary')
+
+    @property
+    def required_permission(self):
+        # 소송 사건 등록/수정/삭제 권한은 일반 문서 권한(docs.create 등)과 동일하게 매핑
+        mapping = {
+            'list': 'docs.read',
+            'retrieve': 'docs.read',
+            'create': 'docs.create',
+            'update': 'docs.update',
+            'partial_update': 'docs.update',
+            'destroy': 'docs.delete'
+        }
+        return mapping.get(self.action, None)
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
@@ -111,7 +123,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
         'issue_project', 'doc_type', 'category', 'lawsuit', 'creator', 'updator'
     ).prefetch_related('links', 'files', 'docscrape_set')
     serializer_class = DocumentSerializer
-    permission_classes = (permissions.IsAuthenticated, ProjectPermission)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, DocumentPermission)
     pagination_class = PageNumberPaginationOneHundred
     filterset_class = DocumentFilterSet
     search_fields = (
@@ -139,14 +151,6 @@ class DocumentViewSet(viewsets.ModelViewSet):
             return queryset
         return queryset
 
-    @staticmethod
-    def _is_owner_or_admin(user, instance) -> bool:
-        return (
-            user.is_superuser or
-            getattr(user, 'work_manager', False) or
-            instance.creator == user
-        )
-
     @action(detail=True, methods=['post'], url_path='hit')
     def hit(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -165,12 +169,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
                 'issue_project', 'category', 'lawsuit'
             ).get(pk=origin_pk)
 
-            if org_instance.is_secret and not self._is_owner_or_admin(request.user, org_instance):
-                return Response(
-                    {'detail': 'You do not have permission to copy this secret document.'},
-                    status=status.HTTP_403_FORBIDDEN
-                )
-
+            # (A) 기밀 문서 검증은 DocumentPermission 클래스에서 자동 통제됨
             copied_at = timezone.localtime(timezone.now()).strftime('%Y-%m-%d %H:%M')
             add_text = (
                 f'<br /><br /><p>'
@@ -204,20 +203,12 @@ class DocumentViewSet(viewsets.ModelViewSet):
         serializer.save(creator=self.request.user)
 
     def perform_update(self, serializer):
-        instance = serializer.instance
-        if instance.is_secret and not self._is_owner_or_admin(self.request.user, instance):
-            raise PermissionDenied("You do not have permission to update this secret document.")
+        # (B) 기밀 문서 수정 검증은 DocumentPermission 클래스에서 자동 통제됨
         serializer.save(updator=self.request.user)
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
-
-        if instance.is_secret and not self._is_owner_or_admin(request.user, instance):
-            return Response(
-                {'detail': 'You do not have permission to delete this secret document.'},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
+        # (C) 기밀 문서 삭제 검증은 DocumentPermission 클래스에서 자동 통제됨
         instance.soft_delete()
         return Response({'status': 'soft-deleted'}, status=status.HTTP_200_OK)
 
@@ -225,7 +216,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
 class LinkViewSet(viewsets.ModelViewSet):
     queryset = Link.objects.all()
     serializer_class = LinkSerializer
-    permission_classes = (permissions.IsAuthenticated, ProjectPermission)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, DocumentPermission)
 
     @property
     def required_permission(self):
@@ -258,7 +249,7 @@ class LinkViewSet(viewsets.ModelViewSet):
 class FileViewSet(viewsets.ModelViewSet):
     queryset = File.objects.all()
     serializer_class = FileSerializer
-    permission_classes = (permissions.IsAuthenticated, ProjectPermission)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, DocumentPermission)
     filterset_fields = ('docs',)
     search_fields = ('file_name', 'description')
 
@@ -290,7 +281,7 @@ class FileViewSet(viewsets.ModelViewSet):
 class ImageViewSet(viewsets.ModelViewSet):
     queryset = Image.objects.all()
     serializer_class = ImageSerializer
-    permission_classes = (permissions.IsAuthenticated, ProjectPermission)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, DocumentPermission)
 
     @property
     def required_permission(self):
@@ -356,7 +347,7 @@ class OfficialLetterFilterSet(FilterSet):
 class OfficialLetterViewSet(viewsets.ModelViewSet):
     queryset = OfficialLetter.objects.select_related('company', 'creator', 'updator')
     serializer_class = OfficialLetterSerializer
-    permission_classes = (permissions.IsAuthenticated, ProjectPermission)
+    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
     pagination_class = PageNumberPaginationOneHundred
     filterset_class = OfficialLetterFilterSet
     search_fields = ('document_number', 'title', 'recipient_name',

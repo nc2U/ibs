@@ -346,7 +346,24 @@ class IssueCommentPermission(ProjectPermission):
 
 
 class DocumentPermission(ProjectPermission):
-    pass
+    def has_object_permission(self, request, view, obj):
+        # 1. 기본 프로젝트 레벨 권한 검증
+        if not super().has_object_permission(request, view, obj):
+            return False
+
+        # 2. 조회 요청은 통과
+        if request.method in permissions.SAFE_METHODS:
+            return True
+
+        # 3. 연관된 문서(docs)가 기밀 상태인 경우 소유자 및 관리자만 수정/삭제 허용
+        docs = getattr(obj, 'docs', None)
+        if docs and docs.is_secret:
+            user = request.user
+            is_admin = user.is_superuser or getattr(user, 'work_manager', False)
+            if not is_admin and docs.creator != user:
+                return False
+
+        return True
 
 
 class ForumPermission(ProjectPermission):
