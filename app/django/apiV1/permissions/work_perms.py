@@ -40,6 +40,11 @@ class ProjectPermission(permissions.BasePermission):
             return obj.meeting.project
         if hasattr(obj, 'news') and hasattr(obj.news, 'project'):
             return obj.news.project
+        # 게시판(Forum) 및 게시물 관련 프로젝트 매핑
+        if hasattr(obj, 'forum') and hasattr(obj.forum, 'project'):
+            return obj.forum.project
+        if hasattr(obj, 'post') and hasattr(obj.post, 'forum') and hasattr(obj.post.forum, 'project'):
+            return obj.post.forum.project
         return None
 
     def has_permission(self, request, view):
@@ -371,4 +376,43 @@ class DocumentPermission(ProjectPermission):
 
 
 class ForumPermission(ProjectPermission):
-    pass
+    def has_object_permission(self, request, view, obj):
+        # 1. 기본 프로젝트 레벨 권한 검증
+        if not super().has_object_permission(request, view, obj):
+            return False
+
+        user = request.user
+        project = self.extract_project(obj)
+        if not project:
+            return False
+
+        user_perms = project.get_user_permissions(user)
+
+        # 2. 조회(SAFE_METHODS) 요청 시 forum.read 권한 엄격히 대조 (레드마인 모델 준수)
+        if request.method in permissions.SAFE_METHODS:
+            required_perm = getattr(view, 'required_permission', 'forum.read') or 'forum.read'
+            return required_perm in user_perms
+
+        # 3. 수정 권한 제어
+        if view.action in ['update', 'partial_update']:
+            if 'forum.update' in user_perms:
+                return True
+            if 'forum.own_update' in user_perms:
+                # 본인의 글(Post/Comment/첨부물)인지 확인
+                creator = getattr(obj, 'creator', None) or getattr(obj, 'author', None)
+                if creator == user:
+                    return True
+            return False
+
+        # 4. 삭제 권한 제어
+        if view.action == 'destroy':
+            if 'forum.delete' in user_perms:
+                return True
+            if 'forum.own_delete' in user_perms:
+                # 본인의 글(Post/Comment/첨부물)인지 확인
+                creator = getattr(obj, 'creator', None) or getattr(obj, 'author', None)
+                if creator == user:
+                    return True
+            return False
+
+        return True
