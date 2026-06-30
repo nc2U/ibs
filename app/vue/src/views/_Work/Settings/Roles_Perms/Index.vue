@@ -114,6 +114,11 @@ onBeforeMount(async () => {
         @close="roleModal = false"
       />
 
+      <CCol class="text-right">
+        <v-icon icon="mdi-information-off-outline" color="secondary" size="small" class="mr-2" />
+        <span class="text-secondary">역할 및 권한은 관리자만 생성 및 수정 가능합니다.</span>
+      </CCol>
+
       <ConfirmModal ref="refConfirmModal">
         <template #footer>
           <v-btn color="warning" size="small" @click="roleDelete">삭제</v-btn>
