@@ -61,9 +61,6 @@ export const PERM = {
   FORUM_OWN_UPDATE: 'forum.own_update',
   FORUM_DELETE: 'forum.delete',
   FORUM_OWN_DELETE: 'forum.own_delete',
-  FORUM_WATCHER_READ: 'forum.watcher_read',
-  FORUM_WATCHER_CREATE: 'forum.watcher_create',
-  FORUM_WATCHER_DELETE: 'forum.watcher_delete',
   FORUM_MANAGE: 'forum.manage',
 
   // Calendar permissions
