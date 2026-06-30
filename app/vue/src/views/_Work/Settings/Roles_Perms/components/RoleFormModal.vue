@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { isValidate } from '@/utils/helper.ts'
 import { useWork } from '@/store/pinia/work_project'
 import type { Role } from '@/store/types/work_project'
+import { CModal } from '@coreui/vue'
 
 const props = defineProps<{
   visible: boolean
@@ -11,6 +13,8 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits(['close'])
+
+const validated = ref(false)
 
 const workStore = useWork()
 
@@ -45,26 +49,27 @@ watch(
   },
 )
 
-const saveRole = async () => {
-  if (form.value.pk) {
-    await workStore.updateRole(form.value as Role)
+const saveRole = async (event: Event) => {
+  if (isValidate(event)) {
+    validated.value = true
   } else {
-    await workStore.createRole(form.value as Role)
+    if (form.value.pk) await workStore.updateRole(form.value as Role)
+    else await workStore.createRole(form.value as Role)
+    emit('close')
   }
-  emit('close')
 }
 </script>
 
 <template>
   <CModal :visible="visible" alignment="center" size="md" @close="emit('close')">
-    <CModalHeader>
-      <CModalTitle>{{ form.pk ? '역할 수정' : '새 역할' }}</CModalTitle>
-    </CModalHeader>
-    <CModalBody>
-      <CForm>
+    <CForm class="needs-validation" novalidate :validated="validated" @submit.prevent="saveRole">
+      <CModalHeader>
+        <CModalTitle>{{ form.pk ? '역할 수정' : '새 역할' }}</CModalTitle>
+      </CModalHeader>
+      <CModalBody>
         <div class="mb-3">
           <CFormLabel>이름</CFormLabel>
-          <CFormInput v-model="form.name" required />
+          <CFormInput v-model="form.name" placeholder="역할명을 입력하세요" required />
         </div>
         <div class="mb-3">
           <CFormCheck id="assignable" v-model="form.assignable" label="업무 위탁 권한" />
@@ -97,18 +102,18 @@ const saveRole = async () => {
             </span>
           </CAlert>
         </div>
-      </CForm>
-    </CModalBody>
-    <CModalFooter>
-      <v-btn color="secondary" size="small" @click="emit('close')">취소</v-btn>
-      <v-btn
-        :color="form.pk ? 'success' : 'primary'"
-        size="small"
-        :disabled="!workManager"
-        @click="saveRole"
-      >
-        저장
-      </v-btn>
-    </CModalFooter>
+      </CModalBody>
+      <CModalFooter>
+        <v-btn color="secondary" size="small" @click="emit('close')">취소</v-btn>
+        <v-btn
+          type="submit"
+          :color="form.pk ? 'success' : 'primary'"
+          size="small"
+          :disabled="!workManager"
+        >
+          저장
+        </v-btn>
+      </CModalFooter>
+    </CForm>
   </CModal>
 </template>

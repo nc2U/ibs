@@ -3,6 +3,11 @@ import type { Role } from '@/store/types/work_project'
 
 defineProps<{ roleList: Role[]; workManager: boolean }>()
 const emit = defineEmits(['show-modal', 'delete-role'])
+
+const copyRole = (role: Role) => {
+  const copied: Role = { ...role, pk: 0, name: '' }
+  emit('show-modal', copied)
+}
 </script>
 
 <template>
@@ -38,11 +43,19 @@ const emit = defineEmits(['show-modal', 'delete-role'])
         <CTableDataCell class="text-center">
           {{ role.issue_visible }}
         </CTableDataCell>
-        <CTableDataCell class="text-center">
-          {{ role.user_visible }}
-        </CTableDataCell>
+        <CTableDataCell class="text-center"> {{ role.user_visible }}</CTableDataCell>
         <CTableDataCell class="text-end">
           <v-btn
+            color="info"
+            size="x-small"
+            class="me-1"
+            :disabled="!workManager"
+            @click="copyRole(role)"
+          >
+            복사
+          </v-btn>
+          <v-btn
+            v-if="role.pk > 2"
             color="success"
             size="x-small"
             class="me-1"
@@ -52,6 +65,7 @@ const emit = defineEmits(['show-modal', 'delete-role'])
             수정
           </v-btn>
           <v-btn
+            v-if="role.pk > 2"
             color="warning"
             size="x-small"
             :disabled="!workManager"
