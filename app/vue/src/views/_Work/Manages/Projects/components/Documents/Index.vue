@@ -2,6 +2,7 @@
 import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useRoute } from 'vue-router'
+import type { Docs } from '@/store/types/docs.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import { type DocsFilter, type SuitCaseFilter, useDocs } from '@/store/pinia/docs'
 import Loading from '@/components/Loading/Index.vue'
