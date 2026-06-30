@@ -5,7 +5,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from apiV1.pagination import PageNumberPaginationTwenty, PageNumberPaginationOneHundred
-from apiV1.permission import ProjectPermission
+from apiV1.permission import ProjectPermission, IsWorkManagerOnly
 from apiV1.serializers.work import (
     IssueProjectSerializer, IssueProjectListSerializer,
     ModuleSerializer, RoleSerializer, PermissionSerializer,
@@ -165,7 +165,7 @@ class ModuleViewSet(viewsets.ModelViewSet):
 class RoleViewSet(viewsets.ModelViewSet):
     queryset = Role.objects.all().select_related('creator')
     serializer_class = RoleSerializer
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (permissions.IsAuthenticated, IsWorkManagerOnly)
     pagination_class = PageNumberPaginationTwenty
     search_fields = ('id',)
 
@@ -176,7 +176,7 @@ class RoleViewSet(viewsets.ModelViewSet):
 class PermissionViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Permission.objects.all()
     serializer_class = PermissionSerializer
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (permissions.IsAuthenticated, IsWorkManagerOnly)
     pagination_class = PageNumberPaginationOneHundred
 
 

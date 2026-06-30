@@ -13,7 +13,9 @@ const copyRole = (role: Role) => {
 <template>
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h5>역할 목록</h5>
-    <CButton color="primary" size="sm" @click="emit('show-modal')">새 역할</CButton>
+    <CButton color="primary" size="sm" @click="emit('show-modal')" :disabled="!workManager">
+      새 역할
+    </CButton>
   </div>
 
   <CTable hover responsive align="middle">

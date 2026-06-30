@@ -8,9 +8,14 @@ class IsSuperUserOnly(permissions.BasePermission):
         return request.user.is_superuser
 
 
+class IsWorkManagerOnly(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_superuser or getattr(request.user, 'work_manager', False)
+
+
 class IsStaffOnly(permissions.BasePermission):
     def has_permission(self, request, view):
-        if request.user.is_superuser:
+        if request.user.is_superuser or getattr(request.user, 'work_manager', False):
             return True
         else:
             try:
@@ -37,7 +42,7 @@ class IsStaffOrReadOnly(permissions.BasePermission):
         if request.method in permissions.SAFE_METHODS:
             return True
         else:
-            if request.user.is_superuser:
+            if request.user.is_superuser or getattr(request.user, 'work_manager', False):
                 return True
             else:
                 try:
@@ -51,7 +56,7 @@ class IsProjectStaffOrReadOnly(permissions.BasePermission):
         if request.method in permissions.SAFE_METHODS:
             return True
         else:
-            if request.user.is_superuser:
+            if request.user.is_superuser or getattr(request.user, 'work_manager', False):
                 return True
             else:
                 try:
@@ -130,7 +135,7 @@ class ProjectPermission(permissions.BasePermission):
         # 슈퍼유저/관리자 예외 처리
         if request.user.is_superuser or getattr(request.user, 'work_manager', False):
             return True
-            
+
         # obj가 프로젝트 모델인지 확인 (혹은 프로젝트를 참조하는 모델인지 지능형 추적)
         project = None
         if isinstance(obj, IssueProject):
@@ -145,7 +150,7 @@ class ProjectPermission(permissions.BasePermission):
             project = obj.meeting.project
         elif hasattr(obj, 'news') and hasattr(obj.news, 'project'):
             project = obj.news.project
-        
+
         if not project:
             return False
 
@@ -213,7 +218,7 @@ class IssuePermission(ProjectPermission):
         # 1. 부모 클래스(ProjectPermission)의 기본 생성 검사 수행
         if not super().has_permission(request, view):
             return False
-            
+
         # 2. 신규 생성 시 하위 업무 제어
         if view.action == 'create':
             parent_id = request.data.get('parent')
@@ -241,14 +246,14 @@ class IssuePermission(ProjectPermission):
         if request.method in permissions.SAFE_METHODS:
             if request.user.is_superuser or getattr(request.user, 'work_manager', False):
                 return True
-                
+
             project = getattr(obj, 'project', None)
             if not project:
                 return False
-                
+
             role_attrs = project.get_user_role_attributes(request.user)
             issue_visible = role_attrs.get('issue_visible', 'NOP')
-            
+
             if issue_visible == 'ALL':
                 pass  # super() 결과에 따름
             elif issue_visible == 'PUB':
@@ -260,7 +265,7 @@ class IssuePermission(ProjectPermission):
             elif issue_visible == 'NOP':
                 if obj.creator != request.user and obj.assigned_to != request.user:
                     return False
-            
+
             return True
 
         # 3. 수정 및 삭제 관련 로직
@@ -269,7 +274,7 @@ class IssuePermission(ProjectPermission):
             project = getattr(obj, 'project', None)
             if not project:
                 return False
-            
+
             user_perms = project.get_user_permissions(user)
 
             # (A) 수정 권한 처리
@@ -278,7 +283,7 @@ class IssuePermission(ProjectPermission):
                 is_sub = (obj.parent_id is not None) or ('parent' in request.data)
                 if is_sub:
                     return 'issue.sub_manage' in user_perms
-                    
+
                 if 'issue.update' in user_perms:
                     return True
                 if 'issue.own_update' in user_perms:
@@ -300,7 +305,7 @@ class IssuePermission(ProjectPermission):
                     if (obj.creator == user) or (obj.assigned_to == user):
                         return True
                 return False
-            
+
         return True
 
 
@@ -309,15 +314,15 @@ class IssueCommentPermission(ProjectPermission):
         # 1. 기본 프로젝트 레벨 권한 선제 검증
         if not super().has_object_permission(request, view, obj):
             return False
-            
+
         user = request.user
         project = None
         if hasattr(obj, 'issue') and hasattr(obj.issue, 'project'):
             project = obj.issue.project
-            
+
         if not project:
             return False
-            
+
         user_perms = project.get_user_permissions(user)
 
         # [비공개 댓글 가드] 작성자가 아니고 비공개 댓글 보기 권한이 없으면 접근 전면 차단
@@ -328,7 +333,7 @@ class IssueCommentPermission(ProjectPermission):
         # 2. 안전한 메서드(GET, HEAD, OPTIONS)는 통과
         if request.method in permissions.SAFE_METHODS:
             return True
-            
+
         # 3. 수정 및 삭제 관련 로직
         if view.action in ['update', 'partial_update', 'destroy']:
             # (A) 댓글 수정 권한 처리
@@ -338,7 +343,7 @@ class IssueCommentPermission(ProjectPermission):
                     req_private = request.data.get('is_private')
                     if isinstance(req_private, str):
                         req_private = req_private.lower() in ['true', '1']
-                    
+
                     if req_private != obj.is_private:
                         if 'issue.private_comment_set' not in user_perms:
                             if not ('issue.comment_own_update' in user_perms and obj.creator == user):
@@ -360,5 +365,5 @@ class IssueCommentPermission(ProjectPermission):
                     if obj.creator == user:
                         return True
                 return False
-            
+
         return True
