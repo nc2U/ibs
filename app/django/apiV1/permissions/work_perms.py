@@ -77,8 +77,6 @@ class ProjectPermission(permissions.BasePermission):
 
             user_perms = project.get_user_permissions(request.user)
 
-            if required_perm == 'issue.create':
-                return 'issue.create' in user_perms or 'issue.copy' in user_perms
             if not required_perm:
                 return False
             return required_perm in user_perms
@@ -181,32 +179,36 @@ class IssuePermission(ProjectPermission):
         if not super().has_permission(request, view):
             return False
 
-        # 2. 신규 생성 시 하위 업무 제어
+        # 2. 신규 생성 시의 업무 도메인 특화 검사
         if view.action == 'create':
+            project_slug = self.get_project_slug(view, request.data)
+            project = None
+
+            # 부모(parent)가 있다면 역추적하여 프로젝트 가져오기 우선 시도
             parent_id = request.data.get('parent')
-            if parent_id:  # 상위 업무를 지정하여 하위 업무로 생성하려는 경우
-                project_slug = view.kwargs.get('project_slug') or request.data.get('project')
-                if project_slug:
-                    from work.models.project import IssueProject
-                    try:
-                        if isinstance(project_slug, int) or (isinstance(project_slug, str) and project_slug.isdigit()):
-                            project = IssueProject.objects.get(pk=int(project_slug))
-                        else:
-                            project = IssueProject.objects.get(slug=project_slug)
-                        user_perms = project.get_user_permissions(request.user)
-                        return 'issue.sub_manage' in user_perms
-                    except (IssueProject.DoesNotExist, ValueError):
-                        return False
-                else:
-                    # 개선: request 데이터에 project 식별자가 누락되었을 때, 상위(parent) 업무에서 프로젝트 정보를 역추적해 검증
-                    from work.models.issue import Issue
-                    try:
-                        parent_issue = Issue.objects.select_related('project').get(pk=parent_id)
-                        project = parent_issue.project
-                        user_perms = project.get_user_permissions(request.user)
-                        return 'issue.sub_manage' in user_perms
-                    except Issue.DoesNotExist:
-                        return False
+            if parent_id and not project_slug:
+                from work.models.issue import Issue
+                try:
+                    parent_issue = Issue.objects.select_related('project').get(pk=parent_id)
+                    project = parent_issue.project
+                except Issue.DoesNotExist:
+                    return False
+            elif project_slug:
+                project = self.find_project(project_slug)
+
+            if not project:
+                return False
+
+            user_perms = project.get_user_permissions(request.user)
+
+            # (A) issue.create 혹은 issue.copy 권한 보유 여부 확인 (이전 캡슐화 완료)
+            if 'issue.create' not in user_perms and 'issue.copy' not in user_perms:
+                return False
+
+            # (B) 하위 업무로 생성하는 경우, sub_manage 권한이 추가로 필요한지 확인
+            if parent_id:
+                return 'issue.sub_manage' in user_perms
+
         return True
 
     def has_object_permission(self, request, view, obj):

@@ -240,7 +240,7 @@ class IssueCountByMemberView(APIView):
 class IssueRelationViewSet(viewsets.ModelViewSet):
     queryset = IssueRelation.objects.all()
     serializer_class = IssueRelationSerializer
-    permission_classes = (permissions.IsAuthenticated, ProjectPermission)
+    permission_classes = (permissions.IsAuthenticated, IssuePermission)
     pagination_class = PageNumberPaginationTwenty
     filterset_fields = ('source',)
 
@@ -264,7 +264,7 @@ class IssueRelationViewSet(viewsets.ModelViewSet):
 class IssueFileViewSet(viewsets.ModelViewSet):
     queryset = IssueFile.objects.all()
     serializer_class = IssueFileSerializer
-    permission_classes = (permissions.IsAuthenticated, ProjectPermission)
+    permission_classes = (permissions.IsAuthenticated, IssuePermission)
     pagination_class = PageNumberPaginationTwenty
     search_fields = ('id',)
 
