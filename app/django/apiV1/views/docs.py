@@ -119,6 +119,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
         mapping = {  # 매핑 로직 정의
             'list': 'docs.read',
             'retrieve': 'docs.read',
+            'hit': 'docs.read',
             'create': 'docs.create',
             'update': 'docs.update',
             'partial_update': 'docs.update',
@@ -126,6 +127,14 @@ class DocumentViewSet(viewsets.ModelViewSet):
         }
         # 정의되지 않은 액션에 대해 기본 권한 반환
         return mapping.get(self.action, None)
+
+    @action(detail=True, methods=['post'], url_path='hit')
+    def hit(self, request, *args, **kwargs):
+        """조회수 증가 전용 액션 - docs.read 권한만 필요"""
+        instance = self.get_object()
+        instance.hit = (instance.hit or 0) + 1
+        instance.save(update_fields=['hit'])
+        return Response({'hit': instance.hit}, status=status.HTTP_200_OK)
 
     def copy_and_create(self, request, *args, **kwargs):
         # 복사할 행의 ID를 저장한다.
@@ -314,9 +323,9 @@ class DocsInTrashViewSet(DocumentViewSet):
 
         # 비밀글 완전 삭제 보안 가드: 비밀글인 경우 작성자 본인이거나 관리자만 완전 삭제 가능
         is_owner_or_admin = (
-            request.user.is_superuser or
-            getattr(request.user, 'work_manager', False) or
-            instance.creator == request.user
+                request.user.is_superuser or
+                getattr(request.user, 'work_manager', False) or
+                instance.creator == request.user
         )
         if instance.is_secret and not is_owner_or_admin:
             return Response({'detail': 'You do not have permission to delete this secret document.'},
