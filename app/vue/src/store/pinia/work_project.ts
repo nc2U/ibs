@@ -254,25 +254,31 @@ export const useWork = defineStore('work', () => {
       .then(res => (memberList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
-  const createMember = (payload: { user?: number; roles?: number[]; slug: string }) =>
-    api
-      .post(`/member/`, payload)
+  const createMember = async (payload: { user?: number; roles?: number[]; slug: string }) => {
+    const { roles, ...rest } = payload
+    const body = { ...rest, ...(roles !== undefined ? { role_ids: roles } : {}) }
+    return api
+      .post(`/member/`, body)
       .then(async res => {
         await fetchIssueProject(payload.slug)
         await fetchMember(res.data.pk)
         message()
       })
       .catch(err => errorHandle(err.response.data))
+  }
 
-  const patchMember = (payload: { pk: number; user?: number; roles?: number[] }) =>
-    api
-      .patch(`/member/${payload.pk}/`, payload)
+  const patchMember = async (payload: { pk: number; user?: number; roles?: number[] }) => {
+    const { pk, roles, ...rest } = payload
+    const body = { ...rest, ...(roles !== undefined ? { role_ids: roles } : {}) }
+    return api
+      .patch(`/member/${pk}/`, body)
       .then(async res => {
         await fetchIssueProject(res.data.project.slug)
         await fetchMember(res.data.pk)
         message()
       })
       .catch(err => errorHandle(err.response.data))
+  }
 
   // version states & getters
   const version = ref<Version | null>(null)
