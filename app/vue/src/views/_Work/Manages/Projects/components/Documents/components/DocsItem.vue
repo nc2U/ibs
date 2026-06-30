@@ -16,14 +16,18 @@ const canDocsRead = computed(() => can(PERM.DOCS_READ))
     <v-card-text class="pa-3">
       <CRow align="center">
         <CCol sm="8" class="d-flex align-center">
-          <v-tooltip v-if="docs.is_secret" location="top" text="비밀 문서">
+          <v-tooltip
+            v-if="docs.is_secret || docs.is_blind"
+            location="top"
+            :text="docs.is_secret ? '비밀 문서' : '숨김 문서'"
+          >
             <template #activator="{ props: tooltipProps }">
-              <v-icon v-bind="tooltipProps" icon="mdi-lock" color="warning" class="mr-2" />
-            </template>
-          </v-tooltip>
-          <v-tooltip v-else-if="docs.is_blind" location="top" text="숨김 문서">
-            <template #activator="{ props: tooltipProps }">
-              <v-icon v-bind="tooltipProps" icon="mdi-eye-off" color="danger" class="mr-2" />
+              <v-icon
+                v-bind="tooltipProps"
+                :icon="docs.is_secret ? 'mdi-lock' : 'mdi-eye-off'"
+                :color="docs.is_secret ? 'warning' : 'primary'"
+                class="mr-2"
+              />
             </template>
           </v-tooltip>
           <v-icon v-else icon="mdi-file-document" color="info" class="mr-2" />
@@ -37,50 +41,20 @@ const canDocsRead = computed(() => can(PERM.DOCS_READ))
             class="text-decoration-none font-weight-medium text-body-1"
           >
             {{ cutString(docs.title, 50) }}
-            <v-chip
-              v-if="docs.is_secret"
-              label
-              size="x-small"
-              color="warning"
-              variant="tonal"
-              class="ml-1"
-            >
-              비밀
-            </v-chip>
-            <v-chip
-              v-if="docs.is_blind"
-              label
-              size="x-small"
-              color="danger"
-              variant="tonal"
-              class="ml-1"
-            >
-              숨김
-            </v-chip>
           </router-link>
           <span v-else class="d-flex align-center">
             {{ cutString(docs.title, 50) }}
-            <v-chip
-              v-if="docs.is_secret"
-              label
-              size="x-small"
-              color="warning"
-              variant="tonal"
-              class="ml-1"
-            >
-              비밀문서
-            </v-chip>
-            <v-chip
-              v-if="docs.is_blind"
-              label
-              size="x-small"
-              color="danger"
-              variant="tonal"
-              class="ml-1"
-            >
-              숨김문서
-            </v-chip>
           </span>
+          <v-chip
+            v-if="docs.is_secret || docs.is_blind"
+            label
+            size="x-small"
+            :color="docs.is_secret ? 'warning' : 'primary'"
+            variant="tonal"
+            class="ml-2"
+          >
+            {{ docs.is_secret ? 'SECRET' : 'BLIND' }}
+          </v-chip>
         </CCol>
         <CCol sm="4" class="text-right text-grey small">
           <v-icon icon="mdi-clock-outline" size="x-small" class="mr-1" />

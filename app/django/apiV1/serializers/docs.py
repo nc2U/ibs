@@ -191,7 +191,7 @@ class DocumentSerializer(serializers.ModelSerializer):
         user = self.context['request'].user
         # 블라인드글이고 관리자가 아닌 경우 제목을 마스킹 처리
         if obj.is_blind and not (user.is_superuser or getattr(user, 'work_manager', False)):
-            return "블라인드 처리된 글입니다."
+            return "[HIDDEN DOCUMENT]"
         return obj.title
 
     def _is_visible_to_user(self, obj) -> bool:
@@ -214,8 +214,8 @@ class DocumentSerializer(serializers.ModelSerializer):
     def get_description(self, obj):
         if not self._is_visible_to_user(obj):
             if obj.is_blind:
-                return "블라인드 처리된 글입니다."
-            return "비밀글입니다."
+                return "이 문서는 관리자에 의해 숨김처리 되었습니다."
+            return "비밀 문서입니다."
         return obj.description
 
     def get_links(self, obj):

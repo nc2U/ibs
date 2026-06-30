@@ -53,35 +53,23 @@ onMounted(() => {
       <CCol class="d-flex align-center gap-2">
         <h4 class="font-weight-bold mb-1">
           {{ docs.title }}
-          <v-tooltip v-if="docs.is_secret" location="top" text="비밀 문서">
+          <v-tooltip
+            v-if="docs.is_secret || docs.is_blind"
+            location="right"
+            :text="docs.is_secret ? '비밀 문서' : '숨김 문서'"
+          >
             <template #activator="{ props: tooltipProps }">
               <v-chip
                 v-bind="tooltipProps"
                 label
                 size="small"
-                color="warning"
+                :color="docs.is_secret ? 'warning' : 'primary'"
                 variant="tonal"
                 class="ml-2"
                 style="vertical-align: middle"
               >
-                <v-icon start icon="mdi-lock" size="small" />
-                비밀 문서
-              </v-chip>
-            </template>
-          </v-tooltip>
-          <v-tooltip v-if="docs.is_blind" location="top" text="숨김 문서">
-            <template #activator="{ props: tooltipProps }">
-              <v-chip
-                v-bind="tooltipProps"
-                label
-                size="small"
-                color="danger"
-                variant="tonal"
-                class="ml-2"
-                style="vertical-align: middle"
-              >
-                <v-icon start icon="mdi-lock" size="small" />
-                숨김 문서
+                <v-icon start :icon="docs.is_secret ? 'mdi-lock' : 'mdi-eye-off'" size="small" />
+                {{ docs.is_secret ? 'SECRET' : 'BLIND' }}
               </v-chip>
             </template>
           </v-tooltip>
@@ -103,14 +91,14 @@ onMounted(() => {
 
     <v-alert
       v-if="docs.is_secret || docs.is_blind"
-      :type="docs.is_secret ? 'warning' : 'error'"
+      :type="docs.is_secret ? 'warning' : 'primary'"
       variant="tonal"
       density="compact"
       class="mb-4"
       :icon="docs.is_secret ? 'mdi-lock' : 'mdi-eye-off'"
     >
       <span>
-        이 문서는 <strong>{{ docs.is_secret ? '비밀' : '숨김' }} 문서</strong>입니다.
+        이 문서는 <strong>{{ docs.is_secret ? '비밀' : '숨김' }} 문서</strong> 입니다.
         <span v-if="!workManager">열람 권한이 없어 일부 내용이 제한됩니다.</span>
       </span>
     </v-alert>
