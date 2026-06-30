@@ -124,7 +124,7 @@ class MeetingViewSet(viewsets.ModelViewSet):
 class MeetingFileViewSet(viewsets.ModelViewSet):
     queryset = MeetingFile.objects.all()
     serializer_class = MeetingFileSerializer
-    permission_classes = (permissions.IsAuthenticated, ProjectPermission)
+    permission_classes = (permissions.IsAuthenticated, MeetingPermission)
 
     @property
     def required_permission(self):
