@@ -90,6 +90,7 @@ export interface PostFile {
   file?: string
   file_name: string
   file_size: number
+  file_type: string
   newFile?: Blob
   hit: number
   del?: boolean

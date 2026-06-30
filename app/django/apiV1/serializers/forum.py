@@ -1,12 +1,12 @@
 import json
-import os.path
 from urllib.parse import urlsplit, urlunsplit
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import F, Q
 from rest_framework import serializers
 
+from _utils.file_service import FileService
 from accounts.models import Profile
 from apiV1.serializers.accounts import SimpleUserSerializer
 from forum.models import Forum, PostCategory, Post, PostLink, PostFile, PostImage, Comment, Tag
@@ -29,19 +29,20 @@ class ForumSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_all_post_count(obj):
-        post_count = obj.post_set.count()
+        # 개선: post_count 중복 계산 제거
         comment_count = Comment.objects.filter(post__forum=obj).count()
-        return post_count + comment_count
+        return obj.post_set.count() + comment_count
 
     @staticmethod
     def get_last_post(obj):
-        last_post = obj.post_set.order_by('-created').first()
+        # 개선: creator select_related 로 추가 쿼리 방지
+        last_post = obj.post_set.select_related('creator').order_by('-created').first()
         if last_post:
             return {
                 'pk': last_post.pk,
                 'title': last_post.title,
                 'creator': last_post.creator.username if last_post.creator else None,
-                'created': last_post.created
+                'created': last_post.created,
             }
         return None
 
@@ -61,7 +62,7 @@ class LinksInPostSerializer(serializers.ModelSerializer):
 class FilesInPostSerializer(serializers.ModelSerializer):
     class Meta:
         model = PostFile
-        fields = ('pk', 'post', 'file', 'file_name', 'file_size', 'hit')
+        fields = ('pk', 'post', 'file', 'file_name', 'file_size', 'file_type', 'hit')
 
 
 class PostSerializer(serializers.ModelSerializer):
@@ -86,87 +87,85 @@ class PostSerializer(serializers.ModelSerializer):
                   'created', 'updated', 'is_new', 'prev_pk', 'next_pk')
         read_only_fields = ('ip', 'comments')
 
-    def get_collection(self):
+    def _get_filtered_queryset(self):
+        """prev_pk / next_pk 계산용 필터된 쿼리셋 (View 레이어와 필터 조건 동기화 필요)"""
         queryset = Post.objects.all()
         query = self.context['request'].query_params
         forum = query.get('forum')
-        is_notice = True if query.get('is_notice') == 'true' else False
+        is_notice_param = query.get('is_notice')
         category = query.get('category')
         search = query.get('search')
 
-        queryset = queryset.filter(forum_id=forum) if forum else queryset
-        queryset = queryset.filter(is_notice=True) if is_notice == 'true' else queryset
-        queryset = queryset.filter(is_notice=False) if is_notice == 'false' else queryset
-        queryset = queryset.filter(category_id=category) if category else queryset
-        queryset = queryset.filter(
-            Q(title__icontains=search) |
-            Q(content__icontains=search) |
-            Q(links__link__icontains=search) |
-            Q(files__file__icontains=search) |
-            Q(creator__username__icontains=search)
-        ) if search else queryset
-
+        if forum:
+            queryset = queryset.filter(forum_id=forum)
+        # 수정: bool 변환 후 문자열 비교 오류 수정
+        if is_notice_param == 'true':
+            queryset = queryset.filter(is_notice=True)
+        elif is_notice_param == 'false':
+            queryset = queryset.filter(is_notice=False)
+        if category:
+            queryset = queryset.filter(category_id=category)
+        if search:
+            queryset = queryset.filter(
+                Q(title__icontains=search) |
+                Q(content__icontains=search) |
+                Q(links__link__icontains=search) |
+                Q(files__file__icontains=search) |
+                Q(creator__username__icontains=search)
+            )
         return queryset
 
     @staticmethod
     def get_scrape(obj):
-        return len(obj.postscrape_set.all())
+        # 개선: len(queryset) → count() 로 DB 집계
+        return obj.postscrape_set.count()
 
     def get_my_scrape(self, obj):
+        # 개선: 전체 로드 후 Python 필터 → DB filter().exists()
         user = self.context['request'].user
-        scrapes = obj.postscrape_set.all()
-        users = [s.user for s in scrapes]
-        return user in users
+        return obj.postscrape_set.filter(user=user).exists()
 
     def get_my_like(self, obj):
+        # 개선: M2M 전체 로드 → filter().exists()
         user = self.context['request'].user
-        likes = user.profile.like_posts.all()
-        likes = [p.pk for p in likes]
-        return obj.pk in likes
+        return user.profile.like_posts.filter(pk=obj.pk).exists()
 
     def get_my_blame(self, obj):
+        # 개선: M2M 전체 로드 → filter().exists()
         user = self.context['request'].user
-        blames = user.profile.blame_posts.all()
-        blames = [p.pk for p in blames]
-        return obj.pk in blames
+        return user.profile.blame_posts.filter(pk=obj.pk).exists()
 
     def get_prev_pk(self, obj):
-        prev_obj = self.get_collection().filter(created__lt=obj.created).first()
+        prev_obj = self._get_filtered_queryset().filter(created__lt=obj.created).first()
         return prev_obj.pk if prev_obj else None
 
     def get_next_pk(self, obj):
-        next_obj = self.get_collection().filter(created__gt=obj.created).order_by('created').first()
+        next_obj = self._get_filtered_queryset().filter(created__gt=obj.created).order_by('created').first()
         return next_obj.pk if next_obj else None
 
-    def to_python(self, value):
+    @staticmethod
+    def _normalize_url(url):
+        """
+        URL 정규화 헬퍼. 스킴이 없으면 http:// 를 기본으로 추가.
+        수정: to_python() 에서 분리하여 error_messages KeyError 방지.
+        """
 
-        def split_url(url):
-            """
-            Return a list of url parts via urlparse.urlsplit(), or raise
-            ValidationError for some malformed URLs.
-            """
+        def split_url(u):
             try:
-                return list(urlsplit(url))
+                return list(urlsplit(u))
             except ValueError:
-                # urlparse.urlsplit can raise a ValueError with some
-                # misformatted URLs.
-                raise ValidationError(self.error_messages['invalid'], code='invalid')
+                raise ValidationError('올바른 URL 형식이 아닙니다.', code='invalid')
 
-        if value:
-            url_fields = split_url(value)
+        if url:
+            url_fields = split_url(url)
             if not url_fields[0]:
-                # If no URL scheme given, assume http://
                 url_fields[0] = 'http'
             if not url_fields[1]:
-                # Assume that if no domain is provided, that the path segment
-                # contains the domain.
                 url_fields[1] = url_fields[2]
                 url_fields[2] = ''
-                # Rebuild the url_fields list, since the domain segment may now
-                # contain the path too.
                 url_fields = split_url(urlunsplit(url_fields))
-            value = urlunsplit(url_fields)
-        return value
+            url = urlunsplit(url_fields)
+        return url
 
     @transaction.atomic
     def create(self, validated_data):
@@ -175,18 +174,17 @@ class PostSerializer(serializers.ModelSerializer):
         post = Post.objects.create(**validated_data)
 
         # Links 처리
-        if self.initial_data.get('newLinks'):
-            new_links = self.initial_data.getlist('newLinks')
-            if new_links:
-                for link in new_links:
-                    PostLink.objects.create(post=post, link=self.to_python(link))
+        for link in self.initial_data.getlist('newLinks'):
+            PostLink.objects.create(post=post, link=self._normalize_url(link))
 
-        # Files 처리
-        if self.initial_data.get('newFiles'):
-            new_files = self.initial_data.getlist('newFiles')
-            if new_files:
-                for file in new_files:
-                    PostFile.objects.create(post=post, file=file)
+        # Files 처리 - FileService 위임 (os.remove 제거, new_files_key='newFiles' 지정)
+        FileService.manage_files(
+            instance=post,
+            initial_data=self.initial_data,
+            file_model=PostFile,
+            related_name='post',
+            new_files_key='newFiles',
+        )
 
         return post
 
@@ -194,57 +192,32 @@ class PostSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         validated_data['ip'] = self.context.get('request').META.get('REMOTE_ADDR')
         validated_data['device'] = self.context.get('request').META.get('HTTP_USER_AGENT')
-        instance.__dict__.update(**validated_data)
-        instance.forum = validated_data.get('forum', instance.forum)
-        instance.category = validated_data.get('category', instance.category)
+        # 개선: __dict__.update() → setattr() (ORM 캐시 오염 방지)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
         instance.save()
 
-        try:
-            # Links 처리
-            old_links = self.initial_data.getlist('links')
-            if old_links:
-                for json_link in old_links:
-                    link = json.loads(json_link)
-                    link_object = PostLink.objects.get(pk=link.get('pk'))
-                    if link.get('del'):
-                        link_object.delete()
-                    else:
-                        link_object.link = self.to_python(link.get('link'))
-                        link_object.save()
+        # Links 처리
+        for json_link in self.initial_data.getlist('links'):
+            link = json.loads(json_link)
+            link_object = PostLink.objects.get(pk=link.get('pk'))
+            if link.get('del'):
+                link_object.delete()
+            else:
+                link_object.link = self._normalize_url(link.get('link'))
+                link_object.save()
 
-            new_links = self.initial_data.getlist('newLinks')
-            if new_links:
-                for link in new_links:
-                    PostLink.objects.create(post=instance, link=self.to_python(link))
+        for link in self.initial_data.getlist('newLinks'):
+            PostLink.objects.create(post=instance, link=self._normalize_url(link))
 
-            # Files 처리
-            old_files = self.initial_data.getlist('files')
-            if old_files:
-                cng_pks = self.initial_data.getlist('cngPks')
-                cng_files = self.initial_data.getlist('cngFiles')
-                cng_maps = [(pk, cng_files[i]) for i, pk in enumerate(cng_pks)]
-
-                for json_file in old_files:
-                    file = json.loads(json_file)
-                    file_object = PostFile.objects.get(pk=file.get('pk'))
-
-                    if file.get('del'):
-                        file_object.delete()
-
-                    for cng_map in cng_maps:
-                        if int(file.get('pk')) == int(cng_map[0]):
-                            old_file = file_object.file
-                            if os.path.isfile(old_file.path):
-                                os.remove(old_file.path)
-                            file_object.file = cng_map[1]
-                            file_object.save()
-
-            new_files = self.initial_data.getlist('newFiles')
-            if new_files:
-                for file in new_files:
-                    PostFile.objects.create(post=instance, file=file)
-        except AttributeError:
-            pass
+        # Files 처리 - FileService 위임 (transaction.on_commit 으로 파일 삭제 안전 처리)
+        FileService.manage_files(
+            instance=instance,
+            initial_data=self.initial_data,
+            file_model=PostFile,
+            related_name='post',
+            new_files_key='newFiles',
+        )
 
         return instance
 
@@ -257,16 +230,18 @@ class PostLikeSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def update(self, instance, validated_data):
         user = self.context['request'].user
-        profile = Profile.objects.get(user=user)
+        # 개선: get() → get_or_create() (DoesNotExist 방어)
+        profile, _ = Profile.objects.get_or_create(user=user)
 
         if profile.like_posts.filter(pk=instance.pk).exists():
-            if instance.like > 0:
-                instance.like -= 1
-                profile.like_posts.remove(instance)
+            # 개선: F() 표현식으로 원자적 감소 (Race Condition 방지)
+            Post.objects.filter(pk=instance.pk, like__gt=0).update(like=F('like') - 1)
+            profile.like_posts.remove(instance)
         else:
-            instance.like += 1
+            Post.objects.filter(pk=instance.pk).update(like=F('like') + 1)
             profile.like_posts.add(instance)
-        instance.save()
+
+        instance.refresh_from_db()
         return instance
 
 
@@ -278,16 +253,16 @@ class PostBlameSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def update(self, instance, validated_data):
         user = self.context['request'].user
-        profile = Profile.objects.get(user=user)
+        profile, _ = Profile.objects.get_or_create(user=user)
 
         if profile.blame_posts.filter(pk=instance.pk).exists():
-            if instance.blame > 0:
-                instance.blame -= 1
-                profile.blame_posts.remove(instance)
+            Post.objects.filter(pk=instance.pk, blame__gt=0).update(blame=F('blame') - 1)
+            profile.blame_posts.remove(instance)
         else:
-            instance.blame += 1
+            Post.objects.filter(pk=instance.pk).update(blame=F('blame') + 1)
             profile.blame_posts.add(instance)
-        instance.save()
+
+        instance.refresh_from_db()
         return instance
 
 
@@ -334,16 +309,14 @@ class CommentSerializer(serializers.ModelSerializer):
         return serializer.data
 
     def get_my_like(self, obj):
+        # 개선: M2M 전체 로드 → filter().exists()
         user = self.context['request'].user
-        likes = user.profile.like_comments.all()
-        likes = [c.pk for c in likes]
-        return obj.pk in likes
+        return user.profile.like_comments.filter(pk=obj.pk).exists()
 
     def get_my_blame(self, obj):
+        # 개선: M2M 전체 로드 → filter().exists()
         user = self.context['request'].user
-        blames = user.profile.blame_comments.all()
-        blames = [c.pk for c in blames]
-        return obj.pk in blames
+        return user.profile.blame_comments.filter(pk=obj.pk).exists()
 
     @transaction.atomic
     def create(self, validated_data):
@@ -357,8 +330,9 @@ class CommentSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         validated_data['ip'] = self.context.get('request').META.get('REMOTE_ADDR')
         validated_data['device'] = self.context.get('request').META.get('HTTP_USER_AGENT')
-        instance.__dict__.update(**validated_data)
-        instance.post = validated_data.get('post', instance.post)
+        # 개선: __dict__.update() → setattr()
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
         instance.save()
         return instance
 
@@ -371,16 +345,16 @@ class CommentLikeSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def update(self, instance, validated_data):
         user = self.context['request'].user
-        profile = Profile.objects.get(user=user)
+        profile, _ = Profile.objects.get_or_create(user=user)
 
         if profile.like_comments.filter(pk=instance.pk).exists():
-            if instance.like > 0:
-                instance.like -= 1
-                profile.like_comments.remove(instance)
+            Comment.objects.filter(pk=instance.pk, like__gt=0).update(like=F('like') - 1)
+            profile.like_comments.remove(instance)
         else:
-            instance.like += 1
+            Comment.objects.filter(pk=instance.pk).update(like=F('like') + 1)
             profile.like_comments.add(instance)
-        instance.save()
+
+        instance.refresh_from_db()
         return instance
 
 
@@ -392,16 +366,16 @@ class CommentBlameSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def update(self, instance, validated_data):
         user = self.context['request'].user
-        profile = Profile.objects.get(user=user)
+        profile, _ = Profile.objects.get_or_create(user=user)
 
         if profile.blame_comments.filter(pk=instance.pk).exists():
-            if instance.blame > 0:
-                instance.blame -= 1
-                profile.blame_comments.remove(instance)
+            Comment.objects.filter(pk=instance.pk, blame__gt=0).update(blame=F('blame') - 1)
+            profile.blame_comments.remove(instance)
         else:
-            instance.blame += 1
+            Comment.objects.filter(pk=instance.pk).update(blame=F('blame') + 1)
             profile.blame_comments.add(instance)
-        instance.save()
+
+        instance.refresh_from_db()
         return instance
 
 

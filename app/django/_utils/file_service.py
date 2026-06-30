@@ -2,29 +2,34 @@ import json
 from django.db import transaction
 from django.core.files.storage import default_storage
 
+
 class FileService:
     @staticmethod
-    def manage_files(instance, initial_data, creator, file_model, related_name='meeting'):
+    def manage_files(instance, initial_data, creator=None, file_model=None,
+                     related_name='meeting', new_files_key='new_files'):
         """
         Generic file management for models with associated file models.
-        - instance: The model instance (e.g., Meeting, News)
+        - instance: The model instance (e.g., Meeting, News, Post)
         - initial_data: The raw request data (QueryDict)
-        - creator: The user performing the action
-        - file_model: The file model class (e.g., MeetingFile, NewsFile)
+        - creator: The user performing the action (optional — only used if the model has a creator field)
+        - file_model: The file model class (e.g., MeetingFile, NewsFile, PostFile)
         - related_name: The field name in the file model pointing to the instance
+        - new_files_key: QueryDict key for new file uploads (default: 'new_files')
         """
-        
+
         # 1. Add new files (supports both descriptions and new_descs)
-        new_files = initial_data.getlist('new_files', [])
+        new_files = initial_data.getlist(new_files_key, [])
         descriptions = initial_data.getlist('descriptions', []) or initial_data.getlist('new_descs', [])
-        
+
         for i, upload_file in enumerate(new_files):
             file_data = {
                 related_name: instance,
-                'file': upload_file,
-                'description': descriptions[i] if i < len(descriptions) else None,
-                'creator': creator
+                'file': upload_file
             }
+            if creator is not None:
+                file_data['creator'] = creator
+            if descriptions:
+                file_data['description'] = descriptions[i] if i < len(descriptions) else None
             file_model.objects.create(**file_data)
 
         # 2. Existing file modifications/deletions/replacements (via JSON)
@@ -36,7 +41,7 @@ class FileService:
         for json_file in old_files:
             file_data = json.loads(json_file)
             pk = str(file_data.get('pk'))
-            
+
             if file_data.get('del'):
                 file_model.objects.filter(pk=pk, **{related_name: instance}).delete()
                 continue
@@ -47,7 +52,8 @@ class FileService:
                     file_obj = file_model.objects.get(pk=pk, **{related_name: instance})
                     old_file_name = file_obj.file.name
                     file_obj.file = cng_file
-                    file_obj.creator = creator
+                    if creator is not None:
+                        file_obj.creator = creator
                     file_obj.save()
                     if old_file_name:
                         transaction.on_commit(lambda name=old_file_name: default_storage.delete(name))
@@ -59,18 +65,21 @@ class FileService:
         if edit_file:
             meeting_file = file_model.objects.get(pk=edit_file, **{related_name: instance})
             old_file = None
-            
+
             cng_file = initial_data.get('cng_file')
             if cng_file:
                 old_file = meeting_file.file
                 meeting_file.file = cng_file
-            
+
             edit_file_desc = initial_data.get('edit_file_desc')
             if edit_file_desc is not None:
                 meeting_file.description = edit_file_desc
-            
+
+            if creator is not None:
+                meeting_file.creator = creator
+
             meeting_file.save()
-            
+
             if old_file and old_file.name:
                 transaction.on_commit(lambda f=old_file: f.delete(save=False))
 
