@@ -388,9 +388,9 @@ class OfficialLetterViewSet(viewsets.ModelViewSet):
         letter = self.get_object()
         try:
             pdf_file = generate_official_letter_pdf(letter)
-        except Exception as e:
+        except Exception:
             return Response(
-                {'error': f'PDF 생성 실패: {e}'},
+                {'error': 'PDF 생성에 실패했습니다.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
         letter.pdf_file = pdf_file
