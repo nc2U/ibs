@@ -1,8 +1,8 @@
-from datetime import datetime
-
+from django.utils import timezone
 from django_filters import BooleanFilter
 from django_filters.rest_framework import FilterSet
 from rest_framework import viewsets, status
+from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from apiV1.permissions.auth_perms import permissions, IsProjectStaffOrReadOnly
@@ -17,14 +17,14 @@ from ..serializers.forum import ForumSerializer, CategorySerializer, PostSeriali
 class ForumViewSet(viewsets.ModelViewSet):
     queryset = Forum.objects.all()
     serializer_class = ForumSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated,)
     filterset_fields = ('project__slug', 'search_able', 'manager')
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = PostCategory.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated,)
     filterset_fields = ('forum', 'parent')
 
 
@@ -35,39 +35,56 @@ class PostFilterSet(FilterSet):
 
 
 class PostViewSet(viewsets.ModelViewSet):
-    queryset = Post.objects.filter(deleted=None)
+    queryset = Post.objects.filter(deleted=None).select_related(
+        'forum', 'category', 'creator'
+    ).prefetch_related('links', 'files')
     serializer_class = PostSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated,)
     filterset_class = PostFilterSet
     search_fields = ('title', 'content', 'links__link', 'files__file', 'creator__username')
 
+    @property
+    def required_permission(self):
+        mapping = {
+            'list': 'forum.read',
+            'retrieve': 'forum.read',
+            'hit': 'forum.read',
+            'copy_and_create': 'forum.create',
+            'create': 'forum.create',
+            'update': 'forum.update',
+            'partial_update': 'forum.update',
+            'destroy': 'forum.delete'
+        }
+        return mapping.get(self.action, None)
+
+    # 개선: API 라우터에 복사 액션이 정상 등록되도록 @action 데코레이터 추가
+    @action(detail=True, methods=['post'], url_path='copy')
     def copy_and_create(self, request, *args, **kwargs):
         # 복사할 행의 ID를 저장한다.
         origin_pk = kwargs.get('pk')
-        project = request.data.get('project')
         forum = request.data.get('forum')
 
         try:
             # 기존 행을 가져와서 복사한다.
             org_instance = Post.objects.get(pk=origin_pk)
 
-            add_text = f'<br /><br /><p>[이 게시물은 {self.request.user.username} 님에 의해 {datetime.now()} {org_instance.forum.name} 에서 복사됨]</p>'
+            # 개선: timezone을 사용하여 로컬 타임존 일관성 유지
+            now_str = timezone.localtime(timezone.now()).strftime('%Y-%m-%d %H:%M:%S')
+            add_text = f'<br /><br /><p>[이 게시물은 {self.request.user.username} 님에 의해 {now_str} {org_instance.forum.name} 에서 복사됨]</p>'
 
-            # 기존 행의 정보를 사용하여 새로운 행을 생성한다.
+            # 개선: Post 모델에 존재하지 않는 project, lawsuit, execution_date 필드 제거 및 정합성 매핑
             new_instance_data = {
-                'project': project if project else None,
                 'forum': forum,
                 'category': org_instance.category.pk if org_instance.category else None,
-                'lawsuit': org_instance.lawsuit.pk if org_instance.lawsuit else None,
                 'title': org_instance.title,
-                'execution_date': org_instance.execution_date if org_instance.execution_date else None,
                 'content': org_instance.content + add_text,
             }
 
             # Serializer를 사용해 새로운 행을 생성하고 저장한다.
             serializer = PostSerializer(data=new_instance_data, context={'request': request})
             serializer.is_valid(raise_exception=True)
-            serializer.save()
+            # 개선: creator를 명시적으로 저장해 복사한 사용자가 작성자가 되도록 지정
+            serializer.save(creator=self.request.user)
 
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         except Post.DoesNotExist:
@@ -116,7 +133,8 @@ class CommentFilterSet(FilterSet):
 
 
 class CommentViewSet(viewsets.ModelViewSet):
-    queryset = Comment.objects.all()
+    # 개선: N+1 쿼리 방지를 위한 select_related 및 prefetch_related 적용
+    queryset = Comment.objects.all().select_related('creator', 'post__forum').prefetch_related('replies')
     serializer_class = CommentSerializer
     permission_classes = (permissions.IsAuthenticated,)
     filterset_class = CommentFilterSet
@@ -144,5 +162,8 @@ class TagViewSet(viewsets.ModelViewSet):
 
 
 class PostInTrashViewSet(PostViewSet):
-    queryset = Post.objects.filter(deleted__isnull=False)
     serializer_class = PostInTrashSerializer
+
+    # 개선: 쿼리셋 정적 재정의 대신 get_queryset() 오버라이딩 적용
+    def get_queryset(self):
+        return Post.objects.filter(deleted__isnull=False).select_related('forum', 'category', 'creator')
