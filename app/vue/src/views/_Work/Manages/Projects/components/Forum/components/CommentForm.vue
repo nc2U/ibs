@@ -1,5 +1,6 @@
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+import { usePerms } from '@/composables/usePerms.ts'
 import MdEditor from '@/components/MdEditor/Index.vue'
 
 const props = defineProps({
@@ -9,6 +10,9 @@ const props = defineProps({
 const emit = defineEmits(['submit-comment', 'cancel'])
 
 const commentContent = ref(props.content)
+
+const { can, PERM } = usePerms()
+const canForumCreate = computed(() => can(PERM.FORUM_CREATE))
 
 const onSubmit = () => {
   if (commentContent.value.trim()) {
@@ -31,7 +35,7 @@ const onSubmit = () => {
         :color="content ? 'success' : 'primary'"
         size="small"
         variant="flat"
-        :disabled="!commentContent.trim()"
+        :disabled="!commentContent.trim() && canForumCreate"
         @click="onSubmit"
         class="mr-2"
       >

@@ -3,11 +3,12 @@ import { computed, type PropType } from 'vue'
 import { useAccount } from '@/store/pinia/account.ts'
 import { useRoute, useRouter } from 'vue-router'
 import { elapsedTime, humanizeFileSize } from '@/utils/baseMixins'
+import { usePerms } from '@/composables/usePerms.ts'
 import { markdownRender } from '@/utils/helper'
 import type { Post } from '@/store/types/forum'
 import CommentSection from './CommentSection.vue'
 
-const props = defineProps({
+defineProps({
   post: { type: Object as PropType<Post>, required: true },
   comments: { type: Array as PropType<any[]>, default: () => [] },
 })
@@ -16,6 +17,11 @@ const emit = defineEmits(['delete-post', 'like-post', 'blame-post'])
 
 const route = useRoute()
 const router = useRouter()
+
+const { can, PERM } = usePerms()
+const canForumCreate = computed(() => can(PERM.FORUM_CREATE))
+const canForumUpdate = computed(() => can(PERM.FORUM_UPDATE))
+const canForumDelete = computed(() => can(PERM.FORUM_DELETE))
 
 const accStore = useAccount()
 const userInfo = computed(() => accStore.userInfo)
@@ -83,11 +89,10 @@ const userInfo = computed(() => accStore.userInfo)
       </v-card-text>
 
       <v-card-actions class="justify-end py-2 border-top">
-        <!-- CCardFooter 대신 v-card-actions 사용 -->
         <v-btn
           :prepend-icon="post.my_like ? 'mdi-thumb-up' : 'mdi-thumb-up-outline'"
           size="small"
-          :variant="post.my_like ? 'flat' : 'outlined'"
+          :variant="post.my_like ? 'flat' : 'tonal'"
           color="primary"
           class="mr-2"
           @click="emit('like-post', post.pk)"
@@ -97,7 +102,7 @@ const userInfo = computed(() => accStore.userInfo)
         <v-btn
           :prepend-icon="post.my_blame ? 'mdi-alert-octagon' : 'mdi-alert-octagon-outline'"
           size="small"
-          :variant="post.my_blame ? 'flat' : 'outlined'"
+          :variant="post.my_blame ? 'flat' : 'tonal'"
           color="error"
           @click="emit('blame-post', post.pk)"
         >
@@ -116,6 +121,7 @@ const userInfo = computed(() => accStore.userInfo)
         color="success"
         size="small"
         class="mr-2"
+        :disabled="!canForumUpdate"
         :to="{
           name: '(게시판) - 게시물 수정',
           params: { projId: route.params.projId, forumId: post.forum, postId: post.pk },
@@ -128,6 +134,7 @@ const userInfo = computed(() => accStore.userInfo)
         v-if="userInfo?.is_superuser || userInfo?.pk === post.creator?.pk"
         color="warning"
         size="small"
+        :disabled="!canForumDelete"
         @click="emit('delete-post', post.pk)"
       >
         <v-icon icon="mdi-trash-can-outline" size="small" class="mr-1" />
