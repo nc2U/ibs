@@ -79,13 +79,13 @@ const { can, canViewUser, PERM } = usePerms()
     </CRow>
 
     <CRow v-if="news.summary">
-      <CCol class="blockquote fst-italic">
+      <CCol class="blockquote fst-italic" style="font-size: 1.1em">
         {{ news.summary }}
       </CCol>
     </CRow>
 
     <CRow class="mb-0">
-      <CCol v-html="markdownRender(cutString(news.content, 80))" class="news-content" />
+      <CCol v-html="markdownRender(cutString(news.content, 68))" class="news-content" />
     </CRow>
   </v-card>
 </template>

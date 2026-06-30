@@ -7,6 +7,7 @@ import { usePerms } from '@/composables/usePerms.ts'
 import { useInform } from '@/store/pinia/work_inform.ts'
 import FileDisplay from '@/views/_Work/components/atomics/FileDisplay.vue'
 import CommentList from './CommentList.vue'
+import router from '@/router'
 
 const props = defineProps({
   news: { type: Object as PropType<News>, required: true },
@@ -26,7 +27,7 @@ const deleteFile = (pk: number) => {
 
 <template>
   <div v-if="news" class="news-view">
-    <v-card variant="flat" border class="pa-5 mb-5 rounded-lg card-white">
+    <v-card variant="flat" border class="pa-5 rounded-lg card-white">
       <!-- Title Section -->
       <div class="d-flex justify-space-between align-start mb-3">
         <h5 class="font-weight-bold">
@@ -103,6 +104,12 @@ const deleteFile = (pk: number) => {
         </v-list>
       </div>
     </v-card>
+
+    <CRow class="text-right my-3">
+      <CCol>
+        <v-btn size="small" color="light" variant="flat" @click="router.back()"> 목록으로 </v-btn>
+      </CCol>
+    </CRow>
 
     <!-- Comments Section -->
     <v-sheet border rounded="lg" class="pa-5 card-white">
