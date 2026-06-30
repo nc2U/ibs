@@ -37,8 +37,7 @@ const fetchPostData = async (pk: number) => {
   await forumStore.fetchPost(pk)
   if (!heatedPage.value.includes(pk)) {
     heatedPage.value.push(pk)
-    const hit = ((post.value as Post)?.hit ?? 0) + 1
-    await forumStore.patchPost({ pk, hit })
+    await forumStore.hitPost(pk)
   }
 }
 

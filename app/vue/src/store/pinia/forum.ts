@@ -180,6 +180,16 @@ export const useForum = defineStore('forum', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
+  const hitPost = (pk: number) =>
+    api
+      .post(`/post/${pk}/hit/`, { pk })
+      .then(res => {
+        if (post.value && post.value.pk === pk) {
+          post.value.hit = res.data.hit
+        }
+      })
+      .catch(err => errorHandle(err.response.data))
+
   const patchPostLike = (pk: number) =>
     api
       .patch(`/post-like/${pk}/`, { pk })
@@ -368,6 +378,7 @@ export const useForum = defineStore('forum', () => {
     createPost,
     updatePost,
     patchPost,
+    hitPost,
     patchPostLike,
     patchPostBlame,
     copyPost,
