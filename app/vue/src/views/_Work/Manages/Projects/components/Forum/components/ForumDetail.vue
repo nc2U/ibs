@@ -1,6 +1,5 @@
 <script lang="ts" setup>
 import { computed, type PropType } from 'vue'
-import { btnLight } from '@/utils/cssMixins.ts'
 import { useAccount } from '@/store/pinia/account.ts'
 import { useRoute, useRouter } from 'vue-router'
 import { elapsedTime, humanizeFileSize } from '@/utils/baseMixins'
@@ -20,12 +19,6 @@ const router = useRouter()
 
 const accStore = useAccount()
 const userInfo = computed(() => accStore.userInfo)
-
-const goList = () =>
-  router.push({
-    name: '(게시판) - 보기',
-    params: { projId: route.params.projId, forumId: props.post.forum },
-  })
 </script>
 
 <template>
@@ -115,11 +108,12 @@ const goList = () =>
 
     <div class="text-right mb-6">
       <!-- 하단 간격 조정 -->
-      <v-btn :color="btnLight" size="small" class="mr-2" @click="goList"> 목록으로 </v-btn>
+      <v-btn color="light" variant="flat" size="small" class="mr-2" @click="router.back()">
+        목록으로
+      </v-btn>
       <v-btn
         v-if="userInfo?.is_superuser || userInfo?.pk === post.creator?.pk"
         color="success"
-        variant="outlined"
         size="small"
         class="mr-2"
         :to="{
@@ -132,8 +126,7 @@ const goList = () =>
       </v-btn>
       <v-btn
         v-if="userInfo?.is_superuser || userInfo?.pk === post.creator?.pk"
-        color="error"
-        variant="outlined"
+        color="warning"
         size="small"
         @click="emit('delete-post', post.pk)"
       >

@@ -5,7 +5,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms.ts'
 import { useDocs } from '@/store/pinia/docs'
 import { useAccount } from '@/store/pinia/account.ts'
-import { btnLight, colorLight } from '@/utils/cssMixins'
+import { colorLight } from '@/utils/cssMixins'
 import type { CodeValue } from '@/store/types/work_issue.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import type { AFile, Attatches, Docs, Link } from '@/store/types/docs'
@@ -292,7 +292,7 @@ onBeforeMount(() => dataSetup())
         >
           저장
         </v-btn>
-        <v-btn :color="btnLight" size="small" @click="router.back()"> 취소 </v-btn>
+        <v-btn color="light" variant="flat" size="small" @click="router.back()"> 취소 </v-btn>
       </CCol>
     </CRow>
   </CForm>
