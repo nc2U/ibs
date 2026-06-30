@@ -10,6 +10,8 @@ class IsSuperUserOnly(permissions.BasePermission):
 
 class IsSuperUserOrReadOnly(permissions.BasePermission):
     def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
         if request.method in permissions.SAFE_METHODS:
             return True
         else:
@@ -23,6 +25,8 @@ class IsWorkManagerOnly(permissions.BasePermission):
 
 class IsWorkManagerReadOnly(permissions.BasePermission):
     def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
         if request.method in permissions.SAFE_METHODS:
             return True
         else:
@@ -112,9 +116,11 @@ class ProjectPermission(permissions.BasePermission):
 
             # 1. 최상위 프로젝트 생성인 경우 ('project.create')
             if required_perm == 'project.create':
-                # 최상위 프로젝트 생성은 프로젝트 컨텍스트 없이 허용
-                # (실제 권한 체크는 사용자 기반의 전역 권한 체크가 필요하다면 여기에 추가)
-                return True
+                from work.models.project import Member
+                return Member.objects.filter(
+                    user=request.user,
+                    roles__permissions__code='project.create'
+                ).exists()
 
             # 2. 리소스 생성 시 프로젝트 식별자 추출 (하위 프로젝트, 회의록, 업무 등)
             project_slug = (
@@ -138,6 +144,30 @@ class ProjectPermission(permissions.BasePermission):
             if required_perm == 'issue.create':
                 return 'issue.create' in user_perms or 'issue.copy' in user_perms
             return required_perm in user_perms
+
+        # list 액션에 대한 선제 검증
+        if getattr(view, 'action', None) == 'list':
+            project_slug = (
+                    request.query_params.get('project') or
+                    request.query_params.get('issue_project') or
+                    view.kwargs.get('project_slug')
+            )
+            if project_slug:
+                from work.models.project import IssueProject
+                try:
+                    if isinstance(project_slug, int) or (isinstance(project_slug, str) and project_slug.isdigit()):
+                        project = IssueProject.objects.get(pk=int(project_slug))
+                    else:
+                        project = IssueProject.objects.get(slug=project_slug)
+                    
+                    if project.is_public:
+                        return True
+                    
+                    user_perms = project.get_user_permissions(request.user)
+                    required_perm = getattr(view, 'required_permission', 'issue.read')
+                    return required_perm in user_perms
+                except IssueProject.DoesNotExist:
+                    return False
 
         return True
 
