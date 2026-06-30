@@ -3,7 +3,7 @@ from rest_framework import viewsets
 
 from apiV1.pagination import PageNumberPaginationTen
 from apiV1.permissions.auth_perms import permissions
-from apiV1.permissions.work_perms import ProjectPermission
+from apiV1.permissions.work_perms import NewsPermission
 from apiV1.serializers.work import NewsFileSerializer, NewsCommentSerializer, SearchSerializer
 from apiV1.serializers.work.inform import NewsSerializer
 from work.models import NewsFile
@@ -13,7 +13,7 @@ from work.models.inform import News, NewsComment, Search
 class NewsViewSet(viewsets.ModelViewSet):
     queryset = News.objects.all()
     serializer_class = NewsSerializer
-    permission_classes = (permissions.IsAuthenticated, ProjectPermission)
+    permission_classes = (permissions.IsAuthenticated, NewsPermission)
     pagination_class = PageNumberPaginationTen
     filterset_fields = ('project__slug', 'author')
 
@@ -52,7 +52,7 @@ class NewsViewSet(viewsets.ModelViewSet):
 class NewsFileViewSet(viewsets.ModelViewSet):
     queryset = NewsFile.objects.all()
     serializer_class = NewsFileSerializer
-    permission_classes = (permissions.IsAuthenticated, ProjectPermission)
+    permission_classes = (permissions.IsAuthenticated, NewsPermission)
     filterset_fields = ('news',)
     search_fields = ('file_name', 'description')
 
@@ -91,7 +91,7 @@ class NewsFileViewSet(viewsets.ModelViewSet):
 class NewsCommentViewSet(viewsets.ModelViewSet):
     queryset = NewsComment.objects.all()
     serializer_class = NewsCommentSerializer
-    permission_classes = (permissions.IsAuthenticated, ProjectPermission)
+    permission_classes = (permissions.IsAuthenticated, NewsPermission)
     pagination_class = PageNumberPaginationTen
     filterset_fields = ('news__project__slug', 'news', 'parent', 'creator')
 

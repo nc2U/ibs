@@ -345,6 +345,10 @@ class IssueCommentPermission(ProjectPermission):
         return True
 
 
+class NewsPermission(ProjectPermission):
+    pass
+
+
 class DocumentPermission(ProjectPermission):
     def has_object_permission(self, request, view, obj):
         # 1. 기본 프로젝트 레벨 권한 검증
