@@ -25,7 +25,7 @@ const canDocsRead = computed(() => can(PERM.DOCS_READ))
               <v-icon
                 v-bind="tooltipProps"
                 :icon="docs.is_secret ? 'mdi-lock' : 'mdi-eye-off'"
-                :color="docs.is_secret ? 'warning' : 'primary'"
+                :color="docs.is_secret ? 'warning' : 'error'"
                 class="mr-2"
               />
             </template>
@@ -49,7 +49,7 @@ const canDocsRead = computed(() => can(PERM.DOCS_READ))
             v-if="docs.is_secret || docs.is_blind"
             label
             size="x-small"
-            :color="docs.is_secret ? 'warning' : 'primary'"
+            :color="docs.is_secret ? 'warning' : 'error'"
             variant="tonal"
             class="ml-2"
           >

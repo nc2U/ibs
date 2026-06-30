@@ -63,7 +63,7 @@ onMounted(() => {
                 v-bind="tooltipProps"
                 label
                 size="small"
-                :color="docs.is_secret ? 'warning' : 'primary'"
+                :color="docs.is_secret ? 'warning' : 'error'"
                 variant="tonal"
                 class="ml-2"
                 style="vertical-align: middle"
@@ -91,7 +91,7 @@ onMounted(() => {
 
     <v-alert
       v-if="docs.is_secret || docs.is_blind"
-      :type="docs.is_secret ? 'warning' : 'primary'"
+      :type="docs.is_secret ? 'warning' : 'error'"
       variant="tonal"
       density="compact"
       class="mb-4"
