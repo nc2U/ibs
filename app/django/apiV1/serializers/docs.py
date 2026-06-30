@@ -145,6 +145,7 @@ class DocumentSerializer(serializers.ModelSerializer):
     cate_name = serializers.SlugField(source='category', read_only=True)
     cate_color = serializers.SerializerMethodField(read_only=True)
     lawsuit_name = serializers.SlugField(source='lawsuit', read_only=True)
+    title = serializers.SerializerMethodField()
     links = serializers.SerializerMethodField(read_only=True)
     files = serializers.SerializerMethodField(read_only=True)
     description = serializers.SerializerMethodField()
@@ -178,44 +179,59 @@ class DocumentSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_scrape(obj):
-        return len(obj.docscrape_set.all())
+        # 개선: len(queryset) -> count()
+        return obj.docscrape_set.count()
 
     def get_my_scrape(self, obj):
+        # 개선: any() -> filter().exists()
         user = self.context['request'].user
         if not user or not user.is_authenticated:
             return False
-        return any(s.user_id == user.pk for s in obj.docscrape_set.all())
+        return obj.docscrape_set.filter(user=user).exists()
+
+    def get_title(self, obj):
+        user = self.context['request'].user
+        # 블라인드글이고 관리자가 아닌 경우 제목을 마스킹 처리
+        if obj.is_blind and not (user.is_superuser or getattr(user, 'work_manager', False)):
+            return "블라인드 처리된 글입니다."
+        return obj.title
+
+    def _is_visible_to_user(self, obj) -> bool:
+        """비밀글 및 블라인드글 노출 제어 헬퍼"""
+        request = self.context.get('request')
+        if not request:
+            return False
+        user = request.user
+        if not user or not user.is_authenticated:
+            return False
+        # 1. 블라인드글인 경우 관리자(workManager)만 노출
+        if obj.is_blind:
+            return user.is_superuser or getattr(user, 'work_manager', False)
+        # 2. 비밀글인 경우
+        if obj.is_secret:
+            # 관리자(workManager) 또는 작성자 본인은 패스워드 검증 없이 노출
+            if user.is_superuser or getattr(user, 'work_manager', False) or obj.creator == user:
+                return True
+            # 제3자 일반 사용자는 입력된 패스워드와 매칭 여부 확인
+            req_password = request.query_params.get('password')
+            return req_password == obj.password
+        # 3. 일반 글인 경우 모든 유저 노출
+        return True
 
     def get_description(self, obj):
-        user = self.context['request'].user
-        is_owner_or_admin = (
-                user.is_superuser or
-                getattr(user, 'work_manager', False) or
-                obj.creator == user
-        )
-        if obj.is_secret and not is_owner_or_admin:
+        if not self._is_visible_to_user(obj):
+            if obj.is_blind:
+                return "블라인드 처리된 글입니다."
             return "비밀글입니다."
         return obj.description
 
     def get_links(self, obj):
-        user = self.context['request'].user
-        is_owner_or_admin = (
-                user.is_superuser or
-                getattr(user, 'work_manager', False) or
-                obj.creator == user
-        )
-        if obj.is_secret and not is_owner_or_admin:
+        if not self._is_visible_to_user(obj):
             return []
         return LinksInDocumentSerializer(obj.links.all(), many=True).data
 
     def get_files(self, obj):
-        user = self.context['request'].user
-        is_owner_or_admin = (
-                user.is_superuser or
-                getattr(user, 'work_manager', False) or
-                obj.creator == user
-        )
-        if obj.is_secret and not is_owner_or_admin:
+        if not self._is_visible_to_user(obj):
             return []
         return FilesInDocumentSerializer(obj.files.all(), many=True).data
 
@@ -238,12 +254,14 @@ class DocumentSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def create(self, validated_data):
         request = self.context.get('request')
+        user = request.user
 
         validated_data['ip'] = request.META.get('REMOTE_ADDR')  # ip 추가
         validated_data['device'] = request.META.get('HTTP_USER_AGENT')  # device 추가
+        if user and user.is_authenticated:
+            validated_data['creator'] = user  # creator 안전 바인딩
 
         docs = super().create(validated_data)  # 기본 create 처리 (save 포함)
-        user = request.user
 
         new_links = self.initial_data.getlist('newLinks', [])  # Links 처리
         if new_links:
