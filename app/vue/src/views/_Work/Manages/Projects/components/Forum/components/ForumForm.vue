@@ -1,8 +1,9 @@
 <script lang="ts" setup>
-import { onBeforeMount, onBeforeUpdate, type PropType, ref } from 'vue'
+import { computed, onBeforeMount, onBeforeUpdate, type PropType, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { usePerms } from '@/composables/usePerms.ts'
 import { useForum } from '@/store/pinia/forum'
-import { btnLight, colorLight } from '@/utils/cssMixins'
+import { colorLight } from '@/utils/cssMixins'
 import type { Post, PostCategory } from '@/store/types/forum'
 import MdEditor from '@/components/MdEditor/Index.vue'
 import FileForms from '@/components/OtherParts/FileForms.vue'
@@ -15,6 +16,10 @@ const props = defineProps({
 })
 
 const [route, router] = [useRoute(), useRouter()]
+
+const { can, PERM } = usePerms()
+const canForumCreate = computed(() => can(PERM.FORUM_CREATE))
+const canForumUpdate = computed(() => can(PERM.FORUM_UPDATE))
 
 const frmStore = useForum()
 const createPost = (payload: { form: FormData }) => frmStore.createPost(payload)
@@ -189,8 +194,16 @@ onBeforeUpdate(() => dataSetup())
 
     <CRow class="mb-5 text-right">
       <CCol>
-        <v-btn type="submit" color="primary" variant="flat" size="small" class="mr-2">저장</v-btn>
-        <v-btn :color="btnLight" size="small" variant="flat" @click="router.back()">취소</v-btn>
+        <v-btn color="light" size="small" variant="flat" @click="router.back()">취소</v-btn>
+        <v-btn
+          type="submit"
+          :color="!post?.pk ? 'primary' : 'success'"
+          :disabled="!post?.pk ? !canForumCreate : !canForumUpdate"
+          size="small"
+          class="mr-2"
+        >
+          저장
+        </v-btn>
       </CCol>
     </CRow>
   </CForm>
