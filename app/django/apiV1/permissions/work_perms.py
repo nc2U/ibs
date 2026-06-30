@@ -6,6 +6,42 @@ class ProjectPermission(permissions.BasePermission):
     프로젝트 slug를 기반으로 사용자의 권한을 체크하는 클래스
     """
 
+    def get_project_slug(self, view, source):
+        return (view.kwargs.get('slug')
+                or source.get('project')
+                or source.get('issue_project')
+                or source.get('parent_slug'))
+
+    def find_project(self, project_slug):
+        from work.models.project import IssueProject
+
+        if isinstance(project_slug, int):
+            return IssueProject.objects.filter(pk=project_slug).first()
+
+        if isinstance(project_slug, str) and project_slug.isdigit():
+            return IssueProject.objects.filter(pk=int(project_slug)).first()
+
+        return IssueProject.objects.filter(slug=project_slug).first()
+
+    def extract_project(self, obj):
+        from work.models.project import IssueProject
+
+        if isinstance(obj, IssueProject):
+            return obj
+        if hasattr(obj, 'project'):
+            return obj.project
+        if hasattr(obj, 'issue_project'):
+            return obj.issue_project
+        if hasattr(obj, 'source') and hasattr(obj.source, 'project'):
+            return obj.source.project
+        if hasattr(obj, 'issue') and hasattr(obj.issue, 'project'):
+            return obj.issue.project
+        if hasattr(obj, 'meeting') and hasattr(obj.meeting, 'project'):
+            return obj.meeting.project
+        if hasattr(obj, 'news') and hasattr(obj.news, 'project'):
+            return obj.news.project
+        return None
+
     def has_permission(self, request, view):
         # 인증 여부 우선 체크
         if not request.user or not request.user.is_authenticated:
@@ -15,8 +51,9 @@ class ProjectPermission(permissions.BasePermission):
         if request.user.is_superuser or getattr(request.user, 'work_manager', False):
             return True
 
+        action = getattr(view, 'action', None)
         # create 액션의 경우, 선제 검증 필요
-        if getattr(view, 'action', None) == 'create':
+        if action == 'create':
             required_perm = getattr(view, 'required_permission', None)
 
             # 1. 최상위 프로젝트 생성인 경우 ('project.create')
@@ -28,76 +65,52 @@ class ProjectPermission(permissions.BasePermission):
                 ).exists()
 
             # 2. 리소스 생성 시 프로젝트 식별자 추출 (하위 프로젝트, 회의록, 업무 등)
-            project_slug = (
-                    view.kwargs.get('project_slug') or
-                    request.data.get('project') or
-                    request.data.get('parent_slug')
-            )
+            project_slug = self.get_project_slug(view, request.data)
+
             if not project_slug:
                 return False
 
-            from work.models.project import IssueProject
-            try:
-                if isinstance(project_slug, int) or (isinstance(project_slug, str) and project_slug.isdigit()):
-                    project = IssueProject.objects.get(pk=int(project_slug))
-                else:
-                    project = IssueProject.objects.get(slug=project_slug)
-            except IssueProject.DoesNotExist:
+            project = self.find_project(project_slug)
+
+            if not project:
                 return False
 
             user_perms = project.get_user_permissions(request.user)
+
             if required_perm == 'issue.create':
                 return 'issue.create' in user_perms or 'issue.copy' in user_perms
+            if not required_perm:
+                return False
             return required_perm in user_perms
 
         # list 액션에 대한 선제 검증
-        if getattr(view, 'action', None) == 'list':
-            project_slug = (
-                    request.query_params.get('project') or
-                    request.query_params.get('issue_project') or
-                    view.kwargs.get('project_slug')
-            )
+        if action == 'list':
+            project_slug = self.get_project_slug(view, request.query_params)
+
             if project_slug:
-                from work.models.project import IssueProject
-                try:
-                    if isinstance(project_slug, int) or (isinstance(project_slug, str) and project_slug.isdigit()):
-                        project = IssueProject.objects.get(pk=int(project_slug))
-                    else:
-                        project = IssueProject.objects.get(slug=project_slug)
+                project = self.find_project(project_slug)
 
-                    if project.is_public:
-                        return True
-
-                    user_perms = project.get_user_permissions(request.user)
-                    required_perm = getattr(view, 'required_permission', 'issue.read')
-                    return required_perm in user_perms
-                except IssueProject.DoesNotExist:
+                if not project:
                     return False
+
+                if project.is_public:
+                    return True
+
+                user_perms = project.get_user_permissions(request.user)
+                required_perm = getattr(view, 'required_permission', 'issue.read')
+                if not required_perm:
+                    return False
+                return required_perm in user_perms
 
         return True
 
     def has_object_permission(self, request, view, obj):
-        from work.models.project import IssueProject
         # 슈퍼유저/관리자 예외 처리
         if request.user.is_superuser or getattr(request.user, 'work_manager', False):
             return True
 
         # obj가 프로젝트 모델인지 확인 (혹은 프로젝트를 참조하는 모델인지 지능형 추적)
-        project = None
-        if isinstance(obj, IssueProject):
-            project = obj
-        elif hasattr(obj, 'project'):
-            project = obj.project
-        elif hasattr(obj, 'issue_project'):
-            project = obj.issue_project
-        elif hasattr(obj, 'source') and hasattr(obj.source, 'project'):
-            project = obj.source.project
-        elif hasattr(obj, 'issue') and hasattr(obj.issue, 'project'):
-            project = obj.issue.project
-        elif hasattr(obj, 'meeting') and hasattr(obj.meeting, 'project'):
-            project = obj.meeting.project
-        elif hasattr(obj, 'news') and hasattr(obj.news, 'project'):
-            project = obj.news.project
+        project = self.extract_project(obj)
 
         if not project:
             return False
@@ -150,7 +163,8 @@ class MeetingPermission(ProjectPermission):
                 if 'meeting.update' in user_perms:
                     return True
                 if 'meeting.own_update' in user_perms:
-                    if (user == obj.creator) or (user in obj.attendees.all()):
+                    # 개선: filter().exists()를 사용해 M2M 전체 인메모리 로드 방지
+                    if (user == obj.creator) or obj.attendees.filter(pk=user.pk).exists():
                         return True
                 return False
 
@@ -183,6 +197,16 @@ class IssuePermission(ProjectPermission):
                         return 'issue.sub_manage' in user_perms
                     except (IssueProject.DoesNotExist, ValueError):
                         return False
+                else:
+                    # 개선: request 데이터에 project 식별자가 누락되었을 때, 상위(parent) 업무에서 프로젝트 정보를 역추적해 검증
+                    from work.models.issue import Issue
+                    try:
+                        parent_issue = Issue.objects.select_related('project').get(pk=parent_id)
+                        project = parent_issue.project
+                        user_perms = project.get_user_permissions(request.user)
+                        return 'issue.sub_manage' in user_perms
+                    except Issue.DoesNotExist:
+                        return False
         return True
 
     def has_object_permission(self, request, view, obj):
@@ -205,8 +229,10 @@ class IssuePermission(ProjectPermission):
             if issue_visible == 'ALL':
                 pass  # super() 결과에 따름
             elif issue_visible == 'PUB':
+                # 개선: PUB 권한에서도 본인이 생성자(creator)이거나 담당자(assigned_to)인 비공개 글은 접근 허용
                 if obj.is_private:
-                    return False
+                    if obj.creator != request.user and obj.assigned_to != request.user:
+                        return False
             elif issue_visible == 'PRI':
                 if obj.creator != request.user and obj.assigned_to != request.user:
                     return False
@@ -315,3 +341,11 @@ class IssueCommentPermission(ProjectPermission):
                 return False
 
         return True
+
+
+class DocumentPermission(ProjectPermission):
+    pass
+
+
+class ForumPermission(ProjectPermission):
+    pass
