@@ -6,6 +6,8 @@ import type { Docs } from '@/store/types/docs'
 import { useRoute, useRouter } from 'vue-router'
 import { timeFormat } from '@/utils/baseMixins'
 import { usePerms } from '@/composables/usePerms.ts'
+import { storeToRefs } from 'pinia'
+import { useAccount } from '@/store/pinia/account.ts'
 import PostInfo from '@/components/OtherParts/PostInfo.vue'
 import PostContent from '@/components/OtherParts/PostContent.vue'
 import PostedFile from '@/components/OtherParts/PostedFile.vue'
@@ -27,6 +29,8 @@ const [route, router] = [useRoute(), useRouter()]
 const { can, PERM } = usePerms()
 const canDocsUpdate = computed(() => can(PERM.DOCS_UPDATE))
 const canDocsDelete = computed(() => can(PERM.DOCS_DELETE))
+
+const { workManager } = storeToRefs(useAccount())
 
 const docId = computed(() => Number(route.params.docId))
 
@@ -65,6 +69,22 @@ onMounted(() => {
               </v-chip>
             </template>
           </v-tooltip>
+          <v-tooltip v-if="docs.is_blind" location="top" text="숨김 문서">
+            <template #activator="{ props: tooltipProps }">
+              <v-chip
+                v-bind="tooltipProps"
+                label
+                size="small"
+                color="danger"
+                variant="tonal"
+                class="ml-2"
+                style="vertical-align: middle"
+              >
+                <v-icon start icon="mdi-lock" size="small" />
+                숨김 문서
+              </v-chip>
+            </template>
+          </v-tooltip>
         </h4>
       </CCol>
     </CRow>
@@ -82,17 +102,17 @@ onMounted(() => {
     <v-divider class="mb-3" />
 
     <v-alert
-      v-if="docs.is_secret"
-      type="warning"
+      v-if="docs.is_secret || docs.is_blind"
+      :type="docs.is_secret ? 'warning' : 'error'"
       variant="tonal"
       density="compact"
       class="mb-4"
-      icon="mdi-lock"
+      :icon="docs.is_secret ? 'mdi-lock' : 'mdi-eye-off'"
     >
-      <template v-if="docs.description === '비밀글입니다.'">
-        이 문서는 <strong>비밀 문서</strong>입니다. 열람 권한이 없어 일부 내용이 제한됩니다.
-      </template>
-      <template v-else> 이 문서는 <strong>비밀 문서</strong>입니다. </template>
+      <span>
+        이 문서는 <strong>{{ docs.is_secret ? '비밀' : '숨김' }} 문서</strong>입니다.
+        <span v-if="!workManager">열람 권한이 없어 일부 내용이 제한됩니다.</span>
+      </span>
     </v-alert>
 
     <PostInfo :docs="docs" class="mb-4" />
@@ -121,13 +141,15 @@ onMounted(() => {
       <CRow class="mb-3 pt-4">
         <CCol>
           <h6 class="mb-2">첨부 파일</h6>
-          <template v-if="docs.files && docs.files.length">
+          <p v-if="!workManager && (docs.is_secret || docs.is_blind)" class="text-muted small">
+            <v-icon icon="mdi-lock" size="x-small" class="mr-1" />
+            {{ docs.is_secret ? '비밀' : '숨김' }}
+            문서의 첨부 파일은 열람이 제한됩니다.
+          </p>
+          <template v-else-if="docs.files && docs.files.length">
             <PostedFile :docs="docs.pk as number" btn-direction="right" :files="docs.files" />
           </template>
-          <p v-else-if="docs.is_secret" class="text-muted small">
-            <v-icon icon="mdi-lock" size="x-small" class="mr-1" />비밀 문서의 첨부 파일은 열람이
-            제한됩니다.
-          </p>
+
           <p v-else class="text-muted small">첨부 파일이 없습니다.</p>
         </CCol>
       </CRow>
@@ -135,13 +157,13 @@ onMounted(() => {
       <CRow class="mb-3">
         <CCol>
           <h6 class="mb-2">관련 링크</h6>
-          <template v-if="docs.links && docs.links.length">
+          <p v-if="!workManager && (docs.is_secret || docs.is_blind)" class="text-muted small">
+            <v-icon icon="mdi-lock" size="x-small" class="mr-1" />
+            {{ docs.is_secret ? '비밀' : '숨김' }} 문서의 관련 링크는 열람이 제한됩니다.
+          </p>
+          <template v-else-if="docs.links && docs.links.length">
             <PostedLink :docs="docs.pk as number" btn-direction="right" :links="docs.links" />
           </template>
-          <p v-else-if="docs.is_secret" class="text-muted small">
-            <v-icon icon="mdi-lock" size="x-small" class="mr-1" />비밀 문서의 관련 링크는 열람이
-            제한됩니다.
-          </p>
           <p v-else class="text-muted small">관련 링크가 없습니다.</p>
         </CCol>
       </CRow>

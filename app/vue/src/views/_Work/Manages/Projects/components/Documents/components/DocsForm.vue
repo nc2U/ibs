@@ -1,8 +1,10 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, onBeforeUpdate, type PropType, ref } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useRoute, useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms.ts'
 import { useDocs } from '@/store/pinia/docs'
+import { useAccount } from '@/store/pinia/account.ts'
 import { btnLight, colorLight } from '@/utils/cssMixins'
 import type { CodeValue } from '@/store/types/work_issue.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
@@ -34,6 +36,8 @@ const refLinkForms = ref()
 const { can, PERM } = usePerms()
 const canDocsCreate = computed(() => can(PERM.DOCS_CREATE))
 const canDocsUpdate = computed(() => can(PERM.DOCS_UPDATE))
+
+const { workManager } = storeToRefs(useAccount())
 
 const validated = ref(false)
 const form = ref<Docs>({
@@ -182,6 +186,13 @@ onBeforeMount(() => dataSetup())
             </CCol>
             <CCol class="pt-2">
               <CFormCheck v-model="form.is_secret" id="is_secret" label="비밀문서" inline />
+              <CFormCheck
+                v-if="workManager"
+                v-model="form.is_blind"
+                id="is_blind"
+                label="숨김 - 관리자 기능"
+                inline
+              />
             </CCol>
           </CRow>
 

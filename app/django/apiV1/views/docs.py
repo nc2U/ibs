@@ -48,13 +48,12 @@ class LawSuitCaseFilterSet(FilterSet):
 
     @staticmethod
     def is_real_dev_proj(queryset, name, value):
-        if value:  # True 일 경우 값이 '2' 인 데이터만 반환
+        if value:
             return queryset.filter(issue_project__sort='2')
-        return queryset.exclude(issue_project__sort='2')  # False 일 경우 '2'가 아닌 데이터만 반환
+        return queryset.exclude(issue_project__sort='2')
 
     @staticmethod
     def filter_related_case(queryset, name, value):
-        # 수정: 타입 안전성 — int 변환 실패 시 빈 결과 반환, related_case_id 사용
         try:
             pk = int(value)
         except (ValueError, TypeError):
@@ -102,9 +101,9 @@ class DocumentFilterSet(FilterSet):
 
     @staticmethod
     def is_real_dev_proj(queryset, name, value):
-        if value:  # True 일 경우 값이 '2' 인 데이터만 반환
+        if value:
             return queryset.filter(issue_project__sort='2')
-        return queryset.exclude(issue_project__sort='2')  # False 일 경우 '2'가 아닌 데이터만 반환
+        return queryset.exclude(issue_project__sort='2')
 
 
 class DocumentViewSet(viewsets.ModelViewSet):
@@ -138,32 +137,26 @@ class DocumentViewSet(viewsets.ModelViewSet):
         queryset = super().get_queryset()
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset
-        # 읽기 권한이 있으면 비밀글 및 블라인드글도 목록에 노출되도록 함 (제목/내용 등 상세 노출은 Serializer에서 제한)
         return queryset
 
     @staticmethod
     def _is_owner_or_admin(user, instance) -> bool:
-        """비밀글 접근 가드: 작성자 본인 또는 관리자인지 확인"""
         return (
-                user.is_superuser or
-                getattr(user, 'work_manager', False) or
-                instance.creator == user
+            user.is_superuser or
+            getattr(user, 'work_manager', False) or
+            instance.creator == user
         )
 
     @action(detail=True, methods=['post'], url_path='hit')
     def hit(self, request, *args, **kwargs):
-        """조회수 증가 전용 액션 - docs.read 권한만 필요"""
         instance = self.get_object()
-        # 수정: F() 표현식으로 Race Condition 방지
         Document.objects.filter(pk=instance.pk).update(hit=F('hit') + 1)
         instance.refresh_from_db(fields=['hit'])
         return Response({'hit': instance.hit}, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'], url_path='copy')
     def copy_and_create(self, request, *args, **kwargs):
-        """문서 복사 액션"""
         origin_pk = kwargs.get('pk')
-        # 프론트엔드에서 전달받는 issue_project pk (project 키 하위 호환)
         issue_project = request.data.get('issue_project') or request.data.get('project')
         doc_type = request.data.get('doc_type')
 
@@ -172,14 +165,12 @@ class DocumentViewSet(viewsets.ModelViewSet):
                 'issue_project', 'category', 'lawsuit'
             ).get(pk=origin_pk)
 
-            # 비밀글 복사 보안 가드: 작성자이거나 관리자일 때만 복사 허용
             if org_instance.is_secret and not self._is_owner_or_admin(request.user, org_instance):
                 return Response(
                     {'detail': 'You do not have permission to copy this secret document.'},
                     status=status.HTTP_403_FORBIDDEN
                 )
 
-            # 수정: timezone-aware 현재 시간 사용 (datetime.now() 제거)
             copied_at = timezone.localtime(timezone.now()).strftime('%Y-%m-%d %H:%M')
             add_text = (
                 f'<br /><br /><p>'
@@ -189,7 +180,6 @@ class DocumentViewSet(viewsets.ModelViewSet):
             )
 
             new_instance_data = {
-                # 수정: company 필드 제거(Document에 없음), issue_project 필드 사용
                 'issue_project': issue_project,
                 'doc_type': doc_type,
                 'category': org_instance.category.pk if org_instance.category else None,
@@ -214,9 +204,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
         serializer.save(creator=self.request.user)
 
     def perform_update(self, serializer):
-        # 수정: get_object() 이중 호출 제거 → serializer.instance 사용
         instance = serializer.instance
-        # 비밀글 수정 보안 가드: 비밀글인 경우 작성자 본인이거나 관리자만 수정 가능
         if instance.is_secret and not self._is_owner_or_admin(self.request.user, instance):
             raise PermissionDenied("You do not have permission to update this secret document.")
         serializer.save(updator=self.request.user)
@@ -224,7 +212,6 @@ class DocumentViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
 
-        # 비밀글 삭제 보안 가드: 비밀글인 경우 작성자 본인이거나 관리자만 삭제 가능
         if instance.is_secret and not self._is_owner_or_admin(request.user, instance):
             return Response(
                 {'detail': 'You do not have permission to delete this secret document.'},
@@ -253,12 +240,10 @@ class LinkViewSet(viewsets.ModelViewSet):
         return mapping.get(self.action, None)
 
     def get_queryset(self):
-        # 수정: self.queryset 직접 참조 → super().get_queryset()
         user = self.request.user
         queryset = super().get_queryset()
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset
-        # is_secret: 작성자 본인 열람 가능 / is_blind: 관리자만 열람 가능
         return queryset.filter(
             Q(docs__is_secret=False) | Q(docs__creator=user)
         ).filter(docs__is_blind=False)
@@ -290,12 +275,10 @@ class FileViewSet(viewsets.ModelViewSet):
         return mapping.get(self.action, None)
 
     def get_queryset(self):
-        # 수정: self.queryset 직접 참조 → super().get_queryset()
         user = self.request.user
         queryset = super().get_queryset()
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset
-        # is_secret: 작성자 본인 열람 가능 / is_blind: 관리자만 열람 가능
         return queryset.filter(
             Q(docs__is_secret=False) | Q(docs__creator=user)
         ).filter(docs__is_blind=False)
@@ -322,12 +305,10 @@ class ImageViewSet(viewsets.ModelViewSet):
         return mapping.get(self.action, None)
 
     def get_queryset(self):
-        # 수정: self.queryset 직접 참조 → super().get_queryset()
         user = self.request.user
         queryset = super().get_queryset()
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset
-        # is_secret: 작성자 본인 열람 가능 / is_blind: 관리자만 열람 가능
         return queryset.filter(
             Q(docs__is_secret=False) | Q(docs__creator=user)
         ).filter(docs__is_blind=False)
@@ -338,12 +319,10 @@ class DocsInTrashViewSet(DocumentViewSet):
     serializer_class = DocumentInTrashSerializer
 
     def get_queryset(self):
-        # 수정: self.queryset 직접 참조 → super().get_queryset() (클래스 queryset 기반 필터 적용)
         user = self.request.user
         queryset = super().get_queryset()
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset
-        # is_secret: 작성자 본인 열람 가능
         return queryset.filter(
             Q(is_secret=False) | Q(creator=user)
         )
@@ -351,7 +330,6 @@ class DocsInTrashViewSet(DocumentViewSet):
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
 
-        # 비밀글 완전 삭제 보안 가드: 비밀글인 경우 작성자 본인이거나 관리자만 완전 삭제 가능
         if instance.is_secret and not self._is_owner_or_admin(request.user, instance):
             return Response(
                 {'detail': 'You do not have permission to delete this secret document.'},
@@ -416,9 +394,7 @@ class OfficialLetterViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def generate_pdf(self, request, pk=None):
-        """공문 PDF 생성"""
         letter = self.get_object()
-        # 수정: 예외 처리 추가로 500 에러 노출 방지
         try:
             pdf_file = generate_official_letter_pdf(letter)
         except Exception as e:
@@ -427,7 +403,6 @@ class OfficialLetterViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
         letter.pdf_file = pdf_file
-        # 수정: update_fields 지정으로 불필요한 전체 필드 갱신 방지
         letter.save(update_fields=['pdf_file'])
         return Response({
             'status': 'success',
@@ -436,7 +411,6 @@ class OfficialLetterViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['get'])
     def download_pdf(self, request, pk=None):
-        """PDF 파일 다운로드"""
         letter = self.get_object()
 
         if not letter.pdf_file:
@@ -451,7 +425,6 @@ class OfficialLetterViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def next_document_number(self, request):
-        """다음 문서번호 미리보기 (시퀀스를 증가시키지 않음)"""
         company_id = request.query_params.get('company')
         if not company_id:
             return Response({'error': '회사 ID가 필요합니다.'},

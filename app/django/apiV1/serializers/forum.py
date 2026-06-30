@@ -29,13 +29,11 @@ class ForumSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_all_post_count(obj):
-        # 개선: post_count 중복 계산 제거
         comment_count = Comment.objects.filter(post__forum=obj).count()
         return obj.post_set.count() + comment_count
 
     @staticmethod
     def get_last_post(obj):
-        # 개선: creator select_related 로 추가 쿼리 방지
         last_post = obj.post_set.select_related('creator').order_by('-created').first()
         if last_post:
             return {
@@ -98,7 +96,6 @@ class PostSerializer(serializers.ModelSerializer):
 
         if forum:
             queryset = queryset.filter(forum_id=forum)
-        # 수정: bool 변환 후 문자열 비교 오류 수정
         if is_notice_param == 'true':
             queryset = queryset.filter(is_notice=True)
         elif is_notice_param == 'false':
@@ -117,21 +114,17 @@ class PostSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_scrape(obj):
-        # 개선: len(queryset) → count() 로 DB 집계
         return obj.postscrape_set.count()
 
     def get_my_scrape(self, obj):
-        # 개선: 전체 로드 후 Python 필터 → DB filter().exists()
         user = self.context['request'].user
         return obj.postscrape_set.filter(user=user).exists()
 
     def get_my_like(self, obj):
-        # 개선: M2M 전체 로드 → filter().exists()
         user = self.context['request'].user
         return user.profile.like_posts.filter(pk=obj.pk).exists()
 
     def get_my_blame(self, obj):
-        # 개선: M2M 전체 로드 → filter().exists()
         user = self.context['request'].user
         return user.profile.blame_posts.filter(pk=obj.pk).exists()
 
@@ -145,10 +138,7 @@ class PostSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def _normalize_url(url):
-        """
-        URL 정규화 헬퍼. 스킴이 없으면 http:// 를 기본으로 추가.
-        수정: to_python() 에서 분리하여 error_messages KeyError 방지.
-        """
+        """URL 정규화 헬퍼. 스킴이 없으면 http:// 를 기본으로 추가."""
 
         def split_url(u):
             try:
@@ -177,7 +167,7 @@ class PostSerializer(serializers.ModelSerializer):
         for link in self.initial_data.getlist('newLinks'):
             PostLink.objects.create(post=post, link=self._normalize_url(link))
 
-        # Files 처리 - FileService 위임 (os.remove 제거, new_files_key='newFiles' 지정)
+        # Files 처리
         FileService.manage_files(
             instance=post,
             initial_data=self.initial_data,
@@ -192,7 +182,6 @@ class PostSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         validated_data['ip'] = self.context.get('request').META.get('REMOTE_ADDR')
         validated_data['device'] = self.context.get('request').META.get('HTTP_USER_AGENT')
-        # 개선: __dict__.update() → setattr() (ORM 캐시 오염 방지)
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
@@ -210,7 +199,7 @@ class PostSerializer(serializers.ModelSerializer):
         for link in self.initial_data.getlist('newLinks'):
             PostLink.objects.create(post=instance, link=self._normalize_url(link))
 
-        # Files 처리 - FileService 위임 (transaction.on_commit 으로 파일 삭제 안전 처리)
+        # Files 처리
         FileService.manage_files(
             instance=instance,
             initial_data=self.initial_data,
@@ -309,12 +298,10 @@ class CommentSerializer(serializers.ModelSerializer):
         return serializer.data
 
     def get_my_like(self, obj):
-        # 개선: M2M 전체 로드 → filter().exists()
         user = self.context['request'].user
         return user.profile.like_comments.filter(pk=obj.pk).exists()
 
     def get_my_blame(self, obj):
-        # 개선: M2M 전체 로드 → filter().exists()
         user = self.context['request'].user
         return user.profile.blame_comments.filter(pk=obj.pk).exists()
 
@@ -330,7 +317,6 @@ class CommentSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         validated_data['ip'] = self.context.get('request').META.get('REMOTE_ADDR')
         validated_data['device'] = self.context.get('request').META.get('HTTP_USER_AGENT')
-        # 개선: __dict__.update() → setattr()
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()

@@ -179,11 +179,9 @@ class DocumentSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_scrape(obj):
-        # 개선: len(queryset) -> count()
         return obj.docscrape_set.count()
 
     def get_my_scrape(self, obj):
-        # 개선: any() -> filter().exists()
         user = self.context['request'].user
         if not user or not user.is_authenticated:
             return False
@@ -207,14 +205,9 @@ class DocumentSerializer(serializers.ModelSerializer):
         # 1. 블라인드글인 경우 관리자(workManager)만 노출
         if obj.is_blind:
             return user.is_superuser or getattr(user, 'work_manager', False)
-        # 2. 비밀글인 경우
+        # 2. 비밀글인 경우 관리자(workManager) 또는 작성자 본인만 노출
         if obj.is_secret:
-            # 관리자(workManager) 또는 작성자 본인은 패스워드 검증 없이 노출
-            if user.is_superuser or getattr(user, 'work_manager', False) or obj.creator == user:
-                return True
-            # 제3자 일반 사용자는 입력된 패스워드와 매칭 여부 확인
-            req_password = request.query_params.get('password')
-            return req_password == obj.password
+            return user.is_superuser or getattr(user, 'work_manager', False) or obj.creator == user
         # 3. 일반 글인 경우 모든 유저 노출
         return True
 
@@ -256,8 +249,8 @@ class DocumentSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         user = request.user
 
-        validated_data['ip'] = request.META.get('REMOTE_ADDR')  # ip 추가
-        validated_data['device'] = request.META.get('HTTP_USER_AGENT')  # device 추가
+        validated_data['ip'] = request.META.get('REMOTE_ADDR')
+        validated_data['device'] = request.META.get('HTTP_USER_AGENT')
         if user and user.is_authenticated:
             validated_data['creator'] = user  # creator 안전 바인딩
 
@@ -280,7 +273,6 @@ class DocumentSerializer(serializers.ModelSerializer):
         validated_data['ip'] = request.META.get('REMOTE_ADDR')
         validated_data['device'] = request.META.get('HTTP_USER_AGENT')
 
-        # updator 설정
         if hasattr(request, 'user') and request.user:
             instance.updator = request.user
 
@@ -306,9 +298,8 @@ class DocumentSerializer(serializers.ModelSerializer):
 
             # 파일 처리를 FileService로 위임
             FileService.manage_files(instance, request.data, user, File, related_name='docs')
-
-        except Exception as e:
-            print(f"링크 처리 중 오류 발생: {e}")
+        except AttributeError:
+            pass
 
         return instance
 
@@ -319,8 +310,7 @@ class LinkSerializer(serializers.ModelSerializer):
     class Meta:
         model = Link
         fields = ('pk', 'docs', 'link', 'description', 'hit', 'creator', 'created')
-
-    readonly_fields = ('hit', 'created')
+        read_only_fields = ('hit', 'created')
 
 
 class FileSerializer(serializers.ModelSerializer):
@@ -330,16 +320,14 @@ class FileSerializer(serializers.ModelSerializer):
         model = File
         fields = ('pk', 'docs', 'file', 'file_name', 'file_type',
                   'file_size', 'description', 'hit', 'creator', 'created')
-
-    readonly_fields = ('file_name', 'file_type', 'file_size', 'hit', 'created')
+        read_only_fields = ('file_name', 'file_type', 'file_size', 'hit', 'created')
 
 
 class ImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Image
         fields = ('pk', 'docs', 'image', 'image_name', 'image_type', 'image_size', 'created')
-
-    readonly_fields = ('image_name', 'image_type', 'image_size', 'created')
+        readonly_fields = ('image_name', 'image_type', 'image_size', 'created')
 
 
 class DocumentInTrashSerializer(serializers.ModelSerializer):
@@ -360,7 +348,6 @@ class DocumentInTrashSerializer(serializers.ModelSerializer):
         return instance
 
 
-# Official Letter --------------------------------------------------------------------------
 class OfficialLetterSerializer(serializers.ModelSerializer):
     company_name = serializers.SlugField(source='company', read_only=True)
     creator = SimpleUserSerializer(read_only=True)
@@ -382,7 +369,8 @@ class OfficialLetterSerializer(serializers.ModelSerializer):
         if view and view.action != 'retrieve':
             return None
         queryset = view.filter_queryset(OfficialLetter.objects.all())
-        prev_obj = queryset.filter(pk__lt=obj.pk).order_by('-issue_date', '-pk').first()
+        # 개선: pk 비교 기준 정렬을 pk 기준으로 통일 (순서 논리 오류 방지)
+        prev_obj = queryset.filter(pk__lt=obj.pk).order_by('-pk').first()
         return prev_obj.pk if prev_obj else None
 
     def get_next_pk(self, obj):
@@ -390,13 +378,14 @@ class OfficialLetterSerializer(serializers.ModelSerializer):
         if view and view.action != 'retrieve':
             return None
         queryset = view.filter_queryset(OfficialLetter.objects.all())
-        next_obj = queryset.filter(pk__gt=obj.pk).order_by('issue_date', 'pk').first()
+        # 개선: pk 비교 기준 정렬을 pk 기준으로 통일 (순서 논리 오류 방지)
+        next_obj = queryset.filter(pk__gt=obj.pk).order_by('pk').first()
         return next_obj.pk if next_obj else None
 
 
 class SimpleOfficialLetterSerializer(serializers.ModelSerializer):
     """목록 조회용 간략 시리얼라이저"""
-    creator = serializers.SlugField(read_only=True)
+    creator = SimpleUserSerializer(read_only=True)
 
     class Meta:
         model = OfficialLetter

@@ -21,7 +21,12 @@ const canDocsRead = computed(() => can(PERM.DOCS_READ))
               <v-icon v-bind="tooltipProps" icon="mdi-lock" color="warning" class="mr-2" />
             </template>
           </v-tooltip>
-          <v-icon v-else icon="mdi-file-document-outline" color="grey" class="mr-2" />
+          <v-tooltip v-else-if="docs.is_blind" location="top" text="숨김 문서">
+            <template #activator="{ props: tooltipProps }">
+              <v-icon v-bind="tooltipProps" icon="mdi-eye-off" color="danger" class="mr-2" />
+            </template>
+          </v-tooltip>
+          <v-icon v-else icon="mdi-file-document" color="info" class="mr-2" />
 
           <span v-if="docs.cate_name" class="mr-2" :style="{ color: docs.cate_color || 'inherit' }">
             [{{ docs.cate_name }}]
@@ -42,6 +47,16 @@ const canDocsRead = computed(() => can(PERM.DOCS_READ))
             >
               비밀
             </v-chip>
+            <v-chip
+              v-if="docs.is_blind"
+              label
+              size="x-small"
+              color="danger"
+              variant="tonal"
+              class="ml-1"
+            >
+              숨김
+            </v-chip>
           </router-link>
           <span v-else class="d-flex align-center">
             {{ cutString(docs.title, 50) }}
@@ -54,6 +69,16 @@ const canDocsRead = computed(() => can(PERM.DOCS_READ))
               class="ml-1"
             >
               비밀문서
+            </v-chip>
+            <v-chip
+              v-if="docs.is_blind"
+              label
+              size="x-small"
+              color="danger"
+              variant="tonal"
+              class="ml-1"
+            >
+              숨김문서
             </v-chip>
           </span>
         </CCol>
