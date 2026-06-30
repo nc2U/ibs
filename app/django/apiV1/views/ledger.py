@@ -20,7 +20,7 @@ from ledger.models import (
 from ledger.services.company_transaction import get_company_transactions
 from ledger.services.project_transaction import get_project_transactions
 from ..pagination import PageNumberPaginationFifteen, PageNumberPaginationFifty, PageNumberPaginationThreeHundred
-from ..permission import IsStaffOrReadOnly
+from apiV1.permissions.auth_perms import IsStaffOrReadOnly
 from ..serializers.ledger import (
     CompanyAccountSerializer, ProjectAccountSerializer, AffiliateSerializer,
     AccountSearchResultSerializer, LedgerBankCodeSerializer,

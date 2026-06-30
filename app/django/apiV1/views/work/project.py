@@ -5,11 +5,10 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from apiV1.pagination import PageNumberPaginationTwenty, PageNumberPaginationOneHundred
-from apiV1.permission import ProjectPermission, IsWorkManagerReadOnly
-from apiV1.serializers.work import (
-    IssueProjectSerializer, IssueProjectListSerializer,
-    ModuleSerializer, RoleSerializer, PermissionSerializer,
-    MemberSerializer, VersionSerializer)
+from apiV1.permissions.auth_perms import IsWorkManagerReadOnly
+from apiV1.permissions.work_perms import ProjectPermission
+from apiV1.serializers.work import IssueProjectSerializer, IssueProjectListSerializer, \
+    ModuleSerializer, RoleSerializer, PermissionSerializer, MemberSerializer, VersionSerializer
 from work.models import IssueProject, Module, Role, Permission, Member, Version
 
 

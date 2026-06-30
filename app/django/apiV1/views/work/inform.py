@@ -1,9 +1,12 @@
 from django.db.models import Q
 from rest_framework import viewsets
 
-from apiV1.pagination import *
-from apiV1.permission import *
-from apiV1.serializers.work.inform import *
+from apiV1.pagination import PageNumberPaginationTen
+from apiV1.permissions.auth_perms import permissions
+from apiV1.permissions.work_perms import ProjectPermission
+from apiV1.serializers.work import NewsFileSerializer, NewsCommentSerializer, SearchSerializer
+from apiV1.serializers.work.inform import NewsSerializer
+from work.models import NewsFile
 from work.models.inform import News, NewsComment, Search
 
 

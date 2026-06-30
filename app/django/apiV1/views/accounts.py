@@ -1,17 +1,23 @@
 import base64
 
 from allauth.account.forms import default_token_generator
+from django.conf import settings
 from django.contrib.auth import authenticate, update_session_auth_hash
 from django.contrib.auth.hashers import check_password
+from django.core.mail import send_mail
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from ..pagination import *
-from ..permission import *
-from ..serializers.accounts import *
+from accounts.models import User, StaffAuth, Profile, DocScrape, PostScrape, Todo, PasswordResetToken
+from apiV1.permissions.auth_perms import permissions, IsStaffOrReadOnly, IsOwnerOnly
+from ..pagination import PageNumberPaginationThreeThousand, PageNumberPaginationFifty
+from ..serializers.accounts import UserSerializer, StaffAuthInUserSerializer, ProfileSerializer, \
+    DocScrapeSerializer, PostScrapeSerializer, TodoSerializer, ChangePasswordSerializer, \
+    PasswordResetSerializer, PasswordResetTokenSerializer, AdminCreateUserSerializer
 
 
 # Accounts --------------------------------------------------------------------------
@@ -26,15 +32,15 @@ class UserViewSet(viewsets.ModelViewSet):
         from django.db.models import Q
         queryset = User.objects.all()
         user = self.request.user
-        
+
         # 로그인하지 않은 경우 목록 노출 방지
         if not user or not user.is_authenticated:
             return queryset.none()
-            
+
         # 슈퍼유저나 work_manager는 전체 사용자 조회 가능
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset
-            
+
         try:
             if hasattr(user, 'staff_auth') and user.staff_auth.is_hq_staff:
                 return queryset
@@ -77,7 +83,6 @@ class UserViewSet(viewsets.ModelViewSet):
             return queryset.filter(pk=user.pk)
 
         return queryset.none()
-
 
 
 class StaffAuthViewSet(viewsets.ModelViewSet):
@@ -296,7 +301,7 @@ class AdminCreateUserView(APIView):
                         token_db = PasswordResetToken.objects.get(user=user)
                         token_db.token = token
                     except PasswordResetToken.DoesNotExist:
-                        token_db = PasswordResetToken(user=user, token=token, expired=expired*3600)
+                        token_db = PasswordResetToken(user=user, token=token, expired=expired * 3600)
                     token_db.save()
 
                     # Create a password reset link
@@ -318,6 +323,6 @@ class AdminCreateUserView(APIView):
 
                 return Response({'detail': '새 계정을 생성하고 비밀번호 설정을 위한 이메일을 발송했습니다.'}, status=status.HTTP_200_OK)
 
-            return Response({ 'detail': '새 계정을 생성하였습니다.' }, status=status.HTTP_200_OK)
+            return Response({'detail': '새 계정을 생성하였습니다.'}, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

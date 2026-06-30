@@ -1,8 +1,10 @@
 from rest_framework import viewsets
 
-from ..pagination import *
-from ..permission import *
-from ..serializers.company import *
+from company.models import Company, Logo, Department, JobGrade, Position, DutyTitle, Staff
+from ..pagination import PageNumberPaginationOneThousand
+from apiV1.permissions.auth_perms import permissions, IsSuperUserOrReadOnly, IsStaffOrReadOnly
+from ..serializers.company import CompanySerializer, LogoSerializer, DepartmentSerializer, \
+    JobGradeSerializer, PositionSerializer, DutyTitleSerializer, StaffSerializer
 
 
 # Company --------------------------------------------------------------------------

@@ -5,8 +5,11 @@ from django_filters.rest_framework import FilterSet
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 
-from ..permission import *
-from ..serializers.forum import *
+from apiV1.permissions.auth_perms import permissions, IsProjectStaffOrReadOnly
+from forum.models import Forum, PostCategory, Post, PostLink, PostFile, PostImage, Comment, Tag
+from ..serializers.forum import ForumSerializer, CategorySerializer, PostSerializer, PostLikeSerializer, \
+    PostBlameSerializer, ImageSerializer, LinkSerializer, FileSerializer, CommentSerializer, \
+    CommentLikeSerializer, CommentBlameSerializer, TagSerializer, PostInTrashSerializer
 
 
 # Forum --------------------------------------------------------------------------

@@ -14,7 +14,7 @@
 
 ```python
 from rest_framework import permissions, viewsets
-from apiV1.permission import ProjectPermission
+from apiV1.permissions.auth_perms import ProjectPermission
 
 
 class IssueViewSet(viewsets.ModelViewSet):
@@ -28,7 +28,7 @@ class IssueViewSet(viewsets.ModelViewSet):
 
 ```python
 from rest_framework import viewsets, permissions
-from apiV1.permission import ProjectPermission
+from apiV1.permissions.auth_perms import ProjectPermission
 
 
 class IssueViewSet(viewsets.ModelViewSet):

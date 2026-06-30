@@ -4,9 +4,10 @@ from django.db.models import Q
 from django_filters.rest_framework import FilterSet, DateFilter, CharFilter
 from rest_framework import viewsets
 
-from apiV1.pagination import *
-from apiV1.permission import *
-from apiV1.serializers.work.logging import *
+from apiV1.pagination import PageNumberPaginationThreeHundred, PageNumberPaginationFifty
+from apiV1.permissions.auth_perms import permissions
+from apiV1.serializers.work import IssueLogEntrySerializer
+from apiV1.serializers.work.logging import ActivityLogEntrySerializer
 from work.models.logging import ActivityLogEntry, IssueLogEntry
 from work.models.project import IssueProject
 
@@ -79,7 +80,8 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
 
         # 1. 슈퍼유저/work_manager는 전체 활동 조회
         if user.is_superuser or getattr(user, 'work_manager', False):
-            return queryset.select_related('project', 'creator', 'issue', 'comment', 'meeting', 'news', 'document', 'post')
+            return queryset.select_related('project', 'creator', 'issue', 'comment', 'meeting', 'news', 'document',
+                                           'post')
 
         # 2. 일반 유저는 본인이 소속되었거나 공개 프로젝트의 활동만 조회 가능
         from work.models.project import Member
@@ -119,19 +121,19 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
                 project_id__in=member_pub_pids,
                 issue__isnull=False
             ) & (
-                Q(issue__is_private=False) |
-                Q(issue__assigned_to=user) |
-                Q(issue__creator=user)
-            )
+                                    Q(issue__is_private=False) |
+                                    Q(issue__assigned_to=user) |
+                                    Q(issue__creator=user)
+                            )
 
         if member_pri_pids:
             issue_filter |= Q(
                 project_id__in=member_pri_pids,
                 issue__isnull=False
             ) & (
-                Q(issue__assigned_to=user) |
-                Q(issue__creator=user)
-            )
+                                    Q(issue__assigned_to=user) |
+                                    Q(issue__creator=user)
+                            )
 
         from work.models.project import Role
         try:
@@ -140,7 +142,8 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
         except Role.DoesNotExist:
             non_member_issue_visible = 'PUB'
 
-        public_pids = IssueProject.objects.filter(is_public=True).exclude(pk__in=member_all_project_ids).values_list('pk', flat=True)
+        public_pids = IssueProject.objects.filter(is_public=True).exclude(pk__in=member_all_project_ids).values_list(
+            'pk', flat=True)
         if public_pids:
             if non_member_issue_visible == 'ALL':
                 issue_filter |= Q(project_id__in=public_pids)
@@ -149,18 +152,18 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
                     project_id__in=public_pids,
                     issue__isnull=False
                 ) & (
-                    Q(issue__is_private=False) |
-                    Q(issue__assigned_to=user) |
-                    Q(issue__creator=user)
-                )
+                                        Q(issue__is_private=False) |
+                                        Q(issue__assigned_to=user) |
+                                        Q(issue__creator=user)
+                                )
             elif non_member_issue_visible == 'PRI':
                 issue_filter |= Q(
                     project_id__in=public_pids,
                     issue__isnull=False
                 ) & (
-                    Q(issue__assigned_to=user) |
-                    Q(issue__creator=user)
-                )
+                                        Q(issue__assigned_to=user) |
+                                        Q(issue__creator=user)
+                                )
 
         final_qs = queryset.filter(base_filter).filter(
             ~Q(sort__in=['1', '2']) | issue_filter
@@ -217,18 +220,18 @@ class IssueLogEntryViewSet(viewsets.ModelViewSet):
             allowed_issues_filter |= Q(
                 issue__project_id__in=member_pub_pids
             ) & (
-                Q(issue__is_private=False) |
-                Q(issue__assigned_to=user) |
-                Q(issue__creator=user)
-            )
+                                             Q(issue__is_private=False) |
+                                             Q(issue__assigned_to=user) |
+                                             Q(issue__creator=user)
+                                     )
 
         if member_pri_pids:
             allowed_issues_filter |= Q(
                 issue__project_id__in=member_pri_pids
             ) & (
-                Q(issue__assigned_to=user) |
-                Q(issue__creator=user)
-            )
+                                             Q(issue__assigned_to=user) |
+                                             Q(issue__creator=user)
+                                     )
 
         from work.models.project import Role
         try:
@@ -237,7 +240,8 @@ class IssueLogEntryViewSet(viewsets.ModelViewSet):
         except Role.DoesNotExist:
             non_member_issue_visible = 'PUB'
 
-        public_pids = IssueProject.objects.filter(is_public=True).exclude(pk__in=member_all_project_ids).values_list('pk', flat=True)
+        public_pids = IssueProject.objects.filter(is_public=True).exclude(pk__in=member_all_project_ids).values_list(
+            'pk', flat=True)
         if public_pids:
             if non_member_issue_visible == 'ALL':
                 allowed_issues_filter |= Q(issue__project_id__in=public_pids)
@@ -245,16 +249,16 @@ class IssueLogEntryViewSet(viewsets.ModelViewSet):
                 allowed_issues_filter |= Q(
                     issue__project_id__in=public_pids
                 ) & (
-                    Q(issue__is_private=False) |
-                    Q(issue__assigned_to=user) |
-                    Q(issue__creator=user)
-                )
+                                                 Q(issue__is_private=False) |
+                                                 Q(issue__assigned_to=user) |
+                                                 Q(issue__creator=user)
+                                         )
             elif non_member_issue_visible == 'PRI':
                 allowed_issues_filter |= Q(
                     issue__project_id__in=public_pids
                 ) & (
-                    Q(issue__assigned_to=user) |
-                    Q(issue__creator=user)
-                )
+                                                 Q(issue__assigned_to=user) |
+                                                 Q(issue__creator=user)
+                                         )
 
         return queryset.filter(allowed_issues_filter)

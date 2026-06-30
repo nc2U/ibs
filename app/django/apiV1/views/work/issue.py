@@ -2,11 +2,18 @@ from django.db.models import Q
 from django_filters.rest_framework import FilterSet, BooleanFilter, CharFilter, NumberFilter
 from rest_framework import viewsets
 from rest_framework.decorators import action
+from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apiV1.pagination import *
-from apiV1.permission import *
-from apiV1.serializers.work.issue import *
+from apiV1.pagination import PageNumberPaginationTwenty
+from apiV1.permissions.auth_perms import permissions
+from apiV1.permissions.work_perms import ProjectPermission, IssuePermission, IssueCommentPermission
+from apiV1.serializers.work import IssueCountByMemberSerializer, IssueRelationSerializer, \
+    IssueFileSerializer, IssueCommentSerializer, TrackerSerializer, IssueCategorySerializer, \
+    IssueCountByTrackerSerializer, IssueStatusSerializer, WorkflowSerializer, CodeIssuePrioritySerializer
+from apiV1.serializers.work.issue import IssueSerializer
+from work.models import Issue, IssueRelation, IssueProject, IssueFile, IssueComment, Tracker, \
+    IssueCategory, IssueStatus, Workflow, CodeIssuePriority
 
 
 class IssueFilter(FilterSet):
@@ -154,7 +161,7 @@ class IssueViewSet(viewsets.ModelViewSet):
             for role in member.roles.all():
                 if issue_visibility_order.get(role.issue_visible, 0) > issue_visibility_order.get(best_visible, 0):
                     best_visible = role.issue_visible
-            
+
             if best_visible == 'ALL':
                 member_all_pids.append(member.project_id)
             elif best_visible == 'PUB':
@@ -297,10 +304,10 @@ class IssueCommentViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         queryset = IssueComment.objects.all().select_related('issue')
-        
+
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset
-            
+
         # 1. 사용자의 멤버 프로젝트들을 가져와 권한 수준에 따라 분류
         from work.models.project import Member
         user_members = Member.objects.filter(user=user).prefetch_related('roles__permissions')
@@ -315,20 +322,20 @@ class IssueCommentViewSet(viewsets.ModelViewSet):
             # (A) issue_visible 수준 판별
             best_visible = 'NOP'
             has_private_read = False
-            
+
             for role in member.roles.all():
                 if issue_visibility_order.get(role.issue_visible, 0) > issue_visibility_order.get(best_visible, 0):
                     best_visible = role.issue_visible
-                
+
                 for perm in role.permissions.all():
                     if perm.code == 'issue.private_comment_read':
                         has_private_read = True
-            
+
             if best_visible == 'ALL':
                 member_all_pids.append(member.project_id)
             elif best_visible == 'PUB':
                 member_pub_pids.append(member.project_id)
-                
+
             if has_private_read:
                 private_comment_read_pids.append(member.project_id)
 
@@ -337,7 +344,8 @@ class IssueCommentViewSet(viewsets.ModelViewSet):
         try:
             non_member_role = Role.objects.prefetch_related('permissions').get(pk=2)
             non_member_visible = non_member_role.issue_visible
-            non_member_private_read = any(perm.code == 'issue.private_comment_read' for perm in non_member_role.permissions.all())
+            non_member_private_read = any(
+                perm.code == 'issue.private_comment_read' for perm in non_member_role.permissions.all())
         except Role.DoesNotExist:
             non_member_visible = 'NOP'
             non_member_private_read = False
@@ -357,7 +365,7 @@ class IssueCommentViewSet(viewsets.ModelViewSet):
 
         # 4. 비공개 댓글 가시성에 따른 필터 조건 (comment_q)
         comment_q = Q(is_private=False) | Q(creator=user)
-        
+
         if private_comment_read_pids:
             comment_q |= Q(issue__project_id__in=private_comment_read_pids)
         if non_member_private_read:

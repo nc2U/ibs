@@ -13,7 +13,8 @@ from company.models import Company
 from docs.models import LetterSequence, DocType, Category, LawsuitCase, Document, Link, File, Image, OfficialLetter
 from docs.utils import generate_official_letter_pdf
 from ..pagination import PageNumberPaginationOneHundred, PageNumberPaginationThreeThousand
-from ..permission import permissions, IsProjectStaffOrReadOnly, ProjectPermission
+from apiV1.permissions.auth_perms import permissions, IsProjectStaffOrReadOnly
+from apiV1.permissions.work_perms import ProjectPermission
 from ..serializers.docs import DocTypeSerializer, CategorySerializer, LawSuitCaseSerializer, \
     SimpleLawSuitCaseSerializer, DocumentSerializer, LinkSerializer, FileSerializer, ImageSerializer, \
     DocumentInTrashSerializer, OfficialLetterSerializer

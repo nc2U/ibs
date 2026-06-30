@@ -1,4 +1,5 @@
 from django.core.cache import cache
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Count, Sum, Q
 from django.shortcuts import get_object_or_404
 from django_filters import ChoiceFilter, ModelChoiceFilter, DateFilter, BooleanFilter
@@ -10,13 +11,23 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from _utils.contract_price import get_project_payment_summary, get_multiple_projects_payment_summary, get_contract_price
+from _utils.contract_price import get_project_payment_summary, get_multiple_projects_payment_summary, \
+    get_contract_price, get_contract_payment_plan
+from apiV1.permissions.auth_perms import permissions, IsProjectStaffOrReadOnly
+from contract.models import OrderGroup, DocumentType, RequiredDocument, Contractor, Contract, ContractPrice, \
+    ContractFile, ContractDocument, ContractDocumentFile, ContractorAddress, ContractorContact, \
+    ContractorConsultationLogs, Succession, ContractorRelease
 from contract.services import ContractPriceBulkUpdateService
-from items.models import BuildingUnit
+from items.models import BuildingUnit, UnitType
 from project.models import Project
 from ..pagination import PageNumberPaginationThreeThousand, PageNumberPaginationFifteen, PageNumberPaginationFifty
-from ..permission import *
-from ..serializers.contract import *
+from ..serializers.contract import OrderGroupSerializer, DocumentTypeSerializer, RequiredDocumentSerializer, \
+    ContractSerializer, PaymentSummarySerializer, ContractPriceWithPaymentPlanSerializer, \
+    MultiProjectPaymentSummarySerializer, ContractSetSerializer, SimpleContractSerializer, ContractPriceSerializer, \
+    SubsSummarySerializer, ContSummarySerializer, ContractAggregateSerializer, ContractorSerializer, \
+    SimpleContractorSerializer, ContractFileSerializer, ContractDocumentSerializer, ContractDocumentFileSerializer, \
+    ContractorAddressSerializer, ContractorContactSerializer, ContractorConsultationLogsSerializer, \
+    SuccessionSerializer, ContractorReleaseSerializer
 
 
 # Contract --------------------------------------------------------------------------

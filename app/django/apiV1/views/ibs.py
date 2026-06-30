@@ -1,8 +1,13 @@
 from rest_framework import viewsets
 
-from ..pagination import *
-from ..permission import *
-from ..serializers.ibs import *
+from ibs.models import CalendarSchedule, AccountSort, AccountSubD1, AccountSubD2, \
+    AccountSubD3, ProjectAccountD2, ProjectAccountD3, UserWidgetConfig, WiseSaying
+from ..pagination import PageNumberPaginationOneHundred, PageNumberPaginationTwenty, \
+    PageNumberPaginationTwoHundred, PageNumberPaginationThreeHundred
+from apiV1.permissions.auth_perms import permissions, IsProjectStaffOrReadOnly
+from ..serializers.ibs import CalendarScheduleSerializer, AccountSortSerializer, AccountSubD1Serializer, \
+    AccountSubD2Serializer, AccountSubD3Serializer, ProjectAccountD2Serializer, ProjectAccountD3Serializer, \
+    UserWidgetConfigSerializer, WiseSaySerializer
 
 
 # Ibs --------------------------------------------------------------------------

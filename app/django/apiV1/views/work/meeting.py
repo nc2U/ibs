@@ -5,7 +5,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from apiV1.pagination import PageNumberPaginationTwenty
-from apiV1.permission import ProjectPermission, MeetingPermission
+from apiV1.permissions.work_perms import ProjectPermission, MeetingPermission
 from apiV1.serializers.work.meeting import MeetingCategorySerializer, MeetingSerializer, MeetingFileSerializer
 from work.models.meeting import MeetingCategory, Meeting, MeetingFile
 
