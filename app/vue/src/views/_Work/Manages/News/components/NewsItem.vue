@@ -3,8 +3,9 @@ import { computed, type PropType } from 'vue'
 import { useRoute } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
 import { markdownRender } from '@/utils/helper.ts'
-import { elapsedTime } from '@/utils/baseMixins.ts'
+import { cutString, elapsedTime } from '@/utils/baseMixins.ts'
 import type { News } from '@/store/types/work_inform.ts'
+import { CRow } from '@coreui/vue'
 
 defineProps({ news: { type: Object as PropType<News>, required: true } })
 
@@ -77,8 +78,14 @@ const { can, canViewUser, PERM } = usePerms()
       </CCol>
     </CRow>
 
+    <CRow v-if="news.summary">
+      <CCol class="blockquote fst-italic">
+        {{ news.summary }}
+      </CCol>
+    </CRow>
+
     <CRow class="mb-0">
-      <CCol v-html="markdownRender(news.content)" class="news-content" />
+      <CCol v-html="markdownRender(cutString(news.content, 80))" class="news-content" />
     </CRow>
   </v-card>
 </template>
