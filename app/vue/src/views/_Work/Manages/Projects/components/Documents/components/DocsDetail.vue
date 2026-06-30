@@ -35,11 +35,6 @@ const modalAction = () => {
   router.push({ name: '(문서)' })
 }
 
-onBeforeMount(() => {
-  if (docId.value) {
-    docStore.fetchDocs(docId.value)
-  }
-})
 
 onMounted(() => {
   if (docId.value && !props.heatedPage?.includes(docId.value)) {
@@ -51,8 +46,26 @@ onMounted(() => {
 <template>
   <div v-if="docs" class="pa-4">
     <CRow class="mb-2">
-      <CCol>
-        <h4 class="font-weight-bold mb-1">{{ docs.title }}</h4>
+      <CCol class="d-flex align-center gap-2">
+        <h4 class="font-weight-bold mb-1">
+          {{ docs.title }}
+          <v-tooltip v-if="docs.is_secret" location="top" text="비밀 문서">
+            <template #activator="{ props: tooltipProps }">
+              <v-chip
+                v-bind="tooltipProps"
+                label
+                size="small"
+                color="warning"
+                variant="tonal"
+                class="ml-2"
+                style="vertical-align: middle"
+              >
+                <v-icon start icon="mdi-lock" size="small" />
+                비밀 문서
+              </v-chip>
+            </template>
+          </v-tooltip>
+        </h4>
       </CCol>
     </CRow>
 
@@ -67,6 +80,22 @@ onMounted(() => {
     </CRow>
 
     <v-divider class="mb-3" />
+
+    <v-alert
+      v-if="docs.is_secret"
+      type="warning"
+      variant="tonal"
+      density="compact"
+      class="mb-4"
+      icon="mdi-lock"
+    >
+      <template v-if="docs.description === '비밀글입니다.'">
+        이 문서는 <strong>비밀 문서</strong>입니다. 열람 권한이 없어 일부 내용이 제한됩니다.
+      </template>
+      <template v-else>
+        이 문서는 <strong>비밀 문서</strong>입니다.
+      </template>
+    </v-alert>
 
     <PostInfo :docs="docs" class="mb-4" />
 
@@ -94,14 +123,26 @@ onMounted(() => {
       <CRow class="mb-3 pt-4">
         <CCol>
           <h6 class="mb-2">첨부 파일</h6>
-          <PostedFile :docs="docs.pk as number" btn-direction="right" :files="docs.files" />
+          <template v-if="docs.files && docs.files.length">
+            <PostedFile :docs="docs.pk as number" btn-direction="right" :files="docs.files" />
+          </template>
+          <p v-else-if="docs.is_secret" class="text-muted small">
+            <v-icon icon="mdi-lock" size="x-small" class="mr-1" />비밀 문서의 첨부 파일은 열람이 제한됩니다.
+          </p>
+          <p v-else class="text-muted small">첨부 파일이 없습니다.</p>
         </CCol>
       </CRow>
 
       <CRow class="mb-3">
         <CCol>
           <h6 class="mb-2">관련 링크</h6>
-          <PostedLink :docs="docs.pk as number" btn-direction="right" :links="docs.links" />
+          <template v-if="docs.links && docs.links.length">
+            <PostedLink :docs="docs.pk as number" btn-direction="right" :links="docs.links" />
+          </template>
+          <p v-else-if="docs.is_secret" class="text-muted small">
+            <v-icon icon="mdi-lock" size="x-small" class="mr-1" />비밀 문서의 관련 링크는 열람이 제한됩니다.
+          </p>
+          <p v-else class="text-muted small">관련 링크가 없습니다.</p>
         </CCol>
       </CRow>
     </div>

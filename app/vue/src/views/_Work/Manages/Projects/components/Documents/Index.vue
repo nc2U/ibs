@@ -4,7 +4,6 @@ import { useWork } from '@/store/pinia/work_project.ts'
 import { useRoute } from 'vue-router'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import { type DocsFilter, type SuitCaseFilter, useDocs } from '@/store/pinia/docs'
-import type { Docs, PatchDocs } from '@/store/types/docs'
 import Loading from '@/components/Loading/Index.vue'
 import AddNewDoc from './components/AddNewDoc.vue'
 import DocsList from './components/DocsList.vue'
@@ -51,7 +50,6 @@ const fetchDocs = (pk: number) => docStore.fetchDocs(pk)
 const fetchDocsList = (payload: DocsFilter) => docStore.fetchDocsList(payload)
 const fetchCategoryList = (type: number) => docStore.fetchCategoryList(type)
 const fetchAllSuitCaseList = (payload: SuitCaseFilter) => docStore.fetchAllSuitCaseList(payload)
-const patchDocs = (payload: PatchDocs & { filter: DocsFilter }) => docStore.patchDocs(payload)
 
 const categories = computed(() => getCategories.value)
 
@@ -81,9 +79,7 @@ const heatedPage = ref<number[]>([])
 const docsHit = async (pk: number) => {
   if (!heatedPage.value.includes(pk)) {
     heatedPage.value.push(pk)
-    await fetchDocs(pk)
-    const hit = ((docs.value as Docs)?.hit ?? 0) + 1
-    await patchDocs({ pk, hit, filter: docsFilter.value })
+    await docStore.hitDocs(pk)
   }
 }
 

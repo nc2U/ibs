@@ -12,6 +12,7 @@ import MultiSelect from '@/components/MultiSelect/index.vue'
 import FileForms from '@/components/OtherParts/FileForms.vue'
 import LinkForms from '@/components/OtherParts/LinkForms.vue'
 import AddNewDoc from './AddNewDoc.vue'
+import { CFormCheck } from '@coreui/vue'
 
 const props = defineProps({
   docs: { type: Object as PropType<Docs>, default: () => null },
@@ -174,6 +175,9 @@ onBeforeMount(() => dataSetup())
                 <option :value="1">일반 문서</option>
                 <option :value="2">소송 기록</option>
               </CFormSelect>
+            </CCol>
+            <CCol class="pt-2">
+              <CFormCheck v-model="form.is_secret" id="is_secret" label="비밀문서" inline />
             </CCol>
           </CRow>
 
