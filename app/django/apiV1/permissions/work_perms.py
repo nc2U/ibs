@@ -6,11 +6,20 @@ class ProjectPermission(permissions.BasePermission):
     프로젝트 slug를 기반으로 사용자의 권한을 체크하는 클래스
     """
 
-    def get_project_slug(self, view, source):
-        return (view.kwargs.get('slug')
-                or source.get('project')
-                or source.get('issue_project')
-                or source.get('parent_slug'))
+    @staticmethod
+    def get_project_slug(view, *sources):
+        slug = view.kwargs.get('slug')
+        if slug:
+            return slug
+        
+        for source in sources:
+            if isinstance(source, dict):
+                slug = (source.get('project') 
+                        or source.get('issue_project') 
+                        or source.get('parent_slug'))
+                if slug:
+                    return slug
+        return None
 
     def find_project(self, project_slug):
         from work.models.project import IssueProject
@@ -70,7 +79,7 @@ class ProjectPermission(permissions.BasePermission):
                 ).exists()
 
             # 2. 리소스 생성 시 프로젝트 식별자 추출 (하위 프로젝트, 회의록, 업무 등)
-            project_slug = self.get_project_slug(view, request.data)
+            project_slug = self.get_project_slug(view, request.data, request.query_params)
 
             if not project_slug:
                 return False

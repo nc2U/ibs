@@ -21,6 +21,8 @@ const categoryForm = ref()
 
 const [route, router] = [useRoute(), useRouter()]
 
+const projId = computed(() => route.params.projId as string)
+
 const { can, PERM } = usePerms()
 const canForumCreate = computed(() => can(PERM.FORUM_CREATE))
 const canForumUpdate = computed(() => can(PERM.FORUM_UPDATE))
@@ -52,15 +54,18 @@ const submitCategory = (event: Event) => {
   if (isValidate(event)) categoryValidated.value = true
   else {
     isSubmittingCategory.value = true
-    frmStore.createCategory(newCategory.value).then(() => {
+    frmStore.createCategory(newCategory.value, projId.value).then(() => {
       categoryForm.value.close()
       categoryValidated.value = false
       isSubmittingCategory.value = false
     })
   }
 }
-const createPost = (payload: { form: FormData }) => frmStore.createPost(payload)
-const updatePost = (payload: { pk: number; form: FormData }) => frmStore.updatePost(payload)
+
+const createPost = (payload: { form: FormData }, project: string = '') =>
+  frmStore.createPost(payload, project)
+const updatePost = (payload: { pk: number; form: FormData }, project: string = '') =>
+  frmStore.updatePost(payload, project)
 
 const refFileForms = ref()
 const refLinkForms = ref()
@@ -125,13 +130,13 @@ const onSubmit = async () => {
   newLinks.value.forEach(link => formData.append('newLinks', link))
 
   if (form.value.pk) {
-    await updatePost({ pk: form.value.pk, form: formData })
+    await updatePost({ pk: form.value.pk, form: formData }, projId.value)
     await router.replace({
       name: '(게시판) - 게시물 보기',
       params: { projId: route.params.projId, forumId: props.forumId, postId: form.value.pk },
     })
   } else {
-    await createPost({ form: formData })
+    await createPost({ form: formData }, projId.value)
     await router.replace({
       name: '(게시판) - 보기',
       params: { projId: route.params.projId, forumId: props.forumId },

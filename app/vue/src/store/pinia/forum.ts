@@ -73,27 +73,27 @@ export const useForum = defineStore('forum', () => {
       .then(res => (categoryList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
-  const createCategory = (payload: PostCategory) =>
+  const createCategory = (payload: PostCategory, projId: string = '') =>
     api
-      .post(`/post-category/`, payload)
+      .post(`/post-category/?project=${projId}`, payload)
       .then(async res => {
         await fetchCategoryList(res.data.forum)
         message()
       })
       .catch(err => errorHandle(err.response.data))
 
-  const updateCategory = (payload: PostCategory) =>
+  const updateCategory = (payload: PostCategory, projId: string = '') =>
     api
-      .put(`/post-category/${payload.pk}/`, payload)
+      .put(`/post-category/${payload.pk}/?project=${projId}`, payload)
       .then(async res => {
         await fetchCategoryList(res.data.forum)
         message()
       })
       .catch(err => errorHandle(err.response.data))
 
-  const deleteCategory = (payload: { pk: number; forum: number }) =>
+  const deleteCategory = (payload: { pk: number; forum: number }, projId: string = '') =>
     api
-      .delete(`/post-category/${payload.pk}/`)
+      .delete(`/post-category/${payload.pk}/?project=${projId}`)
       .then(async () => {
         await fetchCategoryList(payload.forum)
         message('warning', '', '카테고리가 삭제되었습니다.')
@@ -155,9 +155,10 @@ export const useForum = defineStore('forum', () => {
     } & {
       isProject?: boolean
     },
+    projId: string = '',
   ) =>
     api
-      .post(`/post/`, payload.form, config_headers)
+      .post(`/post/?project=${projId}`, payload.form, config_headers)
       .then(async res => {
         await fetchPostList({
           forum: res.data.forum,
@@ -174,9 +175,10 @@ export const useForum = defineStore('forum', () => {
     } & {
       isProject?: boolean
     },
+    projId: string = '',
   ) =>
     api
-      .put(`/post/${payload.pk}/`, payload.form, config_headers)
+      .put(`/post/${payload.pk}/?project=${projId}`, payload.form, config_headers)
       .then(async res => {
         await fetchPostList({
           forum: res.data.forum,
@@ -191,10 +193,11 @@ export const useForum = defineStore('forum', () => {
     payload: PatchPost & {
       filter?: PostFilter
     },
+    projId: string = '',
   ) => {
     const { filter, ...data } = payload
     return await api
-      .patch(`/post/${data.pk}/`, data)
+      .patch(`/post/${data.pk}/?project=${projId}`, data)
       .then(res =>
         fetchPostList({
           ...filter,
@@ -225,15 +228,15 @@ export const useForum = defineStore('forum', () => {
       .then(() => accStore.fetchProfile().then(() => fetchPost(pk)))
       .catch(err => errorHandle(err.response.data))
 
-  const copyPost = (payload: { post: number; forum: number }) =>
+  const copyPost = (payload: { post: number; forum: number }, projId: string = '') =>
     api
-      .post(`post/${payload.post}/copy/`, payload)
+      .post(`post/${payload.post}/copy/?project=${projId}`, payload)
       .then(() => message('success', '', '게시물 복사가 완료되었습니다.'))
       .catch(err => errorHandle(err.response.data))
 
-  const deletePost = (pk: number, filter: PostFilter) =>
+  const deletePost = (pk: number, filter: PostFilter, projId: string = '') =>
     api
-      .delete(`/post/${pk}/`)
+      .delete(`/post/${pk}/?project=${projId}`)
       .then(() =>
         fetchPostList(filter).then(() =>
           message('warning', '', '해당 게시물이 휴지통으로 삭제되었습니다.'),
