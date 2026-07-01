@@ -71,12 +71,12 @@ const crateForum = () => {
   RefForumForm.value.callModal()
 }
 
-const modifyCall = (brd: Forum) => {
-  form.value.pk = brd.pk
-  form.value.project = brd.project
-  form.value.name = brd.name
-  form.value.description = brd.description
-  form.value.parent = brd.parent
+const modifyCall = (frm: Forum) => {
+  form.value.pk = frm.pk
+  form.value.project = frm.project
+  form.value.name = frm.name
+  form.value.description = frm.description
+  form.value.parent = frm.parent
   RefForumForm.value.callModal()
 }
 
@@ -204,13 +204,13 @@ onBeforeMount(async () => {
               />
             </CCol>
           </CRow>
-          <CRow class="mb-3">
+          <CRow v-if="forumList.length" class="mb-3">
             <CFormLabel for="parent" class="col-sm-3 col-form-label">상위 게시판</CFormLabel>
             <CCol sm="9">
               <CFormSelect v-model="form.parent" id="parent">
                 <option value="">---------</option>
-                <option v-for="brd in forumList" :value="brd.pk" :key="brd.pk as number">
-                  {{ brd.name }}
+                <option v-for="frm in forumList" :value="frm.pk" :key="frm.pk as number">
+                  {{ frm.name }}
                 </option>
               </CFormSelect>
             </CCol>
