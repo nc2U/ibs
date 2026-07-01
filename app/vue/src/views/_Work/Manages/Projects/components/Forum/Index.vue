@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { usePerms } from '@/composables/usePerms.ts'
 import { useForum } from '@/store/pinia/forum.ts'
-import { useAccount } from '@/store/pinia/account.ts'
 import type { Post } from '@/store/types/forum.ts'
 import Loading from '@/components/Loading/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
@@ -16,8 +16,8 @@ const cBody = ref()
 const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
 
-const accStore = useAccount()
-const workManager = computed(() => accStore.workManager)
+const { can, PERM } = usePerms()
+const canForumManage = computed(() => can(PERM.FORUM_MANAGE))
 
 const forumStore = useForum()
 const forum = computed(() => forumStore.forum)
@@ -211,7 +211,7 @@ onBeforeMount(async () => {
                 프로젝트 개요
               </router-link>
             </li>
-            <li v-if="workManager" class="mb-2">
+            <li v-if="canForumManage" class="mb-2">
               <v-icon icon="mdi-cog-outline" size="small" class="mr-2" />
               <router-link
                 :to="{
