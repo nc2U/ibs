@@ -51,7 +51,7 @@ const userInfo = computed(() => accStore.userInfo)
       <v-card-text class="py-3 bg-more-light border-bottom">
         <!-- CCardHeader 대신 v-card-text 사용 -->
         <v-row no-gutters align="center" class="text-muted text-grey">
-          <v-col cols="auto" class="mr-3">
+          <v-col cols="auto" class="mr-3 strong">
             <v-icon icon="mdi-account-circle-outline" size="small" class="mr-1" />
             <router-link
               v-if="canViewUser(userInfo?.pk)"

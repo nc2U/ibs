@@ -79,6 +79,7 @@ const onSubmit = (payload: Cm) => emit('on-submit', payload)
       <router-link
         v-if="canViewUser(userInfo?.pk)"
         :to="{ name: '사용자 - 보기', params: { userId: comment?.creator?.pk } }"
+        class="text-decoration-none text-muted"
       >
         {{ comment?.creator?.username }}
       </router-link>
