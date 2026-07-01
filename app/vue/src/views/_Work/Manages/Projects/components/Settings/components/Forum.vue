@@ -1,11 +1,12 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref, watch } from 'vue'
 import { btnLight } from '@/utils/cssMixins.ts'
+import { useForum } from '@/store/pinia/forum'
+import type { Forum } from '@/store/types/forum'
 import { useRoute } from 'vue-router'
 import { isValidate } from '@/utils/helper.ts'
-import { useForum } from '@/store/pinia/forum'
+import { usePerms } from '@/composables/usePerms.ts'
 import { getOrderedList, setLocalStorage } from '@/utils/helper.ts'
-import type { Forum } from '@/store/types/forum'
 import Draggable from 'vuedraggable'
 import NoData from '@/components/NoData/Index.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
@@ -17,6 +18,9 @@ const route = useRoute()
 
 const RefForumForm = ref()
 const RefDelConfirm = ref()
+
+const { can, PERM } = usePerms()
+const canForumManage = computed(() => can(PERM.FORUM_MANAGE))
 
 const validated = ref(false)
 const form = ref<Forum>({
@@ -111,7 +115,7 @@ onBeforeMount(async () => {
 <template>
   <CRow class="py-2">
     <CCol>
-      <span class="mr-2 form-text">
+      <span v-if="canForumManage" class="mr-2 form-text">
         <v-icon icon="mdi-plus-circle" color="success" size="15" />
         <router-link to="" class="ml-1" @click="crateForum">새 게시판</router-link>
       </span>
@@ -153,11 +157,11 @@ onBeforeMount(async () => {
                   size="16"
                   class="cursor-move mr-3"
                 />
-                <span class="mr-3 cursor-pointer">
+                <span v-if="canForumManage" class="mr-3 cursor-pointer">
                   <v-icon icon="mdi-pencil" color="amber" size="15" class="mr-2" />
                   <router-link to="" @click="modifyCall(element)">편집</router-link>
                 </span>
-                <span>
+                <span v-if="canForumManage">
                   <v-icon icon="mdi-trash-can-outline" color="grey" size="15" class="mr-2" />
                   <router-link to="" @click="deleteModalCall(element.pk)">삭제</router-link>
                 </span>
@@ -213,8 +217,17 @@ onBeforeMount(async () => {
           </CRow>
         </CModalBody>
         <CModalFooter>
-          <v-btn :color="btnLight" size="small" @click="RefForumForm.close()"> 닫기</v-btn>
-          <v-btn type="submit" :color="form.pk ? 'success' : 'primary'" size="small">확인</v-btn>
+          <v-btn variant="flat" :color="btnLight" size="small" @click="RefForumForm.close()">
+            닫기
+          </v-btn>
+          <v-btn
+            type="submit"
+            :color="form.pk ? 'success' : 'primary'"
+            size="small"
+            :disabled="!canForumManage"
+          >
+            확인
+          </v-btn>
         </CModalFooter>
       </CForm>
     </template>
@@ -226,7 +239,9 @@ onBeforeMount(async () => {
       계속 진행 하시겠습니까?
     </template>
     <template #footer>
-      <v-btn color="warning" size="small" @click="deleteForum">삭제</v-btn>
+      <v-btn color="warning" size="small" :disabled="!canForumManage" @click="deleteForum">
+        삭제
+      </v-btn>
     </template>
   </ConfirmModal>
 </template>
