@@ -1,5 +1,6 @@
 <script lang="ts" setup>
-import { ref, type PropType } from 'vue'
+import { ref, type PropType, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { useForum } from '@/store/pinia/forum'
 import type { Comment } from '@/store/types/forum'
 import CommentList from './components/CommentList.vue'
@@ -14,18 +15,22 @@ const props = defineProps({
 const formVision = ref<boolean>(true)
 const actForm = ref<number | undefined>(undefined)
 
+const route = useRoute()
+const projId = computed(() => route.params.projId as string)
+
 const forumStore = useForum()
-const createComment = (payload: Comment) => forumStore.createComment(payload)
-const patchComment = (payload: Comment) => forumStore.patchComment(payload)
+const createComment = (payload: Comment, projId: string = '') =>
+  forumStore.createComment(payload, projId)
+const patchComment = (payload: Comment, projId: string = '') =>
+  forumStore.patchComment(payload, projId)
 const patchCommentLike = (pk: number, post: number, page?: number) =>
   forumStore.patchCommentLike(pk, post, page)
 
 const toLike = (pk: number) => patchCommentLike(pk, props.post)
 
 const onSubmit = (payload: Comment) => {
-  console.log(payload)
-  if (!payload?.pk) createComment(payload)
-  else patchComment(payload)
+  if (!payload?.pk) createComment(payload, projId.value)
+  else patchComment(payload, projId.value)
 }
 
 const formReset = () => {

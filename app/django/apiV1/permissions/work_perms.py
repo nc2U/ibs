@@ -141,7 +141,25 @@ class ProjectPermission(permissions.BasePermission):
             # 설정되지 않았을 경우, 기본적으로 읽기 권한(read)만 허용하거나 접근 막기
             return request.method in permissions.SAFE_METHODS
 
-        return required_perm in user_perms
+        if required_perm in user_perms:
+            return True
+
+        # own_ 권한 확인 (작성자 본인 검증 등 세부 로직은 하위 Permission 클래스에서 처리)
+        parts = required_perm.split('.')
+        if len(parts) == 2:
+            domain, action = parts
+            if action in ['update', 'delete', 'private']:
+                if f"{domain}.own_{action}" in user_perms:
+                    return True
+            
+            # comment_update -> comment_own_update 등 복합 액션 처리
+            if '_' in action:
+                prefix, suffix = action.rsplit('_', 1)
+                if suffix in ['update', 'delete']:
+                    if f"{domain}.{prefix}_own_{suffix}" in user_perms:
+                        return True
+
+        return False
 
 
 class MeetingPermission(ProjectPermission):

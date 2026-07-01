@@ -19,7 +19,7 @@ const frmStore = useForum()
 
 const onSubmitComment = (payload: any) => {
   const data = typeof payload === 'string' ? { content: payload } : payload
-  if (data.pk) frmStore.patchComment(data)
+  if (data.pk) frmStore.patchComment(data, projId.value)
   else frmStore.createComment({ ...data, post: props.postId }, projId.value)
 }
 
