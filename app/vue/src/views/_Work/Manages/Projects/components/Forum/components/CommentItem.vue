@@ -15,8 +15,10 @@ const emit = defineEmits(['submit-comment', 'delete-comment'])
 
 const accStore = useAccount()
 const userInfo = computed(() => accStore.userInfo)
+const workManager = computed(() => accStore.workManager)
 
 const { can, PERM } = usePerms()
+const forceManage = ref(false)
 const canCommentCreate = computed(() => can(PERM.FORUM_CREATE))
 const canCommentUpdate = computed(() => {
   if (can(PERM.FORUM_UPDATE)) return true
@@ -59,30 +61,39 @@ const onEdit = (content: string) => {
           </div>
           <div class="actions">
             <v-btn
-              v-if="!comment.parent"
-              variant="text"
-              size="small"
+              v-if="userInfo?.pk !== comment.creator?.pk"
+              size="x-small"
               color="primary"
               :disabled="!canCommentCreate"
               @click="showReplyForm = !showReplyForm"
             >
               답글
             </v-btn>
-            <template v-if="userInfo?.pk === comment.creator?.pk">
+            <v-btn
+              v-if="userInfo?.pk !== comment.creator?.pk && workManager"
+              v-model="forceManage"
+              variant="outlined"
+              size="x-small"
+              color="primary"
+              @click="forceManage = !forceManage"
+            >
+              관리
+            </v-btn>
+            <template v-if="userInfo?.pk === comment.creator?.pk || forceManage">
               <v-btn
-                variant="text"
-                size="small"
+                v-if="canCommentUpdate"
+                variant="outlined"
+                size="x-small"
                 color="success"
-                :disabled="!canCommentUpdate"
                 @click="showEditForm = !showEditForm"
               >
                 수정
               </v-btn>
               <v-btn
-                variant="text"
-                size="small"
+                v-if="canCommentDelete"
+                variant="outlined"
+                size="x-small"
                 color="danger"
-                :disabled="!canCommentDelete"
                 @click="emit('delete-comment', comment.pk)"
               >
                 삭제
