@@ -23,13 +23,15 @@ const emit = defineEmits(['modal-close'])
 const store = useStore()
 const isDark = computed(() => store.theme === 'dark')
 
-const { can, PERM } = usePerms()
-
 const accStore = useAccount()
 const workManager = computed(() => accStore.workManager)
-const canUpdatePublic = computed(() => {
-  return workManager.value || can(PERM.PROJECT_PUBLIC)
-})
+
+const { can, PERM } = usePerms()
+
+const canProjectCreate = computed(() => can(PERM.PROJECT_CREATE))
+const canProjectUpdate = computed(() => can(PERM.PROJECT_UPDATE))
+const canProjectPublic = computed(() => can(PERM.PROJECT_PUBLIC))
+const canProjectModule = computed(() => can(PERM.PROJECT_MODULE))
 
 const validated = ref(false)
 
@@ -66,17 +68,13 @@ const module = reactive({
   calendar: true,
 })
 
-const canUpdateModule = computed(() => {
-  return workManager.value || can(PERM.PROJECT_MODULE)
-})
-
 const formsCheck = computed(() => {
   // 1. 권한 체크 로직
   const canSubmit = props.project
-    ? can(PERM.PROJECT_UPDATE)
+    ? canProjectUpdate.value
     : form.parent
       ? can(PERM.PROJECT_CREATE_SUB)
-      : can(PERM.PROJECT_CREATE)
+      : canProjectCreate.value
 
   // 2. 권한이 아예 없으면 무조건 비활성화
   if (!canSubmit) return true
@@ -89,7 +87,7 @@ const formsCheck = computed(() => {
     const e = form.homepage === props.project.homepage
 
     // 공개여부 변경은 권한이 있을 때만 체크
-    const f = !canUpdatePublic.value || form.is_public === props.project.is_public
+    const f = !canProjectPublic.value || form.is_public === props.project.is_public
 
     const g = Number(form.parent) === Number(props.project.parent)
     const h = form.is_inherit_members === props.project.is_inherit_members
@@ -103,11 +101,11 @@ const formsCheck = computed(() => {
       JSON.stringify(props.project.trackers?.map(t => t.pk).sort((a, b) => a - b))
 
     // 모듈 변경 체크는 권한이 있을 때만
-    const l = !canUpdateModule.value || module.issue === props.project.module?.issue
-    const n = !canUpdateModule.value || module.news === props.project.module?.news
-    const o = !canUpdateModule.value || module.document === props.project.module?.document
-    const r = !canUpdateModule.value || module.forum === props.project.module?.forum
-    const s = !canUpdateModule.value || module.calendar === props.project.module?.calendar
+    const l = !canProjectModule.value || module.issue === props.project.module?.issue
+    const n = !canProjectModule.value || module.news === props.project.module?.news
+    const o = !canProjectModule.value || module.document === props.project.module?.document
+    const r = !canProjectModule.value || module.forum === props.project.module?.forum
+    const s = !canProjectModule.value || module.calendar === props.project.module?.calendar
 
     const first = a && b && c && d && e && f && g && h && i && j
     const second = l && n && o && r && s
@@ -162,7 +160,7 @@ const onSubmit = async (event: Event) => {
 
       // 2. 공개 여부 변경 시 별도 액션 호출
       if (props.project && form.is_public !== props.project.is_public) {
-        if (canUpdatePublic.value) {
+        if (canProjectPublic.value) {
           await workStore.toggleProjectPublic(props.project.slug as string)
         }
       }
@@ -312,15 +310,10 @@ onBeforeMount(() => {
           </CCol>
         </CRow>
 
-        <CRow v-if="workManager || project?.my_perms?.includes('project_public')" class="mb-3">
+        <CRow v-if="canProjectPublic" class="mb-3">
           <CFormLabel class="col-form-label text-right col-2">공개여부</CFormLabel>
           <CCol class="pt-2">
-            <CFormSwitch
-              v-model="form.is_public"
-              id="is_public"
-              label="프로젝트 공개 여부"
-              :disabled="!canUpdatePublic"
-            />
+            <CFormSwitch v-model="form.is_public" id="is_public" label="프로젝트 공개 여부" />
             <div class="form-text">
               공개 프로젝트는 네트워크의 모든 사용자가 접속할 수 있습니다.
             </div>
@@ -396,22 +389,22 @@ onBeforeMount(() => {
       <CCardBody>
         <CRow>
           <CCol sm="6" md="4" lg="3" xl="2">
-            <CFormCheck
-              v-model="module.issue"
-              id="issue"
-              label="업무관리"
-              :disabled="true"
-            />
+            <CFormCheck v-model="module.issue" id="issue" label="업무관리" :disabled="true" />
           </CCol>
           <CCol sm="6" md="4" lg="3" xl="2">
-            <CFormCheck v-model="module.news" id="news" label="공지" :disabled="!canUpdateModule" />
+            <CFormCheck
+              v-model="module.news"
+              id="news"
+              label="공지"
+              :disabled="!canProjectModule"
+            />
           </CCol>
           <CCol sm="6" md="4" lg="3" xl="2">
             <CFormCheck
               v-model="module.document"
               id="document"
               label="문서"
-              :disabled="!canUpdateModule"
+              :disabled="!canProjectModule"
             />
           </CCol>
           <CCol sm="6" md="4" lg="3" xl="2">
@@ -419,7 +412,7 @@ onBeforeMount(() => {
               v-model="module.forum"
               id="forum"
               label="게시판"
-              :disabled="!canUpdateModule"
+              :disabled="!canProjectModule"
             />
           </CCol>
           <CCol sm="6" md="4" lg="3" xl="2">
@@ -427,7 +420,7 @@ onBeforeMount(() => {
               v-model="module.calendar"
               id="calendar"
               label="달력"
-              :disabled="!canUpdateModule"
+              :disabled="!canProjectModule"
             />
           </CCol>
         </CRow>
