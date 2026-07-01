@@ -23,6 +23,7 @@ watch(props, val => {
 const emit = defineEmits(['vision-toggle', 'to-like', 'to-blame', 'on-submit', 'on-delete'])
 
 const refBlameModal = ref()
+const refDeleteModal = ref()
 
 const accStore = useAccount()
 const userInfo = computed(() => accStore.userInfo)
@@ -67,11 +68,8 @@ const canCommentDelete = computed(() => {
   else return false
 })
 
-const toDelete = () => {
-  if (confirm('이 댓글을 삭제하시겠습니까?')) {
-    emit('on-delete', props.comment?.pk, props.comment?.post.pk)
-  }
-}
+const toDelete = () => refDeleteModal.value.callModal()
+const deleteComment = () => emit('on-delete', props.comment?.pk, props.comment?.post.pk)
 
 const onSubmit = (payload: Cm) => emit('on-submit', payload)
 </script>
@@ -122,7 +120,12 @@ const onSubmit = (payload: Cm) => emit('on-submit', payload)
     <p v-if="!(formShow && isEditing)" class="mt-3">
       <CBadge v-if="comment.secret" color="warning" class="mr-1">비밀글입니다</CBadge>
       <span
-        v-show="!comment.secret || userInfo?.is_superuser || userInfo?.pk === comment.creator?.pk || canCommentUpdate"
+        v-show="
+          !comment.secret ||
+          userInfo?.is_superuser ||
+          userInfo?.pk === comment.creator?.pk ||
+          canCommentUpdate
+        "
       >
         {{ comment?.content }}
       </span>
@@ -144,12 +147,20 @@ const onSubmit = (payload: Cm) => emit('on-submit', payload)
   <ConfirmModal ref="refBlameModal">
     <template #header>알림</template>
     <template #default>
-      이 댓글을 신고 {{ comment.my_blame ? '를 취소' : '' }} 하시겠습니까?<br /><br />
+      이 댓글을 신고 {{ comment.my_blame ? '를 취소' : '' }} 하시겠습니까?
     </template>
     <template #footer>
-      <v-btn :color="comment.my_blame ? 'secondary' : 'warning'" @click="blameAction">
+      <v-btn size="small" :color="comment.my_blame ? 'secondary' : 'warning'" @click="blameAction">
         {{ comment.my_blame ? '취소' : '신고' }}
       </v-btn>
+    </template>
+  </ConfirmModal>
+
+  <ConfirmModal ref="refDeleteModal">
+    <template #header>알림</template>
+    <template #default> 이 댓글을 삭제하시겠습니까? </template>
+    <template #footer>
+      <v-btn color="warning" size="small" @click="deleteComment"> 삭제 </v-btn>
     </template>
   </ConfirmModal>
 </template>
