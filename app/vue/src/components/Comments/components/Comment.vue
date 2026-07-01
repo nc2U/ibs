@@ -76,7 +76,9 @@ const onSubmit = (payload: Cm) => emit('on-submit', payload)
 
 <template>
   <li class="text-50" :id="`comment_${comment.pk}`">
-    <strong>{{ comment?.creator?.username }}</strong>
+    <strong>
+      <router-link :to="{}">{{ comment?.creator?.username }}</router-link>
+    </strong>
     <small class="ml-2">
       <v-icon icon="mdi-clock-time-four-outline" size="sm" />
       {{ elapsedTime(comment?.created ?? '') }}
@@ -117,8 +119,8 @@ const onSubmit = (payload: Cm) => emit('on-submit', payload)
       <small v-if="canCommentDelete" class="ml-1 text-btn" @click="toDelete">삭제</small>
     </template>
 
-    <p v-if="!(formShow && isEditing)" class="mt-3">
-      <CBadge v-if="comment.secret" color="warning" class="mr-1">비밀글입니다</CBadge>
+    <p v-if="!(formShow && isEditing)" class="mt-1 p-2">
+      <CBadge v-if="comment.secret" color="danger" class="mr-2">비밀글입니다</CBadge>
       <span
         v-show="
           !comment.secret ||
