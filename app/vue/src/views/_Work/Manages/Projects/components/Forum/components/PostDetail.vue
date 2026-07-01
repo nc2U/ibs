@@ -5,8 +5,8 @@ import type { Post } from '@/store/types/forum'
 import { useRoute, useRouter } from 'vue-router'
 import { elapsedTime, humanizeFileSize } from '@/utils/baseMixins'
 import { usePerms } from '@/composables/usePerms.ts'
-import { markdownRender } from '@/utils/helper'
 import CommentSection from './CommentSection.vue'
+import MDContent from '@/components/OtherParts/MDContent.vue'
 
 const props = defineProps({
   post: { type: Object as PropType<Post>, required: true },
@@ -78,7 +78,7 @@ const userInfo = computed(() => accStore.userInfo)
 
       <v-card-text>
         <!-- CCardBody 대신 v-card-text 사용 -->
-        <div v-html="markdownRender(post.content)" class="post-content" />
+        <MDContent :content="post.content" />
 
         <div v-if="post.links?.length || post.files?.length" class="mt-6 pt-6 files-section">
           <!-- 상단 간격 조정 -->
@@ -157,10 +157,3 @@ const userInfo = computed(() => accStore.userInfo)
     />
   </template>
 </template>
-
-<style lang="scss" scoped>
-.post-content {
-  min-height: 200px;
-  line-height: 1.6;
-}
-</style>
