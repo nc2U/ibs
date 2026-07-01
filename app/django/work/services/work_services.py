@@ -135,6 +135,8 @@ class PermissionService:
     @staticmethod
     def check_module_permission(user, project):
         """모듈 수정 권한을 중앙에서 검증"""
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return
         perms = project.get_user_permissions(user)
         if 'project.module' not in perms:
             raise PermissionDenied("모듈을 수정할 권한이 없습니다.")

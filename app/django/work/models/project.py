@@ -125,20 +125,20 @@ class IssueProject(models.Model):
                 pass
             return list(permission_codes)
 
-        # 1. 상속 가능한 상위 프로젝트 목록 계산
-        projects_to_fetch = [self]
+        # 1. 상속 가능한 상위 프로젝트 목록 계산 (PK 리스트 사용)
+        project_ids = [self.pk]
         curr = self
         while curr.is_inherit_members and curr.parent:
-            if curr.parent in projects_to_fetch:
+            if curr.parent.pk in project_ids:
                 break
-            projects_to_fetch.append(curr.parent)
+            project_ids.append(curr.parent.pk)
             curr = curr.parent
 
-        # 2. 해당 사용자(user)가 속한 Member 정보와 Role만 한정하여 조회
+        # 2. 해당 사용자(user)가 속한 Member 정보와 Role만 한정하여 조회 (user_id 및 project_id__in 사용)
         from work.models.project import Member
         user_members = Member.objects.filter(
-            project__in=projects_to_fetch,
-            user=user
+            project_id__in=project_ids,
+            user_id=user.pk
         ).prefetch_related('roles__permissions')
 
         # 3. 모든 역할에 연결된 권한 코드 추출
