@@ -4,13 +4,13 @@ import { navMenu1, navMenu2 } from '@/views/_Work/_menu/headermixin1'
 import { useCompany } from '@/store/pinia/company.ts'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useInform } from '@/store/pinia/work_inform.ts'
+import { useAccount } from '@/store/pinia/account.ts'
+import { usePerms } from '@/composables/usePerms.ts'
 import { onBeforeRouteUpdate, useRoute } from 'vue-router'
 import type { Company } from '@/store/types/settings'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import Loading from '@/components/Loading/Index.vue'
 import Header from '@/views/_Work/components/Header/Index.vue'
-import { usePerms } from '@/composables/usePerms.ts'
-import { useAccount } from '@/store/pinia/account.ts'
 
 const cBody = ref()
 const sideNavCAll = () => cBody.value.toggle()
@@ -29,6 +29,7 @@ const headerTitle = computed(() =>
 const navMenus = computed(() => (!issueProjects.value.length ? navMenu1 : navMenu2))
 
 const { can, PERM } = usePerms()
+
 const accStore = useAccount()
 const workManager = computed(() => accStore.workManager)
 const canAccessSetting = computed(
@@ -83,7 +84,6 @@ provide('query', route?.query)
 
 const workStore = useWork()
 const issueProject = computed(() => workStore.issueProject as IssueProject)
-provide('iProject', issueProject)
 const issueProjects = computed(() => workStore.issueProjects)
 
 const infStore = useInform()

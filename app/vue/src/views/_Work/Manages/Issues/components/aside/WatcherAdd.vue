@@ -30,7 +30,7 @@ const userAdding = () => {
 }
 
 const workStore = useWork()
-const iProject = inject<ComputedRef<IssueProject>>('iProject')
+const iProject = computed(() => workStore.issueProject as IssueProject)
 
 const members = computed(() =>
   (iProject?.value ? iProject?.value?.all_members : workStore?.memberList)?.map(m => m.user),

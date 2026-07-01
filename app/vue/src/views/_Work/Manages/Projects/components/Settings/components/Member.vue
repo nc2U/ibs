@@ -15,9 +15,8 @@ const memberFormModal = ref()
 const { can, PERM } = usePerms()
 const canManageMembers = computed(() => can(PERM.PROJECT_MEMBER))
 
-const iProject = inject<ComputedRef<IssueProject>>('iProject')
-
 const workStore = useWork()
+const iProject = computed(() => workStore.issueProject as IssueProject)
 const memberList = computed<SimpleMember[]>(
   () => (workStore.issueProject as IssueProject)?.members ?? [],
 )

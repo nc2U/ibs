@@ -9,6 +9,7 @@ import type { User } from '@/store/types/accounts.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import type { ActLogEntryFilter } from '@/store/types/work_logging.ts'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
+import { useWork } from '@/store/pinia/work_project.ts'
 
 const props = defineProps({
   toDate: { type: Date, required: true },
@@ -106,13 +107,13 @@ watch(
   () => filterActivity(),
 )
 
-const iProject = inject<ComputedRef<IssueProject>>('iProject')
+const workStore = useWork()
 
 const accStore = useAccount()
 const userInfo = computed(() => accStore.userInfo)
 const getUsers = computed(() =>
-  iProject?.value
-    ? iProject.value?.all_members?.map(m => ({
+  workStore.issueProject
+    ? workStore.issueProject?.all_members?.map(m => ({
         value: m.user.pk,
         label: m.user.username,
       }))

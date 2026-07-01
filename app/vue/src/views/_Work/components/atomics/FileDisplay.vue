@@ -1,6 +1,7 @@
 <script lang="ts" setup>
-import { computed, type ComputedRef, inject, type PropType, ref } from 'vue'
-import type { IssueProject, SimpleUser } from '@/store/types/work_project.ts'
+import { computed, type PropType, ref } from 'vue'
+import { useWork } from '@/store/pinia/work_project.ts'
+import type { SimpleUser } from '@/store/types/work_project.ts'
 import { cutString, humanizeFileSize, timeFormat } from '@/utils/baseMixins.ts'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
@@ -25,8 +26,8 @@ const deleteFile = () => {
   RefDelFile.value.close()
 }
 
-const iProject = inject<ComputedRef<IssueProject | null>>('iProject')
-const projStatus = computed(() => iProject?.value?.status)
+const workStore = useWork()
+const projStatus = computed(() => workStore.issueProject?.status)
 </script>
 
 <template>
