@@ -8,6 +8,9 @@ import type { Post, PostCategory } from '@/store/types/forum'
 import MdEditor from '@/components/MdEditor/Index.vue'
 import FileForms from '@/components/OtherParts/FileForms.vue'
 import LinkForms from '@/components/OtherParts/LinkForms.vue'
+import FormModal from '@/components/Modals/FormModal.vue'
+import { isValidate } from '@/utils/helper.ts'
+import { btnLight } from '@/utils/cssMixins.ts'
 
 const props = defineProps({
   post: { type: Object as PropType<Post | null>, default: null },
@@ -15,13 +18,48 @@ const props = defineProps({
   categories: { type: Array as PropType<PostCategory[]>, default: () => [] },
 })
 
+const categoryForm = ref()
+
 const [route, router] = [useRoute(), useRouter()]
 
 const { can, PERM } = usePerms()
 const canForumCreate = computed(() => can(PERM.FORUM_CREATE))
 const canForumUpdate = computed(() => can(PERM.FORUM_UPDATE))
+const canForumManage = computed(() => can(PERM.FORUM_MANAGE))
 
 const frmStore = useForum()
+
+// 카테고리 간편 추가용 다이얼로그 상태 및 폼 객체
+const categoryValidated = ref(false)
+const newCategory = ref({
+  forum: props.forumId,
+  name: '',
+  color: '#6c757d',
+  order: 1,
+})
+const isSubmittingCategory = ref(false)
+
+const openCategoryDialog = () => {
+  newCategory.value = {
+    forum: props.forumId,
+    name: '',
+    color: '#6c757d',
+    order: props.categories.length + 1,
+  }
+  categoryForm.value.callModal()
+}
+
+const submitCategory = (event: Event) => {
+  if (isValidate(event)) categoryValidated.value = true
+  else {
+    isSubmittingCategory.value = true
+    frmStore.createCategory(newCategory.value).then(() => {
+      categoryForm.value.close()
+      categoryValidated.value = false
+      isSubmittingCategory.value = false
+    })
+  }
+}
 const createPost = (payload: { form: FormData }) => frmStore.createPost(payload)
 const updatePost = (payload: { pk: number; form: FormData }) => frmStore.updatePost(payload)
 
@@ -140,14 +178,32 @@ onBeforeUpdate(() => dataSetup())
         <CRow class="mb-3">
           <CCol sm="12" lg="6">
             <CRow>
-              <CFormLabel class="col-form-label text-right col-2 col-lg-4">범주</CFormLabel>
-              <CCol class="col-sm-10 col-md-6 col-lg-8 col-xl-6">
-                <CFormSelect v-model.number="form.category">
+              <CFormLabel class="col-form-label text-right col-2 col-lg-4">카테고리</CFormLabel>
+              <CCol class="col-sm-10 col-md-6 col-lg-8 col-xl-6 d-flex align-center">
+                <CFormSelect v-if="categories.length" v-model.number="form.category">
                   <option value="">---------</option>
                   <option v-for="cate in categories" :value="cate.pk" :key="cate.pk as number">
                     {{ cate.name }}
                   </option>
                 </CFormSelect>
+
+                <v-tooltip text="카테고리 추가">
+                  <template v-slot:activator="{ props }">
+                    <v-btn
+                      v-bind="props"
+                      v-if="canForumManage"
+                      icon="mdi-plus"
+                      color="success"
+                      size="x-small"
+                      variant="text"
+                      density="comfortable"
+                      title="카테고리 추가"
+                      class="ml-2"
+                      @click="openCategoryDialog"
+                    >
+                    </v-btn>
+                  </template>
+                </v-tooltip>
               </CCol>
             </CRow>
           </CCol>
@@ -208,12 +264,11 @@ onBeforeUpdate(() => dataSetup())
 
     <CRow class="mb-5 text-right">
       <CCol>
-        <v-btn color="light" size="small" variant="flat" @click="router.back()">취소</v-btn>
+        <v-btn color="light" variant="flat" @click="router.back()">취소</v-btn>
         <v-btn
           type="submit"
           :color="!post?.pk ? 'primary' : 'success'"
           :disabled="!post?.pk ? !canForumCreate : !canForumUpdate"
-          size="small"
           class="mr-2"
         >
           저장
@@ -221,4 +276,64 @@ onBeforeUpdate(() => dataSetup())
       </CCol>
     </CRow>
   </CForm>
+
+  <!-- 카테고리 간편 추가 다이얼로그 (FormModal 적용) -->
+  <FormModal ref="categoryForm">
+    <template #header>새 카테고리 등록</template>
+    <template #default>
+      <CForm
+        class="needs-validation"
+        novalidate
+        :validated="categoryValidated"
+        @submit.prevent="submitCategory"
+      >
+        <CModalBody class="text-body">
+          <CRow class="mb-3">
+            <CFormLabel for="cat-name" class="col-sm-3 col-form-label required">이름</CFormLabel>
+            <CCol sm="9">
+              <CFormInput
+                v-model="newCategory.name"
+                id="cat-name"
+                placeholder="카테고리 명칭"
+                maxlength="255"
+                required
+              />
+            </CCol>
+          </CRow>
+          <CRow class="mb-3">
+            <CFormLabel for="cat-name" class="col-sm-3 col-form-label">색상</CFormLabel>
+            <CCol sm="9">
+              <CFormInput
+                v-model="newCategory.color"
+                id="cat-color"
+                type="color"
+                :value="newCategory.color"
+                placeholder="색상 코드"
+              />
+            </CCol>
+          </CRow>
+          <CRow class="mb-3">
+            <CFormLabel for="cat-name" class="col-sm-3 col-form-label">순서</CFormLabel>
+            <CCol sm="9">
+              <CFormInput
+                v-model.number="newCategory.order"
+                type="number"
+                id="cat-order"
+                placeholder="출력 순서"
+                maxlength="255"
+              />
+            </CCol>
+          </CRow>
+        </CModalBody>
+        <CModalFooter>
+          <v-btn variant="flat" color="light" size="small" @click="categoryForm.close()">
+            닫기
+          </v-btn>
+          <v-btn type="submit" color="primary" size="small" :loading="isSubmittingCategory">
+            확인
+          </v-btn>
+        </CModalFooter>
+      </CForm>
+    </template>
+  </FormModal>
 </template>
