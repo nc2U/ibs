@@ -33,8 +33,8 @@ const canForumRead = computed(() => can(PERM.FORUM_READ))
       {{ post.title }}
     </router-link>
     <span v-else>{{ post.title }}</span>
-    <CBadge v-if="post.is_new" color="success" class="ml-2" size="sm">new</CBadge>
     <span v-if="post.comments?.length" class="ml-2 text-grey"> ({{ post.comments.length }}) </span>
+    <CBadge v-if="post.is_new" color="success" class="ml-2" size="sm">new</CBadge>
   </CTableDataCell>
   <CTableDataCell class="text-center">{{ post.creator?.username }}</CTableDataCell>
   <CTableDataCell class="text-center">{{ timeFormat(post.created as string) }}</CTableDataCell>

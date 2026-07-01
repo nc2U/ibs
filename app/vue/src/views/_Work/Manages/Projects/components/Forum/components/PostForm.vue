@@ -152,8 +152,22 @@ onBeforeUpdate(() => dataSetup())
             </CRow>
           </CCol>
           <CCol sm="12" lg="6" class="pt-2">
-            <CFormCheck v-model="form.is_notice" label="공지사항" inline class="mr-3" />
-            <CFormCheck v-model="form.is_secret" label="비밀글" inline />
+            <CFormCheck
+              v-if="can(PERM.FORUM_MANAGE)"
+              v-model="form.is_notice"
+              label="공지사항"
+              id="is_notice"
+              inline
+              class="mr-3"
+            />
+            <CFormCheck v-model="form.is_blind" label="숨김글" id="is_blind" inline />
+            <span v-if="form.is_blind" class="text-muted">
+              숨김글로 설정한 게시물은 관리자만 확인할 수 있습니다.
+            </span>
+            <CFormCheck v-model="form.is_secret" label="비밀글" id="is_secret" inline />
+            <span v-if="form.is_secret" class="text-muted">
+              비밀글로 설정한 게시물은 본인과 관리자만 확인할 수 있습니다.
+            </span>
           </CCol>
         </CRow>
 

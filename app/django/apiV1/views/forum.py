@@ -34,12 +34,45 @@ class ForumViewSet(viewsets.ModelViewSet):
         }
         return mapping.get(self.action, None)
 
+    def get_queryset(self):
+        user = self.request.user
+        queryset = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return queryset.select_related('project')
+        # 행 보안: 사용자가 속한 프로젝트의 게시판이거나 공개 프로젝트의 게시판만 노출
+        return queryset.filter(
+            Q(project__is_public=True) | Q(project__members__user=user)
+        ).distinct().select_related('project')
+
 
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = PostCategory.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (permissions.IsAuthenticated, ForumPermission)
     filterset_fields = ('forum', 'parent')
+
+    @property
+    def required_permission(self):
+        # 카테고리 관리는 게시판 설정 관리 권한(forum.manage)으로 일원화
+        mapping = {
+            'list': 'forum.read',
+            'retrieve': 'forum.read',
+            'create': 'forum.manage',
+            'update': 'forum.manage',
+            'partial_update': 'forum.manage',
+            'destroy': 'forum.manage'
+        }
+        return mapping.get(self.action, None)
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return queryset.select_related('forum')
+        # 행 보안: 사용자가 속한 프로젝트의 게시판 카테고리 혹은 공개 프로젝트의 카테고리만 노출
+        return queryset.filter(
+            Q(forum__project__is_public=True) | Q(forum__project__members__user=user)
+        ).distinct().select_related('forum')
 
 
 class PostFilterSet(FilterSet):
@@ -70,6 +103,16 @@ class PostViewSet(viewsets.ModelViewSet):
             'destroy': 'forum.delete'
         }
         return mapping.get(self.action, None)
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return queryset
+        # 행 보안: 사용자가 권한을 가진 프로젝트의 게시판 글만 조회
+        return queryset.filter(
+            Q(forum__project__is_public=True) | Q(forum__project__members__user=user)
+        ).distinct()
 
     @action(detail=True, methods=['post'], url_path='hit')
     def hit(self, request, *args, **kwargs):
@@ -124,6 +167,14 @@ class PostLikeViewSet(viewsets.ModelViewSet):
     def required_permission(self):
         return 'forum.read'
 
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return self.queryset
+        return self.queryset.filter(
+            Q(forum__project__is_public=True) | Q(forum__project__members__user=user)
+        ).distinct()
+
 
 class PostBlameViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all()
@@ -133,6 +184,14 @@ class PostBlameViewSet(viewsets.ModelViewSet):
     @property
     def required_permission(self):
         return 'forum.read'
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return self.queryset
+        return self.queryset.filter(
+            Q(forum__project__is_public=True) | Q(forum__project__members__user=user)
+        ).distinct()
 
 
 class PostLinkViewSet(viewsets.ModelViewSet):
@@ -152,6 +211,15 @@ class PostLinkViewSet(viewsets.ModelViewSet):
         }
         return mapping.get(self.action, None)
 
+    def get_queryset(self):
+        user = self.request.user
+        qs = self.queryset.select_related('post__forum')
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(
+            Q(post__forum__project__is_public=True) | Q(post__forum__project__members__user=user)
+        ).distinct()
+
 
 class PostFileViewSet(viewsets.ModelViewSet):
     queryset = PostFile.objects.all()
@@ -170,6 +238,15 @@ class PostFileViewSet(viewsets.ModelViewSet):
         }
         return mapping.get(self.action, None)
 
+    def get_queryset(self):
+        user = self.request.user
+        qs = self.queryset.select_related('post__forum')
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(
+            Q(post__forum__project__is_public=True) | Q(post__forum__project__members__user=user)
+        ).distinct()
+
 
 class PostImageViewSet(viewsets.ModelViewSet):
     queryset = PostImage.objects.all()
@@ -187,6 +264,15 @@ class PostImageViewSet(viewsets.ModelViewSet):
             'destroy': 'forum.update'
         }
         return mapping.get(self.action, None)
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = self.queryset.select_related('post__forum')
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(
+            Q(post__forum__project__is_public=True) | Q(post__forum__project__members__user=user)
+        ).distinct()
 
 
 class CommentFilterSet(FilterSet):
@@ -216,6 +302,16 @@ class CommentViewSet(viewsets.ModelViewSet):
         }
         return mapping.get(self.action, None)
 
+    def get_queryset(self):
+        user = self.request.user
+        queryset = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return queryset
+        # 행 보안: 사용자가 권한을 가진 프로젝트의 게시판 댓글만 조회
+        return queryset.filter(
+            Q(post__forum__project__is_public=True) | Q(post__forum__project__members__user=user)
+        ).distinct()
+
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
 
@@ -229,6 +325,14 @@ class CommentLikeViewSet(viewsets.ModelViewSet):
     def required_permission(self):
         return 'forum.read'
 
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return self.queryset
+        return self.queryset.filter(
+            Q(post__forum__project__is_public=True) | Q(post__forum__project__members__user=user)
+        ).distinct()
+
 
 class CommentBlameViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()
@@ -239,11 +343,27 @@ class CommentBlameViewSet(viewsets.ModelViewSet):
     def required_permission(self):
         return 'forum.read'
 
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return self.queryset
+        return self.queryset.filter(
+            Q(post__forum__project__is_public=True) | Q(post__forum__project__members__user=user)
+        ).distinct()
+
 
 class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return self.queryset
+        return self.queryset.filter(
+            Q(post__forum__project__is_public=True) | Q(post__forum__project__members__user=user)
+        ).distinct()
 
 
 class PostInTrashViewSet(PostViewSet):

@@ -1,14 +1,17 @@
 <script lang="ts" setup>
 import { type PropType } from 'vue'
-import { useRoute } from 'vue-router'
 import type { Forum } from '@/store/types/forum'
+import { useRoute } from 'vue-router'
 import { elapsedTime } from '@/utils/baseMixins'
+import { usePerms } from '@/composables/usePerms.ts'
 
 defineProps({
   forumList: { type: Array as PropType<Forum[]>, default: () => [] },
 })
 
 const route = useRoute()
+
+const { can, PERM } = usePerms()
 </script>
 
 <template>
@@ -41,7 +44,7 @@ const route = useRoute()
               name: '(게시판) - 보기',
               params: { projId: route.params.projId, forumId: frm.pk },
             }"
-            class="bold"
+            class="strong"
           >
             {{ frm.name }}
           </router-link>
@@ -51,6 +54,7 @@ const route = useRoute()
         <CTableDataCell class="form-text pl-4">
           <template v-if="frm.last_post">
             <router-link
+              v-if="can(PERM.FORUM_READ)"
               :to="{
                 name: '(게시판) - 게시물 보기',
                 params: {
@@ -62,6 +66,7 @@ const route = useRoute()
             >
               {{ frm.last_post.title }}
             </router-link>
+            <span v-else>{{ frm.last_post.title }}</span>
             <span class="text-grey ml-2">
               by {{ frm.last_post.creator }}, {{ elapsedTime(frm.last_post.created) }}
             </span>
@@ -72,9 +77,3 @@ const route = useRoute()
     </CTableBody>
   </CTable>
 </template>
-
-<style lang="scss" scoped>
-.bold {
-  font-weight: bold;
-}
-</style>
