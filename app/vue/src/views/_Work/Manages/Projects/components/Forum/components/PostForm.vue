@@ -2,6 +2,7 @@
 import { computed, onBeforeMount, onBeforeUpdate, type PropType, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms.ts'
+import { isValidate } from '@/utils/helper.ts'
 import { useForum } from '@/store/pinia/forum'
 import { colorLight } from '@/utils/cssMixins'
 import type { Post, PostCategory } from '@/store/types/forum'
@@ -9,8 +10,6 @@ import MdEditor from '@/components/MdEditor/Index.vue'
 import FileForms from '@/components/OtherParts/FileForms.vue'
 import LinkForms from '@/components/OtherParts/LinkForms.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
-import { isValidate } from '@/utils/helper.ts'
-import { btnLight } from '@/utils/cssMixins.ts'
 
 const props = defineProps({
   post: { type: Object as PropType<Post | null>, default: null },
