@@ -364,7 +364,9 @@ export const useForum = defineStore('forum', () => {
   const deleteComment = (payload: { pk: number; post: number }, projId: string = '') =>
     api
       .delete(`/comment/${payload.pk}/?project=${projId}`)
-      .then(() => fetchPost(payload.post).then(() => message()))
+      .then(() =>
+        fetchPost(payload.post).then(() => message('warning', '', '해당 댓글이 삭제되었습니다.')),
+      )
       .catch(err => errorHandle(err.response.data))
 
   const tag = ref(null)
