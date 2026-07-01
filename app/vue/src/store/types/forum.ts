@@ -18,11 +18,11 @@ export interface Forum {
 }
 
 export interface PostCategory {
-  pk: number | null
+  pk?: number | null
   forum: number | null
   color: string | null
   name: string
-  parent: number | null
+  parent?: number | null
   order: number | null
 }
 

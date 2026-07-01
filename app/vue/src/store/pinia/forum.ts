@@ -73,9 +73,32 @@ export const useForum = defineStore('forum', () => {
       .then(res => (categoryList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
-  const createCategory = () => 2
-  const updateCategory = () => 3
-  const deleteCategory = () => 4
+  const createCategory = (payload: PostCategory) =>
+    api
+      .post(`/post-category/`, payload)
+      .then(async res => {
+        await fetchCategoryList(res.data.forum)
+        message()
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const updateCategory = (payload: PostCategory) =>
+    api
+      .put(`/post-category/${payload.pk}/`, payload)
+      .then(async res => {
+        await fetchCategoryList(res.data.forum)
+        message()
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const deleteCategory = (payload: { pk: number; forum: number }) =>
+    api
+      .delete(`/post-category/${payload.pk}/`)
+      .then(async () => {
+        await fetchCategoryList(payload.forum)
+        message('warning', '', '카테고리가 삭제되었습니다.')
+      })
+      .catch(err => errorHandle(err.response.data))
 
   const accStore = useAccount()
   const post = ref<Post | null>(null)
