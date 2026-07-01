@@ -1,9 +1,9 @@
 <script lang="ts" setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
+import { usePerms } from '@/composables/usePerms'
 import { useWork } from '@/store/pinia/work_project.ts'
 import type { IssueProject, ProjectFilter } from '@/store/types/work_project.ts'
-import { usePerms } from '@/composables/usePerms'
 import SearchList from './SearchList.vue'
 import ProjectCard from './ProjectCard.vue'
 import ProjectTable from './ProjectTable.vue'
@@ -19,6 +19,7 @@ const { can, PERM } = usePerms() // 사용자 권한 데이터
 const projectList = computed<IssueProject[]>(() => workStore.issueProjects)
 const allIssueProjects = computed<IssueProject[]>(() => workStore.AllIssueProjects)
 const allProjects = computed(() => workStore.getAllProjects)
+const rollList = computed(() => workStore.roleList)
 
 const viewMode = ref<'board' | 'list'>(
   (localStorage.getItem('project-view-mode') as 'board' | 'list') || 'board',
@@ -53,12 +54,6 @@ const updateBreakpoint = () => {
   else breakpoint.value = 'xl'
 }
 
-onMounted(() => {
-  updateBreakpoint()
-  window.addEventListener('resize', updateBreakpoint)
-})
-onBeforeUnmount(() => window.removeEventListener('resize', updateBreakpoint))
-
 // 반응형 컬럼 설정 계산
 const colProps = computed(() => {
   switch (breakpoint.value) {
@@ -71,6 +66,16 @@ const colProps = computed(() => {
     default:
       return { sm: 3 }
   }
+})
+
+onMounted(() => {
+  updateBreakpoint()
+  window.addEventListener('resize', updateBreakpoint)
+})
+onBeforeUnmount(() => window.removeEventListener('resize', updateBreakpoint))
+
+onBeforeMount(() => {
+  workStore.fetchRoleList()
 })
 </script>
 
@@ -121,6 +126,23 @@ const colProps = computed(() => {
             <v-icon icon="mdi-bookmark" color="info" size="15" class="mr-1" />
             <span class="mt-2">내 북마크</span>
           </span>
+        </CCol>
+      </CRow>
+      <CRow class="text-right text">
+        <div class="my-5"></div>
+        <CCol class="mt-4 p-3 bg-more-light text-muted">
+          <v-icon icon="mdi-information" color="light-blue-lighten-2" size="small" class="mr-2" />
+          프로젝트를 생성 하려면
+          <strong>
+            {{
+              rollList
+                .filter(r => r.permissions.includes(1))
+                .map(r => r.name)
+                .join(', ')
+            }}
+          </strong>
+          역할이 필요합니다.<br />
+          해당 역할을 배정 받거나 해당 멤버에게 생성을 요청하시기 바랍니다.
         </CCol>
       </CRow>
     </template>
