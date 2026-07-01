@@ -3,7 +3,10 @@ import { computed, nextTick, onBeforeMount, onBeforeUpdate, type PropType, ref }
 import type { AFile } from '@/store/types/docs'
 import { AlertSecondary } from '@/utils/cssMixins'
 
-const props = defineProps({ files: { type: Array as PropType<AFile[]>, default: () => [] } })
+const props = defineProps({
+  label: { type: String, default: '파일' },
+  files: { type: Array as PropType<AFile[]>, default: () => [] },
+})
 
 const emit = defineEmits(['files-update', 'file-upload', 'file-change'])
 
@@ -84,7 +87,7 @@ onBeforeMount(() => dataSetup())
 
 <template>
   <CRow>
-    <CFormLabel for="title" class="col-form-label col-2 text-right">파일</CFormLabel>
+    <CFormLabel for="title" class="col-form-label col-2 text-right">{{ label }}</CFormLabel>
     <CCol class="col-sm-10 col-xl-8">
       <CRow v-if="(files as AFile[]).length">
         <CAlert :color="AlertSecondary">

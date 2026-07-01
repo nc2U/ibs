@@ -15,6 +15,7 @@ import MultiSelect from '@/components/MultiSelect/index.vue'
 import FileForms from '@/components/OtherParts/FileForms.vue'
 import LinkForms from '@/components/OtherParts/LinkForms.vue'
 import AddNewDoc from './AddNewDoc.vue'
+import MdEditor from '@/components/MdEditor/Index.vue'
 
 const props = defineProps({
   docs: { type: Object as PropType<Docs>, default: () => null },
@@ -256,16 +257,13 @@ onBeforeMount(() => dataSetup())
           <CRow class="mb-3">
             <CFormLabel class="col-form-label text-right col-2">설명</CFormLabel>
             <CCol class="col-sm-10 mb-5">
-              <QuillEditor
-                v-model:content="form.description"
-                placeholder="문서 내용 설명"
-                style="background: white"
-              />
+              <MdEditor v-model="form.description" placeholder="문서 내용 설명" />
             </CCol>
           </CRow>
 
           <FileForms
             ref="refFileForms"
+            label="문서파일"
             :files="docs?.files ?? []"
             @files-update="filesUpdate"
             @file-upload="fileUpload"
@@ -274,6 +272,7 @@ onBeforeMount(() => dataSetup())
 
           <LinkForms
             ref="refLinkForms"
+            label="문서링크"
             :links="docs?.links ?? []"
             @links-update="linksUpdate"
             @new-link-push="newLinkPush"

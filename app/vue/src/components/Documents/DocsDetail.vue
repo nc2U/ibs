@@ -342,7 +342,7 @@ onMounted(() => {
         </CCol>
       </CRow>
 
-      <PostContent :description="docs.description" />
+      <PostContent :content="docs.description" />
     </div>
 
     <CRow class="my-3 px-3">

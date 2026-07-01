@@ -7,6 +7,7 @@ import { elapsedTime, humanizeFileSize } from '@/utils/baseMixins'
 import { usePerms } from '@/composables/usePerms.ts'
 import CommentSection from './CommentSection.vue'
 import MDContent from '@/components/OtherParts/MDContent.vue'
+import PostContent from '@/components/OtherParts/PostContent.vue'
 
 const props = defineProps({
   post: { type: Object as PropType<Post>, required: true },
@@ -77,8 +78,7 @@ const userInfo = computed(() => accStore.userInfo)
       <v-divider />
 
       <v-card-text>
-        <!-- CCardBody 대신 v-card-text 사용 -->
-        <MDContent :content="post.content" />
+        <PostContent :content="post.content" />
 
         <div v-if="post.links?.length || post.files?.length" class="mt-6 pt-6 files-section">
           <!-- 상단 간격 조정 -->

@@ -6,7 +6,7 @@ import { isValidate } from '@/utils/helper.ts'
 import { useForum } from '@/store/pinia/forum'
 import { colorLight } from '@/utils/cssMixins'
 import type { Post, PostCategory } from '@/store/types/forum'
-import MdEditor from '@/components/MdEditor/Index.vue'
+import QuillEditor from '@/components/QuillEditor/index.vue'
 import FileForms from '@/components/OtherParts/FileForms.vue'
 import LinkForms from '@/components/OtherParts/LinkForms.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
@@ -241,11 +241,7 @@ onBeforeUpdate(() => dataSetup())
         <CRow class="mb-3">
           <CFormLabel class="col-form-label text-right col-2">내용</CFormLabel>
           <CCol class="col-sm-10">
-            <MdEditor
-              v-model="form.content"
-              placeholder="내용을 입력하세요"
-              style="height: 450px"
-            />
+            <QuillEditor v-model:content="form.content" />
           </CCol>
         </CRow>
 

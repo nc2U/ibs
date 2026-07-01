@@ -1,14 +1,14 @@
 <script lang="ts" setup>
 import { computed, onMounted, type PropType, ref } from 'vue'
 import { useDocs } from '@/store/pinia/docs'
+import { useAccount } from '@/store/pinia/account.ts'
 import type { Docs } from '@/store/types/docs'
 import { useRoute, useRouter } from 'vue-router'
 import { timeFormat } from '@/utils/baseMixins'
 import { usePerms } from '@/composables/usePerms.ts'
 import { storeToRefs } from 'pinia'
-import { useAccount } from '@/store/pinia/account.ts'
 import PostInfo from '@/components/OtherParts/PostInfo.vue'
-import PostContent from '@/components/OtherParts/PostContent.vue'
+import MDContent from '@/components/OtherParts/MDContent.vue'
 import PostedFile from '@/components/OtherParts/PostedFile.vue'
 import PostedLink from '@/components/OtherParts/PostedLink.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
@@ -120,7 +120,7 @@ onMounted(() => {
     <div v-if="docs.description" class="description-section mb-5">
       <h6 class="mb-2 text-muted">문서 요약</h6>
       <div class="p-3 bg-more-light rounded border">
-        <PostContent :description="docs.description" />
+        <MDContent :content="docs.description" />
       </div>
     </div>
 

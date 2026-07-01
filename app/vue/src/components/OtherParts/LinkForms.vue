@@ -3,7 +3,10 @@ import { computed, nextTick, onBeforeMount, onBeforeUpdate, type PropType, ref }
 import type { Link } from '@/store/types/docs'
 import { AlertSecondary } from '@/utils/cssMixins'
 
-const props = defineProps({ links: { type: Array as PropType<Link[]>, default: () => [] } })
+const props = defineProps({
+  label: { type: String, default: '링크' },
+  links: { type: Array as PropType<Link[]>, default: () => [] },
+})
 
 const emit = defineEmits(['links-update', 'new-link-push'])
 
@@ -43,7 +46,7 @@ onBeforeMount(() => dataSetup())
 
 <template>
   <CRow>
-    <CFormLabel for="title" class="col-form-label col-2 text-right">링크</CFormLabel>
+    <CFormLabel for="title" class="col-form-label col-2 text-right">{{ label }}</CFormLabel>
     <CCol class="col-sm-10 col-xl-8">
       <CRow v-if="(links as Link[]).length">
         <CAlert :color="AlertSecondary">
