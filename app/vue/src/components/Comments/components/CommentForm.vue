@@ -43,7 +43,7 @@ onUpdated(() => formSet())
 </script>
 
 <template>
-  <v-form class="mt-2 p-3 bg-more-light" @submit.prevent="onSubmit">
+  <v-form class="p-4 bg-more-light" @submit.prevent="onSubmit">
     <v-container fluid class="m-0 p-0">
       <v-textarea
         label="comment"

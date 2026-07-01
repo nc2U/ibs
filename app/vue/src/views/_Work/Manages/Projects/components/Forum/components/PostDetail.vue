@@ -18,7 +18,7 @@ const emit = defineEmits(['delete-post', 'like-post', 'blame-post'])
 const route = useRoute()
 const router = useRouter()
 
-const { can, PERM } = usePerms()
+const { can, canViewUser, PERM } = usePerms()
 const canForumUpdate = computed(() => {
   if (can(PERM.FORUM_UPDATE)) return true
   if (can(PERM.FORUM_OWN_UPDATE)) return props.post.creator?.pk === userInfo.value?.pk
@@ -48,20 +48,22 @@ const userInfo = computed(() => accStore.userInfo)
 
     <v-card class="mb-6 card-white" flat border>
       <!-- v-card로 변경, mb-6으로 하단 간격, flat border 추가 -->
-      <v-card-text class="py-2">
+      <v-card-text class="py-3 bg-more-light border-bottom">
         <!-- CCardHeader 대신 v-card-text 사용 -->
-        <v-row no-gutters align="center" class="text-caption text-grey">
+        <v-row no-gutters align="center" class="text-muted text-grey">
           <v-col cols="auto" class="mr-3">
             <v-icon icon="mdi-account-circle-outline" size="small" class="mr-1" />
             <router-link
+              v-if="canViewUser(userInfo?.pk)"
               :to="{
-                name: '(게시판) - 보기',
-                params: { projId: route.params.projId, forumId: post.forum },
+                name: '사용자 - 보기',
+                params: { userId: 1 },
               }"
               class="text-decoration-none text-grey"
             >
               {{ post.creator?.username }}
             </router-link>
+            <span v-else>{{ post.creator?.username }}</span>
           </v-col>
           <v-col cols="auto" class="mr-3">
             <v-icon icon="mdi-clock-outline" size="small" class="mr-1" />
@@ -73,8 +75,6 @@ const userInfo = computed(() => accStore.userInfo)
           </v-col>
         </v-row>
       </v-card-text>
-
-      <v-divider />
 
       <v-card-text>
         <PostContent :content="post.content" />
@@ -95,7 +95,7 @@ const userInfo = computed(() => accStore.userInfo)
         </div>
       </v-card-text>
 
-      <v-card-actions class="justify-end py-2 border-top">
+      <v-card-actions class="justify-end py-2">
         <v-btn
           :prepend-icon="post.my_like ? 'mdi-thumb-up' : 'mdi-thumb-up-outline'"
           size="small"

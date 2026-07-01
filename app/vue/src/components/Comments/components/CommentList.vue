@@ -37,7 +37,10 @@ const commentPages = (pages: number) => Math.ceil(commentCount.value / pages)
 
 <template>
   <div v-if="commentCount">
-    <h5 class="mt-5 ml-4">댓글 ({{ commentCount }})</h5>
+    <h5 class="mt-4 ml-4">
+      <v-icon icon="mdi-comment-text-multiple-outline" color="primary" size="20" class="mr-2" />
+      댓글 <span class="text-caption">({{ commentCount }})</span>
+    </h5>
     <v-divider class="mb-4 mx-3" />
     <ul v-for="cmt1 in comments" :key="cmt1.pk" class="comments ml-4 mb-3">
       <Comment

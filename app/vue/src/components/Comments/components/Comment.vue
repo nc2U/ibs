@@ -74,7 +74,7 @@ const onSubmit = (payload: Cm) => emit('on-submit', payload)
 </script>
 
 <template>
-  <li class="text-50" :id="`comment_${comment.pk}`">
+  <li class="text-muted" :id="`comment_${comment.pk}`">
     <strong>
       <router-link
         v-if="canViewUser(userInfo?.pk)"
@@ -124,7 +124,7 @@ const onSubmit = (payload: Cm) => emit('on-submit', payload)
       <small v-if="canCommentDelete" class="ml-1 text-btn" @click="toDelete">삭제</small>
     </template>
 
-    <p v-if="!(formShow && isEditing)" class="mt-1 p-2">
+    <p v-if="!(formShow && isEditing)" class="mt-1 p-1">
       <CBadge v-if="comment.secret" color="danger" class="mr-2">비밀글입니다</CBadge>
       <span
         v-show="

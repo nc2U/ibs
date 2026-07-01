@@ -51,7 +51,7 @@ const onDelete = (pk: number, post: number) => {
 </script>
 
 <template>
-  <div v-show="!isHide">
+  <div v-show="!isHide" class="border rounded">
     <CommentList
       :act-form="actForm"
       :comments="comments"
@@ -62,10 +62,8 @@ const onDelete = (pk: number, post: number) => {
       @form-reset="formReset"
       @page-select="pageSelect"
     />
-    <div v-show="formVision" class="pt-1">
+    <div v-show="formVision" :class="{ 'border-top': comments.length }">
       <CommentForm :form-vision="formVision" :post="post" @on-submit="onSubmit" />
     </div>
-
-    <v-divider />
   </div>
 </template>
