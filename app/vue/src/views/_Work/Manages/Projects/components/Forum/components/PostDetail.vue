@@ -1,14 +1,14 @@
 <script lang="ts" setup>
 import { computed, type PropType } from 'vue'
 import { useAccount } from '@/store/pinia/account.ts'
+import type { Post } from '@/store/types/forum'
 import { useRoute, useRouter } from 'vue-router'
 import { elapsedTime, humanizeFileSize } from '@/utils/baseMixins'
 import { usePerms } from '@/composables/usePerms.ts'
 import { markdownRender } from '@/utils/helper'
-import type { Post } from '@/store/types/forum'
 import CommentSection from './CommentSection.vue'
 
-defineProps({
+const props = defineProps({
   post: { type: Object as PropType<Post>, required: true },
   comments: { type: Array as PropType<any[]>, default: () => [] },
 })
@@ -19,9 +19,17 @@ const route = useRoute()
 const router = useRouter()
 
 const { can, PERM } = usePerms()
-const canForumCreate = computed(() => can(PERM.FORUM_CREATE))
-const canForumUpdate = computed(() => can(PERM.FORUM_UPDATE))
-const canForumDelete = computed(() => can(PERM.FORUM_DELETE))
+const canForumUpdate = computed(() => {
+  if (can(PERM.FORUM_UPDATE)) return true
+  if (can(PERM.FORUM_OWN_UPDATE)) return props.post.creator?.pk === userInfo.value?.pk
+  return false
+})
+
+const canForumDelete = computed(() => {
+  if (can(PERM.FORUM_DELETE)) return true
+  if (can(PERM.FORUM_OWN_DELETE)) return props.post?.creator?.pk === userInfo.value?.pk
+  return false
+})
 
 const accStore = useAccount()
 const userInfo = computed(() => accStore.userInfo)
