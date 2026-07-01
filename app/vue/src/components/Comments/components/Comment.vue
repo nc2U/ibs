@@ -2,6 +2,7 @@
 import { computed, type PropType, ref, watch } from 'vue'
 import { useAccount } from '@/store/pinia/account.ts'
 import { elapsedTime } from '@/utils/baseMixins'
+import { usePerms } from '@/composables/usePerms.ts'
 import type { Comment as Cm } from '@/store/types/forum'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import CommentForm from './CommentForm.vue'
@@ -52,9 +53,7 @@ const toModify = () => {
   emit('vision-toggle', { num: props.comment?.pk as number, sts: !isEditing.value })
 }
 
-import { usePerms } from '@/composables/usePerms.ts'
-
-const { can, PERM } = usePerms()
+const { can, canViewUser, PERM } = usePerms()
 const canCommentUpdate = computed(() => {
   if (can(PERM.FORUM_UPDATE)) return true
   else if (can(PERM.FORUM_OWN_UPDATE) && userInfo.value?.pk === props.comment?.creator?.pk)
@@ -77,7 +76,13 @@ const onSubmit = (payload: Cm) => emit('on-submit', payload)
 <template>
   <li class="text-50" :id="`comment_${comment.pk}`">
     <strong>
-      <router-link :to="{}">{{ comment?.creator?.username }}</router-link>
+      <router-link
+        v-if="canViewUser(userInfo?.pk)"
+        :to="{ name: '사용자 - 보기', params: { userId: comment?.creator?.pk } }"
+      >
+        {{ comment?.creator?.username }}
+      </router-link>
+      <span v-else>{{ comment?.creator?.username }}</span>
     </strong>
     <small class="ml-2">
       <v-icon icon="mdi-clock-time-four-outline" size="sm" />
