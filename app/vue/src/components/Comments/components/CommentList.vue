@@ -39,8 +39,9 @@ const commentPages = (pages: number) => Math.ceil(commentCount.value / pages)
 
 <template>
   <div v-if="commentCount">
-    <h5 class="my-4 ml-4">{{ commentCount }} Comment{{ commentCount > 1 ? 's' : '' }}</h5>
-    <ul v-for="cmt1 in comments" :key="cmt1.pk" class="comments ml-5 mb-3">
+    <h5 class="mt-5 ml-4">댓글 ({{ commentCount }})</h5>
+    <v-divider class="mb-4 mx-3" />
+    <ul v-for="cmt1 in comments" :key="cmt1.pk" class="comments ml-4 mb-3">
       <Comment
         :form-show="actForm === cmt1.pk"
         :comment="cmt1"
@@ -50,7 +51,7 @@ const commentPages = (pages: number) => Math.ceil(commentCount.value / pages)
         @on-submit="onSubmit"
       />
 
-      <ul v-for="cmt2 in cmt1.replies" :key="cmt2.pk" class="comments ml-5 mb-3">
+      <ul v-for="cmt2 in cmt1.replies" :key="cmt2.pk" class="comments ml-4 mb-3">
         <Comment
           :form-show="actForm === cmt2.pk"
           :comment="cmt2"
@@ -60,7 +61,7 @@ const commentPages = (pages: number) => Math.ceil(commentCount.value / pages)
           @on-submit="onSubmit"
         />
 
-        <ul v-for="cmt3 in cmt2.replies" :key="cmt3.pk" class="comments ml-5 mb-3">
+        <ul v-for="cmt3 in cmt2.replies" :key="cmt3.pk" class="comments ml-4 mb-3">
           <Comment
             :form-show="actForm === cmt3.pk"
             :comment="cmt3"
@@ -70,7 +71,7 @@ const commentPages = (pages: number) => Math.ceil(commentCount.value / pages)
             @on-submit="onSubmit"
           />
 
-          <ul v-for="cmt4 in cmt3.replies" :key="cmt4.pk" class="comments ml-5 mb-3">
+          <ul v-for="cmt4 in cmt3.replies" :key="cmt4.pk" class="comments ml-4 mb-3">
             <Comment
               :form-show="actForm === cmt4.pk"
               :comment="cmt4"
@@ -79,7 +80,7 @@ const commentPages = (pages: number) => Math.ceil(commentCount.value / pages)
               @to-blame="toBlame"
               @on-submit="onSubmit"
             />
-            <ul v-for="cmt5 in cmt4.replies" :key="cmt5.pk" class="comments ml-5 mb-3">
+            <ul v-for="cmt5 in cmt4.replies" :key="cmt5.pk" class="comments ml-4 mb-3">
               <Comment
                 :form-show="actForm === cmt5.pk"
                 :comment="cmt5"

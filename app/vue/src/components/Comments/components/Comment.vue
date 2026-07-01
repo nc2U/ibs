@@ -89,7 +89,7 @@ const onSubmit = (payload: Cm) => emit('on-submit', payload)
     </small>
 
     <small v-if="!lastDepth" class="ml-3 text-btn" @click="toReply">
-      {{ !isReplying ? '답변' : '취소' }}
+      {{ !isReplying ? '답글' : '취소' }}
     </small>
     <template v-if="!comment.replies?.length && userInfo?.pk === props.comment?.creator?.pk">
       <!--    해당 본인 작성글이고 댓글에 대댓글이 없을 경우 수정/삭제 활성-->
@@ -99,7 +99,7 @@ const onSubmit = (payload: Cm) => emit('on-submit', payload)
       <small class="ml-1 text-btn" @click="toDelete">삭제</small>
     </template>
 
-    <p v-if="!(formShow && isEditing)">
+    <p v-if="!(formShow && isEditing)" class="mt-3">
       <CBadge v-if="comment.secret" color="warning" class="mr-1">비밀글입니다</CBadge>
       <span
         v-show="!comment.secret || userInfo?.is_superuser || userInfo?.pk === comment.creator?.pk"
@@ -112,7 +112,7 @@ const onSubmit = (payload: Cm) => emit('on-submit', payload)
       <CommentForm :post="comment?.post.pk as number" :comment="comment" @on-submit="onSubmit" />
     </p>
     <p v-if="formShow && isReplying">
-      <!-- 답변시 -->
+      <!-- 답글시 -->
       <CommentForm
         :post="comment?.post.pk as number"
         :parent="comment?.pk as number"
