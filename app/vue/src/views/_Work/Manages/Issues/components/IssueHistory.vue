@@ -30,7 +30,7 @@ onBeforeMount(() => {
         :active="tabPaneActiveKey === 1"
         @click="tabPaneActiveKey = 1"
       >
-        이력
+        전체로그
       </CNavLink>
     </CNavItem>
     <CNavItem v-if="issueLogList.filter(l => l.comment).length">
