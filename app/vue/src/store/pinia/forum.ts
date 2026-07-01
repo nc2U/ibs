@@ -337,15 +337,15 @@ export const useForum = defineStore('forum', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
-  const createComment = (payload: Cm) =>
+  const createComment = (payload: Cm, projId: string = '') =>
     api
-      .post(`/comment/`, payload)
+      .post(`/comment/?project=${projId}`, payload)
       .then(res => fetchPost(res.data.post.pk).then(() => message()))
       .catch(err => errorHandle(err.response.data))
 
-  const patchComment = (payload: Cm) =>
+  const patchComment = (payload: Cm, projId: string = '') =>
     api
-      .patch(`/comment/${payload.pk}/`, payload)
+      .patch(`/comment/${payload.pk}/?project=${projId}`, payload)
       .then(res => fetchPost(res.data.post.pk).then(() => message()))
       .catch(err => errorHandle(err.response.data))
 
@@ -361,9 +361,9 @@ export const useForum = defineStore('forum', () => {
       .then(() => accStore.fetchProfile().then(() => fetchCommentList({ post, page })))
       .catch(err => errorHandle(err.response.data))
 
-  const deleteComment = (payload: { pk: number; post: number }) =>
+  const deleteComment = (payload: { pk: number; post: number }, projId: string = '') =>
     api
-      .delete(`/comment/${payload.pk}/`)
+      .delete(`/comment/${payload.pk}/?project=${projId}`)
       .then(() => fetchPost(payload.post).then(() => message()))
       .catch(err => errorHandle(err.response.data))
 

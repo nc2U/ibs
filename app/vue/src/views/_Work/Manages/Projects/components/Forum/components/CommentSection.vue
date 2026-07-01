@@ -1,6 +1,7 @@
 <script lang="ts" setup>
-import { type PropType } from 'vue'
+import { computed, type PropType } from 'vue'
 import { useForum } from '@/store/pinia/forum'
+import { useRoute } from 'vue-router'
 import type { Comment } from '@/store/types/forum'
 import CommentList from './CommentList.vue'
 import CommentForm from './CommentForm.vue'
@@ -11,17 +12,20 @@ const props = defineProps({
   comments: { type: Array as PropType<Comment[]>, default: () => [] },
 })
 
+const route = useRoute()
+const projId = computed(() => route.params.projId as string)
+
 const frmStore = useForum()
 
 const onSubmitComment = (payload: any) => {
   const data = typeof payload === 'string' ? { content: payload } : payload
   if (data.pk) frmStore.patchComment(data)
-  else frmStore.createComment({ ...data, post: props.postId })
+  else frmStore.createComment({ ...data, post: props.postId }, projId.value)
 }
 
 const onDeleteComment = (pk: number) => {
   if (confirm('이 댓글을 삭제하시겠습니까?')) {
-    frmStore.deleteComment({ pk, post: props.postId })
+    frmStore.deleteComment({ pk, post: props.postId }, projId.value)
   }
 }
 </script>

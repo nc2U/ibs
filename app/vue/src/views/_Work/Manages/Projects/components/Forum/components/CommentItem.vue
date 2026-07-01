@@ -3,6 +3,7 @@ import { computed, type PropType, ref } from 'vue'
 import { useAccount } from '@/store/pinia/account.ts'
 import type { Comment } from '@/store/types/forum'
 import { elapsedTime, timeFormat } from '@/utils/baseMixins'
+import { usePerms } from '@/composables/usePerms.ts'
 import { markdownRender } from '@/utils/helper'
 import CommentForm from './CommentForm.vue'
 
@@ -14,6 +15,21 @@ const emit = defineEmits(['submit-comment', 'delete-comment'])
 
 const accStore = useAccount()
 const userInfo = computed(() => accStore.userInfo)
+
+const { can, PERM } = usePerms()
+const canCommentCreate = computed(() => can(PERM.FORUM_CREATE))
+const canCommentUpdate = computed(() => {
+  if (can(PERM.FORUM_UPDATE)) return true
+  else if (can(PERM.FORUM_OWN_UPDATE) && userInfo.value?.pk === props.comment.creator?.pk)
+    return true
+  else return false
+})
+const canCommentDelete = computed(() => {
+  if (can(PERM.FORUM_DELETE)) return true
+  else if (can(PERM.FORUM_OWN_DELETE) && userInfo.value?.pk === props.comment.creator?.pk)
+    return true
+  else return false
+})
 
 const showReplyForm = ref(false)
 const showEditForm = ref(false)
@@ -47,6 +63,7 @@ const onEdit = (content: string) => {
               variant="text"
               size="small"
               color="primary"
+              :disabled="!canCommentCreate"
               @click="showReplyForm = !showReplyForm"
             >
               답글
@@ -56,6 +73,7 @@ const onEdit = (content: string) => {
                 variant="text"
                 size="small"
                 color="success"
+                :disabled="!canCommentUpdate"
                 @click="showEditForm = !showEditForm"
               >
                 수정
@@ -64,6 +82,7 @@ const onEdit = (content: string) => {
                 variant="text"
                 size="small"
                 color="danger"
+                :disabled="!canCommentDelete"
                 @click="emit('delete-comment', comment.pk)"
               >
                 삭제
@@ -92,7 +111,7 @@ const onEdit = (content: string) => {
 
     <!-- Recursive rendering for replies -->
     <div v-if="comment.replies?.length" class="replies-list ml-5 mt-2 border-left pl-3">
-      <CommentObj
+      <CommentItem
         v-for="reply in comment.replies"
         :key="reply.pk"
         :comment="reply"
