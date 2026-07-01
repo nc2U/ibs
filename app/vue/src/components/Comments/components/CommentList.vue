@@ -18,13 +18,9 @@ const forumStore = useForum()
 const commentCount = computed(() => forumStore.commentCount)
 
 const visionToggle = (payload: { num: number; sts: boolean }) => emit('vision-toggle', payload)
-
 const toLike = (pk: number, post: number) => toCommentLike(pk, post, page.value)
-
 const toBlame = (pk: number, post: number) => toCommentBlame(pk, post, page.value)
-
 const onDelete = (pk: number, post: number) => emit('on-delete', pk, post)
-
 const onSubmit = (payload: Cm) => {
   emit('on-submit', payload)
   emit('form-reset')

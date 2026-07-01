@@ -43,7 +43,7 @@ onUpdated(() => formSet())
 </script>
 
 <template>
-  <v-form class="mt-2 p-3 bg-light" @submit.prevent="onSubmit">
+  <v-form class="mt-2 p-3 bg-more-light" @submit.prevent="onSubmit">
     <v-container fluid class="m-0 p-0">
       <v-textarea
         label="comment"
@@ -60,12 +60,19 @@ onUpdated(() => formSet())
       />
       <v-row>
         <v-checkbox
-          label="Secret"
+          label="비밀댓글"
           v-model="form.secret"
           density="compact"
           hide-details
-          class="m-3 pt-1"
+          class="m-3 pt-1 text-muted text-caption"
         />
+        <span
+          v-if="form.secret"
+          class="text-right text-muted text-caption"
+          style="padding-top: 30px"
+        >
+          비밀댓글은 관리자와 작성자만 볼 수 있습니다.
+        </span>
 
         <v-col class="text-right pt-3">
           <v-btn
