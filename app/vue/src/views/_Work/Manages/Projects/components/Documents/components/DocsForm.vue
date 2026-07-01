@@ -9,13 +9,12 @@ import { colorLight } from '@/utils/cssMixins'
 import type { CodeValue } from '@/store/types/work_issue.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import type { AFile, Attatches, Docs, Link } from '@/store/types/docs'
-import QuillEditor from '@/components/QuillEditor/index.vue'
+import MdEditor from '@/components/MdEditor/Index.vue'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import MultiSelect from '@/components/MultiSelect/index.vue'
 import FileForms from '@/components/OtherParts/FileForms.vue'
 import LinkForms from '@/components/OtherParts/LinkForms.vue'
 import AddNewDoc from './AddNewDoc.vue'
-import MdEditor from '@/components/MdEditor/Index.vue'
 
 const props = defineProps({
   docs: { type: Object as PropType<Docs>, default: () => null },
