@@ -44,6 +44,10 @@ const visionToggle = (payload: { num: number; sts: boolean }) => {
 }
 
 const pageSelect = (page: number) => forumStore.fetchCommentList({ post: props.post, page })
+
+const onDelete = (pk: number, post: number) => {
+  forumStore.deleteComment({ pk, post }, projId.value)
+}
 </script>
 
 <template>
@@ -54,6 +58,7 @@ const pageSelect = (page: number) => forumStore.fetchCommentList({ post: props.p
       @vision-toggle="visionToggle"
       @to-like="toLike"
       @on-submit="onSubmit"
+      @on-delete="onDelete"
       @form-reset="formReset"
       @page-select="pageSelect"
     />

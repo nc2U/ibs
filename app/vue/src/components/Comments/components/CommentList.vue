@@ -10,7 +10,7 @@ defineProps({
   actForm: { type: Number, default: undefined },
   comments: { type: Array as PropType<Cm[]>, default: () => [] },
 })
-const emit = defineEmits(['vision-toggle', 'on-submit', 'form-reset', 'page-select'])
+const emit = defineEmits(['vision-toggle', 'on-submit', 'form-reset', 'page-select', 'on-delete'])
 
 const page = ref(1)
 
@@ -22,6 +22,8 @@ const visionToggle = (payload: { num: number; sts: boolean }) => emit('vision-to
 const toLike = (pk: number, post: number) => toCommentLike(pk, post, page.value)
 
 const toBlame = (pk: number, post: number) => toCommentBlame(pk, post, page.value)
+
+const onDelete = (pk: number, post: number) => emit('on-delete', pk, post)
 
 const onSubmit = (payload: Cm) => {
   emit('on-submit', payload)
@@ -49,6 +51,7 @@ const commentPages = (pages: number) => Math.ceil(commentCount.value / pages)
         @to-like="toLike"
         @to-blame="toBlame"
         @on-submit="onSubmit"
+        @on-delete="onDelete"
       />
 
       <ul v-for="cmt2 in cmt1.replies" :key="cmt2.pk" class="comments ml-4 mb-3">
@@ -59,6 +62,7 @@ const commentPages = (pages: number) => Math.ceil(commentCount.value / pages)
           @to-like="toLike"
           @to-blame="toBlame"
           @on-submit="onSubmit"
+          @on-delete="onDelete"
         />
 
         <ul v-for="cmt3 in cmt2.replies" :key="cmt3.pk" class="comments ml-4 mb-3">
@@ -69,6 +73,7 @@ const commentPages = (pages: number) => Math.ceil(commentCount.value / pages)
             @to-like="toLike"
             @to-blame="toBlame"
             @on-submit="onSubmit"
+            @on-delete="onDelete"
           />
 
           <ul v-for="cmt4 in cmt3.replies" :key="cmt4.pk" class="comments ml-4 mb-3">
@@ -79,6 +84,7 @@ const commentPages = (pages: number) => Math.ceil(commentCount.value / pages)
               @to-like="toLike"
               @to-blame="toBlame"
               @on-submit="onSubmit"
+              @on-delete="onDelete"
             />
             <ul v-for="cmt5 in cmt4.replies" :key="cmt5.pk" class="comments ml-4 mb-3">
               <Comment
@@ -89,6 +95,7 @@ const commentPages = (pages: number) => Math.ceil(commentCount.value / pages)
                 @to-like="toLike"
                 @to-blame="toBlame"
                 @on-submit="onSubmit"
+                @on-delete="onDelete"
               />
             </ul>
           </ul>

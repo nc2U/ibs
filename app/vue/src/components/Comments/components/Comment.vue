@@ -20,7 +20,7 @@ watch(props, val => {
   }
 })
 
-const emit = defineEmits(['vision-toggle', 'to-like', 'to-blame', 'on-submit'])
+const emit = defineEmits(['vision-toggle', 'to-like', 'to-blame', 'on-submit', 'on-delete'])
 
 const refBlameModal = ref()
 
@@ -51,7 +51,27 @@ const toModify = () => {
   emit('vision-toggle', { num: props.comment?.pk as number, sts: !isEditing.value })
 }
 
-const toDelete = () => alert('delete')
+import { usePerms } from '@/composables/usePerms.ts'
+
+const { can, PERM } = usePerms()
+const canCommentUpdate = computed(() => {
+  if (can(PERM.FORUM_UPDATE)) return true
+  else if (can(PERM.FORUM_OWN_UPDATE) && userInfo.value?.pk === props.comment?.creator?.pk)
+    return true
+  else return false
+})
+const canCommentDelete = computed(() => {
+  if (can(PERM.FORUM_DELETE)) return true
+  else if (can(PERM.FORUM_OWN_DELETE) && userInfo.value?.pk === props.comment?.creator?.pk)
+    return true
+  else return false
+})
+
+const toDelete = () => {
+  if (confirm('이 댓글을 삭제하시겠습니까?')) {
+    emit('on-delete', props.comment?.pk, props.comment?.post.pk)
+  }
+}
 
 const onSubmit = (payload: Cm) => emit('on-submit', payload)
 </script>
@@ -91,18 +111,18 @@ const onSubmit = (payload: Cm) => emit('on-submit', payload)
     <small v-if="!lastDepth" class="ml-3 text-btn" @click="toReply">
       {{ !isReplying ? '답글' : '취소' }}
     </small>
-    <template v-if="!comment.replies?.length && userInfo?.pk === props.comment?.creator?.pk">
-      <!--    해당 본인 작성글이고 댓글에 대댓글이 없을 경우 수정/삭제 활성-->
-      <small class="ml-1 text-btn" @click="toModify">
+    <template v-if="!comment.replies?.length && (canCommentUpdate || canCommentDelete)">
+      <!--    해당 작성글/관리자 권한이고 댓글에 대댓글이 없을 경우 수정/삭제 활성-->
+      <small v-if="canCommentUpdate" class="ml-1 text-btn" @click="toModify">
         {{ !isEditing ? '수정' : '취소' }}
       </small>
-      <small class="ml-1 text-btn" @click="toDelete">삭제</small>
+      <small v-if="canCommentDelete" class="ml-1 text-btn" @click="toDelete">삭제</small>
     </template>
 
     <p v-if="!(formShow && isEditing)" class="mt-3">
       <CBadge v-if="comment.secret" color="warning" class="mr-1">비밀글입니다</CBadge>
       <span
-        v-show="!comment.secret || userInfo?.is_superuser || userInfo?.pk === comment.creator?.pk"
+        v-show="!comment.secret || userInfo?.is_superuser || userInfo?.pk === comment.creator?.pk || canCommentUpdate"
       >
         {{ comment?.content }}
       </span>
