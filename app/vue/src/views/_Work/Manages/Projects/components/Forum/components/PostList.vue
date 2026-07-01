@@ -1,9 +1,10 @@
 <script lang="ts" setup>
-import { type PropType } from 'vue'
+import { computed, type PropType } from 'vue'
 import type { Forum, Post } from '@/store/types/forum'
+import { usePerms } from '@/composables/usePerms.ts'
 import { useForum } from '@/store/pinia/forum'
-import NoData from '@/components/NoData/Index.vue'
 import Pagination from '@/components/Pagination'
+import NoData from '@/components/NoData/Index.vue'
 import PostItem from './PostItem.vue'
 
 defineProps({
@@ -14,9 +15,11 @@ defineProps({
 
 const emit = defineEmits(['page-select'])
 
+const { can, PERM } = usePerms()
+const canForumCreate = computed(() => can(PERM.FORUM_CREATE))
+
 const frmStore = useForum()
 const postPages = (limit: number) => frmStore.postPages(limit)
-
 const pageSelect = (page: number) => emit('page-select', page)
 </script>
 
@@ -28,7 +31,7 @@ const pageSelect = (page: number) => emit('page-select', page)
         {{ forum?.name }}
       </h5>
     </CCol>
-    <CCol class="text-right">
+    <CCol v-if="canForumCreate" class="text-right">
       <v-btn
         color="success"
         size="small"

@@ -7,9 +7,9 @@ import type { Post } from '@/store/types/forum.ts'
 import Loading from '@/components/Loading/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import ForumIndex from './components/ForumIndex.vue'
-import ForumList from './components/ForumList.vue'
-import ForumDetail from './components/ForumDetail.vue'
-import ForumForm from './components/ForumForm.vue'
+import PostList from './components/PostList.vue'
+import PostDetail from './components/PostDetail.vue'
+import PostForm from './components/PostForm.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 const cBody = ref()
@@ -17,6 +17,7 @@ const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
 
 const { can, PERM } = usePerms()
+const canForumRead = computed(() => can(PERM.FORUM_READ))
 const canForumManage = computed(() => can(PERM.FORUM_MANAGE))
 
 const forumStore = useForum()
@@ -137,7 +138,7 @@ onBeforeMount(async () => {
       <ForumIndex v-if="route.name === '(게시판)'" :forum-list="forumList" />
 
       <!-- 게시물 목록 -->
-      <ForumList
+      <PostList
         v-else-if="route.name === '(게시판) - 보기' && !route.params.postId"
         :forum="forum"
         :post-list="postList"
@@ -146,7 +147,7 @@ onBeforeMount(async () => {
       />
 
       <!-- 게시물 상세 -->
-      <ForumDetail
+      <PostDetail
         v-else-if="route.name === '(게시판) - 게시물 보기' && (post || loading)"
         :post="post as Post"
         :comments="commentList"
@@ -156,14 +157,14 @@ onBeforeMount(async () => {
       />
 
       <!-- 게시물 작성 -->
-      <ForumForm
+      <PostForm
         v-else-if="route.name === '(게시판) - 게시물 작성'"
         :forum-id="Number(route.params.forumId)"
         :categories="categoryList"
       />
 
       <!-- 게시물 수정 -->
-      <ForumForm
+      <PostForm
         v-else-if="route.name === '(게시판) - 게시물 수정' && (post || loading)"
         :post="post"
         :forum-id="Number(route.params.forumId)"
@@ -172,14 +173,15 @@ onBeforeMount(async () => {
     </template>
 
     <template v-slot:aside>
-      <CRow v-if="postList.length" class="mb-4">
+      <CRow class="mb-4">
         <CCol>
           <h6 class="asideTitle">최근 게시물</h6>
           <v-divider class="mt-0" />
-          <ul class="list-unstyled aside-menu">
+          <ul v-if="postList.length" class="list-unstyled aside-menu mb-4">
             <li v-for="p in postList.slice(0, 5)" :key="p.pk" class="mb-2 text-truncate">
               <v-icon icon="mdi-comment-text-outline" size="x-small" class="mr-1" />
               <router-link
+                v-if="canForumRead"
                 :to="{
                   name: '(게시판) - 게시물 보기',
                   params: {
@@ -191,12 +193,14 @@ onBeforeMount(async () => {
                 class="text-body-2"
               >
                 {{ p.title }}
-                <span v-if="p.comments_count" class="text-info small"
-                  >({{ p.comments_count }})</span
-                >
               </router-link>
+              <span v-else>{{ p.title }}</span>
+              <span v-if="p.comments?.length" class="ml-2 text-grey">
+                ({{ p.comments.length }})
+              </span>
             </li>
           </ul>
+          <div v-else class="py-4 text-muted">등록된 게시물이 없습니다.</div>
         </CCol>
       </CRow>
 
@@ -204,7 +208,7 @@ onBeforeMount(async () => {
         <CCol>
           <h6 class="asideTitle">게시판 관리</h6>
           <v-divider class="mt-0" />
-          <ul class="list-unstyled aside-menu">
+          <ul v-if="canForumManage" class="list-unstyled aside-menu">
             <li class="mb-2">
               <v-icon icon="mdi-view-dashboard-outline" size="small" class="mr-2" />
               <router-link :to="{ name: '(개요)', params: { projId: route.params.projId } }">
@@ -228,6 +232,7 @@ onBeforeMount(async () => {
               <router-link to="">휴지통</router-link>
             </li>
           </ul>
+          <div v-else class="py-4 text-muted">게시판 관리 권한이 없습니다.</div>
         </CCol>
       </CRow>
     </template>
