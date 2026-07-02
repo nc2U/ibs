@@ -30,7 +30,12 @@ const canDocsRead = computed(() => can(PERM.DOCS_READ))
               />
             </template>
           </v-tooltip>
-          <v-icon v-else icon="mdi-file-document" color="info" class="mr-2" />
+          <v-icon
+            v-else
+            icon="mdi-text-box-plus-outline"
+            color="blue-grey-lighten-3"
+            class="mr-2"
+          />
 
           <span v-if="docs.cate_name" class="mr-2" :style="{ color: docs.cate_color || 'inherit' }">
             [{{ docs.cate_name }}]
