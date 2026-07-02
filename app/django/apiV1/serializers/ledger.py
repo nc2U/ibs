@@ -265,7 +265,7 @@ class CompanyBankTransactionSerializer(serializers.ModelSerializer):
     sort_name = serializers.CharField(source='sort.name', read_only=True)
     creator_name = serializers.CharField(source='creator.username', read_only=True)
     is_balanced = serializers.ReadOnlyField()
-    accounting_entries = CompanyAccountingEntrySerializer(many=True, read_only=True)
+    accounting_entries = serializers.SerializerMethodField()
 
     class Meta:
         model = CompanyBankTransaction
@@ -275,6 +275,15 @@ class CompanyBankTransactionSerializer(serializers.ModelSerializer):
                   'is_balanced', 'accounting_entries')
         read_only_fields = ('transaction_id', 'created_at', 'updated_at')
 
+    @staticmethod
+    def get_accounting_entries(obj):
+        """prefetched_accounting_entries가 있으면 캐시를 사용하여 N+1 방지"""
+        if hasattr(obj, 'prefetched_accounting_entries'):
+            entries = obj.prefetched_accounting_entries
+        else:
+            entries = obj.accounting_entries
+        return CompanyAccountingEntrySerializer(entries, many=True).data
+
 
 class ProjectBankTransactionSerializer(serializers.ModelSerializer):
     """프로젝트 은행 거래 시리얼라이저"""
@@ -283,7 +292,7 @@ class ProjectBankTransactionSerializer(serializers.ModelSerializer):
     sort_name = serializers.CharField(source='sort.name', read_only=True)
     creator_name = serializers.CharField(source='creator.username', read_only=True)
     is_balanced = serializers.ReadOnlyField()
-    accounting_entries = ProjectAccountingEntrySerializer(many=True, read_only=True)
+    accounting_entries = serializers.SerializerMethodField()
 
     class Meta:
         model = ProjectBankTransaction
@@ -293,6 +302,15 @@ class ProjectBankTransactionSerializer(serializers.ModelSerializer):
                   'creator', 'creator_name', 'created_at', 'updated_at',
                   'is_balanced', 'accounting_entries')
         read_only_fields = ('transaction_id', 'created_at', 'updated_at')
+
+    @staticmethod
+    def get_accounting_entries(obj):
+        """prefetched_accounting_entries가 있으면 캐시를 사용하여 N+1 방지"""
+        if hasattr(obj, 'prefetched_accounting_entries'):
+            entries = obj.prefetched_accounting_entries
+        else:
+            entries = obj.accounting_entries
+        return ProjectAccountingEntrySerializer(entries, many=True).data
 
 
 # ============================================
@@ -380,8 +398,8 @@ class CompanyCompositeTransactionSerializer(serializers.Serializer):
         if is_update and self.partial:
             # PATCH 요청(부분 업데이트)일 때만 기존 분개 목록을 포함
             # PUT 요청(전체 교체)일 때는 incoming_entries만으로 합계 계산
-            for entry in instance.accounting_entries.all():
-                final_entry_amounts[entry.pk] = entry.amount
+            for pk, amount in instance.accounting_entries.values_list('pk', 'amount'):
+                final_entry_amounts[pk] = amount
 
         # 들어온 데이터로 final_entry_amounts를 업데이트
         incoming_entries = attrs.get('accounting_entries', [])
@@ -619,8 +637,10 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
         if is_update:
             # 수정 모드: 같은 transaction_id를 가진 모든 기존 분개 포함
             # account.is_payment=False인 분개(읽기 전용)도 합계에 포함해야 함
-            for entry in ProjectAccountingEntry.objects.filter(transaction_id=instance.transaction_id):
-                final_entry_amounts[entry.pk] = entry.amount
+            for pk, amount in ProjectAccountingEntry.objects.filter(
+                transaction_id=instance.transaction_id
+            ).values_list('pk', 'amount'):
+                final_entry_amounts[pk] = amount
 
         # 들어온 데이터로 final_entry_amounts를 업데이트
         incoming_entries = attrs.get('accounting_entries', [])

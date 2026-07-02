@@ -3,6 +3,7 @@ import uuid
 
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
+from django.db.models import Count, Sum
 from django.utils import timezone
 
 from ledger.services.sync_payment_contract import trigger_sync_contract_payment
@@ -182,30 +183,30 @@ class Account(models.Model):
     def _generate_code(self):
         """계정 코드 자동 생성"""
         if self.depth == 1:
-            # 최상위 계정: category별 기본 코드에서 시작하여 100 단위로 증가
+            # 최상위 계정: 해당 category의 기존 코드를 한 번에 로딩하여 중복 체크
             base_code = self.CATEGORY_BASE_CODES[self.category]
-            code_candidate = base_code
+            existing_codes = set(
+                self.__class__.objects.filter(category=self.category)
+                .exclude(pk=self.pk or 0)
+                .values_list('code', flat=True)
+            )
             increment = 0
-
             while True:
-                test_code = str(code_candidate + (increment * 100))
-                # 자신을 제외하고 중복 검사
-                existing = self.__class__.objects.filter(code=test_code)
-                if self.pk:  # 업데이트인 경우 자신 제외
-                    existing = existing.exclude(pk=self.pk)
-
-                if not existing.exists():
+                test_code = str(base_code + (increment * 100))
+                if test_code not in existing_codes:
                     return test_code
                 increment += 1
 
         # 하위 계정: 부모 코드 + (순서 * 깊이별 간격)
         parent_code = int(self.parent.code)
 
-        # 같은 parent를 가진 형제 계정 수 확인 (자신 제외)
-        # 추상 클래스이므로 self.__class__를 사용하여 실제 모델 클래스의 매니저 접근
-        siblings_count = self.__class__.objects.filter(parent=self.parent).count()
-        if self.pk:  # 업데이트인 경우 자신 제외
-            siblings_count -= 1
+        # 같은 parent를 가진 형제 계정 코드를 한 번에 로딩하여 중복 체크
+        existing_codes = set(
+            self.__class__.objects.filter(parent=self.parent)
+            .exclude(pk=self.pk or 0)
+            .values_list('code', flat=True)
+        )
+        siblings_count = len(existing_codes)
 
         # 순서 계산 (1부터 시작)
         sibling_order = siblings_count + 1
@@ -447,7 +448,7 @@ class BankTransaction(models.Model):
     UUID 기반 식별자를 통해 다른 도메인과 느슨하게 결합됩니다.
     """
     # Primary Identifier
-    transaction_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False, db_index=True,
+    transaction_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False,
                                       verbose_name='거래 ID', help_text='도메인 간 연결을 위한 UUID 식별자')
 
     # 거래 정보
@@ -466,7 +467,6 @@ class BankTransaction(models.Model):
     class Meta:
         abstract = True
         indexes = [
-            models.Index(fields=['transaction_id']),
             models.Index(fields=['deal_date']),
             models.Index(fields=['deal_date', 'sort']),
         ]
@@ -512,8 +512,9 @@ class BankTransaction(models.Model):
         Returns:
             dict: {'is_valid': bool, 'bank_amount': int, 'accounting_total': int, 'difference': int}
         """
-        entries = self.accounting_entries
-        accounting_total = sum(e.amount for e in entries) if entries.exists() else 0
+        result = self.accounting_entries.aggregate(total=Sum('amount'), count=Count('id'))
+        accounting_total = result['total'] or 0
+        entry_count = result['count'] or 0
         difference = self.amount - accounting_total
 
         return {
@@ -521,7 +522,7 @@ class BankTransaction(models.Model):
             'bank_amount': self.amount,
             'accounting_total': accounting_total,
             'difference': difference,
-            'entry_count': entries.count(),
+            'entry_count': entry_count,
         }
 
     def __str__(self):
@@ -550,7 +551,11 @@ class CompanyBankTransaction(BankTransaction):
     @property
     def accounting_entries(self):
         """이 은행 거래에 연결된 모든 회계 분개 항목들을 반환합니다."""
-        entries = CompanyAccountingEntry.objects.filter(transaction_id=self.transaction_id)
+        return CompanyAccountingEntry.objects.filter(transaction_id=self.transaction_id)
+
+    def get_accounting_entries_with_tx(self):
+        """_related_transaction 주입이 필요한 경우에만 호출합니다."""
+        entries = list(self.accounting_entries)
         for entry in entries:
             entry._related_transaction = self
         return entries
@@ -623,7 +628,7 @@ class ProjectBankTransaction(BankTransaction):
 
         # project 또는 deal_date 변경 시 ContractPayment 동기화
         if project_changed or deal_date_changed:
-            entries = ProjectAccountingEntry.objects.filter(transaction_id=self.transaction_id)
+            entries = list(ProjectAccountingEntry.objects.filter(transaction_id=self.transaction_id))
 
             for entry in entries:
                 trigger_sync_contract_payment(entry)
@@ -632,13 +637,17 @@ class ProjectBankTransaction(BankTransaction):
                 logger.info(
                     f"ProjectBankTransaction(pk={self.pk}) deal_date 변경: "
                     f"{old_deal_date} → {self.deal_date}, "
-                    f"연결된 {entries.count()}개 ContractPayment 동기화 완료"
+                    f"연결된 {len(entries)}개 ContractPayment 동기화 완료"
                 )
 
     @property
     def accounting_entries(self):
         """이 은행 거래에 연결된 모든 회계 분개 항목들을 반환합니다."""
-        entries = ProjectAccountingEntry.objects.filter(transaction_id=self.transaction_id)
+        return ProjectAccountingEntry.objects.filter(transaction_id=self.transaction_id)
+
+    def get_accounting_entries_with_tx(self):
+        """_related_transaction 주입이 필요한 경우에만 호출합니다."""
+        entries = list(self.accounting_entries)
         for entry in entries:
             entry._related_transaction = self
         return entries
@@ -992,6 +1001,8 @@ class ImportJob(models.Model):
         """진행률 업데이트"""
         self.processed_records = processed
         self.total_records = total
+        update_fields = ['processed_records', 'total_records']
         if status:
             self.status = status
-        self.save()
+            update_fields.append('status')
+        self.save(update_fields=update_fields)

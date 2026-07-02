@@ -51,11 +51,12 @@ def get_company_transactions(params):
     if account_id:
         try:
             account = CompanyAccount.objects.get(pk=account_id)
-            descendants = account.get_descendants(include_self=True)
-            active_accounts = [acc.pk for acc in descendants if acc.is_active]
-            entry_filters &= Q(account_id__in=active_accounts)
         except CompanyAccount.DoesNotExist:
             return CompanyBankTransaction.objects.none()
+        active_accounts = CompanyAccount.objects.filter(
+            code__startswith=account.code, is_active=True
+        ).values_list('pk', flat=True)
+        entry_filters &= Q(account_id__in=active_accounts)
 
     if account_category:
         account_ids = CompanyAccount.objects.filter(
@@ -67,16 +68,19 @@ def get_company_transactions(params):
         entry_filters &= Q(affiliate_id=affiliate_id)
 
     if search:
-        # 계정 이름 검색
-        accounts = CompanyAccount.objects.filter(name__icontains=search, is_active=True)
-        all_account_ids = []
-        for acc in accounts:
-            descendants = acc.get_descendants(include_self=True)
-            active_descendants = [a.pk for a in descendants if a.is_active]
-            all_account_ids.extend(active_descendants)
+        # 계정 이름 검색 — 매칭된 계정 + 하위 계정들을 code__startswith로 단일 쿼리 수집
+        matched_codes = list(CompanyAccount.objects.filter(
+            name__icontains=search, is_active=True
+        ).values_list('code', flat=True))
 
-        account_ids = list(set(all_account_ids))
-        entry_filters |= Q(account_id__in=account_ids)
+        if matched_codes:
+            account_q = Q()
+            for code in matched_codes:
+                account_q |= Q(code__startswith=code)
+            account_ids = CompanyAccount.objects.filter(
+                account_q, is_active=True
+            ).values_list('pk', flat=True)
+            entry_filters |= Q(account_id__in=account_ids)
 
         # trader 검색 추가
         entry_filters |= Q(trader__icontains=search)

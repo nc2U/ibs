@@ -403,6 +403,31 @@ class CompanyBankTransactionViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
 
+    def list(self, request, *args, **kwargs):
+        """accounting_entries N+1 방지를 위한 수동 prefetch"""
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        instances = page if page is not None else list(queryset)
+
+        transaction_ids = [t.transaction_id for t in instances]
+        if transaction_ids:
+            entries = CompanyAccountingEntry.objects.filter(
+                transaction_id__in=transaction_ids
+            ).select_related('account', 'affiliate', 'affiliate__company', 'affiliate__project')
+            entries_map = defaultdict(list)
+            for entry in entries:
+                entries_map[entry.transaction_id].append(entry)
+            for tx in instances:
+                tx.prefetched_accounting_entries = entries_map.get(tx.transaction_id, [])
+        else:
+            for tx in instances:
+                tx.prefetched_accounting_entries = []
+
+        serializer = self.get_serializer(instances, many=True)
+        if page is not None:
+            return self.get_paginated_response(serializer.data)
+        return Response(serializer.data)
+
     @action(detail=True, methods=['get'])
     def validate_balance(self, request, pk=None):
         """거래 금액 균형 검증"""
@@ -539,6 +564,31 @@ class ProjectBankTransactionViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
 
+    def list(self, request, *args, **kwargs):
+        """accounting_entries N+1 방지를 위한 수동 prefetch"""
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        instances = page if page is not None else list(queryset)
+
+        transaction_ids = [t.transaction_id for t in instances]
+        if transaction_ids:
+            entries = ProjectAccountingEntry.objects.filter(
+                transaction_id__in=transaction_ids
+            ).select_related('account', 'contract', 'contractor')
+            entries_map = defaultdict(list)
+            for entry in entries:
+                entries_map[entry.transaction_id].append(entry)
+            for tx in instances:
+                tx.prefetched_accounting_entries = entries_map.get(tx.transaction_id, [])
+        else:
+            for tx in instances:
+                tx.prefetched_accounting_entries = []
+
+        serializer = self.get_serializer(instances, many=True)
+        if page is not None:
+            return self.get_paginated_response(serializer.data)
+        return Response(serializer.data)
+
     @action(detail=True, methods=['get'])
     def validate_balance(self, request, pk=None):
         """거래 금액 균형 검증"""
@@ -656,6 +706,43 @@ class ProjectBankTransactionViewSet(viewsets.ModelViewSet):
 # Accounting Entry ViewSets
 # ============================================
 
+
+class BankTransactionPreloadMixin:
+    """
+    AccountingEntry 목록 조회 시 related BankTransaction을 단일 쿼리로 preload합니다.
+
+    AccountingEntry는 transaction_id(UUID)로 BankTransaction과 느슨하게 연결되어 있어
+    Django의 prefetch_related를 사용할 수 없으므로 수동 매핑 방식을 사용합니다.
+    """
+    bank_transaction_model = None  # 하위 클래스에서 지정
+
+    def preload_bank_transactions(self, instances):
+        if not self.bank_transaction_model:
+            return
+        tx_ids = [inst.transaction_id for inst in instances if inst.transaction_id]
+        if not tx_ids:
+            return
+        db = self.get_queryset().db or 'default'
+        tx_map = {
+            tx.transaction_id: tx
+            for tx in self.bank_transaction_model.objects.using(db)
+            .filter(transaction_id__in=tx_ids)
+            .select_related('sort')
+        }
+        for inst in instances:
+            inst._related_transaction = tx_map.get(inst.transaction_id)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            self.preload_bank_transactions(page)
+            return self.get_paginated_response(self.get_serializer(page, many=True).data)
+        instances = list(queryset)
+        self.preload_bank_transactions(instances)
+        return Response(self.get_serializer(instances, many=True).data)
+
+
 class CompanyAccountingEntryFilterSet(FilterSet):
     """본사 회계 분개 필터셋"""
     transaction_id = CharFilter(field_name='transaction_id', lookup_expr='exact')
@@ -666,7 +753,7 @@ class CompanyAccountingEntryFilterSet(FilterSet):
                   'evidence_type', 'transaction_id')
 
 
-class CompanyAccountingEntryViewSet(viewsets.ModelViewSet):
+class CompanyAccountingEntryViewSet(BankTransactionPreloadMixin, viewsets.ModelViewSet):
     """본사 회계 분개 ViewSet"""
     queryset = CompanyAccountingEntry.objects.select_related(
         'company', 'account', 'affiliate', 'affiliate__company', 'affiliate__project'
@@ -677,31 +764,7 @@ class CompanyAccountingEntryViewSet(viewsets.ModelViewSet):
     filterset_class = CompanyAccountingEntryFilterSet
     search_fields = ('transaction_id', 'account_code', 'trader')
     ordering = ['-created_at']
-
-    def preload_bank_transactions(self, instances):
-        transaction_ids = [inst.transaction_id for inst in instances if inst.transaction_id]
-        if not transaction_ids:
-            return
-        db = self.get_queryset().db or 'default'
-        transactions = CompanyBankTransaction.objects.using(db).filter(
-            transaction_id__in=transaction_ids
-        ).select_related('sort')
-        tx_map = {tx.transaction_id: tx for tx in transactions}
-        for inst in instances:
-            inst._related_transaction = tx_map.get(inst.transaction_id)
-
-    def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            self.preload_bank_transactions(page)
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-
-        instances = list(queryset)
-        self.preload_bank_transactions(instances)
-        serializer = self.get_serializer(instances, many=True)
-        return Response(serializer.data)
+    bank_transaction_model = CompanyBankTransaction
 
 
 class ProjectAccountingEntryFilterSet(FilterSet):
@@ -713,7 +776,7 @@ class ProjectAccountingEntryFilterSet(FilterSet):
         fields = ('project', 'account', 'contract', 'contractor', 'evidence_type', 'transaction_id')
 
 
-class ProjectAccountingEntryViewSet(viewsets.ModelViewSet):
+class ProjectAccountingEntryViewSet(BankTransactionPreloadMixin, viewsets.ModelViewSet):
     """프로젝트 회계 분개 ViewSet"""
     queryset = ProjectAccountingEntry.objects.select_related(
         'project', 'account', 'contract', 'contractor'
@@ -724,31 +787,7 @@ class ProjectAccountingEntryViewSet(viewsets.ModelViewSet):
     filterset_class = ProjectAccountingEntryFilterSet
     search_fields = ('transaction_id', 'account_code', 'trader', 'project__name')
     ordering = ['-created_at']
-
-    def preload_bank_transactions(self, instances):
-        transaction_ids = [inst.transaction_id for inst in instances if inst.transaction_id]
-        if not transaction_ids:
-            return
-        db = self.get_queryset().db or 'default'
-        transactions = ProjectBankTransaction.objects.using(db).filter(
-            transaction_id__in=transaction_ids
-        ).select_related('sort')
-        tx_map = {tx.transaction_id: tx for tx in transactions}
-        for inst in instances:
-            inst._related_transaction = tx_map.get(inst.transaction_id)
-
-    def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            self.preload_bank_transactions(page)
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-
-        instances = list(queryset)
-        self.preload_bank_transactions(instances)
-        serializer = self.get_serializer(instances, many=True)
-        return Response(serializer.data)
+    bank_transaction_model = ProjectBankTransaction
 
 
 # ============================================
