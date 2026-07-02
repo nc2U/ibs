@@ -12,6 +12,7 @@ import DocsList from './components/DocsList.vue'
 import DocsDetail from './components/DocsDetail.vue'
 import DocsForm from './components/DocsForm.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
+import { CFormInput } from '@coreui/vue'
 
 const cBody = ref()
 const toggle = () => cBody.value.toggle()
@@ -233,13 +234,23 @@ onBeforeMount(async () => {
             />
           </CCol>
         </CRow>
-
-        <CRow class="mr-2">
-          <CCol class="text-right">
-            <v-btn size="small" color="info" @click="fetchDocsList(docsFilter)">검색</v-btn>
-          </CCol>
-        </CRow>
       </template>
+
+      <CRow class="mb-3 mr-2">
+        <CCol>
+          <CFormInput
+            v-model="docsFilter.search"
+            placeholder="검색어"
+            @keydown.enter="fetchDocsList(docsFilter)"
+          />
+        </CCol>
+      </CRow>
+
+      <CRow class="mr-2">
+        <CCol class="text-right">
+          <v-btn size="small" color="info" @click="fetchDocsList(docsFilter)">검색</v-btn>
+        </CCol>
+      </CRow>
     </template>
   </ContentBody>
 </template>
