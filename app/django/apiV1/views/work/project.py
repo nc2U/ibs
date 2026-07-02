@@ -36,41 +36,6 @@ class IssueProjectViewSet(viewsets.ModelViewSet):
     pagination_class = PageNumberPaginationTwenty
     filterset_class = IssueProjectFilter
 
-    @action(detail=True, methods=['post'])
-    def toggle_status(self, request, slug=None):
-        project = self.get_object()
-        # 상태 전환 로직 (예: '1' -> '9', '9' -> '1')
-        project.status = '9' if project.status == '1' else '1'
-        project.save()
-        return Response({'status': project.status})
-
-    @action(detail=True, methods=['post'])
-    def toggle_public(self, request, slug=None):
-        project = self.get_object()
-        project.is_public = not project.is_public
-        project.save()
-        return Response({'is_public': project.is_public})
-
-    @action(detail=True, methods=['post'])
-    def update_members(self, request, slug=None):
-        project = self.get_object()
-        users = request.data.get('users', [])
-        roles = request.data.get('roles', [])
-        del_mem = request.data.get('del_mem')
-
-        if users:
-            for user_id in users:
-                member, _ = Member.objects.get_or_create(user_id=user_id, project=project)
-                if roles:
-                    member.roles.set(roles)
-                member.save()
-            return Response({'status': 'members updated'})
-        elif del_mem is not None:
-            Member.objects.filter(pk=del_mem, project=project).delete()
-            return Response({'status': 'member deleted'})
-
-        return Response({'status': 'no action taken'}, status=400)
-
     @property
     def required_permission(self):
         mapping = {  # 매핑 로직 정의
@@ -112,6 +77,41 @@ class IssueProjectViewSet(viewsets.ModelViewSet):
         if self.action == 'list':
             return IssueProjectListSerializer
         return IssueProjectSerializer
+
+    @action(detail=True, methods=['post'])
+    def toggle_status(self, request, slug=None):
+        project = self.get_object()
+        # 상태 전환 로직 (예: '1' -> '9', '9' -> '1')
+        project.status = '9' if project.status == '1' else '1'
+        project.save()
+        return Response({'status': project.status})
+
+    @action(detail=True, methods=['post'])
+    def toggle_public(self, request, slug=None):
+        project = self.get_object()
+        project.is_public = not project.is_public
+        project.save()
+        return Response({'is_public': project.is_public})
+
+    @action(detail=True, methods=['post'])
+    def update_members(self, request, slug=None):
+        project = self.get_object()
+        users = request.data.get('users', [])
+        roles = request.data.get('roles', [])
+        del_mem = request.data.get('del_mem')
+
+        if users:
+            for user_id in users:
+                member, _ = Member.objects.get_or_create(user_id=user_id, project=project)
+                if roles:
+                    member.roles.set(roles)
+                member.save()
+            return Response({'status': 'members updated'})
+        elif del_mem is not None:
+            Member.objects.filter(pk=del_mem, project=project).delete()
+            return Response({'status': 'member deleted'})
+
+        return Response({'status': 'no action taken'}, status=400)
 
     def perform_create(self, serializer):
         parent_slug = self.request.data.get('parent_slug')
