@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.db.models import Q
 
 
 class IssueProjectManager(models.Manager):
@@ -53,6 +54,15 @@ class IssueProject(models.Model):
             parents.insert(0, self.parent)
             return self.parent.family_tree(parents)
         return parents
+
+    def get_all_descendant_ids(self):
+        """재귀적으로 하위 프로젝트의 모든 ID를 반환합니다."""
+        ids = []
+        children = IssueProject.objects.filter(parent=self)
+        for child in children:
+            ids.append(child.id)
+            ids.extend(child.get_all_descendant_ids())
+        return ids
 
     def all_members(self):
         """
@@ -224,10 +234,12 @@ class IssueProject(models.Model):
                     if role.assignable:
                         assignable = True
                     # issue_visible 우선순위 병합
-                    if issue_visibility_order.get(role.issue_visible, 0) > issue_visibility_order.get(best_issue_visible, 0):
+                    if issue_visibility_order.get(role.issue_visible,
+                                                  0) > issue_visibility_order.get(best_issue_visible, 0):
                         best_issue_visible = role.issue_visible
                     # user_visible 우선순위 병합
-                    if user_visibility_order.get(role.user_visible, 0) > user_visibility_order.get(best_user_visible, 0):
+                    if user_visibility_order.get(role.user_visible,
+                                                 0) > user_visibility_order.get(best_user_visible, 0):
                         best_user_visible = role.user_visible
 
             return {
@@ -325,6 +337,20 @@ class Member(models.Model):
         unique_together = ('user', 'project')  # 한 프로젝트당 한 번만 속할 수 있음
 
 
+class VersionManager(models.Manager):
+    def accessible_from(self, project):
+        ancestor_ids = [p.id for p in project.family_tree()]
+        descendant_ids = project.get_all_descendant_ids()
+
+        # sharing: 0:없음, 1:하위, 2:상위/하위, 3:루트/하위, 4:전체
+        return self.filter(
+            Q(project=project) |  # 자신의 버전
+            Q(project_id__in=descendant_ids, sharing__in=['1', '2', '3', '4']) |
+            Q(project_id__in=ancestor_ids, sharing__in=['2', '3', '4']) |
+            Q(sharing='4')
+        )
+
+
 class Version(models.Model):
     project = models.ForeignKey(IssueProject, on_delete=models.CASCADE, verbose_name='프로젝트', related_name='versions')
     name = models.CharField('이름', max_length=20, db_index=True)
@@ -336,6 +362,8 @@ class Version(models.Model):
     description = models.CharField('설명', max_length=255, blank=True, default='')
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
+
+    objects = VersionManager()
 
     def __str__(self):
         return self.name
