@@ -6,6 +6,7 @@ import type { Docs } from '@/store/types/docs.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import { type DocsFilter, type SuitCaseFilter, useDocs } from '@/store/pinia/docs'
 import Loading from '@/components/Loading/Index.vue'
+import MultiSelect from '@/components/MultiSelect/index.vue'
 import AddNewDoc from './components/AddNewDoc.vue'
 import DocsList from './components/DocsList.vue'
 import DocsDetail from './components/DocsDetail.vue'
@@ -28,6 +29,7 @@ const docsFilter = ref<DocsFilter>({
   doc_type: typeNumber.value,
   category: '',
   issue_project: '',
+  lawsuit: '',
   ordering: '-created',
   search: '',
   page: 1,
@@ -182,7 +184,7 @@ onBeforeMount(async () => {
     </template>
 
     <template v-slot:aside>
-      <CRow class="mb-4">
+      <CRow class="mb-4 pr-2 mr-2">
         <CCol>
           <h6 class="asideTitle">문서 카테고리</h6>
           <v-divider class="mt-0" />
@@ -218,18 +220,26 @@ onBeforeMount(async () => {
         </CCol>
       </CRow>
 
-      <CRow v-if="getSuitCase.length" class="mb-4">
-        <CCol>
-          <h6 class="asideTitle">관련 사건</h6>
-          <v-divider class="mt-0" />
-          <ul class="list-unstyled aside-menu">
-            <li v-for="sc in getSuitCase" :key="sc.value" class="mb-2 text-truncate">
-              <v-icon icon="mdi-gavel" size="x-small" class="mr-1" />
-              <span class="text-body-2">{{ sc.label }}</span>
-            </li>
-          </ul>
-        </CCol>
-      </CRow>
+      <template v-if="typeNumber === 2">
+        <CRow v-if="getSuitCase.length" class="mb-3 mr-2">
+          <CCol>
+            <h6 class="asideTitle">관련 사건</h6>
+            <v-divider class="mt-0" />
+            <MultiSelect
+              mode="single"
+              v-model="docsFilter.lawsuit"
+              :options="getSuitCase"
+              placeholder="관련 사건 목록"
+            />
+          </CCol>
+        </CRow>
+
+        <CRow class="mr-2">
+          <CCol class="text-right">
+            <v-btn size="small" color="info" @click="fetchDocsList(docsFilter)">검색</v-btn>
+          </CCol>
+        </CRow>
+      </template>
     </template>
   </ContentBody>
 </template>
