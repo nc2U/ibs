@@ -22,7 +22,7 @@ const canIssueRead = computed(() => can(PERM.ISSUE_READ) && props.issue.project?
         params: { projId: issue.project.slug, issueId: issue.pk },
       }"
     >
-      {{ issue.pk }}
+      #{{ issue.pk }}
     </router-link>
     <span v-else>{{ issue.pk }}</span>
   </CTableDataCell>
