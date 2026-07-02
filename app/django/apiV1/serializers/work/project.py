@@ -198,7 +198,8 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
     # 메서드 복구
     @staticmethod
     def get_versions(obj):
-        versions = obj.versions.filter(status='1')
+        # 이제 VersionManager의 accessible_from을 사용하여 공유 설정이 반영된 버전 목록을 가져옵니다.
+        versions = Version.objects.accessible_from(obj).filter(status='1')
         return VersionInIssueProjectSerializer(versions, many=True).data
 
     def get_sub_projects(self, obj):

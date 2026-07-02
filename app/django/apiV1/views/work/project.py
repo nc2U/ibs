@@ -258,16 +258,25 @@ class VersionViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = Version.objects.all()
-
-        # 1. 슈퍼유저나 work_manager는 전체 버전 조회 가능
-        if user.is_superuser or getattr(user, 'work_manager', False):
-            base_qs = queryset
+        project_slug = self.request.query_params.get('project__slug')
+        
+        # 1. 특정 프로젝트 기준 조회가 요청된 경우
+        if project_slug:
+            try:
+                project = IssueProject.objects.get(slug=project_slug)
+                # 구현한 VersionManager 사용
+                base_qs = Version.objects.accessible_from(project)
+            except IssueProject.DoesNotExist:
+                return Version.objects.none()
         else:
-            # 2. 접근 가능한 프로젝트의 버전만 조회
-            base_qs = queryset.filter(
-                Q(project__is_public=True) | Q(project__members__user=user)
-            ).distinct()
+            # 2. 전체 조회 (기존 로직 유지 또는 필요에 따라 제한)
+            queryset = Version.objects.all()
+            if user.is_superuser or getattr(user, 'work_manager', False):
+                base_qs = queryset
+            else:
+                base_qs = queryset.filter(
+                    Q(project__is_public=True) | Q(project__members__user=user)
+                ).distinct()
 
         # 3. 성능 최적화
         return base_qs.select_related('project').prefetch_related('issues__tracker', 'issues__project')
