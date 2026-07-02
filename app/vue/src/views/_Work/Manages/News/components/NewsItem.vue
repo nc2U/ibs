@@ -85,7 +85,7 @@ const { can, canViewUser, PERM } = usePerms()
     </CRow>
 
     <CRow class="mb-0">
-      <CCol v-html="markdownRender(cutString(news.content, 68))" class="news-content" />
+      <CCol class="news-content">{{ cutString(news.content, 68) }}</CCol>
     </CRow>
   </v-card>
 </template>

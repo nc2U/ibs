@@ -29,7 +29,7 @@ const deleteFile = (pk: number) => {
   <div v-if="news" class="news-view">
     <v-card variant="flat" border class="pa-5 rounded-lg card-white">
       <!-- Title Section -->
-      <div class="d-flex justify-space-between align-start mb-3">
+      <div class="d-flex justify-space-between align-start my-3 pl-1">
         <h5 class="font-weight-bold">
           <v-chip
             v-if="news.is_important"
@@ -89,7 +89,7 @@ const deleteFile = (pk: number) => {
       </div>
 
       <!-- Content Section -->
-      <div class="content-body py-4 mb-6" v-html="markdownRender(news.content)" />
+      <div class="content-body pl-4 py-4 mb-6" v-html="markdownRender(news.content)" />
 
       <!-- Files Section -->
       <div v-if="news.files.length" class="files-section mt-6 pt-6">
