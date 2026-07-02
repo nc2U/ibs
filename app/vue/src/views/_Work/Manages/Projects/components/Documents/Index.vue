@@ -221,11 +221,16 @@ onBeforeMount(async () => {
         </CCol>
       </CRow>
 
+      <CRow>
+        <CCol class="mt-4">
+          <h6 class="asideTitle">{{ typeNumber === 1 ? '키워드' : '관련 사건' }}</h6>
+          <v-divider class="mt-0" />
+        </CCol>
+      </CRow>
+
       <template v-if="typeNumber === 2">
         <CRow v-if="getSuitCase.length" class="mb-3 mr-2">
           <CCol>
-            <h6 class="asideTitle">관련 사건</h6>
-            <v-divider class="mt-0" />
             <MultiSelect
               mode="single"
               v-model="docsFilter.lawsuit"
