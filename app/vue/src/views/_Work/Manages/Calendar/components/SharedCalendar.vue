@@ -1,29 +1,32 @@
 <script lang="ts" setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useStore } from '@/store'
-import { useIssue } from '@/store/pinia/work_issue'
-import { useMeeting } from '@/store/pinia/work_meeting'
-import { addDaysToDate, cutString, getToday } from '@/utils/baseMixins'
-import type { Issue } from '@/store/types/work_issue'
-import type { Meeting } from '@/store/types/work_meeting'
+import { addDaysToDate, getToday } from '@/utils/baseMixins'
 import type { CalendarOptions } from '@fullcalendar/core'
+import { useStore } from '@/store'
+import { useCalendar } from '@/store/pinia/work_calendar'
 import FullCalendar from '@fullcalendar/vue3'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import interactionPlugin from '@fullcalendar/interaction'
+import { usePerms } from '@/composables/usePerms.ts'
 
-defineProps({
-  projectId: { type: String, default: undefined },
+const props = defineProps({
+  projectSlug: { type: String, default: undefined },
 })
 
 const router = useRouter()
 const store = useStore()
-const issueStore = useIssue()
-const meetingStore = useMeeting()
+const calendarStore = useCalendar()
+
+const { can, PERM } = usePerms()
+const canCalendarRead = computed(() => can(PERM.CALENDAR_READ))
 
 const isDark = computed(() => store.theme === 'dark')
 
-const getEventColor = (status: { pk: number; closed: boolean }) => {
+const getEventColor = (type: 'issue' | 'meeting', status?: { pk: number; closed: boolean }) => {
+  if (type === 'meeting' || !status) {
+    return '#9575cd'
+  }
   const colors = {
     light: {
       1: '#e57373',
@@ -49,44 +52,47 @@ const getEventColor = (status: { pk: number; closed: boolean }) => {
 }
 
 const calendarEvents = computed(() => {
-  const issueEvents = issueStore.issueList.map((issue: Issue) => {
-    const assignee = issue.assigned_to ? `(${issue.assigned_to.username})` : ''
+  return calendarStore.events.map(event => {
+    if (event.type === 'meeting') {
+      return {
+        id: event.id,
+        title: event.title,
+        start: event.start || undefined,
+        allDay: false,
+        backgroundColor: '#9575cd',
+        borderColor: '#9575cd',
+        extendedProps: {
+          type: 'meeting',
+          project: event.project,
+          pk: parseInt(event.id.replace('m-', '')),
+        },
+      }
+    }
+
+    // issue
     return {
-      id: issue.pk.toString(),
-      title: `[${issue.tracker.name}] ${cutString(issue.subject, 15)}${assignee}`,
-      start: issue.start_date,
-      end: issue.due_date ? addDaysToDate(issue.due_date, 1) : addDaysToDate(issue.start_date, 1),
+      id: event.id,
+      title: event.title,
+      start: event.start,
+      end: event.end ? addDaysToDate(event.end, 1) : addDaysToDate(event.start, 1),
       allDay: true,
-      backgroundColor: getEventColor(issue.status),
-      borderColor: getEventColor(issue.status),
+      backgroundColor: getEventColor('issue', event.status),
+      borderColor: getEventColor('issue', event.status),
       extendedProps: {
         type: 'issue',
-        project: issue.project.slug,
-        pk: issue.pk,
+        project: event.project,
+        pk: parseInt(event.id),
+        start: event.start,
+        end: event.end,
+        expected_duration: event.expected_duration,
       },
     }
   })
-
-  const meetingEvents = meetingStore.meetingList.map((meeting: Meeting) => {
-    return {
-      id: `m-${meeting.pk}`,
-      title: `[회의] ${cutString(meeting.title, 15)}`,
-      start: meeting.meeting_date || undefined,
-      allDay: false,
-      backgroundColor: '#9575cd',
-      borderColor: '#9575cd',
-      extendedProps: {
-        type: 'meeting',
-        project: meeting.project_desc?.slug,
-        pk: meeting.pk,
-      },
-    }
-  })
-
-  return [...issueEvents, ...meetingEvents]
 })
 
 const handleEventClick = (info: any) => {
+  if (!canCalendarRead.value) return
+
   const { type, project, pk } = info.event.extendedProps
   if (type === 'issue') {
     router.push({
@@ -144,6 +150,22 @@ const renderEventContent = (eventInfo: any) => {
   }
 }
 
+// 달력의 현재 조회 범위를 기록해두고 외부 필터에서 쓸 수 있도록 노출
+const currentRange = ref({ start: '', end: '' })
+
+const handleDatesSet = (dateInfo: any) => {
+  const startStr = dateInfo.startStr.split('T')[0]
+  const endStr = dateInfo.endStr.split('T')[0]
+  currentRange.value = { start: startStr, end: endStr }
+  calendarStore.fetchCalendarEvents(props.projectSlug, startStr, endStr)
+}
+
+const handleEventDidMount = (info: any) => {
+  // 권한이 있는 경우에만 pointer 클래스 추가
+  if (canCalendarRead.value) info.el.classList.add('pointer')
+  else info.el.style.cursor = 'not-allowed' // 권한이 없으면 기본 커서로 강제 지정
+}
+
 const calendarOptions = computed<CalendarOptions>(() => ({
   timeZone: 'local',
   plugins: [dayGridPlugin, interactionPlugin],
@@ -153,15 +175,17 @@ const calendarOptions = computed<CalendarOptions>(() => ({
   height: 630,
   showNonCurrentDates: false,
   events: calendarEvents.value,
+  eventDidMount: handleEventDidMount,
   eventClick: handleEventClick,
   eventContent: renderEventContent,
+  datesSet: handleDatesSet,
 }))
 
-defineExpose({ calendarOptions })
+defineExpose({ calendarOptions, currentRange })
 </script>
 
 <template>
-  <FullCalendar :options="calendarOptions" />
+  <FullCalendar :key="`${canCalendarRead}`" :options="calendarOptions" />
 </template>
 
 <style lang="scss" scoped>

@@ -2,10 +2,9 @@
 import { computed, onBeforeMount, provide, ref } from 'vue'
 import { navMenu2 as navMenu } from '@/views/_Work/_menu/headermixin1'
 import { useRoute } from 'vue-router'
-import { useIssue } from '@/store/pinia/work_issue'
 import { useWork } from '@/store/pinia/work_project'
-import { useMeeting } from '@/store/pinia/work_meeting'
 import { useCompany } from '@/store/pinia/company.ts'
+import { useCalendar } from '@/store/pinia/work_calendar'
 import type { Company } from '@/store/types/settings'
 import type { IssueFilter } from '@/store/types/work_issue'
 import Loading from '@/components/Loading/Index.vue'
@@ -20,9 +19,8 @@ const company = computed<Company | null>(() => comStore.company)
 const comName = computed(() => company?.value?.name)
 
 const route = useRoute()
-const issueStore = useIssue()
 const workStore = useWork()
-const meetingStore = useMeeting()
+const calendarStore = useCalendar()
 
 provide('navMenu', navMenu)
 provide('query', route?.query)
@@ -31,16 +29,22 @@ const allProjects = computed(() => workStore.getAllProjects)
 
 const sideNavCAll = () => cBody.value.toggle()
 
+const activeProject = ref<string | undefined>(route.query.project as string | undefined)
+const calendarRef = ref()
+
 const filterSubmit = (payload: IssueFilter) => {
-  issueStore.fetchIssueList(payload)
+  activeProject.value = payload.project
+  const range = calendarRef.value?.currentRange || { start: '', end: '' }
+  calendarStore.fetchCalendarEvents(payload.project, range.start, range.end)
 }
 
 const summary = computed(() => {
-  const issues = issueStore.issueList
+  const events = calendarStore.events
+  const issues = events.filter(e => e.type === 'issue')
   return {
     total: issues.length,
-    open: issues.filter(i => !i.status.closed).length,
-    closed: issues.filter(i => i.status.closed).length,
+    open: issues.filter(i => i.status && !i.status.closed).length,
+    closed: issues.filter(i => i.status && i.status.closed).length,
   }
 })
 
@@ -48,8 +52,6 @@ const loading = ref(true)
 
 onBeforeMount(async () => {
   await workStore.fetchAllIssueProjectList()
-  await issueStore.fetchIssueList({})
-  await meetingStore.fetchMeetingList({})
   loading.value = false
 })
 </script>
@@ -70,7 +72,7 @@ onBeforeMount(async () => {
 
       <CRow class="mb-3">
         <CCol>
-          <SharedCalendar />
+          <SharedCalendar ref="calendarRef" :project-slug="activeProject" />
         </CCol>
       </CRow>
 
