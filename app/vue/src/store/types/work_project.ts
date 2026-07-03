@@ -163,3 +163,14 @@ export interface Version {
   is_default?: boolean
   issues?: SimpleIssue[]
 }
+
+export interface FormVersion {
+  pk: number | null
+  project: string
+  name: string
+  status: '1' | '2' | '3'
+  sharing: '0' | '1' | '2' | '3' | '4'
+  is_default: boolean
+  effective_date: string | null
+  description: string
+}

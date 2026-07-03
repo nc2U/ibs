@@ -11,6 +11,7 @@ import type {
   Role,
   Permission,
   Version,
+  FormVersion,
 } from '@/store/types/work_project.ts'
 
 export const useWork = defineStore('work', () => {
@@ -313,7 +314,7 @@ export const useWork = defineStore('work', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
-  const createVersion = (payload: Version) =>
+  const createVersion = (payload: FormVersion) =>
     api
       .post(`/version/`, payload)
       .then(async res => {
@@ -325,7 +326,7 @@ export const useWork = defineStore('work', () => {
       })
       .catch(err => errorHandle(err.response.data))
 
-  const updateVersion = (payload: Version) =>
+  const updateVersion = (payload: FormVersion) =>
     api
       .put(`/version/${payload.pk}/`, payload)
       .then(async res => {
