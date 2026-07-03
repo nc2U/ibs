@@ -51,7 +51,7 @@ export interface IssueProject {
   allowed_roles: { pk: number; name: string; inherited: boolean }[]
   trackers: { pk: number; name: string; description: string }[]
   forums: number[]
-  versions: Version[]
+  versions: SimpleVersion[]
   default_version: string | null
   categories: SimpleCategory[]
   status: '1' | '9'
@@ -127,6 +127,24 @@ export interface Member {
   created: string
 }
 
+export interface SimpleVersion {
+  pk: number
+  name: string
+  status: '1' | '2' | '3'
+  status_desc: '진행' | '잠김' | '닫힘'
+  sharing: '0' | '1' | '2' | '3' | '4'
+  sharing_desc:
+    | '공유 없음'
+    | '하위 프로젝트'
+    | '상위 및 하위 프로젝트'
+    | '최상위 및 모든 하위 프로젝트'
+    | '모든 프로젝트'
+  is_default: boolean
+  effective_date: string | null
+  description: string
+  proj_name: string
+}
+
 export interface Version {
   pk?: number
   project?: SimpleProject
@@ -142,7 +160,6 @@ export interface Version {
     | '모든 프로젝트'
   effective_date: string | null
   description: string
-  proj_name: string
-  issues?: SimpleIssue[]
   is_default?: boolean
+  issues?: SimpleIssue[]
 }
