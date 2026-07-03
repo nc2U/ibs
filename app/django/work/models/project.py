@@ -1,9 +1,10 @@
 from django.conf import settings
 from django.db import models
 from django.db.models import Q
+from tree_queries.query import TreeQuerySet
 
 
-class IssueProjectManager(models.Manager):
+class IssueProjectManager(models.Manager.from_queryset(TreeQuerySet)):
     def get_queryset(self):
         return super().get_queryset().select_related('parent', 'company', 'creator')
 
@@ -46,48 +47,21 @@ class IssueProject(models.Model):
         else:
             return self.parent.depth() + 1
 
-    def get_ancestors(self):
-        """자신을 제외한 조상 프로젝트 목록을 최상위부터 순서대로 반환합니다.
+    def ancestors(self, **kwargs):
+        """django-tree-queries를 사용하여 모든 조상 노드를 반환합니다."""
+        return self.__class__._default_manager.ancestors(self, **kwargs)
 
-        순환 참조 방어를 포함하며, 재귀 대신 반복문으로 스택 오버플로우를 방지합니다.
-        """
-        parents = []
-        visited_ids = {self.pk}
-        curr = self.parent
-        while curr is not None:
-            if curr.pk in visited_ids:
-                # 순환 참조 감지 시 중단
-                break
-            parents.insert(0, curr)
-            visited_ids.add(curr.pk)
-            curr = curr.parent
-        return parents
+    def descendants(self, **kwargs):
+        """django-tree-queries를 사용하여 모든 자손 노드를 반환합니다."""
+        return self.__class__._default_manager.descendants(self, **kwargs)
+
+    def get_ancestors(self):
+        """자신을 제외한 조상 프로젝트 목록을 최상위부터 순서대로 반환합니다."""
+        return list(self.ancestors())
 
     def get_all_descendant_ids(self):
-        """모든 하위 프로젝트의 ID를 반환합니다.
-
-        전체 프로젝트의 (id, parent_id)를 단일 쿼리로 가져온 후
-        메모리에서 BFS로 순회하여 N+1 쿼리 문제를 방지합니다.
-        """
-        all_nodes = IssueProject.objects.values_list('id', 'parent_id')
-        # parent_id -> [child_id, ...] 매핑 구성
-        children_map: dict[int, list[int]] = {}
-        for node_id, parent_id in all_nodes:
-            if parent_id is not None:
-                children_map.setdefault(parent_id, []).append(node_id)
-
-        # BFS로 자신의 모든 자손 수집
-        result = []
-        queue = list(children_map.get(self.pk, []))
-        visited = {self.pk}
-        while queue:
-            child_id = queue.pop(0)
-            if child_id in visited:
-                continue
-            visited.add(child_id)
-            result.append(child_id)
-            queue.extend(children_map.get(child_id, []))
-        return result
+        """모든 하위 프로젝트의 ID를 반환합니다."""
+        return list(self.descendants().values_list('id', flat=True))
 
     def all_members(self):
         """
@@ -364,8 +338,8 @@ class Member(models.Model):
 
 class VersionManager(models.Manager):
     def accessible_from(self, project):
-        ancestor_ids = [p.id for p in project.get_ancestors()]
-        descendant_ids = project.get_all_descendant_ids()
+        ancestor_ids = project.ancestors().values('id')
+        descendant_ids = project.descendants().values('id')
 
         # sharing: 0:없음, 1:하위, 2:상위/하위, 3:루트/하위, 4:전체
         return self.filter(
