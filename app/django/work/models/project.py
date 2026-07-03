@@ -378,6 +378,6 @@ class Version(models.Model):
         return self.name
 
     class Meta:
-        ordering = ('project', 'id')
+        ordering = ('id',)
         verbose_name = '06. 단계'
         verbose_name_plural = '06. 단계'

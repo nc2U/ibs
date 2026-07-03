@@ -160,7 +160,11 @@ export interface Version {
     | '모든 프로젝트'
   effective_date: string | null
   description: string
-  is_default?: boolean
+  is_default: boolean
+  closed_num: number
+  open_num: number
+  total_num: number
+  done_ratio: number
   issues?: SimpleIssue[]
 }
 

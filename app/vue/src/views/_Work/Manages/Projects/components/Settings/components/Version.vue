@@ -147,11 +147,28 @@ const deleteSubmit = () => {
               :class="{ 'text-secondary': ver.status === '3' }"
             >
               <template v-if="ver.project?.slug !== currentProjectSlug">
-                <small class="text-muted">[{{ ver.project?.name }}] </small>
-                {{ ver.name }}
+                <v-icon icon="mdi-link-variant" color="grey" size="sm" class="mr-2" />
+
+                <router-link
+                  :to="{
+                    name: '(로드맵) - 보기',
+                    params: { projId: ver.project?.slug, verId: ver.pk },
+                  }"
+                >
+                  <small class="text-muted">[{{ ver.project?.name }}] </small>
+                  {{ ver.name }}
+                </router-link>
               </template>
               <template v-else>
-                {{ ver.name }}
+                <router-link
+                  :to="{
+                    name: '(로드맵) - 보기',
+                    params: { projId: ver.project?.slug, verId: ver.pk },
+                  }"
+                  class="pl-4"
+                >
+                  {{ ver.name }}
+                </router-link>
               </template>
             </CTableDataCell>
             <CTableDataCell :class="{ 'text-secondary': ver.status === '3' }">

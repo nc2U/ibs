@@ -373,15 +373,38 @@ class VersionListSerializer(serializers.ModelSerializer):
     sharing_desc = serializers.CharField(source='get_sharing_display', read_only=True)
     is_default = serializers.SerializerMethodField(read_only=True)
 
+    open_num = serializers.SerializerMethodField(read_only=True)
+    closed_num = serializers.SerializerMethodField(read_only=True)
+    total_num = serializers.SerializerMethodField(read_only=True)
+    done_ratio = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = Version
         fields = ('pk', 'project', 'name', 'status', 'status_desc', 'sharing',
-                  'sharing_desc', 'effective_date', 'description', 'is_default')
+                  'sharing_desc', 'effective_date', 'description', 'is_default',
+                  'open_num', 'closed_num', 'total_num', 'done_ratio')
 
     @staticmethod
     def get_is_default(obj):
         default_ver = obj.project.default_version
         return True if default_ver and default_ver.pk == obj.pk else False
+
+    @staticmethod
+    def get_closed_num(obj):
+        return obj.issues.filter(status__closed=True).count()
+
+    @staticmethod
+    def get_open_num(obj):
+        return obj.issues.filter(status__closed=False).count()
+
+    @staticmethod
+    def get_total_num(obj):
+        return obj.issues.count()
+
+    def get_done_ratio(self, obj):
+        if self.get_closed_num(obj) == 0:
+            return 0
+        return round(self.get_closed_num(obj) / self.get_total_num(obj) * 100, 2)
 
 
 class VersionSerializer(VersionListSerializer):

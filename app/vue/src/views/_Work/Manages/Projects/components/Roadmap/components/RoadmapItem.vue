@@ -11,14 +11,14 @@ const { can, PERM } = usePerms()
 
 const boxClass = ['primary-box', 'danger-box', 'success-box']
 
-const closedNum = computed(() => props.version?.issues?.filter(i => i.closed).length ?? 0)
+const closedNum = computed(() => props.version.closed_num ?? 0)
 const closedStr = computed(() => {
   if (closedNum.value === 0) return '모두 미완료'
   else if (closedNum.value === 1) return '한 건 완료'
   else return `${closedNum.value} 건 완료`
 })
 
-const progressNum = computed(() => props.version?.issues?.filter(i => !i.closed).length ?? 0)
+const progressNum = computed(() => props.version.open_num ?? 0)
 const progressStr = computed(() => {
   if (progressNum.value === 0) return '모두 완료'
   else if (progressNum.value === 1) return '한 건 진행 중'
@@ -26,10 +26,8 @@ const progressStr = computed(() => {
 })
 
 const done_ratio = computed(() => {
-  const done_sum = props.version.issues?.reduce((sum, issue) => sum + issue.done_ratio, 0) ?? 0
-
-  if (!props.version?.issues?.length) return 0
-  else return Math.round(done_sum / props.version?.issues?.length)
+  // 백엔드에서 issue_stats가 포함되지 않은 경우를 대비한 안전장치
+  return props.version.done_ratio ?? 0
 })
 </script>
 
@@ -63,7 +61,7 @@ const done_ratio = computed(() => {
       <CCol>{{ version.description }}</CCol>
     </CRow>
 
-    <template v-if="!version.issues?.length">
+    <template v-if="version.total_num === 0">
       <div class="form-text mb-3">이 단계에 해당하는 업무 없음</div>
     </template>
 
