@@ -242,10 +242,7 @@ const newIssueStatusList = computed(() => {
 
 const categories = computed(() => (props.issueProject?.categories as SimpleCategory[]) ?? [])
 const versions = computed(() => props.issueProject?.versions ?? [])
-watch(versions, nVal => {
-  const def_vers = nVal.filter(v => v.is_default)
-  if (!!def_vers.length) form.value.fixed_version = def_vers[0].pk ?? null
-})
+const def_ver = computed(() => versions.value.find(v => v.is_default) ?? null)
 
 const filteredParentIssues = computed(() => {
   if (props.issue?.pk) {
@@ -289,10 +286,6 @@ const onSubmit = (event: Event) => {
   }
 }
 
-const removeProperty = (e: Event) => {
-  const el = e.currentTarget as HTMLInputElement
-  el.classList.remove('is-invalid')
-}
 const canEditIssue = (issue: Issue | null) => {
   if (!issue) return true // 신규 생성 시
 
@@ -357,9 +350,12 @@ onBeforeMount(() => {
     form.value.category = copyIssueObj.category
     form.value.expected_duration = copyIssueObj.expected_duration ?? ''
     form.value.done_ratio = copyIssueObj.done_ratio
-  } else if (route.query.parent) {
-    form.value.parent = Number(route.query.parent)
-    form.value.tracker = Number(route.query.tracker)
+  } else {
+    if (route.query.parent) {
+      form.value.parent = Number(route.query.parent)
+      form.value.tracker = Number(route.query.tracker)
+    }
+    if (def_ver.value) form.value.fixed_version = def_ver.value.pk
   }
 })
 
