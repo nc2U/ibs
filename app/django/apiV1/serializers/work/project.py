@@ -372,14 +372,11 @@ class VersionListSerializer(serializers.ModelSerializer):
     status_desc = serializers.CharField(source='get_status_display', read_only=True)
     sharing_desc = serializers.CharField(source='get_sharing_display', read_only=True)
     is_default = serializers.SerializerMethodField(read_only=True)
-    project_slug = serializers.SlugRelatedField(
-        slug_field='slug', queryset=IssueProject.objects.all(),
-        source='project', write_only=True, required=False)
 
     class Meta:
         model = Version
-        fields = ('pk', 'project', 'project_slug', 'name', 'status', 'status_desc',
-                  'sharing', 'sharing_desc', 'effective_date', 'description', 'is_default')
+        fields = ('pk', 'project', 'name', 'status', 'status_desc', 'sharing',
+                  'sharing_desc', 'effective_date', 'description', 'is_default')
 
     @staticmethod
     def get_is_default(obj):
