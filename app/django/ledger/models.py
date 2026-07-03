@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.db.models import Count, Sum
 from django.utils import timezone
+from tree_queries.query import TreeQuerySet
 
 from ledger.services.sync_payment_contract import trigger_sync_contract_payment
 
@@ -110,6 +111,7 @@ class Account(models.Model):
     이 모델은 추상 모델로, CompanyAccount와 ProjectAccount로 상속됩니다.
     구조는 동일하지만 계정 데이터는 완전히 분리되어 관리됩니다.
     """
+    objects = TreeQuerySet.as_manager()
 
     # Category별 시작 코드
     CATEGORY_BASE_CODES = {
@@ -256,28 +258,12 @@ class Account(models.Model):
         return ' > '.join(path)
 
     def get_descendants(self, include_self=False):
-        """모든 하위 계정 조회 (재귀)"""
-        descendants = []
-        if include_self:
-            descendants.append(self)
-
-        for child in self.children.all():
-            descendants.extend(child.get_descendants(include_self=True))
-
-        return descendants
+        """모든 하위 계정 조회"""
+        return list(self.__class__._default_manager.descendants(self, include_self=include_self))
 
     def get_ancestors(self, include_self=False):
         """모든 상위 계정 조회 (루트까지)"""
-        ancestors = []
-        if include_self:
-            ancestors.append(self)
-
-        parent = self.parent
-        while parent:
-            ancestors.append(parent)
-            parent = parent.parent
-
-        return ancestors
+        return list(self.__class__._default_manager.ancestors(self, include_self=include_self))
 
     def get_computed_direction(self):
         """
