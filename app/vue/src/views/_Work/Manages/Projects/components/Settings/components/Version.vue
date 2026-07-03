@@ -6,7 +6,10 @@ import type { Version } from '@/store/types/work_project.ts'
 import NoData from '@/components/NoData/Index.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
-defineProps({ versions: { type: Array as PropType<Version[]>, default: () => [] } })
+defineProps({
+  versions: { type: Array as PropType<Version[]>, default: () => [] },
+  currentProjectSlug: { type: String, required: true },
+})
 
 const emit = defineEmits(['version-filter', 'delete-version'])
 
@@ -143,7 +146,13 @@ const deleteSubmit = () => {
               class="text-left pl-4"
               :class="{ 'text-secondary': ver.status === '3' }"
             >
-              {{ ver.name }}
+              <template v-if="ver.project?.slug !== currentProjectSlug">
+                <small class="text-muted">[{{ ver.project?.name }}] </small>
+                {{ ver.name }}
+              </template>
+              <template v-else>
+                {{ ver.name }}
+              </template>
             </CTableDataCell>
             <CTableDataCell :class="{ 'text-secondary': ver.status === '3' }">
               <v-icon v-if="ver.is_default" icon="mdi-check-bold" color="success" size="sm" />

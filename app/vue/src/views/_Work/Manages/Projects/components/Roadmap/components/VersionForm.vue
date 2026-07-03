@@ -5,6 +5,7 @@ import { isValidate } from '@/utils/helper'
 import { usePerms } from '@/composables/usePerms.ts'
 import { colorLight } from '@/utils/cssMixins'
 import { useWork } from '@/store/pinia/work_project.ts'
+import type { FormVersion } from '@/store/types/work_project.ts'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 
 const emit = defineEmits(['on-submit'])
@@ -15,15 +16,15 @@ const canManageVersions = computed(() => can(PERM.PROJECT_VERSION))
 
 const validated = ref(false)
 
-const form = ref({
+const form = ref<FormVersion>({
   pk: null as number | null,
   project: '',
   name: '',
-  description: '',
   status: '1' as '1' | '2' | '3',
-  effective_date: null as string | null,
   sharing: '0' as '0' | '1' | '2' | '3' | '4',
   is_default: false,
+  effective_date: null as string | null,
+  description: '',
 })
 
 const formsCheck = computed(() => {

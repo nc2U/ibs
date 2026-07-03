@@ -179,6 +179,7 @@ onBeforeMount(async () => {
         <Version
           v-if="menu === '단계'"
           :versions="versionList"
+          :current-project-slug="issueProject?.slug as string"
           @version-filter="versionFilter"
           @delete-version="deleteVersion"
         />
