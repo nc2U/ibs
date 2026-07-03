@@ -392,13 +392,22 @@ class VersionSerializer(VersionListSerializer):
 
     @transaction.atomic
     def create(self, validated_data):
-        is_default = self.initial_data.get('is_default', False)
-        if isinstance(is_default, str):
-            is_default = is_default.lower() in ['true', '1']
         project = validated_data.get('project')
+        if not project:
+            project_slug = self.initial_data.get('project')
+            if project_slug:
+                try:
+                    project = IssueProject.objects.get(slug=project_slug)
+                    validated_data['project'] = project
+                except IssueProject.DoesNotExist:
+                    raise serializers.ValidationError({'project': 'Invalid project slug'})
 
         if not project:
             raise serializers.ValidationError({'project': 'Project is required'})
+
+        is_default = self.initial_data.get('is_default', False)
+        if isinstance(is_default, str):
+            is_default = is_default.lower() in ['true', '1']
 
         version = Version.objects.create(**validated_data)
         if is_default:
