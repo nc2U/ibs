@@ -68,7 +68,6 @@ class ProjectPermissionMixin:
         }
 
 
-
 # Work --------------------------------------------------------------------------
 class SimpleIssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer):
     visible = serializers.SerializerMethodField(read_only=True)
@@ -164,7 +163,7 @@ class IssueProjectListSerializer(ProjectPermissionMixin, serializers.ModelSerial
 
 
 class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer):
-    family_tree = SimpleIssueProjectSerializer(many=True, read_only=True)
+    ancestors = SimpleIssueProjectSerializer(many=True, read_only=True)
     module = ModuleInIssueProjectSerializer(read_only=True)
     all_members = MemberInIssueProjectSerializer(many=True, read_only=True)
     members = MemberInIssueProjectSerializer(many=True, read_only=True)
@@ -191,7 +190,7 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
         fields = ('pk', 'company', 'sort', 'name', 'slug', 'description', 'homepage', 'is_public',
                   'module', 'is_inherit_members', 'allowed_roles', 'trackers', 'forums', 'versions',
                   'default_version', 'categories', 'status', 'depth', 'all_members', 'members',
-                  'visible', 'family_tree', 'parent', 'parent_visible', 'sub_projects', 'creator',
+                  'visible', 'ancestors', 'parent', 'parent_visible', 'sub_projects', 'creator',
                   'my_perms', 'my_role', 'created', 'updated', 'issue', 'news', 'document', 'forum', 'calendar')
         read_only_fields = ('status', 'is_public', 'forums')
 

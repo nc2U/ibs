@@ -46,7 +46,7 @@ class IssueProject(models.Model):
         else:
             return self.parent.depth() + 1
 
-    def family_tree(self):
+    def get_ancestors(self):
         """자신을 제외한 조상 프로젝트 목록을 최상위부터 순서대로 반환합니다.
 
         순환 참조 방어를 포함하며, 재귀 대신 반복문으로 스택 오버플로우를 방지합니다.
@@ -364,7 +364,7 @@ class Member(models.Model):
 
 class VersionManager(models.Manager):
     def accessible_from(self, project):
-        ancestor_ids = [p.id for p in project.family_tree()]
+        ancestor_ids = [p.id for p in project.get_ancestors()]
         descendant_ids = project.get_all_descendant_ids()
 
         # sharing: 0:없음, 1:하위, 2:상위/하위, 3:루트/하위, 4:전체

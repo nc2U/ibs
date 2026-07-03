@@ -61,7 +61,7 @@ export interface IssueProject {
   activities: CodeValue[]
   visible?: boolean
   total_time_spent?: number
-  family_tree: SimpleProject[]
+  ancestors: SimpleProject[]
   parent: number | null
   parent_visible: boolean
   sub_projects: IssueProject[]

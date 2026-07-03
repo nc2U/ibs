@@ -12,7 +12,7 @@ import HeaderNav from './components/HeaderNav.vue'
 defineProps({
   pageTitle: { type: String, default: '' },
   navMenu: { type: Array, default: () => ['Base Menu'] },
-  familyTree: { type: Array as PropType<SimpleProject[]>, default: () => [] },
+  ancestors: { type: Array as PropType<SimpleProject[]>, default: () => [] },
 })
 
 const visible = ref(false)
@@ -76,8 +76,8 @@ onBeforeMount(workStore.fetchAllIssueProjectList)
                 »
               </span>
 
-              <span v-if="!!familyTree.length">
-                <span v-for="p in familyTree" :key="p.pk">
+              <span v-if="!!ancestors.length">
+                <span v-for="p in ancestors" :key="p.pk">
                   <span v-if="p.visible" class="mr-1 text-blue-grey">
                     <router-link :to="{ name: route.name ?? '(개요)', params: { projId: p.slug } }">
                       {{ p.name }}
@@ -96,7 +96,7 @@ onBeforeMount(workStore.fetchAllIssueProjectList)
 
             <CCol
               class="text-body d-lg-none pointer"
-              :class="{ pointer: !!familyTree.length }"
+              :class="{ pointer: !!ancestors.length }"
               @click="visible = !visible"
             >
               <v-icon :icon="visible ? 'mdi-chevron-up' : 'mdi-chevron-down'" color="" />
