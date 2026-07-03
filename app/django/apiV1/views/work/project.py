@@ -7,8 +7,8 @@ from rest_framework.response import Response
 from apiV1.pagination import PageNumberPaginationTwenty, PageNumberPaginationOneHundred
 from apiV1.permissions.auth_perms import IsWorkManagerReadOnly
 from apiV1.permissions.work_perms import ProjectPermission
-from apiV1.serializers.work import IssueProjectSerializer, IssueProjectListSerializer, \
-    ModuleSerializer, RoleSerializer, PermissionSerializer, MemberSerializer, VersionSerializer
+from apiV1.serializers.work import IssueProjectSerializer, IssueProjectListSerializer, ModuleSerializer, \
+    RoleSerializer, PermissionSerializer, MemberSerializer, VersionSerializer, VersionListSerializer
 from work.models import IssueProject, Module, Role, Permission, Member, Version
 
 
@@ -246,7 +246,7 @@ class VersionFilter(FilterSet):
 
     class Meta:
         model = Version
-        fields = ('project__slug', 'status')
+        fields = ('status',)
 
 
 class VersionViewSet(viewsets.ModelViewSet):
@@ -256,21 +256,35 @@ class VersionViewSet(viewsets.ModelViewSet):
     filterset_class = VersionFilter
     search_fields = ('name', 'description')
 
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return VersionListSerializer
+        return VersionSerializer
+
     def get_queryset(self):
         user = self.request.user
         project_slug = self.request.query_params.get('project__slug')
-        
+
+        # 기본 쿼리셋
+        queryset = Version.objects.all()
+
         # 1. 특정 프로젝트 기준 조회가 요청된 경우
         if project_slug:
             try:
                 project = IssueProject.objects.get(slug=project_slug)
                 # 구현한 VersionManager 사용
                 base_qs = Version.objects.accessible_from(project)
+
+                # [보안 복원] 관리자가 아닌 경우, 접근 가능한 프로젝트의 버전만 필터링
+                if not (user.is_superuser or getattr(user, 'work_manager', False)):
+                    accessible_projects = IssueProject.objects.filter(
+                        Q(is_public=True) | Q(members__user=user)
+                    ).values_list('pk', flat=True)
+                    base_qs = base_qs.filter(project_id__in=accessible_projects)
             except IssueProject.DoesNotExist:
                 return Version.objects.none()
         else:
-            # 2. 전체 조회 (기존 로직 유지 또는 필요에 따라 제한)
-            queryset = Version.objects.all()
+            # 2. 전체 조회 (기존 로직 유지)
             if user.is_superuser or getattr(user, 'work_manager', False):
                 base_qs = queryset
             else:

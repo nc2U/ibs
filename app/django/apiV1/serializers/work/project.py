@@ -367,26 +367,31 @@ class IssueInVersionSerializer(serializers.ModelSerializer):
                   'expected_duration', 'expected_duration_display', 'done_ratio', 'closed')
 
 
-class VersionSerializer(serializers.ModelSerializer):
+class VersionListSerializer(serializers.ModelSerializer):
     project = SimpleIssueProjectSerializer(read_only=True)
     status_desc = serializers.CharField(source='get_status_display', read_only=True)
     sharing_desc = serializers.CharField(source='get_sharing_display', read_only=True)
     is_default = serializers.SerializerMethodField(read_only=True)
-    issues = IssueInVersionSerializer(many=True, read_only=True)
-
     project_slug = serializers.SlugRelatedField(
         slug_field='slug', queryset=IssueProject.objects.all(),
         source='project', write_only=True, required=False)
 
     class Meta:
         model = Version
-        fields = ('pk', 'project', 'project_slug', 'name', 'status', 'status_desc', 'sharing', 'sharing_desc',
-                  'effective_date', 'description', 'issues', 'is_default')
+        fields = ('pk', 'project', 'project_slug', 'name', 'status', 'status_desc',
+                  'sharing', 'sharing_desc', 'effective_date', 'description', 'is_default')
 
     @staticmethod
     def get_is_default(obj):
         default_ver = obj.project.default_version
         return True if default_ver and default_ver.pk == obj.pk else False
+
+
+class VersionSerializer(VersionListSerializer):
+    issues = IssueInVersionSerializer(many=True, read_only=True)
+
+    class Meta(VersionListSerializer.Meta):
+        fields = VersionListSerializer.Meta.fields + ('issues',)
 
     @transaction.atomic
     def create(self, validated_data):

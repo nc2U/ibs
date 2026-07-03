@@ -330,35 +330,60 @@ class Member(models.Model):
 
 class VersionManager(models.Manager):
     def accessible_from(self, project):
-        ancestors = project.get_ancestors()
-        descendants = project.get_descendants()
+        # CTE 쿼리셋을 "그대로" 서브쿼리에 넘기지 말고, 여기서 즉시 실행해서 리스트로 확정
+        ancestor_ids = list(project.get_ancestors().values_list('id', flat=True))
+        descendant_ids = list(project.get_descendants().values_list('id', flat=True))
 
-        ancestor_ids = ancestors.values('id')
-        descendant_ids = descendants.values('id')
+        root = None
+        if ancestor_ids:
+            # ancestors는 루트부터 정렬되므로 첫 번째가 루트
+            root = IssueProject.objects.get(pk=ancestor_ids[0])
+        root = root or project
 
-        # 프로젝트 트리의 루트를 찾습니다 (ancestors는 루트부터 정렬됨)
-        root = ancestors.first() or project
-        root_descendants = root.get_descendants(include_self=True).values('id')
+        root_descendant_ids = list(
+            root.get_descendants(include_self=True).values_list('id', flat=True)
+        )
 
-        # sharing: 0:없음, 1:하위, 2:상위/하위, 3:최상위 및 모든 하위, 4:전체
         return self.filter(
-            # 1. 이 버전이 바로 현재 프로젝트 내에 생성되었다면?
-            # -> 당연히 보여줘야 함 (공유 설정과 무관)
             Q(project=project) |
-            # 2. 이 버전이 나의 '자손 프로젝트' 중 하나에 속해 있다면?
-            # -> 그 자손 프로젝트가 [1,2,3,4] 중 하나의 공유 설정을 가졌다면
-            #    (즉, 내 쪽으로 공유를 풀어놨다면) 보여줌.
             Q(project_id__in=descendant_ids, sharing__in=['1', '2', '3', '4']) |
-            # 3. 이 버전이 나의 '조상 프로젝트' 중 하나에 속해 있다면?
-            # -> 그 조상 프로젝트가 [2번: 상위/하위 공유]로 설정했다면 보여줌.
             Q(project_id__in=ancestor_ids, sharing__in=['2']) |
-            # 4. 이 버전이 나와 '같은 트리에 있는 어떤 프로젝트'에 속해 있고,
-            # -> 그 프로젝트가 [3번: 최상위(루트) 및 모든 하위 프로젝트 공유]로 설정했다면 보여줌.
-            Q(project_id__in=root_descendants, sharing='3') |
-            # 5. 이 버전이 [4번: 모든 프로젝트 공유]로 설정되어 있다면?
-            # -> 내 위치와 상관없이 무조건 보여줌.
+            Q(project_id__in=root_descendant_ids, sharing='3') |
             Q(sharing='4')
         )
+
+
+# class VersionManager(models.Manager):
+#     def accessible_from(self, project):
+#         ancestors = project.get_ancestors()
+#         descendants = project.get_descendants()
+#
+#         ancestor_ids = ancestors.values('id')
+#         descendant_ids = descendants.values('id')
+#
+#         # 프로젝트 트리의 루트를 찾습니다 (ancestors는 루트부터 정렬됨)
+#         root = ancestors.first() or project
+#         root_descendants = root.get_descendants(include_self=True).values('id')
+#
+#         # sharing: 0:없음, 1:하위, 2:상위/하위, 3:최상위 및 모든 하위, 4:전체
+#         return self.filter(
+#             # 1. 이 버전이 바로 현재 프로젝트 내에 생성되었다면?
+#             # -> 당연히 보여줘야 함 (공유 설정과 무관)
+#             Q(project=project) |
+#             # 2. 이 버전이 나의 '자손 프로젝트' 중 하나에 속해 있다면?
+#             # -> 그 자손 프로젝트가 [1,2,3,4] 중 하나의 공유 설정을 가졌다면
+#             #    (즉, 내 쪽으로 공유를 풀어놨다면) 보여줌.
+#             Q(project_id__in=descendant_ids, sharing__in=['1', '2', '3', '4']) |
+#             # 3. 이 버전이 나의 '조상 프로젝트' 중 하나에 속해 있다면?
+#             # -> 그 조상 프로젝트가 [2번: 상위/하위 공유]로 설정했다면 보여줌.
+#             Q(project_id__in=ancestor_ids, sharing__in=['2']) |
+#             # 4. 이 버전이 나와 '같은 트리에 있는 어떤 프로젝트'에 속해 있고,
+#             # -> 그 프로젝트가 [3번: 최상위(루트) 및 모든 하위 프로젝트 공유]로 설정했다면 보여줌.
+#             Q(project_id__in=root_descendants, sharing='3') |
+#             # 5. 이 버전이 [4번: 모든 프로젝트 공유]로 설정되어 있다면?
+#             # -> 내 위치와 상관없이 무조건 보여줌.
+#             Q(sharing='4')
+#         )
 
 
 class Version(models.Model):
