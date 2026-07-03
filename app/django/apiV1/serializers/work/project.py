@@ -163,7 +163,7 @@ class IssueProjectListSerializer(ProjectPermissionMixin, serializers.ModelSerial
 
 
 class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer):
-    ancestors = SimpleIssueProjectSerializer(many=True, read_only=True)
+    ancestors = SimpleIssueProjectSerializer(source='get_ancestors', many=True, read_only=True)
     module = ModuleInIssueProjectSerializer(read_only=True)
     all_members = MemberInIssueProjectSerializer(many=True, read_only=True)
     members = MemberInIssueProjectSerializer(many=True, read_only=True)

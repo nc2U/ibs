@@ -47,21 +47,13 @@ class IssueProject(models.Model):
         else:
             return self.parent.depth() + 1
 
-    def ancestors(self, **kwargs):
+    def get_ancestors(self, **kwargs):
         """django-tree-queries를 사용하여 모든 조상 노드를 반환합니다."""
         return self.__class__._default_manager.ancestors(self, **kwargs)
 
-    def descendants(self, **kwargs):
+    def get_descendants(self, **kwargs):
         """django-tree-queries를 사용하여 모든 자손 노드를 반환합니다."""
         return self.__class__._default_manager.descendants(self, **kwargs)
-
-    def get_ancestors(self):
-        """자신을 제외한 조상 프로젝트 목록을 최상위부터 순서대로 반환합니다."""
-        return list(self.ancestors())
-
-    def get_all_descendant_ids(self):
-        """모든 하위 프로젝트의 ID를 반환합니다."""
-        return list(self.descendants().values_list('id', flat=True))
 
     def all_members(self):
         """
@@ -338,8 +330,8 @@ class Member(models.Model):
 
 class VersionManager(models.Manager):
     def accessible_from(self, project):
-        ancestor_ids = project.ancestors().values('id')
-        descendant_ids = project.descendants().values('id')
+        ancestor_ids = project.get_ancestors().values('id')
+        descendant_ids = project.get_descendants().values('id')
 
         # sharing: 0:없음, 1:하위, 2:상위/하위, 3:루트/하위, 4:전체
         return self.filter(
