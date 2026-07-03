@@ -117,11 +117,12 @@ class VersionInIssueProjectSerializer(serializers.ModelSerializer):
     status_desc = serializers.CharField(source='get_status_display', read_only=True)
     sharing_desc = serializers.CharField(source='get_sharing_display', read_only=True)
     is_default = serializers.SerializerMethodField(read_only=True)
+    proj_name = serializers.CharField(source='project.name', read_only=True)
 
     class Meta:
         model = Version
         fields = ('pk', 'name', 'status', 'status_desc', 'sharing', 'sharing_desc',
-                  'is_default', 'effective_date', 'description')
+                  'is_default', 'effective_date', 'description', 'proj_name')
 
     @staticmethod
     def get_is_default(obj):
@@ -197,8 +198,9 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
     # 메서드 복구
     @staticmethod
     def get_versions(obj):
-        # 이제 VersionManager의 accessible_from을 사용하여 공유 설정이 반영된 버전 목록을 가져옵니다.
-        versions = Version.objects.accessible_from(obj).filter(status='1')
+        # 모든 상태의 버전을 포함.
+        # VersionManager의 accessible_from을 사용.
+        versions = Version.objects.accessible_from(obj)
         return VersionInIssueProjectSerializer(versions, many=True).data
 
     def get_sub_projects(self, obj):

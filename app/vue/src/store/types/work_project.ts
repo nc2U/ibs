@@ -142,6 +142,7 @@ export interface Version {
     | '모든 프로젝트'
   effective_date: string | null
   description: string
+  proj_name: string
   issues?: SimpleIssue[]
   is_default?: boolean
 }
