@@ -170,17 +170,19 @@ const deleteSubmit = () => {
               {{ ver.sharing_desc }}
             </CTableDataCell>
             <CTableDataCell class="form-text">
-              <span v-if="canManageVersions" class="mr-2">
-                <v-icon icon="mdi-pencil" color="amber" size="sm" class="mr-1" />
-                <router-link
-                  :to="{ name: '(로드맵) - 수정', params: { verId: ver.pk }, query: { back: 1 } }"
-                >
-                  편집
-                </router-link>
-              </span>
-              <span v-if="canManageVersions">
-                <v-icon icon="mdi-trash-can" color="grey" size="sm" class="mr-1" />
-                <router-link to="" @click="toDelete(ver?.pk as number)">삭제</router-link>
+              <span v-if="ver.project?.slug === currentProjectSlug">
+                <span v-if="canManageVersions" class="mr-2">
+                  <v-icon icon="mdi-pencil" color="amber" size="sm" class="mr-1" />
+                  <router-link
+                    :to="{ name: '(로드맵) - 수정', params: { verId: ver.pk }, query: { back: 1 } }"
+                  >
+                    편집
+                  </router-link>
+                </span>
+                <span v-if="canManageVersions">
+                  <v-icon icon="mdi-trash-can" color="grey" size="sm" class="mr-1" />
+                  <router-link to="" @click="toDelete(ver?.pk as number)">삭제</router-link>
+                </span>
               </span>
             </CTableDataCell>
           </CTableRow>
