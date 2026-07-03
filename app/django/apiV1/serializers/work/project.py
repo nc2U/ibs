@@ -402,9 +402,16 @@ class VersionListSerializer(serializers.ModelSerializer):
         return obj.issues.count()
 
     def get_done_ratio(self, obj):
-        if self.get_closed_num(obj) == 0:
+        # 1. 이슈가 아예 없는 경우
+        total_num = self.get_total_num(obj)
+        if total_num == 0:
             return 0
-        return round(self.get_closed_num(obj) / self.get_total_num(obj) * 100, 2)
+        # 2. 종료된 업무가 없는 경우
+        closed_num = self.get_closed_num(obj)
+        if closed_num == 0:
+            return 0
+        else:
+            return round(closed_num / total_num * 100, 2)
 
 
 class VersionSerializer(VersionListSerializer):
