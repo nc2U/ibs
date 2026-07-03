@@ -242,7 +242,20 @@ const newIssueStatusList = computed(() => {
 
 const categories = computed(() => (props.issueProject?.categories as SimpleCategory[]) ?? [])
 const versions = computed(() => props.issueProject?.versions ?? [])
-const def_ver = computed(() => versions.value.find(v => v.is_default) ?? null)
+
+watch(
+  () => versions.value,
+  newVersions => {
+    // 신규 생성 모드이면서 fixed_version이 설정되지 않았을 때만 자동 설정
+    if (!props.issue && !route.query.copy && newVersions.length > 0 && !form.value.fixed_version) {
+      const defaultVersion = newVersions.find(v => v.is_default)
+      if (defaultVersion) {
+        form.value.fixed_version = defaultVersion.pk
+      }
+    }
+  },
+  { immediate: true },
+)
 
 const filteredParentIssues = computed(() => {
   if (props.issue?.pk) {
@@ -355,7 +368,6 @@ onBeforeMount(() => {
       form.value.parent = Number(route.query.parent)
       form.value.tracker = Number(route.query.tracker)
     }
-    if (def_ver.value) form.value.fixed_version = def_ver.value.pk
   }
 })
 
