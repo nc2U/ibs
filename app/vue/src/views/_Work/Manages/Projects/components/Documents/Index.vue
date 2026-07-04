@@ -12,7 +12,6 @@ import DocsList from './components/DocsList.vue'
 import DocsDetail from './components/DocsDetail.vue'
 import DocsForm from './components/DocsForm.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
-import { CFormInput } from '@coreui/vue'
 
 const cBody = ref()
 const toggle = () => cBody.value.toggle()

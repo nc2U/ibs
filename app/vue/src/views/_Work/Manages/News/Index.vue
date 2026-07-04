@@ -12,7 +12,6 @@ import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import NewsForm from './components/NewsForm.vue'
 import NewsList from './components/NewsList.vue'
 import TopCreateButton from '@/views/_Work/components/atomics/TopCreateButton.vue'
-import { CRow } from '@coreui/vue'
 
 const cBody = ref()
 const comStore = useCompany()

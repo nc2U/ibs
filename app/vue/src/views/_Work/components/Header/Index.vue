@@ -56,7 +56,7 @@ const cngProject = async (slug: any) => {
   const routeName = (route.name as string) ?? ''
   const name = /^\(.*\)$/.test(routeName) ? routeName : `(${routeName})`
   if (slug) {
-    if (!(await chkModules(slug))) await router.push({ name: '(개요)', params: { projId: slug } })
+    if (!chkModules(slug)) await router.push({ name: '(개요)', params: { projId: slug } })
     else await router.push({ name, params: { projId: slug } })
   }
 }
