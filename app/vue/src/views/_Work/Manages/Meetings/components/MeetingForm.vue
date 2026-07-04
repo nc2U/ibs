@@ -223,7 +223,7 @@ const userOptions = computed(() =>
 
 const refCategoryModal = ref()
 const categoryForm = ref({
-  project: 6 as number,
+  project: form.value.project,
   name: '',
   color: '',
   order: 1,
@@ -232,7 +232,7 @@ const categoryForm = ref({
 const callCategoryModal = () => {
   categoryForm.value.project = form.value.project as number
   categoryForm.value.name = ''
-  categoryForm.value.color = ''
+  categoryForm.value.color = '#fffdbd'
   categoryForm.value.order = (categories.value.length || 0) + 1
   refCategoryModal.value.callModal()
 }
@@ -260,7 +260,7 @@ const onConfirmToggle = async () => {
           <!-- Main Content Column -->
           <CCol md="8">
             <CRow class="mb-3">
-              <CFormLabel for="title" class="col-sm-2 col-form-label text-right">
+              <CFormLabel for="title" class="col-sm-2 col-form-label text-right required">
                 회의 제목
               </CFormLabel>
               <CCol sm="10">
@@ -469,7 +469,7 @@ const onConfirmToggle = async () => {
           <!-- Sidebar Column (Meta Info) -->
           <CCol md="4" class="bg-more-light p-4">
             <CRow class="mb-3">
-              <CFormLabel for="project" class="col-sm-4 col-form-label text-right">
+              <CFormLabel for="project" class="col-sm-4 col-form-label text-right required">
                 프로젝트
               </CFormLabel>
               <CCol sm="8">
@@ -492,13 +492,14 @@ const onConfirmToggle = async () => {
             </CRow>
 
             <CRow class="mb-3">
-              <CFormLabel for="meeting_date" class="col-sm-4 col-form-label text-right">
+              <CFormLabel for="meeting_date" class="col-sm-4 col-form-label text-right required">
                 회의일시
               </CFormLabel>
               <CCol sm="8">
                 <DateTimePicker
                   v-model="form.meeting_date"
                   id="meeting_date"
+                  required
                   placeholder="회의 일시 선택"
                 />
               </CCol>
@@ -524,7 +525,9 @@ const onConfirmToggle = async () => {
             </CRow>
 
             <CRow class="mb-3 mt-3">
-              <CFormLabel for="status" class="col-sm-4 col-form-label text-right">상태</CFormLabel>
+              <CFormLabel for="status" class="col-sm-4 col-form-label text-right required">
+                상태
+              </CFormLabel>
               <CCol sm="8">
                 <CFormSelect v-model="form.status" id="status" required>
                   <option value="1">준비</option>
@@ -586,12 +589,11 @@ const onConfirmToggle = async () => {
             <v-btn
               type="submit"
               :color="form.pk ? 'success' : 'primary'"
-              variant="flat"
               :disabled="form.pk ? !canMeetingUpdate : !canMeetingCreate"
             >
               {{ form.pk ? '확인' : '저장' }}
             </v-btn>
-            <v-btn color="secondary" variant="flat" class="ml-2" @click="router.back()">취소</v-btn>
+            <v-btn color="light" class="ml-2" @click="router.back()" flat>취소</v-btn>
           </CCol>
         </CRow>
       </CForm>
@@ -641,7 +643,12 @@ const onConfirmToggle = async () => {
         <CRow class="mb-3">
           <CFormLabel for="cat-name" class="col-sm-3 col-form-label">카테고리명</CFormLabel>
           <CCol sm="9">
-            <CFormInput v-model="categoryForm.name" id="cat-name" required />
+            <CFormInput
+              v-model="categoryForm.name"
+              id="cat-name"
+              placeholder="카테고리명을 입력하세요."
+              required
+            />
             <CFormFeedback invalid>카테고리명을 입력해 주세요.</CFormFeedback>
           </CCol>
         </CRow>
@@ -662,14 +669,8 @@ const onConfirmToggle = async () => {
 
         <CRow>
           <CCol class="text-right">
-            <v-btn type="submit" color="primary" variant="flat" size="small"> 저장 </v-btn>
-            <v-btn
-              color="secondary"
-              variant="flat"
-              size="small"
-              class="ml-2"
-              @click="refCategoryModal.close()"
-            >
+            <v-btn type="submit" color="primary" size="small"> 저장 </v-btn>
+            <v-btn color="light" size="small" class="ml-2" @click="refCategoryModal.close()" flat>
               취소
             </v-btn>
           </CCol>
