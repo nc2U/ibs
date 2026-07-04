@@ -165,6 +165,23 @@ class DocumentSerializer(serializers.ModelSerializer):
         read_only_fields = ('ip',)
         extra_kwargs = {'password': {'write_only': True}}
 
+    def _is_visible_to_user(self, obj) -> bool:
+        """비밀글 및 블라인드글 노출 제어 헬퍼"""
+        request = self.context.get('request')
+        if not request:
+            return False
+        user = request.user
+        if not user or not user.is_authenticated:
+            return False
+        # 1. 블라인드글인 경우 관리자(workManager)만 노출
+        if obj.is_blind:
+            return user.is_superuser or getattr(user, 'work_manager', False)
+        # 2. 비밀글인 경우 관리자(workManager) 또는 작성자 본인만 노출
+        if obj.is_secret:
+            return user.is_superuser or getattr(user, 'work_manager', False) or obj.creator == user
+        # 3. 일반 글인 경우 모든 유저 노출
+        return True
+
     @staticmethod
     def get_proj_sort(obj):
         return obj.issue_project.sort if obj.issue_project else None
@@ -193,23 +210,6 @@ class DocumentSerializer(serializers.ModelSerializer):
         if obj.is_blind and not (user.is_superuser or getattr(user, 'work_manager', False)):
             return "[HIDDEN DOCUMENT]"
         return obj.title
-
-    def _is_visible_to_user(self, obj) -> bool:
-        """비밀글 및 블라인드글 노출 제어 헬퍼"""
-        request = self.context.get('request')
-        if not request:
-            return False
-        user = request.user
-        if not user or not user.is_authenticated:
-            return False
-        # 1. 블라인드글인 경우 관리자(workManager)만 노출
-        if obj.is_blind:
-            return user.is_superuser or getattr(user, 'work_manager', False)
-        # 2. 비밀글인 경우 관리자(workManager) 또는 작성자 본인만 노출
-        if obj.is_secret:
-            return user.is_superuser or getattr(user, 'work_manager', False) or obj.creator == user
-        # 3. 일반 글인 경우 모든 유저 노출
-        return True
 
     def get_description(self, obj):
         if not self._is_visible_to_user(obj):
@@ -249,6 +249,12 @@ class DocumentSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         user = request.user
 
+        # title과 description은 SerializerMethodField라서 validated_data에서 제외되므로 직접 바인딩
+        if 'title' in self.initial_data:
+            validated_data['title'] = self.initial_data.get('title')
+        if 'description' in self.initial_data:
+            validated_data['description'] = self.initial_data.get('description')
+
         validated_data['ip'] = request.META.get('REMOTE_ADDR')
         validated_data['device'] = request.META.get('HTTP_USER_AGENT')
         if user and user.is_authenticated:
@@ -269,6 +275,12 @@ class DocumentSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         request = self.context.get('request')
         user = request.user
+
+        # title과 description은 SerializerMethodField라서 validated_data에서 제외되므로 직접 바인딩
+        if 'title' in self.initial_data:
+            validated_data['title'] = self.initial_data.get('title')
+        if 'description' in self.initial_data:
+            validated_data['description'] = self.initial_data.get('description')
 
         validated_data['ip'] = request.META.get('REMOTE_ADDR')
         validated_data['device'] = request.META.get('HTTP_USER_AGENT')

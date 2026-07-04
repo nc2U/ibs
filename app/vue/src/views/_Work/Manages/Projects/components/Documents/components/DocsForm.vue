@@ -1,7 +1,7 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, onBeforeUpdate, type PropType, ref } from 'vue'
+import { computed, onBeforeMount, type PropType, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms.ts'
 import { useDocs } from '@/store/pinia/docs'
 import { useAccount } from '@/store/pinia/account.ts'
@@ -154,7 +154,11 @@ const dataSetup = () => {
   } else form.value.doc_type = props.typeNumber
 }
 
-onBeforeUpdate(() => dataSetup())
+watch(
+  () => props.docs,
+  () => dataSetup(),
+  { deep: true },
+)
 onBeforeMount(() => dataSetup())
 </script>
 

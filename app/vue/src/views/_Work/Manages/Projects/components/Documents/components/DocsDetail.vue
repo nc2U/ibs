@@ -1,17 +1,14 @@
 <script lang="ts" setup>
-import { computed, onMounted, type PropType, ref } from 'vue'
-import { useDocs } from '@/store/pinia/docs'
+import { computed, onMounted, type PropType } from 'vue'
 import { useAccount } from '@/store/pinia/account.ts'
 import type { Docs } from '@/store/types/docs'
 import { useRoute, useRouter } from 'vue-router'
 import { timeFormat } from '@/utils/baseMixins'
-import { usePerms } from '@/composables/usePerms.ts'
 import { storeToRefs } from 'pinia'
 import PostInfo from '@/components/OtherParts/PostInfo.vue'
 import MDContent from '@/components/OtherParts/MDContent.vue'
 import PostedFile from '@/components/OtherParts/PostedFile.vue'
 import PostedLink from '@/components/OtherParts/PostedLink.vue'
-import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 const props = defineProps({
   docs: { type: Object as PropType<Docs>, required: true },
@@ -20,24 +17,11 @@ const props = defineProps({
 
 const emit = defineEmits(['docs-hit'])
 
-const refConfirmModal = ref()
-
-const docStore = useDocs()
 const [route, router] = [useRoute(), useRouter()]
-
-const { can, PERM } = usePerms()
-const canDocsUpdate = computed(() => can(PERM.DOCS_UPDATE))
-const canDocsDelete = computed(() => can(PERM.DOCS_DELETE))
 
 const { workManager } = storeToRefs(useAccount())
 
 const docId = computed(() => Number(route.params.docId))
-
-const modalAction = () => {
-  docStore.deleteDocs(props.docs.pk as number, {})
-  refConfirmModal.value.close()
-  router.push({ name: '(문서)' })
-}
 
 onMounted(() => {
   if (docId.value && !props.heatedPage?.includes(docId.value)) {
@@ -172,12 +156,4 @@ onMounted(() => {
       </CCol>
     </CRow>
   </div>
-
-  <ConfirmModal ref="refConfirmModal">
-    <template #header>알림!</template>
-    <template #default> 이 문서를 삭제 합니다. 계속 진행 하시겠습니까?</template>
-    <template #footer>
-      <v-btn color="warning" size="small" @click="modalAction">삭제</v-btn>
-    </template>
-  </ConfirmModal>
 </template>
