@@ -160,29 +160,14 @@ onMounted(() => {
 
     <CRow class="mt-4">
       <CCol class="text-right">
-        <v-btn color="light" variant="flat" @click="router.back()" size="small" class="mr-2">
-          목록으로
-        </v-btn>
-
         <v-btn
-          v-if="canDocsUpdate"
-          color="success"
+          color="light"
+          variant="flat"
+          @click="router.push({ name: '(문서)' })"
           size="small"
           class="mr-2"
-          :to="{ name: '(문서) - 편집' }"
         >
-          <v-icon icon="mdi-pencil" size="small" class="mr-1" />
-          편집
-        </v-btn>
-
-        <v-btn
-          v-if="canDocsDelete"
-          color="warning"
-          size="small"
-          @click.prevent="refConfirmModal.callModal()"
-        >
-          <v-icon icon="mdi-trash-can-outline" size="small" class="mr-1" />
-          삭제
+          목록으로
         </v-btn>
       </CCol>
     </CRow>

@@ -1,17 +1,19 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useWork } from '@/store/pinia/work_project.ts'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { usePerms } from '@/composables/usePerms.ts'
 import type { Docs } from '@/store/types/docs.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import { type DocsFilter, type SuitCaseFilter, useDocs } from '@/store/pinia/docs'
 import Loading from '@/components/Loading/Index.vue'
 import MultiSelect from '@/components/MultiSelect/index.vue'
-import AddNewDoc from './components/AddNewDoc.vue'
 import DocsList from './components/DocsList.vue'
 import DocsDetail from './components/DocsDetail.vue'
 import DocsForm from './components/DocsForm.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
+import TopCreateButton from '@/views/_Work/components/atomics/TopCreateButton.vue'
+import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 const cBody = ref()
 const toggle = () => cBody.value.toggle()
@@ -19,11 +21,19 @@ defineExpose({ toggle })
 
 const typeNumber = ref<1 | 2 | 3>(1)
 const refDocsForm = ref()
+const RefDelDocs = ref()
 
 const types = ref<any[]>([
   { value: 1, label: '일반문서' },
   { value: 2, label: '소송기록' },
 ])
+
+const { can, PERM } = usePerms()
+const canDocsCreate = computed(() => can(PERM.DOCS_CREATE) && issueProject.value?.status !== '9')
+const canDocsUpdate = computed(() => can(PERM.DOCS_UPDATE))
+const canDocsDelete = computed(() => can(PERM.DOCS_DELETE))
+
+const viewForm = ref(false)
 
 const docsFilter = ref<DocsFilter>({
   doc_type: typeNumber.value,
@@ -37,6 +47,7 @@ const docsFilter = ref<DocsFilter>({
 })
 
 const route = useRoute()
+const router = useRouter()
 
 const workStore = useWork()
 const issueProject = computed<IssueProject | null>(() => workStore.issueProject)
@@ -53,6 +64,7 @@ const fetchDocs = (pk: number) => docStore.fetchDocs(pk)
 const fetchDocsList = (payload: DocsFilter) => docStore.fetchDocsList(payload)
 const fetchCategoryList = (type: number) => docStore.fetchCategoryList(type)
 const fetchAllSuitCaseList = (payload: SuitCaseFilter) => docStore.fetchAllSuitCaseList(payload)
+const deleteDocs = (pk: number, proj?: number) => docStore.deleteDocs(pk, { project: proj })
 
 const categories = computed(() => getCategories.value)
 
@@ -84,6 +96,14 @@ const docsHit = async (pk: number) => {
     heatedPage.value.push(pk)
     await docStore.hitDocs(pk)
   }
+}
+
+const docsDelConfirm = async () => {
+  RefDelDocs.value.close()
+  const docsId = Number(route.params.docsId)
+  const projId = Number(route.params.projId)
+  await deleteDocs(docsId, projId)
+  await router.replace({ name: '(문서)' })
 }
 
 const dataSetup = async (docId?: string | string[]) => {
@@ -125,62 +145,90 @@ onBeforeMount(async () => {
   <Loading v-model:active="loading" />
   <ContentBody ref="cBody">
     <template v-slot:default>
-      <DocsDetail v-if="route.name === '(문서) - 보기'" :docs="docs as Docs" @docs-hit="docsHit" />
+      <span v-if="route.name !== '(문서)'">
+        <router-link :to="{ name: '(문서)' }">문서</router-link>
+        »
+      </span>
+
+      <CRow class="py-2">
+        <CCol>
+          <h5>
+            <v-icon icon="mdi-file-document-multiple-outline" color="info" class="mr-2" />
+            {{ ($route?.name as string).replace(/^\((.*)\)$/, '$1') }}
+          </h5>
+        </CCol>
+
+        <CCol v-if="route.name === '(문서)'" class="text-right">
+          <span v-if="canDocsCreate" class="mr-2 form-text">
+            <TopCreateButton name="새 문서" @click="viewForm = !viewForm" :active="false" />
+          </span>
+        </CCol>
+
+        <CCol v-else class="text-right">
+          <span v-if="canDocsUpdate" class="mr-2 form-text">
+            <v-icon icon="mdi-pencil" color="amber" size="15" />
+            <router-link to="" class="ml-1" @click="viewForm = !viewForm">편집</router-link>
+          </span>
+
+          <span v-if="!viewForm && canDocsDelete" class="mr-2 form-text">
+            <v-icon icon="mdi-trash-can-outline" color="grey" size="15" />
+            <router-link to="" class="ml-1" @click="RefDelDocs.callModal()">삭제</router-link>
+          </span>
+        </CCol>
+      </CRow>
 
       <DocsForm
-        v-else-if="route.name === '(문서) - 편집'"
+        v-if="viewForm"
         :issue-project="issueProject as IssueProject"
         :type-number="typeNumber"
         :categories="categories"
         :get-suit-case="getSuitCase"
-        :docs="docs as Docs"
+        @close-form="viewForm = false"
       />
 
-      <template v-else>
-        <DocsForm
-          ref="refDocsForm"
-          v-if="route.name === '(문서) - 추가'"
-          :issue-project="issueProject as IssueProject"
-          :type-number="typeNumber"
-          :categories="categories"
-          :get-suit-case="getSuitCase"
-        />
+      <template v-if="can(PERM.DOCS_READ)">
+        <template v-if="route.name === '(문서)'">
+          <CRow class="mb-3">
+            <CCol v-if="issueProject?.sort !== '3'">
+              <v-tabs v-model="typeNumber" density="compact" @update:model-value="getDocsList">
+                <v-tab
+                  v-for="type in types"
+                  :value="type.value"
+                  :key="type.value"
+                  variant="tonal"
+                  :active="typeNumber === type.value"
+                >
+                  {{ type.label }}
+                </v-tab>
+              </v-tabs>
+            </CCol>
+          </CRow>
+          <DocsList
+            :category="docsFilter.category as number"
+            :category-list="categoryList"
+            :docs-list="docsList"
+            @select-cate="selectCate"
+            @page-select="pageSelect"
+          />
+        </template>
 
-        <CRow class="py-2">
-          <CCol>
-            <h5>
-              <v-icon icon="mdi-file-document-multiple-outline" color="info" class="mr-2" />
-              문서
-            </h5>
-          </CCol>
-
-          <AddNewDoc v-if="route.name !== '(문서) - 추가'" :proj-status="issueProject?.status" />
-        </CRow>
-
-        <CRow class="mb-3">
-          <CCol v-if="issueProject?.sort !== '3'">
-            <v-tabs v-model="typeNumber" density="compact" @update:model-value="getDocsList">
-              <v-tab
-                v-for="type in types"
-                :value="type.value"
-                :key="type.value"
-                variant="tonal"
-                :active="typeNumber === type.value"
-              >
-                {{ type.label }}
-              </v-tab>
-            </v-tabs>
-          </CCol>
-        </CRow>
-
-        <DocsList
-          :category="docsFilter.category as number"
-          :category-list="categoryList"
-          :docs-list="docsList"
-          @select-cate="selectCate"
-          @page-select="pageSelect"
+        <DocsDetail
+          v-else-if="route.name === '(문서) - 보기'"
+          :docs="docs as Docs"
+          @docs-hit="docsHit"
         />
       </template>
+      <v-alert v-else color="warning" class="mt-4" variant="tonal">
+        <v-icon icon="mdi-alert-circle" class="mr-2" />
+        문서를 조회할 수 있는 권한이 없습니다.
+      </v-alert>
+
+      <ConfirmModal ref="RefDelDocs">
+        <template #default>이 문서의 삭제를 계속 진행하시겠습니까?</template>
+        <template #footer>
+          <v-btn color="warning" size="small" @click="docsDelConfirm">삭제</v-btn>
+        </template>
+      </ConfirmModal>
     </template>
 
     <template v-slot:aside>

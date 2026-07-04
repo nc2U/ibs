@@ -16,8 +16,6 @@ const props = defineProps({
 
 const [route, router] = [useRoute(), useRouter()]
 
-const projId = computed(() => route.params?.projId as string)
-
 const infStore = useInform()
 
 const { canViewUser } = usePerms()
@@ -111,12 +109,7 @@ const deleteFile = (pk: number) => {
 
     <CRow class="text-right my-3">
       <CCol>
-        <v-btn
-          size="small"
-          color="light"
-          variant="flat"
-          @click="router.push({ name: '(공지)', params: { projId } })"
-        >
+        <v-btn size="small" color="light" variant="flat" @click="router.push({ name: '(공지)' })">
           목록으로
         </v-btn>
       </CCol>
@@ -173,15 +166,15 @@ const deleteFile = (pk: number) => {
 .content-body :deep(img) {
   max-width: 100%;
   height: auto;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   margin: 1.5rem 0;
 }
 
 .content-body :deep(code) {
   background-color: #f8f9fa;
   padding: 0.2rem 0.4rem;
-  border-radius: 4px;
+  border-radius: 3px;
   color: #e83e8c;
   font-size: 0.9em;
 }
@@ -195,16 +188,8 @@ const deleteFile = (pk: number) => {
   background-color: #282c34;
   color: #abb2bf;
   padding: 1rem;
-  border-radius: 8px;
+  border-radius: 3px;
   overflow-x: auto;
   margin-bottom: 1.5rem;
-}
-
-.border-t-sm {
-  border-top: 1px solid #e0e0e0;
-}
-
-.border-t-dark {
-  border-top: 1px solid #444;
 }
 </style>

@@ -14,7 +14,6 @@ import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import MultiSelect from '@/components/MultiSelect/index.vue'
 import FileForms from '@/components/OtherParts/FileForms.vue'
 import LinkForms from '@/components/OtherParts/LinkForms.vue'
-import AddNewDoc from './AddNewDoc.vue'
 
 const props = defineProps({
   docs: { type: Object as PropType<Docs>, default: () => null },
@@ -24,7 +23,9 @@ const props = defineProps({
   getSuitCase: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },
 })
 
-const [route, router] = [useRoute(), useRouter()]
+const emit = defineEmits(['close-form'])
+
+const router = useRouter()
 
 const docStore = useDocs()
 const createDocs = (payload: { form: FormData }) => docStore.createDocs(payload)
@@ -129,6 +130,7 @@ const onSubmit = async (payload: Docs & Attatches) => {
   }
   newFiles.value = []
   cngFiles.value = []
+  emit('close-form')
 }
 
 const setDocType = (type: 1 | 2) => (form.value.doc_type = type)
@@ -157,15 +159,6 @@ onBeforeMount(() => dataSetup())
 </script>
 
 <template>
-  <CRow class="py-2">
-    <CCol>
-      <h5 v-if="!docs">새 문서</h5>
-      <h5 v-else>문서</h5>
-    </CCol>
-
-    <AddNewDoc v-if="route.name === '(문서) - 추가'" :proj-status="issueProject?.status" />
-  </CRow>
-
   <CForm
     enctype="multipart/form-data"
     class="needs-validation"
@@ -289,7 +282,7 @@ onBeforeMount(() => dataSetup())
         >
           저장
         </v-btn>
-        <v-btn color="light" variant="flat" @click="router.back()"> 취소 </v-btn>
+        <v-btn color="light" variant="flat" @click="emit('close-form')"> 취소 </v-btn>
       </CCol>
     </CRow>
   </CForm>
