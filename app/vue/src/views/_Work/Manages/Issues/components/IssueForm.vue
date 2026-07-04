@@ -221,11 +221,11 @@ watch(
 // form.category 변경 감시: 범주 선택 시 기본 담당자 자동 지정 로직
 watch(
   () => form.value.category,
-  newCategoryId => {
-    if (newCategoryId) {
-      const selectedCategory = categories.value.find(c => c.pk === newCategoryId)
-      if (selectedCategory?.assigned_to && !form.value.assigned_to) {
-        form.value.assigned_to = selectedCategory.assigned_to.pk
+  newCateId => {
+    if (newCateId) {
+      const selectedCate = categories.value.find(c => c.pk === newCateId)
+      if (selectedCate?.assigned_to && !form.value.assigned_to) {
+        form.value.assigned_to = selectedCate.assigned_to.pk
       }
     }
   },
@@ -601,8 +601,8 @@ defineExpose({ callComment, callReply })
                 </CFormLabel>
                 <CCol sm="8">
                   <CInputGroup>
-                    <CFormSelect v-model="form.category" id="category">
-                      <option :value="null">---------</option>
+                    <CFormSelect v-model.number="form.category" id="category">
+                      <option value="">---------</option>
                       <option v-for="cate in categories" :value="cate.pk" :key="cate.pk">
                         {{ cate.name }}
                       </option>
