@@ -9,7 +9,7 @@ import ProjectCard from './ProjectCard.vue'
 import ProjectTable from './ProjectTable.vue'
 import NoData from '@/components/NoData/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
-import TopCreateButton from '@/views/_Work/components/atomics/TopCreateButton.vue'
+import TopButton from '../../../components/atomics/TopButton.vue'
 
 const cBody = ref()
 const toggle = () => cBody.value.toggle()
@@ -90,7 +90,7 @@ onBeforeMount(() => {
 
         <CCol v-if="can(PERM.PROJECT_CREATE)" class="text-right form-text">
           <span v-show="route.name !== '프로젝트 - 추가'" class="mr-2">
-            <TopCreateButton name="새 프로젝트" :to="{ name: '프로젝트 - 추가' }" />
+            <TopButton name="새 프로젝트" :to="{ name: '프로젝트 - 추가' }" />
           </span>
         </CCol>
       </CRow>

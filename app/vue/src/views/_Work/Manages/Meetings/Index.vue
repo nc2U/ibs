@@ -15,7 +15,7 @@ import MeetingList from './components/MeetingList.vue'
 import MeetingAside from './components/MeetingAside.vue'
 import MeetingDetail from './components/MeetingDetail.vue'
 import MeetingForm from './components/MeetingForm.vue'
-import TopCreateButton from '@/views/_Work/components/atomics/TopCreateButton.vue'
+import TopButton from '../../components/atomics/TopButton.vue'
 
 const cBody = ref()
 const comStore = useCompany()
@@ -98,7 +98,7 @@ watch(
         </CCol>
         <CCol class="text-right">
           <span v-if="canMeetingCreate" class="mr-2 form-text">
-            <TopCreateButton name="새 회의록" :to="{ name: '회의 - 추가' }" />
+            <TopButton name="새 회의록" :to="{ name: '회의 - 추가' }" />
           </span>
         </CCol>
       </CRow>

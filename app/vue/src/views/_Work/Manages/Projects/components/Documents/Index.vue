@@ -12,7 +12,7 @@ import DocsList from './components/DocsList.vue'
 import DocsDetail from './components/DocsDetail.vue'
 import DocsForm from './components/DocsForm.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
-import TopCreateButton from '@/views/_Work/components/atomics/TopCreateButton.vue'
+import TopButton from '../../../../components/atomics/TopButton.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 const cBody = ref()
@@ -160,7 +160,7 @@ onBeforeMount(async () => {
 
         <CCol v-if="route.name === '(문서)'" class="text-right">
           <span v-if="canDocsCreate" class="mr-2 form-text">
-            <TopCreateButton name="새 문서" @click="viewForm = !viewForm" :active="false" />
+            <TopButton name="새 문서" @click="viewForm = !viewForm" :active="false" />
           </span>
         </CCol>
 

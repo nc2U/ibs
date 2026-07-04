@@ -5,7 +5,7 @@ import { usePerms } from '@/composables/usePerms'
 import { useWork } from '@/store/pinia/work_project.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
-import TopCreateButton from '@/views/_Work/components/atomics/TopCreateButton.vue'
+import TopButton from '../../../../../components/atomics/TopButton.vue'
 
 const props = defineProps({
   project: { type: Object as PropType<IssueProject>, required: true },
@@ -44,7 +44,7 @@ const addBookMark = () => alert('북마크 추가!! 구현 예정!')
 
     <CCol class="text-right">
       <span class="mr-2">
-        <TopCreateButton
+        <TopButton
           name="북마크 추가"
           icon="mdi-bookmark-multiple"
           icon-color="primary"
