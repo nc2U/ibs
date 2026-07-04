@@ -12,6 +12,7 @@ import NewsForm from '@/views/_Work/Manages/News/components/NewsForm.vue'
 import NewsDetail from '@/views/_Work/Manages/News/components/NewsDetail.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import TopButton from '../../../../components/atomics/TopButton.vue'
+import { CRow } from '@coreui/vue'
 
 defineProps({
   issueProject: { type: Object as PropType<IssueProject>, default: () => null },
@@ -128,34 +129,36 @@ onBeforeMount(async () => {
         </CCol>
 
         <CCol v-if="route.name === '(공지)'" class="text-right">
-          <span v-if="can(PERM.NEWS_MANAGE)" class="mr-2 form-text">
+          <span v-if="can(PERM.NEWS_MANAGE)">
             <TopButton name="새 공지" @click="viewForm = !viewForm" />
           </span>
 
-          <span v-if="$route.params.projId && can(PERM.NEWS_READ)" class="mr-2 form-text">
-            <v-icon icon="mdi-star" color="secondary" size="15" />
-            <!--  <router-link to="" class="ml-1" @click="">-->
-            지켜보기
-            <!--  </router-link>-->
+          <span v-if="$route.params.projId && can(PERM.NEWS_READ)">
+            <TopButton name="지켜보기" icon="mdi-star" icon-color="amber" color="secondary" />
           </span>
         </CCol>
 
         <CCol v-else class="text-right">
-          <span v-if="can(PERM.NEWS_READ)" class="mr-2 form-text">
-            <v-icon icon="mdi-star" color="amber" size="15" />
-            <!--  <router-link to="" class="ml-1">-->
-            관심끄기
-            <!--  </router-link>-->
+          <span v-if="can(PERM.NEWS_READ)">
+            <TopButton name="관심끄기" icon="mdi-star" icon-color="amber" color="secondary" />
           </span>
 
-          <span v-if="can(PERM.NEWS_MANAGE)" class="mr-2 form-text">
-            <v-icon icon="mdi-pencil" color="amber" size="15" />
-            <router-link to="" class="ml-1" @click="viewForm = !viewForm">편집</router-link>
+          <span v-if="can(PERM.NEWS_MANAGE)">
+            <TopButton
+              name="편집"
+              icon="mdi-pencil"
+              icon-color="amber"
+              @click="viewForm = !viewForm"
+            />
           </span>
 
-          <span v-if="can(PERM.NEWS_MANAGE) && !viewForm" class="mr-2 form-text">
-            <v-icon icon="mdi-trash-can-outline" color="grey" size="15" />
-            <router-link to="" class="ml-1" @click="RefDelNews.callModal()">삭제</router-link>
+          <span v-if="can(PERM.NEWS_MANAGE) && !viewForm">
+            <TopButton
+              name="삭제"
+              icon="mdi-trash-can-outline"
+              icon-color="grey"
+              @click="RefDelNews.callModal()"
+            />
           </span>
         </CCol>
       </CRow>

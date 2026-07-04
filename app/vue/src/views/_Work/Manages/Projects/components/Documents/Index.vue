@@ -165,14 +165,22 @@ onBeforeMount(async () => {
         </CCol>
 
         <CCol v-else class="text-right">
-          <span v-if="canDocsUpdate" class="mr-2 form-text">
-            <v-icon icon="mdi-pencil" color="amber" size="15" />
-            <router-link to="" class="ml-1" @click="viewForm = !viewForm">편집</router-link>
+          <span v-if="canDocsUpdate">
+            <TopButton
+              name="편집"
+              icon="mdi-pencil"
+              icon-color="amber"
+              @click="viewForm = !viewForm"
+            />
           </span>
 
-          <span v-if="!viewForm && canDocsDelete" class="mr-2 form-text">
-            <v-icon icon="mdi-trash-can-outline" color="grey" size="15" />
-            <router-link to="" class="ml-1" @click="RefDelDocs.callModal()">삭제</router-link>
+          <span v-if="!viewForm && canDocsDelete">
+            <TopButton
+              name="삭제"
+              icon="mdi-trash-can-outline"
+              icon-color="grey"
+              @click="RefDelDocs.callModal()"
+            />
           </span>
         </CCol>
       </CRow>
