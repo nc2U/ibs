@@ -106,6 +106,7 @@ onBeforeMount(async () => {
         <v-btn type="submit" :color="category ? 'success' : 'primary'" :disabled="formsCheck">
           저장
         </v-btn>
+        <v-btn color="light" flat @click="$router.push({ name: '(설정)' })">취소</v-btn>
       </CCol>
     </CRow>
   </CForm>

@@ -3,6 +3,7 @@ import { ref, type PropType } from 'vue'
 import type { SimpleCategory } from '@/store/types/work_issue.ts'
 import NoData from '@/components/NoData/Index.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
+import TopButton from '@/views/_Work/components/atomics/TopButton.vue'
 
 defineProps({ categories: { type: Array as PropType<SimpleCategory[]>, default: () => [] } })
 
@@ -32,8 +33,7 @@ const deleteCategory = () => {
   <CRow class="py-2">
     <CCol>
       <span class="mr-2 form-text">
-        <v-icon icon="mdi-plus-circle" color="success" size="15" />
-        <router-link :to="{ name: '(설정) - 범주추가' }" class="ml-1">새 업무범주</router-link>
+        <TopButton name="새 업무범주" :to="{ name: '(설정) - 범주추가' }" />
       </span>
     </CCol>
   </CRow>
@@ -59,7 +59,7 @@ const deleteCategory = () => {
 
         <CTableBody>
           <CTableRow v-for="category in categories" :key="category.pk" class="text-center">
-            <CTableDataCell class="text-left">{{ category.name }}</CTableDataCell>
+            <CTableDataCell>{{ category.name }}</CTableDataCell>
             <CTableDataCell>{{ category.assigned_to?.username }}</CTableDataCell>
             <CTableDataCell class="form-text">
               <span class="mr-2">
@@ -81,7 +81,7 @@ const deleteCategory = () => {
 
   <ConfirmModal ref="RefCateDelConfirm">
     <template #footer>
-      <v-btn color="warning" @click="deleteCategory">삭제</v-btn>
+      <v-btn color="warning" size="small" @click="deleteCategory">삭제</v-btn>
     </template>
   </ConfirmModal>
 </template>
