@@ -11,6 +11,8 @@ import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import NewsForm from './components/NewsForm.vue'
 import NewsList from './components/NewsList.vue'
+import TopCreateButton from '@/views/_Work/components/atomics/TopCreateButton.vue'
+import { CRow } from '@coreui/vue'
 
 const cBody = ref()
 const comStore = useCompany()
@@ -82,8 +84,7 @@ onBeforeMount(async () => {
 
         <CCol class="text-right">
           <span v-if="can(PERM.NEWS_MANAGE)" class="mr-2 form-text">
-            <v-icon icon="mdi-plus-circle" color="success" size="15" class="mr-1" />
-            <router-link to="" class="ml-1" @click="viewForm = true">새 공지</router-link>
+            <TopCreateButton name="새 공지" @click="viewForm = !viewForm" />
           </span>
 
           <span v-if="$route.params.projId && can(PERM.NEWS_READ)" class="mr-2 form-text">

@@ -286,11 +286,10 @@ onBeforeMount(() => dataSetup())
           type="submit"
           :color="docs?.pk ? 'success' : 'primary'"
           :disabled="docs?.pk ? !canDocsUpdate : !canDocsCreate"
-          size="small"
         >
           저장
         </v-btn>
-        <v-btn color="light" variant="flat" size="small" @click="router.back()"> 취소 </v-btn>
+        <v-btn color="light" variant="flat" @click="router.back()"> 취소 </v-btn>
       </CCol>
     </CRow>
   </CForm>

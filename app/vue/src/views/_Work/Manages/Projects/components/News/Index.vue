@@ -11,6 +11,7 @@ import NewsForm from '@/views/_Work/Manages/News/components/NewsForm.vue'
 import NewsDetail from '@/views/_Work/Manages/News/components/NewsDetail.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import { usePerms } from '@/composables/usePerms'
+import TopCreateButton from '@/views/_Work/components/atomics/TopCreateButton.vue'
 
 defineProps({
   issueProject: { type: Object as PropType<IssueProject>, default: () => null },
@@ -124,8 +125,7 @@ onBeforeMount(async () => {
 
         <CCol v-if="route.name === '(공지)'" class="text-right">
           <span v-if="can(PERM.NEWS_MANAGE)" class="mr-2 form-text">
-            <v-icon icon="mdi-plus-circle" color="success" size="15" />
-            <router-link to="" class="ml-1" @click="viewForm = true">새 공지</router-link>
+            <TopCreateButton name="새 공지" @click="viewForm = !viewForm" />
           </span>
 
           <span v-if="$route.params.projId && can(PERM.NEWS_READ)" class="mr-2 form-text">

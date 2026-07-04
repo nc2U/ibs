@@ -10,6 +10,7 @@ import Pagination from '@/components/Pagination'
 import NoData from '@/components/NoData/Index.vue'
 import SearchList from './SearchList.vue'
 import IssueItem from './IssueItem.vue'
+import TopCreateButton from '@/views/_Work/components/atomics/TopCreateButton.vue'
 
 const props = defineProps({
   projStatus: { type: String, default: '' },
@@ -66,10 +67,7 @@ const watchControl = (payload: any) => {
 
     <CCol class="text-right">
       <span v-if="canIssueCreate" class="mr-2 form-text">
-        <v-icon icon="mdi-plus-circle" color="success" size="15" class="mr-1" />
-        <router-link :to="{ name: `${String(route.name)} - 추가` }" class="ml-1">
-          새 업무
-        </router-link>
+        <TopCreateButton name="새 업무" :to="{ name: `${String(route.name)} - 추가` }" />
       </span>
 
       <span>

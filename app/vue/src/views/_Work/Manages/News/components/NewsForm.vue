@@ -1,12 +1,12 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, type PropType, ref } from 'vue'
-import { btnLight, colorLight } from '@/utils/cssMixins.ts'
+import { colorLight } from '@/utils/cssMixins.ts'
 import { useWork } from '@/store/pinia/work_project.ts'
+import { usePerms } from '@/composables/usePerms'
 import type { News } from '@/store/types/work_inform.ts'
 import MdEditor from '@/components/MdEditor/Index.vue'
 import FileModify from '@/components/FileControl/FileModify.vue'
 import FileUpload from '@/components/FileControl/FileUpload.vue'
-import { usePerms } from '@/composables/usePerms'
 
 const props = defineProps({ news: { type: Object as PropType<News | null>, default: () => null } })
 const emit = defineEmits(['on-submit', 'close-form'])
@@ -140,8 +140,10 @@ onBeforeMount(() => {
     </CCard>
 
     <CCol class="mt-4 mb-5 text-right">
-      <v-btn type="submit" :color="news ? 'success' : 'primary'" :disabled="!can(PERM.NEWS_MANAGE)" size="small">저장</v-btn>
-      <v-btn :color="btnLight" @click="emit('close-form')" size="small">취소</v-btn>
+      <v-btn type="submit" :color="news ? 'success' : 'primary'" :disabled="!can(PERM.NEWS_MANAGE)">
+        저장
+      </v-btn>
+      <v-btn color="light" @click="emit('close-form')" flat>취소</v-btn>
     </CCol>
   </CForm>
 </template>

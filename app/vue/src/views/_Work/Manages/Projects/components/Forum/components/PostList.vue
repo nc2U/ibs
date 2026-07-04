@@ -6,6 +6,7 @@ import { useForum } from '@/store/pinia/forum'
 import Pagination from '@/components/Pagination'
 import NoData from '@/components/NoData/Index.vue'
 import PostItem from './PostItem.vue'
+import TopCreateButton from '@/views/_Work/components/atomics/TopCreateButton.vue'
 
 defineProps({
   forum: { type: Object as PropType<Forum | null>, default: null },
@@ -32,18 +33,14 @@ const pageSelect = (page: number) => emit('page-select', page)
       </h5>
     </CCol>
     <CCol v-if="canForumCreate" class="text-right">
-      <v-btn
-        color="success"
-        size="small"
-        variant="flat"
-        prepend-icon="mdi-pencil-plus"
+      <TopCreateButton
+        name="새 게시물"
+        icon="mdi-pencil-plus"
         :to="{
           name: '(게시판) - 게시물 작성',
           params: { projId: $route.params.projId, forumId: forum?.pk },
         }"
-      >
-        새 게시물
-      </v-btn>
+      />
     </CCol>
   </CRow>
 

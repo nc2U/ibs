@@ -15,6 +15,7 @@ import MeetingList from './components/MeetingList.vue'
 import MeetingAside from './components/MeetingAside.vue'
 import MeetingDetail from './components/MeetingDetail.vue'
 import MeetingForm from './components/MeetingForm.vue'
+import TopCreateButton from '@/views/_Work/components/atomics/TopCreateButton.vue'
 
 const cBody = ref()
 const comStore = useCompany()
@@ -97,8 +98,7 @@ watch(
         </CCol>
         <CCol class="text-right">
           <span v-if="canMeetingCreate" class="mr-2 form-text">
-            <v-icon icon="mdi-plus-circle" color="success" size="15" class="mr-1" />
-            <router-link :to="{ name: '회의 - 추가' }" class="ml-1">새 회의록</router-link>
+            <TopCreateButton name="새 회의록" :to="{ name: '회의 - 추가' }" />
           </span>
         </CCol>
       </CRow>

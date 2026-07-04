@@ -10,6 +10,7 @@ import MeetingList from '@/views/_Work/Manages/Meetings/components/MeetingList.v
 import MeetingAside from '@/views/_Work/Manages/Meetings/components/MeetingAside.vue'
 import MeetingDetail from '@/views/_Work/Manages/Meetings/components/MeetingDetail.vue'
 import MeetingForm from '@/views/_Work/Manages/Meetings/components/MeetingForm.vue'
+import TopCreateButton from '@/views/_Work/components/atomics/TopCreateButton.vue'
 
 const props = defineProps({
   issueProject: { type: Object as () => IssueProject, default: null },
@@ -94,13 +95,10 @@ onBeforeMount(fetchMeetings)
 
         <CCol class="text-right">
           <span v-if="canMeetingCreate" class="mr-2 form-text">
-            <v-icon icon="mdi-plus-circle" color="success" size="15" class="mr-1" />
-            <router-link
+            <TopCreateButton
+              name="새 회의록"
               :to="{ name: '(회의) - 추가', params: { projId: route.params.projId } }"
-              class="ml-1"
-            >
-              새 회의록
-            </router-link>
+            />
           </span>
         </CCol>
       </CRow>

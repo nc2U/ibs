@@ -264,7 +264,6 @@ onBeforeUpdate(() => dataSetup())
 
     <CRow class="mb-5 text-right">
       <CCol>
-        <v-btn color="light" variant="flat" @click="router.back()">취소</v-btn>
         <v-btn
           type="submit"
           :color="!post?.pk ? 'primary' : 'success'"
@@ -273,6 +272,7 @@ onBeforeUpdate(() => dataSetup())
         >
           저장
         </v-btn>
+        <v-btn color="light" @click="router.back()" flat>취소</v-btn>
       </CCol>
     </CRow>
   </CForm>
