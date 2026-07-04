@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, type PropType, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { usePerms } from '@/composables/usePerms'
 import { useInform } from '@/store/pinia/work_inform.ts'
 import type { News } from '@/store/types/work_inform.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
@@ -10,7 +11,6 @@ import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import NewsForm from '@/views/_Work/Manages/News/components/NewsForm.vue'
 import NewsDetail from '@/views/_Work/Manages/News/components/NewsDetail.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
-import { usePerms } from '@/composables/usePerms'
 import TopCreateButton from '@/views/_Work/components/atomics/TopCreateButton.vue'
 
 defineProps({

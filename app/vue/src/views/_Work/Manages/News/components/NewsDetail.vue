@@ -1,18 +1,22 @@
 <script lang="ts" setup>
-import { type PropType } from 'vue'
+import { computed, type PropType } from 'vue'
 import type { News } from '@/store/types/work_inform.ts'
+import { useRoute, useRouter } from 'vue-router'
 import { markdownRender } from '@/utils/helper.ts'
 import { elapsedTime } from '@/utils/baseMixins.ts'
 import { usePerms } from '@/composables/usePerms.ts'
 import { useInform } from '@/store/pinia/work_inform.ts'
 import FileDisplay from '@/views/_Work/components/atomics/FileDisplay.vue'
 import CommentList from './CommentList.vue'
-import router from '@/router'
 
 const props = defineProps({
   news: { type: Object as PropType<News>, required: true },
   viewForm: { type: Boolean, default: false },
 })
+
+const [route, router] = [useRoute(), useRouter()]
+
+const projId = computed(() => route.params?.projId as string)
 
 const infStore = useInform()
 
@@ -107,7 +111,14 @@ const deleteFile = (pk: number) => {
 
     <CRow class="text-right my-3">
       <CCol>
-        <v-btn size="small" color="light" variant="flat" @click="router.back()"> 목록으로 </v-btn>
+        <v-btn
+          size="small"
+          color="light"
+          variant="flat"
+          @click="router.push({ name: '(공지)', params: { projId } })"
+        >
+          목록으로
+        </v-btn>
       </CCol>
     </CRow>
 
