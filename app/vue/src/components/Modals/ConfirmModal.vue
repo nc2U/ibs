@@ -47,10 +47,10 @@ defineExpose({ callModal, close })
       </slot>
     </CModalBody>
     <CModalFooter>
-      <v-btn :color="btnLight" size="small" @click="() => (visible = false)"> 닫기</v-btn>
       <slot name="footer">
         <v-btn size="small" color="primary">Save changes</v-btn>
       </slot>
+      <v-btn :color="btnLight" size="small" @click="() => (visible = false)" flat> 닫기</v-btn>
     </CModalFooter>
   </CModal>
 </template>
