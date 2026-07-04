@@ -1,13 +1,15 @@
 <script lang="ts" setup>
 import { computed, type PropType } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms.ts'
 import type { Version } from '@/store/types/work_project.ts'
 
 const props = defineProps({ version: { type: Object as PropType<Version>, required: true } })
 
-const router = useRouter()
 const { can, PERM } = usePerms()
+
+const [route, router] = [useRoute(), useRouter()]
+const projId = computed(() => (route.params.projId as string) || props.version.project?.slug || '')
 
 const boxClass = ['primary-box', 'danger-box', 'success-box']
 
@@ -37,7 +39,7 @@ const done_ratio = computed(() => {
       <CCol>
         <v-icon icon="mdi-star-box-multiple" color="amber" class="mr-2" />
         <span class="mr-2 bold" style="font-size: large">
-          <router-link :to="{ name: '(로드맵) - 보기', params: { verId: version.pk } }">
+          <router-link :to="{ name: '(로드맵) - 보기', params: { projId, verId: version.pk } }">
             {{ version.name }}
           </router-link>
         </span>

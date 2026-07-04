@@ -257,7 +257,7 @@ onBeforeMount(async () => {
               <router-link
                 :to="{
                   name: '(실행기록)',
-                  params: { projId: issueProject?.slug },
+                  params: { projId: issue.project.slug },
                   query: { from: issue?.created.substring(0, 10) },
                 }"
               >
@@ -272,7 +272,7 @@ onBeforeMount(async () => {
               <router-link
                 :to="{
                   name: '(실행기록)',
-                  params: { projId: issueProject?.slug ?? '' },
+                  params: { projId: issue.project.slug },
                   query: { from: issue.updated.substring(0, 10) },
                 }"
               >
@@ -321,7 +321,10 @@ onBeforeMount(async () => {
             <CCol class="title">목표단계 :</CCol>
             <CCol>
               <router-link
-                :to="{ name: '(로드맵) - 보기', params: { verId: issue.fixed_version.pk } }"
+                :to="{
+                  name: '(로드맵) - 보기',
+                  params: { projId: issue.project.slug, verId: issue.fixed_version.pk },
+                }"
               >
                 {{ issue.fixed_version?.name }}
               </router-link>
