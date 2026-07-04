@@ -64,7 +64,7 @@ def send_issue_mail_task(issue_pk, user_pk, mail_type, old_status_name=None, old
             addresses = [user.email]
             if instance.assigned_to:
                 addresses.append(instance.assigned_to.email)
-            subject = f'『 {instance.project} 』 - 새 업무 :: [#{instance.pk}] "{instance.subject}"이(가) 배정되었습니다.' if instance.assigned_to else f'『 {instance.project} 』 - 새 업무 :: [#{instance.pk}] "{instance.subject}"이(가) 생성되었습니다.'
+            subject = f'『 {instance.project} 』 - 새 업무 :: [#{instance.pk}] "{instance.subject}"이(가) 할당되었습니다.' if instance.assigned_to else f'『 {instance.project} 』 - 새 업무 :: [#{instance.pk}] "{instance.subject}"이(가) 생성되었습니다.'
             template = 'mail/issue_create.html'
         elif mail_type == "progress":
             addresses = [watcher.email for watcher in watchers]

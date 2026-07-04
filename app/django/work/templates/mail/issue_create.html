@@ -35,7 +35,7 @@
       <!-- Dark mode logo (hidden by default) -->
       <img class="logo-dark" src="{{ settings.DOMAIN_HOST }}/static/ibs/images/logo-dark.png" alt="Dark Logo" height="35" style="display:none;">
       <p style="margin-top: 25px;">[{{ user.username }}]님이 <b>{{ instance.project }}</b> 프로젝트의 <b>새 업무 [#{{ instance.pk }}]
-        "{{ instance.subject }}"</b>을(를) 생성 {% if instance.assigned_to %}하여 &lt;"{{ instance.assigned_to.username }}"&gt; 님에게 배정(요청){% endif %} 하였습니다.</p>
+        "{{ instance.subject }}"</b>을(를) 생성 {% if instance.assigned_to %}하여 &lt;"{{ instance.assigned_to.username }}"&gt; 님에게 할당{% endif %} 하였습니다.</p>
     </td>
   </tr>
   <tr style="border-top:1px solid #999; border-bottom:1px solid #999; background: #eee; height: 50px;">
