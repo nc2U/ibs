@@ -479,7 +479,6 @@ const refConfirmModal = ref()
 
     <CRow class="mb-2">
       <CCol class="text-right">
-        <v-btn :color="btnLight" size="small" @click="goList"> 목록으로 </v-btn>
         <v-btn v-if="canMeetingUpdate" color="success" size="small" class="ml-2" @click="goEdit">
           수정
         </v-btn>
@@ -487,11 +486,11 @@ const refConfirmModal = ref()
           v-if="canMeetingDelete"
           color="warning"
           size="small"
-          class="ml-2"
           @click="refConfirmModal.callModal()"
         >
           삭제
         </v-btn>
+        <v-btn color="light" size="small" @click="goList" flat> 목록으로 </v-btn>
       </CCol>
     </CRow>
   </div>
