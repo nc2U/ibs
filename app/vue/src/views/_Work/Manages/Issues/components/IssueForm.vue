@@ -383,7 +383,7 @@ defineExpose({ callComment, callReply })
           <CRow class="mb-3">
             <CCol md="8">
               <CRow class="mb-3">
-                <CFormLabel for="issue-project" class="col-sm-2 col-form-label text-right">
+                <CFormLabel for="issue-project" class="col-sm-2 col-form-label text-right required">
                   유형
                 </CFormLabel>
                 <CCol sm="4">
@@ -400,7 +400,7 @@ defineExpose({ callComment, callReply })
               </CRow>
 
               <CRow class="mb-3">
-                <CFormLabel for="subject" class="col-sm-2 col-form-label text-right">
+                <CFormLabel for="subject" class="col-sm-2 col-form-label text-right required">
                   제목
                 </CFormLabel>
                 <CCol sm="10">
@@ -477,7 +477,7 @@ defineExpose({ callComment, callReply })
 
             <CCol md="4" class="bg-more-light p-4">
               <CRow class="mb-3">
-                <CFormLabel for="issue-project" class="col-sm-4 col-form-label text-right">
+                <CFormLabel for="issue-project" class="col-sm-4 col-form-label text-right required">
                   프로젝트
                 </CFormLabel>
                 <CCol sm="8">
@@ -499,7 +499,7 @@ defineExpose({ callComment, callReply })
               </CRow>
 
               <CRow class="mb-3">
-                <CFormLabel for="status" class="col-sm-4 col-form-label text-right">
+                <CFormLabel for="status" class="col-sm-4 col-form-label text-right required">
                   상태
                 </CFormLabel>
                 <CCol sm="8">
@@ -516,7 +516,7 @@ defineExpose({ callComment, callReply })
               </CRow>
 
               <CRow class="mb-3 mt-3">
-                <CFormLabel for="priority" class="col-sm-4 col-form-label text-right">
+                <CFormLabel for="priority" class="col-sm-4 col-form-label text-right required">
                   우선순위
                 </CFormLabel>
                 <CCol sm="8">
@@ -619,7 +619,7 @@ defineExpose({ callComment, callReply })
               </CRow>
 
               <CRow class="mb-3">
-                <CFormLabel for="start_date" class="col-sm-4 col-form-label text-right">
+                <CFormLabel for="start_date" class="col-sm-4 col-form-label text-right required">
                   시작일자
                 </CFormLabel>
                 <CCol sm="8">
@@ -637,11 +637,14 @@ defineExpose({ callComment, callReply })
               </CRow>
 
               <CRow class="mb-3">
-                <CFormLabel for="expected_duration" class="col-sm-4 col-form-label text-right">
+                <CFormLabel
+                  for="expected_duration"
+                  class="col-sm-4 col-form-label text-right required"
+                >
                   예상 처리기간
                 </CFormLabel>
                 <CCol sm="8">
-                  <CFormSelect v-model="form.expected_duration" id="expected_duration">
+                  <CFormSelect v-model="form.expected_duration" id="expected_duration" required>
                     <option value="">---------</option>
                     <option v-for="dur in durationOptions" :value="dur.value" :key="dur.value">
                       {{ dur.label }}
