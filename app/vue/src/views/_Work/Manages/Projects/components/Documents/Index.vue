@@ -100,9 +100,10 @@ const docsHit = async (pk: number) => {
 
 const docsDelConfirm = async () => {
   RefDelDocs.value.close()
-  const docsId = Number(route.params.docsId)
+  const docId = docs.value?.pk
   const projId = Number(route.params.projId)
-  await deleteDocs(docsId, projId)
+  if (docId) await deleteDocs(docId, projId)
+
   await router.replace({ name: '(문서)' })
 }
 
