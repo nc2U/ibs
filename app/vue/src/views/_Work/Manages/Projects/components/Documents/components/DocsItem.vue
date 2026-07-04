@@ -12,7 +12,13 @@ const canDocsRead = computed(() => can(PERM.DOCS_READ))
 </script>
 
 <template>
-  <v-card variant="flat" border class="mb-2 w-100 docs-item card-white">
+  <v-card
+    :to="canDocsRead ? { name: '(문서) - 보기', params: { docId: docs.pk } } : undefined"
+    border
+    class="mb-2 w-100 docs-item card-white no-underline"
+    :class="canDocsRead ? 'pointer' : 'cursor-not-allowed'"
+    flat
+  >
     <v-card-text class="pa-3">
       <CRow align="center">
         <CCol sm="8" class="d-flex align-center">
@@ -40,14 +46,7 @@ const canDocsRead = computed(() => can(PERM.DOCS_READ))
           <span v-if="docs.cate_name" class="mr-2" :style="{ color: docs.cate_color || 'inherit' }">
             [{{ docs.cate_name }}]
           </span>
-          <router-link
-            v-if="canDocsRead"
-            :to="{ name: '(문서) - 보기', params: { docId: docs.pk } }"
-            class="text-decoration-none font-weight-medium text-body-1"
-          >
-            {{ cutString(docs.title, 50) }}
-          </router-link>
-          <span v-else class="d-flex align-center">
+          <span class="d-flex align-center text-primary">
             {{ cutString(docs.title, 50) }}
           </span>
           <v-chip

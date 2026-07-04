@@ -154,6 +154,10 @@ body.dark-theme {
   text-decoration: underline;
 }
 
+.no-underline {
+  text-decoration: none !important;
+}
+
 .pointer,
 .nav-link,
 a.page-link,
