@@ -7,8 +7,9 @@ from rest_framework.response import Response
 from apiV1.pagination import PageNumberPaginationTwenty, PageNumberPaginationOneHundred
 from apiV1.permissions.auth_perms import IsWorkManagerReadOnly
 from apiV1.permissions.work_perms import ProjectPermission
-from apiV1.serializers.work import IssueProjectSerializer, IssueProjectListSerializer, ModuleSerializer, \
-    RoleSerializer, PermissionSerializer, MemberSerializer, VersionSerializer, VersionListSerializer
+from apiV1.serializers.work import IssueProjectSerializer, IssueProjectListSerializer, \
+    ModuleSerializer, RoleSerializer, PermissionSerializer, MemberSerializer, \
+    ProjectMemberUserSerializer, VersionSerializer, VersionListSerializer
 from work.models import IssueProject, Module, Role, Permission, Member, Version
 
 
@@ -76,7 +77,16 @@ class IssueProjectViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == 'list':
             return IssueProjectListSerializer
+        elif self.action == 'members':
+            return ProjectMemberUserSerializer
         return IssueProjectSerializer
+
+    @action(detail=True, methods=['get'])
+    def members(self, request, slug=None):
+        project = self.get_object()
+        members_data = project.all_members()
+        serializer = ProjectMemberUserSerializer(members_data, many=True)
+        return Response(serializer.data)
 
     @action(detail=True, methods=['post'])
     def toggle_status(self, request, slug=None):

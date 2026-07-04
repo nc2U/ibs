@@ -134,7 +134,7 @@ class IssueSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         user = self.context['request'].user
 
-        # 1. 담당자(assigned_to) assignable 권한 검증
+        # 1. 담당자(assigned_to) 멤버십 및 assignable 권한 검증
         assigned_to_id = self.initial_data.get('assigned_to', None)
         if assigned_to_id:
             try:
@@ -154,6 +154,14 @@ class IssueSerializer(serializers.ModelSerializer):
                         pass
 
             if project:
+                # 구성원(멤버) 여부 검증 (슈퍼유저 및 work_manager 제외)
+                if not (assigned_user.is_superuser or getattr(assigned_user, 'work_manager', False)):
+                    all_members = project.all_members()
+                    member_ids = {m['user']['pk'] for m in all_members}
+                    if assigned_user.pk not in member_ids:
+                        raise serializers.ValidationError(
+                            {'assigned_to': '지정된 담당자는 이 프로젝트의 구성원(멤버)이 아닙니다.'})
+
                 is_admin_or_self = (
                         assigned_user == user or
                         assigned_user.is_superuser or
@@ -443,6 +451,14 @@ class IssueCategorySerializer(serializers.ModelSerializer):
                         pass
 
             if project:
+                # 구성원(멤버) 여부 검증 (슈퍼유저 및 work_manager 제외)
+                if not (assigned_to.is_superuser or getattr(assigned_to, 'work_manager', False)):
+                    all_members = project.all_members()
+                    member_ids = {m['user']['pk'] for m in all_members}
+                    if assigned_to.pk not in member_ids:
+                        raise serializers.ValidationError(
+                            {'assigned_to': '지정된 담당자는 이 프로젝트의 구성원(멤버)이 아닙니다.'})
+
                 user = self.context['request'].user
                 is_admin_or_self = (
                         assigned_to == user or

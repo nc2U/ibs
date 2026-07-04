@@ -354,6 +354,31 @@ class MemberSerializer(serializers.ModelSerializer):
         return instance
 
 
+class ProjectMemberUserSerializer(serializers.Serializer):
+    """프로젝트 멤버 유저 정보 반환 (담당자 선택 드롭다운용)"""
+    pk = serializers.IntegerField()  # Member pk
+    user_id = serializers.SerializerMethodField()
+    username = serializers.SerializerMethodField()
+    roles = serializers.SerializerMethodField()
+    is_assignable = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_user_id(obj):
+        return obj['user']['pk']
+
+    @staticmethod
+    def get_username(obj):
+        return obj['user']['username']
+
+    @staticmethod
+    def get_roles(obj):
+        return obj['roles']
+
+    @staticmethod
+    def get_is_assignable(obj):
+        return any(role.get('assignable', False) for role in obj.get('roles', []))
+
+
 class IssueInVersionSerializer(serializers.ModelSerializer):
     project = SimpleIssueProjectSerializer(read_only=True)
     tracker = TrackerInIssueProjectSerializer(read_only=True)
