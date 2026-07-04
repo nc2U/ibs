@@ -258,7 +258,7 @@ ACCOUNT_LOGIN_METHODS = ['email']
 ACCOUNT_SIGNUP_FIELDS = ['username*', 'email*', 'password1*']
 
 # EMAIL SETTINGS
-DOMAIN_HOST = config('DOMAIN_HOST', default='http://localhost/')  # ex: 'https://abc.com/'
+DOMAIN_HOST = config('DOMAIN_HOST', default='http://localhost').rstrip('/')  # ex: 'https://abc.com'
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = config('EMAIL_HOST', default='smtp.example.com')  # 'your-smtp-server.com'
 EMAIL_PORT = 587
