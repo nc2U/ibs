@@ -137,6 +137,7 @@ watch(
 
 const loading = ref<boolean>(true)
 onBeforeMount(async () => {
+  if (route.query.viewForm) viewForm.value = true
   await dataSetup(route.params?.docId)
   loading.value = false
 })

@@ -106,6 +106,7 @@ watch(
 
 const loading = ref<boolean>(true)
 onBeforeMount(async () => {
+  if (route.query.viewForm) viewForm.value = true
   await dataSetup()
   loading.value = false
 })

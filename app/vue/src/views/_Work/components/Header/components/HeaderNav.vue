@@ -31,8 +31,18 @@ const getTitle = (title: string) => title.replace(/[() ]/gim, '')
         <CDropdownItem v-if="workManager" @click="router.push({ name: '(로드맵) - 추가' })">
           새 단계
         </CDropdownItem>
-        <CDropdownItem v-if="workManager" disabled>새 뉴스</CDropdownItem>
-        <CDropdownItem v-if="workManager" disabled>새 문서</CDropdownItem>
+        <CDropdownItem
+          v-if="workManager"
+          @click="router.push({ name: '(공지)', query: { viewForm: '1' } })"
+        >
+          새 공지
+        </CDropdownItem>
+        <CDropdownItem
+          v-if="workManager"
+          @click="router.push({ name: '(문서)', query: { viewForm: '1' } })"
+        >
+          새 문서
+        </CDropdownItem>
       </CDropdownMenu>
     </CDropdown>
     <CNavItem v-for="(menu, i) in menus" :key="i">
