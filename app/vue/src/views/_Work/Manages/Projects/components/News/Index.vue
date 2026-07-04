@@ -118,9 +118,13 @@ onBeforeMount(async () => {
         <router-link :to="{ name: '(공지)' }">공지</router-link>
         »
       </span>
+
       <CRow class="py-2">
         <CCol>
-          <h5>{{ ($route?.name as string).replace(/^\((.*)\)$/, '$1') }}</h5>
+          <h5>
+            <v-icon icon="mdi-bullhorn-variant" color="info" class="mr-2" />
+            {{ ($route?.name as string).replace(/^\((.*)\)$/, '$1') }}
+          </h5>
         </CCol>
 
         <CCol v-if="route.name === '(공지)'" class="text-right">
@@ -146,10 +150,10 @@ onBeforeMount(async () => {
 
           <span v-if="can(PERM.NEWS_MANAGE)" class="mr-2 form-text">
             <v-icon icon="mdi-pencil" color="amber" size="15" />
-            <router-link to="" class="ml-1" @click="viewForm = true">편집</router-link>
+            <router-link to="" class="ml-1" @click="viewForm = !viewForm">편집</router-link>
           </span>
 
-          <span v-if="can(PERM.NEWS_MANAGE)" class="mr-2 form-text">
+          <span v-if="can(PERM.NEWS_MANAGE) && !viewForm" class="mr-2 form-text">
             <v-icon icon="mdi-trash-can-outline" color="grey" size="15" />
             <router-link to="" class="ml-1" @click="RefDelNews.callModal()">삭제</router-link>
           </span>
@@ -181,7 +185,7 @@ onBeforeMount(async () => {
       <ConfirmModal ref="RefDelNews">
         <template #default>이 공지의 삭제를 계속 진행하시겠습니까?</template>
         <template #footer>
-          <v-btn color="danger" size="small" @click="newsDelConfirm">삭제</v-btn>
+          <v-btn color="warning" size="small" @click="newsDelConfirm">삭제</v-btn>
         </template>
       </ConfirmModal>
     </template>
