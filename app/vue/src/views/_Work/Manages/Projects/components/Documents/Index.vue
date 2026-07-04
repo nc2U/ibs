@@ -74,7 +74,7 @@ const getDocsList = (target: unknown) => {
     docsFilter.value.doc_type = target as number
     fetchCategoryList(target as 1 | 2 | 3)
     fetchDocsList(docsFilter.value)
-    if (route.name === '(문서) - 추가') refDocsForm.value.setDocType(target as number)
+    if (viewForm.value) refDocsForm.value.setDocType(target as number)
   }
 }
 
