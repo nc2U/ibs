@@ -255,6 +255,14 @@ export const useWork = defineStore('work', () => {
       .then(res => (memberList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
+  const projectMembers = ref<any[]>([])
+
+  const fetchProjectMembers = (slug: string) =>
+    api
+      .get(`/issue-project/${slug}/members/`)
+      .then(res => (projectMembers.value = res.data))
+      .catch(err => errorHandle(err.response.data))
+
   const createMember = async (payload: { user?: number; roles?: number[]; slug: string }) => {
     const { roles, ...rest } = payload
     const body = { ...rest, ...(roles !== undefined ? { role_ids: roles } : {}) }
@@ -380,8 +388,10 @@ export const useWork = defineStore('work', () => {
 
     member,
     memberList,
+    projectMembers,
     fetchMember,
     fetchMemberList,
+    fetchProjectMembers,
     createMember,
     patchMember,
 

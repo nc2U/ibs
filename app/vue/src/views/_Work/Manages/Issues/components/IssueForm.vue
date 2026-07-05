@@ -55,7 +55,7 @@ const form = ref({
   files: [] as any[],
 })
 
-const { can, isAssignable, PERM } = usePerms()
+const { can, PERM } = usePerms()
 const canIssueCreate = computed(() => can(PERM.ISSUE_CREATE))
 const canIssueUpdate = computed(() => can(PERM.ISSUE_UPDATE))
 
@@ -80,7 +80,7 @@ const removeFile = (index: number) => {
 }
 
 const formsCheck = computed(() => {
-  const canSubmit = props.issue ? canIssueUpdate.value : canIssueCreate.value
+  const canSubmit = props.issue ? canEditIssue(props.issue) : canIssueCreate.value
   if (!canSubmit) return true
   if (props.issue) {
     const a = form.value.project === props.issue.project.slug
@@ -122,11 +122,11 @@ const watcherList = ref<{ pk: number; username: string }[]>([])
 const memberList = computed(() => {
   let list: { pk: number; username: string; isAssignable: boolean }[] = []
 
-  if (props.issueProject?.all_members) {
-    list = props.issueProject.all_members.map(m => ({
-      pk: m.user.pk,
-      username: m.user.username,
-      isAssignable: m.roles.some(r => r.assignable),
+  if (workStore.projectMembers.length > 0) {
+    list = workStore.projectMembers.map(m => ({
+      pk: m.user_id,
+      username: m.username,
+      isAssignable: m.is_assignable,
     }))
   } else {
     list = [...new Map(workStore.memberList.map(m => [m.user.pk, m.user])).values()].map(u => ({
@@ -136,12 +136,9 @@ const memberList = computed(() => {
     }))
   }
 
-  // my_role.assignable 이 true 이거나 슈퍼유저/업무관리자라면 전체 멤버 반환
-  if (isAssignable(props.issueProject?.slug || '')) {
-    return list
-  }
+  const canAssignToOthers = props.issue ? canEditIssue(props.issue) : canIssueCreate.value
+  if (canAssignToOthers) return list
 
-  // 그렇지 않다면, 자기 자신 및 (기존에 할당된 담당자가 있다면) 기존 담당자만 남김
   const myPk = userInfo.value?.pk
   const existingAssigneePk = props.issue?.assigned_to?.pk
 
@@ -180,11 +177,13 @@ watch(
         selectedProjectData.value = workStore.issueProject
         // NEW: Fetch issues for the selected project
         await issueStore.fetchAllIssueList(newProjectSlug)
+        await workStore.fetchProjectMembers(newProjectSlug)
       } else {
         // If project is unselected, clear selectedProjectData
         selectedProjectData.value = null
         // NEW: If project is unselected, fetch all issues again
         await issueStore.fetchAllIssueList()
+        workStore.projectMembers = []
       }
     }
   },
@@ -331,9 +330,10 @@ const refWatcherAdd = ref()
 const createCategory = (payload: any) => issueStore.createCategory(payload)
 const createVersion = (payload: any) => workStore.createVersion(payload)
 
-onBeforeMount(() => {
+onBeforeMount(async () => {
   if (props.issueProject) {
     form.value.project = props.issueProject.slug as string
+    await workStore.fetchProjectMembers(props.issueProject.slug)
   }
 
   const copyId = route.query.copy ? Number(route.query.copy) : null
