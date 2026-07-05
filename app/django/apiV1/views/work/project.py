@@ -75,11 +75,42 @@ class IssueProjectViewSet(viewsets.ModelViewSet):
         return base_qs.select_related('company', 'module', 'creator', 'parent', 'default_version')
 
     def get_serializer_class(self):
-        if self.action == 'list':
+        if self.action in ('list', 'all_projects', 'visible_projects', 'my_projects'):
             return IssueProjectListSerializer
         elif self.action == 'members':
             return ProjectMemberUserSerializer
         return IssueProjectSerializer
+
+    @action(detail=False, methods=['get'], pagination_class=None)
+    def all_projects(self, request):
+        queryset = IssueProject.objects.all().prefetch_related(
+            'members__user', 'members__roles', 'trackers',
+            'versions', 'categories__assigned_to', 'allowed_roles'
+        ).select_related('company', 'module', 'creator')
+        queryset = self.filter_queryset(queryset)
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], pagination_class=None)
+    def visible_projects(self, request):
+        queryset = self.get_queryset().select_related('company', 'module', 'creator')
+        queryset = self.filter_queryset(queryset)
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], pagination_class=None)
+    def my_projects(self, request):
+        user = request.user
+        queryset = IssueProject.objects.all()
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            queryset = queryset.filter(members__user=user).distinct()
+        queryset = queryset.prefetch_related(
+            'members__user', 'members__roles', 'trackers',
+            'versions', 'categories__assigned_to', 'allowed_roles'
+        ).select_related('company', 'module', 'creator')
+        queryset = self.filter_queryset(queryset)
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
     @action(detail=True, methods=['get'])
     def members(self, request, slug=None):

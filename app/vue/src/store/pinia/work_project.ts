@@ -22,33 +22,56 @@ export const useWork = defineStore('work', () => {
   // Issue Project states & getters
   const issueProject = ref<IssueProject | null>(null)
 
-  /**
-   * [프로젝트 상세/필터링 목록 상태]
-   * `fetchIssueProjectList` 호출을 통해 API 필터링 조건(회사, 부모 프로젝트, 공개여부 등)에 부합하는
-   * 프로젝트 목록을 저장하는 상태입니다. (조회 조건에 따라 목록이 동적으로 변경됨)
-   */
-  const issueProjectList = ref<IssueProject[]>([])
-
-  /**
-   * [최상위(루트) 프로젝트 목록]
-   * `issueProjectList`에서 부모가 없는(parent === null) 최상위 프로젝트들만 필터링한 컬렉션입니다.
-   * 계층 구조(트리뷰)를 렌더링할 때 루트 노드로 활용됩니다.
-   */
-  const issueProjects = computed(() => issueProjectList.value.filter(proj => proj.parent === null))
-
-  /**
-   * [전체 프로젝트 원시 데이터 트리]
-   * `fetchAllIssueProjectList` 호출을 통해 회사 내 전체 프로젝트 데이터를 계층 구조(sub_projects가 중첩된 트리 형태)로
-   * 로드하여 메모리에 저장해 두는 마스터 리스트 상태입니다.
-   */
+  // 1. 원시 플랫 상태 (Refs)
   const allProjects = ref<IssueProject[]>([])
+  const visibleProjects = ref<IssueProject[]>([])
+  const myProjects = ref<IssueProject[]>([])
 
-  /**
-   * [평탄화된(Flattened) 전체 프로젝트 목록]
-   * 트리 구조로 중첩되어 있는 `allProjects`를 재귀적으로 탐색(flatten)하여 1차원 배열로 평탄화한 컬렉션입니다.
-   * 중복을 방지(visited Set 사용)하고 활성화된(visible: true) 프로젝트만 필터링하여 전역에서 빠른 탐색이 필요할 때 사용됩니다.
-   */
-  const AllIssueProjects = computed(() => {
+  // 하위 호환성 연결: 기존 issueProjectList는 visibleProjects를 바라봅니다.
+  const issueProjectList = visibleProjects
+
+  // 2. 트리 재구성 함수 및 트리 가공 상태 (Computed)
+  const buildProjectTree = (projects: IssueProject[]): IssueProject[] => {
+    const map = new Map<number, IssueProject>()
+    projects.forEach(p => {
+      if (p.pk !== undefined) {
+        map.set(p.pk, { ...p, sub_projects: [] })
+      }
+    })
+
+    const roots: IssueProject[] = []
+    projects.forEach(p => {
+      if (p.pk !== undefined) {
+        const cloned = map.get(p.pk)!
+        if (p.parent !== null && p.parent !== undefined) {
+          const parentNode = map.get(p.parent)
+          if (parentNode) {
+            parentNode.sub_projects.push(cloned)
+          } else {
+            roots.push(cloned)
+          }
+        } else {
+          roots.push(cloned)
+        }
+      }
+    })
+    return roots
+  }
+
+  const allProjectsTree = computed(() => buildProjectTree(allProjects.value))
+  const visibleProjectsTree = computed(() => buildProjectTree(visibleProjects.value))
+  const myProjectsTree = computed(() => buildProjectTree(myProjects.value))
+
+  // 최상위 루트 노드 바인딩 (parent === null)
+  const allProjectsRoot = computed(() => allProjectsTree.value)
+  const visibleProjectsRoot = computed(() => visibleProjectsTree.value)
+  const myProjectsRoot = computed(() => myProjectsTree.value)
+
+  // 하위 호환성 연결: 기존의 최상위 루트 리스트 issueProjects는 visibleProjectsTree를 반환합니다.
+  const issueProjects = computed(() => visibleProjectsTree.value)
+
+  // 3. 재귀적 평탄화 가공 상태 (Computed)
+  const flattenTree = (projects: IssueProject[]) => {
     const visited = new Set<number>()
     const result: IssueProject[] = []
 
@@ -59,27 +82,36 @@ export const useWork = defineStore('work', () => {
       }
       if (Array.isArray(proj.sub_projects)) proj.sub_projects.forEach(flatten)
     }
-    allProjects.value.forEach(flatten)
+    projects.forEach(flatten)
     return result
-  })
+  }
 
-  /**
-   * [UI 옵션용 ID-이름 매핑 리스트 (PK 형태)]
-   * `allProjects` 목록을 기반으로 Multiselect 등 셀렉트 박스 컴포넌트 규격에 부합하게
-   * `{ value: pk, label: name }` 형태로 매핑한 옵션용 컬렉션입니다.
-   */
+  // 하위 호환성 연결: 기존 AllIssueProjects는 visibleProjects를 평탄화합니다.
+  const AllIssueProjects = computed(() => flattenTree(visibleProjects.value))
+  const myProjectsFlat = computed(() => flattenTree(myProjects.value))
+  const allProjectsFlat = computed(() => flattenTree(allProjects.value))
+
+  // 4. 셀렉박스 UI 옵션 가공 상태 - PK 형태 (Computed)
   const getAllProjPks = computed(() =>
     allProjects.value.map(i => ({
       value: i.pk as number,
       label: i.name as string,
     })),
   )
+  const getVisibleProjPks = computed(() =>
+    visibleProjects.value.map(i => ({
+      value: i.pk as number,
+      label: i.name as string,
+    })),
+  )
+  const getMyProjPks = computed(() =>
+    myProjects.value.map(i => ({
+      value: i.pk as number,
+      label: i.name as string,
+    })),
+  )
 
-  /**
-   * [UI 옵션용 상세 프로젝트 속성 리스트 (Slug 형태)]
-   * `allProjects` 목록을 기반으로 컴포넌트(예: 필터, 사이드바 등)에서 참조할 수 있는 주요 속성들
-   * (pk, value=slug, label=name, status, depth, parent_visible 등)만 가공하여 노출해 주는 컬렉션입니다.
-   */
+  // 5. 셀렉박스 UI 옵션 가공 상태 - Slug 형태 (Computed)
   const getAllProjects = computed(() =>
     allProjects.value.map(i => ({
       pk: i.pk as number,
@@ -91,10 +123,39 @@ export const useWork = defineStore('work', () => {
       parent_visible: i.parent_visible,
     })),
   )
+  const getVisibleProjects = computed(() =>
+    visibleProjects.value.map(i => ({
+      pk: i.pk as number,
+      value: i.slug as string,
+      label: i.name,
+      slug: i.slug,
+      status: i.status,
+      depth: i.depth,
+      parent_visible: i.parent_visible,
+    })),
+  )
+  const getMyProjects = computed(() =>
+    myProjects.value.map(i => ({
+      pk: i.pk as number,
+      value: i.slug as string,
+      label: i.name,
+      slug: i.slug,
+      status: i.status,
+      depth: i.depth,
+      parent_visible: i.parent_visible,
+    })),
+  )
 
   // actions
-  const fetchIssueProjectList = async (payload: ProjectFilter) => {
-    let url = `/issue-project/?1=1`
+  const fetchAllProjectsList = async (com: '' | number = '') => {
+    return await api
+      .get(`/issue-project/all_projects/?company=${com}`)
+      .then(res => (allProjects.value = res.data))
+      .catch(err => errorHandle(err.response.data))
+  }
+
+  const fetchVisibleProjectsList = async (payload: ProjectFilter) => {
+    let url = `/issue-project/visible_projects/?1=1`
     if (payload.company) url += `&company=${payload.company}`
     if (payload?.status) url += `&status=${payload?.status}`
     else if (payload?.status__exclude) url += `&status__exclude=${payload?.status__exclude}`
@@ -109,22 +170,37 @@ export const useWork = defineStore('work', () => {
 
     return await api
       .get(url)
-      .then(res => (issueProjectList.value = res.data.results))
+      .then(res => (visibleProjects.value = res.data))
       .catch(err => errorHandle(err.response.data))
   }
+
+  const fetchMyProjectsList = async (com: '' | number = '') => {
+    return await api
+      .get(`/issue-project/my_projects/?company=${com}`)
+      .then(res => (myProjects.value = res.data))
+      .catch(err => errorHandle(err.response.data))
+  }
+
+  const fetchIssueProjectList = fetchVisibleProjectsList
 
   const fetchAllIssueProjectList = async (
     com: '' | number = '',
     sort: '' | '1' | '2' | '3' = '',
     p_isnull: '' | '1' = '',
     status: '' | '1' | '9' = '1',
-  ) =>
-    await api
-      .get(
-        `/issue-project/?company=${com}&sort=${sort}&parent__isnull=${p_isnull}&status=${status}`,
-      )
-      .then(res => (allProjects.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+  ) => {
+    // 1. 보이는 프로젝트 조회
+    const url = `/issue-project/visible_projects/?company=${com}&status=${status}`
+    await api.get(url).then(res => (visibleProjects.value = res.data)).catch(err => errorHandle(err.response.data))
+
+    // 2. 내 프로젝트 조회
+    const myUrl = `/issue-project/my_projects/?company=${com}&status=${status}`
+    await api.get(myUrl).then(res => (myProjects.value = res.data)).catch(err => errorHandle(err.response.data))
+
+    // 3. 전체 프로젝트 조회
+    const allUrl = `/issue-project/all_projects/?company=${com}&status=${status}`
+    await api.get(allUrl).then(res => (allProjects.value = res.data)).catch(err => errorHandle(err.response.data))
+  }
 
   const fetchIssueProject = (slug: string) =>
     api
@@ -390,11 +466,29 @@ export const useWork = defineStore('work', () => {
 
   return {
     issueProject,
+    allProjects,
+    visibleProjects,
+    myProjects,
     issueProjectList,
     issueProjects,
+    allProjectsTree,
+    visibleProjectsTree,
+    myProjectsTree,
+    allProjectsRoot,
+    visibleProjectsRoot,
+    myProjectsRoot,
     AllIssueProjects,
+    myProjectsFlat,
+    allProjectsFlat,
     getAllProjPks,
+    getVisibleProjPks,
+    getMyProjPks,
     getAllProjects,
+    getVisibleProjects,
+    getMyProjects,
+    fetchAllProjectsList,
+    fetchVisibleProjectsList,
+    fetchMyProjectsList,
     fetchIssueProjectList,
     fetchAllIssueProjectList,
     fetchIssueProject,
