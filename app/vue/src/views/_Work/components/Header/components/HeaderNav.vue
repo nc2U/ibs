@@ -16,11 +16,9 @@ const [route, router] = [useRoute(), useRouter()]
 const store = useStore()
 const isDark = computed(() => store.theme === 'dark')
 
-const pureRouteName = computed(() => {
+const menuName = computed(() => {
   const name = String(route.name ?? '')
-  return name
-    .split(/\s*-\s*/)[0] // "프로젝트 - 리스트" -> "프로젝트"
-    .replace(/^\((.*)\)$/, '$1') // "(업무)" -> "업무"
+  return name.split(/\s*-\s*/)[0]
 })
 
 const getTitle = (title: string) => title.replace(/[() ]/gim, '')
@@ -54,9 +52,7 @@ const getTitle = (title: string) => title.replace(/[() ]/gim, '')
     </CDropdown>
     <CNavItem v-for="(menu, i) in menus" :key="i">
       <CNavLink
-        :active="
-          pureRouteName === menu || ((route.meta as any)?.title ?? '').includes(menu as string)
-        "
+        :active="menuName === menu || ((route.meta as any)?.title ?? '').includes(menu as string)"
         @click="router.push({ name: menu as RouteRecordName })"
       >
         {{ getTitle(menu as string) }}
