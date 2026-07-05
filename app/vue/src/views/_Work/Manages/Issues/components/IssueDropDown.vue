@@ -412,7 +412,7 @@ onBeforeMount(() => (isWatcher.value = isCumputedWatcher.value as any))
                 :key="ratio"
                 :active="issue.done_ratio === ratio"
                 min-height="30px"
-                min-width="100px"
+                min-width="150px"
                 class="py-0"
                 @click="changeProgress(ratio)"
               >
