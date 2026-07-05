@@ -2,6 +2,7 @@
 import { computed, onBeforeMount, type PropType, ref } from 'vue'
 import { useAccount } from '@/store/pinia/account.ts'
 import { useRouter } from 'vue-router'
+import { usePerms } from '@/composables/usePerms.ts'
 import type { Issue, SimpleIssue } from '@/store/types/work_issue.ts'
 
 const props = defineProps({
@@ -11,6 +12,8 @@ const props = defineProps({
 const emit = defineEmits(['watch-control'])
 
 const router = useRouter()
+
+const { can, PERM } = usePerms()
 
 const accStore = useAccount()
 const userInfo = computed(() => accStore.userInfo)
@@ -47,52 +50,36 @@ onBeforeMount(() => (isWatcher.value = isCumputedWatcher.value as any))
             })
           "
         >
-          <router-link to="">
-            <v-icon icon="mdi-pencil" color="amber" size="sm" />
-            편집
-          </router-link>
+          <v-icon icon="mdi-pencil" color="amber" size="sm" />
+          <span class="text-primary ml-1">편집</span>
         </CDropdownItem>
         <CDropdownItem class="form-text" disabled>
           <v-icon size="sm" />
-          <!--                      <router-link to="">-->
-          상태
-          <!--                      </router-link>-->
+          <span class="ml-1">상태</span>
         </CDropdownItem>
         <CDropdownItem class="form-text" disabled>
           <v-icon size="sm" />
-          <!--                      <router-link to="">-->
-          유형
-          <!--                      </router-link>-->
+          <span class="ml-1">유형</span>
         </CDropdownItem>
         <CDropdownItem class="form-text" disabled>
           <v-icon size="sm" />
-          <!--                      <router-link to=""> -->
-          우선순위
-          <!--                      </router-link>-->
+          <span class="ml-1">우선순위</span>
         </CDropdownItem>
         <CDropdownItem class="form-text" disabled>
           <v-icon size="sm" />
-          <!--                      <router-link to=""> -->
-          담당자
-          <!--                      </router-link>-->
+          <span class="ml-1">담당자</span>
         </CDropdownItem>
         <CDropdownItem class="form-text" disabled>
           <v-icon size="sm" />
-          <!--                      <router-link to=""> -->
-          진척도
-          <!--                      </router-link>-->
+          <span class="ml-1">진척도</span>
         </CDropdownItem>
         <CDropdownItem class="form-text" disabled>
           <v-icon size="sm" />
-          <!--                      <router-link to=""> -->
-          업무 관람자
-          <!--                      </router-link>-->
+          <span class="ml-1">업무 관람자</span>
         </CDropdownItem>
         <CDropdownItem class="form-text" @click="watchControl">
-          <router-link to="">
-            <v-icon icon="mdi-star" :color="isWatcher ? 'amber' : 'secondary'" size="sm" />
-            {{ isWatcher ? '관심끄기' : '지켜보기' }}
-          </router-link>
+          <v-icon icon="mdi-star" :color="isWatcher ? 'amber' : 'secondary'" size="sm" />
+          <span class="text-primary ml-1">{{ isWatcher ? '관심끄기' : '지켜보기' }}</span>
         </CDropdownItem>
         <CDropdownItem
           class="form-text"
@@ -104,28 +91,20 @@ onBeforeMount(() => (isWatcher.value = isCumputedWatcher.value as any))
             })
           "
         >
-          <router-link to="">
-            <v-icon icon="mdi-plus-circle" color="success" size="sm" />
-            하위 업무 추가
-          </router-link>
+          <v-icon icon="mdi-plus-circle" color="success" size="sm" />
+          <span class="text-primary ml-1">하위 업무 추가</span>
         </CDropdownItem>
         <CDropdownItem class="form-text" disabled>
-          <!--                      <router-link to="">-->
           <v-icon icon="mdi-link-edit" color="secondary" size="sm" />
-          링크복사
-          <!--                      </router-link>-->
+          <span class="ml-1">링크복사</span>
         </CDropdownItem>
         <CDropdownItem class="form-text" disabled>
-          <!--                      <router-link to="">-->
           <v-icon icon="mdi-content-copy" color="secondary" size="sm" />
-          복사
-          <!--                      </router-link>-->
+          <span class="ml-1">복사</span>
         </CDropdownItem>
         <CDropdownItem class="form-text" disabled>
-          <!--                      <router-link to="">-->
           <v-icon icon="mdi-trash-can-outline" color="secondary" size="sm" />
-          업무 삭제
-          <!--                      </router-link>-->
+          <span class="ml-1">업무 삭제</span>
         </CDropdownItem>
       </CDropdownMenu>
     </CDropdown>
