@@ -5,6 +5,7 @@ import { message } from '@/utils/helper.ts'
 import { usePerms } from '@/composables/usePerms.ts'
 import { useAccount } from '@/store/pinia/account.ts'
 import type { Issue } from '@/store/types/work_issue.ts'
+import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 
 const props = defineProps({
   projStatus: { type: String, default: '' },
@@ -107,21 +108,21 @@ const callDeleteIssue = () => emit('call-delete-issue')
 
 <template>
   <CCol class="text-right form-text">
-    <span v-if="projStatus !== '9' && showEditButton" class="mr-2">
-      <v-icon icon="mdi-pencil" color="amber" size="sm" />
-      <router-link to="" class="ml-1" @click="callEditForm">편집</router-link>
+    <span v-if="projStatus !== '9' && showEditButton">
+      <TextButton name="편집" icon="mdi-pencil" icon-color="amber" @click="callEditForm" />
     </span>
 
-    <span class="mr-2">
-      <v-icon icon="mdi-star" :color="isWatcher ? 'amber' : 'secondary'" size="16" />
-      <router-link to="" class="ml-1" @click="watchControl">
-        {{ isWatcher ? '관심끄기' : '지켜보기' }}
-      </router-link>
+    <span>
+      <TextButton
+        :name="isWatcher ? '관심끄기' : '지켜보기'"
+        icon="mdi-star"
+        :icon-color="isWatcher ? 'amber' : 'secondary'"
+        @click="watchControl"
+      />
     </span>
 
-    <span v-if="showCopyButton" class="mr-2">
-      <v-icon icon="mdi-content-copy" color="grey" size="sm" />
-      <router-link to="" class="ml-1" @click="copyIssue">복사</router-link>
+    <span v-if="showCopyButton">
+      <TextButton name="복사" icon="mdi-content-copy" icon-color="grey" @click="copyIssue" />
     </span>
 
     <span>

@@ -713,13 +713,7 @@ defineExpose({ callComment, callReply })
             >
               확인
             </v-btn>
-            <v-btn
-              color="secondary"
-              :size="btnSize"
-              variant="flat"
-              class="ml-2"
-              @click="emit('close-form')"
-            >
+            <v-btn color="light" :size="btnSize" class="ml-2" @click="emit('close-form')" flat>
               취소
             </v-btn>
           </CCol>
