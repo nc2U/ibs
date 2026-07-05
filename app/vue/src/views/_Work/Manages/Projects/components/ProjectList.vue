@@ -122,7 +122,7 @@ onBeforeMount(() => {
           </span>
 
           <span>
-            <TextButton name="내 북마크" icon="mdi-bookmark" color="secondary" />
+            <TextButton name="내 북마크" icon="mdi-bookmark" icon-color="info" color="secondary" />
           </span>
         </CCol>
       </CRow>
