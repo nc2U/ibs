@@ -284,7 +284,7 @@ const filteredParentIssues = computed(() => {
 
 const durationOptions = [
   { value: '0', label: '당일처리' },
-  { value: '1', label: '1일 이내' },
+  { value: '1', label: '익일처리' },
   { value: '3', label: '3일 이내' },
   { value: '5', label: '5일 이내' },
   { value: '10', label: '10일 이내' },

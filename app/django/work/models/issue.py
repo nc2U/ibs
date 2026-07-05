@@ -17,7 +17,7 @@ class IssueManager(models.Manager):
 
 class ExpectedDuration(models.TextChoices):
     SAME_DAY = '0', '당일처리'
-    DAY_1 = '1', '1일 이내'
+    DAY_1 = '1', '익일처리'
     DAY_3 = '3', '3일 이내'
     DAY_5 = '5', '5일 이내'
     DAY_10 = '10', '10일 이내'
@@ -47,7 +47,7 @@ class Issue(models.Model):
                                 verbose_name='관련 회의', related_name='issues')
     is_private = models.BooleanField('비공개', default=False)
     expected_duration = models.CharField('예상 처리기간', max_length=3, choices=ExpectedDuration, null=True, blank=True,
-                                         default=ExpectedDuration.SAME_DAY)
+                                         default=ExpectedDuration.SAME_DAY, help_text='시작 일자 기준 예상 처리기간')
     start_date = models.DateField('시작 일자')
     due_date = models.DateField('완료 기한', null=True, blank=True)
     done_ratio = models.PositiveSmallIntegerField('진척도', default=0)
