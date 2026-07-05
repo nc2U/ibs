@@ -3,7 +3,7 @@ import { ref, type PropType } from 'vue'
 import type { SimpleCategory } from '@/store/types/work_issue.ts'
 import NoData from '@/components/NoData/Index.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
-import TopButton from '@/views/_Work/components/atomics/TopButton.vue'
+import TextButton from '../../../../../components/atomics/TextButton.vue'
 
 defineProps({ categories: { type: Array as PropType<SimpleCategory[]>, default: () => [] } })
 
@@ -33,7 +33,7 @@ const deleteCategory = () => {
   <CRow class="py-2">
     <CCol>
       <span class="mr-2 form-text">
-        <TopButton name="새 업무범주" :to="{ name: '(설정) - 범주추가' }" />
+        <TextButton name="새 업무범주" :to="{ name: '(설정) - 범주추가' }" />
       </span>
     </CCol>
   </CRow>

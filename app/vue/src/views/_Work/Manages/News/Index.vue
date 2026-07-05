@@ -11,7 +11,7 @@ import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import NewsForm from './components/NewsForm.vue'
 import NewsList from './components/NewsList.vue'
-import TopButton from '../../components/atomics/TopButton.vue'
+import TextButton from '../../components/atomics/TextButton.vue'
 
 const cBody = ref()
 const comStore = useCompany()
@@ -83,7 +83,7 @@ onBeforeMount(async () => {
 
         <CCol class="text-right">
           <span v-if="can(PERM.NEWS_MANAGE)" class="mr-2 form-text">
-            <TopButton name="새 공지" @click="viewForm = !viewForm" />
+            <TextButton name="새 공지" @click="viewForm = !viewForm" />
           </span>
         </CCol>
       </CRow>

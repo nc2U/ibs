@@ -12,7 +12,7 @@ import DocsList from './components/DocsList.vue'
 import DocsDetail from './components/DocsDetail.vue'
 import DocsForm from './components/DocsForm.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
-import TopButton from '../../../../components/atomics/TopButton.vue'
+import TextButton from '../../../../components/atomics/TextButton.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 const cBody = ref()
@@ -162,13 +162,13 @@ onBeforeMount(async () => {
 
         <CCol v-if="route.name === '(문서)'" class="text-right">
           <span v-if="canDocsCreate" class="mr-2 form-text">
-            <TopButton name="새 문서" @click="viewForm = !viewForm" :active="false" />
+            <TextButton name="새 문서" @click="viewForm = !viewForm" :active="false" />
           </span>
         </CCol>
 
         <CCol v-else class="text-right">
           <span v-if="canDocsUpdate">
-            <TopButton
+            <TextButton
               name="편집"
               icon="mdi-pencil"
               icon-color="amber"
@@ -177,7 +177,7 @@ onBeforeMount(async () => {
           </span>
 
           <span v-if="!viewForm && canDocsDelete">
-            <TopButton
+            <TextButton
               name="삭제"
               icon="mdi-trash-can-outline"
               icon-color="grey"

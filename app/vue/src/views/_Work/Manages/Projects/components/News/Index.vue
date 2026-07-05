@@ -11,7 +11,7 @@ import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import NewsForm from '@/views/_Work/Manages/News/components/NewsForm.vue'
 import NewsDetail from '@/views/_Work/Manages/News/components/NewsDetail.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
-import TopButton from '../../../../components/atomics/TopButton.vue'
+import TextButton from '../../../../components/atomics/TextButton.vue'
 import { CRow } from '@coreui/vue'
 
 defineProps({
@@ -131,21 +131,21 @@ onBeforeMount(async () => {
 
         <CCol v-if="route.name === '(공지)'" class="text-right">
           <span v-if="can(PERM.NEWS_MANAGE)">
-            <TopButton name="새 공지" @click="viewForm = !viewForm" />
+            <TextButton name="새 공지" @click="viewForm = !viewForm" />
           </span>
 
           <span v-if="$route.params.projId && can(PERM.NEWS_READ)">
-            <TopButton name="지켜보기" icon="mdi-star" icon-color="amber" color="secondary" />
+            <TextButton name="지켜보기" icon="mdi-star" icon-color="amber" color="secondary" />
           </span>
         </CCol>
 
         <CCol v-else class="text-right">
           <span v-if="can(PERM.NEWS_READ)">
-            <TopButton name="관심끄기" icon="mdi-star" icon-color="amber" color="secondary" />
+            <TextButton name="관심끄기" icon="mdi-star" icon-color="amber" color="secondary" />
           </span>
 
           <span v-if="can(PERM.NEWS_MANAGE)">
-            <TopButton
+            <TextButton
               name="편집"
               icon="mdi-pencil"
               icon-color="amber"
@@ -154,7 +154,7 @@ onBeforeMount(async () => {
           </span>
 
           <span v-if="can(PERM.NEWS_MANAGE) && !viewForm">
-            <TopButton
+            <TextButton
               name="삭제"
               icon="mdi-trash-can-outline"
               icon-color="grey"

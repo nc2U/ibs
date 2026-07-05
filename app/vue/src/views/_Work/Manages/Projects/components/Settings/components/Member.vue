@@ -8,7 +8,7 @@ import type { IssueProject, SimpleMember } from '@/store/types/work_project.ts'
 import NoData from '@/components/NoData/Index.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
-import TopButton from '@/views/_Work/components/atomics/TopButton.vue'
+import TextButton from '../../../../../components/atomics/TextButton.vue'
 
 const memberConfirmModal = ref()
 const memberFormModal = ref()
@@ -153,13 +153,13 @@ onBeforeMount(() => accStore.fetchUsersList())
   <CRow class="py-2">
     <CCol>
       <span v-if="canManageMembers" class="mr-2 form-text">
-        <TopButton name="새 구성원" @click="callModal" />
+        <TextButton name="새 구성원" @click="callModal" />
       </span>
     </CCol>
 
     <CCol class="text-right">
       <span class="form-text">
-        <TopButton name="관리" :to="{ name: '사용자' }" icon="mdi-cog" icon-color="grey" />
+        <TextButton name="관리" :to="{ name: '사용자' }" icon="mdi-cog" icon-color="grey" />
       </span>
     </CCol>
   </CRow>

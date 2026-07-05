@@ -5,7 +5,7 @@ import { colorLight } from '@/utils/cssMixins'
 import type { Version } from '@/store/types/work_project.ts'
 import NoData from '@/components/NoData/Index.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
-import TopButton from '@/views/_Work/components/atomics/TopButton.vue'
+import TextButton from '../../../../../components/atomics/TextButton.vue'
 
 defineProps({
   versions: { type: Array as PropType<Version[]>, default: () => [] },
@@ -51,13 +51,18 @@ const deleteSubmit = () => {
   <CRow class="py-2">
     <CCol>
       <span v-if="canManageVersions" class="mr-2 form-text">
-        <TopButton name="새 단계" :to="{ name: '(로드맵) - 추가', query: { back: 1 } }" />
+        <TextButton name="새 단계" :to="{ name: '(로드맵) - 추가', query: { back: 1 } }" />
       </span>
     </CCol>
 
     <CCol class="text-right">
       <span v-if="canManageVersions" class="mr-2 form-text">
-        <TopButton name="완료된 단계 닫기" icon="mdi-lock" icon-color="warning" color="secondary" />
+        <TextButton
+          name="완료된 단계 닫기"
+          icon="mdi-lock"
+          icon-color="warning"
+          color="secondary"
+        />
       </span>
     </CCol>
   </CRow>

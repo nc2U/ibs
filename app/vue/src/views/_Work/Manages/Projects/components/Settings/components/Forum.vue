@@ -11,7 +11,7 @@ import Draggable from 'vuedraggable'
 import NoData from '@/components/NoData/Index.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
-import TopButton from '@/views/_Work/components/atomics/TopButton.vue'
+import TextButton from '../../../../../components/atomics/TextButton.vue'
 
 const props = defineProps({ project: { type: Number, required: true } })
 
@@ -117,7 +117,7 @@ onBeforeMount(async () => {
   <CRow class="py-2">
     <CCol>
       <span v-if="canForumManage">
-        <TopButton name="새 게시판" @click="crateForum" />
+        <TextButton name="새 게시판" @click="crateForum" />
       </span>
     </CCol>
   </CRow>

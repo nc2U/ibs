@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms.ts'
 import type { Version } from '@/store/types/work_project.ts'
 import RoadmapItem from './RoadmapItem.vue'
-import TopButton from '../../../../../components/atomics/TopButton.vue'
+import TextButton from '../../../../../components/atomics/TextButton.vue'
 
 defineProps({ versionList: { type: Array as PropType<Version[]>, default: () => [] } })
 
@@ -20,7 +20,7 @@ const [route, router] = [useRoute(), useRouter()]
 
     <CCol class="text-right">
       <span v-if="can(PERM.PROJECT_VERSION)" class="mr-2 form-text">
-        <TopButton name="새 단계" :to="{ name: '(로드맵) - 추가' }" />
+        <TextButton name="새 단계" :to="{ name: '(로드맵) - 추가' }" />
       </span>
 
       <span>

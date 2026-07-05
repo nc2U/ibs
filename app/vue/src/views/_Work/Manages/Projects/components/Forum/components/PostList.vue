@@ -6,7 +6,7 @@ import { useForum } from '@/store/pinia/forum'
 import Pagination from '@/components/Pagination'
 import NoData from '@/components/NoData/Index.vue'
 import PostItem from './PostItem.vue'
-import TopButton from '../../../../../components/atomics/TopButton.vue'
+import TextButton from '../../../../../components/atomics/TextButton.vue'
 
 defineProps({
   forum: { type: Object as PropType<Forum | null>, default: null },
@@ -33,7 +33,7 @@ const pageSelect = (page: number) => emit('page-select', page)
       </h5>
     </CCol>
     <CCol v-if="canForumCreate" class="text-right">
-      <TopButton
+      <TextButton
         name="새 게시물"
         icon="mdi-pencil-plus"
         :to="{

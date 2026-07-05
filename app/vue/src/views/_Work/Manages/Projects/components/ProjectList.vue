@@ -9,7 +9,7 @@ import ProjectCard from './ProjectCard.vue'
 import ProjectTable from './ProjectTable.vue'
 import NoData from '@/components/NoData/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
-import TopButton from '../../../components/atomics/TopButton.vue'
+import TextButton from '../../../components/atomics/TextButton.vue'
 
 const cBody = ref()
 const toggle = () => cBody.value.toggle()
@@ -90,7 +90,7 @@ onBeforeMount(() => {
 
         <CCol v-if="can(PERM.PROJECT_CREATE)" class="text-right form-text">
           <span v-show="route.name !== '프로젝트 - 추가'" class="mr-2">
-            <TopButton name="새 프로젝트" :to="{ name: '프로젝트 - 추가' }" />
+            <TextButton name="새 프로젝트" :to="{ name: '프로젝트 - 추가' }" />
           </span>
         </CCol>
       </CRow>
@@ -118,13 +118,11 @@ onBeforeMount(() => {
       <CRow>
         <CCol class="text-right form-text">
           <span class="mr-2">
-            <v-icon icon="mdi-account-tag" color="success" size="15" class="mr-1" />
-            <span class="mt-2">내 프로젝트</span>
+            <TextButton name="내 프로젝트" icon="mdi-account-tag" color="secondary" />
           </span>
 
           <span>
-            <v-icon icon="mdi-bookmark" color="info" size="15" class="mr-1" />
-            <span class="mt-2">내 북마크</span>
+            <TextButton name="내 북마크" icon="mdi-bookmark" color="secondary" />
           </span>
         </CCol>
       </CRow>

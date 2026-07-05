@@ -6,7 +6,7 @@ import { useAccount } from '@/store/pinia/account.ts'
 import NoData from '@/components/NoData/Index.vue'
 import SearchList from '@/views/_Work/Manages/Projects/components/SearchList.vue'
 import UserTable from '@/views/_Work/Settings/Users/components/UserTable.vue'
-import TopButton from '@/views/_Work/components/atomics/TopButton.vue'
+import TextButton from '../../../components/atomics/TextButton.vue'
 
 defineProps({
   userList: { type: Array as PropType<User[]>, default: () => [] },
@@ -26,7 +26,7 @@ const workManager = computed(() => accStore.workManager)
 
     <CCol v-if="workManager" class="text-right">
       <span class="mr-2">
-        <TopButton name="새 사용자" :to="{ name: '사용자 - 생성' }" />
+        <TextButton name="새 사용자" :to="{ name: '사용자 - 생성' }" />
       </span>
 
       <!--          <span>-->

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Role } from '@/store/types/work_project'
-import TopButton from '@/views/_Work/components/atomics/TopButton.vue'
+import TextButton from '../../../components/atomics/TextButton.vue'
 
 defineProps<{ roleList: Role[]; workManager: boolean }>()
 const emit = defineEmits(['show-modal', 'delete-role'])
@@ -18,7 +18,7 @@ const copyRole = (role: Role) => {
     </CCol>
     <CCol class="text-right">
       <span v-if="workManager" class="mr-2 form-text">
-        <TopButton name="새 역할" @click="emit('show-modal')" />
+        <TextButton name="새 역할" @click="emit('show-modal')" />
       </span>
     </CCol>
   </div>

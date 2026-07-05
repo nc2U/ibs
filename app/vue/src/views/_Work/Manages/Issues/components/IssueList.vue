@@ -10,7 +10,7 @@ import Pagination from '@/components/Pagination'
 import NoData from '@/components/NoData/Index.vue'
 import SearchList from './SearchList.vue'
 import IssueItem from './IssueItem.vue'
-import TopButton from '../../../components/atomics/TopButton.vue'
+import TextButton from '../../../components/atomics/TextButton.vue'
 
 const props = defineProps({
   projStatus: { type: String, default: '' },
@@ -67,7 +67,7 @@ const watchControl = (payload: any) => {
 
     <CCol class="text-right">
       <span v-if="canIssueCreate" class="mr-2 form-text">
-        <TopButton name="새 업무" :to="{ name: `${String(route.name)} - 추가` }" />
+        <TextButton name="새 업무" :to="{ name: `${String(route.name)} - 추가` }" />
       </span>
 
       <span>
