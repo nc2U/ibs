@@ -21,10 +21,33 @@ export const useWork = defineStore('work', () => {
 
   // Issue Project states & getters
   const issueProject = ref<IssueProject | null>(null)
+
+  /**
+   * [프로젝트 상세/필터링 목록 상태]
+   * `fetchIssueProjectList` 호출을 통해 API 필터링 조건(회사, 부모 프로젝트, 공개여부 등)에 부합하는
+   * 프로젝트 목록을 저장하는 상태입니다. (조회 조건에 따라 목록이 동적으로 변경됨)
+   */
   const issueProjectList = ref<IssueProject[]>([])
+
+  /**
+   * [최상위(루트) 프로젝트 목록]
+   * `issueProjectList`에서 부모가 없는(parent === null) 최상위 프로젝트들만 필터링한 컬렉션입니다.
+   * 계층 구조(트리뷰)를 렌더링할 때 루트 노드로 활용됩니다.
+   */
   const issueProjects = computed(() => issueProjectList.value.filter(proj => proj.parent === null))
 
+  /**
+   * [전체 프로젝트 원시 데이터 트리]
+   * `fetchAllIssueProjectList` 호출을 통해 회사 내 전체 프로젝트 데이터를 계층 구조(sub_projects가 중첩된 트리 형태)로
+   * 로드하여 메모리에 저장해 두는 마스터 리스트 상태입니다.
+   */
   const allProjects = ref<IssueProject[]>([])
+
+  /**
+   * [평탄화된(Flattened) 전체 프로젝트 목록]
+   * 트리 구조로 중첩되어 있는 `allProjects`를 재귀적으로 탐색(flatten)하여 1차원 배열로 평탄화한 컬렉션입니다.
+   * 중복을 방지(visited Set 사용)하고 활성화된(visible: true) 프로젝트만 필터링하여 전역에서 빠른 탐색이 필요할 때 사용됩니다.
+   */
   const AllIssueProjects = computed(() => {
     const visited = new Set<number>()
     const result: IssueProject[] = []
@@ -40,6 +63,11 @@ export const useWork = defineStore('work', () => {
     return result
   })
 
+  /**
+   * [UI 옵션용 ID-이름 매핑 리스트 (PK 형태)]
+   * `allProjects` 목록을 기반으로 Multiselect 등 셀렉트 박스 컴포넌트 규격에 부합하게
+   * `{ value: pk, label: name }` 형태로 매핑한 옵션용 컬렉션입니다.
+   */
   const getAllProjPks = computed(() =>
     allProjects.value.map(i => ({
       value: i.pk as number,
@@ -47,6 +75,11 @@ export const useWork = defineStore('work', () => {
     })),
   )
 
+  /**
+   * [UI 옵션용 상세 프로젝트 속성 리스트 (Slug 형태)]
+   * `allProjects` 목록을 기반으로 컴포넌트(예: 필터, 사이드바 등)에서 참조할 수 있는 주요 속성들
+   * (pk, value=slug, label=name, status, depth, parent_visible 등)만 가공하여 노출해 주는 컬렉션입니다.
+   */
   const getAllProjects = computed(() =>
     allProjects.value.map(i => ({
       pk: i.pk as number,

@@ -115,6 +115,12 @@ onBeforeMount(() => {
         </template>
       </CRow>
 
+      {{ allIssueProjects.length }}
+
+      <hr />
+
+      {{ projectList.length }}
+
       <CRow>
         <CCol class="text-right form-text">
           <span class="mr-2">

@@ -98,7 +98,21 @@ watch(
         </CCol>
         <CCol class="text-right">
           <span v-if="canMeetingCreate" class="mr-2 form-text">
-            <TextButton name="새 회의록" :to="{ name: '회의 - 추가' }" />
+            <v-btn color="info" size="small">
+              <v-icon icon="mdi-plus-circle-outline" class="mr-1" />
+              새 회의록
+              <v-menu activator="parent">
+                <v-list>
+                  <v-list-item
+                    v-for="proj in issueProjects"
+                    :key="proj.slug"
+                    :to="{ name: '(회의) - 추가', params: { projId: proj.slug } }"
+                  >
+                    <v-list-item-title>{{ proj.name }}</v-list-item-title>
+                  </v-list-item>
+                </v-list>
+              </v-menu>
+            </v-btn>
           </span>
         </CCol>
       </CRow>

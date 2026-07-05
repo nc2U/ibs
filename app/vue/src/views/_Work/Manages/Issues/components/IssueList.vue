@@ -61,7 +61,22 @@ const watchControl = (issuePk: number) => issueStore.watchIssue(issuePk)
 
     <CCol class="text-right">
       <span v-if="canIssueCreate" class="mr-2 form-text">
-        <TextButton name="새 업무" :to="{ name: `${String(route.name)} - 추가` }" />
+        <v-btn v-if="route.name === '업무'" color="info" size="small">
+          <v-icon icon="mdi-plus-circle-outline" class="mr-1" />
+          새 업무
+          <v-menu activator="parent">
+            <v-list>
+              <v-list-item
+                v-for="proj in allProjects"
+                :key="proj.slug"
+                :to="{ name: '(업무) - 추가', params: { projId: proj.slug } }"
+              >
+                <v-list-item-title>{{ proj.name }}</v-list-item-title>
+              </v-list-item>
+            </v-list>
+          </v-menu>
+        </v-btn>
+        <TextButton v-else name="새 업무" :to="{ name: `${String(route.name)} - 추가` }" />
       </span>
 
       <span>
