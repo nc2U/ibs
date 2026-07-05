@@ -150,8 +150,18 @@ const memberList = computed(() => {
 
 watch(
   () => memberList.value,
-  nVal => (watcherList.value = nVal ?? []),
+  nVal => {
+    const current = watcherList.value || []
+    const addedList = current.filter(u => !(nVal || []).some(m => m.pk === u.pk))
+    watcherList.value = [...(nVal ?? []), ...addedList]
+  },
+  { immediate: true },
 )
+
+const filteredWatcherList = computed(() => {
+  const myPk = userInfo.value?.pk
+  return watcherList.value.filter(u => u.pk !== myPk)
+})
 
 const issueStore = useIssue()
 
@@ -346,6 +356,12 @@ onBeforeMount(() => {
     form.value.category = props.issue.category
     form.value.expected_duration = props.issue.expected_duration ?? ''
     form.value.done_ratio = props.issue.done_ratio
+    form.value.watchers = props.issue.watchers.map(w => w.pk)
+    props.issue.watchers.forEach(w => {
+      if (!watcherList.value.some(existing => existing.pk === w.pk)) {
+        watcherList.value.push({ pk: w.pk, username: w.username })
+      }
+    })
     form.value.files = props.issue.files
   } else if (copyIssueObj) {
     form.value.project = copyIssueObj.project.slug
@@ -363,6 +379,12 @@ onBeforeMount(() => {
     form.value.category = copyIssueObj.category
     form.value.expected_duration = copyIssueObj.expected_duration ?? ''
     form.value.done_ratio = copyIssueObj.done_ratio
+    form.value.watchers = copyIssueObj.watchers.map(w => w.pk)
+    copyIssueObj.watchers.forEach(w => {
+      if (!watcherList.value.some(existing => existing.pk === w.pk)) {
+        watcherList.value.push({ pk: w.pk, username: w.username })
+      }
+    })
   } else {
     if (route.query.parent) {
       form.value.parent = Number(route.query.parent)
@@ -451,7 +473,7 @@ defineExpose({ callComment, callReply })
                     업무 관람자
                   </CFormLabel>
                   <CCol sm="10" style="padding-top: 8px">
-                    <span v-for="user in watcherList" :key="user.pk" class="mr-3">
+                    <span v-for="user in filteredWatcherList" :key="user.pk" class="mr-3">
                       <input
                         v-model="form.watchers"
                         :id="`user-${user.pk}`"

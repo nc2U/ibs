@@ -50,9 +50,9 @@ const canDeleteWatcher = (watcherPk: number) => {
 }
 
 const issueStore = useIssue()
-const watcherAddSubmit = (payload: number[]) => {
+const watcherAddSubmit = (payload: { pk: number; username: string }[]) => {
   const form = new FormData()
-  payload.forEach(val => form.append('watchers', val.toString()))
+  payload.forEach(val => form.append('watchers', val.pk.toString()))
   issueStore.patchIssue(props.issue.pk, form)
 }
 

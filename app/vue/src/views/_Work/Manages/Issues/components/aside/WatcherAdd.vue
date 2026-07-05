@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, type ComputedRef, inject, onBeforeMount, type PropType, ref, watch } from 'vue'
+import { computed, onBeforeMount, type PropType, ref, watch } from 'vue'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useAccount } from '@/store/pinia/account'
 import type { IssueProject } from '@/store/types/work_project.ts'
@@ -40,6 +40,7 @@ const accStore = useAccount()
 const getUsers = computed(() =>
   accStore.getUsers.filter(
     u =>
+      u.value !== accStore.userInfo?.pk &&
       !members.value?.map(m => m.pk).includes(u.value) &&
       !props.watchers.map(w => w.pk).includes(u.value) &&
       !addMembers.value.map(m => m.pk).includes(u.value),
@@ -47,7 +48,9 @@ const getUsers = computed(() =>
 ) // 전체 유저에서 기본 멤버리스트 제외 목록
 
 const memberList = computed(() =>
-  members.value?.filter(m => !props.watchers.map(m => m.pk).includes(m.pk)),
+  members.value?.filter(
+    m => m.pk !== accStore.userInfo?.pk && !props.watchers.map(m => m.pk).includes(m.pk),
+  ),
 ) // 기본 멤버리스트에서 관람자 리스트 제외 목록
 
 watch(
@@ -55,11 +58,15 @@ watch(
   nVal => (addMembers.value = nVal ?? []),
 )
 
-const callModal = () => refConfirmModal.value.callModal()
+const callModal = () => {
+  addUsers.value = []
+  refConfirmModal.value.callModal()
+}
 defineExpose({ callModal })
 
 const watcherAddSubmit = () => {
-  emit('watcher-add-submit', [...addUsers.value])
+  const selectedMembers = addMembers.value.filter(m => addUsers.value.includes(m.pk))
+  emit('watcher-add-submit', selectedMembers)
   refConfirmModal.value.close()
 }
 
