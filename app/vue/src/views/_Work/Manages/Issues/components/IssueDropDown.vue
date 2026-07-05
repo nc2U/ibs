@@ -215,7 +215,6 @@ onBeforeMount(() => (isWatcher.value = isCumputedWatcher.value as any))
 
 <template>
   <span>
-    {{ members }}
     <v-btn icon variant="text" size="x-small" color="grey-darken-1">
       <v-icon icon="mdi-dots-horizontal" />
       <v-tooltip activator="parent" location="top">Actions</v-tooltip>
