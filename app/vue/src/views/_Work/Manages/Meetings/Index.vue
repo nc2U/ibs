@@ -15,7 +15,7 @@ import MeetingList from './components/MeetingList.vue'
 import MeetingAside from './components/MeetingAside.vue'
 import MeetingDetail from './components/MeetingDetail.vue'
 import MeetingForm from './components/MeetingForm.vue'
-import TextButton from '../../components/atomics/TextButton.vue'
+import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 
 const cBody = ref()
 const comStore = useCompany()
@@ -31,13 +31,13 @@ const viewMode = computed(() => {
 
 const sideNavCAll = () => cBody.value.toggle()
 
-const navMenu = computed(() => (!issueProjects.value.length ? navMenu1 : navMenu2))
+const navMenu = computed(() => (!myProjects.value.length ? navMenu1 : navMenu2))
 
 const { can, PERM } = usePerms()
 const canMeetingCreate = computed(() => can(PERM.MEETING_CREATE) && viewMode.value === 'list')
 
 const workStore = useWork()
-const issueProjects = computed(() => workStore.issueProjects)
+const myProjects = computed(() => workStore.myProjects)
 
 const meetingStore = useMeeting()
 const meetingList = computed(() => meetingStore.meetingList)
@@ -61,7 +61,7 @@ const loading = ref<boolean>(true)
 
 const initData = async () => {
   loading.value = true
-  await workStore.fetchIssueProjectList({})
+  await workStore.fetchAllIssueProjectList()
   if (viewMode.value === 'list') {
     await meetingStore.fetchMeetingList({ page: page.value })
   }
@@ -98,21 +98,11 @@ watch(
         </CCol>
         <CCol class="text-right">
           <span v-if="canMeetingCreate" class="mr-2 form-text">
-            <v-btn color="info" size="small">
-              <v-icon icon="mdi-plus-circle-outline" class="mr-1" />
-              새 회의록
-              <v-menu activator="parent">
-                <v-list>
-                  <v-list-item
-                    v-for="proj in issueProjects"
-                    :key="proj.slug"
-                    :to="{ name: '(회의) - 추가', params: { projId: proj.slug } }"
-                  >
-                    <v-list-item-title>{{ proj.name }}</v-list-item-title>
-                  </v-list-item>
-                </v-list>
-              </v-menu>
-            </v-btn>
+            <TextButton
+              name="새 회의록"
+              :my-projects="myProjects"
+              :project-to="{ name: '(회의) - 추가' }"
+            />
           </span>
         </CCol>
       </CRow>

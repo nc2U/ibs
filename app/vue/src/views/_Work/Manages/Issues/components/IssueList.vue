@@ -6,6 +6,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
 import { useIssue } from '@/store/pinia/work_issue.ts'
 import { useAccount } from '@/store/pinia/account.ts'
+import { useWork } from '@/store/pinia/work_project.ts'
 import Pagination from '@/components/Pagination'
 import NoData from '@/components/NoData/Index.vue'
 import SearchList from './SearchList.vue'
@@ -32,6 +33,9 @@ const [route, router] = [useRoute(), useRouter()]
 
 const accStore = useAccount()
 const workManager = computed(() => accStore.workManager)
+
+const workStore = useWork()
+const myProjects = computed(() => workStore.myProjects)
 
 const selectedRow = ref<number | null>(null)
 const handleClickOutside = (event: any) => {
@@ -61,21 +65,12 @@ const watchControl = (issuePk: number) => issueStore.watchIssue(issuePk)
 
     <CCol class="text-right">
       <span v-if="canIssueCreate" class="mr-2 form-text">
-        <v-btn v-if="route.name === '업무'" color="info" size="small">
-          <v-icon icon="mdi-plus-circle-outline" class="mr-1" />
-          새 업무
-          <v-menu activator="parent">
-            <v-list>
-              <v-list-item
-                v-for="proj in allProjects"
-                :key="proj.slug"
-                :to="{ name: '(업무) - 추가', params: { projId: proj.slug } }"
-              >
-                <v-list-item-title>{{ proj.name }}</v-list-item-title>
-              </v-list-item>
-            </v-list>
-          </v-menu>
-        </v-btn>
+        <TextButton
+          v-if="route.name === '업무'"
+          name="새 업무"
+          :my-projects="myProjects"
+          :project-to="{ name: '(업무) - 추가' }"
+        />
         <TextButton v-else name="새 업무" :to="{ name: `${String(route.name)} - 추가` }" />
       </span>
 
