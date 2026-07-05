@@ -127,6 +127,25 @@ watch(props, nVal => {
 
 const watcherList = ref<{ pk: number; username: string }[]>([])
 
+// 프로젝트 전체 멤버 목록 (업무 관람자 대상용)
+const allProjectMembers = computed(() => {
+  if (workStore.projectMembers.length > 0) {
+    return workStore.projectMembers.map(m => ({ pk: m.user_id, username: m.username }))
+  }
+  return [...new Map(workStore.memberList.map(m => [m.user.pk, m.user])).values()]
+})
+
+// 프로젝트 멤버가 로드/변경될 때, 멤버가 아닌 관람자를 자동으로 필터링
+watch(
+  () => allProjectMembers.value,
+  newMembers => {
+    const memberPks = newMembers.map(m => m.pk)
+    watcherList.value = watcherList.value.filter(w => memberPks.includes(w.pk))
+    form.value.watchers = form.value.watchers.filter(pk => memberPks.includes(pk))
+  },
+  { deep: true }
+)
+
 const memberList = computed(() => {
   let list: { pk: number; username: string; isAssignable: boolean }[] = []
 
