@@ -593,7 +593,7 @@ const onConfirmToggle = async () => {
             >
               {{ form.pk ? '확인' : '저장' }}
             </v-btn>
-            <v-btn color="light" class="ml-2" @click="router.back()" flat>취소</v-btn>
+            <v-btn color="light" @click="router.back()" flat>취소</v-btn>
           </CCol>
         </CRow>
       </CForm>
@@ -670,9 +670,7 @@ const onConfirmToggle = async () => {
         <CRow>
           <CCol class="text-right">
             <v-btn type="submit" color="primary" size="small"> 저장 </v-btn>
-            <v-btn color="light" size="small" class="ml-2" @click="refCategoryModal.close()" flat>
-              취소
-            </v-btn>
+            <v-btn color="light" size="small" @click="refCategoryModal.close()" flat> 취소 </v-btn>
           </CCol>
         </CRow>
       </CForm>
