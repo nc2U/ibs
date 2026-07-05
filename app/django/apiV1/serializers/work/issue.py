@@ -307,13 +307,23 @@ class IssueSerializer(serializers.ModelSerializer):
             watchers = self.initial_data.get('watchers', [])
 
         if watchers:
-            watcher_ids = [int(w) for w in watchers]
+            watcher_ids = []
+            for w in watchers:
+                try:
+                    clean_w = str(w).strip('"\'')
+                    watcher_ids.append(int(clean_w))
+                except (ValueError, TypeError):
+                    pass
             valid_watchers = User.objects.filter(pk__in=watcher_ids)
             instance.watchers.add(*valid_watchers)
 
         del_watcher = self.initial_data.get('del_watcher', None)
         if del_watcher:
-            instance.watchers.remove(del_watcher)
+            try:
+                clean_val = str(del_watcher).strip('"\'')
+                instance.watchers.remove(int(clean_val))
+            except (ValueError, TypeError):
+                pass
 
         # sub_issue 관계 지우기
         del_child = self.initial_data.get('del_child', None)

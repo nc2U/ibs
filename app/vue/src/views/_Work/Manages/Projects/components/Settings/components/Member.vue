@@ -1,7 +1,6 @@
 <script lang="ts" setup>
-import { ref, computed, onBeforeMount, inject, type ComputedRef } from 'vue'
+import { computed, onBeforeMount, ref } from 'vue'
 import { usePerms } from '@/composables/usePerms'
-import { btnLight } from '@/utils/cssMixins.ts'
 import { useAccount } from '@/store/pinia/account'
 import { useWork } from '@/store/pinia/work_project.ts'
 import type { IssueProject, SimpleMember } from '@/store/types/work_project.ts'
@@ -309,10 +308,10 @@ onBeforeMount(() => accStore.fetchUsersList())
           </CCard>
         </CModalBody>
         <CModalFooter>
-          <v-btn :color="btnLight" size="small" @click="memberFormModal.close"> 닫기</v-btn>
           <v-btn :disabled="!canManageMembers" color="primary" size="small" type="submit">
             추가
           </v-btn>
+          <v-btn color="light" size="small" @click="memberFormModal.close" flat> 닫기</v-btn>
         </CModalFooter>
       </CForm>
     </template>
