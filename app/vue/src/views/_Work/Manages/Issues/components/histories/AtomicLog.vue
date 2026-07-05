@@ -33,7 +33,7 @@ const { canViewUser } = usePerms()
           <span>
             <router-link
               :to="{
-                name: '(실행기록)',
+                name: '(업무실행내역)',
                 query: { from: log.timestamp.substring(0, 10) },
               }"
             >

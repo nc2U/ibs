@@ -15,7 +15,7 @@ const selectOptions = [
   { value: 6, label: '최근 뉴스' },
   { value: 7, label: '달력' },
   { value: 8, label: '문서' },
-  { value: 10, label: '실행기록' },
+  { value: 10, label: '업무실행내역' },
 ]
 
 const getTitle = (n: number | string) =>

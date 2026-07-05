@@ -250,7 +250,7 @@ onBeforeMount(async () => {
             <span>
               <router-link
                 :to="{
-                  name: '(실행기록)',
+                  name: '(업무실행내역)',
                   params: { projId: issue.project.slug },
                   query: { from: issue?.created.substring(0, 10) },
                 }"
@@ -265,7 +265,7 @@ onBeforeMount(async () => {
             <span>
               <router-link
                 :to="{
-                  name: '(실행기록)',
+                  name: '(업무실행내역)',
                   params: { projId: issue.project.slug },
                   query: { from: issue.updated.substring(0, 10) },
                 }"

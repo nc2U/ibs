@@ -113,7 +113,7 @@ const delSubmit = () => {
           <span>
             <router-link
               :to="{
-                name: '(실행기록)',
+                name: '(업무실행내역)',
                 params: { projId: route.params.projId },
                 query: { from: log.timestamp.substring(0, 10) },
               }"

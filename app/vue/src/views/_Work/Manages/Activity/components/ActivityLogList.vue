@@ -36,7 +36,7 @@ const toNext = () => {
 <template>
   <CRow class="py-2">
     <CCol>
-      <h5>실행기록</h5>
+      <h5>업무실행내역</h5>
     </CCol>
   </CRow>
 

@@ -53,7 +53,7 @@ const workProject = {
         },
         {
           path: ':projId/activity',
-          name: '(실행기록)',
+          name: '(업무실행내역)',
           component: () => import('@/views/_Work/Manages/Projects/components/Activity/Index.vue'),
         },
         {
@@ -186,7 +186,7 @@ const workProject = {
     },
     {
       path: 'activity',
-      name: '실행기록',
+      name: '업무실행내역',
       component: () => import('@/views/_Work/Manages/Activity/Index.vue'),
     },
     {

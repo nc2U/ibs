@@ -56,7 +56,7 @@ const projectNavMenus = computed(() => {
   const menus = [
     { no: 1, menu: '(개요)' },
     { no: 2, menu: '(회의)' },
-    { no: 3, menu: '(실행기록)' },
+    { no: 3, menu: '(업무실행내역)' },
   ]
 
   if (project) {

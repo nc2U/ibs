@@ -30,7 +30,7 @@ const isDark = computed(() => store.theme === 'dark')
               </router-link>
               이(가)
               <router-link
-                :to="{ name: '(실행기록)', query: { from: news.created.substring(0, 10) } }"
+                :to="{ name: '(업무실행내역)', query: { from: news.created.substring(0, 10) } }"
               >
                 {{ elapsedTime(news.created) }}
               </router-link>

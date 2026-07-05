@@ -64,7 +64,7 @@ const deleteFile = (pk: number) => {
         <div class="d-flex align-center mr-4">
           <v-icon icon="mdi-clock-outline" size="18" class="mr-1" />
           <router-link
-            :to="{ name: '(실행기록)', params: { projId: news.project?.slug } }"
+            :to="{ name: '(업무실행내역)', params: { projId: news.project?.slug } }"
             class="text-decoration-none"
           >
             {{ elapsedTime(news.created) }}
