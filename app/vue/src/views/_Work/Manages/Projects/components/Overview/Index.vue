@@ -100,11 +100,11 @@ onBeforeMount(async () => {
         이 프로젝트는 닫혀 있으며 읽기 전용입니다.
       </CAlert>
 
-      <CRow class="mt-2">
-        <CCol>{{ iProject?.description }}</CCol>
+      <CRow class="my-2">
+        <CCol class="text-muted">{{ iProject?.description }}</CCol>
       </CRow>
 
-      <CRow v-if="iProject?.homepage" class="pl-2 my-3">
+      <CRow v-if="iProject?.homepage" class="pl-2 my-2">
         <li>
           <a :href="iProject.homepage" target="_blank">{{ iProject?.homepage }}</a>
         </li>
