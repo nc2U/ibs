@@ -50,13 +50,7 @@ const issuePages = (pageNum: number) => issueStore.issuePages(pageNum)
 const pageSelect = (page: number) => emit('page-select', page)
 
 // 지켜보기 / 관심끄기
-const watchControl = (payload: any) => {
-  const form = new FormData()
-  if (payload.watchers)
-    payload.watchers.forEach((val: any) => form.append('watchers', JSON.stringify(val)))
-  else if (payload.del_watcher) form.append('del_watcher', JSON.stringify(payload.del_watcher))
-  issueStore.patchIssue(payload.issue, form)
-}
+const watchControl = (issuePk: number) => issueStore.watchIssue(issuePk)
 </script>
 
 <template>

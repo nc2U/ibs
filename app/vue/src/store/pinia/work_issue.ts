@@ -162,6 +162,17 @@ export const useIssue = defineStore('issue', () => {
       })
       .catch(err => errorHandle(err.response.data))
 
+  const watchIssue = (pk: number) =>
+    api
+      .post(`/issue/${pk}/toggle_watch/`, {}, config_headers)
+      .then(async () => {
+        await fetchIssue(pk)
+        await fetchIssueList(issueFilter.value)
+        await logStore.fetchIssueLogList({ issue: pk })
+        message()
+      })
+      .catch(err => errorHandle(err.response.data))
+
   const deleteIssue = (pk: number) =>
     api
       .delete(`/issue/${pk}/`)
@@ -374,6 +385,7 @@ export const useIssue = defineStore('issue', () => {
     createIssue,
     updateIssue,
     patchIssue,
+    watchIssue,
     deleteIssue,
 
     issueRelation,

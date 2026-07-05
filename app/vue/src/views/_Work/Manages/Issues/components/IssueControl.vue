@@ -57,12 +57,7 @@ const isWatcher = computed(() =>
   (props.watchers || []).map(w => w.pk).includes(userInfo?.value?.pk as number),
 )
 
-const watchControl = () => {
-  const payload = isWatcher.value
-    ? { del_watcher: userInfo?.value?.pk }
-    : { watchers: [userInfo?.value?.pk] }
-  emit('watch-control', payload)
-}
+const watchControl = () => emit('watch-control')
 
 const copyIssue = () => {
   const routeName = route.params.projId ? '(업무) - 추가' : '업무 - 추가'

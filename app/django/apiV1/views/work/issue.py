@@ -123,7 +123,8 @@ class IssueViewSet(viewsets.ModelViewSet):
             'update': 'issue.update',
             'partial_update': 'issue.update',
             'destroy': 'issue.delete',
-            'toggle_private': 'issue.private'
+            'toggle_private': 'issue.private',
+            'toggle_watch': 'issue.read',
         }
         return mapping.get(self.action, None)
 
@@ -133,6 +134,19 @@ class IssueViewSet(viewsets.ModelViewSet):
         issue.is_private = not issue.is_private
         issue.save()
         return Response({'is_private': issue.is_private})
+
+    @action(detail=True, methods=['post'])
+    def toggle_watch(self, request, pk=None):
+        issue = self.get_object()
+        user = request.user
+
+        if issue.watchers.filter(pk=user.pk).exists():
+            issue.watchers.remove(user)
+        else:
+            issue.watchers.add(user)
+
+        serializer = self.get_serializer(issue)
+        return Response(serializer.data)
 
     def get_queryset(self):
         user = self.request.user

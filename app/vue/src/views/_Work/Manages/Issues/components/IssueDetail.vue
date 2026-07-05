@@ -106,13 +106,7 @@ const goMeeting = () => {
 }
 
 // 지켜보기 / 관심끄기
-const watchControl = (payload: { watchers: any[]; del_watcher?: number }) => {
-  const form = new FormData()
-  if (payload.watchers)
-    payload.watchers.forEach(val => form.append('watchers', JSON.stringify(val)))
-  else if (payload.del_watcher) form.append('del_watcher', JSON.stringify(payload.del_watcher))
-  issueStore.patchIssue(props.issue?.pk as number, form)
-}
+const watchControl = () => issueStore.watchIssue(props.issue?.pk as number)
 
 // 하위 업무 관련 코드
 const unlinkSubIssue = (del_child: number) =>
