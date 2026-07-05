@@ -11,6 +11,7 @@ import Draggable from 'vuedraggable'
 import NoData from '@/components/NoData/Index.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
+import TopButton from '@/views/_Work/components/atomics/TopButton.vue'
 
 const props = defineProps({ project: { type: Number, required: true } })
 
@@ -115,9 +116,8 @@ onBeforeMount(async () => {
 <template>
   <CRow class="py-2">
     <CCol>
-      <span v-if="canForumManage" class="mr-2 form-text">
-        <v-icon icon="mdi-plus-circle" color="success" size="15" />
-        <router-link to="" class="ml-1" @click="crateForum">새 게시판</router-link>
+      <span v-if="canForumManage">
+        <TopButton name="새 게시판" @click="crateForum" />
       </span>
     </CCol>
   </CRow>

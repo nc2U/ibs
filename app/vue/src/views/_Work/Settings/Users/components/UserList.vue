@@ -6,6 +6,7 @@ import { useAccount } from '@/store/pinia/account.ts'
 import NoData from '@/components/NoData/Index.vue'
 import SearchList from '@/views/_Work/Manages/Projects/components/SearchList.vue'
 import UserTable from '@/views/_Work/Settings/Users/components/UserTable.vue'
+import TopButton from '@/views/_Work/components/atomics/TopButton.vue'
 
 defineProps({
   userList: { type: Array as PropType<User[]>, default: () => [] },
@@ -23,10 +24,9 @@ const workManager = computed(() => accStore.workManager)
       <h5>{{ route.name }}</h5>
     </CCol>
 
-    <CCol v-if="workManager" class="text-right form-text">
+    <CCol v-if="workManager" class="text-right">
       <span class="mr-2">
-        <v-icon icon="mdi-plus-circle" color="success" size="15" />
-        <router-link :to="{ name: '사용자 - 생성' }" class="ml-1">새 사용자</router-link>
+        <TopButton name="새 사용자" :to="{ name: '사용자 - 생성' }" />
       </span>
 
       <!--          <span>-->

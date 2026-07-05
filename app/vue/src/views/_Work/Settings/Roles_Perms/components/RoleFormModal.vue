@@ -104,7 +104,6 @@ const saveRole = async (event: Event) => {
         </div>
       </CModalBody>
       <CModalFooter>
-        <v-btn color="secondary" size="small" @click="emit('close')">취소</v-btn>
         <v-btn
           type="submit"
           :color="form.pk ? 'success' : 'primary'"
@@ -113,6 +112,7 @@ const saveRole = async (event: Event) => {
         >
           저장
         </v-btn>
+        <v-btn color="light" size="small" @click="emit('close')" flat>취소</v-btn>
       </CModalFooter>
     </CForm>
   </CModal>
