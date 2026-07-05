@@ -468,6 +468,14 @@ onBeforeMount(async () => {
     </CCardBody>
   </CCard>
 
+  <CRow>
+    <CCol class="text-right my-2">
+      <v-btn size="small" color="light" flat @click="router.push({ name: '(업무)' })">
+        목록으로
+      </v-btn>
+    </CCol>
+  </CRow>
+
   <IssueHistory
     v-if="issueLogList.length"
     :issue-log-list="issueLogList"
@@ -476,7 +484,7 @@ onBeforeMount(async () => {
     @del-submit="delSubmit"
   />
 
-  <div>
+  <div v-if="issueLogList.length">
     <IssueControl
       :proj-status="issueProject?.status"
       :watchers="issue.watchers"
