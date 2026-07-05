@@ -57,7 +57,15 @@ const form = ref({
 
 const { can, PERM } = usePerms()
 const canIssueCreate = computed(() => can(PERM.ISSUE_CREATE))
-const canIssueUpdate = computed(() => can(PERM.ISSUE_UPDATE))
+
+const canEditIssue = computed(() => {
+  if (!props.issue) return true // 신규 생성 시
+
+  const isCreator = props.issue.creator.pk === userInfo?.value?.pk
+  const isAssignee = props.issue.assigned_to?.pk === userInfo?.value?.pk
+
+  return can(PERM.ISSUE_UPDATE) || (can(PERM.ISSUE_OWN_UPDATE) && (isCreator || isAssignee))
+})
 
 const assignedToMe = () => (form.value.assigned_to = userInfo?.value?.pk as number)
 
@@ -80,7 +88,7 @@ const removeFile = (index: number) => {
 }
 
 const formsCheck = computed(() => {
-  const canSubmit = props.issue ? canEditIssue(props.issue) : canIssueCreate.value
+  const canSubmit = props.issue ? canEditIssue.value : canIssueCreate.value
   if (!canSubmit) return true
   if (props.issue) {
     const a = form.value.project === props.issue.project.slug
@@ -136,7 +144,7 @@ const memberList = computed(() => {
     }))
   }
 
-  const canAssignToOthers = props.issue ? canEditIssue(props.issue) : canIssueCreate.value
+  const canAssignToOthers = props.issue ? canEditIssue.value : canIssueCreate.value
   if (canAssignToOthers) return list
 
   const myPk = userInfo.value?.pk
@@ -308,14 +316,6 @@ const onSubmit = (event: Event) => {
   }
 }
 
-const canEditIssue = (issue: Issue | null) => {
-  if (!issue) return true // 신규 생성 시
-
-  const isCreator = issue.creator.pk === userInfo?.value?.pk
-  const isAssignee = issue.assigned_to?.pk === userInfo?.value?.pk
-
-  return can(PERM.ISSUE_UPDATE) || (can(PERM.ISSUE_OWN_UPDATE) && (isCreator || isAssignee))
-}
 const cmtFocus = ref(false)
 const callComment = () => (cmtFocus.value = true)
 const callReply = (payload: any) => {
@@ -397,11 +397,16 @@ defineExpose({ callComment, callReply })
 </script>
 
 <template>
+  <CRow v-if="!issue?.pk" class="py-2">
+    <CCol :class="btnSize === 'small' ? 'pl-4' : ''">
+      <h5>업무</h5>
+    </CCol>
+  </CRow>
   <CCard id="edit-form">
     <CCardHeader>{{ !issue?.pk ? '새 업무' : '업무 수정' }}</CCardHeader>
     <CCardBody>
       <CForm class="needs-validation" novalidate :validated="validated" @submit.prevent="onSubmit">
-        <div v-if="!issue || canEditIssue(issue)">
+        <div v-if="!issue || canEditIssue">
           <CRow class="mb-3">
             <CCol md="8">
               <CRow class="mb-3">
