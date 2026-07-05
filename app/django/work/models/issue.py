@@ -16,8 +16,8 @@ class IssueManager(models.Manager):
 
 
 class ExpectedDuration(models.TextChoices):
-    SAME_DAY = '0', '당일처리'
-    DAY_1 = '1', '익일처리'
+    SAME_DAY = '1', '당일 처리'
+    DAY_1 = '2', '2일 이내'
     DAY_3 = '3', '3일 이내'
     DAY_5 = '5', '5일 이내'
     DAY_10 = '10', '10일 이내'
