@@ -5,11 +5,12 @@ import { errorHandle, message } from '@/utils/helper'
 import { useCompany } from '@/store/pinia/company.ts'
 import { usePermission } from '@/store/pinia/work_permission.ts'
 import type {
-  IssueProject,
-  Member,
   ProjectFilter,
+  IssueProject,
   Role,
   Permission,
+  Member,
+  ProjectMember,
   Version,
   FormVersion,
 } from '@/store/types/work_project.ts'
@@ -255,7 +256,7 @@ export const useWork = defineStore('work', () => {
       .then(res => (memberList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
-  const projectMembers = ref<any[]>([])
+  const projectMembers = ref<ProjectMember[]>([])
 
   const fetchProjectMembers = (slug: string) =>
     api

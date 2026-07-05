@@ -127,6 +127,21 @@ export interface Member {
   created: string
 }
 
+export interface ProjectMember {
+  pk: number
+  user_id: number
+  username: string
+  roles: [
+    {
+      pk: number
+      name: string
+      assignable: boolean
+      inherited: boolean
+    },
+  ]
+  is_assignable: boolean
+}
+
 export interface SimpleVersion {
   pk: number
   name: string
