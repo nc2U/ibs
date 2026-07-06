@@ -137,6 +137,7 @@ export const useIssue = defineStore('issue', () => {
         await fetchIssueList(issueFilter.value)
         await logStore.fetchIssueLogList({ issue: res.data.pk })
         message()
+        return res.data
       })
       .catch(err => errorHandle(err.response.data))
 

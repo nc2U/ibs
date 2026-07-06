@@ -39,7 +39,7 @@ const trackerList = computed(() => issueStore.trackerList)
 const priorityList = computed(() => issueStore.priorityList)
 const getIssues = computed(() => issueStore.getIssues)
 
-const onSubmit = (payload: any) => {
+const onSubmit = async (payload: any) => {
   const { pk, ...getData } = payload
   const form = new FormData()
 
@@ -54,17 +54,36 @@ const onSubmit = (payload: any) => {
     } else form.append(key, getData[key] === null ? '' : (getData[key] as string))
   }
 
-  if (pk) issueStore.updateIssue(pk, form)
+  if (pk) await issueStore.updateIssue(pk, form)
   else {
-    issueStore.createIssue(form)
-    if (route.params.projId) {
-      if (route.query.parent)
+    const newIssue = await issueStore.createIssue(form)
+    if (newIssue && newIssue.pk) {
+      const projId = (route.params.projId as string) || newIssue.project?.slug || newIssue.project
+      
+      // 하위 업무를 생성한 경우(부모 ID가 존재하면) 부모 상세 페이지로 복귀
+      const parentId = route.query.parent as string || newIssue.parent
+      
+      if (parentId) {
         router.replace({
           name: '(업무) - 보기',
-          params: { projId: route.params.projId, issueId: route.query.parent as string },
+          params: { projId, issueId: String(parentId) },
         })
-      else router.replace({ name: '(업무)' })
-    } else router.replace({ name: '업무' })
+      } else {
+        router.replace({
+          name: '(업무) - 보기',
+          params: { projId, issueId: String(newIssue.pk) },
+        })
+      }
+    } else {
+      if (route.params.projId) {
+        if (route.query.parent)
+          router.replace({
+            name: '(업무) - 보기',
+            params: { projId: route.params.projId, issueId: route.query.parent as string },
+          })
+        else router.replace({ name: '(업무)' })
+      } else router.replace({ name: '업무' })
+    }
   }
 }
 
