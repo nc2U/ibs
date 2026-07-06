@@ -1,3 +1,4 @@
+import logging
 import os
 
 import magic
@@ -9,6 +10,8 @@ from _utils.contract_price import get_contract_payment_plan
 from _utils.file_cleanup import file_cleanup_signals
 from _utils.file_upload import get_contract_file_path, get_upload_path
 from payment.models import InstallmentPaymentOrder
+
+logger = logging.getLogger(__name__)
 
 
 class OrderGroup(models.Model):
@@ -172,7 +175,7 @@ class Contract(models.Model):
         if total == 0:
             return 0
         completed = self.contractor.submitted_documents.filter(
-            submitted_quantity__gte=models.F('required_quantity')
+            submitted_quantity__gte=models.F('required_document__quantity')
         ).count()
         return round((completed / total) * 100, 1)
 
@@ -182,8 +185,8 @@ class Contract(models.Model):
         if not hasattr(self, 'contractor'):
             return False
         return not self.contractor.submitted_documents.filter(
-            require_type='required',
-            submitted_quantity__lt=models.F('required_quantity')
+            required_document__require_type='required',
+            submitted_quantity__lt=models.F('required_document__quantity')
         ).exists()
 
     def get_missing_documents(self):
@@ -191,7 +194,7 @@ class Contract(models.Model):
         if not hasattr(self, 'contractor'):
             return ContractDocument.objects.none()
         return self.contractor.submitted_documents.filter(
-            submitted_quantity__lt=models.F('required_quantity')
+            submitted_quantity__lt=models.F('required_document__quantity')
         )
 
     def get_pending_required_documents(self):
@@ -199,8 +202,8 @@ class Contract(models.Model):
         if not hasattr(self, 'contractor'):
             return ContractDocument.objects.none()
         return self.contractor.submitted_documents.filter(
-            require_type='required',
-            status='pending'
+            required_document__require_type='required',
+            submitted_quantity__lt=models.F('required_document__quantity')
         )
 
     @property
@@ -287,10 +290,8 @@ class ContractPrice(models.Model):
             self.is_cache_valid = True
 
         except Exception as e:
-            # 계산 실패 시 캐시 무효화
             self.is_cache_valid = False
-            # 에러 로깅은 상위에서 처리하도록 함
-            pass
+            logger.warning('ContractPrice(pk=%s) 납부 계획 계산 실패: %s', self.pk, e)
 
     def calculate_uncontracted_payments(self):
         """미계약 상태에서 house_unit 기반으로 납부 계획을 계산하여 JSON 필드에 저장"""
@@ -303,8 +304,7 @@ class ContractPrice(models.Model):
                 self.is_cache_valid = False
                 return
 
-            # InstallmentPaymentOrder 직접 조회하여 납부 계획 계산
-            from payment.models import InstallmentPaymentOrder
+            # InstallmentPaymentOrder 직접 조회하여 납부 계획 계산 (상단 import 사용)
             from _utils.contract_price import get_payment_amount
 
             # 임시 계약 객체 생성 - get_payment_amount 함수용
@@ -338,7 +338,6 @@ class ContractPrice(models.Model):
             if not payment_amounts and self.house_unit.unit_type.name == '근린생활시설':
                 # 기본 납부회차: 잔금 100%
                 # 잔금(pay_sort='3')에 해당하는 pay_time 찾기
-                from payment.models import InstallmentPaymentOrder
                 try:
                     final_payment_order = InstallmentPaymentOrder.objects.get(
                         project=project,
@@ -358,14 +357,14 @@ class ContractPrice(models.Model):
             self.is_cache_valid = True
 
         except Exception as e:
-            # 계산 실패 시 캐시 무효화
             self.is_cache_valid = False
+            logger.warning('ContractPrice(pk=%s) 미계약 납부 계획 계산 실패: %s', self.pk, e)
 
     def get_payment_amount_by_time(self, pay_time):
         """납부순서별 납부 금액 조회"""
         if not self.is_cache_valid:
             self.calculate_and_cache_payments()
-            self.save()
+            self.save(update_fields=['payment_amounts', 'is_cache_valid', 'calculated'])
 
         return self.payment_amounts.get(str(pay_time), 0)
 
@@ -373,7 +372,10 @@ class ContractPrice(models.Model):
         """납부종류별 납부 금액 합계 조회 (동일 pay_sort의 모든 pay_time 합계)"""
         if not self.is_cache_valid:
             self.calculate_and_cache_payments()
-            self.save()
+            self.save(update_fields=['payment_amounts', 'is_cache_valid', 'calculated'])
+
+        if not self.contract_id:
+            return 0
 
         # pay_sort와 매칭되는 모든 pay_time의 금액 합계
         # 해당 계약의 프로젝트에서 pay_sort에 해당하는 모든 pay_time 조회
@@ -538,7 +540,11 @@ class ContractDocumentFile(models.Model):
 
     def save(self, *args, **kwargs):
         if self.file:
-            self.file_name = self.file.name.split('/')[-1]
+            original_name = getattr(self.file, '_name', None) or getattr(self.file, 'name', None)
+            if original_name:
+                self.file_name = os.path.basename(original_name)
+            else:
+                self.file_name = self.file.name.split('/')[-1]
             mime = magic.Magic(mime=True)
             file_pos = self.file.tell()
             self.file_type = mime.from_buffer(self.file.read(2048))
