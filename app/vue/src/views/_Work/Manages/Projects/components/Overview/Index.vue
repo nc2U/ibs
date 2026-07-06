@@ -79,7 +79,10 @@ const deleteProject = (slug: string) => {
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  if (iProject.value) await issueStore.fetchTrackerSummary(iProject.value?.pk)
+  if (iProject.value) {
+    await issueStore.fetchTrackerSummary(iProject.value?.pk)
+    await infStore.fetchNewsList({ project: iProject.value.slug })
+  }
   loading.value = false
 })
 </script>
