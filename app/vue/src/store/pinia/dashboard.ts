@@ -157,15 +157,32 @@ const DEFAULT_VISIBLE_WIDGETS = [
   'issue-tracker',
 ]
 
-export const useDashboard = defineStore('dashboard', () => {
-  // State
-  const layouts = ref<Record<Breakpoint, DashboardLayoutItem[]>>({
-    lg: [],
-    md: [],
-    sm: [],
-    xs: [],
-    xxs: [],
+// 기본 레이아웃 빌더 — 저장 상태가 없을 때 즉시 렌더링할 초기값 생성
+const buildDefaultLayouts = (): Record<Breakpoint, DashboardLayoutItem[]> => {
+  const result = {} as Record<Breakpoint, DashboardLayoutItem[]>
+  BREAKPOINTS.forEach(bp => {
+    result[bp] = DEFAULT_VISIBLE_WIDGETS.map(id => {
+      const widget = WIDGET_REGISTRY.find(w => w.id === id)!
+      return {
+        ...widget.defaultLayout,
+        i: id,
+        visible: true,
+        minW: widget.minW,
+        minH: widget.minH,
+      }
+    })
+    result[bp].sort((a, b) => {
+      const indexA = WIDGET_REGISTRY.findIndex(w => w.id === a.i)
+      const indexB = WIDGET_REGISTRY.findIndex(w => w.id === b.i)
+      return indexA - indexB
+    })
   })
+  return result
+}
+
+export const useDashboard = defineStore('dashboard', () => {
+  // State — layouts를 기본값으로 초기화해 첫 로그인 시에도 위젯이 즉시 표시되게 함
+  const layouts = ref<Record<Breakpoint, DashboardLayoutItem[]>>(buildDefaultLayouts())
   const visibleWidgets = ref<string[]>([...DEFAULT_VISIBLE_WIDGETS])
   const currentBreakpoint = ref<Breakpoint>('lg')
   const configPk = ref<number | null>(null)
@@ -292,24 +309,9 @@ export const useDashboard = defineStore('dashboard', () => {
 
   const resetToDefaults = (syncToDB = true) => {
     visibleWidgets.value = [...DEFAULT_VISIBLE_WIDGETS]
+    const defaultLayouts = buildDefaultLayouts()
     BREAKPOINTS.forEach(bp => {
-      layouts.value[bp] = DEFAULT_VISIBLE_WIDGETS.map(id => {
-        const widget = WIDGET_REGISTRY.find(w => w.id === id)!
-        return {
-          ...widget.defaultLayout,
-          i: id,
-          visible: true,
-          minW: widget.minW,
-          minH: widget.minH,
-        }
-      })
-
-      // WIDGET_REGISTRY 순서대로 정렬
-      layouts.value[bp].sort((a, b) => {
-        const indexA = WIDGET_REGISTRY.findIndex(w => w.id === a.i)
-        const indexB = WIDGET_REGISTRY.findIndex(w => w.id === b.i)
-        return indexA - indexB
-      })
+      layouts.value[bp] = defaultLayouts[bp]
     })
     saveDashboardState(syncToDB)
   }
