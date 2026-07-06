@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, markRaw, type Component } from 'vue'
+import { computed, onMounted, nextTick, markRaw, type Component } from 'vue'
 import { GridLayout, type LayoutItem } from 'grid-layout-plus'
 import { useDashboard, WIDGET_REGISTRY } from '@/store/pinia/dashboard.ts'
 import type { Breakpoint } from '@/store/types/dashboard.ts'
@@ -42,28 +42,18 @@ const widgetComponents: Record<string, Component> = {
   'meeting-minutes': markRaw(MeetingMinutesWidget),
 }
 
-// Computed layouts for grid-layout-plus
-const gridLayouts = computed({
-  get: () =>
-    dashboardStore.activeLayouts.map(l => ({
-      x: l.x,
-      y: l.y,
-      w: l.w,
-      h: l.h,
-      i: l.i,
-      minW: l.minW,
-      minH: l.minH,
-    })),
-  set: (val: LayoutItem[]) => {
-    dashboardStore.updateLayout(
-      val.map(item => ({
-        ...item,
-        i: String(item.i),
-        visible: true,
-      })),
-    )
-  },
-})
+// Computed layouts for grid-layout-plus (read-only — writes go through handleLayoutUpdated)
+const gridLayouts = computed(() =>
+  dashboardStore.activeLayouts.map(l => ({
+    x: l.x,
+    y: l.y,
+    w: l.w,
+    h: l.h,
+    i: l.i,
+    minW: l.minW,
+    minH: l.minH,
+  }))
+)
 
 const getWidgetComponent = (widgetId: string) => {
   return widgetComponents[widgetId]
@@ -79,11 +69,21 @@ const getWidgetIcon = (widgetId: string) => {
   return widget?.icon
 }
 
+// breakpoint 전환 중 자동 재배치로 인한 @layout-updated 를 무시하기 위한 플래그
+let isBreakpointChanging = false
+
 const handleBreakpointChange = (newBreakpoint: string) => {
+  isBreakpointChanging = true
   dashboardStore.setCurrentBreakpoint(newBreakpoint as Breakpoint)
+  // 라이브러리의 자동 재배치 이벤트가 처리된 후 플래그 해제
+  nextTick(() => {
+    isBreakpointChanging = false
+  })
 }
 
 const handleLayoutUpdated = (newLayout: LayoutItem[]) => {
+  // breakpoint 전환에 의한 자동 재배치는 저장하지 않음
+  if (isBreakpointChanging) return
   dashboardStore.updateLayout(
     newLayout.map(item => ({
       ...item,
@@ -101,7 +101,7 @@ onMounted(() => {
 <template>
   <div class="dashboard-grid">
     <GridLayout
-      v-model:layout="gridLayouts"
+      :layout="gridLayouts"
       :responsive="true"
       :breakpoints="breakpoints"
       :cols="cols"

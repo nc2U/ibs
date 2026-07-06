@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onBeforeMount } from 'vue'
+import { ref, computed, watch, onBeforeMount, onBeforeUnmount } from 'vue'
 import { useStore } from '@/store'
 import { useIbs } from '@/store/pinia/ibs'
 import WidgetWrapper from '../WidgetWrapper.vue'
@@ -64,15 +64,21 @@ const refreshWiseWord = async () => {
   }
 }
 
+let intervalId: ReturnType<typeof setInterval> | null = null
+
 onBeforeMount(async () => {
   getColor()
   await fetchWiseWordsList()
   if (wiseWordsList.value.length > 0) {
     wiseWord.value = wiseWordsList.value[getIndex()]
   }
-  setInterval(() => {
+  intervalId = setInterval(() => {
     refreshWiseWord()
   }, 30000)
+})
+
+onBeforeUnmount(() => {
+  if (intervalId !== null) clearInterval(intervalId)
 })
 </script>
 

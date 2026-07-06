@@ -71,41 +71,41 @@ const upcomingEvents = ref([
         </v-list-item>
       </v-list>
 
-      <v-btn variant="text" color="primary" size="small" class="mt-2" block>
+      <v-btn variant="text" color="primary" size="small" class="mt-2" block :to="{ name: '달력' }">
         전체 일정 보기
         <v-icon icon="mdi-chevron-right" size="small" />
       </v-btn>
-      </div>
-      </WidgetWrapper>
-      </template>
+    </div>
+  </WidgetWrapper>
+</template>
 
-      <style scoped>
-      .calendar-widget {
-      height: 100%;
-      }
+<style scoped>
+.calendar-widget {
+  height: 100%;
+}
 
-      .calendar-header {
-      background: rgba(var(--v-theme-on-surface), 0.05);
-      border-radius: 8px;
-      padding: 4px;
-      }
+.calendar-header {
+  background: rgba(var(--v-theme-on-surface), 0.05);
+  border-radius: 8px;
+  padding: 4px;
+}
 
-      .list-item {
-        background-color: #ffffff;
-        border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
-        transition: all 0.2s;
-      }
+.list-item {
+  background-color: #ffffff;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+  transition: all 0.2s;
+}
 
-      .list-item:hover {
-        background-color: rgba(var(--v-theme-on-surface), 0.04);
-      }
+.list-item:hover {
+  background-color: rgba(var(--v-theme-on-surface), 0.04);
+}
 
-      body.dark-theme .list-item {
-        background-color: rgba(255, 255, 255, 0.05);
-        border-color: transparent;
-      }
+body.dark-theme .list-item {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: transparent;
+}
 
-      body.dark-theme .list-item:hover {
-        background-color: rgba(255, 255, 255, 0.1);
-      }
-      </style>
+body.dark-theme .list-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+</style>
