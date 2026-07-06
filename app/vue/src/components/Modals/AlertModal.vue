@@ -1,15 +1,14 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
-import { btnLight } from '@/utils/cssMixins.ts'
 
 defineProps({ size: { type: String, default: '' } })
 
 const headMessage = ref('')
 const bodyMessage = ref('')
 const headIcon = ref('mdi-alert-circle')
-const headColor = ref('indigo-lighten-2')
+const headColor = ref('warning')
 const visible = ref(false)
-const callModal = (head?: string, body?: string, icon?: string, color = 'indigo-lighten-2') => {
+const callModal = (head?: string, body?: string, icon?: string, color = 'warning') => {
   if (head) headMessage.value = head
   if (body) bodyMessage.value = body
   if (icon) headIcon.value = icon
@@ -46,7 +45,7 @@ defineExpose({ callModal, close })
     </CModalBody>
     <CModalFooter>
       <slot name="footer">
-        <v-btn :color="btnLight" size="small" @click="() => (visible = false)" flat> 닫기</v-btn>
+        <v-btn color="light" size="small" @click="() => (visible = false)" flat> 닫기</v-btn>
       </slot>
     </CModalFooter>
   </CModal>

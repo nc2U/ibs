@@ -1,6 +1,5 @@
 <script lang="ts" setup>
 import { type PropType, ref } from 'vue'
-import { btnLight } from '@/utils/cssMixins.ts'
 
 defineProps({ size: { type: String as PropType<'sm' | 'lg' | 'xl'>, default: '' } })
 
@@ -31,7 +30,7 @@ defineExpose({ callModal, close })
       <CModalBody class="text-body"> Form here...</CModalBody>
       <CModalFooter>
         <v-btn color="primary" size="small">확인</v-btn>
-        <v-btn :color="btnLight" size="small" @click="() => (visible = false)" flat> 닫기</v-btn>
+        <v-btn color="light" size="small" @click="() => (visible = false)" flat> 닫기</v-btn>
       </CModalFooter>
     </slot>
   </CModal>
