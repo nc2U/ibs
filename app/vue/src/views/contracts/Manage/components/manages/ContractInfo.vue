@@ -455,7 +455,7 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
             v-model="noteText"
             density="compact"
             rows="3"
-            label="메모 입력"
+            label="계약자 관련 메모"
             variant="outlined"
             hide-details
             :disabled="isSavingNote"
@@ -464,20 +464,14 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
           <div class="text-right">
             <v-btn
               color="success"
-              size="x-small"
+              size="small"
               :disabled="isSavingNote"
               :loading="isSavingNote"
               @click="updateNote"
             >
               저장
             </v-btn>
-            <v-btn
-              color="light"
-              size="x-small"
-              :disabled="isSavingNote"
-              @click="cancelEditNote"
-              flat
-            >
+            <v-btn color="light" size="small" :disabled="isSavingNote" @click="cancelEditNote" flat>
               취소
             </v-btn>
           </div>

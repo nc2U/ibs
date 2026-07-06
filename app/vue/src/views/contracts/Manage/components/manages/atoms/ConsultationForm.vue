@@ -2,11 +2,14 @@
 import { ref } from 'vue'
 import type { ConsultationLog } from '@/store/types/contract'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
+import AlertModal from '@/components/Modals/AlertModal.vue'
 
 // Events
 const emit = defineEmits<{
   submit: [data: Partial<ConsultationLog>]
 }>()
+
+const refAlertModal = ref()
 
 // 폼 데이터
 const formData = ref<Partial<ConsultationLog>>({
@@ -26,7 +29,8 @@ const formData = ref<Partial<ConsultationLog>>({
 // 폼 제출
 const submitForm = () => {
   if (!(formData.value.title as string)?.trim()) {
-    alert('상담 제목을 입력해주세요.')
+    // alert('상담 제목을 입력해주세요.')
+    refAlertModal.value.callModal()
     return
   }
   emit('submit', formData.value as any)
@@ -123,4 +127,6 @@ const resetForm = () => {
       </CRow>
     </CCardBody>
   </CCard>
+
+  <AlertModal ref="refAlertModal">상담 제목을 입력해주세요.</AlertModal>
 </template>

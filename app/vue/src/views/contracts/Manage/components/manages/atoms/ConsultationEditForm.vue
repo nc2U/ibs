@@ -13,14 +13,10 @@ const emit = defineEmits<{
 }>()
 
 // 저장
-const save = () => {
-  emit('save', props.log)
-}
+const save = () => emit('save', props.log)
 
 // 취소
-const cancel = () => {
-  emit('cancel')
-}
+const cancel = () => emit('cancel')
 </script>
 
 <template>
@@ -98,8 +94,8 @@ const cancel = () => {
 
     <CRow class="mt-3">
       <CCol class="text-end">
-        <v-btn color="secondary" size="small" @click="cancel" class="me-2"> 취소 </v-btn>
         <v-btn color="success" size="small" @click="save">저장</v-btn>
+        <v-btn color="light" size="small" @click="cancel" class="me-2" flat> 취소 </v-btn>
       </CCol>
     </CRow>
   </div>

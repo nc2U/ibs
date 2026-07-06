@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import type { ConsultationLog } from '@/store/types/contract'
+import { timeFormat } from '@/utils/baseMixins.ts'
 
 // Props
 defineProps<{
@@ -26,13 +27,11 @@ defineProps<{
       </CCol>
     </CRow>
     <CRow class="mt-2">
-      <CCol :md="6">
+      <CCol :md="12" class="text-end">
         <small class="text-muted">
-          담당자: {{ (log.consultant as any)?.username || '미지정' }}
+          등록자 :: {{ (log.consultant as any)?.username || '미지정' }}
+          <span class="ml-2">{{ timeFormat(log.created) }}</span>
         </small>
-      </CCol>
-      <CCol :md="6" class="text-end">
-        <small class="text-muted">등록: {{ log.created }}</small>
       </CCol>
     </CRow>
   </div>

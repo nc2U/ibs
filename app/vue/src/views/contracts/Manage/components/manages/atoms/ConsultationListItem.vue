@@ -30,10 +30,14 @@ const toggleExpand = () => {
   }
 }
 
-// 수정 시작
-const startEdit = () => {
-  editingLog.value = { ...props.log }
-  isExpanded.value = true
+// 수정 토글
+const toggleEdit = () => {
+  if (isExpanded.value) {
+    cancelEdit()
+  } else {
+    editingLog.value = { ...props.log }
+    isExpanded.value = true
+  }
 }
 
 // 수정 취소
@@ -110,17 +114,17 @@ const getStatusColor = (status: string) => {
         {{ log.status_display }}
       </v-chip>
     </CTableDataCell>
-    <CTableDataCell class="text-center py-0">
+    <CTableDataCell class="text-end py-0">
       <v-btn
         size="x-small"
         icon="mdi-pencil"
         variant="text"
         color="success"
-        @click.stop="startEdit"
+        @click.stop="toggleEdit"
       />
       <v-btn
         size="x-small"
-        icon="mdi-delete"
+        icon="mdi-trash-can-outline"
         variant="text"
         color="grey"
         @click.stop="handleDelete"

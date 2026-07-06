@@ -7,6 +7,9 @@ import Pagination from '@/components/Pagination'
 import ConsultationForm from './atoms/ConsultationForm.vue'
 import ConsultationFilterChips from './atoms/ConsultationFilterChips.vue'
 import ConsultationListItem from './atoms/ConsultationListItem.vue'
+import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
+
+const refDeleteConfirm = ref()
 
 const route = useRoute()
 const contStore = useContract()
@@ -57,14 +60,22 @@ const handleEdit = async (log: ConsultationLog) => {
 }
 
 // 삭제
+const delPk = ref<number | null>(null)
 const handleDelete = async (pk: number) => {
+  delPk.value = pk
   if (!contractorId.value) return
-  if (!confirm('상담 내역을 삭제하시겠습니까?')) return
+  refDeleteConfirm.value.callModal()
+}
 
-  try {
-    await contStore.deleteConsultationLog(pk, contractorId.value)
-  } catch (error) {
-    console.error('삭제 실패:', error)
+const deleteLog = async () => {
+  if (delPk.value && contractorId.value) {
+    try {
+      await contStore.deleteConsultationLog(delPk.value, contractorId.value)
+    } catch (error) {
+      console.error('삭제 실패:', error)
+    }
+    delPk.value = null
+    refDeleteConfirm.value.close()
   }
 }
 
@@ -185,4 +196,14 @@ onMounted(() => {
       />
     </CCol>
   </CCardBody>
+
+  <ConfirmModal ref="refDeleteConfirm">
+    <template #icon>
+      <v-icon icon="mdi-trash-can-outline" size="small" color="danger" class="mr-2" />
+    </template>
+    <template #default>상담 내역을 삭제하시겠습니까?</template>
+    <template #footer>
+      <v-btn size="small" color="warning" @click="deleteLog">삭제</v-btn>
+    </template>
+  </ConfirmModal>
 </template>
