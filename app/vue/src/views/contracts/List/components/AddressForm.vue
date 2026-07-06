@@ -346,8 +346,8 @@ onBeforeUnmount(() => {
       </CTable>
     </CModalBody>
     <CModalFooter>
-      <v-btn :color="btnLight" size="small" @click="$emit('close')">닫기</v-btn>
       <v-btn type="submit" color="primary" size="small">확인</v-btn>
+      <v-btn :color="btnLight" size="small" @click="$emit('close')" flat>닫기</v-btn>
     </CModalFooter>
   </CForm>
 
