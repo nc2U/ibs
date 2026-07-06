@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useIssue } from '@/store/pinia/work_issue'
 import WidgetWrapper from '../WidgetWrapper.vue'
 
 defineProps<{
@@ -8,101 +9,261 @@ defineProps<{
   icon?: string
 }>()
 
-// Mock data
-const mockIssues = ref({
-  total: 45,
-  open: 12,
-  inProgress: 8,
-  resolved: 20,
-  closed: 5,
+const issueStore = useIssue()
+const isLoading = ref(false)
+
+// 최근 등록된 이슈 5개 추출 (전체 목록에서 최신순 정렬)
+const recentIssues = computed(() => {
+  return [...issueStore.allIssueList].sort((a, b) => b.pk - a.pk).slice(0, 5)
+})
+
+// 상태별 실시간 집계 계산
+const issueStats = computed(() => {
+  const list = issueStore.allIssueList
+  const stats = {
+    new: 0,
+    progress: 0,
+    resolved: 0,
+    closed: 0,
+  }
+
+  list.forEach(issue => {
+    const statusName = issue.status?.name || ''
+    if (statusName.includes('신규') || statusName.includes('준비') || statusName.includes('요청')) {
+      stats.new++
+    } else if (statusName.includes('진행')) {
+      stats.progress++
+    } else if (
+      statusName.includes('해결') ||
+      statusName.includes('검토') ||
+      statusName.includes('완료')
+    ) {
+      stats.resolved++
+    } else if (
+      statusName.includes('종료') ||
+      statusName.includes('보류') ||
+      statusName.includes('폐기')
+    ) {
+      stats.closed++
+    } else {
+      // 그 외 기본값 매핑
+      if (issue.status?.closed) {
+        stats.closed++
+      } else {
+        stats.progress++
+      }
+    }
+  })
+
+  return stats
 })
 
 const issueCategories = computed(() => [
-  { label: '신규', value: mockIssues.value.open, color: 'error' },
-  { label: '진행중', value: mockIssues.value.inProgress, color: 'warning' },
-  { label: '해결됨', value: mockIssues.value.resolved, color: 'success' },
-  { label: '종료', value: mockIssues.value.closed, color: 'grey' },
+  { label: '신규', value: issueStats.value.new, color: 'info', icon: 'mdi-alert-circle-outline' },
+  {
+    label: '진행중',
+    value: issueStats.value.progress,
+    color: 'primary',
+    icon: 'mdi-progress-clock',
+  },
+  {
+    label: '해결됨',
+    value: issueStats.value.resolved,
+    color: 'success',
+    icon: 'mdi-checkbox-marked-circle-outline',
+  },
+  {
+    label: '종료',
+    value: issueStats.value.closed,
+    color: 'grey-darken-1',
+    icon: 'mdi-close-circle-outline',
+  },
 ])
 
-const recentIssues = ref([
-  { id: 101, subject: '외벽 균열 보수 필요', priority: 'high', assignee: '김철수' },
-  { id: 102, subject: '전기 배선 점검', priority: 'medium', assignee: '이영희' },
-  { id: 103, subject: '자재 배송 지연', priority: 'low', assignee: '박민수' },
-])
-
-const priorityColor = (priority: string) => {
-  switch (priority) {
-    case 'high':
-      return 'error'
-    case 'medium':
-      return 'warning'
-    default:
-      return 'info'
+const fetchTrackerData = async () => {
+  try {
+    isLoading.value = true
+    // 프로젝트 전체 혹은 스코프 무관하게 전체 미완료/종료 이슈를 로드
+    // closed 파라미터를 빈 문자열이나 생략하여 모든 상태를 로드할 수 있도록 빈 값 설정
+    await issueStore.fetchAllIssueList('', '') // 모든 이슈 로드
+  } catch (error) {
+    console.error('이슈 트래커 데이터 로드 실패:', error)
+  } finally {
+    isLoading.value = false
   }
 }
+
+// 우선순위별 칩 컬러 매핑
+const getPriorityColor = (priorityName: string | undefined) => {
+  if (!priorityName) return 'grey'
+  if (priorityName.includes('낮음')) return 'blue-grey'
+  if (priorityName.includes('보통')) return 'blue'
+  if (priorityName.includes('높음')) return 'orange'
+  if (priorityName.includes('긴급')) return 'deep-orange'
+  if (priorityName.includes('즉시')) return 'red'
+  return 'success'
+}
+
+onMounted(() => {
+  fetchTrackerData()
+})
 </script>
 
 <template>
-  <WidgetWrapper :widget-id="widgetId" :title="title" :icon="icon" refreshable>
-    <div class="issue-tracker-widget">
-      <v-row dense class="mb-3">
-        <v-col v-for="cat in issueCategories" :key="cat.label" cols="3">
-          <div class="text-center">
-            <div class="text-h6 font-weight-bold" :class="`text-${cat.color}`">
-              {{ cat.value }}
-            </div>
-            <div class="text-caption text-medium-emphasis">{{ cat.label }}</div>
-          </div>
-        </v-col>
-      </v-row>
+  <WidgetWrapper
+    :widget-id="widgetId"
+    :title="title"
+    :icon="icon"
+    refreshable
+    @refresh="fetchTrackerData"
+  >
+    <div class="issue-tracker-widget d-flex flex-column h-100">
+      <!-- 로딩 바 -->
+      <div v-if="isLoading" class="d-flex justify-center align-center py-10 my-auto">
+        <v-progress-circular indeterminate color="primary" size="32" />
+      </div>
 
-      <v-divider class="mb-2" />
+      <template v-else>
+        <!-- 상단 카드 섹션: 상태별 집계 -->
+        <v-row dense align="start" class="mb-4" style="flex: 0 0 auto">
+          <v-col v-for="cat in issueCategories" :key="cat.label" cols="3" class="py-0">
+            <v-card variant="tonal" :color="cat.color" class="text-center py-2 rounded-lg">
+              <v-icon :icon="cat.icon" size="small" class="mb-1 opacity-70" />
+              <div class="text-h5 font-weight-bold tracking-tight">
+                {{ cat.value }}
+              </div>
+              <div class="text-caption font-weight-medium opacity-80 mt-n1">
+                {{ cat.label }}
+              </div>
+            </v-card>
+          </v-col>
+        </v-row>
 
-      <div class="text-caption text-medium-emphasis mb-2">최근 이슈</div>
+        <v-divider class="mb-3" />
 
-      <v-list density="compact" class="pa-0 bg-transparent">
-        <v-list-item
-          v-for="issue in recentIssues"
-          :key="issue.id"
-          lines="one"
-          class="mb-1 rounded-sm list-item"
+        <!-- 하단 섹션: 최근 이슈 요약 -->
+        <div class="d-flex align-center justify-space-between mb-2">
+          <span class="text-subtitle-2 font-weight-bold text-medium-emphasis">최근 업무 현황</span>
+          <v-btn variant="text" color="primary" size="small" class="px-1" :to="{ name: '업무' }">
+            전체 보기
+            <v-icon icon="mdi-chevron-right" />
+          </v-btn>
+        </div>
+
+        <div
+          v-if="recentIssues.length === 0"
+          class="d-flex flex-column align-center justify-center py-5 text-grey"
         >
-          <template #prepend>
-            <v-avatar :color="priorityColor(issue.priority)" size="8" />
-          </template>
-          <v-list-item-title class="text-body-2">
-            #{{ issue.id }} {{ issue.subject }}
-          </v-list-item-title>
-          <template #append>
-            <span class="text-caption text-medium-emphasis">{{ issue.assignee }}</span>
-          </template>
-        </v-list-item>
-      </v-list>
+          <v-icon icon="mdi-tray-blank" size="large" class="mb-1" />
+          <span class="text-caption">최근 생성된 이슈가 없습니다.</span>
+        </div>
+
+        <v-list v-else density="compact" class="pa-0 bg-transparent flex-grow-1 overflow-y-auto">
+          <v-list-item
+            v-for="issue in recentIssues"
+            :key="issue.pk"
+            class="mb-2 rounded-lg list-item pa-2 border-all"
+            variant="flat"
+            :to="{
+              name: '(업무) - 보기',
+              params: { projId: issue.project?.slug, issueId: issue.pk },
+            }"
+          >
+            <template #prepend>
+              <!-- 우선순위 마커 칩 -->
+              <v-chip
+                :color="getPriorityColor(issue.priority?.name)"
+                size="x-small"
+                variant="flat"
+                class="mr-2 font-weight-bold"
+              >
+                {{ issue.priority?.name || '보통' }}
+              </v-chip>
+            </template>
+
+            <v-list-item-title class="text-body-2 font-weight-medium pr-1 text-truncate">
+              <span class="text-grey font-weight-bold text-caption mr-1">#{{ issue.pk }}</span>
+              {{ issue.subject }}
+            </v-list-item-title>
+
+            <v-list-item-subtitle class="text-caption text-grey mt-1 d-flex align-center flex-wrap">
+              <v-chip size="x-small" variant="outlined" color="primary" class="mr-2 py-0">
+                {{ issue.tracker?.name }}
+              </v-chip>
+              <span class="text-truncate mr-2" style="max-width: 100px">{{
+                issue.project?.name
+              }}</span>
+              <span class="text-grey-lighten-1 mr-2">•</span>
+              <span class="text-truncate">작성: {{ issue.creator?.username }}</span>
+            </v-list-item-subtitle>
+
+            <template #append>
+              <!-- 담당자 정보 표시 -->
+              <v-tooltip
+                :text="
+                  issue.assigned_to ? `담당자: ${issue.assigned_to.username}` : '담당자 미지정'
+                "
+                location="top"
+              >
+                <template #activator="{ props }">
+                  <v-avatar
+                    v-bind="props"
+                    size="24"
+                    :color="issue.assigned_to ? 'primary' : 'grey-lighten-2'"
+                    class="text-caption font-weight-bold"
+                  >
+                    <span v-if="issue.assigned_to" class="text-white">
+                      {{ issue.assigned_to.username.substring(0, 1) }}
+                    </span>
+                    <v-icon
+                      v-else
+                      icon="mdi-account-question-outline"
+                      size="x-small"
+                      color="grey"
+                    />
+                  </v-avatar>
+                </template>
+              </v-tooltip>
+            </template>
+          </v-list-item>
+        </v-list>
+      </template>
     </div>
   </WidgetWrapper>
 </template>
 
 <style scoped>
 .issue-tracker-widget {
-  height: 100%;
+  min-height: 280px;
 }
 
 .list-item {
-  background-color: #ffffff;
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
-  transition: all 0.2s;
+  background-color: rgb(var(--v-theme-surface));
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+  cursor: pointer;
+}
+
+.border-all {
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.06) !important;
 }
 
 .list-item:hover {
-  background-color: rgba(var(--v-theme-on-surface), 0.04);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border-color: rgba(var(--v-theme-primary), 0.2) !important;
 }
 
-body.dark-theme .list-item {
-  background-color: rgba(255, 255, 255, 0.05);
-  border-color: transparent;
+.tracking-tight {
+  letter-spacing: -0.05em;
 }
 
-body.dark-theme .list-item:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+.opacity-70 {
+  opacity: 0.7;
+}
+
+.opacity-80 {
+  opacity: 0.8;
 }
 </style>
