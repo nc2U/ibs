@@ -132,8 +132,13 @@ const createRelatedIssue = async (payload: any) => {
 
 const deleteMeeting = async () => {
   if (meeting.value) {
-    await meetingStore.deleteMeeting(meeting.value.pk, route.params.projId as string)
-    await router.push({ name: route.params.projId ? '(회의)' : '회의' })
+    const projId = (route.params.projId as string) || meeting.value.project_desc?.slug
+    await meetingStore.deleteMeeting(meeting.value.pk, projId)
+    if (projId) {
+      await router.push({ name: '(회의)', params: { projId } })
+    } else {
+      await router.push({ name: '회의' })
+    }
   }
 }
 
@@ -144,23 +149,20 @@ const deleteFile = async (fileId: number) => {
 }
 
 const goList = () => {
-  if (route.params.projId) {
-    router.push({ name: '(회의)', params: { projId: route.params.projId } })
+  const projId = (route.params.projId as string) || meeting.value?.project_desc?.slug
+  if (projId) {
+    router.push({ name: '(회의)', params: { projId } })
   } else {
     router.push({ name: '회의' })
   }
 }
 
 const goEdit = () => {
-  if (route.params.projId) {
+  const projId = (route.params.projId as string) || meeting.value?.project_desc?.slug
+  if (projId && meeting.value) {
     router.push({
       name: '(회의) - 수정',
-      params: { projId: route.params.projId, meetingId: route.params.meetingId },
-    })
-  } else {
-    router.push({
-      name: '회의 - 수정',
-      params: { meetingId: route.params.meetingId },
+      params: { projId, meetingId: meeting.value.pk },
     })
   }
 }

@@ -60,11 +60,16 @@ const isWatcher = computed(() =>
 const watchControl = () => emit('watch-control')
 
 const copyIssue = () => {
-  const routeName = route.params.projId ? '(업무) - 추가' : '업무 - 추가'
-  router.push({
-    name: routeName,
-    query: { copy: props.issue.pk },
-  })
+  const projId = (route.params.projId as string) || props.issue.project?.slug
+  if (projId) {
+    router.push({
+      name: '(업무) - 추가',
+      params: { projId },
+      query: { copy: props.issue.pk },
+    })
+  } else {
+    router.push({ name: '업무' })
+  }
 }
 
 const fallbackCopy = (text: string) => {

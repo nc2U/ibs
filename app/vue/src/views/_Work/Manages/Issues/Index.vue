@@ -12,7 +12,6 @@ import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import Loading from '@/components/Loading/Index.vue'
 import IssueList from './components/IssueList.vue'
-import IssueForm from './components/IssueForm.vue'
 
 const cBody = ref()
 const comStore = useCompany()
@@ -32,35 +31,12 @@ const issueStore = useIssue()
 const issueList = computed(() => issueStore.issueList)
 const statusList = computed(() => issueStore.statusList)
 const trackerList = computed(() => issueStore.trackerList)
-const priorityList = computed(() => issueStore.priorityList)
 const getIssues = computed(() => issueStore.getIssues)
 
 const [route, router] = [useRoute(), useRouter()]
 
 provide('navMenu', navMenu)
 provide('query', route?.query)
-
-const onSubmit = (payload: any) => {
-  const { pk, ...getData } = payload
-  const form = new FormData()
-
-  for (const key in getData) {
-    if (key === 'watchers' || key === 'files')
-      getData[key]?.forEach((val: number | string) => form.append(key, JSON.stringify(val)))
-    else if (key === 'newFiles') {
-      getData[key].forEach((val: any) => {
-        form.append('files', val.file as string | Blob)
-        form.append('descriptions', val.description ?? '')
-      })
-    } else form.append(key, getData[key] === null ? '' : (getData[key] as string))
-  }
-
-  if (pk) issueStore.updateIssue(pk, form)
-  else {
-    issueStore.createIssue(form)
-    router.replace({ name: '업무' })
-  }
-}
 
 const listFilter = ref<IssueFilter>({ status__closed: '0' })
 const filterSubmit = (payload: IssueFilter) => {
@@ -92,8 +68,8 @@ onBeforeMount(async () => {
 
   <ContentBody ref="cBody" :nav-menu="navMenu" :query="route?.query">
     <template v-slot:default>
+      <!-- 전역 업무 인덱스는 항상 리스트 뷰만 노출 -->
       <IssueList
-        v-if="route.name === '업무'"
         :issue-list="issueList as Issue[]"
         :all-projects="allProjects"
         :status-list="statusList"
@@ -103,16 +79,6 @@ onBeforeMount(async () => {
         :get-versions="getVersions"
         @filter-submit="filterSubmit"
         @page-select="pageSelect"
-      />
-
-      <IssueForm
-        v-if="route.name === '업무 - 추가'"
-        :all-projects="allProjects"
-        :status-list="statusList"
-        :priority-list="priorityList"
-        :get-issues="getIssues"
-        @on-submit="onSubmit"
-        @close-form="router.push({ name: '업무' })"
       />
     </template>
 

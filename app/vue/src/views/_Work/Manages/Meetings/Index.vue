@@ -13,8 +13,6 @@ import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import MeetingList from './components/MeetingList.vue'
 import MeetingAside from './components/MeetingAside.vue'
-import MeetingDetail from './components/MeetingDetail.vue'
-import MeetingForm from './components/MeetingForm.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 
 const cBody = ref()
@@ -23,18 +21,13 @@ const company = computed<Company | null>(() => comStore.company)
 const comName = computed(() => company?.value?.name)
 
 const route = useRoute()
-const viewMode = computed(() => {
-  if (route.name === '회의 - 추가' || route.name === '회의 - 수정') return 'form'
-  if (route.name === '회의 - 보기') return 'detail'
-  return 'list'
-})
 
 const sideNavCAll = () => cBody.value.toggle()
 
 const navMenu = computed(() => (!myProjects.value.length ? navMenu1 : navMenu2))
 
 const { can, PERM } = usePerms()
-const canMeetingCreate = computed(() => can(PERM.MEETING_CREATE) && viewMode.value === 'list')
+const canMeetingCreate = computed(() => can(PERM.MEETING_CREATE))
 
 const workStore = useWork()
 const myProjects = computed(() => workStore.myProjects)
@@ -62,9 +55,7 @@ const loading = ref<boolean>(true)
 const initData = async () => {
   loading.value = true
   await workStore.fetchAllIssueProjectList()
-  if (viewMode.value === 'list') {
-    await meetingStore.fetchMeetingList({ page: page.value })
-  }
+  await meetingStore.fetchMeetingList({ page: page.value })
   await meetingStore.fetchCategoryList()
   loading.value = false
 }
@@ -107,9 +98,8 @@ watch(
         </CCol>
       </CRow>
 
-      <MeetingForm v-if="viewMode === 'form'" />
-      <MeetingDetail v-else-if="viewMode === 'detail'" />
-      <MeetingList v-else :meeting-list="meetingList" :page="page" @page-select="onPageSelect" />
+      <!-- 전역 회의 관리 목록은 항상 리스트만 표시 -->
+      <MeetingList :meeting-list="meetingList" :page="page" @page-select="onPageSelect" />
     </template>
 
     <template v-slot:aside>

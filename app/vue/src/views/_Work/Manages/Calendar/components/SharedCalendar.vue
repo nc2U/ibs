@@ -100,9 +100,14 @@ const handleEventClick = (info: any) => {
       params: { projId: project, issueId: pk },
     })
   } else if (type === 'meeting') {
-    const routeName = project ? '(회의) - 보기' : '회의 - 보기'
-    const params = project ? { projId: project, meetingId: pk } : { meetingId: pk }
-    router.push({ name: routeName, params: params })
+    if (project) {
+      router.push({
+        name: '(회의) - 보기',
+        params: { projId: project, meetingId: pk },
+      })
+    } else {
+      console.warn('소속 프로젝트 슬러그가 없어 회의록 상세 페이지로 이동할 수 없습니다.')
+    }
   }
 }
 

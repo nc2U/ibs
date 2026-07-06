@@ -30,10 +30,11 @@ watchEffect(() => {
   else document.removeEventListener('click', handleClickOutside)
 })
 
-const goDetail = (pk: number) => {
-  if (route.params.projId)
-    router.push({ name: '(회의) - 보기', params: { projId: route.params.projId, meetingId: pk } })
-  else router.push({ name: '회의 - 보기', params: { meetingId: pk } })
+const goDetail = (meeting: Meeting) => {
+  const projId = (route.params.projId as string) || meeting.project_desc?.slug
+  if (projId && meeting.pk) {
+    router.push({ name: '(회의) - 보기', params: { projId, meetingId: meeting.pk } })
+  }
 }
 
 const pageSelect = (page: number) => emit('page-select', page)
@@ -75,7 +76,7 @@ const pageSelect = (page: number) => emit('page-select', page)
       <CTableBody>
         <CTableRow
           v-for="meeting in meetingList"
-          @click="goDetail(meeting.pk)"
+          @click="goDetail(meeting)"
           @mouseover="selectedRow = meeting.pk"
           class="text-center table-row pointer"
           :key="meeting.pk"

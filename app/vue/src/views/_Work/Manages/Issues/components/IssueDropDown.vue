@@ -188,11 +188,16 @@ const issueLinkCopy = () => {
 
 // 복사 (일감 복사 생성으로 이동)
 const copyIssue = () => {
-  const routeName = route.params.projId ? '(업무) - 추가' : '업무 - 추가'
-  router.push({
-    name: routeName,
-    query: { copy: props.issue.pk },
-  })
+  const projId = (route.params.projId as string) || props.issue.project?.slug
+  if (projId) {
+    router.push({
+      name: '(업무) - 추가',
+      params: { projId },
+      query: { copy: props.issue.pk },
+    })
+  } else {
+    router.push({ name: '업무' })
+  }
 }
 
 // 업무 삭제

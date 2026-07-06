@@ -96,12 +96,9 @@ const callReply = (payload?: { id: number; user: string; content: string }) => {
 const goMeeting = () => {
   if (props.issue?.meeting_desc) {
     const meetingId = props.issue.meeting_desc.pk
-    const projId = props.issueProject?.slug
-    if (projId) {
-      router.push({ name: '(회의) - 보기', params: { projId, meetingId } })
-    } else {
-      router.push({ name: '회의 - 보기', params: { meetingId } })
-    }
+    const projId = props.issueProject?.slug || props.issue.project.slug
+    if (projId) router.push({ name: '(회의) - 보기', params: { projId, meetingId } })
+    else router.push({ name: '회의' })
   }
 }
 

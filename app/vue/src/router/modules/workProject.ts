@@ -169,20 +169,6 @@ const workProject = {
       path: 'meeting',
       name: '회의',
       component: () => import('@/views/_Work/Manages/Meetings/Index.vue'),
-      children: [
-        {
-          path: 'create',
-          name: '회의 - 추가',
-        },
-        {
-          path: ':meetingId',
-          name: '회의 - 보기',
-        },
-        {
-          path: ':meetingId/update',
-          name: '회의 - 수정',
-        },
-      ],
     },
     {
       path: 'activity',
@@ -193,32 +179,7 @@ const workProject = {
       path: 'issue',
       name: '업무',
       component: () => import('@/views/_Work/Manages/Issues/Index.vue'),
-      children: [
-        {
-          path: 'create',
-          name: '업무 - 추가',
-        },
-      ],
     },
-    // {
-    //   path: 'time_entry',
-    //   name: '소요시간',
-    //   component: () => import('@/views/_Work/Manages/SpentTime/Index.vue'),
-    //   children: [
-    //     {
-    //       path: 'create',
-    //       name: '소요시간 - 추가',
-    //     },
-    //     {
-    //       path: ':timeId/update',
-    //       name: '소요시간 - 편집',
-    //     },
-    //     // {
-    //     //   path: ':timeId/delete',
-    //     //   name: '소요시간 - 삭제',
-    //     // },
-    //   ],
-    // },
     {
       path: 'calendar',
       name: '달력',

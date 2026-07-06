@@ -109,14 +109,19 @@ const getIcon = (sort: string, progress: boolean) => {
 
           <span v-if="act.sort === '3'">
             <router-link
+              v-if="act.project?.slug"
               :to="{
-                name: act.project?.slug ? '(회의) - 보기' : '회의 - 보기',
+                name: '(회의) - 보기',
                 params: { projId: act.project?.slug, meetingId: act.meeting?.pk },
               }"
             >
               [회의록] #{{ act.meeting?.pk }} ({{ act.status_log || '등록' }})
               {{ act.meeting?.title }}
             </router-link>
+            <span v-else>
+              [회의록] #{{ act.meeting?.pk }} ({{ act.status_log || '등록' }})
+              {{ act.meeting?.title }}
+            </span>
 
             <div class="ml-5 pl-4 fst-italic">
               <div
