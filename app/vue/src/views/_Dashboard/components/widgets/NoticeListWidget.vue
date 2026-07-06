@@ -36,39 +36,48 @@ onBeforeMount(() => {
           <tr>
             <th class="text-left" style="width: 190px">프로젝트</th>
             <th class="text-left">제목</th>
-            <th class="text-right" style="width: 100px">날짜</th>
+            <th class="text-center" style="width: 100px">날짜</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="item in newsList.slice(0, 5)" :key="item.pk ?? 0">
-            <td class="truncate">
-              <router-link
-                v-if="item.project"
-                :to="{ name: '(개요)', params: { projId: item.project?.slug } }"
-                class="text-body-2"
-              >
-                {{ item.project?.name }}
-              </router-link>
-            </td>
-            <td class="truncate">
-              <router-link
-                :to="{
-                  name: '(공지) - 보기',
-                  params: { projId: item.project?.slug, newsId: item.pk },
-                }"
-                class="text-body-2"
-              >
-                {{ cutString(item.title, 40) }}
-              </router-link>
-              <CBadge v-if="item.is_new" color="warning" size="sm" class="ml-2">new</CBadge>
-              <CBadge v-if="item.comments?.length" color="warning" size="sm" class="ml-1">
-                +{{ item.comments.length }}
-              </CBadge>
-            </td>
-            <td class="text-right text-caption text-medium-emphasis truncate">
-              {{ timeFormat(item.created ?? '').substring(0, 10) }}
-            </td>
-          </tr>
+          <template v-for="item in newsList.slice(0, 5)" :key="item.pk ?? 0">
+            <tr :class="item.is_important ? 'accent' : ''">
+              <td class="truncate">
+                <router-link
+                  v-if="item.project"
+                  :to="{ name: '(개요)', params: { projId: item.project?.slug } }"
+                  class="text-body-2"
+                >
+                  {{ item.project?.name }}
+                </router-link>
+              </td>
+              <td class="truncate">
+                <v-icon
+                  v-if="item.is_important"
+                  icon="mdi-information"
+                  size="small"
+                  color="primary"
+                  class="mr-2"
+                />
+                <router-link
+                  :to="{
+                    name: '(공지) - 보기',
+                    params: { projId: item.project?.slug, newsId: item.pk },
+                  }"
+                  class="text-body-2"
+                >
+                  {{ cutString(item.title, 40) }}
+                </router-link>
+                <CBadge v-if="item.is_new" color="warning" size="sm" class="ml-2">new</CBadge>
+                <CBadge v-if="item.comments?.length" color="warning" size="sm" class="ml-1">
+                  +{{ item.comments.length }}
+                </CBadge>
+              </td>
+              <td class="text-right text-caption text-medium-emphasis truncate">
+                {{ timeFormat(item.created ?? '').substring(0, 10) }}
+              </td>
+            </tr>
+          </template>
           <tr v-if="!newsList.length">
             <td colspan="3" class="text-center text-medium-emphasis">공지사항이 없습니다.</td>
           </tr>
