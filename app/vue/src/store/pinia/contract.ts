@@ -321,6 +321,14 @@ export const useContract = defineStore('contract', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
+  const patchContractor = (pk: number, payload: any, project?: number) =>
+    api
+      .patch(`/contractor/${pk}/?project=${project || ''}`, payload)
+      .then(res => {
+        contractor.value = res.data
+      })
+      .catch(err => errorHandle(err.response.data))
+
   // state & getters
   const createContractFile = async (contractorId: number, file: File, contract: number) => {
     const formData = new FormData()
@@ -871,6 +879,7 @@ export const useContract = defineStore('contract', () => {
     fetchContractor,
     removeContractor,
     fetchContractorList,
+    patchContractor,
 
     createContractFile,
     updateContractFile,

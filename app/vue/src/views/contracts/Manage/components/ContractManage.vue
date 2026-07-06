@@ -18,7 +18,7 @@ const router = useRouter()
 
 const contStore = useContract()
 const addressList = computed(() => contStore.contAddressList)
-const currentAddress = computed(() => addressList.value.find(addr => addr.is_current) as any)
+const currentAddress = computed(() => addressList.value.find(addr => addr.is_current))
 const pastAddresses = computed(() => addressList.value.filter(addr => !addr.is_current))
 
 // 계약 정보가 있는지 확인
@@ -61,7 +61,7 @@ const getColSize = computed(() => {
 })
 
 // 목록으로 돌아가기
-const goBack = () => {
+const goToList = () => {
   if (props.fromPage) {
     router.push({
       name: '계약 등록 조회',
@@ -102,31 +102,31 @@ const goBack = () => {
     <!-- 탭 컨텐츠 영역 -->
     <CRow>
       <!-- 계약 내역 탭 -->
-      <CCol v-if="visibleTabs.contract" :xl="getColSize" :key="`contract-${selectedTabsCount}`">
+      <div v-if="visibleTabs.contract" :class="`col-12 col-xl-${getColSize}`">
         <ContractInfo
           :contract="contract"
           :contractor="contractor"
           :current-address="currentAddress"
           :past-addresses="pastAddresses"
         />
-      </CCol>
+      </div>
 
       <!-- 납부 내역 탭 -->
-      <CCol v-if="visibleTabs.payment" :xl="getColSize" :key="`payment-${selectedTabsCount}`">
+      <div v-if="visibleTabs.payment" :class="`col-12 col-xl-${getColSize}`">
         <PaymentInfo :contract="contract" />
-      </CCol>
+      </div>
 
       <!-- 기타 정보 탭 -->
-      <CCol v-if="visibleTabs.extra" :xl="getColSize" :key="`extra-${selectedTabsCount}`">
+      <div v-if="visibleTabs.extra" :class="`col-12 col-xl-${getColSize}`">
         <AdditionalInfo :contract="contract" />
-      </CCol>
+      </div>
     </CRow>
 
     <!-- 하단 액션 버튼 -->
     <CRow class="mt-4">
       <CCol>
         <div class="d-flex justify-content-between align-items-center">
-          <v-btn color="secondary" size="small" @click="goBack">
+          <v-btn color="light" size="small" @click="goToList">
             <v-icon icon="mdi-arrow-left" class="mr-1" />
             목록으로
           </v-btn>

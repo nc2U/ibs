@@ -43,6 +43,36 @@ const isUpdating = ref(false)
 const confirmModal = ref()
 const fileToDelete = ref<number | null>(null)
 
+// 메모 인라인 수정 관련
+const isEditingNote = ref(false)
+const noteText = ref('')
+const isSavingNote = ref(false)
+
+const enableEditNote = () => {
+  if (!write_contract.value) return // 권한 검사
+  noteText.value = props.contractor.note || ''
+  isEditingNote.value = true
+}
+
+const cancelEditNote = () => {
+  isEditingNote.value = false
+  noteText.value = ''
+}
+
+const updateNote = async () => {
+  if (!props.contractor?.pk) return
+  isSavingNote.value = true
+  try {
+    await contStore.patchContractor(props.contractor.pk, { note: noteText.value })
+    isEditingNote.value = false
+    emit('file-uploaded') // 부모 컴포넌트 데이터 갱신 유도 (동일한 갱신 흐름 재활용)
+  } catch (error) {
+    console.error('메모 수정 실패:', error)
+  } finally {
+    isSavingNote.value = false
+  }
+}
+
 // 파일 업로드 실행
 const uploadFile = async () => {
   if (!selectedFile.value || !props.contractor?.pk) return
@@ -406,8 +436,52 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
 
       <!-- 메모 -->
       <div>
-        <h6 class="mb-2">메모</h6>
-        <div class="text-grey">{{ contractor.note || '메모가 없습니다.' }}</div>
+        <h6 class="mb-2">
+          메모
+          <span v-if="write_contract" class="text-caption text-grey ml-1">(더블클릭하여 수정)</span>
+        </h6>
+
+        <div v-if="!isEditingNote" @dblclick="enableEditNote" class="pointer-cursor-container">
+          <div
+            class="text-muted p-2 border rounded border-dashed"
+            style="min-height: 48px; cursor: pointer"
+          >
+            {{ contractor.note || '메모가 없습니다.' }}
+          </div>
+        </div>
+
+        <div v-else class="mt-2">
+          <v-textarea
+            v-model="noteText"
+            density="compact"
+            rows="3"
+            label="메모 입력"
+            variant="outlined"
+            hide-details
+            :disabled="isSavingNote"
+            class="mb-2 bg-transparent"
+          />
+          <div class="text-right">
+            <v-btn
+              color="success"
+              size="x-small"
+              :disabled="isSavingNote"
+              :loading="isSavingNote"
+              @click="updateNote"
+            >
+              저장
+            </v-btn>
+            <v-btn
+              color="light"
+              size="x-small"
+              :disabled="isSavingNote"
+              @click="cancelEditNote"
+              flat
+            >
+              취소
+            </v-btn>
+          </div>
+        </div>
       </div>
     </CCardBody>
   </CCard>
