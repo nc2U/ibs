@@ -8,6 +8,7 @@ import type { Contract, Contractor } from '@/store/types/contract'
 import AddressForm from '@/views/contracts/List/components/AddressForm.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
+import { timeFormat } from '@/utils/baseMixins.ts'
 
 const props = defineProps({
   contract: { type: Object as PropType<Contract>, required: true },
@@ -128,9 +129,9 @@ const confirmDeleteFile = (filePk: number, fileName: string) => {
   fileToDelete.value = filePk
   confirmModal.value?.callModal(
     '계약서 파일 삭제',
-    `"${fileName}" 파일을 삭제하시겠습니까?\n삭제된 파일은 복구할 수 없습니다.`,
+    `"${fileName}" 파일을 삭제하시겠습니까?`,
     'mdi-delete-alert',
-    'red-darken-2',
+    'danger',
   )
 }
 
@@ -500,7 +501,7 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
               <small class="text-grey">
                 {{ (file.file_size / 1024).toFixed(2) }} KB
                 <span class="mx-1">|</span>
-                {{ file.created }}
+                {{ timeFormat(file.created) }}
                 <span class="mx-1">|</span>
                 {{ file.creator.username }}
               </small>
@@ -509,7 +510,7 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
               <v-icon
                 v-if="write_contract"
                 icon="mdi-pencil"
-                :color="editingFileId === file.pk ? 'success' : 'warning'"
+                :color="editingFileId === file.pk ? 'warning' : 'success'"
                 size="x-small"
                 class="ml-3 pointer"
                 @click="toggleEditMode(file.pk)"
@@ -528,7 +529,7 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
           <!-- 파일 수정 폼 -->
           <div v-if="editingFileId === file.pk" class="mt-2 p-3 border rounded bg-light">
             <div class="mb-2">
-              <strong class="text-warning">파일 수정</strong>
+              <strong class="text-primary">파일 수정</strong>
               <small class="text-grey ml-2">새 파일을 선택하여 기존 파일을 교체합니다.</small>
             </div>
             <v-file-input
@@ -539,7 +540,7 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
               :disabled="isUpdating"
               class="mb-2"
             />
-            <div class="d-flex gap-2">
+            <div class="text-right">
               <v-btn
                 color="success"
                 size="small"
@@ -550,11 +551,11 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
                 {{ isUpdating ? '수정 중...' : '파일 수정' }}
               </v-btn>
               <v-btn
-                color="secondary"
+                color="light"
                 size="small"
-                variant="outlined"
                 :disabled="isUpdating"
                 @click="toggleEditMode(file.pk)"
+                flat
               >
                 취소
               </v-btn>
@@ -604,7 +605,7 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
 
   <ConfirmModal ref="confirmModal">
     <template #footer>
-      <v-btn color="error" size="small" @click="deleteFile">
+      <v-btn color="warning" size="small" @click="deleteFile">
         <v-icon icon="mdi-delete" size="small" class="mr-1" />
         삭제
       </v-btn>

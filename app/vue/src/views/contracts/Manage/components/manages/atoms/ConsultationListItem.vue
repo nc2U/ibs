@@ -32,7 +32,7 @@ const toggleExpand = () => {
 
 // 수정 토글
 const toggleEdit = () => {
-  if (isExpanded.value) {
+  if (editingLog.value) {
     cancelEdit()
   } else {
     editingLog.value = { ...props.log }
