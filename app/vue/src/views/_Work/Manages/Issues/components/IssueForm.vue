@@ -121,10 +121,6 @@ const route = useRoute()
 const workStore = useWork()
 const issueProject = computed<IssueProject | null>(() => workStore.issueProject)
 
-watch(props, nVal => {
-  if (nVal.issueProject) form.value.project = nVal?.issueProject.slug as string
-})
-
 const watcherList = ref<{ pk: number; username: string }[]>([])
 
 // 프로젝트 전체 멤버 목록 (업무 관람자 대상용)
@@ -143,7 +139,7 @@ watch(
     watcherList.value = watcherList.value.filter(w => memberPks.includes(w.pk))
     form.value.watchers = form.value.watchers.filter(pk => memberPks.includes(pk))
   },
-  { deep: true }
+  { deep: true },
 )
 
 const memberList = computed(() => {
@@ -189,44 +185,10 @@ const filteredWatcherList = computed(() => {
 
 const issueStore = useIssue()
 
-// New ref to hold project data when selected in global context
-const selectedProjectData = ref<IssueProject | null>(null)
-
-// Watcher for form.project to fetch project-specific trackers in global context
-watch(
-  () => form.value.project,
-  async newProjectSlug => {
-    // Only execute this logic if issueProject prop is NOT provided (i.e., in global context)
-    if (!props.issueProject) {
-      if (newProjectSlug) {
-        // Fetch the specific project data. Assuming workStore.fetchIssueProject updates workStore.issueProject
-        await workStore.fetchIssueProject(newProjectSlug)
-        selectedProjectData.value = workStore.issueProject
-        // NEW: Fetch issues for the selected project
-        await issueStore.fetchAllIssueList(newProjectSlug)
-        await workStore.fetchProjectMembers(newProjectSlug)
-      } else {
-        // If project is unselected, clear selectedProjectData
-        selectedProjectData.value = null
-        // NEW: If project is unselected, fetch all issues again
-        await issueStore.fetchAllIssueList()
-        workStore.projectMembers = []
-      }
-    }
-  },
-  { immediate: true }, // Run immediately on component mount to handle initial state
-)
-
-// Modified trackers computed property to use selectedProjectData if available
 const trackers = computed(() => {
   if (props.issueProject?.trackers) {
-    // If issueProject prop is provided (project-specific context)
     return props.issueProject.trackers
-  } else if (selectedProjectData.value?.trackers) {
-    // If a project is selected in global context and its data is fetched
-    return selectedProjectData.value.trackers
   } else {
-    // Default to all trackers (initial global context or no project selected)
     return issueStore.trackerList
   }
 })
@@ -350,10 +312,8 @@ const createCategory = (payload: any) => issueStore.createCategory(payload)
 const createVersion = (payload: any) => workStore.createVersion(payload)
 
 onBeforeMount(async () => {
-  if (props.issueProject) {
-    form.value.project = props.issueProject.slug as string
-    await workStore.fetchProjectMembers(props.issueProject.slug)
-  }
+  const pId = route.params.projId as string | undefined
+  if (pId) await workStore.fetchProjectMembers(pId)
 
   const copyId = route.query.copy ? Number(route.query.copy) : null
   const copyIssueObj = copyId ? issueStore.allIssueList.find(i => i.pk === copyId) : null
@@ -405,6 +365,7 @@ onBeforeMount(async () => {
       }
     })
   } else {
+    if (pId) form.value.project = pId
     if (route.query.parent) {
       form.value.parent = Number(route.query.parent)
       form.value.tracker = Number(route.query.tracker)
