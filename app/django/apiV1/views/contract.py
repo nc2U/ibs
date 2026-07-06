@@ -110,6 +110,9 @@ class ContractViewSet(viewsets.ModelViewSet):
                        'serial_number', 'contractor__name')
     ordering = ['-created', '-pk']  # 기본 정렬 + pk로 안정적인 정렬 보장
 
+    def get_queryset(self):
+        return Contract.objects.select_related('project', 'order_group', 'unit_type')
+
     def filter_queryset(self, queryset):
         """정렬 안정성을 위해 pk를 보조 정렬 키로 항상 추가"""
         queryset = super().filter_queryset(queryset)
@@ -359,6 +362,24 @@ class ContractViewSet(viewsets.ModelViewSet):
 class ContractSetViewSet(ContractViewSet):
     serializer_class = ContractSetSerializer
 
+    def get_queryset(self):
+        """ContractSetSerializer에서 요구하는 모든 관계들을 미리 select/prefetch하여 N+1 쿼리 방지"""
+        return Contract.objects.select_related(
+            'project',
+            'order_group',
+            'unit_type',
+            'key_unit__houseunit__floor_type',
+            'contractprice',
+            'contractor__contractoraddress',
+            'contractor__contractorcontact',
+            'updator',
+        ).prefetch_related(
+            'contractor__contractor_files__creator',
+            'payments__accounting_entry__related_transaction',
+            'payments__installment_order',
+        )
+
+
     def perform_update(self, serializer):
         # from_page 정보를 임시로 저장
         from_page = self.request.data.get('from_page')
@@ -518,6 +539,9 @@ class SimpleContractorViewSet(ContractorViewSet):
     serializer_class = SimpleContractorSerializer
     pagination_class = PageNumberPaginationThreeThousand
 
+    def get_queryset(self):
+        return Contractor.objects.select_related('contract')
+
 
 class ContractFileViewSet(viewsets.ModelViewSet):
     """계약서 파일 업로드 관리"""
@@ -673,8 +697,8 @@ class SuccessionViewSet(viewsets.ModelViewSet):
         except ValueError:
             return Response({'error': 'highlight_id and project must be integers'}, status=400)
 
-        # 프로젝트별 전체 Succession 목록 가져오기
-        queryset = Succession.objects.filter(contract__project_id=project_id)
+        # 프로젝트별 전체 Succession 목록 및 필터 적용
+        queryset = self.filter_queryset(Succession.objects.filter(contract__project_id=project_id))
 
         # 해당 ID가 존재하는지 확인
         try:
@@ -686,9 +710,7 @@ class SuccessionViewSet(viewsets.ModelViewSet):
         limit = int(request.query_params.get('limit', 10))
 
         # Succession 모델의 정확한 ordering: ['-apply_date', '-trading_date', '-id']
-        # 프로젝트별 전체 목록에서 target_item보다 앞에 있는 항목들의 개수 계산
-        from django.db.models import Q
-
+        # 필터링된 목록에서 target_item보다 앞에 있는 항목들의 개수 계산
         items_before = queryset.filter(
             Q(apply_date__gt=target_item.apply_date) |
             Q(apply_date=target_item.apply_date, trading_date__gt=target_item.trading_date) |
@@ -729,8 +751,8 @@ class ContReleaseViewSet(viewsets.ModelViewSet):
         except ValueError:
             return Response({'error': 'highlight_id and project must be integers'}, status=400)
 
-        # 프로젝트별 전체 ContractorRelease 목록 가져오기
-        queryset = ContractorRelease.objects.filter(project_id=project_id)
+        # 프로젝트별 전체 ContractorRelease 목록 및 필터 적용
+        queryset = self.filter_queryset(ContractorRelease.objects.filter(project_id=project_id))
 
         # 해당 ID가 존재하는지 확인
         try:
@@ -742,7 +764,7 @@ class ContReleaseViewSet(viewsets.ModelViewSet):
         limit = int(request.query_params.get('limit', 10))
 
         # ContractorRelease 모델의 정확한 ordering: ['-request_date', '-created']
-        # 프로젝트별 전체 목록에서 target_item보다 앞에 있는 항목들의 개수 계산
+        # 필터링된 목록에서 target_item보다 앞에 있는 항목들의 개수 계산
         items_before = queryset.filter(
             Q(request_date__gt=target_item.request_date) |
             Q(request_date=target_item.request_date, created__gt=target_item.created)
@@ -877,6 +899,9 @@ def bulk_update_contract_prices(request):
             })
 
     except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.exception('bulk_update_contract_prices 오류 발생')
         return Response({
             'success': False,
             'message': '업데이트 중 서버에 오류가 발생했습니다. 관리자에게 문의하세요.'
@@ -990,6 +1015,9 @@ def contract_price_update_preview(request):
             'message': f'Project with ID {project_id} not found'
         }, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.exception('contract_price_update_preview 오류 발생')
         return Response({
             'success': False,
             'message': '내부 서버 오류가 발생했습니다.'  # "An internal server error occurred." in Korean

@@ -2,6 +2,7 @@ import logging
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
+from django.db.models import Sum
 from rest_framework import serializers
 
 from _utils.contract_price import get_contract_payment_plan
@@ -269,14 +270,14 @@ class ContractSetSerializer(serializers.ModelSerializer):
     def get_payments(self, instance):  # 납부 분담금/분양대금 리스트
         payments = self.get_payment_list(instance).select_related(
             'accounting_entry',
+            'accounting_entry__related_transaction',  # get_deal_date, get_bank_account N+1 방지
             'installment_order'
         )
         return ContractPaymentInContractSerializer(payments, many=True, read_only=True).data
 
     def get_total_paid(self, instance):
-        """총 납부액 계산 (ContractPayment.amount property 사용)"""
-        payments = self.get_payment_list(instance).select_related('accounting_entry')
-        return sum([payment.amount for payment in payments])
+        """총 납부액 계산 - DB 집계 쿼리로 처리 (Python 루프 합산 대비 성능 개선)"""
+        return instance.payments.aggregate(total=Sum('accounting_entry__amount'))['total'] or 0
 
     def get_last_paid_order(self, instance):  # 완납 회차 구하기
         """
@@ -291,8 +292,8 @@ class ContractSetSerializer(serializers.ModelSerializer):
         if not payment_plan:
             return None
 
-        # 2. 총 납부액 조회
-        total_paid = self.get_total_paid(instance)
+        # 2. 총 납부액 조회 (aggregate 단일 쿼리 — get_payments 쿼리와 별개로 가볍게 실행)
+        total_paid = instance.payments.aggregate(total=Sum('accounting_entry__amount'))['total'] or 0
         if total_paid <= 0:
             return None
 
@@ -313,7 +314,7 @@ class ContractSetSerializer(serializers.ModelSerializer):
                 # 납부액이 부족하면 중단
                 break
 
-        # 5. 결과를 JSON 직렬화 가능한 형태로 반환
+        # 4. 결과를 JSON 직렬화 가능한 형태로 반환
         if last_paid_installment:
             return SimpleInstallmentOrderSerializer(last_paid_installment).data
         return None
@@ -645,7 +646,8 @@ class SuccessionSerializer(serializers.ModelSerializer):
         buyer.note = f"{buyer.note + '\n' if buyer.note else ''}{validated_data.get('note')}"
         buyer.save()
 
-        buyer_addr = buyer.contractoraddress
+        # 주소 정보 업데이트 (없으면 생성)
+        buyer_addr, _ = ContractorAddress.objects.get_or_create(contractor=buyer)
         buyer_addr.id_zipcode = self.initial_data.get('id_zipcode')
         buyer_addr.id_address1 = self.initial_data.get('id_address1')
         buyer_addr.id_address2 = self.initial_data.get('id_address2')
@@ -656,7 +658,8 @@ class SuccessionSerializer(serializers.ModelSerializer):
         buyer_addr.dm_address3 = self.initial_data.get('dm_address3')
         buyer_addr.save()
 
-        buyer_contact = buyer.contractorcontact
+        # 연락처 정보 업데이트 (없으면 생성)
+        buyer_contact, _ = ContractorContact.objects.get_or_create(contractor=buyer)
         buyer_contact.cell_phone = self.initial_data.get('cell_phone')
         buyer_contact.home_phone = self.initial_data.get('home_phone')
         buyer_contact.other_phone = self.initial_data.get('other_phone')

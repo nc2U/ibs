@@ -516,8 +516,8 @@ class ContractorRegistrationService:
 
         contractor.save()
 
-        # 연락처 정보 수정
-        contact = ContractorContact.objects.get(contractor=contractor)
+        # 연락처 정보 수정 (없으면 생성)
+        contact, _ = ContractorContact.objects.get_or_create(contractor=contractor)
         contact.cell_phone = data.get('cell_phone', '')
         contact.home_phone = data.get('home_phone', '')
         contact.other_phone = data.get('other_phone', '')
@@ -901,8 +901,7 @@ class ContractUpdateService:
         instance.save()
 
         # 2. 유닛 재할당 (필요한 경우)
-        current_unit_pk = instance.key_unit_id
-        new_unit_pk = clean_id_value(data.get('key_unit'))
+        # new_unit_pk / current_unit_pk 는 Step 1에서 이미 계산된 값 재사용
         house_unit_pk = clean_id_value(data.get('houseunit'))
 
         if current_unit_pk != new_unit_pk:
