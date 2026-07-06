@@ -35,7 +35,7 @@ const editingDocId = ref<number | null>(null)
 
 // 파일 업로드 다이얼로그
 const fileUploadDialog = ref(false)
-const uploadingDocId = ref<number | null>(null)
+const uploadingDoc = ref<MergedDocument | null>(null)
 const selectedFile = ref<File | null>(null)
 
 // 로딩 상태
@@ -102,9 +102,9 @@ const loadData = async () => {
   }
 }
 
-// 자동 저장 함수
-const saveDocument = async (doc: MergedDocument) => {
-  if (!contractorId.value) return
+// 자동 저장 함수 - 반환값으로 생성되거나 확인된 pk를 보장함
+const saveDocument = async (doc: MergedDocument): Promise<number | undefined> => {
+  if (!contractorId.value) return undefined
 
   try {
     const payload: Partial<ContractDocument> = {
@@ -121,14 +121,17 @@ const saveDocument = async (doc: MergedDocument) => {
       await contStore.updateContractDocument(existingDoc.pk, payload)
       // 클라이언트 상태도 동기화
       doc.contract_doc_pk = existingDoc.pk
+      return existingDoc.pk
     } else {
       // 서버에 데이터가 없으면 신규 생성
       const newDoc = await contStore.createContractDocument(payload as ContractDocument)
       // 클라이언트 상태 업데이트
       doc.contract_doc_pk = newDoc.pk
+      return newDoc.pk
     }
   } catch (error) {
     console.error('서류 저장 실패:', error)
+    return undefined
   }
 }
 
@@ -145,18 +148,10 @@ const endEdit = async (doc: MergedDocument) => {
   editingDocId.value = null
 }
 
-// 파일 업로드 다이얼로그
+// 파일 업로드 다이얼로그 열기 (단순 UI 토글)
 const openFileUpload = (doc: MergedDocument) => {
-  if (!doc.contract_doc_pk) {
-    // 서류 기록이 없으면 먼저 생성
-    saveDocument(doc).then(() => {
-      uploadingDocId.value = doc.contract_doc_pk!
-      fileUploadDialog.value = true
-    })
-  } else {
-    uploadingDocId.value = doc.contract_doc_pk
-    fileUploadDialog.value = true
-  }
+  uploadingDoc.value = doc
+  fileUploadDialog.value = true
 }
 
 const onFileSelect = (event: Event) => {
@@ -167,19 +162,33 @@ const onFileSelect = (event: Event) => {
 }
 
 const uploadFile = async () => {
-  if (!selectedFile.value || !uploadingDocId.value || !contractorId.value) return
+  if (!selectedFile.value || !uploadingDoc.value || !contractorId.value) return
 
   try {
-    await contStore.uploadDocumentFile(uploadingDocId.value, selectedFile.value, contractorId.value)
-    closeFileUpload()
+    isLoading.value = true
+    let docPk: number | undefined = uploadingDoc.value.contract_doc_pk
+
+    // 서류 제출 기록이 없는 경우 먼저 생성
+    if (!docPk) {
+      docPk = await saveDocument(uploadingDoc.value)
+    }
+
+    if (docPk) {
+      await contStore.uploadDocumentFile(docPk, selectedFile.value, contractorId.value)
+      closeFileUpload()
+    } else {
+      console.error('서류 레코드 생성 실패로 파일을 업로드할 수 없습니다.')
+    }
   } catch (error) {
     console.error('파일 업로드 실패:', error)
+  } finally {
+    isLoading.value = false
   }
 }
 
 const closeFileUpload = () => {
   fileUploadDialog.value = false
-  uploadingDocId.value = null
+  uploadingDoc.value = null
   selectedFile.value = null
 }
 
@@ -381,16 +390,21 @@ onMounted(() => {
 
   <!-- 파일 업로드 다이얼로그 -->
   <v-dialog v-model="fileUploadDialog" max-width="500">
-    <v-card>
-      <v-card-title>파일 업로드</v-card-title>
+    <v-card class="bg-more-light">
+      <v-card-title class="text-muted">
+        <v-icon icon="mdi-paperclip" size="sm" class="me-1" />
+        파일 업로드
+      </v-card-title>
       <v-card-text>
         <CFormInput type="file" @change="onFileSelect" />
-        <div v-if="selectedFile" class="mt-2">선택된 파일: {{ (selectedFile as File)?.name }}</div>
+        <div v-if="selectedFile" class="mt-2 text-muted">
+          선택된 파일 : {{ (selectedFile as File)?.name }}
+        </div>
       </v-card-text>
       <v-card-actions>
         <v-spacer />
-        <v-btn color="grey" @click="closeFileUpload">취소</v-btn>
         <v-btn color="primary" @click="uploadFile" :disabled="!selectedFile">업로드</v-btn>
+        <v-btn color="grey" @click="closeFileUpload">취소</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
