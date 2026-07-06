@@ -35,7 +35,7 @@ const emit = defineEmits(['file-uploaded'])
 const selectedFile = ref<File | null>(null)
 const isUploading = ref(false)
 
-// 파일 수정 관련
+// 파일 변경 관련
 const editingFileId = ref<number | null>(null)
 const editFile = ref<File | null>(null)
 const isUpdating = ref(false)
@@ -94,7 +94,7 @@ const uploadFile = async () => {
   }
 }
 
-// 파일 수정 모드 토글
+// 파일 변경 모드 토글
 const toggleEditMode = (filePk: number) => {
   if (editingFileId.value === filePk) {
     // 이미 수정 모드인 경우 취소
@@ -107,7 +107,7 @@ const toggleEditMode = (filePk: number) => {
   }
 }
 
-// 파일 수정 실행
+// 파일 변경 실행
 const updateFile = async (filePk: number) => {
   if (!editFile.value) return
 
@@ -118,7 +118,7 @@ const updateFile = async (filePk: number) => {
     editFile.value = null
     emit('file-uploaded') // 부모 컴포넌트에 파일 변경 알림
   } catch (error) {
-    console.error('파일 수정 실패:', error)
+    console.error('파일 변경 실패:', error)
   } finally {
     isUpdating.value = false
   }
@@ -526,10 +526,10 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
             </div>
           </div>
 
-          <!-- 파일 수정 폼 -->
-          <div v-if="editingFileId === file.pk" class="mt-2 p-3 border rounded bg-light">
+          <!-- 파일 변경 폼 -->
+          <div v-if="editingFileId === file.pk" class="mt-2 p-3 border rounded bg-more-light">
             <div class="mb-2">
-              <strong class="text-primary">파일 수정</strong>
+              <strong class="text-primary">파일 변경</strong>
               <small class="text-grey ml-2">새 파일을 선택하여 기존 파일을 교체합니다.</small>
             </div>
             <v-file-input
@@ -548,7 +548,7 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
                 :loading="isUpdating"
                 @click="updateFile(file.pk)"
               >
-                {{ isUpdating ? '수정 중...' : '파일 수정' }}
+                {{ isUpdating ? '변경 중...' : '파일변경' }}
               </v-btn>
               <v-btn
                 color="light"
