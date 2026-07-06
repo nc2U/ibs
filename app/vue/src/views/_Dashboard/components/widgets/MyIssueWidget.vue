@@ -151,7 +151,7 @@ onMounted(() => {
                   {{ issue.priority?.name }}
                 </v-chip>
               </td>
-              <td class="text-center text-no-wrap">
+              <td class="text-center text-medium-emphasis text-no-wrap">
                 {{ issue.due_date || '-' }}
               </td>
             </tr>

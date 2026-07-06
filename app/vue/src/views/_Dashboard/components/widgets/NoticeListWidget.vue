@@ -73,7 +73,7 @@ onBeforeMount(() => {
                   +{{ item.comments.length }}
                 </CBadge>
               </td>
-              <td class="text-right text-caption text-medium-emphasis truncate">
+              <td class="text-right text-medium-emphasis truncate">
                 {{ timeFormat(item.created ?? '').substring(0, 10) }}
               </td>
             </tr>
