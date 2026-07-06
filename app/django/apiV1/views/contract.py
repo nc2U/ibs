@@ -1,6 +1,6 @@
 from django.core.cache import cache
 from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import Count, Sum, Q
+from django.db.models import Count, Sum, Q, Prefetch
 from django.shortcuts import get_object_or_404
 from django_filters import ChoiceFilter, ModelChoiceFilter, DateFilter, BooleanFilter
 from django_filters.rest_framework import FilterSet
@@ -19,6 +19,7 @@ from contract.models import OrderGroup, DocumentType, RequiredDocument, Contract
     ContractorConsultationLogs, Succession, ContractorRelease
 from contract.services import ContractPriceBulkUpdateService
 from items.models import BuildingUnit, UnitType
+from payment.models import ContractPayment
 from project.models import Project
 from ..pagination import PageNumberPaginationThreeThousand, PageNumberPaginationFifteen, PageNumberPaginationFifty
 from ..serializers.contract import OrderGroupSerializer, DocumentTypeSerializer, RequiredDocumentSerializer, \
@@ -364,21 +365,23 @@ class ContractSetViewSet(ContractViewSet):
 
     def get_queryset(self):
         """ContractSetSerializer에서 요구하는 모든 관계들을 미리 select/prefetch하여 N+1 쿼리 방지"""
+
         return Contract.objects.select_related(
             'project',
             'order_group',
             'unit_type',
             'key_unit__houseunit__floor_type',
             'contractprice',
-            'contractor__contractoraddress',
             'contractor__contractorcontact',
             'updator',
         ).prefetch_related(
+            'contractor__addresses',  # contractoraddress property N+1 방지
             'contractor__contractor_files__creator',
-            'payments__accounting_entry__related_transaction',
-            'payments__installment_order',
+            Prefetch(
+                'payments',
+                queryset=ContractPayment.objects.select_related('accounting_entry', 'installment_order')
+            )
         )
-
 
     def perform_update(self, serializer):
         # from_page 정보를 임시로 저장

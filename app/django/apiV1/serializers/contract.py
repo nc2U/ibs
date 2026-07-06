@@ -270,7 +270,6 @@ class ContractSetSerializer(serializers.ModelSerializer):
     def get_payments(self, instance):  # 납부 분담금/분양대금 리스트
         payments = self.get_payment_list(instance).select_related(
             'accounting_entry',
-            'accounting_entry__related_transaction',  # get_deal_date, get_bank_account N+1 방지
             'installment_order'
         )
         return ContractPaymentInContractSerializer(payments, many=True, read_only=True).data
