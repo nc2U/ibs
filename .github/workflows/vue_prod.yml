@@ -18,6 +18,11 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    
     steps:
       # 레파지터리 체크 아웃
       - name: Check out source code
