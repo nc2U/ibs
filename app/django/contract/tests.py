@@ -1,11 +1,13 @@
-from django.test import TestCase
 from django.contrib.auth import get_user_model
-from django.utils import timezone
-from project.models import Project
+from django.test import TestCase
+
+from company.models import Company
+from contract.models import OrderGroup, Contract, ContractPrice
+from contract.services import ContractPriceUpdateService
 from items.models import UnitType, KeyUnit, HouseUnit
-from contract.models import OrderGroup, Contract, ContractPrice, Contractor
-from contract.services import ContractPriceUpdateService, ContractorReleaseService
 from payment.models import InstallmentPaymentOrder
+from project.models import Project
+from work.models.project import IssueProject
 
 User = get_user_model()
 
@@ -14,10 +16,9 @@ class ContractAppTests(TestCase):
     def setUp(self):
         # 1. 테스트 기본 데이터 생성
         self.user = User.objects.create_user(username='testadmin', password='password123')
-        
+
         # 1-1. Project 종속성(Company, IssueProject) 생성
-        from company.models import Company
-        from work.models.project import IssueProject
+
         self.company = Company.objects.create(name='Test Company')
         self.issue_project = IssueProject.objects.create(
             company=self.company,
@@ -25,7 +26,7 @@ class ContractAppTests(TestCase):
             slug='test-issue-project',
             creator=self.user
         )
-        
+
         # 1-2. Project 필수 필드 채워 생성
         self.project = Project.objects.create(
             issue_project=self.issue_project,
@@ -37,7 +38,7 @@ class ContractAppTests(TestCase):
             construction_start_date='2026-06-01',
             construction_period_months=24
         )
-        
+
         # 2. 차수(OrderGroup) 생성
         self.order_group = OrderGroup.objects.create(
             project=self.project,
@@ -46,7 +47,7 @@ class ContractAppTests(TestCase):
             name='1차 일반분양',
             is_default_for_uncontracted=True
         )
-        
+
         # 3. 타입(UnitType) 생성
         self.unit_type = UnitType.objects.create(
             project=self.project,
@@ -56,7 +57,7 @@ class ContractAppTests(TestCase):
             average_price=300000000,
             num_unit=100
         )
-        
+
         # 4. 키유닛, 동(BuildingUnit) 및 하우스유닛 생성
         self.key_unit = KeyUnit.objects.create(
             project=self.project,
@@ -77,7 +78,7 @@ class ContractAppTests(TestCase):
             bldg_line=1,
             floor_no=1
         )
-        
+
         # 5. 분할 납부 일정 생성 (계약금 10%, 중도금 60%, 잔금 30%)
         # 계약금 (pay_sort='1')
         self.pay_order_down = InstallmentPaymentOrder.objects.create(
@@ -123,12 +124,12 @@ class ContractAppTests(TestCase):
 
         # 3. DB에 올바르게 저장되었고 캐시 유효성(is_cache_valid)이 설정되었는지 확인
         self.assertTrue(contract_price.is_cache_valid)
-        
+
         # 4. JSON 필드(payment_amounts)에 회차별 금액(계약금 10% = 3천만원, 잔금 90% = 2억 7천만원)이 저장되었는지 확인
         # JSON 키는 문자열 타입 ("1", "10")
         self.assertEqual(contract_price.payment_amounts.get('1'), 30000000)
         self.assertEqual(contract_price.payment_amounts.get('10'), 270000000)
-        
+
         # 5. Helper 메소드 작동 검증
         self.assertEqual(contract_price.get_payment_amount_by_time(1), 30000000)
         self.assertEqual(contract_price.get_payment_amount_by_sort('1'), 30000000)
@@ -161,7 +162,7 @@ class ContractAppTests(TestCase):
 
         # 서비스 레이어 실행
         contract_price, created = ContractPriceUpdateService.update_single_contract_price(contract)
-        
+
         self.assertTrue(created)
         # UnitType의 average_price(3억) 기준으로 임시 생성 검증
         self.assertEqual(contract_price.price, 300000000)
