@@ -90,7 +90,7 @@ export const WIDGET_REGISTRY: WidgetConfig[] = [
     id: 'contract-status',
     type: 'contract-status',
     title: 'Contract Status',
-    titleKo: '프로젝트별 계약 현황',
+    titleKo: '현장별 계약 현황',
     icon: 'mdi-file-document-outline',
     defaultLayout: { x: 6, y: 15, w: 6, h: 4 },
     minW: 4,
