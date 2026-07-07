@@ -53,11 +53,12 @@ const copyRole = (role: Role) => {
         <CTableDataCell class="text-center"> {{ role.user_visible }}</CTableDataCell>
         <CTableDataCell class="text-end">
           <v-btn
-            color="info"
+            color="light"
             size="x-small"
             class="me-1"
             :disabled="!workManager"
             @click="copyRole(role)"
+            flat
           >
             복사
           </v-btn>
