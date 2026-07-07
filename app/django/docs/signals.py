@@ -1,7 +1,8 @@
-from django.db.models.signals import pre_save, post_save, post_delete
+from django.db.models.signals import pre_save, post_save, post_delete, pre_delete
 from django.dispatch import receiver
 
 from _utils.slack_notifications import send_slack_notification
+from work.models.logging import ActivityLogEntry
 from .models import LawsuitCase, Document
 
 
@@ -85,3 +86,17 @@ def notify_lawsuitcase_delete(sender, instance, **kwargs):
 def notify_document_delete(sender, instance, **kwargs):
     """Document 삭제 시 Slack 알림"""
     send_slack_notification(instance, "삭제", getattr(instance, 'creator', None))
+
+
+@receiver(post_save, sender=Document, dispatch_uid="document_activity_log_changes")
+def document_log_changes(sender, instance, created, **kwargs):
+    """Document 생성 시 ActivityLogEntry 생성"""
+    if created and instance.issue_project and instance.issue_project.status == '1':
+        ActivityLogEntry.objects.create(sort='5', project=instance.issue_project,
+                                        document=instance, creator=instance.creator)
+
+
+@receiver(pre_delete, sender=Document, dispatch_uid="document_activity_log_delete")
+def document_log_delete(sender, instance, **kwargs):
+    """Document 삭제 전 ActivityLogEntry 제거"""
+    ActivityLogEntry.objects.filter(document=instance).delete()
