@@ -48,9 +48,9 @@ const copyRole = (role: Role) => {
           <CIcon v-if="role.assignable" name="cil-check" class="text-success" />
         </CTableDataCell>
         <CTableDataCell class="text-center">
-          {{ role.issue_visible }}
+          {{ role.issue_visible_desc }}
         </CTableDataCell>
-        <CTableDataCell class="text-center"> {{ role.user_visible }}</CTableDataCell>
+        <CTableDataCell class="text-center"> {{ role.user_visible_desc }}</CTableDataCell>
         <CTableDataCell class="text-end">
           <v-btn
             color="light"

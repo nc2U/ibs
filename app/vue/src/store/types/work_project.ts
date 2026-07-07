@@ -102,7 +102,9 @@ export interface Role {
   name: string
   assignable: boolean
   issue_visible: 'ALL' | 'PUB' | 'PRI' | 'NOP'
+  issue_visible_desc: string
   user_visible: 'ALL' | 'PRJ' | 'NOP'
+  user_visible_desc: string
   permissions: number[]
   order: number
   creator: number

@@ -301,10 +301,13 @@ class ModuleSerializer(serializers.ModelSerializer):
 
 
 class RoleSerializer(serializers.ModelSerializer):
+    issue_visible_desc = serializers.CharField(source='get_issue_visible_display', read_only=True)
+    user_visible_desc = serializers.CharField(source='get_user_visible_display', read_only=True)
+
     class Meta:
         model = Role
-        fields = ('pk', 'name', 'assignable', 'issue_visible', 'user_visible',
-                  'permissions', 'order', 'creator', 'created', 'updated')
+        fields = ('pk', 'name', 'assignable', 'issue_visible', 'issue_visible_desc', 'user_visible',
+                  'user_visible_desc', 'permissions', 'order', 'creator', 'created', 'updated')
 
 
 class PermissionSerializer(serializers.ModelSerializer):
