@@ -46,7 +46,7 @@ const deleteObject = (bankTransactionId: number) => {
   <CTableRow class="text-center" :color="payment.pk.toString() === paymentId ? TableSecondary : ''">
     <CTableDataCell>{{ payment.deal_date }}</CTableDataCell>
     <CTableDataCell>
-      {{ payment.installment_order ? payment.installment_order.__str__ : '-' }}
+      {{ payment.installment_order ? payment.installment_order.str_display : '-' }}
     </CTableDataCell>
     <CTableDataCell class="text-right">
       <router-link to="" @click="showDetail">

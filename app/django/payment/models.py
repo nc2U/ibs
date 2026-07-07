@@ -1,8 +1,12 @@
+import logging
+
 from django.apps import apps
 from django.core.exceptions import ValidationError
 from django.db import models
 
 from items.models import UnitType
+
+logger = logging.getLogger(__name__)
 
 
 class InstallmentPaymentOrder(models.Model):  # 분할 납부 차수 등록
@@ -23,7 +27,7 @@ class InstallmentPaymentOrder(models.Model):  # 분할 납부 차수 등록
     pay_ratio = models.DecimalField('회당 납부비율(%)', max_digits=5, decimal_places=2, null=True, blank=True,
                                     help_text='''분양가 대비 납부비율, 계약금 항목인 경우 Downpayment 
                                     테이블 데이터 우선, 잔금 항목인 경우 분양가와 비교 차액 데이터 우선''')
-    pay_due_date = models.DateField('냡부 약정일', null=True, blank=True, help_text="특정일자를 납부기한으로 지정할 경우")
+    pay_due_date = models.DateField('납부 약정일', null=True, blank=True, help_text="특정일자를 납부기한으로 지정할 경우")
     days_since_prev = models.PositiveSmallIntegerField('전회 기준 경과일수', null=True, blank=True,
                                                        help_text="전 회차(예: 계약일)로부터 __일 이내 형식으로 납부기한을 지정할 경우 해당 일수")
     is_prep_discount = models.BooleanField('선납할인 적용 여부', default=False)
@@ -57,8 +61,15 @@ class InstallmentPaymentOrder(models.Model):  # 분할 납부 차수 등록
     def __str__(self):
         return f'[{self.get_pay_sort_display()}] - {self.pay_name}'
 
+    def clean(self):
+        super().clean()
+        if self.is_prep_discount and self.prep_discount_ratio is None:
+            raise ValidationError({'prep_discount_ratio': '선납할인율을 입력해야 합니다.'})
+        if self.is_late_penalty and self.late_penalty_ratio is None:
+            raise ValidationError({'late_penalty_ratio': '연체가산율을 입력해야 합니다.'})
+
     class Meta:
-        ordering = ['-project', 'pay_code', 'pay_time']
+        ordering = ['project', 'pay_code', 'pay_time']
         verbose_name = '01. 납입회차 관리'
         verbose_name_plural = '01. 납입회차 관리'
 
@@ -74,7 +85,7 @@ class SalesPriceByGT(models.Model):  # 차수별 타입별 분양가격
     price = models.PositiveIntegerField('기준공급가')
 
     def __str__(self):
-        return f'{self.price}'
+        return f'{self.order_group} / {self.unit_type} / {self.unit_floor_type} - {self.price:,}원'
 
     class Meta:
         ordering = ('order_group', 'unit_type', 'unit_floor_type', 'project')
@@ -108,7 +119,7 @@ class DownPayment(models.Model):
                                                  help_text='동호 미지정 계약 등 차수 및 타입별 각 계약금 회차 고정 납부 계약금. 미지정 시 공급가격 * 회차별 납부비율 적용')
 
     def __str__(self):
-        return f'{self.payment_amount}'
+        return f'{self.order_group} / {self.unit_type} - {self.payment_amount:,}원'
 
     class Meta:
         ordering = ('id',)
@@ -163,29 +174,6 @@ class ContractPaymentQuerySet(models.QuerySet):
         return self.filter(
             installment_order__is_late_penalty=True
         )
-
-
-class ContractPaymentManager(models.Manager):
-    """ContractPayment 전용 Manager"""
-
-    def get_queryset(self):
-        return ContractPaymentQuerySet(self.model, using=self._db)
-
-    def valid_payments(self):
-        """유효한 납부 내역만 조회 (기본 사용 권장)"""
-        return self.get_queryset().valid_payments()
-
-    def mismatched_payments(self):
-        """계정 불일치 납부 내역 조회 (감사/모니터링용)"""
-        return self.get_queryset().mismatched_payments()
-
-    def for_contract(self, contract):
-        """특정 계약의 납부 내역"""
-        return self.get_queryset().for_contract(contract)
-
-    def for_installment(self, installment_order):
-        """특정 회차의 납부 내역"""
-        return self.get_queryset().for_installment(installment_order)
 
 
 class ContractPayment(models.Model):
@@ -265,7 +253,7 @@ class ContractPayment(models.Model):
 
     # 계정 불일치 플래그
     is_payment_mismatch = models.BooleanField(default=False, verbose_name='결제계정 불일치',
-                                              help_text='연결된 회계분개의 is_payment=False인 경우 True로 표시')
+                                               help_text='연결된 회계분개의 is_payment=False인 경우 True로 표시')
 
     # 감사 필드
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='생성일시')
@@ -273,7 +261,7 @@ class ContractPayment(models.Model):
     creator = models.ForeignKey('accounts.User', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='생성자')
 
     # Custom Manager 설정
-    objects = ContractPaymentManager()
+    objects = ContractPaymentQuerySet.as_manager()
 
     class Meta:
         verbose_name = '05. 분양 대금 납부'
@@ -328,13 +316,10 @@ class ContractPayment(models.Model):
                         transaction_id=self.accounting_entry.transaction_id
                     )
                 except ProjectBankTransaction.DoesNotExist:
-                    import logging
-                    logger = logging.getLogger(__name__)
                     logger.warning(
                         f"ProjectBankTransaction(transaction_id={self.accounting_entry.transaction_id}) not found in master DB. "
                         f"Cannot validate ContractPayment deal_date."
                     )
-                    pass
 
             if bank_transaction and self.deal_date and self.deal_date != bank_transaction.deal_date:
                 raise ValidationError({
@@ -372,9 +357,6 @@ class ContractPayment(models.Model):
 
         직접 수정 시 데이터 불일치 위험이 있으므로 권장하지 않습니다.
         """
-        import logging
-        logger = logging.getLogger(__name__)
-
         is_update = self.pk is not None
 
         # 직접 수정 감지 (update_fields가 없으면 수동 호출)
@@ -396,11 +378,11 @@ class ContractPayment(models.Model):
         except ValidationError as e:
             # accounting_entry 관련 에러이고, Master DB를 사용 중인 신규 생성 건이면 허용
             # (복제 지연으로 인해 Slave에서 조회가 안 되는 경우일 가능성이 높음)
-            if not is_update and 'accounting_entry' in e.message_dict:
+            if not is_update and hasattr(e, 'message_dict') and 'accounting_entry' in e.message_dict:
                 logger.info(
                     f"💡 ContractPayment 신규 생성 중 accounting_entry 유효성 검사 지연 발생 (PK: {self.accounting_entry_id}). 생성 강행.")
             else:
-                raise e
+                raise
 
         super().save(*args, **kwargs)
 
@@ -433,8 +415,14 @@ class OverDueRule(models.Model):
         te = str(self.term_end) + '일' if self.term_end is not None else 'Max'
         return f'{ts} - {te}'
 
+    def clean(self):
+        super().clean()
+        if self.term_start is not None and self.term_end is not None:
+            if self.term_start >= self.term_end:
+                raise ValidationError('최소연체(선납)일은 최대연체(선납)일보다 작아야 합니다.')
+
     class Meta:
-        ordering = ('-project', 'term_start', 'term_end')
+        ordering = ('project', 'term_start', 'term_end')
         verbose_name = '06. 선납할인/연체이율 관리'
         verbose_name_plural = '06. 선납할인/연체이율 관리'
 

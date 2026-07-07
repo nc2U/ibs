@@ -871,7 +871,7 @@ onBeforeRouteLeave(() => formDataReset())
                       }}
                     </CTableDataCell>
                     <CTableDataCell>{{ payment.trader }}</CTableDataCell>
-                    <CTableDataCell>{{ payment.installment_order.__str__ }}</CTableDataCell>
+                    <CTableDataCell>{{ payment.installment_order.str_display }}</CTableDataCell>
                     <CTableDataCell>
                       <v-btn
                         type="button"
@@ -945,7 +945,7 @@ onBeforeRouteLeave(() => formDataReset())
               >
                 <option value="">납부회차 선택</option>
                 <option v-for="po in downPayOrder" :key="po.pk as number" :value="po.pk">
-                  {{ po.__str__ }}
+                  {{ po.str_display }}
                 </option>
               </CFormSelect>
               <CFormFeedback invalid>납부회차를 선택하세요.</CFormFeedback>

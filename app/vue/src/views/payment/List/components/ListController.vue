@@ -153,7 +153,7 @@ defineExpose({ listFiltering })
             <CFormSelect v-model="form.pay_order" :disabled="byCont" @change="listFiltering(1)">
               <option value="">납부회차 선택</option>
               <option v-for="po in payOrderList" :key="po.pk as number" :value="po.pk">
-                {{ po.__str__ }}
+                {{ po.str_display }}
               </option>
             </CFormSelect>
           </CCol>

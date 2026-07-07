@@ -1,7 +1,7 @@
 export interface PayOrder {
   pk?: number | null
   project?: number
-  __str__?: string
+  str_display?: string
   type_sort?: '1' | '2' | '3' | '4' | '5' | '6' | ''
   pay_sort?: '1' | '2' | '3' | '4' | '5' | '6' | '7' | ''
   calculation_method?: 'auto' | 'ratio' | 'downpayment'
@@ -183,7 +183,7 @@ interface BasePayment {
     pay_sort: string
     pay_name: string
     pay_time: number
-    __str__: string
+    str_display: string
   }
   bank_account: {
     pk: number

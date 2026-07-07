@@ -209,7 +209,7 @@ onUpdated(() => formDataSetup())
           <CFormSelect v-model="form.now_payment_order" placeholder="발행회차" required>
             <option value="">--------</option>
             <option v-for="po in payOrderList" :key="po.pk as number" :value="po.pk">
-              {{ po.__str__ }}
+              {{ po.str_display }}
             </option>
           </CFormSelect>
         </CCol>

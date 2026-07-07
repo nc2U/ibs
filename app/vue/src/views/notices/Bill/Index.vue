@@ -43,7 +43,7 @@ const paymentStore = usePayment()
 const payOrder = computed(() => paymentStore.payOrder as PayOrder | null)
 
 const payOrderTime = computed(() => (payOrder.value ? payOrder.value.pay_time : 0))
-const payOrderName = computed(() => (payOrder.value ? payOrder.value.__str__ : ''))
+const payOrderName = computed(() => (payOrder.value ? payOrder.value.str_display : ''))
 
 const fetchPayOrder = (pk: number) => paymentStore.fetchPayOrder(pk)
 const patchPayOrder = (payload: PayOrder) => paymentStore.patchPayOrder(payload)

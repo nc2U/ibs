@@ -69,7 +69,7 @@ const handleExcelDownload = (url: string, fileName: string) => {
           <strong>완납 차수 :</strong>
         </CCol>
         <CCol :cols="6" class="text-end">
-          <span>{{ contract.last_paid_order?.__str__ || '-' }}</span>
+          <span>{{ contract.last_paid_order?.str_display || '-' }}</span>
         </CCol>
       </CRow>
     </CCardBody>
@@ -93,7 +93,7 @@ const handleExcelDownload = (url: string, fileName: string) => {
           <CTableBody>
             <CTableRow v-for="payment in contract.payments" :key="payment.pk">
               <CTableDataCell>{{ payment.deal_date }}</CTableDataCell>
-              <CTableDataCell>{{ payment.installment_order?.__str__ }}</CTableDataCell>
+              <CTableDataCell>{{ payment.installment_order?.str_display }}</CTableDataCell>
               <CTableDataCell class="text-end">
                 {{ numFormat(payment.amount) }}
               </CTableDataCell>

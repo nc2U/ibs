@@ -23,14 +23,20 @@ class PaymentSummaryComponentSerializer(serializers.Serializer):
 
 
 class InstallmentOrderSerializer(serializers.ModelSerializer):
+    str_display = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = InstallmentPaymentOrder
-        fields = ('pk', 'project', '__str__', 'type_sort', 'pay_sort',
+        fields = ('pk', 'project', 'str_display', 'type_sort', 'pay_sort',
                   'is_except_price', 'pay_code', 'pay_time', 'pay_name', 'alias_name',
                   'pay_amt', 'pay_ratio', 'pay_due_date', 'days_since_prev',
                   'is_prep_discount', 'prep_discount_ratio', 'prep_ref_date',
                   'is_late_penalty', 'late_penalty_ratio', 'extra_due_date',
                   'excluded_order_groups', 'calculation_method')
+
+    @staticmethod
+    def get_str_display(obj):
+        return str(obj)
 
 
 class SalesPriceSerializer(serializers.ModelSerializer):
@@ -99,7 +105,7 @@ class SimpleOrderGroupSerializer(serializers.ModelSerializer):
 class SimpleContractSerializer(serializers.ModelSerializer):
     order_group = SimpleOrderGroupSerializer()
     unit_type = SimpleUnitTypeSerializer()
-    contractor = serializers.SlugRelatedField(queryset=Contractor.objects.all(), slug_field='name')
+    contractor = serializers.SlugRelatedField(read_only=True, slug_field='name')
 
     class Meta:
         model = Contract
@@ -107,9 +113,15 @@ class SimpleContractSerializer(serializers.ModelSerializer):
 
 
 class SimpleInstallmentOrderSerializer(serializers.ModelSerializer):
+    str_display = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = InstallmentPaymentOrder
-        fields = ('pk', 'pay_sort', 'pay_time', 'pay_name', '__str__')
+        fields = ('pk', 'pay_sort', 'pay_time', 'pay_name', 'str_display')
+
+    @staticmethod
+    def get_str_display(obj):
+        return str(obj)
 
 
 class PayOrderCollectionSerializer(serializers.Serializer):
@@ -128,21 +140,21 @@ class PayOrderDuePeriodSerializer(serializers.Serializer):
     subtotal = serializers.IntegerField()
 
 
-class OverallSummaryPayOrderSerializer(serializers.ModelSerializer):
-    contract_amount = serializers.IntegerField()
-    non_contract_amount = serializers.IntegerField()
-    contract_rate = serializers.DecimalField(max_digits=5, decimal_places=2)
-    collection = PayOrderCollectionSerializer()
-    due_period = PayOrderDuePeriodSerializer()
-    not_due_unpaid = serializers.IntegerField()
-    total_unpaid = serializers.IntegerField()
-    total_unpaid_rate = serializers.DecimalField(max_digits=5, decimal_places=2)
-
-    class Meta:
-        model = InstallmentPaymentOrder
-        fields = ('pk', 'pay_name', 'pay_due_date', 'pay_sort', 'pay_code',
-                  'pay_time', 'contract_amount', 'non_contract_amount', 'contract_rate', 'collection', 'due_period',
-                  'not_due_unpaid', 'total_unpaid', 'total_unpaid_rate')
+class OverallSummaryPayOrderSerializer(serializers.Serializer):
+    pk = serializers.IntegerField(read_only=True)
+    pay_name = serializers.CharField(read_only=True)
+    pay_due_date = serializers.DateField(read_only=True)
+    pay_sort = serializers.CharField(read_only=True)
+    pay_code = serializers.IntegerField(read_only=True)
+    pay_time = serializers.IntegerField(read_only=True)
+    contract_amount = serializers.IntegerField(read_only=True)
+    non_contract_amount = serializers.IntegerField(read_only=True)
+    contract_rate = serializers.DecimalField(max_digits=5, decimal_places=2, read_only=True)
+    collection = PayOrderCollectionSerializer(read_only=True)
+    due_period = PayOrderDuePeriodSerializer(read_only=True)
+    not_due_unpaid = serializers.IntegerField(read_only=True)
+    total_unpaid = serializers.IntegerField(read_only=True)
+    total_unpaid_rate = serializers.DecimalField(max_digits=5, decimal_places=2, read_only=True)
 
 
 class OverallSummaryAggregateSerializer(serializers.Serializer):
@@ -243,6 +255,15 @@ class ContractPaymentSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ('deal_date', 'amount', 'created_at', 'updated_at')
 
+    def _get_related_transaction(self, obj):
+        """related_transaction 캐시 조회 (동일 요청 내 중복 쿼리 방지)"""
+        if not hasattr(obj, '_cached_related_transaction'):
+            try:
+                obj._cached_related_transaction = obj.accounting_entry.related_transaction
+            except AttributeError:
+                obj._cached_related_transaction = None
+        return obj._cached_related_transaction
+
     def get_trader(self, obj):
         """거래처 조회"""
         try:
@@ -252,10 +273,8 @@ class ContractPaymentSerializer(serializers.ModelSerializer):
 
     def get_note(self, obj):
         """비고 조회"""
-        try:
-            return obj.accounting_entry.related_transaction.note
-        except (AttributeError, TypeError):
-            return None
+        transaction = self._get_related_transaction(obj)
+        return transaction.note if transaction else None
 
     def get_bank_account(self, obj):
         """
@@ -263,43 +282,27 @@ class ContractPaymentSerializer(serializers.ModelSerializer):
 
         ProjectBankTransaction에서 bank_account 정보 추출
         """
-        try:
-            transaction = obj.accounting_entry.related_transaction
-            if transaction and hasattr(transaction, 'bank_account') and transaction.bank_account:
-                return {
-                    'pk': transaction.bank_account.pk,
-                    'alias_name': transaction.bank_account.alias_name
-                }
-        except (AttributeError, TypeError):
-            pass
+        transaction = self._get_related_transaction(obj)
+        if transaction and hasattr(transaction, 'bank_account') and transaction.bank_account:
+            return {
+                'pk': transaction.bank_account.pk,
+                'alias_name': transaction.bank_account.alias_name
+            }
         return None
 
     def get_bank_transaction_id(self, obj):
         """
         은행 거래 ID 조회
-
-        프론트엔드에서 수정/삭제 시 ProjectCompositeTransactionSerializer 에 필요
-        updateContractPayment(bank_transaction_id, payload)
-        patchContractPayment(bank_transaction_id, payload)
-        deleteContractPayment(bank_transaction_id)
         """
-        try:
-            return obj.related_transaction.pk
-        except (AttributeError, TypeError):
-            return None
+        transaction = self._get_related_transaction(obj)
+        return transaction.pk if transaction else None
 
     def get_bank_transaction_amount(self, obj):
         """
         실제 은행 거래 금액 조회
-
-        PaymentForm 수정 시 은행거래 금액을 정확히 표시하기 위해 필요
-        obj.amount는 분개 금액(분할 납부 시 일부 금액)
-        이 필드는 실제 은행 거래의 총 금액을 반환
         """
-        try:
-            return obj.accounting_entry.related_transaction.amount
-        except (AttributeError, TypeError):
-            return None
+        transaction = self._get_related_transaction(obj)
+        return transaction.amount if transaction else None
 
     def get_sibling_entries(self, obj):
         """
@@ -308,86 +311,69 @@ class ContractPaymentSerializer(serializers.ModelSerializer):
         account.is_payment 기준으로 편집 가능/읽기 전용 구분:
         - account.is_payment = True: 편집 가능 (ContractPayment)
         - account.is_payment = False: 읽기 전용 (기타 분개)
-
-        예시:
-        - 은행거래: 24,811,705원
-        - 분개1: 분담금 16,734,356원 (account.is_payment=True) → 편집 가능
-        - 분개2: 영업외수익 8,077,349원 (account.is_payment=False) → 참조용
-
-        Returns:
-            List[dict]: 모든 형제 분개 정보 목록 (is_contract_payment로 구분)
         """
         try:
-            # 현재 분개의 transaction_id 가져오기
             transaction_id = obj.accounting_entry.transaction_id
+            if not transaction_id:
+                return []
+        except AttributeError:
+            return []
 
-            # 같은 transaction_id를 가진 모든 분개 조회
-            sibling_entries = ProjectAccountingEntry.objects.filter(
-                transaction_id=transaction_id
-            ).select_related(
-                'account',
-                'contract',
-                'contract__order_group',
-                'contract__unit_type'
-            ).order_by('pk')
+        sibling_entries = ProjectAccountingEntry.objects.filter(
+            transaction_id=transaction_id
+        ).select_related(
+            'account',
+            'contract',
+            'contract__order_group',
+            'contract__unit_type'
+        ).order_by('pk')
 
-            # 각 분개 정보를 직렬화
-            result = []
-            for entry in sibling_entries:
-                # account.is_payment 값으로 편집 가능 여부 결정
-                is_payment_account = getattr(entry.account, 'is_payment', False) if entry.account else False
+        # N+1 쿼리 최적화: 한 번에 모든 ContractPayment 정보 조회
+        cp_map = {}
+        if sibling_entries.exists():
+            cps = ContractPayment.objects.select_related('installment_order').filter(
+                accounting_entry__in=sibling_entries
+            )
+            cp_map = {cp.accounting_entry_id: cp for cp in cps}
 
-                # ContractPayment 조회 (편집 가능 항목에만 필요)
-                contract_payment = None
-                if is_payment_account:
-                    try:
-                        contract_payment = ContractPayment.objects.select_related(
-                            'installment_order'
-                        ).get(accounting_entry=entry)
-                    except ContractPayment.DoesNotExist:
-                        pass
+        result = []
+        for entry in sibling_entries:
+            is_payment_account = getattr(entry.account, 'is_payment', False) if entry.account else False
+            contract_payment = cp_map.get(entry.pk) if is_payment_account else None
 
-                # 기본 분개 정보
-                entry_data = {
-                    'pk': entry.pk,  # AccountingEntry PK
-                    'amount': entry.amount,
-                    'trader': entry.trader,
-                    'contract': entry.contract.pk if entry.contract else None,
-                    'account': {
-                        'pk': entry.account.pk if entry.account else None,
-                        'name': entry.account.name if entry.account else None,
-                        'is_payment': is_payment_account
-                    },
-                    # account.is_payment 기준으로 구분
-                    'is_contract_payment': is_payment_account
-                }
+            entry_data = {
+                'pk': entry.pk,
+                'amount': entry.amount,
+                'trader': entry.trader,
+                'contract': entry.contract.pk if entry.contract else None,
+                'account': {
+                    'pk': entry.account.pk if entry.account else None,
+                    'name': entry.account.name if entry.account else None,
+                    'is_payment': is_payment_account
+                },
+                'is_contract_payment': is_payment_account
+            }
 
-                # 편집 가능 항목 (account.is_payment = True)
-                if is_payment_account:
-                    if contract_payment:
-                        entry_data.update({
-                            'contract_payment_pk': contract_payment.pk,
-                            'installment_order': contract_payment.installment_order.pk if contract_payment.installment_order else None,
-                            'installment_order_display': str(contract_payment.installment_order) if contract_payment.installment_order else None,
-                        })
-                    else:
-                        # ContractPayment가 없는 경우 (데이터 불일치)
-                        entry_data.update({
-                            'contract_payment_pk': None,
-                            'installment_order': None,
-                            'installment_order_display': None,
-                        })
-                # 읽기 전용 항목 (account.is_payment = False)
+            if is_payment_account:
+                if contract_payment:
+                    entry_data.update({
+                        'contract_payment_pk': contract_payment.pk,
+                        'installment_order': contract_payment.installment_order.pk if contract_payment.installment_order else None,
+                        'installment_order_display': str(contract_payment.installment_order) if contract_payment.installment_order else None,
+                    })
                 else:
                     entry_data.update({
                         'contract_payment_pk': None,
                         'installment_order': None,
                         'installment_order_display': None,
                     })
+            else:
+                entry_data.update({
+                    'contract_payment_pk': None,
+                    'installment_order': None,
+                    'installment_order_display': None,
+                })
 
-                result.append(entry_data)
+            result.append(entry_data)
 
-            return result
-
-        except (AttributeError, TypeError):
-            return []
+        return result

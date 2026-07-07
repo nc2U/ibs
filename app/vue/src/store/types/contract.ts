@@ -220,7 +220,7 @@ interface InstallmentOrder {
   pay_sort: string
   pay_time: number
   pay_name: string
-  __str__: string
+  str_display: string
 }
 
 export interface SalesPrice {

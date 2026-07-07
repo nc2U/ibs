@@ -649,7 +649,7 @@ onBeforeMount(() => {
                       <CFormSelect v-model.number="entry.installment_order" required>
                         <option value="">---------</option>
                         <option v-for="po in payOrderList" :key="po.pk as number" :value="po.pk">
-                          {{ po.__str__ }}
+                          {{ po.str_display }}
                         </option>
                       </CFormSelect>
                     </CTableDataCell>
