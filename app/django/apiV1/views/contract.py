@@ -28,7 +28,7 @@ from ..serializers.contract import OrderGroupSerializer, DocumentTypeSerializer,
     SubsSummarySerializer, ContSummarySerializer, ContractAggregateSerializer, ContractorSerializer, \
     SimpleContractorSerializer, ContractFileSerializer, ContractDocumentSerializer, ContractDocumentFileSerializer, \
     ContractorAddressSerializer, ContractorContactSerializer, ContractorConsultationLogsSerializer, \
-    SuccessionSerializer, ContractorReleaseSerializer
+    SuccessionSerializer, ContractorReleaseSerializer, SimpleContractLogSerializer
 
 
 # Contract --------------------------------------------------------------------------
@@ -137,6 +137,20 @@ class ContractViewSet(viewsets.ModelViewSet):
             setattr(instance, '_from_page', from_page)
 
         return instance
+
+    @action(detail=False, methods=['get'], url_path='recent-logs')
+    def recent_logs(self, request):
+        """대시보드 위젯용 최근 5개 계약 로그 조회 (가벼운 직렬화 적용)"""
+        queryset = Contract.objects.filter(activation=True).select_related(
+            'project',
+            'contractor',
+            'unit_type',
+            'key_unit__houseunit',
+            'contractprice'
+        ).order_by('-created')[:10]
+
+        serializer = SimpleContractLogSerializer(queryset, many=True)
+        return Response(serializer.data)
 
     @action(detail=False, methods=['get'])
     def find_page(self, request):

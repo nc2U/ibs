@@ -730,3 +730,23 @@ class ContractorReleaseSerializer(serializers.ModelSerializer):
         instance.save()
 
         return instance
+
+
+class SimpleContractLogSerializer(serializers.ModelSerializer):
+    project_name = serializers.CharField(source='project.name', read_only=True)
+    contractor_name = serializers.CharField(source='contractor.name', read_only=True)
+    contractor_status = serializers.CharField(source='contractor.status', read_only=True)
+    unit_type_name = serializers.CharField(source='unit_type.name', read_only=True)
+    house_unit_name = serializers.SerializerMethodField(read_only=True)
+    price = serializers.IntegerField(source='contractprice.price', read_only=True)
+
+    class Meta:
+        model = Contract
+        fields = ('pk', 'project_name', 'contractor_name', 'contractor_status',
+                  'unit_type_name', 'house_unit_name', 'serial_number', 'price', 'created')
+
+    @staticmethod
+    def get_house_unit_name(obj):
+        if hasattr(obj, 'key_unit') and obj.key_unit and obj.key_unit.houseunit:
+            return obj.key_unit.houseunit.__str__()
+        return None
