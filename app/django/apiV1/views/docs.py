@@ -30,7 +30,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = (permissions.IsAuthenticated, IsWorkManagerReadOnly)
-    filterset_fields = ('doc_type', 'active')
+    filterset_fields = ('doc_type_new', 'active')
 
 
 class LawSuitCaseFilterSet(FilterSet):
@@ -109,7 +109,7 @@ class DocumentFilterSet(FilterSet):
     class Meta:
         model = Document
         fields = ('company', 'is_real_dev', 'issue_project__project',
-                  'issue_project', 'doc_type', 'category', 'lawsuit', 'creator')
+                  'issue_project', 'doc_type_new', 'category', 'lawsuit', 'creator')
 
     @staticmethod
     def is_real_dev_proj(queryset, name, value):
@@ -120,7 +120,7 @@ class DocumentFilterSet(FilterSet):
 
 class DocumentViewSet(viewsets.ModelViewSet):
     queryset = Document.objects.select_related(
-        'issue_project', 'doc_type', 'category', 'lawsuit', 'creator', 'updator'
+        'issue_project', 'doc_type_new', 'category', 'lawsuit', 'creator', 'updator'
     ).prefetch_related('links', 'files', 'docscrape_set')
     serializer_class = DocumentSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, DocumentPermission)
@@ -162,7 +162,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
     def copy_and_create(self, request, *args, **kwargs):
         origin_pk = kwargs.get('pk')
         issue_project = request.data.get('issue_project') or request.data.get('project')
-        doc_type = request.data.get('doc_type')
+        doc_type_new = request.data.get('doc_type_new')
 
         try:
             org_instance = Document.objects.select_related(
@@ -180,7 +180,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
 
             new_instance_data = {
                 'issue_project': issue_project,
-                'doc_type': doc_type,
+                'doc_type_new': doc_type_new,
                 'category': org_instance.category.pk if org_instance.category else None,
                 'lawsuit': org_instance.lawsuit.pk if org_instance.lawsuit else None,
                 'title': org_instance.title,
@@ -306,7 +306,7 @@ class ImageViewSet(viewsets.ModelViewSet):
 
 
 class DocsInTrashViewSet(DocumentViewSet):
-    queryset = Document.all_objects.filter(deleted__isnull=False).select_related('doc_type', 'category')
+    queryset = Document.all_objects.filter(deleted__isnull=False).select_related('doc_type_new', 'category')
     serializer_class = DocumentInTrashSerializer
 
     def get_queryset(self):

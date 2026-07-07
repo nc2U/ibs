@@ -28,8 +28,6 @@ DOC_TYPE_CHOICES = (('1', '일반 업무'), ('2', '소송 업무'))
 
 
 class Category(models.Model):
-    doc_type = models.ForeignKey(DocType, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='유형1')
-
     doc_type_new = models.CharField('유형', max_length=1, choices=DOC_TYPE_CHOICES, null=True, blank=True)
     color = models.CharField('색상', max_length=21, null=True, blank=True)
     name = models.CharField('이름', max_length=100, db_index=True)
@@ -71,8 +69,6 @@ class SoftDeleteManager(models.Manager):
 
 class Document(BaseModel):
     issue_project = models.ForeignKey('work.IssueProject', on_delete=models.PROTECT, verbose_name='업무 프로젝트')
-    doc_type = models.ForeignKey(DocType, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='유형1')
-
     doc_type_new = models.CharField('유형', max_length=1, choices=DOC_TYPE_CHOICES, null=True, blank=True)
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='카테고리')
     lawsuit = models.ForeignKey('docs.LawsuitCase', on_delete=models.SET_NULL,

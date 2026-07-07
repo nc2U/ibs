@@ -16,11 +16,11 @@ class DocTypeAdmin(ImportExportMixin, admin.ModelAdmin):
 
 @admin.register(Category)
 class CategoryAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'doc_type', 'color', 'name', 'parent', 'order', 'active', 'default')
+    list_display = ('id', 'doc_type_new', 'color', 'name', 'parent', 'order', 'active', 'default')
     list_display_links = ('name',)
-    list_editable = ('doc_type', 'color', 'parent', 'order', 'active', 'default')
+    list_editable = ('doc_type_new', 'color', 'parent', 'order', 'active', 'default')
     search_fields = ('name',)
-    list_filter = ('doc_type',)
+    list_filter = ('doc_type_new',)
 
 
 class LinkInline(admin.TabularInline):
@@ -40,11 +40,11 @@ class ImageInline(admin.TabularInline):
 
 @admin.register(Document)
 class DocumentAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'doc_type', 'doc_type_new', 'issue_project', 'category', 'title', 'execution_date')
+    list_display = ('id', 'doc_type_new', 'issue_project', 'category', 'title', 'execution_date')
     list_display_links = ('title',)
-    list_editable = ('doc_type', 'doc_type_new', 'issue_project', 'category', 'execution_date')
+    list_editable = ('doc_type_new', 'issue_project', 'category', 'execution_date')
     search_fields = ('title', 'description')
-    list_filter = ('doc_type', 'issue_project__company', 'issue_project__project', 'issue_project', 'category')
+    list_filter = ('doc_type_new', 'issue_project__company', 'issue_project__project', 'issue_project', 'category')
     inlines = (LinkInline, FileInline, ImageInline)
 
 
