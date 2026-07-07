@@ -177,7 +177,6 @@ router.register(r'message-templates', notice.MessageTemplateViewSet)
 router.register(r'message-send-history', notice.MessageSendHistoryViewSet)
 
 # docs
-router.register(r'doc-type', docs.DocTypeViewSet)
 router.register(r'category', docs.CategoryViewSet)
 router.register(r'suitcase', docs.LawSuitCaseViewSet)
 router.register(r'all-suitcase', docs.AllLawSuitCaseViewSet, basename='all-suitcase')

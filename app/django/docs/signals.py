@@ -29,7 +29,7 @@ def store_document_pre_save_state(sender, instance, **kwargs):
             _document_pre_save_state[instance.pk] = {
                 'title': old_instance.title,
                 'description': old_instance.description,
-                'doc_type_id': old_instance.doc_type_id,
+                'doc_type': old_instance.doc_type,
                 'category_id': old_instance.category_id,
                 'lawsuit_id': old_instance.lawsuit_id,
                 'execution_date': old_instance.execution_date,
@@ -54,7 +54,7 @@ def notify_document_change(sender, instance, created, raw=False, update_fields=N
             old_state = _document_pre_save_state[instance.pk]
 
             # hit를 제외한 필드들이 변경되었는지 확인
-            meaningful_fields = ['title', 'description', 'doc_type_id', 'category_id',
+            meaningful_fields = ['title', 'description', 'doc_type', 'category_id',
                                  'lawsuit_id', 'execution_date', 'is_secret', 'password', 'is_blind']
 
             has_meaningful_change = False

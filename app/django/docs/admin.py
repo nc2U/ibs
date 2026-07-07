@@ -2,25 +2,18 @@ from django.contrib import admin
 from import_export.admin import ImportExportMixin
 
 from .models import (
-    DocType, Category, LawsuitCase, Document, Link, File, Image,
+    Category, LawsuitCase, Document, Link, File, Image,
     LetterSequence, OfficialLetter
 )
 
 
-@admin.register(DocType)
-class DocTypeAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'type')
-    list_display_links = ('type',)
-    search_fields = ('type',)
-
-
 @admin.register(Category)
 class CategoryAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'doc_type_new', 'color', 'name', 'parent', 'order', 'active', 'default')
+    list_display = ('id', 'doc_type', 'color', 'name', 'parent', 'order', 'active', 'default')
     list_display_links = ('name',)
-    list_editable = ('doc_type_new', 'color', 'parent', 'order', 'active', 'default')
+    list_editable = ('doc_type', 'color', 'parent', 'order', 'active', 'default')
     search_fields = ('name',)
-    list_filter = ('doc_type_new',)
+    list_filter = ('doc_type',)
 
 
 class LinkInline(admin.TabularInline):
@@ -40,11 +33,11 @@ class ImageInline(admin.TabularInline):
 
 @admin.register(Document)
 class DocumentAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'doc_type_new', 'issue_project', 'category', 'title', 'execution_date')
+    list_display = ('id', 'doc_type', 'issue_project', 'category', 'title', 'execution_date')
     list_display_links = ('title',)
-    list_editable = ('doc_type_new', 'issue_project', 'category', 'execution_date')
+    list_editable = ('doc_type', 'issue_project', 'category', 'execution_date')
     search_fields = ('title', 'description')
-    list_filter = ('doc_type_new', 'issue_project__company', 'issue_project__project', 'issue_project', 'category')
+    list_filter = ('doc_type', 'issue_project__company', 'issue_project__project', 'issue_project', 'category')
     inlines = (LinkInline, FileInline, ImageInline)
 
 

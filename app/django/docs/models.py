@@ -10,25 +10,11 @@ from _utils.file_cleanup import file_cleanup_signals
 from _utils.file_upload import get_docs_file_path, get_docs_image_path, get_letter_pdf_path
 from .courts import COURT_CHOICES
 
-
-class DocType(models.Model):
-    TYPE_CHOICES = (('1', '업무 문서'), ('2', '소송 기록'), ('3', '기타 문서'))
-    type = models.CharField('이름', max_length=1, choices=TYPE_CHOICES)
-
-    def __str__(self):
-        return self.get_type_display()
-
-    class Meta:
-        ordering = ['id']
-        verbose_name = '01. 유형'
-        verbose_name_plural = '01. 유형'
-
-
 DOC_TYPE_CHOICES = (('1', '일반 업무'), ('2', '소송 업무'))
 
 
 class Category(models.Model):
-    doc_type_new = models.CharField('유형', max_length=1, choices=DOC_TYPE_CHOICES, null=True, blank=True)
+    doc_type = models.CharField('유형', max_length=1, choices=DOC_TYPE_CHOICES, null=True, blank=True)
     color = models.CharField('색상', max_length=21, null=True, blank=True)
     name = models.CharField('이름', max_length=100, db_index=True)
     parent = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='상위 카테고리')
@@ -69,7 +55,7 @@ class SoftDeleteManager(models.Manager):
 
 class Document(BaseModel):
     issue_project = models.ForeignKey('work.IssueProject', on_delete=models.PROTECT, verbose_name='업무 프로젝트')
-    doc_type_new = models.CharField('유형', max_length=1, choices=DOC_TYPE_CHOICES, null=True, blank=True)
+    doc_type = models.CharField('유형', max_length=1, choices=DOC_TYPE_CHOICES, null=True, blank=True)
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='카테고리')
     lawsuit = models.ForeignKey('docs.LawsuitCase', on_delete=models.SET_NULL,
                                 null=True, blank=True, verbose_name='사건번호')

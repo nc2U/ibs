@@ -7,26 +7,14 @@ from rest_framework import serializers
 
 from _utils.file_service import FileService
 from apiV1.serializers.accounts import SimpleUserSerializer
-from docs.models import DocType, Category, LawsuitCase, Document, Link, File, Image, OfficialLetter
+from docs.models import Category, LawsuitCase, Document, Link, File, Image, OfficialLetter
 
 
 # DocsItem --------------------------------------------------------------------------
-class DocTypeSerializer(serializers.ModelSerializer):
-    name = serializers.SerializerMethodField()
-
-    class Meta:
-        model = DocType
-        fields = ('pk', 'type', 'name')
-
-    @staticmethod
-    def get_name(obj):
-        return obj.get_type_display()
-
-
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ('pk', 'doc_type_new', 'color', 'name', 'parent', 'order', 'active', 'default')
+        fields = ('pk', 'doc_type', 'color', 'name', 'parent', 'order', 'active', 'default')
 
 
 class FilesInLawSuitCaseSerializer(serializers.ModelSerializer):
@@ -158,7 +146,7 @@ class DocumentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Document
-        fields = ('pk', 'issue_project', 'proj_name', 'proj_sort', 'doc_type_new', 'type_name',
+        fields = ('pk', 'issue_project', 'proj_name', 'proj_sort', 'doc_type', 'type_name',
                   'category', 'cate_name', 'cate_color', 'lawsuit', 'lawsuit_name', 'title',
                   'execution_date', 'description', 'hit', 'scrape', 'my_scrape', 'ip', 'device',
                   'is_pinned', 'is_secret', 'password', 'is_blind', 'deleted', 'links', 'files',
@@ -189,7 +177,7 @@ class DocumentSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_type_name(obj):
-        return obj.doc_type_new.__str__()
+        return obj.doc_type.__str__()
 
     @staticmethod
     def get_cate_color(obj):
@@ -354,7 +342,7 @@ class DocumentInTrashSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_type_name(obj):
-        return obj.doc_type_new.get_type_display()
+        return obj.doc_type.get_type_display()
 
     def update(self, instance, validated_data):
         instance.restore()
