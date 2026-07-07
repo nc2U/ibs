@@ -36,6 +36,18 @@ onMounted(() => {
       <CCol class="d-flex align-center gap-2">
         <h4 class="font-weight-bold mb-1">
           {{ docs.title }}
+          <v-chip
+            v-if="docs.is_pinned"
+            label
+            size="small"
+            density="comfortable"
+            color="brown-lighten-1"
+            class="ml-2 font-weight-bold"
+            style="vertical-align: middle"
+          >
+            <v-icon start icon="mdi-pin" color="danger" size="small" class="rotate-45" />
+            고정
+          </v-chip>
           <v-tooltip
             v-if="docs.is_secret || docs.is_blind"
             location="right"
@@ -157,3 +169,9 @@ onMounted(() => {
     </CRow>
   </div>
 </template>
+
+<style scoped>
+.rotate-45 {
+  transform: rotate(45deg);
+}
+</style>

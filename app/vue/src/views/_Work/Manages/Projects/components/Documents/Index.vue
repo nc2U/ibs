@@ -40,7 +40,7 @@ const docsFilter = ref<DocsFilter>({
   category: '',
   issue_project: '',
   lawsuit: '',
-  ordering: '-created',
+  ordering: '-is_pinned,-created',
   search: '',
   page: 1,
   limit: '',

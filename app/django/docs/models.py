@@ -139,7 +139,7 @@ class Document(BaseModel):
         return today < new_period.strftime('%Y-%m-%d %H:%M')
 
     class Meta:
-        ordering = ['is_pinned', '-created']
+        ordering = ['-is_pinned', '-created']
         verbose_name = '04. 문서'
         verbose_name_plural = '04. 문서'
 

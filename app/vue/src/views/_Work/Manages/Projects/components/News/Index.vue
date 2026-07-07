@@ -45,14 +45,14 @@ const onSubmit = (payload: any) => {
     if (key === 'files') {
       ;(getData[key] as any[]).forEach(val => form.append(key, JSON.stringify(val)))
     } else if (key === 'newFiles')
-      getData[key]?.forEach(val => {
-        form.append('new_files', val.file as Blob)
-        form.append('new_descs', val.description as string)
+      getData[key]?.forEach((val: { file: File | Blob; description: string }) => {
+        form.append('new_files', val.file)
+        form.append('new_descs', val.description)
       })
     else if (key === 'cngFiles') {
-      getData[key]?.forEach(val => {
-        form.append('cngPks', val.pk as any)
-        form.append('cngFiles', val.file as Blob)
+      getData[key]?.forEach((val: { pk: number; file: File | Blob }) => {
+        form.append('cngPks', String(val.pk))
+        form.append('cngFiles', val.file)
       })
     } else {
       const formValue = getData[key] === null ? '' : getData[key]
@@ -124,7 +124,7 @@ onBeforeMount(async () => {
       <CRow class="py-2">
         <CCol>
           <h5>
-            <v-icon icon="mdi-bullhorn-variant" color="info" class="mr-2" />
+            <v-icon icon="mdi-microphone" color="info" class="mr-2" />
             {{ ($route?.name as string).replace(/^\((.*)\)$/, '$1') }}
           </h5>
         </CCol>
