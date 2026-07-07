@@ -30,7 +30,7 @@ class CompanySerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_com_issue_project(obj):
-        issue_project = IssueProject.objects.filter(company=obj, sort='1').first()
+        issue_project = IssueProject.objects.filter(company=obj, type='1').first()
         return issue_project.pk if issue_project else None
 
 

@@ -41,8 +41,8 @@ class LawSuitCaseFilterSet(FilterSet):
     @staticmethod
     def is_real_dev_proj(queryset, name, value):
         if value:
-            return queryset.filter(issue_project__sort='2')
-        return queryset.exclude(issue_project__sort='2')
+            return queryset.filter(issue_project__type='2')
+        return queryset.exclude(issue_project__type='2')
 
     @staticmethod
     def filter_related_case(queryset, name, value):
@@ -107,8 +107,8 @@ class DocumentFilterSet(FilterSet):
     @staticmethod
     def is_real_dev_proj(queryset, name, value):
         if value:
-            return queryset.filter(issue_project__sort='2')
-        return queryset.exclude(issue_project__sort='2')
+            return queryset.filter(issue_project__type='2')
+        return queryset.exclude(issue_project__type='2')
 
 
 class DocumentViewSet(viewsets.ModelViewSet):
