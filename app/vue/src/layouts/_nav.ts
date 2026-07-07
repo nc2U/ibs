@@ -3,10 +3,6 @@ const dashboard = {
   name: '대 시 보 드',
   to: '/dashboard',
   icon: 'cil-speedometer',
-  badge: {
-    color: 'warning',
-    text: 'ing..',
-  },
 }
 
 const workProject = {
