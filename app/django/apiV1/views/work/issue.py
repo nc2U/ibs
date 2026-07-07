@@ -224,7 +224,8 @@ class IssueCountByMemberView(APIView):
 
     @staticmethod
     def get(request, *args, **kwargs):
-        user = request.query_params.get('user', None)
+        user_param = request.query_params.get('user', None)
+        user = user_param if user_param else request.user
 
         # Count issues assigned to the user
         issues_in_charge = Issue.objects.filter(assigned_to=user)
