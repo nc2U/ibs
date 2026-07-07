@@ -67,7 +67,6 @@ const sortName = computed(() => props.docs?.proj_name || '본사 문서')
 const docsId = computed(() => Number(route.params.docsId))
 
 const docStore = useDocs()
-// const docTypeList = computed(() => docStore.docTypeList)
 const categoryList = computed(() => docStore.categoryList)
 const getDocsNav = computed(() => docStore.getDocsNav)
 

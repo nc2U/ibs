@@ -1,10 +1,4 @@
 export interface DocType {
-  pk: number | null
-  type: '1' | '2'
-  name: string
-}
-
-export interface DocTypeChoice {
   value: number
   label: string
 }

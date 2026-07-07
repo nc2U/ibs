@@ -7,7 +7,6 @@ import type {
   DFile,
   Docs,
   DocType,
-  DocTypeChoice,
   Link,
   PatchDocs,
   SimpleSuitCase,
@@ -62,12 +61,7 @@ export type LetterFilter = {
 
 export const useDocs = defineStore('docs', () => {
   // state & getters
-  const docTypeList = ref<DocType[]>([
-    { pk: 1, type: '1', name: '일반문서' },
-    { pk: 2, type: '2', name: '소송기록' },
-  ])
-
-  const docTypes = ref<DocTypeChoice[]>([
+  const docTypes = ref<DocType[]>([
     { value: 1, label: '일반문서' },
     { value: 2, label: '소송기록' },
   ])
@@ -540,12 +534,8 @@ export const useDocs = defineStore('docs', () => {
       .catch(err => errorHandle(err.response.data))
 
   return {
-    // docType,
-    docTypeList,
     docTypes,
 
-    // fetchDocType,
-    // fetchDocTypeList,
     createDocType,
     updateDocType,
     deleteDocType,
