@@ -47,7 +47,7 @@ const handleClose = () => {
           :loading="loading"
           @click.stop="handleRefresh"
         >
-          <v-icon icon="mdi-refresh" size="16" />
+          <v-icon icon="mdi-refresh" color="grey" size="16" />
         </v-btn>
         <v-btn
           v-if="configurable"
@@ -56,10 +56,10 @@ const handleClose = () => {
           variant="text"
           @click.stop="emit('configure')"
         >
-          <v-icon icon="mdi-cog" size="16" />
+          <v-icon icon="mdi-cog" color="grey" size="16" />
         </v-btn>
         <v-btn icon size="x-small" variant="text" @click.stop="handleClose">
-          <v-icon icon="mdi-close" size="16" />
+          <v-icon icon="mdi-close" color="grey" size="16" />
         </v-btn>
       </div>
     </v-card-title>
