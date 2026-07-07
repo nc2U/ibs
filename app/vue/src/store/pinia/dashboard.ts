@@ -137,6 +137,16 @@ export const WIDGET_REGISTRY: WidgetConfig[] = [
     minH: 3,
   },
   {
+    id: 'document-list',
+    type: 'document-list',
+    title: 'Document List',
+    titleKo: '최근 문서 목록',
+    icon: 'mdi-file-document-multiple-outline',
+    defaultLayout: { x: 0, y: 28, w: 6, h: 4 },
+    minW: 4,
+    minH: 3,
+  },
+  {
     id: 'financial-status',
     type: 'financial-status',
     title: 'Financial Status',

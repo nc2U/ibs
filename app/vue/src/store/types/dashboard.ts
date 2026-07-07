@@ -12,6 +12,7 @@ export type WidgetType =
   | 'my-issue'
   | 'notice-list'
   | 'meeting-minutes'
+  | 'document-list'
 
 export interface WidgetConfig {
   id: string
