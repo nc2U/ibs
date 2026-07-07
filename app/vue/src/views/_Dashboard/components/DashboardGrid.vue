@@ -12,7 +12,7 @@ import IssueTrackerWidget from './widgets/IssueTrackerWidget.vue'
 import CalendarWidget from './widgets/CalendarWidget.vue'
 import QuickActionsWidget from './widgets/QuickActionsWidget.vue'
 import ActivityFeedWidget from './widgets/ActivityFeedWidget.vue'
-import WorkLogWidget from './widgets/WorkLogWidget.vue'
+import ContractLogWidget from './widgets/ContractLogWidget.vue'
 import MainCarouselWidget from './widgets/MainCarouselWidget.vue'
 import WiseWordWidget from './widgets/WiseWordWidget.vue'
 import MyIssueWidget from './widgets/MyIssueWidget.vue'
@@ -34,7 +34,7 @@ const widgetComponents: Record<string, Component> = {
   calendar: markRaw(CalendarWidget),
   'quick-actions': markRaw(QuickActionsWidget),
   'activity-feed': markRaw(ActivityFeedWidget),
-  'work-log': markRaw(WorkLogWidget),
+  'contract-log': markRaw(ContractLogWidget),
   'main-carousel': markRaw(MainCarouselWidget),
   'wise-word': markRaw(WiseWordWidget),
   'my-issue': markRaw(MyIssueWidget),

@@ -64,7 +64,7 @@ const handleClose = () => {
       </div>
     </v-card-title>
     <v-divider />
-    <v-card-text class="widget-content flex-grow-1 pa-3 overflow-auto">
+    <v-card-text class="widget-content flex-grow-1 pa-3 overflow-y-auto overflow-x-hidden">
       <slot />
     </v-card-text>
   </v-card>
@@ -108,6 +108,11 @@ const handleClose = () => {
 
 .widget-content {
   min-height: 0;
+}
+
+.widget-content :deep(> div) {
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 .drag-handle {
