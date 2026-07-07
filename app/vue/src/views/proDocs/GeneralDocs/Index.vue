@@ -76,7 +76,6 @@ const docs = computed(() => docStore.docs as Docs | null)
 const docsList = computed(() => docStore.docsList)
 const categoryList = computed(() => docStore.categoryList)
 
-const fetchDocTypeList = () => docStore.fetchDocTypeList()
 const fetchLink = (pk: number) => docStore.fetchLink(pk)
 const fetchFile = (pk: number) => docStore.fetchFile(pk)
 const fetchDocs = (pk: number) => docStore.fetchDocs(pk)
@@ -171,7 +170,6 @@ const fileHit = async (pk: number) => {
 
 const dataSetup = (pk: number, docsId?: string | string[]) => {
   docsFilter.value.project = pk
-  fetchDocTypeList()
   fetchCategoryList(typeNumber.value)
   fetchDocsList(docsFilter.value)
   if (docsId) fetchDocs(Number(docsId))

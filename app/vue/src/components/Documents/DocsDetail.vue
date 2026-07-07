@@ -67,7 +67,7 @@ const sortName = computed(() => props.docs?.proj_name || '본사 문서')
 const docsId = computed(() => Number(route.params.docsId))
 
 const docStore = useDocs()
-const docTypeList = computed(() => docStore.docTypeList)
+// const docTypeList = computed(() => docStore.docTypeList)
 const categoryList = computed(() => docStore.categoryList)
 const getDocsNav = computed(() => docStore.getDocsNav)
 
@@ -456,7 +456,6 @@ onMounted(() => {
   <TypeListModal
     ref="refTypeListModal"
     :now-type="docs?.doc_type ?? undefined"
-    :doc-type-list="docTypeList"
     :is-copy="isCopy"
     @copy-docs="copyDocs"
     @move-docs="moveDocs"

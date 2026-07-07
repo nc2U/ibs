@@ -59,7 +59,6 @@ const categoryList = computed(() => docStore.categoryList)
 const getCategories = computed(() => docStore.getCategories)
 const getSuitCase = computed(() => docStore.getSuitCase)
 
-const fetchDocTypeList = () => docStore.fetchDocTypeList()
 const fetchDocs = (pk: number) => docStore.fetchDocs(pk)
 const fetchDocsList = (payload: DocsFilter) => docStore.fetchDocsList(payload)
 const fetchCategoryList = (type: number) => docStore.fetchCategoryList(type)
@@ -121,7 +120,6 @@ const dataSetup = async (docId?: string | string[]) => {
   docsFilter.value.doc_type = typeNumber.value
 
   docsFilter.value.issue_project = (issueProject.value as IssueProject)?.pk
-  await fetchDocTypeList()
   await fetchCategoryList(typeNumber.value)
   await fetchDocsList(docsFilter.value)
   await fetchAllSuitCaseList({ issue_project: docsFilter.value.issue_project })

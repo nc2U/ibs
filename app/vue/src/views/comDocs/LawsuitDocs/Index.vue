@@ -106,7 +106,6 @@ const docsList = computed(() => docStore.docsList)
 const categoryList = computed(() => docStore.categoryList)
 const getSuitCase = computed(() => docStore.getSuitCase)
 
-const fetchDocTypeList = () => docStore.fetchDocTypeList()
 const fetchLink = (pk: number) => docStore.fetchLink(pk)
 const fetchFile = (pk: number) => docStore.fetchFile(pk)
 const fetchDocs = (pk: number) => docStore.fetchDocs(pk)
@@ -262,7 +261,6 @@ const dataSetup = async (pk: number, docsId?: string | string[]) => {
     await comStore.fetchCompany(targetCompany)
   }
 
-  await fetchDocTypeList()
   await fetchCategoryList(typeNumber.value)
   await fetchDocsList(docsFilter.value)
   if (docsId) await fetchDocs(Number(docsId))

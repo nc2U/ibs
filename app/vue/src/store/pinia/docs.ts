@@ -61,20 +61,10 @@ export type LetterFilter = {
 
 export const useDocs = defineStore('docs', () => {
   // state & getters
-  const docType = ref<DocType | null>(null)
-  const docTypeList = ref<DocType[]>([])
-
-  const fetchDocType = (pk: number) =>
-    api
-      .get(`/doc-type/${pk}/`)
-      .then(res => (docType.value = res.data))
-      .catch(err => errorHandle(err.response.data))
-
-  const fetchDocTypeList = () =>
-    api
-      .get('/doc-type/')
-      .then(res => (docTypeList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+  const docTypeList = ref<DocType[]>([
+    { pk: 1, type: '1', name: '일반 업무' },
+    { pk: 2, type: '2', name: '소송 업무' }
+  ])
 
   const createDocType = () => 2
   const updateDocType = () => 3
@@ -256,9 +246,7 @@ export const useDocs = defineStore('docs', () => {
   const removeDocsList = () => (docsList.value = [])
 
   const hitDocs = (pk: number) =>
-    api
-      .post(`/docs/${pk}/hit/`)
-      .catch(err => errorHandle(err.response.data))
+    api.post(`/docs/${pk}/hit/`).catch(err => errorHandle(err.response.data))
 
   const config_headers = { headers: { 'Content-Type': 'multipart/form-data' } }
 
@@ -546,11 +534,11 @@ export const useDocs = defineStore('docs', () => {
       .catch(err => errorHandle(err.response.data))
 
   return {
-    docType,
+    // docType,
     docTypeList,
 
-    fetchDocType,
-    fetchDocTypeList,
+    // fetchDocType,
+    // fetchDocTypeList,
     createDocType,
     updateDocType,
     deleteDocType,
