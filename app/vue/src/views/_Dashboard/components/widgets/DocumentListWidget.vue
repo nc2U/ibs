@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onBeforeMount } from 'vue'
-import { useDocs } from '@/store/pinia/docs'
+import api from '@/api'
 import { cutString, timeFormat } from '@/utils/baseMixins'
 import WidgetWrapper from '../WidgetWrapper.vue'
 
@@ -10,15 +10,30 @@ defineProps<{
   icon?: string
 }>()
 
-const docsStore = useDocs()
-const docsList = computed(() => docsStore.docsList)
-
+const activeTab = ref(1)
 const loading = ref(true)
+
+const generalDocs = ref<any[]>([])
+const lawsuitDocs = ref<any[]>([])
+
+const currentDocsList = computed(() => {
+  return activeTab.value === 1 ? generalDocs.value : lawsuitDocs.value
+})
 
 const fetchData = async () => {
   loading.value = true
-  await docsStore.fetchDocsList({ limit: 5 })
-  loading.value = false
+  try {
+    const [res1, res2] = await Promise.all([
+      api.get('/docs/?limit=5&doc_type=1'),
+      api.get('/docs/?limit=5&doc_type=2'),
+    ])
+    generalDocs.value = res1.data.results || []
+    lawsuitDocs.value = res2.data.results || []
+  } catch (error) {
+    console.error('Failed to fetch documents for widget:', error)
+  } finally {
+    loading.value = false
+  }
 }
 
 onBeforeMount(() => {
@@ -29,6 +44,12 @@ onBeforeMount(() => {
 <template>
   <WidgetWrapper :widget-id="widgetId" :title="title" :icon="icon" refreshable @refresh="fetchData">
     <div class="document-list-widget">
+      <!-- 탭 선택기 -->
+      <v-tabs v-model="activeTab" density="compact" color="primary" class="border-bottom mb-2">
+        <v-tab :value="1" class="text-body-2 font-weight-bold">일반문서</v-tab>
+        <v-tab :value="2" class="text-body-2 font-weight-bold">소송기록</v-tab>
+      </v-tabs>
+
       <v-progress-linear v-if="loading" indeterminate color="primary" />
 
       <v-table v-else density="compact" hover>
@@ -40,7 +61,7 @@ onBeforeMount(() => {
           </tr>
         </thead>
         <tbody>
-          <template v-for="item in docsList.slice(0, 5)" :key="item.pk ?? 0">
+          <template v-for="item in currentDocsList" :key="item.pk ?? 0">
             <tr>
               <td class="truncate">
                 <v-chip
@@ -53,9 +74,12 @@ onBeforeMount(() => {
                 </v-chip>
               </td>
               <td class="truncate">
+                <span class="text-caption text-grey mr-1" v-if="item.proj_name">
+                  [{{ item.proj_name }}]
+                </span>
                 <router-link
                   :to="{
-                    name: '본사 일반 문서 - 보기',
+                    name: activeTab === 1 ? '본사 일반 문서 - 보기' : '본사 소송 문서 - 보기',
                     params: { docsId: item.pk },
                   }"
                   class="text-body-2"
@@ -68,21 +92,28 @@ onBeforeMount(() => {
               </td>
             </tr>
           </template>
-          <tr v-if="!docsList.length">
-            <td colspan="3" class="text-center text-medium-emphasis">등록된 문서가 없습니다.</td>
+          <tr v-if="!currentDocsList.length">
+            <td colspan="3" class="text-center text-medium-emphasis py-4">등록된 문서가 없습니다.</td>
           </tr>
         </tbody>
       </v-table>
 
-      <v-btn variant="text" color="primary" size="small" class="mt-2" block :to="{ name: '본사 일반 문서' }">
-        전체 문서 보기
+      <v-btn
+        variant="text"
+        color="primary"
+        size="small"
+        class="mt-2"
+        block
+        :to="{ name: activeTab === 1 ? '본사 일반 문서' : '본사 소송 문서' }"
+      >
+        전체 {{ activeTab === 1 ? '일반문서' : '소송기록' }} 보기
         <v-icon icon="mdi-chevron-right" size="small" />
       </v-btn>
     </div>
   </WidgetWrapper>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .document-list-widget {
   height: 100%;
   overflow-y: auto;
@@ -90,5 +121,9 @@ onBeforeMount(() => {
 
 .document-list-widget :deep(.v-table) {
   background: transparent;
+}
+
+.border-bottom {
+  border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.08);
 }
 </style>
