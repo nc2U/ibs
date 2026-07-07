@@ -158,10 +158,11 @@ class DocumentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Document
-        fields = ('pk', 'issue_project', 'proj_name', 'proj_sort', 'doc_type', 'type_name', 'category',
-                  'cate_name', 'cate_color', 'lawsuit', 'lawsuit_name', 'title', 'execution_date', 'description',
-                  'hit', 'scrape', 'my_scrape', 'ip', 'device', 'is_secret', 'password', 'is_blind', 'deleted',
-                  'links', 'files', 'creator', 'updator', 'created', 'updated', 'is_new', 'prev_pk', 'next_pk')
+        fields = ('pk', 'issue_project', 'proj_name', 'proj_sort', 'doc_type', 'type_name',
+                  'category', 'cate_name', 'cate_color', 'lawsuit', 'lawsuit_name', 'title',
+                  'execution_date', 'description', 'hit', 'scrape', 'my_scrape', 'ip', 'device',
+                  'is_pinned', 'is_secret', 'password', 'is_blind', 'deleted', 'links', 'files',
+                  'creator', 'updator', 'created', 'updated', 'is_new', 'prev_pk', 'next_pk')
         read_only_fields = ('ip',)
         extra_kwargs = {'password': {'write_only': True}}
 

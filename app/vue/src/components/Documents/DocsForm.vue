@@ -53,6 +53,7 @@ const form = reactive<Docs>({
   execution_date: null,
   description: '',
   device: '',
+  is_pinned: false,
   is_secret: false,
   password: '',
   is_blind: false,
@@ -155,6 +156,7 @@ const dataSetup = () => {
     form.execution_date = props.docs.execution_date
     form.description = props.docs.description
     form.device = props.docs.device
+    form.is_pinned = props.docs.is_pinned
     form.is_secret = props.docs.is_secret
     form.password = props.docs.password
     form.is_blind = props.docs.is_blind

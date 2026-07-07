@@ -53,8 +53,8 @@ const workStore = useWork()
 const issueProject = computed<IssueProject | null>(() => workStore.issueProject)
 
 const docStore = useDocs()
-const docs = computed(() => docStore.docs)
-const docsList = computed(() => docStore.docsList)
+const docs = computed<Docs | null>(() => docStore.docs)
+const docsList = computed<Docs[]>(() => docStore.docsList)
 const categoryList = computed(() => docStore.categoryList)
 const getCategories = computed(() => docStore.getCategories)
 const getSuitCase = computed(() => docStore.getSuitCase)
@@ -188,11 +188,12 @@ onBeforeMount(async () => {
       </CRow>
 
       <DocsForm
-        v-if="viewForm"
+        v-if="viewForm && docs"
         :issue-project="issueProject as IssueProject"
         :type-number="typeNumber"
         :categories="categories"
         :get-suit-case="getSuitCase"
+        :docs="docs"
         @close-form="viewForm = false"
       />
 

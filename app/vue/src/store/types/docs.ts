@@ -92,6 +92,7 @@ export type Docs = {
   my_scrape?: boolean
   ip?: string | null
   device: string
+  is_pinned: boolean
   is_secret: boolean
   password: string
   is_blind: boolean

@@ -51,6 +51,7 @@ const form = ref<Docs>({
   title: '',
   description: '',
   device: '',
+  is_pinned: false,
   is_secret: false,
   password: '',
   is_blind: false,
@@ -148,6 +149,7 @@ const dataSetup = () => {
     form.value.title = props.docs.title
     form.value.description = props.docs.description
     form.value.device = props.docs.device
+    form.value.is_pinned = props.docs.is_pinned
     form.value.is_secret = props.docs.is_secret
     form.value.password = props.docs.password
     form.value.is_blind = props.docs.is_blind
@@ -182,12 +184,13 @@ onBeforeMount(() => dataSetup())
               </CFormSelect>
             </CCol>
             <CCol class="pt-2">
+              <CFormCheck v-model="form.is_pinned" id="is_pinned" label="상단고정" inline />
               <CFormCheck v-model="form.is_secret" id="is_secret" label="비밀문서" inline />
               <CFormCheck
                 v-if="workManager"
                 v-model="form.is_blind"
                 id="is_blind"
-                label="숨김 - 관리자 기능"
+                label="숨김 [관리자 기능]"
                 inline
               />
             </CCol>
