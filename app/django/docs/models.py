@@ -24,8 +24,13 @@ class DocType(models.Model):
         verbose_name_plural = '01. 유형'
 
 
+DOC_TYPE_CHOICES = (('1', '일반 업무'), ('2', '소송 업무'))
+
+
 class Category(models.Model):
-    doc_type = models.ForeignKey(DocType, on_delete=models.CASCADE, verbose_name='유형')
+    doc_type = models.ForeignKey(DocType, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='유형1')
+
+    doc_type_new = models.CharField('유형', max_length=1, choices=DOC_TYPE_CHOICES, null=True, blank=True)
     color = models.CharField('색상', max_length=21, null=True, blank=True)
     name = models.CharField('이름', max_length=100, db_index=True)
     parent = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='상위 카테고리')
@@ -38,50 +43,8 @@ class Category(models.Model):
 
     class Meta:
         ordering = ['id']
-        verbose_name = '02. 카테고리'
-        verbose_name_plural = '02. 카테고리'
-
-
-class LawsuitCase(models.Model):
-    issue_project = models.ForeignKey('work.IssueProject', on_delete=models.CASCADE, verbose_name='업무 프로젝트')
-    SORT_CHOICES = (('1', '민사'), ('2', '형사'), ('3', '행정'), ('4', '신청'), ('5', '집행'))
-    sort = models.CharField('유형', max_length=1, choices=SORT_CHOICES)
-    LEVEL_CHOICES = (
-        ('1', '1심'), ('2', '2심'), ('3', '3심'), ('4', '고소/수사'),
-        ('5', '신청'), ('6', '항고/이의'), ('7', '압류/추심'), ('8', '정지/이의'))
-    level = models.CharField('심급', max_length=1, choices=LEVEL_CHOICES, blank=True)
-    related_case = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='관련사건',
-                                     help_text='본안 사건인 경우 원심 사건, 신청/집행 사건인 경우 관련 본안 사건 지정')
-    court = models.CharField('법원명', max_length=10, choices=COURT_CHOICES, blank=True, default='')
-    other_agency = models.CharField('기타 처리기관', max_length=30, blank=True, default='',
-                                    help_text='사건 유형이 기소 전 형사 사건인 경우 해당 수사기관을 기재')
-    case_number = models.CharField('사건번호', max_length=20)
-    case_name = models.CharField('사건명', max_length=30, db_index=True)
-    plaintiff = models.CharField('원고(신청인)', max_length=30, blank=True, default='')
-    plaintiff_attorney = models.CharField('원고 대리인', max_length=50, blank=True, default='')
-    plaintiff_case_price = models.PositiveBigIntegerField('원고 소가', null=True, blank=True)
-    defendant = models.CharField('피고(피신청인)', max_length=30)
-    defendant_attorney = models.CharField('피고 대리인', max_length=50, blank=True, default='')
-    defendant_case_price = models.PositiveBigIntegerField('피고 소가', null=True, blank=True)
-    related_debtor = models.CharField('제3채무자', max_length=30, blank=True, default='')
-    case_start_date = models.DateField('사건개시일')
-    case_end_date = models.DateField('사건종결일', null=True, blank=True)
-    summary = models.TextField('개요 및 경과', blank=True, default='')
-    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자',
-                                related_name='lawsuitcases')
-    updator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
-                                related_name='updated_lawsuitcases', verbose_name='편집자')
-    created = models.DateTimeField('등록일시', auto_now_add=True)
-    updated = models.DateTimeField('편집일시', auto_now=True)
-
-    def __str__(self):
-        agency = self.get_court_display() if self.get_court_display() else self.other_agency
-        return f'{agency} {self.case_number} {self.case_name}'
-
-    class Meta:
-        ordering = ['-case_start_date', '-id']
-        verbose_name = '03. 소송사건'
-        verbose_name_plural = '03. 소송사건'
+        verbose_name = '01. 카테고리'
+        verbose_name_plural = '01. 카테고리'
 
 
 class BaseModel(models.Model):
@@ -107,10 +70,13 @@ class SoftDeleteManager(models.Manager):
 
 
 class Document(BaseModel):
-    issue_project = models.ForeignKey('work.IssueProject', on_delete=models.CASCADE, verbose_name='업무 프로젝트')
-    doc_type = models.ForeignKey(DocType, on_delete=models.PROTECT, verbose_name='유형')
+    issue_project = models.ForeignKey('work.IssueProject', on_delete=models.PROTECT, verbose_name='업무 프로젝트')
+    doc_type = models.ForeignKey(DocType, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='유형1')
+
+    doc_type_new = models.CharField('유형', max_length=1, choices=DOC_TYPE_CHOICES, null=True, blank=True)
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='카테고리')
-    lawsuit = models.ForeignKey(LawsuitCase, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='사건번호')
+    lawsuit = models.ForeignKey('docs.LawsuitCase', on_delete=models.SET_NULL,
+                                null=True, blank=True, verbose_name='사건번호')
     title = models.CharField('제목', max_length=255, db_index=True)
     execution_date = models.DateField('문서 시행일자', null=True, blank=True, help_text='문서 발신/수신/시행일자')
     description = models.CharField('설명', max_length=255, blank=True, default='')
@@ -140,8 +106,8 @@ class Document(BaseModel):
 
     class Meta:
         ordering = ['-is_pinned', '-created']
-        verbose_name = '04. 문서'
-        verbose_name_plural = '04. 문서'
+        verbose_name = '02. 문서'
+        verbose_name_plural = '02. 문서'
 
 
 class Link(models.Model):
@@ -215,6 +181,48 @@ class Image(models.Model):
 
 
 file_cleanup_signals(Image)  # 파일인스턴스 직접 삭제시
+
+
+class LawsuitCase(models.Model):
+    issue_project = models.ForeignKey('work.IssueProject', on_delete=models.CASCADE, verbose_name='업무 프로젝트')
+    SORT_CHOICES = (('1', '민사'), ('2', '형사'), ('3', '행정'), ('4', '신청'), ('5', '집행'))
+    sort = models.CharField('유형', max_length=1, choices=SORT_CHOICES)
+    LEVEL_CHOICES = (
+        ('1', '1심'), ('2', '2심'), ('3', '3심'), ('4', '고소/수사'),
+        ('5', '신청'), ('6', '항고/이의'), ('7', '압류/추심'), ('8', '정지/이의'))
+    level = models.CharField('심급', max_length=1, choices=LEVEL_CHOICES, blank=True)
+    related_case = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='관련사건',
+                                     help_text='본안 사건인 경우 원심 사건, 신청/집행 사건인 경우 관련 본안 사건 지정')
+    court = models.CharField('법원명', max_length=10, choices=COURT_CHOICES, blank=True, default='')
+    other_agency = models.CharField('기타 처리기관', max_length=30, blank=True, default='',
+                                    help_text='사건 유형이 기소 전 형사 사건인 경우 해당 수사기관을 기재')
+    case_number = models.CharField('사건번호', max_length=20)
+    case_name = models.CharField('사건명', max_length=30, db_index=True)
+    plaintiff = models.CharField('원고(신청인)', max_length=30, blank=True, default='')
+    plaintiff_attorney = models.CharField('원고 대리인', max_length=50, blank=True, default='')
+    plaintiff_case_price = models.PositiveBigIntegerField('원고 소가', null=True, blank=True)
+    defendant = models.CharField('피고(피신청인)', max_length=30)
+    defendant_attorney = models.CharField('피고 대리인', max_length=50, blank=True, default='')
+    defendant_case_price = models.PositiveBigIntegerField('피고 소가', null=True, blank=True)
+    related_debtor = models.CharField('제3채무자', max_length=30, blank=True, default='')
+    case_start_date = models.DateField('사건개시일')
+    case_end_date = models.DateField('사건종결일', null=True, blank=True)
+    summary = models.TextField('개요 및 경과', blank=True, default='')
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자',
+                                related_name='lawsuitcases')
+    updator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                                related_name='updated_lawsuitcases', verbose_name='편집자')
+    created = models.DateTimeField('등록일시', auto_now_add=True)
+    updated = models.DateTimeField('편집일시', auto_now=True)
+
+    def __str__(self):
+        agency = self.get_court_display() if self.get_court_display() else self.other_agency
+        return f'{agency} {self.case_number} {self.case_name}'
+
+    class Meta:
+        ordering = ['-case_start_date', '-id']
+        verbose_name = '03. 소송사건'
+        verbose_name_plural = '03. 소송사건'
 
 
 # ============================================================
