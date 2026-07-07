@@ -75,7 +75,7 @@ const formatPrice = (val: any) => {
     <div class="contract-log-widget">
       <!-- 5개 / 10개 목록 갯수 토글 -->
       <div class="d-flex align-center justify-space-between mb-3">
-        <span class="text-caption text-medium-emphasis">실시간 분양 계약 등록 현황</span>
+        <span class="text-medium-emphasis">실시간 분양 계약 등록 현황</span>
         <v-btn-toggle
           v-model="limitCount"
           mandatory
@@ -84,12 +84,8 @@ const formatPrice = (val: any) => {
           class="activity-toggle rounded-lg"
           variant="outlined"
         >
-          <v-btn :value="5" size="x-small" class="text-caption font-weight-medium px-2"
-            >5개 보기</v-btn
-          >
-          <v-btn :value="10" size="x-small" class="text-caption font-weight-medium px-2"
-            >10개 보기</v-btn
-          >
+          <v-btn :value="5" size="small" class="font-weight-medium px-2"> 5개 보기 </v-btn>
+          <v-btn :value="10" size="small" class="font-weight-medium px-2"> 10개 보기 </v-btn>
         </v-btn-toggle>
       </div>
 
@@ -197,12 +193,23 @@ const formatPrice = (val: any) => {
   }
 }
 
-body.dark-theme .list-item {
-  background-color: rgba(255, 255, 255, 0.03);
-  border-color: rgba(255, 255, 255, 0.08);
+body.dark-theme {
+  .list-item {
+    background-color: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.08);
 
-  &:hover {
-    background-color: rgba(255, 255, 255, 0.06);
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.06);
+    }
+  }
+
+  .activity-toggle {
+    :deep(.v-btn) {
+      color: rgba(255, 255, 255, 0.8) !important;
+      &.v-btn--selected {
+        color: rgb(var(--v-theme-primary)) !important;
+      }
+    }
   }
 }
 </style>

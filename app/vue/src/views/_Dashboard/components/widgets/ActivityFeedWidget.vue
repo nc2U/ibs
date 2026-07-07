@@ -125,12 +125,12 @@ const handleLogClick = (log: ActLogEntry) => {
           class="activity-toggle rounded-lg"
           variant="outlined"
         >
-          <v-btn value="all" size="x-small" class="text-caption font-weight-medium px-2"
-            >전체 활동</v-btn
-          >
-          <v-btn value="my" size="x-small" class="text-caption font-weight-medium px-2"
-            >내 활동만</v-btn
-          >
+          <v-btn value="all" size="x-small" class="text-caption font-weight-medium px-2">
+            전체 활동
+          </v-btn>
+          <v-btn value="my" size="x-small" class="text-caption font-weight-medium px-2">
+            내 활동만
+          </v-btn>
         </v-btn-toggle>
       </div>
 
@@ -150,24 +150,31 @@ const handleLogClick = (log: ActLogEntry) => {
           @click="handleLogClick(log)"
         >
           <!-- 좌측 원형 아이콘 -->
-          <v-avatar :color="getLogColor(log)" size="30" class="mr-3 flex-shrink-0 text-white elevation-1">
+          <v-avatar
+            :color="getLogColor(log)"
+            size="30"
+            class="mr-3 flex-shrink-0 text-white elevation-1"
+          >
             <v-icon :icon="getLogIcon(log)" size="16" />
           </v-avatar>
 
           <!-- 우측 상세 정보 -->
           <div class="flex-grow-1 min-width-0">
             <div class="d-flex align-center justify-space-between mb-1">
-              <div class="text-body-2 text-truncate" style="max-width: 75%;">
-                <strong>{{ log.creator.username }}</strong>이(가)
+              <div class="text-body-2 text-truncate" style="max-width: 75%">
+                <strong>{{ log.creator.username }}</strong>
+                &nbsp; -
                 <span class="text-medium-emphasis ml-1">{{ getActionText(log) }}</span>
               </div>
-              <span class="text-caption text-grey-darken-1 flex-shrink-0">{{ elapsedTime(log.timestamp) }}</span>
+              <span class="text-caption text-grey-darken-1 flex-shrink-0">{{
+                elapsedTime(log.timestamp)
+              }}</span>
             </div>
-            
+
             <div class="text-caption font-weight-medium text-primary text-truncate mb-1">
               {{ getTargetText(log) }}
             </div>
-            
+
             <div class="text-caption text-grey-darken-1">
               {{ log.project.name }}
             </div>
@@ -211,13 +218,24 @@ const handleLogClick = (log: ActLogEntry) => {
   }
 }
 
-body.dark-theme .activity-item-card {
-  border-color: rgba(255, 255, 255, 0.06);
-  background-color: rgba(255, 255, 255, 0.02);
+body.dark-theme {
+  .activity-item-card {
+    border-color: rgba(255, 255, 255, 0.06);
+    background-color: rgba(255, 255, 255, 0.02);
 
-  &:hover {
-    background-color: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.08);
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+  }
+
+  .activity-toggle {
+    :deep(.v-btn) {
+      color: rgba(255, 255, 255, 0.8) !important;
+      &.v-btn--selected {
+        color: rgb(var(--v-theme-primary)) !important;
+      }
+    }
   }
 }
 
