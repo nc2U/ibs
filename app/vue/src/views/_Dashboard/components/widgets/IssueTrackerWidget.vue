@@ -24,31 +24,23 @@ const issueStats = computed(() => {
     new: 0,
     progress: 0,
     resolved: 0,
-    closed: 0,
+    reserved: 0,
   }
 
   list.forEach(issue => {
     const statusName = issue.status?.name || ''
-    if (statusName.includes('신규') || statusName.includes('준비') || statusName.includes('요청')) {
+    if (statusName.includes('준비')) {
       stats.new++
-    } else if (statusName.includes('진행')) {
+    } else if (statusName.includes('진행') || statusName.includes('검토')) {
       stats.progress++
-    } else if (
-      statusName.includes('해결') ||
-      statusName.includes('검토') ||
-      statusName.includes('완료')
-    ) {
+    } else if (statusName.includes('보류')) {
+      stats.reserved++
+    } else if (statusName.includes('완료') || statusName.includes('취소')) {
       stats.resolved++
-    } else if (
-      statusName.includes('종료') ||
-      statusName.includes('보류') ||
-      statusName.includes('폐기')
-    ) {
-      stats.closed++
     } else {
       // 그 외 기본값 매핑
       if (issue.status?.closed) {
-        stats.closed++
+        stats.resolved++
       } else {
         stats.progress++
       }
@@ -59,7 +51,7 @@ const issueStats = computed(() => {
 })
 
 const issueCategories = computed(() => [
-  { label: '신규', value: issueStats.value.new, color: 'info', icon: 'mdi-alert-circle-outline' },
+  { label: '준비', value: issueStats.value.new, color: 'info', icon: 'mdi-alert-circle-outline' },
   {
     label: '진행중',
     value: issueStats.value.progress,
@@ -67,16 +59,16 @@ const issueCategories = computed(() => [
     icon: 'mdi-progress-clock',
   },
   {
+    label: '보류',
+    value: issueStats.value.reserved,
+    color: 'grey-darken-1',
+    icon: 'mdi-access-point-off',
+  },
+  {
     label: '해결됨',
     value: issueStats.value.resolved,
     color: 'success',
     icon: 'mdi-checkbox-marked-circle-outline',
-  },
-  {
-    label: '종료',
-    value: issueStats.value.closed,
-    color: 'grey-darken-1',
-    icon: 'mdi-close-circle-outline',
   },
 ])
 
@@ -184,46 +176,61 @@ onMounted(() => {
             <v-list-item-title class="text-body-2 font-weight-medium pr-1 text-truncate">
               <span class="text-grey font-weight-bold text-caption mr-1">#{{ issue.pk }}</span>
               {{ issue.subject }}
+
+              <span class="ml-2 text-caption text-grey align-center">
+                <v-chip size="x-small" variant="outlined" color="primary" class="mr-2 py-0">
+                  {{ issue.tracker?.name }}
+                </v-chip>
+                <span class="text-truncate mr-2" style="max-width: 100px">
+                  {{ issue.project?.name }}
+                </span>
+                <span class="text-grey-lighten-1 mr-2">•</span>
+                <span class="text-truncate">작성 : {{ issue.creator?.username }}</span>
+              </span>
             </v-list-item-title>
 
-            <v-list-item-subtitle class="text-caption text-grey mt-1 d-flex align-center flex-wrap">
-              <v-chip size="x-small" variant="outlined" color="primary" class="mr-2 py-0">
-                {{ issue.tracker?.name }}
-              </v-chip>
-              <span class="text-truncate mr-2" style="max-width: 100px">{{
-                issue.project?.name
-              }}</span>
-              <span class="text-grey-lighten-1 mr-2">•</span>
-              <span class="text-truncate">작성: {{ issue.creator?.username }}</span>
-            </v-list-item-subtitle>
+            <!--            <v-list-item-subtitle class="text-caption text-grey mt-1 align-center">-->
+            <!--              <v-chip size="x-small" variant="outlined" color="primary" class="mr-2 py-0">-->
+            <!--                {{ issue.tracker?.name }}-->
+            <!--              </v-chip>-->
+            <!--              <span class="text-truncate mr-2" style="max-width: 100px">-->
+            <!--                {{ issue.project?.name }}-->
+            <!--              </span>-->
+            <!--              <span class="text-grey-lighten-1 mr-2">•</span>-->
+            <!--              <span class="text-truncate">작성: {{ issue.creator?.username }}</span>-->
+            <!--            </v-list-item-subtitle>-->
 
             <template #append>
               <!-- 담당자 정보 표시 -->
-              <v-tooltip
-                :text="
-                  issue.assigned_to ? `담당자: ${issue.assigned_to.username}` : '담당자 미지정'
-                "
-                location="top"
-              >
-                <template #activator="{ props }">
-                  <v-avatar
-                    v-bind="props"
-                    size="24"
-                    :color="issue.assigned_to ? 'primary' : 'grey-lighten-2'"
-                    class="text-caption font-weight-bold"
-                  >
-                    <span v-if="issue.assigned_to" class="text-white">
-                      {{ issue.assigned_to.username.substring(0, 1) }}
-                    </span>
-                    <v-icon
-                      v-else
-                      icon="mdi-account-question-outline"
-                      size="x-small"
-                      color="grey"
-                    />
-                  </v-avatar>
-                </template>
-              </v-tooltip>
+              <span v-if="issue.assigned_to" class="text-muted text-caption">
+                담당 : {{ issue.assigned_to.username }}
+              </span>
+              <v-icon v-else icon="mdi-account-question-outline" size="x-small" color="grey" />
+              <!--              <v-tooltip-->
+              <!--                :text="-->
+              <!--                  issue.assigned_to ? `담당자: ${issue.assigned_to.username}` : '담당자 미지정'-->
+              <!--                "-->
+              <!--                location="top"-->
+              <!--              >-->
+              <!--                <template #activator="{ props }">-->
+              <!--                  <v-avatar-->
+              <!--                    v-bind="props"-->
+              <!--                    size="24"-->
+              <!--                    :color="issue.assigned_to ? 'primary' : 'grey-lighten-2'"-->
+              <!--                    class="text-caption font-weight-bold"-->
+              <!--                  >-->
+              <!--                    <span v-if="issue.assigned_to" class="text-white">-->
+              <!--                      {{ issue.assigned_to.username.substring(0, 1) }}-->
+              <!--                    </span>-->
+              <!--                    <v-icon-->
+              <!--                      v-else-->
+              <!--                      icon="mdi-account-question-outline"-->
+              <!--                      size="x-small"-->
+              <!--                      color="grey"-->
+              <!--                    />-->
+              <!--                  </v-avatar>-->
+              <!--                </template>-->
+              <!--              </v-tooltip>-->
             </template>
           </v-list-item>
         </v-list>
