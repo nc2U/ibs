@@ -10,7 +10,7 @@ from _utils.file_cleanup import file_cleanup_signals
 from _utils.file_upload import get_docs_file_path, get_docs_image_path, get_letter_pdf_path
 from .courts import COURT_CHOICES
 
-DOC_TYPE_CHOICES = (('1', '일반 업무'), ('2', '소송 업무'))
+DOC_TYPE_CHOICES = (('1', '일반문서'), ('2', '소송기록'))
 
 
 class Category(models.Model):

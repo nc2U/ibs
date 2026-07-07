@@ -4,6 +4,11 @@ export interface DocType {
   name: string
 }
 
+export interface DocTypeChoice {
+  value: number
+  label: string
+}
+
 export interface Category {
   pk: number | null
   doc_type: number
