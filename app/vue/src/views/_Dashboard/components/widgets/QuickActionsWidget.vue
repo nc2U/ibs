@@ -12,40 +12,53 @@ const router = useRouter()
 
 const quickActions = [
   {
-    icon: 'mdi-plus',
-    label: '새 프로젝트',
-    color: 'primary',
-    routeName: '프로젝트 - 추가',
+    icon: 'mdi-cash-plus',
+    label: '거래 등록',
+    color: 'teal-lighten-2',
+    routeName: '거래 내역 관리 - 생성',
+  },
+  {
+    icon: 'mdi-bug-outline',
+    label: '업무 등록',
+    color: 'teal-darken-1',
+    routeName: '업무',
   },
   {
     icon: 'mdi-file-document-plus',
     label: '계약 등록',
-    color: 'success',
+    color: 'blue-grey-lighten-1',
     routeName: '계약 등록 조회',
   },
   {
-    icon: 'mdi-bug-outline',
-    label: '이슈 등록',
-    color: 'warning',
-    routeName: '업무',
-  },
-  {
     icon: 'mdi-calendar-plus',
-    label: '일정 추가',
+    label: '일정 보기',
     color: 'info',
     routeName: '달력',
   },
   {
+    icon: 'mdi-cash-clock',
+    label: '납부 내역',
+    color: 'light-green-darken-1',
+    routeName: '납부 내역 관리',
+  },
+  {
     icon: 'mdi-clipboard-plus',
-    label: '업무 기록',
-    color: 'secondary',
+    label: '업무실행내역',
+    color: 'brown-lighten-2',
     routeName: '업무실행내역',
   },
+
   {
     icon: 'mdi-bell-plus',
     label: '공지 작성',
-    color: 'error',
+    color: 'blue-darken-2',
     routeName: '공지',
+  },
+  {
+    icon: 'mdi-plus',
+    label: '새 프로젝트',
+    color: 'indigo-lighten-2',
+    routeName: '프로젝트 - 추가',
   },
 ]
 
@@ -60,7 +73,7 @@ const handleAction = (routeName: string) => {
       <v-row dense>
         <v-col v-for="action in quickActions" :key="action.label" cols="6">
           <v-btn
-            variant="tonal"
+            variant="flat"
             :color="action.color"
             class="quick-action-btn"
             block
