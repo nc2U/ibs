@@ -154,7 +154,7 @@ onMounted(() => {
           <v-list-item
             v-for="issue in recentIssues"
             :key="issue.pk"
-            class="mb-2 rounded-lg list-item pa-2 border-all"
+            class="mb-2 rounded-lg list-item pa-2 border-all bg-more-light"
             variant="flat"
             :to="{
               name: '(업무) - 보기',
