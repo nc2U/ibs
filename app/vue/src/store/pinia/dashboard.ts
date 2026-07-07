@@ -150,7 +150,7 @@ export const WIDGET_REGISTRY: WidgetConfig[] = [
     id: 'financial-status',
     type: 'financial-status',
     title: 'Financial Status',
-    titleKo: '재무 현황',
+    titleKo: '현장별 수납 현황',
     icon: 'mdi-currency-usd',
     defaultLayout: { x: 6, y: 24, w: 6, h: 4 },
     minW: 4,
