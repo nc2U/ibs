@@ -24,7 +24,7 @@ const getWeekDays = () => {
   const sunday = new Date(current)
   sunday.setDate(current.getDate() - day)
 
-  const days = []
+  const days: any[] = []
   for (let i = 0; i < 7; i++) {
     const d = new Date(sunday)
     d.setDate(sunday.getDate() + i)

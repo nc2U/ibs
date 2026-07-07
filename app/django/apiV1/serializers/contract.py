@@ -734,6 +734,7 @@ class ContractorReleaseSerializer(serializers.ModelSerializer):
 
 class SimpleContractLogSerializer(serializers.ModelSerializer):
     project_name = serializers.CharField(source='project.name', read_only=True)
+    contractor_id = serializers.IntegerField(source='contractor.id', read_only=True)
     contractor_name = serializers.CharField(source='contractor.name', read_only=True)
     contractor_status = serializers.CharField(source='contractor.status', read_only=True)
     unit_type_name = serializers.CharField(source='unit_type.name', read_only=True)
@@ -742,7 +743,7 @@ class SimpleContractLogSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Contract
-        fields = ('pk', 'project_name', 'contractor_name', 'contractor_status',
+        fields = ('pk', 'project_name', 'contractor_id', 'contractor_name', 'contractor_status',
                   'unit_type_name', 'house_unit_name', 'serial_number', 'price', 'created')
 
     @staticmethod
