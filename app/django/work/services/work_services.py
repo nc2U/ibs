@@ -86,7 +86,7 @@ class IssueService:
                     details += f"|- **{label}**가 {desc}#{instance.parent.pk} *{instance.parent}*(으)로 {act}되었습니다."
                     parent_details = f"|- **하위 업무**에 #{instance.pk} *{instance}*이(가) 추가되었습니다."
                 elif field == 'closed':
-                    details += f"|- **{label}**가 *{instance.closed}*에 종료되었습니다."
+                    details += f"|- **{label}**가 *{instance.closed.strftime('%Y-%m-%d %H:%M')}*에 종료되었습니다."
                 else:
                     desc = f" *{old_val}*에서 " if old_val else ""
                     act = "변경" if old_val else "지정"
@@ -130,6 +130,7 @@ class IssueService:
     def send_issue_mail(instance, user, mail_type, old_status_name=None, old_assigned_to=None):
         """이슈 관련 메일 발송 유틸리티 (Celery 비동기 호출)"""
         send_issue_mail_task.delay(instance.pk, user.pk, mail_type, old_status_name, old_assigned_to)
+
 
 class PermissionService:
     @staticmethod
