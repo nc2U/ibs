@@ -4,7 +4,7 @@ import { useContract } from '@/store/pinia/contract'
 import { write_contract } from '@/utils/pageAuth'
 import { TableSecondary } from '@/utils/cssMixins'
 import Pagination from '@/components/Pagination'
-import Contract from '@/views/contracts/List/components/Contract.vue'
+import ContractItem from './ContractItem.vue'
 
 const emit = defineEmits(['page-select', 'contract-converted'])
 
@@ -59,7 +59,7 @@ const pageSelect = (page: number) => emit('page-select', page)
     </CTableHead>
 
     <CTableBody>
-      <Contract
+      <ContractItem
         v-for="contract in contractList"
         :key="contract.pk"
         :contract="contract"
