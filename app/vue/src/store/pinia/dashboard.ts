@@ -102,8 +102,8 @@ export const WIDGET_REGISTRY: WidgetConfig[] = [
     title: 'Calendar',
     titleKo: '캘린더',
     icon: 'mdi-calendar',
-    defaultLayout: { x: 0, y: 19, w: 6, h: 5 },
-    minW: 4,
+    defaultLayout: { x: 0, y: 19, w: 12, h: 5 },
+    minW: 6,
     minH: 4,
   },
   {
