@@ -227,13 +227,14 @@ class ContractPaymentSerializer(serializers.ModelSerializer):
     installment_order = SimpleInstallmentOrderSerializer(read_only=True)
     accounting_entry = SimpleLedgerAccountingEntrySerializer(read_only=True)
 
-    # 모델 프로퍼티 (효율적)
-    deal_date = serializers.DateField(read_only=True)
+    # 모델 프로퍼티 — @property이므로 명시적 선언 필요
     amount = serializers.IntegerField(read_only=True)
+
+    # 거래처 — accounting_entry.trader 직접 매핑
+    trader = serializers.CharField(source='accounting_entry.trader', read_only=True, allow_null=True)
 
     # 추가 필드 (목록용 - accounting_entry를 통해 조회)
     bank_account = serializers.SerializerMethodField(read_only=True)
-    trader = serializers.SerializerMethodField(read_only=True)
     note = serializers.SerializerMethodField(read_only=True)
     bank_transaction_id = serializers.SerializerMethodField(read_only=True)
 
@@ -253,7 +254,7 @@ class ContractPaymentSerializer(serializers.ModelSerializer):
             # 폼 수정용 추가 필드
             'bank_transaction_amount', 'sibling_entries'
         )
-        read_only_fields = ('deal_date', 'amount', 'created_at', 'updated_at')
+        read_only_fields = ('deal_date', 'created_at', 'updated_at')
 
     def _get_related_transaction(self, obj):
         """related_transaction 캐시 조회 (동일 요청 내 중복 쿼리 방지)"""
@@ -263,13 +264,6 @@ class ContractPaymentSerializer(serializers.ModelSerializer):
             except AttributeError:
                 obj._cached_related_transaction = None
         return obj._cached_related_transaction
-
-    def get_trader(self, obj):
-        """거래처 조회"""
-        try:
-            return obj.accounting_entry.trader
-        except AttributeError:
-            return None
 
     def get_note(self, obj):
         """비고 조회"""
@@ -329,12 +323,10 @@ class ContractPaymentSerializer(serializers.ModelSerializer):
         ).order_by('pk')
 
         # N+1 쿼리 최적화: 한 번에 모든 ContractPayment 정보 조회
-        cp_map = {}
-        if sibling_entries.exists():
-            cps = ContractPayment.objects.select_related('installment_order').filter(
-                accounting_entry__in=sibling_entries
-            )
-            cp_map = {cp.accounting_entry_id: cp for cp in cps}
+        cps = ContractPayment.objects.select_related('installment_order').filter(
+            accounting_entry__in=sibling_entries
+        )
+        cp_map = {cp.accounting_entry_id: cp for cp in cps}
 
         result = []
         for entry in sibling_entries:
