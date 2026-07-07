@@ -204,6 +204,8 @@ export const useContract = defineStore('contract', () => {
   const getContracts = ref<{ value: number; label: string }[]>([])
   const getAllContractors = ref<{ value: number; label: string; contract: number | null }[]>([])
 
+  const contractLogs = ref([])
+
   // actions
   const fetchAllContracts = async (project: number) =>
     await api

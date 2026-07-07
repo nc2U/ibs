@@ -6,7 +6,7 @@ export type WidgetType =
   | 'calendar'
   | 'quick-actions'
   | 'activity-feed'
-  | 'work-log'
+  | 'contract-log'
   | 'main-carousel'
   | 'wise-word'
   | 'my-issue'

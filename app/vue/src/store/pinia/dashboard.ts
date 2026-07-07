@@ -129,8 +129,8 @@ export const WIDGET_REGISTRY: WidgetConfig[] = [
   {
     id: 'contract-log',
     type: 'contract-log',
-    title: 'Contract Log',
-    titleKo: '최근 계약 변동 현황',
+    title: 'Recent Contracts',
+    titleKo: '최근 계약 등록 현황',
     icon: 'mdi-file-sign',
     defaultLayout: { x: 0, y: 24, w: 6, h: 4 },
     minW: 4,
