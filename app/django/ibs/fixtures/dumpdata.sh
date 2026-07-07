@@ -1,7 +1,7 @@
 #!/bin/bash
 
 python ../../manage.py dumpdata \
-    docs.doctype docs.category ledger.bankcode \
+    docs.category ledger.bankcode \
     ledger.companyaccount ledger.projectaccount contract.documenttype \
     ibs.accountsort ibs.accountsubd1 ibs.accountsubd2 ibs.accountsubd3 \
     ibs.projectaccountd2 ibs.projectaccountd3 ibs.wisesaying \

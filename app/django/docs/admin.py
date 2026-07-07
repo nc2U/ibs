@@ -23,15 +23,6 @@ class CategoryAdmin(ImportExportMixin, admin.ModelAdmin):
     list_filter = ('doc_type',)
 
 
-@admin.register(LawsuitCase)
-class LawsuitCaseAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'issue_project', 'sort', 'level', '__str__', 'plaintiff', 'defendant', 'case_start_date')
-    list_display_links = ('__str__',)
-    list_editable = ('issue_project', 'sort', 'level', 'case_start_date',)
-    list_filter = ('issue_project', 'sort', 'level')
-    search_fields = ('case_number', 'case_name', 'plaintiff', 'defendant')
-
-
 class LinkInline(admin.TabularInline):
     model = Link
     extra = 1
@@ -47,20 +38,23 @@ class ImageInline(admin.TabularInline):
     extra = 1
 
 
-# @admin.register(File)
-# class FileAdmin(ImportExportMixin, admin.ModelAdmin):
-#     list_display = ('id', 'docs', 'file_name')
-#     list_filter = ('docs__company', 'docs__project')
-
-
 @admin.register(Document)
 class DocumentAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'doc_type', 'issue_project', 'category', 'title', 'execution_date')
+    list_display = ('id', 'doc_type', 'doc_type_new', 'issue_project', 'category', 'title', 'execution_date')
     list_display_links = ('title',)
-    list_editable = ('doc_type', 'issue_project', 'category', 'execution_date')
+    list_editable = ('doc_type', 'doc_type_new', 'issue_project', 'category', 'execution_date')
     search_fields = ('title', 'description')
     list_filter = ('doc_type', 'issue_project__company', 'issue_project__project', 'issue_project', 'category')
     inlines = (LinkInline, FileInline, ImageInline)
+
+
+@admin.register(LawsuitCase)
+class LawsuitCaseAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_display = ('id', 'issue_project', 'sort', 'level', '__str__', 'plaintiff', 'defendant', 'case_start_date')
+    list_display_links = ('__str__',)
+    list_editable = ('issue_project', 'sort', 'level', 'case_start_date',)
+    list_filter = ('issue_project', 'sort', 'level')
+    search_fields = ('case_number', 'case_name', 'plaintiff', 'defendant')
 
 
 @admin.register(LetterSequence)
