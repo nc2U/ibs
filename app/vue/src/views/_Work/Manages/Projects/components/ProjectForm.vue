@@ -44,7 +44,7 @@ const allTrackers = computed(() => issueStore.getTrackers)
 const form = reactive({
   pk: undefined as number | undefined,
   company: null as null | number,
-  sort: '2',
+  type: '2',
   name: '',
   description: '',
   slug: '',
@@ -78,7 +78,7 @@ const formsCheck = computed(() => {
 
   if (props.project) {
     const a = form.company === props.project.company
-    const b = form.sort === props.project.sort
+    const b = form.type === props.project.type
     const c = form.name === props.project.name
     const d = form.description === props.project.description
     const e = form.homepage === props.project.homepage
@@ -179,7 +179,7 @@ const dataSetup = () => {
   if (props.project) {
     form.pk = props.project.pk
     form.company = props.project.company
-    form.sort = props.project.sort
+    form.type = props.project.type
     form.name = props.project.name
     form.description = props.project.description
     form.slug = props.project.slug
@@ -199,7 +199,7 @@ const dataSetup = () => {
   }
 }
 
-const sorts = ref([
+const types = ref([
   { value: '1', label: '본사관리' },
   { value: '2', label: '부동산개발' },
   { value: '3', label: '기타 프로젝트' },
@@ -243,27 +243,27 @@ onBeforeMount(() => {
           <CCol class="mt-2">
             <CFormCheck
               type="radio"
-              id="sort-1"
+              id="type-1"
               inline
               label="본사관리"
               value="1"
-              v-model="form.sort"
+              v-model="form.type"
             />
             <CFormCheck
               type="radio"
-              id="sort-2"
+              id="type-2"
               inline
               label="부동산개발 프로젝트"
               value="2"
-              v-model="form.sort"
+              v-model="form.type"
             />
             <CFormCheck
               type="radio"
-              id="sort-3"
+              id="type-3"
               inline
               label="기타 프로젝트"
               value="3"
-              v-model="form.sort"
+              v-model="form.type"
             />
           </CCol>
         </CRow>

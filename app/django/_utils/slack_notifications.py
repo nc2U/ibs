@@ -79,8 +79,8 @@ def send_bulk_import_summary(summary_data, user=None, target_instance=None):
 
 
 def get_slack_webhook_url(issue_project):
-    """IssueProject의 sort와 slug를 기반으로 환경변수에서 웹훅 URL 조회"""
-    if issue_project.sort == '1':  # 본사관리
+    """IssueProject의 type과 slug를 기반으로 환경변수에서 웹훅 URL 조회"""
+    if issue_project.type == '1':  # 본사관리
         key = 'SLACK_COMPANY_URL'
     else:  # 개별 프로젝트
         # slug에 하이픈(-)이 있으면 언더스코어로 변환 (환경변수 키 규칙)
@@ -242,7 +242,7 @@ def get_service_url(model_instance):
     else:
         issue_project = None
 
-    prefix = '' if (issue_project and issue_project.sort == '1') else 'project-'
+    prefix = '' if (issue_project and issue_project.type == '1') else 'project-'
 
     if isinstance(model_instance, CompanyBankTransaction):
         return f"{base_url}/#/ledger/index?highlight_id={model_instance.id}&company={model_instance.company_id}"

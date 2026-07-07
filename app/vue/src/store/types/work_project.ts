@@ -40,7 +40,7 @@ export interface MyRole {
 export interface IssueProject {
   pk?: number
   company: number | null
-  sort: '1' | '2' | '3'
+  type: '1' | '2' | '3'
   name: string
   slug: string
   description: string

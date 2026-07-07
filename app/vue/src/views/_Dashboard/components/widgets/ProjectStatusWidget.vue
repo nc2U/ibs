@@ -20,9 +20,9 @@ const myIssues = computed(() => issueStore.issueNumByMember)
 const totalProjects = computed(() => projects.value.length)
 
 // 유형별 프로젝트 수
-const hqProjects = computed(() => projects.value.filter(p => p.sort === '1').length)
-const devProjects = computed(() => projects.value.filter(p => p.sort === '2').length)
-const etcProjects = computed(() => projects.value.filter(p => p.sort === '3').length)
+const hqProjects = computed(() => projects.value.filter(p => p.type === '1').length)
+const devProjects = computed(() => projects.value.filter(p => p.type === '2').length)
+const etcProjects = computed(() => projects.value.filter(p => p.type === '3').length)
 
 // 내 할 일 진행률 계산
 const myTaskProgress = computed(() => {
@@ -130,18 +130,18 @@ onMounted(fetchWidgetData)
             <template #prepend>
               <v-icon
                 :icon="
-                  proj.sort === '1'
+                  proj.type === '1'
                     ? 'mdi-office-building-outline'
-                    : proj.sort === '2'
+                    : proj.type === '2'
                       ? 'mdi-home-city-outline'
                       : 'mdi-folder-open-outline'
                 "
                 size="small"
                 class="mr-2"
                 :color="
-                  proj.sort === '1'
+                  proj.type === '1'
                     ? 'primary'
-                    : proj.sort === '2'
+                    : proj.type === '2'
                       ? 'green-darken-3'
                       : 'purple-lighten-2'
                 "

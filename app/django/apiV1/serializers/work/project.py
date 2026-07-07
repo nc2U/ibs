@@ -151,7 +151,7 @@ class IssueProjectListSerializer(ProjectPermissionMixin, serializers.ModelSerial
 
     class Meta:
         model = IssueProject
-        fields = ('pk', 'company', 'sort', 'name', 'slug', 'description', 'status', 'depth', 'is_public',
+        fields = ('pk', 'company', 'type', 'name', 'slug', 'description', 'status', 'depth', 'is_public',
                   'module', 'creator', 'visible', 'my_perms', 'my_role', 'sub_projects', 'all_members',
                   'parent', 'parent_visible', 'slack_notifications_enabled', 'created', 'updated')
 
@@ -188,7 +188,7 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
 
     class Meta:
         model = IssueProject
-        fields = ('pk', 'company', 'sort', 'name', 'slug', 'description', 'homepage', 'is_public', 'module',
+        fields = ('pk', 'company', 'type', 'name', 'slug', 'description', 'homepage', 'is_public', 'module',
                   'is_inherit_members', 'allowed_roles', 'trackers', 'forums', 'versions', 'default_version',
                   'categories', 'status', 'depth', 'all_members', 'members', 'visible', 'ancestors', 'parent',
                   'parent_visible', 'slack_notifications_enabled', 'sub_projects', 'creator', 'my_perms',

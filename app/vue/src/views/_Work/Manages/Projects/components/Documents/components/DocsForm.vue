@@ -175,7 +175,7 @@ onBeforeMount(() => dataSetup())
     <CRow>
       <CCard :color="colorLight" class="mb-3">
         <CCardBody>
-          <CRow v-if="issueProject?.sort !== '3'" class="mb-3">
+          <CRow v-if="issueProject?.type !== '3'" class="mb-3">
             <CFormLabel class="col-form-label text-right col-2">유형</CFormLabel>
             <CCol class="col-sm-10 col-md-6 col-lg-4 col-xl-3">
               <CFormSelect v-model.number="form.doc_type" disabled required>
@@ -221,7 +221,7 @@ onBeforeMount(() => dataSetup())
             </CCol>
           </CRow>
 
-          <CRow v-if="issueProject?.sort !== '3' && form.doc_type === 2">
+          <CRow v-if="issueProject?.type !== '3' && form.doc_type === 2">
             <CCol sm="12" lg="6" class="mb-3">
               <CRow>
                 <CFormLabel class="col-form-label text-right col-2 col-lg-4">사건번호</CFormLabel>

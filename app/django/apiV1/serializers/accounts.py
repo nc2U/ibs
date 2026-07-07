@@ -155,7 +155,7 @@ class DocsInScrapeSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_proj_sort(obj):
-        return obj.issue_project.sort if obj.issue_project else None
+        return obj.issue_project.type if obj.issue_project else None
 
 
 class DocScrapeSerializer(serializers.ModelSerializer):

@@ -112,7 +112,7 @@ const dataSetup = async (docId?: string | string[]) => {
     await workStore.fetchIssueProject(projId)
   }
 
-  if (issueProject.value?.sort === '3') {
+  if (issueProject.value?.type === '3') {
     typeNumber.value = 3
   } else if (typeNumber.value === 3) {
     typeNumber.value = 1
@@ -198,7 +198,7 @@ onBeforeMount(async () => {
       <template v-if="can(PERM.DOCS_READ)">
         <template v-if="route.name === '(문서)'">
           <CRow class="mb-3">
-            <CCol v-if="issueProject?.sort !== '3'">
+            <CCol v-if="issueProject?.type !== '3'">
               <v-tabs v-model="typeNumber" density="compact" @update:model-value="getDocsList">
                 <v-tab
                   v-for="type in types"

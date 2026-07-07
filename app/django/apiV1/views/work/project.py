@@ -25,7 +25,7 @@ class IssueProjectFilter(FilterSet):
 
     class Meta:
         model = IssueProject
-        fields = ('company', 'sort', 'status', 'parent__slug', 'project',
+        fields = ('company', 'type', 'status', 'parent__slug', 'project',
                   'is_public', 'name', 'members__user', 'description')
 
 
