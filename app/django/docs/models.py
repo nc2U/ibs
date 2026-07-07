@@ -117,6 +117,7 @@ class Document(BaseModel):
     hit = models.PositiveIntegerField('조회수', default=0)
     ip = models.GenericIPAddressField('아이피', null=True, blank=True)
     device = models.CharField('등록기기', max_length=255, blank=True, default='')
+    is_pinned = models.BooleanField('상단 고정', default=False)
     is_secret = models.BooleanField('비밀글', default=False)
     password = models.CharField('패스워드', max_length=255, blank=True, default='')
     is_blind = models.BooleanField('숨김', default=False)
@@ -138,7 +139,7 @@ class Document(BaseModel):
         return today < new_period.strftime('%Y-%m-%d %H:%M')
 
     class Meta:
-        ordering = ['-created']
+        ordering = ['is_pinned', '-created']
         verbose_name = '04. 문서'
         verbose_name_plural = '04. 문서'
 
