@@ -5,7 +5,6 @@ import { useRoute, useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
 import { useStore } from '@/store'
 import { useCompany } from '@/store/pinia/company'
-import { useAccount } from '@/store/pinia/account.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { colorLight } from '@/utils/cssMixins'
@@ -22,9 +21,6 @@ const emit = defineEmits(['modal-close'])
 
 const store = useStore()
 const isDark = computed(() => store.theme === 'dark')
-
-const accStore = useAccount()
-const workManager = computed(() => accStore.workManager)
 
 const { can, PERM } = usePerms()
 
@@ -58,6 +54,7 @@ const form = reactive({
   is_inherit_members: false,
   allowed_roles: [6, 7, 8],
   trackers: [4, 5, 6, 7],
+  slack_notifications_enabled: false,
 })
 
 const module = reactive({
@@ -106,9 +103,10 @@ const formsCheck = computed(() => {
     const o = !canProjectModule.value || module.document === props.project.module?.document
     const r = !canProjectModule.value || module.forum === props.project.module?.forum
     const s = !canProjectModule.value || module.calendar === props.project.module?.calendar
+    const t = form.slack_notifications_enabled === props.project.slack_notifications_enabled
 
     const first = a && b && c && d && e && f && g && h && i && j
-    const second = l && n && o && r && s
+    const second = l && n && o && r && s && t
 
     // 3. 권한은 있지만 변경 사항이 없으면 비활성화
     return first && second
@@ -191,6 +189,7 @@ const dataSetup = () => {
     form.is_inherit_members = props.project.is_inherit_members
     form.allowed_roles = props.project.allowed_roles?.map(r => r.pk) ?? []
     form.trackers = props.project.trackers?.map(t => t.pk) ?? []
+    form.slack_notifications_enabled = props.project.slack_notifications_enabled
 
     module.issue = true
     module.news = !!props.project.module?.news
@@ -312,7 +311,7 @@ onBeforeMount(() => {
 
         <CRow v-if="canProjectPublic" class="mb-3">
           <CFormLabel class="col-form-label text-right col-2">공개여부</CFormLabel>
-          <CCol class="pt-2">
+          <CCol style="padding-top: 5px">
             <CFormSwitch v-model="form.is_public" id="is_public" label="프로젝트 공개 여부" />
             <div class="form-text">
               공개 프로젝트는 네트워크의 모든 사용자가 접속할 수 있습니다.
@@ -376,6 +375,21 @@ onBeforeMount(() => {
               :options="allTrackers"
               placeholder="허용 유형 항목 선택"
             />
+          </CCol>
+        </CRow>
+
+        <CRow class="mb-3">
+          <CFormLabel class="col-form-label text-right col-2">슬랙 알림</CFormLabel>
+          <CCol style="padding-top: 5px">
+            <CFormSwitch
+              v-model="form.slack_notifications_enabled"
+              id="slack_notifications_enabled"
+              label="슬랙 알림 사용 여부"
+            />
+            <span v-if="form.slack_notifications_enabled" class="form-text">
+              슬랙 웹훅이 등록된 경우에만 슬랙 알림을 사용할 수 있습니다. 웹훅 등록은 관리자에게
+              요청하세요.
+            </span>
           </CCol>
         </CRow>
       </CCardBody>

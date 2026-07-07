@@ -153,7 +153,7 @@ class IssueProjectListSerializer(ProjectPermissionMixin, serializers.ModelSerial
         model = IssueProject
         fields = ('pk', 'company', 'sort', 'name', 'slug', 'description', 'status', 'depth', 'is_public',
                   'module', 'creator', 'visible', 'my_perms', 'my_role', 'sub_projects', 'all_members',
-                  'parent', 'parent_visible', 'created', 'updated')
+                  'parent', 'parent_visible', 'slack_notifications_enabled', 'created', 'updated')
 
     def get_sub_projects(self, obj):
         sub_projects = obj.issueproject_set.exclude(status='9')
@@ -188,11 +188,11 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
 
     class Meta:
         model = IssueProject
-        fields = ('pk', 'company', 'sort', 'name', 'slug', 'description', 'homepage', 'is_public',
-                  'module', 'is_inherit_members', 'allowed_roles', 'trackers', 'forums', 'versions',
-                  'default_version', 'categories', 'status', 'depth', 'all_members', 'members',
-                  'visible', 'ancestors', 'parent', 'parent_visible', 'sub_projects', 'creator',
-                  'my_perms', 'my_role', 'created', 'updated', 'issue', 'news', 'document', 'forum', 'calendar')
+        fields = ('pk', 'company', 'sort', 'name', 'slug', 'description', 'homepage', 'is_public', 'module',
+                  'is_inherit_members', 'allowed_roles', 'trackers', 'forums', 'versions', 'default_version',
+                  'categories', 'status', 'depth', 'all_members', 'members', 'visible', 'ancestors', 'parent',
+                  'parent_visible', 'slack_notifications_enabled', 'sub_projects', 'creator', 'my_perms',
+                  'my_role', 'created', 'updated', 'issue', 'news', 'document', 'forum', 'calendar')
         read_only_fields = ('status', 'is_public', 'forums')
 
     # 메서드 복구

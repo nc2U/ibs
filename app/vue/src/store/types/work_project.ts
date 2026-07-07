@@ -58,12 +58,11 @@ export interface IssueProject {
   depth: number
   all_members: SimpleMember[]
   members: SimpleMember[]
-  activities: CodeValue[]
   visible?: boolean
-  total_time_spent?: number
   ancestors: SimpleProject[]
   parent: number | null
   parent_visible: boolean
+  slack_notifications_enabled: boolean
   sub_projects: IssueProject[]
   creator?: string
   my_perms?: string[]
