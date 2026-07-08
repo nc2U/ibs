@@ -19,7 +19,7 @@ class Company(models.Model):
     address1 = models.CharField('주소', max_length=35, blank=True)
     address2 = models.CharField('상세주소', max_length=50, blank=True)
     address3 = models.CharField('참고항목', max_length=30, blank=True)
-    is_default = models.BooleanField('기본 회사 여부', default=False)
+    is_default = models.BooleanField('메인 회사 여부', default=False)
 
     class Meta:
         verbose_name = "01. 회사 정보"
