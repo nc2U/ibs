@@ -9,7 +9,7 @@ from _utils.file_upload import get_site_file_path
 
 
 class Project(models.Model):
-    issue_project = models.OneToOneField('work.IssueProject', on_delete=models.CASCADE, verbose_name="업무 프로젝트")
+    issue_project = models.OneToOneField('work.IssueProject', on_delete=models.PROTECT, verbose_name="업무 프로젝트")
     name = models.CharField('프로젝트명', max_length=30, unique=True, db_index=True)
     order = models.PositiveSmallIntegerField('정렬순서', default=100)
     KIND_CHOICES = (('1', '공동주택(아파트)'), ('2', '공동주택(타운하우스)'), ('3', '주상복합(아파트)'), ('4', '주상복합(오피스텔)'),
