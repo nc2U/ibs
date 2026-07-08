@@ -30,6 +30,7 @@ export interface Project {
   num_planed_parking: number | null
   sub_name?: string
   slug?: string
+  desc?: string
   slack_notifications_enabled?: boolean
   company_id?: number | null
 }

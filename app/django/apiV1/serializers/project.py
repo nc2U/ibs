@@ -28,6 +28,7 @@ class SallesBillInProjectSerializer(serializers.ModelSerializer):
 
 class ProjectSerializer(serializers.ModelSerializer):
     company = serializers.SerializerMethodField(read_only=True)
+    issue_project = serializers.PrimaryKeyRelatedField(read_only=True)
     kind = serializers.ChoiceField(choices=Project.KIND_CHOICES)
     kind_desc = serializers.CharField(source='get_kind_display', read_only=True)
     salesbillissue = SallesBillInProjectSerializer(read_only=True)
@@ -35,6 +36,7 @@ class ProjectSerializer(serializers.ModelSerializer):
     # Write-only fields for unified IssueProject creation
     sub_name = serializers.CharField(write_only=True, required=False)
     slug = serializers.CharField(write_only=True, required=False)
+    desc = serializers.CharField(write_only=True, required=False, allow_blank=True)
     slack_notifications_enabled = serializers.BooleanField(write_only=True, required=False, default=False)
     company_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
 
@@ -46,7 +48,7 @@ class ProjectSerializer(serializers.ModelSerializer):
                   'num_unit', 'buy_land_extent', 'scheme_land_extent', 'donation_land_extent', 'on_floor_area',
                   'under_floor_area', 'total_floor_area', 'build_area', 'floor_area_ratio', 'build_to_land_ratio',
                   'num_legal_parking', 'num_planed_parking', 'salesbillissue',
-                  'sub_name', 'slug', 'slack_notifications_enabled', 'company_id')
+                  'sub_name', 'slug', 'desc', 'slack_notifications_enabled', 'company_id')
 
     @staticmethod
     def get_company(obj):
@@ -149,6 +151,7 @@ class ProjectSerializer(serializers.ModelSerializer):
 
         sub_name = validated_data.pop('sub_name', None)
         slug = validated_data.pop('slug', None)
+        desc = validated_data.pop('desc', '')
         slack_notifications_enabled = validated_data.pop('slack_notifications_enabled', False)
         company_id = validated_data.pop('company_id', None)
 
@@ -175,6 +178,7 @@ class ProjectSerializer(serializers.ModelSerializer):
             type='2',  # 부동산개발
             name=sub_name or validated_data.get('name'),
             slug=slug or validated_data.get('name'),
+            description=desc,
             is_public=True,
             slack_notifications_enabled=slack_notifications_enabled,
             creator=creator
@@ -194,6 +198,7 @@ class ProjectSerializer(serializers.ModelSerializer):
         # 생성 전용 write_only 필드들은 수정 시 유입되더라도 제외
         validated_data.pop('sub_name', None)
         validated_data.pop('slug', None)
+        validated_data.pop('desc', None)
         validated_data.pop('slack_notifications_enabled', None)
         validated_data.pop('company_id', None)
 

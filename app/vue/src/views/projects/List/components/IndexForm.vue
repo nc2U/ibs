@@ -1,14 +1,10 @@
 <script setup lang="ts">
-import { computed, onBeforeMount, onUpdated, type PropType, reactive, ref } from 'vue'
-import { useStore } from '@/store'
+import { computed, onBeforeMount, type PropType, reactive, ref, watch } from 'vue'
 import { type Project } from '@/store/types/project'
-import { useProject } from '@/store/pinia/project'
-import { btnLight } from '@/utils/cssMixins.ts'
+import { useStore } from '@/store'
 import { write_project } from '@/utils/pageAuth'
 import Datepicker from '@vuepic/vue-datepicker'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
-import IssueProjectForm from './IssueProjectForm.vue'
-import MultiSelect from '@/components/MultiSelect/index.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
@@ -21,17 +17,6 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['to-submit', 'reset-form', 'close', 'get-project'])
-
-const projStore = useProject()
-const getAllProjects = async (sort: '1' | '2' | '3') => {
-  emit('get-project', sort)
-  if (props.project?.pk) {
-    await projStore.fetchProject(props.project.pk)
-    formDataSetup()
-  }
-}
-
-const refIssueForm = ref()
 
 const form = reactive<Project>({
   pk: undefined,
@@ -65,6 +50,7 @@ const form = reactive<Project>({
   num_planed_parking: null,
   sub_name: '',
   slug: '',
+  desc: '',
   slack_notifications_enabled: false,
 })
 
@@ -78,8 +64,6 @@ const sortOptins = [
   { value: '7', label: '지식산업센터' },
   { value: '8', label: '기타' },
 ]
-
-const validated = ref(false)
 
 const confirmText = computed(() => (props.project ? '변경' : '등록'))
 const btnClass = computed(() => (props.project ? 'success' : 'primary'))
@@ -127,6 +111,8 @@ const refConfirmModal = ref()
 
 const store = useStore()
 
+const validated = ref(false)
+
 const onSubmit = (event: Event) => {
   if (write_project.value) {
     const e = event.currentTarget as HTMLSelectElement
@@ -146,6 +132,7 @@ const modalAction = () => {
   if (props.project) {
     delete submitData.sub_name
     delete submitData.slug
+    delete submitData.desc
     delete submitData.slack_notifications_enabled
     delete submitData.company_id
   }
@@ -219,12 +206,16 @@ const formDataSetup = () => {
     form.num_planed_parking = null
     form.sub_name = ''
     form.slug = ''
+    form.desc = ''
     form.slack_notifications_enabled = false
   }
 }
 
 onBeforeMount(() => formDataSetup())
-onUpdated(() => formDataSetup())
+watch(
+  () => props.project,
+  () => formDataSetup(),
+)
 </script>
 
 <template>
@@ -233,7 +224,7 @@ onUpdated(() => formDataSetup())
       <CRow>
         <CCol xl="12" class="pt-3">
           <CRow>
-            <CFormLabel class="col-md-2 col-lg-1 col-form-label required"> 프로젝트명</CFormLabel>
+            <CFormLabel class="col-md-2 col-lg-1 col-form-label required">프로젝트명</CFormLabel>
             <CCol md="10" lg="2" class="mb-md-3">
               <CFormInput
                 v-model="form.name"
@@ -243,17 +234,6 @@ onUpdated(() => formDataSetup())
                 required
               />
               <CFormFeedback invalid>프로젝트명을 입력하세요.</CFormFeedback>
-            </CCol>
-
-            <CFormLabel class="col-md-2 col-lg-1 col-form-label"> 정렬순서</CFormLabel>
-            <CCol md="10" lg="2" class="mb-md-3">
-              <CFormInput
-                v-model.number="form.order"
-                type="number"
-                min="0"
-                placeholder="프로젝트 정력순서를 입력하세요"
-              />
-              <CFormFeedback invalid>정렬순서를 입력하세요.</CFormFeedback>
             </CCol>
 
             <CFormLabel class="col-md-2 col-lg-1 col-form-label required"> 프로젝트종류</CFormLabel>
@@ -286,61 +266,69 @@ onUpdated(() => formDataSetup())
               />
               <CFormFeedback invalid> 사업개시년도를 입력하세요</CFormFeedback>
             </CCol>
+
+            <CFormLabel class="col-md-2 col-lg-1 col-form-label"> 정렬순서</CFormLabel>
+            <CCol md="10" lg="2" class="mb-md-3">
+              <CFormInput
+                v-model.number="form.order"
+                type="number"
+                min="0"
+                placeholder="프로젝트 정력순서를 입력하세요"
+              />
+              <CFormFeedback invalid>정렬순서를 입력하세요.</CFormFeedback>
+            </CCol>
           </CRow>
-          <CRow>
-            <template v-if="!project">
-              <CRow>
-                <CFormLabel class="col-md-2 col-lg-1 col-form-label required">
-                  프로젝트 약칭
-                </CFormLabel>
-                <CCol md="10" lg="2" class="mb-md-3">
-                  <CFormInput
-                    v-model="form.sub_name"
-                    type="text"
-                    maxlength="100"
-                    placeholder="예: [인천]동춘조합"
-                    required
-                  />
-                  <CFormFeedback invalid>프로젝트 약칭을 입력하세요.</CFormFeedback>
-                </CCol>
 
-                <CFormLabel class="col-md-2 col-lg-1 col-form-label required"
-                  >식별자 (Slug)</CFormLabel
-                >
-                <CCol md="10" lg="2" class="mb-md-3">
-                  <CFormInput
-                    v-model="form.slug"
-                    type="text"
-                    maxlength="100"
-                    placeholder="예: dongchun"
-                    required
-                  />
-                  <CFormFeedback invalid>식별자(Slug)를 입력하세요.</CFormFeedback>
-                </CCol>
+          <CRow v-if="!project">
+            <CFormLabel class="col-md-2 col-lg-1 col-form-label required">
+              프로젝트 약칭
+            </CFormLabel>
+            <CCol md="10" lg="2" class="mb-md-3">
+              <CFormInput
+                v-model="form.sub_name"
+                type="text"
+                maxlength="100"
+                placeholder="예: [인천]동춘조합"
+                required
+              />
+              <CFormFeedback invalid>프로젝트 약칭을 입력하세요.</CFormFeedback>
+            </CCol>
 
-                <CFormLabel class="col-md-2 col-lg-1 col-form-label">Slack 알림 사용</CFormLabel>
-                <CCol md="10" lg="2" class="mb-md-3 pt-2">
-                  <CFormCheck
-                    id="slack-toggle"
-                    v-model="form.slack_notifications_enabled"
-                    label="활성화"
-                  />
-                </CCol>
-              </CRow>
-            </template>
-            <template v-else>
-              <CRow>
-                <CFormLabel class="col-md-2 col-lg-1 col-form-label">업무 프로젝트</CFormLabel>
-                <CCol md="10" lg="4" class="mb-md-3 pt-2">
-                  <span class="text-body-2 font-weight-bold text-grey-darken-1">
-                    {{
-                      getProjects.find(p => p.value === form.issue_project)?.label ||
-                      '연동된 프로젝트 없음'
-                    }}
-                  </span>
-                </CCol>
-              </CRow>
-            </template>
+            <CFormLabel class="col-md-2 col-lg-1 col-form-label required">
+              식별자 (Slug)
+            </CFormLabel>
+            <CCol md="10" lg="2" class="mb-md-3">
+              <CFormInput
+                v-model="form.slug"
+                type="text"
+                maxlength="100"
+                placeholder="예: dongchun"
+                required
+              />
+              <CFormFeedback invalid>식별자(Slug)를 입력하세요.</CFormFeedback>
+            </CCol>
+
+            <CFormLabel class="col-md-2 col-lg-1 col-form-label"> 프로젝트 설명</CFormLabel>
+            <CCol md="10" lg="2" class="mb-md-3">
+              <CFormInput
+                v-model="form.desc"
+                type="text"
+                placeholder="프로젝트에 대한 설명을 간략히 입력하세요"
+              />
+            </CCol>
+
+            <CFormLabel class="col-md-2 col-lg-1 col-form-label">Slack 알림 사용 </CFormLabel>
+            <CCol md="10" lg="2" class="mb-md-3">
+              <CFormCheck
+                id="slack-toggle"
+                v-model="form.slack_notifications_enabled"
+                label="활성화"
+              />
+              <CFormText class="text-grey">
+                슬랙 웹훅이 등록된 경우에만 슬랙 알림을 사용할 수 있습니다. 웹훅 등록은 관리자에게
+                요청하세요.
+              </CFormText>
+            </CCol>
           </CRow>
 
           <CRow>
@@ -623,7 +611,7 @@ onUpdated(() => formDataSetup())
         저장
       </v-btn>
       <v-btn v-if="project" type="button" color="warning" @click="deleteProject"> 삭제</v-btn>
-      <v-btn type="button" :color="btnLight" @click="emit('reset-form')" flat> 취소</v-btn>
+      <v-btn type="button" color="light" @click="emit('reset-form')" flat> 취소</v-btn>
     </CCardFooter>
   </CForm>
 
@@ -644,6 +632,4 @@ onUpdated(() => formDataSetup())
   </ConfirmModal>
 
   <AlertModal ref="refAlertModal" />
-
-  <IssueProjectForm ref="refIssueForm" @get-project="getAllProjects" />
 </template>
