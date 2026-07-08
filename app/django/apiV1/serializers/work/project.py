@@ -267,7 +267,11 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
             if request:
                 PermissionService.check_module_permission(request.user, instance)
 
-            module = instance.module
+            try:
+                module = instance.module
+            except Module.DoesNotExist:
+                module = Module.objects.create(project=instance)
+                
             if issue is not None: module.issue = issue
             if news is not None: module.news = news
             if document is not None: module.document = document

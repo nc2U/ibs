@@ -11,7 +11,7 @@ from ledger.models import ProjectAccount
 from notice.models import SalesBillIssue
 from project.models import (Project, ProjectIncBudget, ProjectOutBudget, Site, SiteInfoFile,
                             SiteOwner, SiteOwnshipRelationship, SiteContract, SiteContractFile)
-from work.models.project import IssueProject
+from work.models.project import IssueProject, Module
 
 
 # Project --------------------------------------------------------------------------
@@ -185,6 +185,9 @@ class ProjectSerializer(serializers.ModelSerializer):
         )
         issue_project.allowed_roles.set([6, 7, 8])
         issue_project.trackers.set([4, 5, 6, 7, 8])
+
+        # 기본 모듈(Module) 객체 연계 생성
+        Module.objects.create(project=issue_project)
 
         # 3. Project 인스턴스 생성 및 필요서류 등록
         validated_data['issue_project'] = issue_project
