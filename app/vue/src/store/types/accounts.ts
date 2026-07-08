@@ -13,6 +13,9 @@ export declare interface User {
     name: string
     birth_date: string
     cell_phone: string
+    auto_watch_created?: boolean
+    auto_watch_assigned?: boolean
+    meeting_notification?: boolean
   }
   last_login: string | null
 }
@@ -42,13 +45,16 @@ export interface StaffAuth {
 }
 
 export type Profile = {
-  [key: string]: undefined | number | number[] | null | string | File
+  [key: string]: undefined | number | number[] | null | string | boolean | File
   pk?: number | null
   user?: number | null
   name: string
   birth_date: string
   cell_phone: string
   image?: File | string | null
+  auto_watch_created?: boolean
+  auto_watch_assigned?: boolean
+  meeting_notification?: boolean
   like_posts?: number[]
   like_comments?: number[]
   blame_posts?: number[]

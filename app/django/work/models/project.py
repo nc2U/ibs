@@ -328,6 +328,17 @@ class Member(models.Model):
         unique_together = ('user', 'project')  # 한 프로젝트당 한 번만 속할 수 있음
 
 
+class ProjectSubscription(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="사용자")
+    project = models.ForeignKey(IssueProject, on_delete=models.CASCADE, verbose_name="업무 프로젝트")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'project')
+        verbose_name = "프로젝트 알림 구독"
+        verbose_name_plural = "프로젝트 알림 구독"
+
+
 class VersionManager(models.Manager):
     def accessible_from(self, project):
         ancestors = project.get_ancestors()

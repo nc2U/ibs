@@ -6,11 +6,10 @@ from _utils.file_service import FileService
 from accounts.models import User
 from apiV1.serializers.accounts import SimpleUserSerializer
 from apiV1.serializers.work.project import SimpleIssueProjectSerializer, TrackerInIssueProjectSerializer
-from work.models.issue import (IssueCategory, Tracker, IssueStatus,
-                               Workflow, CodeIssuePriority, Issue,
-                               IssueRelation, IssueFile, IssueComment)
+from work.models.issue import (IssueCategory, Tracker, IssueStatus, Workflow, CodeIssuePriority,
+                               Issue, IssueRelation, IssueFile, IssueComment)
 from work.models.meeting import Meeting
-from work.models.project import IssueProject, Version
+from work.models.project import IssueProject, Version, ProjectSubscription
 
 
 class MeetingInIssueSerializer(serializers.ModelSerializer):
@@ -254,7 +253,22 @@ class IssueSerializer(serializers.ModelSerializer):
                                      **validated_data)
         # Set the watchers of the instance to the list of watchers
         creator = self.context['request'].user
-        issue.watchers.add(creator.pk)
+        profile = getattr(creator, 'profile', None)
+        auto_watch_created = getattr(profile, 'auto_watch_created', True) if profile else True
+        if auto_watch_created:
+            issue.watchers.add(creator.pk)
+
+        # Apply Project Subscriptions
+        sub_user_ids = ProjectSubscription.objects.filter(project=project).values_list('user_id', flat=True)
+        if sub_user_ids:
+            issue.watchers.add(*sub_user_ids)
+
+        # Apply Assignee Auto-watch Preference
+        if assigned_to:
+            assignee_profile = getattr(assigned_to, 'profile', None)
+            auto_watch_assigned = getattr(assignee_profile, 'auto_watch_assigned', True) if assignee_profile else True
+            if auto_watch_assigned:
+                issue.watchers.add(assigned_to)
 
         if hasattr(self.initial_data, 'getlist'):
             watchers = self.initial_data.getlist('watchers')
@@ -297,8 +311,15 @@ class IssueSerializer(serializers.ModelSerializer):
             instance.fixed_version = Version.objects.get(pk=fixed_version) if fixed_version else None
 
         if 'assigned_to' in self.initial_data:
-            assigned_to = self.initial_data.get('assigned_to', None)
-            instance.assigned_to = User.objects.get(pk=assigned_to) if assigned_to else None
+            assigned_to_id = self.initial_data.get('assigned_to', None)
+            assigned_to = User.objects.get(pk=assigned_to_id) if assigned_to_id else None
+            instance.assigned_to = assigned_to
+            if assigned_to:
+                assignee_profile = getattr(assigned_to, 'profile', None)
+                auto_watch_assigned = getattr(assignee_profile, 'auto_watch_assigned',
+                                              True) if assignee_profile else True
+                if auto_watch_assigned:
+                    instance.watchers.add(assigned_to)
 
         # 공유자 업데이트
         if hasattr(self.initial_data, 'getlist'):

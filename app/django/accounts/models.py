@@ -9,7 +9,7 @@ from django.utils.translation import gettext_lazy as _
 from _utils.file_cleanup import file_cleanup_signals
 from docs.models import Document
 from forum.models import Post, Comment
-from work.models.project import IssueProject
+from work.models.project import IssueProject, Member
 
 
 class User(AbstractBaseUser, PermissionsMixin):
@@ -65,7 +65,6 @@ class User(AbstractBaseUser, PermissionsMixin):
         send_mail(subject, message, from_email, [self.email], **kwargs)
 
     def work_projects(self):
-        from work.models.project import Member
         # 1. Get project IDs where the user is directly a member
         direct_project_ids = list(
             Member.objects.filter(user=self, project__status='1').values_list('project_id', flat=True))
@@ -103,9 +102,9 @@ class StaffAuth(models.Model):
                                               blank=True, verbose_name='허용 프로젝트',
                                               help_text='사용자가 조회 및 관리할 수 있는 프로젝트들을 선택합니다.')
     default_project = models.ForeignKey('project.Project',
-                                         on_delete=models.SET_NULL, null=True,
-                                         blank=True, verbose_name='담당 메인 프로젝트',
-                                         help_text='선택한 프로젝트를 사용자의 각 화면에서 기본 프로젝트로 보여줍니다.')
+                                        on_delete=models.SET_NULL, null=True,
+                                        blank=True, verbose_name='담당 메인 프로젝트',
+                                        help_text='선택한 프로젝트를 사용자의 각 화면에서 기본 프로젝트로 보여줍니다.')
 
     class AuthChoice(models.TextChoices):
         NONE = '0', '권한없음'
@@ -144,6 +143,11 @@ class Profile(models.Model):
     like_comments = models.ManyToManyField(Comment, blank=True, related_name='comment_likes')
     blame_posts = models.ManyToManyField(Post, blank=True, related_name='post_blames')
     blame_comments = models.ManyToManyField(Comment, blank=True, related_name='comment_blames')
+
+    # Notification & Watcher Preferences
+    auto_watch_created = models.BooleanField('내가 생성한 업무 자동 모니터링', default=True)
+    auto_watch_assigned = models.BooleanField('나에게 할당된 업무 자동 모니터링', default=True)
+    meeting_notification = models.BooleanField('회의록 참석 시 알림 수신', default=True)
 
     def __str__(self):
         return self.name

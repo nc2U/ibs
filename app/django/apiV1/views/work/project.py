@@ -10,7 +10,8 @@ from apiV1.permissions.work_perms import ProjectPermission
 from apiV1.serializers.work import IssueProjectSerializer, IssueProjectListSerializer, \
     ModuleSerializer, RoleSerializer, PermissionSerializer, MemberSerializer, \
     ProjectMemberUserSerializer, VersionSerializer, VersionListSerializer
-from work.models import IssueProject, Module, Role, Permission, Member, Version
+from apiV1.serializers.work import ProjectSubscriptionSerializer
+from work.models import IssueProject, Module, Role, Permission, Member, ProjectSubscription, Version
 
 
 # Work --------------------------------------------------------------------------
@@ -280,6 +281,20 @@ class MemberViewSet(viewsets.ModelViewSet):
             return queryset.filter(user=user).prefetch_related('roles')
 
         return queryset.none()
+
+
+class ProjectSubscriptionViewSet(viewsets.ModelViewSet):
+    queryset = ProjectSubscription.objects.all()
+    serializer_class = ProjectSubscriptionSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+    filterset_fields = ('project',)
+
+    def get_queryset(self):
+        user = self.request.user
+        target_user = self.request.query_params.get('user')
+        if target_user and (user.is_superuser or user.work_manager):
+            return self.queryset.filter(user_id=target_user)
+        return self.queryset.filter(user=user)
 
 
 class VersionFilter(FilterSet):

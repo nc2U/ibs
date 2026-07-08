@@ -2,13 +2,15 @@
 import { computed, onBeforeMount, ref, reactive, watch } from 'vue'
 import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
 import { useAccount } from '@/store/pinia/account'
+import { useWork } from '@/store/pinia/work_project'
 import api from '@/api'
-import { CFormSelect } from '@coreui/vue'
 
 const menu = ref<'일반' | '프로젝트'>('일반')
 
 const accStore = useAccount()
 const user = computed(() => accStore.user)
+const workProjectStore = useWork()
+const projectList = computed(() => workProjectStore.getVisibleProjPks)
 
 const [route, router] = [useRoute(), useRouter()]
 
@@ -25,16 +27,20 @@ const form = reactive({
   name: '',
   birth_date: '',
   cell_phone: '',
+  auto_watch_created: true,
+  auto_watch_assigned: true,
+  meeting_notification: true,
   // Notification fields (creation only)
   mail_sending: true,
   send_option: '1',
   expired: 24,
+  subscribed_projects: [] as number[],
 })
 
 const genPass = ref('')
 const validated = ref(false)
 
-const formDataSetup = () => {
+const formDataSetup = async () => {
   if (user.value) {
     form.username = user.value.username || ''
     form.email = user.value.email || ''
@@ -49,10 +55,24 @@ const formDataSetup = () => {
       form.name = user.value.profile.name || ''
       form.birth_date = user.value.profile.birth_date || ''
       form.cell_phone = user.value.profile.cell_phone || ''
+      form.auto_watch_created = user.value.profile.auto_watch_created ?? true
+      form.auto_watch_assigned = user.value.profile.auto_watch_assigned ?? true
+      form.meeting_notification = user.value.profile.meeting_notification ?? true
     } else {
       form.name = ''
       form.birth_date = ''
       form.cell_phone = ''
+      form.auto_watch_created = true
+      form.auto_watch_assigned = true
+      form.meeting_notification = true
+    }
+
+    try {
+      const res = await api.get(`/project-subscription/?user=${user.value.pk}`)
+      form.subscribed_projects = res.data.map((item: any) => item.project)
+    } catch (err) {
+      console.error(err)
+      form.subscribed_projects = []
     }
   } else {
     form.username = ''
@@ -66,19 +86,24 @@ const formDataSetup = () => {
     form.name = ''
     form.birth_date = ''
     form.cell_phone = ''
+    form.auto_watch_created = true
+    form.auto_watch_assigned = true
+    form.meeting_notification = true
     form.mail_sending = true
     form.send_option = '1'
     form.expired = 24
+    form.subscribed_projects = []
   }
 }
 
 onBeforeMount(async () => {
+  await workProjectStore.fetchVisibleProjectsList({})
   if (route.params.userId) {
     await accStore.fetchUser(Number(route.params.userId))
   } else {
     accStore.user = null
   }
-  formDataSetup()
+  await formDataSetup()
 })
 
 onBeforeRouteUpdate(async to => {
@@ -87,7 +112,7 @@ onBeforeRouteUpdate(async to => {
   } else {
     accStore.user = null
   }
-  formDataSetup()
+  await formDataSetup()
 })
 
 watch(user, () => formDataSetup())
@@ -128,6 +153,7 @@ const onSubmit = async (event: Event) => {
   }
 
   try {
+    let targetUserId = 0
     if (!user.value) {
       // Create user
       const payload = {
@@ -138,9 +164,13 @@ const onSubmit = async (event: Event) => {
         send_option: form.send_option as '1' | '2',
         expired: form.expired,
       }
-      await accStore.adminCreateUser(payload)
+      const res = await accStore.adminCreateUser(payload)
+      if (res && res.data && res.data.pk) {
+        targetUserId = res.data.pk
+      }
     } else {
       // Edit User account info
+      targetUserId = user.value.pk as number
       const userPayload: any = {
         email: form.email,
         is_active: form.is_active,
@@ -158,11 +188,32 @@ const onSubmit = async (event: Event) => {
         name: form.name,
         birth_date: form.birth_date,
         cell_phone: form.cell_phone,
+        auto_watch_created: form.auto_watch_created,
+        auto_watch_assigned: form.auto_watch_assigned,
+        meeting_notification: form.meeting_notification,
       }
       if (user.value.profile) {
         await api.patch(`/profile/${user.value.profile.pk}/`, profilePayload)
       } else {
         await api.post(`/profile/`, { ...profilePayload, user: user.value.pk })
+      }
+    }
+
+    if (targetUserId) {
+      const res = await api.get(`/project-subscription/?user=${targetUserId}`)
+      const existingSubs = res.data
+      const existingProjIds = existingSubs.map((item: any) => item.project)
+
+      const toAdd = form.subscribed_projects.filter((id: number) => !existingProjIds.includes(id))
+      const toDelete = existingSubs.filter(
+        (item: any) => !form.subscribed_projects.includes(item.project),
+      )
+
+      for (const projId of toAdd) {
+        await api.post(`/project-subscription/`, { user: targetUserId, project: projId })
+      }
+      for (const sub of toDelete) {
+        await api.delete(`/project-subscription/${sub.pk}/`)
       }
     }
 
@@ -212,7 +263,7 @@ const onSubmit = async (event: Event) => {
       :validated="validated"
       @submit.prevent="onSubmit"
     >
-      <CCol class="col-6">
+      <CCol class="col-lg-6">
         <CRow>
           <CCol lg="12">
             <!-- Account Info Card -->
@@ -356,115 +407,128 @@ const onSubmit = async (event: Event) => {
         </CRow>
       </CCol>
 
-      <CCol class="col-6">
-        <!-- Mail Notifications Card (Only when creating a new user) -->
-        <CCard v-if="!user" class="mb-4">
+      <CCol class="col-lg-6">
+        <!-- Mail Notifications Card -->
+        <CCard class="mb-4">
           <CCardHeader class="font-weight-bold">
-            <v-icon icon="mdi-email-send" class="mr-1" color="warning" />
-            알림 메일 발송 설정
+            <template v-if="!user">
+              <v-icon icon="mdi-email-send" class="mr-1" color="warning" />
+              알림 메일 발송 설정
+            </template>
+            <template v-else>
+              <v-icon icon="mdi-cog" class="mr-1" color="primary" />
+              업무 및 알림 설정
+            </template>
           </CCardHeader>
           <CCardBody>
-            <CRow class="mb-2">
-              <CCol>
-                <CFormCheck
-                  v-model="form.mail_sending"
-                  type="checkbox"
-                  id="inform-mail"
-                  label="새로 생성한 사용자에게 알림 메일 보내기"
-                />
-              </CCol>
-            </CRow>
-
-            <CRow class="pl-4">
-              <CCol sm="12" class="mb-3">
-                <CFormCheck
-                  v-model="form.send_option"
-                  value="1"
-                  type="radio"
-                  name="content-option"
-                  id="content-option1"
-                  label="패스워드 재설정 링크 포함"
-                  :disabled="!form.mail_sending"
-                />
-              </CCol>
-
-              <CRow class="mb-3">
-                <CCol sm="4" class="pl-5 pt-1">
-                  <span>링크 만료 시간 : </span>
+            <div v-if="!user">
+              <CRow class="mb-2">
+                <CCol>
+                  <CFormCheck
+                    v-model="form.mail_sending"
+                    type="checkbox"
+                    id="inform-mail"
+                    label="새로 생성한 사용자에게 알림 메일 보내기"
+                  />
                 </CCol>
-                <CCol sm="4">
-                  <CFormSelect
-                    v-model.number="form.expired"
-                    size="sm"
-                    :disabled="!form.mail_sending"
-                  >
-                    <option v-for="i in 24" :value="i" :key="i">
-                      <span v-if="i < 10">0</span>{{ i }}
-                    </option>
-                  </CFormSelect>
-                </CCol>
-                <CCol sm="4" class="pt-1">시간</CCol>
               </CRow>
 
-              <CCol sm="12" class="mb-3">
-                <CFormCheck
-                  v-model="form.send_option"
-                  value="2"
-                  type="radio"
-                  name="content-option"
-                  id="content-option2"
-                  label="사용자 패스워드 포함"
-                  :disabled="!form.mail_sending"
-                />
-              </CCol>
-            </CRow>
+              <CRow class="pl-4">
+                <CCol sm="12" class="mb-3">
+                  <CFormCheck
+                    v-model="form.send_option"
+                    value="1"
+                    type="radio"
+                    name="content-option"
+                    id="content-option1"
+                    label="패스워드 재설정 링크 포함"
+                    :disabled="!form.mail_sending"
+                  />
+                </CCol>
 
-            <!-- 메일알림 설정 -->
-            <v-divider class="my-4" />
-            <CRow class="mb-3">
-              <CFormLabel class="col-sm-3 col-form-label">메일 알림 설정</CFormLabel>
-              <CCol sm="9" class="pt-2">
-                <CRow>
-                  <CCol xs="12" class="mb-3">
-                    <CFormSelect>
-                      <option value="">내가 속한 프로젝트들로부터 모든 메일 받기</option>
-                      <option value="">선택한 프로젝트들로부터 모든 메일 받기</option>
-                      <option value="">내가 지켜보거나 관계있는 사항만</option>
-                      <option value="">내가 지켜보거나 담당인 사항만</option>
-                      <option value="">내가 지켜보거나 작성한 사항만</option>
-                      <option value="">알림 없음</option>
+                <CRow class="mb-3">
+                  <CCol sm="4" class="pl-5 pt-1">
+                    <span>링크 만료 시간 : </span>
+                  </CCol>
+                  <CCol sm="4">
+                    <CFormSelect
+                      v-model.number="form.expired as any"
+                      size="sm"
+                      :disabled="!form.mail_sending"
+                    >
+                      <option v-for="i in 24" :value="i" :key="i">
+                        <span v-if="i < 10">0</span>{{ i }}
+                      </option>
                     </CFormSelect>
                   </CCol>
+                  <CCol sm="4" class="pt-1">시간</CCol>
                 </CRow>
+
+                <CCol sm="12" class="mb-3">
+                  <CFormCheck
+                    v-model="form.send_option"
+                    value="2"
+                    type="radio"
+                    name="content-option"
+                    id="content-option2"
+                    label="사용자 패스워드 포함"
+                    :disabled="!form.mail_sending"
+                  />
+                </CCol>
+              </CRow>
+              <v-divider class="my-4" />
+            </div>
+
+            <!-- 메일 알림 설정 -->
+            <CRow class="mb-3">
+              <CFormLabel class="col-sm-3 col-form-label">회의 알림 설정</CFormLabel>
+              <CCol sm="9" class="pt-2">
                 <CRow>
                   <CCol xs="12" class="mb-3">
                     <CFormCheck
-                      v-model="form.is_active"
-                      id="is_active"
-                      label="우선순위가 높음 이상인 업무에 대해서도 알려주세요."
-                    />
-                  </CCol>
-                </CRow>
-                <CRow>
-                  <CCol xs="12" class="mb-3">
-                    <CFormCheck
-                      v-model="form.is_staff"
-                      id="is_staff"
-                      label="내가 만든 변경사항들에 대해서는 알림을 받지 않습니다."
+                      v-model="form.meeting_notification"
+                      id="meeting_notification"
+                      label="회의록 참석 시 알림 메일 수신"
                     />
                   </CCol>
                 </CRow>
               </CCol>
             </CRow>
 
-            <!-- 메일알림 설정 -->
+            <!-- 자동 관람 설정 -->
             <v-divider class="my-4" />
             <CRow class="mb-3">
-              <CFormLabel class="col-sm-3 col-form-label">자동 관람 설정</CFormLabel>
+              <CFormLabel class="col-sm-3 col-form-label">업무 관람 설정</CFormLabel>
               <CCol sm="9" class="pt-2">
                 <CRow>
+                  <CCol xs="12" class="mb-4" style="width: 380px">
+                    <v-autocomplete
+                      v-model="form.subscribed_projects"
+                      :items="projectList"
+                      item-title="label"
+                      item-value="value"
+                      label="알림 구독 프로젝트"
+                      multiple
+                      chips
+                      closable-chips
+                      density="compact"
+                      hint="선택한 프로젝트의 업무 변경 알림 메일을 수신합니다."
+                      persistent-hint
+                    />
+                  </CCol>
                   <CCol xs="12" class="mb-2">
-                    <CFormCheck v-model="form.is_active" id="is_active" label="내가 생성한 업무" />
+                    <CFormCheck
+                      v-model="form.auto_watch_created"
+                      id="auto_watch_created"
+                      label="내가 생성한 업무 자동 지켜보기 (모니터링)"
+                    />
+                  </CCol>
+                  <CCol xs="12" class="mb-3">
+                    <CFormCheck
+                      v-model="form.auto_watch_assigned"
+                      id="auto_watch_assigned"
+                      label="나에게 할당된 업무 자동 지켜보기 (모니터링)"
+                    />
                   </CCol>
                 </CRow>
               </CCol>

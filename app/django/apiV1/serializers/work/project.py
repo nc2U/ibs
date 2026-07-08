@@ -4,7 +4,8 @@ from rest_framework import serializers
 
 from apiV1.serializers.accounts import SimpleUserSerializer
 from work.models.issue import IssueCategory, Issue, Tracker
-from work.models.project import IssueProject, Role, Member, Module, Permission, Version
+from work.models.project import IssueProject, Module, Role, Permission, \
+    Member, ProjectSubscription, Version
 from work.services.work_services import PermissionService
 
 User = get_user_model()
@@ -271,7 +272,7 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
                 module = instance.module
             except Module.DoesNotExist:
                 module = Module.objects.create(project=instance)
-                
+
             if issue is not None: module.issue = issue
             if news is not None: module.news = news
             if document is not None: module.document = document
@@ -384,6 +385,23 @@ class ProjectMemberUserSerializer(serializers.Serializer):
     @staticmethod
     def get_is_assignable(obj):
         return any(role.get('assignable', False) for role in obj.get('roles', []))
+
+
+class ProjectSubscriptionSerializer(serializers.ModelSerializer):
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=False)
+
+    class Meta:
+        model = ProjectSubscription
+        fields = ('pk', 'user', 'project', 'created_at')
+
+    def create(self, validated_data):
+        request = self.context.get('request')
+        if request and request.user:
+            target_user = validated_data.get('user')
+            if not target_user or not (request.user.is_superuser or request.user.work_manager):
+                validated_data['user'] = request.user
+        return super().create(validated_data)
+
 
 
 class IssueInVersionSerializer(serializers.ModelSerializer):

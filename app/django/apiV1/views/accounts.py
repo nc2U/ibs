@@ -320,11 +320,11 @@ class AdminCreateUserView(APIView):
                     send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [email])
                 except Exception as e:
                     print(f"관리자 유저 생성 메일 발송 실패: {e}")
-                    return Response({'detail': '새 계정이 생성되었으나 알림 이메일 발송에는 실패했습니다. 비밀번호를 수동으로 전달하십시오.'},
+                    return Response({'pk': user.pk, 'detail': '새 계정이 생성되었으나 알림 이메일 발송에는 실패했습니다. 비밀번호를 수동으로 전달하십시오.'},
                                     status=status.HTTP_201_CREATED)
 
-                return Response({'detail': '새 계정을 생성하고 비밀번호 설정을 위한 이메일을 발송했습니다.'}, status=status.HTTP_201_CREATED)
+                return Response({'pk': user.pk, 'detail': '새 계정을 생성하고 비밀번호 설정을 위한 이메일을 발송했습니다.'}, status=status.HTTP_201_CREATED)
 
-            return Response({'detail': '새 계정을 생성하였습니다.'}, status=status.HTTP_201_CREATED)
+            return Response({'pk': user.pk, 'detail': '새 계정을 생성하였습니다.'}, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
