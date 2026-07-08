@@ -63,6 +63,9 @@ const form = reactive<Project>({
   build_to_land_ratio: null,
   num_legal_parking: null,
   num_planed_parking: null,
+  sub_name: '',
+  slug: '',
+  slack_notifications_enabled: false,
 })
 
 const sortOptins = [
@@ -179,6 +182,40 @@ const formDataSetup = () => {
     form.build_to_land_ratio = props.project.build_to_land_ratio
     form.num_legal_parking = props.project.num_legal_parking
     form.num_planed_parking = props.project.num_planed_parking
+    form.sub_name = ''
+    form.slug = ''
+    form.slack_notifications_enabled = false
+  } else {
+    form.pk = undefined
+    form.issue_project = null
+    form.name = ''
+    form.order = null
+    form.kind = ''
+    form.start_year = ''
+    form.is_direct_manage = false
+    form.is_unit_set = false
+    form.is_returned_area = false
+    form.monthly_aggr_start_date = ''
+    form.construction_start_date = ''
+    form.construction_period_months = null
+    form.location = ''
+    form.area_usage = ''
+    form.build_size = ''
+    form.num_unit = null
+    form.buy_land_extent = null
+    form.scheme_land_extent = null
+    form.donation_land_extent = null
+    form.on_floor_area = null
+    form.under_floor_area = null
+    form.total_floor_area = null
+    form.build_area = null
+    form.floor_area_ratio = null
+    form.build_to_land_ratio = null
+    form.num_legal_parking = null
+    form.num_planed_parking = null
+    form.sub_name = ''
+    form.slug = ''
+    form.slack_notifications_enabled = false
   }
 }
 
@@ -191,30 +228,6 @@ onUpdated(() => formDataSetup())
     <CCardBody>
       <CRow>
         <CCol xl="12" class="pt-3">
-          <CRow>
-            <CFormLabel class="col-md-2 col-lg-1 col-form-label required">업무 프로젝트</CFormLabel>
-            <CCol md="10" lg="2" class="mb-md-3">
-              <MultiSelect
-                v-model="form.issue_project"
-                mode="single"
-                :options="getProjects"
-                :attrs="form.issue_project ? {} : { required: true }"
-                placeholder="업무 프로젝트를 선택하세요."
-              />
-              <CFormFeedback invalid>업무 프로젝트를 선택하세요.</CFormFeedback>
-            </CCol>
-            <CCol md="2" style="padding-top: 7px">
-              <div style="width: 20px">
-                <v-icon
-                  icon="mdi-plus-circle"
-                  color="success"
-                  class="pointer"
-                  @click="refIssueForm.callModal()"
-                />
-                <v-tooltip activator="parent" location="end">새 업무 프로젝트 생성하기</v-tooltip>
-              </div>
-            </CCol>
-          </CRow>
           <CRow>
             <CFormLabel class="col-md-2 col-lg-1 col-form-label required"> 프로젝트명</CFormLabel>
             <CCol md="10" lg="2" class="mb-md-3">
@@ -269,6 +282,61 @@ onUpdated(() => formDataSetup())
               />
               <CFormFeedback invalid> 사업개시년도를 입력하세요</CFormFeedback>
             </CCol>
+          </CRow>
+          <CRow>
+            <template v-if="!project">
+              <CRow>
+                <CFormLabel class="col-md-2 col-lg-1 col-form-label required">
+                  프로젝트 약칭
+                </CFormLabel>
+                <CCol md="10" lg="2" class="mb-md-3">
+                  <CFormInput
+                    v-model="form.sub_name"
+                    type="text"
+                    maxlength="100"
+                    placeholder="예: [인천]동춘조합"
+                    required
+                  />
+                  <CFormFeedback invalid>프로젝트 약칭을 입력하세요.</CFormFeedback>
+                </CCol>
+
+                <CFormLabel class="col-md-2 col-lg-1 col-form-label required"
+                  >식별자 (Slug)</CFormLabel
+                >
+                <CCol md="10" lg="2" class="mb-md-3">
+                  <CFormInput
+                    v-model="form.slug"
+                    type="text"
+                    maxlength="100"
+                    placeholder="예: dongchun"
+                    required
+                  />
+                  <CFormFeedback invalid>식별자(Slug)를 입력하세요.</CFormFeedback>
+                </CCol>
+
+                <CFormLabel class="col-md-2 col-lg-1 col-form-label">Slack 알림 사용</CFormLabel>
+                <CCol md="10" lg="2" class="mb-md-3 pt-2">
+                  <CFormCheck
+                    id="slack-toggle"
+                    v-model="form.slack_notifications_enabled"
+                    label="활성화"
+                  />
+                </CCol>
+              </CRow>
+            </template>
+            <template v-else>
+              <CRow>
+                <CFormLabel class="col-md-2 col-lg-1 col-form-label">업무 프로젝트</CFormLabel>
+                <CCol md="10" lg="4" class="mb-md-3 pt-2">
+                  <span class="text-body-2 font-weight-bold text-grey-darken-1">
+                    {{
+                      getProjects.find(p => p.value === form.issue_project)?.label ||
+                      '연동된 프로젝트 없음'
+                    }}
+                  </span>
+                </CCol>
+              </CRow>
+            </template>
           </CRow>
 
           <CRow>
@@ -546,12 +614,12 @@ onUpdated(() => formDataSetup())
     </CCardBody>
 
     <CCardFooter class="text-right">
-      <v-btn type="button" :color="btnLight" @click="emit('reset-form')"> 취소</v-btn>
-      <v-btn v-if="project" type="button" color="warning" @click="deleteProject"> 삭제</v-btn>
       <v-btn type="submit" :color="btnClass" :disabled="formsCheck">
         <CIcon name="cil-check-circle" />
         저장
       </v-btn>
+      <v-btn v-if="project" type="button" color="warning" @click="deleteProject"> 삭제</v-btn>
+      <v-btn type="button" :color="btnLight" @click="emit('reset-form')" flat> 취소</v-btn>
     </CCardFooter>
   </CForm>
 

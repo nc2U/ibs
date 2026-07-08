@@ -28,6 +28,10 @@ export interface Project {
   build_to_land_ratio: number | null
   num_legal_parking: number | null
   num_planed_parking: number | null
+  sub_name?: string
+  slug?: string
+  slack_notifications_enabled?: boolean
+  company_id?: number | null
 }
 
 export interface UnitType {

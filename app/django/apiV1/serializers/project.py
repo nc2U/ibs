@@ -4,12 +4,14 @@ from django.db import transaction
 from rest_framework import serializers
 
 from apiV1.serializers.accounts import SimpleUserSerializer
+from company.models import Company
 from contract.models import DocumentType, RequiredDocument
 from ibs.models import ProjectAccountD2, ProjectAccountD3
 from ledger.models import ProjectAccount
 from notice.models import SalesBillIssue
 from project.models import (Project, ProjectIncBudget, ProjectOutBudget, Site, SiteInfoFile,
                             SiteOwner, SiteOwnshipRelationship, SiteContract, SiteContractFile)
+from work.models.project import IssueProject
 
 
 # Project --------------------------------------------------------------------------
@@ -30,6 +32,12 @@ class ProjectSerializer(serializers.ModelSerializer):
     kind_desc = serializers.CharField(source='get_kind_display', read_only=True)
     salesbillissue = SallesBillInProjectSerializer(read_only=True)
 
+    # Write-only fields for unified IssueProject creation
+    sub_name = serializers.CharField(write_only=True, required=False)
+    slug = serializers.CharField(write_only=True, required=False)
+    slack_notifications_enabled = serializers.BooleanField(write_only=True, required=False, default=False)
+    company_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
+
     class Meta:
         model = Project
         fields = ('pk', 'company', 'issue_project', 'name', 'order', 'kind', 'kind_desc', 'start_year',
@@ -37,11 +45,12 @@ class ProjectSerializer(serializers.ModelSerializer):
                   'construction_start_date', 'construction_period_months', 'location', 'area_usage', 'build_size',
                   'num_unit', 'buy_land_extent', 'scheme_land_extent', 'donation_land_extent', 'on_floor_area',
                   'under_floor_area', 'total_floor_area', 'build_area', 'floor_area_ratio', 'build_to_land_ratio',
-                  'num_legal_parking', 'num_planed_parking', 'salesbillissue')
+                  'num_legal_parking', 'num_planed_parking', 'salesbillissue',
+                  'sub_name', 'slug', 'slack_notifications_enabled', 'company_id')
 
     @staticmethod
     def get_company(obj):
-        return obj.issue_project.company.pk
+        return obj.issue_project.company.pk if obj.issue_project and obj.issue_project.company else None
 
     def _create_default_required_documents(self, project):
         """
@@ -136,23 +145,70 @@ class ProjectSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def create(self, validated_data):
-        """프로젝트 생성 시 기본 필요 서류 자동 생성"""
+        """프로젝트 생성 시 연동되는 IssueProject 함께 생성 및 기본 필요 서류 자동 등록"""
+
+        sub_name = validated_data.pop('sub_name', None)
+        slug = validated_data.pop('slug', None)
+        slack_notifications_enabled = validated_data.pop('slack_notifications_enabled', False)
+        company_id = validated_data.pop('company_id', None)
+
+        # 1. 회사 결정 (전달되었거나 기본 회사 조회)
+        if company_id:
+            try:
+                company = Company.objects.get(pk=company_id)
+            except Company.DoesNotExist:
+                company = Company.objects.filter(is_default=True).first()
+        else:
+            company = Company.objects.filter(is_default=True).first()
+
+        if not company:
+            raise serializers.ValidationError({"company_id": "설정된 메인 회사가 없으며 회사 ID가 누락되었습니다."})
+
+        # 2. IssueProject 생성 및 기본값 세팅
+        creator = self.context.get('request').user if self.context.get('request') else None
+
+        if slug and IssueProject.objects.filter(slug=slug).exists():
+            raise serializers.ValidationError({"slug": "이미 존재하는 식별자(Slug)입니다."})
+
+        issue_project = IssueProject.objects.create(
+            company=company,
+            type='2',  # 부동산개발
+            name=sub_name or validated_data.get('name'),
+            slug=slug or validated_data.get('name'),
+            is_public=True,
+            slack_notifications_enabled=slack_notifications_enabled,
+            creator=creator
+        )
+        issue_project.allowed_roles.set([6, 7, 8])
+        issue_project.trackers.set([4, 5, 6, 7, 8])
+
+        # 3. Project 인스턴스 생성 및 필요서류 등록
+        validated_data['issue_project'] = issue_project
         project = super().create(validated_data)
         self._create_default_required_documents(project)
         return project
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        """
-        프로젝트 업데이트 시 필요 서류 동기화
-        RequiredDocument가 없으면 생성, 있으면 DocumentType과 동기화
-        """
-        # 프로젝트 업데이트
+        """프로젝트 업데이트 시 연동된 IssueProject 약칭 등 동기화 및 필요 서류 매핑"""
+        sub_name = validated_data.pop('sub_name', None)
+        slack_notifications_enabled = validated_data.pop('slack_notifications_enabled', None)
+
+        # 연동된 IssueProject 동기화
+        issue_project = instance.issue_project
+        if issue_project:
+            if sub_name:
+                issue_project.name = sub_name
+            if slack_notifications_enabled is not None:
+                issue_project.slack_notifications_enabled = slack_notifications_enabled
+            issue_project.save()
+
+        # 프로젝트 필드 업데이트
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
 
-        # RequiredDocument가 없으면 생성, 있으면 동기화
+        # 필요 서류 동기화
         if not RequiredDocument.objects.filter(project=instance).exists():
             self._create_default_required_documents(instance)
         else:
