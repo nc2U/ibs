@@ -8,12 +8,12 @@ from django.core.mail import send_mail
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from rest_framework import viewsets, status
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.models import User, StaffAuth, Profile, DocScrape, PostScrape, Todo, PasswordResetToken
-from apiV1.permissions.auth_perms import permissions, IsStaffOrReadOnly, IsOwnerOnly
+from apiV1.permissions.auth_perms import IsStaffOrReadOnly, IsOwnerOnly, IsWorkManagerOnly
 from ..pagination import PageNumberPaginationThreeThousand, PageNumberPaginationFifty
 from ..serializers.accounts import UserSerializer, StaffAuthInUserSerializer, ProfileSerializer, \
     DocScrapeSerializer, PostScrapeSerializer, TodoSerializer, ChangePasswordSerializer, \
@@ -25,7 +25,7 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     pagination_class = PageNumberPaginationThreeThousand
-    permission_classes = (permissions.AllowAny,)
+    permission_classes = (AllowAny,)
     filterset_fields = ('is_staff', 'is_active',)
 
     def get_queryset(self):
@@ -88,13 +88,13 @@ class UserViewSet(viewsets.ModelViewSet):
 class StaffAuthViewSet(viewsets.ModelViewSet):
     queryset = StaffAuth.objects.all()
     serializer_class = StaffAuthInUserSerializer
-    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
+    permission_classes = (IsAuthenticated, IsStaffOrReadOnly)
 
 
 class ProfileViewSet(viewsets.ModelViewSet):
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
-    permission_classes = (permissions.IsAuthenticated, IsOwnerOnly)
+    permission_classes = (IsAuthenticated, IsOwnerOnly)
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
@@ -103,7 +103,7 @@ class ProfileViewSet(viewsets.ModelViewSet):
 class DocScrapeViewSet(viewsets.ModelViewSet):
     queryset = DocScrape.objects.all()
     serializer_class = DocScrapeSerializer
-    permission_classes = (permissions.IsAuthenticated, IsOwnerOnly)
+    permission_classes = (IsAuthenticated, IsOwnerOnly)
     filterset_fields = ('user',)
     search_fields = ('title', 'post__title', 'post__content')
 
@@ -111,7 +111,7 @@ class DocScrapeViewSet(viewsets.ModelViewSet):
 class PostScrapeViewSet(viewsets.ModelViewSet):
     queryset = PostScrape.objects.all()
     serializer_class = PostScrapeSerializer
-    permission_classes = (permissions.IsAuthenticated, IsOwnerOnly)
+    permission_classes = (IsAuthenticated, IsOwnerOnly)
     filterset_fields = ('user',)
     search_fields = ('title', 'post__title', 'post__content')
 
@@ -120,7 +120,7 @@ class TodoViewSet(viewsets.ModelViewSet):
     queryset = Todo.objects.all()
     serializer_class = TodoSerializer
     pagination_class = PageNumberPaginationFifty
-    permission_classes = (permissions.IsAuthenticated, IsOwnerOnly)
+    permission_classes = (IsAuthenticated, IsOwnerOnly)
     filterset_fields = ('user', 'soft_deleted')
     search_fields = ('title',)
 
@@ -150,7 +150,7 @@ class CheckPasswordView(APIView):
 
 class ChangePasswordView(APIView):
     """종전 비밀번호를 확인 한 후 비밀번호를 변경하는 API"""
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (IsAuthenticated,)
 
     @staticmethod
     def post(request, *args, **kwargs):
@@ -176,7 +176,7 @@ class ChangePasswordView(APIView):
 
 class PasswordResetRequestView(APIView):
     """비밀번호 분실 시 재설정 링크를 요청하는 API"""
-    permission_classes = (permissions.AllowAny,)
+    permission_classes = (AllowAny,)
 
     @staticmethod
     def post(request, *args, **kwargs):
@@ -217,7 +217,7 @@ class PasswordResetRequestView(APIView):
 
 class PasswordResetConfirmView(APIView):
     """비밀번호 재설정 링크를 통해서 비밀번호를 재설정하는 API"""
-    permission_classes = (permissions.AllowAny,)
+    permission_classes = (AllowAny,)
 
     def post(self, request, *args, **kwargs):
         user_id = kwargs.get('user_id')
@@ -240,7 +240,7 @@ class PasswordResetConfirmView(APIView):
                 user.save()
 
                 # # Log the user in with the new password
-                # authenticated_user = authenticate(username=user.username, password=new_password)
+                # authenticated_user = authenticate (username=user.username, password=new_password)
                 # login(request, authenticated_user)
 
                 return Response({'detail': 'Password reset successful'}, status=status.HTTP_200_OK)
@@ -253,13 +253,13 @@ class PasswordResetConfirmView(APIView):
 class PasswordResetTokenViewSet(viewsets.ModelViewSet):
     queryset = PasswordResetToken.objects.all()
     serializer_class = PasswordResetTokenSerializer
-    permission_classes = (permissions.AllowAny,)
+    permission_classes = (AllowAny,)
     filterset_fields = ('user', 'token')
 
 
 class AdminCreateUserView(APIView):
     """비밀번호 분실 시 재설정 링크를 요청하는 API"""
-    permission_classes = (permissions.IsAdminUser,)
+    permission_classes = (IsAuthenticated, IsWorkManagerOnly)
 
     @staticmethod
     def post(request, *args, **kwargs):
@@ -319,10 +319,12 @@ class AdminCreateUserView(APIView):
                 try:
                     send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [email])
                 except Exception as e:
-                    return Response({'detail': '이메일 발송 중 오류가 발생했습니다.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    print(f"관리자 유저 생성 메일 발송 실패: {e}")
+                    return Response({'detail': '새 계정이 생성되었으나 알림 이메일 발송에는 실패했습니다. 비밀번호를 수동으로 전달하십시오.'},
+                                    status=status.HTTP_201_CREATED)
 
-                return Response({'detail': '새 계정을 생성하고 비밀번호 설정을 위한 이메일을 발송했습니다.'}, status=status.HTTP_200_OK)
+                return Response({'detail': '새 계정을 생성하고 비밀번호 설정을 위한 이메일을 발송했습니다.'}, status=status.HTTP_201_CREATED)
 
-            return Response({'detail': '새 계정을 생성하였습니다.'}, status=status.HTTP_200_OK)
+            return Response({'detail': '새 계정을 생성하였습니다.'}, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
