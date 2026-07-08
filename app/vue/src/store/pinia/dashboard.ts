@@ -107,6 +107,16 @@ export const WIDGET_REGISTRY: WidgetConfig[] = [
     minH: 4,
   },
   {
+    id: 'contract-log',
+    type: 'contract-log',
+    title: 'Recent Contracts',
+    titleKo: '최근 등록 계약',
+    icon: 'mdi-file-sign',
+    defaultLayout: { x: 0, y: 24, w: 6, h: 4 },
+    minW: 4,
+    minH: 3,
+  },
+  {
     id: 'quick-actions',
     type: 'quick-actions',
     title: 'Quick Actions',
@@ -124,16 +134,6 @@ export const WIDGET_REGISTRY: WidgetConfig[] = [
     icon: 'mdi-timeline',
     defaultLayout: { x: 9, y: 19, w: 3, h: 4 },
     minW: 3,
-    minH: 3,
-  },
-  {
-    id: 'contract-log',
-    type: 'contract-log',
-    title: 'Recent Contracts',
-    titleKo: '최근 등록 계약',
-    icon: 'mdi-file-sign',
-    defaultLayout: { x: 0, y: 24, w: 6, h: 4 },
-    minW: 4,
     minH: 3,
   },
   {
