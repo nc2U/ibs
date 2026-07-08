@@ -19,6 +19,7 @@ class Company(models.Model):
     address1 = models.CharField('주소', max_length=35, blank=True)
     address2 = models.CharField('상세주소', max_length=50, blank=True)
     address3 = models.CharField('참고항목', max_length=30, blank=True)
+    is_default = models.BooleanField('기본 회사 여부', default=False)
 
     class Meta:
         verbose_name = "01. 회사 정보"
@@ -26,6 +27,11 @@ class Company(models.Model):
 
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        if self.is_default:
+            Company.objects.filter(is_default=True).exclude(pk=self.pk).update(is_default=False)
+        super().save(*args, **kwargs)
 
 
 class Logo(models.Model):

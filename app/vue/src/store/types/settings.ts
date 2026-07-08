@@ -15,6 +15,7 @@ export interface Company {
   departments?: Department[]
   positions?: Positions[]
   com_issue_project?: number | null
+  is_default?: boolean
 }
 
 export interface Logo {

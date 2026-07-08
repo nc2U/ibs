@@ -53,7 +53,7 @@ const form = reactive({
   parent: null as number | null,
   is_inherit_members: false,
   allowed_roles: [6, 7, 8],
-  trackers: [4, 5, 6, 7],
+  trackers: [4, 5, 6, 7, 8],
   slack_notifications_enabled: false,
 })
 
