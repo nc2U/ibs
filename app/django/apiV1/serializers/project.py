@@ -190,18 +190,12 @@ class ProjectSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        """프로젝트 업데이트 시 연동된 IssueProject 약칭 등 동기화 및 필요 서류 매핑"""
-        sub_name = validated_data.pop('sub_name', None)
-        slack_notifications_enabled = validated_data.pop('slack_notifications_enabled', None)
-
-        # 연동된 IssueProject 동기화
-        issue_project = instance.issue_project
-        if issue_project:
-            if sub_name:
-                issue_project.name = sub_name
-            if slack_notifications_enabled is not None:
-                issue_project.slack_notifications_enabled = slack_notifications_enabled
-            issue_project.save()
+        """프로젝트 업데이트 시 연동된 IssueProject는 변경하지 않고 Project 정보 및 필요 서류 매핑"""
+        # 생성 전용 write_only 필드들은 수정 시 유입되더라도 제외
+        validated_data.pop('sub_name', None)
+        validated_data.pop('slug', None)
+        validated_data.pop('slack_notifications_enabled', None)
+        validated_data.pop('company_id', None)
 
         # 프로젝트 필드 업데이트
         for attr, value in validated_data.items():

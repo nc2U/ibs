@@ -142,7 +142,14 @@ const onSubmit = (event: Event) => {
 
 const modalAction = () => {
   if (!form.order) form.order = 100
-  emit('to-submit', { ...form })
+  const submitData = { ...form }
+  if (props.project) {
+    delete submitData.sub_name
+    delete submitData.slug
+    delete submitData.slack_notifications_enabled
+    delete submitData.company_id
+  }
+  emit('to-submit', submitData)
   validated.value = false
   refConfirmModal.value.close()
 }
@@ -182,9 +189,6 @@ const formDataSetup = () => {
     form.build_to_land_ratio = props.project.build_to_land_ratio
     form.num_legal_parking = props.project.num_legal_parking
     form.num_planed_parking = props.project.num_planed_parking
-    form.sub_name = ''
-    form.slug = ''
-    form.slack_notifications_enabled = false
   } else {
     form.pk = undefined
     form.issue_project = null
