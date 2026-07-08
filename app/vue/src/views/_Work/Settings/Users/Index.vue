@@ -11,7 +11,7 @@ import Loading from '@/components/Loading/Index.vue'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import UserList from '@/views/_Work/Settings/Users/components/UserList.vue'
-import UserForm from '@/views/_Work/Settings/Users/components/UserForm.vue'
+import AdminUserForm from '@/views/_Work/Settings/Users/components/AdminUserForm.vue'
 import UserDetail from './components/UserDetail.vue'
 
 const cBody = ref()
@@ -70,7 +70,7 @@ onBeforeMount(async () => {
         :issue-num="issueNumByMember"
       />
 
-      <UserForm v-else-if="route.name === '사용자 - 생성' || route.name === '사용자 - 수정'" />
+      <AdminUserForm v-else-if="route.name === '사용자 - 생성' || route.name === '사용자 - 수정'" />
     </template>
 
     <template v-slot:aside></template>

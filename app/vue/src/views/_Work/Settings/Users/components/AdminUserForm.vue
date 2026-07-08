@@ -2,9 +2,8 @@
 import { computed, onBeforeMount, ref, reactive, watch } from 'vue'
 import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
 import { useAccount } from '@/store/pinia/account'
-import { btnLight } from '@/utils/cssMixins.ts'
-import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import api from '@/api'
+import { CFormSelect } from '@coreui/vue'
 
 const menu = ref<'일반' | '프로젝트'>('일반')
 
@@ -168,7 +167,7 @@ const onSubmit = async (event: Event) => {
     }
 
     validated.value = false
-    router.push({ name: '사용자' })
+    await router.push({ name: '사용자' })
   } catch (err: any) {
     console.error(err)
     alert('사용자 정보 저장 중 오류가 발생했습니다.')
@@ -177,39 +176,44 @@ const onSubmit = async (event: Event) => {
 </script>
 
 <template>
-  <CRow>
-    <CCol sm="6">
-      <CRow class="py-2">
-        <CCol class="mb-2">
-          <span class="h5 mr-2">
-            <router-link :to="{ name: '사용자' }">사용자</router-link>
-          </span>
-          <span class="mr-2">»</span>
-          <span class="h5">{{ user ? user.username : '새 사용자' }}</span>
-        </CCol>
+  <CRow class="py-2">
+    <CCol class="mb-2">
+      <span class="h5 mr-2">
+        <router-link :to="{ name: '사용자' }">사용자</router-link>
+      </span>
+      <span class="mr-2">»</span>
+      <span class="h5">{{ user ? user.username : '새 사용자' }}</span>
+    </CCol>
 
-        <CCol v-if="user" class="text-right form-text">
-          <span class="mr-2">
-            <v-icon icon="mdi-account" color="success" size="sm" />
-            <router-link :to="{ name: '사용자 - 보기', params: { userId: user.pk } }" class="ml-1">
-              사용자 정보
-            </router-link>
-          </span>
-        </CCol>
-      </CRow>
+    <CCol v-if="user" class="text-right form-text">
+      <span class="mr-2">
+        <v-icon icon="mdi-account" color="success" size="sm" />
+        <router-link :to="{ name: '사용자 - 보기', params: { userId: user.pk } }" class="ml-1">
+          사용자 정보
+        </router-link>
+      </span>
+    </CCol>
+  </CRow>
 
-      <!-- Edit Mode Tabs -->
-      <CRow v-if="user" class="mb-3">
-        <CCol>
-          <v-tabs v-model="menu" density="compact">
-            <v-tab value="일반" variant="tonal"> 일반</v-tab>
-            <v-tab value="프로젝트" variant="tonal"> 프로젝트</v-tab>
-          </v-tabs>
-        </CCol>
-      </CRow>
+  <!-- Edit Mode Tabs -->
+  <CRow class="mb-3">
+    <CCol>
+      <v-tabs v-model="menu" density="compact">
+        <v-tab value="일반" variant="tonal"> 일반</v-tab>
+        <v-tab value="프로젝트" variant="tonal"> 프로젝트</v-tab>
+      </v-tabs>
+    </CCol>
+  </CRow>
 
-      <CForm class="needs-validation" novalidate :validated="validated" @submit.prevent="onSubmit">
-        <CRow v-if="menu === '일반'">
+  <CRow v-if="menu === '일반'">
+    <CForm
+      class="row needs-validation"
+      novalidate
+      :validated="validated"
+      @submit.prevent="onSubmit"
+    >
+      <CCol class="col-6">
+        <CRow>
           <CCol lg="12">
             <!-- Account Info Card -->
             <CCard class="mb-4">
@@ -238,9 +242,9 @@ const onSubmit = async (event: Event) => {
 
                 <!-- Email -->
                 <CRow class="mb-3">
-                  <CFormLabel for="email" class="col-sm-3 col-form-label required"
-                    >이메일</CFormLabel
-                  >
+                  <CFormLabel for="email" class="col-sm-3 col-form-label required">
+                    이메일
+                  </CFormLabel>
                   <CCol sm="9">
                     <CFormInput
                       v-model="form.email"
@@ -307,8 +311,8 @@ const onSubmit = async (event: Event) => {
                       {{ genPass }}
                     </div>
                     <div style="display: inline-block; vertical-align: middle" class="ml-2">
-                      <v-btn :color="btnLight" size="small" class="mr-1" @click="genPass = ''"
-                        >취소
+                      <v-btn color="light" size="small" class="mr-1" @click="genPass = ''">
+                        취소
                       </v-btn>
                       <v-btn color="success" size="small" @click="applyGen">적용</v-btn>
                     </div>
@@ -316,165 +320,174 @@ const onSubmit = async (event: Event) => {
                 </CRow>
 
                 <!-- Permissions / Flags (Only visible when editing an existing user) -->
-                <template v-if="user">
-                  <v-divider class="my-4" />
-                  <CRow class="mb-3">
-                    <CFormLabel class="col-sm-3 col-form-label">권한 및 상태</CFormLabel>
-                    <CCol sm="9" class="pt-2">
-                      <CRow>
-                        <CCol xs="6" sm="4" class="mb-2">
-                          <CFormCheck v-model="form.is_active" id="is_active" label="활성 사용자" />
-                        </CCol>
-                        <CCol xs="6" sm="4" class="mb-2">
-                          <CFormCheck v-model="form.is_staff" id="is_staff" label="Staff 권한" />
-                        </CCol>
-                        <CCol xs="6" sm="4" class="mb-2">
-                          <CFormCheck
-                            v-model="form.is_superuser"
-                            id="is_superuser"
-                            label="Superuser 권한"
-                          />
-                        </CCol>
-                        <CCol xs="6" sm="4" class="mb-2">
-                          <CFormCheck
-                            v-model="form.work_manager"
-                            id="work_manager"
-                            label="업무관리자 권한"
-                          />
-                        </CCol>
-                      </CRow>
-                    </CCol>
-                  </CRow>
-                </template>
-              </CCardBody>
-            </CCard>
+                <v-divider class="my-4" />
+                <CRow class="mb-3">
+                  <CFormLabel class="col-sm-3 col-form-label">권한 및 상태</CFormLabel>
+                  <CCol sm="9" class="pt-2">
+                    <CRow>
+                      <CCol xs="6" class="mb-2">
+                        <CFormCheck v-model="form.is_active" id="is_active" label="활성 사용자" />
+                      </CCol>
+                      <CCol xs="6" class="mb-2">
+                        <CFormCheck v-model="form.is_staff" id="is_staff" label="스태프 권한" />
+                      </CCol>
 
-            <!-- Profile Info Card (Only relevant/loaded when editing, or optional during creation) -->
-            <!--            <CCard class="mb-4">-->
-            <!--              <CCardHeader class="font-weight-bold">-->
-            <!--                <v-icon icon="mdi-card-account-details" class="mr-1" color="success" />-->
-            <!--                프로필 정보-->
-            <!--              </CCardHeader>-->
-            <!--              <CCardBody>-->
-            <!--                &lt;!&ndash; Real Name &ndash;&gt;-->
-            <!--                <CRow class="mb-3">-->
-            <!--                  <CFormLabel for="name" class="col-sm-3 col-form-label">이름</CFormLabel>-->
-            <!--                  <CCol sm="9">-->
-            <!--                    <CFormInput-->
-            <!--                      v-model="form.name"-->
-            <!--                      id="name"-->
-            <!--                      maxlength="50"-->
-            <!--                      placeholder="사용자 이름"-->
-            <!--                    />-->
-            <!--                  </CCol>-->
-            <!--                </CRow>-->
+                      <CCol xs="6" class="mb-2">
+                        <CFormCheck
+                          v-model="form.work_manager"
+                          id="work_manager"
+                          label="업무관리자 권한"
+                        />
+                      </CCol>
 
-            <!--                &lt;!&ndash; Birth Date &ndash;&gt;-->
-            <!--                <CRow class="mb-3">-->
-            <!--                  <CFormLabel for="birth_date" class="col-sm-3 col-form-label">생년월일</CFormLabel>-->
-            <!--                  <CCol sm="9">-->
-            <!--                    <DatePicker-->
-            <!--                      v-model="form.birth_date"-->
-            <!--                      placeholder="생년월일 선택 (YYYY-MM-DD)"-->
-            <!--                    />-->
-            <!--                  </CCol>-->
-            <!--                </CRow>-->
-
-            <!--                &lt;!&ndash; Cell Phone &ndash;&gt;-->
-            <!--                <CRow class="mb-3">-->
-            <!--                  <CFormLabel for="cell_phone" class="col-sm-3 col-form-label"-->
-            <!--                    >휴대폰 번호</CFormLabel-->
-            <!--                  >-->
-            <!--                  <CCol sm="9">-->
-            <!--                    <CFormInput-->
-            <!--                      v-model="form.cell_phone"-->
-            <!--                      id="cell_phone"-->
-            <!--                      maxlength="20"-->
-            <!--                      placeholder="휴대폰 번호 (예: 010-1234-5678)"-->
-            <!--                    />-->
-            <!--                  </CCol>-->
-            <!--                </CRow>-->
-            <!--              </CCardBody>-->
-            <!--            </CCard>-->
-
-            <!-- Mail Notifications Card (Only when creating a new user) -->
-            <CCard v-if="!user" class="mb-4">
-              <CCardHeader class="font-weight-bold">
-                <v-icon icon="mdi-email-send" class="mr-1" color="warning" />
-                알림 메일 발송 설정
-              </CCardHeader>
-              <CCardBody>
-                <CRow class="mb-2">
-                  <CCol>
-                    <CFormCheck
-                      v-model="form.mail_sending"
-                      type="checkbox"
-                      id="inform-mail"
-                      label="새로 생성한 사용자에게 알림 메일 보내기"
-                    />
-                  </CCol>
-                </CRow>
-
-                <CRow class="pl-4">
-                  <CCol sm="12" class="mb-3">
-                    <CFormCheck
-                      v-model="form.send_option"
-                      value="1"
-                      type="radio"
-                      name="content-option"
-                      id="content-option1"
-                      label="패스워드 재설정 링크 포함"
-                      :disabled="!form.mail_sending"
-                    />
-                  </CCol>
-
-                  <CRow class="mb-3">
-                    <CCol sm="4" class="pl-5 pt-1">
-                      <span>링크 만료 시간 : </span>
-                    </CCol>
-                    <CCol sm="4">
-                      <CFormSelect
-                        v-model.number="form.expired"
-                        size="sm"
-                        :disabled="!form.mail_sending"
-                      >
-                        <option v-for="i in 24" :value="i" :key="i">
-                          <span v-if="i < 10">0</span>{{ i }}
-                        </option>
-                      </CFormSelect>
-                    </CCol>
-                    <CCol sm="4" class="pt-1">시간</CCol>
-                  </CRow>
-
-                  <CCol sm="12" class="mb-3">
-                    <CFormCheck
-                      v-model="form.send_option"
-                      value="2"
-                      type="radio"
-                      name="content-option"
-                      id="content-option2"
-                      label="사용자 패스워드 포함"
-                      :disabled="!form.mail_sending"
-                    />
+                      <CCol xs="6" class="mb-2">
+                        <CFormCheck
+                          v-model="form.is_superuser"
+                          id="is_superuser"
+                          label="수퍼유저 권한"
+                        />
+                      </CCol>
+                    </CRow>
                   </CCol>
                 </CRow>
               </CCardBody>
             </CCard>
-
-            <!-- Submit & Cancel Footer -->
-            <div class="text-right mb-4">
-              <v-btn type="submit" color="primary"> 저장</v-btn>
-              <v-btn color="light" class="mr-2" @click="router.push({ name: '사용자' })" flat>
-                취소
-              </v-btn>
-            </div>
           </CCol>
         </CRow>
-      </CForm>
+      </CCol>
 
+      <CCol class="col-6">
+        <!-- Mail Notifications Card (Only when creating a new user) -->
+        <CCard v-if="!user" class="mb-4">
+          <CCardHeader class="font-weight-bold">
+            <v-icon icon="mdi-email-send" class="mr-1" color="warning" />
+            알림 메일 발송 설정
+          </CCardHeader>
+          <CCardBody>
+            <CRow class="mb-2">
+              <CCol>
+                <CFormCheck
+                  v-model="form.mail_sending"
+                  type="checkbox"
+                  id="inform-mail"
+                  label="새로 생성한 사용자에게 알림 메일 보내기"
+                />
+              </CCol>
+            </CRow>
+
+            <CRow class="pl-4">
+              <CCol sm="12" class="mb-3">
+                <CFormCheck
+                  v-model="form.send_option"
+                  value="1"
+                  type="radio"
+                  name="content-option"
+                  id="content-option1"
+                  label="패스워드 재설정 링크 포함"
+                  :disabled="!form.mail_sending"
+                />
+              </CCol>
+
+              <CRow class="mb-3">
+                <CCol sm="4" class="pl-5 pt-1">
+                  <span>링크 만료 시간 : </span>
+                </CCol>
+                <CCol sm="4">
+                  <CFormSelect
+                    v-model.number="form.expired"
+                    size="sm"
+                    :disabled="!form.mail_sending"
+                  >
+                    <option v-for="i in 24" :value="i" :key="i">
+                      <span v-if="i < 10">0</span>{{ i }}
+                    </option>
+                  </CFormSelect>
+                </CCol>
+                <CCol sm="4" class="pt-1">시간</CCol>
+              </CRow>
+
+              <CCol sm="12" class="mb-3">
+                <CFormCheck
+                  v-model="form.send_option"
+                  value="2"
+                  type="radio"
+                  name="content-option"
+                  id="content-option2"
+                  label="사용자 패스워드 포함"
+                  :disabled="!form.mail_sending"
+                />
+              </CCol>
+            </CRow>
+
+            <!-- 메일알림 설정 -->
+            <v-divider class="my-4" />
+            <CRow class="mb-3">
+              <CFormLabel class="col-sm-3 col-form-label">메일 알림 설정</CFormLabel>
+              <CCol sm="9" class="pt-2">
+                <CRow>
+                  <CCol xs="12" class="mb-3">
+                    <CFormSelect>
+                      <option value="">내가 속한 프로젝트들로부터 모든 메일 받기</option>
+                      <option value="">선택한 프로젝트들로부터 모든 메일 받기</option>
+                      <option value="">내가 지켜보거나 관계있는 사항만</option>
+                      <option value="">내가 지켜보거나 담당인 사항만</option>
+                      <option value="">내가 지켜보거나 작성한 사항만</option>
+                      <option value="">알림 없음</option>
+                    </CFormSelect>
+                  </CCol>
+                </CRow>
+                <CRow>
+                  <CCol xs="12" class="mb-3">
+                    <CFormCheck
+                      v-model="form.is_active"
+                      id="is_active"
+                      label="우선순위가 높음 이상인 업무에 대해서도 알려주세요."
+                    />
+                  </CCol>
+                </CRow>
+                <CRow>
+                  <CCol xs="12" class="mb-3">
+                    <CFormCheck
+                      v-model="form.is_staff"
+                      id="is_staff"
+                      label="내가 만든 변경사항들에 대해서는 알림을 받지 않습니다."
+                    />
+                  </CCol>
+                </CRow>
+              </CCol>
+            </CRow>
+
+            <!-- 메일알림 설정 -->
+            <v-divider class="my-4" />
+            <CRow class="mb-3">
+              <CFormLabel class="col-sm-3 col-form-label">자동 관람 설정</CFormLabel>
+              <CCol sm="9" class="pt-2">
+                <CRow>
+                  <CCol xs="12" class="mb-2">
+                    <CFormCheck v-model="form.is_active" id="is_active" label="내가 생성한 업무" />
+                  </CCol>
+                </CRow>
+              </CCol>
+            </CRow>
+          </CCardBody>
+        </CCard>
+
+        <!-- Submit & Cancel Footer -->
+        <div class="text-right mb-4">
+          <v-btn type="submit" color="primary"> 저장</v-btn>
+          <v-btn color="light" class="mr-2" @click="router.push({ name: '사용자' })" flat>
+            취소
+          </v-btn>
+        </div>
+      </CCol>
+    </CForm>
+  </CRow>
+
+  <CRow v-else>
+    <CCol>
       <!-- Project Tab (Placeholder or configuration) -->
       <CRow v-if="menu === '프로젝트' && user">
-        <CCol lg="8" class="mx-auto">
+        <CCol lg="12">
           <CCard>
             <CCardHeader class="font-weight-bold">
               <v-icon icon="mdi-shield-account" class="mr-1" color="orange" />
@@ -489,7 +502,5 @@ const onSubmit = async (event: Event) => {
         </CCol>
       </CRow>
     </CCol>
-
-    <CCol sm="6"></CCol>
   </CRow>
 </template>
