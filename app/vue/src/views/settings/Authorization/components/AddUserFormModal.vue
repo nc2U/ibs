@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
-import { btnLight } from '@/utils/cssMixins.ts'
 import FormModal from '@/components/Modals/FormModal.vue'
 
 const emit = defineEmits(['on-submit'])
@@ -152,8 +151,8 @@ defineExpose({ callModal })
               <div class="p-1 mb-1 bg-yellow-lighten-1 text-center" style="width: 90px">
                 {{ genPass }}
               </div>
-              <v-btn color="success" size="small" @click="applyGen">적용</v-btn>
-              <v-btn color="light" size="small" @click="genPass = ''" flat>취소</v-btn>
+              <v-btn color="light" size="x-small" @click="genPass = ''">취소</v-btn>
+              <v-btn color="success" size="x-small" @click="applyGen">적용</v-btn>
             </CCol>
           </CRow>
 
