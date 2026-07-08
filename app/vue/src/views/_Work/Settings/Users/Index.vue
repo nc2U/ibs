@@ -70,9 +70,7 @@ onBeforeMount(async () => {
         :issue-num="issueNumByMember"
       />
 
-      <UserForm v-else-if="route.name === '사용자 - 생성'" />
-
-      <UserForm v-else-if="route.name === '사용자 - 수정'" />
+      <UserForm v-else-if="route.name === '사용자 - 생성' || route.name === '사용자 - 수정'" />
     </template>
 
     <template v-slot:aside></template>

@@ -83,7 +83,7 @@ defineExpose({ callModal })
     <template #icon>
       <v-icon icon="mdi-account-check" color="success" class="mr-2" />
     </template>
-    <template #header>사용자 정보 입력</template>
+    <template #header>새 사용자 생성</template>
     <template #default>
       <CForm class="needs-validation" novalidate :validated="validated" @submit.prevent="onSubmit">
         <CModalBody class="text-body p-4">
@@ -152,8 +152,8 @@ defineExpose({ callModal })
               <div class="p-1 mb-1 bg-yellow-lighten-1 text-center" style="width: 90px">
                 {{ genPass }}
               </div>
-              <v-btn :color="btnLight" size="small" @click="genPass = ''">취소</v-btn>
               <v-btn color="success" size="small" @click="applyGen">적용</v-btn>
+              <v-btn color="light" size="small" @click="genPass = ''" flat>취소</v-btn>
             </CCol>
           </CRow>
 
@@ -209,8 +209,8 @@ defineExpose({ callModal })
           </CRow>
         </CModalBody>
         <CModalFooter>
-          <v-btn :color="btnLight" size="small" @click="() => refFormModal.close()"> 닫기</v-btn>
           <v-btn type="submit" size="small" color="primary">확인</v-btn>
+          <v-btn color="light" size="small" @click="() => refFormModal.close()" flat> 닫기</v-btn>
         </CModalFooter>
       </CForm>
     </template>

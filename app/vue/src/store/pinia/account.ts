@@ -12,7 +12,7 @@ export type UserByAdmin = {
   username: string
   email: string
   password: string
-  send_mail: boolean
+  mail_sending: boolean
   send_option: '1' | '2'
   expired: number
 }

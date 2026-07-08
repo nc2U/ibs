@@ -38,11 +38,14 @@ class StaffAuthInUserSerializer(serializers.ModelSerializer):
 
         # 4. 승인 메일 발송
         try:
-            subject = f'[IBS] {instance.user.username}님 회원가입이 관리자에게 승인 되었습니다.'
-            message = (f'이 메일은 [IBS]회원가입에 대해 관리자에게 승인 후 발송되는 메일입니다. \n\n'
-                       f'가입 시 등록한 이메일 계정으로 로그인 후 이용하시기 바랍니다.')
+            subject = f'[IBS] 워크스페이스 회원가입이 승인되었습니다.'
+            message = (f'안녕하세요, {instance.user.username}님.\n\n'
+                       '회원가입 신청이 관리자의 승인을 받아 정상적으로 완료되었습니다.\n'
+                       '회원가입 시 등록한 이메일 주소로 로그인하여 서비스를 이용해 주시기 바랍니다.\n\n'
+                       f'로그인: {settings.DOMAIN_HOST}/\n\n'
+                       '감사합니다.')
             send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [instance.user.email])
-        except ConnectionRefusedError as e:
+        except Exception as e:
             print(f"메일 발송 실패: {e}")
 
         return instance
@@ -63,7 +66,8 @@ class IssueProjectInUserSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
         write_only=True,
-        required=True,
+        required=False,
+        allow_blank=True,
         help_text='변경할 필요가 없으면 비워 두십시오.',
         style={'input_type': 'password', 'placeholder': '비밀번호'}
     )
@@ -85,19 +89,28 @@ class UserSerializer(serializers.ModelSerializer):
 
         try:
             # 회원가입 환영 메일 보내기
-            subject = f'[IBS] {user.username}님 회원가입을 환영합니다.'
-            message = (f'이 메일은 [IBS]회원가입에 따라 발송되는 메일입니다. \n\n'
-                       f'이 사이트는 업무용 시스템으로 회원가입 후 사이트 이용을 위해서는 관리자의 승인이 필요합니다. \n'
-                       f'관리자의 승인을 기다리거나 관리자({settings.DEFAULT_FROM_EMAIL})에게 승인을 요청할 수 있습니다.')
+            subject = f'[IBS] 워크스페이스 {user.username}님, 회원가입을 환영합니다.'
+            message = (
+                f'안녕하세요, {user.username}님.\n\n'
+                'IBS 워크스페이스 회원가입을 환영합니다.\n\n'
+                '회원가입은 정상적으로 완료되었으며, '
+                '업무용 시스템 이용을 위해서는 관리자의 승인이 필요합니다.\n'
+                '관리자의 승인 후 서비스를 이용하실 수 있습니다.\n\n'
+                f'승인이 지연되는 경우 관리자({settings.DEFAULT_FROM_EMAIL})에게 문의해 주시기 바랍니다.'
+            )
             send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [user.email])
 
             # 관리자에게 회원가입 메일 보내기
-            subject = f'[IBS] 신규회원 가입 1건 ({user.username}님)이 있습니다.'
-            message = (f'[IBS] 시스템 - {user.username}님이 신규 회원가입을 하였습니다.\n\n'
-                       f'사용자 이  름 : {user.username}\n'
-                       f'사용자 이메일 : {user.email}\n')
+            subject = f'[IBS] 워크스페이스 신규 회원가입 알림 ({user.username})'
+            message = (
+                'IBS 워크스페이스에 신규 회원가입이 접수되었습니다.\n\n'
+                f'사용자명 : {user.username}\n'
+                f'이메일 : {user.email}\n\n'
+                f'승인 페이지: {settings.DOMAIN_HOST}/#/settings/authorization\n'
+                '관리자 페이지에서 가입 승인 여부를 확인해 주세요.'
+            )
             send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [settings.DEFAULT_FROM_EMAIL])
-        except ConnectionRefusedError as e:
+        except Exception as e:
             print(f"메일 발송 실패 {e}")
 
         user.save()

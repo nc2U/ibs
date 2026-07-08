@@ -277,7 +277,7 @@ class AdminCreateUserView(APIView):
             try:
                 User.objects.get(email=email)
                 print(f"User with email {email} already exists.")
-                return Response({'detail': '입력한 이메일로 등록된 사용자가 이미 존재합니다.'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'detail': '이미 등록된 이메일입니다.'}, status=status.HTTP_400_BAD_REQUEST)
             except User.DoesNotExist:
                 print(f"No user found with email {email}. Proceeding with user creation.")
 
