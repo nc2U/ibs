@@ -9,6 +9,7 @@ import { useLogging } from '@/store/pinia/work_logging.ts'
 import IssueSummary from './atomicViews/IssueSummary.vue'
 import ProjectSummary from './atomicViews/ProjectSummary.vue'
 import ActivityLog from '@/views/_Work/Manages/Activity/components/ActivityLog.vue'
+import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 
 const props = defineProps({
   issueProjects: { type: Array as PropType<IssueProject[]>, default: () => [] },
@@ -22,6 +23,7 @@ const route = useRoute()
 
 const accStore = useAccount()
 const user = computed(() => accStore.user)
+const userInfo = computed(() => accStore.userInfo)
 const workManager = computed(() => accStore.workManager)
 
 const logStore = useLogging()
@@ -40,12 +42,14 @@ const issueProjects = computed(() => props.issueProjects.slice())
       </span>
     </CCol>
 
-    <CCol v-if="user && workManager" class="text-right form-text">
+    <CCol v-if="user?.pk === userInfo?.pk || workManager" class="text-right form-text">
       <span class="mr-2">
-        <v-icon icon="mdi-pencil" color="amber" size="sm" />
-        <router-link :to="{ name: '사용자 - 수정', params: { userId: user.pk } }" class="ml-1">
-          편집
-        </router-link>
+        <TextButton
+          name="편집"
+          icon="mdi-pencil"
+          icon-color="amber"
+          :to="{ name: '사용자 - 수정', params: { userId: user?.pk } }"
+        />
       </span>
     </CCol>
   </CRow>
