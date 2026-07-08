@@ -116,7 +116,9 @@ onBeforeMount(async () => {
 
       <CCol class="text-right">
         <v-icon icon="mdi-information-off-outline" color="secondary" size="small" class="mr-2" />
-        <span class="text-secondary">역할 및 권한은 관리자만 생성 및 수정 가능합니다.</span>
+        <span class="text-secondary">
+          역할 및 권한은 시스템 관리자가 생성 및 수정할 수 있습니다.
+        </span>
       </CCol>
 
       <ConfirmModal ref="refConfirmModal">
