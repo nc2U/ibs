@@ -412,7 +412,7 @@ const onSubmit = async (event: Event) => {
         <CCard class="mb-4">
           <CCardHeader class="font-weight-bold">
             <template v-if="!user">
-              <v-icon icon="mdi-email-send" class="mr-1" color="warning" />
+              <v-icon icon="mdi-email-arrow-right-outline" class="mr-1" color="primary" />
               알림 메일 발송 설정
             </template>
             <template v-else>
