@@ -31,7 +31,7 @@ export const usePermission = defineStore('permission', () => {
 
     // 2. 특정 프로젝트 ID나 Slug가 주어졌을 때는 해당 프로젝트의 역할 정보를 반환
     if (projectIdentifier !== undefined) {
-      const targetProj = workStore.AllIssueProjects.find(
+      const targetProj = workStore.visibleProjectsFlat.find(
         (p: any) => p.pk === projectIdentifier || p.slug === projectIdentifier,
       )
       return (
@@ -53,7 +53,7 @@ export const usePermission = defineStore('permission', () => {
       let best_issue_visible: 'ALL' | 'PUB' | 'PRI' | 'NOP' = 'NOP'
       let best_user_visible: 'ALL' | 'PRJ' | 'NOP' = 'NOP'
 
-      workStore.AllIssueProjects.forEach((p: any) => {
+      workStore.visibleProjectsFlat.forEach((p: any) => {
         if (p.my_role) {
           if (p.my_role.assignable) assignable = true
           if (
@@ -117,7 +117,7 @@ export const usePermission = defineStore('permission', () => {
 
       // 특정 프로젝트 ID나 Slug가 주어졌을 때는 해당 프로젝트의 권한을 체크
       if (projectIdentifier !== undefined) {
-        const targetProj = workStore.AllIssueProjects.find(
+        const targetProj = workStore.visibleProjectsFlat.find(
           (p: any) => p.pk === projectIdentifier || p.slug === projectIdentifier,
         )
         return targetProj?.my_perms ? targetProj.my_perms.includes(c) : false
@@ -126,7 +126,7 @@ export const usePermission = defineStore('permission', () => {
       // active 프로젝트가 없는 상태(전역 구간)라면,
       // 사용자가 권한을 가진 프로젝트가 최소 하나라도 있으면 true로 반환
       if (!workStore.issueProject)
-        return workStore.AllIssueProjects.some((p: any) => p.my_perms && p.my_perms.includes(c))
+        return workStore.visibleProjectsFlat.some((p: any) => p.my_perms && p.my_perms.includes(c))
 
       // 프로젝트별 권한 세트에서 체크
       return projectPermSet.value.has(c)

@@ -18,7 +18,7 @@ defineExpose({ toggle })
 const workStore = useWork()
 const { can, PERM } = usePerms() // 사용자 권한 데이터
 const visibleProjectsTree = computed<IssueProject[]>(() => workStore.visibleProjectsTree)
-const allIssueProjects = computed<IssueProject[]>(() => workStore.AllIssueProjects)
+const visibleProjectsFlat = computed<IssueProject[]>(() => workStore.visibleProjectsFlat)
 const allProjects = computed(() => workStore.getAllProjects)
 const rollList = computed(() => workStore.roleList)
 
@@ -104,7 +104,7 @@ onBeforeMount(() => {
       <NoData v-if="!visibleProjectsTree.length" />
 
       <div v-else-if="viewMode === 'list'" class="mb-4">
-        <ProjectTable :projects="allIssueProjects" />
+        <ProjectTable :projects="visibleProjectsFlat" />
       </div>
 
       <CRow v-else>

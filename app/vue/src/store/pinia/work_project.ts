@@ -81,9 +81,9 @@ export const useWork = defineStore('work', () => {
   }
 
   // 하위 호환성 연결: 기존 AllIssueProjects는 visibleProjects를 평탄화합니다.
-  const AllIssueProjects = computed(() => flattenTree(visibleProjects.value))
-  const myProjectsFlat = computed(() => flattenTree(myProjects.value))
   const allProjectsFlat = computed(() => flattenTree(allProjects.value))
+  const visibleProjectsFlat = computed(() => flattenTree(visibleProjects.value))
+  const myProjectsFlat = computed(() => flattenTree(myProjects.value))
 
   // 4. 셀렉박스 UI 옵션 가공 상태 - PK 형태 (Computed)
   const getAllProjPks = computed(() =>
@@ -485,24 +485,31 @@ export const useWork = defineStore('work', () => {
 
   return {
     issueProject,
+
     allProjects,
     visibleProjects,
     myProjects,
+
     allProjectsTree,
     visibleProjectsTree,
     myProjectsTree,
+
     allProjectsRoot,
     visibleProjectsRoot,
     myProjectsRoot,
-    AllIssueProjects,
-    myProjectsFlat,
+
     allProjectsFlat,
+    visibleProjectsFlat,
+    myProjectsFlat,
+
     getAllProjPks,
     getVisibleProjPks,
     getMyProjPks,
+
     getAllProjects,
     getVisibleProjects,
     getMyProjects,
+
     fetchAllProjectsList,
     fetchVisibleProjectsList,
     fetchMyProjectsList,
