@@ -13,15 +13,6 @@ import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 const refAlertModal = ref<InstanceType<typeof AlertModal>>()
 const refConfirmModal = ref<InstanceType<typeof AlertModal>>()
 
-const accStore = useAccount()
-const userInfo = computed(() => accStore.userInfo)
-const profile = computed(() => accStore.profile)
-const createProfile = (payload: FormData) => accStore.createProfile(payload)
-const patchProfile = (payload: { pk: number; form: FormData }) => accStore.patchProfile(payload)
-
-const workStore = useWork()
-const projectList = computed(() => workStore.getVisibleProjPks)
-
 const [route, router] = [useRoute(), useRouter()]
 
 const form = reactive({
@@ -45,21 +36,31 @@ const form = reactive({
 
 const validated = ref(false)
 
+const accStore = useAccount()
+const userInfo = computed(() => accStore.userInfo)
+const profile = computed(() => accStore.profile)
+
+const createProfile = (payload: FormData) => accStore.createProfile(payload)
+const patchProfile = (payload: { pk: number; form: FormData }) => accStore.patchProfile(payload)
+
+const workStore = useWork()
+const projectList = computed(() => workStore.getVisibleProjPks)
+
 const transProfileForm = (img?: File) => (form.image = img)
 
 const formDataSetup = async () => {
   if (userInfo.value) {
-    form.pk = userInfo.value?.profile?.pk || null
     form.user = userInfo.value.pk || null
     form.email = userInfo.value.email || ''
 
-    if (userInfo.value.profile) {
-      form.name = userInfo.value.profile.name || ''
-      form.birth_date = userInfo.value.profile.birth_date || ''
-      form.cell_phone = userInfo.value.profile.cell_phone || ''
-      form.auto_watch_created = userInfo.value.profile.auto_watch_created ?? true
-      form.auto_watch_assigned = userInfo.value.profile.auto_watch_assigned ?? true
-      form.meeting_notification = userInfo.value.profile.meeting_notification ?? true
+    if (profile.value) {
+      form.pk = profile.value?.pk || null
+      form.name = profile.value.name || ''
+      form.birth_date = profile.value.birth_date || ''
+      form.cell_phone = profile.value.cell_phone || ''
+      form.auto_watch_created = profile.value.auto_watch_created ?? true
+      form.auto_watch_assigned = profile.value.auto_watch_assigned ?? true
+      form.meeting_notification = profile.value.meeting_notification ?? true
     } else {
       form.name = ''
       form.birth_date = ''
@@ -76,6 +77,8 @@ const formDataSetup = async () => {
       form.subscribed_projects = []
     }
   } else {
+    form.pk = null
+    form.user = null
     form.email = ''
 
     form.name = ''
@@ -109,16 +112,18 @@ const onSubmitConfirm = async () => {
     if (!form.image) delete form.image
 
     const { pk, ...formData } = form
-
-    if (!formData.user && userInfo.value) formData.user = userInfo.value?.pk
     if (!formData.birth_date) formData.birth_date = ''
 
-    const profileData = new FormData()
+    const submitData = new FormData()
 
-    for (const key in formData) profileData.append(key, formData[key] as string | Blob)
+    Object.entries(formData).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        submitData.append(key, value as any)
+      }
+    })
 
-    if (pk) await patchProfile({ ...{ pk }, ...{ profileData } })
-    else await createProfile(profileData)
+    if (pk) await patchProfile({ ...{ pk }, ...{ form: submitData } })
+    else await createProfile(submitData)
 
     validated.value = false
     refConfirmModal.value?.close()
