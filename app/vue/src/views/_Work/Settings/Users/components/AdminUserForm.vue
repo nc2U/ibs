@@ -2,9 +2,10 @@
 import { computed, onBeforeMount, ref, reactive, watch } from 'vue'
 import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
 import { useAccount } from '@/store/pinia/account'
-import api from '@/api'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
+import AlertModal from '@/components/Modals/AlertModal.vue'
 
+const refAlertModal = ref()
 const menu = ref<'일반' | '프로젝트'>('일반')
 
 const accStore = useAccount()
@@ -13,20 +14,19 @@ const user = computed(() => accStore.user)
 const [route, router] = [useRoute(), useRouter()]
 
 const form = reactive({
-  username: '',
   email: '',
+  username: '',
   password: '',
   pass_conf: '',
+
   is_active: true,
   is_staff: false,
-  is_superuser: false,
   work_manager: false,
 
   // Notification fields (creation only)
   mail_sending: true,
   send_option: '1',
   expired: 24,
-  subscribed_projects: [] as number[],
 })
 
 const genPass = ref('')
@@ -40,16 +40,7 @@ const formDataSetup = async () => {
     form.pass_conf = ''
     form.is_active = user.value.is_active
     form.is_staff = user.value.is_staff
-    form.is_superuser = user.value.is_superuser
     form.work_manager = user.value.work_manager
-
-    try {
-      const res = await api.get(`/project-subscription/?user=${user.value.pk}`)
-      form.subscribed_projects = (res.data.results || res.data).map((item: any) => item.project)
-    } catch (err) {
-      console.error(err)
-      form.subscribed_projects = []
-    }
   } else {
     form.username = ''
     form.email = ''
@@ -57,31 +48,12 @@ const formDataSetup = async () => {
     form.pass_conf = ''
     form.is_active = true
     form.is_staff = false
-    form.is_superuser = false
     form.work_manager = false
-
-    form.mail_sending = true
-    form.send_option = '1'
-    form.expired = 24
-    form.subscribed_projects = []
   }
+  form.mail_sending = true
+  form.send_option = '1'
+  form.expired = 24
 }
-
-onBeforeMount(async () => {
-  if (route.params.userId) {
-    await accStore.fetchUser(Number(route.params.userId))
-  } else {
-    accStore.user = null
-  }
-  await formDataSetup()
-})
-
-onBeforeRouteUpdate(async to => {
-  if (to.params.userId) await accStore.fetchUser(Number(to.params.userId))
-  else accStore.user = null
-
-  await formDataSetup()
-})
 
 watch(user, () => formDataSetup())
 
@@ -116,49 +88,62 @@ const onSubmit = async (event: Event) => {
   }
 
   if (form.password && form.password !== form.pass_conf) {
-    alert('비밀번호가 일치하지 않습니다.')
+    refAlertModal.value.callModal('', '비밀번호가 일치하지 않습니다.')
     return
   }
 
   try {
-    let targetUserId = 0
     if (!user.value) {
       // Create user
       const payload = {
-        username: form.username,
         email: form.email,
+        username: form.username,
         password: form.password,
         mail_sending: form.mail_sending,
         send_option: form.send_option as '1' | '2',
         expired: form.expired,
       }
-      const res = await accStore.adminCreateUser(payload)
-      if (res && res.data && res.data.pk) {
-        targetUserId = res.data.pk
-      }
+      await accStore.adminCreateUser(payload)
     } else {
       // Edit User account info
-      targetUserId = user.value.pk as number
       const userPayload: any = {
         email: form.email,
+        password: form.password,
+        mail_sending: form.mail_sending,
+        send_option: form.send_option as '1' | '2',
+        expired: form.expired,
+
         is_active: form.is_active,
         is_staff: form.is_staff,
-        is_superuser: form.is_superuser,
         work_manager: form.work_manager,
       }
       if (form.password) {
         userPayload.password = form.password
       }
-      await api.patch(`/user/${user.value.pk}/`, userPayload)
+      // await accStore.adminUpdateUser(form?.pk as number, userPayload)
     }
 
     validated.value = false
     await router.push({ name: '사용자' })
   } catch (err: any) {
     console.error(err)
-    alert('사용자 정보 저장 중 오류가 발생했습니다.')
+    refAlertModal.value.callModal('', '사용자 정보 저장 중 오류가 발생했습니다.')
   }
 }
+
+onBeforeMount(async () => {
+  if (route.params.userId) await accStore.fetchUser(Number(route.params.userId))
+  else accStore.user = null
+
+  await formDataSetup()
+})
+
+onBeforeRouteUpdate(async to => {
+  if (to.params.userId) await accStore.fetchUser(Number(to.params.userId))
+  else accStore.user = null
+
+  await formDataSetup()
+})
 </script>
 
 <template>
@@ -211,8 +196,8 @@ const onSubmit = async (event: Event) => {
               <CCardBody>
                 <!-- Username -->
                 <CRow class="mb-3">
-                  <CFormLabel for="username" class="col-sm-3 col-form-label required"
-                    >아이디
+                  <CFormLabel for="username" class="col-sm-3 col-form-label required">
+                    아이디
                   </CFormLabel>
                   <CCol sm="9">
                     <CFormInput
@@ -239,6 +224,7 @@ const onSubmit = async (event: Event) => {
                       type="email"
                       maxlength="100"
                       placeholder="이메일"
+                      :disabled="!!user"
                       required
                     />
                   </CCol>
@@ -307,31 +293,40 @@ const onSubmit = async (event: Event) => {
                 </CRow>
 
                 <!-- Permissions / Flags (Only visible when editing an existing user) -->
-                <v-divider class="my-4" />
-                <CRow class="mb-3">
+                <v-divider v-if="user?.pk" class="my-4" />
+                <CRow v-if="user?.pk" class="mb-3">
                   <CFormLabel class="col-sm-3 col-form-label">권한 및 상태</CFormLabel>
                   <CCol sm="9" class="pt-2">
                     <CRow>
-                      <CCol xs="6" class="mb-2">
-                        <CFormCheck v-model="form.is_active" id="is_active" label="활성 사용자" />
+                      <CCol xs="4" class="mb-2">
+                        <v-checkbox
+                          id="is_active"
+                          v-model="form.is_active"
+                          color="info"
+                          label="활성 사용자"
+                          density="compact"
+                          messages="사이트 접속 권한"
+                        />
                       </CCol>
-                      <CCol xs="6" class="mb-2">
-                        <CFormCheck v-model="form.is_staff" id="is_staff" label="스태프 권한" />
-                      </CCol>
-
-                      <CCol xs="6" class="mb-2">
-                        <CFormCheck
-                          v-model="form.work_manager"
-                          id="work_manager"
-                          label="업무관리자 권한"
+                      <CCol xs="4" class="mb-2">
+                        <v-checkbox
+                          id="is_staff"
+                          v-model="form.is_staff"
+                          color="primary"
+                          label="스태프 권한"
+                          density="compact"
+                          messages="관리자 페이지 접속 권한"
                         />
                       </CCol>
 
-                      <CCol xs="6" class="mb-2">
-                        <CFormCheck
-                          v-model="form.is_superuser"
-                          id="is_superuser"
-                          label="수퍼유저 권한"
+                      <CCol xs="4" class="mb-2">
+                        <v-checkbox
+                          id="work_manager"
+                          v-model="form.work_manager"
+                          color="success"
+                          label="업무관리자"
+                          density="compact"
+                          messages="업무시스템 관리자(어드민)"
                         />
                       </CCol>
                     </CRow>
@@ -442,4 +437,6 @@ const onSubmit = async (event: Event) => {
       </CRow>
     </CCol>
   </CRow>
+
+  <AlertModal ref="refAlertModal" />
 </template>

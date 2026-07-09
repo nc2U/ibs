@@ -333,7 +333,7 @@ class AdminManageUserView(APIView):
 
     @staticmethod
     def put(request, *args, **kwargs):
-        user_id = request.data.get('user')
+        user_id = request.data.get('pk')
         email = request.data.get('email')
 
         try:

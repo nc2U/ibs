@@ -15,6 +15,11 @@ export type UserByAdmin = {
   mail_sending: boolean
   send_option: '1' | '2'
   expired: number
+
+  pk?: number
+  is_active?: boolean
+  is_staff?: boolean
+  work_manager?: boolean
 }
 type LoginUser = { email: string; password: string; redirect?: string }
 
@@ -59,7 +64,16 @@ export const useAccount = defineStore('account', () => {
       .post('/admin-create-user/', payload)
       .then(res => {
         fetchUsersList().then(r => message('info', '', '사용자를 생성하고 메일을 발송했습니다.'))
-        return res
+        return res.data
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const adminUpdateUser = (payload: UserByAdmin) =>
+    api
+      .put(`/admin-create-user/`, payload)
+      .then(res => {
+        fetchUsersList().then(r => message('info', '', '사용자를 생성하고 메일을 발송했습니다.'))
+        return res.data
       })
       .catch(err => errorHandle(err.response.data))
 
@@ -419,6 +433,7 @@ export const useAccount = defineStore('account', () => {
     fetchUser,
     removeUser,
     adminCreateUser,
+    adminUpdateUser,
     signup,
     login,
     loginByToken,
