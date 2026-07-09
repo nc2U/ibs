@@ -24,10 +24,12 @@ export const useCompany = defineStore('company', () => {
   const company = ref<Company | null>(null)
 
   const currentCompany = Number(Cookies.get('curr-company'))
-  const userCompany = computed(() =>
-    accountStore.userInfo?.staff_auth?.company ? accountStore.userInfo.staff_auth.company : 1,
-  )
-  const initComId = computed(() => (currentCompany ? currentCompany : userCompany.value))
+  const defaultCompany = computed(() => {
+    const defaultCom = companyList.value.find(com => com.is_default) || companyList.value[0]
+    return defaultCom?.pk || 1
+  })
+
+  const initComId = computed<number>(() => (currentCompany ? currentCompany : defaultCompany.value))
 
   const comSelect = computed<{ value: number; label: string }[]>(() => {
     return companyList.value.map((com: Company) => ({

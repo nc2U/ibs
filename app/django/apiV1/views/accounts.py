@@ -8,7 +8,6 @@ from django.core.mail import send_mail
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from rest_framework import viewsets, status
-from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -288,7 +287,7 @@ class AdminManageUserView(APIView):
             user.save()
 
             # 2. 기본 스태프 권한 및 프로필 등록
-            StaffAuth.objects.create(user=user, company_id=1, is_pjt_staff=True)
+            StaffAuth.objects.create(user=user, is_pjt_staff=True)
             Profile.objects.create(user=user)
 
             if mail_sending is not None:

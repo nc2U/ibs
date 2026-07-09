@@ -25,7 +25,6 @@ type Auth = '0' | '1' | '2'
 export interface StaffAuth {
   pk?: number
   user?: number
-  company: number | null
   is_hq_staff: boolean
   is_pjt_staff: boolean
   allowed_projects: number[]

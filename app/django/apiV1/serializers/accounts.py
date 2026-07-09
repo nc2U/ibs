@@ -19,7 +19,7 @@ class SimpleUserSerializer(serializers.ModelSerializer):
 class StaffAuthInUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = StaffAuth
-        fields = ('pk', 'user', 'company', 'is_hq_staff', 'is_pjt_staff', 'allowed_projects',
+        fields = ('pk', 'user', 'is_hq_staff', 'is_pjt_staff', 'allowed_projects',
                   'default_project', 'contract', 'payment', 'notice', 'project_ledger',
                   'project_docs', 'project', 'project_site', 'company_ledger',
                   'company_docs', 'human_resource', 'company_settings', 'auth_manage')
