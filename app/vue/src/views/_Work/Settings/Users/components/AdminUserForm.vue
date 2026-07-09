@@ -247,7 +247,6 @@ onBeforeRouteUpdate(async to => {
                       maxlength="20"
                       placeholder="비밀번호"
                       autocomplete="off"
-                      :required="!user"
                     />
                   </CCol>
                   <CCol sm="4">
@@ -273,7 +272,6 @@ onBeforeRouteUpdate(async to => {
                       type="password"
                       maxlength="20"
                       placeholder="비밀번호 확인"
-                      :required="!user"
                     />
                   </CCol>
                   <CCol v-if="genPass" sm="4">

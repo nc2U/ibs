@@ -217,6 +217,7 @@ export const useDashboard = defineStore('dashboard', () => {
 
   // Actions
   const loadDashboardState = async () => {
+    configPk.value = null // Reset configPk before fetching a new state
     // 1. Try DB first
     const dbLoaded = await fetchDashboardFromDB()
     if (dbLoaded) return
@@ -270,9 +271,12 @@ export const useDashboard = defineStore('dashboard', () => {
           }),
         )
         return true
+      } else {
+        configPk.value = null
       }
     } catch (e) {
       console.warn('Failed to fetch dashboard config from DB:', e)
+      configPk.value = null
     }
     return false
   }
