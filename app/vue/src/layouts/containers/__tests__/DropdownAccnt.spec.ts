@@ -64,9 +64,9 @@ describe('AppHeaderDropdownAccnt Component Test', () => {
 
     expect(wrapper.find('.dropdown-header').text()).toBe('운영자님')
     expect(wrapper.find('.dropdown-menu').html()).toContain('할일 관리')
-    expect(wrapper.find('.dropdown-menu').html()).toContain('마이페이지')
     expect(wrapper.find('.dropdown-menu').html()).toContain('사용자 매뉴얼') // 포함 확인
     expect(wrapper.find('.dropdown-menu').html()).not.toContain('관리자 페이지') // 미포함 확인
+    expect(wrapper.find('.dropdown-menu').html()).toContain('내 계정 관리')
     expect(wrapper.find('.dropdown-menu').html()).toContain('로그아웃')
 
     await wrapper.setProps({
