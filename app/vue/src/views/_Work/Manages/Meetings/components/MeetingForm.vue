@@ -188,7 +188,7 @@ const fetchMeeting = async (pk: number) => {
 
 onBeforeMount(async () => {
   await accStore.fetchUsersList()
-  await workStore.fetchAllIssueProjectList()
+  await workStore.fetchAllProjectList()
   await issueStore.fetchStatusList()
   await issueStore.fetchPriorityList()
   await issueStore.fetchTrackerList()

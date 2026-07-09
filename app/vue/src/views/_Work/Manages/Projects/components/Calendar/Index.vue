@@ -48,7 +48,7 @@ const summary = computed(() => {
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  await workStore.fetchAllIssueProjectList()
+  await workStore.fetchAllProjectList()
   if (route.params.projId) {
     await fetchData(route.params.projId as string)
   }

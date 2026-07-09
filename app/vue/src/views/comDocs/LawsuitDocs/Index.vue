@@ -250,10 +250,10 @@ watch(
 const dataSetup = async (pk: number, docsId?: string | string[]) => {
   docsFilter.value.company = pk
 
-  // workStore.fetchAllIssueProjectList가 회사를 변경하므로 현재 회사 저장
+  // workStore.fetchAllProjectList 회사를 변경하므로 현재 회사 저장
   const targetCompany = pk
 
-  await workStore.fetchAllIssueProjectList(pk, '2', '')
+  await workStore.fetchAllProjectList(pk, '', '2')
 
   // workStore 함수가 회사를 변경했다면 다시 원래 회사로 복원
   if (company.value !== targetCompany) {

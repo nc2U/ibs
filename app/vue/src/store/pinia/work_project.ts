@@ -81,9 +81,9 @@ export const useWork = defineStore('work', () => {
   }
 
   //
-  const allProjectsFlat = computed(() => flattenTree(allProjects.value))
-  const issueProjectsFlat = computed(() => flattenTree(issueProjects.value))
-  const myProjectsFlat = computed(() => flattenTree(myProjects.value))
+  const allProjectsFlat = computed(() => flattenTree(allProjectsTree.value))
+  const issueProjectsFlat = computed(() => flattenTree(issueProjectsTree.value))
+  const myProjectsFlat = computed(() => flattenTree(myProjectsTree.value))
 
   // 4. 셀렉박스 UI 옵션 가공 상태 - PK 형태 (Computed)
   const getAllProjPks = computed(() =>
@@ -141,10 +141,14 @@ export const useWork = defineStore('work', () => {
   )
 
   // actions
-  const fetchAllProjectList = async (company: '' | number = '', status: '' | '1' | '9' = '') => {
+  const fetchAllProjectList = async (
+    company: '' | number = '',
+    status: '' | '1' | '9' = '',
+    type: '' | '1' | '2' | '3' = '',
+  ) => {
     return await api
-      .get(`/issue-project/?company=${company}&status=${status}`)
-      .then(res => (allProjects.value = res.data))
+      .get(`/issue-project/?company=${company}&status=${status}&type=${type}`)
+      .then(res => (allProjects.value = res.data.results || res.data))
       .catch(err => errorHandle(err.response.data))
   }
 
@@ -164,41 +168,13 @@ export const useWork = defineStore('work', () => {
 
     return await api
       .get(url)
-      .then(res => (issueProjects.value = res.data))
+      .then(res => (issueProjects.value = res.data.results || res.data))
       .catch(err => errorHandle(err.response.data))
   }
 
-  const fetchMyProjectsList = async (com: '' | number = '') => {
+  const fetchMyProjectsList = async () => {
     return await api
-      .get(`/issue-project/my_projects/?company=${com}`)
-      .then(res => (myProjects.value = res.data))
-      .catch(err => errorHandle(err.response.data))
-  }
-
-  const fetchAllIssueProjectList = async (
-    com: '' | number = '',
-    sort: '' | '1' | '2' | '3' = '',
-    p_isnull: '' | '1' = '',
-    status: '' | '1' | '9' = '1',
-  ) => {
-    // 1. 전체 프로젝트 조회
-    const allUrl = `/issue-project/all_projects/?company=${com}&status=${status}`
-    await api
-      .get(allUrl)
-      .then(res => (allProjects.value = res.data || []))
-      .catch(err => errorHandle(err.response.data))
-
-    // 2. 보이는 프로젝트 조회
-    const url = `/issue-project/visible_projects/?company=${com}&status=${status}`
-    await api
-      .get(url)
-      .then(res => (issueProjects.value = res.data))
-      .catch(err => errorHandle(err.response.data))
-
-    // 3. 내 프로젝트 조회
-    const myUrl = `/issue-project/my_projects/?company=${com}&status=${status}`
-    await api
-      .get(myUrl)
+      .get(`/issue-project/my_projects/`)
       .then(res => (myProjects.value = res.data))
       .catch(err => errorHandle(err.response.data))
   }
@@ -511,7 +487,6 @@ export const useWork = defineStore('work', () => {
     fetchAllProjectList,
     fetchIssueProjectList,
     fetchMyProjectsList,
-    fetchAllIssueProjectList,
     fetchIssueProject,
     removeIssueProject,
     createIssueProject,

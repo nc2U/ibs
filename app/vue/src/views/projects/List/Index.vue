@@ -34,13 +34,13 @@ const toSubmit = async (payload: Project) => {
 
 const workStore = useWork()
 const getAllProjPks = computed(() => workStore.getAllProjPks)
-const getProjects = (sort: '1' | '2' | '3') => workStore.fetchAllIssueProjectList('', sort, '')
+const getProjects = (type: '1' | '2' | '3') => workStore.fetchAllProjectList('', '', type)
 
 const issueStore = useIssue()
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  await workStore.fetchAllIssueProjectList('', '2', '')
+  await workStore.fetchAllProjectList('', '', '2')
   await workStore.fetchRoleList()
   await issueStore.fetchTrackerList()
   loading.value = false
