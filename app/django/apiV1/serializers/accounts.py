@@ -134,6 +134,7 @@ class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
         fields = ('pk', 'user', 'name', 'birth_date', 'cell_phone', 'image',
+                  'auto_watch_created', 'auto_watch_assigned', 'meeting_notification',
                   'like_posts', 'like_comments', 'blame_posts', 'blame_comments')
 
     @transaction.atomic
