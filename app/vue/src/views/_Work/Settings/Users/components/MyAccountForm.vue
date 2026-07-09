@@ -7,55 +7,51 @@ import { useWork } from '@/store/pinia/work_project'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import AvatarInput from '@/views/_MyPage/Modify/components/AvatarInput.vue'
+import AlertModal from '@/components/Modals/AlertModal.vue'
+import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
+
+const refAlertModal = ref<InstanceType<typeof AlertModal>>()
+const refConfirmModal = ref<InstanceType<typeof AlertModal>>()
 
 const accStore = useAccount()
 const userInfo = computed(() => accStore.userInfo)
 const profile = computed(() => accStore.profile)
+const createProfile = (payload: FormData) => accStore.createProfile(payload)
+const patchProfile = (payload: { pk: number; form: FormData }) => accStore.patchProfile(payload)
 
-const workProjectStore = useWork()
-const projectList = computed(() => workProjectStore.getVisibleProjPks)
+const workStore = useWork()
+const projectList = computed(() => workStore.getVisibleProjPks)
 
 const [route, router] = [useRoute(), useRouter()]
 
 const form = reactive({
-  username: '',
+  pk: null as number | null,
+  user: null as number | null,
   email: '',
-  password: '',
-  pass_conf: '',
-  is_active: true,
-  is_staff: false,
-  is_superuser: false,
-  work_manager: false,
+
   // Profile fields
   name: '',
   birth_date: '',
   cell_phone: '',
   image: undefined as File | undefined,
+
+  // notification fields
   auto_watch_created: true,
   auto_watch_assigned: true,
   meeting_notification: true,
-  // Notification fields (creation only)
-  mail_sending: true,
-  send_option: '1',
-  expired: 24,
+
   subscribed_projects: [] as number[],
 })
 
-const genPass = ref('')
 const validated = ref(false)
 
 const transProfileForm = (img?: File) => (form.image = img)
 
 const formDataSetup = async () => {
   if (userInfo.value) {
-    form.username = userInfo.value.username || ''
+    form.pk = userInfo.value?.profile?.pk || null
+    form.user = userInfo.value.pk || null
     form.email = userInfo.value.email || ''
-    form.password = ''
-    form.pass_conf = ''
-    form.is_active = userInfo.value.is_active
-    form.is_staff = userInfo.value.is_staff
-    form.is_superuser = userInfo.value.is_superuser
-    form.work_manager = userInfo.value.work_manager
 
     if (userInfo.value.profile) {
       form.name = userInfo.value.profile.name || ''
@@ -77,35 +73,65 @@ const formDataSetup = async () => {
       const res = await api.get(`/project-subscription/?user=${userInfo.value.pk}`)
       form.subscribed_projects = res.data.map((item: any) => item.project)
     } catch (err) {
-      console.error(err)
       form.subscribed_projects = []
     }
   } else {
-    form.username = ''
     form.email = ''
-    form.password = ''
-    form.pass_conf = ''
-    form.is_active = true
-    form.is_staff = false
-    form.is_superuser = false
-    form.work_manager = false
+
     form.name = ''
     form.birth_date = ''
     form.cell_phone = ''
     form.auto_watch_created = true
     form.auto_watch_assigned = true
     form.meeting_notification = true
-    form.mail_sending = true
-    form.send_option = '1'
-    form.expired = 24
+
     form.subscribed_projects = []
+  }
+}
+
+watch(userInfo, () => formDataSetup())
+
+const onSubmit = async (event: Event) => {
+  if (userInfo.value) {
+    const el = event.currentTarget as HTMLFormElement
+    if (!el.checkValidity()) {
+      event.preventDefault()
+      event.stopPropagation()
+      validated.value = true
+      return
+    } else refConfirmModal.value?.callModal()
+  } else refAlertModal.value?.callModal()
+}
+
+const onSubmitConfirm = async () => {
+  try {
+    console.log('form', form)
+    if (!form.image) delete form.image
+
+    const { pk, ...formData } = form
+
+    if (!formData.user && userInfo.value) formData.user = userInfo.value?.pk
+    if (!formData.birth_date) formData.birth_date = ''
+
+    const profileData = new FormData()
+
+    for (const key in formData) profileData.append(key, formData[key] as string | Blob)
+
+    if (pk) await patchProfile({ ...{ pk }, ...{ profileData } })
+    else await createProfile(profileData)
+
+    validated.value = false
+    refConfirmModal.value?.close()
+    // await router.push({ name: '사용자' })
+  } catch (err: any) {
+    refAlertModal.value?.callModal('', '사용자 정보 저장 중 오류가 발생했습니다.')
   }
 }
 
 const loading = ref(true)
 
 onBeforeMount(async () => {
-  await workProjectStore.fetchVisibleProjectsList({})
+  await workStore.fetchVisibleProjectsList({})
   if (route.params.userId) {
     await accStore.fetchUser(Number(route.params.userId))
   } else {
@@ -121,110 +147,6 @@ onBeforeRouteUpdate(async to => {
 
   await formDataSetup()
 })
-
-watch(userInfo, () => formDataSetup())
-
-const generatePassword = () => {
-  const chars =
-    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+[]{}|;:,.<>?'
-  let password = ''
-
-  for (let i = 0; i < 8; i++) {
-    const array = new Uint32Array(1)
-    window.crypto.getRandomValues(array)
-    const randomIndex = array[0] % chars.length
-    password += chars[randomIndex]
-  }
-
-  genPass.value = password
-}
-
-const applyGen = () => {
-  form.password = genPass.value
-  form.pass_conf = genPass.value
-  genPass.value = ''
-}
-
-const onSubmit = async (event: Event) => {
-  const el = event.currentTarget as HTMLFormElement
-  if (!el.checkValidity()) {
-    event.preventDefault()
-    event.stopPropagation()
-    validated.value = true
-    return
-  }
-
-  if (form.password && form.password !== form.pass_conf) {
-    alert('비밀번호가 일치하지 않습니다.')
-    return
-  }
-
-  try {
-    let targetUserId = 0
-    if (!userInfo.value) {
-      // Create user
-      const payload = {
-        username: form.username,
-        email: form.email,
-        password: form.password,
-        mail_sending: form.mail_sending,
-        send_option: form.send_option as '1' | '2',
-        expired: form.expired,
-      }
-      const res = await accStore.adminCreateUser(payload)
-      if (res && res.data && res.data.pk) {
-        targetUserId = res.data.pk
-      }
-    } else {
-      // Edit User account info
-      targetUserId = userInfo.value.pk as number
-      const userPayload: any = {
-        email: form.email,
-        is_active: form.is_active,
-        is_staff: form.is_staff,
-        is_superuser: form.is_superuser,
-        work_manager: form.work_manager,
-      }
-      if (form.password) {
-        userPayload.password = form.password
-      }
-
-      // Edit User Profile info
-      const profilePayload = {
-        name: form.name,
-        birth_date: form.birth_date,
-        cell_phone: form.cell_phone,
-        auto_watch_created: form.auto_watch_created,
-        auto_watch_assigned: form.auto_watch_assigned,
-        meeting_notification: form.meeting_notification,
-      }
-    }
-
-    if (targetUserId) {
-      const res = await api.get(`/project-subscription/?user=${targetUserId}`)
-      const existingSubs = res.data
-      const existingProjIds = existingSubs.map((item: any) => item.project)
-
-      const toAdd = form.subscribed_projects.filter((id: number) => !existingProjIds.includes(id))
-      const toDelete = existingSubs.filter(
-        (item: any) => !form.subscribed_projects.includes(item.project),
-      )
-
-      for (const projId of toAdd) {
-        await api.post(`/project-subscription/`, { user: targetUserId, project: projId })
-      }
-      for (const sub of toDelete) {
-        await api.delete(`/project-subscription/${sub.pk}/`)
-      }
-    }
-
-    validated.value = false
-    await router.push({ name: '사용자' })
-  } catch (err: any) {
-    console.error(err)
-    alert('사용자 정보 저장 중 오류가 발생했습니다.')
-  }
-}
 </script>
 
 <template>
@@ -263,11 +185,9 @@ const onSubmit = async (event: Event) => {
             <CCardBody>
               <!-- Username -->
               <CRow class="mb-3">
-                <CFormLabel for="username" class="col-sm-3 col-form-label required">
-                  아이디
-                </CFormLabel>
+                <CFormLabel for="username" class="col-sm-3 col-form-label">아이디</CFormLabel>
                 <CCol sm="9">
-                  <span>{{ form.username }}</span>
+                  <span>{{ userInfo?.username }}</span>
                 </CCol>
               </CRow>
 
@@ -290,13 +210,7 @@ const onSubmit = async (event: Event) => {
 
               <!-- Password -->
               <CRow class="mb-3">
-                <CFormLabel
-                  for="password"
-                  class="col-sm-3 col-form-label"
-                  :class="{ required: !userInfo }"
-                >
-                  비밀번호
-                </CFormLabel>
+                <CFormLabel for="password" class="col-sm-3 col-form-label">비밀번호</CFormLabel>
                 <CCol sm="5">
                   <v-btn color="light" @click="router.push({ name: '비밀번호 변경' })">
                     비밀번호 변경
@@ -370,13 +284,7 @@ const onSubmit = async (event: Event) => {
               </CRow>
 
               <CRow class="mb-3">
-                <CFormLabel
-                  for="password"
-                  class="col-sm-3 col-form-label"
-                  :class="{ required: !userInfo }"
-                >
-                  휴대전화
-                </CFormLabel>
+                <CFormLabel for="password" class="col-sm-3 col-form-label"> 휴대전화 </CFormLabel>
                 <CCol>
                   <input
                     v-model="form.cell_phone"
@@ -469,4 +377,12 @@ const onSubmit = async (event: Event) => {
       </CForm>
     </CRow>
   </div>
+
+  <ConfirmModal ref="refConfirmModal">
+    <template #default> 내 계정 정보를 저장하시겠습니까? </template>
+    <template #footer>
+      <v-btn color="success" size="small" @click="onSubmitConfirm">저장</v-btn>
+    </template>
+  </ConfirmModal>
+  <AlertModal ref="refAlertModal"></AlertModal>
 </template>
