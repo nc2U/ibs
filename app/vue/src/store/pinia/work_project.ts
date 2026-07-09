@@ -191,15 +191,24 @@ export const useWork = defineStore('work', () => {
   ) => {
     // 1. 보이는 프로젝트 조회
     const url = `/issue-project/visible_projects/?company=${com}&status=${status}`
-    await api.get(url).then(res => (visibleProjects.value = res.data)).catch(err => errorHandle(err.response.data))
+    await api
+      .get(url)
+      .then(res => (visibleProjects.value = res.data))
+      .catch(err => errorHandle(err.response.data))
 
     // 2. 내 프로젝트 조회
     const myUrl = `/issue-project/my_projects/?company=${com}&status=${status}`
-    await api.get(myUrl).then(res => (myProjects.value = res.data)).catch(err => errorHandle(err.response.data))
+    await api
+      .get(myUrl)
+      .then(res => (myProjects.value = res.data))
+      .catch(err => errorHandle(err.response.data))
 
     // 3. 전체 프로젝트 조회
     const allUrl = `/issue-project/all_projects/?company=${com}&status=${status}`
-    await api.get(allUrl).then(res => (allProjects.value = res.data)).catch(err => errorHandle(err.response.data))
+    await api
+      .get(allUrl)
+      .then(res => (allProjects.value = res.data || []))
+      .catch(err => errorHandle(err.response.data))
   }
 
   const fetchIssueProject = (slug: string) =>
@@ -399,6 +408,22 @@ export const useWork = defineStore('work', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
+  // subscribed_projects
+  const subscribedProjects = ref([])
+
+  const fetchSubscribedProjects = async (userPk: number) =>
+    api
+      .get(`/project-subscription/?user=${userPk}`)
+      .then(res => (subscribedProjects.value = res.data.results))
+      .catch(err => errorHandle(err.response.data))
+
+  const createSubscribedProjects = (payload: { user: number; project_ids: number[] }) => {
+    api
+      .post(`/project-subscription/bulk-update/`, payload)
+      .then(() => fetchSubscribedProjects(payload.user))
+      .catch(err => errorHandle(err.response.data))
+  }
+
   // version states & getters
   const version = ref<Version | null>(null)
   const versionList = ref<Version[]>([])
@@ -522,6 +547,10 @@ export const useWork = defineStore('work', () => {
     fetchProjectMembers,
     createMember,
     patchMember,
+
+    subscribedProjects,
+    fetchSubscribedProjects,
+    createSubscribedProjects,
 
     version,
     versionList,

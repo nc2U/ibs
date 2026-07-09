@@ -296,6 +296,51 @@ class ProjectSubscriptionViewSet(viewsets.ModelViewSet):
             return self.queryset.filter(user_id=target_user)
         return self.queryset.filter(user=user)
 
+    @action(detail=False, methods=['post'], url_path='bulk-update')
+    def bulk_update(self, request):
+        user = self.request.user
+        target_user_id = request.data.get('user')
+
+        # 권한 제어: 관리자가 아닌 유저가 타인 아이디를 요청 시 본인 계정으로 고정
+        if target_user_id and (user.is_superuser or user.work_manager):
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            try:
+                target_user = User.objects.get(pk=target_user_id)
+            except User.DoesNotExist:
+                return Response({'detail': '사용자를 찾을 수 없습니다.'}, status=400)
+        else:
+            target_user = user
+
+        project_ids = request.data.get('project_ids', [])
+        if not isinstance(project_ids, list):
+            return Response({'detail': 'project_ids는 배열 형태여야 합니다.'}, status=400)
+
+        from django.db import transaction
+        with transaction.atomic():
+            # 기존 구독 조회
+            existing_subs = ProjectSubscription.objects.filter(user=target_user)
+            existing_project_ids = set(existing_subs.values_list('project_id', flat=True))
+
+            target_project_ids = set(int(pid) for pid in project_ids if str(pid).isdigit())
+
+            # 삭제 처리
+            to_delete = existing_project_ids - target_project_ids
+            ProjectSubscription.objects.filter(user=target_user, project_id__in=to_delete).delete()
+
+            # 생성 처리
+            to_add = target_project_ids - existing_project_ids
+            new_subs = [
+                ProjectSubscription(user=target_user, project_id=pid)
+                for pid in to_add
+            ]
+            ProjectSubscription.objects.bulk_create(new_subs)
+
+        # 변경 이후의 전체 구독 목록 조회 및 반환
+        updated_subs = ProjectSubscription.objects.filter(user=target_user)
+        serializer = self.get_serializer(updated_subs, many=True)
+        return Response(serializer.data)
+
 
 class VersionFilter(FilterSet):
     status__exclude = CharFilter(field_name='status', exclude=True, label='상태-제외')

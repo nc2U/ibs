@@ -45,6 +45,7 @@ const patchProfile = (payload: { pk: number; form: FormData }) => accStore.patch
 
 const workStore = useWork()
 const projectList = computed(() => workStore.getVisibleProjPks)
+const subscribedProjects = computed(() => workStore.subscribedProjects)
 
 const transProfileForm = (img?: File) => (form.image = img)
 
@@ -70,12 +71,15 @@ const formDataSetup = async () => {
       form.meeting_notification = true
     }
 
-    try {
-      const res = await api.get(`/project-subscription/?user=${userInfo.value.pk}`)
-      form.subscribed_projects = res.data.map((item: any) => item.project)
-    } catch (err) {
-      form.subscribed_projects = []
-    }
+    await workStore.fetchSubscribedProjects(profile.value?.user as number)
+    form.subscribed_projects = subscribedProjects.value.map((item: any) => item.project) || []
+
+    // try {
+    //   const res = await api.get(`/project-subscription/?user=${userInfo.value.pk}`)
+    //   form.subscribed_projects = res.data.map((item: any) => item.project)
+    // } catch (err) {
+    //   form.subscribed_projects = []
+    // }
   } else {
     form.pk = null
     form.user = null
@@ -108,27 +112,33 @@ const onSubmit = async (event: Event) => {
 
 const onSubmitConfirm = async () => {
   try {
-    console.log('form', form)
-    if (!form.image) delete form.image
-
-    const { pk, ...formData } = form
-    if (!formData.birth_date) formData.birth_date = ''
+    const { pk, image, subscribed_projects, ...profileFields } = form
+    if (!profileFields.birth_date) profileFields.birth_date = ''
 
     const submitData = new FormData()
 
-    Object.entries(formData).forEach(([key, value]) => {
+    Object.entries(profileFields).forEach(([key, value]) => {
       if (value !== null && value !== undefined) {
         submitData.append(key, value as any)
       }
     })
 
-    if (pk) await patchProfile({ ...{ pk }, ...{ form: submitData } })
+    if (image instanceof File) submitData.append('image', image)
+
+    if (pk) await patchProfile({ pk, form: submitData })
     else await createProfile(submitData)
+
+    if (userInfo.value?.pk) {
+      workStore.createSubscribedProjects({
+        user: userInfo.value.pk,
+        project_ids: form.subscribed_projects,
+      })
+    }
 
     validated.value = false
     refConfirmModal.value?.close()
-    // await router.push({ name: '사용자' })
   } catch (err: any) {
+    console.error('Error during onSubmitConfirm:', err)
     refAlertModal.value?.callModal('', '사용자 정보 저장 중 오류가 발생했습니다.')
   }
 }

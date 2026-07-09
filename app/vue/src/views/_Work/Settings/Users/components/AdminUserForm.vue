@@ -70,7 +70,7 @@ const formDataSetup = async () => {
 
     try {
       const res = await api.get(`/project-subscription/?user=${user.value.pk}`)
-      form.subscribed_projects = res.data.map((item: any) => item.project)
+      form.subscribed_projects = (res.data.results || res.data).map((item: any) => item.project)
     } catch (err) {
       console.error(err)
       form.subscribed_projects = []
@@ -199,21 +199,10 @@ const onSubmit = async (event: Event) => {
     }
 
     if (targetUserId) {
-      const res = await api.get(`/project-subscription/?user=${targetUserId}`)
-      const existingSubs = res.data
-      const existingProjIds = existingSubs.map((item: any) => item.project)
-
-      const toAdd = form.subscribed_projects.filter((id: number) => !existingProjIds.includes(id))
-      const toDelete = existingSubs.filter(
-        (item: any) => !form.subscribed_projects.includes(item.project),
-      )
-
-      for (const projId of toAdd) {
-        await api.post(`/project-subscription/`, { user: targetUserId, project: projId })
-      }
-      for (const sub of toDelete) {
-        await api.delete(`/project-subscription/${sub.pk}/`)
-      }
+      await api.post(`/project-subscription/bulk-update/`, {
+        user: targetUserId,
+        project_ids: form.subscribed_projects,
+      })
     }
 
     validated.value = false
