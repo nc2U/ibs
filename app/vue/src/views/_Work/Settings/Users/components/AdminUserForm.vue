@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref, reactive, watch } from 'vue'
 import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
+import { generatePassword } from '@/utils/helper.ts'
 import { useAccount } from '@/store/pinia/account'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
@@ -29,6 +30,16 @@ const form = reactive({
   expired: 24,
 })
 
+const formCheck = computed(() => {
+  if (user.value) {
+    const a = !form.password
+    const b = form.is_active === user.value.is_active
+    const c = form.is_staff === user.value.is_staff
+    const d = form.work_manager === user.value.work_manager
+    return a && b && c && d
+  } else return false
+})
+
 const genPass = ref('')
 const validated = ref(false)
 
@@ -50,27 +61,13 @@ const formDataSetup = async () => {
     form.is_staff = false
     form.work_manager = false
   }
-  form.mail_sending = true
+  form.mail_sending = !user.value || !!form.password
   form.send_option = '1'
   form.expired = 24
 }
 
 watch(user, () => formDataSetup())
-
-const generatePassword = () => {
-  const chars =
-    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+[]{}|;:,.<>?'
-  let password = ''
-
-  for (let i = 0; i < 8; i++) {
-    const array = new Uint32Array(1)
-    window.crypto.getRandomValues(array)
-    const randomIndex = array[0] % chars.length
-    password += chars[randomIndex]
-  }
-
-  genPass.value = password
-}
+watch(form, val => (form.mail_sending = !user.value || !!val.password))
 
 const applyGen = () => {
   form.password = genPass.value
@@ -108,11 +105,14 @@ const onSubmit = async (event: Event) => {
       // Edit User account info
       const userPayload: any = {
         email: form.email,
-        password: form.password,
-        mail_sending: form.mail_sending,
-        send_option: form.send_option as '1' | '2',
-        expired: form.expired,
-
+        // 비밀번호 관련 필드는 명시적으로 입력했을 때만 포함
+        ...(form.password && {
+          password: form.password,
+          mail_sending: form.mail_sending,
+          send_option: form.send_option,
+          expired: form.expired,
+        }),
+        // 권한 필드는 항상 전송 (기존 값 유지)
         is_active: form.is_active,
         is_staff: form.is_staff,
         work_manager: form.work_manager,
@@ -120,7 +120,7 @@ const onSubmit = async (event: Event) => {
       if (form.password) {
         userPayload.password = form.password
       }
-      // await accStore.adminUpdateUser(form?.pk as number, userPayload)
+      await accStore.adminUpdateUser(userPayload)
     }
 
     validated.value = false
@@ -251,7 +251,12 @@ onBeforeRouteUpdate(async to => {
                     />
                   </CCol>
                   <CCol sm="4">
-                    <v-btn color="info" size="small" class="mt-1" @click="generatePassword">
+                    <v-btn
+                      color="info"
+                      size="small"
+                      class="mt-1"
+                      @click="genPass = generatePassword()"
+                    >
                       임의 패스워드 생성
                     </v-btn>
                   </CCol>
@@ -408,7 +413,7 @@ onBeforeRouteUpdate(async to => {
 
         <!-- Submit & Cancel Footer -->
         <div class="text-right mb-4">
-          <v-btn type="submit" color="primary"> 저장</v-btn>
+          <v-btn type="submit" :disabled="formCheck" color="primary"> 저장</v-btn>
           <v-btn color="light" class="mr-2" @click="router.push({ name: '사용자' })" flat>
             취소
           </v-btn>
