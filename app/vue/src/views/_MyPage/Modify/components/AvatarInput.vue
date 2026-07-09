@@ -8,7 +8,7 @@ const props = defineProps<{
 
 const emit = defineEmits(['trans-profile-form'])
 
-const imgSource = ref('') // 화면에 표시되는 이미지 소스
+const imgSource = ref<string | File>('') // 화면에 표시되는 이미지 소스
 
 const modalImg = ref()
 const cropModal = ref()
