@@ -1,13 +1,21 @@
 <script lang="ts" setup>
-import { ref, reactive } from 'vue'
-import { CCardBody, CCardHeader } from '@coreui/vue'
+import { ref, reactive, computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAccount } from '@/store/pinia/account'
+import AlertModal from '@/components/Modals/AlertModal.vue'
 
-defineProps({ username: String })
+const props = defineProps({ username: String })
 const emit = defineEmits(['change-password'])
+
+const refAlertModal = ref()
+
+const router = useRouter()
+const accStore = useAccount()
+const userInfo = computed(() => accStore.userInfo)
+const usernameVal = computed(() => props.username || userInfo.value?.username || '')
 
 const validated = ref(false)
 const showPassword = ref(false)
-const confirm_message = ref('비밀번호를 한번 더 입력하세요.')
 
 const form = reactive({
   old_password: '',
@@ -15,7 +23,7 @@ const form = reactive({
   confirm_password: '',
 })
 
-const onSubmit = (event: Event) => {
+const onSubmit = async (event: Event) => {
   const e = event.currentTarget as HTMLInputElement
   if (!e.checkValidity()) {
     event.preventDefault()
@@ -23,8 +31,16 @@ const onSubmit = (event: Event) => {
 
     validated.value = true
   } else {
-    if (form.new_password === form.confirm_password) emit('change-password', form)
-    else alert('비밀번호가 서로 다릅니다.')
+    if (form.new_password === form.confirm_password) {
+      emit('change-password', form)
+      if (await accStore.changePassword(form)) {
+        setTimeout(() => {
+          router.push({ name: 'Login' })
+        }, 1000)
+      }
+    } else {
+      refAlertModal.value.callModal('', '비밀번호가 서로 다릅니다.')
+    }
   }
 }
 </script>
@@ -47,11 +63,11 @@ const onSubmit = (event: Event) => {
           <CCardBody>
             <CRow class="pl-4 pt-3 mb-3">
               <CFormLabel class="col-sm-4 col-lg-2 col-form-label">이름</CFormLabel>
-              <CCol sm="6" lg="4" xl="2" class="pt-2">{{ username }}</CCol>
+              <CCol sm="6" lg="4" xl="2" class="pt-2">{{ usernameVal }}</CCol>
             </CRow>
 
             <CRow class="pl-4 my-3">
-              <CFormLabel class="col-sm-4 col-lg-2 col-form-label">현재비밀번호</CFormLabel>
+              <CFormLabel class="col-sm-4 col-lg-2 col-form-label">현재 비밀번호</CFormLabel>
               <CCol sm="6" lg="4" xl="3">
                 <CInputGroup>
                   <CFormInput
@@ -76,7 +92,7 @@ const onSubmit = (event: Event) => {
               </CCol>
             </CRow>
             <CRow class="pl-4 my-3">
-              <CFormLabel class="col-sm-4 col-lg-2 col-form-label">새로운비밀번호</CFormLabel>
+              <CFormLabel class="col-sm-4 col-lg-2 col-form-label">새로운 비밀번호</CFormLabel>
               <CCol sm="6" lg="4" xl="3">
                 <CInputGroup>
                   <CFormInput
@@ -101,7 +117,7 @@ const onSubmit = (event: Event) => {
               </CCol>
             </CRow>
             <CRow class="pl-4 my-3">
-              <CFormLabel class="col-sm-4 col-lg-2 col-form-label">재입력</CFormLabel>
+              <CFormLabel class="col-sm-4 col-lg-2 col-form-label">비밀번호 확인</CFormLabel>
               <CCol sm="6" lg="4" xl="3">
                 <CInputGroup>
                   <CFormInput
@@ -129,7 +145,7 @@ const onSubmit = (event: Event) => {
               <CCol class="col-sm-4 col-lg-2"></CCol>
               <CCol sm="6" lg="4" xl="3" class="text-right">
                 <v-btn type="submit" color="success">수정하기</v-btn>
-                <v-btn color="light" @click="$router.back()" flat>취소</v-btn>
+                <v-btn color="light" @click="router.back()" flat>취소</v-btn>
               </CCol>
             </CRow>
           </CCardBody>
@@ -137,4 +153,6 @@ const onSubmit = (event: Event) => {
       </CCol>
     </CForm>
   </CRow>
+
+  <AlertModal ref="refAlertModal" />
 </template>
