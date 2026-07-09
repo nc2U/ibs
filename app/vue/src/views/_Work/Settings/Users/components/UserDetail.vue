@@ -46,7 +46,7 @@ const issueProjects = computed(() => props.issueProjects.slice())
       <span v-if="user?.pk === userInfo?.pk">
         <TextButton name="내 계정" icon="mdi-pencil" icon-color="amber" :to="{ name: '내 계정' }" />
       </span>
-      <span v-if="workManager">
+      <span v-if="workManager && user?.pk !== userInfo?.pk">
         <TextButton
           name="편집"
           icon="mdi-pencil"
