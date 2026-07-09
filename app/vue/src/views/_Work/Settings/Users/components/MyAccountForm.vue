@@ -92,7 +92,7 @@ const formDataSetup = async () => {
   }
 }
 
-watch(userInfo, () => formDataSetup())
+watch([userInfo, profile], () => formDataSetup())
 
 const onSubmit = async (event: Event) => {
   if (userInfo.value) {
