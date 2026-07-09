@@ -94,7 +94,7 @@ class IssueProjectViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], pagination_class=None)
     def visible_projects(self, request):
-        queryset = self.get_queryset().select_related('company', 'module', 'creator')
+        queryset = self.get_queryset().filter(status='1').select_related('company', 'module', 'creator')
         queryset = self.filter_queryset(queryset)
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
@@ -102,7 +102,7 @@ class IssueProjectViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], pagination_class=None)
     def my_projects(self, request):
         user = request.user
-        queryset = IssueProject.objects.all()
+        queryset = IssueProject.objects.filter(status='1')
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
             queryset = queryset.filter(members__user=user).distinct()
         queryset = queryset.prefetch_related(
