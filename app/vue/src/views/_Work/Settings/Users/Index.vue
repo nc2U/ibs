@@ -24,7 +24,7 @@ const accStore = useAccount()
 const usersList = computed(() => accStore.usersList)
 
 const workStore = useWork()
-const issueProjects = computed(() => workStore.issueProjects)
+const visibleProjectsTree = computed(() => workStore.visibleProjectsTree)
 const fetchIssueProjectList = (payload: any) => workStore.fetchIssueProjectList(payload)
 
 const issueStore = useIssue()
@@ -68,7 +68,7 @@ onBeforeMount(async () => {
 
       <UserDetail
         v-else-if="route.name === '사용자 - 보기'"
-        :issue-projects="issueProjects"
+        :issue-projects="visibleProjectsTree"
         :issue-num="issueNumByMember"
       />
 

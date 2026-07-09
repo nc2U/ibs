@@ -23,12 +23,9 @@ export const useWork = defineStore('work', () => {
   const issueProject = ref<IssueProject | null>(null)
 
   // 1. 원시 플랫 상태 (Refs)
-  const allProjects = ref<IssueProject[]>([])
-  const visibleProjects = ref<IssueProject[]>([])
-  const myProjects = ref<IssueProject[]>([])
-
-  // 하위 호환성 연결: 기존 issueProjectList는 visibleProjects를 바라봅니다.
-  const issueProjectList = visibleProjects
+  const allProjects = ref<IssueProject[]>([]) // 모든 프로젝트 - 검색용 (닫힌 프로젝트 포함)
+  const visibleProjects = ref<IssueProject[]>([]) // 사용중 공개 프로젝트(is_public=True, status='1')
+  const myProjects = ref<IssueProject[]>([]) // 내가 멤버인 프로젝트
 
   // 2. 트리 재구성 함수 및 트리 가공 상태 (Computed)
   const buildProjectTree = (projects: IssueProject[]): IssueProject[] => {
@@ -66,9 +63,6 @@ export const useWork = defineStore('work', () => {
   const allProjectsRoot = computed(() => allProjectsTree.value)
   const visibleProjectsRoot = computed(() => visibleProjectsTree.value)
   const myProjectsRoot = computed(() => myProjectsTree.value)
-
-  // 하위 호환성 연결: 기존의 최상위 루트 리스트 issueProjects는 visibleProjectsTree를 반환합니다.
-  const issueProjects = computed(() => visibleProjectsTree.value)
 
   // 3. 재귀적 평탄화 가공 상태 (Computed)
   const flattenTree = (projects: IssueProject[]) => {
@@ -494,8 +488,6 @@ export const useWork = defineStore('work', () => {
     allProjects,
     visibleProjects,
     myProjects,
-    issueProjectList,
-    issueProjects,
     allProjectsTree,
     visibleProjectsTree,
     myProjectsTree,
