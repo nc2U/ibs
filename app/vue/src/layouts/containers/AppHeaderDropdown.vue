@@ -63,10 +63,6 @@ const logout = () => {
       <CDropdownHeader component="h6" class="fw-semibold py-2" :class="headerClass">
         Settings
       </CDropdownHeader>
-      <CDropdownItem @click="router.push({ name: '마이페이지' })">
-        <v-icon icon="mdi mdi-account-outline" size="small" />
-        마이페이지
-      </CDropdownItem>
 
       <CDropdownItem v-if="userInfo.is_staff" @click="locationBlank('/admin/')">
         <v-icon icon="mdi mdi-cog-outline" size="small" />
@@ -76,6 +72,11 @@ const logout = () => {
       <CDropdownItem @click="locationBlank('https://docs.dyibs.com/')">
         <v-icon icon="mdi mdi-file-document-outline" size="small" />
         사용자 매뉴얼
+      </CDropdownItem>
+
+      <CDropdownItem @click="router.push({ name: '내 계정' })">
+        <v-icon icon="mdi mdi-account-outline" size="small" />
+        내 계정 관리
       </CDropdownItem>
 
       <CDropdownDivider />
