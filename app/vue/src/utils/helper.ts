@@ -130,3 +130,18 @@ export const cleanupParams = (params: Record<string, any>): Record<string, any> 
   }
   return cleanedParams
 }
+
+export const generatePassword = () => {
+  const chars =
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+[]{}|;:,.<>?'
+  let password = ''
+
+  for (let i = 0; i < 8; i++) {
+    const array = new Uint32Array(1)
+    window.crypto.getRandomValues(array)
+    const randomIndex = array[0] % chars.length
+    password += chars[randomIndex]
+  }
+
+  return password
+}

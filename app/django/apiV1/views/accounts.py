@@ -11,6 +11,7 @@ from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.db import transaction
 
 from accounts.models import User, StaffAuth, Profile, DocScrape, PostScrape, Todo, PasswordResetToken
 from apiV1.permissions.auth_perms import IsStaffOrReadOnly, IsOwnerOnly, IsWorkManagerOnly
@@ -264,135 +265,147 @@ class AdminManageUserView(APIView):
     @staticmethod
     def post(request, *args, **kwargs):
         serializer = AdminCreateUserSerializer(data=request.data)
-        if serializer.is_valid():
-            # Find the user with the given email
-            email = serializer.validated_data.get('email')
-            username = serializer.validated_data.get('username')
-            password = serializer.validated_data.get('password')
-            mail_sending = serializer.validated_data.get('mail_sending')
-            send_option = serializer.validated_data.get('send_option')
-            expired = serializer.validated_data.get('expired')
-            print("Serializer is valid:", serializer.validated_data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-            try:
-                User.objects.get(email=email)
-                print(f"User with email {email} already exists.")
-                return Response({'detail': '이미 등록된 이메일입니다.'}, status=status.HTTP_400_BAD_REQUEST)
-            except User.DoesNotExist:
-                print(f"No user found with email {email}. Proceeding with user creation.")
+        # 이미 존재하는 이메일 체크
+        email = serializer.validated_data.get('email')
+        if User.objects.filter(email=email).exists():
+            return Response({'detail': '이미 등록된 이메일입니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
-            # 1. 관리자가 입력한 계정 정보(임의 패스워드 포함)로 계정 생성
-            user = User(email=email, username=username)
-            user.set_password(password)
-            user.save()
+        # 트랜잭션을 사용하여 원자적 처리
+        try:
+            with transaction.atomic():
+                # 1. 사용자 생성
+                user = User(email=email, username=serializer.validated_data.get('username'))
+                user.set_password(serializer.validated_data.get('password'))
+                user.save()
 
-            # 2. 기본 스태프 권한 및 프로필 등록
-            StaffAuth.objects.create(user=user, is_pjt_staff=True)
-            Profile.objects.create(user=user)
+                # 2. 기본 스태프 권한 및 프로필 등록
+                StaffAuth.objects.create(user=user, is_pjt_staff=True)
+                Profile.objects.create(user=user)
 
-            if mail_sending is not None:
-                scheme = 'http' if settings.DEBUG else 'https'
-                curr_host = request.get_host()
+                # 3. 메일 발송 로직 (mail_sending이 True인 경우)
 
-                if send_option == '1':
-                    # Generate a password reset token
-                    token = default_token_generator.make_token(user)
+                # Find the user with the given email
+                mail_sending = serializer.validated_data.get('mail_sending')
+
+                if mail_sending is not None:
+                    scheme = 'http' if settings.DEBUG else 'https'
+                    curr_host = request.get_host()
+
+                    send_option = serializer.validated_data.get('send_option')
+
+                    if send_option == '1':
+                        # Generate a password reset token
+                        token = default_token_generator.make_token(user)
+                        expired = serializer.validated_data.get('expired')
+                        try:
+                            token_db = PasswordResetToken.objects.get(user=user)
+                            token_db.token = token
+                        except PasswordResetToken.DoesNotExist:
+                            token_db = PasswordResetToken(user=user, token=token, expired=expired * 3600)
+                        token_db.save()
+
+                        # Create a password reset link
+                        uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+                        reset_link = f'{scheme}://{curr_host}/#/accounts/pass-reset/?uidb64={uidb64}&token={token}'
+
+                        # Send the password reset email
+                        subject = f'[IBS] 워크스페이스 {user.username}님 새 계정이 생성 되었습니다.'
+                        message = f'''[IBS] 워크스페이스를 시작하기 위해 다음 링크를 클릭하여 비밀번호를 설정 하세요.: \n{reset_link}\n\n이 링크는 발송 후 {expired}시간 후에 만료됩니다. 만료되기 전에 패스워드를 설정하지 않은 경우 관리자에게 문의하십시오.'''
+                    else:
+                        # Send the password reset email
+                        subject = f'[IBS] 워크스페이스 {user.username}님 새 계정이 생성 되었습니다.'
+                        message = f'''[IBS] 워크스페이스를 시작하기 위해 다음 사용자 정보를 이용해 로그인 하세요.: \n\n메일주소 : {email}\n비밀번호 : {password}\n\nURL 주소 : {scheme}://{curr_host}\n\n로그인 및 각 메뉴에 대한 접근 권한은 관리자에게 문의하십시오.'''
+
                     try:
-                        token_db = PasswordResetToken.objects.get(user=user)
-                        token_db.token = token
-                    except PasswordResetToken.DoesNotExist:
-                        token_db = PasswordResetToken(user=user, token=token, expired=expired * 3600)
-                    token_db.save()
+                        send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [email])
+                    except Exception as e:
+                        print(f"관리자 유저 생성 메일 발송 실패: {e}")
+                        return Response(
+                            {'pk': user.pk, 'detail': '새 계정이 생성되었으나 알림 이메일 발송에는 실패했습니다. 비밀번호를 수동으로 전달하십시오.'},
+                            status=status.HTTP_201_CREATED)
 
-                    # Create a password reset link
-                    uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
-                    reset_link = f'{scheme}://{curr_host}/#/accounts/pass-reset/?uidb64={uidb64}&token={token}'
-
-                    # Send the password reset email
-                    subject = f'[IBS] 워크스페이스 {user.username}님 새 계정이 생성 되었습니다.'
-                    message = f'''[IBS] 워크스페이스를 시작하기 위해 다음 링크를 클릭하여 비밀번호를 설정 하세요.: \n{reset_link}\n\n이 링크는 발송 후 {expired}시간 후에 만료됩니다. 만료되기 전에 패스워드를 설정하지 않은 경우 관리자에게 문의하십시오.'''
-                else:
-                    # Send the password reset email
-                    subject = f'[IBS] 워크스페이스 {user.username}님 새 계정이 생성 되었습니다.'
-                    message = f'''[IBS] 워크스페이스를 시작하기 위해 다음 사용자 정보를 이용해 로그인 하세요.: \n\n메일주소 : {email}\n비밀번호 : {password}\n\nURL 주소 : {scheme}://{curr_host}\n\n로그인 및 각 메뉴에 대한 접근 권한은 관리자에게 문의하십시오.'''
-
-                try:
-                    send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [email])
-                except Exception as e:
-                    print(f"관리자 유저 생성 메일 발송 실패: {e}")
-                    return Response({'pk': user.pk, 'detail': '새 계정이 생성되었으나 알림 이메일 발송에는 실패했습니다. 비밀번호를 수동으로 전달하십시오.'},
+                    return Response({'pk': user.pk, 'detail': '새 계정을 생성하고 비밀번호 설정을 위한 이메일을 발송했습니다.'},
                                     status=status.HTTP_201_CREATED)
 
-                return Response({'pk': user.pk, 'detail': '새 계정을 생성하고 비밀번호 설정을 위한 이메일을 발송했습니다.'},
-                                status=status.HTTP_201_CREATED)
-
             return Response({'pk': user.pk, 'detail': '새 계정을 생성하였습니다.'}, status=status.HTTP_201_CREATED)
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'detail': f'사용자 생성 중 오류 발생: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @staticmethod
     def put(request, *args, **kwargs):
-        user_id = request.data.get('pk')
         email = request.data.get('email')
 
         try:
-            if user_id:
-                user = User.objects.get(pk=user_id)
-            elif email:
-                user = User.objects.get(email=email)
-            else:
-                return Response({'detail': '사용자 식별 정보(user ID 또는 email)가 필요합니다.'}, status=status.HTTP_400_BAD_REQUEST)
+            user = User.objects.get(email=email)
         except User.DoesNotExist:
             return Response({'detail': '사용자를 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
 
+        # 1. 권한 관련 필드 업데이트 (명시적 존재 확인)
+        # 요청 데이터에 해당 필드가 있을 때만 업데이트합니다.
+        for field in ['is_active', 'is_staff', 'work_manager']:
+            if field in request.data:
+                setattr(user, field, request.data[field])
+
+        # 2. 비밀번호 변경 (비밀번호 정보가 명시적으로 들어올 때만)
         password = request.data.get('password')
-        mail_sending = request.data.get('mail_sending', True)
+        mail_sending = request.data.get('mail_sending', False)
         send_option = request.data.get('send_option', '1')  # '1': 리셋 링크, '2': 새 비밀번호 정보
-        expired = request.data.get('expired', 24)
 
-        if not str(expired).isdigit():
-            expired = 24
-        else:
-            expired = int(expired)
-
-        # 만약 비밀번호가 직접 입력되었고 send_option == '2'인 경우 비밀번호 설정
+        # 비밀번호 직접 변경 로직 (send_option '2'일 때)
         if password and send_option == '2':
             user.set_password(password)
-            user.save()
 
-        if mail_sending:
-            scheme = 'http' if settings.DEBUG else 'https'
-            curr_host = request.get_host()
-            email = user.email
+        # 3. 데이터 저장 및 메일 발송 (트랜잭션으로 원자적 처리)
+        try:
+            with transaction.atomic():
+                user.save()
 
-            if send_option == '1':
-                # Generate a password reset token
-                token = default_token_generator.make_token(user)
-                try:
-                    token_db = PasswordResetToken.objects.get(user=user)
-                    token_db.token = token
-                except PasswordResetToken.DoesNotExist:
-                    token_db = PasswordResetToken(user=user, token=token, expired=expired * 3600)
-                token_db.save()
+                # 메일 발송이 필요한 경우
+                if mail_sending:
+                    scheme = 'http' if settings.DEBUG else 'https'
+                    curr_host = request.get_host()
+                    email = user.email
 
-                # Create a password reset link
-                uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
-                reset_link = f'{scheme}://{curr_host}/#/accounts/pass-reset/?uidb64={uidb64}&token={token}'
+                    expired = request.data.get('expired', 24)
+                    if not str(expired).isdigit():
+                        expired = 24
+                    else:
+                        expired = int(expired)
 
-                # Send the password reset email
-                subject = f'[IBS] 워크스페이스 {user.username}님 계정 비밀번호 초기화 안내.'
-                message = f'''[IBS] 워크스페이스 계정의 비밀번호를 재설정하기 위해 다음 링크를 클릭하세요.: \n{reset_link}\n\n이 링크는 발송 후 {expired}시간 후에 만료됩니다. 만료되기 전에 패스워드를 재설정하지 않은 경우 관리자에게 문의하십시오.'''
-            else:
-                # Send the password reset email with new password
-                subject = f'[IBS] 워크스페이스 {user.username}님 계정 비밀번호가 변경되었습니다.'
-                message = f'''[IBS] 워크스페이스 계정의 비밀번호가 관리자에 의해 변경되었습니다. 다음 정보로 로그인 하세요.: \n\n메일주소 : {email}\n비밀번호 : {password}\n\nURL 주소 : {scheme}://{curr_host}'''
+                    if send_option == '1':
+                        # Generate a password reset token
+                        token = default_token_generator.make_token(user)
+                        try:
+                            token_db = PasswordResetToken.objects.get(user=user)
+                            token_db.token = token
+                        except PasswordResetToken.DoesNotExist:
+                            token_db = PasswordResetToken(user=user, token=token, expired=expired * 3600)
+                        token_db.save()
 
-            try:
-                send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [email])
-            except Exception as e:
-                print(f"비밀번호 재설정 메일 발송 실패: {e}")
-                return Response({'detail': '비밀번호 처리가 완료되었으나 알림 이메일 발송에 실패했습니다.'}, status=status.HTTP_200_OK)
+                        # Create a password reset link
+                        uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+                        reset_link = f'{scheme}://{curr_host}/#/accounts/pass-reset/?uidb64={uidb64}&token={token}'
 
-            return Response({'detail': '비밀번호 재설정 처리 및 알림 이메일을 발송했습니다.'}, status=status.HTTP_200_OK)
+                        # Send the password reset email
+                        subject = f'[IBS] 워크스페이스 {user.username}님 계정 비밀번호 초기화 안내.'
+                        message = f'''[IBS] 워크스페이스 계정의 비밀번호를 재설정하기 위해 다음 링크를 클릭하세요.: \n{reset_link}\n\n이 링크는 발송 후 {expired}시간 후에 만료됩니다. 만료되기 전에 패스워드를 재설정하지 않은 경우 관리자에게 문의하십시오.'''
+                    else:
+                        # Send the password reset email with new password
+                        subject = f'[IBS] 워크스페이스 {user.username}님 계정 비밀번호가 변경되었습니다.'
+                        message = f'''[IBS] 워크스페이스 계정의 비밀번호가 관리자에 의해 변경되었습니다. 다음 정보로 로그인 하세요.: \n\n메일주소 : {email}\n비밀번호 : {password}\n\nURL 주소 : {scheme}://{curr_host}'''
 
-        return Response({'detail': '비밀번호 재설정 처리가 완료되었습니다.'}, status=status.HTTP_200_OK)
+                    try:
+                        send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [email])
+                    except Exception as e:
+                        print(f"비밀번호 재설정 메일 발송 실패: {e}")
+                        return Response({'detail': '비밀번호 처리가 완료되었으나 알림 이메일 발송에 실패했습니다.'}, status=status.HTTP_200_OK)
+
+                    return Response({'detail': '비밀번호 재설정 처리 및 알림 이메일을 발송했습니다.'}, status=status.HTTP_200_OK)
+        except Exception as e:
+            # 트랜잭션 내에서 에러 발생 시 롤백됨
+            return Response({'detail': f'처리 중 오류 발생: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response({'detail': '사용자 정보 변경 처리가 완료되었습니다.'}, status=status.HTTP_200_OK)

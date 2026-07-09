@@ -72,7 +72,11 @@ export const useAccount = defineStore('account', () => {
     api
       .put(`/admin-create-user/`, payload)
       .then(res => {
-        fetchUsersList().then(r => message('info', '', '사용자를 생성하고 메일을 발송했습니다.'))
+        const send_mail = payload.password && payload.mail_sending
+        const notice_massage = send_mail
+          ? '비밀번호를 수정하고 메일을 발송했습니다.'
+          : '사용자 권한 정보를 수정하였습니다.'
+        fetchUsersList().then(r => message('info', '', notice_massage))
         return res.data
       })
       .catch(err => errorHandle(err.response.data))
