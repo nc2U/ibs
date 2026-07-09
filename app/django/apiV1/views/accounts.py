@@ -309,12 +309,12 @@ class AdminManageUserView(APIView):
                     reset_link = f'{scheme}://{curr_host}/#/accounts/pass-reset/?uidb64={uidb64}&token={token}'
 
                     # Send the password reset email
-                    subject = f'[IBS] {user.username}님 새 계정이 생성 되었습니다.'
-                    message = f'''[IBS]를 시작하기 위해 다음 링크를 클릭하여 비밀번호를 설정 하세요.: \n{reset_link}\n\n이 링크는 발송 후 {expired}시간 후에 만료됩니다. 만료되기 전에 패스워드를 설정하지 않은 경우 관리자에게 문의하십시오.'''
+                    subject = f'[IBS] 워크스페이스 {user.username}님 새 계정이 생성 되었습니다.'
+                    message = f'''[IBS] 워크스페이스를 시작하기 위해 다음 링크를 클릭하여 비밀번호를 설정 하세요.: \n{reset_link}\n\n이 링크는 발송 후 {expired}시간 후에 만료됩니다. 만료되기 전에 패스워드를 설정하지 않은 경우 관리자에게 문의하십시오.'''
                 else:
                     # Send the password reset email
-                    subject = f'[IBS] {user.username}님 새 계정이 생성 되었습니다.'
-                    message = f'''[IBS]를 시작하기 위해 다음 사용자 정보를 이용해 로그인 하세요.: \n\n메일주소 : {email}\n비밀번호 : {password}\n\nURL 주소 : {scheme}://{curr_host}\n\n로그인 및 각 메뉴에 대한 접근 권한은 관리자에게 문의하십시오.'''
+                    subject = f'[IBS] 워크스페이스 {user.username}님 새 계정이 생성 되었습니다.'
+                    message = f'''[IBS] 워크스페이스를 시작하기 위해 다음 사용자 정보를 이용해 로그인 하세요.: \n\n메일주소 : {email}\n비밀번호 : {password}\n\nURL 주소 : {scheme}://{curr_host}\n\n로그인 및 각 메뉴에 대한 접근 권한은 관리자에게 문의하십시오.'''
 
                 try:
                     send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [email])
@@ -380,12 +380,12 @@ class AdminManageUserView(APIView):
                 reset_link = f'{scheme}://{curr_host}/#/accounts/pass-reset/?uidb64={uidb64}&token={token}'
 
                 # Send the password reset email
-                subject = f'[IBS] {user.username}님 계정 비밀번호 초기화 안내.'
-                message = f'''[IBS] 계정의 비밀번호를 재설정하기 위해 다음 링크를 클릭하세요.: \n{reset_link}\n\n이 링크는 발송 후 {expired}시간 후에 만료됩니다. 만료되기 전에 패스워드를 재설정하지 않은 경우 관리자에게 문의하십시오.'''
+                subject = f'[IBS] 워크스페이스 {user.username}님 계정 비밀번호 초기화 안내.'
+                message = f'''[IBS] 워크스페이스 계정의 비밀번호를 재설정하기 위해 다음 링크를 클릭하세요.: \n{reset_link}\n\n이 링크는 발송 후 {expired}시간 후에 만료됩니다. 만료되기 전에 패스워드를 재설정하지 않은 경우 관리자에게 문의하십시오.'''
             else:
                 # Send the password reset email with new password
-                subject = f'[IBS] {user.username}님 계정 비밀번호가 변경되었습니다.'
-                message = f'''[IBS] 계정의 비밀번호가 관리자에 의해 변경되었습니다. 다음 정보로 로그인 하세요.: \n\n메일주소 : {email}\n비밀번호 : {password}\n\nURL 주소 : {scheme}://{curr_host}'''
+                subject = f'[IBS] 워크스페이스 {user.username}님 계정 비밀번호가 변경되었습니다.'
+                message = f'''[IBS] 워크스페이스 계정의 비밀번호가 관리자에 의해 변경되었습니다. 다음 정보로 로그인 하세요.: \n\n메일주소 : {email}\n비밀번호 : {password}\n\nURL 주소 : {scheme}://{curr_host}'''
 
             try:
                 send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [email])
