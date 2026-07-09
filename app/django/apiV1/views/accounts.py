@@ -8,6 +8,7 @@ from django.core.mail import send_mail
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from rest_framework import viewsets, status
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -323,8 +324,76 @@ class AdminCreateUserView(APIView):
                     return Response({'pk': user.pk, 'detail': '새 계정이 생성되었으나 알림 이메일 발송에는 실패했습니다. 비밀번호를 수동으로 전달하십시오.'},
                                     status=status.HTTP_201_CREATED)
 
-                return Response({'pk': user.pk, 'detail': '새 계정을 생성하고 비밀번호 설정을 위한 이메일을 발송했습니다.'}, status=status.HTTP_201_CREATED)
+                return Response({'pk': user.pk, 'detail': '새 계정을 생성하고 비밀번호 설정을 위한 이메일을 발송했습니다.'},
+                                status=status.HTTP_201_CREATED)
 
             return Response({'pk': user.pk, 'detail': '새 계정을 생성하였습니다.'}, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @staticmethod
+    def put(request, *args, **kwargs):
+        user_id = request.data.get('user')
+        email = request.data.get('email')
+
+        try:
+            if user_id:
+                user = User.objects.get(pk=user_id)
+            elif email:
+                user = User.objects.get(email=email)
+            else:
+                return Response({'detail': '사용자 식별 정보(user ID 또는 email)가 필요합니다.'}, status=status.HTTP_400_BAD_REQUEST)
+        except User.DoesNotExist:
+            return Response({'detail': '사용자를 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+
+        password = request.data.get('password')
+        mail_sending = request.data.get('mail_sending', True)
+        send_option = request.data.get('send_option', '1')  # '1': 리셋 링크, '2': 새 비밀번호 정보
+        expired = request.data.get('expired', 24)
+
+        if not str(expired).isdigit():
+            expired = 24
+        else:
+            expired = int(expired)
+
+        # 만약 비밀번호가 직접 입력되었고 send_option == '2'인 경우 비밀번호 설정
+        if password and send_option == '2':
+            user.set_password(password)
+            user.save()
+
+        if mail_sending:
+            scheme = 'http' if settings.DEBUG else 'https'
+            curr_host = request.get_host()
+            email = user.email
+
+            if send_option == '1':
+                # Generate a password reset token
+                token = default_token_generator.make_token(user)
+                try:
+                    token_db = PasswordResetToken.objects.get(user=user)
+                    token_db.token = token
+                except PasswordResetToken.DoesNotExist:
+                    token_db = PasswordResetToken(user=user, token=token, expired=expired * 3600)
+                token_db.save()
+
+                # Create a password reset link
+                uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+                reset_link = f'{scheme}://{curr_host}/#/accounts/pass-reset/?uidb64={uidb64}&token={token}'
+
+                # Send the password reset email
+                subject = f'[IBS] {user.username}님 계정 비밀번호 초기화 안내.'
+                message = f'''[IBS] 계정의 비밀번호를 재설정하기 위해 다음 링크를 클릭하세요.: \n{reset_link}\n\n이 링크는 발송 후 {expired}시간 후에 만료됩니다. 만료되기 전에 패스워드를 재설정하지 않은 경우 관리자에게 문의하십시오.'''
+            else:
+                # Send the password reset email with new password
+                subject = f'[IBS] {user.username}님 계정 비밀번호가 변경되었습니다.'
+                message = f'''[IBS] 계정의 비밀번호가 관리자에 의해 변경되었습니다. 다음 정보로 로그인 하세요.: \n\n메일주소 : {email}\n비밀번호 : {password}\n\nURL 주소 : {scheme}://{curr_host}'''
+
+            try:
+                send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [email])
+            except Exception as e:
+                print(f"비밀번호 재설정 메일 발송 실패: {e}")
+                return Response({'detail': '비밀번호 처리가 완료되었으나 알림 이메일 발송에 실패했습니다.'}, status=status.HTTP_200_OK)
+
+            return Response({'detail': '비밀번호 재설정 처리 및 알림 이메일을 발송했습니다.'}, status=status.HTTP_200_OK)
+
+        return Response({'detail': '비밀번호 재설정 처리가 완료되었습니다.'}, status=status.HTTP_200_OK)

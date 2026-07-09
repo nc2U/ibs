@@ -2,7 +2,6 @@
 import { computed, onBeforeMount, ref, reactive, watch } from 'vue'
 import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
 import { useAccount } from '@/store/pinia/account'
-import { useWork } from '@/store/pinia/work_project'
 import api from '@/api'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 
@@ -10,8 +9,6 @@ const menu = ref<'일반' | '프로젝트'>('일반')
 
 const accStore = useAccount()
 const user = computed(() => accStore.user)
-const workProjectStore = useWork()
-const projectList = computed(() => workProjectStore.getVisibleProjPks)
 
 const [route, router] = [useRoute(), useRouter()]
 
@@ -24,13 +21,7 @@ const form = reactive({
   is_staff: false,
   is_superuser: false,
   work_manager: false,
-  // Profile fields
-  name: '',
-  birth_date: '',
-  cell_phone: '',
-  auto_watch_created: true,
-  auto_watch_assigned: true,
-  meeting_notification: true,
+
   // Notification fields (creation only)
   mail_sending: true,
   send_option: '1',
@@ -52,22 +43,6 @@ const formDataSetup = async () => {
     form.is_superuser = user.value.is_superuser
     form.work_manager = user.value.work_manager
 
-    if (user.value.profile) {
-      form.name = user.value.profile.name || ''
-      form.birth_date = user.value.profile.birth_date || ''
-      form.cell_phone = user.value.profile.cell_phone || ''
-      form.auto_watch_created = user.value.profile.auto_watch_created ?? true
-      form.auto_watch_assigned = user.value.profile.auto_watch_assigned ?? true
-      form.meeting_notification = user.value.profile.meeting_notification ?? true
-    } else {
-      form.name = ''
-      form.birth_date = ''
-      form.cell_phone = ''
-      form.auto_watch_created = true
-      form.auto_watch_assigned = true
-      form.meeting_notification = true
-    }
-
     try {
       const res = await api.get(`/project-subscription/?user=${user.value.pk}`)
       form.subscribed_projects = (res.data.results || res.data).map((item: any) => item.project)
@@ -84,12 +59,7 @@ const formDataSetup = async () => {
     form.is_staff = false
     form.is_superuser = false
     form.work_manager = false
-    form.name = ''
-    form.birth_date = ''
-    form.cell_phone = ''
-    form.auto_watch_created = true
-    form.auto_watch_assigned = true
-    form.meeting_notification = true
+
     form.mail_sending = true
     form.send_option = '1'
     form.expired = 24
@@ -98,7 +68,6 @@ const formDataSetup = async () => {
 }
 
 onBeforeMount(async () => {
-  await workProjectStore.fetchVisibleProjectsList({})
   if (route.params.userId) {
     await accStore.fetchUser(Number(route.params.userId))
   } else {
@@ -181,28 +150,6 @@ const onSubmit = async (event: Event) => {
         userPayload.password = form.password
       }
       await api.patch(`/user/${user.value.pk}/`, userPayload)
-
-      // Edit User Profile info
-      const profilePayload = {
-        name: form.name,
-        birth_date: form.birth_date,
-        cell_phone: form.cell_phone,
-        auto_watch_created: form.auto_watch_created,
-        auto_watch_assigned: form.auto_watch_assigned,
-        meeting_notification: form.meeting_notification,
-      }
-      if (user.value.profile) {
-        await api.patch(`/profile/${user.value.profile.pk}/`, profilePayload)
-      } else {
-        await api.post(`/profile/`, { ...profilePayload, user: user.value.pk })
-      }
-    }
-
-    if (targetUserId) {
-      await api.post(`/project-subscription/bulk-update/`, {
-        user: targetUserId,
-        project_ids: form.subscribed_projects,
-      })
     }
 
     validated.value = false
@@ -400,17 +347,11 @@ const onSubmit = async (event: Event) => {
         <!-- Mail Notifications Card -->
         <CCard class="mb-4">
           <CCardHeader class="font-weight-bold">
-            <template v-if="!user">
-              <v-icon icon="mdi-email-arrow-right-outline" class="mr-1" color="primary" />
-              알림 메일 발송 설정
-            </template>
-            <template v-else>
-              <v-icon icon="mdi-cog" class="mr-1" color="primary" />
-              업무 및 알림 설정
-            </template>
+            <v-icon icon="mdi-email-arrow-right-outline" class="mr-1" color="primary" />
+            알림 메일 발송 설정
           </CCardHeader>
           <CCardBody>
-            <div v-if="!user">
+            <div>
               <CRow class="mb-2">
                 <CCol>
                   <CFormCheck
@@ -467,61 +408,6 @@ const onSubmit = async (event: Event) => {
               </CRow>
               <v-divider class="my-4" />
             </div>
-
-            <!-- 메일 알림 설정 -->
-            <CRow class="mb-3">
-              <CFormLabel class="col-sm-3 col-form-label">회의 알림 설정</CFormLabel>
-              <CCol sm="9" class="pt-2">
-                <CRow>
-                  <CCol xs="12" class="mb-3">
-                    <CFormCheck
-                      v-model="form.meeting_notification"
-                      id="meeting_notification"
-                      label="회의록 참석 시 알림 메일 수신"
-                    />
-                  </CCol>
-                </CRow>
-              </CCol>
-            </CRow>
-
-            <!-- 자동 관람 설정 -->
-            <v-divider class="my-4" />
-            <CRow class="mb-3">
-              <CFormLabel class="col-sm-3 col-form-label">업무 관람 설정</CFormLabel>
-              <CCol sm="9" class="pt-2">
-                <CRow>
-                  <CCol xs="12" class="mb-4" style="width: 380px">
-                    <v-autocomplete
-                      v-model="form.subscribed_projects"
-                      :items="projectList"
-                      item-title="label"
-                      item-value="value"
-                      label="알림 구독 프로젝트"
-                      multiple
-                      chips
-                      closable-chips
-                      density="compact"
-                      hint="선택한 프로젝트의 업무 변경 알림 메일을 수신합니다."
-                      persistent-hint
-                    />
-                  </CCol>
-                  <CCol xs="12" class="mb-2">
-                    <CFormCheck
-                      v-model="form.auto_watch_created"
-                      id="auto_watch_created"
-                      label="내가 생성한 업무 자동 지켜보기 (모니터링)"
-                    />
-                  </CCol>
-                  <CCol xs="12" class="mb-3">
-                    <CFormCheck
-                      v-model="form.auto_watch_assigned"
-                      id="auto_watch_assigned"
-                      label="나에게 할당된 업무 자동 지켜보기 (모니터링)"
-                    />
-                  </CCol>
-                </CRow>
-              </CCol>
-            </CRow>
           </CCardBody>
         </CCard>
 
