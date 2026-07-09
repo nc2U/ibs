@@ -2,9 +2,9 @@
 import { ref, onMounted, watch } from 'vue'
 import CropperModal from './CropperModal.vue'
 
-const props = defineProps({
-  image: { type: String, required: true },
-})
+const props = defineProps<{
+  image: string | File
+}>()
 
 const emit = defineEmits(['trans-profile-form'])
 
