@@ -137,19 +137,11 @@ const loading = ref(true)
 
 onBeforeMount(async () => {
   await workStore.fetchVisibleProjectsList({})
-  if (route.params.userId) {
-    await accStore.fetchUser(Number(route.params.userId))
-  } else {
-    accStore.user = null
-  }
   await formDataSetup()
   loading.value = false // 로딩 완료
 })
 
 onBeforeRouteUpdate(async to => {
-  if (to.params.userId) await accStore.fetchUser(Number(to.params.userId))
-  else accStore.user = null
-
   await formDataSetup()
 })
 </script>
@@ -232,13 +224,13 @@ onBeforeRouteUpdate(async to => {
               아바타
             </CCardHeader>
             <CCardBody>
-              <!-- Username -->
               <CRow class="mb-3">
-                <CFormLabel for="username" class="col-sm-3 col-form-label"></CFormLabel>
+                <CFormLabel for="avatar" class="col-sm-3 col-form-label"></CFormLabel>
                 <CCol sm="9">
                   <AvatarInput
                     ref="avatar"
                     :image="(profile && profile.image) || '/static/dist/img/NoImage.jpeg'"
+                    id="avatar"
                     @trans-profile-form="transProfileForm"
                   />
                 </CCol>
@@ -255,9 +247,8 @@ onBeforeRouteUpdate(async to => {
               내 프로필
             </CCardHeader>
             <CCardBody>
-              <!-- Username -->
               <CRow class="mb-3">
-                <CFormLabel for="username" class="col-sm-3 col-form-label required">
+                <CFormLabel for="profile-name" class="col-sm-3 col-form-label required">
                   이름
                 </CFormLabel>
                 <CCol sm="9">
@@ -266,7 +257,7 @@ onBeforeRouteUpdate(async to => {
                     type="text"
                     placeholder="성명을 입력하세요"
                     maxlength="20"
-                    id="name"
+                    id="profile-name"
                     required
                   />
                   <CFormFeedback invalid>성명을 입력하세요.</CFormFeedback>
