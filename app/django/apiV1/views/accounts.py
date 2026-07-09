@@ -258,7 +258,7 @@ class PasswordResetTokenViewSet(viewsets.ModelViewSet):
     filterset_fields = ('user', 'token')
 
 
-class AdminCreateUserView(APIView):
+class AdminManageUserView(APIView):
     """비밀번호 분실 시 재설정 링크를 요청하는 API"""
     permission_classes = (IsAuthenticated, IsWorkManagerOnly)
 

@@ -213,7 +213,7 @@ urlpatterns += [path('contract-bulk-price-update/', contract.bulk_update_contrac
 urlpatterns += [path('contract-price-update-preview/', contract.contract_price_update_preview,
                      name='contract-price-update-preview')]
 urlpatterns += [path('issue-by-member/', work.IssueCountByMemberView.as_view(), name='issue-by-member')]
-urlpatterns += [path('admin-create-user/', accounts.AdminCreateUserView.as_view(), name='admin-create-user')]
+urlpatterns += [path('admin-create-user/', accounts.AdminManageUserView.as_view(), name='admin-create-user')]
 urlpatterns += [path('check-password/', accounts.CheckPasswordView.as_view(), name='check-password')]
 urlpatterns += [path('change-password/', accounts.ChangePasswordView.as_view(), name='change-password')]
 urlpatterns += [path('password-reset/', accounts.PasswordResetRequestView.as_view(), name='password-reset')]
