@@ -24,7 +24,7 @@ export const useWork = defineStore('work', () => {
 
   // 1. 원시 플랫 상태 (Refs)
   const allProjects = ref<IssueProject[]>([]) // 모든 프로젝트 - 검색용 (닫힌 프로젝트 포함)
-  const visibleProjects = ref<IssueProject[]>([]) // 사용중 공개 프로젝트(is_public=True, status='1')
+  const issueProjects = ref<IssueProject[]>([]) // 사용중 공개 프로젝트(is_public=True, status='1')
   const myProjects = ref<IssueProject[]>([]) // 내가 멤버인 프로젝트
 
   // 2. 트리 재구성 함수 및 트리 가공 상태 (Computed)
@@ -56,12 +56,12 @@ export const useWork = defineStore('work', () => {
   }
 
   const allProjectsTree = computed(() => buildProjectTree(allProjects.value))
-  const visibleProjectsTree = computed(() => buildProjectTree(visibleProjects.value))
+  const issueProjectsTree = computed(() => buildProjectTree(issueProjects.value))
   const myProjectsTree = computed(() => buildProjectTree(myProjects.value))
 
   // 최상위 루트 노드 바인딩 (parent === null)
   const allProjectsRoot = computed(() => allProjectsTree.value)
-  const visibleProjectsRoot = computed(() => visibleProjectsTree.value)
+  const issueProjectsRoot = computed(() => issueProjectsTree.value)
   const myProjectsRoot = computed(() => myProjectsTree.value)
 
   // 3. 재귀적 평탄화 가공 상태 (Computed)
@@ -80,9 +80,9 @@ export const useWork = defineStore('work', () => {
     return result
   }
 
-  // 하위 호환성 연결: 기존 AllIssueProjects는 visibleProjects를 평탄화합니다.
+  //
   const allProjectsFlat = computed(() => flattenTree(allProjects.value))
-  const visibleProjectsFlat = computed(() => flattenTree(visibleProjects.value))
+  const issueProjectsFlat = computed(() => flattenTree(issueProjects.value))
   const myProjectsFlat = computed(() => flattenTree(myProjects.value))
 
   // 4. 셀렉박스 UI 옵션 가공 상태 - PK 형태 (Computed)
@@ -93,7 +93,7 @@ export const useWork = defineStore('work', () => {
     })),
   )
   const getVisibleProjPks = computed(() =>
-    visibleProjects.value.map(i => ({
+    issueProjects.value.map(i => ({
       value: i.pk as number,
       label: i.name as string,
     })),
@@ -118,7 +118,7 @@ export const useWork = defineStore('work', () => {
     })),
   )
   const getVisibleProjects = computed(() =>
-    visibleProjects.value.map(i => ({
+    issueProjects.value.map(i => ({
       pk: i.pk as number,
       value: i.slug as string,
       label: i.name,
@@ -164,7 +164,7 @@ export const useWork = defineStore('work', () => {
 
     return await api
       .get(url)
-      .then(res => (visibleProjects.value = res.data))
+      .then(res => (issueProjects.value = res.data))
       .catch(err => errorHandle(err.response.data))
   }
 
@@ -187,7 +187,7 @@ export const useWork = defineStore('work', () => {
     const url = `/issue-project/visible_projects/?company=${com}&status=${status}`
     await api
       .get(url)
-      .then(res => (visibleProjects.value = res.data))
+      .then(res => (issueProjects.value = res.data))
       .catch(err => errorHandle(err.response.data))
 
     // 2. 내 프로젝트 조회
@@ -487,19 +487,19 @@ export const useWork = defineStore('work', () => {
     issueProject,
 
     allProjects,
-    visibleProjects,
+    issueProjects,
     myProjects,
 
     allProjectsTree,
-    visibleProjectsTree,
+    issueProjectsTree,
     myProjectsTree,
 
     allProjectsRoot,
-    visibleProjectsRoot,
+    issueProjectsRoot,
     myProjectsRoot,
 
     allProjectsFlat,
-    visibleProjectsFlat,
+    issueProjectsFlat,
     myProjectsFlat,
 
     getAllProjPks,

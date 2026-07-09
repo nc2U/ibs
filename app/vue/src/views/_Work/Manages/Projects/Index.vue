@@ -26,7 +26,7 @@ const headerTitle = computed(() =>
   routeName.value.includes('프로젝트') ? comName.value : issueProject.value?.name,
 )
 
-const navMenus = computed(() => (!visibleProjectsTree.value.length ? navMenu1 : navMenu2))
+const navMenus = computed(() => (!issueProjectsTree.value.length ? navMenu1 : navMenu2))
 
 const { can, PERM } = usePerms()
 
@@ -84,7 +84,7 @@ provide('query', route?.query)
 
 const workStore = useWork()
 const issueProject = computed(() => workStore.issueProject as IssueProject)
-const visibleProjectsTree = computed(() => workStore.visibleProjectsTree)
+const issueProjectsTree = computed(() => workStore.issueProjectsTree)
 
 const infStore = useInform()
 onBeforeRouteUpdate(async to => {
