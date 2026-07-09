@@ -15,6 +15,7 @@ const workSetting = {
       path: 'user',
       name: '사용자',
       component: () => import('@/views/_Work/Settings/Users/Index.vue'),
+      meta: { title: '사용자' },
       children: [
         {
           path: ':userId',
