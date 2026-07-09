@@ -337,7 +337,7 @@ onBeforeRouteUpdate(async to => {
                 <CFormLabel class="col-sm-3 col-form-label">업무 관람 설정</CFormLabel>
                 <CCol sm="9" class="pt-2">
                   <CRow>
-                    <CCol xs="12" class="mb-4" style="width: 380px">
+                    <CCol xs="12" class="mb-4" style="width: 420px">
                       <v-autocomplete
                         v-model="form.subscribed_projects"
                         :items="projectList"
@@ -348,7 +348,7 @@ onBeforeRouteUpdate(async to => {
                         chips
                         closable-chips
                         density="compact"
-                        hint="선택한 프로젝트의 업무 변경 알림 메일을 수신합니다."
+                        hint="선택한 프로젝트의 모든 업무 생성 및 변경 알림 메일을 수신합니다."
                         persistent-hint
                       />
                     </CCol>

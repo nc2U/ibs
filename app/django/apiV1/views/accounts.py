@@ -277,8 +277,10 @@ class AdminManageUserView(APIView):
         try:
             with transaction.atomic():
                 # 1. 사용자 생성
-                user = User(email=email, username=serializer.validated_data.get('username'))
-                user.set_password(serializer.validated_data.get('password'))
+                username = serializer.validated_data.get('username')
+                password = serializer.validated_data.get('password')
+                user = User(email=email, username=username)
+                user.set_password(password)
                 user.save()
 
                 # 2. 기본 스태프 권한 및 프로필 등록

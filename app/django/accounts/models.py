@@ -1,7 +1,6 @@
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.auth.models import UserManager, PermissionsMixin
 from django.contrib.auth.validators import UnicodeUsernameValidator
-from django.core.mail import send_mail
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -52,17 +51,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     def clean(self):
         super().clean()
         self.email = self.__class__.objects.normalize_email(self.email)
-
-    def email_user(self, subject, message, from_email=None, **kwargs):
-        """
-        :: 이 유저에게 이메일 보내기
-        :param subject: 제목
-        :param message: 내용
-        :param from_email: 보낸 사람
-        :param kwargs: 기타 첨가 내용
-        :return: 발송 성공 여부
-        """
-        send_mail(subject, message, from_email, [self.email], **kwargs)
 
     def work_projects(self):
         # 1. Get project IDs where the user is directly a member
