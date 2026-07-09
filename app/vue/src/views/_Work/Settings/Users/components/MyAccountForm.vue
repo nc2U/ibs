@@ -234,7 +234,7 @@ onBeforeRouteUpdate(async to => {
               아바타
             </CCardHeader>
             <CCardBody>
-              <CRow class="mb-3">
+              <CRow class="pt-2 mb-3">
                 <CFormLabel for="avatar" class="col-sm-3 col-form-label"></CFormLabel>
                 <CCol sm="9">
                   <AvatarInput
