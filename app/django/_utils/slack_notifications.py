@@ -309,7 +309,7 @@ def get_target_issue_project(model_instance):
         # Company의 본사관리 IssueProject 찾기
         return IssueProject.objects.filter(
             company=model_instance.company,
-            sort='1',  # 본사관리
+            type='1',  # 본사관리
             slack_notifications_enabled=True
         ).first()
 
