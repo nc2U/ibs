@@ -1,12 +1,10 @@
 <script lang="ts" setup>
+import api from '@/api'
 import { computed, onBeforeMount, ref, reactive, watch } from 'vue'
 import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
 import { useAccount } from '@/store/pinia/account'
 import { useWork } from '@/store/pinia/work_project'
-import api from '@/api'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
-
-const menu = ref<'일반' | '프로젝트'>('일반')
 
 const accStore = useAccount()
 const user = computed(() => accStore.user)
@@ -228,35 +226,17 @@ const onSubmit = async (event: Event) => {
 <template>
   <CRow class="py-2">
     <CCol class="mb-2">
-      <span class="h5 mr-2">
-        <router-link :to="{ name: '사용자' }">사용자</router-link>
-      </span>
-      <span class="mr-2">»</span>
-      <span class="h5">{{ user?.pk ? user.username : '새 사용자' }}</span>
+      <span class="h5 mr-2"> 내 계정 </span>
     </CCol>
 
-    <CCol v-if="user?.pk" class="text-right form-text">
+    <CCol v-if="user" class="text-right form-text">
       <span class="mr-2">
-        <TextButton
-          name="사용자 정보"
-          icon="mdi-account"
-          :to="{ name: '사용자 - 보기', params: { userId: user.pk } }"
-        />
+        <TextButton name="비밀번호 변경" :to="{ name: '비밀번호 변경' }" icon="mdi-key-outline" />
       </span>
     </CCol>
   </CRow>
 
-  <!-- Edit Mode Tabs -->
-  <CRow v-if="user?.pk" class="mb-3">
-    <CCol>
-      <v-tabs v-model="menu" density="compact">
-        <v-tab value="일반" variant="tonal"> 일반</v-tab>
-        <v-tab value="프로젝트" variant="tonal"> 프로젝트</v-tab>
-      </v-tabs>
-    </CCol>
-  </CRow>
-
-  <CRow v-if="menu === '일반'">
+  <CRow>
     <CForm
       class="row needs-validation"
       novalidate
@@ -545,26 +525,5 @@ const onSubmit = async (event: Event) => {
         </div>
       </CCol>
     </CForm>
-  </CRow>
-
-  <CRow v-else>
-    <CCol>
-      <!-- Project Tab (Placeholder or configuration) -->
-      <CRow v-if="menu === '프로젝트' && user">
-        <CCol lg="12">
-          <CCard>
-            <CCardHeader class="font-weight-bold">
-              <v-icon icon="mdi-shield-account" class="mr-1" color="orange" />
-              프로젝트 권한 설정
-            </CCardHeader>
-            <CCardBody class="text-center py-5">
-              <span class="text-grey-darken-1">
-                프로젝트 권한 관리 및 소속 제어는 상단 관리자 설정 메뉴를 통해 관리할 수 있습니다.
-              </span>
-            </CCardBody>
-          </CCard>
-        </CCol>
-      </CRow>
-    </CCol>
   </CRow>
 </template>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onBeforeMount, ref, computed } from 'vue'
-import { pageTitle, navMenu } from '@/views/_Work/_menu/headermixin3'
+import { pageTitle, navMenu } from '@/views/_Work/_menu/headermixin2'
 import { storeToRefs } from 'pinia'
 import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project'

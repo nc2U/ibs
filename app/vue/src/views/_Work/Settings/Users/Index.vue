@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onBeforeMount, watch } from 'vue'
-import { pageTitle, navMenu } from '@/views/_Work/_menu/headermixin3'
+import { pageTitle, navMenu } from '@/views/_Work/_menu/headermixin2'
 import type { ActLogEntryFilter } from '@/store/types/work_logging.ts'
 import { useRoute } from 'vue-router'
 import { useAccount } from '@/store/pinia/account'
@@ -13,6 +13,8 @@ import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import UserList from '@/views/_Work/Settings/Users/components/UserList.vue'
 import AdminUserForm from '@/views/_Work/Settings/Users/components/AdminUserForm.vue'
 import UserDetail from './components/UserDetail.vue'
+import MyAccountForm from './components/MyAccountForm.vue'
+import MyPasswordForm from './components/MyPasswordForm.vue'
 
 const cBody = ref()
 
@@ -71,6 +73,8 @@ onBeforeMount(async () => {
       />
 
       <AdminUserForm v-else-if="route.name === '사용자 - 생성' || route.name === '사용자 - 수정'" />
+      <MyAccountForm v-else-if="route.name === '내 계정'" />
+      <MyPasswordForm v-else-if="route.name === '비밀번호 변경'" />
     </template>
 
     <template v-slot:aside></template>
