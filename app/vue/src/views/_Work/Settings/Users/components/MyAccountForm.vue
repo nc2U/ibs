@@ -228,8 +228,7 @@ const onSubmit = async (event: Event) => {
 </script>
 
 <template>
-  <div v-if="loading"></div>
-  <div v-else>
+  <div>
     <CRow class="py-2">
       <CCol class="mb-2">
         <span class="h5 mr-2"> 내 계정 </span>
