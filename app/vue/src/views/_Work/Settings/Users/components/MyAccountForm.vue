@@ -255,158 +255,146 @@ const onSubmit = async (event: Event) => {
         @submit.prevent="onSubmit"
       >
         <CCol class="col-lg-6">
-          <CRow>
-            <CCol lg="12">
-              <!-- Account Info Card -->
-              <CCard class="mb-4">
-                <CCardHeader class="font-weight-bold">
-                  <v-icon icon="mdi-account-cog" class="mr-1" color="primary" />
-                  계정 정보
-                </CCardHeader>
-                <CCardBody>
-                  <!-- Username -->
-                  <CRow class="mb-3">
-                    <CFormLabel for="username" class="col-sm-3 col-form-label required">
-                      아이디
-                    </CFormLabel>
-                    <CCol sm="9">
-                      <span>{{ form.username }}</span>
-                    </CCol>
-                  </CRow>
+          <!-- Account Info Card -->
+          <CCard class="mb-4">
+            <CCardHeader class="font-weight-bold">
+              <v-icon icon="mdi-account-cog" class="mr-1" color="primary" />
+              계정 정보
+            </CCardHeader>
+            <CCardBody>
+              <!-- Username -->
+              <CRow class="mb-3">
+                <CFormLabel for="username" class="col-sm-3 col-form-label required">
+                  아이디
+                </CFormLabel>
+                <CCol sm="9">
+                  <span>{{ form.username }}</span>
+                </CCol>
+              </CRow>
 
-                  <!-- Email -->
-                  <CRow class="mb-3">
-                    <CFormLabel for="email" class="col-sm-3 col-form-label required">
-                      이메일
-                    </CFormLabel>
-                    <CCol sm="9">
-                      <CFormInput
-                        v-model="form.email"
-                        id="email"
-                        type="email"
-                        maxlength="100"
-                        placeholder="이메일"
-                        required
-                      />
-                    </CCol>
-                  </CRow>
+              <!-- Email -->
+              <CRow class="mb-3">
+                <CFormLabel for="email" class="col-sm-3 col-form-label required">
+                  이메일
+                </CFormLabel>
+                <CCol sm="9">
+                  <CFormInput
+                    v-model="form.email"
+                    id="email"
+                    type="email"
+                    maxlength="100"
+                    placeholder="이메일"
+                    required
+                  />
+                </CCol>
+              </CRow>
 
-                  <!-- Password -->
-                  <CRow class="mb-3">
-                    <CFormLabel
-                      for="password"
-                      class="col-sm-3 col-form-label"
-                      :class="{ required: !userInfo }"
-                    >
-                      비밀번호
-                    </CFormLabel>
-                    <CCol sm="5">
-                      <v-btn color="light" @click="router.push({ name: '비밀번호 변경' })">
-                        비밀번호 변경
-                      </v-btn>
-                    </CCol>
-                  </CRow>
-                </CCardBody>
-              </CCard>
-            </CCol>
-          </CRow>
+              <!-- Password -->
+              <CRow class="mb-3">
+                <CFormLabel
+                  for="password"
+                  class="col-sm-3 col-form-label"
+                  :class="{ required: !userInfo }"
+                >
+                  비밀번호
+                </CFormLabel>
+                <CCol sm="5">
+                  <v-btn color="light" @click="router.push({ name: '비밀번호 변경' })">
+                    비밀번호 변경
+                  </v-btn>
+                </CCol>
+              </CRow>
+            </CCardBody>
+          </CCard>
 
-          <CRow>
-            <CCol lg="12">
-              <!-- Profile Info Card -->
-              <CCard class="mb-4">
-                <CCardHeader class="font-weight-bold">
-                  <v-icon icon="mdi-account-cog" class="mr-1" color="primary" />
-                  내 프로필
-                </CCardHeader>
-                <CCardBody>
-                  <!-- Username -->
-                  <CRow class="mb-3">
-                    <CFormLabel for="username" class="col-sm-3 col-form-label required">
-                      이름
-                    </CFormLabel>
-                    <CCol sm="9">
-                      <CFormInput
-                        v-model="form.name"
-                        type="text"
-                        placeholder="성명을 입력하세요"
-                        maxlength="20"
-                        id="name"
-                        required
-                      />
-                      <CFormFeedback invalid>성명을 입력하세요.</CFormFeedback>
-                    </CCol>
-                  </CRow>
-
-                  <CRow class="mb-3">
-                    <CFormLabel for="email" class="col-sm-3 col-form-label required">
-                      생년월일
-                    </CFormLabel>
-                    <CCol sm="9">
-                      <DatePicker
-                        v-model="form.birth_date"
-                        placeholder="생년월일을 입력하세요"
-                        maxlength="10"
-                        id="birth_date"
-                      />
-                      <CFormFeedback invalid>생년월일을 입력하세요.</CFormFeedback>
-                    </CCol>
-                  </CRow>
-
-                  <CRow class="mb-3">
-                    <CFormLabel
-                      for="password"
-                      class="col-sm-3 col-form-label"
-                      :class="{ required: !userInfo }"
-                    >
-                      휴대전화
-                    </CFormLabel>
-                    <CCol>
-                      <input
-                        v-model="form.cell_phone"
-                        v-maska
-                        data-maska="['###-###-####', '###-####-####']"
-                        type="text"
-                        class="form-control"
-                        placeholder="휴대전화를 입력하세요"
-                        maxlength="13"
-                        id="cell_phone"
-                      />
-                      <CFormFeedback invalid>휴대전화를 입력하세요.</CFormFeedback>
-                    </CCol>
-                  </CRow>
-                </CCardBody>
-              </CCard>
-            </CCol>
-          </CRow>
-
-          <CRow>
-            <CCol lg="12">
-              <!-- Profile Info Card -->
-              <CCard class="mb-4">
-                <CCardHeader class="font-weight-bold">
-                  <v-icon icon="mdi-account-cog" class="mr-1" color="primary" />
-                  프로필 이미지
-                </CCardHeader>
-                <CCardBody>
-                  <!-- Username -->
-                  <CRow class="mb-3">
-                    <CFormLabel for="username" class="col-sm-3 col-form-label"></CFormLabel>
-                    <CCol sm="9">
-                      <AvatarInput
-                        ref="avatar"
-                        :image="(profile && profile.image) || '/static/dist/img/NoImage.jpeg'"
-                        @trans-profile-form="transProfileForm"
-                      />
-                    </CCol>
-                  </CRow>
-                </CCardBody>
-              </CCard>
-            </CCol>
-          </CRow>
+          <!-- Profile Image Card -->
+          <CCard class="mb-4">
+            <CCardHeader class="font-weight-bold">
+              <v-icon icon="mdi-account-circle" class="mr-1" color="primary" />
+              아바타
+            </CCardHeader>
+            <CCardBody>
+              <!-- Username -->
+              <CRow class="mb-3">
+                <CFormLabel for="username" class="col-sm-3 col-form-label"></CFormLabel>
+                <CCol sm="9">
+                  <AvatarInput
+                    ref="avatar"
+                    :image="(profile && profile.image) || '/static/dist/img/NoImage.jpeg'"
+                    @trans-profile-form="transProfileForm"
+                  />
+                </CCol>
+              </CRow>
+            </CCardBody>
+          </CCard>
         </CCol>
 
         <CCol class="col-lg-6">
+          <!-- Profile Info Card -->
+          <CCard class="mb-4">
+            <CCardHeader class="font-weight-bold">
+              <v-icon icon="mdi-account-check" class="mr-1" color="primary" />
+              내 프로필
+            </CCardHeader>
+            <CCardBody>
+              <!-- Username -->
+              <CRow class="mb-3">
+                <CFormLabel for="username" class="col-sm-3 col-form-label required">
+                  이름
+                </CFormLabel>
+                <CCol sm="9">
+                  <CFormInput
+                    v-model="form.name"
+                    type="text"
+                    placeholder="성명을 입력하세요"
+                    maxlength="20"
+                    id="name"
+                    required
+                  />
+                  <CFormFeedback invalid>성명을 입력하세요.</CFormFeedback>
+                </CCol>
+              </CRow>
+
+              <CRow class="mb-3">
+                <CFormLabel for="email" class="col-sm-3 col-form-label required">
+                  생년월일
+                </CFormLabel>
+                <CCol sm="9">
+                  <DatePicker
+                    v-model="form.birth_date"
+                    placeholder="생년월일을 입력하세요"
+                    maxlength="10"
+                    id="birth_date"
+                  />
+                  <CFormFeedback invalid>생년월일을 입력하세요.</CFormFeedback>
+                </CCol>
+              </CRow>
+
+              <CRow class="mb-3">
+                <CFormLabel
+                  for="password"
+                  class="col-sm-3 col-form-label"
+                  :class="{ required: !userInfo }"
+                >
+                  휴대전화
+                </CFormLabel>
+                <CCol>
+                  <input
+                    v-model="form.cell_phone"
+                    v-maska
+                    data-maska="['###-###-####', '###-####-####']"
+                    type="text"
+                    class="form-control"
+                    placeholder="휴대전화를 입력하세요"
+                    maxlength="13"
+                    id="cell_phone"
+                  />
+                  <CFormFeedback invalid>휴대전화를 입력하세요.</CFormFeedback>
+                </CCol>
+              </CRow>
+            </CCardBody>
+          </CCard>
+
           <!-- Mail Notifications Card -->
           <CCard class="mb-4">
             <CCardHeader class="font-weight-bold">
