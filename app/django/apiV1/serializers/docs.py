@@ -177,7 +177,7 @@ class DocumentSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_type_name(obj):
-        return obj.doc_type.__str__()
+        return obj.get_doc_type_display()
 
     @staticmethod
     def get_cate_color(obj):
@@ -342,7 +342,7 @@ class DocumentInTrashSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_type_name(obj):
-        return obj.doc_type.get_type_display()
+        return obj.get_doc_type_display()
 
     def update(self, instance, validated_data):
         instance.restore()
