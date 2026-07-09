@@ -4,15 +4,12 @@ import { useRouter } from 'vue-router'
 import { useAccount } from '@/store/pinia/account'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
-const props = defineProps({ username: String })
-const emit = defineEmits(['change-password'])
-
 const refAlertModal = ref()
 
 const router = useRouter()
 const accStore = useAccount()
 const userInfo = computed(() => accStore.userInfo)
-const usernameVal = computed(() => props.username || userInfo.value?.username || '')
+const usernameVal = computed(() => userInfo.value?.username || '')
 
 const validated = ref(false)
 const showPassword = ref(false)
@@ -32,7 +29,6 @@ const onSubmit = async (event: Event) => {
     validated.value = true
   } else {
     if (form.new_password === form.confirm_password) {
-      emit('change-password', form)
       if (await accStore.changePassword(form)) {
         setTimeout(() => {
           router.push({ name: 'Login' })
@@ -82,7 +78,6 @@ const onSubmit = async (event: Event) => {
                     type="button"
                     color="secondary"
                     variant="outlined"
-                    id="button-addon2"
                     @click="showPassword = !showPassword"
                   >
                     <v-icon :icon="!showPassword ? 'mdi-eye' : 'mdi-eye-off'" />
@@ -107,7 +102,6 @@ const onSubmit = async (event: Event) => {
                     type="button"
                     color="secondary"
                     variant="outlined"
-                    id="button-addon2"
                     @click="showPassword = !showPassword"
                   >
                     <v-icon :icon="!showPassword ? 'mdi-eye' : 'mdi-eye-off'" />
@@ -132,7 +126,6 @@ const onSubmit = async (event: Event) => {
                     type="button"
                     color="secondary"
                     variant="outlined"
-                    id="button-addon2"
                     @click="showPassword = !showPassword"
                   >
                     <v-icon :icon="!showPassword ? 'mdi-eye' : 'mdi-eye-off'" />
