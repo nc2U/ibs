@@ -82,22 +82,22 @@ class IssueProjectViewSet(viewsets.ModelViewSet):
             return ProjectMemberUserSerializer
         return IssueProjectSerializer
 
-    @action(detail=False, methods=['get'], pagination_class=None)
-    def all_projects(self, request):
-        queryset = IssueProject.objects.all().prefetch_related(
-            'members__user', 'members__roles', 'trackers',
-            'versions', 'categories__assigned_to', 'allowed_roles'
-        ).select_related('company', 'module', 'creator')
-        queryset = self.filter_queryset(queryset)
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
+    # @action(detail=False, methods=['get'], pagination_class=None)
+    # def all_projects(self, request):
+    #     queryset = IssueProject.objects.all().prefetch_related(
+    #         'members__user', 'members__roles', 'trackers',
+    #         'versions', 'categories__assigned_to', 'allowed_roles'
+    #     ).select_related('company', 'module', 'creator')
+    #     queryset = self.filter_queryset(queryset)
+    #     serializer = self.get_serializer(queryset, many=True)
+    #     return Response(serializer.data)
 
-    @action(detail=False, methods=['get'], pagination_class=None)
-    def visible_projects(self, request):
-        queryset = self.get_queryset().filter(status='1').select_related('company', 'module', 'creator')
-        queryset = self.filter_queryset(queryset)
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
+    # @action(detail=False, methods=['get'], pagination_class=None)
+    # def visible_projects(self, request):
+    #     queryset = self.get_queryset().filter(status='1').select_related('company', 'module', 'creator')
+    #     queryset = self.filter_queryset(queryset)
+    #     serializer = self.get_serializer(queryset, many=True)
+    #     return Response(serializer.data)
 
     @action(detail=False, methods=['get'], pagination_class=None)
     def my_projects(self, request):

@@ -34,7 +34,7 @@ const myTaskProgress = computed(() => {
 const fetchWidgetData = async () => {
   loading.value = true
   try {
-    await workStore.fetchVisibleProjectsList({ status: '1' })
+    await workStore.fetchIssueProjectList({ status: '1' })
     await issueStore.fetchIssueByMember()
   } catch (error) {
     console.error('Failed to fetch project status widget data:', error)

@@ -146,7 +146,7 @@ const onSubmitConfirm = async () => {
 }
 
 onBeforeMount(async () => {
-  await workStore.fetchVisibleProjectsList({})
+  await workStore.fetchIssueProjectList({})
   await formDataSetup()
 })
 

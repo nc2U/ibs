@@ -141,15 +141,15 @@ export const useWork = defineStore('work', () => {
   )
 
   // actions
-  const fetchAllProjectsList = async (com: '' | number = '') => {
+  const fetchAllProjectList = async (company: '' | number = '', status: '' | '1' | '9' = '') => {
     return await api
-      .get(`/issue-project/all_projects/?company=${com}`)
+      .get(`/issue-project/?company=${company}&status=${status}`)
       .then(res => (allProjects.value = res.data))
       .catch(err => errorHandle(err.response.data))
   }
 
-  const fetchVisibleProjectsList = async (payload: ProjectFilter) => {
-    let url = `/issue-project/visible_projects/?1=1`
+  const fetchIssueProjectList = async (payload: ProjectFilter) => {
+    let url = `/issue-project/?1=1`
     if (payload.company) url += `&company=${payload.company}`
     if (payload?.status) url += `&status=${payload?.status}`
     else if (payload?.status__exclude) url += `&status__exclude=${payload?.status__exclude}`
@@ -175,33 +175,31 @@ export const useWork = defineStore('work', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
-  const fetchIssueProjectList = fetchVisibleProjectsList
-
   const fetchAllIssueProjectList = async (
     com: '' | number = '',
     sort: '' | '1' | '2' | '3' = '',
     p_isnull: '' | '1' = '',
     status: '' | '1' | '9' = '1',
   ) => {
-    // 1. 보이는 프로젝트 조회
+    // 1. 전체 프로젝트 조회
+    const allUrl = `/issue-project/all_projects/?company=${com}&status=${status}`
+    await api
+      .get(allUrl)
+      .then(res => (allProjects.value = res.data || []))
+      .catch(err => errorHandle(err.response.data))
+
+    // 2. 보이는 프로젝트 조회
     const url = `/issue-project/visible_projects/?company=${com}&status=${status}`
     await api
       .get(url)
       .then(res => (issueProjects.value = res.data))
       .catch(err => errorHandle(err.response.data))
 
-    // 2. 내 프로젝트 조회
+    // 3. 내 프로젝트 조회
     const myUrl = `/issue-project/my_projects/?company=${com}&status=${status}`
     await api
       .get(myUrl)
       .then(res => (myProjects.value = res.data))
-      .catch(err => errorHandle(err.response.data))
-
-    // 3. 전체 프로젝트 조회
-    const allUrl = `/issue-project/all_projects/?company=${com}&status=${status}`
-    await api
-      .get(allUrl)
-      .then(res => (allProjects.value = res.data || []))
       .catch(err => errorHandle(err.response.data))
   }
 
@@ -510,10 +508,9 @@ export const useWork = defineStore('work', () => {
     getIssueProjects,
     getMyProjects,
 
-    fetchAllProjectsList,
-    fetchVisibleProjectsList,
-    fetchMyProjectsList,
+    fetchAllProjectList,
     fetchIssueProjectList,
+    fetchMyProjectsList,
     fetchAllIssueProjectList,
     fetchIssueProject,
     removeIssueProject,
