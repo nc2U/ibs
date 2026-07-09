@@ -417,8 +417,8 @@ export const useWork = defineStore('work', () => {
       .then(res => (subscribedProjects.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
 
-  const createSubscribedProjects = (payload: { user: number; project_ids: number[] }) => {
-    api
+  const createSubscribedProjects = async (payload: { user: number; project_ids: number[] }) => {
+    await api
       .post(`/project-subscription/bulk-update/`, payload)
       .then(() => fetchSubscribedProjects(payload.user))
       .catch(err => errorHandle(err.response.data))

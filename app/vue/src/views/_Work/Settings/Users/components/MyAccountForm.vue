@@ -13,7 +13,7 @@ import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 const refAlertModal = ref<InstanceType<typeof AlertModal>>()
 const refConfirmModal = ref<InstanceType<typeof AlertModal>>()
 
-const [route, router] = [useRoute(), useRouter()]
+const router = useRouter()
 
 const form = reactive({
   pk: null as number | null,
@@ -125,11 +125,13 @@ const onSubmitConfirm = async () => {
 
     if (image instanceof File) submitData.append('image', image)
 
+    // 1. 프로필 업데이트 (이미지 포함)
     if (pk) await patchProfile({ pk, form: submitData })
     else await createProfile(submitData)
 
+    // 2. 프로젝트 구독 업데이트 (await 추가 및 프로필 업데이트 성공 후 실행 보장)
     if (userInfo.value?.pk) {
-      workStore.createSubscribedProjects({
+      await workStore.createSubscribedProjects({
         user: userInfo.value.pk,
         project_ids: form.subscribed_projects,
       })
@@ -143,12 +145,9 @@ const onSubmitConfirm = async () => {
   }
 }
 
-const loading = ref(true)
-
 onBeforeMount(async () => {
   await workStore.fetchVisibleProjectsList({})
   await formDataSetup()
-  loading.value = false // 로딩 완료
 })
 
 onBeforeRouteUpdate(async to => {
