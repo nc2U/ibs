@@ -92,7 +92,7 @@ export const useWork = defineStore('work', () => {
       label: i.name as string,
     })),
   )
-  const getVisibleProjPks = computed(() =>
+  const getIssueProjPks = computed(() =>
     issueProjects.value.map(i => ({
       value: i.pk as number,
       label: i.name as string,
@@ -117,7 +117,7 @@ export const useWork = defineStore('work', () => {
       parent_visible: i.parent_visible,
     })),
   )
-  const getVisibleProjects = computed(() =>
+  const getIssueProjects = computed(() =>
     issueProjects.value.map(i => ({
       pk: i.pk as number,
       value: i.slug as string,
@@ -503,11 +503,11 @@ export const useWork = defineStore('work', () => {
     myProjectsFlat,
 
     getAllProjPks,
-    getVisibleProjPks,
+    getIssueProjPks,
     getMyProjPks,
 
     getAllProjects,
-    getVisibleProjects,
+    getIssueProjects,
     getMyProjects,
 
     fetchAllProjectsList,

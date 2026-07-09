@@ -44,7 +44,7 @@ const createProfile = (payload: FormData) => accStore.createProfile(payload)
 const patchProfile = (payload: { pk: number; form: FormData }) => accStore.patchProfile(payload)
 
 const workStore = useWork()
-const projectList = computed(() => workStore.getVisibleProjPks)
+const projectList = computed(() => workStore.getIssueProjPks)
 const subscribedProjects = computed(() => workStore.subscribedProjects)
 
 const transProfileForm = (img?: File) => (form.image = img)
