@@ -1,11 +1,11 @@
 <script lang="ts" setup>
-import { computed, inject, onBeforeMount, onBeforeUnmount, provide, ref, watch } from 'vue'
+import { computed, inject, onBeforeMount, provide, ref } from 'vue'
 import { useStore } from '@/store'
 import { useAccount } from '@/store/pinia/account.ts'
 import type { User } from '@/store/types/accounts.ts'
 import { type RouteRecordName, useRoute, useRouter } from 'vue-router'
 
-const props = defineProps({ aside: { type: Boolean, default: true } })
+defineProps({ aside: { type: Boolean, default: true } })
 
 const visible = ref(false)
 
@@ -17,9 +17,9 @@ const [route, router] = [useRoute(), useRouter()]
 const isDark = computed(() => useStore().theme === 'dark')
 const baseColor = computed(() => (isDark.value ? '#fff' : '#333'))
 const bgColor = computed(() => (isDark.value ? '#24252F' : '#fefefe'))
+
 const isActive = (menu: string) =>
-  ((route.name as string) ?? '').includes(menu) ||
-  ((route.meta as any)?.title ?? '').includes(menu)
+  ((route.name as string) ?? '').includes(menu) || ((route.meta as any)?.title ?? '').includes(menu)
 
 const accStore = useAccount()
 const userInfo = computed(() => accStore.userInfo as User)
