@@ -189,6 +189,7 @@ onMounted(() => formDataSetup())
           <AvatarInput
             ref="avatar"
             :image="(profile && profile.image) || '/static/dist/img/NoImage.jpeg'"
+            :filename="userInfo?.username || 'profile'"
             @trans-profile-form="transProfileForm"
           />
         </CCol>

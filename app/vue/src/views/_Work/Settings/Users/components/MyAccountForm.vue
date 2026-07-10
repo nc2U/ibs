@@ -240,6 +240,7 @@ onBeforeRouteUpdate(async to => {
                   <AvatarInput
                     ref="avatar"
                     :image="(profile && profile.image) || '/static/dist/img/NoImage.jpeg'"
+                    :filename="userInfo?.username || 'profile'"
                     id="avatar"
                     @trans-profile-form="transProfileForm"
                   />

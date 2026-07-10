@@ -9,6 +9,7 @@ export default defineComponent({
   components: { CircleStencil, Cropper },
   props: {
     modalImg: { type: String, default: undefined },
+    filename: { type: String, default: 'profile' },
   },
   emits: ['image-del', 'trans-avatar-input'],
   setup(props, ctx) {
@@ -24,7 +25,9 @@ export default defineComponent({
       const { canvas } = cropper.value.getResult()
       if (canvas) {
         canvas.toBlob((blob: Blob) => {
-          const img = new File([blob], 'profile.png', { type: blob.type })
+          const ext = blob.type.split('/')[1] || 'png'
+          const name = `${props.filename || 'profile'}.${ext}`
+          const img = new File([blob], name, { type: blob.type })
           ctx.emit('trans-avatar-input', img)
         })
       }

@@ -2,9 +2,15 @@
 import { ref, onMounted, watch } from 'vue'
 import CropperModal from './CropperModal.vue'
 
-const props = defineProps<{
-  image: string | File
-}>()
+const props = withDefaults(
+  defineProps<{
+    image: string | File
+    filename?: string
+  }>(),
+  {
+    filename: 'profile',
+  },
+)
 
 const emit = defineEmits(['trans-profile-form'])
 
@@ -87,6 +93,7 @@ onMounted(() => (imgSource.value = props.image || '/static/dist/img/NoImage.jpeg
   <CropperModal
     ref="cropModal"
     :modal-img="modalImg"
+    :filename="filename"
     @image-del="delModalImg"
     @trans-avatar-input="transAvatarInput"
   />
