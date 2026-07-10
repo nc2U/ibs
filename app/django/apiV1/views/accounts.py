@@ -208,7 +208,8 @@ class PasswordResetRequestView(APIView):
 
             # Send the password reset email
             subject = f'[IBS] {user.username}님 계정 비밀번호 초기화 링크 안내드립니다.'
-            message = f'비밀번호를 재설정 하기 위해서 다음 링크를 클릭 하세요: \n{reset_link}\n\n이 링크는 발송 후 10분 후에 만료됩니다.'
+            message = (f'비밀번호를 재설정 하기 위해서 다음 링크를 클릭 하세요: \n{reset_link}\n\n'
+                       f'이 링크는 발송 후 10분 후에 만료됩니다.')
             send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [email])
 
             return Response({'detail': '비밀번호 재설정을 위한 이메일을 발송했습니다.'}, status=status.HTTP_200_OK)
@@ -393,11 +394,24 @@ class AdminManageUserView(APIView):
 
                         # Send the password reset email
                         subject = f'[IBS] 워크스페이스 {user.username}님 계정 비밀번호 초기화 안내.'
-                        message = f'''[IBS] 워크스페이스 계정의 비밀번호를 재설정하기 위해 다음 링크를 클릭하세요.: \n{reset_link}\n\n이 링크는 발송 후 {expired}시간 후에 만료됩니다. 만료되기 전에 패스워드를 재설정하지 않은 경우 관리자에게 문의하십시오.'''
+                        message = f'''안녕하세요.
+                        관리자에 의해 IBS 워크스페이스 계정의 비밀번호가 초기화되었습니다.\n
+                        계정을 계속 사용하려면 아래 링크를 클릭하여 새로운 비밀번호를 설정해 주세요.\n\n
+                        {reset_link}\n\n
+                        이 링크는 발송 시점부터 {expired}시간 동안만 유효합니다.\n
+                        유효기간 내에 비밀번호를 재설정하지 못한 경우에는 링크가 만료되므로 관리자에게 문의하시기 바랍니다.\n
+                        감사합니다.\n\n
+                        ※ 본인이 요청하지 않은 경우에는 이 메일을 무시하지 말고 관리자에게 즉시 문의하시기 바랍니다.'''
                     else:
                         # Send the password reset email with new password
                         subject = f'[IBS] 워크스페이스 {user.username}님 계정 비밀번호가 변경되었습니다.'
-                        message = f'''[IBS] 워크스페이스 계정의 비밀번호가 관리자에 의해 변경되었습니다. 다음 정보로 로그인 하세요.: \n\n메일주소 : {email}\n비밀번호 : {password}\n\nURL 주소 : {scheme}://{curr_host}'''
+                        message = f'''안녕하세요.\n\n
+                        관리자에 의해 IBS 워크스페이스 계정의 비밀번호가 변경되었습니다.\n
+                        아래 계정 정보로 로그인하신 후, 보안을 위해 비밀번호를 변경하시기 바랍니다.\n\n
+                        메일주소 : {email}\n
+                        임시 비밀번호 : {password}\n\n
+                        로그인 주소 : {scheme}://{curr_host}\n\n
+                        감사합니다.'''
 
                     try:
                         send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [email])
