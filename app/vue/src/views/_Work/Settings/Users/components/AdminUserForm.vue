@@ -5,8 +5,11 @@ import { generatePassword } from '@/utils/helper.ts'
 import { useAccount } from '@/store/pinia/account'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
+import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 const refAlertModal = ref()
+const refConfirmModal = ref()
+
 const menu = ref<'일반' | '프로젝트'>('일반')
 
 const accStore = useAccount()
@@ -89,6 +92,10 @@ const onSubmit = async (event: Event) => {
     return
   }
 
+  refConfirmModal.value.callModal()
+}
+
+const onSubmitConfirm = async () => {
   try {
     if (!user.value) {
       // Create user
@@ -124,7 +131,8 @@ const onSubmit = async (event: Event) => {
     }
 
     validated.value = false
-    await router.push({ name: '사용자' })
+    refConfirmModal.value.close()
+    // await router.push({ name: '사용자' })
   } catch (err: any) {
     console.error(err)
     refAlertModal.value.callModal('', '사용자 정보 저장 중 오류가 발생했습니다.')
@@ -443,5 +451,11 @@ onBeforeRouteUpdate(async to => {
     </CCol>
   </CRow>
 
+  <ConfirmModal ref="refConfirmModal">
+    <template #default> 사용자 정보를 저장하시겠습니까? </template>
+    <template #footer>
+      <v-btn color="success" size="small" @click="onSubmitConfirm">저장</v-btn>
+    </template>
+  </ConfirmModal>
   <AlertModal ref="refAlertModal" />
 </template>
