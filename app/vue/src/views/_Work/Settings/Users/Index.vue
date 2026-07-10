@@ -11,14 +11,23 @@ import Loading from '@/components/Loading/Index.vue'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import UserList from '@/views/_Work/Settings/Users/components/UserList.vue'
-import AdminUserForm from '@/views/_Work/Settings/Users/components/AdminUserForm.vue'
 import UserDetail from './components/UserDetail.vue'
+import AdminUserManage from './components/AdminUserManage.vue'
 import MyAccountForm from './components/MyAccountForm.vue'
 import MyPasswordForm from './components/MyPasswordForm.vue'
 
 const cBody = ref()
 
 const sideNavCAll = () => cBody.value.toggle()
+
+const component = computed(() => {
+  if (route.name === '사용자') return '목록보기'
+  if (route.name === '사용자 - 보기') return '상세보기'
+  if (route.name === '사용자 - 생성' || route.name === '사용자 - 수정') return '관리자 메뉴'
+  if (route.name === '사용자 - 내 계정') return '내 계정'
+  if (route.name === '사용자 - 비밀번호 변경') return '비밀번호 변경'
+  return '목록'
+})
 
 const accStore = useAccount()
 const usersList = computed(() => accStore.usersList)
@@ -64,17 +73,18 @@ onBeforeMount(async () => {
 
   <ContentBody ref="cBody" :nav-menu="navMenu" :query="route?.query" :aside="true">
     <template v-slot:default>
-      <UserList v-if="route.name === '사용자'" :user-list="usersList" />
+      <UserList v-if="component === '목록보기'" :user-list="usersList" />
 
       <UserDetail
-        v-else-if="route.name === '사용자 - 보기'"
+        v-else-if="component === '상세보기'"
         :issue-projects="issueProjectsTree"
         :issue-num="issueNumByMember"
       />
 
-      <AdminUserForm v-else-if="route.name === '사용자 - 생성' || route.name === '사용자 - 수정'" />
-      <MyAccountForm v-else-if="route.name === '사용자 - 내 계정'" />
-      <MyPasswordForm v-else-if="route.name === '사용자 - 비밀번호 변경'" />
+      <AdminUserManage v-else-if="component === '관리자 메뉴'" />
+
+      <MyAccountForm v-else-if="component === '내 계정'" />
+      <MyPasswordForm v-else-if="component === '비밀번호 변경'" />
     </template>
 
     <template v-slot:aside></template>
