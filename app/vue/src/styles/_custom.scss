@@ -1,6 +1,14 @@
 // Here you can add other styles
+:root {
+  --logo-accent-color: #012F48; /* 라이트 모드일 때의 심볼 색상 */
+  --logo-text-color: #333333; /* 라이트 모드일 때의 어두운 글자 색상 */
+}
+
 body.dark-theme {
   --cui-secondary-color: #B5B6B9;
+
+  --logo-accent-color: #43848C; /* 다크 모드일 때 톤다운된 밝은 심볼 색상 */
+  --logo-text-color: #ffffff; /* 다크 모드일 때 하얀 글자 색상 */
 }
 
 .bg-primary-lighten {
