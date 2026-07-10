@@ -15,19 +15,20 @@ const router = useRouter()
 const calendarStore = useCalendar()
 const todayStr = getToday()
 
-// 7일간의 날짜 데이터 생성 (일요일 ~ 토요일)
+// 7일간의 날짜 데이터 생성 (월요일 ~ 일요일)
 const getWeekDays = () => {
   const current = new Date()
   const day = current.getDay() // 0: 일, 1: 월, ... 6: 토
 
-  // 이번 주 일요일 계산
-  const sunday = new Date(current)
-  sunday.setDate(current.getDate() - day)
+  // 이번 주 월요일 계산 (오늘이 일요일(0)이면 6일 전, 그 외에는 day - 1일 전)
+  const monday = new Date(current)
+  const distanceToMonday = day === 0 ? 6 : day - 1
+  monday.setDate(current.getDate() - distanceToMonday)
 
   const days: any[] = []
   for (let i = 0; i < 7; i++) {
-    const d = new Date(sunday)
-    d.setDate(sunday.getDate() + i)
+    const d = new Date(monday)
+    d.setDate(monday.getDate() + i)
     days.push({
       dateStr: dateFormat(d),
       dayNum: d.getDate(),

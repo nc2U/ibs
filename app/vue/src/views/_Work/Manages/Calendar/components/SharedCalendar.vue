@@ -177,6 +177,7 @@ const calendarOptions = computed<CalendarOptions>(() => ({
   initialView: 'dayGridMonth',
   weekends: true,
   selectable: true,
+  firstDay: 1,
   height: 630,
   showNonCurrentDates: false,
   events: calendarEvents.value,
