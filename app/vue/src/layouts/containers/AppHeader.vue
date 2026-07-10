@@ -38,16 +38,11 @@ const toggleAside = () => store.toggleAside()
   <CHeader position="sticky" class="pb-0">
     <CContainer fluid>
       <CHeaderToggler class="ps-1" @click="toggleSidebar">
-        <v-icon
-          v-if="isVisible"
-          icon="mdi mdi-format-indent-decrease"
-          size="small"
-          class="text-50"
-        />
-        <v-icon v-else icon="mdi mdi-format-indent-increase" size="small" class="text-50" />
+        <v-icon v-if="isVisible" icon=" mdi-format-indent-decrease" size="small" class="text-50" />
+        <v-icon v-else icon="mdi-format-indent-increase" size="small" class="text-50" />
       </CHeaderToggler>
 
-      <CHeaderBrand class="mx-auto d-lg-none" to="/">
+      <CHeaderBrand class="pl-3 d-lg-none" to="/">
         <CIcon :icon="logo" height="31" alt="Logo" />
       </CHeaderBrand>
 
