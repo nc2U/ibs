@@ -258,9 +258,10 @@ export const useAccount = defineStore('account', () => {
     api.defaults.headers.post['Content-Type'] = 'multipart/form-data'
     return await api
       .post(`/profile/`, payload)
-      .then(() => {
+      .then(async () => {
         const cookedToken = Cookies.get('accessToken')
-        loginByToken(cookedToken).then(() => message())
+        await loginByToken(cookedToken)
+        message('info', '', '프로필 정보가 생성되었습니다.', 2000, 'top-center', 'bounce')
       })
       .catch(err => errorHandle(err.response.data))
   }
@@ -270,9 +271,10 @@ export const useAccount = defineStore('account', () => {
     api.defaults.headers.patch['Content-Type'] = 'multipart/form-data'
     return await api
       .patch(`/profile/${pk}/`, form)
-      .then(() => {
+      .then(async () => {
         const cookedToken = Cookies.get('accessToken')
-        loginByToken(cookedToken).then(() => message())
+        await loginByToken(cookedToken)
+        message('info', '', '프로필 정보가 수정되었습니다.', 2000, 'top-center', 'bounce')
       })
       .catch(err => errorHandle(err.response.data))
   }
