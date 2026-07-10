@@ -18,7 +18,7 @@ const isExpired = computed(() => {
   if (!!resetToken) {
     if (resetToken.is_expired)
       return true // expired!
-    else return token.value !== resetToken.token // if tokenCheck true -> not expired!, false -> expired!
+    else return token.value !== resetToken.token // if tokenCheck true -> not expired! false -> expired!
   } else return true
 })
 
@@ -67,10 +67,10 @@ onBeforeMount(() => fetchResetTokenList(uid.value))
   </div>
 
   <AlertModal ref="refAlertModal">
-    <template #header>성공!</template>
+    <template #header>비밀번호 재설정!</template>
     <template #default>비밀번호가 변경되었습니다. 새 비밀번호로 다시 로그인하십시오.</template>
     <template #footer>
-      <v-btn color="light" @click="router.push({ name: 'Login' })">로그인</v-btn>
+      <v-btn color="primary" @click="router.push({ name: 'Login' })">로그인 화면으로</v-btn>
     </template>
   </AlertModal>
 </template>
