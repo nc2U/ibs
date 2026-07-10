@@ -44,7 +44,12 @@ const issueProjects = computed(() => props.issueProjects.slice())
 
     <CCol class="text-right form-text">
       <span v-if="user?.pk === userInfo?.pk">
-        <TextButton name="내 계정" icon="mdi-pencil" icon-color="amber" :to="{ name: '내 계정' }" />
+        <TextButton
+          name="내 계정"
+          icon="mdi-pencil"
+          icon-color="amber"
+          :to="{ name: '사용자 - 내 계정' }"
+        />
       </span>
       <span v-if="workManager && user?.pk !== userInfo?.pk">
         <TextButton

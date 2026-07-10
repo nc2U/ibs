@@ -30,11 +30,11 @@ const workSetting = {
         },
         {
           path: 'my/account',
-          name: '내 계정',
+          name: '사용자 - 내 계정',
         },
         {
           path: 'my/password',
-          name: '비밀번호 변경',
+          name: '사용자 - 비밀번호 변경',
         },
       ],
     },

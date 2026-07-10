@@ -74,7 +74,7 @@ const logout = () => {
         사용자 매뉴얼
       </CDropdownItem>
 
-      <CDropdownItem @click="router.push({ name: '내 계정' })">
+      <CDropdownItem @click="router.push({ name: '사용자 - 내 계정' })">
         <v-icon icon="mdi mdi-account-outline" size="small" />
         내 계정 관리
       </CDropdownItem>

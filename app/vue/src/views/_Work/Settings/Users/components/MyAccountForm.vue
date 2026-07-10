@@ -167,7 +167,7 @@ onBeforeRouteUpdate(async to => {
         <span class="mr-2">
           <TextButton
             name="비밀번호 변경"
-            :to="{ name: '비밀번호 변경' }"
+            :to="{ name: '사용자 - 비밀번호 변경' }"
             icon="mdi-key-outline"
             icon-color="amber"
           />
@@ -219,7 +219,7 @@ onBeforeRouteUpdate(async to => {
               <CRow class="mb-3">
                 <CFormLabel for="password" class="col-sm-3 col-form-label">비밀번호</CFormLabel>
                 <CCol sm="5">
-                  <v-btn color="light" @click="router.push({ name: '비밀번호 변경' })">
+                  <v-btn color="light" @click="router.push({ name: '사용자 - 비밀번호 변경' })">
                     비밀번호 변경
                   </v-btn>
                 </CCol>

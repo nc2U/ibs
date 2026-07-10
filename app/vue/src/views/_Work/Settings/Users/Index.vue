@@ -73,8 +73,8 @@ onBeforeMount(async () => {
       />
 
       <AdminUserForm v-else-if="route.name === '사용자 - 생성' || route.name === '사용자 - 수정'" />
-      <MyAccountForm v-else-if="route.name === '내 계정'" />
-      <MyPasswordForm v-else-if="route.name === '비밀번호 변경'" />
+      <MyAccountForm v-else-if="route.name === '사용자 - 내 계정'" />
+      <MyPasswordForm v-else-if="route.name === '사용자 - 비밀번호 변경'" />
     </template>
 
     <template v-slot:aside></template>
