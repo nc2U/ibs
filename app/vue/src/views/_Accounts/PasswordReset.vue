@@ -31,7 +31,7 @@ const onSubmit = async (new_password: string) => {
     new_password,
   }
   accStore.passResetConfirm(payload)
-  await refAlertModal.value.callModal()
+  await refAlertModal.value.callModal('', '', '', 'success')
 }
 
 onBeforeMount(() => fetchResetTokenList(uid.value))
@@ -70,7 +70,7 @@ onBeforeMount(() => fetchResetTokenList(uid.value))
     <template #header>성공!</template>
     <template #default>비밀번호가 변경되었습니다. 새 비밀번호로 다시 로그인하십시오.</template>
     <template #footer>
-      <v-btn color="primary" @click="router.push({ name: 'Home' })">지금 로그인</v-btn>
+      <v-btn color="light" @click="router.push({ name: 'Login' })">로그인</v-btn>
     </template>
   </AlertModal>
 </template>

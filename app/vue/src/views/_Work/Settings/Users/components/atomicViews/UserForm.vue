@@ -255,10 +255,10 @@ onBeforeRouteUpdate(async () => await formDataSetup())
                     {{ genPass }}
                   </div>
                   <div style="display: inline-block; vertical-align: middle" class="ml-2">
-                    <v-btn color="light" size="small" class="mr-1" @click="genPass = ''">
+                    <v-btn color="success" size="small" @click="applyGen">적용</v-btn>
+                    <v-btn color="light" size="small" class="mr-1" @click="genPass = ''" flat>
                       취소
                     </v-btn>
-                    <v-btn color="success" size="small" @click="applyGen">적용</v-btn>
                   </div>
                 </CCol>
               </CRow>
