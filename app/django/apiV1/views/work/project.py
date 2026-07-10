@@ -292,8 +292,8 @@ class ProjectSubscriptionViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         target_user = self.request.query_params.get('user')
-        if target_user and (user.is_superuser or user.work_manager):
-            return self.queryset.filter(user_id=target_user)
+        if target_user and target_user.isdigit() and (user.is_superuser or user.work_manager):
+            return self.queryset.filter(user_id=int(target_user))
         return self.queryset.filter(user=user)
 
     @action(detail=False, methods=['post'], url_path='bulk-update')
