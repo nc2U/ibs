@@ -320,7 +320,7 @@ onBeforeRouteUpdate(async to => {
                           color="primary"
                           label="스태프 권한"
                           density="compact"
-                          messages="관리자 페이지 접속 권한"
+                          messages="관리자페이지 접속 권한"
                         />
                       </CCol>
 
@@ -331,7 +331,7 @@ onBeforeRouteUpdate(async to => {
                           color="success"
                           label="업무관리자"
                           density="compact"
-                          messages="업무시스템 관리자(어드민)"
+                          messages="업무시스템 관리자"
                         />
                       </CCol>
                     </CRow>
