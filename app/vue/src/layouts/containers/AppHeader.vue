@@ -42,7 +42,7 @@ const toggleAside = () => store.toggleAside()
         <v-icon v-else icon="mdi-format-indent-increase" size="small" class="text-50" />
       </CHeaderToggler>
 
-      <CHeaderBrand class="pl-3 d-lg-none" to="/">
+      <CHeaderBrand class="pl-3 d-md-none" to="/">
         <CIcon :icon="logo" height="31" alt="Logo" />
       </CHeaderBrand>
 
