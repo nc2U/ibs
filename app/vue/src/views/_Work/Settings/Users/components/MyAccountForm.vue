@@ -50,6 +50,7 @@ const subscribedProjects = computed(() => workStore.subscribedProjects)
 const transProfileForm = (img?: File) => (form.image = img)
 
 const formDataSetup = async () => {
+  form.image = undefined
   if (userInfo.value) {
     form.user = userInfo.value.pk || null
     form.email = userInfo.value.email || ''
