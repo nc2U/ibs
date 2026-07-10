@@ -1,26 +1,302 @@
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { computed, onBeforeMount, ref } from 'vue'
+import { useAccount } from '@/store/pinia/account'
+import { useWork } from '@/store/pinia/work_project.ts'
+import type { Member } from '@/store/types/work_project.ts'
+import NoData from '@/components/NoData/Index.vue'
+import FormModal from '@/components/Modals/FormModal.vue'
+import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
+import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 
-const msg = ref('')
+// ────────────────────────────────────────────────────
+// 스토어 & 데이터
+// ────────────────────────────────────────────────────
+const confirmModal = ref()
+const formModal = ref()
+
+const accStore = useAccount()
+const workStore = useWork()
+
+// 현재 편집 대상 유저 (AdminUserManage 에서 accStore.user 로 관리)
+const userPk = computed(() => accStore.user?.pk as number | undefined)
+
+// 이 유저가 소속된 멤버십 목록 (Member[]): { pk, user, project, roles, created }
+const memberList = computed<Member[]>(() => workStore.memberList)
+
+// 전체 역할 목록 (편집/추가 모달에서 선택용) - 시스템 역할(1: 익명, 2: 일반사용자)은 제외
+const roleList = computed(() => workStore.roleList.filter(r => r.pk !== 1 && r.pk !== 2))
+
+// ────────────────────────────────────────────────────
+// 인라인 편집
+// ────────────────────────────────────────────────────
+const editMode = ref<number | null>(null) // 편집 중인 member.pk
+const memberRole = ref<number[]>([])
+
+const toEdit = (mem: Member) => {
+  editMode.value = mem.pk
+  memberRole.value = mem.roles.map(r => r.pk)
+}
+
+const cancelEdit = () => {
+  editMode.value = null
+  memberRole.value = []
+}
+
+const editSubmit = (mem: Member, roles: number[]) => {
+  workStore.patchMember({ pk: mem.pk, roles }).then(() => {
+    if (userPk.value) workStore.fetchMemberList(userPk.value)
+  })
+  cancelEdit()
+}
+
+// ────────────────────────────────────────────────────
+// 삭제
+// ────────────────────────────────────────────────────
+const deleteMemberPk = ref<number | null>(null)
+
+const toDelete = (pk: number) => {
+  confirmModal.value.callModal('', '이 사용자를 해당 프로젝트에서 제거하시겠습니까?', '', 'warning')
+  deleteMemberPk.value = pk
+}
+
+const deleteSubmit = () => {
+  if (deleteMemberPk.value !== null) {
+    workStore.deleteMember(deleteMemberPk.value, userPk.value)
+  }
+  confirmModal.value.close()
+}
+
+// ────────────────────────────────────────────────────
+// 새 프로젝트 추가 모달
+// ────────────────────────────────────────────────────
+const validated = ref(false)
+const selectedProjects = ref<number[]>([])
+const selectedRoles = ref<number[]>([])
+
+const callModal = () => formModal.value.callModal()
+
+const onSubmit = (event: Event) => {
+  const el = event.currentTarget as HTMLFormElement
+  if (!el.checkValidity()) {
+    event.preventDefault()
+    event.stopPropagation()
+    validated.value = true
+  } else {
+    modalAction()
+    validated.value = false
+    formModal.value.close()
+  }
+}
+
+const modalAction = async () => {
+  if (!userPk.value) return
+  // 선택한 프로젝트들에 대해 순차적으로 멤버 생성
+  for (const projPk of selectedProjects.value) {
+    const proj = workStore.allProjects.find(p => p.pk === projPk)
+    if (proj) {
+      await workStore.createMember({
+        user: userPk.value,
+        roles: selectedRoles.value,
+        slug: proj.slug,
+      })
+    }
+  }
+  // 전체 목록 갱신
+  await workStore.fetchMemberList(userPk.value)
+  selectedProjects.value = []
+  selectedRoles.value = []
+}
+
+// ────────────────────────────────────────────────────
+// 유틸
+// ────────────────────────────────────────────────────
+const addComma = (total: number, i: number) => total > i + 1
+
+// ────────────────────────────────────────────────────
+// 초기화
+// ────────────────────────────────────────────────────
+onBeforeMount(async () => {
+  if (userPk.value) await workStore.fetchMemberList(userPk.value)
+  await workStore.fetchAllProjectList()
+  await workStore.fetchRoleList()
+})
 </script>
 
 <template>
   <CCol>
-    <!-- Project Tab (Placeholder or configuration) -->
-    <CRow>
-      <CCol lg="12">
-        <CCard>
-          <CCardHeader class="font-weight-bold">
-            <v-icon icon="mdi-shield-account" class="mr-1" color="orange" />
-            프로젝트 권한 설정
-          </CCardHeader>
-          <CCardBody class="text-center py-5">
-            <span class="text-grey-darken-1">
-              프로젝트 권한 관리 및 소속 제어는 상단 관리자 설정 메뉴를 통해 관리할 수 있습니다.
-            </span>
-          </CCardBody>
-        </CCard>
+    <!-- 헤더 액션 -->
+    <CRow class="py-2">
+      <CCol>
+        <span class="mr-2 form-text">
+          <TextButton name="프로젝트 추가" @click="callModal" />
+        </span>
       </CCol>
     </CRow>
+
+    <!-- 데이터 없음 -->
+    <NoData v-if="!memberList.length" />
+
+    <!-- 프로젝트-역할 테이블 -->
+    <CRow v-else>
+      <CCol>
+        <v-divider class="my-0" />
+        <CTable hover small striped responsive>
+          <colgroup>
+            <col style="width: 35%" />
+            <col style="width: 40%" />
+            <col style="width: 25%" />
+          </colgroup>
+          <CTableHead>
+            <CTableRow>
+              <CTableHeaderCell class="pl-5" scope="col">프로젝트</CTableHeaderCell>
+              <CTableHeaderCell class="pl-3" scope="col">역할</CTableHeaderCell>
+              <CTableHeaderCell scope="col"></CTableHeaderCell>
+            </CTableRow>
+          </CTableHead>
+
+          <CTableBody>
+            <CTableRow v-for="mem in memberList" :key="mem.pk" align="middle">
+              <!-- 프로젝트명 -->
+              <CTableDataCell class="pl-5">
+                <router-link :to="{ name: '(개요)', params: { projId: mem.project.slug } }">
+                  {{ mem.project.name }}
+                </router-link>
+              </CTableDataCell>
+
+              <!-- 역할 (편집 모드 or 표시 모드) -->
+              <CTableDataCell class="pl-3">
+                <div v-if="editMode === mem.pk">
+                  <div v-for="role in roleList" :key="role.pk">
+                    <CFormCheck
+                      v-model="memberRole"
+                      :label="role.name"
+                      :value="role.pk"
+                      :id="'user-proj-role-' + role.pk"
+                      class="text-left"
+                    />
+                  </div>
+
+                  <v-btn
+                    color="success"
+                    size="x-small"
+                    type="button"
+                    class="mt-2"
+                    @click="editSubmit(mem, memberRole)"
+                  >
+                    저장
+                  </v-btn>
+                  <v-btn
+                    color="secondary"
+                    variant="outlined"
+                    size="x-small"
+                    type="button"
+                    @click="cancelEdit"
+                    class="mt-2"
+                  >
+                    취소
+                  </v-btn>
+                </div>
+
+                <div v-else>
+                  <span v-for="(role, i) in mem.roles" :key="role.pk">
+                    {{ role.name }}<span v-if="addComma(mem.roles.length, i)">, </span>
+                  </span>
+                </div>
+              </CTableDataCell>
+
+              <!-- 액션 버튼 -->
+              <CTableDataCell class="px-3">
+                <span v-if="editMode === null || editMode !== mem.pk" class="mr-2">
+                  <v-icon icon="mdi-pencil" color="amber" size="sm" />
+                  <router-link to="" @click="toEdit(mem)">편집</router-link>
+                </span>
+                <span v-else-if="editMode === mem.pk" class="mr-2">
+                  <v-icon icon="mdi-close-octagon-outline" color="grey" size="sm" class="mr-1" />
+                  <router-link to="" @click="cancelEdit">취소</router-link>
+                </span>
+
+                <span>
+                  <v-icon icon="mdi-trash-can-outline" color="grey" size="sm" class="mr-1" />
+                  <router-link to="" @click="toDelete(mem.pk)">삭제</router-link>
+                </span>
+              </CTableDataCell>
+            </CTableRow>
+          </CTableBody>
+        </CTable>
+      </CCol>
+    </CRow>
+
+    <!-- 새 프로젝트 추가 모달 -->
+    <FormModal ref="formModal" size="xl">
+      <template #icon></template>
+      <template #header>프로젝트 추가</template>
+      <template #default>
+        <CForm
+          class="needs-validation"
+          novalidate
+          :validated="validated"
+          @submit.prevent="onSubmit"
+        >
+          <CModalBody class="text-body">
+            <!-- 프로젝트 선택 -->
+            <CCard class="mb-3">
+              <CCardHeader>
+                <v-icon icon="mdi-check" color="success" size="sm" />
+                추가할 프로젝트 선택
+              </CCardHeader>
+              <CCardBody class="pb-5">
+                <span v-if="!workStore.allProjects.length" class="text-grey-darken-1">
+                  추가 가능한 프로젝트가 없습니다.
+                </span>
+                <CFormCheck
+                  v-else
+                  inline
+                  v-for="p in workStore.allProjects"
+                  :key="p.pk"
+                  :value="p.pk"
+                  :id="'proj-' + p.pk"
+                  :label="p.name"
+                  :disabled="p.pk !== undefined && memberList.map(m => m.project.pk).includes(p.pk)"
+                  v-model="selectedProjects"
+                  :required="!selectedProjects.length"
+                />
+              </CCardBody>
+            </CCard>
+
+            <!-- 역할 선택 -->
+            <CCard>
+              <CCardHeader>
+                <v-icon icon="mdi-check" color="success" size="sm" />
+                역할
+              </CCardHeader>
+              <CCardBody>
+                <CFormCheck
+                  inline
+                  v-for="r in roleList"
+                  :key="r.pk"
+                  :value="r.pk"
+                  :id="'modal-role-' + r.pk"
+                  :label="r.name"
+                  v-model="selectedRoles"
+                  :required="!selectedRoles.length"
+                />
+              </CCardBody>
+            </CCard>
+          </CModalBody>
+
+          <CModalFooter>
+            <v-btn color="primary" size="small" type="submit">추가</v-btn>
+            <v-btn color="light" size="small" @click="formModal.close" flat>닫기</v-btn>
+          </CModalFooter>
+        </CForm>
+      </template>
+    </FormModal>
+
+    <!-- 삭제 확인 모달 -->
+    <ConfirmModal ref="confirmModal">
+      <template #footer>
+        <v-btn color="warning" size="small" @click="deleteSubmit">삭제</v-btn>
+      </template>
+    </ConfirmModal>
   </CCol>
 </template>

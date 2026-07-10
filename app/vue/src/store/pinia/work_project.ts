@@ -376,6 +376,16 @@ export const useWork = defineStore('work', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
+  const deleteMember = async (pk: number, userPk?: number) => {
+    return api
+      .delete(`/member/${pk}/`)
+      .then(async () => {
+        await fetchMemberList(userPk)
+        message('warning', '알림!', '해당 구성원이 프로젝트에서 제거되었습니다.')
+      })
+      .catch(err => errorHandle(err.response.data))
+  }
+
   // subscribed_projects
   const subscribedProjects = ref([])
 
@@ -518,6 +528,7 @@ export const useWork = defineStore('work', () => {
     fetchProjectMembers,
     createMember,
     patchMember,
+    deleteMember,
 
     subscribedProjects,
     fetchSubscribedProjects,
