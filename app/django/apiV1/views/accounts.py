@@ -133,7 +133,8 @@ class CheckPasswordView(APIView):
     """비밀번호가 맞는지 체크하는 API"""
     permission_classes = (IsAuthenticated,)
 
-    def post(self, request, *args, **kwargs):
+    @staticmethod
+    def post(request, *args, **kwargs):
         password = request.data.get('password', None)
 
         if not password:
@@ -221,7 +222,8 @@ class PasswordResetConfirmView(APIView):
     """비밀번호 재설정 링크를 통해서 비밀번호를 재설정하는 API"""
     permission_classes = (AllowAny,)
 
-    def post(self, request, *args, **kwargs):
+    @staticmethod
+    def post(request, *args, **kwargs):
         user_id = kwargs.get('user_id')
         while len(user_id) % 4 != 0:
             user_id += '='
@@ -334,8 +336,8 @@ class AdminManageUserView(APIView):
                                     status=status.HTTP_201_CREATED)
 
             return Response({'pk': user.pk, 'detail': '새 계정을 생성하였습니다.'}, status=status.HTTP_201_CREATED)
-        except Exception as e:
-            return Response({'detail': f'사용자 생성 중 오류 발생: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception:
+            return Response({'detail': f'사용자 생성 중 오류가 발생했습니다.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @staticmethod
     def put(request, *args, **kwargs):
@@ -420,8 +422,8 @@ class AdminManageUserView(APIView):
                         return Response({'detail': '비밀번호 처리가 완료되었으나 알림 이메일 발송에 실패했습니다.'}, status=status.HTTP_200_OK)
 
                     return Response({'detail': '비밀번호 재설정 처리 및 알림 이메일을 발송했습니다.'}, status=status.HTTP_200_OK)
-        except Exception as e:
+        except Exception:
             # 트랜잭션 내에서 에러 발생 시 롤백됨
-            return Response({'detail': f'처리 중 오류 발생: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({'detail': f'처리 중 오류가 발생했습니다.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return Response({'detail': '사용자 정보 변경 처리가 완료되었습니다.'}, status=status.HTTP_200_OK)
