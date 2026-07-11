@@ -5,10 +5,10 @@ import { useWork } from '@/store/pinia/work_project'
 import { useIssue } from '@/store/pinia/work_issue'
 import { useMeeting } from '@/store/pinia/work_meeting'
 import type { IssueFilter } from '@/store/types/work_issue'
-import Loading from '@/components/Loading/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import SearchList from '@/views/_Work/Manages/Projects/components/SearchList.vue'
 import SharedCalendar from '@/views/_Work/Manages/Calendar/components/SharedCalendar.vue'
+import Loading from '@/components/Loading/Index.vue'
 
 const cBody = ref()
 const toggle = () => cBody.value.toggle()

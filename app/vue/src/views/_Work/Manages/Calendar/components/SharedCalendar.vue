@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { message } from '@/utils/helper.ts'
 import { usePerms } from '@/composables/usePerms.ts'
 import { addDaysToDate, getToday } from '@/utils/baseMixins'
 import { useStore } from '@/store'
@@ -106,7 +107,7 @@ const handleEventClick = (info: any) => {
         params: { projId: project, meetingId: pk },
       })
     } else {
-      console.warn('소속 프로젝트 슬러그가 없어 회의록 상세 페이지로 이동할 수 없습니다.')
+      message('warning', '', '소속 프로젝트 슬러그가 없어 회의록 상세 페이지로 이동할 수 없습니다.')
     }
   }
 }

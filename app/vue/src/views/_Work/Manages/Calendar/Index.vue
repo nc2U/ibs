@@ -7,12 +7,12 @@ import { useCompany } from '@/store/pinia/company.ts'
 import { useCalendar } from '@/store/pinia/work_calendar'
 import type { Company } from '@/store/types/settings'
 import type { IssueFilter } from '@/store/types/work_issue'
-import Loading from '@/components/Loading/Index.vue'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import SearchList from '@/views/_Work/Manages/Projects/components/SearchList.vue'
 import SharedCalendar from './components/SharedCalendar.vue'
 import SummaryStatus from '@/views/_Work/Manages/Calendar/components/SummaryStatus.vue'
+import Loading from '@/components/Loading/Index.vue'
 
 const cBody = ref()
 const comStore = useCompany()
