@@ -51,8 +51,8 @@ const addRelIssue = (event: Event) => {
     <CRow class="mt-2">
       <CCol sm="4" md="3" lg="2">
         <CFormSelect v-model="direction">
-          <option value="successor">후속 업무 (다음에 진행할 업무)</option>
-          <option value="predecessor">선행 업무 (다음 업무를 우선 진행)</option>
+          <option value="successor">후속 업무 (이 업무를 다음에 진행)</option>
+          <option value="predecessor">선행 업무 (이 업무를 우선 진행)</option>
         </CFormSelect>
       </CCol>
       <CFormLabel for="colFormLabel" class="col-sm-1 col-form-label text-right">

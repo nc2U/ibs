@@ -71,8 +71,9 @@ class Issue(models.Model):
 
 
 class IssueRelation(models.Model):
-    source = models.ForeignKey(Issue, on_delete=models.CASCADE, verbose_name='선행 업무', related_name='outgoing_relations')
-    target = models.OneToOneField(Issue, on_delete=models.CASCADE, verbose_name='후속 업무',
+    source = models.ForeignKey(Issue, on_delete=models.CASCADE, verbose_name='선행 업무(이 업무를 우선 진행)',
+                               related_name='outgoing_relations')
+    target = models.OneToOneField(Issue, on_delete=models.CASCADE, verbose_name='후속 업무(이 업무를 다음에 진행)',
                                   related_name='incoming_relation')
     delay = models.PositiveSmallIntegerField('대기일수', null=True, blank=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, models.SET_NULL, null=True, blank=True, verbose_name='작성자')
