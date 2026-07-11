@@ -20,8 +20,8 @@ import AddRelationForm from './relations/AddRelationForm.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 const props = defineProps({
-  issueProject: { type: Object as PropType<IssueProject>, default: null },
   issue: { type: Object as PropType<Issue>, required: true },
+  issueProject: { type: Object as PropType<IssueProject>, default: null },
   allProjects: { type: Array as PropType<getProject[]>, default: () => [] },
   issueCommentList: { type: Array as PropType<IssueComment[]>, default: () => [] },
   statusList: { type: Array as PropType<IssueStatus[]>, default: () => [] },
@@ -173,6 +173,13 @@ onBeforeMount(async () => {
 </script>
 
 <template>
+  <CRow class="py-2">
+    <CCol>
+      <h5>
+        <v-icon icon="mdi-clipboard-check" color="green-darken-1" size="small" class="mr-2" />업무
+      </h5>
+    </CCol>
+  </CRow>
   <CRow class="py-2">
     <CCol>
       <h5>

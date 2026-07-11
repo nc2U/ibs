@@ -33,7 +33,9 @@ const allIssues = computed(() => issueStore.allIssueList || [])
 const trackerReport = computed(() => {
   const currentProjectPk = workStore.issueProject?.pk
   const filteredTrackers = currentProjectPk
-    ? issueStore.trackerList.filter(t => t.projects?.map((p: any) => p.pk).includes(currentProjectPk))
+    ? issueStore.trackerList.filter(t =>
+        t.projects?.map((p: any) => p.pk).includes(currentProjectPk),
+      )
     : issueStore.trackerList
 
   return filteredTrackers.map(t => {
@@ -179,7 +181,7 @@ const totalAll = computed(() => allIssues.value.length)
   <CRow class="py-2 mb-3 align-items-center">
     <CCol>
       <h5 class="mb-0 font-weight-bold">
-        <v-icon icon="mdi-chart-bar" color="primary" class="mr-2" size="24" />
+        <v-icon icon="mdi-chart-bar" color="green-darken-1" class="mr-2" size="24" />
         업무 보고서
       </h5>
     </CCol>
