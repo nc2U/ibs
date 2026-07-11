@@ -19,6 +19,16 @@ class ProjectPermission(permissions.BasePermission):
                         or source.get('parent_slug'))
                 if slug:
                     return slug
+                
+                # 이슈 ID를 기반으로 프로젝트 역추적
+                issue_id = source.get('issue') or source.get('source') or source.get('parent')
+                if issue_id:
+                    from work.models.issue import Issue
+                    try:
+                        issue = Issue.objects.select_related('project').get(pk=issue_id)
+                        return issue.project.pk
+                    except (Issue.DoesNotExist, ValueError, TypeError):
+                        pass
         return None
 
     def find_project(self, project_slug):
@@ -213,6 +223,10 @@ class IssuePermission(ProjectPermission):
 
         # 2. 신규 생성 시의 업무 도메인 특화 검사
         if view.action == 'create':
+            # 슈퍼유저/관리자 예외 처리
+            if request.user.is_superuser or getattr(request.user, 'work_manager', False):
+                return True
+
             project_slug = self.get_project_slug(view, request.data)
             project = None
 
