@@ -23,9 +23,9 @@ export const useWork = defineStore('work', () => {
   const issueProject = ref<IssueProject | null>(null)
 
   // 1. 원시 플랫 상태 (Refs)
-  const allProjects = ref<IssueProject[]>([]) // 모든 프로젝트 - 검색용 (닫힌 프로젝트 포함)
-  const issueProjects = ref<IssueProject[]>([]) // 사용중 공개 프로젝트(is_public=True, status='1')
-  const myProjects = ref<IssueProject[]>([]) // 내가 멤버인 프로젝트
+  const allProjects = ref<IssueProject[]>([]) // 모든 프로젝트 - 선택 목록용(타입/회사/상태 만 검색 가능 - 권한 기본 적용)
+  const issueProjects = ref<IssueProject[]>([]) // 검색용 - 표시 목록용(모든 검색 사용가능 - 권한 기본 적용)
+  const myProjects = ref<IssueProject[]>([]) // 내가 멤버인 프로젝트(권한 기본 적용)
 
   // 2. 트리 재구성 함수 및 트리 가공 상태 (Computed)
   const buildProjectTree = (projects: IssueProject[]): IssueProject[] => {
@@ -55,14 +55,10 @@ export const useWork = defineStore('work', () => {
     return roots
   }
 
+  // 최상위 루트 노드 바인딩 (parent === null)
   const allProjectsTree = computed(() => buildProjectTree(allProjects.value))
   const issueProjectsTree = computed(() => buildProjectTree(issueProjects.value))
   const myProjectsTree = computed(() => buildProjectTree(myProjects.value))
-
-  // 최상위 루트 노드 바인딩 (parent === null)
-  const allProjectsRoot = computed(() => allProjectsTree.value)
-  const issueProjectsRoot = computed(() => issueProjectsTree.value)
-  const myProjectsRoot = computed(() => myProjectsTree.value)
 
   // 3. 재귀적 평탄화 가공 상태 (Computed)
   const flattenTree = (projects: IssueProject[]) => {
@@ -477,10 +473,6 @@ export const useWork = defineStore('work', () => {
     allProjectsTree,
     issueProjectsTree,
     myProjectsTree,
-
-    allProjectsRoot,
-    issueProjectsRoot,
-    myProjectsRoot,
 
     allProjectsFlat,
     issueProjectsFlat,
