@@ -137,7 +137,7 @@ onBeforeMount(async () => {
 
   if (route.query.user) actFilter.creator = route.query.user as string
 
-  filterActivity()
+  await filterActivity()
 })
 </script>
 
