@@ -54,7 +54,6 @@ const loading = ref<boolean>(true)
 
 const initData = async () => {
   loading.value = true
-  await workStore.fetchMyProjectsList()
   await meetingStore.fetchMeetingList({ page: page.value })
   await meetingStore.fetchCategoryList()
   loading.value = false
