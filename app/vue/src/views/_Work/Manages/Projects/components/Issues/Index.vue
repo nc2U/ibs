@@ -64,12 +64,12 @@ const onSubmit = async (payload: any) => {
       const parentId = route.query.parent as string || newIssue.parent
       
       if (parentId) {
-        router.replace({
+        await router.replace({
           name: '(업무) - 보기',
           params: { projId, issueId: String(parentId) },
         })
       } else {
-        router.replace({
+        await router.replace({
           name: '(업무) - 보기',
           params: { projId, issueId: String(newIssue.pk) },
         })
@@ -77,12 +77,12 @@ const onSubmit = async (payload: any) => {
     } else {
       if (route.params.projId) {
         if (route.query.parent)
-          router.replace({
+          await router.replace({
             name: '(업무) - 보기',
             params: { projId: route.params.projId, issueId: route.query.parent as string },
           })
-        else router.replace({ name: '(업무)' })
-      } else router.replace({ name: '업무' })
+        else await router.replace({ name: '(업무)' })
+      } else await router.replace({ name: '업무' })
     }
   }
 }

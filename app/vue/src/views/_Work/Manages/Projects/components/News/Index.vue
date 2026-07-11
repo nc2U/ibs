@@ -11,8 +11,7 @@ import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import NewsForm from '@/views/_Work/Manages/News/components/NewsForm.vue'
 import NewsDetail from '@/views/_Work/Manages/News/components/NewsDetail.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
-import TextButton from '../../../../components/atomics/TextButton.vue'
-import { CRow } from '@coreui/vue'
+import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 
 defineProps({
   issueProject: { type: Object as PropType<IssueProject>, default: () => null },

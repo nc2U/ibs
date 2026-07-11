@@ -5,7 +5,7 @@ import { usePerms } from '@/composables/usePerms'
 import { useWork } from '@/store/pinia/work_project.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
-import TextButton from '../../../../../components/atomics/TextButton.vue'
+import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 
 const props = defineProps({
   project: { type: Object as PropType<IssueProject>, required: true },

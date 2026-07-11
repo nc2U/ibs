@@ -10,7 +10,7 @@ import MeetingList from '@/views/_Work/Manages/Meetings/components/MeetingList.v
 import MeetingAside from '@/views/_Work/Manages/Meetings/components/MeetingAside.vue'
 import MeetingDetail from '@/views/_Work/Manages/Meetings/components/MeetingDetail.vue'
 import MeetingForm from '@/views/_Work/Manages/Meetings/components/MeetingForm.vue'
-import TextButton from '../../../../components/atomics/TextButton.vue'
+import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 
 const props = defineProps({
   issueProject: { type: Object as () => IssueProject, default: null },
