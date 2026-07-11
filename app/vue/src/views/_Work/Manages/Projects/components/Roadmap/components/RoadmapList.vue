@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms.ts'
 import type { Version } from '@/store/types/work_project.ts'
 import RoadmapItem from './RoadmapItem.vue'
-import TextButton from '../../../../../components/atomics/TextButton.vue'
+import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 
 defineProps({ versionList: { type: Array as PropType<Version[]>, default: () => [] } })
 
