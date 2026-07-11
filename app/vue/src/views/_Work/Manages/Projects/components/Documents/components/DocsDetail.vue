@@ -31,7 +31,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div v-if="docs" class="pa-4">
+  <div v-if="docs" class="pa-5 rounded border">
     <CRow class="mb-2">
       <CCol class="d-flex align-center gap-2">
         <h4 class="font-weight-bold mb-1">
@@ -72,7 +72,7 @@ onMounted(() => {
       </CCol>
     </CRow>
 
-    <CRow class="text-grey text-caption mb-3">
+    <CRow class="text-grey text-caption">
       <CCol>
         <span>{{ docs.proj_name }}</span>
         <v-icon icon="mdi-chevron-right" size="small" class="mx-1" />
@@ -82,7 +82,7 @@ onMounted(() => {
       </CCol>
     </CRow>
 
-    <v-divider class="mb-3" />
+    <v-divider class="my-2" />
 
     <v-alert
       v-if="docs.is_secret || docs.is_blind"
@@ -98,7 +98,7 @@ onMounted(() => {
       </span>
     </v-alert>
 
-    <PostInfo :docs="docs" class="mb-4" />
+    <PostInfo :docs="docs" />
 
     <CRow class="mb-5">
       <CCol>
