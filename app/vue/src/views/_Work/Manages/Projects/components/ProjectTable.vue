@@ -4,7 +4,7 @@ import type { IssueProject } from '@/store/types/work_project.ts'
 import { markdownRender } from '@/utils/helper.ts'
 
 defineProps({
-  projects: { type: Array as PropType<IssueProject[]>, default: () => [] },
+  issueProjectsFlat: { type: Array as PropType<IssueProject[]>, default: () => [] },
 })
 </script>
 
@@ -24,7 +24,7 @@ defineProps({
       </CTableRow>
     </CTableHead>
     <CTableBody>
-      <CTableRow v-for="proj in projects" :key="proj.pk">
+      <CTableRow v-for="proj in issueProjectsFlat" :key="proj.pk">
         <CTableDataCell class="pl-4">
           <div :style="{ paddingLeft: `${proj.depth * 20}px` }">
             <v-icon

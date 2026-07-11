@@ -76,7 +76,7 @@ onMounted(() => {
 onBeforeUnmount(() => window.removeEventListener('resize', updateBreakpoint))
 
 onBeforeMount(() => {
-  workStore.fetchRoleList()
+  workStore.fetchIssueProjectList({ status: '1' })
 })
 </script>
 
@@ -104,7 +104,7 @@ onBeforeMount(() => {
       <NoData v-if="!issueProjectsTree.length" />
 
       <div v-else-if="viewMode === 'list'" class="mb-4">
-        <ProjectTable :projects="issueProjectsFlat" />
+        <ProjectTable :issue-projects-flat="issueProjectsFlat" />
       </div>
 
       <CRow v-else>
