@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project'
 import { useIssue } from '@/store/pinia/work_issue'
 import { useMeeting } from '@/store/pinia/work_meeting'
+import { useCalendar } from '@/store/pinia/work_calendar'
 import type { IssueFilter } from '@/store/types/work_issue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import SearchList from '@/views/_Work/Manages/Projects/components/SearchList.vue'
@@ -18,6 +19,7 @@ const route = useRoute()
 const issueStore = useIssue()
 const workStore = useWork()
 const meetingStore = useMeeting()
+const calendarStore = useCalendar()
 
 const allProjects = computed(() => workStore.getAllProjects)
 
@@ -47,6 +49,8 @@ const summary = computed(() => {
 })
 
 const loading = ref(true)
+const combinedLoading = computed(() => loading.value || calendarStore.loading)
+
 onBeforeMount(async () => {
   if (route.params.projId) {
     await fetchData(route.params.projId as string)
@@ -56,7 +60,7 @@ onBeforeMount(async () => {
 </script>
 
 <template>
-  <Loading v-model:active="loading" />
+  <Loading :active="combinedLoading" />
   <ContentBody ref="cBody">
     <template v-slot:default>
       <CRow class="py-2">
@@ -69,7 +73,7 @@ onBeforeMount(async () => {
 
       <CRow class="mb-3">
         <CCol>
-          <SharedCalendar :project-id="route.params.projId as string" />
+          <SharedCalendar :project-slug="route.params.projId as string" />
         </CCol>
       </CRow>
 

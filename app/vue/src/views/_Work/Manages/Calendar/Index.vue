@@ -48,16 +48,10 @@ const summary = computed(() => {
     closed: issues.filter(i => i.status && i.status.closed).length,
   }
 })
-
-const loading = ref(true)
-
-onBeforeMount(async () => {
-  loading.value = false
-})
 </script>
 
 <template>
-  <Loading v-model:active="loading" />
+  <Loading :active="calendarStore.loading" />
   <Header :page-title="comName" :nav-menu="navMenu" @side-nav-call="sideNavCAll" />
 
   <ContentBody ref="cBody" :nav-menu="navMenu" :query="route?.query">
