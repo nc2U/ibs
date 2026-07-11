@@ -25,5 +25,5 @@ onBeforeMount(async () => {
 
 <template>
   <Loading v-model:active="loading" />
-  <router-view v-if="!loading" />
+  <router-view />
 </template>
