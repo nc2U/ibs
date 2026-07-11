@@ -1,14 +1,8 @@
-import { h, resolveComponent } from 'vue'
-
 const workSetting = {
   path: 'manage',
   name: '설 정 관 리',
   redirect: '/manage/user',
-  component: {
-    render() {
-      return h(resolveComponent('router-view'))
-    },
-  },
+  component: () => import('@/views/_Work/Settings/Layout.vue'),
   meta: { title: '설 정 관 리', auth: true },
   children: [
     {

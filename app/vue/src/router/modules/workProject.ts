@@ -1,14 +1,8 @@
-import { h, resolveComponent } from 'vue'
-
 const workProject = {
   path: 'work',
   name: '업 무 관 리',
   redirect: '/work/project/list',
-  component: {
-    render() {
-      return h(resolveComponent('router-view'))
-    },
-  },
+  component: () => import('@/views/_Work/Manages/Layout.vue'),
   meta: { title: '업 무 관 리', auth: true, affix: true },
   children: [
     {
