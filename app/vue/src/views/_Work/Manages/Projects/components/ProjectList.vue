@@ -4,12 +4,12 @@ import { useRoute } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
 import { useWork } from '@/store/pinia/work_project.ts'
 import type { IssueProject, ProjectFilter } from '@/store/types/work_project.ts'
+import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
+import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 import SearchList from './SearchList.vue'
 import ProjectCard from './ProjectCard.vue'
 import ProjectTable from './ProjectTable.vue'
 import NoData from '@/components/NoData/Index.vue'
-import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
-import TextButton from '../../../components/atomics/TextButton.vue'
 
 const cBody = ref()
 const toggle = () => cBody.value.toggle()
