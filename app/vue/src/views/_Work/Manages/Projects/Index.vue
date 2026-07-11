@@ -99,10 +99,6 @@ onBeforeRouteUpdate(async to => {
 
 const loading = ref<boolean>(true)
 onBeforeMount(async () => {
-  await workStore.fetchAllProjectList()
-  await workStore.fetchMyProjectsList()
-  await workStore.fetchRoleList()
-  await workStore.fetchPermissionList()
   if (route.params.projId) await workStore.fetchIssueProject(route.params.projId as string)
   loading.value = false
 })
