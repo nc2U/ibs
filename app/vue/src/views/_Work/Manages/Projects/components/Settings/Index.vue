@@ -122,20 +122,24 @@ watch(
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  await issueStore.fetchTrackerList()
+  try {
+    await issueStore.fetchTrackerList()
 
-  if (route.params.projId) {
-    const projId = route.params.projId as string
-    await workStore.fetchVersionList({ project: projId, status: '' })
+    if (route.params.projId) {
+      const projId = route.params.projId as string
+      await workStore.fetchVersionList({ project: projId, status: '' })
+    }
+
+    // 메뉴 초기화 로직 보완
+    const cookieMenu = Cookies.get('workSettingMenu')
+    if (route.query.menu) menu.value = route.query.menu as string
+    else if (cookieMenu && settingMenus.value.includes(cookieMenu)) menu.value = cookieMenu
+    else menu.value = initMenu.value
+  } catch (err) {
+    console.log('Failed to load project settings configurations', err)
+  } finally {
+    loading.value = false
   }
-
-  // 메뉴 초기화 로직 보완
-  const cookieMenu = Cookies.get('workSettingMenu')
-  if (route.query.menu) menu.value = route.query.menu as string
-  else if (cookieMenu && settingMenus.value.includes(cookieMenu)) menu.value = cookieMenu
-  else menu.value = initMenu.value
-
-  loading.value = false
 })
 </script>
 
