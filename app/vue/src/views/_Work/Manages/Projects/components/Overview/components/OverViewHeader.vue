@@ -39,7 +39,7 @@ const addBookMark = () => alert('북마크 추가!! 구현 예정!')
 <template>
   <CRow class="py-2">
     <CCol>
-      <h5><v-icon icon="mdi-folder-open" color="primary" size="small" class="mr-2" />개요</h5>
+      <h5><v-icon icon="mdi-folder-open" color="success" size="small" class="mr-2" />개요</h5>
     </CCol>
 
     <CCol class="text-right">

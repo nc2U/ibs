@@ -17,7 +17,7 @@ const { can, PERM } = usePerms()
 <template>
   <CRow class="py-2">
     <CCol>
-      <h5><v-icon icon="mdi-forum" color="primary" class="mr-2" />게시판</h5>
+      <h5><v-icon icon="mdi-forum" color="success" class="mr-2" />게시판</h5>
     </CCol>
   </CRow>
 

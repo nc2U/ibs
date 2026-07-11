@@ -123,7 +123,7 @@ onBeforeMount(async () => {
       <CRow class="py-2">
         <CCol>
           <h5>
-            <v-icon icon="mdi-bullhorn" color="primary" class="mr-2" />
+            <v-icon icon="mdi-bullhorn" color="success" class="mr-2" />
             공지
           </h5>
         </CCol>

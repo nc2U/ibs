@@ -51,6 +51,14 @@ const loading = ref<boolean>(true)
 
   <ContentBody ref="cBody" :nav-menu="navMenu">
     <template v-slot:default>
+      <CRow class="py-2">
+        <CCol>
+          <h5>
+            <v-icon icon="mdi-history" color="primary" size="small" class="mr-2" />업무실행내역
+          </h5>
+        </CCol>
+      </CRow>
+
       <ActivityLogList
         :to-date="toDate"
         :from-date="fromDate"

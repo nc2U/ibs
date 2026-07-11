@@ -167,7 +167,7 @@ onBeforeUpdate(() => dataSetup())
   <CRow class="py-2">
     <CCol>
       <h5>
-        <v-icon icon="mdi-forum-outline" color="primary" class="mr-2" />
+        <v-icon icon="mdi-forum-outline" color="success" class="mr-2" />
         게시물 {{ post ? '수정' : '작성' }}
       </h5>
     </CCol>

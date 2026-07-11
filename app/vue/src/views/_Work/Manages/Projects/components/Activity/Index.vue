@@ -40,6 +40,14 @@ const loading = ref<boolean>(true)
   <Loading v-model:active="loading" />
   <ContentBody ref="cBody">
     <template v-slot:default>
+      <CRow class="py-2">
+        <CCol>
+          <h5>
+            <v-icon icon="mdi-history" color="success" size="small" class="mr-2" />업무실행내역
+          </h5>
+        </CCol>
+      </CRow>
+
       <ActivityLogList
         :to-date="toDate"
         :from-date="fromDate"

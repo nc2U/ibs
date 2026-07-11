@@ -60,9 +60,15 @@ const watchControl = (issuePk: number) => issueStore.watchIssue(issuePk)
 <template>
   <CRow class="py-2">
     <CCol>
-      <h5><v-icon icon="mdi-clipboard-check" color="primary" size="small" class="mr-2" />업무</h5>
+      <h5>
+        <v-icon
+          icon="mdi-clipboard-check"
+          :color="route.name === '업무' ? 'primary' : 'success'"
+          size="small"
+          class="mr-2"
+        />업무
+      </h5>
     </CCol>
-
     <CCol class="text-right">
       <span v-if="canIssueCreate" class="mr-2 form-text">
         <TextButton

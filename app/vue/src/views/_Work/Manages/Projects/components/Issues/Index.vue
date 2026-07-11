@@ -59,10 +59,10 @@ const onSubmit = async (payload: any) => {
     const newIssue = await issueStore.createIssue(form)
     if (newIssue && newIssue.pk) {
       const projId = (route.params.projId as string) || newIssue.project?.slug || newIssue.project
-      
+
       // 하위 업무를 생성한 경우(부모 ID가 존재하면) 부모 상세 페이지로 복귀
-      const parentId = route.query.parent as string || newIssue.parent
-      
+      const parentId = (route.query.parent as string) || newIssue.parent
+
       if (parentId) {
         await router.replace({
           name: '(업무) - 보기',
@@ -141,9 +141,9 @@ onBeforeMount(async () => {
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentBody ref="cBody">
     <template v-slot:default>
-      <Loading v-model:active="loading" />
       <IssueList
         v-if="route.name === '(업무)'"
         :proj-status="issueProject?.status"

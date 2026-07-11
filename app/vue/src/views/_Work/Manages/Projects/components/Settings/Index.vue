@@ -150,7 +150,7 @@ onBeforeMount(async () => {
       <template v-if="route.name === '(설정)'">
         <CRow class="py-2">
           <CCol>
-            <h5><v-icon icon="mdi-cog" color="primary" size="small" class="mr-2" />설정</h5>
+            <h5><v-icon icon="mdi-cog" color="success" size="small" class="mr-2" />설정</h5>
           </CCol>
         </CRow>
 
