@@ -41,7 +41,8 @@ const canDocsUpdate = computed(() => can(PERM.DOCS_UPDATE))
 const { workManager } = storeToRefs(useAccount())
 
 const validated = ref(false)
-const form = ref<Docs>({
+
+const getInitialForm = (): Docs => ({
   pk: undefined,
   issue_project: null,
   doc_type: props.typeNumber,
@@ -58,6 +59,9 @@ const form = ref<Docs>({
   files: [],
   links: [],
 })
+
+const form = ref<Docs>(getInitialForm())
+const resetForm = () => (form.value = getInitialForm())
 
 const newFiles = ref<File[]>([])
 const cngFiles = ref<
@@ -131,6 +135,8 @@ const onSubmit = async (payload: Docs & Attatches) => {
   }
   newFiles.value = []
   cngFiles.value = []
+  newLinks.value = []
+  resetForm()
   emit('close-form')
 }
 

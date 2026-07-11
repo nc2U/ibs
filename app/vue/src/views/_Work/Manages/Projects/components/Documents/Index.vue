@@ -12,7 +12,7 @@ import DocsList from './components/DocsList.vue'
 import DocsDetail from './components/DocsDetail.vue'
 import DocsForm from './components/DocsForm.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
-import TextButton from '../../../../components/atomics/TextButton.vue'
+import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 const cBody = ref()
@@ -150,11 +150,11 @@ onBeforeMount(async () => {
         »
       </span>
 
-      <CRow class="py-2">
+      <CRow class="py-2 header">
         <CCol>
           <h5>
             <v-icon icon="mdi-file-document-multiple-outline" color="info" class="mr-2" />
-            {{ ($route?.name as string).replace(/^\((.*)\)$/, '$1') }}
+            문서
           </h5>
         </CCol>
 
@@ -185,17 +185,16 @@ onBeforeMount(async () => {
         </CCol>
       </CRow>
 
-      <DocsForm
-        v-if="viewForm && docs"
-        :issue-project="issueProject as IssueProject"
-        :type-number="typeNumber"
-        :categories="categories"
-        :get-suit-case="getSuitCase"
-        :docs="docs"
-        @close-form="viewForm = false"
-      />
-
       <template v-if="can(PERM.DOCS_READ)">
+        <DocsForm
+          v-if="viewForm"
+          :issue-project="issueProject as IssueProject"
+          :type-number="typeNumber"
+          :categories="categories"
+          :get-suit-case="getSuitCase"
+          :docs="route.name === '(문서)' ? undefined : (docs as Docs)"
+          @close-form="viewForm = false"
+        />
         <template v-if="route.name === '(문서)'">
           <CRow class="mb-3">
             <CCol v-if="issueProject?.type !== '3'">
