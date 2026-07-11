@@ -66,7 +66,7 @@ onBeforeMount(async () => {
   <CRow class="d-flex flex-row flex-grow-1 main-layout">
     <!--    Main Content-->
     <CCol class="text-body main flex-grow-1 p-4 px-lg-5 mx-3">
-      <slot> Under Construction!</slot>
+      <slot></slot>
     </CCol>
 
     <!--    Sidebar-->
@@ -84,7 +84,7 @@ onBeforeMount(async () => {
 
       <CRow v-show="sidebarVisible">
         <CCol class="px-3" style="position: relative">
-          <slot name="aside"> Under Construction!</slot>
+          <slot name="aside"></slot>
         </CCol>
       </CRow>
     </CCol>

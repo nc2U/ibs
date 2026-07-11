@@ -113,8 +113,10 @@ watch(
   () => route.params.issueId,
   async nVal => {
     if (nVal) {
+      loading.value = true
       await issueStore.fetchIssue(Number(nVal))
       await logStore.fetchIssueLogList({ issue: Number(nVal) })
+      loading.value = false
     } else issueStore.removeIssue()
   },
   { deep: true },
