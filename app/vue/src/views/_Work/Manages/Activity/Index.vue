@@ -20,10 +20,10 @@ const comName = computed(() => company?.value?.name)
 
 const sideNavCAll = () => cBody.value.toggle()
 
-const navMenu = computed(() => (!issueProjectsTree.value.length ? navMenu1 : navMenu2))
+const navMenu = computed(() => (!allProjectsTree.value.length ? navMenu1 : navMenu2))
 
 const workStore = useWork()
-const issueProjectsTree = computed(() => workStore.issueProjectsTree)
+const allProjectsTree = computed(() => workStore.allProjectsTree)
 
 const route = useRoute()
 
@@ -43,10 +43,6 @@ const RefActCont = ref()
 const toMove = async (date: Date) => (toDate.value = date)
 
 const loading = ref<boolean>(true)
-onBeforeMount(async () => {
-  await workStore.fetchIssueProjectList({})
-  loading.value = false
-})
 </script>
 
 <template>
