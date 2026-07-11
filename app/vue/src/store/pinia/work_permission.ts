@@ -44,16 +44,18 @@ export const usePermission = defineStore('permission', () => {
     }
 
     // 3. active 프로젝트가 없는 상태(전역 구간)라면,
-    // 사용자가 가진 모든 프로젝트 중 가장 높은 수준의 옵션을 병합해 반환
+    // 사용자가 가진 모든 프로젝트 및 일반사용자(PK 2)의 권한 중 가장 높은 수준의 옵션을 병합해 반환
     if (!workStore.issueProject) {
       const issue_visibility_order: Record<string, number> = { ALL: 3, PUB: 2, PRI: 1, NOP: 0 }
       const user_visibility_order: Record<string, number> = { ALL: 2, PRJ: 1, NOP: 0 }
 
-      let assignable = false
-      let best_issue_visible: 'ALL' | 'PUB' | 'PRI' | 'NOP' = 'NOP'
-      let best_user_visible: 'ALL' | 'PRJ' | 'NOP' = 'NOP'
+      const authRole = workStore.roleList.find((r: any) => r.pk === 2)
 
-      workStore.issueProjectsFlat.forEach((p: any) => {
+      let assignable = authRole ? authRole.assignable : false
+      let best_issue_visible: 'ALL' | 'PUB' | 'PRI' | 'NOP' = authRole ? authRole.issue_visible : 'NOP'
+      let best_user_visible: 'ALL' | 'PRJ' | 'NOP' = authRole ? authRole.user_visible : 'NOP'
+
+      workStore.myProjectsFlat.forEach((p: any) => {
         if (p.my_role) {
           if (p.my_role.assignable) assignable = true
           if (
@@ -124,9 +126,21 @@ export const usePermission = defineStore('permission', () => {
       }
 
       // active 프로젝트가 없는 상태(전역 구간)라면,
-      // 사용자가 권한을 가진 프로젝트가 최소 하나라도 있으면 true로 반환
-      if (!workStore.issueProject)
-        return workStore.issueProjectsFlat.some((p: any) => p.my_perms && p.my_perms.includes(c))
+      // 1. 사용자가 멤버이면서 권한을 가진 프로젝트가 최소 하나라도 있거나,
+      // 2. 로그인된 사용자 권한(PK 2)이 체크 대상 권한을 갖고 있으면서 공개 프로젝트가 존재하는지 확인
+      if (!workStore.issueProject) {
+        const hasMemberPerm = workStore.myProjectsFlat.some((p: any) => p.my_perms && p.my_perms.includes(c))
+        if (hasMemberPerm) return true
+
+        const authRole = workStore.roleList.find((r: any) => r.pk === 2)
+        const targetPerm = workStore.permissionList.find((p: any) => p.code === c)
+        const hasAuthRolePerm = authRole?.permissions && targetPerm
+          ? authRole.permissions.includes(targetPerm.pk)
+          : false
+        const hasPublicProject = workStore.issueProjectsFlat.some((p: any) => p.is_public)
+
+        return hasAuthRolePerm && hasPublicProject
+      }
 
       // 프로젝트별 권한 세트에서 체크
       return projectPermSet.value.has(c)
