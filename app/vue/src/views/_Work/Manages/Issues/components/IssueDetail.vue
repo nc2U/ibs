@@ -180,7 +180,7 @@ onBeforeMount(async () => {
       </h5>
     </CCol>
   </CRow>
-  <CRow class="py-2">
+  <CRow class="py-1">
     <CCol>
       <h5>
         <span>{{ issue?.tracker.name }} #{{ issue?.pk }}</span>
