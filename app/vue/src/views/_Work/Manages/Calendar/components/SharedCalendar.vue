@@ -1,14 +1,14 @@
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { usePerms } from '@/composables/usePerms.ts'
 import { addDaysToDate, getToday } from '@/utils/baseMixins'
-import type { CalendarOptions } from '@fullcalendar/core'
 import { useStore } from '@/store'
 import { useCalendar } from '@/store/pinia/work_calendar'
+import type { CalendarOptions } from '@fullcalendar/core'
 import FullCalendar from '@fullcalendar/vue3'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import interactionPlugin from '@fullcalendar/interaction'
-import { usePerms } from '@/composables/usePerms.ts'
 
 const props = defineProps({
   projectSlug: { type: String, default: undefined },
