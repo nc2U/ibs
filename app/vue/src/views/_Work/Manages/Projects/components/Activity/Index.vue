@@ -34,9 +34,6 @@ const toMove = (date: Date) => {
 }
 
 const loading = ref<boolean>(true)
-onBeforeMount(async () => {
-  loading.value = false
-})
 </script>
 
 <template>
@@ -57,6 +54,8 @@ onBeforeMount(async () => {
         :to-date="toDate"
         :from-date="fromDate"
         :has-subs="hasSubs"
+        @loading-start="loading = true"
+        @loading-end="loading = false"
       />
     </template>
   </ContentBody>

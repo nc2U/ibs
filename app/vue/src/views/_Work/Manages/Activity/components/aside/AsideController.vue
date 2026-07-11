@@ -1,15 +1,14 @@
 <script lang="ts" setup>
 import Cookies from 'js-cookie'
-import { computed, type ComputedRef, inject, nextTick, onBeforeMount, reactive, watch } from 'vue'
+import { computed, onBeforeMount, reactive, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { dateFormat } from '@/utils/baseMixins'
 import { useAccount } from '@/store/pinia/account'
+import { useWork } from '@/store/pinia/work_project.ts'
 import { useLogging } from '@/store/pinia/work_logging.ts'
 import type { User } from '@/store/types/accounts.ts'
-import type { IssueProject } from '@/store/types/work_project.ts'
 import type { ActLogEntryFilter } from '@/store/types/work_logging.ts'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
-import { useWork } from '@/store/pinia/work_project.ts'
 
 const props = defineProps({
   toDate: { type: Date, required: true },
@@ -81,9 +80,12 @@ const pickSort = (sort: '1' | '2' | '3' | '4' | '5' | '6') => {
   }
 }
 
+const emit = defineEmits(['loading-start', 'loading-end'])
+
 const route = useRoute()
 const logStore = useLogging()
-const filterActivity = () => {
+const filterActivity = async () => {
+  emit('loading-start')
   if (route.params.projId) {
     if (actFilter.subProjects) {
       actFilter.project = route.params.projId as string
@@ -97,7 +99,11 @@ const filterActivity = () => {
     actFilter.project__search = ''
   }
 
-  logStore.fetchActivityLogList({ ...actFilter })
+  try {
+    await logStore.fetchActivityLogList({ ...actFilter })
+  } finally {
+    emit('loading-end')
+  }
 }
 
 defineExpose({ filterActivity })

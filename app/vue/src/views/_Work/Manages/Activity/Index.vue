@@ -64,7 +64,13 @@ onBeforeMount(async () => {
     </template>
 
     <template v-slot:aside>
-      <AsideController ref="RefActCont" :to-date="toDate" :from-date="fromDate" />
+      <AsideController
+        ref="RefActCont"
+        :to-date="toDate"
+        :from-date="fromDate"
+        @loading-start="loading = true"
+        @loading-end="loading = false"
+      />
     </template>
   </ContentBody>
 </template>
