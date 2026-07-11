@@ -59,9 +59,7 @@ const roleDelete = async () => {
   }
 }
 
-onBeforeMount(async () => {
-  await workStore.fetchRoleList()
-  await workStore.fetchPermissionList()
+onBeforeMount(() => {
   loading.value = false
 })
 </script>

@@ -55,8 +55,6 @@ watch(route, nVal => {
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  await accStore.fetchUsersList()
-
   if (route.params.userId) {
     await accStore.fetchUser(Number(route.params.userId))
     await fetchIssueByMember(route.params.userId as string)
