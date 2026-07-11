@@ -43,7 +43,12 @@ const loading = ref<boolean>(true)
       <CRow class="py-2">
         <CCol>
           <h5>
-            <v-icon icon="mdi-history" color="success" size="small" class="mr-2" />업무실행내역
+            <v-icon
+              icon="mdi-history"
+              color="green-darken-1"
+              size="small"
+              class="mr-2"
+            />업무실행내역
           </h5>
         </CCol>
       </CRow>

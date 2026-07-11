@@ -90,7 +90,9 @@ onBeforeMount(fetchMeetings)
     <template v-slot:default>
       <CRow class="py-2">
         <CCol>
-          <h5><v-icon icon="mdi-account-group" color="success" size="small" class="mr-2" />회의</h5>
+          <h5>
+            <v-icon icon="mdi-account-group" color="green-darken-1" size="small" class="mr-2" />회의
+          </h5>
         </CCol>
 
         <CCol class="text-right">

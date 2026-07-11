@@ -63,7 +63,7 @@ const watchControl = (issuePk: number) => issueStore.watchIssue(issuePk)
       <h5>
         <v-icon
           icon="mdi-clipboard-check"
-          :color="route.name === '업무' ? 'primary' : 'success'"
+          :color="route.name === '업무' ? 'primary' : 'green-darken-1'"
           size="small"
           class="mr-2"
         />업무

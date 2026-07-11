@@ -66,7 +66,12 @@ onBeforeMount(async () => {
       <CRow class="py-2">
         <CCol>
           <h5>
-            <v-icon icon="mdi-calendar-account" color="success" size="small" class="mr-2" />캘린더
+            <v-icon
+              icon="mdi-calendar-account"
+              color="green-darken-1"
+              size="small"
+              class="mr-2"
+            />캘린더
           </h5>
         </CCol>
       </CRow>
