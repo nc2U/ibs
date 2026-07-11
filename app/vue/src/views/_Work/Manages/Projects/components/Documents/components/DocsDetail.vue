@@ -31,7 +31,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div v-if="docs" class="pa-5 rounded border">
+  <CRow v-if="docs" class="pa-5 rounded border bg-more-light">
     <CRow class="mb-2">
       <CCol class="d-flex align-center gap-2">
         <h4 class="font-weight-bold mb-1">
@@ -72,7 +72,7 @@ onMounted(() => {
       </CCol>
     </CRow>
 
-    <CRow class="text-grey text-caption">
+    <CRow class="text-muted text-caption">
       <CCol>
         <span>{{ docs.proj_name }}</span>
         <v-icon icon="mdi-chevron-right" size="small" class="mx-1" />
@@ -115,7 +115,7 @@ onMounted(() => {
 
     <div v-if="docs.description" class="description-section mb-5">
       <h6 class="mb-2 text-muted">문서 요약</h6>
-      <div class="p-3 bg-more-light rounded border">
+      <div class="p-3 rounded border card-white">
         <MDContent :content="docs.description" />
       </div>
     </div>
@@ -152,22 +152,16 @@ onMounted(() => {
       </CRow>
     </div>
 
-    <v-divider class="mb-3" />
+    <v-divider />
 
-    <CRow class="mt-4">
-      <CCol class="text-right">
-        <v-btn
-          color="light"
-          variant="flat"
-          @click="router.push({ name: '(문서)' })"
-          size="small"
-          class="mr-2"
-        >
+    <CRow class="mt-1 pr-0">
+      <CCol class="text-right pr-0">
+        <v-btn color="light" variant="flat" @click="router.push({ name: '(문서)' })" size="small">
           목록으로
         </v-btn>
       </CCol>
     </CRow>
-  </div>
+  </CRow>
 </template>
 
 <style scoped>
