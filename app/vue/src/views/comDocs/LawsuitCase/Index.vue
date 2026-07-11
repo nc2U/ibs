@@ -184,7 +184,7 @@ const dataSetup = async (pk: number, caseId?: string | string[]) => {
   // workStore.fetchAllProjectList 회사를 변경하므로 현재 회사 저장
   const targetCompany = pk
 
-  await workStore.fetchAllProjectList(pk, '', '2')
+  await workStore.fetchAllProjectList('2', pk)
 
   // workStore 함수가 회사를 변경했다면 다시 원래 회사로 복원
   if (company.value !== targetCompany) {

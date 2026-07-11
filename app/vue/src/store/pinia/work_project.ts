@@ -142,12 +142,12 @@ export const useWork = defineStore('work', () => {
 
   // actions
   const fetchAllProjectList = async (
+    type: '' | '1' | '2' | '3' = '',
     company: '' | number = '',
     status: '' | '1' | '9' = '',
-    type: '' | '1' | '2' | '3' = '',
   ) => {
     return await api
-      .get(`/issue-project/?company=${company}&status=${status}&type=${type}`)
+      .get(`/issue-project/?type=${type}&company=${company}&status=${status || '1'}`)
       .then(res => (allProjects.value = res.data.results || res.data))
       .catch(err => errorHandle(err.response.data))
   }

@@ -34,13 +34,12 @@ const toSubmit = async (payload: Project) => {
 
 const workStore = useWork()
 const getAllProjPks = computed(() => workStore.getAllProjPks)
-const getProjects = (type: '1' | '2' | '3') => workStore.fetchAllProjectList('', '', type)
 
 const issueStore = useIssue()
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  await workStore.fetchAllProjectList('', '', '2')
+  await workStore.fetchAllProjectList('2')
   await workStore.fetchRoleList()
   await issueStore.fetchTrackerList()
   loading.value = false
@@ -66,7 +65,6 @@ onBeforeMount(async () => {
         :get-projects="getAllProjPks"
         @to-submit="toSubmit"
         @reset-form="resetForm"
-        @get-project="getProjects"
       />
 
       <IndexForm
@@ -75,7 +73,6 @@ onBeforeMount(async () => {
         :get-projects="getAllProjPks"
         @to-submit="toSubmit"
         @reset-form="resetForm"
-        @get-project="getProjects"
       />
 
       <template #footer>

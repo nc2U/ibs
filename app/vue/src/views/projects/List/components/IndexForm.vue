@@ -16,7 +16,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['to-submit', 'reset-form', 'close', 'get-project'])
+const emit = defineEmits(['to-submit', 'reset-form'])
 
 const form = reactive<Project>({
   pk: undefined,
