@@ -5,7 +5,7 @@ import { colorLight } from '@/utils/cssMixins'
 import type { Version } from '@/store/types/work_project.ts'
 import NoData from '@/components/NoData/Index.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
-import TextButton from '../../../../../components/atomics/TextButton.vue'
+import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 
 defineProps({
   versions: { type: Array as PropType<Version[]>, default: () => [] },

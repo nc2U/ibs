@@ -122,13 +122,10 @@ watch(
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  await workStore.fetchIssueProjectList({})
-  await workStore.fetchRoleList()
   await issueStore.fetchTrackerList()
 
   if (route.params.projId) {
     const projId = route.params.projId as string
-    await workStore.fetchIssueProject(projId)
     await workStore.fetchVersionList({ project: projId, status: '' })
   }
 

@@ -7,7 +7,7 @@ import type { IssueProject, SimpleMember } from '@/store/types/work_project.ts'
 import NoData from '@/components/NoData/Index.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
-import TextButton from '../../../../../components/atomics/TextButton.vue'
+import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 
 const memberConfirmModal = ref()
 const memberFormModal = ref()
