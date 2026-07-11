@@ -9,9 +9,9 @@ import { useAccount } from '@/store/pinia/account.ts'
 import { useWork } from '@/store/pinia/work_project.ts'
 import Pagination from '@/components/Pagination'
 import NoData from '@/components/NoData/Index.vue'
+import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 import SearchList from './SearchList.vue'
 import IssueItem from './IssueItem.vue'
-import TextButton from '../../../components/atomics/TextButton.vue'
 
 const props = defineProps({
   projStatus: { type: String, default: '' },

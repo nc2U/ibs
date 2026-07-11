@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeMount, provide, ref } from 'vue'
 import { navMenu2 as navMenu } from '@/views/_Work/_menu/headermixin1'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useAccount } from '@/store/pinia/account'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
@@ -33,7 +33,7 @@ const statusList = computed(() => issueStore.statusList)
 const trackerList = computed(() => issueStore.trackerList)
 const getIssues = computed(() => issueStore.getIssues)
 
-const [route, router] = [useRoute(), useRouter()]
+const route = useRoute()
 
 provide('navMenu', navMenu)
 provide('query', route?.query)
@@ -53,6 +53,7 @@ onBeforeMount(async () => {
   await issueStore.fetchAllIssueList()
   if (!route.query) await issueStore.fetchIssueList({ status__closed: '0' })
 
+  await workStore.fetchMyProjectsList()
   await workStore.fetchMemberList()
   await issueStore.fetchTrackerList()
   await issueStore.fetchStatusList()
