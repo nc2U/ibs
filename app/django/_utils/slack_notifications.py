@@ -469,7 +469,7 @@ class SlackMessageBuilder:
         color = 'good' if action == '등록' else '#ff9500' if action == '편집' else 'danger'
 
         # 간소화된 제목: 문서유형 + 제목 + 보안표시
-        doc_type = instance.doc_type.get_type_display()
+        doc_type = instance.get_doc_type_display()
         title = f"📄 {instance.issue_project.name}-[{doc_type}]-{instance.title}"
 
         # 보안 문서 표시
