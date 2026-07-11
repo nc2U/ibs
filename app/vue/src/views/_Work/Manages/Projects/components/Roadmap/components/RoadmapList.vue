@@ -15,7 +15,7 @@ const [route, router] = [useRoute(), useRouter()]
 <template>
   <CRow class="py-2">
     <CCol>
-      <h5>로드맵</h5>
+      <h5><v-icon icon="mdi-target" color="primary" size="small" class="mr-2" />로드맵</h5>
     </CCol>
 
     <CCol class="text-right">

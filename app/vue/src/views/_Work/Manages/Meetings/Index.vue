@@ -84,7 +84,7 @@ watch(
     <template v-slot:default>
       <CRow class="py-2">
         <CCol>
-          <h5>회의</h5>
+          <h5><v-icon icon="mdi-account-group" color="primary" size="small" class="mr-2" />회의</h5>
         </CCol>
         <CCol class="text-right">
           <span v-if="canMeetingCreate" class="mr-2 form-text">

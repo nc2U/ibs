@@ -28,7 +28,7 @@ const pageSelect = (page: number) => emit('page-select', page)
   <CRow class="py-2">
     <CCol>
       <h5>
-        <v-icon icon="mdi-forum-outline" color="info" class="mr-2" />
+        <v-icon icon="mdi-forum-outline" color="primary" class="mr-2" />
         {{ forum?.name }}
       </h5>
     </CCol>

@@ -85,7 +85,7 @@ onBeforeMount(() => {
     <template v-slot:default>
       <CRow class="py-2">
         <CCol>
-          <h5>프로젝트</h5>
+          <h5><v-icon icon="mdi-domain" color="primary" size="small" class="mr-2" />프로젝트</h5>
         </CCol>
 
         <CCol v-if="can(PERM.PROJECT_CREATE)" class="text-right form-text">

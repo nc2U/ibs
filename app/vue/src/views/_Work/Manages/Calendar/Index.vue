@@ -58,7 +58,9 @@ const summary = computed(() => {
     <template v-slot:default>
       <CRow class="py-2">
         <CCol>
-          <h5>{{ route.name }}</h5>
+          <h5>
+            <v-icon icon="mdi-calendar-account" color="primary" size="small" class="mr-2" />캘린더
+          </h5>
         </CCol>
       </CRow>
 

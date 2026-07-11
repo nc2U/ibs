@@ -120,14 +120,10 @@ const userInfo = computed(() => accStore.userInfo)
 
     <div class="text-right mb-6">
       <!-- 하단 간격 조정 -->
-      <v-btn color="light" variant="flat" size="small" class="mr-2" @click="router.back()">
-        목록으로
-      </v-btn>
       <v-btn
         v-if="userInfo?.is_superuser || userInfo?.pk === post.creator?.pk"
         color="success"
-        size="small"
-        class="mr-2"
+        class="mr-2 no-underline"
         :disabled="!canForumUpdate"
         :to="{
           name: '(게시판) - 게시물 수정',
@@ -140,13 +136,13 @@ const userInfo = computed(() => accStore.userInfo)
       <v-btn
         v-if="userInfo?.is_superuser || userInfo?.pk === post.creator?.pk"
         color="warning"
-        size="small"
         :disabled="!canForumDelete"
         @click="emit('delete-post', post.pk)"
       >
         <v-icon icon="mdi-trash-can-outline" size="small" class="mr-1" />
         삭제
       </v-btn>
+      <v-btn color="light" class="mr-2" @click="router.back()" flat> 목록으로 </v-btn>
     </div>
 
     <Comment :post="post.pk as number" :comments="comments" />

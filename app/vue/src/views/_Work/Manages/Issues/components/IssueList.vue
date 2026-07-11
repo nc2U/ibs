@@ -60,7 +60,7 @@ const watchControl = (issuePk: number) => issueStore.watchIssue(issuePk)
 <template>
   <CRow class="py-2">
     <CCol>
-      <h5>업무</h5>
+      <h5><v-icon icon="mdi-clipboard-check" color="primary" size="small" class="mr-2" />업무</h5>
     </CCol>
 
     <CCol class="text-right">
