@@ -7,7 +7,8 @@ from rest_framework.views import APIView
 
 from apiV1.pagination import PageNumberPaginationTwenty
 from apiV1.permissions.auth_perms import permissions
-from apiV1.permissions.work_perms import ProjectPermission, IssuePermission, IssueCommentPermission
+from apiV1.permissions.work_perms import ProjectPermission, IssuePermission, IssueCommentPermission, \
+    IssueRelationPermission
 from apiV1.serializers.work import IssueCountByMemberSerializer, IssueRelationSerializer, \
     IssueFileSerializer, IssueCommentSerializer, TrackerSerializer, IssueCategorySerializer, \
     IssueCountByTrackerSerializer, IssueStatusSerializer, WorkflowSerializer, CodeIssuePrioritySerializer
@@ -220,8 +221,6 @@ class IssueViewSet(viewsets.ModelViewSet):
 class IssueCountByMemberView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
-    # filterset_fields = ('projects',)
-
     @staticmethod
     def get(request, *args, **kwargs):
         user_param = request.query_params.get('user', None)
@@ -255,7 +254,7 @@ class IssueCountByMemberView(APIView):
 class IssueRelationViewSet(viewsets.ModelViewSet):
     queryset = IssueRelation.objects.all()
     serializer_class = IssueRelationSerializer
-    permission_classes = (permissions.IsAuthenticated, IssuePermission)
+    permission_classes = (permissions.IsAuthenticated, IssueRelationPermission)
     pagination_class = PageNumberPaginationTwenty
     filterset_fields = ('source',)
 

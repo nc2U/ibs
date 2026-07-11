@@ -31,8 +31,8 @@ const addRelIssue = (event: Event) => {
       delay: relIssue.value.delay,
     }
 
-    if (direction.value === 'predecessor') {
-      // If it's a predecessor, the current issue is the target
+    if (direction.value === 'successor') {
+      // If it's a successor (meaning "this issue is to be processed next"), the current issue is the target
       payload = {
         source: relIssue.value.target as number,
         target: props.issuePk,

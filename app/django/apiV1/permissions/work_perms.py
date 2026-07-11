@@ -11,15 +11,15 @@ class ProjectPermission(permissions.BasePermission):
         slug = view.kwargs.get('slug')
         if slug:
             return slug
-        
+
         for source in sources:
             if isinstance(source, dict):
-                slug = (source.get('project') 
-                        or source.get('issue_project') 
+                slug = (source.get('project')
+                        or source.get('issue_project')
                         or source.get('parent_slug'))
                 if slug:
                     return slug
-                
+
                 # 이슈 ID를 기반으로 프로젝트 역추적
                 issue_id = source.get('issue') or source.get('source') or source.get('parent')
                 if issue_id:
@@ -161,7 +161,7 @@ class ProjectPermission(permissions.BasePermission):
             if action in ['update', 'delete', 'private']:
                 if f"{domain}.own_{action}" in user_perms:
                     return True
-            
+
             # comment_update -> comment_own_update 등 복합 액션 처리
             if '_' in action:
                 prefix, suffix = action.rsplit('_', 1)
@@ -329,6 +329,35 @@ class IssuePermission(ProjectPermission):
                 return False
 
         return True
+
+
+class IssueRelationPermission(ProjectPermission):
+    def has_permission(self, request, view):
+        # 1. 부모 클래스(ProjectPermission)의 기본 생성 검사 수행
+        if not super().has_permission(request, view):
+            return False
+        return True
+
+    def has_object_permission(self, request, view, obj):
+        # 1. 기존 프로젝트 접근 권한 체크
+        if not super().has_object_permission(request, view, obj):
+            return False
+
+        # 슈퍼유저/관리자 예외 처리
+        if request.user.is_superuser or getattr(request.user, 'work_manager', False):
+            return True
+
+        project = self.extract_project(obj)
+        if not project:
+            return False
+
+        user_perms = project.get_user_permissions(request.user)
+        required_perm = getattr(view, 'required_permission', None)
+
+        if not required_perm:
+            return False
+
+        return required_perm in user_perms
 
 
 class IssueCommentPermission(ProjectPermission):

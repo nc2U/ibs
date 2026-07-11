@@ -28,7 +28,7 @@ const deleteRelConfirm = () => {
 
 const projId = route.params.projId as string
 const detailRouteName = projId ? '(업무) - 보기' : '업무 - 보기'
-const detailRouteParams = (id: number) => projId ? { projId, issueId: id } : { issueId: id }
+const detailRouteParams = (id: number) => (projId ? { projId, issueId: id } : { issueId: id })
 </script>
 
 <template>
@@ -51,9 +51,7 @@ const detailRouteParams = (id: number) => projId ? { projId, issueId: id } : { i
       <span class="mr-3">{{ rel.issue.status }}</span>
       <span class="mr-3" v-if="rel.issue.assigned_to">
         담당자 :
-        <router-link
-          :to="{ name: '사용자 - 보기', params: { userId: rel.issue.assigned_to?.pk } }"
-        >
+        <router-link :to="{ name: '사용자 - 보기', params: { userId: rel.issue.assigned_to?.pk } }">
           {{ cutString(rel.issue.assigned_to?.username, 9) }}
         </router-link>
       </span>
@@ -74,22 +72,17 @@ const detailRouteParams = (id: number) => projId ? { projId, issueId: id } : { i
           height="14"
         />
       </span>
-      <v-btn
-        v-if="can(PERM.ISSUE_REL_MANAGE)"
-        variant="plain"
-        size="small"
-        @click="deleteRelation"
-      >
+      <v-btn v-if="can(PERM.ISSUE_REL_MANAGE)" variant="plain" size="small" @click="deleteRelation">
         삭제
       </v-btn>
     </CCol>
   </CRow>
 
   <ConfirmModal ref="delRelRef">
-    <template #header>연결된 업무 관계 지우기</template>
-    <template #default> 계속 진행하시겠습니까?</template>
+    <template #header>관계 삭제 확인</template>
+    <template #default> 연결된 업무의 관계 삭제 하시겠습니까?</template>
     <template #footer>
-      <v-btn color="warning" @click="deleteRelConfirm">확인</v-btn>
+      <v-btn color="warning" size="small" @click="deleteRelConfirm">확인</v-btn>
     </template>
   </ConfirmModal>
 </template>
