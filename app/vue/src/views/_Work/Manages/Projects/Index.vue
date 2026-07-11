@@ -9,8 +9,8 @@ import { usePerms } from '@/composables/usePerms.ts'
 import { onBeforeRouteUpdate, useRoute } from 'vue-router'
 import type { Company } from '@/store/types/settings'
 import type { IssueProject } from '@/store/types/work_project.ts'
-import Loading from '@/components/Loading/Index.vue'
 import Header from '@/views/_Work/components/Header/Index.vue'
+import Loading from '@/components/Loading/Index.vue'
 
 const cBody = ref()
 const sideNavCAll = () => cBody.value.toggle()
@@ -26,7 +26,7 @@ const headerTitle = computed(() =>
   routeName.value.includes('프로젝트') ? comName.value : issueProject.value?.name,
 )
 
-const navMenus = computed(() => (!issueProjectsTree.value.length ? navMenu1 : navMenu2))
+const navMenus = computed(() => (!allProjectsTree.value.length ? navMenu1 : navMenu2))
 
 const { can, PERM } = usePerms()
 
@@ -84,14 +84,14 @@ provide('query', route?.query)
 
 const workStore = useWork()
 const issueProject = computed(() => workStore.issueProject as IssueProject)
-const issueProjectsTree = computed(() => workStore.issueProjectsTree)
+const allProjectsTree = computed(() => workStore.allProjectsTree)
 
 const infStore = useInform()
 onBeforeRouteUpdate(async to => {
   if (to.params.projId) {
     await workStore.fetchIssueProject(to.params.projId as string)
   } else {
-    await workStore.fetchIssueProjectList({ status: '1' })
+    await workStore.fetchAllProjectList()
     workStore.removeIssueProject()
     infStore.newsList = []
   }
@@ -99,7 +99,8 @@ onBeforeRouteUpdate(async to => {
 
 const loading = ref<boolean>(true)
 onBeforeMount(async () => {
-  await workStore.fetchIssueProjectList({ status: '1' })
+  await workStore.fetchAllProjectList()
+  await workStore.fetchMyProjectsList()
   await workStore.fetchRoleList()
   await workStore.fetchPermissionList()
   if (route.params.projId) await workStore.fetchIssueProject(route.params.projId as string)

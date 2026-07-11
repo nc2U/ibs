@@ -1,5 +1,5 @@
-import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { defineStore } from 'pinia'
 import { type PermissionCode } from '@/store/constants/permissions'
 import type { MyRole } from '@/store/types/work_project.ts'
 import { useWork } from '@/store/pinia/work_project'
@@ -52,7 +52,9 @@ export const usePermission = defineStore('permission', () => {
       const authRole = workStore.roleList.find((r: any) => r.pk === 2)
 
       let assignable = authRole ? authRole.assignable : false
-      let best_issue_visible: 'ALL' | 'PUB' | 'PRI' | 'NOP' = authRole ? authRole.issue_visible : 'NOP'
+      let best_issue_visible: 'ALL' | 'PUB' | 'PRI' | 'NOP' = authRole
+        ? authRole.issue_visible
+        : 'NOP'
       let best_user_visible: 'ALL' | 'PRJ' | 'NOP' = authRole ? authRole.user_visible : 'NOP'
 
       workStore.myProjectsFlat.forEach((p: any) => {
@@ -129,15 +131,16 @@ export const usePermission = defineStore('permission', () => {
       // 1. 사용자가 멤버이면서 권한을 가진 프로젝트가 최소 하나라도 있거나,
       // 2. 로그인된 사용자 권한(PK 2)이 체크 대상 권한을 갖고 있으면서 공개 프로젝트가 존재하는지 확인
       if (!workStore.issueProject) {
-        const hasMemberPerm = workStore.myProjectsFlat.some((p: any) => p.my_perms && p.my_perms.includes(c))
+        const hasMemberPerm = workStore.myProjectsFlat.some(
+          (p: any) => p.my_perms && p.my_perms.includes(c),
+        )
         if (hasMemberPerm) return true
 
         const authRole = workStore.roleList.find((r: any) => r.pk === 2)
         const targetPerm = workStore.permissionList.find((p: any) => p.code === c)
-        const hasAuthRolePerm = authRole?.permissions && targetPerm
-          ? authRole.permissions.includes(targetPerm.pk)
-          : false
-        const hasPublicProject = workStore.issueProjectsFlat.some((p: any) => p.is_public)
+        const hasAuthRolePerm =
+          authRole?.permissions && targetPerm ? authRole.permissions.includes(targetPerm.pk) : false
+        const hasPublicProject = workStore.allProjectsFlat.some((p: any) => p.is_public)
 
         return hasAuthRolePerm && hasPublicProject
       }
