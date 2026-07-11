@@ -5,9 +5,10 @@ from apiV1.permissions.work_perms import ProjectPermission
 from work.models.issue import Issue
 from work.models.meeting import Meeting
 
+
 class CalendarViewSet(viewsets.ViewSet):
     """
-    달력 화면 전용 통합 이벤트 API ViewSet
+    캘린더 화면 전용 통합 이벤트 API ViewSet
     `calendar.read` 권한이 적용되며, start/end 날짜 파라미터를 받아 기간 내의 Issue와 Meeting 데이터를 조회 및 가공합니다.
     """
     permission_classes = (permissions.IsAuthenticated, ProjectPermission)
@@ -19,7 +20,7 @@ class CalendarViewSet(viewsets.ViewSet):
     def list(self, request):
         user = self.request.user
         project_slug = request.query_params.get('project')
-        
+
         # 프론트엔드에서 전달하는 조회 기간 파라미터 (형식: YYYY-MM-DD)
         start_date_str = request.query_params.get('start')
         end_date_str = request.query_params.get('end')
@@ -76,7 +77,7 @@ class CalendarViewSet(viewsets.ViewSet):
         for issue in issue_data:
             assignee_name = issue['assigned_to__username']
             assignee = f"({assignee_name})" if assignee_name else ""
-            
+
             events.append({
                 'id': str(issue['pk']),
                 'type': 'issue',

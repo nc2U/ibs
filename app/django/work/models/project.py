@@ -263,7 +263,7 @@ class Module(models.Model):
     news = models.BooleanField('공지', default=True)
     document = models.BooleanField('문서', default=True)
     forum = models.BooleanField('게시판', default=True)
-    calendar = models.BooleanField('달력', default=True)
+    calendar = models.BooleanField('캘린더', default=True)
 
     def __str__(self):
         return f'{self.project.name}'
@@ -297,7 +297,7 @@ class Role(models.Model):
 
 class Permission(models.Model):
     MODULE_CHOICES = (('project', '프로젝트'), ('meeting', '회의'), ('issue', '업무'),
-                      ('news', '공지'), ('docs', '문서'), ('forum', '게시판'), ('calendar', '달력'))
+                      ('news', '공지'), ('docs', '문서'), ('forum', '게시판'), ('calendar', '캘린더'))
     module = models.CharField('모듈', max_length=10, choices=MODULE_CHOICES, db_index=True)
     code = models.CharField('코드', max_length=30, unique=True)
     name = models.CharField('이름', max_length=20)

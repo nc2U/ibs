@@ -90,7 +90,7 @@ const workProject = {
         },
         {
           path: ':projId/calendar',
-          name: '(달력)',
+          name: '(캘린더)',
           component: () => import('@/views/_Work/Manages/Projects/components/Calendar/Index.vue'),
         },
         {
@@ -176,7 +176,7 @@ const workProject = {
     },
     {
       path: 'calendar',
-      name: '달력',
+      name: '캘린더',
       component: () => import('@/views/_Work/Manages/Calendar/Index.vue'),
     },
     {

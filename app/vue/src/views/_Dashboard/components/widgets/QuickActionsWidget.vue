@@ -33,7 +33,7 @@ const quickActions = [
     icon: 'mdi-calendar-plus',
     label: '일정 보기',
     color: 'info',
-    routeName: '달력',
+    routeName: '캘린더',
   },
   {
     icon: 'mdi-cash-clock',

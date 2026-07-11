@@ -28,7 +28,7 @@ const sortLabel = (sort: string) => {
     news: '공지',
     docs: '문서',
     forum: '게시판',
-    calendar: '달력',
+    calendar: '캘린더',
   }
   return labels[sort] || sort
 }

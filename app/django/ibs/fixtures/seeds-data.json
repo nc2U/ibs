@@ -10786,7 +10786,7 @@
     "fields": {
       "module": "calendar",
       "code": "calendar.read",
-      "name": "달력 보기",
+      "name": "캘린더 보기",
       "is_default": true,
       "description": ""
     }

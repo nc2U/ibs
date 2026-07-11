@@ -45,7 +45,7 @@ const chkModules = (slug: string) => {
   else {
     if (routeName.includes('로드맵') && !project.versions?.length) return false
     else if (routeName.includes('업무') && !project.module?.issue) return false
-    else if (routeName.includes('달력') && !project.module?.calendar) return false
+    else if (routeName.includes('캘린더') && !project.module?.calendar) return false
     else if (routeName.includes('공지') && !project.module?.news) return false
     else if (routeName.includes('문서') && !project.module?.document) return false
     else return true

@@ -78,7 +78,7 @@ export default defineConfig({
               { text: '업무실행내역', link: '/work-manage/activity' },
               { text: '로드맵', link: '/work-manage/roadmap' },
               { text: '업무', link: '/work-manage/issue' },
-              { text: '달력', link: '/work-manage/calendar' },
+              { text: '캘린더', link: '/work-manage/calendar' },
               { text: '공지', link: '/work-manage/news' },
               { text: '문서', link: '/work-manage/docs' },
               { text: '게시판', link: '/work-manage/forum' },

@@ -156,7 +156,7 @@ const renderEventContent = (eventInfo: any) => {
   }
 }
 
-// 달력의 현재 조회 범위를 기록해두고 외부 필터에서 쓸 수 있도록 노출
+// 캘린더의 현재 조회 범위를 기록해두고 외부 필터에서 쓸 수 있도록 노출
 const currentRange = ref({ start: '', end: '' })
 
 const handleDatesSet = (dateInfo: any) => {

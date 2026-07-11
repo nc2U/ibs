@@ -84,7 +84,7 @@ pnpm type-check
     - `contract` - 계약 및 계약자 관리
     - `docs` - 문서 등록 시스템
     - `forum` - 게시판 기능
-    - `ibs` - 기초 회계 계정 / 대시보드 설정 / 달력 / 오늘의 한마디
+    - `ibs` - 기초 회계 계정 / 대시보드 설정 / 캘린더 / 오늘의 한마디
     - `items` - 분양 계약 유니트 및 타입 / 속성 관리
     - `ledger` - 재무 거래 및 자금 흐름 관리
     - `notice` - 고객 고지 및 알림 관리
@@ -121,17 +121,26 @@ pnpm type-check
 부동산 시행 및 개발 프로세스를 '업무(Issue)'와 '회의(Meeting)' 단위로 관리하는 핵심 도메인입니다. 개발 및 수정 시 다음 규칙을 준수하십시오.
 
 #### 1. 데이터 모델 및 비즈니스 흐름
-* **회의록(Meeting) 중심 협업**: 단순 회의 기록 작성을 넘어 의제(`agenda`), 결정 사항(`decisions`), 후속 조치(`action_items`)를 자산화합니다. 외부인 참석자는 `other_attendees` 텍스트 필드로 기록합니다.
-* **회의와 업무의 유기적 매핑**: `Issue` 모델은 `meeting`을 외래키로 참조합니다. 회의 중 생성된 액션 아이템은 관련 업무(`Issue`)로 자동/수동 할당되어 진척률(`done_ratio`)과 완료율이 실시간 모니터링됩니다.
-* **통합 이력 추적**: `ActivityLogEntry`를 통해 프로젝트 내 전체 활동을 로깅하며, `IssueLogEntry`를 활용해 업무의 상태 변경 정보와 텍스트 차이점(`diff`)을 보관하여 변경 이력을 투명하게 보관합니다.
+
+* **회의록(Meeting) 중심 협업**: 단순 회의 기록 작성을 넘어 의제(`agenda`), 결정 사항(`decisions`), 후속 조치(`action_items`)를 자산화합니다. 외부인 참석자는
+  `other_attendees` 텍스트 필드로 기록합니다.
+* **회의와 업무의 유기적 매핑**: `Issue` 모델은 `meeting`을 외래키로 참조합니다. 회의 중 생성된 액션 아이템은 관련 업무(`Issue`)로 자동/수동 할당되어 진척률(`done_ratio`)과
+  완료율이 실시간 모니터링됩니다.
+* **통합 이력 추적**: `ActivityLogEntry`를 통해 프로젝트 내 전체 활동을 로깅하며, `IssueLogEntry`를 활용해 업무의 상태 변경 정보와 텍스트 차이점(`diff`)을 보관하여 변경
+  이력을 투명하게 보관합니다.
 
 #### 2. 백엔드 API & 권한 통제
-* **액션 기반 권한 매핑**: 각 ViewSet에는 `@property`로 `required_permission`을 정의하여 DRF 액션별 권한 코드(예: `meeting.read`, `issue.create`)를 명시합니다. 이 코드는 `ProjectPermission` 등의 커스텀 권한 클래스에서 요청 유저의 역할(`Role`)과 비교 검증됩니다.
-* **행 단위 데이터 보안 (Row-Level Security)**: 권한 검증과 별개로 목록 조회(`list`) 시 권한 없는 프로젝트의 데이터 유출을 막기 위해, `get_queryset()` 메서드에서 반드시 슈퍼유저/work_manager가 아닐 경우 **"공개 프로젝트이거나, 사용자가 속한 프로젝트이거나, 작성자/담당자인 데이터"**로만 필터링해야 합니다.
+
+* **액션 기반 권한 매핑**: 각 ViewSet에는 `@property`로 `required_permission`을 정의하여 DRF 액션별 권한 코드(예: `meeting.read`, `issue.create`)
+  를 명시합니다. 이 코드는 `ProjectPermission` 등의 커스텀 권한 클래스에서 요청 유저의 역할(`Role`)과 비교 검증됩니다.
+* **행 단위 데이터 보안 (Row-Level Security)**: 권한 검증과 별개로 목록 조회(`list`) 시 권한 없는 프로젝트의 데이터 유출을 막기 위해, `get_queryset()` 메서드에서 반드시
+  슈퍼유저/work_manager가 아닐 경우 **"공개 프로젝트이거나, 사용자가 속한 프로젝트이거나, 작성자/담당자인 데이터"**로만 필터링해야 합니다.
 * **Eager Loading 최적화**: N+1 쿼리 문제를 원천 차단하기 위해 `select_related` 및 `prefetch_related`를 통해 관계 테이블을 미리 로딩해야 합니다.
 
 #### 3. 프론트엔드 Pinia & 타입 연동
-* **상태 동기화**: Pinia 스토어(`useIssue`, `useMeeting` 등)에서 CRUD 완료 시, 연관된 타 스토어(`useLogging`, `useWork` 등)의 액션을 재조회하여 화면의 일관성을 맞춥니다. 파일이 첨부된 폼을 전송할 때는 `multipart/form-data` 헤더를 설정합니다.
+
+* **상태 동기화**: Pinia 스토어(`useIssue`, `useMeeting` 등)에서 CRUD 완료 시, 연관된 타 스토어(`useLogging`, `useWork` 등)의 액션을 재조회하여 화면의
+  일관성을 맞춥니다. 파일이 첨부된 폼을 전송할 때는 `multipart/form-data` 헤더를 설정합니다.
 * **타입 안전성**: 프론트엔드 `store/types/work_*.ts` 파일 내 인터페이스는 백엔드 Serializer가 반환하는 필드 및 Nullable 옵션과 100% 일치하도록 일원화되어야 합니다.
 
 ### 설정 아키텍처 (Configuration)
@@ -199,22 +208,28 @@ pnpm test:e2e
 * **운영 환경 (Prod)**: `master` 브랜치에 코드가 push되면 `ibs-prod` 네임스페이스에 자동 배포됩니다.
 
 #### 1. 백엔드 배포 (`django_dev.yml`, `django_prod.yml`)
-* **컨테이너 이미지 빌드**: Git SHA 값을 태그(`dev-${SHA}` / `${SHA}`)로 지정하여 Dockerfile 기반 이미지를 빌드하고 Docker Hub(`nc2u/django`)에 푸시합니다.
+
+* **컨테이너 이미지 빌드**: Git SHA 값을 태그(`dev-${SHA}` / `${SHA}`)로 지정하여 Dockerfile 기반 이미지를 빌드하고 Docker Hub(`nc2u/django`)에
+  푸시합니다.
 * **K8s 리소스 충돌 관리**: 배포 전 보류 중인 Helm 업그레이드 작업을 클리닝하고, 기존 PV/PVC를 Helm 릴리즈에 자동 편입(Adoption)합니다.
 * **Helm 배포**: `deploy/helm/` 차트를 사용하여 지정된 네임스페이스에 배포 및 마이그레이션 작업을 수행하며, 완료 시 롤아웃 상태를 검증합니다.
 
 #### 2. 프론트엔드 배포 (`vue_dev.yml`, `vue_prod.yml`)
+
 * **정적 파일 빌드**: Node.js와 pnpm을 사용하여 Vue.js SPA를 빌드하며, 빌드 무결성을 자동 검증합니다.
-* **무중단 원자적 배포**: 빌드 폴더(`dist_${TIMESTAMP}`)를 CI/CD 서버로 복사(SCP)한 뒤, `dist` 심볼릭 링크를 원자적으로 교체(Symlink Swap)하여 중단 없는 서비스를 실현합니다.
+* **무중단 원자적 배포**: 빌드 폴더(`dist_${TIMESTAMP}`)를 CI/CD 서버로 복사(SCP)한 뒤, `dist` 심볼릭 링크를 원자적으로 교체(Symlink Swap)하여 중단 없는 서비스를
+  실현합니다.
 * **리소싱 효율성**: 성공한 최신 3개의 빌드 디렉토리만 서버에 유지하고 이전 빌드는 자동 삭제합니다.
 * **캐시 갱신**: 프론트엔드 배포 후 Django 템플릿과 Nginx의 파일 변경이 즉시 반영되도록 관련 Pod를 재시작(`rollout restart`)합니다.
 
 #### 3. 헬름 배포 (`helm_dev.yml`, `helm_prod.yml`)
+
 * **인프라 변경**: `deploy/helm/**` 경로 수정 시 트리거되어 Helm 차트 구성을 서버와 동기화합니다.
 * **커스텀 설정 유지**: 서버에 보관된 커스텀 설정 파일(`values-dev-custom.yaml` / `values-prod-custom.yaml`)을 배포 시 백업 및 복원하여 설정 유실을 방지합니다.
 * **NFS 스토리지**: `nfs-subdir-external-provisioner` Helm 리포지토리를 추가 및 설치하여 NFS 스토리지 공유 볼륨 설정을 자동 연동합니다.
 
 #### 4. 기타 워크플로우 및 통합
+
 * **데이터베이스 작업**: `db_backup.yml`(백업), `db_sync.yml`(동기화) 등을 통해 정기 및 수동 데이터베이스 관리 스크립트 실행이 가능합니다.
 * **보안 검증**: `codeql-analysis.yml`을 통한 취약점 스캔을 지원합니다.
 * **Slack 연동**: 모든 주요 배포 워크플로우의 성공/실패 상태를 Slack 수신 웹훅(`secrets.SLACK_INCOMING_URL`)으로 즉시 알립니다.

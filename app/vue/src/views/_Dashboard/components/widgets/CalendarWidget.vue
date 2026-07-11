@@ -153,7 +153,14 @@ const handleEventClick = (event: any) => {
         </div>
       </div>
 
-      <v-btn variant="text" color="primary" size="small" class="mt-3" block :to="{ name: '달력' }">
+      <v-btn
+        variant="text"
+        color="primary"
+        size="small"
+        class="mt-3"
+        block
+        :to="{ name: '캘린더' }"
+      >
         전체 일정 보기
         <v-icon icon="mdi-chevron-right" size="small" />
       </v-btn>

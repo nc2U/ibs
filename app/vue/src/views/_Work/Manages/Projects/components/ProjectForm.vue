@@ -433,7 +433,7 @@ onBeforeMount(() => {
             <CFormCheck
               v-model="module.calendar"
               id="calendar"
-              label="달력"
+              label="캘린더"
               :disabled="!canProjectModule"
             />
           </CCol>
