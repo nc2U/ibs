@@ -124,7 +124,7 @@ onBeforeMount(async () => {
         <CCol>
           <h5>
             <v-icon icon="mdi-microphone" color="info" class="mr-2" />
-            {{ ($route?.name as string).replace(/^\((.*)\)$/, '$1') }}
+            공지
           </h5>
         </CCol>
 

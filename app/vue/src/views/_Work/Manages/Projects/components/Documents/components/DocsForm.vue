@@ -167,6 +167,16 @@ watch(
   () => dataSetup(),
   { deep: true },
 )
+
+watch(
+  () => props.typeNumber,
+  nVal => {
+    if (!props.docs) {
+      form.value.doc_type = nVal
+    }
+  },
+)
+
 onBeforeMount(() => dataSetup())
 </script>
 

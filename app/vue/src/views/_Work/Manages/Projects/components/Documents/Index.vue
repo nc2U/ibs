@@ -150,7 +150,7 @@ onBeforeMount(async () => {
         »
       </span>
 
-      <CRow class="py-2 header">
+      <CRow class="py-2">
         <CCol>
           <h5>
             <v-icon icon="mdi-file-document-multiple-outline" color="info" class="mr-2" />
@@ -186,6 +186,22 @@ onBeforeMount(async () => {
       </CRow>
 
       <template v-if="can(PERM.DOCS_READ)">
+        <CRow v-if="route.name === '(문서)'" class="mb-3 header">
+          <CCol v-if="issueProject?.type !== '3'">
+            <v-tabs v-model="typeNumber" density="compact" @update:model-value="getDocsList">
+              <v-tab
+                v-for="type in types"
+                :value="type.value"
+                :key="type.value"
+                variant="tonal"
+                :active="typeNumber === type.value"
+              >
+                {{ type.label }}
+              </v-tab>
+            </v-tabs>
+          </CCol>
+        </CRow>
+
         <DocsForm
           v-if="viewForm"
           :issue-project="issueProject as IssueProject"
@@ -195,30 +211,15 @@ onBeforeMount(async () => {
           :docs="route.name === '(문서)' ? undefined : (docs as Docs)"
           @close-form="viewForm = false"
         />
-        <template v-if="route.name === '(문서)'">
-          <CRow class="mb-3">
-            <CCol v-if="issueProject?.type !== '3'">
-              <v-tabs v-model="typeNumber" density="compact" @update:model-value="getDocsList">
-                <v-tab
-                  v-for="type in types"
-                  :value="type.value"
-                  :key="type.value"
-                  variant="tonal"
-                  :active="typeNumber === type.value"
-                >
-                  {{ type.label }}
-                </v-tab>
-              </v-tabs>
-            </CCol>
-          </CRow>
-          <DocsList
-            :category="docsFilter.category as number"
-            :category-list="categoryList"
-            :docs-list="docsList"
-            @select-cate="selectCate"
-            @page-select="pageSelect"
-          />
-        </template>
+
+        <DocsList
+          v-if="route.name === '(문서)'"
+          :category="docsFilter.category as number"
+          :category-list="categoryList"
+          :docs-list="docsList"
+          @select-cate="selectCate"
+          @page-select="pageSelect"
+        />
 
         <DocsDetail
           v-else-if="route.name === '(문서) - 보기'"
