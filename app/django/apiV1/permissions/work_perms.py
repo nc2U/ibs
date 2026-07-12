@@ -302,7 +302,7 @@ class IssuePermission(ProjectPermission):
             # (A) 수정 권한 처리
             if view.action in ['update', 'partial_update']:
                 # 하위 업무 수정 혹은 상위 관계 수정 시
-                is_sub = (obj.parent_id is not None) or ('parent' in request.data)
+                is_sub = (obj.parent_id is not None) or ('parent' in request.data) or ('del_child' in request.data)
                 if is_sub:
                     return 'issue.sub_manage' in user_perms
 

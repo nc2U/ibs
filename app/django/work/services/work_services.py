@@ -82,8 +82,11 @@ class IssueService:
                     details += f"|- **{label}**가 {desc}*{new_display}*(으)로 {act}되었습니다."
                 elif field == 'parent':
                     desc = f" *{old_val}*에서 " if old_val else ""
-                    act = "변경" if old_val else "지정"
-                    details += f"|- **{label}**가 {desc}#{instance.parent.pk} *{instance.parent}*(으)로 {act}되었습니다."
+                    if instance.parent:
+                        act = "변경" if old_val else "지정"
+                        details += f"|- **{label}**가 {desc}#{instance.parent.pk} *{instance.parent}*(으)로 {act}되었습니다."
+                    else:
+                        details += f"|- **{label}**가 {desc} 해제되었습니다."
                     parent_details = f"|- **하위 업무**에 #{instance.pk} *{instance}*이(가) 추가되었습니다."
                 elif field == 'closed':
                     details += f"|- **{label}**가 *{instance.closed.strftime('%Y-%m-%d %H:%M')}*에 종료되었습니다."
