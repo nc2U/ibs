@@ -6,12 +6,12 @@ import { errorHandle, message } from '@/utils/helper'
 import { useAccount } from '@/store/pinia/account.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
 import { useWork } from '@/store/pinia/work_project.ts'
-import type { Issue, SimpleIssue } from '@/store/types/work_issue.ts'
+import type { Issue, SimpleIssue, SubIssue } from '@/store/types/work_issue.ts'
 import type { SimpleUser } from '@/store/types/work_project.ts'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 const props = defineProps({
-  issue: { type: Object as PropType<Issue | SimpleIssue>, required: true },
+  issue: { type: Object as PropType<Issue | SimpleIssue | SubIssue>, required: true },
   isDelete: { type: Boolean, default: false },
 })
 

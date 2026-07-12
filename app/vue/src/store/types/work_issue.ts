@@ -80,10 +80,17 @@ export interface IssueFile {
 
 export interface SubIssue {
   pk: number
+  project: SimpleProject
   subject: string
-  tracker: string
+  tracker: {
+    pk: number
+    name: string
+    description: string
+  }
   status: string
   assigned_to: SimpleUser
+  watchers: SimpleUser[]
+  priority: number
   start_date: string
   due_date: string | null
   done_ratio: number
