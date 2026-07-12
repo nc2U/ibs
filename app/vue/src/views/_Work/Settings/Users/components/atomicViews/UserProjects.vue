@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, ref } from 'vue'
+import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useAccount } from '@/store/pinia/account'
 import { useWork } from '@/store/pinia/work_project.ts'
 import type { Member } from '@/store/types/work_project.ts'
@@ -70,8 +70,19 @@ const deleteSubmit = () => {
 // 새 프로젝트 추가 모달
 // ────────────────────────────────────────────────────
 const validated = ref(false)
-const selectedProjects = ref<number[]>([])
+const selectedProject = ref<number | null>(null)
 const selectedRoles = ref<number[]>([])
+
+const activeProject = computed(() =>
+  workStore.allProjects.find(p => Number(p.pk) === Number(selectedProject.value))
+)
+const allowedRoleIds = computed<number[]>(() =>
+  activeProject.value?.allowed_roles?.map((r: any) => r.pk) ?? []
+)
+
+watch(selectedProject, () => {
+  selectedRoles.value = []
+})
 
 const callModal = () => formModal.value.callModal()
 
@@ -89,21 +100,18 @@ const onSubmit = (event: Event) => {
 }
 
 const modalAction = async () => {
-  if (!userPk.value) return
-  // 선택한 프로젝트들에 대해 순차적으로 멤버 생성
-  for (const projPk of selectedProjects.value) {
-    const proj = workStore.allProjects.find(p => p.pk === projPk)
-    if (proj) {
-      await workStore.createMember({
-        user: userPk.value,
-        roles: selectedRoles.value,
-        slug: proj.slug,
-      })
-    }
+  if (!userPk.value || !selectedProject.value) return
+  const proj = workStore.allProjects.find(p => p.pk === selectedProject.value)
+  if (proj) {
+    await workStore.createMember({
+      user: userPk.value,
+      roles: selectedRoles.value,
+      slug: proj.slug,
+    })
   }
   // 전체 목록 갱신
   await workStore.fetchMemberList(userPk.value)
-  selectedProjects.value = []
+  selectedProject.value = null
   selectedRoles.value = []
 }
 
@@ -248,18 +256,25 @@ onBeforeMount(async () => {
                 <span v-if="!workStore.allProjects.length" class="text-grey-darken-1">
                   추가 가능한 프로젝트가 없습니다.
                 </span>
-                <CFormCheck
-                  v-else
-                  inline
-                  v-for="p in workStore.allProjects"
-                  :key="p.pk"
-                  :value="p.pk"
-                  :id="'proj-' + p.pk"
-                  :label="p.name"
-                  :disabled="p.pk !== undefined && memberList.map(m => m.project.pk).includes(p.pk)"
-                  v-model="selectedProjects"
-                  :required="!selectedProjects.length"
-                />
+                <div v-else class="d-flex flex-wrap gap-2">
+                  <div
+                    v-for="p in workStore.allProjects"
+                    :key="p.pk"
+                    class="form-check form-check-inline"
+                  >
+                    <input
+                      type="radio"
+                      name="selectedProject"
+                      :id="'proj-' + p.pk"
+                      :value="p.pk"
+                      class="form-check-input"
+                      :disabled="p.pk !== undefined && memberList.map(m => m.project.pk).includes(p.pk)"
+                      v-model="selectedProject"
+                      required
+                    />
+                    <label :for="'proj-' + p.pk" class="form-check-label">{{ p.name }}</label>
+                  </div>
+                </div>
               </CCardBody>
             </CCard>
 
@@ -270,16 +285,25 @@ onBeforeMount(async () => {
                 역할
               </CCardHeader>
               <CCardBody>
-                <CFormCheck
-                  inline
-                  v-for="r in roleList"
-                  :key="r.pk"
-                  :value="r.pk"
-                  :id="'modal-role-' + r.pk"
-                  :label="r.name"
-                  v-model="selectedRoles"
-                  :required="!selectedRoles.length"
-                />
+                <span v-if="!selectedProject" class="text-grey-darken-1">
+                  먼저 프로젝트를 선택해주세요.
+                </span>
+                <span v-else-if="selectedProject && !allowedRoleIds.length" class="text-warning">
+                  이 프로젝트에 허용된 역할이 없습니다.
+                </span>
+                <template v-else>
+                  <CFormCheck
+                    inline
+                    v-for="r in roleList"
+                    :key="r.pk"
+                    :value="r.pk"
+                    :id="'modal-role-' + r.pk"
+                    :label="r.name"
+                    v-model="selectedRoles"
+                    :disabled="!allowedRoleIds.map(Number).includes(Number(r.pk))"
+                    :required="!selectedRoles.length"
+                  />
+                </template>
               </CCardBody>
             </CCard>
           </CModalBody>
