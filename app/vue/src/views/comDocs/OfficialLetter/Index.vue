@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, onBeforeMount, ref, watch } from 'vue'
-import Cookies from 'js-cookie'
 import { navMenu, pageTitle } from '@/views/comDocs/_menu/headermixin'
 import {
   onBeforeRouteUpdate,
@@ -53,10 +52,7 @@ const updateLetter = (pk: number, payload: OfficialLetter) => docStore.updateLet
 const deleteLetter = (pk: number, filter: LetterFilter) => docStore.deleteLetter(pk, filter)
 const generatePdf = (pk: number) => docStore.generatePdf(pk)
 
-const [route, router] = [
-  useRoute() as Loaded & { name: string },
-  useRouter(),
-]
+const [route, router] = [useRoute() as Loaded & { name: string }, useRouter()]
 
 watch(route, val => {
   if (val.params.letterId) fetchLetter(Number(val.params.letterId))
@@ -93,11 +89,17 @@ const onSubmit = async (payload: OfficialLetter) => {
 
     if (payload.pk) {
       await updateLetter(payload.pk, data)
-      await router.replace({ name: `${mainViewName.value} - 보기`, params: { letterId: payload.pk } })
+      await router.replace({
+        name: `${mainViewName.value} - 보기`,
+        params: { letterId: payload.pk },
+      })
     } else {
       const result = await createLetter(data)
       if (result?.pk) {
-        await router.replace({ name: `${mainViewName.value} - 보기`, params: { letterId: result.pk } })
+        await router.replace({
+          name: `${mainViewName.value} - 보기`,
+          params: { letterId: result.pk },
+        })
       } else {
         await router.replace({ name: mainViewName.value })
       }
@@ -127,11 +129,13 @@ const dataReset = () => {
 
 const clearQueryString = () => {
   if (Object.keys(route.query).length > 0) {
-    router.replace({
-      name: route.name,
-      params: route.params,
-      query: {},
-    }).catch(() => {})
+    router
+      .replace({
+        name: route.name,
+        params: route.params,
+        query: {},
+      })
+      .catch(() => {})
   }
 }
 
@@ -139,7 +143,7 @@ const comSelect = async (target: number | null, skipClearQuery = false) => {
   if (!skipClearQuery) clearQueryString()
 
   if (target) {
-    Cookies.set('curr-company', `${target}`)
+    localStorage.setItem('curr-company', `${target}`)
     await comStore.fetchCompany(target)
 
     const isSlackEntry = skipClearQuery && route.name?.includes('보기')
