@@ -1,5 +1,4 @@
 <script lang="ts" setup>
-import Cookies from 'js-cookie'
 import { ref, computed, onBeforeMount } from 'vue'
 import { pageTitle, navMenu } from '@/views/comLedger/_menu/headermixin'
 import { useCompany } from '@/store/pinia/company'
@@ -86,7 +85,7 @@ const filename = computed(() => {
 
 const showTab = (num: number) => {
   compName.value = comp[num]
-  Cookies.set('comLedgerStatus', `${num}`)
+  localStorage.setItem('comLedgerStatus', `${num}`)
 }
 
 const setDate = (dt: string) => {
@@ -131,7 +130,7 @@ const comSelect = (target: number | null) => {
 const loading = ref(true)
 onBeforeMount(async () => {
   dataSetup(company.value || comStore.initComId)
-  compName.value = comp[Number(Cookies.get('comLedgerStatus') ?? 1)]
+  compName.value = comp[Number(localStorage.getItem('comLedgerStatus') ?? 1)]
   loading.value = false
 })
 </script>
