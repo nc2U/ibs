@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
 import { useStore } from '@/store'
+import { useRouter } from 'vue-router'
 import { useAccount } from '@/store/pinia/account'
 import type { User } from '@/store/types/accounts'
 import { directive as vFullscreen } from 'vue-fullscreen'
@@ -8,6 +9,8 @@ import { logo } from '@/assets/brand/current-logo'
 import AppBreadcrumb from './AppBreadcrumb.vue'
 import AppHeaderDropdown from './AppHeaderDropdown.vue'
 import TagsView from '@/layouts/containers/TagsView.vue'
+
+const router = useRouter()
 
 const store = useStore()
 const accountStore = useAccount()
@@ -42,7 +45,7 @@ const toggleAside = () => store.toggleAside()
         <v-icon v-else icon="mdi-format-indent-increase" size="small" class="text-50" />
       </CHeaderToggler>
 
-      <CHeaderBrand class="pl-3 d-md-none" to="/">
+      <CHeaderBrand class="pl-3 d-md-none pointer" to="/" @click="router.push({ path: '/' })">
         <CIcon :icon="logo" height="31" alt="Logo" />
       </CHeaderBrand>
 
@@ -50,8 +53,8 @@ const toggleAside = () => store.toggleAside()
         <AppBreadcrumb />
       </CHeaderNav>
 
-      <CHeaderNav class="ms-auto me-4">
-        <CHeaderToggler v-fullscreen.teleport="options" class="d-none d-lg-block">
+      <CHeaderNav class="ms-auto me-sm-0 me-md-4">
+        <CHeaderToggler v-fullscreen.teleport="options" class="d-none d-lg-block mr-3">
           <v-icon large :icon="screenIcon" class="text-50" />
           <v-tooltip activator="parent" location="bottom">
             {{ screenGuide }}
@@ -88,7 +91,7 @@ const toggleAside = () => store.toggleAside()
         </CButtonGroup>
       </CHeaderNav>
 
-      <CHeaderNav class="mr-4">
+      <CHeaderNav class="mr-sm-0 mr-lg-2">
         <AppHeaderDropdown v-if="isAuthorized" :user-info="userInfo as User" :profile="profile" />
         <router-link v-else :to="{ name: 'Login' }" class="btn btn-outline-primary">
           로그인
