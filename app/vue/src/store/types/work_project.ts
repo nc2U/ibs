@@ -1,4 +1,4 @@
-import type { CodeValue, SimpleCategory, SimpleIssue } from '@/store/types/work_issue.ts'
+import type { SimpleCategory, SimpleIssue } from '@/store/types/work_issue.ts'
 
 // issue project
 export interface SimpleUser {
@@ -44,31 +44,31 @@ export interface IssueProject {
   name: string
   slug: string
   description: string
-  homepage: string | null
   is_public: boolean
-  module?: Module | null
-  is_inherit_members: boolean
-  allowed_roles: { pk: number; name: string; inherited: boolean }[]
-  trackers: { pk: number; name: string; description: string }[]
-  forums: number[]
-  versions: SimpleVersion[]
-  default_version: string | null
-  categories: SimpleCategory[]
-  status: '1' | '9'
-  depth: number
-  all_members: SimpleMember[]
-  members: SimpleMember[]
-  visible?: boolean
-  ancestors: SimpleProject[]
   parent: number | null
-  parent_visible: boolean
+  allowed_roles: { pk: number; name: string; inherited: boolean }[]
+  status: '1' | '9'
   slack_notifications_enabled: boolean
-  sub_projects: IssueProject[]
-  creator?: string
-  my_perms?: string[]
-  my_role?: MyRole
   created?: string
   updated?: string
+  creator?: string
+  sub_projects: IssueProject[]
+  depth: number
+  module?: Module | null
+  my_role?: MyRole
+  my_perms?: string[]
+  all_members: SimpleMember[]
+  visible?: boolean
+  parent_visible: boolean
+  homepage: string | null
+  is_inherit_members: boolean
+  default_version: string | null
+  trackers: { pk: number; name: string; description: string }[]
+  ancestors: SimpleProject[]
+  members: SimpleMember[]
+  versions: SimpleVersion[]
+  categories: SimpleCategory[]
+  forums: number[]
 }
 
 export interface ProjectFilter {
