@@ -1,5 +1,4 @@
 import api from '@/api'
-import Cookies from 'js-cookie'
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { useAccount } from '@/store/pinia/account'
@@ -54,7 +53,7 @@ export const useProject = defineStore('project', () => {
       : 0,
   )
 
-  const currentProject = Number(Cookies.get('curr-project'))
+  const currentProject = Number(localStorage.getItem('curr-project'))
   const initProjId = computed(() => (currentProject ? currentProject : assingedProject.value))
 
   // actions
