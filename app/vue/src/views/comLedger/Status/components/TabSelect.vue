@@ -1,9 +1,9 @@
 <script lang="ts" setup>
 import { ref, watch } from 'vue'
 
-const tabPanePillsActiveKey = ref(Number(localStorage.getItem('comCashStatus')) || 1)
+const tabPanePillsActiveKey = ref(Number(localStorage.getItem('comLedgerStatus')) || 1)
 
-watch(tabPanePillsActiveKey, nVal => localStorage.setItem('comCashStatus', String(nVal)))
+watch(tabPanePillsActiveKey, nVal => localStorage.setItem('comLedgerStatus', String(nVal)))
 
 const emit = defineEmits(['tab-select'])
 
