@@ -432,8 +432,8 @@ onBeforeMount(async () => {
         </CCol>
       </CRow>
 
-      <template v-for="sub in issue.sub_issues" :key="sub.pk">
-        <SubIssue v-if="issue.sub_issues.length" :sub="sub" @unlink-sub-issue="unlinkSubIssue" />
+      <template v-for="sub in issue.sub_issues ?? []" :key="sub.pk">
+        <SubIssue :sub="sub" @unlink-sub-issue="unlinkSubIssue" />
       </template>
 
       <v-divider v-if="issueProject?.status !== '9'" />
@@ -453,7 +453,7 @@ onBeforeMount(async () => {
       </CRow>
 
       <!-- Outgoing relations -->
-      <template v-for="rel in issue.outgoing_relations" :key="rel.pk">
+      <template v-for="rel in issue.outgoing_relations ?? []" :key="rel.pk">
         <Relation :rel="rel" type="선행업무" @delete-relation="deleteRelation(rel.pk as number)" />
       </template>
 

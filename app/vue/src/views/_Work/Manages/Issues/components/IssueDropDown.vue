@@ -12,6 +12,7 @@ import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 const props = defineProps({
   issue: { type: Object as PropType<Issue | SimpleIssue>, required: true },
+  isDelete: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['watch-control'])
@@ -153,7 +154,9 @@ const toggleWatcher = (userPk: number) => {
 
 // 복사, 링크복사, 삭제 권한 정의
 const showCopyButton = computed(() => can(PERM.ISSUE_COPY) && !isProjectClosed.value)
-const showDeleteButton = computed(() => can(PERM.ISSUE_DELETE) && !isProjectClosed.value)
+const showDeleteButton = computed(
+  () => props.isDelete && can(PERM.ISSUE_DELETE) && !isProjectClosed.value,
+)
 
 // 링크 복사 기능
 const fallbackCopy = (text: string) => {

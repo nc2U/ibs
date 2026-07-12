@@ -95,6 +95,10 @@ const canIssueRead = computed(() => can(PERM.ISSUE_READ) && props.issue.project?
   </CTableDataCell>
   <CTableDataCell class="text-center">{{ timeFormat(issue.updated) }}</CTableDataCell>
   <CTableDataCell class="p-0">
-    <IssueDropDown :issue="issue" @watch-control="emit('watch-control', $event)" />
+    <IssueDropDown
+      :issue="issue"
+      :is-delete="true"
+      @watch-control="emit('watch-control', $event)"
+    />
   </CTableDataCell>
 </template>
