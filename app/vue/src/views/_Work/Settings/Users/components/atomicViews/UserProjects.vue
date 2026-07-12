@@ -120,6 +120,11 @@ const modalAction = async () => {
 // ────────────────────────────────────────────────────
 const addComma = (total: number, i: number) => total > i + 1
 
+const getAllowedRoleIdsByProject = (projPk: number) => {
+  const proj = workStore.allProjects.find(p => Number(p.pk) === Number(projPk))
+  return proj?.allowed_roles?.map((r: any) => Number(r.pk)) ?? []
+}
+
 // ────────────────────────────────────────────────────
 // 초기화
 // ────────────────────────────────────────────────────
@@ -181,6 +186,7 @@ onBeforeMount(async () => {
                       :value="role.pk"
                       :id="'user-proj-role-' + role.pk"
                       class="text-left"
+                      :disabled="!getAllowedRoleIdsByProject(mem.project.pk).includes(Number(role.pk))"
                     />
                   </div>
 
