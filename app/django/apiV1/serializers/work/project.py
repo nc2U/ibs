@@ -3,7 +3,8 @@ from django.db import transaction
 from rest_framework import serializers
 
 from apiV1.serializers.accounts import SimpleUserSerializer
-from work.models.issue import IssueCategory, Issue, Tracker
+from work.models import Issue
+from work.models.issue import IssueCategory, Tracker
 from work.models.project import IssueProject, Module, Role, Permission, \
     Member, ProjectSubscription, Version
 from work.services.work_services import PermissionService
@@ -405,19 +406,6 @@ class ProjectSubscriptionSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
-class IssueInVersionSerializer(serializers.ModelSerializer):
-    project = SimpleIssueProjectSerializer(read_only=True)
-    tracker = TrackerInIssueProjectSerializer(read_only=True)
-    watchers = SimpleUserSerializer(many=True, read_only=True)
-    expected_duration_display = serializers.CharField(source='get_expected_duration_display', read_only=True)
-
-    class Meta:
-        model = Issue
-        fields = ('pk', 'project', 'subject', 'status', 'tracker', 'priority',
-                  'fixed_version', 'category', 'assigned_to', 'watchers',
-                  'expected_duration', 'expected_duration_display', 'done_ratio', 'closed')
-
-
 class VersionListSerializer(serializers.ModelSerializer):
     project = SimpleIssueProjectSerializer(read_only=True)
     status_desc = serializers.CharField(source='get_status_display', read_only=True)
@@ -465,8 +453,21 @@ class VersionListSerializer(serializers.ModelSerializer):
             return round(closed_num / total_num * 100, 2)
 
 
+class SimpleIssueSerializer(serializers.ModelSerializer):
+    project = SimpleIssueProjectSerializer(read_only=True)
+    tracker = TrackerInIssueProjectSerializer(read_only=True)
+    watchers = SimpleUserSerializer(many=True, read_only=True)
+    expected_duration_display = serializers.CharField(source='get_expected_duration_display', read_only=True)
+
+    class Meta:
+        model = Issue
+        fields = ('pk', 'project', 'subject', 'status', 'tracker', 'priority',
+                  'fixed_version', 'category', 'assigned_to', 'watchers',
+                  'expected_duration', 'expected_duration_display', 'done_ratio', 'closed')
+
+
 class VersionSerializer(VersionListSerializer):
-    issues = IssueInVersionSerializer(many=True, read_only=True)
+    issues = SimpleIssueSerializer(many=True, read_only=True)
 
     class Meta(VersionListSerializer.Meta):
         fields = VersionListSerializer.Meta.fields + ('issues',)
