@@ -74,10 +74,10 @@ const selectedProject = ref<number | null>(null)
 const selectedRoles = ref<number[]>([])
 
 const activeProject = computed(() =>
-  workStore.allProjects.find(p => Number(p.pk) === Number(selectedProject.value))
+  workStore.allProjects.find(p => Number(p.pk) === Number(selectedProject.value)),
 )
-const allowedRoleIds = computed<number[]>(() =>
-  activeProject.value?.allowed_roles?.map((r: any) => r.pk) ?? []
+const allowedRoleIds = computed<number[]>(
+  () => activeProject.value?.allowed_roles?.map((r: any) => r.pk) ?? [],
 )
 
 watch(selectedProject, () => {
@@ -194,7 +194,7 @@ onBeforeMount(async () => {
                     저장
                   </v-btn>
                   <v-btn
-                    color="secondary"
+                    color="grey"
                     variant="outlined"
                     size="x-small"
                     type="button"
@@ -268,7 +268,9 @@ onBeforeMount(async () => {
                       :id="'proj-' + p.pk"
                       :value="p.pk"
                       class="form-check-input"
-                      :disabled="p.pk !== undefined && memberList.map(m => m.project.pk).includes(p.pk)"
+                      :disabled="
+                        p.pk !== undefined && memberList.map(m => m.project.pk).includes(p.pk)
+                      "
                       v-model="selectedProject"
                       required
                     />
