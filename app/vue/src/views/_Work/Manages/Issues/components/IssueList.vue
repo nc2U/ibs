@@ -52,9 +52,6 @@ const filterSubmit = (payload: IssueFilter) => emit('filter-submit', payload)
 const issueStore = useIssue()
 const issuePages = (pageNum: number) => issueStore.issuePages(pageNum)
 const pageSelect = (page: number) => emit('page-select', page)
-
-// 지켜보기 / 관심끄기
-const watchControl = (issuePk: number) => issueStore.watchIssue(issuePk)
 </script>
 
 <template>
@@ -165,7 +162,7 @@ const watchControl = (issuePk: number) => issueStore.watchIssue(issuePk)
           class="text-center table-row cursor-menu"
           :key="issue.pk"
         >
-          <IssueItem :issue="issue" @watch-control="watchControl" />
+          <IssueItem :issue="issue" />
         </CTableRow>
       </CTableBody>
     </CTable>

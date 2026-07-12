@@ -15,8 +15,6 @@ const props = defineProps({
   isDelete: { type: Boolean, default: false },
 })
 
-const emit = defineEmits(['watch-control'])
-
 const refDelModal = ref()
 
 const router = useRouter()
@@ -66,7 +64,8 @@ const isCumputedWatcher = computed(() =>
 )
 
 const watchControl = () => {
-  emit('watch-control', props.issue?.pk)
+  // 지켜보기 / 관심끄기
+  issueStore.watchIssue(props.issue?.pk)
   isWatcher.value = !isWatcher.value
 }
 
