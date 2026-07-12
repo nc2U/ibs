@@ -1,7 +1,6 @@
 <script lang="ts" setup>
-import Cookies from 'js-cookie'
-import { ref, computed, onBeforeMount, onMounted, onUpdated, watch, provide } from 'vue'
-import { pageTitle, navMenu } from '@/views/payment/_menu/headermixin'
+import { computed, onBeforeMount, onMounted, onUpdated, ref, watch } from 'vue'
+import { navMenu, pageTitle } from '@/views/payment/_menu/headermixin'
 import { dateFormat } from '@/utils/baseMixins'
 import { downloadFile } from '@/utils/helper.ts'
 import { write_payment } from '@/utils/pageAuth'
@@ -11,10 +10,10 @@ import { usePayment } from '@/store/pinia/payment'
 import { useProLedger } from '@/store/pinia/proLedger.ts'
 import { useContract } from '@/store/pinia/contract'
 import type { Project } from '@/store/types/project.ts'
-import type { Contract, ContFilter } from '@/store/types/contract'
+import type { ContFilter, Contract } from '@/store/types/contract'
 import type { ProAccountFilter } from '@/store/types/proLedger.ts'
 import type { ContPayFilter, DownPayFilter, PriceFilter } from '@/store/types/payment'
-import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router'
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
@@ -29,8 +28,8 @@ import CreateButton from './components/CreateButton.vue'
 const paymentId = ref<string>('')
 const date = ref(dateFormat(new Date()))
 
-const isCalc = ref(Cookies.get('isCalc') ?? '1')
-watch(isCalc, newVal => Cookies.set('isCalc', newVal))
+const isCalc = ref(localStorage.getItem('isCalc') ?? '1')
+watch(isCalc, newVal => localStorage.setItem('isCalc', newVal))
 
 const paymentUrl = computed(() => {
   const url = '/pdf/ledger/payment/'
