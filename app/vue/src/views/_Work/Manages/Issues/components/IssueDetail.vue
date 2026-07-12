@@ -42,10 +42,27 @@ const isClosed = computed(() => props.issue?.closed)
 
 const issueStore = useIssue()
 const issueNums = computed(() => issueStore.issueNums ?? [])
-const getIssues = computed(() => {
-  const issues = issueStore.getIssues
-  if (!props.issue) return issues
-  return issues.filter(i => i.value !== props.issue?.pk)
+const getIssues = computed(() => issueStore.getIssues)
+
+const getRelationIssues = computed(() => {
+  if (!props.issue) return []
+
+  // 1. 이미 연결된 업무(선행/후행) 및 자기 자신 ID 목록 구하기
+  const excludeIds = new Set<number>()
+  excludeIds.add(props.issue.pk) // 자기 자신 제외
+
+  if (props.issue.outgoing_relations) {
+    props.issue.outgoing_relations.forEach(r => {
+      if (r.issue) excludeIds.add(r.issue.pk)
+    })
+  }
+
+  if (props.issue.incoming_relation && props.issue.incoming_relation.issue) {
+    excludeIds.add(props.issue.incoming_relation.issue.pk)
+  }
+
+  // 2. 기본 getIssues에서 자기 자신 및 관계 설정된 업무들을 제외하여 필터링
+  return getIssues.value.filter(i => !excludeIds.has(i.value))
 })
 
 const logStore = useLogging()
@@ -451,7 +468,7 @@ onBeforeMount(async () => {
       <AddRelationForm
         v-if="addRIssue"
         :issue-pk="issue.pk"
-        :get-issues="getIssues"
+        :get-issues="getRelationIssues"
         class="mt-4"
         @add-rel-issue="addRelIssue"
         @add-form-ctl="addFormCtl"
