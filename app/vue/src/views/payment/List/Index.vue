@@ -1,5 +1,4 @@
 <script lang="ts" setup>
-import Cookies from 'js-cookie'
 import { computed, onBeforeMount, ref, watch } from 'vue'
 import { navMenu, pageTitle } from '@/views/payment/_menu/headermixin'
 import { useProject } from '@/store/pinia/project'
@@ -94,9 +93,9 @@ const byContract = computed(() =>
     : '',
 )
 
-const paymentBy = ref(Cookies.get('paymentBy') ?? '1') // 다운로드할 파일 선택
+const paymentBy = ref(localStorage.getItem('paymentBy') ?? '1') // 다운로드할 파일 선택
 
-watch(paymentBy, newVal => Cookies.set('paymentBy', newVal))
+watch(paymentBy, newVal => localStorage.setItem('paymentBy', newVal))
 
 const excelUrl = computed(() => (paymentBy.value === '1' ? byPayment.value : byContract.value))
 const filename = computed(() =>
