@@ -1,5 +1,4 @@
 <script lang="ts" setup>
-import Cookies from 'js-cookie'
 import { computed, onBeforeMount, reactive, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { dateFormat } from '@/utils/baseMixins'
@@ -63,9 +62,9 @@ watch(
       if (nVal.length === 0) {
         const defaults: Array<'1' | '2' | '3' | '4' | '5' | '6'> = ['1', '2', '3', '4', '5', '6']
         actFilter.sort.splice(0, actFilter.sort.length, ...defaults)
-        Cookies.remove('cookieSort')
+        localStorage.removeItem('activity-log-enabled-modules')
       } else {
-        Cookies.set('cookieSort', [...nVal].sort().join('-'))
+        localStorage.setItem('activity-log-enabled-modules', [...nVal].sort().join('-'))
         filterActivity()
       }
     }
@@ -129,8 +128,10 @@ const getUsers = computed(() =>
 onBeforeMount(async () => {
   await accStore.fetchUsersList()
 
-  const cookieSort = (Cookies.get('cookieSort') as string)?.split('-') as any[]
-  if (cookieSort?.length) actFilter.sort = cookieSort
+  const enabledModules = (localStorage.getItem('activity-log-enabled-modules') as string)?.split(
+    '-',
+  ) as any[]
+  if (enabledModules?.length) actFilter.sort = enabledModules
 
   if (props.toDate) actFilter.to_act_date = dateFormat(props.toDate)
   if (props.fromDate) actFilter.from_act_date = dateFormat(props.fromDate)

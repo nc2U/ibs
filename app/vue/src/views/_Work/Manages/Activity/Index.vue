@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeMount, provide, ref } from 'vue'
+import { computed, provide, ref } from 'vue'
 import { navMenu1, navMenu2 } from '@/views/_Work/_menu/headermixin1'
 import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project.ts'

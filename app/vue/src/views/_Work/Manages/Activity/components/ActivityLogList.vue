@@ -1,6 +1,5 @@
 <script lang="ts" setup>
-import Cookies from 'js-cookie'
-import { computed, type PropType } from 'vue'
+import { type PropType } from 'vue'
 import { dateFormat } from '@/utils/baseMixins'
 import type { ActLogEntry } from '@/store/types/work_logging.ts'
 import NoData from '@/components/NoData/Index.vue'
@@ -16,11 +15,6 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['to-move'])
-
-const cookieSort = computed(() => Cookies.get('cookieSort')?.split('-') as any)
-const sort = computed(() =>
-  cookieSort.value?.length ? cookieSort : ['1', '2', '3', '4', '5', '6'],
-)
 
 const toBack = () => {
   if (props.toDate)
