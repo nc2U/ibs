@@ -415,11 +415,9 @@ onBeforeMount(async () => {
         </CCol>
       </CRow>
 
-      <SubIssues
-        v-if="issue.sub_issues.length"
-        :sub-issues="issue.sub_issues"
-        @unlink-sub-issue="unlinkSubIssue"
-      />
+      <template v-for="sub in issue.sub_issues" :key="sub.pk">
+        <SubIssues v-if="issue.sub_issues.length" :sub="sub" @unlink-sub-issue="unlinkSubIssue" />
+      </template>
 
       <v-divider v-if="issueProject?.status !== '9'" />
 

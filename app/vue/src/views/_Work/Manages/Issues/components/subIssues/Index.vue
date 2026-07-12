@@ -1,12 +1,12 @@
 <script lang="ts" setup>
 import { ref, type PropType, watchEffect } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
 import { cutString } from '@/utils/baseMixins'
+import { useRoute, useRouter } from 'vue-router'
+import { usePerms } from '@/composables/usePerms.ts'
 import type { SubIssue } from '@/store/types/work_issue.ts'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
-import { usePerms } from '@/composables/usePerms.ts'
 
-defineProps({ subIssues: { type: Array as PropType<SubIssue[]>, default: () => [] } })
+defineProps({ sub: { type: Object as PropType<SubIssue>, required: true } })
 
 const emit = defineEmits(['unlink-sub-issue'])
 
@@ -46,10 +46,8 @@ const detailRouteParams = (id: number) => (projId ? { projId, issueId: id } : { 
 
 <template>
   <CRow
-    v-for="sub in subIssues"
-    :key="sub.pk"
-    :class="{ 'bg-info-lighten': selected === sub.pk }"
     class="sub-issue cursor-menu"
+    :class="{ 'bg-info-lighten': selected === sub.pk }"
     @click="selected = sub.pk"
   >
     <CCol md="6" lg="4" class="pt-1">
