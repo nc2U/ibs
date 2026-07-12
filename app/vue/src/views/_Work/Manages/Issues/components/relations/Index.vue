@@ -1,10 +1,11 @@
 <script lang="ts" setup>
 import { type PropType, ref } from 'vue'
 import { useRoute } from 'vue-router'
+import { usePerms } from '@/composables/usePerms.ts'
 import { cutString, diffDate } from '@/utils/baseMixins'
 import type { IssueRelation } from '@/store/types/work_issue.ts'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
-import { usePerms } from '@/composables/usePerms.ts'
+import IssueDropDown from '@/views/_Work/Manages/Issues/components/IssueDropDown.vue'
 
 defineProps({
   rel: { type: Object as PropType<IssueRelation>, required: true },
@@ -73,7 +74,8 @@ const detailRouteParams = (id: number) => (projId ? { projId, issueId: id } : { 
         />
       </span>
       <v-btn v-if="can(PERM.ISSUE_REL_MANAGE)" variant="plain" size="small" @click="deleteRelation">
-        삭제
+        <v-icon icon="mdi-link-variant-off" size="16" />
+        <v-tooltip activator="parent" location="start">관계 지우기</v-tooltip>
       </v-btn>
     </CCol>
   </CRow>
