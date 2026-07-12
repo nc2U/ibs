@@ -64,6 +64,7 @@ export default defineConfig({
         items: [
           { text: 'IBS란?', link: '/' },
           { text: '시작하기', link: '/intro/getting-started' },
+          { text: '대시보드', link: '/intro/dashboard' },
         ],
       },
       {
