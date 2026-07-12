@@ -83,6 +83,10 @@ const detailRouteParams = (id: number) => (projId ? { projId, issueId: id } : { 
         <v-icon icon="mdi-link-variant-off" size="16" />
         <v-tooltip activator="parent" location="start">관계 지우기</v-tooltip>
       </v-btn>
+      <span v-if="can(PERM.ISSUE_SUB_MANAGE)">
+        <!--        {{ rel }}-->
+        <!--        <IssueDropDown issue="" />-->
+      </span>
     </CCol>
   </CRow>
 
