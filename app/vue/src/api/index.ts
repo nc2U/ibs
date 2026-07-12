@@ -33,7 +33,7 @@ api.interceptors.response.use(
 
     // validateStatus 때문에 401이 success로 처리되므로 여기서 체크
     if (response.status === 401) {
-      const redirectPath = Cookies.get('redirectPath') || '/'
+      const redirectPath = localStorage.getItem('redirectPath') || '/'
       // 로그인 페이지로 리다이렉트
       await router.push({
         name: 'Login',
@@ -50,7 +50,7 @@ api.interceptors.response.use(
 
     if (error.response) {
       if (error.response.status === 401) {
-        const redirectPath = Cookies.get('redirectPath') || '/'
+        const redirectPath = localStorage.getItem('redirectPath') || '/'
         // 로그인 페이지로 리다이렉트
         await router.push({
           name: 'Login',

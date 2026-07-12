@@ -26,7 +26,7 @@ router.beforeEach(async (to, from, next) => {
       }
 
       if (!accountStore.userInfo) {
-        Cookies.set('redirectPath', to.path)
+        localStorage.setItem('redirectPath', to.path)
         return next({ name: 'Login' })
       }
     }
