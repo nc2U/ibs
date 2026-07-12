@@ -45,14 +45,16 @@ class IssueFileInIssueSerializer(serializers.ModelSerializer):
 
 
 class IssueInIssueSerializer(serializers.ModelSerializer):
-    tracker = serializers.SlugRelatedField(slug_field='name', read_only=True)
+    project = SimpleIssueProjectSerializer(read_only=True)
+    tracker = TrackerInIssueProjectSerializer(read_only=True)
+    watchers = SimpleUserSerializer(many=True, read_only=True)
     status = serializers.SlugRelatedField(slug_field='name', read_only=True)
     assigned_to = SimpleUserSerializer(read_only=True)
 
     class Meta:
         model = Issue
-        fields = ('pk', 'subject', 'tracker', 'status', 'assigned_to',
-                  'start_date', 'due_date', 'done_ratio', 'closed')
+        fields = ('pk', 'project', 'subject', 'tracker', 'status', 'assigned_to',
+                  'priority', 'watchers', 'start_date', 'due_date', 'done_ratio', 'closed')
 
 
 class IssueRelationInIssueSerializer(serializers.ModelSerializer):
