@@ -12,8 +12,8 @@ import IssueControl from './IssueControl.vue'
 import IssueHistory from './IssueHistory.vue'
 import IssueForm from './IssueForm.vue'
 import IssueFiles from './issueFiles/Index.vue'
-import SubIssues from './subIssues/Index.vue'
-import SubSummary from './subIssues/Summary.vue'
+import SubIssue from './subIssue/Index.vue'
+import SubSummary from './subIssue/Summary.vue'
 import RelSummary from './relation/Summary.vue'
 import Relation from './relation/Index.vue'
 import AddRelationForm from './relation/AddRelationForm.vue'
@@ -433,7 +433,7 @@ onBeforeMount(async () => {
       </CRow>
 
       <template v-for="sub in issue.sub_issues" :key="sub.pk">
-        <SubIssues v-if="issue.sub_issues.length" :sub="sub" @unlink-sub-issue="unlinkSubIssue" />
+        <SubIssue v-if="issue.sub_issues.length" :sub="sub" @unlink-sub-issue="unlinkSubIssue" />
       </template>
 
       <v-divider v-if="issueProject?.status !== '9'" />
