@@ -347,8 +347,12 @@ export const useWork = defineStore('work', () => {
       .catch(err => errorHandle(err.response.data))
 
   const createMember = async (payload: { user?: number; roles?: number[]; slug: string }) => {
-    const { roles, ...rest } = payload
-    const body = { ...rest, ...(roles !== undefined ? { role_ids: roles } : {}) }
+    const { user, roles, ...rest } = payload
+    const body = {
+      ...rest,
+      ...(user !== undefined ? { user_id: user } : {}),
+      ...(roles !== undefined ? { role_ids: roles } : {}),
+    }
     return api
       .post(`/member/`, body)
       .then(async res => {
@@ -360,8 +364,12 @@ export const useWork = defineStore('work', () => {
   }
 
   const patchMember = async (payload: { pk: number; user?: number; roles?: number[] }) => {
-    const { pk, roles, ...rest } = payload
-    const body = { ...rest, ...(roles !== undefined ? { role_ids: roles } : {}) }
+    const { pk, user, roles, ...rest } = payload
+    const body = {
+      ...rest,
+      ...(user !== undefined ? { user_id: user } : {}),
+      ...(roles !== undefined ? { role_ids: roles } : {}),
+    }
     return api
       .patch(`/member/${pk}/`, body)
       .then(async res => {
