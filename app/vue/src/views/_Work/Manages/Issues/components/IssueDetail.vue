@@ -14,9 +14,9 @@ import IssueForm from './IssueForm.vue'
 import IssueFiles from './issueFiles/Index.vue'
 import SubIssues from './subIssues/Index.vue'
 import SubSummary from './subIssues/Summary.vue'
-import RelSummary from './relations/Summary.vue'
-import Relations from './relations/Index.vue'
-import AddRelationForm from './relations/AddRelationForm.vue'
+import RelSummary from './relation/Summary.vue'
+import Relation from './relation/Index.vue'
+import AddRelationForm from './relation/AddRelationForm.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 const props = defineProps({
@@ -439,11 +439,11 @@ onBeforeMount(async () => {
 
       <!-- Outgoing relations -->
       <template v-for="rel in issue.outgoing_relations" :key="rel.pk">
-        <Relations :rel="rel" type="선행업무" @delete-relation="deleteRelation(rel.pk as number)" />
+        <Relation :rel="rel" type="선행업무" @delete-relation="deleteRelation(rel.pk as number)" />
       </template>
 
       <!-- Incoming (reverse) relation -->
-      <Relations
+      <Relation
         v-if="issue?.incoming_relation"
         :rel="issue.incoming_relation"
         type="후행업무"

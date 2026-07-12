@@ -41,7 +41,7 @@ const unlinkSubIssue = () => {
 
 const projId = route.params.projId as string
 const detailRouteName = projId ? '(업무) - 보기' : '업무 - 보기'
-const detailRouteParams = (id: number) => projId ? { projId, issueId: id } : { issueId: id }
+const detailRouteParams = (id: number) => (projId ? { projId, issueId: id } : { issueId: id })
 </script>
 
 <template>
@@ -66,9 +66,7 @@ const detailRouteParams = (id: number) => projId ? { projId, issueId: id } : { i
     <CCol class="col-sm-6 col-md-3 col-lg-4 text-right pt-1">
       <span class="mr-3">{{ sub.status }}</span>
       <span v-if="sub.assigned_to" class="mr-3">
-        <router-link
-          :to="{ name: '사용자 - 보기', params: { userId: sub.assigned_to.pk } }"
-        >
+        <router-link :to="{ name: '사용자 - 보기', params: { userId: sub.assigned_to.pk } }">
           {{ cutString(sub.assigned_to.username, 9) }}
         </router-link>
       </span>
@@ -83,10 +81,15 @@ const detailRouteParams = (id: number) => projId ? { projId, issueId: id } : { i
           height="14"
         />
       </span>
-      <span v-if="can(PERM.ISSUE_SUB_MANAGE)" class="mr-3" @click="parentUnlink(sub.pk)">
-        <v-icon icon="mdi-link-variant-off" size="sm" color="grey" class="pointer" />
-        <v-tooltip activator="parent" location="top"> 관계 지우기 </v-tooltip>
-      </span>
+      <v-btn
+        v-if="can(PERM.ISSUE_SUB_MANAGE)"
+        variant="plain"
+        class="mr-3"
+        @click="parentUnlink(sub.pk)"
+      >
+        <v-icon icon="mdi-link-variant-off" size="16" />
+        <v-tooltip activator="parent" location="start"> 관계 지우기 </v-tooltip>
+      </v-btn>
       <span v-if="can(PERM.ISSUE_SUB_MANAGE)">
         <CDropdown color="secondary" variant="input-group" placement="bottom-end">
           <CDropdownToggle
@@ -170,17 +173,10 @@ const detailRouteParams = (id: number) => projId ? { projId, issueId: id } : { i
   </CRow>
 
   <ConfirmModal ref="delSubRef">
-    <template #header>하위 업무 관계 지우기</template>
-    <template #default> 계속 진행하시겠습니까?</template>
+    <template #header>하위 업무 관계 삭제</template>
+    <template #default>상위 업무와의 관계를 삭제 하시겠습니까?</template>
     <template #footer>
-      <v-btn color="warning" @click="unlinkSubIssue">확인</v-btn>
+      <v-btn color="warning" size="small" @click="unlinkSubIssue">확인</v-btn>
     </template>
   </ConfirmModal>
 </template>
-
-<style lang="scss" scoped>
-.closed {
-  color: #999;
-  text-decoration: line-through;
-}
-</style>

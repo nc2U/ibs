@@ -14,6 +14,8 @@ defineProps({
 
 const emit = defineEmits(['delete-relation'])
 
+const selected = ref<number | null>(null)
+
 const route = useRoute()
 const { can, PERM } = usePerms()
 const delRelRef = ref()
@@ -33,7 +35,11 @@ const detailRouteParams = (id: number) => (projId ? { projId, issueId: id } : { 
 </script>
 
 <template>
-  <CRow class="rel-issue" v-if="rel.issue">
+  <CRow
+    v-if="rel.issue"
+    class="rel-issue cursor-menu"
+    :class="{ 'bg-info-lighten': selected === rel.issue.pk }"
+  >
     <CCol md="6" class="pt-1">
       <span>{{ type }} : </span>
       <span v-if="rel.issue">
@@ -81,8 +87,8 @@ const detailRouteParams = (id: number) => (projId ? { projId, issueId: id } : { 
   </CRow>
 
   <ConfirmModal ref="delRelRef">
-    <template #header>관계 삭제 확인</template>
-    <template #default> 연결된 업무의 관계 삭제 하시겠습니까?</template>
+    <template #header>연결된 업무 관계 삭제</template>
+    <template #default> 연결된 업무의 관계를 삭제 하시겠습니까?</template>
     <template #footer>
       <v-btn color="warning" size="small" @click="deleteRelConfirm">확인</v-btn>
     </template>
