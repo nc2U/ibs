@@ -36,7 +36,7 @@ const comSelect = computed(() => comStore.comSelect)
 
 const workStore = useWork()
 const getAllProjects = computed(() => workStore.getAllProjects)
-const allRoles = computed(() => workStore.getRoles)
+const allRoles = computed(() => workStore.getRoles.filter(r => r.value !== 1 && r.value !== 2))
 
 const issueStore = useIssue()
 const allTrackers = computed(() => issueStore.getTrackers)
