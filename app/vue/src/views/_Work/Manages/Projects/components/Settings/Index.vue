@@ -1,13 +1,13 @@
 <script lang="ts" setup>
-import Cookies from 'js-cookie'
 import { computed, onBeforeMount, ref, watch } from 'vue'
 import { type IssueProject } from '@/store/types/work_project.ts'
 import { type IssueCategory as ICategory } from '@/store/types/work_issue.ts'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
 import { useAccount } from '@/store/pinia/account.ts'
-import { usePerms } from '@/composables/usePerms.ts'
+import { message } from '@/utils/helper.ts'
 import { useRoute, useRouter } from 'vue-router'
+import { usePerms } from '@/composables/usePerms.ts'
 import Loading from '@/components/Loading/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import ProjectForm from '@/views/_Work/Manages/Projects/components/ProjectForm.vue'
@@ -131,16 +131,22 @@ onBeforeMount(async () => {
     }
 
     // 메뉴 초기화 로직 보완
-    const cookieMenu = Cookies.get('workSettingMenu')
+    const localStorageMenu = localStorage.getItem('workSettingMenu')
     if (route.query.menu) menu.value = route.query.menu as string
-    else if (cookieMenu && settingMenus.value.includes(cookieMenu)) menu.value = cookieMenu
+    else if (localStorageMenu && settingMenus.value.includes(localStorageMenu))
+      menu.value = localStorageMenu
     else menu.value = initMenu.value
   } catch (err) {
     console.log('Failed to load project settings configurations', err)
+    message('warning', '', '프로젝트 설정 정보를 불러오는 데 실패했습니다.')
   } finally {
     loading.value = false
   }
 })
+const handleMenuClick = (m: string) => {
+  localStorage.setItem('workSettingMenu', m)
+  menu.value = m
+}
 </script>
 
 <template>
@@ -163,7 +169,7 @@ onBeforeMount(async () => {
                 :key="m"
                 variant="tonal"
                 :active="menu === m"
-                @click="Cookies.set('workSettingMenu', m)"
+                @click="handleMenuClick(m)"
               >
                 {{ m }}
               </v-tab>

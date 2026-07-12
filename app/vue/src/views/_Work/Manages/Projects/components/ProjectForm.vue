@@ -1,5 +1,4 @@
 <script lang="ts" setup>
-import Cookies from 'js-cookie'
 import { computed, onBeforeMount, onMounted, onUpdated, type PropType, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
@@ -149,7 +148,7 @@ const onSubmit = async (event: Event) => {
     event.stopPropagation()
     validated.value = true
   } else {
-    Cookies.set('workSettingMenu', '프로젝트')
+    localStorage.setItem('workSettingMenu', '프로젝트')
 
     if (form.pk) {
       // 1. 일반 프로젝트 정보 업데이트 (is_public은 제외하고 업데이트)
