@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { type PropType, ref } from 'vue'
+import { type PropType, ref, watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
 import { usePerms } from '@/composables/usePerms.ts'
 import { cutString, diffDate } from '@/utils/baseMixins'
@@ -7,19 +7,32 @@ import type { IssueRelation } from '@/store/types/work_issue.ts'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import IssueDropDown from '@/views/_Work/Manages/Issues/components/IssueDropDown.vue'
 
-defineProps({
+const props = defineProps({
   rel: { type: Object as PropType<IssueRelation>, required: true },
   type: { type: String as PropType<'선행업무' | '후행업무'>, required: true },
 })
 
 const emit = defineEmits(['delete-relation'])
 
-const selected = ref<number | null>(null)
-
 const route = useRoute()
 const { can, PERM } = usePerms()
-const delRelRef = ref()
 
+const selected = ref<number | null>(null)
+
+const handleClickOutside = (event: any) => {
+  const closestRelIssue = event.target.closest('.rel-issue')
+  // 클릭한 대상이 .rel-issue 외부이거나, 혹은 다른 rel-issue 요소인 경우 선택 해제
+  if (!closestRelIssue || closestRelIssue.id !== `rel-issue-${props.rel.issue?.pk}`) {
+    selected.value = null
+  }
+}
+
+watchEffect(() => {
+  if (selected.value) document.addEventListener('click', handleClickOutside)
+  else document.removeEventListener('click', handleClickOutside)
+})
+
+const delRelRef = ref()
 const deleteRelation = () => {
   delRelRef.value.callModal()
 }
@@ -38,9 +51,11 @@ const detailRouteParams = (id: number) => (projId ? { projId, issueId: id } : { 
   <CRow
     v-if="rel.issue"
     class="rel-issue cursor-menu"
-    :class="{ 'bg-info-lighten': selected === rel.issue.pk }"
+    :id="`rel-issue-${rel.issue.pk}`"
+    :class="{ 'bg-amber-lighten-2': selected === rel.issue.pk }"
+    @click="selected = rel.issue.pk"
   >
-    <CCol md="6" class="pt-1">
+    <CCol md="6" lg="4" class="pt-1">
       <span>{{ type }} : </span>
       <span v-if="rel.issue">
         <router-link
@@ -54,7 +69,7 @@ const detailRouteParams = (id: number) => (projId ? { projId, issueId: id } : { 
       </span>
     </CCol>
 
-    <CCol class="col-sm-8 col-md-3 text-right pt-1">
+    <CCol class="col-sm-6 col-md-3 col-lg-4 text-right pt-1">
       <span class="mr-3">{{ rel.issue.status }}</span>
       <span class="mr-3" v-if="rel.issue.assigned_to">
         담당자 :
@@ -70,7 +85,8 @@ const detailRouteParams = (id: number) => (projId ? { projId, issueId: id } : { 
         {{ rel.issue.due_date }}
       </span>
     </CCol>
-    <CCol class="col-sm-4 col-md-3 text-right">
+
+    <CCol class="col-sm-6 col-md-3 col-lg-4 text-right">
       <span v-if="rel.issue">
         <CProgress
           color="green-lighten-3"
@@ -79,7 +95,7 @@ const detailRouteParams = (id: number) => (projId ? { projId, issueId: id } : { 
           height="14"
         />
       </span>
-      <v-btn v-if="can(PERM.ISSUE_REL_MANAGE)" variant="plain" size="small" @click="deleteRelation">
+      <v-btn v-if="can(PERM.ISSUE_REL_MANAGE)" variant="plain" @click="deleteRelation">
         <v-icon icon="mdi-link-variant-off" size="16" />
         <v-tooltip activator="parent" location="start">관계 지우기</v-tooltip>
       </v-btn>

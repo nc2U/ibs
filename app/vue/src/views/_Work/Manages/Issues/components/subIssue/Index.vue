@@ -1,13 +1,13 @@
 <script lang="ts" setup>
 import { ref, type PropType, watchEffect } from 'vue'
-import { cutString } from '@/utils/baseMixins'
+import { cutString, diffDate } from '@/utils/baseMixins'
 import { useRoute } from 'vue-router'
 import { usePerms } from '@/composables/usePerms.ts'
 import type { SubIssue } from '@/store/types/work_issue.ts'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import IssueDropDown from '@/views/_Work/Manages/Issues/components/IssueDropDown.vue'
 
-defineProps({ sub: { type: Object as PropType<SubIssue>, required: true } })
+const props = defineProps({ sub: { type: Object as PropType<SubIssue>, required: true } })
 
 const emit = defineEmits(['unlink-sub-issue'])
 
@@ -17,7 +17,11 @@ const { can, PERM } = usePerms()
 const selected = ref<number | null>(null)
 
 const handleClickOutside = (event: any) => {
-  if (!event.target.closest('.sub-issue')) selected.value = null
+  const closestSubIssue = event.target.closest('.sub-issue')
+  // 클릭한 대상이 .sub-issue 외부이거나, 혹은 다른 rel-issue 요소인 경우 선택 해제
+  if (!closestSubIssue || closestSubIssue.id !== `sub-issue-${props.sub?.pk}`) {
+    selected.value = null
+  }
 }
 
 watchEffect(() => {
@@ -47,6 +51,7 @@ const detailRouteParams = (id: number) => (projId ? { projId, issueId: id } : { 
 <template>
   <CRow
     class="sub-issue cursor-menu"
+    :id="`sub-issue-${sub.pk}`"
     :class="{ 'bg-amber-lighten-3': selected === sub.pk }"
     @click="selected = sub.pk"
   >
@@ -61,6 +66,7 @@ const detailRouteParams = (id: number) => (projId ? { projId, issueId: id } : { 
       <span v-else :class="{ closed: sub.closed }">기능 #{{ sub.pk }}</span>
       : {{ sub.subject }}
     </CCol>
+
     <CCol class="col-sm-6 col-md-3 col-lg-4 text-right pt-1">
       <span class="mr-3">{{ sub.status }}</span>
       <span v-if="sub.assigned_to" class="mr-3">
@@ -68,8 +74,14 @@ const detailRouteParams = (id: number) => (projId ? { projId, issueId: id } : { 
           {{ cutString(sub.assigned_to.username, 9) }}
         </router-link>
       </span>
-      <span class="mr-3">{{ sub?.start_date }}</span>
+      <span class="mr-3">
+        {{ sub?.start_date }}
+      </span>
+      <span class="mr-3" :class="{ 'text-danger': sub.due_date && diffDate(sub.due_date) > 0 }">
+        {{ sub.due_date }}
+      </span>
     </CCol>
+
     <CCol class="col-sm-6 col-md-3 col-lg-4 text-right">
       <span class="mr-3">
         <CProgress
