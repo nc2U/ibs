@@ -1,5 +1,4 @@
 <script lang="ts" setup>
-import Cookies from 'js-cookie'
 import { computed, nextTick, onBeforeMount, provide, ref } from 'vue'
 import {
   onBeforeRouteLeave,
@@ -37,7 +36,7 @@ const setImprest = () => {
   dataFilter.value.page = 1
   imprest.value = !imprest.value
   const is_imprest = imprest.value ? 'all' : 'false'
-  Cookies.set('get-imprest', is_imprest) // all='포함', false=불포함(기본값)
+  localStorage.setItem('get-imprest', is_imprest) // all='포함', false=불포함(기본값)
   fetchProBankTransList({ ...dataFilter.value, is_imprest })
 }
 
@@ -113,7 +112,7 @@ const dataSetup = async (pk: number) => {
   await fetchAllContractors(pk)
   await fetchProBankAccList(pk)
   await fetchAllProBankAccList(pk)
-  const is_imprest = (Cookies.get('get-imprest') as 'all' | 'true' | 'false') ?? 'false'
+  const is_imprest = (localStorage.getItem('get-imprest') as 'all' | 'true' | 'false') ?? 'false'
   await fetchProBankTransList({ project: pk, ...dataFilter.value, is_imprest })
   await fetchProLedgerCalculation(pk)
   proLedgerStore.proBankTransFilter.project = pk
@@ -199,7 +198,7 @@ onBeforeMount(async () => {
     projectId = urlProjectId.value
   }
 
-  imprest.value = Cookies.get('get-imprest') === 'all' // 기본값 false
+  imprest.value = localStorage.getItem('get-imprest') === 'all' // 기본값 false
 
   await fetchProjectAccounts()
 
