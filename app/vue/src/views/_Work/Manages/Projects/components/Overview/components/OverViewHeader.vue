@@ -70,43 +70,45 @@ const addBookMark = () => alert('북마크 추가!! 구현 예정!')
             <CDropdownItem
               v-if="project?.status === '1' && can(PERM.PROJECT_CREATE_SUB)"
               class="form-text"
+              @click="router.push({ name: '프로젝트 - 추가', query: { parent: project?.pk } })"
             >
-              <router-link :to="{ name: '프로젝트 - 추가', query: { parent: project?.pk } }">
+              <span class="text-primary">
                 <v-icon icon="mdi-plus-circle" color="success" size="sm" class="mr-2" />새 하위
                 프로젝트
-              </router-link>
+              </span>
             </CDropdownItem>
             <CDropdownItem
               v-if="can(PERM.PROJECT_CLOSE)"
               class="form-text"
               @click="RefProjectCloseConfirm.callModal()"
             >
-              <router-link to="">
+              <span class="text-primary">
                 <v-icon
                   :icon="project?.status === '1' ? 'mdi-lock' : 'mdi-lock-open'"
                   :color="project?.status === '1' ? 'warning' : 'secondary'"
                   size="sm"
                   class="mr-1"
-                />{{ project?.status === '1' ? '닫기' : '다시 열기' }}
-              </router-link>
+                />
+                {{ project?.status === '1' ? '닫기' : '다시 열기' }}
+              </span>
             </CDropdownItem>
             <CDropdownItem
               v-if="can(PERM.PROJECT_DELETE)"
               class="form-text"
               @click="RefProjectDeleteConfirm.callModal()"
             >
-              <router-link to="">
+              <span class="text-primary">
                 <v-icon icon="mdi-trash-can-outline" color="danger" size="sm" class="mr-1" />삭제
-              </router-link>
+              </span>
             </CDropdownItem>
             <CDropdownItem
               v-if="project?.status === '1'"
               class="form-text"
               @click="router.push({ name: '(설정)' })"
             >
-              <router-link to="">
+              <span class="text-primary">
                 <v-icon icon="mdi-cog" color="secondary" size="sm" class="mr-1" />설정
-              </router-link>
+              </span>
             </CDropdownItem>
           </CDropdownMenu>
         </CDropdown>
