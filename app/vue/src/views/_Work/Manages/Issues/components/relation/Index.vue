@@ -47,9 +47,9 @@ const detailRouteParams = (id: number) => (projId ? { projId, issueId: id } : { 
           v-if="can(PERM.ISSUE_READ)"
           :to="{ name: detailRouteName, params: detailRouteParams(rel.issue.pk) }"
         >
-          {{ rel.issue.tracker }} #{{ rel.issue.pk }}
+          {{ rel.issue.tracker.name }} #{{ rel.issue.pk }}
         </router-link>
-        <span v-else>{{ rel.issue.tracker }} #{{ rel.issue.pk }}</span>
+        <span v-else>{{ rel.issue.tracker.name }} #{{ rel.issue.pk }}</span>
         : {{ rel.issue.subject }}
       </span>
     </CCol>
@@ -84,8 +84,7 @@ const detailRouteParams = (id: number) => (projId ? { projId, issueId: id } : { 
         <v-tooltip activator="parent" location="start">관계 지우기</v-tooltip>
       </v-btn>
       <span v-if="can(PERM.ISSUE_SUB_MANAGE)">
-        <!--        {{ rel }}-->
-        <!--        <IssueDropDown issue="" />-->
+        <IssueDropDown :issue="rel.issue" />
       </span>
     </CCol>
   </CRow>
