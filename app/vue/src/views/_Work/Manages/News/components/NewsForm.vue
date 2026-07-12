@@ -102,7 +102,7 @@ onBeforeMount(() => {
             <CFormCheck
               id="is_important"
               v-model="form.is_important"
-              label="중요 공지 (최상단 고정)"
+              label="중요 공지 (상단 고정)"
             />
           </CCol>
         </CRow>
