@@ -1,5 +1,4 @@
 <script lang="ts" setup>
-import Cookies from 'js-cookie'
 import { ref, watch } from 'vue'
 import { downloadFile } from '@/utils/helper.ts'
 import { AlertSecondary } from '@/utils/cssMixins'
@@ -12,19 +11,16 @@ const props = defineProps({
 
 const refAlertModal = ref()
 
-const noPrice = ref(Boolean(Cookies.get('noPrice')))
+const noPrice = ref(localStorage.getItem('noPrice') === 'true')
 
 watch(noPrice, newVal => {
-  const val = newVal ? '1' : ''
-  Cookies.set('noPrice', val)
+  localStorage.setItem('noPrice', String(newVal))
 })
 
-// const noLate = ref(Boolean(Cookies.get('noLate')) ?? true)
-const noLate = ref(false)
+const noLate = ref(localStorage.getItem('noLate') === 'true')
 
 watch(noLate, newVal => {
-  const val = newVal ? '1' : ''
-  Cookies.set('noLate', val)
+  localStorage.setItem('noLate', String(newVal))
 })
 
 const printBill = () => {
@@ -38,8 +34,8 @@ const printBill = () => {
       const { project, pub_date } = props.printData
       const seq = props.contracts?.join('-')
       const url = '/pdf/bill/'
-      const np = noPrice.value || ''
-      const nl = noLate.value || ''
+      const np = noPrice.value ? '1' : ''
+      const nl = noLate.value ? '1' : ''
       const lastUrl = `${url}?project=${project}&date=${pub_date}&seq=${seq}&np=${np}&nl=${nl}`
       downloadFile(lastUrl, `대금납부_고지서(${props.contracts.length}건).pdf`)
     }
