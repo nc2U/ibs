@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, computed, onBeforeMount, watch } from 'vue'
-import Cookies from 'js-cookie'
 import { pageTitle, navMenu } from '@/views/comDocs/_menu/headermixin'
 import {
   onBeforeRouteUpdate,
@@ -188,7 +187,7 @@ const dataSetup = async (pk: number, caseId?: string | string[]) => {
 
   // workStore 함수가 회사를 변경했다면 다시 원래 회사로 복원
   if (company.value !== targetCompany) {
-    Cookies.set('curr-company', `${targetCompany}`)
+    localStorage.setItem('curr-company', `${targetCompany}`)
     await comStore.fetchCompany(targetCompany)
   }
 
@@ -228,8 +227,8 @@ const comSelect = async (target: number | null, skipClearQuery = false) => {
   if (fController.value) fController.value.resetForm(false)
 
   if (!!target) {
-    // 쿠키 설정 (ContentHeader와 동일한 방식)
-    Cookies.set('curr-company', `${target}`)
+    // 로컬스토리지 설정 (ContentHeader와 동일한 방식)
+    localStorage.setItem('curr-company', `${target}`)
 
     // 회사 변경
     await comStore.fetchCompany(target)

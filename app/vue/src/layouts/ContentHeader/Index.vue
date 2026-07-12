@@ -1,5 +1,4 @@
 <script lang="ts" setup>
-import Cookies from 'js-cookie'
 import { useRoute } from 'vue-router'
 import { useProject } from '@/store/pinia/project'
 import { useCompany } from '@/store/pinia/company'
@@ -30,7 +29,7 @@ const projectStore = useProject()
 
 const comSelect = async (com: number | null) => {
   if (!!com) {
-    Cookies.set('curr-company', `${com}`)
+    localStorage.setItem('curr-company', `${com}`)
     await companyStore.fetchCompany(com)
   } else companyStore.removeCompany()
   emit('com-select', com)
@@ -38,7 +37,7 @@ const comSelect = async (com: number | null) => {
 
 const projSelect = async (proj: number | null) => {
   if (!!proj) {
-    Cookies.set('curr-project', `${proj}`)
+    localStorage.setItem('curr-project', `${proj}`)
     await projectStore.fetchProject(proj)
   } else projectStore.removeProject()
   emit('proj-select', proj)
