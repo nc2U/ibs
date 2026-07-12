@@ -1,5 +1,4 @@
 <script lang="ts" setup>
-import Cookies from 'js-cookie'
 import { ref, computed, onBeforeMount } from 'vue'
 import { useProject } from '@/store/pinia/project'
 import { useProLedger } from '@/store/pinia/proLedger'
@@ -125,7 +124,7 @@ const filename = computed(() => {
 
 const showTab = (num: number) => {
   compName.value = comp[num]
-  Cookies.set('proLedgerStatus', `${num}`)
+  localStorage.setItem('proLedgerStatus', `${num}`)
 }
 
 const setDate = (dt: string) => {
@@ -199,7 +198,7 @@ const loading = ref(true)
 onBeforeMount(async () => {
   await fetchProjectAccounts()
   dataSetup(project.value || projStore.initProjId)
-  compName.value = comp[Number(Cookies.get('proLedgerStatus') ?? 1)]
+  compName.value = comp[Number(localStorage.getItem('proLedgerStatus') ?? 1)]
   loading.value = false
 })
 </script>

@@ -1,10 +1,9 @@
 <script lang="ts" setup>
-import Cookies from 'js-cookie'
 import { ref, watch } from 'vue'
 
-const tabPanePillsActiveKey = ref(Number(Cookies.get('proCashStatus')) || 1)
+const tabPanePillsActiveKey = ref(Number(localStorage.getItem('proLedgerStatus')) || 1)
 
-watch(tabPanePillsActiveKey, nVal => Cookies.set('proCashStatus', String(nVal)))
+watch(tabPanePillsActiveKey, nVal => localStorage.setItem('proLedgerStatus', String(nVal)))
 
 const emit = defineEmits(['tab-select'])
 
