@@ -129,10 +129,17 @@ const getAllowedRoleIdsByProject = (projPk: number) => {
 // 초기화
 // ────────────────────────────────────────────────────
 onBeforeMount(async () => {
-  if (userPk.value) await workStore.fetchMemberList(userPk.value)
   await workStore.fetchAllProjectList()
   await workStore.fetchRoleList()
 })
+
+watch(
+  userPk,
+  async newVal => {
+    if (newVal) await workStore.fetchMemberList(newVal)
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
@@ -186,7 +193,9 @@ onBeforeMount(async () => {
                       :value="role.pk"
                       :id="'user-proj-role-' + role.pk"
                       class="text-left"
-                      :disabled="!getAllowedRoleIdsByProject(mem.project.pk).includes(Number(role.pk))"
+                      :disabled="
+                        !getAllowedRoleIdsByProject(mem.project.pk).includes(Number(role.pk))
+                      "
                     />
                   </div>
 

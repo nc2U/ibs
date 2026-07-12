@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, ref } from 'vue'
+import { computed, onBeforeMount, ref, watch } from 'vue'
 import { onBeforeRouteUpdate, useRoute } from 'vue-router'
 import { useAccount } from '@/store/pinia/account.ts'
 import type { User } from '@/store/types/accounts.ts'
@@ -15,6 +15,11 @@ const user = computed<User | null>(() => accStore.user)
 const route = useRoute()
 
 onBeforeMount(async () => {
+  const savedTab = localStorage.getItem('admin-user-menu-tab') as '일반' | '프로젝트' | null
+  if (savedTab === '일반' || savedTab === '프로젝트') {
+    menu.value = savedTab
+  }
+
   if (route.params.userId) await accStore.fetchUser(Number(route.params.userId))
   else accStore.user = null
 })
@@ -22,6 +27,10 @@ onBeforeMount(async () => {
 onBeforeRouteUpdate(async to => {
   if (to.params.userId) await accStore.fetchUser(Number(to.params.userId))
   else accStore.user = null
+})
+
+watch(menu, newVal => {
+  localStorage.setItem('admin-user-menu-tab', newVal)
 })
 </script>
 
