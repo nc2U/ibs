@@ -1,12 +1,19 @@
 from django.db import models
 
+UNIT_SORT_CHOICES = (
+    ('1', '공동주택'),
+    ('2', '오피스텔'),
+    ('3', '숙박시설'),
+    ('4', '지식산업센터'),
+    ('5', '근린생활시설'),
+    ('6', '기타'),
+)
+
 
 class UnitType(models.Model):
     project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트', related_name='types')
     main_or_sub = models.CharField('종류', max_length=1, choices=(('1', '메인유닛'), ('2', '부대시설')), default='1')
-    SORT_CHOICES = (('1', '공동주택'), ('2', '오피스텔'), ('3', '숙박시설'),
-                    ('4', '지식산업센터'), ('5', '근린생활시설'), ('6', '기타'))
-    sort = models.CharField('타입종류', max_length=1, choices=SORT_CHOICES)
+    sort = models.CharField('타입종류', max_length=1, choices=UNIT_SORT_CHOICES)
     name = models.CharField('타입명칭', max_length=10, db_index=True)
     color = models.CharField('타입색상', max_length=20)
     actual_area = models.DecimalField('전용면적(㎡)', max_digits=7, decimal_places=4, null=True, blank=True)
@@ -28,7 +35,7 @@ class UnitType(models.Model):
 
 class UnitFloorType(models.Model):  # 층별 타입
     project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트', related_name='floors')
-    sort = models.CharField('타입종류', max_length=1, choices=UnitType.SORT_CHOICES)
+    sort = models.CharField('타입종류', max_length=1, choices=UNIT_SORT_CHOICES)
     start_floor = models.SmallIntegerField('시작 층')
     end_floor = models.SmallIntegerField('종료 층')
     extra_cond = models.CharField('방향/위치', max_length=20, blank=True,
@@ -39,7 +46,7 @@ class UnitFloorType(models.Model):  # 층별 타입
         return self.alias_name
 
     class Meta:
-        ordering = ['-project', 'sort', '-end_floor']
+        ordering = ['-project__id', 'sort', '-end_floor']
         verbose_name = '02. 층별 조건'
         verbose_name_plural = '02. 층별 조건'
 
@@ -53,7 +60,7 @@ class KeyUnit(models.Model):
         return f'{self.unit_code}'
 
     class Meta:
-        ordering = ['id', '-project']
+        ordering = ['-project', 'id']
         verbose_name = '03. 계약 유닛'
         verbose_name_plural = '03. 계약 유닛'
 
@@ -85,7 +92,9 @@ class HouseUnit(models.Model):
     hold_reason = models.CharField('홀딩 사유', max_length=100, blank=True)
 
     def __str__(self):
-        return f'{self.building_unit}-{self.name}'
+        if self.name:
+            return f'{self.building_unit}-{self.name}'
+        return f'{self.building_unit}'
 
     class Meta:
         ordering = ['-building_unit__project', 'building_unit', '-floor_no', 'bldg_line']
@@ -96,10 +105,10 @@ class HouseUnit(models.Model):
 class OptionItem(models.Model):
     project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트')
     types = models.ManyToManyField('UnitType', verbose_name='타입구분')
-    opt_code = models.CharField('품목코드', max_length=20, blank=True, null=True)
+    opt_code = models.CharField('품목코드', max_length=20, blank=True)
     opt_name = models.CharField('품목이름', max_length=100, db_index=True)
-    opt_desc = models.CharField('세부옵션', max_length=200, blank=True, null=True)
-    opt_maker = models.CharField('제조사', max_length=20, blank=True, null=True)
+    opt_desc = models.CharField('세부옵션', max_length=200, blank=True)
+    opt_maker = models.CharField('제조사', max_length=20, blank=True)
     opt_price = models.PositiveIntegerField(verbose_name='옵션가격')
     opt_deposit = models.PositiveIntegerField('계약금', null=True, blank=True)
     opt_balance = models.PositiveIntegerField('잔금', null=True, blank=True)

@@ -55,7 +55,7 @@ class KeyUnitAdmin(ImportExportMixin, admin.ModelAdmin):
     list_filter = ('project', 'unit_type', HasContractFilter)
 
 
-class BuindingUnitAdmin(ImportExportMixin, admin.ModelAdmin):
+class BuildingUnitAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('id', 'project', 'name')
     list_display_links = ('project',)
     list_editable = ('name',)
@@ -83,6 +83,6 @@ class OptionItemAdmin(ImportExportMixin, admin.ModelAdmin):
 admin.site.register(UnitType, UnitTypeAdmin)
 admin.site.register(UnitFloorType, UnitFloorTypeAdmin)
 admin.site.register(KeyUnit, KeyUnitAdmin)
-admin.site.register(BuildingUnit, BuindingUnitAdmin)
+admin.site.register(BuildingUnit, BuildingUnitAdmin)
 admin.site.register(HouseUnit, HouseUnitAdmin)
 admin.site.register(OptionItem, OptionItemAdmin)

@@ -4,14 +4,14 @@ from django.apps import apps
 from django.core.exceptions import ValidationError
 from django.db import models
 
-from items.models import UnitType
+from items.models import UnitType, UNIT_SORT_CHOICES
 
 logger = logging.getLogger(__name__)
 
 
 class InstallmentPaymentOrder(models.Model):  # 분할 납부 차수 등록
     project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트')
-    type_sort = models.CharField('타입종류', max_length=1, choices=UnitType.SORT_CHOICES, default='1')
+    type_sort = models.CharField('타입종류', max_length=1, choices=UNIT_SORT_CHOICES, default='1')
     PAY_SORT_CHOICES = (('1', '계약금'), ('2', '중도금'), ('3', '잔금'), ('4', '계약금 정산'), ('5', '미납 연체료'),
                         ('6', '기타 부담금'), ('7', '제세 공과금'), ('8', '후불 이자'), ('9', '업무 대행비'))
     pay_sort = models.CharField('종류', max_length=1, choices=PAY_SORT_CHOICES, default='1')
