@@ -238,7 +238,7 @@ onBeforeRouteUpdate(async to => {
               아바타
             </CCardHeader>
             <CCardBody>
-              <CRow class="pt-2 mb-3">
+              <CRow class="pt-3 pb-4">
                 <CFormLabel for="avatar" class="col-sm-3 col-form-label"></CFormLabel>
                 <CCol sm="9">
                   <AvatarInput
@@ -325,14 +325,14 @@ onBeforeRouteUpdate(async to => {
                 <CFormLabel class="col-sm-3 col-form-label">회의 알림 설정</CFormLabel>
                 <CCol sm="9" class="pt-2">
                   <CRow>
-                    <CCol xs="12" class="mb-3">
+                    <CCol xs="12" class="mb-2">
                       <CFormCheck
                         v-model="form.meeting_created_notification"
                         id="meeting_created_notification"
                         label="회의록 등록 시 알림 메일 수신"
                       />
                     </CCol>
-                    <CCol xs="12" class="mb-3">
+                    <CCol xs="12" class="mb-2">
                       <CFormCheck
                         v-model="form.meeting_confirmed_notification"
                         id="meeting_confirmed_notification"
@@ -371,7 +371,7 @@ onBeforeRouteUpdate(async to => {
                         label="내가 생성한 업무 자동 지켜보기 (모니터링)"
                       />
                     </CCol>
-                    <CCol xs="12" class="mb-3">
+                    <CCol xs="12" class="mb-2">
                       <CFormCheck
                         v-model="form.auto_watch_assigned"
                         id="auto_watch_assigned"
