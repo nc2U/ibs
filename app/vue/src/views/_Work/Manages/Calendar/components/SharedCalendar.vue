@@ -179,7 +179,7 @@ const calendarOptions = computed<CalendarOptions>(() => ({
   weekends: true,
   selectable: true,
   firstDay: 1,
-  height: 630,
+  height: 'auto',
   showNonCurrentDates: false,
   events: calendarEvents.value,
   eventDidMount: handleEventDidMount,
