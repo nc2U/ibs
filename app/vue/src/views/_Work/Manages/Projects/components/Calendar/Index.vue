@@ -67,7 +67,7 @@ onBeforeMount(async () => {
         <CCol>
           <h5>
             <v-icon
-              icon="mdi-calendar-account"
+              icon="mdi-calendar-clock"
               color="green-darken-1"
               size="small"
               class="mr-2"

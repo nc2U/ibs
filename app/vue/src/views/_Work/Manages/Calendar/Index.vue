@@ -59,7 +59,7 @@ const summary = computed(() => {
       <CRow class="py-2">
         <CCol>
           <h5>
-            <v-icon icon="mdi-calendar-account" color="primary" size="small" class="mr-2" />캘린더
+            <v-icon icon="mdi-calendar-clock" color="primary" size="small" class="mr-2" />캘린더
           </h5>
         </CCol>
       </CRow>
