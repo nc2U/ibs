@@ -10,7 +10,8 @@ from ibs.models import ProjectAccountD2, ProjectAccountD3
 from ledger.models import ProjectAccount
 from notice.models import SalesBillIssue
 from project.models import (Project, ProjectIncBudget, ProjectOutBudget, Site, SiteInfoFile,
-                            SiteOwner, SiteOwnshipRelationship, SiteContract, SiteContractFile)
+                            SiteOwner, SiteOwnshipRelationship, SiteContract,
+                            SiteContractFile, PROJECT_KIND_CHOICES)
 from work.models.project import IssueProject, Module
 
 
@@ -29,7 +30,7 @@ class SallesBillInProjectSerializer(serializers.ModelSerializer):
 class ProjectSerializer(serializers.ModelSerializer):
     company = serializers.SerializerMethodField(read_only=True)
     issue_project = serializers.PrimaryKeyRelatedField(read_only=True)
-    kind = serializers.ChoiceField(choices=Project.KIND_CHOICES)
+    kind = serializers.ChoiceField(choices=PROJECT_KIND_CHOICES)
     kind_desc = serializers.CharField(source='get_kind_display', read_only=True)
     salesbillissue = SallesBillInProjectSerializer(read_only=True)
 

@@ -9,6 +9,7 @@ import hashlib
 import os
 import uuid
 
+import magic
 from django.utils import timezone
 
 
@@ -218,24 +219,29 @@ def get_project_file_path(instance, filename):
     """project 앱 파일 업로드 경로"""
     return get_upload_path(instance, filename, 'project', 'files')
 
-# # 레거시 호환성을 위한 래퍼 함수들
-# def legacy_safe_upload_path(instance, filename, base_dir, sub_dir=''):
-#     """
-#     기존 함수들과의 호환성을 위한 래퍼 함수
-#
-#     Args:
-#         instance: 모델 인스턴스
-#         filename: 원본 파일명
-#         base_dir: 기본 디렉토리
-#         sub_dir: 서브 디렉토리
-#
-#     Returns:
-#         str: 안전한 업로드 경로
-#     """
-#     safe_filename = generate_safe_filename(filename)
-#     date_path = timezone.now().strftime('%Y/%m')
-#
-#     if sub_dir:
-#         return os.path.join(base_dir, sub_dir, date_path, safe_filename)
-#     else:
-#         return os.path.join(base_dir, date_path, safe_filename)
+
+def populate_file_meta(instance, file_field='file', name_field='file_name', type_field='file_type',
+                       size_field='file_size') -> None:
+    """
+    파일/이미지 모델 인스턴스의 파일명, 타입, 크기 메타데이터를 저장 전에 자동으로 채우는 유틸리티 함수.
+    """
+    file_obj = getattr(instance, file_field, None)
+    if not file_obj:
+        return
+
+    original_name = getattr(file_obj, '_name', None) or getattr(file_obj, 'name', None)
+    if original_name:
+        filename = os.path.basename(original_name)
+    else:
+        filename = file_obj.name.split('/')[-1]
+
+    setattr(instance, name_field, filename)
+
+    mime = magic.Magic(mime=True)
+    file_pos = file_obj.tell()  # 현재 파일 커서 위치 백업
+    file_type = mime.from_buffer(file_obj.read(2048))  # 2048바이트면 충분
+    file_obj.seek(file_pos)  # 원래 위치로 복구
+    file_size = file_obj.size
+
+    setattr(instance, type_field, file_type)
+    setattr(instance, size_field, file_size)

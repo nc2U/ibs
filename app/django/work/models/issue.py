@@ -1,9 +1,8 @@
-import magic
 from django.conf import settings
 from django.db import models
 
 from _utils.file_cleanup import file_cleanup_signals
-from _utils.file_upload import get_work_file_path
+from _utils.file_upload import get_work_file_path, populate_file_meta
 from work.models.project import IssueProject
 
 
@@ -97,11 +96,7 @@ class IssueFile(models.Model):
         return settings.MEDIA_URL
 
     def save(self, *args, **kwargs):
-        if self.file:
-            self.file_name = self.file.name.split('/')[-1]
-            mime = magic.Magic(mime=True)
-            self.file_type = mime.from_buffer(self.file.read())
-            self.file_size = self.file.size
+        populate_file_meta(self)
         super().save(*args, **kwargs)
 
 

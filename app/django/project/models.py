@@ -1,11 +1,8 @@
-import os
-
-import magic
 from django.conf import settings
 from django.db import models
 
 from _utils.file_cleanup import file_cleanup_signals
-from _utils.file_upload import get_site_file_path
+from _utils.file_upload import get_site_file_path, populate_file_meta
 
 PROJECT_KIND_CHOICES = (
     ('1', '공동주택(아파트)'),
@@ -19,27 +16,7 @@ PROJECT_KIND_CHOICES = (
 )
 
 
-def _populate_file_meta(instance) -> None:
-    """파일 메타(이름/타입/사이즈)를 채우는 공통 유틸.
-    SiteInfoFile, SiteContractFile 양쪽에서 공유합니다.
-    """
-    if not instance.file:
-        return
-    original_name = getattr(instance.file, '_name', None) or getattr(instance.file, 'name', None)
-    if original_name:
-        instance.file_name = os.path.basename(original_name)
-    else:
-        instance.file_name = instance.file.name.split('/')[-1]
-
-    mime = magic.Magic(mime=True)
-    file_pos = instance.file.tell()        # 현재 파일 커서 위치 백업
-    instance.file_type = mime.from_buffer(instance.file.read(2048))  # 2048바이트면 충분
-    instance.file.seek(file_pos)           # 원래 위치로 복구
-    instance.file_size = instance.file.size
-
-
 class Project(models.Model):
-    KIND_CHOICES = PROJECT_KIND_CHOICES
     issue_project = models.OneToOneField('work.IssueProject', on_delete=models.PROTECT, verbose_name="업무 프로젝트")
     name = models.CharField('프로젝트명', max_length=30, unique=True, db_index=True)
     order = models.PositiveSmallIntegerField('정렬순서', default=100)
@@ -175,7 +152,7 @@ class SiteInfoFile(models.Model):
         return self.file_name
 
     def save(self, *args, **kwargs):
-        _populate_file_meta(self)
+        populate_file_meta(self)
         super().save(*args, **kwargs)
 
 
@@ -322,7 +299,7 @@ class SiteContractFile(models.Model):
         return self.file_name
 
     def save(self, *args, **kwargs):
-        _populate_file_meta(self)
+        populate_file_meta(self)
         super().save(*args, **kwargs)
 
 

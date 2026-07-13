@@ -1,13 +1,11 @@
-import os
 from datetime import datetime, timedelta
 
-import magic
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
 from _utils.file_cleanup import file_cleanup_signals
-from _utils.file_upload import get_docs_file_path, get_docs_image_path, get_letter_pdf_path
+from _utils.file_upload import get_docs_file_path, get_docs_image_path, get_letter_pdf_path, populate_file_meta
 from .courts import COURT_CHOICES
 
 DOC_TYPE_CHOICES = (('1', '일반문서'), ('2', '소송기록'))
@@ -121,18 +119,7 @@ class File(models.Model):
 
     def save(self, *args, **kwargs):
         if self.file and not self.file_name:
-            # Preserve original filename before upload_to function changes it
-            original_name = getattr(self.file, '_name', None) or getattr(self.file, 'name', None)
-            if original_name:
-                self.file_name = os.path.basename(original_name)
-            else:
-                self.file_name = self.file.name.split('/')[-1]
-
-            mime = magic.Magic(mime=True)
-            file_pos = self.file.tell()  # 현재 파일 커서 위치 백업
-            self.file_type = mime.from_buffer(self.file.read(2048))  # 2048바이트 정도면 충분
-            self.file.seek(file_pos)  # 원래 위치로 복구
-            self.file_size = self.file.size
+            populate_file_meta(self)
         super().save(*args, **kwargs)
 
 
@@ -153,12 +140,8 @@ class Image(models.Model):
 
     def save(self, *args, **kwargs):
         if self.image and not self.image_name:
-            self.image_name = self.image.name.split('/')[-1]
-            mime = magic.Magic(mime=True)
-            image_pos = self.image.tell()  # 현재 이미지 파일 커서 위치 백업
-            self.image_type = mime.from_buffer(self.image.read(2048))  # 2048바이트 정도면 충분
-            self.image.seek(image_pos)  # 원래 위치로 복구
-            self.image_size = self.image.size
+            populate_file_meta(self, file_field='image', name_field='image_name', type_field='image_type',
+                               size_field='image_size')
         super().save(*args, **kwargs)
 
 

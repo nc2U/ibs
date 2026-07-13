@@ -1,11 +1,10 @@
 from datetime import datetime, timedelta
 
-import magic
 from django.conf import settings
 from django.db import models
 
 from _utils.file_cleanup import file_cleanup_signals
-from _utils.file_upload import get_news_file_path
+from _utils.file_upload import get_news_file_path, populate_file_meta
 from work.models.project import IssueProject, Member
 
 
@@ -48,13 +47,7 @@ class NewsFile(models.Model):
         return settings.MEDIA_URL
 
     def save(self, *args, **kwargs):
-        if self.file:
-            self.file_name = self.file.name.split('/')[-1]
-            mime = magic.Magic(mime=True)
-            file_pos = self.file.tell()  # 현재 파일 커서 위치 백업
-            self.file_type = mime.from_buffer(self.file.read(2048))  # 2048바이트 정도면 충분
-            self.file.seek(file_pos)  # 원래 위치로 복구
-            self.file_size = self.file.size
+        populate_file_meta(self)
         super().save(*args, **kwargs)
 
 

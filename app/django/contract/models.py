@@ -1,14 +1,12 @@
 import logging
-import os
 
-import magic
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 
 from _utils.contract_price import get_contract_payment_plan
 from _utils.file_cleanup import file_cleanup_signals
-from _utils.file_upload import get_contract_file_path, get_upload_path
+from _utils.file_upload import get_contract_file_path, get_upload_path, populate_file_meta
 from payment.models import InstallmentPaymentOrder
 
 logger = logging.getLogger(__name__)
@@ -449,19 +447,7 @@ class ContractFile(models.Model):
         return self.file_name
 
     def save(self, *args, **kwargs):
-        if self.file:
-            # Preserve original filename before upload_to function changes it
-            original_name = getattr(self.file, '_name', None) or getattr(self.file, 'name', None)
-            if original_name:
-                self.file_name = os.path.basename(original_name)
-            else:
-                self.file_name = self.file.name.split('/')[-1]
-
-            mime = magic.Magic(mime=True)
-            file_pos = self.file.tell()  # 현재 파일 커서 위치 백업
-            self.file_type = mime.from_buffer(self.file.read(2048))  # 2048바이트 정도면 충분
-            self.file.seek(file_pos)  # 원래 위치로 복구
-            self.file_size = self.file.size
+        populate_file_meta(self)
         super().save(*args, **kwargs)
 
 
@@ -539,17 +525,7 @@ class ContractDocumentFile(models.Model):
         return f'{self.contract_document} - {self.file_name}'
 
     def save(self, *args, **kwargs):
-        if self.file:
-            original_name = getattr(self.file, '_name', None) or getattr(self.file, 'name', None)
-            if original_name:
-                self.file_name = os.path.basename(original_name)
-            else:
-                self.file_name = self.file.name.split('/')[-1]
-            mime = magic.Magic(mime=True)
-            file_pos = self.file.tell()
-            self.file_type = mime.from_buffer(self.file.read(2048))
-            self.file.seek(file_pos)
-            self.file_size = self.file.size
+        populate_file_meta(self)
         super().save(*args, **kwargs)
 
     class Meta:
