@@ -130,7 +130,8 @@ class Profile(models.Model):
     # Notification & Watcher Preferences
     auto_watch_created = models.BooleanField('내가 생성한 업무 자동 모니터링', default=True)
     auto_watch_assigned = models.BooleanField('나에게 할당된 업무 자동 모니터링', default=True)
-    meeting_notification = models.BooleanField('회의록 참석 시 알림 수신', default=True)
+    meeting_created_notification = models.BooleanField('회의록 등록 시 알림 수신', default=True)
+    meeting_confirmed_notification = models.BooleanField('회의록 확정 시 알림 수신', default=True)
     #
     like_posts = models.ManyToManyField(Post, blank=True, related_name='post_likes')
     like_comments = models.ManyToManyField(Comment, blank=True, related_name='comment_likes')

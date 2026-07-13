@@ -108,10 +108,7 @@ class MeetingViewSet(viewsets.ModelViewSet):
         instance.is_confirmed = not instance.is_confirmed
         instance.save()
 
-        # 필요 시 알림 로직 (상태 변화와 별개로 처리)
-        from work.services.work_services import MeetingService
-        MeetingService.notify_meeting_changes(instance, created=False, user=request.user, old_status=None)
-
+        # 필요 시 알림 로직 (상태 변화와 별개로 처리 - signals.py에서 자동 처리됨)
         return Response({'is_confirmed': instance.is_confirmed})
 
     def perform_create(self, serializer):
