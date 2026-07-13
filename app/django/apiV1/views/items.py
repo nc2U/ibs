@@ -8,8 +8,9 @@ from rest_framework import viewsets
 from items.models import UnitType, UnitFloorType, KeyUnit, BuildingUnit, HouseUnit, OptionItem
 from ..pagination import PageNumberPaginationFifty, PageNumberPaginationThreeHundred, PageNumberPaginationThreeThousand
 from apiV1.permissions.auth_perms import permissions, IsProjectStaffOrReadOnly
-from ..serializers.items import UnitTypeSerializer, UnitFloorTypeSerializer, KeyUnitSerializer, BuildingUnitSerializer, \
-    HouseUnitSerializer, AllHouseUnitSerializer, HouseUnitSummarySerializer, OptionItemSerializer
+from ..serializers.items import (UnitTypeSerializer, UnitFloorTypeSerializer, KeyUnitSerializer,
+                                 BuildingUnitSerializer, HouseUnitSerializer, AllHouseUnitSerializer,
+                                 HouseUnitSummarySerializer, OptionItemSerializer)
 
 TODAY = datetime.today().strftime('%Y-%m-%d')
 
@@ -70,26 +71,33 @@ class AvailableHouseUnitViewSet(HouseUnitViewSet):
     pagination_class = PageNumberPaginationThreeHundred
 
     def get_queryset(self):
-        houseunit = HouseUnit.objects.all()
-        queryset = houseunit
-
+        queryset = HouseUnit.objects.all()
         project = self.request.query_params.get('project', None)
         unit_type = self.request.query_params.get('unit_type', None)
 
         if project and unit_type:
-            queryset = houseunit.filter(building_unit__project=project, unit_type=unit_type, key_unit__isnull=True)
+            queryset = queryset.filter(
+                building_unit__project=project, unit_type=unit_type, key_unit__isnull=True
+            )
 
         contract = self.request.query_params.get('contract', None)
         if contract is not None:
-            queryset = houseunit.filter(
+            queryset = HouseUnit.objects.filter(
                 Q(building_unit__project=project, unit_type=unit_type, key_unit__isnull=True) |
-                Q(key_unit__contract=contract))
+                Q(key_unit__contract=contract)
+            )
         return queryset
 
 
 class AllHouseUnitViewSet(HouseUnitViewSet):
     serializer_class = AllHouseUnitSerializer
     pagination_class = PageNumberPaginationThreeThousand
+
+    def get_queryset(self):
+        return HouseUnit.objects.select_related(
+            'unit_type',
+            'key_unit__contract__contractor',
+        ).all()
 
 
 class HouseUnitSummaryViewSet(viewsets.ModelViewSet):
