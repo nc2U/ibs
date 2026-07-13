@@ -279,7 +279,7 @@ const refConfirmModal = ref()
                 </v-chip>
                 <v-chip
                   v-if="meeting.is_confirmed"
-                  color="primary"
+                  color="success"
                   size="x-small"
                   variant="flat"
                   class="ml-1"
