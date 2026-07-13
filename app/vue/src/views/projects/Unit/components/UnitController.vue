@@ -2,7 +2,7 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { useProjectData } from '@/store/pinia/project_data'
 import { type BuildingUnit } from '@/store/types/project'
-import { AlertLight, btnLight } from '@/utils/cssMixins'
+import { AlertLight } from '@/utils/cssMixins'
 import { write_project } from '@/utils/pageAuth'
 import FormModal from '@/components/Modals/FormModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
@@ -269,8 +269,8 @@ const modalAction = () => {
           </CRow>
         </CModalBody>
         <CModalFooter>
-          <v-btn :color="btnLight" @click="refBuildForm.close()"> 닫기</v-btn>
-          <v-btn type="submit" color="primary">저장</v-btn>
+          <v-btn type="submit" size="small" color="primary">저장</v-btn>
+          <v-btn color="light" size="small" @click="refBuildForm.close()" flat> 닫기</v-btn>
         </CModalFooter>
       </CForm>
     </template>
@@ -283,8 +283,9 @@ const modalAction = () => {
         <strong>
           [{{ bldgName }}동] ({{ form.type }} 타입) {{ form.line }}호 라인, 층<span
             v-if="form.maxFloor"
-            >범위</span
           >
+            범위
+          </span>
           : {{ form.minFloor }}층
           <span v-if="form.maxFloor">- {{ form.maxFloor }}층</span>
         </strong>
