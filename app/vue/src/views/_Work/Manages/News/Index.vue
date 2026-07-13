@@ -75,7 +75,7 @@ onBeforeMount(async () => {
     <template v-slot:default>
       <CRow class="py-2">
         <CCol>
-          <h5><v-icon icon="mdi-bullhorn" color="primary" size="small" class="mr-2" />공지</h5>
+          <h5><v-icon icon="mdi-message-badge" color="primary" size="small" class="mr-2" />공지</h5>
         </CCol>
 
         <CCol class="text-right">

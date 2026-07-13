@@ -153,7 +153,7 @@ onBeforeMount(async () => {
       <CRow class="py-2">
         <CCol>
           <h5>
-            <v-icon icon="mdi-file-document-multiple" color="green-darken-1" class="mr-2" />
+            <v-icon icon="mdi-text-box-search-outline" color="green-darken-1" class="mr-2" />
             문서
           </h5>
         </CCol>
