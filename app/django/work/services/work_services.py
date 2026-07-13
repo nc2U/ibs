@@ -1,3 +1,4 @@
+from django.db import transaction
 from work.models.logging import ActivityLogEntry, IssueLogEntry
 from work.tasks import send_issue_mail_task, send_meeting_mail_task
 from rest_framework.exceptions import PermissionDenied
@@ -16,7 +17,7 @@ class MeetingService:
     @staticmethod
     def send_meeting_mail(instance, user, mail_type):
         """회의 관련 메일 발송 유틸리티 (Celery 비동기 호출)"""
-        send_meeting_mail_task.delay(instance.pk, user.pk, mail_type)
+        transaction.on_commit(lambda: send_meeting_mail_task.delay(instance.pk, user.pk, mail_type))
 
 
 class IssueService:

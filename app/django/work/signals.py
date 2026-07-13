@@ -23,7 +23,7 @@ def meeting_track_changes(sender, instance, **kwargs):
 
 @receiver(post_save, sender=Meeting)
 def meeting_log_changes(sender, instance, created, **kwargs):
-    user = instance.updater if not created else instance.creator
+    user = (instance.updater if not created else instance.creator) or instance.creator
     old_is_confirmed = getattr(instance, 'old_is_confirmed', None)
 
     if created:

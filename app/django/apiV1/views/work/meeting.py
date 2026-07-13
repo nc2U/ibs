@@ -106,9 +106,9 @@ class MeetingViewSet(viewsets.ModelViewSet):
 
         # 토글: 확정 여부 반전
         instance.is_confirmed = not instance.is_confirmed
+        instance.updater = request.user
         instance.save()
 
-        # 필요 시 알림 로직 (상태 변화와 별개로 처리 - signals.py에서 자동 처리됨)
         return Response({'is_confirmed': instance.is_confirmed})
 
     def perform_create(self, serializer):

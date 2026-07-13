@@ -1,0 +1,117 @@
+{% load markdown_filters %}
+
+<style>
+    .logo-light { display: block !important; }
+    .logo-dark { display: none !important; }
+    @media (prefers-color-scheme: dark) {
+        .logo-light { display: none !important; }
+        .logo-dark { display: block !important; }
+    }
+    [data-ogsc] .logo-light { display: none !important; }
+    [data-ogsc] .logo-dark { display: block !important; }
+</style>
+
+<table width="720" border="0" cellpadding="0" cellspacing="0"
+       style="border-left: 1px solid rgb(226,226,225);border-right: 1px solid rgb(226,226,225);background-color: rgb(255,255,255);border-top:10px solid #28a745; border-bottom:5px solid #28a745;border-collapse: collapse;">
+  <tbody>
+  <tr>
+    <td colspan="2"
+        style="font-size:12px;padding:20px 30px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
+      <img class="logo-light" src="{{ settings.DOMAIN_HOST }}/static/ibs/images/logo.png" alt="Light Logo" height="35" style="display:block;">
+      <img class="logo-dark" src="{{ settings.DOMAIN_HOST }}/static/ibs/images/logo-dark.png" alt="Dark Logo" height="35" style="display:none;">
+      <p style="margin-top: 25px;">[{{ user.username }}]님이 <b>{{ instance.project }}</b> 프로젝트의 회의록 <b>"{{ instance.title }}"</b>을(를) <b>확정</b> 하였습니다.</p>
+    </td>
+  </tr>
+  <tr style="border-top:1px solid #999; border-bottom:1px solid #999; background: #eee; height: 50px;">
+    <td width="120"
+        style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
+      <strong>프로젝트</strong>
+    </td>
+    <td width="600"
+        style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
+      <strong>「{{ instance.project }}」</strong>
+    </td>
+  </tr>
+  <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2; height: 46px;">
+    <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
+      <strong>회의 제목</strong>
+    </td>
+    <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
+      <strong>{{ instance.title }}</strong>
+    </td>
+  </tr>
+  <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
+    <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
+      <strong>회의 일시</strong>
+    </td>
+    <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
+      <span>{{ instance.meeting_date|date:"Y-m-d H:i" }}</span>
+    </td>
+  </tr>
+  {% if instance.content %}
+  <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2; background: #fdfdfd;">
+    <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
+      <strong>회의 내용</strong>
+    </td>
+    <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
+      <span>{{ instance.content|markdown|safe }}</span>
+    </td>
+  </tr>
+  {% endif %}
+  {% if instance.decisions %}
+  <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2; background: #f9fbfd;">
+    <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
+      <strong>주요 결정 사항</strong>
+    </td>
+    <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
+      <span>{{ instance.decisions|markdown|safe }}</span>
+    </td>
+  </tr>
+  {% endif %}
+  {% if instance.action_items %}
+  <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2; background: #fcfcfc;">
+    <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
+      <strong>후속 조치 사항</strong>
+    </td>
+    <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
+      <span>{{ instance.action_items|markdown|safe }}</span>
+    </td>
+  </tr>
+  {% endif %}
+  <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
+    <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
+      <strong>참석자</strong>
+    </td>
+    <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
+      <span>
+        {% for attendee in instance.attendees.all %}
+          {{ attendee.username }}{% if not forloop.last %}, {% endif %}
+        {% endfor %}
+        {% if instance.other_attendees %}
+          {% if instance.attendees.all %}, {% endif %}{{ instance.other_attendees }} (외부)
+        {% endif %}
+      </span>
+    </td>
+  </tr>
+  <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
+    <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
+      <strong>링크</strong>
+    </td>
+    <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
+      <span>
+        <a href="{{ settings.DOMAIN_HOST }}/#/work/project/redmine/meeting/{{ instance.pk }}">
+          회의록 - {{ instance.title }}
+        </a>
+      </span>
+    </td>
+  </tr>
+  <tr style="border-top:1px solid #e2e2e2; border-bottom:1px solid #e2e2e2;">
+    <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
+      <strong>확정자</strong>
+    </td>
+    <td style="padding:10px 20px;font-family: Arial,sans-serif;color: rgb(0,0,0);font-size: 14px;line-height: 20px;">
+      <span><a href="mailto:{{ user.email }}">{{ user.username }} &lt;{{ user.email }}&gt;</a></span>
+    </td>
+  </tr>
+  </tbody>
+</table>
