@@ -3,6 +3,8 @@ from work.models.logging import ActivityLogEntry, IssueLogEntry
 from work.tasks import send_issue_mail_task, send_meeting_mail_task
 from rest_framework.exceptions import PermissionDenied
 
+from work.models.issue import Issue
+
 
 class MeetingService:
     @staticmethod
@@ -26,7 +28,6 @@ class IssueService:
         """이슈 저장 전 변경사항 추적"""
         if instance.pk:
             try:
-                from work.models.issue import Issue
                 old_instance = Issue.objects.get(pk=instance.pk)
                 fields_to_track = [
                     'project', 'tracker', 'status', 'priority', 'subject',
