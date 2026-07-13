@@ -60,7 +60,9 @@ class StatusOutBudgetViewSet(ProjectOutBudgetViewSet):
 
         if use_ledger:
             # ledger 기반: account가 있고, depth=2, is_category_only=False인 예산만
-            queryset = queryset.select_related('account', 'account__parent').filter(
+            queryset = queryset.select_related(
+                'account', 'account__parent', 'account_d2', 'account_d3'
+            ).filter(
                 account__isnull=False,
                 account__depth=2,
                 account__category='expense',
@@ -69,7 +71,7 @@ class StatusOutBudgetViewSet(ProjectOutBudgetViewSet):
         return queryset
 
 
-class ExecAmountToBudgetViewSet(viewsets.ModelViewSet):
+class ExecAmountToBudgetViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = LedgerExecAmountToBudgetSerializer
     pagination_class = PageNumberPaginationFifty
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
@@ -95,19 +97,25 @@ class ExecAmountToBudgetViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(project_id=project)
 
         # 출금 거래만 (sort_id=2)
-        valid_transaction_ids = ProjectBankTransaction.objects.filter(
+        valid_transactions = ProjectBankTransaction.objects.filter(
             sort_id=2,
             deal_date__lte=date
-        ).values_list('transaction_id', flat=True)
+        )
+        if project:
+            valid_transactions = valid_transactions.filter(project_id=project)
+        valid_transaction_ids = valid_transactions.values_list('transaction_id', flat=True)
 
         queryset = queryset.filter(transaction_id__in=valid_transaction_ids)
 
         # 당월 거래 ID
-        month_transaction_ids = list(ProjectBankTransaction.objects.filter(
+        month_transactions = ProjectBankTransaction.objects.filter(
             sort_id=2,
             deal_date__gte=month_first,
             deal_date__lte=date
-        ).values_list('transaction_id', flat=True))
+        )
+        if project:
+            month_transactions = month_transactions.filter(project_id=project)
+        month_transaction_ids = month_transactions.values_list('transaction_id', flat=True)
 
         return queryset.values('account').annotate(
             all_sum=Sum('amount'),
@@ -118,7 +126,7 @@ class ExecAmountToBudgetViewSet(viewsets.ModelViewSet):
         )
 
 
-class TotalSiteAreaViewSet(viewsets.ModelViewSet):
+class TotalSiteAreaViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = TotalSiteAreaSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
     filterset_fields = ('project',)
@@ -149,7 +157,7 @@ class AllSiteViewSet(SiteViewSet):
     pagination_class = PageNumberPaginationFiveHundred
 
 
-class TotalOwnerAreaViewSet(viewsets.ModelViewSet):
+class TotalOwnerAreaViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = TotalOwnerAreaSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
     filterset_fields = ('project',)
@@ -223,7 +231,7 @@ class SiteRelationViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
 
 
-class TotalContractedAreaViewSet(viewsets.ModelViewSet):
+class TotalContractedAreaViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = TotalContractedAreaSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
     filterset_fields = ('project',)

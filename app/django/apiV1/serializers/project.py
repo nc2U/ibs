@@ -1,5 +1,3 @@
-import os
-
 from django.db import transaction
 from rest_framework import serializers
 
@@ -16,7 +14,7 @@ from work.models.project import IssueProject, Module
 
 
 # Project --------------------------------------------------------------------------
-class SallesBillInProjectSerializer(serializers.ModelSerializer):
+class SalesBillInProjectSerializer(serializers.ModelSerializer):
     creator = SimpleUserSerializer(read_only=True)
 
     class Meta:
@@ -32,7 +30,7 @@ class ProjectSerializer(serializers.ModelSerializer):
     issue_project = serializers.PrimaryKeyRelatedField(read_only=True)
     kind = serializers.ChoiceField(choices=PROJECT_KIND_CHOICES)
     kind_desc = serializers.CharField(source='get_kind_display', read_only=True)
-    salesbillissue = SallesBillInProjectSerializer(read_only=True)
+    salesbillissue = SalesBillInProjectSerializer(read_only=True)
 
     # Write-only fields for unified IssueProject creation
     sub_name = serializers.CharField(write_only=True, required=False)
@@ -361,15 +359,7 @@ class SiteSerializer(serializers.ModelSerializer):
         if edit_file and cng_file:
             try:
                 file_to_edit = SiteInfoFile.objects.get(pk=edit_file, site=instance)
-                old_file_path = file_to_edit.file.path
-
-                if file_to_edit.file and os.path.isfile(old_file_path):
-                    try:  # Remove an old file if it exists
-                        os.remove(old_file_path)
-                    except OSError as e:
-                        print(f"Error while deleting old file {old_file_path}: {e}")
-
-                file_to_edit.file = cng_file  # Save new file
+                file_to_edit.file = cng_file  # Save new file (file_cleanup_signals will handle old file removal)
                 file_to_edit.save()
             except SiteInfoFile.DoesNotExist:
                 raise serializers.ValidationError(f"File with ID {edit_file} does not exist.")
@@ -545,15 +535,7 @@ class SiteContractSerializer(serializers.ModelSerializer):
         if edit_file and cng_file:
             try:
                 file_to_edit = SiteContractFile.objects.get(pk=edit_file, site_contract=instance)
-                old_file_path = file_to_edit.file.path
-
-                if file_to_edit.file and os.path.isfile(old_file_path):
-                    try:  # Remove an old file if it exists
-                        os.remove(old_file_path)
-                    except OSError as e:
-                        print(f"오류: {e}")
-
-                file_to_edit.file = cng_file  # Save new file
+                file_to_edit.file = cng_file  # Save new file (file_cleanup_signals will handle old file removal)
                 file_to_edit.save()
             except SiteContractFile.DoesNotExist:
                 raise serializers.ValidationError(f"File with ID {edit_file} does not exist.")
