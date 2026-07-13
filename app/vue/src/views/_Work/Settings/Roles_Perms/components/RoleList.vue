@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Role } from '@/store/types/work_project'
-import TextButton from '../../../components/atomics/TextButton.vue'
+import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 
 defineProps<{ roleList: Role[]; workManager: boolean }>()
 const emit = defineEmits(['show-modal', 'delete-role'])
