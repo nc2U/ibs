@@ -137,10 +137,12 @@ const onUpdate = (payload: HouseUnit) =>
 const onDelete = (payload: { pk: number; type: number }) =>
   deleteUnit(payload.pk, project.value || projStore.initProjId, payload.type)
 
-const dataSetup = (pk: number) => {
-  fetchTypeList(pk)
-  fetchFloorTypeList(pk)
-  fetchBuildingList(pk)
+const dataSetup = async (pk: number) => {
+  await Promise.all([
+    fetchTypeList(pk),
+    fetchFloorTypeList(pk),
+    fetchBuildingList(pk),
+  ])
 }
 
 const dataReset = () => {
@@ -156,15 +158,15 @@ const projSelect = (target: number | null) => {
   if (!!target) dataSetup(target)
 }
 
-onBeforeMount(() => {
-  dataSetup(project.value || projStore.initProjId)
+const loading = ref(true)
+onBeforeMount(async () => {
+  await dataSetup(project.value || projStore.initProjId)
   pDataStore.houseUnitList = []
+  loading.value = false
 })
 
-const loading = ref(true)
-onBeforeRouteLeave(async () => {
+onBeforeRouteLeave(() => {
   dataReset()
-  loading.value = false
 })
 </script>
 
