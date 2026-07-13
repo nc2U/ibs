@@ -70,9 +70,15 @@ def send_issue_mail_task(issue_pk, user_pk, mail_type, old_status_name=None, old
 
         # 수신자 목록 구성
         if mail_type == "create":
-            addresses = [user.email]
+            addresses = []
+            creator_profile = getattr(user, 'profile', None)
+            if getattr(creator_profile, 'auto_watch_created', True) if creator_profile else True:
+                addresses.append(user.email)
             if instance.assigned_to:
-                addresses.append(instance.assigned_to.email)
+                assignee = instance.assigned_to
+                assignee_profile = getattr(assignee, 'profile', None)
+                if getattr(assignee_profile, 'auto_watch_assigned', True) if assignee_profile else True:
+                    addresses.append(assignee.email)
             subject = f'『 {instance.project} 』 - 새 업무 :: [#{instance.pk}] "{instance.subject}"이(가) 할당되었습니다.' if instance.assigned_to else f'『 {instance.project} 』 - 새 업무 :: [#{instance.pk}] "{instance.subject}"이(가) 생성되었습니다.'
             template = 'mail/issue_create.html'
         elif mail_type == "progress":

@@ -91,7 +91,10 @@ class IssueService:
                         details += f"|- **{label}**가 {desc} 해제되었습니다."
                     parent_details = f"|- **하위 업무**에 #{instance.pk} *{instance}*이(가) 추가되었습니다."
                 elif field == 'closed':
-                    details += f"|- **{label}**가 *{instance.closed.strftime('%Y-%m-%d %H:%M')}*에 종료되었습니다."
+                    if instance.closed:
+                        details += f"|- **{label}**가 *{instance.closed.strftime('%Y-%m-%d %H:%M')}*에 종료되었습니다."
+                    else:
+                        details += f"|- **{label}**가 재오픈되었습니다."
                 else:
                     desc = f" *{old_val}*에서 " if old_val else ""
                     act = "변경" if old_val else "지정"
@@ -108,12 +111,27 @@ class IssueService:
 
             if old_assigned_to and old_assigned_to not in {instance.creator, user} and old_assigned_to in watchers:
                 instance.watchers.remove(old_assigned_to)
-            if instance.creator and instance.creator not in watchers:
-                instance.watchers.add(instance.creator)
-            if instance.assigned_to and instance.assigned_to not in watchers:
-                instance.watchers.add(instance.assigned_to)
+
+            if instance.creator:
+                creator_profile = getattr(instance.creator, 'profile', None)
+                auto_watch_created = getattr(creator_profile, 'auto_watch_created', True) if creator_profile else True
+                if auto_watch_created and instance.creator not in watchers:
+                    instance.watchers.add(instance.creator)
+
+            if instance.assigned_to:
+                assignee_profile = getattr(instance.assigned_to, 'profile', None)
+                auto_watch_assigned = getattr(assignee_profile, 'auto_watch_assigned', True) if assignee_profile else True
+                if auto_watch_assigned and instance.assigned_to not in watchers:
+                    instance.watchers.add(instance.assigned_to)
+
             if user and user != instance.assigned_to and user not in watchers:
-                instance.watchers.add(user)
+                if user == instance.creator:
+                    creator_profile = getattr(user, 'profile', None)
+                    auto_watch_created = getattr(creator_profile, 'auto_watch_created', True) if creator_profile else True
+                    if auto_watch_created:
+                        instance.watchers.add(user)
+                else:
+                    instance.watchers.add(user)
 
             # 수정 로그 및 알림
             if details:
