@@ -30,7 +30,12 @@ const statusColor = computed(() => getMeetingStatusColor(props.meeting.status))
 
 const needConfirm = computed(() => {
   const meeting = props.meeting
-  return meeting.status === '2' && meeting?.meeting_date && diffDate(meeting.meeting_date) > 5
+  return (
+    meeting.status === '2' &&
+    !meeting?.is_confirmed &&
+    meetingDate.value &&
+    diffDate(meetingDate.value) > 5
+  )
 })
 
 const confirmAlertColor = computed(() => {
@@ -70,6 +75,7 @@ const downloadPdf = (event: Event) => {
   <CTableDataCell>{{ meeting.category_desc?.name }}</CTableDataCell>
   <CTableDataCell class="text-left" :class="{ closed: meeting.status === '3' }">
     <router-link to="">{{ meeting.title }}</router-link>
+    {{ diffDate(meeting.meeting_date as string) }}
   </CTableDataCell>
   <CTableDataCell>{{ timeFormat(meeting.meeting_date as string, 'min') }}</CTableDataCell>
   <CTableDataCell>{{ meeting.creator.username }}</CTableDataCell>
