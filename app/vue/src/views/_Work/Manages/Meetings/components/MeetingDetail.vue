@@ -39,6 +39,7 @@ const canMeetingUpdate = computed(() => {
   }
   return false
 })
+const canMeetingConfirm = computed(() => can(PERM.MEETING_CONFIRM))
 const canMeetingDelete = computed(() => can(PERM.MEETING_DELETE))
 
 const statusList = computed(() => issueStore.statusList)
@@ -167,6 +168,10 @@ const goEdit = () => {
   }
 }
 
+const onConfirmToggle = async () => {
+  if (meeting.value) await meetingStore.confirmMeeting(meeting.value.pk)
+}
+
 const downloadPdf = () => {
   if (meeting.value) {
     meetingStore.generatePdf(meeting.value.pk)
@@ -194,7 +199,7 @@ const refConfirmModal = ref()
 </script>
 
 <template>
-  <div v-if="meeting" class="p-3">
+  <div v-if="meeting?.pk" class="p-3">
     <CRow class="mb-2">
       <CCol>
         <h5>
@@ -279,7 +284,7 @@ const refConfirmModal = ref()
                 </v-chip>
                 <v-chip
                   v-if="meeting.is_confirmed"
-                  color="success"
+                  color="primary"
                   size="x-small"
                   variant="flat"
                   class="ml-1"
@@ -481,7 +486,14 @@ const refConfirmModal = ref()
 
     <CRow class="mb-2">
       <CCol class="text-right">
-        <v-btn v-if="canMeetingUpdate" color="success" class="ml-2" @click="goEdit"> 수정 </v-btn>
+        <v-btn
+          v-if="canMeetingConfirm"
+          :color="meeting.is_confirmed ? 'secondary' : 'primary'"
+          @click="onConfirmToggle"
+        >
+          {{ meeting.is_confirmed ? '확정취소' : '회의확정' }}
+        </v-btn>
+        <v-btn v-if="canMeetingUpdate" color="success" @click="goEdit"> 수정 </v-btn>
         <v-btn v-if="canMeetingDelete" color="warning" @click="refConfirmModal.callModal()">
           삭제
         </v-btn>

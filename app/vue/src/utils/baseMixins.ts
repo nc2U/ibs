@@ -105,7 +105,6 @@ export const humanizeFileSize = (bytes?: number, decimals = 2) => {
 
 export const getMeetingStatusColor = (status: string): string => {
   if (status === '1') return 'info'
-  if (status === '2') return 'primary'
-  if (status === '3') return 'success'
+  if (status === '2') return 'success'
   return 'secondary'
 }

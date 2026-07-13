@@ -71,7 +71,7 @@ const downloadPdf = (event: Event) => {
     >
       확정 필요
     </v-chip>
-    <v-chip v-if="meeting.is_confirmed" color="success" size="x-small" variant="flat" class="ml-1">
+    <v-chip v-if="meeting.is_confirmed" color="primary" size="x-small" variant="flat" class="ml-1">
       확정
     </v-chip>
   </CTableDataCell>
