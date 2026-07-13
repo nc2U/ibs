@@ -235,7 +235,7 @@ onBeforeRouteUpdate(async to => {
           <CCard class="mb-4">
             <CCardHeader class="font-weight-bold">
               <v-icon icon="mdi-account-circle" class="mr-1" color="primary" />
-              아바타
+              프로필 이미지
             </CCardHeader>
             <CCardBody>
               <CRow class="pt-3 pb-4">
