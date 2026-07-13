@@ -1,7 +1,6 @@
 <script lang="ts" setup>
-import api from '@/api'
-import { computed, onBeforeMount, ref, reactive, watch } from 'vue'
-import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
+import { computed, onBeforeMount, reactive, ref, watch } from 'vue'
+import { onBeforeRouteUpdate, useRouter } from 'vue-router'
 import { useAccount } from '@/store/pinia/account'
 import { useWork } from '@/store/pinia/work_project'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
