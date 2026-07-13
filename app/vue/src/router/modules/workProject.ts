@@ -185,6 +185,11 @@ const workProject = {
       component: () => import('@/views/_Work/Manages/News/Index.vue'),
     },
     {
+      path: 'document',
+      name: '문서',
+      component: () => import('@/views/_Work/Manages/Documents/Index.vue'),
+    },
+    {
       path: 'search',
       name: '전체검색',
       component: () => import('@/views/_Work/components/SearchBody/Index.vue'),

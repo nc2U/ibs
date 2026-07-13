@@ -1,19 +1,30 @@
 <script lang="ts" setup="">
 import { computed, type PropType } from 'vue'
+import { useRoute } from 'vue-router'
+import { useWork } from '@/store/pinia/work_project.ts'
 import type { Docs } from '@/store/types/docs'
 import { usePerms } from '@/composables/usePerms.ts'
 import { cutString, timeFormat } from '@/utils/baseMixins'
 import DOMPurify from 'dompurify'
 
-defineProps({ docs: { type: Object as PropType<Docs>, required: true } })
+const props = defineProps({ docs: { type: Object as PropType<Docs>, required: true } })
+
+const route = useRoute()
+const workStore = useWork()
 
 const { can, PERM } = usePerms()
 const canDocsRead = computed(() => can(PERM.DOCS_READ))
+
+const projId = computed(() => {
+  if (route.params.projId) return route.params.projId as string
+  const proj = workStore.allProjects.find(p => p.pk === props.docs.issue_project)
+  return proj?.slug || ''
+})
 </script>
 
 <template>
   <v-card
-    :to="canDocsRead ? { name: '(문서) - 보기', params: { docId: docs.pk } } : undefined"
+    :to="canDocsRead && projId ? { name: '(문서) - 보기', params: { projId, docId: docs.pk } } : undefined"
     border
     class="mb-2 w-100 docs-item card-white no-underline"
     :class="[canDocsRead ? 'pointer' : 'cursor-not-allowed', docs.is_pinned ? 'card-yellow' : '']"
@@ -51,6 +62,9 @@ const canDocsRead = computed(() => can(PERM.DOCS_READ))
             class="mr-2"
           />
 
+          <span v-if="!route.params.projId && docs.proj_name" class="mr-2 text-grey">
+            [{{ docs.proj_name }}]
+          </span>
           <span v-if="docs.cate_name" class="mr-2" :style="{ color: docs.cate_color || 'inherit' }">
             [{{ docs.cate_name }}]
           </span>
