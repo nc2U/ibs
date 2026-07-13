@@ -27,7 +27,7 @@ const copyRole = (role: Role) => {
     <CTableHead color="light">
       <CTableRow>
         <CTableHeaderCell scope="col">역할</CTableHeaderCell>
-        <CTableHeaderCell scope="col" class="text-center">업무할당 가능 여부</CTableHeaderCell>
+        <CTableHeaderCell scope="col" class="text-center">업무 할당 가능 여부</CTableHeaderCell>
         <CTableHeaderCell scope="col" class="text-center">업무 보기 권한</CTableHeaderCell>
         <CTableHeaderCell scope="col" class="text-center">사용자 보기 권한</CTableHeaderCell>
         <CTableHeaderCell scope="col"></CTableHeaderCell>

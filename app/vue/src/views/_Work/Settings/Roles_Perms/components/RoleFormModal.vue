@@ -72,7 +72,7 @@ const saveRole = async (event: Event) => {
           <CFormInput v-model="form.name" placeholder="역할명을 입력하세요" required />
         </div>
         <div class="mb-3">
-          <CFormCheck id="assignable" v-model="form.assignable" label="업무 위탁 권한" />
+          <CFormCheck id="assignable" v-model="form.assignable" label="업무 할당 가능 여부" />
         </div>
         <div class="mb-3">
           <CFormLabel>업무 보기 권한</CFormLabel>
