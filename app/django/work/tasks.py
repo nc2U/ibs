@@ -13,14 +13,23 @@ User = get_user_model()
 def send_meeting_mail_task(meeting_pk, user_pk, mail_type):
     """Celery task to send meeting-related emails asynchronously"""
     try:
-        instance = Meeting.objects.select_related('project', 'creator').get(pk=meeting_pk)
+        instance = Meeting.objects.select_related('project', 'creator__profile').get(pk=meeting_pk)
         user = User.objects.get(pk=user_pk)
 
         # 참석자 및 작성자 수신자 구성
-        attendees = list(instance.attendees.all())
-        recipients = set([instance.creator.email] + [a.email for a in attendees])
-        if user.email in recipients:
-            recipients.remove(user.email)  # 보낸 사람은 제외
+        creator = instance.creator
+        attendees = list(instance.attendees.select_related('profile').all())
+        candidate_users = set([creator] + attendees)
+
+        recipients = set()
+        for u in candidate_users:
+            profile = getattr(u, 'profile', None)
+            if mail_type == "create":
+                if profile is None or getattr(profile, 'meeting_created_notification', True):
+                    recipients.add(u.email)
+            elif mail_type == "confirm":
+                if profile is None or getattr(profile, 'meeting_confirmed_notification', True):
+                    recipients.add(u.email)
 
         addresses = list(recipients)
 

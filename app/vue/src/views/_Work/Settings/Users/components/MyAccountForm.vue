@@ -29,7 +29,8 @@ const form = reactive({
   // notification fields
   auto_watch_created: true,
   auto_watch_assigned: true,
-  meeting_notification: true,
+  meeting_created_notification: true,
+  meeting_confirmed_notification: true,
 
   subscribed_projects: [] as number[],
 })
@@ -62,14 +63,16 @@ const formDataSetup = async () => {
       form.cell_phone = profile.value.cell_phone || ''
       form.auto_watch_created = profile.value.auto_watch_created ?? true
       form.auto_watch_assigned = profile.value.auto_watch_assigned ?? true
-      form.meeting_notification = profile.value.meeting_notification ?? true
+      form.meeting_created_notification = profile.value.meeting_created_notification ?? true
+      form.meeting_confirmed_notification = profile.value.meeting_confirmed_notification ?? true
     } else {
       form.name = ''
       form.birth_date = ''
       form.cell_phone = ''
       form.auto_watch_created = true
       form.auto_watch_assigned = true
-      form.meeting_notification = true
+      form.meeting_created_notification = true
+      form.meeting_confirmed_notification = true
     }
 
     await workStore.fetchSubscribedProjects(profile.value?.user as number)
@@ -91,7 +94,8 @@ const formDataSetup = async () => {
     form.cell_phone = ''
     form.auto_watch_created = true
     form.auto_watch_assigned = true
-    form.meeting_notification = true
+    form.meeting_created_notification = true
+    form.meeting_confirmed_notification = true
 
     form.subscribed_projects = []
   }
@@ -323,9 +327,16 @@ onBeforeRouteUpdate(async to => {
                   <CRow>
                     <CCol xs="12" class="mb-3">
                       <CFormCheck
-                        v-model="form.meeting_notification"
-                        id="meeting_notification"
-                        label="회의록 참석 시 알림 메일 수신"
+                        v-model="form.meeting_created_notification"
+                        id="meeting_created_notification"
+                        label="회의록 등록 시 알림 메일 수신"
+                      />
+                    </CCol>
+                    <CCol xs="12" class="mb-3">
+                      <CFormCheck
+                        v-model="form.meeting_confirmed_notification"
+                        id="meeting_confirmed_notification"
+                        label="회의록 확정 시 알림 메일 수신"
                       />
                     </CCol>
                   </CRow>

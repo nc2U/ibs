@@ -15,6 +15,8 @@ def meeting_track_changes(sender, instance, **kwargs):
             old_instance = Meeting.objects.get(pk=instance.pk)
             if old_instance.status != instance.status:
                 setattr(instance, 'old_status', old_instance.status)
+            if old_instance.is_confirmed != instance.is_confirmed:
+                setattr(instance, 'old_is_confirmed', old_instance.is_confirmed)
         except Meeting.DoesNotExist:
             pass
 
@@ -22,7 +24,7 @@ def meeting_track_changes(sender, instance, **kwargs):
 @receiver(post_save, sender=Meeting)
 def meeting_log_changes(sender, instance, created, **kwargs):
     user = instance.updater if not created else instance.creator
-    old_status = getattr(instance, 'old_status', None)
+    old_is_confirmed = getattr(instance, 'old_is_confirmed', None)
 
     if created:
         ActivityLogEntry.objects.create(sort='3', project=instance.project,
@@ -33,7 +35,7 @@ def meeting_log_changes(sender, instance, created, **kwargs):
                                         creator=user)
 
     # 메일 알림 서비스 호출
-    MeetingService.notify_meeting_changes(instance, created, user, old_status)
+    MeetingService.notify_meeting_changes(instance, created, user, old_is_confirmed)
 
 
 @receiver(pre_delete, sender=Meeting)

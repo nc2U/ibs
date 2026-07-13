@@ -15,7 +15,8 @@ export declare interface User {
     cell_phone: string
     auto_watch_created?: boolean
     auto_watch_assigned?: boolean
-    meeting_notification?: boolean
+    meeting_created_notification?: boolean
+    meeting_confirmed_notification?: boolean
   }
   last_login: string | null
 }
@@ -53,7 +54,8 @@ export type Profile = {
   image?: File | string | null
   auto_watch_created?: boolean
   auto_watch_assigned?: boolean
-  meeting_notification?: boolean
+  meeting_created_notification?: boolean
+  meeting_confirmed_notification?: boolean
   like_posts?: number[]
   like_comments?: number[]
   blame_posts?: number[]

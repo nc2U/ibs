@@ -5,12 +5,12 @@ from rest_framework.exceptions import PermissionDenied
 
 class MeetingService:
     @staticmethod
-    def notify_meeting_changes(instance, created, user, old_status=None):
+    def notify_meeting_changes(instance, created, user, old_is_confirmed=None):
         """회의 생성 및 확정 상태 변경 알림"""
         if created:
             MeetingService.send_meeting_mail(instance, user, "create")
-        elif old_status != '3' and instance.status == '3':
-            # 확정('3') 상태로 변경된 경우
+        elif old_is_confirmed is False and instance.is_confirmed is True:
+            # 확정(is_confirmed=True) 상태로 변경된 경우
             MeetingService.send_meeting_mail(instance, user, "confirm")
 
     @staticmethod
