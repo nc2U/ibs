@@ -1,17 +1,17 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, provide, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { navMenu2 as navMenu } from '@/views/_Work/_menu/headermixin1'
 import { useWork } from '@/store/pinia/work_project.ts'
-import { useDocs, type DocsFilter } from '@/store/pinia/docs'
+import { type DocsFilter, useDocs } from '@/store/pinia/docs'
 import { useCompany } from '@/store/pinia/company.ts'
 import { usePerms } from '@/composables/usePerms.ts'
 import type { Company } from '@/store/types/settings'
 import type { Docs } from '@/store/types/docs'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
-import Loading from '@/components/Loading/Index.vue'
 import DocsList from './components/DocsList.vue'
+import Loading from '@/components/Loading/Index.vue'
 
 const cBody = ref()
 const sideNavCAll = () => cBody.value.toggle()
@@ -21,7 +21,6 @@ const company = computed<Company | null>(() => comStore.company)
 const comName = computed(() => company?.value?.name)
 
 const route = useRoute()
-const router = useRouter()
 
 const { can, PERM } = usePerms()
 
