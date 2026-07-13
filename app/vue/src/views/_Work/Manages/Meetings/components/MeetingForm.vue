@@ -567,7 +567,7 @@ const onConfirmToggle = async () => {
               </CCol>
             </CRow>
 
-            <CRow v-if="canMeetingConfirm" class="mt-5">
+            <CRow v-if="meeting?.pk && canMeetingConfirm" class="mt-5">
               <CFormLabel for="is_confirmed" class="col-sm-4 col-form-label text-right">
                 확정 여부
               </CFormLabel>
