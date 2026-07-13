@@ -78,7 +78,6 @@ const downloadPdf = (event: Event) => {
   <CTableDataCell>{{ meeting.category_desc?.name }}</CTableDataCell>
   <CTableDataCell class="text-left" :class="{ closed: meeting.status === '3' }">
     <router-link to="">{{ meeting.title }}</router-link>
-    {{ diffDate(meeting.meeting_date as string) }}
   </CTableDataCell>
   <CTableDataCell>{{ timeFormat(meeting.meeting_date as string, 'min') }}</CTableDataCell>
   <CTableDataCell>{{ meeting.creator.username }}</CTableDataCell>

@@ -17,7 +17,8 @@ class MeetingService:
     @staticmethod
     def send_meeting_mail(instance, user, mail_type):
         """회의 관련 메일 발송 유틸리티 (Celery 비동기 호출)"""
-        transaction.on_commit(lambda: send_meeting_mail_task.delay(instance.pk, user.pk, mail_type))
+        pass
+        # transaction.on_commit(lambda: send_meeting_mail_task.delay(instance.pk, user.pk, mail_type))
 
 
 class IssueService:
