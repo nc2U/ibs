@@ -7,15 +7,44 @@ from django.db import models
 from _utils.file_cleanup import file_cleanup_signals
 from _utils.file_upload import get_site_file_path
 
+PROJECT_KIND_CHOICES = (
+    ('1', '공동주택(아파트)'),
+    ('2', '공동주택(타운하우스)'),
+    ('3', '주상복합(아파트)'),
+    ('4', '주상복합(오피스텔)'),
+    ('5', '근린생활시설'),
+    ('6', '생활형숙박시설'),
+    ('7', '지식산업센터'),
+    ('8', '기타'),
+)
+
+
+def _populate_file_meta(instance) -> None:
+    """파일 메타(이름/타입/사이즈)를 채우는 공통 유틸.
+    SiteInfoFile, SiteContractFile 양쪽에서 공유합니다.
+    """
+    if not instance.file:
+        return
+    original_name = getattr(instance.file, '_name', None) or getattr(instance.file, 'name', None)
+    if original_name:
+        instance.file_name = os.path.basename(original_name)
+    else:
+        instance.file_name = instance.file.name.split('/')[-1]
+
+    mime = magic.Magic(mime=True)
+    file_pos = instance.file.tell()        # 현재 파일 커서 위치 백업
+    instance.file_type = mime.from_buffer(instance.file.read(2048))  # 2048바이트면 충분
+    instance.file.seek(file_pos)           # 원래 위치로 복구
+    instance.file_size = instance.file.size
+
 
 class Project(models.Model):
+    KIND_CHOICES = PROJECT_KIND_CHOICES
     issue_project = models.OneToOneField('work.IssueProject', on_delete=models.PROTECT, verbose_name="업무 프로젝트")
     name = models.CharField('프로젝트명', max_length=30, unique=True, db_index=True)
     order = models.PositiveSmallIntegerField('정렬순서', default=100)
-    KIND_CHOICES = (('1', '공동주택(아파트)'), ('2', '공동주택(타운하우스)'), ('3', '주상복합(아파트)'), ('4', '주상복합(오피스텔)'),
-                    ('5', '근린생활시설'), ('6', '생활형숙박시설'), ('7', '지식산업센터'), ('8', '기타'))
-    kind = models.CharField('프로젝트종류', max_length=1, choices=KIND_CHOICES)
-    start_year = models.CharField('사업개시년도', max_length=4)
+    kind = models.CharField('프로젝트종류', max_length=1, choices=PROJECT_KIND_CHOICES)
+    start_year = models.PositiveSmallIntegerField('사업개시년도')
     is_direct_manage = models.BooleanField('직영운영여부', default=False,
                                            help_text='본사 직접 운영하는 프로젝트인 경우 체크, 즉 시행대행이나 업무대행이 아닌 경우')
     is_returned_area = models.BooleanField('토지환지여부', default=False, help_text='해당 사업부지가 환지방식 도시개발사업구역인 경우 체크')
@@ -26,8 +55,8 @@ class Project(models.Model):
     construction_period_months = models.PositiveSmallIntegerField('공사기간(개월)',
                                                                   help_text='예상 공사기간 (개월 단위). 착공월부터 이 기간 + 5개월까지 월별 집계됩니다.')
     location = models.CharField('대지위치', max_length=255, blank=True, default='')
-    area_usage = models.CharField('용도지역지구', max_length=50, blank=True, default='', null=True)
-    build_size = models.CharField('건축규모', max_length=50, blank=True, default='', null=True)
+    area_usage = models.CharField('용도지역지구', max_length=50, blank=True, default='')
+    build_size = models.CharField('건축규모', max_length=50, blank=True, default='')
     num_unit = models.PositiveSmallIntegerField('세대(호/실)수', null=True, blank=True)
     buy_land_extent = models.DecimalField('대지매입면적', max_digits=12, decimal_places=4, null=True, blank=True)
     scheme_land_extent = models.DecimalField('계획대지면적', max_digits=12, decimal_places=4, null=True, blank=True)
@@ -73,7 +102,7 @@ class ProjectIncBudget(models.Model):
         return self.item_name
 
     class Meta:
-        ordering = ('id', '-project')
+        ordering = ('-project', 'id')
         verbose_name = '02. 현장 수입예산'
         verbose_name_plural = '02. 현장 수입예산'
 
@@ -93,7 +122,9 @@ class ProjectOutBudget(models.Model):
     revised_budget = models.PositiveBigIntegerField(verbose_name='현황(변경) 지출 예산', null=True, blank=True)
 
     def __str__(self):
-        return self.account_d3.name
+        if self.account_d3:
+            return self.account_d3.name
+        return self.account_opt or f'지출예산 #{self.pk}'
 
     class Meta:
         ordering = ('order', 'id', '-project')
@@ -144,19 +175,7 @@ class SiteInfoFile(models.Model):
         return self.file_name
 
     def save(self, *args, **kwargs):
-        if self.file:
-            # Preserve original filename before upload_to function changes it
-            original_name = getattr(self.file, '_name', None) or getattr(self.file, 'name', None)
-            if original_name:
-                self.file_name = os.path.basename(original_name)
-            else:
-                self.file_name = self.file.name.split('/')[-1]
-
-            mime = magic.Magic(mime=True)
-            file_pos = self.file.tell()  # 현재 파일 커서 위치 백업
-            self.file_type = mime.from_buffer(self.file.read(2048))  # 2048바이트 정도면 충분
-            self.file.seek(file_pos)  # 원래 위치로 복구
-            self.file_size = self.file.size
+        _populate_file_meta(self)
         super().save(*args, **kwargs)
 
 
@@ -225,7 +244,7 @@ class SiteOwnerConsultationLogs(models.Model):
                                    related_name='site_owner_consultations', verbose_name='상담담당자')
     # 후속 조치
     follow_up_required = models.BooleanField('후속조치 필요', default=False)
-    follow_up_note = models.TextField('후속조치 내용', blank=True)
+    follow_up_note = models.TextField('후속조치 내용', blank=True, default='')
     completion_date = models.DateField('처리완료일', null=True, blank=True)
     # 시스템 필드
     created = models.DateTimeField('등록일시', auto_now_add=True)
@@ -265,7 +284,7 @@ class SiteContract(models.Model):
     inter_pay2 = models.PositiveBigIntegerField('중도금2', null=True, blank=True)
     inter_pay2_date = models.DateField('중도금2 지급일', null=True, blank=True)
     inter_pay2_is_paid = models.BooleanField('중도금2 지급여부', default=False)
-    remain_pay = models.PositiveBigIntegerField('잔금')
+    remain_pay = models.PositiveBigIntegerField('잔금', null=True, blank=True)
     remain_pay_date = models.DateField('잔금 지급일', null=True, blank=True)
     remain_pay_is_paid = models.BooleanField('잔금 지급여부', default=False)
     ownership_completion = models.BooleanField('소유권 확보여부', default=False)
@@ -291,7 +310,7 @@ class SiteContract(models.Model):
 class SiteContractFile(models.Model):
     site_contract = models.ForeignKey(SiteContract, on_delete=models.CASCADE, default=None, verbose_name='계약서',
                                       related_name='site_cont_files')
-    file = models.FileField(upload_to=get_site_file_path, verbose_name='파일경로', max_length=150)
+    file = models.FileField(upload_to=get_site_file_path, verbose_name='파일경로', max_length=255)
     file_name = models.CharField('파일명', max_length=255, blank=True, db_index=True)
     file_type = models.CharField('타입', max_length=80, blank=True)
     file_size = models.PositiveBigIntegerField('사이즈', blank=True, null=True)
@@ -303,19 +322,7 @@ class SiteContractFile(models.Model):
         return self.file_name
 
     def save(self, *args, **kwargs):
-        if self.file:
-            # Preserve original filename before upload_to function changes it
-            original_name = getattr(self.file, '_name', None) or getattr(self.file, 'name', None)
-            if original_name:
-                self.file_name = os.path.basename(original_name)
-            else:
-                self.file_name = self.file.name.split('/')[-1]
-
-            mime = magic.Magic(mime=True)
-            file_pos = self.file.tell()  # 현재 파일 커서 위치 백업
-            self.file_type = mime.from_buffer(self.file.read(2048))  # 2048바이트 정도면 충분
-            self.file.seek(file_pos)  # 원래 위치로 복구
-            self.file_size = self.file.size
+        _populate_file_meta(self)
         super().save(*args, **kwargs)
 
 
