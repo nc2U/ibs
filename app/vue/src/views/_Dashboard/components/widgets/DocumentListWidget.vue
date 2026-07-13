@@ -93,20 +93,15 @@ onBeforeMount(() => {
             </tr>
           </template>
           <tr v-if="!currentDocsList.length">
-            <td colspan="3" class="text-center text-medium-emphasis py-4">등록된 문서가 없습니다.</td>
+            <td colspan="3" class="text-center text-medium-emphasis py-4">
+              등록된 문서가 없습니다.
+            </td>
           </tr>
         </tbody>
       </v-table>
 
-      <v-btn
-        variant="text"
-        color="primary"
-        size="small"
-        class="mt-2"
-        block
-        :to="{ name: activeTab === 1 ? '본사 일반 문서' : '본사 소송 문서' }"
-      >
-        전체 {{ activeTab === 1 ? '일반문서' : '소송기록' }} 보기
+      <v-btn variant="text" color="primary" size="small" class="mt-2" block :to="{ name: '문서' }">
+        전체 문서 보기
         <v-icon icon="mdi-chevron-right" size="small" />
       </v-btn>
     </div>
