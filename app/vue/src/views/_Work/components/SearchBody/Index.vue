@@ -23,6 +23,8 @@ const targets = ref({
   comments: true,
   meetings: true,
   news: true,
+  documents: true,
+  posts: true,
 })
 const openedOnly = ref(false)
 const visible = ref(false)
@@ -78,6 +80,8 @@ const typeLabel: Record<string, string> = {
   comments: '댓글',
   meetings: '회의록',
   news: '공지',
+  documents: '문서',
+  posts: '게시판',
 }
 
 const statusColor = (closed: boolean) => (closed ? 'grey' : 'primary')
@@ -132,6 +136,8 @@ const meetingStatusLabel: Record<string, string> = { '1': '준비', '2': '종료
                 <CFormCheck v-model="targets.comments" inline label="댓글" id="target-comments" />
                 <CFormCheck v-model="targets.meetings" inline label="회의록" id="target-meetings" />
                 <CFormCheck v-model="targets.news" inline label="공지" id="target-news" />
+                <CFormCheck v-model="targets.documents" inline label="문서" id="target-documents" />
+                <CFormCheck v-model="targets.posts" inline label="게시판" id="target-posts" />
               </CCardBody>
             </CCard>
           </CRow>
@@ -351,6 +357,83 @@ const meetingStatusLabel: Record<string, string> = { '1': '준비', '2': '종료
                 </span>
                 <span class="text-caption text-medium-emphasis">
                   {{ item.project.name }} · {{ item.author.username }} ·
+                  {{ new Date(item.created).toLocaleDateString('ko-KR') }}
+                </span>
+              </div>
+            </CCol>
+          </CRow>
+        </template>
+
+        <!-- 문서 결과 -->
+        <template v-if="searchStore.results?.documents?.length">
+          <CRow class="mt-4">
+            <CCol>
+              <h6 class="text-medium-emphasis">
+                <v-icon icon="mdi-file-document-outline" size="small" class="mr-1" />
+                {{ typeLabel.documents }}
+                <v-chip size="x-small" class="ml-1">{{ searchStore.results.documents.length }}</v-chip>
+              </h6>
+              <v-divider />
+            </CCol>
+          </CRow>
+          <CRow
+            v-for="item in searchStore.results.documents"
+            :key="`doc-${item.pk}`"
+            class="mt-2"
+          >
+            <CCol>
+              <div class="d-flex align-center gap-2 flex-wrap">
+                <router-link
+                  :to="{
+                    name: '(문서)',
+                    params: { projId: item.project.slug, docId: item.pk },
+                  }"
+                  class="text-body-2"
+                >
+                  {{ item.title }}
+                </router-link>
+                <span v-if="item.description" class="text-caption text-medium-emphasis">
+                  — {{ item.description }}
+                </span>
+                <span class="text-caption text-medium-emphasis">
+                  {{ item.project.name }} · {{ item.creator?.username }} ·
+                  {{ new Date(item.created).toLocaleDateString('ko-KR') }}
+                </span>
+              </div>
+            </CCol>
+          </CRow>
+        </template>
+
+        <!-- 게시판 결과 -->
+        <template v-if="searchStore.results?.posts?.length">
+          <CRow class="mt-4">
+            <CCol>
+              <h6 class="text-medium-emphasis">
+                <v-icon icon="mdi-forum-outline" size="small" class="mr-1" />
+                {{ typeLabel.posts }}
+                <v-chip size="x-small" class="ml-1">{{ searchStore.results.posts.length }}</v-chip>
+              </h6>
+              <v-divider />
+            </CCol>
+          </CRow>
+          <CRow
+            v-for="item in searchStore.results.posts"
+            :key="`post-${item.pk}`"
+            class="mt-2"
+          >
+            <CCol>
+              <div class="d-flex align-center gap-2 flex-wrap">
+                <router-link
+                  :to="{
+                    name: '(게시판) - 게시물 보기',
+                    params: { projId: item.project.slug, postId: item.pk },
+                  }"
+                  class="text-body-2"
+                >
+                  {{ item.title }}
+                </router-link>
+                <span class="text-caption text-medium-emphasis">
+                  {{ item.project.name }} · {{ item.creator?.username }} ·
                   {{ new Date(item.created).toLocaleDateString('ko-KR') }}
                 </span>
               </div>

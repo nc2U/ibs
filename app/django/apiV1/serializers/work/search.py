@@ -3,6 +3,8 @@ from rest_framework import serializers
 from work.models.issue import Issue, IssueComment
 from work.models.meeting import Meeting
 from work.models.inform import News
+from docs.models import Document
+from forum.models import Post
 
 
 class IssueSearchSerializer(serializers.ModelSerializer):
@@ -77,3 +79,34 @@ class NewsSearchSerializer(serializers.ModelSerializer):
 
     def get_author(self, obj):
         return {'pk': obj.author.pk, 'username': obj.author.username}
+
+
+class DocumentSearchSerializer(serializers.ModelSerializer):
+    project = serializers.SerializerMethodField(source='issue_project')
+    creator = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Document
+        fields = ('pk', 'project', 'title', 'description', 'created', 'creator')
+
+    def get_project(self, obj):
+        return {'slug': obj.issue_project.slug, 'name': obj.issue_project.name}
+
+    def get_creator(self, obj):
+        return {'pk': obj.creator.pk, 'username': obj.creator.username} if obj.creator else None
+
+
+class PostSearchSerializer(serializers.ModelSerializer):
+    project = serializers.SerializerMethodField()
+    creator = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Post
+        fields = ('pk', 'project', 'title', 'created', 'creator')
+
+    def get_project(self, obj):
+        return {'slug': obj.forum.project.slug, 'name': obj.forum.project.name}
+
+    def get_creator(self, obj):
+        return {'pk': obj.creator.pk, 'username': obj.creator.username} if obj.creator else None
+

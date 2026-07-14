@@ -159,7 +159,7 @@ class SearchViewSet(viewsets.ModelViewSet):
 
         scope = request.query_params.get('scope', 'all')
         slug = request.query_params.get('slug', '')
-        targets = set(request.query_params.getlist('t')) or {'issues', 'comments', 'meetings', 'news'}
+        targets = set(request.query_params.getlist('t')) or {'issues', 'comments', 'meetings', 'news', 'documents', 'posts'}
         title_only = request.query_params.get('title_only', '0') == '1'
 
         results = {}
@@ -171,6 +171,10 @@ class SearchViewSet(viewsets.ModelViewSet):
             results['meetings'] = self._search_meetings(request.user, q, scope, slug, title_only)
         if 'news' in targets:
             results['news'] = self._search_news(request.user, q, scope, slug, title_only)
+        if 'documents' in targets:
+            results['documents'] = self._search_documents(request.user, q, scope, slug, title_only)
+        if 'posts' in targets:
+            results['posts'] = self._search_posts(request.user, q, scope, slug, title_only)
 
         return Response(results)
 
@@ -245,4 +249,51 @@ class SearchViewSet(viewsets.ModelViewSet):
         if scope == 'project' and slug:
             qs = qs.filter(project__slug=slug)
         return NewsSearchSerializer(qs[:25], many=True).data
+
+    @staticmethod
+    def _search_documents(user, q, scope, slug, title_only):
+        from apiV1.serializers.work.search import DocumentSearchSerializer
+        from docs.models import Document
+
+        if title_only:
+            q_expr = Q(title__icontains=q)
+        else:
+            q_expr = Q(title__icontains=q) | Q(description__icontains=q)
+
+        # 소프트 딜리트 필터: deleted=None (SoftDeleteManager가 적용되어 있으므로 기본 objects 사용 가능)
+        qs = Document.objects.filter(q_expr, issue_project__status='1').select_related('issue_project', 'creator')
+
+        # 권한 제어: 사용자가 관리자가 아닌 경우 공개 프로젝트 혹은 멤버십 프로젝트 문서만 허용
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            qs = qs.filter(
+                Q(issue_project__is_public=True) | Q(issue_project__members__user=user)
+            ).distinct()
+
+        if scope == 'project' and slug:
+            qs = qs.filter(issue_project__slug=slug)
+        return DocumentSearchSerializer(qs[:25], many=True).data
+
+    @staticmethod
+    def _search_posts(user, q, scope, slug, title_only):
+        from apiV1.serializers.work.search import PostSearchSerializer
+        from forum.models import Post
+
+        if title_only:
+            q_expr = Q(title__icontains=q)
+        else:
+            q_expr = Q(title__icontains=q) | Q(content__icontains=q)
+
+        # 소프트 딜리트 필터: deleted=None 및 프로젝트 활성 상태(status='1')
+        qs = Post.objects.filter(q_expr, deleted__isnull=True, forum__project__status='1').select_related('forum__project', 'creator')
+
+        # 권한 제어: 공개 프로젝트 혹은 멤버십 프로젝트 내 게시판 게시글만 허용
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            qs = qs.filter(
+                Q(forum__project__is_public=True) | Q(forum__project__members__user=user)
+            ).distinct()
+
+        if scope == 'project' and slug:
+            qs = qs.filter(forum__project__slug=slug)
+        return PostSearchSerializer(qs[:25], many=True).data
+
 

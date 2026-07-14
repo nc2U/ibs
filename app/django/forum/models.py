@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 
 from django.conf import settings
 from django.db import models
+from django.contrib.postgres.indexes import GinIndex
 
 from _utils.file_cleanup import file_cleanup_signals
 from _utils.file_upload import get_forum_file_path, get_forum_image_path, populate_file_meta
@@ -73,6 +74,10 @@ class Post(models.Model):
         ordering = ['-is_notice', '-created']
         verbose_name = '03. 게시물 관리'
         verbose_name_plural = '03. 게시물 관리'
+        indexes = [
+            GinIndex(fields=['title'], opclasses=['gin_trgm_ops'], name='forum_post_title_trgm'),
+            GinIndex(fields=['content'], opclasses=['gin_trgm_ops'], name='forum_post_content_trgm'),
+        ]
 
     def delete(self, using=None, keep_parents=False):
         self.deleted = datetime.now()

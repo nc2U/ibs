@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
+from django.contrib.postgres.indexes import GinIndex
 
 from _utils.file_cleanup import file_cleanup_signals
 from _utils.file_upload import get_docs_file_path, get_docs_image_path, get_letter_pdf_path, populate_file_meta
@@ -88,6 +89,10 @@ class Document(BaseModel):
         ordering = ['-is_pinned', '-created']
         verbose_name = '02. 문서'
         verbose_name_plural = '02. 문서'
+        indexes = [
+            GinIndex(fields=['title'], opclasses=['gin_trgm_ops'], name='docs_document_title_trgm'),
+            GinIndex(fields=['description'], opclasses=['gin_trgm_ops'], name='docs_document_desc_trgm'),
+        ]
 
 
 class Link(models.Model):

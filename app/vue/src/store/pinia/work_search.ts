@@ -27,7 +27,7 @@ export const useSearch = defineStore('work_search', () => {
         q: params.q,
         scope: params.scope ?? 'all',
         ...(params.slug && { slug: params.slug }),
-        t: params.t ?? ['issues', 'comments', 'meetings', 'news'],
+        t: params.t ?? ['issues', 'comments', 'meetings', 'news', 'documents', 'posts'],
         title_only: params.title_only ?? '0',
       }
       const res = await api.get('/issue-search/run/', { params: searchParams })

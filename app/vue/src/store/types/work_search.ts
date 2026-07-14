@@ -41,11 +41,30 @@ export interface SearchResultNews {
   author: { pk: number; username: string }
 }
 
+export interface SearchResultDoc {
+  pk: number
+  project: { slug: string; name: string }
+  title: string
+  description: string
+  created: string
+  creator: { pk: number; username: string } | null
+}
+
+export interface SearchResultPost {
+  pk: number
+  project: { slug: string; name: string }
+  title: string
+  created: string
+  creator: { pk: number; username: string } | null
+}
+
 export interface SearchResults {
   issues?: SearchResultIssue[]
   comments?: SearchResultComment[]
   meetings?: SearchResultMeeting[]
   news?: SearchResultNews[]
+  documents?: SearchResultDoc[]
+  posts?: SearchResultPost[]
 }
 
 export interface SearchParams {
