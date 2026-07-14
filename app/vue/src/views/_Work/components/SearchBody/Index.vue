@@ -19,9 +19,9 @@ const searchStore = useSearch()
 const searchWord = ref('')
 const titleOnly = ref(false)
 const targets = ref({
+  meetings: true,
   issues: true,
   comments: true,
-  meetings: true,
   news: true,
   documents: true,
   posts: true,
@@ -91,9 +91,9 @@ onBeforeRouteLeave((to, from, next) => {
 
 // 결과 타입 라벨
 const typeLabel: Record<string, string> = {
+  meetings: '회의록',
   issues: '업무',
   comments: '댓글',
-  meetings: '회의록',
   news: '공지',
   documents: '문서',
   posts: '게시판',
@@ -152,9 +152,9 @@ const meetingStatusLabel: Record<string, string> = { '1': '준비', '2': '종료
           <CRow class="mt-3 m-1">
             <CCard class="mt-3" :color="colorLight">
               <CCardBody>
+                <CFormCheck v-model="targets.meetings" inline label="회의록" id="target-meetings" />
                 <CFormCheck v-model="targets.issues" inline label="업무" id="target-issues" />
                 <CFormCheck v-model="targets.comments" inline label="댓글" id="target-comments" />
-                <CFormCheck v-model="targets.meetings" inline label="회의록" id="target-meetings" />
                 <CFormCheck v-model="targets.news" inline label="공지" id="target-news" />
                 <CFormCheck v-model="targets.documents" inline label="문서" id="target-documents" />
                 <CFormCheck v-model="targets.posts" inline label="게시판" id="target-posts" />
@@ -197,7 +197,7 @@ const meetingStatusLabel: Record<string, string> = { '1': '준비', '2': '종료
       <!-- 에러 -->
       <CRow v-if="searchStore.error" class="mt-3">
         <CCol>
-          <v-alert type="warning" variant="tonal" density="compact">
+          <v-alert type="warning" variant="tonal">
             {{ searchStore.error }}
           </v-alert>
         </CCol>
@@ -219,19 +219,65 @@ const meetingStatusLabel: Record<string, string> = { '1': '준비', '2': '종료
         <!-- 결과 없음 -->
         <CRow v-if="!searchStore.hasResults" class="mt-2">
           <CCol>
-            <v-alert type="info" variant="tonal" density="compact">
-              <v-icon icon="mdi-magnify-close" class="mr-1" />
+            <v-alert variant="tonal" color="blue-grey">
+              <v-icon icon="mdi-magnify-close" size="22" class="mr-1" />
               검색 결과가 없습니다.
             </v-alert>
           </CCol>
         </CRow>
+
+        <!-- 회의록 결과 -->
+        <template v-if="searchStore.results?.meetings?.length">
+          <CRow class="mt-4">
+            <CCol>
+              <h6 class="text-medium-emphasis">
+                <v-icon icon="mdi-account-group-outline" size="small" class="mr-1" />
+                {{ typeLabel.meetings }}
+                <v-chip size="x-small" class="ml-1">
+                  {{ searchStore.results.meetings.length }}
+                </v-chip>
+              </h6>
+              <v-divider />
+            </CCol>
+          </CRow>
+          <CRow
+            v-for="item in searchStore.results.meetings"
+            :key="`meeting-${item.pk}`"
+            class="mt-2"
+          >
+            <CCol>
+              <div class="d-flex align-center gap-2 flex-wrap">
+                <v-chip size="x-small" color="teal" label>
+                  {{ meetingStatusLabel[item.status] ?? item.status }}
+                </v-chip>
+                <router-link
+                  :to="{
+                    name: '(회의) - 보기',
+                    params: { projId: item.project.slug, meetingId: item.pk },
+                  }"
+                  class="text-body-2"
+                >
+                  {{ item.title }}
+                </router-link>
+                <span class="text-caption text-medium-emphasis">
+                  {{ item.project.name }} · {{ item.creator.username }} ·
+                  {{
+                    item.meeting_date
+                      ? new Date(item.meeting_date).toLocaleDateString('ko-KR')
+                      : '-'
+                  }}
+                </span>
+              </div>
+            </CCol>
+          </CRow>
+        </template>
 
         <!-- 업무 결과 -->
         <template v-if="searchStore.results?.issues?.length">
           <CRow class="mt-4">
             <CCol>
               <h6 class="text-medium-emphasis">
-                <v-icon icon="mdi-check-circle-outline" size="small" class="mr-1" />
+                <v-icon icon="mdi-clipboard-check-outline" size="small" class="mr-1" />
                 {{ typeLabel.issues }}
                 <v-chip size="x-small" class="ml-1">{{ searchStore.results.issues.length }}</v-chip>
               </h6>
@@ -274,11 +320,11 @@ const meetingStatusLabel: Record<string, string> = { '1': '준비', '2': '종료
           <CRow class="mt-4">
             <CCol>
               <h6 class="text-medium-emphasis">
-                <v-icon icon="mdi-comment-outline" size="small" class="mr-1" />
+                <v-icon icon="mdi-comment-search-outline" size="small" class="mr-1" />
                 {{ typeLabel.comments }}
-                <v-chip size="x-small" class="ml-1">{{
-                  searchStore.results.comments.length
-                }}</v-chip>
+                <v-chip size="x-small" class="ml-1">
+                  {{ searchStore.results.comments.length }}
+                </v-chip>
               </h6>
               <v-divider />
             </CCol>
@@ -310,58 +356,12 @@ const meetingStatusLabel: Record<string, string> = { '1': '준비', '2': '종료
           </CRow>
         </template>
 
-        <!-- 회의록 결과 -->
-        <template v-if="searchStore.results?.meetings?.length">
-          <CRow class="mt-4">
-            <CCol>
-              <h6 class="text-medium-emphasis">
-                <v-icon icon="mdi-account-group-outline" size="small" class="mr-1" />
-                {{ typeLabel.meetings }}
-                <v-chip size="x-small" class="ml-1">{{
-                  searchStore.results.meetings.length
-                }}</v-chip>
-              </h6>
-              <v-divider />
-            </CCol>
-          </CRow>
-          <CRow
-            v-for="item in searchStore.results.meetings"
-            :key="`meeting-${item.pk}`"
-            class="mt-2"
-          >
-            <CCol>
-              <div class="d-flex align-center gap-2 flex-wrap">
-                <v-chip size="x-small" color="teal" label>
-                  {{ meetingStatusLabel[item.status] ?? item.status }}
-                </v-chip>
-                <router-link
-                  :to="{
-                    name: '(회의) - 보기',
-                    params: { projId: item.project.slug, meetingId: item.pk },
-                  }"
-                  class="text-body-2"
-                >
-                  {{ item.title }}
-                </router-link>
-                <span class="text-caption text-medium-emphasis">
-                  {{ item.project.name }} · {{ item.creator.username }} ·
-                  {{
-                    item.meeting_date
-                      ? new Date(item.meeting_date).toLocaleDateString('ko-KR')
-                      : '-'
-                  }}
-                </span>
-              </div>
-            </CCol>
-          </CRow>
-        </template>
-
         <!-- 공지 결과 -->
         <template v-if="searchStore.results?.news?.length">
           <CRow class="mt-4">
             <CCol>
               <h6 class="text-medium-emphasis">
-                <v-icon icon="mdi-bullhorn-outline" size="small" class="mr-1" />
+                <v-icon icon="mdi-message-badge-outline" size="small" class="mr-1" />
                 {{ typeLabel.news }}
                 <v-chip size="x-small" class="ml-1">{{ searchStore.results.news.length }}</v-chip>
               </h6>
@@ -397,11 +397,11 @@ const meetingStatusLabel: Record<string, string> = { '1': '준비', '2': '종료
           <CRow class="mt-4">
             <CCol>
               <h6 class="text-medium-emphasis">
-                <v-icon icon="mdi-file-document-outline" size="small" class="mr-1" />
+                <v-icon icon="mdi-text-box-search-outline" size="small" class="mr-1" />
                 {{ typeLabel.documents }}
-                <v-chip size="x-small" class="ml-1">{{
-                  searchStore.results.documents.length
-                }}</v-chip>
+                <v-chip size="x-small" class="ml-1">
+                  {{ searchStore.results.documents.length }}
+                </v-chip>
               </h6>
               <v-divider />
             </CCol>
