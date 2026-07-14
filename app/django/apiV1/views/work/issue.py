@@ -1,4 +1,5 @@
 from django.db.models import Q
+from work.models.project import Member
 from django_filters.rest_framework import FilterSet, BooleanFilter, CharFilter, NumberFilter
 from rest_framework import viewsets
 from rest_framework.decorators import action
@@ -109,6 +110,59 @@ class IssueFilter(FilterSet):
         return queryset
 
 
+def build_issue_queryset(user, base_qs=None):
+    """
+    사용자 권한에 따른 Issue 쿼리셋을 반환하는 공용 빌더.
+    IssueViewSet.get_queryset() 및 SearchViewSet 검색에서 공통 사용.
+    """
+    if base_qs is None:
+        base_qs = Issue.objects.filter(project__status='1').select_related(
+            'project', 'status', 'creator', 'assigned_to', 'tracker', 'fixed_version'
+        )
+
+    if getattr(user, 'work_manager', False) or user.is_superuser:
+        return base_qs
+
+    user_members = Member.objects.filter(user=user).prefetch_related('roles__permissions')
+    member_all_pids, member_pub_pids, private_pids = [], [], []
+    issue_visibility_order = {'ALL': 3, 'PUB': 2, 'PRI': 1, 'NOP': 0}
+
+    for member in user_members:
+        best_visible, has_private_perm = 'NOP', False
+        for role in member.roles.all():
+            if issue_visibility_order.get(role.issue_visible, 0) > issue_visibility_order.get(best_visible, 0):
+                best_visible = role.issue_visible
+            for perm in role.permissions.all():
+                if perm.code == 'issue.private':
+                    has_private_perm = True
+        if best_visible == 'ALL':
+            member_all_pids.append(member.project_id)
+        elif best_visible == 'PUB':
+            member_pub_pids.append(member.project_id)
+        if has_private_perm:
+            private_pids.append(member.project_id)
+
+    from work.models.project import Role
+    try:
+        non_member_visible = Role.objects.get(pk=2).issue_visible
+    except Role.DoesNotExist:
+        non_member_visible = 'NOP'
+
+    q_expr = Q(creator=user) | Q(assigned_to=user)
+    if member_all_pids:
+        q_expr |= Q(project_id__in=member_all_pids)
+    if member_pub_pids:
+        q_expr |= Q(project_id__in=member_pub_pids, is_private=False)
+    if private_pids:
+        q_expr |= Q(project_id__in=private_pids)
+    if non_member_visible == 'ALL':
+        q_expr |= Q(project__is_public=True)
+    elif non_member_visible == 'PUB':
+        q_expr |= Q(project__is_public=True, is_private=False)
+
+    return base_qs.filter(q_expr).distinct()
+
+
 class IssueViewSet(viewsets.ModelViewSet):
     queryset = Issue.objects.all()
     serializer_class = IssueSerializer
@@ -151,77 +205,12 @@ class IssueViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     def get_queryset(self):
-        user = self.request.user
-
-        # 기본 쿼리셋에 관계형 필드를 미리 로딩하여 N+1 문제 방지
-        # + 프로젝트 상태가 '1'(사용)인 업무만 조회하도록 제한 (전역 조건)
-        queryset = self.queryset.filter(project__status='1').select_related(
-            'project', 'status', 'creator', 'assigned_to', 'tracker', 'fixed_version'
+        return build_issue_queryset(
+            self.request.user,
+            self.queryset.filter(project__status='1').select_related(
+                'project', 'status', 'creator', 'assigned_to', 'tracker', 'fixed_version'
+            )
         )
-
-        # 관리자는 모든 사용 중인 프로젝트의 업무에 접근 가능
-        if getattr(user, 'work_manager', False) or user.is_superuser:
-            return queryset
-
-        # 1. 사용자의 멤버 프로젝트들을 가져와 권한 수준에 따라 분류
-        user_members = Member.objects.filter(user=user).prefetch_related('roles__permissions')
-
-        member_all_pids = []
-        member_pub_pids = []
-        private_pids = []  # issue.private 권한 보유 프로젝트 (Method D)
-
-        issue_visibility_order = {'ALL': 3, 'PUB': 2, 'PRI': 1, 'NOP': 0}
-
-        for member in user_members:
-            best_visible = 'NOP'
-            has_private_perm = False
-            for role in member.roles.all():
-                if issue_visibility_order.get(role.issue_visible, 0) > issue_visibility_order.get(best_visible, 0):
-                    best_visible = role.issue_visible
-                for perm in role.permissions.all():
-                    if perm.code == 'issue.private':
-                        has_private_perm = True
-
-            if best_visible == 'ALL':
-                member_all_pids.append(member.project_id)
-            elif best_visible == 'PUB':
-                member_pub_pids.append(member.project_id)
-
-            if has_private_perm:
-                private_pids.append(member.project_id)
-
-        # 2. 비회원 역할(pk=2) 정보 가져오기
-        from work.models.project import Role
-        try:
-            non_member_role = Role.objects.get(pk=2)
-            non_member_visible = non_member_role.issue_visible
-        except Role.DoesNotExist:
-            non_member_visible = 'NOP'
-
-        # 3. 쿼리셋 필터 조건 빌드
-        # 기본 조건: 본인이 작성자(creator)이거나 담당자(assigned_to)인 업무는 무조건 허용
-        q_expr = Q(creator=user) | Q(assigned_to=user)
-
-        # 멤버 프로젝트 중 ALL 권한을 가진 프로젝트들의 모든 업무
-        if member_all_pids:
-            q_expr |= Q(project_id__in=member_all_pids)
-
-        # 멤버 프로젝트 중 PUB 권한을 가진 프로젝트들의 공개 업무
-        if member_pub_pids:
-            q_expr |= Q(project_id__in=member_pub_pids, is_private=False)
-
-        # issue.private 권한 보유 시 해당 프로젝트의 모든 비공개 업무 포함 (Method D)
-        if private_pids:
-            q_expr |= Q(project_id__in=private_pids)
-
-        # 멤버가 아닌 프로젝트들에 대한 비회원 권한 적용
-        # (비회원이 접근할 수 있는 프로젝트는 '공개 프로젝트(is_public=True)'이면서 '멤버가 아닌 프로젝트'임)
-        if non_member_visible == 'ALL':
-            q_expr |= Q(project__is_public=True)
-        elif non_member_visible == 'PUB':
-            q_expr |= Q(project__is_public=True, is_private=False)
-
-        return queryset.filter(q_expr).distinct()
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)

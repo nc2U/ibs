@@ -1,5 +1,7 @@
 from django.db.models import Q
 from rest_framework import viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
 from apiV1.pagination import PageNumberPaginationTen
 from apiV1.permissions.auth_perms import permissions
@@ -138,3 +140,109 @@ class SearchViewSet(viewsets.ModelViewSet):
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset
         return queryset.filter(member__user=user)
+
+    @action(detail=False, methods=['get'], url_path='run')
+    def run(self, request):
+        """
+        통합 검색 실행 엔드포인트
+        GET /api/v1/issue-search/run/?q=키워드&scope=all&t=issues&t=comments&t=meetings&t=news
+        파라미터:
+          q          : 검색어 (필수, 2자 이상)
+          scope      : 'all' | 'project' (기본: 'all')
+          slug       : 프로젝트 slug (scope='project'일 때)
+          t          : 검색 대상 (복수 가능) - issues, comments, meetings, news
+          title_only : '1'이면 제목만 검색 (기본: '0')
+        """
+        q = request.query_params.get('q', '').strip()
+        if len(q) < 2:
+            return Response({'error': '검색어는 2자 이상 입력하세요.'}, status=400)
+
+        scope = request.query_params.get('scope', 'all')
+        slug = request.query_params.get('slug', '')
+        targets = set(request.query_params.getlist('t')) or {'issues', 'comments', 'meetings', 'news'}
+        title_only = request.query_params.get('title_only', '0') == '1'
+
+        results = {}
+        if 'issues' in targets:
+            results['issues'] = self._search_issues(request.user, q, scope, slug, title_only)
+        if 'comments' in targets:
+            results['comments'] = self._search_comments(request.user, q, scope, slug)
+        if 'meetings' in targets:
+            results['meetings'] = self._search_meetings(request.user, q, scope, slug, title_only)
+        if 'news' in targets:
+            results['news'] = self._search_news(request.user, q, scope, slug, title_only)
+
+        return Response(results)
+
+    @staticmethod
+    def _search_issues(user, q, scope, slug, title_only):
+        from apiV1.views.work.issue import build_issue_queryset
+        from apiV1.serializers.work.search import IssueSearchSerializer
+
+        qs = build_issue_queryset(user)
+        if title_only:
+            qs = qs.filter(subject__icontains=q)
+        else:
+            qs = qs.filter(Q(subject__icontains=q) | Q(description__icontains=q))
+        if scope == 'project' and slug:
+            qs = qs.filter(project__slug=slug)
+        return IssueSearchSerializer(qs[:25], many=True).data
+
+    @staticmethod
+    def _search_comments(user, q, scope, slug):
+        from apiV1.serializers.work.search import CommentSearchSerializer
+        from work.models.issue import IssueComment
+
+        qs = IssueComment.objects.filter(
+            content__icontains=q,
+            is_private=False,
+            issue__project__status='1',
+        ).select_related('issue__project', 'creator')
+
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            qs = qs.filter(
+                Q(issue__project__is_public=True) | Q(issue__project__members__user=user)
+            ).distinct()
+
+        if scope == 'project' and slug:
+            qs = qs.filter(issue__project__slug=slug)
+        return CommentSearchSerializer(qs[:25], many=True).data
+
+    @staticmethod
+    def _search_meetings(user, q, scope, slug, title_only):
+        from apiV1.serializers.work.search import MeetingSearchSerializer
+        from work.models.meeting import Meeting
+
+        if title_only:
+            q_expr = Q(title__icontains=q)
+        else:
+            q_expr = Q(title__icontains=q) | Q(agenda__icontains=q) | Q(decisions__icontains=q)
+
+        qs = Meeting.objects.filter(q_expr).select_related('project', 'creator')
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            qs = qs.filter(
+                Q(project__is_public=True) | Q(project__members__user=user)
+            ).distinct()
+        if scope == 'project' and slug:
+            qs = qs.filter(project__slug=slug)
+        return MeetingSearchSerializer(qs[:25], many=True).data
+
+    @staticmethod
+    def _search_news(user, q, scope, slug, title_only):
+        from apiV1.serializers.work.search import NewsSearchSerializer
+        from work.models.inform import News
+
+        if title_only:
+            q_expr = Q(title__icontains=q)
+        else:
+            q_expr = Q(title__icontains=q) | Q(summary__icontains=q) | Q(content__icontains=q)
+
+        qs = News.objects.filter(q_expr).select_related('project', 'author')
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            qs = qs.filter(
+                Q(project__is_public=True) | Q(project__members__user=user)
+            ).distinct()
+        if scope == 'project' and slug:
+            qs = qs.filter(project__slug=slug)
+        return NewsSearchSerializer(qs[:25], many=True).data
+
