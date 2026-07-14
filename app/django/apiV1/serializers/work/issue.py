@@ -9,7 +9,7 @@ from apiV1.serializers.work.project import SimpleIssueProjectSerializer, Tracker
 from work.models.issue import (IssueCategory, Tracker, IssueStatus, Workflow, CodeIssuePriority,
                                Issue, IssueRelation, IssueFile, IssueComment)
 from work.models.meeting import Meeting
-from work.models.project import IssueProject, Version, ProjectSubscription
+from work.models.project import IssueProject, Member, Version, ProjectSubscription
 
 
 class MeetingInIssueSerializer(serializers.ModelSerializer):
@@ -157,9 +157,16 @@ class IssueSerializer(serializers.ModelSerializer):
             if project:
                 # 구성원(멤버) 여부 검증 (슈퍼유저 및 work_manager 제외)
                 if not (assigned_user.is_superuser or getattr(assigned_user, 'work_manager', False)):
-                    all_members = project.all_members()
-                    member_ids = {m['user']['pk'] for m in all_members}
-                    if assigned_user.pk not in member_ids:
+                    project_ids = [project.pk]
+                    curr = project
+                    while curr.is_inherit_members and curr.parent:
+                        if curr.parent.pk in project_ids:
+                            break
+                        project_ids.append(curr.parent.pk)
+                        curr = curr.parent
+
+                    is_member = Member.objects.filter(project_id__in=project_ids, user=assigned_user).exists()
+                    if not is_member:
                         raise serializers.ValidationError(
                             {'assigned_to': '지정된 담당자는 이 프로젝트의 구성원(멤버)이 아닙니다.'})
 
@@ -266,15 +273,14 @@ class IssueSerializer(serializers.ModelSerializer):
                     if is_private_req is not None and is_private_req != self.instance.is_private:
                         is_own = (user == self.instance.creator) or (user == self.instance.assigned_to)
                         has_write_private = (
-                            'issue.private' in prj_perms
-                            or ('issue.own_private' in prj_perms and is_own)
+                                'issue.private' in prj_perms
+                                or ('issue.own_private' in prj_perms and is_own)
                         )
                         if not has_write_private:
                             raise serializers.ValidationError(
                                 {'is_private': '이 업무의 비공개 여부를 변경할 권한이 없습니다.'})
 
         return attrs
-
 
     @transaction.atomic
     def create(self, validated_data):
@@ -553,9 +559,17 @@ class IssueCategorySerializer(serializers.ModelSerializer):
             if project:
                 # 구성원(멤버) 여부 검증 (슈퍼유저 및 work_manager 제외)
                 if not (assigned_to.is_superuser or getattr(assigned_to, 'work_manager', False)):
-                    all_members = project.all_members()
-                    member_ids = {m['user']['pk'] for m in all_members}
-                    if assigned_to.pk not in member_ids:
+                    from work.models.project import Member
+                    project_ids = [project.pk]
+                    curr = project
+                    while curr.is_inherit_members and curr.parent:
+                        if curr.parent.pk in project_ids:
+                            break
+                        project_ids.append(curr.parent.pk)
+                        curr = curr.parent
+
+                    is_member = Member.objects.filter(project_id__in=project_ids, user=assigned_to).exists()
+                    if not is_member:
                         raise serializers.ValidationError(
                             {'assigned_to': '지정된 담당자는 이 프로젝트의 구성원(멤버)이 아닙니다.'})
 
