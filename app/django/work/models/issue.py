@@ -115,8 +115,9 @@ file_cleanup_signals(IssueFile)  # 파일인스턴스 직접 삭제시
 class IssueComment(models.Model):
     issue = models.ForeignKey(Issue, on_delete=models.CASCADE, verbose_name='업무', related_name='comments')
     content = models.TextField('내용')
-    is_private = models.BooleanField('비공개 댓글', default=False)
     parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='replies')
+    is_private = models.BooleanField('비공개 댓글', default=False)
+    is_blocked = models.BooleanField('관리자 잠금', default=False)
     created = models.DateTimeField('등록일', auto_now_add=True)
     updated = models.DateTimeField('수정일', auto_now=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name='작성자')

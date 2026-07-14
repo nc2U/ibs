@@ -47,6 +47,8 @@ export interface IssueLogEntry {
   comment: {
     pk: number
     content: string
+    is_private?: boolean
+    is_blocked?: boolean
     creator: { pk: number; username: string }
   } | null
   details: string

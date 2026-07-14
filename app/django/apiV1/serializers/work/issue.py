@@ -488,7 +488,32 @@ class IssueCommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = IssueComment
-        fields = ('pk', 'issue', 'content', 'is_private', 'created', 'updated', 'creator')
+        fields = ('pk', 'issue', 'content', 'is_private', 'is_blocked', 'created', 'updated', 'creator')
+
+    def update(self, instance, validated_data):
+        user = self.context['request'].user
+        is_private_req = self.initial_data.get('is_private', None)
+
+        if is_private_req is not None:
+            if isinstance(is_private_req, str):
+                is_private_req = is_private_req.lower() in ['true', '1']
+            else:
+                is_private_req = bool(is_private_req)
+
+            if is_private_req != instance.is_private:
+                if is_private_req:
+                    # 관리자가 비공개로 강제 전환한 경우
+                    if instance.creator != user:
+                        instance.is_blocked = True
+                else:
+                    # 비공개 설정을 푼 경우
+                    instance.is_blocked = False
+
+        # 모델 수정
+        instance.is_private = validated_data.get('is_private', instance.is_private)
+        instance.content = validated_data.get('content', instance.content)
+        instance.save()
+        return instance
 
 
 class TrackerSerializer(serializers.ModelSerializer):

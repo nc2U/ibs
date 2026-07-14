@@ -1,6 +1,5 @@
 <script lang="ts" setup>
 import { computed, type PropType, ref } from 'vue'
-import { btnLight } from '@/utils/cssMixins.ts'
 import type { IssueLogEntry } from '@/store/types/work_logging.ts'
 import { useRoute } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
@@ -34,19 +33,29 @@ const callReply = (log_id: number, user: string, content: string) => {
 }
 
 const editMode = ref(false)
-
-const toEdit = (comment: string) => {
-  editMode.value = !editMode.value
-  content.value = comment
-}
-
 const content = ref('')
+const isPrivate = ref(false)
+
+const isLockedByAdmin = computed(
+  () => !can(PERM.ISSUE_PRIVATE_COMMENT_SET) && !!props.log.comment?.is_blocked,
+)
+
+const toEdit = (commentVal: string) => {
+  editMode.value = !editMode.value
+  content.value = commentVal
+  isPrivate.value = !!props.log.comment?.is_private
+}
 
 const issueStore = useIssue()
 const commentSubmit = () => {
   const pk = props.log?.comment?.pk
   const issue = props.log?.issue?.pk
-  issueStore.patchIssueComment({ pk, issue, content: content.value })
+  issueStore.patchIssueComment({
+    pk,
+    issue,
+    content: content.value,
+    is_private: isPrivate.value,
+  })
   editMode.value = false
 }
 
@@ -123,6 +132,14 @@ const delSubmit = () => {
             <v-tooltip activator="parent" location="top">{{ timeFormat(log.timestamp) }}</v-tooltip>
           </span>
           에 변경
+          <v-icon
+            v-if="log.comment?.is_private"
+            icon="mdi-lock"
+            color="warning"
+            size="14"
+            class="ml-1 align-middle"
+          />
+          <v-tooltip activator="parent" location="top"> 비공개 댓글 </v-tooltip>
         </CCol>
         <CCol class="text-right">
           <span v-if="can(PERM.ISSUE_COMMENT_CREATE)">
@@ -203,10 +220,22 @@ const delSubmit = () => {
         <div v-if="!editMode" v-html="markdownRender(log.comment?.content + '\n' || '\n')" />
         <span v-else>
           <MdEditor v-model="content" style="height: 150px" class="mb-1" placeholder="Comment.." />
-          <CFormCheck id="private_comment" label="비공개 댓글" />
+          <CFormCheck
+            v-model="isPrivate"
+            id="private_comment"
+            inline
+            label="비공개 댓글"
+            :disabled="isLockedByAdmin"
+          />
+
+          <span v-if="isLockedByAdmin" class="text-danger small inline">
+            관리자에 의해 비공개로 전환된 댓글입니다. 설정을 변경할 수 없습니다.
+          </span>
           <div class="my-3">
-            <v-btn color="success" size="small" @click="commentSubmit">저장</v-btn>
-            <v-btn :color="btnLight" size="small" @click="() => (editMode = false)">취소</v-btn>
+            <v-btn color="success" size="small" @click="commentSubmit" :disabled="isLockedByAdmin">
+              저장
+            </v-btn>
+            <v-btn color="light" size="small" @click="() => (editMode = false)" flat>취소</v-btn>
           </div>
         </span>
       </div>

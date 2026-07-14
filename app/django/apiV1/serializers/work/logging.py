@@ -62,7 +62,7 @@ class SimpleCommentInIssueLogEntrySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = IssueComment
-        fields = ('pk', 'content', 'is_private', 'creator')
+        fields = ('pk', 'content', 'is_private', 'is_blocked', 'creator')
 
 
 class IssueLogEntrySerializer(serializers.ModelSerializer):

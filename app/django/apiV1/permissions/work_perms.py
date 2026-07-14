@@ -438,6 +438,10 @@ class IssueCommentPermission(ProjectPermission):
                         req_private = req_private.lower() in ['true', '1']
 
                     if req_private != obj.is_private:
+                        # 이미 관리자에 의해 잠긴 댓글(is_blocked=True)인 경우 권한 소유자만 설정 변경 가능
+                        if obj.is_blocked and 'issue.private_comment_set' not in user_perms:
+                            return False
+
                         is_own_comment = (obj.creator == user)
                         has_set_perm = 'issue.private_comment_set' in user_perms
                         if not (is_own_comment or has_set_perm):
