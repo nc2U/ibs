@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { computed, onBeforeMount, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { navMenu2 as navMenu } from '@/views/_Work/_menu/headermixin1'
 import { colorLight } from '@/utils/cssMixins'
 import { useCompany } from '@/store/pinia/company.ts'
 import { useSearch } from '@/store/pinia/work_search.ts'
-import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import type { Company } from '@/store/types/settings'
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 
@@ -59,14 +59,8 @@ watch(
       doSearch(q)
     }
   },
+  { immediate: true },
 )
-
-onBeforeMount(() => {
-  if (route.query.q) {
-    searchWord.value = route.query.q as string
-    doSearch(searchWord.value)
-  }
-})
 
 onBeforeRouteLeave((to, from, next) => {
   searchStore.reset()
@@ -96,7 +90,10 @@ const meetingStatusLabel: Record<string, string> = { '1': '준비', '2': '종료
     <template v-slot:default>
       <CRow class="py-2">
         <CCol>
-          <h5>검색</h5>
+          <h5>
+            <v-icon icon="mdi-magnify" size="small" class="mr-1" />
+            검색
+          </h5>
         </CCol>
       </CRow>
 
@@ -111,16 +108,18 @@ const meetingStatusLabel: Record<string, string> = { '1': '준비', '2': '종료
                   placeholder="검색어 입력 (2자 이상)"
                   @keydown.enter="goSearch"
                 />
-                <v-btn
+                <span
                   color="primary"
                   variant="flat"
                   rounded="0"
                   size="small"
+                  class="input-group-text"
                   :loading="searchStore.loading"
                   @click="goSearch"
                 >
+                  <v-icon icon="mdi-magnify" size="18" class="mr-1" />
                   검색
-                </v-btn>
+                </span>
               </CInputGroup>
             </CCol>
             <CCol class="pt-2">
@@ -189,7 +188,9 @@ const meetingStatusLabel: Record<string, string> = { '1': '준비', '2': '종료
           <CCol>
             <h5>
               결과
-              <v-chip size="small" color="primary" class="ml-1">{{ searchStore.totalCount }}</v-chip>
+              <v-chip size="small" color="primary" class="ml-1">
+                {{ searchStore.totalCount }}
+              </v-chip>
             </h5>
           </CCol>
         </CRow>
@@ -216,11 +217,7 @@ const meetingStatusLabel: Record<string, string> = { '1': '준비', '2': '종료
               <v-divider />
             </CCol>
           </CRow>
-          <CRow
-            v-for="item in searchStore.results.issues"
-            :key="`issue-${item.pk}`"
-            class="mt-2"
-          >
+          <CRow v-for="item in searchStore.results.issues" :key="`issue-${item.pk}`" class="mt-2">
             <CCol>
               <div class="d-flex align-center gap-2 flex-wrap">
                 <v-chip size="x-small" :color="statusColor(item.status.closed)" label>
@@ -229,13 +226,18 @@ const meetingStatusLabel: Record<string, string> = { '1': '준비', '2': '종료
                 <v-chip size="x-small" color="blue-grey" label>{{ item.tracker.name }}</v-chip>
                 <router-link
                   :to="{
-                    name: '(업무)',
+                    name: '(업무) - 보기',
                     params: { projId: item.project.slug },
                     query: { issueId: item.pk },
                   }"
                   class="text-body-2"
                 >
-                  <v-icon v-if="item.is_private" icon="mdi-lock-outline" size="x-small" class="mr-1 text-warning" />
+                  <v-icon
+                    v-if="item.is_private"
+                    icon="mdi-lock-outline"
+                    size="x-small"
+                    class="mr-1 text-warning"
+                  />
                   {{ item.subject }}
                 </router-link>
                 <span class="text-caption text-medium-emphasis">
@@ -254,7 +256,9 @@ const meetingStatusLabel: Record<string, string> = { '1': '준비', '2': '종료
               <h6 class="text-medium-emphasis">
                 <v-icon icon="mdi-comment-outline" size="small" class="mr-1" />
                 {{ typeLabel.comments }}
-                <v-chip size="x-small" class="ml-1">{{ searchStore.results.comments.length }}</v-chip>
+                <v-chip size="x-small" class="ml-1">{{
+                  searchStore.results.comments.length
+                }}</v-chip>
               </h6>
               <v-divider />
             </CCol>
@@ -268,7 +272,7 @@ const meetingStatusLabel: Record<string, string> = { '1': '준비', '2': '종료
               <div class="d-flex align-center gap-2 flex-wrap">
                 <router-link
                   :to="{
-                    name: '(업무)',
+                    name: '(업무) - 보기',
                     params: { projId: item.issue.project.slug },
                     query: { issueId: item.issue.pk },
                   }"
@@ -294,7 +298,9 @@ const meetingStatusLabel: Record<string, string> = { '1': '준비', '2': '종료
               <h6 class="text-medium-emphasis">
                 <v-icon icon="mdi-account-group-outline" size="small" class="mr-1" />
                 {{ typeLabel.meetings }}
-                <v-chip size="x-small" class="ml-1">{{ searchStore.results.meetings.length }}</v-chip>
+                <v-chip size="x-small" class="ml-1">{{
+                  searchStore.results.meetings.length
+                }}</v-chip>
               </h6>
               <v-divider />
             </CCol>
@@ -310,14 +316,21 @@ const meetingStatusLabel: Record<string, string> = { '1': '준비', '2': '종료
                   {{ meetingStatusLabel[item.status] ?? item.status }}
                 </v-chip>
                 <router-link
-                  :to="{ name: '(회의)', params: { projId: item.project.slug, meetingId: item.pk } }"
+                  :to="{
+                    name: '(회의) - 보기',
+                    params: { projId: item.project.slug, meetingId: item.pk },
+                  }"
                   class="text-body-2"
                 >
                   {{ item.title }}
                 </router-link>
                 <span class="text-caption text-medium-emphasis">
                   {{ item.project.name }} · {{ item.creator.username }} ·
-                  {{ item.meeting_date ? new Date(item.meeting_date).toLocaleDateString('ko-KR') : '-' }}
+                  {{
+                    item.meeting_date
+                      ? new Date(item.meeting_date).toLocaleDateString('ko-KR')
+                      : '-'
+                  }}
                 </span>
               </div>
             </CCol>
@@ -336,16 +349,12 @@ const meetingStatusLabel: Record<string, string> = { '1': '준비', '2': '종료
               <v-divider />
             </CCol>
           </CRow>
-          <CRow
-            v-for="item in searchStore.results.news"
-            :key="`news-${item.pk}`"
-            class="mt-2"
-          >
+          <CRow v-for="item in searchStore.results.news" :key="`news-${item.pk}`" class="mt-2">
             <CCol>
               <div class="d-flex align-center gap-2 flex-wrap">
                 <router-link
                   :to="{
-                    name: '(공지)',
+                    name: '(공지) - 보기',
                     params: { projId: item.project.slug, newsId: item.pk },
                   }"
                   class="text-body-2"
@@ -371,21 +380,19 @@ const meetingStatusLabel: Record<string, string> = { '1': '준비', '2': '종료
               <h6 class="text-medium-emphasis">
                 <v-icon icon="mdi-file-document-outline" size="small" class="mr-1" />
                 {{ typeLabel.documents }}
-                <v-chip size="x-small" class="ml-1">{{ searchStore.results.documents.length }}</v-chip>
+                <v-chip size="x-small" class="ml-1">{{
+                  searchStore.results.documents.length
+                }}</v-chip>
               </h6>
               <v-divider />
             </CCol>
           </CRow>
-          <CRow
-            v-for="item in searchStore.results.documents"
-            :key="`doc-${item.pk}`"
-            class="mt-2"
-          >
+          <CRow v-for="item in searchStore.results.documents" :key="`doc-${item.pk}`" class="mt-2">
             <CCol>
               <div class="d-flex align-center gap-2 flex-wrap">
                 <router-link
                   :to="{
-                    name: '(문서)',
+                    name: '(문서) - 보기',
                     params: { projId: item.project.slug, docId: item.pk },
                   }"
                   class="text-body-2"
@@ -416,11 +423,7 @@ const meetingStatusLabel: Record<string, string> = { '1': '준비', '2': '종료
               <v-divider />
             </CCol>
           </CRow>
-          <CRow
-            v-for="item in searchStore.results.posts"
-            :key="`post-${item.pk}`"
-            class="mt-2"
-          >
+          <CRow v-for="item in searchStore.results.posts" :key="`post-${item.pk}`" class="mt-2">
             <CCol>
               <div class="d-flex align-center gap-2 flex-wrap">
                 <router-link

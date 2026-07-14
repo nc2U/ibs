@@ -82,7 +82,7 @@ class NewsSearchSerializer(serializers.ModelSerializer):
 
 
 class DocumentSearchSerializer(serializers.ModelSerializer):
-    project = serializers.SerializerMethodField(source='issue_project')
+    project = serializers.SerializerMethodField()
     creator = serializers.SerializerMethodField()
 
     class Meta:
