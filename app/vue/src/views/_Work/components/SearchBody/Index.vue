@@ -183,7 +183,7 @@ const meetingStatusLabel: Record<string, string> = { '1': '준비', '2': '종료
       </CRow>
 
       <!-- 검색 결과 -->
-      <template v-if="route.query.q && !searchStore.loading">
+      <div v-if="route.query.q && !searchStore.loading">
         <CRow class="mt-4">
           <CCol>
             <h5>
@@ -227,8 +227,7 @@ const meetingStatusLabel: Record<string, string> = { '1': '준비', '2': '종료
                 <router-link
                   :to="{
                     name: '(업무) - 보기',
-                    params: { projId: item.project.slug },
-                    query: { issueId: item.pk },
+                    params: { projId: item.project.slug, issueId: item.pk },
                   }"
                   class="text-body-2"
                 >
@@ -273,8 +272,7 @@ const meetingStatusLabel: Record<string, string> = { '1': '준비', '2': '종료
                 <router-link
                   :to="{
                     name: '(업무) - 보기',
-                    params: { projId: item.issue.project.slug },
-                    query: { issueId: item.issue.pk },
+                    params: { projId: item.issue.project.slug, issueId: item.issue.pk },
                   }"
                   class="text-body-2"
                 >
@@ -429,7 +427,7 @@ const meetingStatusLabel: Record<string, string> = { '1': '준비', '2': '종료
                 <router-link
                   :to="{
                     name: '(게시판) - 게시물 보기',
-                    params: { projId: item.project.slug, postId: item.pk },
+                    params: { projId: item.project.slug, forumId: item.forum, postId: item.pk },
                   }"
                   class="text-body-2"
                 >
@@ -443,7 +441,7 @@ const meetingStatusLabel: Record<string, string> = { '1': '준비', '2': '종료
             </CCol>
           </CRow>
         </template>
-      </template>
+      </div>
     </template>
 
     <template v-slot:aside></template>

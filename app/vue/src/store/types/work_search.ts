@@ -53,6 +53,7 @@ export interface SearchResultDoc {
 export interface SearchResultPost {
   pk: number
   project: { slug: string; name: string }
+  forum: number
   title: string
   created: string
   creator: { pk: number; username: string } | null

@@ -98,14 +98,18 @@ class DocumentSearchSerializer(serializers.ModelSerializer):
 
 class PostSearchSerializer(serializers.ModelSerializer):
     project = serializers.SerializerMethodField()
+    forum = serializers.SerializerMethodField()
     creator = serializers.SerializerMethodField()
 
     class Meta:
         model = Post
-        fields = ('pk', 'project', 'title', 'created', 'creator')
+        fields = ('pk', 'project', 'forum', 'title', 'created', 'creator')
 
     def get_project(self, obj):
         return {'slug': obj.forum.project.slug, 'name': obj.forum.project.name}
+
+    def get_forum(self, obj):
+        return obj.forum.pk
 
     def get_creator(self, obj):
         return {'pk': obj.creator.pk, 'username': obj.creator.username} if obj.creator else None
