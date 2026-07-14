@@ -404,6 +404,11 @@ class IssueCommentPermission(ProjectPermission):
             return False
 
         user = request.user
+
+        # 슈퍼유저 / 업무 관리자는 모든 검증을 통과
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return True
+
         project = None
         if hasattr(obj, 'issue') and hasattr(obj.issue, 'project'):
             project = obj.issue.project
@@ -433,9 +438,10 @@ class IssueCommentPermission(ProjectPermission):
                         req_private = req_private.lower() in ['true', '1']
 
                     if req_private != obj.is_private:
-                        if 'issue.private_comment_set' not in user_perms:
-                            if not ('issue.comment_own_update' in user_perms and obj.creator == user):
-                                return False
+                        is_own_comment = (obj.creator == user)
+                        has_set_perm = 'issue.private_comment_set' in user_perms
+                        if not (is_own_comment or has_set_perm):
+                            return False
 
                 # 2) 댓글 내용 수정 권한 검증
                 if 'issue.comment_update' in user_perms:

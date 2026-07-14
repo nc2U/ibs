@@ -9,7 +9,7 @@ from apiV1.permissions.auth_perms import permissions
 from apiV1.serializers.work import IssueLogEntrySerializer
 from apiV1.serializers.work.logging import ActivityLogEntrySerializer
 from work.models.logging import ActivityLogEntry, IssueLogEntry
-from work.models.project import IssueProject
+from work.models.project import IssueProject, Role, Member
 
 
 def get_sub_project_ids(parent):
@@ -84,7 +84,6 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
                                            'post')
 
         # 2. 일반 유저는 본인이 소속되었거나 공개 프로젝트의 활동만 조회 가능
-        from work.models.project import Member
         user_members = Member.objects.filter(user=user).prefetch_related('roles')
 
         member_all_pids = []
@@ -135,7 +134,6 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
                                     Q(issue__creator=user)
                             )
 
-        from work.models.project import Role
         try:
             non_member_role = Role.objects.get(pk=2)
             non_member_issue_visible = non_member_role.issue_visible
@@ -187,22 +185,26 @@ class IssueLogEntryViewSet(viewsets.ModelViewSet):
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset
 
-        from work.models.project import Member
-        user_members = Member.objects.filter(user=user).prefetch_related('roles')
+        user_members = Member.objects.filter(user=user).prefetch_related('roles__permissions')
 
         member_all_pids = []
         member_pub_pids = []
         member_pri_pids = []
         member_all_project_ids = []
+        private_comment_read_pids = []
 
         for m in user_members:
             member_all_project_ids.append(m.project_id)
             roles = m.roles.all()
             best_issue_visible = 'NOP'
             visibility_order = {'ALL': 3, 'PUB': 2, 'PRI': 1, 'NOP': 0}
+            has_private_comment_read = False
             for role in roles:
                 if visibility_order.get(role.issue_visible, 0) > visibility_order.get(best_issue_visible, 0):
                     best_issue_visible = role.issue_visible
+                for perm in role.permissions.all():
+                    if perm.code == 'issue.private_comment_read':
+                        has_private_comment_read = True
 
             if best_issue_visible == 'ALL':
                 member_all_pids.append(m.project_id)
@@ -210,6 +212,9 @@ class IssueLogEntryViewSet(viewsets.ModelViewSet):
                 member_pub_pids.append(m.project_id)
             elif best_issue_visible == 'PRI':
                 member_pri_pids.append(m.project_id)
+
+            if has_private_comment_read:
+                private_comment_read_pids.append(m.project_id)
 
         allowed_issues_filter = Q()
 
@@ -233,7 +238,6 @@ class IssueLogEntryViewSet(viewsets.ModelViewSet):
                                              Q(issue__creator=user)
                                      )
 
-        from work.models.project import Role
         try:
             non_member_role = Role.objects.get(pk=2)
             non_member_issue_visible = non_member_role.issue_visible
@@ -261,4 +265,11 @@ class IssueLogEntryViewSet(viewsets.ModelViewSet):
                                                  Q(issue__creator=user)
                                          )
 
-        return queryset.filter(allowed_issues_filter)
+        # 4. 비공개 댓글 열람 가드 조건 빌드 (Method D)
+        comment_visibility_filter = (Q(comment__isnull=True)
+                                     | Q(comment__is_private=False)
+                                     | Q(comment__creator=user))
+        if private_comment_read_pids:
+            comment_visibility_filter |= Q(issue__project_id__in=private_comment_read_pids)
+
+        return queryset.filter(allowed_issues_filter).filter(comment_visibility_filter)
