@@ -3,3 +3,6 @@ CREATE SCHEMA IF NOT EXISTS ibs AUTHORIZATION ibs;
 
 -- search_path 설정 (선택)
 ALTER DATABASE ibs SET search_path TO ibs, public;
+
+-- pg_trgm 확장 활성화 (Work 앱 통합검색 GIN 인덱스용)
+CREATE EXTENSION IF NOT EXISTS pg_trgm;

@@ -162,7 +162,7 @@ monitoring:
   enabled: false
 
   # Custom queries for monitoring (optional)
-  customQueries: []
+  customQueries: [ ]
 
 # Resource Limits and Requests
 resources:
@@ -184,13 +184,13 @@ affinity:
   podAntiAffinityType: "preferred"
 
   # Node affinity (optional)
-  nodeAffinity: {}
+  nodeAffinity: { }
 
 # Tolerations (optional)
-tolerations: []
+tolerations: [ ]
 
 # Node selector (optional)
-nodeSelector: {}
+nodeSelector: { }
 
 # Service Configuration
 service:
@@ -209,7 +209,7 @@ pgbouncer:
     reserve_pool_size: "5"
 
 # Additional PostgreSQL configurations
-additionalConfig: {}
+additionalConfig: { }
 # Example:
 # additionalConfig:
 #   shared_preload_libraries: "pg_stat_statements"
@@ -234,7 +234,7 @@ bootstrap:
     localeCType: "en_US.UTF-8"
 
     # Post-init SQL (runs as superuser before database creation)
-    postInitSQL: []
+    postInitSQL: [ ]
 
     # Post-init Application SQL (runs as superuser after application database creation)
     postInitApplicationSQL:
@@ -242,6 +242,7 @@ bootstrap:
       - "GRANT ALL PRIVILEGES ON DATABASE ibs TO ibs;"
       - "GRANT ALL ON SCHEMA ibs TO ibs;"
       - "ALTER DATABASE ibs SET search_path TO ibs, public;"
+      - "CREATE EXTENSION IF NOT EXISTS pg_trgm;"  # Work 앱 통합검색 GIN 인덱스용
 
   # Major version upgrade configuration
   pg_upgrade:
@@ -267,12 +268,12 @@ serviceAccount:
   create: true
   name: ""
   # Annotations for a service account
-  annotations: {}
+  annotations: { }
   # Automatically mount service account token
   automountServiceAccountToken: true
 
 # Common labels
-commonLabels: {}
+commonLabels: { }
 
 # Common annotations
-commonAnnotations: {}
+commonAnnotations: { }
