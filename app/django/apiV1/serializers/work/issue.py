@@ -232,7 +232,49 @@ class IssueSerializer(serializers.ModelSerializer):
                         from rest_framework.exceptions import ValidationError
                         raise ValidationError("다른 사용자를 관람자에서 제거할 권한이 없습니다.")
 
+        # 3. 비공개 업무(is_private) 생성/수정 권한 검증 (Method D)
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            is_private_req = self.initial_data.get('is_private', None)
+            if is_private_req is not None:
+                if isinstance(is_private_req, str):
+                    is_private_req = is_private_req.lower() in ['true', '1']
+                else:
+                    is_private_req = bool(is_private_req)
+
+            project = None
+            if self.instance:
+                project = self.instance.project
+            else:
+                project_slug = self.initial_data.get('project', None)
+                if project_slug:
+                    try:
+                        project = IssueProject.objects.get(slug=project_slug)
+                    except IssueProject.DoesNotExist:
+                        pass
+
+            if project:
+                prj_perms = project.get_user_permissions(user)
+
+                if not self.instance:
+                    # 생성(Create): is_private=True 요청 시 권한 필요
+                    if is_private_req:
+                        if 'issue.private' not in prj_perms and 'issue.own_private' not in prj_perms:
+                            raise serializers.ValidationError(
+                                {'is_private': '비공개 업무를 생성할 권한이 없습니다.'})
+                else:
+                    # 수정(Update): is_private 값이 실제로 변경될 때만 권한 검사
+                    if is_private_req is not None and is_private_req != self.instance.is_private:
+                        is_own = (user == self.instance.creator) or (user == self.instance.assigned_to)
+                        has_write_private = (
+                            'issue.private' in prj_perms
+                            or ('issue.own_private' in prj_perms and is_own)
+                        )
+                        if not has_write_private:
+                            raise serializers.ValidationError(
+                                {'is_private': '이 업무의 비공개 여부를 변경할 권한이 없습니다.'})
+
         return attrs
+
 
     @transaction.atomic
     def create(self, validated_data):

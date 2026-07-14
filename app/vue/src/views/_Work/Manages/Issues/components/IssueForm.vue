@@ -67,6 +67,17 @@ const canEditIssue = computed(() => {
   return can(PERM.ISSUE_UPDATE) || (can(PERM.ISSUE_OWN_UPDATE) && (isCreator || isAssignee))
 })
 
+const canSetPrivate = computed(() => {
+  if (!props.issue) {
+    return can(PERM.ISSUE_PRIVATE) || can(PERM.ISSUE_OWN_PRIVATE)
+  }
+
+  const isCreator = props.issue.creator.pk === userInfo?.value?.pk
+  const isAssignee = props.issue.assigned_to?.pk === userInfo?.value?.pk
+
+  return can(PERM.ISSUE_PRIVATE) || (can(PERM.ISSUE_OWN_PRIVATE) && (isCreator || isAssignee))
+})
+
 const assignedToMe = () => (form.value.assigned_to = userInfo?.value?.pk as number)
 
 const comment = ref({
@@ -401,7 +412,7 @@ defineExpose({ callComment, callReply })
                     </option>
                   </CFormSelect>
                 </CCol>
-                <CCol sm="6" class="pt-2">
+                <CCol v-if="canSetPrivate" sm="6" class="pt-2">
                   <CFormCheck v-model="form.is_private" id="is_private" label="비공개" />
                 </CCol>
               </CRow>

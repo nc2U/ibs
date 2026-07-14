@@ -15,6 +15,7 @@ from apiV1.serializers.work import IssueCountByMemberSerializer, IssueRelationSe
 from apiV1.serializers.work.issue import IssueSerializer
 from work.models import Issue, IssueRelation, IssueProject, IssueFile, IssueComment, Tracker, \
     IssueCategory, IssueStatus, Workflow, CodeIssuePriority
+from work.models.project import Member
 
 
 class IssueFilter(FilterSet):
@@ -163,24 +164,31 @@ class IssueViewSet(viewsets.ModelViewSet):
             return queryset
 
         # 1. 사용자의 멤버 프로젝트들을 가져와 권한 수준에 따라 분류
-        from work.models.project import Member
-        user_members = Member.objects.filter(user=user).prefetch_related('roles')
+        user_members = Member.objects.filter(user=user).prefetch_related('roles__permissions')
 
         member_all_pids = []
         member_pub_pids = []
+        private_pids = []  # issue.private 권한 보유 프로젝트 (Method D)
 
         issue_visibility_order = {'ALL': 3, 'PUB': 2, 'PRI': 1, 'NOP': 0}
 
         for member in user_members:
             best_visible = 'NOP'
+            has_private_perm = False
             for role in member.roles.all():
                 if issue_visibility_order.get(role.issue_visible, 0) > issue_visibility_order.get(best_visible, 0):
                     best_visible = role.issue_visible
+                for perm in role.permissions.all():
+                    if perm.code == 'issue.private':
+                        has_private_perm = True
 
             if best_visible == 'ALL':
                 member_all_pids.append(member.project_id)
             elif best_visible == 'PUB':
                 member_pub_pids.append(member.project_id)
+
+            if has_private_perm:
+                private_pids.append(member.project_id)
 
         # 2. 비회원 역할(pk=2) 정보 가져오기
         from work.models.project import Role
@@ -201,6 +209,10 @@ class IssueViewSet(viewsets.ModelViewSet):
         # 멤버 프로젝트 중 PUB 권한을 가진 프로젝트들의 공개 업무
         if member_pub_pids:
             q_expr |= Q(project_id__in=member_pub_pids, is_private=False)
+
+        # issue.private 권한 보유 시 해당 프로젝트의 모든 비공개 업무 포함 (Method D)
+        if private_pids:
+            q_expr |= Q(project_id__in=private_pids)
 
         # 멤버가 아닌 프로젝트들에 대한 비회원 권한 적용
         # (비회원이 접근할 수 있는 프로젝트는 '공개 프로젝트(is_public=True)'이면서 '멤버가 아닌 프로젝트'임)

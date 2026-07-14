@@ -251,7 +251,17 @@ class IssuePermission(ProjectPermission):
             if 'issue.create' not in user_perms and 'issue.copy' not in user_perms:
                 return False
 
-            # (B) 하위 업무로 생성하는 경우, sub_manage 권한이 추가로 필요한지 확인
+            # (B) 비공개 업무 생성 권한 체크 (Method D)
+            is_private_req = request.data.get('is_private', False)
+            if isinstance(is_private_req, str):
+                is_private_req = is_private_req.lower() in ['true', '1']
+            else:
+                is_private_req = bool(is_private_req)
+            if is_private_req:
+                if 'issue.private' not in user_perms and 'issue.own_private' not in user_perms:
+                    return False
+
+            # (C) 하위 업무로 생성하는 경우, sub_manage 권한이 추가로 필요한지 확인
             if parent_id:
                 return 'issue.sub_manage' in user_perms
 
@@ -264,28 +274,38 @@ class IssuePermission(ProjectPermission):
 
         # 2. issue_visible에 의한 개별 업무 읽기 권한(SAFE_METHODS) 검사
         if request.method in permissions.SAFE_METHODS:
-            if request.user.is_superuser or getattr(request.user, 'work_manager', False):
+            user = request.user
+            if user.is_superuser or getattr(user, 'work_manager', False):
                 return True
 
             project = getattr(obj, 'project', None)
             if not project:
                 return False
 
-            role_attrs = project.get_user_role_attributes(request.user)
+            user_perms = project.get_user_permissions(user)
+            role_attrs = project.get_user_role_attributes(user)
             issue_visible = role_attrs.get('issue_visible', 'NOP')
+            is_own = (obj.creator == user or obj.assigned_to == user)
 
-            if issue_visible == 'ALL':
-                pass  # super() 결과에 따름
-            elif issue_visible == 'PUB':
-                # 개선: PUB 권한에서도 본인이 생성자(creator)이거나 담당자(assigned_to)인 비공개 글은 접근 허용
-                if obj.is_private:
-                    if obj.creator != request.user and obj.assigned_to != request.user:
-                        return False
-            elif issue_visible == 'PRI':
-                if obj.creator != request.user and obj.assigned_to != request.user:
+            # 비공개 업무 열람 권한 체크 (Method D)
+            # issue_visible='ALL' OR issue.private OR (issue.own_private AND is_own) OR is_own(creator/assignee)
+            if obj.is_private:
+                can_read_private = (
+                    issue_visible == 'ALL'
+                    or 'issue.private' in user_perms
+                    or ('issue.own_private' in user_perms and is_own)
+                    or is_own
+                )
+                if not can_read_private:
                     return False
-            elif issue_visible == 'NOP':
-                if obj.creator != request.user and obj.assigned_to != request.user:
+
+            # 일반 업무 가시성 체크
+            if issue_visible == 'ALL':
+                pass  # 모두 허용
+            elif issue_visible == 'PUB':
+                pass  # 공개 업무는 허용, 비공개는 위에서 처리됨
+            elif issue_visible in ('PRI', 'NOP'):
+                if not is_own:
                     return False
 
             return True
@@ -306,12 +326,29 @@ class IssuePermission(ProjectPermission):
                 if is_sub:
                     return 'issue.sub_manage' in user_perms
 
-                if 'issue.update' in user_perms:
-                    return True
-                if 'issue.own_update' in user_perms:
-                    if (obj.creator == user) or (obj.assigned_to == user):
-                        return True
-                return False
+                # 기본 수정 권한 확인
+                is_own = (obj.creator == user) or (obj.assigned_to == user)
+                has_update = 'issue.update' in user_perms
+                has_own_update = 'issue.own_update' in user_perms and is_own
+                if not (has_update or has_own_update):
+                    return False
+
+                # is_private 변경 시 추가 쓰기 권한 검사 (Method D)
+                is_private_req = request.data.get('is_private', None)
+                if is_private_req is not None:
+                    if isinstance(is_private_req, str):
+                        is_private_req = is_private_req.lower() in ['true', '1']
+                    else:
+                        is_private_req = bool(is_private_req)
+                    if is_private_req != obj.is_private:
+                        has_write_private = (
+                            'issue.private' in user_perms
+                            or ('issue.own_private' in user_perms and is_own)
+                        )
+                        if not has_write_private:
+                            return False
+
+                return True
 
             # (B) 삭제 권한 처리
             if view.action == 'destroy':
