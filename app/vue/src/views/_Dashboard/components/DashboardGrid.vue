@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, nextTick, markRaw, type Component } from 'vue'
+import { computed, onMounted, nextTick, markRaw, ref, type Component } from 'vue'
 import { GridLayout, type LayoutItem } from 'grid-layout-plus'
 import { useDashboard, WIDGET_REGISTRY } from '@/store/pinia/dashboard.ts'
 import type { Breakpoint } from '@/store/types/dashboard.ts'
@@ -71,6 +71,8 @@ const getWidgetIcon = (widgetId: string) => {
   return widget?.icon
 }
 
+// 초기 로드가 완료되기 전 @layout-updated 를 무시하기 위한 플래그
+const isInitialized = ref(false)
 // breakpoint 전환 중 자동 재배치로 인한 @layout-updated 를 무시하기 위한 플래그
 let isBreakpointChanging = false
 
@@ -84,6 +86,8 @@ const handleBreakpointChange = (newBreakpoint: string) => {
 }
 
 const handleLayoutUpdated = (newLayout: LayoutItem[]) => {
+  // 초기 로드 완료 전 자동 재배치는 저장하지 않음
+  if (!isInitialized.value) return
   // breakpoint 전환에 의한 자동 재배치는 저장하지 않음
   if (isBreakpointChanging) return
   dashboardStore.updateLayout(
@@ -95,8 +99,13 @@ const handleLayoutUpdated = (newLayout: LayoutItem[]) => {
   )
 }
 
-onMounted(() => {
-  dashboardStore.loadDashboardState()
+onMounted(async () => {
+  await dashboardStore.loadDashboardState()
+  // 상태 로드 완료 후 다음 틱에 플래그 활성화
+  // (라이브러리의 초기 렌더링 이벤트가 먼저 처리되도록 대기)
+  nextTick(() => {
+    isInitialized.value = true
+  })
 })
 </script>
 
