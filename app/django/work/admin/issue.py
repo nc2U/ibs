@@ -28,14 +28,13 @@ class IssueAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('pk', 'tracker', 'is_private', 'subject', 'project',
                     'parent', 'status', 'priority', 'start_date', 'due_date')
     list_display_links = ('subject',)
-    list_filter = ('project', 'tracker', 'status', 'priority',
+    list_filter = ('project', 'project__status', 'tracker', 'status', 'priority',
                    ('start_date', DateRangeFilter), ('due_date', DateRangeFilter))
     search_fields = ('subject',)
     inlines = (IssueFileInline, IssueCommentInline, IssueRelationInline)
 
     def get_queryset(self, request):
         return self.model.all_objects.get_queryset()
-
 
 
 @admin.register(Tracker)
