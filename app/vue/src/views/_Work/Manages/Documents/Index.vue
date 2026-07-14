@@ -92,6 +92,14 @@ watch(
     }
   },
 )
+
+watch(
+  () => docsFilter.value.issue_project,
+  () => {
+    docsFilter.value.page = 1
+    fetchDocsList(docsFilter.value)
+  },
+)
 </script>
 
 <template>
@@ -149,7 +157,6 @@ watch(
           <CFormSelect
             v-model="docsFilter.issue_project"
             size="sm"
-            @change="fetchDocsList(docsFilter)"
           >
             <option value="">전체 프로젝트</option>
             <option v-for="proj in allProjects" :key="proj.pk" :value="proj.pk">
