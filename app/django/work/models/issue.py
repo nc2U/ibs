@@ -6,12 +6,20 @@ from _utils.file_upload import get_work_file_path, populate_file_meta
 from work.models.project import IssueProject
 
 
-class IssueManager(models.Manager):
+class IssueAllObjectsManager(models.Manager):
     def get_queryset(self):
         return super().get_queryset().select_related(
             'project', 'tracker', 'status', 'priority', 'category',
             'fixed_version', 'assigned_to', 'parent', 'creator', 'updater', 'meeting'
         )
+
+
+class IssueManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().select_related(
+            'project', 'tracker', 'status', 'priority', 'category',
+            'fixed_version', 'assigned_to', 'parent', 'creator', 'updater', 'meeting'
+        ).filter(project__status='1')
 
 
 class ExpectedDuration(models.TextChoices):
@@ -59,6 +67,7 @@ class Issue(models.Model):
     updated = models.DateTimeField('수정일', auto_now=True)
 
     objects = IssueManager()
+    all_objects = IssueAllObjectsManager()
 
     def __str__(self):
         return f'#{self.pk}-{self.subject}'

@@ -33,6 +33,10 @@ class IssueAdmin(ImportExportMixin, admin.ModelAdmin):
     search_fields = ('subject',)
     inlines = (IssueFileInline, IssueCommentInline, IssueRelationInline)
 
+    def get_queryset(self, request):
+        return self.model.all_objects.get_queryset()
+
+
 
 @admin.register(Tracker)
 class TrackerAdmin(ImportExportMixin, admin.ModelAdmin):
