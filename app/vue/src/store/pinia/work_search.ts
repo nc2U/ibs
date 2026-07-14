@@ -23,13 +23,17 @@ export const useSearch = defineStore('work_search', () => {
     loading.value = true
     error.value = null
     try {
-      const searchParams: Record<string, unknown> = {
-        q: params.q,
-        scope: params.scope ?? 'all',
-        ...(params.slug && { slug: params.slug }),
-        t: params.t ?? ['issues', 'comments', 'meetings', 'news', 'documents', 'posts'],
-        title_only: params.title_only ?? '0',
+      const searchParams = new URLSearchParams()
+      searchParams.append('q', params.q)
+      searchParams.append('scope', params.scope ?? 'all')
+      if (params.slug) {
+        searchParams.append('slug', params.slug)
       }
+      searchParams.append('title_only', params.title_only ?? '0')
+
+      const targets = params.t ?? ['issues', 'comments', 'meetings', 'news', 'documents', 'posts']
+      targets.forEach(t => searchParams.append('t', t))
+
       const res = await api.get('/issue-search/run/', { params: searchParams })
       results.value = res.data
     } catch {

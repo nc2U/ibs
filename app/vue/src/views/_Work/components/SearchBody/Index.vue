@@ -39,7 +39,14 @@ const activeTargets = computed(() =>
 
 const goSearch = () => {
   if (searchWord.value.trim().length < 2) return
-  router.replace({ name: '전체검색', query: { q: searchWord.value } })
+  router.replace({
+    name: '전체검색',
+    query: {
+      q: searchWord.value,
+      title_only: titleOnly.value ? '1' : '0',
+      t: activeTargets.value,
+    },
+  })
 }
 
 const doSearch = (q: string) => {
@@ -52,14 +59,28 @@ const doSearch = (q: string) => {
 }
 
 watch(
-  () => route.query.q,
-  q => {
+  () => route.query,
+  query => {
+    const q = query.q
     if (q && typeof q === 'string') {
       searchWord.value = q
+      if (query.title_only) {
+        titleOnly.value = query.title_only === '1'
+      }
+      if (query.t) {
+        const queryTargets = Array.isArray(query.t) ? query.t : [query.t]
+        Object.keys(targets.value).forEach(k => {
+          targets.value[k as keyof typeof targets.value] = queryTargets.includes(k)
+        })
+      } else {
+        Object.keys(targets.value).forEach(k => {
+          targets.value[k as keyof typeof targets.value] = true
+        })
+      }
       doSearch(q)
     }
   },
-  { immediate: true },
+  { deep: true, immediate: true },
 )
 
 onBeforeRouteLeave((to, from, next) => {
