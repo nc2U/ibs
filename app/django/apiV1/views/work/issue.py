@@ -1,5 +1,4 @@
 from django.db.models import Q
-from work.models.project import Member
 from django_filters.rest_framework import FilterSet, BooleanFilter, CharFilter, NumberFilter
 from rest_framework import viewsets
 from rest_framework.decorators import action
@@ -10,13 +9,14 @@ from apiV1.pagination import PageNumberPaginationTwenty
 from apiV1.permissions.auth_perms import permissions
 from apiV1.permissions.work_perms import ProjectPermission, IssuePermission, IssueCommentPermission, \
     IssueRelationPermission
-from apiV1.serializers.work import IssueCountByMemberSerializer, IssueRelationSerializer, \
-    IssueFileSerializer, IssueCommentSerializer, TrackerSerializer, IssueCategorySerializer, \
-    IssueCountByTrackerSerializer, IssueStatusSerializer, WorkflowSerializer, CodeIssuePrioritySerializer
+from apiV1.serializers.work import (IssueCountByMemberSerializer, IssueRelationSerializer, IssueFileSerializer,
+                                    IssueCommentSerializer, TrackerSerializer, IssueCategorySerializer,
+                                    IssueCountByTrackerSerializer, IssueStatusSerializer, WorkflowSerializer,
+                                    CodeIssuePrioritySerializer)
 from apiV1.serializers.work.issue import IssueSerializer
 from work.models import Issue, IssueRelation, IssueProject, IssueFile, IssueComment, Tracker, \
     IssueCategory, IssueStatus, Workflow, CodeIssuePriority
-from work.models.project import Member
+from work.models.project import Member, Role
 
 
 class IssueFilter(FilterSet):
@@ -142,7 +142,6 @@ def build_issue_queryset(user, base_qs=None):
         if has_private_perm:
             private_pids.append(member.project_id)
 
-    from work.models.project import Role
     try:
         non_member_visible = Role.objects.get(pk=2).issue_visible
     except Role.DoesNotExist:

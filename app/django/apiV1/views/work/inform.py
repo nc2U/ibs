@@ -8,8 +8,15 @@ from apiV1.permissions.auth_perms import permissions
 from apiV1.permissions.work_perms import NewsPermission
 from apiV1.serializers.work import NewsFileSerializer, NewsCommentSerializer, SearchSerializer
 from apiV1.serializers.work.inform import NewsSerializer
+from apiV1.serializers.work.search import (MeetingSearchSerializer, IssueSearchSerializer, CommentSearchSerializer,
+                                           NewsSearchSerializer, DocumentSearchSerializer, PostSearchSerializer)
+from apiV1.views.work.issue import build_issue_queryset
+from docs.models import Document
+from forum.models import Post
 from work.models import NewsFile
 from work.models.inform import News, NewsComment, Search
+from work.models.issue import IssueComment
+from work.models.meeting import Meeting
 
 
 class NewsViewSet(viewsets.ModelViewSet):
@@ -159,7 +166,8 @@ class SearchViewSet(viewsets.ModelViewSet):
 
         scope = request.query_params.get('scope', 'all')
         slug = request.query_params.get('slug', '')
-        targets = set(request.query_params.getlist('t')) or {'issues', 'comments', 'meetings', 'news', 'documents', 'posts'}
+        targets = (set(request.query_params.getlist('t')) or
+                   {'issues', 'comments', 'meetings', 'news', 'documents', 'posts'})
         title_only = request.query_params.get('title_only', '0') == '1'
 
         results = {}
@@ -180,9 +188,6 @@ class SearchViewSet(viewsets.ModelViewSet):
 
     @staticmethod
     def _search_issues(user, q, scope, slug, title_only):
-        from apiV1.views.work.issue import build_issue_queryset
-        from apiV1.serializers.work.search import IssueSearchSerializer
-
         qs = build_issue_queryset(user)
         if title_only:
             qs = qs.filter(subject__icontains=q)
@@ -194,8 +199,6 @@ class SearchViewSet(viewsets.ModelViewSet):
 
     @staticmethod
     def _search_comments(user, q, scope, slug):
-        from apiV1.serializers.work.search import CommentSearchSerializer
-        from work.models.issue import IssueComment
 
         qs = IssueComment.objects.filter(
             content__icontains=q,
@@ -214,8 +217,6 @@ class SearchViewSet(viewsets.ModelViewSet):
 
     @staticmethod
     def _search_meetings(user, q, scope, slug, title_only):
-        from apiV1.serializers.work.search import MeetingSearchSerializer
-        from work.models.meeting import Meeting
 
         if title_only:
             q_expr = Q(title__icontains=q)
@@ -233,8 +234,6 @@ class SearchViewSet(viewsets.ModelViewSet):
 
     @staticmethod
     def _search_news(user, q, scope, slug, title_only):
-        from apiV1.serializers.work.search import NewsSearchSerializer
-        from work.models.inform import News
 
         if title_only:
             q_expr = Q(title__icontains=q)
@@ -252,8 +251,6 @@ class SearchViewSet(viewsets.ModelViewSet):
 
     @staticmethod
     def _search_documents(user, q, scope, slug, title_only):
-        from apiV1.serializers.work.search import DocumentSearchSerializer
-        from docs.models import Document
 
         if title_only:
             q_expr = Q(title__icontains=q)
@@ -275,8 +272,6 @@ class SearchViewSet(viewsets.ModelViewSet):
 
     @staticmethod
     def _search_posts(user, q, scope, slug, title_only):
-        from apiV1.serializers.work.search import PostSearchSerializer
-        from forum.models import Post
 
         if title_only:
             q_expr = Q(title__icontains=q)
@@ -284,7 +279,8 @@ class SearchViewSet(viewsets.ModelViewSet):
             q_expr = Q(title__icontains=q) | Q(content__icontains=q)
 
         # 소프트 딜리트 필터: deleted=None 및 프로젝트 활성 상태(status='1')
-        qs = Post.objects.filter(q_expr, deleted__isnull=True, forum__project__status='1').select_related('forum__project', 'creator')
+        qs = Post.objects.filter(q_expr, deleted__isnull=True,
+                                 forum__project__status='1').select_related('forum__project', 'creator')
 
         # 권한 제어: 공개 프로젝트 혹은 멤버십 프로젝트 내 게시판 게시글만 허용
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
@@ -295,5 +291,3 @@ class SearchViewSet(viewsets.ModelViewSet):
         if scope == 'project' and slug:
             qs = qs.filter(forum__project__slug=slug)
         return PostSearchSerializer(qs[:25], many=True).data
-
-
