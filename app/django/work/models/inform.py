@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 
 from django.conf import settings
 from django.db import models
+from django.contrib.postgres.indexes import GinIndex
 
 from _utils.file_cleanup import file_cleanup_signals
 from _utils.file_upload import get_news_file_path, populate_file_meta
@@ -30,6 +31,11 @@ class News(models.Model):
         ordering = ('-is_important', '-created',)
         verbose_name = '15. 공지'
         verbose_name_plural = '15. 공지'
+        indexes = [
+            GinIndex(fields=['title'], opclasses=['gin_trgm_ops'], name='work_news_title_trgm'),
+            GinIndex(fields=['summary'], opclasses=['gin_trgm_ops'], name='work_news_summary_trgm'),
+            GinIndex(fields=['content'], opclasses=['gin_trgm_ops'], name='work_news_content_trgm'),
+        ]
 
 
 class NewsFile(models.Model):

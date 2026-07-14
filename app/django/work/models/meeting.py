@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.contrib.postgres.indexes import GinIndex
 
 from _utils.file_cleanup import file_cleanup_signals
 from _utils.file_upload import get_meeting_file_path, populate_file_meta
@@ -55,6 +56,11 @@ class Meeting(models.Model):
         ordering = ('-meeting_date', '-created')
         verbose_name = '08. 회의록'
         verbose_name_plural = '08. 회의록'
+        indexes = [
+            GinIndex(fields=['title'], opclasses=['gin_trgm_ops'], name='work_meeting_title_trgm'),
+            GinIndex(fields=['agenda'], opclasses=['gin_trgm_ops'], name='work_meeting_agenda_trgm'),
+            GinIndex(fields=['decisions'], opclasses=['gin_trgm_ops'], name='work_meeting_dec_trgm'),
+        ]
 
     def __str__(self):
         return self.title

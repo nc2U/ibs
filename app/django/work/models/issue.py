@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.contrib.postgres.indexes import GinIndex
 
 from _utils.file_cleanup import file_cleanup_signals
 from _utils.file_upload import get_work_file_path, populate_file_meta
@@ -76,6 +77,10 @@ class Issue(models.Model):
         ordering = ('-id',)
         verbose_name = '09. 업무(작업)'
         verbose_name_plural = '09. 업무(작업)'
+        indexes = [
+            GinIndex(fields=['subject'], opclasses=['gin_trgm_ops'], name='work_issue_subject_trgm'),
+            GinIndex(fields=['description'], opclasses=['gin_trgm_ops'], name='work_issue_desc_trgm'),
+        ]
 
 
 class IssueRelation(models.Model):
@@ -124,6 +129,11 @@ class IssueComment(models.Model):
 
     def __str__(self):
         return self.content
+
+    class Meta:
+        indexes = [
+            GinIndex(fields=['content'], opclasses=['gin_trgm_ops'], name='work_comment_content_trgm'),
+        ]
 
 
 class TrackerManager(models.Manager):
