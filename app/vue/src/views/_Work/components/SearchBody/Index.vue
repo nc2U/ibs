@@ -3,6 +3,7 @@ import { computed, onBeforeMount, ref, watch } from 'vue'
 import { navMenu2 as navMenu } from '@/views/_Work/_menu/headermixin1'
 import { colorLight } from '@/utils/cssMixins'
 import { useCompany } from '@/store/pinia/company.ts'
+import { useSearch } from '@/store/pinia/work_search.ts'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import type { Company } from '@/store/types/settings'
 import Header from '@/views/_Work/components/Header/Index.vue'
@@ -14,39 +15,74 @@ const company = computed<Company | null>(() => comStore.company)
 const comName = computed(() => company?.value?.name)
 const sideNavCAll = () => cBody.value.toggle()
 
+const searchStore = useSearch()
 const searchWord = ref('')
-const searchCond = ref({
-  all: true,
-  subOnly: false,
-  project: false,
-  meeting: false,
-  issue: false,
-  news: false,
-  document: false,
-  text: false,
-
-  opened: false,
-  attatch: '1' as '1' | '2' | '3',
+const titleOnly = ref(false)
+const targets = ref({
+  issues: true,
+  comments: true,
+  meetings: true,
+  news: true,
 })
-
+const openedOnly = ref(false)
 const visible = ref(false)
 
 const [route, router] = [useRoute(), useRouter()]
 
-const goSearch = () => router.replace({ name: '전체검색', query: { q: searchWord.value } })
+const activeTargets = computed(() =>
+  Object.entries(targets.value)
+    .filter(([, v]) => v)
+    .map(([k]) => k),
+)
 
-watch(route, nVal => {
-  if (nVal.query.q) searchWord.value = nVal.query.q as string
-})
+const goSearch = () => {
+  if (searchWord.value.trim().length < 2) return
+  router.replace({ name: '전체검색', query: { q: searchWord.value } })
+}
+
+const doSearch = (q: string) => {
+  searchStore.fetchSearch({
+    q,
+    scope: 'all',
+    t: activeTargets.value,
+    title_only: titleOnly.value ? '1' : '0',
+  })
+}
+
+watch(
+  () => route.query.q,
+  q => {
+    if (q && typeof q === 'string') {
+      searchWord.value = q
+      doSearch(q)
+    }
+  },
+)
 
 onBeforeMount(() => {
-  if (route.query.q) searchWord.value = route.query.q as string
+  if (route.query.q) {
+    searchWord.value = route.query.q as string
+    doSearch(searchWord.value)
+  }
 })
 
 onBeforeRouteLeave((to, from, next) => {
+  searchStore.reset()
   to.query = {}
   next()
 })
+
+// 결과 타입 라벨
+const typeLabel: Record<string, string> = {
+  issues: '업무',
+  comments: '댓글',
+  meetings: '회의록',
+  news: '공지',
+}
+
+const statusColor = (closed: boolean) => (closed ? 'grey' : 'primary')
+
+const meetingStatusLabel: Record<string, string> = { '1': '준비', '2': '종료', '3': '취소' }
 </script>
 
 <template>
@@ -60,42 +96,47 @@ onBeforeRouteLeave((to, from, next) => {
         </CCol>
       </CRow>
 
+      <!-- 검색 폼 -->
       <CCard :color="colorLight">
         <CCardBody>
           <CRow>
-            <CCol sm="12" md="8" lg="6" xl="3">
-              <CFormInput v-model="searchWord" @keydown.enter="goSearch" />
+            <CCol sm="12" md="8" lg="6" xl="4">
+              <CInputGroup>
+                <CFormInput
+                  v-model="searchWord"
+                  placeholder="검색어 입력 (2자 이상)"
+                  @keydown.enter="goSearch"
+                />
+                <v-btn
+                  color="primary"
+                  variant="flat"
+                  rounded="0"
+                  size="small"
+                  :loading="searchStore.loading"
+                  @click="goSearch"
+                >
+                  검색
+                </v-btn>
+              </CInputGroup>
             </CCol>
             <CCol class="pt-2">
-              <CFormCheck v-model="searchCond.all" inline label="모든 단어" id="all-word" />
-
-              <CFormCheck
-                v-model="searchCond.subOnly"
-                inline
-                label="제목에서만 찾기"
-                id="only-subject"
-              />
+              <CFormCheck v-model="titleOnly" inline label="제목에서만 찾기" id="title-only" />
             </CCol>
           </CRow>
 
+          <!-- 검색 대상 선택 -->
           <CRow class="mt-3 m-1">
             <CCard class="mt-3" :color="colorLight">
               <CCardBody>
-                <CFormCheck v-model="searchCond.project" inline label="프로젝트" id="proj-search" />
-                <CFormCheck
-                  v-model="searchCond.meeting"
-                  inline
-                  label="회의록"
-                  id="meeting-search"
-                />
-                <CFormCheck v-model="searchCond.issue" inline label="업무" id="issue-search" />
-                <CFormCheck v-model="searchCond.news" inline label="공지" id="news-search" />
-                <CFormCheck v-model="searchCond.document" inline label="문서" id="docs-search" />
-                <CFormCheck v-model="searchCond.text" inline label="글" id="text-search" />
+                <CFormCheck v-model="targets.issues" inline label="업무" id="target-issues" />
+                <CFormCheck v-model="targets.comments" inline label="댓글" id="target-comments" />
+                <CFormCheck v-model="targets.meetings" inline label="회의록" id="target-meetings" />
+                <CFormCheck v-model="targets.news" inline label="공지" id="target-news" />
               </CCardBody>
             </CCard>
           </CRow>
 
+          <!-- 옵션 -->
           <CRow class="mt-3">
             <CCol class="pointer mb-0" @click="visible = !visible">
               <v-icon :icon="visible ? 'mdi-chevron-down' : 'mdi-chevron-right'" size="sm" />
@@ -103,41 +144,9 @@ onBeforeRouteLeave((to, from, next) => {
             </CCol>
             <CCollapse :visible="visible">
               <v-divider class="mx-1" />
-              <CRow class="mt-2 pl-1" color="light">
+              <CRow class="mt-2 pl-1">
                 <CCol>
-                  <CFormCheck v-model="searchCond.opened" label="열린 업무만" id="opened-only" />
-                </CCol>
-              </CRow>
-
-              <CRow class="mt-1 pl-1">
-                <CCol>
-                  <CFormCheck
-                    v-model="searchCond.attatch"
-                    value="1"
-                    type="radio"
-                    inline
-                    name="attatch"
-                    id="attatch1"
-                    label="첨부는 검색하지 않음"
-                  />
-                  <CFormCheck
-                    v-model="searchCond.attatch"
-                    value="2"
-                    type="radio"
-                    inline
-                    name="attatch"
-                    id="attatch2"
-                    label="첨부파일명과 설명만 검색"
-                  />
-                  <CFormCheck
-                    v-model="searchCond.attatch"
-                    value="3"
-                    type="radio"
-                    inline
-                    name="attatch"
-                    id="attatch3"
-                    label="첨부만 검색"
-                  />
+                  <CFormCheck v-model="openedOnly" label="열린 업무만" id="opened-only" />
                 </CCol>
               </CRow>
             </CCollapse>
@@ -147,23 +156,208 @@ onBeforeRouteLeave((to, from, next) => {
 
       <CRow class="mt-2">
         <CCol>
-          <v-btn color="primary" variant="outlined" size="small" @click="goSearch">검색</v-btn>
+          <v-btn
+            color="primary"
+            variant="outlined"
+            size="small"
+            :loading="searchStore.loading"
+            @click="goSearch"
+          >
+            검색
+          </v-btn>
         </CCol>
       </CRow>
 
-      <CRow v-if="route.query.q">
+      <!-- 에러 -->
+      <CRow v-if="searchStore.error" class="mt-3">
         <CCol>
+          <v-alert type="warning" variant="tonal" density="compact">
+            {{ searchStore.error }}
+          </v-alert>
+        </CCol>
+      </CRow>
+
+      <!-- 검색 결과 -->
+      <template v-if="route.query.q && !searchStore.loading">
+        <CRow class="mt-4">
+          <CCol>
+            <h5>
+              결과
+              <v-chip size="small" color="primary" class="ml-1">{{ searchStore.totalCount }}</v-chip>
+            </h5>
+          </CCol>
+        </CRow>
+
+        <!-- 결과 없음 -->
+        <CRow v-if="!searchStore.hasResults" class="mt-2">
+          <CCol>
+            <v-alert type="info" variant="tonal" density="compact">
+              <v-icon icon="mdi-magnify-close" class="mr-1" />
+              검색 결과가 없습니다.
+            </v-alert>
+          </CCol>
+        </CRow>
+
+        <!-- 업무 결과 -->
+        <template v-if="searchStore.results?.issues?.length">
           <CRow class="mt-4">
             <CCol>
-              <h5>결과 (0)</h5>
+              <h6 class="text-medium-emphasis">
+                <v-icon icon="mdi-check-circle-outline" size="small" class="mr-1" />
+                {{ typeLabel.issues }}
+                <v-chip size="x-small" class="ml-1">{{ searchStore.results.issues.length }}</v-chip>
+              </h6>
+              <v-divider />
             </CCol>
           </CRow>
-
-          <CRow class="mt-2">
-            <CCol> 결과들 ... (구현 중)</CCol>
+          <CRow
+            v-for="item in searchStore.results.issues"
+            :key="`issue-${item.pk}`"
+            class="mt-2"
+          >
+            <CCol>
+              <div class="d-flex align-center gap-2 flex-wrap">
+                <v-chip size="x-small" :color="statusColor(item.status.closed)" label>
+                  {{ item.status.name }}
+                </v-chip>
+                <v-chip size="x-small" color="blue-grey" label>{{ item.tracker.name }}</v-chip>
+                <router-link
+                  :to="{
+                    name: '(업무)',
+                    params: { projId: item.project.slug },
+                    query: { issueId: item.pk },
+                  }"
+                  class="text-body-2"
+                >
+                  <v-icon v-if="item.is_private" icon="mdi-lock-outline" size="x-small" class="mr-1 text-warning" />
+                  {{ item.subject }}
+                </router-link>
+                <span class="text-caption text-medium-emphasis">
+                  {{ item.project.name }} · {{ item.creator?.username }} ·
+                  {{ new Date(item.created).toLocaleDateString('ko-KR') }}
+                </span>
+              </div>
+            </CCol>
           </CRow>
-        </CCol>
-      </CRow>
+        </template>
+
+        <!-- 댓글 결과 -->
+        <template v-if="searchStore.results?.comments?.length">
+          <CRow class="mt-4">
+            <CCol>
+              <h6 class="text-medium-emphasis">
+                <v-icon icon="mdi-comment-outline" size="small" class="mr-1" />
+                {{ typeLabel.comments }}
+                <v-chip size="x-small" class="ml-1">{{ searchStore.results.comments.length }}</v-chip>
+              </h6>
+              <v-divider />
+            </CCol>
+          </CRow>
+          <CRow
+            v-for="item in searchStore.results.comments"
+            :key="`comment-${item.pk}`"
+            class="mt-2"
+          >
+            <CCol>
+              <div class="d-flex align-center gap-2 flex-wrap">
+                <router-link
+                  :to="{
+                    name: '(업무)',
+                    params: { projId: item.issue.project.slug },
+                    query: { issueId: item.issue.pk },
+                  }"
+                  class="text-body-2"
+                >
+                  {{ item.issue.subject }}
+                </router-link>
+                <span class="text-caption text-medium-emphasis">에 달린 댓글:</span>
+                <span class="text-body-2">{{ item.content }}</span>
+                <span class="text-caption text-medium-emphasis">
+                  {{ item.creator.username }} ·
+                  {{ new Date(item.created).toLocaleDateString('ko-KR') }}
+                </span>
+              </div>
+            </CCol>
+          </CRow>
+        </template>
+
+        <!-- 회의록 결과 -->
+        <template v-if="searchStore.results?.meetings?.length">
+          <CRow class="mt-4">
+            <CCol>
+              <h6 class="text-medium-emphasis">
+                <v-icon icon="mdi-account-group-outline" size="small" class="mr-1" />
+                {{ typeLabel.meetings }}
+                <v-chip size="x-small" class="ml-1">{{ searchStore.results.meetings.length }}</v-chip>
+              </h6>
+              <v-divider />
+            </CCol>
+          </CRow>
+          <CRow
+            v-for="item in searchStore.results.meetings"
+            :key="`meeting-${item.pk}`"
+            class="mt-2"
+          >
+            <CCol>
+              <div class="d-flex align-center gap-2 flex-wrap">
+                <v-chip size="x-small" color="teal" label>
+                  {{ meetingStatusLabel[item.status] ?? item.status }}
+                </v-chip>
+                <router-link
+                  :to="{ name: '(회의)', params: { projId: item.project.slug, meetingId: item.pk } }"
+                  class="text-body-2"
+                >
+                  {{ item.title }}
+                </router-link>
+                <span class="text-caption text-medium-emphasis">
+                  {{ item.project.name }} · {{ item.creator.username }} ·
+                  {{ item.meeting_date ? new Date(item.meeting_date).toLocaleDateString('ko-KR') : '-' }}
+                </span>
+              </div>
+            </CCol>
+          </CRow>
+        </template>
+
+        <!-- 공지 결과 -->
+        <template v-if="searchStore.results?.news?.length">
+          <CRow class="mt-4">
+            <CCol>
+              <h6 class="text-medium-emphasis">
+                <v-icon icon="mdi-bullhorn-outline" size="small" class="mr-1" />
+                {{ typeLabel.news }}
+                <v-chip size="x-small" class="ml-1">{{ searchStore.results.news.length }}</v-chip>
+              </h6>
+              <v-divider />
+            </CCol>
+          </CRow>
+          <CRow
+            v-for="item in searchStore.results.news"
+            :key="`news-${item.pk}`"
+            class="mt-2"
+          >
+            <CCol>
+              <div class="d-flex align-center gap-2 flex-wrap">
+                <router-link
+                  :to="{
+                    name: '(공지)',
+                    params: { projId: item.project.slug, newsId: item.pk },
+                  }"
+                  class="text-body-2"
+                >
+                  {{ item.title }}
+                </router-link>
+                <span v-if="item.summary" class="text-caption text-medium-emphasis">
+                  — {{ item.summary }}
+                </span>
+                <span class="text-caption text-medium-emphasis">
+                  {{ item.project.name }} · {{ item.author.username }} ·
+                  {{ new Date(item.created).toLocaleDateString('ko-KR') }}
+                </span>
+              </div>
+            </CCol>
+          </CRow>
+        </template>
+      </template>
     </template>
 
     <template v-slot:aside></template>
