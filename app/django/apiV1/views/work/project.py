@@ -1,5 +1,5 @@
 from django.db.models import Q
-from django_filters.rest_framework import FilterSet, BooleanFilter, CharFilter
+from django_filters.rest_framework import FilterSet, BooleanFilter, CharFilter, DateFilter
 from rest_framework import viewsets, serializers, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -34,6 +34,11 @@ class IssueProjectFilter(FilterSet):
     description__startswith = CharFilter(field_name='description', lookup_expr='istartswith', label='설명-시작')
     description__endswith = CharFilter(field_name='description', lookup_expr='iendswith', label='설명-끝')
     description__isnull = BooleanFilter(field_name='description', lookup_expr='isnull', label='설명-없음')
+
+    from_created = DateFilter(field_name='created', lookup_expr='gte', label='등록일자-시작')
+    to_created = DateFilter(field_name='created', lookup_expr='lte', label='등록일자-기한')
+    from_updated = DateFilter(field_name='updated', lookup_expr='gte', label='수정일자-시작')
+    to_updated = DateFilter(field_name='updated', lookup_expr='lte', label='수정일자-기한')
 
     class Meta:
         model = IssueProject

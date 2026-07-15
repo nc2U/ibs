@@ -90,6 +90,14 @@ export interface ProjectFilter {
   description__startswith?: string
   description__endswith?: string
   description__isnull?: boolean
+  created_date?: string
+  created_date2?: string
+  updated_date?: string
+  updated_date2?: string
+  from_created?: string
+  to_created?: string
+  from_updated?: string
+  to_updated?: string
   member?: number
 }
 

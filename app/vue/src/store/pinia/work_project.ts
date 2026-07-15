@@ -179,6 +179,11 @@ export const useWork = defineStore('work', () => {
     else if (payload.description__endswith) url += `&description__endswith=${payload.description__endswith}`
     else if (payload.description__isnull !== undefined) url += `&description__isnull=${payload.description__isnull}`
 
+    if (payload.from_created) url += `&from_created=${payload.from_created}`
+    if (payload.to_created) url += `&to_created=${payload.to_created}`
+    if (payload.from_updated) url += `&from_updated=${payload.from_updated}`
+    if (payload.to_updated) url += `&to_updated=${payload.to_updated}`
+
     return await api
       .get(url)
       .then(res => (issueProjects.value = res.data.results || res.data))

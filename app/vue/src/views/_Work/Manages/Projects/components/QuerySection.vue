@@ -58,8 +58,8 @@ const searchOptions = reactive([
   {
     label: '날짜',
     options: [
-      { value: 'created', label: '\u00A0\u00A0\u00A0등록' },
-      { value: 'updated', label: '\u00A0\u00A0\u00A0수정' },
+      { value: 'created', label: '\u00A0\u00A0\u00A0등록일' },
+      { value: 'updated', label: '\u00A0\u00A0\u00A0수정일' },
     ],
   },
 ])
@@ -69,6 +69,8 @@ const cond = ref({
   project: 'is' as 'is' | 'exclude',
   parent: 'all' as 'all' | 'none' | 'is' | 'exclude',
   is_public: 'is' as 'is' | 'exclude',
+  created: 'is' as 'is' | 'gte' | 'lte' | 'between',
+  updated: 'is' as 'is' | 'gte' | 'lte' | 'between',
 
   name: 'contains',
   description: 'contains',
@@ -77,6 +79,11 @@ const cond = ref({
 const form = ref<ProjectFilter>({
   status: '1',
   is_public: '1',
+
+  created_date: '',
+  created_date2: '',
+  updated_date: '',
+  updated_date2: '',
 
   name: '',
   description: '',
@@ -151,6 +158,42 @@ const filterSubmit = () => {
         filterData.description__startswith = form.value.description
       else if (cond.value.description === 'endswith')
         filterData.description__endswith = form.value.description
+    }
+  }
+
+  if (searchCond.value.includes('created')) {
+    if (cond.value.created === 'is' && form.value.created_date) {
+      filterData.from_created = form.value.created_date
+      filterData.to_created = form.value.created_date
+    } else if (cond.value.created === 'gte' && form.value.created_date) {
+      filterData.from_created = form.value.created_date
+    } else if (cond.value.created === 'lte' && form.value.created_date) {
+      filterData.to_created = form.value.created_date
+    } else if (
+      cond.value.created === 'between' &&
+      form.value.created_date &&
+      form.value.created_date2
+    ) {
+      filterData.from_created = form.value.created_date
+      filterData.to_created = form.value.created_date2
+    }
+  }
+
+  if (searchCond.value.includes('updated')) {
+    if (cond.value.updated === 'is' && form.value.updated_date) {
+      filterData.from_updated = form.value.updated_date
+      filterData.to_updated = form.value.updated_date
+    } else if (cond.value.updated === 'gte' && form.value.updated_date) {
+      filterData.from_updated = form.value.updated_date
+    } else if (cond.value.updated === 'lte' && form.value.updated_date) {
+      filterData.to_updated = form.value.updated_date
+    } else if (
+      cond.value.updated === 'between' &&
+      form.value.updated_date &&
+      form.value.updated_date2
+    ) {
+      filterData.from_updated = form.value.updated_date
+      filterData.to_updated = form.value.updated_date2
     }
   }
 
@@ -331,29 +374,38 @@ const onQuerySelect = (event: Event) => {
                 <CFormCheck checked="true" label="등록일자" id="created" readonly />
               </CCol>
               <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect size="sm">
-                  <option value="1">is</option>
-                  <option value="2">&gt;=</option>
-                  <option value="3">&lt;=</option>
-                  <option value="4">between</option>
-                  <option value="5">less than days ago</option>
-                  <option value="6">more than days ago</option>
-                  <option value="7">is the past</option>
-                  <option value="8">days ago</option>
-                  <option value="9">today</option>
-                  <option value="10">yesterday</option>
-                  <option value="11">this week</option>
-                  <option value="12">last week</option>
-                  <option value="13">last 2 weeks</option>
-                  <option value="14">this month</option>
-                  <option value="15">last month</option>
-                  <option value="16">this year</option>
-                  <option value="17">none</option>
-                  <option value="18">any</option>
+                <CFormSelect v-model="cond.created" size="sm">
+                  <option value="is">is</option>
+                  <option value="gte">&gt;=</option>
+                  <option value="lte">&lt;=</option>
+                  <option value="between">between</option>
                 </CFormSelect>
               </CCol>
               <CCol class="col-4 col-lg-3 col-xl-2">
-                <DatePicker size="sm" />
+                <DatePicker v-model="form.created_date" size="sm" />
+              </CCol>
+              <CCol v-if="cond.created === 'between'" class="col-4 col-lg-3 col-xl-2">
+                <DatePicker v-model="form.created_date2" size="sm" />
+              </CCol>
+            </CRow>
+
+            <CRow v-if="searchCond.includes('updated')">
+              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
+                <CFormCheck checked="true" label="수정일자" id="updated" readonly />
+              </CCol>
+              <CCol class="col-4 col-lg-3 col-xl-2">
+                <CFormSelect v-model="cond.updated" size="sm">
+                  <option value="is">is</option>
+                  <option value="gte">&gt;=</option>
+                  <option value="lte">&lt;=</option>
+                  <option value="between">between</option>
+                </CFormSelect>
+              </CCol>
+              <CCol class="col-4 col-lg-3 col-xl-2">
+                <DatePicker v-model="form.updated_date" size="sm" />
+              </CCol>
+              <CCol v-if="cond.updated === 'between'" class="col-4 col-lg-3 col-xl-2">
+                <DatePicker v-model="form.updated_date2" size="sm" />
               </CCol>
             </CRow>
 
