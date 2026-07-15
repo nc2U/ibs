@@ -70,7 +70,7 @@ export interface SearchResults {
 
 export interface SearchParams {
   q: string
-  scope?: 'all' | 'project'
+  scope?: 'all' | 'my' | 'project'
   slug?: string
   t?: string[]
   title_only?: '0' | '1'

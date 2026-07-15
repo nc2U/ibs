@@ -189,7 +189,6 @@ class SearchViewSet(viewsets.ModelViewSet):
 
     @staticmethod
     def _search_issues(user, q, scope, slug, title_only, opened_only):
-
         qs = build_issue_queryset(user)
         if opened_only:
             qs = qs.filter(closed__isnull=True)
@@ -199,11 +198,12 @@ class SearchViewSet(viewsets.ModelViewSet):
             qs = qs.filter(Q(subject__icontains=q) | Q(description__icontains=q))
         if scope == 'project' and slug:
             qs = qs.filter(project__slug=slug)
+        elif scope == 'my':
+            qs = qs.filter(project__members__user=user)
         return IssueSearchSerializer(qs[:25], many=True).data
 
     @staticmethod
     def _search_comments(user, q, scope, slug):
-
         qs = IssueComment.objects.filter(
             content__icontains=q,
             is_private=False,
@@ -217,11 +217,12 @@ class SearchViewSet(viewsets.ModelViewSet):
 
         if scope == 'project' and slug:
             qs = qs.filter(issue__project__slug=slug)
+        elif scope == 'my':
+            qs = qs.filter(issue__project__members__user=user)
         return CommentSearchSerializer(qs[:25], many=True).data
 
     @staticmethod
     def _search_meetings(user, q, scope, slug, title_only):
-
         if title_only:
             q_expr = Q(title__icontains=q)
         else:
@@ -234,11 +235,12 @@ class SearchViewSet(viewsets.ModelViewSet):
             ).distinct()
         if scope == 'project' and slug:
             qs = qs.filter(project__slug=slug)
+        elif scope == 'my':
+            qs = qs.filter(project__members__user=user)
         return MeetingSearchSerializer(qs[:25], many=True).data
 
     @staticmethod
     def _search_news(user, q, scope, slug, title_only):
-
         if title_only:
             q_expr = Q(title__icontains=q)
         else:
@@ -251,11 +253,12 @@ class SearchViewSet(viewsets.ModelViewSet):
             ).distinct()
         if scope == 'project' and slug:
             qs = qs.filter(project__slug=slug)
+        elif scope == 'my':
+            qs = qs.filter(project__members__user=user)
         return NewsSearchSerializer(qs[:25], many=True).data
 
     @staticmethod
     def _search_documents(user, q, scope, slug, title_only):
-
         if title_only:
             q_expr = Q(title__icontains=q)
         else:
@@ -272,11 +275,12 @@ class SearchViewSet(viewsets.ModelViewSet):
 
         if scope == 'project' and slug:
             qs = qs.filter(issue_project__slug=slug)
+        elif scope == 'my':
+            qs = qs.filter(issue_project__members__user=user)
         return DocumentSearchSerializer(qs[:25], many=True).data
 
     @staticmethod
     def _search_posts(user, q, scope, slug, title_only):
-
         if title_only:
             q_expr = Q(title__icontains=q)
         else:
@@ -294,4 +298,6 @@ class SearchViewSet(viewsets.ModelViewSet):
 
         if scope == 'project' and slug:
             qs = qs.filter(forum__project__slug=slug)
+        elif scope == 'my':
+            qs = qs.filter(forum__project__members__user=user)
         return PostSearchSerializer(qs[:25], many=True).data

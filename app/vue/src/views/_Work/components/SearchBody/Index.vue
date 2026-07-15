@@ -17,6 +17,7 @@ const sideNavCAll = () => cBody.value.toggle()
 
 const searchStore = useSearch()
 const searchWord = ref('')
+const projectScope = ref<'all' | 'my'>('all')
 const titleOnly = ref(false)
 const targets = ref({
   meetings: true,
@@ -43,6 +44,7 @@ const goSearch = () => {
     name: '전체검색',
     query: {
       q: searchWord.value,
+      scope: projectScope.value,
       title_only: titleOnly.value ? '1' : '0',
       opened_only: openedOnly.value ? '1' : '0',
       t: activeTargets.value,
@@ -53,7 +55,7 @@ const goSearch = () => {
 const doSearch = (q: string) => {
   searchStore.fetchSearch({
     q,
-    scope: 'all',
+    scope: projectScope.value,
     t: activeTargets.value,
     title_only: titleOnly.value ? '1' : '0',
     opened_only: openedOnly.value ? '1' : '0',
@@ -66,6 +68,11 @@ watch(
     const q = query.q
     if (q && typeof q === 'string') {
       searchWord.value = q
+      if (query.scope === 'my') {
+        projectScope.value = 'my'
+      } else {
+        projectScope.value = 'all'
+      }
       if (query.title_only) {
         titleOnly.value = query.title_only === '1'
       }
@@ -127,27 +134,37 @@ const meetingStatusLabel: Record<string, string> = { '1': '준비', '2': '종료
       <CCard :color="colorLight">
         <CCardBody>
           <CRow>
-            <CCol sm="12" md="8" lg="6" xl="4">
-              <CInputGroup>
-                <CFormInput
-                  v-model="searchWord"
-                  placeholder="검색어 입력 (2자 이상)"
-                  @keydown.enter="goSearch"
-                />
-                <span
-                  color="primary"
-                  variant="flat"
-                  rounded="0"
-                  size="small"
-                  class="input-group-text"
-                  :loading="searchStore.loading"
-                  @click="goSearch"
-                >
-                  <v-icon icon="mdi-magnify" size="18" class="mr-1" />
-                  검색
-                </span>
-              </CInputGroup>
+            <CCol sm="12" md="8" lg="6" xl="5">
+              <CRow>
+                <CCol sm="8" xl="9" class="mb-1">
+                  <CInputGroup>
+                    <CFormInput
+                      v-model="searchWord"
+                      placeholder="검색어 입력 (2자 이상)"
+                      @keydown.enter="goSearch"
+                    />
+                    <span
+                      color="primary"
+                      variant="flat"
+                      rounded="0"
+                      size="small"
+                      class="input-group-text"
+                      :loading="searchStore.loading"
+                      @click="goSearch"
+                    >
+                      <v-icon icon="mdi-magnify" size="18" class="mr-1" />
+                    </span>
+                  </CInputGroup>
+                </CCol>
+                <CCol sm="4" xl="3" class="mb-1">
+                  <CFormSelect v-model="projectScope">
+                    <option value="all">모든 프로젝트</option>
+                    <option value="my">내 프로젝트</option>
+                  </CFormSelect>
+                </CCol>
+              </CRow>
             </CCol>
+
             <CCol class="pt-2">
               <CFormCheck v-model="titleOnly" inline label="제목에서만 찾기" id="title-only" />
             </CCol>
