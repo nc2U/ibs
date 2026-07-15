@@ -105,10 +105,10 @@ export const useWork = defineStore('work', () => {
   const getAllProjects = computed(() =>
     allProjects.value.map(i => ({
       pk: i.pk as number,
+      module: i.module,
       value: i.slug as string,
       label: i.name,
       slug: i.slug,
-      status: i.status,
       depth: i.depth,
       parent_visible: i.parent_visible,
     })),
@@ -116,10 +116,10 @@ export const useWork = defineStore('work', () => {
   const getIssueProjects = computed(() =>
     issueProjects.value.map(i => ({
       pk: i.pk as number,
+      module: i.module,
       value: i.slug as string,
       label: i.name,
       slug: i.slug,
-      status: i.status,
       depth: i.depth,
       parent_visible: i.parent_visible,
     })),
@@ -127,10 +127,10 @@ export const useWork = defineStore('work', () => {
   const getMyProjects = computed(() =>
     myProjects.value.map(i => ({
       pk: i.pk as number,
+      module: i.module,
       value: i.slug as string,
       label: i.name,
       slug: i.slug,
-      status: i.status,
       depth: i.depth,
       parent_visible: i.parent_visible,
     })),

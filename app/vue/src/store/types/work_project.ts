@@ -23,10 +23,10 @@ export interface SimpleProject {
 
 export interface getProject {
   pk: number
+  module: any
   value: string
   label: string
   slug: string
-  status: '1' | '9'
   depth: number
   parent_visible: boolean
 }

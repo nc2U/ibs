@@ -9,6 +9,7 @@ import FileModify from '@/components/FileControl/FileModify.vue'
 import FileUpload from '@/components/FileControl/FileUpload.vue'
 
 const props = defineProps({ news: { type: Object as PropType<News | null>, default: () => null } })
+
 const emit = defineEmits(['on-submit', 'close-form'])
 
 const validated = ref(false)
@@ -26,7 +27,17 @@ const form = ref({
 
 const { can, PERM } = usePerms()
 const workStore = useWork()
-const getAllProjects = computed(() => workStore.getAllProjects)
+const getNewsProjects = computed(() =>
+  workStore.allProjects
+    .filter(proj => proj.module?.news)
+    .map(i => ({
+      pk: i.pk as number,
+      value: i.pk as number,
+      label: i.name,
+      depth: i.depth,
+      parent_visible: i.parent_visible,
+    })),
+)
 
 const RefNewFiles = ref()
 const fileUpload = (newFiles: any[]) => (form.value.newFiles = newFiles)
@@ -80,7 +91,7 @@ onBeforeMount(() => {
           <CCol sm="8">
             <CFormSelect v-model="form.project" :required="!$route.params.projId">
               <option value="">---------</option>
-              <option v-for="proj in getAllProjects" :value="proj.value" :key="proj.value">
+              <option v-for="proj in getNewsProjects" :value="proj.pk" :key="proj.pk">
                 <span v-if="!!proj.depth && proj.parent_visible">
                   {{ '&nbsp;'.repeat(proj.depth) }} »
                 </span>
