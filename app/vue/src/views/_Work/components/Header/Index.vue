@@ -41,7 +41,7 @@ const chkModules = (slug: string) => {
   const routeName = (route.name as string) ?? ''
   const project = workStore.issueProjectsFlat.filter(p => p.slug === slug)[0]
   if ((route.meta as any)?.title === '설 정 관 리' || routeName.includes('프로젝트')) return false
-  else if (!route?.params?.projId || !project) return true
+  else if (!project) return true
   else {
     if (routeName.includes('로드맵') && !project.versions?.length) return false
     else if (routeName.includes('업무') && !project.module?.issue) return false
