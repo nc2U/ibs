@@ -226,7 +226,7 @@ onBeforeMount(() => {
         <v-divider class="my-3" />
 
         <div class="mb-4">
-          <h5 class="text-subtitle- mb-2 strong">공용 검색양식</h5>
+          <h5 class="text-subtitle-1 mb-2 strong">공용 검색양식</h5>
           <v-list density="compact" nav class="pa-0 bg-transparent">
             <v-list-item
               v-for="q in publicQueries"
