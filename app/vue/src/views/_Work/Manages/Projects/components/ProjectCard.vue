@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, type PropType } from 'vue'
 import { useAccount } from '@/store/pinia/account.ts'
+import { useWork } from '@/store/pinia/work_project.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import { markdownRender } from '@/utils/helper.ts'
 
@@ -34,6 +35,7 @@ const isOwnProject = (project: IssueProject) =>
         <router-link
           :to="{ name: '(개요)', params: { projId: project.slug } }"
           :class="{ 'text-grey': project.status === '9' }"
+          class="mr-2"
         >
           {{ project.name }}
         </router-link>
@@ -41,6 +43,13 @@ const isOwnProject = (project: IssueProject) =>
           v-if="isOwnProject(project)"
           icon="mdi-account-tag"
           color="success"
+          size="15"
+          class="ml-1"
+        />
+        <v-icon
+          v-if="project?.is_bookmarked"
+          icon="mdi-bookmark"
+          color="info"
           size="15"
           class="ml-1"
         />

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { type PropType, ref } from 'vue'
+import { computed, type PropType, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
 import { useWork } from '@/store/pinia/work_project.ts'
@@ -25,6 +25,7 @@ const toggleStatus = async () => {
   await workStore.toggleProjectStatus(props.project.slug as string)
   RefProjectCloseConfirm.value.close()
 }
+const onToggleBookmark = (projectPk: number) => workStore.toggleBookmark(projectPk)
 
 const projectDelete = () => {
   if (idForDelete.value === (props.project?.slug as string)) {
@@ -33,7 +34,11 @@ const projectDelete = () => {
   } else idForDelete.value = ''
 }
 
-const addBookMark = () => alert('북마크 추가!! 구현 예정!')
+const isBookMarked = computed(() => props.project?.is_bookmarked)
+
+const bookMarkIcon = computed(() =>
+  isBookMarked.value ? 'mdi-bookmark-off' : 'mdi-bookmark-multiple',
+)
 </script>
 
 <template>
@@ -47,10 +52,10 @@ const addBookMark = () => alert('북마크 추가!! 구현 예정!')
     <CCol class="text-right">
       <span class="mr-2">
         <TextButton
-          name="북마크 추가"
-          icon="mdi-bookmark-multiple"
-          icon-color="primary"
-          @click="addBookMark"
+          :name="isBookMarked ? '북마크 해제' : '북마크 추가'"
+          :icon="isBookMarked ? 'mdi-bookmark-off' : 'mdi-bookmark-multiple'"
+          :icon-color="isBookMarked ? 'warning' : 'primary'"
+          @click="onToggleBookmark(project?.pk as number)"
         />
       </span>
 

@@ -77,6 +77,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', updateBreakpoint))
 
 onBeforeMount(() => {
   workStore.fetchIssueProjectList({ status: '1' })
+  workStore.fetchBookmarks()
 })
 </script>
 
@@ -115,14 +116,16 @@ onBeforeMount(() => {
         </template>
       </CRow>
 
-      <CRow>
+      <CRow class="mt-3">
         <CCol class="text-right form-text">
-          <span class="mr-2">
-            <TextButton name="내 프로젝트" icon="mdi-account-tag" color="secondary" />
+          <span class="mr-3">
+            <v-icon icon="mdi-account-tag" color="success" size="small" class="mr-2" />
+            내 프로젝트
           </span>
 
-          <span>
-            <TextButton name="내 북마크" icon="mdi-bookmark" icon-color="info" color="secondary" />
+          <span class="mr-2">
+            <v-icon icon="mdi-bookmark" color="info" size="small" class="mr-2" />
+            내 북마크
           </span>
         </CCol>
       </CRow>
@@ -145,6 +148,12 @@ onBeforeMount(() => {
       </CRow>
     </template>
 
-    <template v-slot:aside></template>
+    <template v-slot:aside> </template>
   </ContentBody>
 </template>
+
+<style lang="scss" scoped>
+.border-amber {
+  border-left: 3px solid #ffb300;
+}
+</style>

@@ -395,9 +395,25 @@ export const useWork = defineStore('work', () => {
       .post(`/project-bookmark/toggle/`, { project: projectId })
       .then(async res => {
         await fetchBookmarks()
-        // allProjects 에 캐시된 is_bookmarked 도 갱신
-        const target = allProjects.value.find(p => p.pk === projectId)
-        if (target) target.is_bookmarked = res.data.bookmarked
+        const isBookmarked = res.data.bookmarked
+
+        // 1. 단일 활성 프로젝트 상세 정보 갱신
+        if (issueProject.value && issueProject.value.pk === projectId) {
+          issueProject.value.is_bookmarked = isBookmarked
+        }
+
+        // 2. allProjects 리스트 갱신
+        const targetAll = allProjects.value.find(p => p.pk === projectId)
+        if (targetAll) targetAll.is_bookmarked = isBookmarked
+
+        // 3. issueProjects 리스트 갱신
+        const targetIssue = issueProjects.value.find(p => p.pk === projectId)
+        if (targetIssue) targetIssue.is_bookmarked = isBookmarked
+
+        // 4. myProjects 리스트 갱신
+        const targetMy = myProjects.value.find(p => p.pk === projectId)
+        if (targetMy) targetMy.is_bookmarked = isBookmarked
+
         return res.data as { bookmarked: boolean }
       })
       .catch(err => errorHandle(err.response.data))
