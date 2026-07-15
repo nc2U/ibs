@@ -14,6 +14,7 @@ import DocsList from './components/DocsList.vue'
 import Loading from '@/components/Loading/Index.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 import DocsForm from '@/views/_Work/Manages/Documents/components/DocsForm.vue'
+import AllProjectsSelect from '@/views/_Work/components/atomics/AllProjectsSelect.vue'
 
 const cBody = ref()
 const sideNavCAll = () => cBody.value.toggle()
@@ -36,7 +37,7 @@ const canDocsCreate = computed(() => can(PERM.DOCS_CREATE))
 const viewForm = ref(false)
 
 const workStore = useWork()
-const allProjects = computed(() => workStore.getAllProjPks)
+const allProjects = computed(() => workStore.getAllProjects.filter(pjt => pjt.module?.document))
 
 const docStore = useDocs()
 const docsList = computed<Docs[]>(() => docStore.docsList)
@@ -176,12 +177,7 @@ watch(
         <CCol>
           <h6 class="asideTitle">프로젝트 선택</h6>
           <v-divider class="mt-0" />
-          <CFormSelect v-model="docsFilter.issue_project" size="sm">
-            <option value="">전체 프로젝트</option>
-            <option v-for="proj in allProjects" :key="proj.value" :value="proj.value">
-              {{ proj.label }}
-            </option>
-          </CFormSelect>
+          <AllProjectsSelect v-model="docsFilter.issue_project" :all-projects="allProjects" />
         </CCol>
       </CRow>
 

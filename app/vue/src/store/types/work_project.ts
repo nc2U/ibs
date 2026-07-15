@@ -21,9 +21,9 @@ export interface SimpleProject {
   visible: boolean
 }
 
-export interface getProject {
+export interface selectProject {
   pk: number
-  module: any
+  module?: Module | null
   value: string
   label: string
   slug: string

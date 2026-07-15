@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed, type PropType, ref, watchEffect } from 'vue'
-import type { getProject } from '@/store/types/work_project.ts'
+import type { selectProject } from '@/store/types/work_project.ts'
 import type { Issue, IssueFilter, IssueStatus, Tracker } from '@/store/types/work_issue.ts'
 import { useRoute, useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
@@ -16,7 +16,7 @@ import IssueItem from './IssueItem.vue'
 const props = defineProps({
   projStatus: { type: String, default: '' },
   issueList: { type: Array as PropType<Issue[]>, default: () => [] },
-  allProjects: { type: Array as PropType<getProject[]>, default: () => [] },
+  allProjects: { type: Array as PropType<selectProject[]>, default: () => [] },
   statusList: { type: Array as PropType<IssueStatus[]>, default: () => [] },
   trackerList: { type: Array as PropType<Tracker[]>, default: () => [] },
   getIssues: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },

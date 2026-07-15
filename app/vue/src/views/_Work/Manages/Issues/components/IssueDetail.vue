@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, type PropType, ref, watch } from 'vue'
-import type { getProject, IssueProject } from '@/store/types/work_project.ts'
+import type { selectProject, IssueProject } from '@/store/types/work_project.ts'
 import type { CodeValue, Issue, IssueComment, IssueStatus } from '@/store/types/work_issue.ts'
 import { useRoute, useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
@@ -22,7 +22,7 @@ import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 const props = defineProps({
   issue: { type: Object as PropType<Issue>, required: true },
   issueProject: { type: Object as PropType<IssueProject>, default: null },
-  allProjects: { type: Array as PropType<getProject[]>, default: () => [] },
+  allProjects: { type: Array as PropType<selectProject[]>, default: () => [] },
   issueCommentList: { type: Array as PropType<IssueComment[]>, default: () => [] },
   statusList: { type: Array as PropType<IssueStatus[]>, default: () => [] },
   priorityList: { type: Array as PropType<CodeValue[]>, default: () => [] },

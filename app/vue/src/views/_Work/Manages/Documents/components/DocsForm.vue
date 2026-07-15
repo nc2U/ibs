@@ -7,6 +7,7 @@ import { useDocs } from '@/store/pinia/docs'
 import { useAccount } from '@/store/pinia/account.ts'
 import { colorLight } from '@/utils/cssMixins'
 import type { CodeValue } from '@/store/types/work_issue.ts'
+import type { selectProject } from '@/store/types/work_project.ts'
 import type { AFile, Attatches, Docs, Link } from '@/store/types/docs'
 import MdEditor from '@/components/MdEditor/Index.vue'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
@@ -18,7 +19,7 @@ const props = defineProps({
   docs: { type: Object as PropType<Docs>, default: () => null },
   typeNumber: { type: Number, default: 1 },
   projectPk: { type: Number, default: () => null },
-  allProjects: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },
+  allProjects: { type: Array as PropType<selectProject[]>, default: () => [] },
   categories: { type: Array as PropType<CodeValue[]>, default: () => [] },
   getSuitCase: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },
 })

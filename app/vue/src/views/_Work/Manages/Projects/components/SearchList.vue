@@ -1,12 +1,12 @@
 <script lang="ts" setup>
 import { ref, reactive, type PropType, onBeforeMount, watch } from 'vue'
-import type { getProject, ProjectFilter } from '@/store/types/work_project.ts'
+import type { selectProject, ProjectFilter } from '@/store/types/work_project.ts'
 import Multiselect from '@vueform/multiselect'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import IProjectSelect from '@/views/_Work/components/IProjectSelect.vue'
 
 const props = defineProps({
-  allProjects: { type: Array as PropType<getProject[]>, default: () => [] },
+  allProjects: { type: Array as PropType<selectProject[]>, default: () => [] },
 })
 
 const emit = defineEmits(['filter-submit', 'change-view-mode'])
