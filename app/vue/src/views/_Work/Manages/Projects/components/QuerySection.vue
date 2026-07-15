@@ -1,5 +1,7 @@
 <script lang="ts" setup>
-import { onBeforeMount, type PropType, reactive, ref, watch } from 'vue'
+import { computed, onBeforeMount, onMounted, type PropType, reactive, ref, watch } from 'vue'
+import { usePerms } from '@/composables/usePerms'
+import { useInform } from '@/store/pinia/work_inform.ts'
 import type { ProjectFilter, selectProject } from '@/store/types/work_project.ts'
 import Multiselect from '@vueform/multiselect'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
@@ -8,9 +10,16 @@ import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 
 const props = defineProps({
   allProjects: { type: Array as PropType<selectProject[]>, default: () => [] },
+  targetType: {
+    type: String as PropType<'project' | 'calendar' | 'issue' | 'meeting'>,
+    default: 'project',
+  },
 })
 
 const emit = defineEmits(['filter-submit', 'change-view-mode'])
+
+const { can, PERM } = usePerms()
+const informStore = useInform()
 
 const viewMode = ref<'board' | 'list'>(
   (localStorage.getItem('project-view-mode') as 'board' | 'list') || 'board',
@@ -100,6 +109,64 @@ onBeforeMount(() => {
     form.value.project = props.allProjects[0]?.slug
   }
 })
+
+// 검색양식 관련 기능 구현
+const isModalOpen = ref(false)
+const queryName = ref('')
+const isPublic = ref(false)
+
+const myQueries = computed(() =>
+  informStore.queries.filter(q => !q.is_public && q.target_type === props.targetType),
+)
+const publicQueries = computed(() =>
+  informStore.queries.filter(q => q.is_public && q.target_type === props.targetType),
+)
+
+onMounted(() => {
+  informStore.fetchQueries({ targetType: props.targetType })
+})
+
+const openSaveModal = () => {
+  queryName.value = ''
+  isPublic.value = false
+  isModalOpen.value = true
+}
+
+const saveQuery = async () => {
+  if (!queryName.value.trim()) return
+
+  const payload = {
+    name: queryName.value,
+    target_type: props.targetType,
+    is_public: isPublic.value,
+    project: null,
+    filters: {
+      searchCond: searchCond.value,
+      cond: cond.value,
+      form: form.value,
+    },
+  }
+
+  await informStore.createQuery(payload)
+  await informStore.fetchQueries({ targetType: props.targetType })
+  isModalOpen.value = false
+}
+
+const onQuerySelect = (event: Event) => {
+  const select = event.target as HTMLSelectElement
+  const queryId = Number(select.value)
+  if (!queryId) return
+
+  const query = informStore.queries.find(q => q.pk === queryId)
+  if (query && query.filters) {
+    const f = query.filters
+    if (f.searchCond) searchCond.value = f.searchCond
+    if (f.cond) cond.value = { ...cond.value, ...f.cond }
+    if (f.form) form.value = { ...form.value, ...f.form }
+
+    filterSubmit()
+  }
+}
 </script>
 
 <template>
@@ -343,12 +410,61 @@ onBeforeMount(() => {
         />
 
         <TextButton
+          v-if="can(PERM.PROJECT_SAVE_QUERY)"
           name="검색양식 저장"
           icon="mdi-content-save"
           icon-color="indigo"
           font-size="1"
+          @click="openSaveModal"
         />
+
+        <CFormSelect
+          v-if="myQueries.length || publicQueries.length"
+          class="d-inline-block ml-3"
+          style="width: auto; max-width: 250px; vertical-align: middle"
+          size="sm"
+          @change="onQuerySelect"
+        >
+          <option value="">-- 검색양식 선택 --</option>
+          <optgroup v-if="myQueries.length" label="내 검색양식">
+            <option v-for="q in myQueries" :key="q.pk" :value="q.pk">
+              {{ q.name }}
+            </option>
+          </optgroup>
+          <optgroup v-if="publicQueries.length" label="공용 검색양식">
+            <option v-for="q in publicQueries" :key="q.pk" :value="q.pk">
+              {{ q.name }}
+            </option>
+          </optgroup>
+        </CFormSelect>
       </slot>
     </CCol>
   </CRow>
+
+  <CModal :visible="isModalOpen" @close="isModalOpen = false">
+    <CModalHeader>
+      <CModalTitle>검색양식 저장</CModalTitle>
+    </CModalHeader>
+    <CForm class="needs-validation" novalidate @submit.prevent="saveQuery">
+      <CModalBody class="text-body">
+        <CRow class="mb-3">
+          <CFormLabel for="query-name" class="col-3 col-form-label required text-right">
+            이름
+          </CFormLabel>
+          <CCol class="col-7">
+            <CFormInput id="query-name" v-model="queryName" placeholder="검색양식 이름" required />
+          </CCol>
+        </CRow>
+        <CRow class="mb-3" v-if="can(PERM.PROJECT_PUB_QUERY)">
+          <CCol class="offset-3 col-7">
+            <CFormCheck id="query-is-public" v-model="isPublic" label="공용 (프로젝트 내 공유)" />
+          </CCol>
+        </CRow>
+      </CModalBody>
+      <CModalFooter>
+        <v-btn type="submit" size="small" color="indigo" class="text-white">저장</v-btn>
+        <v-btn color="light" size="small" @click="isModalOpen = false" flat>닫기</v-btn>
+      </CModalFooter>
+    </CForm>
+  </CModal>
 </template>
