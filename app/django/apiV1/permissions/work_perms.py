@@ -535,3 +535,49 @@ class ForumPermission(ProjectPermission):
             return False
 
         return True
+
+
+class QueryPermission(ProjectPermission):
+    def has_object_permission(self, request, view, obj):
+        # 1. 기본 프로젝트 레벨 접근 허용 여부 체크
+        if not super().has_object_permission(request, view, obj):
+            return False
+
+        user = request.user
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return True
+
+        # 2. 조회 권한 분기
+        if request.method in permissions.SAFE_METHODS:
+            # 개인 검색양식은 작성자 본인만 조회 가능
+            if not obj.is_public and obj.user != user:
+                return False
+            return True
+
+        # 3. 쓰기(수정/삭제) 권한 분기
+        project = self.extract_project(obj)
+        if project:
+            user_perms = set(project.get_user_permissions(user))
+        else:
+            # 프로젝트가 없는 경우 (글로벌 쿼리 등), 회원이 속한 프로젝트들의 권한 및 회원 기본 역할 권한 합산
+            from work.models.project import Role
+            user_perms = set(
+                Role.objects.filter(
+                    projects__members__user=user
+                ).filter(
+                    permissions__code__in=['project.save_query', 'project.pub_query']
+                ).values_list('permissions__code', flat=True)
+            )
+            try:
+                role2 = Role.objects.prefetch_related('permissions').get(pk=2)
+                user_perms.update(role2.permissions.values_list('code', flat=True))
+            except Role.DoesNotExist:
+                pass
+
+        # 공용 검색양식 제어 시도하는 경우 -> 'project.pub_query' 권한 필수
+        if obj.is_public:
+            return 'project.pub_query' in user_perms
+
+        # 개인 검색양식을 수정/삭제하려는 경우 -> 본인이어야 하고 'project.save_query' 권한 필요
+        return obj.user == user and 'project.save_query' in user_perms
+

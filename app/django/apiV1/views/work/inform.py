@@ -1,22 +1,19 @@
 from django.db.models import Q
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets
 from rest_framework.decorators import action
+from rest_framework.filters import SearchFilter
 from rest_framework.response import Response
 
 from apiV1.pagination import PageNumberPaginationTen
 from apiV1.permissions.auth_perms import permissions
-from apiV1.permissions.work_perms import NewsPermission
+from apiV1.permissions.work_perms import NewsPermission, QueryPermission
 from apiV1.serializers.work import NewsFileSerializer, NewsCommentSerializer, SearchSerializer
-from apiV1.serializers.work.inform import NewsSerializer
-from apiV1.serializers.work.search import (MeetingSearchSerializer, IssueSearchSerializer, CommentSearchSerializer,
-                                           NewsSearchSerializer, DocumentSearchSerializer, PostSearchSerializer)
-from apiV1.views.work.issue import build_issue_queryset
-from docs.models import Document
-from forum.models import Post
+from apiV1.serializers.work.inform import NewsSerializer, CustomQuerySerializer
+from apiV1.serializers.work.search import (CommentSearchSerializer)
 from work.models import NewsFile
-from work.models.inform import News, NewsComment, Search
+from work.models.inform import News, NewsComment, Search, CustomQuery
 from work.models.issue import IssueComment
-from work.models.meeting import Meeting
 
 
 class NewsViewSet(viewsets.ModelViewSet):
@@ -250,11 +247,11 @@ class SearchViewSet(viewsets.ModelViewSet):
                 q_expr = Q(title__icontains=q) | Q(agenda__icontains=q) | Q(decisions__icontains=q)
             elif attach_mode == '2':
                 q_expr = (
-                    Q(title__icontains=q) |
-                    Q(agenda__icontains=q) |
-                    Q(decisions__icontains=q) |
-                    Q(files__file_name__icontains=q) |
-                    Q(files__description__icontains=q)
+                        Q(title__icontains=q) |
+                        Q(agenda__icontains=q) |
+                        Q(decisions__icontains=q) |
+                        Q(files__file_name__icontains=q) |
+                        Q(files__description__icontains=q)
                 )
             elif attach_mode == '3':
                 q_expr = Q(files__file_name__icontains=q) | Q(files__description__icontains=q)
@@ -282,11 +279,11 @@ class SearchViewSet(viewsets.ModelViewSet):
                 q_expr = Q(title__icontains=q) | Q(summary__icontains=q) | Q(content__icontains=q)
             elif attach_mode == '2':
                 q_expr = (
-                    Q(title__icontains=q) |
-                    Q(summary__icontains=q) |
-                    Q(content__icontains=q) |
-                    Q(files__file_name__icontains=q) |
-                    Q(files__description__icontains=q)
+                        Q(title__icontains=q) |
+                        Q(summary__icontains=q) |
+                        Q(content__icontains=q) |
+                        Q(files__file_name__icontains=q) |
+                        Q(files__description__icontains=q)
                 )
             elif attach_mode == '3':
                 q_expr = Q(files__file_name__icontains=q) | Q(files__description__icontains=q)
@@ -314,19 +311,19 @@ class SearchViewSet(viewsets.ModelViewSet):
                 q_expr = Q(title__icontains=q) | Q(description__icontains=q)
             elif attach_mode == '2':
                 q_expr = (
-                    Q(title__icontains=q) |
-                    Q(description__icontains=q) |
-                    Q(files__file_name__icontains=q) |
-                    Q(files__description__icontains=q) |
-                    Q(images__image_name__icontains=q) |
-                    Q(links__link__icontains=q) |
-                    Q(links__description__icontains=q)
+                        Q(title__icontains=q) |
+                        Q(description__icontains=q) |
+                        Q(files__file_name__icontains=q) |
+                        Q(files__description__icontains=q) |
+                        Q(images__image_name__icontains=q) |
+                        Q(links__link__icontains=q) |
+                        Q(links__description__icontains=q)
                 )
             elif attach_mode == '3':
                 q_expr = (
-                    Q(files__file_name__icontains=q) |
-                    Q(images__image_name__icontains=q) |
-                    Q(links__link__icontains=q)
+                        Q(files__file_name__icontains=q) |
+                        Q(images__image_name__icontains=q) |
+                        Q(links__link__icontains=q)
                 )
 
         # 소프트 딜리트 필터: deleted=None (SoftDeleteManager가 적용되어 있으므로 기본 objects 사용 가능)
@@ -356,10 +353,10 @@ class SearchViewSet(viewsets.ModelViewSet):
                 q_expr = Q(title__icontains=q) | Q(content__icontains=q)
             elif attach_mode == '2':
                 q_expr = (
-                    Q(title__icontains=q) |
-                    Q(content__icontains=q) |
-                    Q(files__file_name__icontains=q) |
-                    Q(images__image_name__icontains=q)
+                        Q(title__icontains=q) |
+                        Q(content__icontains=q) |
+                        Q(files__file_name__icontains=q) |
+                        Q(images__image_name__icontains=q)
                 )
             elif attach_mode == '3':
                 q_expr = Q(files__file_name__icontains=q) | Q(images__image_name__icontains=q)
@@ -379,3 +376,26 @@ class SearchViewSet(viewsets.ModelViewSet):
         elif scope == 'my':
             qs = qs.filter(forum__project__members__user=user)
         return PostSearchSerializer(qs[:25], many=True).data
+
+
+class CustomQueryViewSet(viewsets.ModelViewSet):
+    queryset = CustomQuery.objects.all()
+    serializer_class = CustomQuerySerializer
+    permission_classes = (permissions.IsAuthenticated, QueryPermission)
+    filter_backends = (DjangoFilterBackend, SearchFilter)
+    filterset_fields = ('project__slug', 'target_type', 'is_public')
+    search_fields = ('name',)
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        user = self.request.user
+
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+
+        # 본인의 개인/공용 양식 OR 타인의 공용 양식
+        from django.db.models import Q
+        return qs.filter(
+            Q(user=user) | Q(is_public=True)
+        ).distinct()
+

@@ -94,3 +94,79 @@ class Search(models.Model):
 
     def __str__(self):
         return f'#{self.pk}. {self.member.user} - 검색조건'
+
+
+class CustomQuery(models.Model):
+    TARGET_TYPE_CHOICES = (
+        ('issue', '업무'),
+        ('project', '프로젝트'),
+        ('calendar', '캘린더'),
+        ('meeting', '회의록'),
+    )
+
+    name = models.CharField('검색양식 이름', max_length=100)
+    target_type = models.CharField(
+        '대상 모듈',
+        max_length=20,
+        choices=TARGET_TYPE_CHOICES,
+        db_index=True
+    )
+    project = models.ForeignKey(
+        IssueProject,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        verbose_name='프로젝트 범위',
+        related_name='custom_queries'
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        verbose_name='작성자',
+        related_name='custom_queries'
+    )
+    is_public = models.BooleanField(
+        '공용 여부',
+        default=False,
+        help_text='체크 시 프로젝트 멤버 전원이 사용할 수 있습니다.'
+    )
+
+    # JSON 형식 필드들
+    filters = models.JSONField(
+        '필터 조건',
+        default=dict,
+        blank=True,
+        help_text='필터 정보 JSON (예: {"status": 1, "is_confirmed": true})'
+    )
+    column_names = models.JSONField(
+        '표시할 열',
+        default=list,
+        blank=True,
+        help_text='테이블 그리드에 표시할 필드 목록 JSON (주로 issue, project, meeting)'
+    )
+    sort_criteria = models.JSONField(
+        '정렬 기준',
+        default=list,
+        blank=True,
+        help_text='정렬 옵션 JSON (예: [["priority", "desc"], ["created", "desc"]])'
+    )
+    group_by = models.CharField(
+        '그룹화 기준',
+        max_length=50,
+        blank=True,
+        default='',
+        help_text='데이터 그룹핑 필드명'
+    )
+
+    created = models.DateTimeField('등록일', auto_now_add=True)
+    updated = models.DateTimeField('수정일', auto_now=True)
+
+    class Meta:
+        ordering = ('target_type', 'name', '-created')
+        verbose_name = '16. 검색 양식'
+        verbose_name_plural = '16. 검색 양식'
+
+    def __str__(self):
+        scope = "공용" if self.is_public else "개인"
+        return f"[{self.get_target_type_display()} - {scope}] {self.name} ({self.user.username})"
+
