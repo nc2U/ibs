@@ -146,10 +146,11 @@ export const useWork = defineStore('work', () => {
   const fetchAllProjectList = async (
     type: '' | '1' | '2' | '3' = '',
     company: '' | number = '',
-    status: '' | '1' | '9' = '',
+    status: '' | '1' | '9' | 'all' = '1',
   ) => {
+    const statusParam = status === 'all' ? '' : status
     return await api
-      .get(`/issue-project/?type=${type}&company=${company}&status=${status || '1'}`)
+      .get(`/issue-project/?type=${type}&company=${company}&status=${statusParam}`)
       .then(res => (allProjects.value = res.data.results || res.data))
       .catch(err => errorHandle(err.response.data))
   }

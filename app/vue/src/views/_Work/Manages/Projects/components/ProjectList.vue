@@ -76,6 +76,7 @@ onMounted(() => {
 onBeforeUnmount(() => window.removeEventListener('resize', updateBreakpoint))
 
 onBeforeMount(() => {
+  workStore.fetchAllProjectList('', '', 'all')
   workStore.fetchIssueProjectList({ status: '1' })
   workStore.fetchBookmarks()
 })
