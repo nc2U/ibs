@@ -2,7 +2,7 @@ import api from '@/api'
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { errorHandle, message } from '@/utils/helper.ts'
-import type { News, NewsComment } from '@/store/types/work_inform.ts'
+import type { News, NewsComment, CustomQuery, TargetType } from '@/store/types/work_inform.ts'
 
 export const useInform = defineStore('inform', () => {
   // news states & getters
@@ -112,6 +112,55 @@ export const useInform = defineStore('inform', () => {
       .then(() => message('warning', '알림', 'deleted!!'))
       .catch(err => errorHandle(err.response.data))
 
+  // custom query states & actions
+  const queries = ref<CustomQuery[]>([])
+  const loading = ref(false)
+
+  const fetchQueries = async (payload: { projectSlug?: string; targetType?: TargetType }) => {
+    loading.value = true
+    try {
+      const params = new URLSearchParams()
+      if (payload.projectSlug) params.append('project__slug', payload.projectSlug)
+      if (payload.targetType) params.append('target_type', payload.targetType)
+
+      const res = await api.get(`/custom-query/?${params.toString()}`)
+      queries.value = res.data.results
+    } catch (err: any) {
+      errorHandle(err.response.data)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const createQuery = async (payload: Partial<CustomQuery>) => {
+    try {
+      const res = await api.post('/custom-query/', payload)
+      message()
+      return res.data
+    } catch (err: any) {
+      errorHandle(err.response.data)
+    }
+  }
+
+  const updateQuery = async (pk: number, payload: Partial<CustomQuery>) => {
+    try {
+      const res = await api.put(`/custom-query/${pk}/`, payload)
+      message()
+      return res.data
+    } catch (err: any) {
+      errorHandle(err.response.data)
+    }
+  }
+
+  const deleteQuery = async (pk: number) => {
+    try {
+      await api.delete(`/custom-query/${pk}/`)
+      message()
+    } catch (err: any) {
+      errorHandle(err.response.data)
+    }
+  }
+
   return {
     news,
     newsList,
@@ -135,5 +184,12 @@ export const useInform = defineStore('inform', () => {
     createNewsComment,
     patchNewsComment,
     deleteNewsComment,
+
+    queries,
+    loading,
+    fetchQueries,
+    createQuery,
+    updateQuery,
+    deleteQuery,
   }
 })
