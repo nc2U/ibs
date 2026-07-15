@@ -5,8 +5,6 @@ import type { selectProject } from '@/store/types/work_project.ts'
 defineProps({
   allProjects: { type: Array as PropType<selectProject[]>, default: () => [] },
   defaultTitle: { type: String, default: '전체 프로젝트' },
-  required: { type: Boolean, default: false },
-  size: { type: String, default: '' },
 })
 </script>
 

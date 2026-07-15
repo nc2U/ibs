@@ -10,6 +10,7 @@ import { colorLight } from '@/utils/cssMixins'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import MdEditor from '@/components/MdEditor/Index.vue'
 import MultiSelect from '@/components/MultiSelect/index.vue'
+import AllProjectsSelect from '@/views/_Work/components/atomics/AllProjectsSelect.vue'
 
 const props = defineProps({
   project: { type: Object as PropType<IssueProject | null>, default: null },
@@ -34,7 +35,9 @@ const comStore = useCompany()
 const comSelect = computed(() => comStore.comSelect)
 
 const workStore = useWork()
-const getAllProjects = computed(() => workStore.getAllProjects)
+const getAllProjects = computed(() =>
+  workStore.getAllProjects.filter(p => p.pk !== props.project?.pk),
+)
 const allRoles = computed(() => workStore.getRoles.filter(r => r.value !== 1 && r.value !== 2))
 
 const issueStore = useIssue()
@@ -321,23 +324,12 @@ onBeforeMount(() => {
         <CRow class="mb-3">
           <CFormLabel class="col-form-label text-right col-2">상위 프로젝트</CFormLabel>
           <CCol>
-            <CFormSelect
+            <AllProjectsSelect
               v-model.number.lazy="form.parent"
+              :all-projects="getAllProjects"
+              default-title="---------"
               :disabled="!can(PERM.PROJECT_CREATE_SUB)"
-            >
-              <option value="">---------</option>
-              <option
-                v-for="proj in getAllProjects"
-                :value="proj.pk"
-                :key="proj.value"
-                v-show="project?.pk !== proj.pk"
-              >
-                <span v-if="!!proj.depth && proj.parent_visible">
-                  {{ '&nbsp;'.repeat(proj.depth) }} »
-                </span>
-                {{ proj.label }}
-              </option>
-            </CFormSelect>
+            />
           </CCol>
         </CRow>
 
