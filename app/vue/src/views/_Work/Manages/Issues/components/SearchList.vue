@@ -1,10 +1,10 @@
 <script lang="ts" setup>
-import { ref, reactive, type PropType, onBeforeMount, watch } from 'vue'
+import { onBeforeMount, type PropType, reactive, ref, watch } from 'vue'
 import type { selectProject } from '@/store/types/work_project.ts'
-import type { IssueStatus, IssueFilter, Tracker } from '@/store/types/work_issue.ts'
+import type { IssueFilter, IssueStatus, Tracker } from '@/store/types/work_issue.ts'
 import { useRoute } from 'vue-router'
 import Multiselect from '@vueform/multiselect'
-import IProjectSelect from '@/views/_Work/components/IProjectSelect.vue'
+import AllProjectsSelect from '@/views/_Work/components/atomics/AllProjectsSelect.vue'
 
 const props = defineProps({
   allProjects: { type: Array as PropType<selectProject[]>, default: () => [] },
@@ -285,7 +285,12 @@ onBeforeMount(async () => {
                 </CFormSelect>
               </CCol>
               <CCol class="col-4 col-lg-3">
-                <IProjectSelect v-model="form.project" :all-projects="allProjects" size="sm" />
+                <AllProjectsSelect
+                  v-model="form.project"
+                  :all-projects="allProjects"
+                  default-title="---------"
+                  size="sm"
+                />
               </CCol>
             </CRow>
 

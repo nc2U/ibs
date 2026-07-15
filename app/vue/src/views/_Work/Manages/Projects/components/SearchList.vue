@@ -1,9 +1,9 @@
 <script lang="ts" setup>
-import { ref, reactive, type PropType, onBeforeMount, watch } from 'vue'
-import type { selectProject, ProjectFilter } from '@/store/types/work_project.ts'
+import { onBeforeMount, type PropType, reactive, ref, watch } from 'vue'
+import type { ProjectFilter, selectProject } from '@/store/types/work_project.ts'
 import Multiselect from '@vueform/multiselect'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
-import IProjectSelect from '@/views/_Work/components/IProjectSelect.vue'
+import AllProjectsSelect from '@/views/_Work/components/atomics/AllProjectsSelect.vue'
 
 const props = defineProps({
   allProjects: { type: Array as PropType<selectProject[]>, default: () => [] },
@@ -142,7 +142,12 @@ onBeforeMount(() => {
                 </CFormSelect>
               </CCol>
               <CCol class="col-4 col-lg-3">
-                <IProjectSelect v-model="form.project" :all-projects="allProjects" size="sm" />
+                <AllProjectsSelect
+                  v-model="form.project"
+                  :all-projects="allProjects"
+                  default-title="---------"
+                  size="sm"
+                />
               </CCol>
             </CRow>
 
