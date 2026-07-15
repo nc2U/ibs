@@ -265,7 +265,7 @@ const meetingStatusLabel: Record<string, string> = { '1': '준비', '2': '종료
       </CRow>
 
       <!-- 검색 결과 -->
-      <div v-if="route.query.q && !searchStore.loading">
+      <div v-if="route.query.q && !searchStore.loading" class="mb-3">
         <CRow class="mt-4">
           <CCol>
             <h5>
