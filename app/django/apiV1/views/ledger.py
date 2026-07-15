@@ -572,11 +572,24 @@ class ProjectBankTransactionViewSet(viewsets.ModelViewSet):
 
         transaction_ids = [t.transaction_id for t in instances]
         if transaction_ids:
-            entries = ProjectAccountingEntry.objects.filter(
+            entries_qs = ProjectAccountingEntry.objects.filter(
                 transaction_id__in=transaction_ids
             ).select_related('account', 'contract', 'contractor')
+
+            # 필터 조건 적용
+            contract_param = request.query_params.get('contract')
+            search_param = request.query_params.get('search')
+
+            if contract_param:
+                entries_qs = entries_qs.filter(contract_id=contract_param)
+            if search_param:
+                entries_qs = entries_qs.filter(
+                    Q(trader__icontains=search_param) |
+                    Q(account__name__icontains=search_param)
+                )
+
             entries_map = defaultdict(list)
-            for entry in entries:
+            for entry in entries_qs:
                 entries_map[entry.transaction_id].append(entry)
             for tx in instances:
                 tx.prefetched_accounting_entries = entries_map.get(tx.transaction_id, [])
