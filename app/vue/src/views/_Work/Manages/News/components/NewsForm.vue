@@ -28,7 +28,7 @@ const form = ref({
 
 const { can, PERM } = usePerms()
 const workStore = useWork()
-const getNewsProjects = computed(() => workStore.getAllProjects.filter(proj => proj.module?.news))
+const getNewsProjects = computed(() => workStore.getMyProjects.filter(proj => proj.module?.news))
 
 const RefNewFiles = ref()
 const fileUpload = (newFiles: any[]) => (form.value.newFiles = newFiles)
@@ -80,15 +80,6 @@ onBeforeMount(() => {
           </CFormLabel>
 
           <CCol sm="8">
-            <!--            <CFormSelect v-model="form.project" :required="!$route.params.projId">-->
-            <!--              <option value="">-&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;</option>-->
-            <!--              <option v-for="proj in getNewsProjects" :value="proj.pk" :key="proj.pk">-->
-            <!--                <span v-if="!!proj.depth && proj.parent_visible">-->
-            <!--                  {{ '&nbsp;'.repeat(proj.depth) }} »-->
-            <!--                </span>-->
-            <!--                {{ proj.label }}-->
-            <!--              </option>-->
-            <!--            </CFormSelect>-->
             <AllProjectsSelect
               v-model="form.project"
               :all-projects="getNewsProjects"

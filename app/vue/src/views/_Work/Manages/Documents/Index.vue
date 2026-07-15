@@ -37,7 +37,7 @@ const canDocsCreate = computed(() => can(PERM.DOCS_CREATE))
 const viewForm = ref(false)
 
 const workStore = useWork()
-const allProjects = computed(() => workStore.getAllProjects.filter(pjt => pjt.module?.document))
+const myProjects = computed(() => workStore.getMyProjects.filter(pjt => pjt.module?.document))
 
 const docStore = useDocs()
 const docsList = computed<Docs[]>(() => docStore.docsList)
@@ -153,7 +153,7 @@ watch(
           :type-number="typeNumber"
           :categories="getCategories"
           :get-suit-case="getSuitCase"
-          :all-projects="allProjects"
+          :all-projects="myProjects"
           @close-form="viewForm = false"
         />
 
@@ -177,7 +177,7 @@ watch(
         <CCol>
           <h6 class="asideTitle">프로젝트 선택</h6>
           <v-divider class="mt-0" />
-          <AllProjectsSelect v-model="docsFilter.issue_project" :all-projects="allProjects" />
+          <AllProjectsSelect v-model="docsFilter.issue_project" :all-projects="myProjects" />
         </CCol>
       </CRow>
 
