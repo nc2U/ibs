@@ -9,7 +9,7 @@ defineProps({
 </script>
 
 <template>
-  <CFormSelect :required="required" :size="size">
+  <CFormSelect>
     <option value="">{{ defaultTitle }}</option>
     <option v-for="proj in allProjects" :value="proj.pk" :key="proj.pk">
       <span v-if="!!proj.depth && proj.parent_visible"> {{ '&nbsp;'.repeat(proj.depth) }} » </span>

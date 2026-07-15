@@ -3,7 +3,7 @@ import { onBeforeMount, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MultiSelect from '@/components/MultiSelect/index.vue'
 
-const props = defineProps({ getProjects: { type: Array, default: () => [] } })
+defineProps({ getProjects: { type: Array, default: () => [] } })
 const emit = defineEmits(['change-project'])
 
 const [route, router] = [useRoute(), useRouter()]
