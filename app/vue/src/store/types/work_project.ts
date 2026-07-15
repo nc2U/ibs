@@ -73,6 +73,7 @@ export interface ProjectFilter {
   company?: number
   parent__isnull?: boolean
   parent?: string
+  parent__exclude?: string
   status?: '1' | '9'
   status__exclude?: '1' | '9'
   project?: string

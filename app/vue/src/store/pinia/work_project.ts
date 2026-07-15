@@ -27,6 +27,7 @@ export const useWork = defineStore('work', () => {
   const allProjects = ref<IssueProject[]>([]) // 모든 프로젝트 - 선택 목록용(타입/회사/상태 만 검색 가능 - 권한 기본 적용)
   const issueProjects = ref<IssueProject[]>([]) // 검색용 - 표시 목록용(모든 검색 사용가능 - 권한 기본 적용)
   const myProjects = ref<IssueProject[]>([]) // 내가 멤버인 프로젝트(권한 기본 적용)
+  const activeFilters = ref<ProjectFilter>({})
 
   // 2. 트리 재구성 함수 및 트리 가공 상태 (Computed)
   const buildProjectTree = (projects: IssueProject[]): IssueProject[] => {
@@ -58,7 +59,37 @@ export const useWork = defineStore('work', () => {
 
   // 최상위 루트 노드 바인딩 (parent === null)
   const allProjectsTree = computed(() => buildProjectTree(allProjects.value))
-  const issueProjectsTree = computed(() => buildProjectTree(issueProjects.value))
+  const issueProjectsTree = computed(() => {
+    let list = issueProjects.value
+
+    const filters = activeFilters.value
+    if (filters) {
+      // 1. parent__isnull 필터
+      if (filters.parent__isnull !== undefined) {
+        if (filters.parent__isnull) {
+          list = list.filter(p => p.parent === null || p.parent === undefined)
+        } else {
+          list = list.filter(p => p.parent !== null && p.parent !== undefined)
+        }
+      }
+      // 2. parent__slug 필터 (parent가 일치)
+      if (filters.parent) {
+        const parentProj = allProjects.value.find(p => p.slug === filters.parent)
+        if (parentProj) {
+          list = list.filter(p => p.parent === parentProj.pk)
+        }
+      }
+      // 3. parent__exclude 필터 (parent가 일치하지 않음)
+      if (filters.parent__exclude) {
+        const parentProj = allProjects.value.find(p => p.slug === filters.parent__exclude)
+        if (parentProj) {
+          list = list.filter(p => p.parent !== parentProj.pk)
+        }
+      }
+    }
+
+    return buildProjectTree(list)
+  })
   const myProjectsTree = computed(() => buildProjectTree(myProjects.value))
 
   // 3. 재귀적 평탄화 가공 상태 (Computed)
@@ -124,6 +155,7 @@ export const useWork = defineStore('work', () => {
   }
 
   const fetchIssueProjectList = async (payload: ProjectFilter) => {
+    activeFilters.value = payload
     let url = `/issue-project/?1=1`
     if (payload.company) url += `&company=${payload.company}`
     if (payload?.status) url += `&status=${payload?.status}`

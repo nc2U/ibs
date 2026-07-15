@@ -44,7 +44,7 @@ const searchOptions = reactive([
     options: [
       { value: 'status', label: '상태', disabled: true },
       { value: 'project', label: '프로젝트' },
-      { value: 'parent', label: '상위 프로젝트', disabled: true },
+      { value: 'parent', label: '상위 프로젝트' },
       { value: 'is_public', label: '공개여부' },
     ],
   },
@@ -83,6 +83,7 @@ const form = ref<ProjectFilter>({
 })
 
 const selectedProjectVal = ref<number | string>('')
+const selectedParentVal = ref<number | string>('')
 
 const filterSubmit = () => {
   const filterData = {} as ProjectFilter
@@ -96,6 +97,20 @@ const filterSubmit = () => {
 
     if (cond.value.project === 'is') filterData.project = projectVal
     else if (cond.value.project === 'exclude') filterData.project__exclude = projectVal
+  }
+
+  if (searchCond.value.includes('parent')) {
+    if (cond.value.parent === 'all') {
+      filterData.parent__isnull = false
+    } else if (cond.value.parent === 'none') {
+      filterData.parent__isnull = true
+    } else if (cond.value.parent === 'is') {
+      const selectedParent = props.allProjects.find(p => p.value === Number(selectedParentVal.value))
+      filterData.parent = selectedParent ? selectedParent.slug : String(selectedParentVal.value)
+    } else if (cond.value.parent === 'exclude') {
+      const selectedParent = props.allProjects.find(p => p.value === Number(selectedParentVal.value))
+      filterData.parent__exclude = selectedParent ? selectedParent.slug : String(selectedParentVal.value)
+    }
   }
 
   if (searchCond.value.includes('is_public'))
@@ -118,9 +133,9 @@ watch(searchCond, nVal => {
 onBeforeMount(() => {
   if (props.allProjects.length) {
     selectedProjectVal.value = props.allProjects[0]?.value
+    selectedParentVal.value = props.allProjects[0]?.value
   }
 })
-
 
 // 검색양식 관련 기능 구현
 const isModalOpen = ref(false)
@@ -158,6 +173,7 @@ const saveQuery = async () => {
       form: {
         ...form.value,
         project: selectedProjectVal.value,
+        parent: selectedParentVal.value,
       },
     },
   }
@@ -180,6 +196,7 @@ const onQuerySelect = (event: Event) => {
     if (f.form) {
       form.value = { ...form.value, ...f.form }
       if (f.form.project !== undefined) selectedProjectVal.value = f.form.project
+      if (f.form.parent !== undefined) selectedParentVal.value = f.form.parent
     }
 
     filterSubmit()
@@ -205,8 +222,8 @@ const onQuerySelect = (event: Event) => {
               </CCol>
               <CCol class="d-none d-lg-block col-4 col-lg-3 col-xl-2">
                 <CFormSelect v-model="cond.status" size="sm">
-                  <option value="is">is</option>
-                  <option value="exclude">is not</option>
+                  <option value="is">이다</option>
+                  <option value="exclude">아니다</option>
                 </CFormSelect>
               </CCol>
               <CCol class="col-8 col-lg-3">
@@ -223,8 +240,8 @@ const onQuerySelect = (event: Event) => {
               </CCol>
               <CCol class="col-4 col-lg-3 col-xl-2">
                 <CFormSelect v-model="cond.project" size="sm">
-                  <option value="is">is</option>
-                  <option value="exclude">is not</option>
+                  <option value="is">이다</option>
+                  <option value="exclude">아니다</option>
                 </CFormSelect>
               </CCol>
               <CCol class="col-4 col-lg-3">
@@ -250,9 +267,13 @@ const onQuerySelect = (event: Event) => {
                 </CFormSelect>
               </CCol>
               <CCol class="col-4 col-lg-3">
-                <CFormSelect size="sm">
-                  <option v-for="proj in allProjects" :key="proj.value" value="1">사용중</option>
-                </CFormSelect>
+                <AllProjectsSelect
+                  v-if="cond.parent === 'is' || cond.parent === 'exclude'"
+                  v-model="selectedParentVal"
+                  :all-projects="allProjects"
+                  default-title="---------"
+                  size="sm"
+                />
               </CCol>
             </CRow>
 
