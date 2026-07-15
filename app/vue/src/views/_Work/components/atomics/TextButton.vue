@@ -11,6 +11,7 @@ defineProps({
 
   projectList: { type: Array as PropType<selectProject[]>, default: () => [] },
   projectTo: { type: Object, default: undefined },
+  fontSize: { type: String, default: '0.98' },
 })
 </script>
 
@@ -22,6 +23,7 @@ defineProps({
     variant="text"
     size="small"
     class="no-underline"
+    :style="`font-size: ${fontSize}em`"
   >
     <template v-slot:prepend>
       <v-icon :color="iconColor"></v-icon>

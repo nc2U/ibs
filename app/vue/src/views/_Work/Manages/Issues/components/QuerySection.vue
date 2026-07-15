@@ -5,6 +5,7 @@ import type { IssueFilter, IssueStatus, Tracker } from '@/store/types/work_issue
 import { useRoute } from 'vue-router'
 import Multiselect from '@vueform/multiselect'
 import AllProjectsSelect from '@/views/_Work/components/atomics/AllProjectsSelect.vue'
+import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 
 const props = defineProps({
   allProjects: { type: Array as PropType<selectProject[]>, default: () => [] },
@@ -559,11 +560,28 @@ onBeforeMount(async () => {
   <CRow class="my-3">
     <CCol>
       <slot name="footer">
-        <v-icon icon="mdi-check-bold" size="sm" color="success" class="mr-1" />
-        <router-link to="" class="mr-3" @click="filterSubmit">검색</router-link>
-        <v-icon icon="mdi-replay" size="sm" color="success" class="mr-1" />
-        <router-link to="" class="mr-3" @click="resetFilter">초기화</router-link>
-        <!--        <router-link to=""> Save 검색양식</router-link>-->
+        <TextButton
+          name="검색"
+          icon="mdi-check-bold"
+          icon-color="info"
+          font-size="1"
+          @click="filterSubmit"
+        />
+
+        <TextButton
+          name="초기화"
+          icon="mdi-autorenew"
+          icon-color="info"
+          font-size="1"
+          @click="resetFilter"
+        />
+
+        <TextButton
+          name="검색양식 저장"
+          icon="mdi-content-save"
+          icon-color="indigo"
+          font-size="1"
+        />
       </slot>
     </CCol>
   </CRow>
