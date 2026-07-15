@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { type PropType, ref } from 'vue'
-import { bgLight, btnLight } from '@/utils/cssMixins'
+import { bgLight } from '@/utils/cssMixins'
 import { useDocs } from '@/store/pinia/docs'
 import type { AFile, DFile } from '@/store/types/docs'
 import { cutString, humanizeFileSize, timeFormat } from '@/utils/baseMixins'
@@ -174,7 +174,7 @@ const fileDelete = () => {
                   <v-btn color="success" size="small" @click="fileChange(file.pk as number)">
                     변경
                   </v-btn>
-                  <v-btn :color="btnLight" size="small" @click="clearFile"> 취소 </v-btn>
+                  <v-btn color="light" size="small" @click="clearFile" flat> 취소 </v-btn>
                 </CCol>
               </CRow>
             </span>
@@ -215,7 +215,7 @@ const fileDelete = () => {
   <CRow v-if="addFileForm" :class="`text-${btnDirection}`">
     <CCol>
       <v-btn color="info" size="small" @click="fileUpload">추가</v-btn>
-      <v-btn :color="btnLight" size="small" @click="clearFile">취소</v-btn>
+      <v-btn color="light" size="small" @click="clearFile" flat>취소</v-btn>
     </CCol>
   </CRow>
 
