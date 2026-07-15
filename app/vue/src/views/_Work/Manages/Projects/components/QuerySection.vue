@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, onMounted, type PropType, reactive, ref, watch } from 'vue'
+import { isValidate } from '@/utils/helper.ts'
 import { usePerms } from '@/composables/usePerms'
 import { useInform } from '@/store/pinia/work_inform.ts'
 import type { ProjectFilter, selectProject } from '@/store/types/work_project.ts'
@@ -216,6 +217,7 @@ onBeforeMount(() => {
 
 // 검색양식 관련 기능 구현
 const queryName = ref('')
+const queryDescription = ref('')
 const isPublic = ref(false)
 
 const myQueries = computed(() =>
@@ -231,15 +233,24 @@ onMounted(() => {
 
 const openSaveModal = () => {
   queryName.value = ''
+  queryDescription.value = ''
   isPublic.value = false
   refQuerySaveModal.value.callModal()
 }
 
-const saveQuery = async () => {
-  if (!queryName.value.trim()) return
+const validated = ref(false)
+const saveQuery = async (event: Event) => {
+  if (isValidate(event)) {
+    validated.value = true
+    return
+  }
+  validated.value = false
+
+  // if (!queryName.value.trim()) return
 
   const payload = {
     name: queryName.value,
+    description: queryDescription.value,
     target_type: props.targetType,
     is_public: isPublic.value,
     project: null,
@@ -573,9 +584,9 @@ const onQuerySelect = (event: Event) => {
     </CCol>
   </CRow>
 
-  <FormModal ref="refQuerySaveModal">
+  <FormModal ref="refQuerySaveModal" size="lg">
     <template #header>검색양식 저장</template>
-    <CForm class="needs-validation" novalidate @submit.prevent="saveQuery">
+    <CForm class="needs-validation" novalidate :validated="validated" @submit.prevent="saveQuery">
       <CModalBody class="text-body">
         <CRow class="mb-3">
           <CFormLabel for="query-name" class="col-3 col-form-label required text-right">
@@ -586,9 +597,9 @@ const onQuerySelect = (event: Event) => {
           </CCol>
         </CRow>
         <CRow class="mb-3">
-          <CFormLabel for="query-name" class="col-3 col-form-label text-right"> 설명 </CFormLabel>
+          <CFormLabel for="query-desc" class="col-3 col-form-label text-right"> 설명 </CFormLabel>
           <CCol class="col-7">
-            <CFormInput id="query-name" v-model="queryName" placeholder="검색양식 설명" />
+            <CFormInput id="query-desc" v-model="queryDescription" placeholder="검색양식 설명" />
           </CCol>
         </CRow>
         <CRow class="mb-3" v-if="can(PERM.PROJECT_PUB_QUERY)">
@@ -596,6 +607,208 @@ const onQuerySelect = (event: Event) => {
             <CFormCheck id="query-is-public" v-model="isPublic" label="공용 (프로젝트 내 공유)" />
           </CCol>
         </CRow>
+        <CRow class="mb-3">
+          <CFormLabel for="modalSearchOptions" class="col-3 col-form-label text-right">
+            검색 조건 추가
+          </CFormLabel>
+          <CCol class="col-7 pt-1">
+            <Multiselect
+              id="modalSearchOptions"
+              v-model="searchCond"
+              mode="tags"
+              placeholder="검색조건 추가"
+              :options="searchOptions"
+              :groups="true"
+              :close-on-select="false"
+              :searchable="false"
+              :create-option="false"
+              size="sm"
+            />
+          </CCol>
+        </CRow>
+
+        <v-divider class="my-4" />
+        <h6 class="mb-3 text-indigo">
+          <v-icon icon="mdi-filter-cog" class="mr-2" size="small" />
+          저장될 검색 조건 설정
+        </h6>
+
+        <div class="px-3 py-2 border rounded bg-light">
+          <!-- 상태 -->
+          <CRow class="mb-2 align-items-center">
+            <CCol class="col-3 pt-1 text-right">
+              <strong>상태</strong>
+            </CCol>
+            <CCol class="col-3">
+              <CFormSelect v-model="cond.status" size="sm">
+                <option value="is">이다</option>
+                <option value="exclude">아니다</option>
+              </CFormSelect>
+            </CCol>
+            <CCol class="col-4">
+              <CFormSelect v-model="form.status" size="sm">
+                <option value="1">사용중</option>
+                <option value="9">잠금/닫힘</option>
+              </CFormSelect>
+            </CCol>
+          </CRow>
+
+          <!-- 프로젝트 -->
+          <CRow v-if="searchCond.includes('project')" class="mb-2 align-items-center">
+            <CCol class="col-3 pt-1 text-right">
+              <strong>프로젝트</strong>
+            </CCol>
+            <CCol class="col-3">
+              <CFormSelect v-model="cond.project" size="sm">
+                <option value="is">이다</option>
+                <option value="exclude">아니다</option>
+              </CFormSelect>
+            </CCol>
+            <CCol class="col-4">
+              <AllProjectsSelect
+                v-model="selectedProjectVal"
+                :all-projects="allProjects"
+                default-title="---------"
+                size="sm"
+              />
+            </CCol>
+          </CRow>
+
+          <!-- 상위 프로젝트 -->
+          <CRow v-if="searchCond.includes('parent')" class="mb-2 align-items-center">
+            <CCol class="col-3 pt-1 text-right">
+              <strong>상위 프로젝트</strong>
+            </CCol>
+            <CCol class="col-3">
+              <CFormSelect v-model="cond.parent" size="sm">
+                <option value="all">모두</option>
+                <option value="none">없음</option>
+                <option value="is">이다</option>
+                <option value="exclude">아니다</option>
+              </CFormSelect>
+            </CCol>
+            <CCol class="col-4">
+              <AllProjectsSelect
+                v-if="cond.parent === 'is' || cond.parent === 'exclude'"
+                v-model="selectedParentVal"
+                :all-projects="allProjects"
+                default-title="---------"
+                size="sm"
+              />
+            </CCol>
+          </CRow>
+
+          <!-- 공개여부 -->
+          <CRow v-if="searchCond.includes('is_public')" class="mb-2 align-items-center">
+            <CCol class="col-3 pt-1 text-right">
+              <strong>공개여부</strong>
+            </CCol>
+            <CCol class="col-3">
+              <CFormSelect v-model="cond.is_public" size="sm">
+                <option value="is">이다</option>
+                <option value="exclude">아니다</option>
+              </CFormSelect>
+            </CCol>
+            <CCol class="col-4">
+              <CFormSelect v-model="form.is_public" size="sm">
+                <option value="1">예</option>
+                <option value="0">아니오</option>
+              </CFormSelect>
+            </CCol>
+          </CRow>
+
+          <!-- 이름 -->
+          <CRow v-if="searchCond.includes('name')" class="mb-2 align-items-center">
+            <CCol class="col-3 pt-1 text-right">
+              <strong>이름</strong>
+            </CCol>
+            <CCol class="col-3">
+              <CFormSelect v-model="cond.name" size="sm">
+                <option value="contains">포함되는 키워드</option>
+                <option value="exclude">포함하지 않는 키워드</option>
+                <option value="startswith">앞문자 일치</option>
+                <option value="endswith">뒷문자 일치</option>
+                <option value="none">없음</option>
+                <option value="any">모두</option>
+              </CFormSelect>
+            </CCol>
+            <CCol class="col-4">
+              <CFormInput
+                v-if="cond.name !== 'none' && cond.name !== 'any'"
+                v-model="form.name"
+                placeholder="키워드 입력"
+                size="sm"
+              />
+            </CCol>
+          </CRow>
+
+          <!-- 설명 -->
+          <CRow v-if="searchCond.includes('description')" class="mb-2 align-items-center">
+            <CCol class="col-3 pt-1 text-right">
+              <strong>설명</strong>
+            </CCol>
+            <CCol class="col-3">
+              <CFormSelect v-model="cond.description" size="sm">
+                <option value="contains">포함되는 키워드</option>
+                <option value="exclude">포함하지 않는 키워드</option>
+                <option value="startswith">앞문자 일치</option>
+                <option value="endswith">뒷문자 일치</option>
+                <option value="none">없음</option>
+                <option value="any">모두</option>
+              </CFormSelect>
+            </CCol>
+            <CCol class="col-4">
+              <CFormInput
+                v-if="cond.description !== 'none' && cond.description !== 'any'"
+                v-model="form.description"
+                placeholder="키워드 입력"
+                size="sm"
+              />
+            </CCol>
+          </CRow>
+
+          <!-- 등록일자 -->
+          <CRow v-if="searchCond.includes('created')" class="mb-2 align-items-center">
+            <CCol class="col-3 pt-1 text-right">
+              <strong>등록일자</strong>
+            </CCol>
+            <CCol class="col-3">
+              <CFormSelect v-model="cond.created" size="sm">
+                <option value="is">이다</option>
+                <option value="gte">&gt;=</option>
+                <option value="lte">&lt;=</option>
+                <option value="between">사이</option>
+              </CFormSelect>
+            </CCol>
+            <CCol class="col-3">
+              <DatePicker v-model="form.created_date" size="sm" />
+            </CCol>
+            <CCol v-if="cond.created === 'between'" class="col-3">
+              <DatePicker v-model="form.created_date2" size="sm" />
+            </CCol>
+          </CRow>
+
+          <!-- 수정일자 -->
+          <CRow v-if="searchCond.includes('updated')" class="mb-2 align-items-center">
+            <CCol class="col-3 pt-1 text-right">
+              <strong>수정일자</strong>
+            </CCol>
+            <CCol class="col-3">
+              <CFormSelect v-model="cond.updated" size="sm">
+                <option value="is">이다</option>
+                <option value="gte">&gt;=</option>
+                <option value="lte">&lt;=</option>
+                <option value="between">사이</option>
+              </CFormSelect>
+            </CCol>
+            <CCol class="col-3">
+              <DatePicker v-model="form.updated_date" size="sm" />
+            </CCol>
+            <CCol v-if="cond.updated === 'between'" class="col-3">
+              <DatePicker v-model="form.updated_date2" size="sm" />
+            </CCol>
+          </CRow>
+        </div>
       </CModalBody>
       <CModalFooter>
         <v-btn type="submit" size="small" color="indigo" class="text-white">저장</v-btn>
