@@ -186,15 +186,8 @@ onBeforeMount(() => {
 
     <template v-slot:aside>
       <div class="mb-4">
-        <h6 class="mb-3 font-weight-bold">
-          <v-icon icon="mdi-filter-cog" size="small" class="mr-2" color="indigo" />
-          검색 양식
-        </h6>
-
         <div class="mb-4">
-          <div class="text-subtitle-2 text-indigo mb-2 font-weight-bold" style="font-size: 0.9rem">
-            내 검색 양식
-          </div>
+          <h5 class="text-subtitle-1 mb-2 strong">내 검색 양식</h5>
           <v-list density="compact" nav class="pa-0 bg-transparent">
             <v-list-item
               v-for="q in myQueries"
@@ -206,9 +199,9 @@ onBeforeMount(() => {
               class="rounded-lg mb-1 px-2 query-item pr-3"
             >
               <template v-slot:prepend>
-                <v-icon icon="mdi-filter-variant" size="small" class="mr-2" color="indigo" />
+                <v-icon icon="mdi-filter-variant" size="small" class="mr-1" color="indigo" />
               </template>
-              <v-list-item-title style="font-size: 0.85rem">{{ q.name }}</v-list-item-title>
+              <v-list-item-title style="font-size: 1em">{{ q.name }}</v-list-item-title>
               <template v-slot:append>
                 <v-btn
                   icon="mdi-close-circle"
@@ -223,7 +216,7 @@ onBeforeMount(() => {
             <div
               v-if="!myQueries.length"
               class="text-caption text-grey pl-2 py-1"
-              style="font-size: 0.8rem"
+              style="font-size: 0.9rem"
             >
               저장된 개인 검색 양식이 없습니다.
             </div>
@@ -233,9 +226,7 @@ onBeforeMount(() => {
         <v-divider class="my-3" />
 
         <div class="mb-4">
-          <div class="text-subtitle-2 text-teal mb-2 font-weight-bold" style="font-size: 0.9rem">
-            검색양식 (공용)
-          </div>
+          <h5 class="text-subtitle- mb-2 strong">공용 검색양식</h5>
           <v-list density="compact" nav class="pa-0 bg-transparent">
             <v-list-item
               v-for="q in publicQueries"
@@ -249,12 +240,12 @@ onBeforeMount(() => {
               <template v-slot:prepend>
                 <v-icon icon="mdi-filter-variant" size="small" class="mr-2" color="teal" />
               </template>
-              <v-list-item-title style="font-size: 0.85rem">{{ q.name }}</v-list-item-title>
+              <v-list-item-title style="font-size: 1em">{{ q.name }}</v-list-item-title>
             </v-list-item>
             <div
               v-if="!publicQueries.length"
               class="text-caption text-grey pl-2 py-1"
-              style="font-size: 0.8rem"
+              style="font-size: 0.9rem"
             >
               저장된 공용 검색 양식이 없습니다.
             </div>
