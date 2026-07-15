@@ -30,7 +30,7 @@ const { can, PERM } = usePerms()
 const canMeetingCreate = computed(() => can(PERM.MEETING_CREATE))
 
 const workStore = useWork()
-const myProjects = computed(() => workStore.myProjects)
+const myProjects = computed(() => workStore.getMyProjects)
 
 const meetingStore = useMeeting()
 const meetingList = computed(() => meetingStore.meetingList)
@@ -90,7 +90,7 @@ watch(
           <span v-if="canMeetingCreate" class="mr-2 form-text">
             <TextButton
               name="새 회의록"
-              :my-projects="myProjects"
+              :project-list="myProjects"
               :project-to="{ name: '(회의) - 추가' }"
             />
           </span>

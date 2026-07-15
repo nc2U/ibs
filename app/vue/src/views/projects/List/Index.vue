@@ -33,7 +33,7 @@ const toSubmit = async (payload: Project) => {
 }
 
 const workStore = useWork()
-const getAllProjPks = computed(() => workStore.getAllProjPks)
+const getAllProjects = computed(() => workStore.getAllProjects)
 
 const issueStore = useIssue()
 
@@ -62,7 +62,7 @@ onBeforeMount(async () => {
 
       <IndexForm
         v-if="compName === 'CreateForm'"
-        :get-projects="getAllProjPks"
+        :get-projects="getAllProjects"
         @to-submit="toSubmit"
         @reset-form="resetForm"
       />
@@ -70,7 +70,7 @@ onBeforeMount(async () => {
       <IndexForm
         v-if="compName === 'UpdateForm'"
         :project="project as Project"
-        :get-projects="getAllProjPks"
+        :get-projects="getAllProjects"
         @to-submit="toSubmit"
         @reset-form="resetForm"
       />

@@ -21,14 +21,21 @@ export interface SimpleProject {
   visible: boolean
 }
 
+// export interface selectProject {
+//   pk: number
+//   module?: Module | null
+//   value: string
+//   label: string
+//   slug: string
+//   depth: number
+//   parent_visible: boolean
+// }
+
 export interface selectProject {
-  pk: number
-  module?: Module | null
-  value: string
+  value: number
   label: string
   slug: string
-  depth: number
-  parent_visible: boolean
+  module?: Module | null
 }
 
 export interface MyRole {

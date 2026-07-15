@@ -81,58 +81,32 @@ export const useWork = defineStore('work', () => {
   const issueProjectsFlat = computed(() => flattenTree(issueProjectsTree.value))
   const myProjectsFlat = computed(() => flattenTree(myProjectsTree.value))
 
-  // 4. 셀렉박스 UI 옵션 가공 상태 - PK 형태 (Computed)
-  const getAllProjPks = computed(() =>
-    allProjects.value.map(i => ({
-      value: i.pk as number,
-      label: i.name as string,
-    })),
-  )
-  const getIssueProjPks = computed(() =>
-    issueProjects.value.map(i => ({
-      value: i.pk as number,
-      label: i.name as string,
-    })),
-  )
-  const getMyProjPks = computed(() =>
-    myProjects.value.map(i => ({
-      value: i.pk as number,
-      label: i.name as string,
-    })),
-  )
-
-  // 5. 셀렉박스 UI 옵션 가공 상태 - Slug 형태 (Computed)
+  // 4. 셀렉박스 UI 옵션 가공 상태 - PK + SLUG 형태 (Computed)
   const getAllProjects = computed(() =>
     allProjects.value.map(i => ({
-      pk: i.pk as number,
+      value: i.pk as number,
+      label:
+        (i.depth && i.parent_visible ? '\u00A0'.repeat(i.depth * 2) + '» \u00A0' : '') + i.name,
+      slug: i.slug as string,
       module: i.module,
-      value: i.slug as string,
-      label: (i.depth && i.parent_visible ? '\u00A0'.repeat(i.depth * 2) + '» ' : '') + i.name,
-      slug: i.slug,
-      depth: i.depth,
-      parent_visible: i.parent_visible,
     })),
   )
   const getIssueProjects = computed(() =>
     issueProjects.value.map(i => ({
-      pk: i.pk as number,
+      value: i.pk as number,
+      label:
+        (i.depth && i.parent_visible ? '\u00A0'.repeat(i.depth * 2) + '» \u00A0' : '') + i.name,
+      slug: i.slug as string,
       module: i.module,
-      value: i.slug as string,
-      label: (i.depth && i.parent_visible ? '\u00A0'.repeat(i.depth * 2) + '» ' : '') + i.name,
-      slug: i.slug,
-      depth: i.depth,
-      parent_visible: i.parent_visible,
     })),
   )
   const getMyProjects = computed(() =>
     myProjects.value.map(i => ({
-      pk: i.pk as number,
+      value: i.pk as number,
+      label:
+        (i.depth && i.parent_visible ? '\u00A0'.repeat(i.depth * 2) + '» \u00A0' : '') + i.name,
+      slug: i.slug as string,
       module: i.module,
-      value: i.slug as string,
-      label: (i.depth && i.parent_visible ? '\u00A0'.repeat(i.depth * 2) + '» ' : '') + i.name,
-      slug: i.slug,
-      depth: i.depth,
-      parent_visible: i.parent_visible,
     })),
   )
 
@@ -485,10 +459,6 @@ export const useWork = defineStore('work', () => {
     allProjectsFlat,
     issueProjectsFlat,
     myProjectsFlat,
-
-    getAllProjPks,
-    getIssueProjPks,
-    getMyProjPks,
 
     getAllProjects,
     getIssueProjects,

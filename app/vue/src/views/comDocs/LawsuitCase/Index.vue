@@ -63,7 +63,7 @@ const listFiltering = (payload: cFilter) => {
   } else {
     caseFilter.value.issue_project = payload.issue_project
     caseFilter.value.is_real_dev = ''
-    formTitle.value = getAllProjPks.value.filter(p => p.value == payload.issue_project)[0].label
+    formTitle.value = getAllProjects.value.filter(p => p.value == payload.issue_project)[0].label
   }
 
   caseFilter.value = payload
@@ -86,7 +86,7 @@ const comStore = useCompany()
 const company = computed(() => (comStore.company as Company)?.pk)
 
 const workStore = useWork()
-const getAllProjPks = computed(() => workStore.getAllProjPks)
+const getAllProjects = computed(() => workStore.getAllProjects)
 
 const docStore = useDocs()
 const suitcase = computed(() => docStore.suitcase)
@@ -305,7 +305,7 @@ onBeforeRouteLeave(() => {
             ref="fController"
             :com-from="true"
             :company="company ?? undefined"
-            :projects="getAllProjPks"
+            :projects="getAllProjects"
             :case-filter="caseFilter"
             @list-filter="listFiltering"
           />

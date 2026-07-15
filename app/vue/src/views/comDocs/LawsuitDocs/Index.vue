@@ -64,7 +64,7 @@ const listFiltering = (payload: DocsFilter) => {
   } else {
     docsFilter.value.issue_project = payload.issue_project
     docsFilter.value.is_real_dev = ''
-    formTitle.value = getAllProjPks.value.filter(p => p.value == payload.issue_project)[0].label
+    formTitle.value = getAllProjects.value.filter(p => p.value == payload.issue_project)[0].label
   }
 
   fetchAllSuitCaseList({ issue_project: docsFilter.value.issue_project })
@@ -91,7 +91,7 @@ const company = computed(() => (comStore.company as Company)?.pk)
 const comIProject = computed(() => (comStore.company as Company)?.com_issue_project ?? '')
 
 const workStore = useWork()
-const getAllProjPks = computed(() => workStore.getAllProjPks)
+const getAllProjects = computed(() => workStore.getAllProjects)
 
 const accStore = useAccount()
 const writeAuth = computed(() => accStore.writeComDocs)
@@ -377,7 +377,7 @@ onBeforeRouteLeave(() => {
             ref="fController"
             :com-from="true"
             :company="company ?? undefined"
-            :projects="getAllProjPks"
+            :projects="getAllProjects"
             :get-suit-case="getSuitCase"
             :docs-filter="docsFilter"
             @list-filter="listFiltering"

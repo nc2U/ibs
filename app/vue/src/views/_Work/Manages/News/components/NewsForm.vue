@@ -7,6 +7,7 @@ import type { News } from '@/store/types/work_inform.ts'
 import MdEditor from '@/components/MdEditor/Index.vue'
 import FileModify from '@/components/FileControl/FileModify.vue'
 import FileUpload from '@/components/FileControl/FileUpload.vue'
+import AllProjectsSelect from '@/views/_Work/components/atomics/AllProjectsSelect.vue'
 
 const props = defineProps({ news: { type: Object as PropType<News | null>, default: () => null } })
 
@@ -79,15 +80,20 @@ onBeforeMount(() => {
           </CFormLabel>
 
           <CCol sm="8">
-            <CFormSelect v-model="form.project" :required="!$route.params.projId">
-              <option value="">---------</option>
-              <option v-for="proj in getNewsProjects" :value="proj.pk" :key="proj.pk">
-                <span v-if="!!proj.depth && proj.parent_visible">
-                  {{ '&nbsp;'.repeat(proj.depth) }} »
-                </span>
-                {{ proj.label }}
-              </option>
-            </CFormSelect>
+            <!--            <CFormSelect v-model="form.project" :required="!$route.params.projId">-->
+            <!--              <option value="">-&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;</option>-->
+            <!--              <option v-for="proj in getNewsProjects" :value="proj.pk" :key="proj.pk">-->
+            <!--                <span v-if="!!proj.depth && proj.parent_visible">-->
+            <!--                  {{ '&nbsp;'.repeat(proj.depth) }} »-->
+            <!--                </span>-->
+            <!--                {{ proj.label }}-->
+            <!--              </option>-->
+            <!--            </CFormSelect>-->
+            <AllProjectsSelect
+              v-model="form.project"
+              :all-projects="getNewsProjects"
+              :required="!$route.params.projId"
+            />
           </CCol>
         </CRow>
 

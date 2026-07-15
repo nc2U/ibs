@@ -108,12 +108,9 @@ onBeforeMount(workStore.fetchAllProjectList)
                   <v-list density="compact" :base-color="baseColor" :bg-color="bgColor">
                     <v-list-item
                       v-for="proj in getProjects"
-                      :key="proj.value"
-                      @click="cngProject(proj.value)"
+                      :key="proj.slug"
+                      @click="cngProject(proj.slug)"
                     >
-                      <span v-if="!!proj.depth && proj.parent_visible">
-                        {{ '&nbsp;'.repeat(proj.depth) }} »
-                      </span>
                       {{ proj.label }}
                     </v-list-item>
                   </v-list>

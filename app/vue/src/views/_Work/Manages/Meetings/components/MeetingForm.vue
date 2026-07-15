@@ -12,6 +12,7 @@ import MdEditor from '@/components/MdEditor/Index.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
 import DateTimePicker from '@/components/DatePicker/DateTimePicker.vue'
 import IssueForm from '@/views/_Work/Manages/Issues/components/IssueForm.vue'
+import AllProjectsSelect from '@/views/_Work/components/atomics/AllProjectsSelect.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -473,20 +474,12 @@ const onConfirmToggle = async () => {
                 프로젝트
               </CFormLabel>
               <CCol sm="8">
-                <CFormSelect
+                <AllProjectsSelect
                   v-model="form.project"
-                  id="project"
+                  :all-projects="allProjects"
                   required
                   :disabled="!!route.params.projId"
-                >
-                  <option value="">---------</option>
-                  <option v-for="proj in allProjects" :key="proj.pk" :value="proj.pk">
-                    <span v-if="!!proj.depth && proj.parent_visible">
-                      {{ '&nbsp;'.repeat(proj.depth) }} »
-                    </span>
-                    {{ proj.label }}
-                  </option>
-                </CFormSelect>
+                />
                 <CFormFeedback invalid>프로젝트를 선택해 주세요.</CFormFeedback>
               </CCol>
             </CRow>
@@ -632,11 +625,12 @@ const onConfirmToggle = async () => {
         <CRow class="mb-3">
           <CFormLabel for="cat-project" class="col-sm-3 col-form-label">프로젝트</CFormLabel>
           <CCol sm="9">
-            <CFormSelect v-model="categoryForm.project" id="cat-project" disabled>
-              <option v-for="proj in allProjects" :key="proj.pk" :value="proj.pk">
-                {{ proj.label }}
-              </option>
-            </CFormSelect>
+            <AllProjectsSelect
+              v-model="categoryForm.project"
+              :all-projects="allProjects"
+              id="cat-project"
+              disabled
+            />
           </CCol>
         </CRow>
 
