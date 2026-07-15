@@ -6,7 +6,7 @@ import { write_company_cash } from '@/utils/pageAuth'
 import Pagination from '@/components/Pagination'
 import BankAcc from './BankAcc.vue'
 import AccountManage from './AccountManage.vue'
-import Transaction from './Transaction.vue'
+import TransactionItem from './TransactionItem.vue'
 
 const props = defineProps({
   company: { type: Number, default: null },
@@ -83,7 +83,7 @@ const accCallModal = () => {
     </CTableHead>
 
     <CTableBody>
-      <Transaction
+      <TransactionItem
         v-for="transaction in bankTransactionList"
         :key="transaction.pk as number"
         :transaction="transaction"

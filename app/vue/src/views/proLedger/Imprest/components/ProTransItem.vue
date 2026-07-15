@@ -236,7 +236,7 @@ const handlePickerClose = async () => {
 }
 
 // --- Collapse/Expand State for Accounting Entries ---
-const DEFAULT_VISIBLE_COUNT = 10
+const DEFAULT_VISIBLE_COUNT = 3
 const visibleEntryCount = ref<number>(DEFAULT_VISIBLE_COUNT)
 
 const totalEntryCount = computed(() => props.proTrans.accounting_entries?.length || 0)

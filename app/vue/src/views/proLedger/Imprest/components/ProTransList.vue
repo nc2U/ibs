@@ -7,7 +7,7 @@ import type { ProjectBank } from '@/store/types/proLedger.ts'
 import Pagination from '@/components/Pagination'
 import AccountManage from '@/views/proLedger/Manage/components/AccountManage.vue'
 import BankAcc from './BankAcc.vue'
-import ProTrans from './ProTrans.vue'
+import ProTransItem from './ProTransItem.vue'
 
 const props = defineProps({
   project: { type: Number, default: null },
@@ -83,7 +83,7 @@ const accCallModal = () => {
     </CTableHead>
 
     <CTableBody>
-      <ProTrans
+      <ProTransItem
         v-for="proTrans in proBankTransList"
         :key="proTrans.pk as number"
         :pro-trans="proTrans"
