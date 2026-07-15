@@ -7,7 +7,7 @@ from collections import defaultdict
 
 import xlwt
 from dateutil.relativedelta import relativedelta
-from django.db.models import Sum, When, F, PositiveBigIntegerField, Case
+from django.db.models import Sum, When, F, PositiveBigIntegerField, Case, Q
 from django.http import HttpResponse
 
 from _excel.mixins import ExcelExportMixin, XlwtStyleMixin
@@ -1239,22 +1239,8 @@ def export_pro_transaction_xls(request):
     # --- 데이터 조회 로직 (공용 서비스 함수 직접 호출) ---
     # request.GET을 직접 전달하여 모든 필터 파라미터를 서비스 함수가 처리하도록 함
     obj_list = get_project_transactions(request.GET)
-    obj_list = obj_list.order_by('deal_date', 'created_at')
     # -----------------------------------------
 
-    # --- N+1 문제 해결을 위한 수동 Prefetch ---
-    transaction_ids = [t.transaction_id for t in obj_list]
-    if transaction_ids:
-        accounting_entries = ProjectAccountingEntry.objects.filter(
-            transaction_id__in=transaction_ids
-        ).select_related('account')
-
-        entries_map = defaultdict(list)
-        for entry in accounting_entries:
-            entries_map[entry.transaction_id].append(entry)
-
-        for transaction in obj_list:
-            transaction.prefetched_entries = entries_map.get(transaction.transaction_id, [])
     # ------------------------------------
 
     project = Project.objects.get(pk=request.GET.get('project'))
@@ -1311,7 +1297,7 @@ def export_pro_transaction_xls(request):
     styles = XlwtStyleMixin.create_xlwt_styles()
 
     for trans in obj_list:
-        entries = getattr(trans, 'prefetched_entries', [])
+        entries = getattr(trans, 'prefetched_accounting_entries', [])
         if not entries:  # 거래는 있으나 분개가 없는 경우
             row_num += 1
             ws.write(row_num, 0, trans.deal_date.strftime('%Y-%m-%d'), styles['date'])

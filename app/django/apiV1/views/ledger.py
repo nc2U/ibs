@@ -549,14 +549,7 @@ class ProjectBankTransactionViewSet(viewsets.ModelViewSet):
     pagination_class = PageNumberPaginationFifteen
 
     def get_queryset(self):
-        """
-        요청 action에 따라 쿼리셋을 분기합니다.
-        - list: 서비스 함수를 통해 필터링된 쿼리셋 반환
-        - retrieve, update 등: 기본 쿼리셋 반환
-        """
-        if self.action == 'list':
-            return get_project_transactions(self.request.query_params)
-        # 상세 조회 등에서는 필터링 없이 전체에서 pk로 조회
+        """기본 상세 조회 및 생성/수정용 쿼리셋 반환"""
         return super().get_queryset().select_related(
             'project', 'bank_account', 'sort', 'creator'
         )
@@ -565,41 +558,14 @@ class ProjectBankTransactionViewSet(viewsets.ModelViewSet):
         serializer.save(creator=self.request.user)
 
     def list(self, request, *args, **kwargs):
-        """accounting_entries N+1 방지를 위한 수동 prefetch"""
-        queryset = self.filter_queryset(self.get_queryset())
-        page = self.paginate_queryset(queryset)
-        instances = page if page is not None else list(queryset)
-
-        transaction_ids = [t.transaction_id for t in instances]
-        if transaction_ids:
-            entries_qs = ProjectAccountingEntry.objects.filter(
-                transaction_id__in=transaction_ids
-            ).select_related('account', 'contract', 'contractor')
-
-            # 필터 조건 적용
-            contract_param = request.query_params.get('contract')
-            search_param = request.query_params.get('search')
-
-            if contract_param:
-                entries_qs = entries_qs.filter(contract_id=contract_param)
-            if search_param:
-                entries_qs = entries_qs.filter(
-                    Q(trader__icontains=search_param) |
-                    Q(account__name__icontains=search_param)
-                )
-
-            entries_map = defaultdict(list)
-            for entry in entries_qs:
-                entries_map[entry.transaction_id].append(entry)
-            for tx in instances:
-                tx.prefetched_accounting_entries = entries_map.get(tx.transaction_id, [])
-        else:
-            for tx in instances:
-                tx.prefetched_accounting_entries = []
-
-        serializer = self.get_serializer(instances, many=True)
+        """get_project_transactions 서비스가 필터링하여 prefetch 맵핑까지 완료한 list 데이터를 직렬화합니다"""
+        obj_list = get_project_transactions(request.query_params)
+        page = self.paginate_queryset(obj_list)
         if page is not None:
+            serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
     @action(detail=True, methods=['get'])

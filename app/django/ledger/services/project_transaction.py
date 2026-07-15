@@ -1,4 +1,5 @@
 from django.db.models import Q
+from collections import defaultdict
 
 from ledger.models import ProjectBankTransaction, ProjectAccount, ProjectAccountingEntry
 
@@ -157,7 +158,30 @@ def get_project_transactions(params):
             Q(transaction_id__in=trader_transaction_ids)
         )
 
-    # 정렬 및 반환
-    return qs.select_related(
+    # 느슨한 관계(Loose Relationship)이므로 메모리에서 수동으로 분개 데이터 Prefetch 맵핑 수행
+    obj_list = list(qs.select_related(
         'project', 'bank_account', 'sort', 'creator'
-    ).order_by('-deal_date', '-created_at')
+    ).order_by('-deal_date', '-created_at'))
+
+    transaction_ids = [t.transaction_id for t in obj_list]
+    if transaction_ids:
+        entries_qs = ProjectAccountingEntry.objects.filter(
+            transaction_id__in=transaction_ids
+        ).select_related('account', 'contract', 'contractor')
+
+        if entry_filters:
+            entries_qs = entries_qs.filter(entry_filters)
+        elif search:
+            entries_qs = entries_qs.filter(trader__icontains=search)
+
+        entries_map = defaultdict(list)
+        for entry in entries_qs:
+            entries_map[entry.transaction_id].append(entry)
+
+        for tx in obj_list:
+            tx.prefetched_accounting_entries = entries_map.get(tx.transaction_id, [])
+    else:
+        for tx in obj_list:
+            tx.prefetched_accounting_entries = []
+
+    return obj_list
