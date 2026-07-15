@@ -75,4 +75,5 @@ export interface SearchParams {
   t?: string[]
   title_only?: '0' | '1'
   opened_only?: '0' | '1'
+  attach_mode?: '1' | '2' | '3'
 }

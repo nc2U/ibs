@@ -170,32 +170,49 @@ class SearchViewSet(viewsets.ModelViewSet):
                    {'issues', 'comments', 'meetings', 'news', 'documents', 'posts'})
         title_only = request.query_params.get('title_only', '0') == '1'
         opened_only = request.query_params.get('opened_only', '0') == '1'
+        attach_mode = request.query_params.get('attach_mode', '1')
 
         results = {}
         if 'issues' in targets:
-            results['issues'] = self._search_issues(request.user, q, scope, slug, title_only, opened_only)
+            results['issues'] = self._search_issues(request.user, q, scope, slug, title_only, opened_only, attach_mode)
         if 'comments' in targets:
             results['comments'] = self._search_comments(request.user, q, scope, slug)
         if 'meetings' in targets:
-            results['meetings'] = self._search_meetings(request.user, q, scope, slug, title_only)
+            results['meetings'] = self._search_meetings(request.user, q, scope, slug, title_only, attach_mode)
         if 'news' in targets:
-            results['news'] = self._search_news(request.user, q, scope, slug, title_only)
+            results['news'] = self._search_news(request.user, q, scope, slug, title_only, attach_mode)
         if 'documents' in targets:
-            results['documents'] = self._search_documents(request.user, q, scope, slug, title_only)
+            results['documents'] = self._search_documents(request.user, q, scope, slug, title_only, attach_mode)
         if 'posts' in targets:
-            results['posts'] = self._search_posts(request.user, q, scope, slug, title_only)
+            results['posts'] = self._search_posts(request.user, q, scope, slug, title_only, attach_mode)
 
         return Response(results)
 
     @staticmethod
-    def _search_issues(user, q, scope, slug, title_only, opened_only):
+    def _search_issues(user, q, scope, slug, title_only, opened_only, attach_mode):
+        from apiV1.views.work.issue import build_issue_queryset
+        from apiV1.serializers.work.search import IssueSearchSerializer
+
         qs = build_issue_queryset(user)
         if opened_only:
             qs = qs.filter(closed__isnull=True)
         if title_only:
             qs = qs.filter(subject__icontains=q)
         else:
-            qs = qs.filter(Q(subject__icontains=q) | Q(description__icontains=q))
+            if attach_mode == '1':
+                qs = qs.filter(Q(subject__icontains=q) | Q(description__icontains=q))
+            elif attach_mode == '2':
+                qs = qs.filter(
+                    Q(subject__icontains=q) |
+                    Q(description__icontains=q) |
+                    Q(files__file_name__icontains=q) |
+                    Q(files__description__icontains=q)
+                ).distinct()
+            elif attach_mode == '3':
+                qs = qs.filter(
+                    Q(files__file_name__icontains=q) |
+                    Q(files__description__icontains=q)
+                ).distinct()
         if scope == 'project' and slug:
             qs = qs.filter(project__slug=slug)
         elif scope == 'my':
@@ -222,11 +239,25 @@ class SearchViewSet(viewsets.ModelViewSet):
         return CommentSearchSerializer(qs[:25], many=True).data
 
     @staticmethod
-    def _search_meetings(user, q, scope, slug, title_only):
+    def _search_meetings(user, q, scope, slug, title_only, attach_mode):
+        from apiV1.serializers.work.search import MeetingSearchSerializer
+        from work.models.meeting import Meeting
+
         if title_only:
             q_expr = Q(title__icontains=q)
         else:
-            q_expr = Q(title__icontains=q) | Q(agenda__icontains=q) | Q(decisions__icontains=q)
+            if attach_mode == '1':
+                q_expr = Q(title__icontains=q) | Q(agenda__icontains=q) | Q(decisions__icontains=q)
+            elif attach_mode == '2':
+                q_expr = (
+                    Q(title__icontains=q) |
+                    Q(agenda__icontains=q) |
+                    Q(decisions__icontains=q) |
+                    Q(files__file_name__icontains=q) |
+                    Q(files__description__icontains=q)
+                )
+            elif attach_mode == '3':
+                q_expr = Q(files__file_name__icontains=q) | Q(files__description__icontains=q)
 
         qs = Meeting.objects.filter(q_expr).select_related('project', 'creator')
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
@@ -240,11 +271,25 @@ class SearchViewSet(viewsets.ModelViewSet):
         return MeetingSearchSerializer(qs[:25], many=True).data
 
     @staticmethod
-    def _search_news(user, q, scope, slug, title_only):
+    def _search_news(user, q, scope, slug, title_only, attach_mode):
+        from apiV1.serializers.work.search import NewsSearchSerializer
+        from work.models.inform import News
+
         if title_only:
             q_expr = Q(title__icontains=q)
         else:
-            q_expr = Q(title__icontains=q) | Q(summary__icontains=q) | Q(content__icontains=q)
+            if attach_mode == '1':
+                q_expr = Q(title__icontains=q) | Q(summary__icontains=q) | Q(content__icontains=q)
+            elif attach_mode == '2':
+                q_expr = (
+                    Q(title__icontains=q) |
+                    Q(summary__icontains=q) |
+                    Q(content__icontains=q) |
+                    Q(files__file_name__icontains=q) |
+                    Q(files__description__icontains=q)
+                )
+            elif attach_mode == '3':
+                q_expr = Q(files__file_name__icontains=q) | Q(files__description__icontains=q)
 
         qs = News.objects.filter(q_expr).select_related('project', 'author')
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
@@ -258,11 +303,29 @@ class SearchViewSet(viewsets.ModelViewSet):
         return NewsSearchSerializer(qs[:25], many=True).data
 
     @staticmethod
-    def _search_documents(user, q, scope, slug, title_only):
+    def _search_documents(user, q, scope, slug, title_only, attach_mode):
+        from apiV1.serializers.work.search import DocumentSearchSerializer
+        from docs.models import Document
+
         if title_only:
             q_expr = Q(title__icontains=q)
         else:
-            q_expr = Q(title__icontains=q) | Q(description__icontains=q)
+            if attach_mode == '1':
+                q_expr = Q(title__icontains=q) | Q(description__icontains=q)
+            elif attach_mode == '2':
+                q_expr = (
+                    Q(title__icontains=q) |
+                    Q(description__icontains=q) |
+                    Q(files__file_name__icontains=q) |
+                    Q(files__description__icontains=q) |
+                    Q(images__image_name__icontains=q)
+                )
+            elif attach_mode == '3':
+                q_expr = (
+                    Q(files__file_name__icontains=q) |
+                    Q(files__description__icontains=q) |
+                    Q(images__image_name__icontains=q)
+                )
 
         # 소프트 딜리트 필터: deleted=None (SoftDeleteManager가 적용되어 있으므로 기본 objects 사용 가능)
         qs = Document.objects.filter(q_expr, issue_project__status='1').select_related('issue_project', 'creator')
@@ -280,11 +343,24 @@ class SearchViewSet(viewsets.ModelViewSet):
         return DocumentSearchSerializer(qs[:25], many=True).data
 
     @staticmethod
-    def _search_posts(user, q, scope, slug, title_only):
+    def _search_posts(user, q, scope, slug, title_only, attach_mode):
+        from apiV1.serializers.work.search import PostSearchSerializer
+        from forum.models import Post
+
         if title_only:
             q_expr = Q(title__icontains=q)
         else:
-            q_expr = Q(title__icontains=q) | Q(content__icontains=q)
+            if attach_mode == '1':
+                q_expr = Q(title__icontains=q) | Q(content__icontains=q)
+            elif attach_mode == '2':
+                q_expr = (
+                    Q(title__icontains=q) |
+                    Q(content__icontains=q) |
+                    Q(files__file_name__icontains=q) |
+                    Q(images__image_name__icontains=q)
+                )
+            elif attach_mode == '3':
+                q_expr = Q(files__file_name__icontains=q) | Q(images__image_name__icontains=q)
 
         # 소프트 딜리트 필터: deleted=None 및 프로젝트 활성 상태(status='1')
         qs = Post.objects.filter(q_expr, deleted__isnull=True,

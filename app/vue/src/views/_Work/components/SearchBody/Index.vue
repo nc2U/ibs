@@ -28,6 +28,7 @@ const targets = ref({
   posts: true,
 })
 const openedOnly = ref(false)
+const attachMode = ref<'1' | '2' | '3'>('1')
 const visible = ref(false)
 
 const [route, router] = [useRoute(), useRouter()]
@@ -47,6 +48,7 @@ const goSearch = () => {
       scope: projectScope.value,
       title_only: titleOnly.value ? '1' : '0',
       opened_only: openedOnly.value ? '1' : '0',
+      attach_mode: attachMode.value,
       t: activeTargets.value,
     },
   })
@@ -59,6 +61,7 @@ const doSearch = (q: string) => {
     t: activeTargets.value,
     title_only: titleOnly.value ? '1' : '0',
     opened_only: openedOnly.value ? '1' : '0',
+    attach_mode: attachMode.value,
   })
 }
 
@@ -78,6 +81,11 @@ watch(
       }
       if (query.opened_only) {
         openedOnly.value = query.opened_only === '1'
+      }
+      if (query.attach_mode === '2' || query.attach_mode === '3') {
+        attachMode.value = query.attach_mode
+      } else {
+        attachMode.value = '1'
       }
       if (query.t) {
         const queryTargets = Array.isArray(query.t) ? query.t : [query.t]
@@ -195,6 +203,37 @@ const meetingStatusLabel: Record<string, string> = { '1': '준비', '2': '종료
               <CRow class="mt-2 pl-1">
                 <CCol>
                   <CFormCheck v-model="openedOnly" label="열린 업무만" id="opened-only" />
+                </CCol>
+              </CRow>
+              <CRow class="mt-2 pl-1">
+                <CCol>
+                  <CFormCheck
+                    v-model="attachMode"
+                    value="1"
+                    type="radio"
+                    inline
+                    name="attachMode"
+                    id="attachMode1"
+                    label="첨부파일은 검색하지 않음"
+                  />
+                  <CFormCheck
+                    v-model="attachMode"
+                    value="2"
+                    type="radio"
+                    inline
+                    name="attachMode"
+                    id="attachMode2"
+                    label="첨부파일명과 설명 검색"
+                  />
+                  <CFormCheck
+                    v-model="attachMode"
+                    value="3"
+                    type="radio"
+                    inline
+                    name="attachMode"
+                    id="attachMode3"
+                    label="첨부파일명만 검색"
+                  />
                 </CCol>
               </CRow>
             </CCollapse>

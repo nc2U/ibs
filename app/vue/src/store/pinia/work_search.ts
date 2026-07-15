@@ -31,6 +31,7 @@ export const useSearch = defineStore('work_search', () => {
       }
       searchParams.append('title_only', params.title_only ?? '0')
       searchParams.append('opened_only', params.opened_only ?? '0')
+      searchParams.append('attach_mode', params.attach_mode ?? '1')
 
       const targets = params.t ?? ['issues', 'comments', 'meetings', 'news', 'documents', 'posts']
       targets.forEach(t => searchParams.append('t', t))
