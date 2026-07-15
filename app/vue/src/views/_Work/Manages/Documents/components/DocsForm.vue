@@ -7,7 +7,6 @@ import { useDocs } from '@/store/pinia/docs'
 import { useAccount } from '@/store/pinia/account.ts'
 import { colorLight } from '@/utils/cssMixins'
 import type { CodeValue } from '@/store/types/work_issue.ts'
-import type { IssueProject } from '@/store/types/work_project.ts'
 import type { AFile, Attatches, Docs, Link } from '@/store/types/docs'
 import MdEditor from '@/components/MdEditor/Index.vue'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
@@ -18,7 +17,8 @@ import LinkForms from '@/components/OtherParts/LinkForms.vue'
 const props = defineProps({
   docs: { type: Object as PropType<Docs>, default: () => null },
   typeNumber: { type: Number, default: 1 },
-  issueProject: { type: Object as PropType<IssueProject>, required: true },
+  projectPk: { type: Number, default: () => null },
+  allProjects: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },
   categories: { type: Array as PropType<CodeValue[]>, default: () => [] },
   getSuitCase: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },
 })
@@ -104,7 +104,6 @@ const onSubmit = async (payload: Docs & Attatches) => {
   const { pk, ...rest } = payload
   const getData: Record<string, any> = { ...rest }
 
-  getData.issue_project = props.issueProject?.pk
   getData.newFiles = newFiles.value
   getData.cngFiles = cngFiles.value
 
@@ -131,7 +130,6 @@ const onSubmit = async (payload: Docs & Attatches) => {
     await router.replace({ name: `(문서) - 보기`, params: { docId: pk } })
   } else {
     await createDocs({ form })
-    await router.replace({ name: `(문서)` })
   }
   newFiles.value = []
   cngFiles.value = []
@@ -145,6 +143,7 @@ const setDocType = (type: 1 | 2) => (form.value.doc_type = type)
 defineExpose({ setDocType })
 
 const dataSetup = () => {
+  if (props.projectPk) form.value.issue_project = props.projectPk
   if (props.docs) {
     form.value.pk = props.docs.pk
     form.value.issue_project = props.docs.issue_project
@@ -161,6 +160,12 @@ const dataSetup = () => {
     form.value.is_blind = props.docs.is_blind
   } else form.value.doc_type = props.typeNumber
 }
+
+watch(
+  () => props.projectPk,
+  () => dataSetup(),
+  { deep: true },
+)
 
 watch(
   () => props.docs,
@@ -191,7 +196,7 @@ onBeforeMount(() => dataSetup())
     <CRow>
       <CCard :color="colorLight" class="mb-3">
         <CCardBody>
-          <CRow v-if="issueProject?.type !== '3'" class="mb-3">
+          <CRow class="mb-3">
             <CFormLabel class="col-form-label text-right col-2">유형</CFormLabel>
             <CCol class="col-sm-10 col-md-6 col-lg-4 col-xl-3">
               <CFormSelect v-model.number="form.doc_type" disabled required>
@@ -209,6 +214,18 @@ onBeforeMount(() => dataSetup())
                 label="숨김 [관리자 기능]"
                 inline
               />
+            </CCol>
+          </CRow>
+
+          <CRow v-if="!projectPk" class="mb-3">
+            <CFormLabel class="col-form-label text-right col-2 required">프로젝트</CFormLabel>
+            <CCol class="col-sm-10 col-md-6 col-lg-4 col-xl-3">
+              <CFormSelect v-model="form.issue_project" required>
+                <option value="">---------</option>
+                <option v-for="pjt in allProjects" :value="pjt.value" :key="pjt.value">
+                  {{ pjt.label }}
+                </option>
+              </CFormSelect>
             </CCol>
           </CRow>
 
@@ -237,7 +254,7 @@ onBeforeMount(() => dataSetup())
             </CCol>
           </CRow>
 
-          <CRow v-if="issueProject?.type !== '3' && form.doc_type === 2">
+          <CRow v-if="form.doc_type === 2">
             <CCol sm="12" lg="6" class="mb-3">
               <CRow>
                 <CFormLabel class="col-form-label text-right col-2 col-lg-4">사건번호</CFormLabel>
@@ -305,7 +322,7 @@ onBeforeMount(() => dataSetup())
         >
           저장
         </v-btn>
-        <v-btn color="light" variant="flat" @click="emit('close-form')"> 취소 </v-btn>
+        <v-btn color="light" variant="flat" @click="emit('close-form')"> 취소</v-btn>
       </CCol>
     </CRow>
   </CForm>

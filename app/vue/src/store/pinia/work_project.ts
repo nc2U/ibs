@@ -76,7 +76,7 @@ export const useWork = defineStore('work', () => {
     return result
   }
 
-  //
+  // 재귀적 평탄화 가공 상태 (Computed)
   const allProjectsFlat = computed(() => flattenTree(allProjectsTree.value))
   const issueProjectsFlat = computed(() => flattenTree(issueProjectsTree.value))
   const myProjectsFlat = computed(() => flattenTree(myProjectsTree.value))

@@ -65,8 +65,6 @@ const fetchCategoryList = (type: number) => docStore.fetchCategoryList(type)
 const fetchAllSuitCaseList = (payload: SuitCaseFilter) => docStore.fetchAllSuitCaseList(payload)
 const deleteDocs = (pk: number, proj?: number) => docStore.deleteDocs(pk, { project: proj })
 
-const categories = computed(() => getCategories.value)
-
 const getDocsList = (target: unknown) => {
   if (target === 1 || target === 2) {
     docsFilter.value.page = 1
@@ -187,7 +185,7 @@ onBeforeMount(async () => {
 
       <template v-if="can(PERM.DOCS_READ)">
         <CRow v-if="route.name === '(문서)'" class="mb-3 header">
-          <CCol v-if="issueProject?.type !== '3'">
+          <CCol>
             <v-tabs v-model="typeNumber" density="compact" @update:model-value="getDocsList">
               <v-tab
                 v-for="type in types"
@@ -204,9 +202,9 @@ onBeforeMount(async () => {
 
         <DocsForm
           v-if="viewForm"
-          :issue-project="issueProject as IssueProject"
+          :project-pk="issueProject?.pk"
           :type-number="typeNumber"
-          :categories="categories"
+          :categories="getCategories"
           :get-suit-case="getSuitCase"
           :docs="route.name === '(문서)' ? undefined : (docs as Docs)"
           @close-form="viewForm = false"

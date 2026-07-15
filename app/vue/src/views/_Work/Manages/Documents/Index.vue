@@ -12,9 +12,17 @@ import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import DocsList from './components/DocsList.vue'
 import Loading from '@/components/Loading/Index.vue'
+import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
+import DocsForm from '@/views/_Work/Manages/Documents/components/DocsForm.vue'
 
 const cBody = ref()
 const sideNavCAll = () => cBody.value.toggle()
+
+const typeNumber = ref<1 | 2>(1)
+const types = ref([
+  { value: 1, label: '일반문서' },
+  { value: 2, label: '소송기록' },
+])
 
 const comStore = useCompany()
 const company = computed<Company | null>(() => comStore.company)
@@ -23,19 +31,18 @@ const comName = computed(() => company?.value?.name)
 const route = useRoute()
 
 const { can, PERM } = usePerms()
+const canDocsCreate = computed(() => can(PERM.DOCS_CREATE))
+
+const viewForm = ref(false)
 
 const workStore = useWork()
-const allProjects = computed(() => workStore.getAllProjects)
+const allProjects = computed(() => workStore.getAllProjPks)
 
 const docStore = useDocs()
 const docsList = computed<Docs[]>(() => docStore.docsList)
 const categoryList = computed(() => docStore.categoryList)
-
-const typeNumber = ref<1 | 2>(1)
-const types = ref([
-  { value: 1, label: '일반문서' },
-  { value: 2, label: '소송기록' },
-])
+const getCategories = computed(() => docStore.getCategories)
+const getSuitCase = computed(() => docStore.getSuitCase)
 
 const docsFilter = ref<DocsFilter>({
   doc_type: typeNumber.value,
@@ -115,6 +122,12 @@ watch(
             문서
           </h5>
         </CCol>
+
+        <CCol class="text-right">
+          <span v-if="canDocsCreate" class="mr-2 form-text">
+            <TextButton name="새 문서" @click="viewForm = !viewForm" :active="false" />
+          </span>
+        </CCol>
       </CRow>
 
       <template v-if="can(PERM.DOCS_READ)">
@@ -133,6 +146,15 @@ watch(
             </v-tabs>
           </CCol>
         </CRow>
+
+        <DocsForm
+          v-if="viewForm"
+          :type-number="typeNumber"
+          :categories="getCategories"
+          :get-suit-case="getSuitCase"
+          :all-projects="allProjects"
+          @close-form="viewForm = false"
+        />
 
         <DocsList
           :category="docsFilter.category as number"
@@ -154,12 +176,9 @@ watch(
         <CCol>
           <h6 class="asideTitle">프로젝트 선택</h6>
           <v-divider class="mt-0" />
-          <CFormSelect
-            v-model="docsFilter.issue_project"
-            size="sm"
-          >
+          <CFormSelect v-model="docsFilter.issue_project" size="sm">
             <option value="">전체 프로젝트</option>
-            <option v-for="proj in allProjects" :key="proj.pk" :value="proj.pk">
+            <option v-for="proj in allProjects" :key="proj.value" :value="proj.value">
               {{ proj.label }}
             </option>
           </CFormSelect>
