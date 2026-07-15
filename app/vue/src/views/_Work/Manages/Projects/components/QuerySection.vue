@@ -369,46 +369,6 @@ const onQuerySelect = (event: Event) => {
               </CCol>
             </CRow>
 
-            <CRow v-if="searchCond.includes('created')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="등록일자" id="created" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.created" size="sm">
-                  <option value="is">is</option>
-                  <option value="gte">&gt;=</option>
-                  <option value="lte">&lt;=</option>
-                  <option value="between">between</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <DatePicker v-model="form.created_date" size="sm" />
-              </CCol>
-              <CCol v-if="cond.created === 'between'" class="col-4 col-lg-3 col-xl-2">
-                <DatePicker v-model="form.created_date2" size="sm" />
-              </CCol>
-            </CRow>
-
-            <CRow v-if="searchCond.includes('updated')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="수정일자" id="updated" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.updated" size="sm">
-                  <option value="is">is</option>
-                  <option value="gte">&gt;=</option>
-                  <option value="lte">&lt;=</option>
-                  <option value="between">between</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <DatePicker v-model="form.updated_date" size="sm" />
-              </CCol>
-              <CCol v-if="cond.updated === 'between'" class="col-4 col-lg-3 col-xl-2">
-                <DatePicker v-model="form.updated_date2" size="sm" />
-              </CCol>
-            </CRow>
-
             <CRow v-if="searchCond.includes('name')">
               <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
                 <CFormCheck checked="true" label="이름" id="name" readonly />
@@ -427,6 +387,7 @@ const onQuerySelect = (event: Event) => {
                 <CFormInput
                   v-if="cond.name !== 'none' && cond.name !== 'any'"
                   v-model="form.name"
+                  placeholder="키워드 입력"
                   size="sm"
                 />
               </CCol>
@@ -450,8 +411,49 @@ const onQuerySelect = (event: Event) => {
                 <CFormInput
                   v-if="cond.description !== 'none' && cond.description !== 'any'"
                   v-model="form.description"
+                  placeholder="키워드 입력"
                   size="sm"
                 />
+              </CCol>
+            </CRow>
+
+            <CRow v-if="searchCond.includes('created')">
+              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
+                <CFormCheck checked="true" label="등록일" id="created" readonly />
+              </CCol>
+              <CCol class="col-4 col-lg-3 col-xl-2">
+                <CFormSelect v-model="cond.created" size="sm">
+                  <option value="is">이다</option>
+                  <option value="gte">&gt;=</option>
+                  <option value="lte">&lt;=</option>
+                  <option value="between">사이</option>
+                </CFormSelect>
+              </CCol>
+              <CCol class="col-4 col-lg-3">
+                <DatePicker v-model="form.created_date" size="sm" />
+              </CCol>
+              <CCol v-if="cond.created === 'between'" class="col-4 col-lg-3">
+                <DatePicker v-model="form.created_date2" size="sm" />
+              </CCol>
+            </CRow>
+
+            <CRow v-if="searchCond.includes('updated')">
+              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
+                <CFormCheck checked="true" label="수정일" id="updated" readonly />
+              </CCol>
+              <CCol class="col-4 col-lg-3 col-xl-2">
+                <CFormSelect v-model="cond.updated" size="sm">
+                  <option value="is">이다</option>
+                  <option value="gte">&gt;=</option>
+                  <option value="lte">&lt;=</option>
+                  <option value="between">사이</option>
+                </CFormSelect>
+              </CCol>
+              <CCol class="col-4 col-lg-3">
+                <DatePicker v-model="form.updated_date" size="sm" />
+              </CCol>
+              <CCol v-if="cond.updated === 'between'" class="col-4 col-lg-3">
+                <DatePicker v-model="form.updated_date2" size="sm" />
               </CCol>
             </CRow>
           </CCol>
