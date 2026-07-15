@@ -100,7 +100,7 @@ class CustomQuerySerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomQuery
         fields = (
-            'pk', 'name', 'target_type', 'target_type_display', 'project',
+            'pk', 'name', 'description', 'target_type', 'target_type_display', 'project',
             'user', 'username', 'is_public', 'filters', 'column_names',
             'sort_criteria', 'group_by', 'created', 'updated'
         )

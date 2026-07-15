@@ -45,6 +45,7 @@ export type TargetType = 'issue' | 'project' | 'calendar' | 'meeting'
 export interface CustomQuery {
   pk: number
   name: string
+  description: string
   target_type: TargetType
   target_type_display: string
   project: number | null

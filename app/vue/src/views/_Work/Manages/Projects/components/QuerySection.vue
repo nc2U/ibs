@@ -585,6 +585,12 @@ const onQuerySelect = (event: Event) => {
             <CFormInput id="query-name" v-model="queryName" placeholder="검색양식 이름" required />
           </CCol>
         </CRow>
+        <CRow class="mb-3">
+          <CFormLabel for="query-name" class="col-3 col-form-label text-right"> 설명 </CFormLabel>
+          <CCol class="col-7">
+            <CFormInput id="query-name" v-model="queryName" placeholder="검색양식 설명" />
+          </CCol>
+        </CRow>
         <CRow class="mb-3" v-if="can(PERM.PROJECT_PUB_QUERY)">
           <CCol class="offset-3 col-7">
             <CFormCheck id="query-is-public" v-model="isPublic" label="공용 (프로젝트 내 공유)" />

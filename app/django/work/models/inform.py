@@ -98,13 +98,13 @@ class Search(models.Model):
 
 class CustomQuery(models.Model):
     TARGET_TYPE_CHOICES = (
-        ('issue', '업무'),
         ('project', '프로젝트'),
-        ('calendar', '캘린더'),
         ('meeting', '회의록'),
+        ('issue', '업무'),
+        ('calendar', '캘린더'),
     )
-
     name = models.CharField('검색양식 이름', max_length=100)
+    description = models.CharField('설명', max_length=255, blank=True, default='')
     target_type = models.CharField(
         '대상 모듈',
         max_length=20,
@@ -169,4 +169,3 @@ class CustomQuery(models.Model):
     def __str__(self):
         scope = "공용" if self.is_public else "개인"
         return f"[{self.get_target_type_display()} - {scope}] {self.name} ({self.user.username})"
-
