@@ -97,7 +97,6 @@ export interface Module {
   pk?: number
   project: number
   issue: boolean
-  time: boolean
   news: boolean
   document: boolean
   forum: boolean

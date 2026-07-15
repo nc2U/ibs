@@ -35,7 +35,7 @@ const accStore = useAccount()
 const workManager = computed(() => accStore.workManager)
 
 const workStore = useWork()
-const myProjects = computed(() => workStore.myProjects)
+const myProjects = computed(() => workStore.getMyProjects.filter(pjt => pjt.module?.issue))
 
 const selectedRow = ref<number | null>(null)
 const handleClickOutside = (event: any) => {
@@ -63,7 +63,8 @@ const pageSelect = (page: number) => emit('page-select', page)
           :color="route.name === '업무' ? 'primary' : 'green-darken-1'"
           size="small"
           class="mr-2"
-        />업무
+        />
+        업무
       </h5>
     </CCol>
     <CCol class="text-right">
@@ -71,7 +72,7 @@ const pageSelect = (page: number) => emit('page-select', page)
         <TextButton
           v-if="route.name === '업무'"
           name="새 업무"
-          :my-projects="myProjects"
+          :project-list="myProjects"
           :project-to="{ name: '(업무) - 추가' }"
         />
         <TextButton v-else name="새 업무" :to="{ name: `${String(route.name)} - 추가` }" />
