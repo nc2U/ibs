@@ -122,16 +122,13 @@ watch(
   { immediate: true },
 )
 
-const inputRef = ref<HTMLInputElement | null>(null)
+const inputRef = ref<any>(null)
 const pickerPosition = computed(() => proLedgerStore.sharedPickerPosition) // Use computed for reactivity
 
 const setEditing = (type: 'tran' | 'entry', pk: number, field: string, value: any) => {
   if (!allowedPeriod.value) return
   proLedgerStore.sharedEditingState = { type, pk, field } // Update shared state
   editValue.value = value
-  nextTick(() => {
-    inputRef.value?.focus()
-  })
 }
 
 const isEditing = (type: 'tran' | 'entry', pk: number, field: string) => {
@@ -484,16 +481,15 @@ const handleUpdate = async () => {
           v-if="isEditing('tran', proTrans.pk!, 'sort_amount') && editValue"
           class="d-flex align-items-center justify-content-end"
         >
-          <v-btn-toggle v-model="editValue.sort" variant="elevated" density="compact" divided>
-            <v-btn :value="1" color="blue-grey-lighten-1" size="x-small">입금</v-btn>
-            <v-btn :value="2" color="brown-lighten-2" size="x-small">출금</v-btn>
-          </v-btn-toggle>
+          <v-chip :color="proTrans.sort === 1 ? 'primary' : 'danger'" size="x-small" class="me-2">
+            {{ proTrans.sort === 1 ? '입금' : '출금' }}
+          </v-chip>
 
           <CFormInput
             ref="inputRef"
             v-model.number="editValue.amount"
             type="number"
-            style="width: 120px; margin-left: 8px"
+            style="width: 120px"
             @blur="handleUpdate"
             @keydown.enter="handleUpdate"
           />
