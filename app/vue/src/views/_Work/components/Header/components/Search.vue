@@ -18,25 +18,40 @@ onBeforeMount(async () => {
 </script>
 
 <template>
-  <CRow class="mb-3">
-    <CCol class="p-1">
-      <CInputGroup size="">
-        <CInputGroupText id="inputGroup-sizing-sm" @click="goSearch"> 검색</CInputGroupText>
-        <CFormInput
-          v-model="search"
-          @keydown.enter="goSearch"
-          @focusin="search = ''"
-          placeholder="검색어 입력"
-        />
-      </CInputGroup>
-    </CCol>
-    <CCol class="p-1 text-body">
+  <v-row class="align-center mb-3" no-gutters>
+    <v-col cols="6" class="pa-1">
+      <v-text-field
+        v-model="search"
+        placeholder="검색어 입력"
+        density="compact"
+        variant="outlined"
+        prepend-inner-icon="mdi-magnify"
+        hide-details
+        single-line
+        class="search-input"
+        @click:prepend-inner="goSearch"
+        @keydown.enter="goSearch"
+        @focus="search = ''"
+      />
+    </v-col>
+    <v-col cols="6" class="pa-1 text-body">
       <MultiSelect
         mode="single"
         :options="getProjects"
         placeholder="프로젝트 바로가기"
         @change="emit('change-project', $event)"
       />
-    </CCol>
-  </CRow>
+    </v-col>
+  </v-row>
 </template>
+
+<style lang="scss" scoped>
+.search-input {
+  background-color: #ffffff;
+}
+
+.dark-theme .search-input {
+  background-color: #41424a;
+  color: #ffffff;
+}
+</style>

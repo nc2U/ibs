@@ -68,7 +68,7 @@ onBeforeMount(workStore.fetchAllProjectList)
   <CRow class="mb-0" :class="backGround">
     <CCol>
       <CRow class="px-3">
-        <CCol class="mb-2 pl-4 pt-3 pb-4 col-9 col-md-6 col-lg-7 col-xl-9">
+        <CCol class="mb-2 py-3 px-4 col-9 col-md-6 col-lg-7 col-xl-8">
           <CRow class="ps-4 ps-lg-0">
             <CCol class="mb-1" style="font-size: 0.9em">
               <span v-if="route.params.projId && company" class="mr-1 text-blue-grey">
