@@ -96,6 +96,7 @@ class SearchSerializer(serializers.ModelSerializer):
 class CustomQuerySerializer(serializers.ModelSerializer):
     username = serializers.ReadOnlyField(source='user.username')
     target_type_display = serializers.CharField(source='get_target_type_display', read_only=True)
+    description = serializers.CharField(required=False, allow_blank=True, allow_null=True)
 
     class Meta:
         model = CustomQuery
@@ -105,6 +106,9 @@ class CustomQuerySerializer(serializers.ModelSerializer):
             'sort_criteria', 'group_by', 'created', 'updated'
         )
         read_only_fields = ('user',)
+
+    def validate_description(self, value):
+        return value or ''
 
     def create(self, validated_data):
         validated_data['user'] = self.context['request'].user
