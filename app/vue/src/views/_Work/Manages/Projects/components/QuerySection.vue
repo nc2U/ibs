@@ -46,14 +46,20 @@ const searchOptions = reactive([
       { value: 'project', label: '프로젝트' },
       { value: 'parent', label: '상위 프로젝트', disabled: true },
       { value: 'is_public', label: '공개여부' },
-      { value: 'created', label: '등록일자', disabled: true },
     ],
   },
   {
     label: '문자열 검색',
     options: [
-      { value: 'name', label: '이름' },
-      { value: 'description', label: '설명' },
+      { value: 'name', label: '\u00A0\u00A0\u00A0이름' },
+      { value: 'description', label: '\u00A0\u00A0\u00A0설명' },
+    ],
+  },
+  {
+    label: '날짜',
+    options: [
+      { value: 'created', label: '\u00A0\u00A0\u00A0등록' },
+      { value: 'updated', label: '\u00A0\u00A0\u00A0수정' },
     ],
   },
 ])
@@ -70,12 +76,13 @@ const cond = ref({
 
 const form = ref<ProjectFilter>({
   status: '1',
-  project: '',
   is_public: '1',
 
   name: '',
   description: '',
 })
+
+const selectedProjectVal = ref<number | string>('')
 
 const filterSubmit = () => {
   const filterData = {} as ProjectFilter
@@ -83,9 +90,13 @@ const filterSubmit = () => {
   if (cond.value.status === 'is') filterData.status = form.value.status
   else if (cond.value.status === 'exclude') filterData.status__exclude = form.value.status
 
-  if (searchCond.value.includes('project'))
-    if (cond.value.project === 'is') filterData.project = form.value.project
-    else if (cond.value.project === 'exclude') filterData.project__exclude = form.value.project
+  if (searchCond.value.includes('project')) {
+    const selectedProj = props.allProjects.find(p => p.value === Number(selectedProjectVal.value))
+    const projectVal = selectedProj ? selectedProj.slug : String(selectedProjectVal.value)
+
+    if (cond.value.project === 'is') filterData.project = projectVal
+    else if (cond.value.project === 'exclude') filterData.project__exclude = projectVal
+  }
 
   if (searchCond.value.includes('is_public'))
     if (cond.value.is_public === 'is' && searchCond.value.includes('is_public'))
@@ -106,9 +117,10 @@ watch(searchCond, nVal => {
 
 onBeforeMount(() => {
   if (props.allProjects.length) {
-    form.value.project = props.allProjects[0]?.slug
+    selectedProjectVal.value = props.allProjects[0]?.value
   }
 })
+
 
 // 검색양식 관련 기능 구현
 const isModalOpen = ref(false)
@@ -143,7 +155,10 @@ const saveQuery = async () => {
     filters: {
       searchCond: searchCond.value,
       cond: cond.value,
-      form: form.value,
+      form: {
+        ...form.value,
+        project: selectedProjectVal.value,
+      },
     },
   }
 
@@ -162,7 +177,10 @@ const onQuerySelect = (event: Event) => {
     const f = query.filters
     if (f.searchCond) searchCond.value = f.searchCond
     if (f.cond) cond.value = { ...cond.value, ...f.cond }
-    if (f.form) form.value = { ...form.value, ...f.form }
+    if (f.form) {
+      form.value = { ...form.value, ...f.form }
+      if (f.form.project !== undefined) selectedProjectVal.value = f.form.project
+    }
 
     filterSubmit()
   }
@@ -211,7 +229,7 @@ const onQuerySelect = (event: Event) => {
               </CCol>
               <CCol class="col-4 col-lg-3">
                 <AllProjectsSelect
-                  v-model="form.project"
+                  v-model="selectedProjectVal"
                   :all-projects="allProjects"
                   default-title="---------"
                   size="sm"
