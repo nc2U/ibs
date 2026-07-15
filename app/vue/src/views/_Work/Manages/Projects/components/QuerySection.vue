@@ -105,11 +105,17 @@ const filterSubmit = () => {
     } else if (cond.value.parent === 'none') {
       filterData.parent__isnull = true
     } else if (cond.value.parent === 'is') {
-      const selectedParent = props.allProjects.find(p => p.value === Number(selectedParentVal.value))
+      const selectedParent = props.allProjects.find(
+        p => p.value === Number(selectedParentVal.value),
+      )
       filterData.parent = selectedParent ? selectedParent.slug : String(selectedParentVal.value)
     } else if (cond.value.parent === 'exclude') {
-      const selectedParent = props.allProjects.find(p => p.value === Number(selectedParentVal.value))
-      filterData.parent__exclude = selectedParent ? selectedParent.slug : String(selectedParentVal.value)
+      const selectedParent = props.allProjects.find(
+        p => p.value === Number(selectedParentVal.value),
+      )
+      filterData.parent__exclude = selectedParent
+        ? selectedParent.slug
+        : String(selectedParentVal.value)
     }
   }
 
@@ -139,9 +145,12 @@ const filterSubmit = () => {
       filterData.description__isnull = false
     } else if (form.value.description) {
       if (cond.value.description === 'contains') filterData.description = form.value.description
-      else if (cond.value.description === 'exclude') filterData.description__exclude = form.value.description
-      else if (cond.value.description === 'startswith') filterData.description__startswith = form.value.description
-      else if (cond.value.description === 'endswith') filterData.description__endswith = form.value.description
+      else if (cond.value.description === 'exclude')
+        filterData.description__exclude = form.value.description
+      else if (cond.value.description === 'startswith')
+        filterData.description__startswith = form.value.description
+      else if (cond.value.description === 'endswith')
+        filterData.description__endswith = form.value.description
     }
   }
 
@@ -282,10 +291,10 @@ const onQuerySelect = (event: Event) => {
               </CCol>
               <CCol class="col-4 col-lg-3 col-xl-2">
                 <CFormSelect v-model="cond.parent" size="sm">
-                  <option value="all">any</option>
-                  <option value="none">none</option>
-                  <option value="is">is</option>
-                  <option value="exclude">is not</option>
+                  <option value="all">모두</option>
+                  <option value="none">없음</option>
+                  <option value="is">이다</option>
+                  <option value="exclude">아니다</option>
                 </CFormSelect>
               </CCol>
               <CCol class="col-4 col-lg-3">
@@ -305,8 +314,8 @@ const onQuerySelect = (event: Event) => {
               </CCol>
               <CCol class="col-4 col-lg-3 col-xl-2">
                 <CFormSelect v-model="cond.is_public" size="sm">
-                  <option value="is">is</option>
-                  <option value="exclude">is not</option>
+                  <option value="is">이다</option>
+                  <option value="exclude">아니다</option>
                 </CFormSelect>
               </CCol>
               <CCol class="col-4 col-lg-3">
@@ -354,12 +363,12 @@ const onQuerySelect = (event: Event) => {
               </CCol>
               <CCol class="col-4 col-lg-3 col-xl-2">
                 <CFormSelect v-model="cond.name" size="sm">
-                  <option value="contains">contains</option>
-                  <option value="exclude">doesn't contain</option>
-                  <option value="startswith">starts with</option>
-                  <option value="endswith">ends with</option>
-                  <option value="none">none</option>
-                  <option value="any">any</option>
+                  <option value="contains">포함되는 키워드</option>
+                  <option value="exclude">포함하지 않는 키워드</option>
+                  <option value="startswith">앞문자 일치</option>
+                  <option value="endswith">뒷문자 일치</option>
+                  <option value="none">없음</option>
+                  <option value="any">모두</option>
                 </CFormSelect>
               </CCol>
               <CCol class="col-4 col-lg-3">
@@ -377,12 +386,12 @@ const onQuerySelect = (event: Event) => {
               </CCol>
               <CCol class="col-4 col-lg-3 col-xl-2">
                 <CFormSelect v-model="cond.description" size="sm">
-                  <option value="contains">contains</option>
-                  <option value="exclude">doesn't contain</option>
-                  <option value="startswith">starts with</option>
-                  <option value="endswith">ends with</option>
-                  <option value="none">none</option>
-                  <option value="any">any</option>
+                  <option value="contains">포함되는 키워드</option>
+                  <option value="exclude">포함하지 않는 키워드</option>
+                  <option value="startswith">앞문자 일치</option>
+                  <option value="endswith">뒷문자 일치</option>
+                  <option value="none">없음</option>
+                  <option value="any">모두</option>
                 </CFormSelect>
               </CCol>
               <CCol class="col-4 col-lg-3">
