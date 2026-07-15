@@ -86,6 +86,8 @@ class Post(models.Model):
     def restore(self):
         self.deleted = None
         self.save(update_fields=['deleted'])
+
+
 class PostFile(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, default=None, verbose_name='게시물', related_name='files')
     file = models.FileField(upload_to=get_forum_file_path, verbose_name='파일')
