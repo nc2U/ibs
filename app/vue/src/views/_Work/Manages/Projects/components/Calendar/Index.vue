@@ -7,7 +7,7 @@ import { useMeeting } from '@/store/pinia/work_meeting'
 import { useCalendar } from '@/store/pinia/work_calendar'
 import type { IssueFilter } from '@/store/types/work_issue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
-import SearchList from '@/views/_Work/Manages/Projects/components/SearchList.vue'
+import QuerySection from '@/views/_Work/Manages/Projects/components/QuerySection.vue'
 import SharedCalendar from '@/views/_Work/Manages/Calendar/components/SharedCalendar.vue'
 import Loading from '@/components/Loading/Index.vue'
 
@@ -76,7 +76,7 @@ onBeforeMount(async () => {
         </CCol>
       </CRow>
 
-      <SearchList :all-projects="allProjects" @filter-submit="filterSubmit" />
+      <QuerySection :all-projects="allProjects" @filter-submit="filterSubmit" />
 
       <CRow class="mb-3">
         <CCol>

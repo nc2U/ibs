@@ -4,7 +4,7 @@ import { useRoute } from 'vue-router'
 import type { User } from '@/store/types/accounts'
 import { useAccount } from '@/store/pinia/account.ts'
 import NoData from '@/components/NoData/Index.vue'
-import SearchList from '@/views/_Work/Manages/Projects/components/SearchList.vue'
+import QuerySection from '@/views/_Work/Manages/Projects/components/QuerySection.vue'
 import UserItem from '@/views/_Work/Settings/Users/components/UserItem.vue'
 import TextButton from '../../../components/atomics/TextButton.vue'
 
@@ -51,7 +51,7 @@ const workManager = computed(() => accStore.workManager)
     </CCol>
   </CRow>
 
-  <SearchList />
+  <QuerySection />
 
   <NoData v-if="!userList.length" />
 

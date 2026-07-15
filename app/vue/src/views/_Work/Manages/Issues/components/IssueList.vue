@@ -10,7 +10,7 @@ import { useWork } from '@/store/pinia/work_project.ts'
 import Pagination from '@/components/Pagination'
 import NoData from '@/components/NoData/Index.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
-import SearchList from './SearchList.vue'
+import QuerySection from './QuerySection.vue'
 import IssueItem from './IssueItem.vue'
 
 const props = defineProps({
@@ -125,7 +125,7 @@ const pageSelect = (page: number) => emit('page-select', page)
     </CCol>
   </CRow>
 
-  <SearchList
+  <QuerySection
     :all-projects="allProjects"
     :status-list="statusList"
     :tracker-list="trackerList"

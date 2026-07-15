@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeMount, provide, ref } from 'vue'
+import { computed, provide, ref } from 'vue'
 import { navMenu2 as navMenu } from '@/views/_Work/_menu/headermixin1'
 import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project'
@@ -9,7 +9,7 @@ import type { Company } from '@/store/types/settings'
 import type { IssueFilter } from '@/store/types/work_issue'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
-import SearchList from '@/views/_Work/Manages/Projects/components/SearchList.vue'
+import QuerySection from '@/views/_Work/Manages/Projects/components/QuerySection.vue'
 import SharedCalendar from './components/SharedCalendar.vue'
 import SummaryStatus from '@/views/_Work/Manages/Calendar/components/SummaryStatus.vue'
 import Loading from '@/components/Loading/Index.vue'
@@ -64,7 +64,7 @@ const summary = computed(() => {
         </CCol>
       </CRow>
 
-      <SearchList :all-projects="allProjects" @filter-submit="filterSubmit" />
+      <QuerySection :all-projects="allProjects" @filter-submit="filterSubmit" />
 
       <CRow class="mb-3">
         <CCol>
