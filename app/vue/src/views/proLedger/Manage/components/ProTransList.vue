@@ -6,7 +6,7 @@ import { useProLedger } from '@/store/pinia/proLedger.ts'
 import type { ProjectBank } from '@/store/types/proLedger.ts'
 import Pagination from '@/components/Pagination'
 import BankAcc from './BankAcc.vue'
-import ProTrans from './ProTrans.vue'
+import ProTransItem from './ProTransItem.vue'
 import AccountManage from './AccountManage.vue'
 
 const props = defineProps({
@@ -83,7 +83,7 @@ const accCallModal = () => {
     </CTableHead>
 
     <CTableBody>
-      <ProTrans
+      <ProTransItem
         v-for="proTrans in proBankTransList"
         :key="proTrans.pk as number"
         :pro-trans="proTrans"
