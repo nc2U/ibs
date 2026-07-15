@@ -163,12 +163,7 @@ onBeforeMount(async () => {
         </CCol>
       </CRow>
 
-      <NewsForm
-        v-if="viewForm && news"
-        :news="news"
-        @on-submit="onSubmit"
-        @close-form="viewForm = false"
-      />
+      <NewsForm v-if="viewForm" :news="news" @on-submit="onSubmit" @close-form="viewForm = false" />
 
       <template v-if="can(PERM.NEWS_READ)">
         <NewsList
