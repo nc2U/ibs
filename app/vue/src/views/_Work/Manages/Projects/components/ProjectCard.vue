@@ -1,7 +1,6 @@
 <script lang="ts" setup>
 import { computed, type PropType } from 'vue'
 import { useAccount } from '@/store/pinia/account.ts'
-import { useWork } from '@/store/pinia/work_project.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import { markdownRender } from '@/utils/helper.ts'
 
