@@ -30,7 +30,7 @@ onBeforeMount(async () => {
         />
       </CInputGroup>
     </CCol>
-    <CCol class="p-1">
+    <CCol class="p-1 text-body">
       <MultiSelect
         mode="single"
         :options="getProjects"

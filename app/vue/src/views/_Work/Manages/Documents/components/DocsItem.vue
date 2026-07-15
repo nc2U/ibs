@@ -24,7 +24,11 @@ const projId = computed(() => {
 
 <template>
   <v-card
-    :to="canDocsRead && projId ? { name: '(문서) - 보기', params: { projId, docId: docs.pk } } : undefined"
+    :to="
+      canDocsRead && projId
+        ? { name: '(문서) - 보기', params: { projId, docId: docs.pk } }
+        : undefined
+    "
     border
     class="mb-2 w-100 docs-item card-white no-underline"
     :class="[canDocsRead ? 'pointer' : 'cursor-not-allowed', docs.is_pinned ? 'card-yellow' : '']"
@@ -93,7 +97,7 @@ const projId = computed(() => {
         </CCol>
         <CCol sm="4" class="text-right text-grey small">
           <v-icon icon="mdi-clock-outline" size="x-small" class="mr-1" />
-          {{ timeFormat(docs.created as string, 'short', '/') }}
+          {{ timeFormat(docs.created as string, 'min', '/') }}
         </CCol>
       </CRow>
       <CRow v-if="docs.description" class="mt-2">
