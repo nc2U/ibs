@@ -295,7 +295,13 @@ onBeforeMount(async () => {
           :is-succession="isSuccession"
           @call-form="callFormModal"
         />
-        <TableTitleRow title="승계 진행 건 목록" excel :url="downloadUrl" filename="승계_진행건_목록.xlsx" :disabled="!project" />
+        <TableTitleRow
+          title="승계 진행 건 목록"
+          excel
+          :url="downloadUrl"
+          filename="승계_진행건_목록.xlsx"
+          :disabled="!project"
+        />
         <SuccessionList
           :highlight-id="highlightId ?? undefined"
           :current-page="page"

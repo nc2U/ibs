@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, type ComputedRef, inject, nextTick, type PropType, ref } from 'vue'
+import { computed, type ComputedRef, inject, nextTick, type PropType, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { cutString, diffDate, numFormat } from '@/utils/baseMixins'
 import { useAccount } from '@/store/pinia/account.ts'
@@ -84,6 +84,44 @@ const handleSelect = async (id: number | null) => {
 // --- 제네릭 인라인 편집을 위한 상태 및 로직 ---
 const editingState = computed(() => proLedgerStore.sharedEditingState) // Use computed for reactivity
 const editValue = ref<any>(null)
+
+watch(
+  editingState,
+  newVal => {
+    if (newVal) {
+      const { type, pk, field } = newVal
+      if (type === 'tran' && pk === props.proTrans.pk) {
+        if (field === 'note') {
+          editValue.value = props.proTrans.note
+        } else if (field === 'content') {
+          editValue.value = props.proTrans.content
+        } else if (field === 'sort_amount') {
+          editValue.value = {
+            sort: props.proTrans.sort,
+            amount: props.proTrans.amount || 0,
+          }
+        }
+      } else if (type === 'entry') {
+        const entry = props.proTrans.accounting_entries?.find(e => e.pk === pk)
+        if (entry) {
+          if (field === 'account_contract') {
+            editValue.value = {
+              account: entry.account,
+              contract: entry.contract,
+              contractor: entry.contractor,
+            }
+          } else if (field === 'trader') {
+            editValue.value = entry.trader
+          }
+        }
+      }
+    } else {
+      editValue.value = null
+    }
+  },
+  { immediate: true },
+)
+
 const inputRef = ref<HTMLInputElement | null>(null)
 const pickerPosition = computed(() => proLedgerStore.sharedPickerPosition) // Use computed for reactivity
 
@@ -443,18 +481,12 @@ const handleUpdate = async () => {
         "
       >
         <div
-          v-if="isEditing('tran', proTrans.pk!, 'sort_amount')"
+          v-if="isEditing('tran', proTrans.pk!, 'sort_amount') && editValue"
           class="d-flex align-items-center justify-content-end"
         >
-          <v-btn-toggle
-            v-model="editValue.sort"
-            variant="elevated"
-            color="success"
-            density="compact"
-            divided
-          >
-            <v-btn :value="1" size="x-small">입금</v-btn>
-            <v-btn :value="2" size="x-small">출금</v-btn>
+          <v-btn-toggle v-model="editValue.sort" variant="elevated" density="compact" divided>
+            <v-btn :value="1" color="blue-grey-lighten-1" size="x-small">입금</v-btn>
+            <v-btn :value="2" color="brown-lighten-2" size="x-small">출금</v-btn>
           </v-btn-toggle>
 
           <CFormInput

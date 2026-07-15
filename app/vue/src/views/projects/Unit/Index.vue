@@ -138,11 +138,7 @@ const onDelete = (payload: { pk: number; type: number }) =>
   deleteUnit(payload.pk, project.value || projStore.initProjId, payload.type)
 
 const dataSetup = async (pk: number) => {
-  await Promise.all([
-    fetchTypeList(pk),
-    fetchFloorTypeList(pk),
-    fetchBuildingList(pk),
-  ])
+  await Promise.all([fetchTypeList(pk), fetchFloorTypeList(pk), fetchBuildingList(pk)])
 }
 
 const dataReset = () => {

@@ -146,7 +146,12 @@ const isEvidenceRequired = (row: NewEntryForm): boolean => {
     <!-- 모든 행을 수정 가능한 폼으로 렌더링 -->
     <CTableRow v-for="(row, idx) in displayRows" :key="row.pk || `new-${idx}`">
       <CTableDataCell>
-        <LedgerAccount v-model="row.account" :options="comAccounts ?? []" :sort-type="sortType" required />
+        <LedgerAccount
+          v-model="row.account"
+          :options="comAccounts ?? []"
+          :sort-type="sortType"
+          required
+        />
         <!-- affiliate 필드가 필요한 경우 추가 드롭다운 표시 -->
         <div v-if="row.account && getAccountById(row.account)?.req_affiliate" class="pt-0 px-2">
           <CFormSelect v-model.number="row.affiliate" class="" placeholder="관계회사 선택">

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, type ComputedRef, inject, nextTick, type PropType, ref } from 'vue'
+import { computed, type ComputedRef, inject, nextTick, type PropType, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { cutString, diffDate, numFormat } from '@/utils/baseMixins'
 import { useAccount } from '@/store/pinia/account.ts'
@@ -83,6 +83,43 @@ const handleAffiliateSelect = async (affiliateId: number | null) => {
 // --- 제네릭 인라인 편집을 위한 상태 및 로직 ---
 const editingState = computed(() => ledgerStore.sharedEditingState) // Use computed for reactivity
 const editValue = ref<any>(null)
+
+watch(
+  editingState,
+  newVal => {
+    if (newVal) {
+      const { type, pk, field } = newVal
+      if (type === 'tran' && pk === props.transaction.pk) {
+        if (field === 'note') {
+          editValue.value = props.transaction.note
+        } else if (field === 'content') {
+          editValue.value = props.transaction.content
+        } else if (field === 'sort_amount') {
+          editValue.value = {
+            sort: props.transaction.sort,
+            amount: props.transaction.amount || 0,
+          }
+        }
+      } else if (type === 'entry') {
+        const entry = props.transaction.accounting_entries?.find(e => e.pk === pk)
+        if (entry) {
+          if (field === 'account_affiliate') {
+            editValue.value = {
+              account: entry.account,
+              affiliate: entry.affiliate,
+            }
+          } else if (field === 'trader') {
+            editValue.value = entry.trader
+          }
+        }
+      }
+    } else {
+      editValue.value = null
+    }
+  },
+  { immediate: true },
+)
+
 const inputRef = ref<HTMLInputElement | null>(null)
 const pickerPosition = computed(() => ledgerStore.sharedPickerPosition) // Use computed for reactivity
 
@@ -426,18 +463,12 @@ const collapseAll = () => {
         "
       >
         <div
-          v-if="isEditing('tran', transaction.pk!, 'sort_amount')"
+          v-if="isEditing('tran', transaction.pk!, 'sort_amount') && editValue"
           class="d-flex align-items-center justify-content-end"
         >
-          <v-btn-toggle
-            v-model="editValue.sort"
-            variant="elevated"
-            color="success"
-            density="compact"
-            divided
-          >
-            <v-btn :value="1" size="x-small">입금</v-btn>
-            <v-btn :value="2" size="x-small">출금</v-btn>
+          <v-btn-toggle v-model="editValue.sort" variant="elevated" density="compact" divided>
+            <v-btn :value="1" color="info" size="x-small">입금</v-btn>
+            <v-btn :value="2" color="warning" size="x-small">출금</v-btn>
           </v-btn-toggle>
 
           <CFormInput

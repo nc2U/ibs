@@ -189,28 +189,32 @@ const loadHighlightPage = async () => {
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  // URL에서 회사 ID가 지정되어 있으면 해당 회사로 전환
-  let projectId = project.value || proStore.initProjId
-  if (urlProjectId.value && urlProjectId.value !== projectId) {
-    console.log(`Switching to project ${urlProjectId.value} from URL parameter`)
-    // 회사 전환 (query string 정리 건너뛰기)
-    await projSelect(urlProjectId.value, true)
-    projectId = urlProjectId.value
+  try {
+    // URL에서 회사 ID가 지정되어 있으면 해당 회사로 전환
+    let projectId = project.value || proStore.initProjId
+    if (urlProjectId.value && urlProjectId.value !== projectId) {
+      console.log(`Switching to project ${urlProjectId.value} from URL parameter`)
+      // 회사 전환 (query string 정리 건너뛰기)
+      await projSelect(urlProjectId.value, true)
+      projectId = urlProjectId.value
+    }
+
+    imprest.value = localStorage.getItem('get-imprest') === 'all' // 기본값 false
+
+    await fetchProjectAccounts()
+
+    // 하이라이트 항목이 있으면 해당 페이지로 이동 후 스크롤
+    if (highlightId.value) {
+      await loadHighlightPage()
+    } else {
+      await dataSetup(projectId)
+    }
+    await scrollToHighlight()
+  } catch (err) {
+    console.log('페이지 로딩 중 에러가 발생했습니다.', err)
+  } finally {
+    loading.value = false
   }
-
-  imprest.value = localStorage.getItem('get-imprest') === 'all' // 기본값 false
-
-  await fetchProjectAccounts()
-
-  // 하이라이트 항목이 있으면 해당 페이지로 이동 후 스크롤
-  if (highlightId.value) {
-    await loadHighlightPage()
-  } else {
-    await dataSetup(projectId)
-  }
-  await scrollToHighlight()
-
-  loading.value = false
 })
 
 // 다른 라우트로 이동 시 query string 정리

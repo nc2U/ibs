@@ -74,8 +74,6 @@ export type Post = {
   next_pk?: number | null
 }
 
-
-
 export interface PostFile {
   pk: null | number
   post?: number

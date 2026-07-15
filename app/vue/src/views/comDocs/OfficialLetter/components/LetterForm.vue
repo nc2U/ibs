@@ -61,7 +61,13 @@ const onSubmit = () => {
   validated.value = true
 
   // Validate required fields
-  if (!form.value.title || !form.value.recipient_name || !form.value.sender_name || !form.value.content || !form.value.issue_date) {
+  if (
+    !form.value.title ||
+    !form.value.recipient_name ||
+    !form.value.sender_name ||
+    !form.value.content ||
+    !form.value.issue_date
+  ) {
     return
   }
 
@@ -100,9 +106,7 @@ const goBack = () => {
         <CCardBody>
           <CRow class="mb-3">
             <CCol md="6">
-              <CFormLabel>
-                제목 <span class="text-danger">*</span>
-              </CFormLabel>
+              <CFormLabel> 제목 <span class="text-danger">*</span> </CFormLabel>
               <CFormInput
                 v-model="form.title"
                 placeholder="공문 제목을 입력하세요"
@@ -112,14 +116,8 @@ const goBack = () => {
               <CFormFeedback invalid>제목을 입력해주세요.</CFormFeedback>
             </CCol>
             <CCol md="6">
-              <CFormLabel>
-                발신일자 <span class="text-danger">*</span>
-              </CFormLabel>
-              <DatePicker
-                v-model="form.issue_date"
-                placeholder="발신일자 선택"
-                required
-              />
+              <CFormLabel> 발신일자 <span class="text-danger">*</span> </CFormLabel>
+              <DatePicker v-model="form.issue_date" placeholder="발신일자 선택" required />
             </CCol>
           </CRow>
         </CCardBody>
@@ -133,9 +131,7 @@ const goBack = () => {
         <CCardBody>
           <CRow class="mb-3">
             <CCol md="6">
-              <CFormLabel>
-                수신처명 <span class="text-danger">*</span>
-              </CFormLabel>
+              <CFormLabel> 수신처명 <span class="text-danger">*</span> </CFormLabel>
               <CFormInput
                 v-model="form.recipient_name"
                 placeholder="수신처명 (예: OO주식회사)"
@@ -155,10 +151,7 @@ const goBack = () => {
           <CRow class="mb-3">
             <CCol md="6">
               <CFormLabel>수신처 주소</CFormLabel>
-              <CFormInput
-                v-model="form.recipient_address"
-                placeholder="수신처 주소"
-              />
+              <CFormInput v-model="form.recipient_address" placeholder="수신처 주소" />
             </CCol>
             <CCol md="6">
               <CFormLabel>수신처 연락처</CFormLabel>
@@ -179,9 +172,7 @@ const goBack = () => {
         <CCardBody>
           <CRow class="mb-3">
             <CCol md="4">
-              <CFormLabel>
-                발신자명 <span class="text-danger">*</span>
-              </CFormLabel>
+              <CFormLabel> 발신자명 <span class="text-danger">*</span> </CFormLabel>
               <CFormInput
                 v-model="form.sender_name"
                 placeholder="발신자명 (예: 홍길동)"
@@ -192,17 +183,11 @@ const goBack = () => {
             </CCol>
             <CCol md="4">
               <CFormLabel>직위</CFormLabel>
-              <CFormInput
-                v-model="form.sender_position"
-                placeholder="직위 (예: 대표이사)"
-              />
+              <CFormInput v-model="form.sender_position" placeholder="직위 (예: 대표이사)" />
             </CCol>
             <CCol md="4">
               <CFormLabel>부서</CFormLabel>
-              <CFormInput
-                v-model="form.sender_department"
-                placeholder="부서 (예: 경영지원팀)"
-              />
+              <CFormInput v-model="form.sender_department" placeholder="부서 (예: 경영지원팀)" />
             </CCol>
           </CRow>
         </CCardBody>
@@ -214,9 +199,7 @@ const goBack = () => {
           <strong>공문 내용</strong>
         </CCardHeader>
         <CCardBody>
-          <CFormLabel>
-            내용 <span class="text-danger">*</span>
-          </CFormLabel>
+          <CFormLabel> 내용 <span class="text-danger">*</span> </CFormLabel>
           <CFormTextarea
             v-model="form.content"
             placeholder="공문 본문을 입력하세요"

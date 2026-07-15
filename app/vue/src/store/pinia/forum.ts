@@ -283,8 +283,6 @@ export const useForum = defineStore('forum', () => {
       )
       .catch(err => errorHandle(err.response.data))
 
-
-
   const file = ref<PostFile | null>(null)
 
   const fetchFile = (pk: number) =>
@@ -407,8 +405,6 @@ export const useForum = defineStore('forum', () => {
     fetchTrashPost,
     fetchTrashPostList,
     restorePost,
-
-
 
     file,
     fetchFile,

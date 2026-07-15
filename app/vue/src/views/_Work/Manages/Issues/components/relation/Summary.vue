@@ -41,7 +41,11 @@ const routeParams = projId ? { projId } : {}
     <span v-if="relations.filter(i => i.closed).length">
       <router-link
         v-if="can(PERM.ISSUE_READ)"
-        :to="{ name: routeName, params: routeParams, query: { issueId: issuePk, status: 'closed' } }"
+        :to="{
+          name: routeName,
+          params: routeParams,
+          query: { issueId: issuePk, status: 'closed' },
+        }"
       >
         {{ relations.filter(i => i.closed).length }} 건 완료
       </router-link>

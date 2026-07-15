@@ -228,7 +228,13 @@ onBeforeMount(async () => {
           :project="project as number"
           @multi-submit="multiSubmit"
         />
-        <TableTitleRow title="부지 소유자 목록" excel :url="excelUrl" filename="소유자별_부지목록.xlsx" :disabled="!project">
+        <TableTitleRow
+          title="부지 소유자 목록"
+          excel
+          :url="excelUrl"
+          filename="소유자별_부지목록.xlsx"
+          :disabled="!project"
+        >
           <span v-if="project" class="text-success" style="padding-top: 7px">
             소유자 면적 :
             {{ numFormat(getOwnersTotal as number, 2) }}m<sup>2</sup> ({{

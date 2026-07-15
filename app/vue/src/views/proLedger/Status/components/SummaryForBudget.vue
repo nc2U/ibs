@@ -68,9 +68,9 @@ const sumTotal = computed(() => {
     const allSum = getEASum(accountPk) || 0
     const monthSum = getEAMonth(accountPk) || 0
 
-    preExecAmt += allSum - monthSum  // 전월 집행금액 누계 (각 행의 표시값 합산)
-    monthExecAmt += monthSum          // 당월 집행금액
-    totalExecAmt += allSum            // 집행금액 합계
+    preExecAmt += allSum - monthSum // 전월 집행금액 누계 (각 행의 표시값 합산)
+    monthExecAmt += monthSum // 당월 집행금액
+    totalExecAmt += allSum // 집행금액 합계
   }
 
   const availableBudget = totalBudgetCalc - totalExecAmt
@@ -184,7 +184,8 @@ const updateRevised = ($event: any) => emit('update-revised', $event.target.valu
         </CTableDataCell>
         <CTableDataCell
           v-if="
-            obj.account_opt && obj.pk === getSubTitle(obj.account_opt, obj.account?.parent?.pk || 0)[0]
+            obj.account_opt &&
+            obj.pk === getSubTitle(obj.account_opt, obj.account?.parent?.pk || 0)[0]
           "
           class="text-left"
           :rowspan="getSubTitle(obj.account_opt, obj.account?.parent?.pk || 0).length"
@@ -242,9 +243,7 @@ const updateRevised = ($event: any) => emit('update-revised', $event.target.valu
         <CTableDataCell
           v-show="isRevised === '1'"
           :class="
-            (obj.revised_budget || obj.budget) < getEASum(obj.account?.pk || 0)
-              ? 'text-danger'
-              : ''
+            (obj.revised_budget || obj.budget) < getEASum(obj.account?.pk || 0) ? 'text-danger' : ''
           "
         >
           {{

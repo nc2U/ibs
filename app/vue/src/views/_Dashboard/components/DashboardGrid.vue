@@ -54,7 +54,7 @@ const gridLayouts = computed(() =>
     i: l.i,
     minW: l.minW,
     minH: l.minH,
-  }))
+  })),
 )
 
 const getWidgetComponent = (widgetId: string) => {

@@ -107,22 +107,11 @@ const formatDateTime = (dateStr: string | undefined) => {
           목록
         </CButton>
         <div>
-          <CButton
-            color="light"
-            size="sm"
-            :disabled="!prevPk"
-            class="me-1"
-            @click="goToPrev"
-          >
+          <CButton color="light" size="sm" :disabled="!prevPk" class="me-1" @click="goToPrev">
             <CIcon name="cilChevronLeft" />
             이전
           </CButton>
-          <CButton
-            color="light"
-            size="sm"
-            :disabled="!nextPk"
-            @click="goToNext"
-          >
+          <CButton color="light" size="sm" :disabled="!nextPk" @click="goToNext">
             다음
             <CIcon name="cilChevronRight" />
           </CButton>
@@ -139,8 +128,8 @@ const formatDateTime = (dateStr: string | undefined) => {
         </div>
         <div>
           <small class="text-muted">
-            작성자: {{ letter.creator?.username || '-' }} |
-            작성일: {{ formatDateTime(letter.created) }}
+            작성자: {{ letter.creator?.username || '-' }} | 작성일:
+            {{ formatDateTime(letter.created) }}
           </small>
         </div>
       </CCardHeader>
@@ -292,7 +281,8 @@ const formatDateTime = (dateStr: string | undefined) => {
       <template #default>
         <p>이 공문을 삭제하시겠습니까?</p>
         <p class="text-muted mb-0">
-          <small>문서번호: {{ letter.document_number }}</small><br>
+          <small>문서번호: {{ letter.document_number }}</small
+          ><br />
           <small>제목: {{ letter.title }}</small>
         </p>
       </template>

@@ -1,13 +1,13 @@
 // Here you can add other styles
 :root {
-  --logo-accent-color: #012F48; /* 라이트 모드일 때의 심볼 색상 */
+  --logo-accent-color: #012f48; /* 라이트 모드일 때의 심볼 색상 */
   --logo-text-color: #333333; /* 라이트 모드일 때의 어두운 글자 색상 */
 }
 
 body.dark-theme {
-  --cui-secondary-color: #B5B6B9;
+  --cui-secondary-color: #b5b6b9;
 
-  --logo-accent-color: #43848C; /* 다크 모드일 때 톤다운된 밝은 심볼 색상 */
+  --logo-accent-color: #43848c; /* 다크 모드일 때 톤다운된 밝은 심볼 색상 */
   --logo-text-color: #ffffff; /* 다크 모드일 때 하얀 글자 색상 */
 }
 
@@ -245,7 +245,7 @@ a.page-link,
 }
 
 .card-green {
-  background-color: #F7FFF9 !important;
+  background-color: #f7fff9 !important;
 }
 
 .dark-theme {
@@ -273,11 +273,11 @@ a.page-link,
   }
 
   .bg-more-light {
-    background-color: #2E2F39 !important;
+    background-color: #2e2f39 !important;
   }
 
   .card-white {
-    background-color: #2A2B36;
+    background-color: #2a2b36;
     color: #f1f1f1;
   }
 
@@ -292,7 +292,7 @@ a.page-link,
   }
 
   .card-green {
-    background-color: #444E49 !important;
+    background-color: #444e49 !important;
   }
 
   .alert-warning {
@@ -303,10 +303,10 @@ a.page-link,
   }
 
   .alert-success {
-    --cui-alert-color: #A1C6AE; // rgb(27.6, 110.4, 55.2);
-    --cui-alert-bg: #37413A; // rgb(213.2, 240.8, 222.4);
-    --cui-alert-border-color: #1E2520; // rgb(192.3, 233.7, 206.1);
-    --cui-alert-link-color: #779B83; // rgb(22.08, 88.32, 44.16);
+    --cui-alert-color: #a1c6ae; // rgb(27.6, 110.4, 55.2);
+    --cui-alert-bg: #37413a; // rgb(213.2, 240.8, 222.4);
+    --cui-alert-border-color: #1e2520; // rgb(192.3, 233.7, 206.1);
+    --cui-alert-link-color: #779b83; // rgb(22.08, 88.32, 44.16);
   }
 }
 

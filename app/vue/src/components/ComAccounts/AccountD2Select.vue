@@ -30,7 +30,7 @@ if (!context) {
 
 const account_d2 = computed({
   get: () => context.account_d2.value,
-  set: (val) => {
+  set: val => {
     context.account_d2.value = val
   },
 })

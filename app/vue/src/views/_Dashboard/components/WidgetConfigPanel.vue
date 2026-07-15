@@ -47,7 +47,11 @@ const handleReset = () => {
           <v-list density="compact">
             <v-list-subheader>표시할 위젯 선택</v-list-subheader>
 
-            <v-list-item v-for="widget in widgets" :key="widget.id" @click="handleToggle(widget.id)">
+            <v-list-item
+              v-for="widget in widgets"
+              :key="widget.id"
+              @click="handleToggle(widget.id)"
+            >
               <template #prepend>
                 <v-icon :icon="widget.icon" size="small" />
               </template>

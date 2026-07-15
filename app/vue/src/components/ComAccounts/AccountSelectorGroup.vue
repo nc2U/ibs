@@ -72,19 +72,19 @@ provide(AccountSelectionKey, context)
 // 변경사항을 부모에게 emit
 watch(
   () => selection.sort.value,
-  (val) => emit('update:sort', val),
+  val => emit('update:sort', val),
 )
 watch(
   () => selection.account_d1.value,
-  (val) => emit('update:accountD1', val),
+  val => emit('update:accountD1', val),
 )
 watch(
   () => selection.account_d2.value,
-  (val) => emit('update:accountD2', val),
+  val => emit('update:accountD2', val),
 )
 watch(
   () => selection.account_d3.value,
-  (val) => emit('update:accountD3', val),
+  val => emit('update:accountD3', val),
 )
 
 // 초기화

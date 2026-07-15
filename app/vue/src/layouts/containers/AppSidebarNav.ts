@@ -52,16 +52,20 @@ const isActiveItem = (route: RouteLocationNormalized, item: Item): boolean => {
 const filterNavItems = (items: Item[], predicates: ((it: Item) => boolean)[]): Item[] => {
   const passAllPredicates = (it: Item) => predicates.every(p => p(it))
 
-  return items
-    // 1. 먼저 현재 아이템(부모)이 권한을 통과하는지 확인
-    .filter(it => passAllPredicates(it))
-    // 2. 통과한 경우에만 자식들을 필터링
-    .map(it => ({
-      ...it,
-      items: it.items ? filterNavItems(it.items, predicates) : undefined,
-    }))
-    // 3. 자식이 있거나, CNavItem인 경우만 유지
-    .filter(it => it.component !== 'CNavGroup' || (Array.isArray(it.items) && it.items.length > 0))
+  return (
+    items
+      // 1. 먼저 현재 아이템(부모)이 권한을 통과하는지 확인
+      .filter(it => passAllPredicates(it))
+      // 2. 통과한 경우에만 자식들을 필터링
+      .map(it => ({
+        ...it,
+        items: it.items ? filterNavItems(it.items, predicates) : undefined,
+      }))
+      // 3. 자식이 있거나, CNavItem인 경우만 유지
+      .filter(
+        it => it.component !== 'CNavGroup' || (Array.isArray(it.items) && it.items.length > 0),
+      )
+  )
 }
 
 const AppSidebarNav = defineComponent({

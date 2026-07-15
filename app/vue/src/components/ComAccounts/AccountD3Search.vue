@@ -27,9 +27,7 @@
           <strong>{{ option.name }}</strong>
           <span class="text-muted small ms-2">({{ option.code }})</span>
         </div>
-        <div class="text-muted small">
-          {{ option.d1_name }} > {{ option.d2_name }}
-        </div>
+        <div class="text-muted small">{{ option.d1_name }} > {{ option.d2_name }}</div>
       </div>
     </template>
   </Multiselect>
@@ -96,7 +94,7 @@ const handleChange = (value: AccountD3Option | null) => {
 // modelValue 변경 시 selectedD3 동기화
 watch(
   () => props.modelValue,
-  (newVal) => {
+  newVal => {
     if (newVal) {
       const found = d3Options.value.find(opt => opt.pk === newVal)
       if (found) {

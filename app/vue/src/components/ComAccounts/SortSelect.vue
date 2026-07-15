@@ -26,7 +26,7 @@ if (!context) {
 
 const sort = computed({
   get: () => context.sort.value,
-  set: (val) => {
+  set: val => {
     context.sort.value = val
   },
 })

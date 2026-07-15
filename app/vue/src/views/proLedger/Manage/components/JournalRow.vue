@@ -160,7 +160,12 @@ const isEvidenceRequired = (row: NewEntryForm): boolean => {
     <!-- 모든 행을 수정 가능한 폼으로 렌더링 -->
     <CTableRow v-for="(row, idx) in displayRows" :key="row.pk || `new-${idx}`">
       <CTableDataCell>
-        <LedgerAccount v-model="row.account" :options="proAccounts ?? []" :sort-type="sortType" required />
+        <LedgerAccount
+          v-model="row.account"
+          :options="proAccounts ?? []"
+          :sort-type="sortType"
+          required
+        />
         <!-- contract 필드가 필요한 경우 추가 드롭다운 표시 -->
         <div v-if="row.account && getAccountById(row.account)?.requires_contract" class="pt-0 px-2">
           <MultiSelect
