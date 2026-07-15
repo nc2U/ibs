@@ -7,6 +7,7 @@ import Multiselect from '@vueform/multiselect'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import AllProjectsSelect from '@/views/_Work/components/atomics/AllProjectsSelect.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
+import FormModal from '@/components/Modals/FormModal.vue'
 
 const props = defineProps({
   allProjects: { type: Array as PropType<selectProject[]>, default: () => [] },
@@ -17,6 +18,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['filter-submit', 'change-view-mode'])
+
+const refQuerySaveModal = ref()
 
 const { can, PERM } = usePerms()
 const informStore = useInform()
@@ -212,7 +215,6 @@ onBeforeMount(() => {
 })
 
 // 검색양식 관련 기능 구현
-const isModalOpen = ref(false)
 const queryName = ref('')
 const isPublic = ref(false)
 
@@ -230,7 +232,7 @@ onMounted(() => {
 const openSaveModal = () => {
   queryName.value = ''
   isPublic.value = false
-  isModalOpen.value = true
+  refQuerySaveModal.value.callModal()
 }
 
 const saveQuery = async () => {
@@ -254,7 +256,7 @@ const saveQuery = async () => {
 
   await informStore.createQuery(payload)
   await informStore.fetchQueries({ targetType: props.targetType })
-  isModalOpen.value = false
+  refQuerySaveModal.value.close()
 }
 
 const onQuerySelect = (event: Event) => {
@@ -571,10 +573,8 @@ const onQuerySelect = (event: Event) => {
     </CCol>
   </CRow>
 
-  <CModal :visible="isModalOpen" @close="isModalOpen = false">
-    <CModalHeader>
-      <CModalTitle>검색양식 저장</CModalTitle>
-    </CModalHeader>
+  <FormModal ref="refQuerySaveModal">
+    <template #header>검색양식 저장</template>
     <CForm class="needs-validation" novalidate @submit.prevent="saveQuery">
       <CModalBody class="text-body">
         <CRow class="mb-3">
@@ -593,8 +593,8 @@ const onQuerySelect = (event: Event) => {
       </CModalBody>
       <CModalFooter>
         <v-btn type="submit" size="small" color="indigo" class="text-white">저장</v-btn>
-        <v-btn color="light" size="small" @click="isModalOpen = false" flat>닫기</v-btn>
+        <v-btn color="light" size="small" @click="refQuerySaveModal.close()" flat>닫기</v-btn>
       </CModalFooter>
     </CForm>
-  </CModal>
+  </FormModal>
 </template>
