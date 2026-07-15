@@ -169,10 +169,11 @@ class SearchViewSet(viewsets.ModelViewSet):
         targets = (set(request.query_params.getlist('t')) or
                    {'issues', 'comments', 'meetings', 'news', 'documents', 'posts'})
         title_only = request.query_params.get('title_only', '0') == '1'
+        opened_only = request.query_params.get('opened_only', '0') == '1'
 
         results = {}
         if 'issues' in targets:
-            results['issues'] = self._search_issues(request.user, q, scope, slug, title_only)
+            results['issues'] = self._search_issues(request.user, q, scope, slug, title_only, opened_only)
         if 'comments' in targets:
             results['comments'] = self._search_comments(request.user, q, scope, slug)
         if 'meetings' in targets:
@@ -187,8 +188,11 @@ class SearchViewSet(viewsets.ModelViewSet):
         return Response(results)
 
     @staticmethod
-    def _search_issues(user, q, scope, slug, title_only):
+    def _search_issues(user, q, scope, slug, title_only, opened_only):
+
         qs = build_issue_queryset(user)
+        if opened_only:
+            qs = qs.filter(closed__isnull=True)
         if title_only:
             qs = qs.filter(subject__icontains=q)
         else:

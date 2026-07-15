@@ -74,4 +74,5 @@ export interface SearchParams {
   slug?: string
   t?: string[]
   title_only?: '0' | '1'
+  opened_only?: '0' | '1'
 }

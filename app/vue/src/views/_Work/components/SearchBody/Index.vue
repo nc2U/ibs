@@ -44,6 +44,7 @@ const goSearch = () => {
     query: {
       q: searchWord.value,
       title_only: titleOnly.value ? '1' : '0',
+      opened_only: openedOnly.value ? '1' : '0',
       t: activeTargets.value,
     },
   })
@@ -55,6 +56,7 @@ const doSearch = (q: string) => {
     scope: 'all',
     t: activeTargets.value,
     title_only: titleOnly.value ? '1' : '0',
+    opened_only: openedOnly.value ? '1' : '0',
   })
 }
 
@@ -66,6 +68,9 @@ watch(
       searchWord.value = q
       if (query.title_only) {
         titleOnly.value = query.title_only === '1'
+      }
+      if (query.opened_only) {
+        openedOnly.value = query.opened_only === '1'
       }
       if (query.t) {
         const queryTargets = Array.isArray(query.t) ? query.t : [query.t]
