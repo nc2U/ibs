@@ -10,8 +10,9 @@ from apiV1.permissions.work_perms import ProjectPermission
 from apiV1.serializers.work import IssueProjectSerializer, IssueProjectListSerializer, \
     ModuleSerializer, RoleSerializer, PermissionSerializer, MemberSerializer, \
     ProjectMemberUserSerializer, VersionSerializer, VersionListSerializer
-from apiV1.serializers.work import ProjectSubscriptionSerializer
-from work.models import IssueProject, Module, Role, Permission, Member, ProjectSubscription, Version
+from apiV1.serializers.work import ProjectSubscriptionSerializer, ProjectBookmarkSerializer
+from work.models import IssueProject, Module, Role, Permission, Member, ProjectSubscription, \
+    ProjectBookmark, Version
 
 
 # Work --------------------------------------------------------------------------
@@ -66,7 +67,7 @@ class IssueProjectViewSet(viewsets.ModelViewSet):
         base_qs = base_qs.prefetch_related(
             'members__user', 'members__roles',
             'trackers', 'versions', 'categories__assigned_to',
-            'allowed_roles'
+            'allowed_roles', 'bookmarked_by'
         )
 
         # 4. 액션에 따른 추가 필드 로드 최적화
@@ -389,3 +390,44 @@ class VersionViewSet(viewsets.ModelViewSet):
         }
         # 정의되지 않은 액션에 대해 기본 권한 반환
         return mapping.get(self.action, None)
+
+
+class ProjectBookmarkViewSet(viewsets.ModelViewSet):
+    queryset = ProjectBookmark.objects.all()
+    serializer_class = ProjectBookmarkSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get_queryset(self):
+        return self.queryset.filter(user=self.request.user).select_related('project')
+
+    @action(detail=False, methods=['post'], url_path='toggle')
+    def toggle(self, request):
+        """단일 프로젝트 북마크 토글 (추가/제거)"""
+        project_id = request.data.get('project')
+        if not project_id:
+            return Response({'detail': 'project 필드가 필요합니다.'}, status=400)
+        try:
+            bm = ProjectBookmark.objects.get(user=request.user, project_id=project_id)
+            bm.delete()
+            return Response({'bookmarked': False})
+        except ProjectBookmark.DoesNotExist:
+            count = ProjectBookmark.objects.filter(user=request.user).count()
+            bm = ProjectBookmark.objects.create(
+                user=request.user, project_id=project_id, order=count
+            )
+            serializer = self.get_serializer(bm)
+            return Response({'bookmarked': True, **serializer.data})
+
+    @action(detail=False, methods=['post'], url_path='reorder')
+    def reorder(self, request):
+        """북마크 순서 일괄 업데이트 (ordered_ids: [pk1, pk2, ...])"""
+        ordered_ids = request.data.get('ordered_ids', [])
+        if not isinstance(ordered_ids, list):
+            return Response({'detail': 'ordered_ids는 배열 형태여야 합니다.'}, status=400)
+        from django.db import transaction
+        with transaction.atomic():
+            for idx, pk in enumerate(ordered_ids):
+                ProjectBookmark.objects.filter(pk=pk, user=request.user).update(order=idx)
+        updated = self.get_queryset()
+        serializer = self.get_serializer(updated, many=True)
+        return Response(serializer.data)

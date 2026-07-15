@@ -339,7 +339,26 @@ class ProjectSubscription(models.Model):
         verbose_name_plural = "프로젝트 알림 구독"
 
 
+class ProjectBookmark(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+                             verbose_name="사용자", related_name='bookmarked_projects')
+    project = models.ForeignKey(IssueProject, on_delete=models.CASCADE,
+                                verbose_name="업무 프로젝트", related_name='bookmarked_by')
+    order = models.PositiveSmallIntegerField('정렬순서', default=0)
+    created = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'project')
+        ordering = ('order', 'created')
+        verbose_name = "프로젝트 북마크"
+        verbose_name_plural = "프로젝트 북마크"
+
+    def __str__(self):
+        return f'{self.user} - {self.project.name}'
+
+
 class VersionManager(models.Manager):
+
     def accessible_from(self, project):
         ancestors = project.get_ancestors()
         descendants = project.get_descendants()

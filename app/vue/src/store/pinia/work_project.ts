@@ -13,6 +13,7 @@ import type {
   ProjectMember,
   Version,
   FormVersion,
+  ProjectBookmark,
 } from '@/store/types/work_project.ts'
 
 export const useWork = defineStore('work', () => {
@@ -380,6 +381,34 @@ export const useWork = defineStore('work', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
+  // bookmarked_projects
+  const bookmarkedProjects = ref<ProjectBookmark[]>([])
+
+  const fetchBookmarks = async () =>
+    api
+      .get(`/project-bookmark/`)
+      .then(res => (bookmarkedProjects.value = res.data.results ?? res.data))
+      .catch(err => errorHandle(err.response.data))
+
+  const toggleBookmark = async (projectId: number) => {
+    return api
+      .post(`/project-bookmark/toggle/`, { project: projectId })
+      .then(async res => {
+        await fetchBookmarks()
+        // allProjects 에 캐시된 is_bookmarked 도 갱신
+        const target = allProjects.value.find(p => p.pk === projectId)
+        if (target) target.is_bookmarked = res.data.bookmarked
+        return res.data as { bookmarked: boolean }
+      })
+      .catch(err => errorHandle(err.response.data))
+  }
+
+  const reorderBookmarks = async (orderedIds: number[]) =>
+    api
+      .post(`/project-bookmark/reorder/`, { ordered_ids: orderedIds })
+      .then(res => (bookmarkedProjects.value = res.data))
+      .catch(err => errorHandle(err.response.data))
+
   // version states & getters
   const version = ref<Version | null>(null)
   const versionList = ref<Version[]>([])
@@ -503,6 +532,11 @@ export const useWork = defineStore('work', () => {
     subscribedProjects,
     fetchSubscribedProjects,
     createSubscribedProjects,
+
+    bookmarkedProjects,
+    fetchBookmarks,
+    toggleBookmark,
+    reorderBookmarks,
 
     version,
     versionList,

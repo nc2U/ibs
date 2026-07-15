@@ -6,7 +6,7 @@ from apiV1.serializers.accounts import SimpleUserSerializer
 from work.models import Issue
 from work.models.issue import IssueCategory, Tracker
 from work.models.project import IssueProject, Module, Role, Permission, \
-    Member, ProjectSubscription, Version
+    Member, ProjectSubscription, ProjectBookmark, Version
 from work.services.work_services import PermissionService
 
 User = get_user_model()
@@ -68,6 +68,12 @@ class ProjectPermissionMixin:
             'issue_visible': 'NOP',
             'user_visible': 'NOP'
         }
+
+    def get_is_bookmarked(self, obj):
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return False
+        return obj.bookmarked_by.filter(user=request.user).exists()
 
 
 # Work --------------------------------------------------------------------------
@@ -151,13 +157,14 @@ class IssueProjectListSerializer(ProjectPermissionMixin, serializers.ModelSerial
     all_members = MemberInIssueProjectSerializer(many=True, read_only=True)
     allowed_roles = RoleInIssueProjectSerializer(many=True, read_only=True)
     parent_visible = serializers.SerializerMethodField(read_only=True)
+    is_bookmarked = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = IssueProject
         fields = ('pk', 'company', 'type', 'name', 'slug', 'description', 'is_public', 'parent',
                   'allowed_roles', 'status', 'slack_notifications_enabled', 'created', 'updated',
                   'creator', 'sub_projects', 'depth', 'module', 'my_role', 'my_perms', 'all_members',
-                  'visible', 'parent_visible')
+                  'visible', 'parent_visible', 'is_bookmarked')
 
     def get_sub_projects(self, obj):
         sub_projects = obj.issueproject_set.exclude(status='9')
@@ -178,6 +185,7 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
     categories = IssueCategoryInIssueProjectSerializer(many=True, read_only=True)
     visible = serializers.SerializerMethodField(read_only=True)
     parent_visible = serializers.SerializerMethodField(read_only=True)
+    is_bookmarked = serializers.SerializerMethodField(read_only=True)
     sub_projects = serializers.SerializerMethodField(read_only=True)
     creator = serializers.SlugRelatedField('username', read_only=True)
     my_perms = serializers.SerializerMethodField(read_only=True)
@@ -509,3 +517,22 @@ class VersionSerializer(VersionListSerializer):
             project.save()
 
         return super().update(instance, validated_data)
+
+
+class ProjectBookmarkSerializer(serializers.ModelSerializer):
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=False)
+    project_name = serializers.CharField(source='project.name', read_only=True)
+    project_slug = serializers.CharField(source='project.slug', read_only=True)
+
+    class Meta:
+        model = ProjectBookmark
+        fields = ('pk', 'user', 'project', 'project_name', 'project_slug', 'order', 'created')
+
+    def create(self, validated_data):
+        request = self.context.get('request')
+        if request and request.user:
+            if not validated_data.get('user') or not (
+                request.user.is_superuser or request.user.work_manager
+            ):
+                validated_data['user'] = request.user
+        return super().create(validated_data)

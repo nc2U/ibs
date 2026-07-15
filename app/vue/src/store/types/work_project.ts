@@ -21,16 +21,6 @@ export interface SimpleProject {
   visible: boolean
 }
 
-// export interface selectProject {
-//   pk: number
-//   module?: Module | null
-//   value: string
-//   label: string
-//   slug: string
-//   depth: number
-//   parent_visible: boolean
-// }
-
 export interface selectProject {
   value: number
   label: string
@@ -67,6 +57,7 @@ export interface IssueProject {
   all_members: SimpleMember[]
   visible?: boolean
   parent_visible: boolean
+  is_bookmarked?: boolean
   homepage: string | null
   is_inherit_members: boolean
   default_version: string | null
@@ -147,6 +138,16 @@ export interface ProjectMember {
     },
   ]
   is_assignable: boolean
+}
+
+export interface ProjectBookmark {
+  pk: number
+  user?: number
+  project: number
+  project_name: string
+  project_slug: string
+  order: number
+  created: string
 }
 
 export interface SimpleVersion {
