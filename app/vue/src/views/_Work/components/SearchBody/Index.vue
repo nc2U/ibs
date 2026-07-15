@@ -258,7 +258,7 @@ const meetingStatusLabel: Record<string, string> = { '1': '준비', '2': '종료
       <!-- 에러 -->
       <CRow v-if="searchStore.error" class="mt-3">
         <CCol>
-          <v-alert type="warning" variant="tonal">
+          <v-alert type="warning" color="#b7721d" icon-size="20" variant="tonal">
             {{ searchStore.error }}
           </v-alert>
         </CCol>
@@ -280,8 +280,8 @@ const meetingStatusLabel: Record<string, string> = { '1': '준비', '2': '종료
         <!-- 결과 없음 -->
         <CRow v-if="!searchStore.hasResults" class="mt-2">
           <CCol>
-            <v-alert variant="tonal" color="blue-grey">
-              <v-icon icon="mdi-magnify-close" size="22" class="mr-1" />
+            <v-alert variant="tonal" color="blue-grey-lighten-1">
+              <v-icon icon="mdi-magnify-close" size="20" class="mr-2" />
               검색 결과가 없습니다.
             </v-alert>
           </CCol>

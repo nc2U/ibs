@@ -24,7 +24,7 @@ const comStore = useCompany()
 const company = computed<Company | null>(() => comStore.company)
 
 const isDark = computed(() => useStore().theme === 'dark')
-const backGround = computed(() => (isDark.value ? 'bg-blue-grey-darken-5' : 'bg-indigo-lighten-5'))
+const backGround = computed(() => (isDark.value ? '' : 'bg-blue-grey-lighten-5'))
 const baseColor = computed(() => (isDark.value ? '#fff' : '#333'))
 const bgColor = computed(() => (isDark.value ? '#24252F' : '#fefefe'))
 
@@ -89,7 +89,7 @@ onBeforeMount(workStore.fetchAllProjectList)
             </CCol>
           </CRow>
 
-          <CRow>
+          <CRow class="mb-3">
             <CCol class="text-body d-none d-lg-block">
               <strong class="title pl-1"> {{ pageTitle }}</strong>
             </CCol>
@@ -142,11 +142,6 @@ onBeforeMount(workStore.fetchAllProjectList)
 <style lang="scss" scoped>
 strong.title {
   font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  font-size: 20px;
-  color: #5e636a;
-}
-
-.dark-theme .title {
-  color: #ddd;
+  font-size: 1.3em;
 }
 </style>
