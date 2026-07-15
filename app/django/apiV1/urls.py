@@ -194,7 +194,6 @@ router.register(r'post-category', forum.CategoryViewSet, basename='forum-post-ca
 router.register(r'post', forum.PostViewSet, basename='forum-post')
 router.register(r'post-like', forum.PostLikeViewSet, basename='forum-post-like')
 router.register(r'post-blame', forum.PostBlameViewSet, basename='forum-post-blame')
-router.register(r'post-link', forum.PostLinkViewSet, basename='forum-post-link')
 router.register(r'post-file', forum.PostFileViewSet, basename='forum-post-file')
 router.register(r'post-image', forum.PostImageViewSet, basename='forum-post-image')
 router.register(r'comment', forum.CommentViewSet, basename='forum-comment')

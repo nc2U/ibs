@@ -8,7 +8,6 @@ import { colorLight } from '@/utils/cssMixins'
 import type { Post, PostCategory } from '@/store/types/forum'
 import QuillEditor from '@/components/QuillEditor/index.vue'
 import FileForms from '@/components/OtherParts/FileForms.vue'
-import LinkForms from '@/components/OtherParts/LinkForms.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
 
 const props = defineProps({
@@ -68,7 +67,6 @@ const updatePost = (payload: { pk: number; form: FormData }, project: string = '
   frmStore.updatePost(payload, project)
 
 const refFileForms = ref()
-const refLinkForms = ref()
 
 const validated = ref(false)
 const form = ref<Post>({
@@ -88,13 +86,10 @@ const form = ref<Post>({
 
 const newFiles = ref<File[]>([])
 const cngFiles = ref<{ pk: number; file: File }[]>([])
-const newLinks = ref<string[]>([])
 
 const fileUpload = (file: File) => newFiles.value.push(file)
 const fileChange = (payload: { pk: number; file: File }) => cngFiles.value.push(payload)
 const filesUpdate = (payload: any[]) => (form.value.files = payload)
-const linksUpdate = (payload: any[]) => (form.value.links = payload)
-const newLinkPush = (payload: any[]) => payload.forEach(l => newLinks.value.push(l.link))
 
 const submitCheck = (event: Event) => {
   const el = event.currentTarget as HTMLFormElement
@@ -104,7 +99,6 @@ const submitCheck = (event: Event) => {
     validated.value = true
   } else {
     validated.value = false
-    refLinkForms.value.newLinkPush()
     onSubmit()
     refFileForms.value.checkRelease()
   }
@@ -114,7 +108,7 @@ const onSubmit = async () => {
   const formData = new FormData()
 
   Object.keys(form.value).forEach(key => {
-    if (key === 'links' || key === 'files') {
+    if (key === 'files') {
       ;(form.value[key] as any[]).forEach(val => formData.append(key, JSON.stringify(val)))
     } else if (key !== 'pk') {
       const val = form.value[key] === null ? '' : form.value[key]
@@ -127,7 +121,6 @@ const onSubmit = async () => {
     formData.append('cngPks', val.pk.toString())
     formData.append('cngFiles', val.file)
   })
-  newLinks.value.forEach(link => formData.append('newLinks', link))
 
   if (form.value.pk) {
     await updatePost({ pk: form.value.pk, form: formData }, projId.value)
@@ -254,13 +247,6 @@ onBeforeUpdate(() => dataSetup())
           @files-update="filesUpdate"
           @file-upload="fileUpload"
           @file-change="fileChange"
-        />
-
-        <LinkForms
-          ref="refLinkForms"
-          :links="(post?.links as any[]) ?? []"
-          @links-update="linksUpdate"
-          @new-link-push="newLinkPush"
         />
       </CCardBody>
     </CCard>

@@ -40,7 +40,6 @@ export type Post = {
     | string
     | boolean
     | SimpleUser
-    | PostLink[]
     | PostFile[]
     | Comment[]
   pk?: number
@@ -65,7 +64,6 @@ export type Post = {
   is_notice: boolean
   is_blind: boolean
   deleted?: string | null
-  links?: PostLink[]
   files?: PostFile[]
   comments?: number[]
   creator?: SimpleUser
@@ -76,13 +74,7 @@ export type Post = {
   next_pk?: number | null
 }
 
-export interface PostLink {
-  pk: null | number
-  post: number
-  link: string
-  hit: number
-  del?: boolean
-}
+
 
 export interface PostFile {
   pk: null | number

@@ -86,17 +86,6 @@ class Post(models.Model):
     def restore(self):
         self.deleted = None
         self.save(update_fields=['deleted'])
-
-
-class PostLink(models.Model):
-    post = models.ForeignKey(Post, on_delete=models.CASCADE, default=None, verbose_name='게시물', related_name='links')
-    link = models.URLField(max_length=500, verbose_name='링크')
-    hit = models.PositiveIntegerField('클릭수', default=0)
-
-    def __str__(self):
-        return self.link
-
-
 class PostFile(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, default=None, verbose_name='게시물', related_name='files')
     file = models.FileField(upload_to=get_forum_file_path, verbose_name='파일')

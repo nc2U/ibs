@@ -8,9 +8,9 @@ from rest_framework.response import Response
 
 from apiV1.permissions.auth_perms import permissions, IsProjectStaffOrReadOnly
 from apiV1.permissions.work_perms import ForumPermission
-from forum.models import Forum, PostCategory, Post, PostLink, PostFile, PostImage, Comment, Tag
+from forum.models import Forum, PostCategory, Post, PostFile, PostImage, Comment, Tag
 from ..serializers.forum import ForumSerializer, CategorySerializer, PostSerializer, PostLikeSerializer, \
-    PostBlameSerializer, ImageSerializer, LinkSerializer, FileSerializer, CommentSerializer, \
+    PostBlameSerializer, ImageSerializer, FileSerializer, CommentSerializer, \
     CommentLikeSerializer, CommentBlameSerializer, TagSerializer, PostInTrashSerializer
 
 
@@ -84,11 +84,11 @@ class PostFilterSet(FilterSet):
 class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.filter(deleted=None).select_related(
         'forum', 'category', 'creator'
-    ).prefetch_related('links', 'files')
+    ).prefetch_related('files')
     serializer_class = PostSerializer
     permission_classes = (permissions.IsAuthenticated, ForumPermission)
     filterset_class = PostFilterSet
-    search_fields = ('title', 'content', 'links__link', 'files__file', 'creator__username')
+    search_fields = ('title', 'content', 'files__file', 'creator__username')
 
     @property
     def required_permission(self):
@@ -194,31 +194,7 @@ class PostBlameViewSet(viewsets.ModelViewSet):
         ).distinct()
 
 
-class PostLinkViewSet(viewsets.ModelViewSet):
-    queryset = PostLink.objects.all()
-    serializer_class = LinkSerializer
-    permission_classes = (permissions.IsAuthenticated, ForumPermission)
 
-    @property
-    def required_permission(self):
-        mapping = {
-            'list': 'forum.read',
-            'retrieve': 'forum.read',
-            'create': 'forum.update',
-            'update': 'forum.update',
-            'partial_update': 'forum.update',
-            'destroy': 'forum.update'
-        }
-        return mapping.get(self.action, None)
-
-    def get_queryset(self):
-        user = self.request.user
-        qs = self.queryset.select_related('post__forum')
-        if user.is_superuser or getattr(user, 'work_manager', False):
-            return qs
-        return qs.filter(
-            Q(post__forum__project__is_public=True) | Q(post__forum__project__members__user=user)
-        ).distinct()
 
 
 class PostFileViewSet(viewsets.ModelViewSet):

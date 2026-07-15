@@ -79,18 +79,13 @@ const userInfo = computed(() => accStore.userInfo)
       <v-card-text>
         <PostContent :content="post.content" />
 
-        <div v-if="post.links?.length || post.files?.length" class="mt-6 pt-6 files-section">
+        <div v-if="post.files?.length" class="mt-6 pt-6 files-section">
           <!-- 상단 간격 조정 -->
-          <h6 v-if="post.files?.length" class="mb-2">첨부 파일</h6>
+          <h6 class="mb-2">첨부 파일</h6>
           <div v-for="file in post.files" :key="file.pk as number" class="mb-2">
             <v-icon icon="mdi-attachment" size="small" class="mr-2" />
             <a :href="file.file" target="_blank">{{ file.file_name }}</a>
             <span class="ml-2 text-muted">{{ humanizeFileSize(file.file_size) }}</span>
-          </div>
-          <h6 v-if="post.links?.length" class="text-h6 mt-4 mb-2">관련 링크</h6>
-          <div v-for="link in post.links" :key="link.pk as number" class="mb-2">
-            <v-icon icon="mdi-link-variant" size="small" class="mr-2" />
-            <a :href="link.link" target="_blank">{{ link.link }}</a>
           </div>
         </div>
       </v-card-text>

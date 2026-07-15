@@ -9,7 +9,7 @@ from rest_framework import serializers
 from _utils.file_service import FileService
 from accounts.models import Profile
 from apiV1.serializers.accounts import SimpleUserSerializer
-from forum.models import Forum, PostCategory, Post, PostLink, PostFile, PostImage, Comment, Tag
+from forum.models import Forum, PostCategory, Post, PostFile, PostImage, Comment, Tag
 
 
 # Forum --------------------------------------------------------------------------
@@ -51,10 +51,7 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = ('pk', 'forum', 'color', 'name', 'parent', 'order')
 
 
-class LinksInPostSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PostLink
-        fields = ('pk', 'post', 'link', 'hit')
+
 
 
 class FilesInPostSerializer(serializers.ModelSerializer):
@@ -66,7 +63,6 @@ class FilesInPostSerializer(serializers.ModelSerializer):
 class PostSerializer(serializers.ModelSerializer):
     forum_name = serializers.SlugField(source='forum', read_only=True)
     cate_name = serializers.SlugField(source='category', read_only=True)
-    links = LinksInPostSerializer(many=True, read_only=True)
     files = FilesInPostSerializer(many=True, read_only=True)
     creator = SimpleUserSerializer(read_only=True)
     my_like = serializers.SerializerMethodField(read_only=True)
@@ -81,7 +77,7 @@ class PostSerializer(serializers.ModelSerializer):
         fields = ('pk', 'forum', 'forum_name', 'category', 'cate_name', 'title',
                   'content', 'hit', 'like', 'my_like', 'scrape', 'my_scrape', 'blame',
                   'my_blame', 'ip', 'device', 'is_secret', 'password', 'is_hide_comment',
-                  'is_notice', 'is_blind', 'deleted', 'links', 'files', 'comments', 'creator',
+                  'is_notice', 'is_blind', 'deleted', 'files', 'comments', 'creator',
                   'created', 'updated', 'is_new', 'prev_pk', 'next_pk')
         read_only_fields = ('ip', 'comments')
 
@@ -106,7 +102,6 @@ class PostSerializer(serializers.ModelSerializer):
             queryset = queryset.filter(
                 Q(title__icontains=search) |
                 Q(content__icontains=search) |
-                Q(links__link__icontains=search) |
                 Q(files__file__icontains=search) |
                 Q(creator__username__icontains=search)
             )
@@ -178,10 +173,6 @@ class PostSerializer(serializers.ModelSerializer):
         validated_data['device'] = self.context.get('request').META.get('HTTP_USER_AGENT')
         post = Post.objects.create(**validated_data)
 
-        # Links 처리
-        for link in self.initial_data.getlist('newLinks'):
-            PostLink.objects.create(post=post, link=self._normalize_url(link))
-
         # Files 처리
         FileService.manage_files(
             instance=post,
@@ -200,19 +191,6 @@ class PostSerializer(serializers.ModelSerializer):
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
-
-        # Links 처리
-        for json_link in self.initial_data.getlist('links'):
-            link = json.loads(json_link)
-            link_object = PostLink.objects.get(pk=link.get('pk'))
-            if link.get('del'):
-                link_object.delete()
-            else:
-                link_object.link = self._normalize_url(link.get('link'))
-                link_object.save()
-
-        for link in self.initial_data.getlist('newLinks'):
-            PostLink.objects.create(post=instance, link=self._normalize_url(link))
 
         # Files 처리
         FileService.manage_files(
@@ -270,10 +248,7 @@ class PostBlameSerializer(serializers.ModelSerializer):
         return instance
 
 
-class LinkSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PostLink
-        fields = ('pk', 'post', 'link', 'hit')
+
 
 
 class FileSerializer(serializers.ModelSerializer):

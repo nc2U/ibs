@@ -318,13 +318,15 @@ class SearchViewSet(viewsets.ModelViewSet):
                     Q(description__icontains=q) |
                     Q(files__file_name__icontains=q) |
                     Q(files__description__icontains=q) |
-                    Q(images__image_name__icontains=q)
+                    Q(images__image_name__icontains=q) |
+                    Q(links__link__icontains=q) |
+                    Q(links__description__icontains=q)
                 )
             elif attach_mode == '3':
                 q_expr = (
                     Q(files__file_name__icontains=q) |
-                    Q(files__description__icontains=q) |
-                    Q(images__image_name__icontains=q)
+                    Q(images__image_name__icontains=q) |
+                    Q(links__link__icontains=q)
                 )
 
         # 소프트 딜리트 필터: deleted=None (SoftDeleteManager가 적용되어 있으므로 기본 objects 사용 가능)

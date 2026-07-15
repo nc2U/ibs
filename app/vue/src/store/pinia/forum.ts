@@ -5,7 +5,6 @@ import { message, errorHandle } from '@/utils/helper'
 import type {
   Forum,
   PostCategory,
-  PostLink,
   PostFile,
   PatchPost,
   Post,
@@ -284,19 +283,7 @@ export const useForum = defineStore('forum', () => {
       )
       .catch(err => errorHandle(err.response.data))
 
-  const link = ref<PostLink | null>(null)
 
-  const fetchLink = (pk: number) =>
-    api
-      .get(`/post-link/${pk}/`)
-      .then(res => (link.value = res.data))
-      .catch(err => errorHandle(err.response.data))
-
-  const patchLink = (payload: PostLink) =>
-    api
-      .patch(`/post-link/${payload.pk}/`, payload)
-      .then(res => fetchPost(res.data.post))
-      .catch(err => errorHandle(err.response.data))
 
   const file = ref<PostFile | null>(null)
 
@@ -421,9 +408,7 @@ export const useForum = defineStore('forum', () => {
     fetchTrashPostList,
     restorePost,
 
-    link,
-    fetchLink,
-    patchLink,
+
 
     file,
     fetchFile,
