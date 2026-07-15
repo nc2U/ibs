@@ -96,6 +96,7 @@ def get_project_transactions(params):
         entry_filters &= Q(contract_id=contract)
 
     if search:
+        search_q = Q()
         # 계정 이름 검색 — 매칭된 계정 + 하위 계정들을 code__startswith로 단일 쿼리 수집
         matched_codes = list(ProjectAccount.objects.filter(
             name__icontains=search, is_active=True
@@ -108,10 +109,13 @@ def get_project_transactions(params):
             account_ids = ProjectAccount.objects.filter(
                 account_q, is_active=True
             ).values_list('pk', flat=True)
-            entry_filters |= Q(account_id__in=account_ids)
+            search_q |= Q(account_id__in=account_ids)
 
         # trader 검색 추가
-        entry_filters |= Q(trader__icontains=search)
+        search_q |= Q(trader__icontains=search)
+
+        # 조립된 search_q 조건을 기존 필터에 AND 결합
+        entry_filters &= search_q
 
     # entry_filters가 있는 경우, transaction_id를 통해 필터링
     if entry_filters:
