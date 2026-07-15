@@ -15,7 +15,7 @@ from company.models import Company
 from ledger.models import CompanyBankTransaction, CompanyAccountingEntry, ProjectBankTransaction, \
     ProjectAccountingEntry
 from ledger.services.company_transaction import get_company_transactions
-from ledger.services.project_transaction import get_project_transactions
+from ledger.services.project_transaction import get_project_transactions, prefetch_project_transactions
 from project.models import Project, ProjectOutBudget
 
 TODAY = datetime.date.today().strftime('%Y-%m-%d')
@@ -1239,6 +1239,8 @@ def export_pro_transaction_xls(request):
     # --- 데이터 조회 로직 (공용 서비스 함수 직접 호출) ---
     # request.GET을 직접 전달하여 모든 필터 파라미터를 서비스 함수가 처리하도록 함
     obj_list = get_project_transactions(request.GET)
+    obj_list = list(obj_list.order_by('deal_date', 'created_at'))
+    prefetch_project_transactions(obj_list, request.GET)
     # -----------------------------------------
 
     # ------------------------------------

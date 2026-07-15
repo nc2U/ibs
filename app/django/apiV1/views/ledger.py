@@ -18,7 +18,7 @@ from ledger.models import (
     CompanyLedgerCalculation, ProjectLedgerCalculation,
 )
 from ledger.services.company_transaction import get_company_transactions
-from ledger.services.project_transaction import get_project_transactions
+from ledger.services.project_transaction import get_project_transactions, prefetch_project_transactions
 from ..pagination import PageNumberPaginationFifteen, PageNumberPaginationFifty, PageNumberPaginationThreeHundred
 from apiV1.permissions.auth_perms import IsStaffOrReadOnly
 from ..serializers.ledger import (
@@ -558,14 +558,17 @@ class ProjectBankTransactionViewSet(viewsets.ModelViewSet):
         serializer.save(creator=self.request.user)
 
     def list(self, request, *args, **kwargs):
-        """get_project_transactions 서비스가 필터링하여 prefetch 맵핑까지 완료한 list 데이터를 직렬화합니다"""
-        obj_list = get_project_transactions(request.query_params)
-        page = self.paginate_queryset(obj_list)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
+        """get_project_transactions 서비스가 필터링한 쿼리셋에 대해 페이징 처리된 instances만 prefetch 맵핑 후 직렬화합니다"""
+        queryset = get_project_transactions(request.query_params)
+        page = self.paginate_queryset(queryset)
+        instances = page if page is not None else list(queryset)
 
-        serializer = self.get_serializer(queryset, many=True)
+        # 페이징 완료된 15건(instances)에 대해서만 분개 prefetch 결합 수행 (성능 극대화)
+        prefetch_project_transactions(instances, request.query_params)
+
+        serializer = self.get_serializer(instances, many=True)
+        if page is not None:
+            return self.get_paginated_response(serializer.data)
         return Response(serializer.data)
 
     @action(detail=True, methods=['get'])
