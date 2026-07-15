@@ -270,12 +270,7 @@ const saveQuery = async (event: Event) => {
   refQuerySaveModal.value.close()
 }
 
-const onQuerySelect = (event: Event) => {
-  const select = event.target as HTMLSelectElement
-  const queryId = Number(select.value)
-  if (!queryId) return
-
-  const query = informStore.queries.find(q => q.pk === queryId)
+const applyQuery = (query: any) => {
   if (query && query.filters) {
     const f = query.filters
     if (f.searchCond) searchCond.value = f.searchCond
@@ -289,6 +284,19 @@ const onQuerySelect = (event: Event) => {
     filterSubmit()
   }
 }
+
+const onQuerySelect = (event: Event) => {
+  const select = event.target as HTMLSelectElement
+  const queryId = Number(select.value)
+  if (!queryId) return
+
+  const query = informStore.queries.find(q => q.pk === queryId)
+  if (query) {
+    applyQuery(query)
+  }
+}
+
+defineExpose({ applyQuery })
 </script>
 
 <template>
