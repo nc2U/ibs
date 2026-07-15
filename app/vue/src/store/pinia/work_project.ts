@@ -166,8 +166,18 @@ export const useWork = defineStore('work', () => {
     if (payload.is_public) url += `&is_public=${payload.is_public}`
     else if (payload.is_public__exclude) url += `&is_public__exclude=${payload.is_public__exclude}`
     if (payload.name) url += `&name=${payload.name}`
+    else if (payload.name__exclude) url += `&name__exclude=${payload.name__exclude}`
+    else if (payload.name__startswith) url += `&name__startswith=${payload.name__startswith}`
+    else if (payload.name__endswith) url += `&name__endswith=${payload.name__endswith}`
+    else if (payload.name__isnull !== undefined) url += `&name__isnull=${payload.name__isnull}`
+
     if (payload.member) url += `&members__user=${payload.member}`
+
     if (payload.description) url += `&description=${payload.description}`
+    else if (payload.description__exclude) url += `&description__exclude=${payload.description__exclude}`
+    else if (payload.description__startswith) url += `&description__startswith=${payload.description__startswith}`
+    else if (payload.description__endswith) url += `&description__endswith=${payload.description__endswith}`
+    else if (payload.description__isnull !== undefined) url += `&description__isnull=${payload.description__isnull}`
 
     return await api
       .get(url)

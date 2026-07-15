@@ -22,8 +22,18 @@ class IssueProjectFilter(FilterSet):
     project = CharFilter(field_name='slug', lookup_expr='exact', label='프로젝트')
     project__exclude = CharFilter(field_name='slug', exclude=True, label='프로젝트-제외')
     is_public__exclude = BooleanFilter(field_name='is_public', exclude=True, label='공개여부-제외')
-    name = CharFilter(field_name='name', lookup_expr='icontains', label='이름')
-    description = CharFilter(field_name='description', lookup_expr='icontains', label='설명')
+
+    name = CharFilter(field_name='name', lookup_expr='icontains', label='이름-포함')
+    name__exclude = CharFilter(field_name='name', lookup_expr='icontains', exclude=True, label='이름-제외')
+    name__startswith = CharFilter(field_name='name', lookup_expr='istartswith', label='이름-시작')
+    name__endswith = CharFilter(field_name='name', lookup_expr='iendswith', label='이름-끝')
+    name__isnull = BooleanFilter(field_name='name', lookup_expr='isnull', label='이름-없음')
+
+    description = CharFilter(field_name='description', lookup_expr='icontains', label='설명-포함')
+    description__exclude = CharFilter(field_name='description', lookup_expr='icontains', exclude=True, label='설명-제외')
+    description__startswith = CharFilter(field_name='description', lookup_expr='istartswith', label='설명-시작')
+    description__endswith = CharFilter(field_name='description', lookup_expr='iendswith', label='설명-끝')
+    description__isnull = BooleanFilter(field_name='description', lookup_expr='isnull', label='설명-없음')
 
     class Meta:
         model = IssueProject

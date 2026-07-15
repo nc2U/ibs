@@ -81,8 +81,16 @@ export interface ProjectFilter {
   is_public?: '1' | '0'
   is_public__exclude?: '1' | '0'
   name?: string
-  member?: number
+  name__exclude?: string
+  name__startswith?: string
+  name__endswith?: string
+  name__isnull?: boolean
   description?: string
+  description__exclude?: string
+  description__startswith?: string
+  description__endswith?: string
+  description__isnull?: boolean
+  member?: number
 }
 
 export interface Module {

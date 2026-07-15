@@ -119,9 +119,31 @@ const filterSubmit = () => {
     else if (cond.value.is_public === 'exclude' && searchCond.value.includes('is_public'))
       filterData.is_public__exclude = form.value.is_public
 
-  if (searchCond.value.includes('name') && form.value.name) filterData.name = form.value.name
-  if (searchCond.value.includes('description') && form.value.description)
-    filterData.description = form.value.description
+  if (searchCond.value.includes('name')) {
+    if (cond.value.name === 'none') {
+      filterData.name__isnull = true
+    } else if (cond.value.name === 'any') {
+      filterData.name__isnull = false
+    } else if (form.value.name) {
+      if (cond.value.name === 'contains') filterData.name = form.value.name
+      else if (cond.value.name === 'exclude') filterData.name__exclude = form.value.name
+      else if (cond.value.name === 'startswith') filterData.name__startswith = form.value.name
+      else if (cond.value.name === 'endswith') filterData.name__endswith = form.value.name
+    }
+  }
+
+  if (searchCond.value.includes('description')) {
+    if (cond.value.description === 'none') {
+      filterData.description__isnull = true
+    } else if (cond.value.description === 'any') {
+      filterData.description__isnull = false
+    } else if (form.value.description) {
+      if (cond.value.description === 'contains') filterData.description = form.value.description
+      else if (cond.value.description === 'exclude') filterData.description__exclude = form.value.description
+      else if (cond.value.description === 'startswith') filterData.description__startswith = form.value.description
+      else if (cond.value.description === 'endswith') filterData.description__endswith = form.value.description
+    }
+  }
 
   emit('filter-submit', filterData)
 }
@@ -333,16 +355,19 @@ const onQuerySelect = (event: Event) => {
               <CCol class="col-4 col-lg-3 col-xl-2">
                 <CFormSelect v-model="cond.name" size="sm">
                   <option value="contains">contains</option>
-                  <option value="2" disabled>contains any of</option>
-                  <option value="3" disabled>doesn't contain</option>
-                  <option value="4" disabled>starts with</option>
-                  <option value="5" disabled>ends with</option>
-                  <option value="6" disabled>none</option>
-                  <option value="7" disabled>any</option>
+                  <option value="exclude">doesn't contain</option>
+                  <option value="startswith">starts with</option>
+                  <option value="endswith">ends with</option>
+                  <option value="none">none</option>
+                  <option value="any">any</option>
                 </CFormSelect>
               </CCol>
               <CCol class="col-4 col-lg-3">
-                <CFormInput v-model="form.name" size="sm" />
+                <CFormInput
+                  v-if="cond.name !== 'none' && cond.name !== 'any'"
+                  v-model="form.name"
+                  size="sm"
+                />
               </CCol>
             </CRow>
 
@@ -353,16 +378,19 @@ const onQuerySelect = (event: Event) => {
               <CCol class="col-4 col-lg-3 col-xl-2">
                 <CFormSelect v-model="cond.description" size="sm">
                   <option value="contains">contains</option>
-                  <option value="2">contains any of</option>
-                  <option value="3">doesn't contain</option>
-                  <option value="4">starts with</option>
-                  <option value="5">ends with</option>
-                  <option value="6">none</option>
-                  <option value="7">any</option>
+                  <option value="exclude">doesn't contain</option>
+                  <option value="startswith">starts with</option>
+                  <option value="endswith">ends with</option>
+                  <option value="none">none</option>
+                  <option value="any">any</option>
                 </CFormSelect>
               </CCol>
               <CCol class="col-4 col-lg-3">
-                <CFormInput v-model="form.description" size="sm" />
+                <CFormInput
+                  v-if="cond.description !== 'none' && cond.description !== 'any'"
+                  v-model="form.description"
+                  size="sm"
+                />
               </CCol>
             </CRow>
           </CCol>
