@@ -743,14 +743,7 @@ onBeforeRouteLeave((to, from, next) => {
         <span class="strong mr-3" :class="{ 'text-danger': !isBalanced }">
           차액: {{ sortName }} {{ numFormat(Math.abs(difference), 0, '0') }}
         </span>
-        <v-btn
-          size="small"
-          variant="tonal"
-          :disabled="isSaving"
-          @click="router.push({ name: '본사 거래 내역' })"
-        >
-          취소
-        </v-btn>
+
         <v-btn
           type="submit"
           :color="isCreateMode ? 'primary' : 'success'"
@@ -761,6 +754,14 @@ onBeforeRouteLeave((to, from, next) => {
           {{
             isSaving ? (isCreateMode ? '생성 중...' : '저장 중...') : isCreateMode ? '생성' : '저장'
           }}
+        </v-btn>
+        <v-btn
+          size="small"
+          variant="tonal"
+          :disabled="isSaving"
+          @click="router.push({ name: '본사 거래 내역' })"
+        >
+          취소
         </v-btn>
       </CCol>
     </CRow>
