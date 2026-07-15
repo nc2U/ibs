@@ -217,9 +217,6 @@ onBeforeMount(async () => {
           </CRow>
         </CModalBody>
         <CModalFooter>
-          <v-btn variant="flat" :color="btnLight" size="small" @click="RefForumForm.close()">
-            닫기
-          </v-btn>
           <v-btn
             type="submit"
             :color="form.pk ? 'success' : 'primary'"
@@ -227,6 +224,9 @@ onBeforeMount(async () => {
             :disabled="!canForumManage"
           >
             확인
+          </v-btn>
+          <v-btn variant="flat" color="light" size="small" @click="RefForumForm.close()" flat>
+            닫기
           </v-btn>
         </CModalFooter>
       </CForm>
