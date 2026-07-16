@@ -202,7 +202,7 @@ onBeforeMount(() => {
                 <v-icon icon="mdi-filter-variant" size="small" class="mr-1" color="indigo" />
               </template>
               <v-list-item-title style="font-size: 1em">{{ q.name }}</v-list-item-title>
-              <template v-slot:append>
+              <template v-slot:append v-if="![1, 2].includes(q.pk)">
                 <v-btn
                   icon="mdi-close-circle"
                   size="small"
@@ -235,12 +235,22 @@ onBeforeMount(() => {
               @click="onQueryClick(q)"
               :active="activeQueryId === q.pk"
               active-color="teal"
-              class="rounded-lg mb-1 px-2"
+              class="rounded-lg mb-1 px-2 query-item pr-3"
             >
               <template v-slot:prepend>
                 <v-icon icon="mdi-filter-variant" size="small" class="mr-2" color="teal" />
               </template>
               <v-list-item-title style="font-size: 1em">{{ q.name }}</v-list-item-title>
+              <template v-slot:append v-if="can(PERM.PROJECT_PUB_QUERY) && ![1, 2].includes(q.pk)">
+                <v-btn
+                  icon="mdi-close-circle"
+                  size="small"
+                  variant="text"
+                  color="grey"
+                  class="delete-btn"
+                  @click="onDeleteQuery(q, $event)"
+                />
+              </template>
             </v-list-item>
             <div
               v-if="!publicQueries.length"
