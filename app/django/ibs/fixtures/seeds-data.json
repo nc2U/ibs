@@ -1,30 +1,9 @@
 [
   {
-    "model": "docs.doctype",
-    "pk": 1,
-    "fields": {
-      "type": "1"
-    }
-  },
-  {
-    "model": "docs.doctype",
-    "pk": 2,
-    "fields": {
-      "type": "2"
-    }
-  },
-  {
-    "model": "docs.doctype",
-    "pk": 3,
-    "fields": {
-      "type": "3"
-    }
-  },
-  {
     "model": "docs.category",
     "pk": 1,
     "fields": {
-      "doc_type": 1,
+      "doc_type": "1",
       "color": "#9575CD",
       "name": "업무기준(규정)",
       "parent": null,
@@ -37,7 +16,7 @@
     "model": "docs.category",
     "pk": 2,
     "fields": {
-      "doc_type": 1,
+      "doc_type": "1",
       "color": "#9E9E9E",
       "name": "서식",
       "parent": null,
@@ -50,7 +29,7 @@
     "model": "docs.category",
     "pk": 3,
     "fields": {
-      "doc_type": 1,
+      "doc_type": "1",
       "color": "#558B2F",
       "name": "수신공문",
       "parent": null,
@@ -63,7 +42,7 @@
     "model": "docs.category",
     "pk": 4,
     "fields": {
-      "doc_type": 1,
+      "doc_type": "1",
       "color": "#43A047",
       "name": "계약서",
       "parent": null,
@@ -76,7 +55,7 @@
     "model": "docs.category",
     "pk": 5,
     "fields": {
-      "doc_type": 1,
+      "doc_type": "1",
       "color": "#5C6BC0",
       "name": "보고서",
       "parent": null,
@@ -89,7 +68,7 @@
     "model": "docs.category",
     "pk": 6,
     "fields": {
-      "doc_type": 1,
+      "doc_type": "1",
       "color": "#607D8B",
       "name": "인허가·등록증",
       "parent": null,
@@ -102,7 +81,7 @@
     "model": "docs.category",
     "pk": 7,
     "fields": {
-      "doc_type": 1,
+      "doc_type": "1",
       "color": "#8D6E63",
       "name": "고시·공고",
       "parent": null,
@@ -115,7 +94,7 @@
     "model": "docs.category",
     "pk": 8,
     "fields": {
-      "doc_type": 1,
+      "doc_type": "1",
       "color": "#BDBDBD",
       "name": "참고자료",
       "parent": null,
@@ -128,7 +107,7 @@
     "model": "docs.category",
     "pk": 9,
     "fields": {
-      "doc_type": 1,
+      "doc_type": "1",
       "color": "#A1887F",
       "name": "홍보자료",
       "parent": null,
@@ -141,7 +120,7 @@
     "model": "docs.category",
     "pk": 10,
     "fields": {
-      "doc_type": 1,
+      "doc_type": "1",
       "color": "#9E9D24",
       "name": "기타",
       "parent": null,
@@ -154,7 +133,7 @@
     "model": "docs.category",
     "pk": 11,
     "fields": {
-      "doc_type": 2,
+      "doc_type": "2",
       "color": "#A1887F",
       "name": "소장·신청서",
       "parent": null,
@@ -167,7 +146,7 @@
     "model": "docs.category",
     "pk": 12,
     "fields": {
-      "doc_type": 2,
+      "doc_type": "2",
       "color": "#9E9D24",
       "name": "당사자 제출문서",
       "parent": null,
@@ -180,7 +159,7 @@
     "model": "docs.category",
     "pk": 13,
     "fields": {
-      "doc_type": 2,
+      "doc_type": "2",
       "color": "#689F38",
       "name": "상대방 제출문서",
       "parent": null,
@@ -193,7 +172,7 @@
     "model": "docs.category",
     "pk": 14,
     "fields": {
-      "doc_type": 2,
+      "doc_type": "2",
       "color": "#9E9E9E",
       "name": "법원 수신문서",
       "parent": null,
@@ -206,7 +185,7 @@
     "model": "docs.category",
     "pk": 15,
     "fields": {
-      "doc_type": 2,
+      "doc_type": "2",
       "color": "#66BB6A",
       "name": "판결·결정문",
       "parent": null,
@@ -219,7 +198,7 @@
     "model": "docs.category",
     "pk": 16,
     "fields": {
-      "doc_type": 2,
+      "doc_type": "2",
       "color": "#9575CD",
       "name": "사건위임계약",
       "parent": null,
@@ -10555,7 +10534,7 @@
     "fields": {
       "module": "issue",
       "code": "issue.private_comment_set",
-      "name": "댓글 비공개 설정",
+      "name": "비공개 댓글 설정",
       "is_default": false,
       "description": ""
     }
