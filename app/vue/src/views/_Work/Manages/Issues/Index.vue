@@ -10,7 +10,7 @@ import type { Company } from '@/store/types/settings'
 import type { Issue, IssueFilter } from '@/store/types/work_issue.ts'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
-import IssueListAside from './components/aside/IssueListAside.vue'
+import SavedQueryAside from '@/views/_Work/components/asides/SavedQueryAside.vue'
 import IssueList from './components/IssueList.vue'
 import Loading from '@/components/Loading/Index.vue'
 
@@ -88,7 +88,7 @@ onBeforeMount(async () => {
     </template>
 
     <template v-slot:aside>
-      <IssueListAside />
+      <SavedQueryAside />
     </template>
   </ContentBody>
 </template>

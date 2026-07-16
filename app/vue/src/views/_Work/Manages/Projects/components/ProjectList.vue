@@ -11,7 +11,7 @@ import QuerySection from './QuerySection.vue'
 import ProjectCard from './ProjectCard.vue'
 import ProjectTable from './ProjectTable.vue'
 import NoData from '@/components/NoData/Index.vue'
-import ProjectAside from '@/views/_Work/Manages/Projects/components/ProjectAside.vue'
+import SavedQueryAside from '@/views/_Work/components/asides/SavedQueryAside.vue'
 
 const cBody = ref()
 const toggle = () => cBody.value.toggle()
@@ -193,7 +193,7 @@ onBeforeMount(() => {
     </template>
 
     <template v-slot:aside>
-      <ProjectAside
+      <SavedQueryAside
         :my-queries="myQueries"
         :active-query-id="activeQueryId ?? undefined"
         :public-queries="publicQueries"
