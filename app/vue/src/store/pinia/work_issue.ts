@@ -95,6 +95,8 @@ export const useIssue = defineStore('issue', () => {
       category__exclude: 'category__exclude',
       category__isnull: 'category__isnull',
       is_private: 'is_private',
+      watcher: 'watcher',
+      watcher__exclude: 'watcher__exclude',
       author: 'creator',
       author__exclude: 'creator__exclude',
       assignee: 'assigned_to',

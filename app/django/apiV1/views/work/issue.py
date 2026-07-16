@@ -27,6 +27,8 @@ class IssueFilter(FilterSet):
     priority__exclude = CharFilter(field_name='priority', exclude=True, label='우선순위-제외')
     category__exclude = CharFilter(field_name='category', exclude=True, label='범주-제외')
     category__isnull = BooleanFilter(field_name='category', lookup_expr='isnull', label='범주-유무')
+    watcher = NumberFilter(field_name='watchers', lookup_expr='exact', label='업무관람자-일치')
+    watcher__exclude = NumberFilter(field_name='watchers', exclude=True, label='업무관람자-제외')
     creator__exclude = CharFilter(field_name='creator', exclude=True, label='작성자-제외')
     assigned_to__exclude = CharFilter(field_name='assigned_to', exclude=True, label='담당자-제외')
     assigned_to__isnull = BooleanFilter(field_name='assigned_to', lookup_expr='isnull', label='담당자-유무')
@@ -70,7 +72,8 @@ class IssueFilter(FilterSet):
         fields = ('project__slug', 'status__closed', 'status', 'tracker', 'priority', 'category', 'category__exclude', 'category__isnull',
                   'creator', 'assigned_to', 'fixed_version', 'id', 'id__gte', 'id__lte', 'id__between', 'id__any',
                   'done_ratio', 'done_ratio__gte', 'done_ratio__lte', 'done_ratio__between', 'done_ratio__isnull',
-                  'parent', 'parent_issue', 'precedes_issue', 'follows_issue', 'project__my_project', 'is_private')
+                  'parent', 'parent_issue', 'precedes_issue', 'follows_issue', 'project__my_project', 'is_private',
+                  'watcher', 'watcher__exclude')
 
     @staticmethod
     def filter_id_between(queryset, name, value):

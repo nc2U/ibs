@@ -2,12 +2,12 @@
 import { onBeforeMount, type PropType, reactive, ref, watch } from 'vue'
 import type { selectProject } from '@/store/types/work_project.ts'
 import type { IssueFilter, IssueStatus, Tracker } from '@/store/types/work_issue.ts'
-import { useRoute } from 'vue-router'
 import Multiselect from '@vueform/multiselect'
-import AllProjectsSelect from '@/views/_Work/components/atomics/AllProjectsSelect.vue'
-import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
+import { useRoute } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
 import { useAccount } from '@/store/pinia/account'
+import AllProjectsSelect from '@/views/_Work/components/atomics/AllProjectsSelect.vue'
+import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 
 const props = defineProps({
   allProjects: { type: Array as PropType<selectProject[]>, default: () => [] },
@@ -59,7 +59,7 @@ const searchOptions = reactive<SearchOptionGroup[]>([
       { value: 'category', label: '범주' },
       { value: 'done_ratio', label: '진척도' },
       { value: 'is_private', label: '비공개' },
-      { value: 'watcher', label: '업무관람자', disabled: true },
+      { value: 'watcher', label: '업무관람자' },
       { value: 'updater', label: '수정자', disabled: true },
       { value: 'last_updater', label: '최근수정자', disabled: true },
       { value: 'issue', label: '업무' },
@@ -125,6 +125,7 @@ const cond = ref({
   priority: 'is' as 'is' | 'exclude',
   category: 'is' as 'is' | 'exclude' | 'none' | 'any',
   is_private: 'is' as 'is' | 'exclude',
+  watcher: 'is' as 'is' | 'exclude',
   done_ratio: 'is' as 'is' | 'gte' | 'lte' | 'between' | 'none' | 'any',
   author: 'is' as 'is' | 'exclude',
   assignee: 'is' as 'is' | 'exclude' | 'none' | 'any',
@@ -152,6 +153,8 @@ const form = ref<IssueFilter>({
   category__exclude: null,
   category__isnull: '0',
   is_private: null as boolean | null,
+  watcher: null,
+  watcher__exclude: null,
   done_ratio: null,
   done_ratio__gte: null,
   done_ratio__lte: null,
@@ -252,6 +255,11 @@ const filterSubmit = () => {
     else if (cond.value.is_private === 'exclude') filterData.is_private = false
   }
 
+  if (searchCond.value.includes('watcher')) {
+    if (cond.value.watcher === 'is') filterData.watcher = form.value.watcher
+    else if (cond.value.watcher === 'exclude') filterData.watcher__exclude = form.value.watcher
+  }
+
   if (searchCond.value.includes('author'))
     if (cond.value.author === 'is') filterData.author = form.value.author
     else if (cond.value.author === 'exclude') filterData.author__exclude = form.value.author
@@ -350,6 +358,8 @@ watch(searchCond, nVal => {
     form.value.priority = props.priorityList[0]?.pk
   if (nVal.includes('category') && !form.value.category)
     form.value.category = props.categoryList[0]?.pk
+  if (nVal.includes('watcher') && !form.value.watcher)
+    form.value.watcher = props.getUsers[0]?.value
   if (!nVal.includes('status')) searchCond.value = ['status']
 })
 
@@ -537,7 +547,28 @@ onBeforeMount(async () => {
                   <option value="exclude">아니다</option>
                 </CFormSelect>
               </CCol>
+              <CCol class="col-4 col-lg-3"> </CCol>
+            </CRow>
+
+            <CRow v-if="searchCond.includes('watcher')">
+              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
+                <CFormCheck checked="true" label="업무관람자" id="watcher" readonly />
+              </CCol>
+              <CCol class="col-4 col-lg-3 col-xl-2">
+                <CFormSelect v-model="cond.watcher" size="sm">
+                  <option value="is">이다</option>
+                  <option value="exclude">아니다</option>
+                </CFormSelect>
+              </CCol>
               <CCol class="col-4 col-lg-3">
+                <Multiselect
+                  v-model="form.watcher"
+                  :options="getUsers"
+                  placeholder="업무관람자"
+                  searchable
+                  size="sm"
+                  @keydown.enter="filterSubmit"
+                />
               </CCol>
             </CRow>
 
