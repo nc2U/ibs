@@ -60,7 +60,7 @@ const searchOptions = reactive<SearchOptionGroup[]>([
       { value: 'done_ratio', label: '진척도' },
       { value: 'is_private', label: '비공개' },
       { value: 'watcher', label: '업무관람자' },
-      { value: 'updater', label: '수정자', disabled: true },
+      { value: 'updater', label: '수정자' },
       { value: 'last_updater', label: '최근수정자', disabled: true },
       { value: 'issue', label: '업무' },
     ],
@@ -128,6 +128,7 @@ const cond = ref({
   watcher: 'is' as 'is' | 'exclude',
   done_ratio: 'is' as 'is' | 'gte' | 'lte' | 'between' | 'none' | 'any',
   author: 'is' as 'is' | 'exclude',
+  updater: 'is' as 'is' | 'exclude',
   assignee: 'is' as 'is' | 'exclude' | 'none' | 'any',
   // is_public: 'is' as 'is' | 'exclude',
   // name: 'contains',
@@ -164,6 +165,8 @@ const form = ref<IssueFilter>({
   done_ratio__isnull: '0',
   author: null,
   author__exclude: null,
+  updater: null,
+  updater__exclude: null,
   assignee: null,
   assignee__exclude: null,
   version: null,
@@ -264,6 +267,11 @@ const filterSubmit = () => {
     if (cond.value.author === 'is') filterData.author = form.value.author
     else if (cond.value.author === 'exclude') filterData.author__exclude = form.value.author
 
+  if (searchCond.value.includes('updater')) {
+    if (cond.value.updater === 'is') filterData.updater = form.value.updater
+    else if (cond.value.updater === 'exclude') filterData.updater__exclude = form.value.updater
+  }
+
   if (searchCond.value.includes('assignee'))
     if (cond.value.assignee === 'is') filterData.assignee = form.value.assignee
     else if (cond.value.assignee === 'exclude') filterData.assignee__exclude = form.value.assignee
@@ -358,8 +366,8 @@ watch(searchCond, nVal => {
     form.value.priority = props.priorityList[0]?.pk
   if (nVal.includes('category') && !form.value.category)
     form.value.category = props.categoryList[0]?.pk
-  if (nVal.includes('watcher') && !form.value.watcher)
-    form.value.watcher = props.getUsers[0]?.value
+  if (nVal.includes('watcher') && !form.value.watcher) form.value.watcher = props.getUsers[0]?.value
+  if (nVal.includes('updater') && !form.value.updater) form.value.updater = props.getUsers[0]?.value
   if (!nVal.includes('status')) searchCond.value = ['status']
 })
 
@@ -587,6 +595,27 @@ onBeforeMount(async () => {
                   v-model="form.author"
                   :options="getUsers"
                   placeholder="작성자"
+                  searchable
+                  @keydown.enter="filterSubmit"
+                />
+              </CCol>
+            </CRow>
+
+            <CRow v-if="searchCond.includes('updater')">
+              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
+                <CFormCheck checked="true" label="수정자" id="updater" readonly />
+              </CCol>
+              <CCol class="col-4 col-lg-3 col-xl-2">
+                <CFormSelect v-model="cond.updater" size="sm">
+                  <option value="is">이다</option>
+                  <option value="exclude">아니다</option>
+                </CFormSelect>
+              </CCol>
+              <CCol class="col-4 col-lg-3">
+                <Multiselect
+                  v-model="form.updater"
+                  :options="getUsers"
+                  placeholder="수정자"
                   searchable
                   @keydown.enter="filterSubmit"
                 />

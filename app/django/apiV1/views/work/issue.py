@@ -17,6 +17,7 @@ from apiV1.serializers.work.issue import IssueSerializer
 from work.models import Issue, IssueRelation, IssueProject, IssueFile, IssueComment, Tracker, \
     IssueCategory, IssueStatus, Workflow, CodeIssuePriority
 from work.models.project import Member, Role
+from work.models.logging import IssueLogEntry
 
 
 class IssueFilter(FilterSet):
@@ -34,6 +35,8 @@ class IssueFilter(FilterSet):
     assigned_to__isnull = BooleanFilter(field_name='assigned_to', lookup_expr='isnull', label='담당자-유무')
     fixed_version__exclude = CharFilter(field_name='fixed_version', exclude=True, label='목표단계-제외')
     fixed_version__isnull = BooleanFilter(field_name='fixed_version', lookup_expr='isnull', label='목표단계-유무')
+    updater = NumberFilter(method='filter_updater', label='수정자')
+    updater__exclude = NumberFilter(method='filter_updater_exclude', label='수정자-제외')
 
     id = NumberFilter(field_name='id', lookup_expr='exact', label='ID-일치')
     id__gte = NumberFilter(field_name='id', lookup_expr='gte', label='ID-이상')
@@ -73,7 +76,7 @@ class IssueFilter(FilterSet):
                   'creator', 'assigned_to', 'fixed_version', 'id', 'id__gte', 'id__lte', 'id__between', 'id__any',
                   'done_ratio', 'done_ratio__gte', 'done_ratio__lte', 'done_ratio__between', 'done_ratio__isnull',
                   'parent', 'parent_issue', 'precedes_issue', 'follows_issue', 'project__my_project', 'is_private',
-                  'watcher', 'watcher__exclude')
+                  'watcher', 'watcher__exclude', 'updater', 'updater__exclude')
 
     @staticmethod
     def filter_id_between(queryset, name, value):
@@ -119,6 +122,27 @@ class IssueFilter(FilterSet):
         # 내가 후속하는 업무들 (내가 target이므로, 대상 source_id들을 찾음)
         pks = IssueRelation.objects.filter(target_id=value).values_list('source_id', flat=True)
         return queryset.filter(pk__in=pks)
+
+    @staticmethod
+    def filter_updater(queryset, name, value):
+        if value:
+            # 수정(Updated) 혹은 댓글(Comment)을 작성한 사람
+            pks = IssueLogEntry.objects.filter(
+                creator_id=value,
+                action__in=['Updated', 'Comment']
+            ).values_list('issue_id', flat=True)
+            return queryset.filter(pk__in=pks)
+        return queryset
+
+    @staticmethod
+    def filter_updater_exclude(queryset, name, value):
+        if value:
+            pks = IssueLogEntry.objects.filter(
+                creator_id=value,
+                action__in=['Updated', 'Comment']
+            ).values_list('issue_id', flat=True)
+            return queryset.exclude(pk__in=pks)
+        return queryset
 
     def filter_queryset(self, queryset):
         for name, value in self.form.cleaned_data.items():
