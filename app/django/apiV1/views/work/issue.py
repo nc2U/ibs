@@ -24,6 +24,7 @@ class IssueFilter(FilterSet):
     project__exclude = CharFilter(field_name='project__slug', exclude=True, label='프로젝트-제외')
     project__search = CharFilter(field_name='project__slug', label='프로젝트-검색')
     tracker__exclude = CharFilter(field_name='tracker', exclude=True, label='유형-제외')
+    priority__exclude = CharFilter(field_name='priority', exclude=True, label='우선순위-제외')
     creator__exclude = CharFilter(field_name='creator', exclude=True, label='작성자-제외')
     assigned_to__exclude = CharFilter(field_name='assigned_to', exclude=True, label='담당자-제외')
     assigned_to__isnull = BooleanFilter(field_name='assigned_to', lookup_expr='isnull', label='담당자-유무')
@@ -58,7 +59,7 @@ class IssueFilter(FilterSet):
 
     class Meta:
         model = Issue
-        fields = ('project__slug', 'status__closed', 'status', 'tracker', 'creator', 'assigned_to',
+        fields = ('project__slug', 'status__closed', 'status', 'tracker', 'priority', 'creator', 'assigned_to',
                   'fixed_version', 'id', 'id__gte', 'id__lte', 'id__between', 'id__any',
                   'parent', 'parent_issue', 'precedes_issue', 'follows_issue', 'project__my_project')
 

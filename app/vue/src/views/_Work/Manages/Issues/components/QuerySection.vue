@@ -11,6 +11,7 @@ const props = defineProps({
   allProjects: { type: Array as PropType<selectProject[]>, default: () => [] },
   statusList: { type: Array as PropType<IssueStatus[]>, default: () => [] },
   trackerList: { type: Array as PropType<Tracker[]>, default: () => [] },
+  priorityList: { type: Array as PropType<any[]>, default: () => [] },
   getIssues: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },
   getUsers: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },
   getVersions: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },
@@ -33,7 +34,7 @@ const searchOptions = reactive([
     options: [
       { value: 'status', label: '상태', disabled: true },
       { value: 'tracker', label: '유형' },
-      { value: 'priority', label: '우선순위', disabled: true },
+      { value: 'priority', label: '우선순위' },
       { value: 'author', label: '작성자' },
       { value: 'assignee', label: '담당자' },
       { value: 'version', label: '목표단계' },
@@ -103,6 +104,7 @@ const cond = ref({
   status: 'open' as 'open' | 'is' | 'exclude' | 'closed' | 'any',
   project: 'is' as 'is' | 'exclude',
   tracker: 'is' as 'is' | 'exclude',
+  priority: 'is' as 'is' | 'exclude',
   author: 'is' as 'is' | 'exclude',
   assignee: 'is' as 'is' | 'exclude' | 'none' | 'any',
   // is_public: 'is' as 'is' | 'exclude',
@@ -123,6 +125,8 @@ const form = ref<IssueFilter>({
   project__exclude: '',
   tracker: null,
   tracker__exclude: null,
+  priority: null,
+  priority__exclude: null,
   author: null,
   author__exclude: null,
   assignee: null,
@@ -201,6 +205,10 @@ const filterSubmit = () => {
     if (cond.value.tracker === 'is') filterData.tracker = form.value.tracker
     else if (cond.value.tracker === 'exclude') filterData.tracker__exclude = form.value.tracker
 
+  if (searchCond.value.includes('priority'))
+    if (cond.value.priority === 'is') filterData.priority = form.value.priority
+    else if (cond.value.priority === 'exclude') filterData.priority__exclude = form.value.priority
+
   if (searchCond.value.includes('author'))
     if (cond.value.author === 'is') filterData.author = form.value.author
     else if (cond.value.author === 'exclude') filterData.author__exclude = form.value.author
@@ -252,10 +260,20 @@ watch(
   { immediate: true },
 )
 
+watch(
+  () => props.priorityList,
+  nVal => {
+    if (nVal.length && !form.value.priority) form.value.priority = nVal[0]?.pk
+  },
+  { immediate: true },
+)
+
 watch(searchCond, nVal => {
   if (nVal.includes('project')) form.value.project = ''
   if (nVal.includes('tracker') && !form.value.tracker)
     form.value.tracker = props.trackerList[0]?.pk
+  if (nVal.includes('priority') && !form.value.priority)
+    form.value.priority = props.priorityList[0]?.pk
   if (!nVal.includes('status')) searchCond.value = ['status']
 })
 
@@ -364,6 +382,25 @@ onBeforeMount(async () => {
                 <CFormSelect v-model="form.tracker" size="sm">
                   <option v-for="tracker in trackerList" :key="tracker.pk" :value="tracker.pk">
                     {{ tracker.name }}
+                  </option>
+                </CFormSelect>
+              </CCol>
+            </CRow>
+
+            <CRow v-if="searchCond.includes('priority')">
+              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
+                <CFormCheck checked="true" label="우선순위" id="priority" readonly />
+              </CCol>
+              <CCol class="col-4 col-lg-3 col-xl-2">
+                <CFormSelect v-model="cond.priority" size="sm">
+                  <option value="is">이다</option>
+                  <option value="exclude">아니다</option>
+                </CFormSelect>
+              </CCol>
+              <CCol class="col-4 col-lg-3">
+                <CFormSelect v-model="form.priority" size="sm">
+                  <option v-for="priority in priorityList" :key="priority.pk" :value="priority.pk">
+                    {{ priority.name }}
                   </option>
                 </CFormSelect>
               </CCol>

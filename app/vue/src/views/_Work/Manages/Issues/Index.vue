@@ -31,6 +31,7 @@ const issueStore = useIssue()
 const issueList = computed(() => issueStore.issueList)
 const statusList = computed(() => issueStore.statusList)
 const trackerList = computed(() => issueStore.trackerList)
+const priorityList = computed(() => issueStore.priorityList)
 const getIssues = computed(() => issueStore.getIssues)
 
 const route = useRoute()
@@ -75,6 +76,7 @@ onBeforeMount(async () => {
         :all-projects="allProjects"
         :status-list="statusList"
         :tracker-list="trackerList"
+        :priority-list="priorityList"
         :get-issues="getIssues"
         :get-users="getUsers"
         :get-versions="getVersions"

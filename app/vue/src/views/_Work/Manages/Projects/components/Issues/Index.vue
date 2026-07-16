@@ -153,6 +153,7 @@ onBeforeMount(async () => {
         :all-projects="allProjects"
         :status-list="statusList"
         :tracker-list="trackerList"
+        :priority-list="priorityList"
         :get-issues="getIssues"
         :get-users="getUsers"
         :get-versions="getVersions"

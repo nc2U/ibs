@@ -19,6 +19,7 @@ const props = defineProps({
   allProjects: { type: Array as PropType<selectProject[]>, default: () => [] },
   statusList: { type: Array as PropType<IssueStatus[]>, default: () => [] },
   trackerList: { type: Array as PropType<Tracker[]>, default: () => [] },
+  priorityList: { type: Array as PropType<any[]>, default: () => [] },
   getIssues: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },
   getUsers: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },
   getVersions: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },
@@ -129,6 +130,7 @@ const pageSelect = (page: number) => emit('page-select', page)
     :all-projects="allProjects"
     :status-list="statusList"
     :tracker-list="trackerList"
+    :priority-list="priorityList"
     :get-issues="getIssues"
     :get-users="getUsers"
     :get-versions="getVersions"
