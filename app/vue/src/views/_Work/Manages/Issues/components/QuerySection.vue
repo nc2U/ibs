@@ -604,7 +604,10 @@ watch(
       if (subIdx === -1) {
         const issueIdx = searchOptions[0].options.findIndex(o => o.value === 'issue')
         if (issueIdx > -1) {
-          searchOptions[0].options.splice(issueIdx, 0, { value: 'sub_project', label: '하위 프로젝트' })
+          searchOptions[0].options.splice(issueIdx, 0, {
+            value: 'sub_project',
+            label: '하위 프로젝트',
+          })
         } else {
           searchOptions[0].options.push({ value: 'sub_project', label: '하위 프로젝트' })
         }
@@ -1614,7 +1617,6 @@ onBeforeMount(async () => {
                   size="sm"
                   @change="filterSubmit"
                 >
-                  <option value="">상태 선택</option>
                   <option value="1">진행</option>
                   <option value="2">잠김</option>
                   <option value="3">닫힘</option>
@@ -1625,7 +1627,6 @@ onBeforeMount(async () => {
                   size="sm"
                   @change="filterSubmit"
                 >
-                  <option value="">상태 선택</option>
                   <option value="1">진행</option>
                   <option value="2">잠김</option>
                   <option value="3">닫힘</option>
