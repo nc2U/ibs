@@ -1,13 +1,22 @@
 <script lang="ts" setup>
-import type { PropType } from 'vue'
-import type { CustomQuery } from '@/store/types/work_inform.ts'
+import { computed, type PropType } from 'vue'
+import { useInform } from '@/store/pinia/work_inform.ts'
 
-defineProps({
-  myQueries: { type: Array as PropType<CustomQuery[]>, default: () => [] },
-  publicQueries: { type: Array as PropType<CustomQuery[]>, default: () => [] },
+type TargetType = 'project' | 'meeting' | 'issue' | 'calendar'
+
+const props = defineProps({
+  targetType: { type: String as PropType<TargetType>, default: 'project' },
   activeQueryId: { type: Number, default: null },
   canProjectPubQuery: { type: Boolean, default: false },
 })
+
+const informStore = useInform()
+const myQueries = computed(() =>
+  informStore.myQueries.filter(q => q.target_type === props.targetType),
+)
+const pubQueries = computed(() =>
+  informStore.pubQueries.filter(q => q.target_type === props.targetType),
+)
 
 const emit = defineEmits(['on-query-click', 'on-delete-query', 'on-reset-query'])
 </script>
@@ -50,7 +59,7 @@ const emit = defineEmits(['on-query-click', 'on-delete-query', 'on-reset-query']
       <h6 class="text-subtitle-1 mb-2">검색 양식</h6>
       <v-list density="compact" nav class="pa-0 bg-transparent">
         <v-list-item
-          v-for="q in publicQueries"
+          v-for="q in pubQueries"
           :key="q.pk"
           link
           @click="emit('on-query-click', q)"
@@ -74,7 +83,7 @@ const emit = defineEmits(['on-query-click', 'on-delete-query', 'on-reset-query']
           </template>
         </v-list-item>
         <div
-          v-if="!publicQueries.length"
+          v-if="!pubQueries.length"
           class="text-caption text-grey pl-2 py-1"
           style="font-size: 0.9rem"
         >

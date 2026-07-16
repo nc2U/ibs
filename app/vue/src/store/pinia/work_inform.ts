@@ -1,5 +1,5 @@
 import api from '@/api'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { errorHandle, message } from '@/utils/helper.ts'
 import type { News, NewsComment, CustomQuery, TargetType } from '@/store/types/work_inform.ts'
@@ -116,6 +116,10 @@ export const useInform = defineStore('inform', () => {
   const queries = ref<CustomQuery[]>([])
   const loading = ref(false)
 
+  // getter
+  const myQueries = computed(() => queries.value.filter(q => !q.is_public))
+  const pubQueries = computed(() => queries.value.filter(q => q.is_public))
+
   const fetchQueries = async (payload: { projectSlug?: string; targetType?: TargetType }) => {
     loading.value = true
     try {
@@ -186,6 +190,8 @@ export const useInform = defineStore('inform', () => {
     deleteNewsComment,
 
     queries,
+    myQueries,
+    pubQueries,
     loading,
     fetchQueries,
     createQuery,

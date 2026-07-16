@@ -82,12 +82,8 @@ const colProps = computed(() => {
 const activeQueryId = ref<number | null>(null)
 const querySectionRef = ref()
 
-const myQueries = computed(() =>
-  informStore.queries.filter(q => !q.is_public && q.target_type === 'project'),
-)
-const publicQueries = computed(() =>
-  informStore.queries.filter(q => q.is_public && q.target_type === 'project'),
-)
+const myQueries = computed(() => informStore.myQueries.filter(q => q.target_type === 'project'))
+const pubQueries = computed(() => informStore.pubQueries.filter(q => q.target_type === 'project'))
 
 const onQueryClick = (query: any) => {
   activeQueryId.value = query.pk
@@ -194,9 +190,7 @@ onBeforeMount(() => {
 
     <template v-slot:aside>
       <SavedQueryAside
-        :my-queries="myQueries"
         :active-query-id="activeQueryId ?? undefined"
-        :public-queries="publicQueries"
         :canProjectPubQuery="can(PERM.PROJECT_PUB_QUERY)"
         @on-query-click="onQueryClick"
         @on-delete-query="onDeleteQuery"

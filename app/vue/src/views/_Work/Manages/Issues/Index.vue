@@ -6,6 +6,7 @@ import { useAccount } from '@/store/pinia/account'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
 import { useCompany } from '@/store/pinia/company.ts'
+import { useInform } from '@/store/pinia/work_inform.ts'
 import type { Company } from '@/store/types/settings'
 import type { Issue, IssueFilter } from '@/store/types/work_issue.ts'
 import Header from '@/views/_Work/components/Header/Index.vue'
@@ -34,6 +35,10 @@ const statusList = computed(() => issueStore.statusList)
 const trackerList = computed(() => issueStore.trackerList)
 const priorityList = computed(() => issueStore.priorityList)
 const getIssues = computed(() => issueStore.getIssues)
+
+const informStore = useInform()
+const myQueries = computed(() => informStore.myQueries.filter(q => q.target_type === 'issue'))
+const pubQueries = computed(() => informStore.pubQueries.filter(q => q.target_type === 'issue'))
 
 const route = useRoute()
 
@@ -88,7 +93,7 @@ onBeforeMount(async () => {
     </template>
 
     <template v-slot:aside>
-      <SavedQueryAside />
+      <SavedQueryAside target-type="issue" />
     </template>
   </ContentBody>
 </template>
