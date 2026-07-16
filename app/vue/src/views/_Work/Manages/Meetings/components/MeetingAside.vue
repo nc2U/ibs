@@ -39,7 +39,7 @@ const filterSubmit = () => {
       </CCol>
     </CRow>
 
-    <CRow class="mb-3">
+    <CRow class="mb-2">
       <CFormLabel for="meeting-status" class="col-sm-4 col-form-label">회의 상태</CFormLabel>
       <CCol class="col-xxl-8">
         <CFormSelect v-model="filter.status" id="meeting-status" size="sm">
@@ -51,7 +51,7 @@ const filterSubmit = () => {
       </CCol>
     </CRow>
 
-    <CRow class="mb-3">
+    <CRow class="mb-2">
       <CFormLabel for="meeting-category" class="col-sm-4 col-form-label">카테고리</CFormLabel>
       <CCol class="col-xxl-8">
         <CFormSelect v-model="filter.category" id="meeting-category" size="sm">
