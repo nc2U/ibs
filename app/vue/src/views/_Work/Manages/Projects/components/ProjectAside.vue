@@ -54,7 +54,7 @@ const emit = defineEmits(['on-query-click', 'on-delete-query', 'on-reset-query']
     <v-divider class="my-3" />
 
     <div class="mb-4">
-      <h6 class="text-subtitle-1 mb-2">공용 검색양식</h6>
+      <h6 class="text-subtitle-1 mb-2">검색 양식</h6>
       <v-list density="compact" nav class="pa-0 bg-transparent">
         <v-list-item
           v-for="q in publicQueries"

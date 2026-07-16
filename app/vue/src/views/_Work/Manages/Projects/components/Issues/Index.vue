@@ -11,7 +11,7 @@ import IssueList from '@/views/_Work/Manages/Issues/components/IssueList.vue'
 import IssueDetail from '@/views/_Work/Manages/Issues/components/IssueDetail.vue'
 import IssueForm from '@/views/_Work/Manages/Issues/components/IssueForm.vue'
 import IssueReport from '@/views/_Work/Manages/Issues/components/IssueReport.vue'
-import AsideIssue from '@/views/_Work/Manages/Issues/components/aside/AsideIssue.vue'
+import IssueItemAside from '@/views/_Work/Manages/Issues/components/aside/IssueItemAside.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import Loading from '@/components/Loading/Index.vue'
 
@@ -190,7 +190,7 @@ onBeforeMount(async () => {
     </template>
 
     <template v-slot:aside>
-      <AsideIssue :watchers="issue?.watchers" :issue="issue as any" />
+      <IssueItemAside :watchers="issue?.watchers" :issue="issue as any" />
     </template>
   </ContentBody>
 </template>

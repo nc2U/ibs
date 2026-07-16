@@ -10,8 +10,9 @@ import type { Company } from '@/store/types/settings'
 import type { Issue, IssueFilter } from '@/store/types/work_issue.ts'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
-import Loading from '@/components/Loading/Index.vue'
+import IssueListAside from './components/aside/IssueListAside.vue'
 import IssueList from './components/IssueList.vue'
+import Loading from '@/components/Loading/Index.vue'
 
 const cBody = ref()
 const comStore = useCompany()
@@ -86,6 +87,8 @@ onBeforeMount(async () => {
       />
     </template>
 
-    <template v-slot:aside></template>
+    <template v-slot:aside>
+      <IssueListAside />
+    </template>
   </ContentBody>
 </template>
