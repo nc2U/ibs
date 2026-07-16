@@ -386,6 +386,17 @@ class CustomQueryViewSet(viewsets.ModelViewSet):
     filterset_fields = ('project__slug', 'target_type', 'is_public')
     search_fields = ('name',)
 
+    @property
+    def required_permission(self):
+        # 쿼리가 속한 프로젝트가 있을 경우의 매핑 기준
+        mapping = {
+            'create': 'project.save_query',
+            'update': 'project.save_query',
+            'partial_update': 'project.save_query',
+            'destroy': 'project.save_query',
+        }
+        return mapping.get(self.action, None)
+
     def get_queryset(self):
         qs = super().get_queryset()
         user = self.request.user

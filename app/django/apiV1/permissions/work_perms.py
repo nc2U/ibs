@@ -88,6 +88,26 @@ class ProjectPermission(permissions.BasePermission):
                     roles__permissions__code='project.create'
                 ).exists()
 
+            # 검색양식 저장의 경우 익명(pk=1) 및 일반사용자 권한(pk=2 등)을 기본 허용하므로 프로젝트 검사 전 우선 판별
+            if required_perm == 'project.save_query':
+                from work.models.project import Role
+                user_perms = set(
+                    Role.objects.filter(
+                        projects__members__user=request.user
+                    ).filter(
+                        permissions__code__in=['project.save_query', 'project.pub_query']
+                    ).values_list('permissions__code', flat=True)
+                )
+                try:
+                    # pk=1 (익명) 및 pk=2 (일반사용자) 기본 권한 합산
+                    default_roles = Role.objects.prefetch_related('permissions').filter(pk__in=[1, 2])
+                    for role in default_roles:
+                        user_perms.update(role.permissions.values_list('code', flat=True))
+                except Exception:
+                    pass
+                if 'project.save_query' in user_perms:
+                    return True
+
             # 2. 리소스 생성 시 프로젝트 식별자 추출 (하위 프로젝트, 회의록, 업무 등)
             project_slug = self.get_project_slug(view, request.data, request.query_params)
 
@@ -291,10 +311,10 @@ class IssuePermission(ProjectPermission):
             # issue_visible='ALL' OR issue.private OR (issue.own_private AND is_own) OR is_own(creator/assignee)
             if obj.is_private:
                 can_read_private = (
-                    issue_visible == 'ALL'
-                    or 'issue.private' in user_perms
-                    or ('issue.own_private' in user_perms and is_own)
-                    or is_own
+                        issue_visible == 'ALL'
+                        or 'issue.private' in user_perms
+                        or ('issue.own_private' in user_perms and is_own)
+                        or is_own
                 )
                 if not can_read_private:
                     return False
@@ -342,8 +362,8 @@ class IssuePermission(ProjectPermission):
                         is_private_req = bool(is_private_req)
                     if is_private_req != obj.is_private:
                         has_write_private = (
-                            'issue.private' in user_perms
-                            or ('issue.own_private' in user_perms and is_own)
+                                'issue.private' in user_perms
+                                or ('issue.own_private' in user_perms and is_own)
                         )
                         if not has_write_private:
                             return False
@@ -580,4 +600,3 @@ class QueryPermission(ProjectPermission):
 
         # 개인 검색양식을 수정/삭제하려는 경우 -> 본인이어야 하고 'project.save_query' 권한 필요
         return obj.user == user and 'project.save_query' in user_perms
-
