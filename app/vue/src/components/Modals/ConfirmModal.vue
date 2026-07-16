@@ -3,13 +3,15 @@ import { ref } from 'vue'
 
 defineProps({ size: { type: String, default: '' } })
 
-const visible = ref(false)
-const headerMessage = ref('알림')
-const bodyMessage = ref('')
-const headIcon = ref('mdi-arrow-right-bold-box')
-const headerColor = ref('indigo-lighten-2')
+const emit = defineEmits(['confirm-func'])
 
-const callModal = (head?: string, body?: string, icon?: string, color = 'indigo-lighten-2') => {
+const visible = ref(false)
+const headerMessage = ref('아이템 삭제 확인')
+const bodyMessage = ref('')
+const headIcon = ref('mdi-alert-octagram')
+const headerColor = ref()
+
+const callModal = (head?: string, body?: string, icon?: string, color = 'warning') => {
   if (head) headerMessage.value = head
   if (body) bodyMessage.value = body
   if (icon) headIcon.value = icon
@@ -31,23 +33,19 @@ defineExpose({ callModal, close })
     <CModalHeader class="text-body">
       <CModalTitle>
         <slot name="icon">
-          <v-icon :icon="headIcon" size="20" :color="headerColor" class="mr-2" />
+          <v-icon :icon="headIcon" size="22" :color="headerColor" class="mr-2" />
         </slot>
         <slot name="header">{{ headerMessage }}</slot>
       </CModalTitle>
     </CModalHeader>
     <CModalBody class="text-body" style="line-height: 26px">
       <slot>
-        {{
-          bodyMessage ||
-          'Cras mattis consectetur purus sit amet fermentum. Cras justo odio, dapibus ac facilisis in,\n' +
-            'egestas eget quam. Morbi leo risus, porta ac consectetur ac, vestibulum at eros.'
-        }}
+        {{ bodyMessage || '이 아이템을 삭제 하시겠습니까?' }}
       </slot>
     </CModalBody>
     <CModalFooter>
       <slot name="footer">
-        <v-btn size="small" color="primary">Save changes</v-btn>
+        <v-btn size="small" color="warning" @click="emit('confirm-func')">삭제</v-btn>
       </slot>
       <v-btn color="light" size="small" @click="() => (visible = false)" flat> 닫기</v-btn>
     </CModalFooter>

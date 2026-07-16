@@ -36,10 +36,6 @@ const trackerList = computed(() => issueStore.trackerList)
 const priorityList = computed(() => issueStore.priorityList)
 const getIssues = computed(() => issueStore.getIssues)
 
-const informStore = useInform()
-const myQueries = computed(() => informStore.myQueries.filter(q => q.target_type === 'issue'))
-const pubQueries = computed(() => informStore.pubQueries.filter(q => q.target_type === 'issue'))
-
 const route = useRoute()
 
 provide('navMenu', navMenu)
@@ -53,6 +49,17 @@ const filterSubmit = (payload: IssueFilter) => {
 const pageSelect = (page: number) => {
   listFilter.value.page = page
   issueStore.fetchIssueList(listFilter.value)
+}
+
+// 쿼리 관련 핸들러 추가
+const activeQueryId = ref<number | null>(null)
+const onQueryClick = (query: any) => {
+  activeQueryId.value = query.pk
+  // 여기에 쿼리 적용 로직 필요 (필요시 구현)
+}
+const onResetQuery = () => {
+  activeQueryId.value = null
+  // 여기에 쿼리 초기화 로직 필요 (필요시 구현)
 }
 
 const loading = ref<boolean>(true)
@@ -93,7 +100,12 @@ onBeforeMount(async () => {
     </template>
 
     <template v-slot:aside>
-      <SavedQueryAside target-type="issue" />
+      <SavedQueryAside
+        target-type="issue"
+        :active-query-id="activeQueryId ?? undefined"
+        @on-query-click="onQueryClick"
+        @on-reset-query="onResetQuery"
+      />
     </template>
   </ContentBody>
 </template>

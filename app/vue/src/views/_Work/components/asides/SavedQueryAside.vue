@@ -1,24 +1,45 @@
 <script lang="ts" setup>
-import { computed, type PropType } from 'vue'
+import { computed, onMounted, type PropType, ref } from 'vue'
 import { useInform } from '@/store/pinia/work_inform.ts'
+import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 type TargetType = 'project' | 'meeting' | 'issue' | 'calendar'
 
 const props = defineProps({
-  targetType: { type: String as PropType<TargetType>, default: 'project' },
+  targetType: { type: String as PropType<TargetType>, required: true },
   activeQueryId: { type: Number, default: null },
   canProjectPubQuery: { type: Boolean, default: false },
 })
 
-const emit = defineEmits(['on-query-click', 'on-delete-query', 'on-reset-query'])
+const emit = defineEmits(['on-query-click', 'on-reset-query'])
+
+const refConfirmDelete = ref()
 
 const informStore = useInform()
+
 const myQueries = computed(() =>
   informStore.myQueries.filter(q => q.target_type === props.targetType),
 )
 const pubQueries = computed(() =>
   informStore.pubQueries.filter(q => q.target_type === props.targetType),
 )
+
+const onDeleteQuery = async (query: any, event: Event) => {
+  event.stopPropagation()
+  delPk.value = query.pk
+  refConfirmDelete.value.callModal()
+}
+const delPk = ref<number | null>(null)
+const onDeleteConfirm = async () => {
+  await informStore.deleteQuery(delPk.value as number)
+  await informStore.fetchQueries({ targetType: props.targetType })
+  refConfirmDelete.value.close()
+  delPk.value = null
+}
+
+onMounted(async () => {
+  await informStore.fetchQueries({ targetType: props.targetType })
+})
 </script>
 
 <template>
@@ -46,7 +67,7 @@ const pubQueries = computed(() =>
               variant="text"
               color="grey"
               class="delete-btn"
-              @click="emit('on-delete-query', q, $event)"
+              @click="onDeleteQuery(q, $event)"
             />
           </template>
         </v-list-item>
@@ -78,7 +99,7 @@ const pubQueries = computed(() =>
               variant="text"
               color="grey"
               class="delete-btn"
-              @click="emit('on-delete-query', q, $event)"
+              @click="onDeleteQuery(q, $event)"
             />
           </template>
         </v-list-item>
@@ -106,6 +127,8 @@ const pubQueries = computed(() =>
       필터 해제 (초기화)
     </v-btn>
   </div>
+
+  <ConfirmModal ref="refConfirmDelete" @confirm-func="onDeleteConfirm" />
 </template>
 
 <style lang="scss" scoped>

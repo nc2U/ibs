@@ -18,7 +18,6 @@ const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
 
 const workStore = useWork()
-const informStore = useInform()
 const { can, PERM } = usePerms() // 사용자 권한 데이터
 const issueProjectsTree = computed<IssueProject[]>(() => workStore.issueProjectsTree)
 const issueProjectsFlat = computed<IssueProject[]>(() => workStore.issueProjectsFlat)
@@ -96,13 +95,7 @@ const onResetQuery = () => {
   }
 }
 
-const onDeleteQuery = async (query: any, event: Event) => {
-  event.stopPropagation() // 클릭 이벤트 전파 방지
-  if (confirm(`'${query.name}' 검색 양식을 삭제하시겠습니까?`)) {
-    await informStore.deleteQuery(query.pk)
-    await informStore.fetchQueries({ targetType: 'project' })
-  }
-}
+// onDeleteQuery 제거됨
 
 onMounted(() => {
   updateBreakpoint()
@@ -184,15 +177,14 @@ onBeforeMount(() => {
         </CCol>
       </CRow>
     </template>
-
-    <template v-slot:aside>
-      <SavedQueryAside
-        :active-query-id="activeQueryId ?? undefined"
-        :canProjectPubQuery="can(PERM.PROJECT_PUB_QUERY)"
-        @on-query-click="onQueryClick"
-        @on-delete-query="onDeleteQuery"
-        @on-reset-query="onResetQuery"
-      />
-    </template>
+<template v-slot:aside>
+  <SavedQueryAside
+    target-type="project"
+    :active-query-id="activeQueryId ?? undefined"
+    :canProjectPubQuery="can(PERM.PROJECT_PUB_QUERY)"
+    @on-query-click="onQueryClick"
+    @on-reset-query="onResetQuery"
+  />
+</template>
   </ContentBody>
 </template>
