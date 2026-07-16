@@ -73,8 +73,8 @@ onBeforeMount(async () => {
     <CCol
       v-if="aside"
       id="sidebar"
-      class="text-body d-none d-xl-block p-0 col-lg-2"
-      :style="{ width: sidebarWidth + 'px' }"
+      class="text-body d-none d-lg-block p-0 col-lg-2"
+      :style="{ width: sidebarWidth + 'px', flexShrink: 0 }"
     >
       <CRow class="mb-4 py-1 pointer sidebar-switch" @mousedown="sidebarToggle">
         <CCol class="pl-0">
@@ -177,5 +177,14 @@ onBeforeMount(async () => {
 
 .dark-theme .sidebar-switch:hover {
   background: #2a2b36;
+}
+
+.main {
+  background: #ffffff;
+  border-right: 1px solid #ddd !important;
+
+  // 추가: 메인 콘텐츠가 사이드바 공간을 침범하지 않게 함
+  flex: 1 1 0%;
+  min-width: 0; // 중요: Flex 자식 요소가 내부 콘텐츠 폭에 의해 늘어나는 것 방지
 }
 </style>
