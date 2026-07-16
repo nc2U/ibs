@@ -279,8 +279,9 @@ onBeforeMount(() => {
           block
           variant="tonal"
           color="blue-grey"
+          min-height="36"
           size="small"
-          class="mt-4"
+          class="mt-5"
           prepend-icon="mdi-filter-off"
           @click="onResetQuery"
         >
@@ -293,10 +294,35 @@ onBeforeMount(() => {
 
 <style lang="scss" scoped>
 .query-item {
+  min-height: 36px !important;
+  height: 36px !important;
+  margin-bottom: 2px !important;
+
+  :deep(.v-list-item__content) {
+    align-self: center;
+  }
+
+  :deep(.v-list-item-title) {
+    font-size: 1em !important;
+    line-height: 1.2 !important;
+  }
+
+  :deep(.v-icon) {
+    font-size: 16px !important;
+  }
+
   .delete-btn {
     opacity: 0;
     transition: opacity 0.2s;
+    width: 20px !important;
+    height: 20px !important;
+    min-width: auto !important;
+
+    :deep(.v-btn__content) {
+      font-size: 14px !important;
+    }
   }
+
   &:hover {
     .delete-btn {
       opacity: 1;
