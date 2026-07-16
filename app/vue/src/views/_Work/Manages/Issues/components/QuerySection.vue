@@ -331,6 +331,7 @@ onBeforeMount(async () => {
                   v-model="form.project"
                   :all-projects="allProjects"
                   default-title="<< 내 프로젝트 >>"
+                  value-type="slug"
                   size="sm"
                 />
               </CCol>
