@@ -94,6 +94,7 @@ export const useIssue = defineStore('issue', () => {
       category: 'category',
       category__exclude: 'category__exclude',
       category__isnull: 'category__isnull',
+      is_private: 'is_private',
       author: 'creator',
       author__exclude: 'creator__exclude',
       assignee: 'assigned_to',

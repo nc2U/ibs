@@ -6,6 +6,8 @@ import { useRoute } from 'vue-router'
 import Multiselect from '@vueform/multiselect'
 import AllProjectsSelect from '@/views/_Work/components/atomics/AllProjectsSelect.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
+import { usePerms } from '@/composables/usePerms'
+import { useAccount } from '@/store/pinia/account'
 
 const props = defineProps({
   allProjects: { type: Array as PropType<selectProject[]>, default: () => [] },
@@ -17,6 +19,9 @@ const props = defineProps({
   getUsers: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },
   getVersions: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },
 })
+
+const { can, PERM } = usePerms()
+const accStore = useAccount()
 
 const emit = defineEmits(['filter-submit'])
 
@@ -53,7 +58,7 @@ const searchOptions = reactive<SearchOptionGroup[]>([
       { value: 'version', label: '목표단계' },
       { value: 'category', label: '범주' },
       { value: 'done_ratio', label: '진척도' },
-      { value: 'is_private', label: '비공개', disabled: true },
+      { value: 'is_private', label: '비공개' },
       { value: 'watcher', label: '업무관람자', disabled: true },
       { value: 'updater', label: '수정자', disabled: true },
       { value: 'last_updater', label: '최근수정자', disabled: true },
@@ -119,6 +124,7 @@ const cond = ref({
   tracker: 'is' as 'is' | 'exclude',
   priority: 'is' as 'is' | 'exclude',
   category: 'is' as 'is' | 'exclude' | 'none' | 'any',
+  is_private: 'is' as 'is' | 'exclude',
   done_ratio: 'is' as 'is' | 'gte' | 'lte' | 'between' | 'none' | 'any',
   author: 'is' as 'is' | 'exclude',
   assignee: 'is' as 'is' | 'exclude' | 'none' | 'any',
@@ -145,6 +151,7 @@ const form = ref<IssueFilter>({
   category: null,
   category__exclude: null,
   category__isnull: '0',
+  is_private: null as boolean | null,
   done_ratio: null,
   done_ratio__gte: null,
   done_ratio__lte: null,
@@ -239,6 +246,11 @@ const filterSubmit = () => {
     else if (cond.value.category === 'exclude') filterData.category__exclude = form.value.category
     else if (cond.value.category === 'none') filterData.category__isnull = '1'
     else if (cond.value.category === 'any') filterData.category__isnull = '0'
+
+  if (searchCond.value.includes('is_private')) {
+    if (cond.value.is_private === 'is') filterData.is_private = true
+    else if (cond.value.is_private === 'exclude') filterData.is_private = false
+  }
 
   if (searchCond.value.includes('author'))
     if (cond.value.author === 'is') filterData.author = form.value.author
@@ -351,6 +363,16 @@ onBeforeMount(async () => {
   } else {
     const categoryIdx = searchOptions[0].options.findIndex(o => o.value === 'category')
     if (categoryIdx > -1) searchOptions[0].options.splice(categoryIdx, 1)
+  }
+
+  // 비공개 업무 권한 검사 (수퍼유저/관리자 혹은 issue.private 권한)
+  const canPrivate = accStore.workManager || can(PERM.ISSUE_PRIVATE)
+  if (canPrivate) {
+    const privateOpt = searchOptions[0].options.find(o => o.value === 'is_private')
+    if (privateOpt) delete privateOpt.disabled
+  } else {
+    const privateIdx = searchOptions[0].options.findIndex(o => o.value === 'is_private')
+    if (privateIdx > -1) searchOptions[0].options.splice(privateIdx, 1)
   }
 
   if (route.name === '업무')
@@ -502,6 +524,20 @@ onBeforeMount(async () => {
                     {{ category.name }}
                   </option>
                 </CFormSelect>
+              </CCol>
+            </CRow>
+
+            <CRow v-if="searchCond.includes('is_private')">
+              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
+                <CFormCheck checked="true" label="비공개" id="is_private" readonly />
+              </CCol>
+              <CCol class="col-4 col-lg-3 col-xl-2">
+                <CFormSelect v-model="cond.is_private" size="sm">
+                  <option value="is">이다</option>
+                  <option value="exclude">아니다</option>
+                </CFormSelect>
+              </CCol>
+              <CCol class="col-4 col-lg-3">
               </CCol>
             </CRow>
 

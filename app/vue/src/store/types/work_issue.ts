@@ -150,6 +150,7 @@ export interface IssueFilter {
   category?: number | null
   category__exclude?: number | null
   category__isnull?: string
+  is_private?: boolean | null
   author?: number | null
   author__exclude?: number | null
   assignee?: number | null

@@ -70,7 +70,7 @@ class IssueFilter(FilterSet):
         fields = ('project__slug', 'status__closed', 'status', 'tracker', 'priority', 'category', 'category__exclude', 'category__isnull',
                   'creator', 'assigned_to', 'fixed_version', 'id', 'id__gte', 'id__lte', 'id__between', 'id__any',
                   'done_ratio', 'done_ratio__gte', 'done_ratio__lte', 'done_ratio__between', 'done_ratio__isnull',
-                  'parent', 'parent_issue', 'precedes_issue', 'follows_issue', 'project__my_project')
+                  'parent', 'parent_issue', 'precedes_issue', 'follows_issue', 'project__my_project', 'is_private')
 
     @staticmethod
     def filter_id_between(queryset, name, value):
