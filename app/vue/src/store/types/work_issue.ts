@@ -181,6 +181,14 @@ export interface IssueFilter {
   done_ratio__isnull?: string
   parent__subject?: string
   parent__isnull?: string
+  subject?: string
+  subject__exclude?: string
+  description?: string
+  description__exclude?: string
+  comment?: string
+  comment__exclude?: string
+  any_searchable?: string
+  any_searchable__exclude?: string
   parent_issue?: number | null // 상위업무
   parent?: number | string // 하위업무
   follows_issue?: number | null // 선행업무

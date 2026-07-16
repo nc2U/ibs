@@ -71,8 +71,8 @@ const searchOptions = reactive<SearchOptionGroup[]>([
       { value: 'subject', label: '\u00A0\u00A0\u00A0제목' },
       { value: 'description', label: '\u00A0\u00A0\u00A0설명' },
       { value: 'comment', label: '\u00A0\u00A0\u00A0댓글' },
+      { value: 'any_searchable', label: '\u00A0\u00A0\u00A0전체 내용' },
     ],
-    disabled: true,
   },
   {
     label: '날짜별 검색',
@@ -137,6 +137,10 @@ const cond = ref({
   version: 'is' as 'is' | 'exclude' | 'none' | 'any',
   issue: 'is' as 'is' | 'gte' | 'lte' | 'between',
   parent: 'is' as 'is' | 'contains' | 'none' | 'any',
+  subject: 'contains' as 'contains' | 'exclude',
+  description: 'contains' as 'contains' | 'exclude',
+  comment: 'contains' as 'contains' | 'exclude',
+  any_searchable: 'contains' as 'contains' | 'exclude',
 })
 
 const route = useRoute()
@@ -182,6 +186,14 @@ const form = ref<IssueFilter>({
   id__between_min: null,
   id__between_max: null,
   id__any: '',
+  subject: '',
+  subject__exclude: '',
+  description: '',
+  description__exclude: '',
+  comment: '',
+  comment__exclude: '',
+  any_searchable: '',
+  any_searchable__exclude: '',
   parent__subject: '',
   parent__isnull: '0',
   parent_issue: null, // 상위업무
@@ -312,6 +324,31 @@ const filterSubmit = () => {
         filterData.id__between = `${min},${max}`
       }
     }
+  }
+
+  if (searchCond.value.includes('subject')) {
+    if (cond.value.subject === 'contains') filterData.subject = form.value.subject
+    else if (cond.value.subject === 'exclude')
+      filterData.subject__exclude = form.value.subject__exclude
+  }
+
+  if (searchCond.value.includes('description')) {
+    if (cond.value.description === 'contains') filterData.description = form.value.description
+    else if (cond.value.description === 'exclude')
+      filterData.description__exclude = form.value.description__exclude
+  }
+
+  if (searchCond.value.includes('comment')) {
+    if (cond.value.comment === 'contains') filterData.comment = form.value.comment
+    else if (cond.value.comment === 'exclude')
+      filterData.comment__exclude = form.value.comment__exclude
+  }
+
+  if (searchCond.value.includes('any_searchable')) {
+    if (cond.value.any_searchable === 'contains')
+      filterData.any_searchable = form.value.any_searchable
+    else if (cond.value.any_searchable === 'exclude')
+      filterData.any_searchable__exclude = form.value.any_searchable__exclude
   }
 
   if (searchCond.value.includes('done_ratio')) {
@@ -885,6 +922,118 @@ onBeforeMount(async () => {
                   :options="getIssues"
                   placeholder="후속업무 선택"
                   searchable
+                  @keydown.enter="filterSubmit"
+                />
+              </CCol>
+            </CRow>
+
+            <CRow v-if="searchCond.includes('subject')">
+              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
+                <CFormCheck checked="true" label="제목" id="subject" readonly />
+              </CCol>
+              <CCol class="col-4 col-lg-3 col-xl-2">
+                <CFormSelect v-model="cond.subject" size="sm">
+                  <option value="contains">포함되는 키워드</option>
+                  <option value="exclude">포함하지 않는 키워드</option>
+                </CFormSelect>
+              </CCol>
+              <CCol class="col-8 col-lg-3">
+                <CFormInput
+                  v-if="cond.subject === 'contains'"
+                  v-model="form.subject"
+                  placeholder="제목 키워드"
+                  style="height: 30px"
+                  @keydown.enter="filterSubmit"
+                />
+                <CFormInput
+                  v-if="cond.subject === 'exclude'"
+                  v-model="form.subject__exclude"
+                  placeholder="제외할 제목 키워드"
+                  style="height: 30px"
+                  @keydown.enter="filterSubmit"
+                />
+              </CCol>
+            </CRow>
+
+            <CRow v-if="searchCond.includes('description')">
+              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
+                <CFormCheck checked="true" label="설명" id="description" readonly />
+              </CCol>
+              <CCol class="col-4 col-lg-3 col-xl-2">
+                <CFormSelect v-model="cond.description" size="sm">
+                  <option value="contains">포함되는 키워드</option>
+                  <option value="exclude">포함하지 않는 키워드</option>
+                </CFormSelect>
+              </CCol>
+              <CCol class="col-8 col-lg-3">
+                <CFormInput
+                  v-if="cond.description === 'contains'"
+                  v-model="form.description"
+                  placeholder="설명 키워드"
+                  style="height: 30px"
+                  @keydown.enter="filterSubmit"
+                />
+                <CFormInput
+                  v-if="cond.description === 'exclude'"
+                  v-model="form.description__exclude"
+                  placeholder="제외할 설명 키워드"
+                  style="height: 30px"
+                  @keydown.enter="filterSubmit"
+                />
+              </CCol>
+            </CRow>
+
+            <CRow v-if="searchCond.includes('comment')">
+              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
+                <CFormCheck checked="true" label="댓글" id="comment" readonly />
+              </CCol>
+              <CCol class="col-4 col-lg-3 col-xl-2">
+                <CFormSelect v-model="cond.comment" size="sm">
+                  <option value="contains">포함되는 키워드</option>
+                  <option value="exclude">포함하지 않는 키워드</option>
+                </CFormSelect>
+              </CCol>
+              <CCol class="col-8 col-lg-3">
+                <CFormInput
+                  v-if="cond.comment === 'contains'"
+                  v-model="form.comment"
+                  placeholder="댓글 키워드"
+                  style="height: 30px"
+                  @keydown.enter="filterSubmit"
+                />
+                <CFormInput
+                  v-if="cond.comment === 'exclude'"
+                  v-model="form.comment__exclude"
+                  placeholder="제외할 댓글 키워드"
+                  style="height: 30px"
+                  @keydown.enter="filterSubmit"
+                />
+              </CCol>
+            </CRow>
+
+            <CRow v-if="searchCond.includes('any_searchable')">
+              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
+                <CFormCheck checked="true" label="전체 내용" id="any_searchable" readonly />
+              </CCol>
+              <CCol class="col-4 col-lg-3 col-xl-2">
+                <CFormSelect v-model="cond.any_searchable" size="sm">
+                  <option value="contains">포함되는 키워드</option>
+                  <option value="exclude">포함하지 않는 키워드</option>
+                </CFormSelect>
+              </CCol>
+              <CCol class="col-8 col-lg-3">
+                <CFormInput
+                  v-if="cond.any_searchable === 'contains'"
+                  v-model="form.any_searchable"
+                  placeholder="검색 키워드 (제목, 설명, 댓글)"
+                  style="height: 30px"
+                  @keydown.enter="filterSubmit"
+                />
+                <CFormInput
+                  v-if="cond.any_searchable === 'exclude'"
+                  v-model="form.any_searchable__exclude"
+                  placeholder="제외할 검색 키워드"
+                  style="height: 30px"
                   @keydown.enter="filterSubmit"
                 />
               </CCol>

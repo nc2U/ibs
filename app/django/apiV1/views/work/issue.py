@@ -39,6 +39,14 @@ class IssueFilter(FilterSet):
     updater__exclude = NumberFilter(method='filter_updater_exclude', label='수정자-제외')
     last_updater = NumberFilter(field_name='updater', lookup_expr='exact', label='최근수정자-일치')
     last_updater__exclude = NumberFilter(field_name='updater', exclude=True, label='최근수정자-제외')
+    subject = CharFilter(field_name='subject', lookup_expr='icontains', label='제목')
+    subject__exclude = CharFilter(field_name='subject', lookup_expr='icontains', exclude=True, label='제목-제외')
+    description = CharFilter(field_name='description', lookup_expr='icontains', label='설명')
+    description__exclude = CharFilter(field_name='description', lookup_expr='icontains', exclude=True, label='설명-제외')
+    comment = CharFilter(field_name='comments__content', lookup_expr='icontains', label='댓글')
+    comment__exclude = CharFilter(field_name='comments__content', lookup_expr='icontains', exclude=True, label='댓글-제외')
+    any_searchable = CharFilter(method='filter_any_searchable', label='전체내용-검색')
+    any_searchable__exclude = CharFilter(method='filter_any_searchable_exclude', label='전체내용-제외')
 
     id = NumberFilter(field_name='id', lookup_expr='exact', label='ID-일치')
     id__gte = NumberFilter(field_name='id', lookup_expr='gte', label='ID-이상')
@@ -78,7 +86,9 @@ class IssueFilter(FilterSet):
                   'creator', 'assigned_to', 'fixed_version', 'id', 'id__gte', 'id__lte', 'id__between', 'id__any',
                   'done_ratio', 'done_ratio__gte', 'done_ratio__lte', 'done_ratio__between', 'done_ratio__isnull',
                   'parent', 'parent_issue', 'precedes_issue', 'follows_issue', 'project__my_project', 'is_private',
-                  'watcher', 'watcher__exclude', 'updater', 'updater__exclude', 'last_updater', 'last_updater__exclude')
+                  'watcher', 'watcher__exclude', 'updater', 'updater__exclude', 'last_updater', 'last_updater__exclude',
+                  'subject', 'subject__exclude', 'description', 'description__exclude', 'comment', 'comment__exclude',
+                  'any_searchable', 'any_searchable__exclude')
 
     @staticmethod
     def filter_id_between(queryset, name, value):
@@ -144,6 +154,26 @@ class IssueFilter(FilterSet):
                 action__in=['Updated', 'Comment']
             ).values_list('issue_id', flat=True)
             return queryset.exclude(pk__in=pks)
+        return queryset
+
+    @staticmethod
+    def filter_any_searchable(queryset, name, value):
+        if value:
+            return queryset.filter(
+                Q(subject__icontains=value) |
+                Q(description__icontains=value) |
+                Q(comments__content__icontains=value)
+            ).distinct()
+        return queryset
+
+    @staticmethod
+    def filter_any_searchable_exclude(queryset, name, value):
+        if value:
+            return queryset.exclude(
+                Q(subject__icontains=value) |
+                Q(description__icontains=value) |
+                Q(comments__content__icontains=value)
+            ).distinct()
         return queryset
 
     def filter_queryset(self, queryset):
