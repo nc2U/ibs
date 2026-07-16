@@ -43,7 +43,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="mb-4">
+  <div class="mb-4 pr-4">
     <div v-if="myQueries.length" class="mb-4">
       <h6 class="text-subtitle-1 mb-2">내 검색 양식</h6>
       <v-list density="compact" nav class="pa-0 bg-transparent">
@@ -53,7 +53,7 @@ onMounted(async () => {
           link
           @click="emit('on-query-click', q)"
           :active="activeQueryId === q.pk"
-          active-color="indigo"
+          active-color="blue-grey-lighten-2"
           class="rounded-lg mb-1 px-2 query-item pr-3"
         >
           <template v-slot:prepend>
@@ -85,7 +85,7 @@ onMounted(async () => {
           link
           @click="emit('on-query-click', q)"
           :active="activeQueryId === q.pk"
-          active-color="brown-darken-4"
+          active-color="blue-grey-lighten-2"
           class="rounded-lg mb-1 px-2 query-item pr-3"
         >
           <template v-slot:prepend>
@@ -117,8 +117,8 @@ onMounted(async () => {
       v-if="activeQueryId !== null"
       block
       variant="tonal"
-      color="blue-grey"
-      min-height="36"
+      color="bg-more-light"
+      min-height="38"
       size="small"
       class="mt-5"
       prepend-icon="mdi-filter-off"
@@ -133,8 +133,8 @@ onMounted(async () => {
 
 <style lang="scss" scoped>
 .query-item {
-  min-height: 36px !important;
-  height: 36px !important;
+  min-height: 32px !important;
+  height: 32px !important;
   margin-bottom: 2px !important;
 
   :deep(.v-list-item__content) {
