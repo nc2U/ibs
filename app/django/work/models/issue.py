@@ -74,7 +74,7 @@ class Issue(models.Model):
         return f'#{self.pk}-{self.subject}'
 
     class Meta:
-        ordering = ('-id',)
+        ordering = ('-updated', '-created')
         verbose_name = '09. 업무(작업)'
         verbose_name_plural = '09. 업무(작업)'
         indexes = [
