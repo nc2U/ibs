@@ -314,7 +314,7 @@ const saveQuery = async (event: Event) => {
 const applyQuery = (query: any) => {
   if (query && query.filters) {
     const f = query.filters
-    
+
     // 이전 필터 상태 완전 초기화
     searchCond.value = ['status']
     cond.value = {
@@ -399,7 +399,7 @@ defineExpose({ applyQuery, resetFilter })
               <CCol class="col-8 col-lg-3">
                 <CFormSelect v-model="form.status" size="sm">
                   <option value="1">사용중</option>
-                  <option value="9">닫힘</option>
+                  <option value="9">잠금보관</option>
                 </CFormSelect>
               </CCol>
             </CRow>
