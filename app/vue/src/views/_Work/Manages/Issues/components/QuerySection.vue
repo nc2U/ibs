@@ -146,11 +146,27 @@ const form = ref<IssueFilter>({
 const filterSubmit = () => {
   const filterData = { project: form.value.project } as IssueFilter
 
-  if (cond.value.status === 'open') filterData.status__closed = '0'
-  else if (cond.value.status === 'is') filterData.status = form.value.status
-  else if (cond.value.status === 'exclude') filterData.status__exclude = form.value.status
-  else if (cond.value.status === 'closed') filterData.status__closed = '1'
-  else if (cond.value.status === 'any') filterData.status__closed = ''
+  if (cond.value.status === 'open') {
+    filterData.status__closed = '0'
+    filterData.status = null
+    filterData.status__exclude = null
+  } else if (cond.value.status === 'is') {
+    filterData.status = form.value.status
+    filterData.status__closed = null
+    filterData.status__exclude = null
+  } else if (cond.value.status === 'exclude') {
+    filterData.status__exclude = form.value.status
+    filterData.status = null
+    filterData.status__closed = null
+  } else if (cond.value.status === 'closed') {
+    filterData.status__closed = '1'
+    filterData.status = null
+    filterData.status__exclude = null
+  } else if (cond.value.status === 'any') {
+    filterData.status__closed = ''
+    filterData.status = null
+    filterData.status__exclude = null
+  }
 
   if (searchCond.value.includes('project'))
     if (cond.value.project === 'is') filterData.project__search = form.value.project
