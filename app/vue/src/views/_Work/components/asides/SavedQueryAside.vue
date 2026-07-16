@@ -10,6 +10,8 @@ const props = defineProps({
   canProjectPubQuery: { type: Boolean, default: false },
 })
 
+const emit = defineEmits(['on-query-click', 'on-delete-query', 'on-reset-query'])
+
 const informStore = useInform()
 const myQueries = computed(() =>
   informStore.myQueries.filter(q => q.target_type === props.targetType),
@@ -17,8 +19,6 @@ const myQueries = computed(() =>
 const pubQueries = computed(() =>
   informStore.pubQueries.filter(q => q.target_type === props.targetType),
 )
-
-const emit = defineEmits(['on-query-click', 'on-delete-query', 'on-reset-query'])
 </script>
 
 <template>

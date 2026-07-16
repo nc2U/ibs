@@ -82,9 +82,6 @@ const colProps = computed(() => {
 const activeQueryId = ref<number | null>(null)
 const querySectionRef = ref()
 
-const myQueries = computed(() => informStore.myQueries.filter(q => q.target_type === 'project'))
-const pubQueries = computed(() => informStore.pubQueries.filter(q => q.target_type === 'project'))
-
 const onQueryClick = (query: any) => {
   activeQueryId.value = query.pk
   if (querySectionRef.value) {
