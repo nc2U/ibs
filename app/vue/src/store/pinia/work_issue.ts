@@ -174,8 +174,10 @@ export const useIssue = defineStore('issue', () => {
       parent_issue__isnull: 'parent_issue__isnull',
       follows_issue: 'follows_issue',
       follows_issue__exclude: 'follows_issue__exclude',
+      follows_issue__isnull: 'follows_issue__isnull',
       precedes_issue: 'precedes_issue',
       precedes_issue__exclude: 'precedes_issue__exclude',
+      precedes_issue__isnull: 'precedes_issue__isnull',
     }
 
     Object.entries(payload).forEach(([key, value]) => {

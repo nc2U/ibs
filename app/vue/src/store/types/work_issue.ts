@@ -244,8 +244,10 @@ export interface IssueFilter {
   parent_issue__isnull?: string
   follows_issue?: number | null // 선행업무
   follows_issue__exclude?: number | null
+  follows_issue__isnull?: string
   precedes_issue?: number | null // 후속업무
   precedes_issue__exclude?: number | null
+  precedes_issue__isnull?: string
   project__my_project?: boolean
   page?: number
 }

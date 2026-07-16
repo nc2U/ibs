@@ -115,8 +115,10 @@ class IssueFilter(FilterSet):
     parent__isnull = BooleanFilter(field_name='issue_set', lookup_expr='isnull', label='하위업무-유무')
     follows_issue = NumberFilter(method='filter_follows', label='선행업무-검색')
     follows_issue__exclude = NumberFilter(method='filter_follows_exclude', label='선행업무-제외')
+    follows_issue__isnull = BooleanFilter(field_name='incoming_relation', lookup_expr='isnull', label='선행업무-유무')
     precedes_issue = NumberFilter(method='filter_precedes', label='후속업무-검색')
     precedes_issue__exclude = NumberFilter(method='filter_precedes_exclude', label='후속업무-제외')
+    precedes_issue__isnull = BooleanFilter(field_name='outgoing_relations', lookup_expr='isnull', label='후속업무-유무')
 
     project__my_project = BooleanFilter(method='filter_my_project', label='내 프로젝트 업무 여부')
 
@@ -138,7 +140,7 @@ class IssueFilter(FilterSet):
                   'done_ratio', 'done_ratio__gte', 'done_ratio__lte', 'done_ratio__between', 'done_ratio__isnull',
                   'parent', 'parent__exclude', 'parent__contains', 'parent__isnull',
                   'parent_issue', 'parent_issue__exclude', 'parent_issue__contains', 'parent_issue__isnull',
-                  'precedes_issue', 'precedes_issue__exclude', 'follows_issue', 'follows_issue__exclude', 'project__my_project', 'is_private',
+                  'precedes_issue', 'precedes_issue__exclude', 'precedes_issue__isnull', 'follows_issue', 'follows_issue__exclude', 'follows_issue__isnull', 'project__my_project', 'is_private',
                   'watcher', 'watcher__exclude', 'updater', 'updater__exclude', 'last_updater', 'last_updater__exclude',
                   'subject', 'subject__exclude', 'description', 'description__exclude', 'comment', 'comment__exclude',
                   'any_searchable', 'any_searchable__exclude',

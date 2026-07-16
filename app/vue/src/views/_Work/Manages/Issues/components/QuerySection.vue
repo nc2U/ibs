@@ -154,8 +154,8 @@ const cond = ref({
   creator_role: 'is' as 'is' | 'exclude',
   assignee_role: 'is' as 'is' | 'exclude',
   version_date: 'is' as 'is' | 'lte' | 'gte' | 'between' | 'none' | 'any',
-  follows_issue: 'is' as 'is' | 'exclude',
-  precedes_issue: 'is' as 'is' | 'exclude',
+  follows_issue: 'is' as 'is' | 'exclude' | 'none' | 'any',
+  precedes_issue: 'is' as 'is' | 'exclude' | 'none' | 'any',
   parent_issue: 'is' as 'is' | 'exclude' | 'contains' | 'none' | 'any',
   parent: 'is' as 'is' | 'exclude' | 'contains' | 'none' | 'any',
 })
@@ -225,8 +225,10 @@ const form = ref<IssueFilter>({
   parent__isnull: '0',
   follows_issue: null, // 선행업무
   follows_issue__exclude: null,
+  follows_issue__isnull: '0',
   precedes_issue: null, // 후속업무
   precedes_issue__exclude: null,
+  precedes_issue__isnull: '0',
   project__my_project: undefined,
   created: '',
   created__gte: '',
@@ -482,6 +484,8 @@ const filterSubmit = () => {
     if (cond.value.follows_issue === 'is') filterData.follows_issue = form.value.follows_issue
     else if (cond.value.follows_issue === 'exclude')
       filterData.follows_issue__exclude = form.value.follows_issue__exclude
+    else if (cond.value.follows_issue === 'none') filterData.follows_issue__isnull = '1'
+    else if (cond.value.follows_issue === 'any') filterData.follows_issue__isnull = '0'
   }
 
   // precedes_issue
@@ -489,6 +493,8 @@ const filterSubmit = () => {
     if (cond.value.precedes_issue === 'is') filterData.precedes_issue = form.value.precedes_issue
     else if (cond.value.precedes_issue === 'exclude')
       filterData.precedes_issue__exclude = form.value.precedes_issue__exclude
+    else if (cond.value.precedes_issue === 'none') filterData.precedes_issue__isnull = '1'
+    else if (cond.value.precedes_issue === 'any') filterData.precedes_issue__isnull = '0'
   }
 
   // parent_issue
@@ -1722,9 +1728,11 @@ onBeforeMount(async () => {
                 <CFormCheck checked="true" label="선행업무" id="follows_issue" readonly />
               </CCol>
               <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.follows_issue" size="sm">
+                <CFormSelect v-model="cond.follows_issue" size="sm" @change="filterSubmit">
                   <option value="is">이다</option>
                   <option value="exclude">아니다</option>
+                  <option value="none">없음</option>
+                  <option value="any">모두</option>
                 </CFormSelect>
               </CCol>
               <CCol class="col-8 col-lg-3">
@@ -1753,9 +1761,11 @@ onBeforeMount(async () => {
                 <CFormCheck checked="true" label="후속업무" id="precedes_issue" readonly />
               </CCol>
               <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.precedes_issue" size="sm">
+                <CFormSelect v-model="cond.precedes_issue" size="sm" @change="filterSubmit">
                   <option value="is">이다</option>
                   <option value="exclude">아니다</option>
+                  <option value="none">없음</option>
+                  <option value="any">모두</option>
                 </CFormSelect>
               </CCol>
               <CCol class="col-8 col-lg-3">
