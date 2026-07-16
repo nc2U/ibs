@@ -113,7 +113,7 @@ onBeforeMount(async () => {
     <template v-slot:aside>
       <CRow class="mb-4">
         <CCol>
-          <h6 class="asideTitle">최근 공지</h6>
+          <h6 class="text-subtitle-1 mb-2">최근 공지</h6>
           <v-divider class="mt-0" />
           <ul class="list-unstyled aside-menu">
             <li v-for="news in newsList.slice(0, 5)" :key="news.pk" class="mb-2 text-truncate">

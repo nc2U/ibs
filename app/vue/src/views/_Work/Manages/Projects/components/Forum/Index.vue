@@ -175,7 +175,7 @@ onBeforeMount(async () => {
     <template v-slot:aside>
       <CRow class="mb-4">
         <CCol>
-          <h6 class="asideTitle">최근 게시물</h6>
+          <h6 class="text-subtitle-1 mb-2">최근 게시물</h6>
           <v-divider class="mt-0" />
           <ul v-if="postList.length" class="list-unstyled aside-menu mb-4">
             <li v-for="p in postList.slice(0, 5)" :key="p.pk" class="mb-2 text-truncate">
@@ -206,7 +206,7 @@ onBeforeMount(async () => {
 
       <CRow class="mb-4">
         <CCol>
-          <h6 class="asideTitle">게시판 관리</h6>
+          <h6 class="text-subtitle-1 mb-2">게시판 관리</h6>
           <v-divider class="mt-0" />
           <ul v-if="canForumManage" class="list-unstyled aside-menu">
             <li class="mb-2">

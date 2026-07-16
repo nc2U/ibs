@@ -144,7 +144,7 @@ onBeforeMount(async () => {
 
 <template>
   <CRow class="mb-3">
-    <CCol><h6 class="asideTitle">업무실행내역</h6></CCol>
+    <CCol><h6 class="text-subtitle-1 mb-2">업무실행내역</h6></CCol>
   </CRow>
   <CRow class="mb-2">
     <CFormLabel for="log-date" class="col-sm-4 col-form-label">10일 기록</CFormLabel>
@@ -192,9 +192,3 @@ onBeforeMount(async () => {
     </CCol>
   </CRow>
 </template>
-
-<style lang="scss" scoped>
-.asideTitle {
-  font-size: 1.1em;
-}
-</style>

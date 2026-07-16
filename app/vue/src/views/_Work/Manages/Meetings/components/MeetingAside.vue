@@ -27,9 +27,9 @@ const filterSubmit = () => {
 </script>
 
 <template>
-  <CCol class="px-3">
+  <CCol class="pr-3">
     <CRow class="mb-3">
-      <CCol><h6 class="asideTitle">회의록 필터</h6></CCol>
+      <CCol><h6 class="text-subtitle-1 mb-2">회의록 필터</h6></CCol>
     </CRow>
 
     <CRow class="mb-2">
@@ -83,9 +83,3 @@ const filterSubmit = () => {
     </CRow>
   </CCol>
 </template>
-
-<style lang="scss" scoped>
-.asideTitle {
-  font-size: 1.1em;
-}
-</style>

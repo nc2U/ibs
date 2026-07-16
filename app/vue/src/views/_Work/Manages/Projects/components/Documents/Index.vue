@@ -241,7 +241,7 @@ onBeforeMount(async () => {
     <template v-slot:aside>
       <CRow class="mb-4 pr-2 mr-2">
         <CCol>
-          <h6 class="asideTitle">문서 카테고리</h6>
+          <h6 class="text-subtitle-1 mb-2">문서 카테고리</h6>
           <v-divider class="mt-0" />
           <v-list density="compact" nav class="pa-0 aside-menu card-white">
             <v-list-item
@@ -277,7 +277,7 @@ onBeforeMount(async () => {
 
       <CRow>
         <CCol class="mt-4">
-          <h6 class="asideTitle">{{ typeNumber === 1 ? '키워드' : '관련 사건' }}</h6>
+          <h6 class="text-subtitle-1 mb-2">{{ typeNumber === 1 ? '키워드' : '관련 사건' }}</h6>
           <v-divider class="mt-0" />
         </CCol>
       </CRow>
@@ -295,19 +295,27 @@ onBeforeMount(async () => {
         </CRow>
       </template>
 
-      <CRow class="mb-3 mr-2">
+      <CRow class="mb-5 mr-2">
         <CCol>
-          <CFormInput
-            v-model="docsFilter.search"
-            placeholder="검색어"
-            @keydown.enter="fetchDocsList(docsFilter)"
-          />
-        </CCol>
-      </CRow>
-
-      <CRow class="mr-2">
-        <CCol class="text-right">
-          <v-btn size="small" color="info" @click="fetchDocsList(docsFilter)">검색</v-btn>
+          <div class="input-group mb-3">
+            <CFormInput
+              v-model="docsFilter.search"
+              placeholder="검색어 입력"
+              aria-label="search-keyword"
+              aria-describedby="button-addon"
+              @keydown.enter="fetchDocsList(docsFilter)"
+            />
+            <button
+              class="btn btn-outline-secondary"
+              type="button"
+              id="button-addon"
+              color="secondary"
+              @click="fetchDocsList(docsFilter)"
+            >
+              <v-btn icon="mdi-magnify" size="sm" color="light" flat />
+              검색
+            </button>
+          </div>
         </CCol>
       </CRow>
     </template>

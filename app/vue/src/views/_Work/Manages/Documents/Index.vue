@@ -175,7 +175,7 @@ watch(
     <template v-slot:aside>
       <CRow class="mb-4 pr-2 mr-2">
         <CCol>
-          <h6 class="asideTitle">프로젝트 선택</h6>
+          <h6 class="text-subtitle-1 mb-2">프로젝트 선택</h6>
           <v-divider class="mt-0" />
           <AllProjectsSelect v-model="docsFilter.issue_project" :all-projects="myProjects" />
         </CCol>
@@ -183,7 +183,7 @@ watch(
 
       <CRow class="mb-4 pr-2 mr-2">
         <CCol>
-          <h6 class="asideTitle">문서 카테고리</h6>
+          <h6 class="text-subtitle-1 mb-2">문서 카테고리</h6>
           <v-divider class="mt-0" />
           <v-list density="compact" nav class="pa-0 aside-menu card-white">
             <v-list-item
