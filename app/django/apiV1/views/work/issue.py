@@ -37,6 +37,12 @@ class IssueFilter(FilterSet):
     id__between = CharFilter(method='filter_id_between', label='ID-범위 (예: 10,20)')
     id__any = CharFilter(method='filter_id_any', label='ID-모두보기')
 
+    done_ratio = NumberFilter(field_name='done_ratio', lookup_expr='exact', label='진척도-일치')
+    done_ratio__gte = NumberFilter(field_name='done_ratio', lookup_expr='gte', label='진척도-이상')
+    done_ratio__lte = NumberFilter(field_name='done_ratio', lookup_expr='lte', label='진척도-이하')
+    done_ratio__between = CharFilter(method='filter_done_ratio_between', label='진척도-범위 (예: 10,20)')
+    done_ratio__isnull = BooleanFilter(field_name='done_ratio', lookup_expr='isnull', label='진척도-유무')
+
     parent__subject = CharFilter(field_name='parent__subject', lookup_expr='icontains', label='상위업무-제목')
     parent__isnull = BooleanFilter(field_name='parent', lookup_expr='isnull', label='상위업무-유무')
     parent_issue = NumberFilter(method='filter_parent_issue', label='상위업무-검색')
@@ -61,6 +67,7 @@ class IssueFilter(FilterSet):
         model = Issue
         fields = ('project__slug', 'status__closed', 'status', 'tracker', 'priority', 'creator', 'assigned_to',
                   'fixed_version', 'id', 'id__gte', 'id__lte', 'id__between', 'id__any',
+                  'done_ratio', 'done_ratio__gte', 'done_ratio__lte', 'done_ratio__between', 'done_ratio__isnull',
                   'parent', 'parent_issue', 'precedes_issue', 'follows_issue', 'project__my_project')
 
     @staticmethod
@@ -73,6 +80,15 @@ class IssueFilter(FilterSet):
 
     @staticmethod
     def filter_id_any(queryset, name, value):
+        return queryset
+
+    @staticmethod
+    def filter_done_ratio_between(queryset, name, value):
+        try:
+            start, end = map(int, value.split(','))
+            return queryset.filter(done_ratio__range=(start, end))
+        except (ValueError, AttributeError):
+            return queryset
         return queryset
 
     @staticmethod

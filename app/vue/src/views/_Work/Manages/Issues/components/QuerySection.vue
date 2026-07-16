@@ -38,6 +38,7 @@ const searchOptions = reactive([
       { value: 'author', label: '작성자' },
       { value: 'assignee', label: '담당자' },
       { value: 'version', label: '목표단계' },
+      { value: 'category', label: '범주', disabled: true },
       { value: 'done_ratio', label: '진척도' },
       { value: 'is_private', label: '비공개', disabled: true },
       { value: 'watcher', label: '업무관람자', disabled: true },
@@ -104,6 +105,7 @@ const cond = ref({
   project: 'is' as 'is' | 'exclude',
   tracker: 'is' as 'is' | 'exclude',
   priority: 'is' as 'is' | 'exclude',
+  done_ratio: 'is' as 'is' | 'gte' | 'lte' | 'between' | 'none' | 'any',
   author: 'is' as 'is' | 'exclude',
   assignee: 'is' as 'is' | 'exclude' | 'none' | 'any',
   // is_public: 'is' as 'is' | 'exclude',
@@ -126,6 +128,11 @@ const form = ref<IssueFilter>({
   tracker__exclude: null,
   priority: null,
   priority__exclude: null,
+  done_ratio: null,
+  done_ratio__gte: null,
+  done_ratio__lte: null,
+  done_ratio__between: '',
+  done_ratio__isnull: '0',
   author: null,
   author__exclude: null,
   assignee: null,
@@ -229,6 +236,16 @@ const filterSubmit = () => {
     else if (cond.value.issue === 'gte') filterData.id__gte = form.value.id__gte
     else if (cond.value.issue === 'lte') filterData.id__lte = form.value.id__lte
     else if (cond.value.issue === 'between') filterData.id__between = form.value.id__between
+  }
+
+  if (searchCond.value.includes('done_ratio')) {
+    if (cond.value.done_ratio === 'is') filterData.done_ratio = form.value.done_ratio
+    else if (cond.value.done_ratio === 'gte') filterData.done_ratio__gte = form.value.done_ratio__gte
+    else if (cond.value.done_ratio === 'lte') filterData.done_ratio__lte = form.value.done_ratio__lte
+    else if (cond.value.done_ratio === 'between')
+      filterData.done_ratio__between = form.value.done_ratio__between
+    else if (cond.value.done_ratio === 'none') filterData.done_ratio__isnull = '1'
+    else if (cond.value.done_ratio === 'any') filterData.done_ratio__isnull = '0'
   }
 
   if (form.value.parent)
@@ -514,6 +531,55 @@ onBeforeMount(async () => {
                 <CFormInput
                   v-if="cond.issue === 'between'"
                   v-model="form.id__between"
+                  placeholder="10,20"
+                  size="sm"
+                  @keydown.enter="filterSubmit"
+                />
+              </CCol>
+            </CRow>
+
+            <CRow v-if="searchCond.includes('done_ratio')">
+              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
+                <CFormCheck checked="true" label="진척도" id="done_ratio" readonly />
+              </CCol>
+              <CCol class="col-4 col-lg-3 col-xl-2">
+                <CFormSelect v-model="cond.done_ratio" size="sm">
+                  <option value="is">이다</option>
+                  <option value="gte">&gt;=</option>
+                  <option value="lte">&lt;=</option>
+                  <option value="between">사이</option>
+                  <option value="none">없음</option>
+                  <option value="any">모두</option>
+                </CFormSelect>
+              </CCol>
+              <CCol class="col-4 col-lg-3">
+                <CFormInput
+                  v-if="cond.done_ratio === 'is'"
+                  v-model="form.done_ratio"
+                  type="number"
+                  placeholder="진척도 (%)"
+                  size="sm"
+                  @keydown.enter="filterSubmit"
+                />
+                <CFormInput
+                  v-if="cond.done_ratio === 'gte'"
+                  v-model="form.done_ratio__gte"
+                  type="number"
+                  placeholder="이상 (%)"
+                  size="sm"
+                  @keydown.enter="filterSubmit"
+                />
+                <CFormInput
+                  v-if="cond.done_ratio === 'lte'"
+                  v-model="form.done_ratio__lte"
+                  type="number"
+                  placeholder="이하 (%)"
+                  size="sm"
+                  @keydown.enter="filterSubmit"
+                />
+                <CFormInput
+                  v-if="cond.done_ratio === 'between'"
+                  v-model="form.done_ratio__between"
                   placeholder="10,20"
                   size="sm"
                   @keydown.enter="filterSubmit"

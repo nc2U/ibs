@@ -145,6 +145,8 @@ export interface IssueFilter {
   project__exclude?: string
   tracker?: number | null
   tracker__exclude?: number | null
+  priority?: number | null
+  priority__exclude?: number | null
   author?: number | null
   author__exclude?: number | null
   assignee?: number | null
@@ -158,6 +160,11 @@ export interface IssueFilter {
   id__lte?: number | null
   id__between?: string // 'ID 범위 예: 10,20'
   id__any?: string // 'ID 포함목록 예: 1,2,3'
+  done_ratio?: number | null
+  done_ratio__gte?: number | null
+  done_ratio__lte?: number | null
+  done_ratio__between?: string
+  done_ratio__isnull?: string
   parent__subject?: string
   parent__isnull?: string
   parent_issue?: number | null // 상위업무
