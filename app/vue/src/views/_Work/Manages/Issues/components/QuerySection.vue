@@ -1,11 +1,12 @@
 <script lang="ts" setup>
-import { onBeforeMount, type PropType, reactive, ref, watch } from 'vue'
+import { onBeforeMount, type PropType, reactive, ref, watch, computed } from 'vue'
 import type { selectProject } from '@/store/types/work_project.ts'
 import type { IssueFilter, IssueStatus, Tracker } from '@/store/types/work_issue.ts'
 import Multiselect from '@vueform/multiselect'
 import { useRoute } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
 import { useAccount } from '@/store/pinia/account'
+import { useWork } from '@/store/pinia/work_project'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import AllProjectsSelect from '@/views/_Work/components/atomics/AllProjectsSelect.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
@@ -23,6 +24,8 @@ const props = defineProps({
 
 const { can, PERM } = usePerms()
 const accStore = useAccount()
+const workStore = useWork()
+const roleList = computed(() => workStore.roleList.filter(r => r.pk !== 1 && r.pk !== 2))
 
 const emit = defineEmits(['filter-submit'])
 
@@ -92,10 +95,10 @@ const searchOptions = reactive<SearchOptionGroup[]>([
     ],
   },
   {
-    label: '담당',
+    label: '역할',
     options: [
-      { value: 'group', label: '\u00A0\u00A0\u00A0할당된 사람의 그룹', disabled: true },
-      { value: 'role', label: '\u00A0\u00A0\u00A0할당된 사람의 역할', disabled: true },
+      { value: 'creator_role', label: '\u00A0\u00A0\u00A0작성자의 역할' },
+      { value: 'assignee_role', label: '\u00A0\u00A0\u00A0담당자의 역할' },
     ],
   },
   {
@@ -146,6 +149,8 @@ const cond = ref({
   updated: 'is' as 'is' | 'gte' | 'lte' | 'between' | 'none' | 'any',
   start_date: 'is' as 'is' | 'gte' | 'lte' | 'between' | 'none' | 'any',
   due_date: 'is' as 'is' | 'gte' | 'lte' | 'between' | 'none' | 'any',
+  creator_role: 'is' as 'is' | 'exclude',
+  assignee_role: 'is' as 'is' | 'exclude',
 })
 
 const route = useRoute()
@@ -231,6 +236,10 @@ const form = ref<IssueFilter>({
   due_date__between_min: '',
   due_date__between_max: '',
   due_date__isnull: '0',
+  creator_role: null,
+  creator_role__exclude: null,
+  assignee_role: null,
+  assignee_role__exclude: null,
 })
 
 const filterSubmit = () => {
@@ -383,14 +392,25 @@ const filterSubmit = () => {
 
   if (searchCond.value.includes('file')) {
     if (cond.value.file === 'contains') filterData.file = form.value.file
-    else if (cond.value.file === 'exclude')
-      filterData.file__exclude = form.value.file__exclude
+    else if (cond.value.file === 'exclude') filterData.file__exclude = form.value.file__exclude
   }
 
   if (searchCond.value.includes('file_desc')) {
     if (cond.value.file_desc === 'contains') filterData.file_desc = form.value.file_desc
     else if (cond.value.file_desc === 'exclude')
       filterData.file_desc__exclude = form.value.file_desc__exclude
+  }
+
+  if (searchCond.value.includes('creator_role')) {
+    if (cond.value.creator_role === 'is') filterData.creator_role = form.value.creator_role
+    else if (cond.value.creator_role === 'exclude')
+      filterData.creator_role__exclude = form.value.creator_role__exclude
+  }
+
+  if (searchCond.value.includes('assignee_role')) {
+    if (cond.value.assignee_role === 'is') filterData.assignee_role = form.value.assignee_role
+    else if (cond.value.assignee_role === 'exclude')
+      filterData.assignee_role__exclude = form.value.assignee_role__exclude
   }
 
   // created
@@ -1187,6 +1207,76 @@ onBeforeMount(async () => {
                   style="height: 30px"
                   @keydown.enter="filterSubmit"
                 />
+              </CCol>
+            </CRow>
+
+            <!-- 작성자 역할 (creator_role) -->
+            <CRow v-if="searchCond.includes('creator_role')">
+              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
+                <CFormCheck checked="true" label="작성자의 역할" id="creator_role" readonly />
+              </CCol>
+              <CCol class="col-4 col-lg-3 col-xl-2">
+                <CFormSelect v-model="cond.creator_role" size="sm">
+                  <option value="is">이다</option>
+                  <option value="exclude">아니다</option>
+                </CFormSelect>
+              </CCol>
+              <CCol class="col-8 col-lg-3">
+                <CFormSelect
+                  v-if="cond.creator_role === 'is'"
+                  v-model="form.creator_role"
+                  size="sm"
+                  @change="filterSubmit"
+                >
+                  <option v-for="r in roleList" :key="r.pk" :value="r.pk">
+                    {{ r.name }}
+                  </option>
+                </CFormSelect>
+                <CFormSelect
+                  v-if="cond.creator_role === 'exclude'"
+                  v-model="form.creator_role__exclude"
+                  size="sm"
+                  @change="filterSubmit"
+                >
+                  <option v-for="r in roleList" :key="r.pk" :value="r.pk">
+                    {{ r.name }}
+                  </option>
+                </CFormSelect>
+              </CCol>
+            </CRow>
+
+            <!-- 담당자 역할 (assignee_role) -->
+            <CRow v-if="searchCond.includes('assignee_role')">
+              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
+                <CFormCheck checked="true" label="담당자의 역할" id="assignee_role" readonly />
+              </CCol>
+              <CCol class="col-4 col-lg-3 col-xl-2">
+                <CFormSelect v-model="cond.assignee_role" size="sm">
+                  <option value="is">이다</option>
+                  <option value="exclude">아니다</option>
+                </CFormSelect>
+              </CCol>
+              <CCol class="col-8 col-lg-3">
+                <CFormSelect
+                  v-if="cond.assignee_role === 'is'"
+                  v-model="form.assignee_role"
+                  size="sm"
+                  @change="filterSubmit"
+                >
+                  <option v-for="r in roleList" :key="r.pk" :value="r.pk">
+                    {{ r.name }}
+                  </option>
+                </CFormSelect>
+                <CFormSelect
+                  v-if="cond.assignee_role === 'exclude'"
+                  v-model="form.assignee_role__exclude"
+                  size="sm"
+                  @change="filterSubmit"
+                >
+                  <option v-for="r in roleList" :key="r.pk" :value="r.pk">
+                    {{ r.name }}
+                  </option>
+                </CFormSelect>
               </CCol>
             </CRow>
 

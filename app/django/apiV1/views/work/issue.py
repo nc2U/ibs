@@ -1,4 +1,4 @@
-from django.db.models import Q
+from django.db.models import Q, F
 from django_filters.rest_framework import FilterSet, BooleanFilter, CharFilter, NumberFilter
 from rest_framework import viewsets
 from rest_framework.decorators import action
@@ -51,6 +51,10 @@ class IssueFilter(FilterSet):
     file__exclude = CharFilter(field_name='files__file_name', lookup_expr='icontains', exclude=True, label='파일명-제외')
     file_desc = CharFilter(field_name='files__description', lookup_expr='icontains', label='파일설명')
     file_desc__exclude = CharFilter(field_name='files__description', lookup_expr='icontains', exclude=True, label='파일설명-제외')
+    creator_role = CharFilter(method='filter_creator_role', label='등록자역할')
+    creator_role__exclude = CharFilter(method='filter_creator_role_exclude', label='등록자역할-제외')
+    assignee_role = CharFilter(method='filter_assignee_role', label='담당자역할')
+    assignee_role__exclude = CharFilter(method='filter_assignee_role_exclude', label='담당자역할-제외')
 
     created = CharFilter(method='filter_created_date', label='등록일-일치')
     created__gte = CharFilter(method='filter_created_gte', label='등록일-이후')
@@ -115,6 +119,7 @@ class IssueFilter(FilterSet):
                   'subject', 'subject__exclude', 'description', 'description__exclude', 'comment', 'comment__exclude',
                   'any_searchable', 'any_searchable__exclude',
                   'file', 'file__exclude', 'file_desc', 'file_desc__exclude',
+                  'creator_role', 'creator_role__exclude', 'assignee_role', 'assignee_role__exclude',
                   'created', 'created__gte', 'created__lte', 'created__between',
                   'updated', 'updated__gte', 'updated__lte', 'updated__between',
                   'start_date', 'start_date__gte', 'start_date__lte', 'start_date__between',
@@ -305,6 +310,44 @@ class IssueFilter(FilterSet):
             return q
         except ValueError:
             return queryset
+
+    @staticmethod
+    def filter_creator_role(queryset, name, value):
+        if value:
+            return queryset.filter(
+                project__members__user=F('creator'),
+                project__members__roles=value
+            ).distinct()
+        return queryset
+
+    @staticmethod
+    def filter_creator_role_exclude(queryset, name, value):
+        if value:
+            matching_ids = queryset.filter(
+                project__members__user=F('creator'),
+                project__members__roles=value
+            ).values_list('id', flat=True)
+            return queryset.exclude(id__in=matching_ids)
+        return queryset
+
+    @staticmethod
+    def filter_assignee_role(queryset, name, value):
+        if value:
+            return queryset.filter(
+                project__members__user=F('assigned_to'),
+                project__members__roles=value
+            ).distinct()
+        return queryset
+
+    @staticmethod
+    def filter_assignee_role_exclude(queryset, name, value):
+        if value:
+            matching_ids = queryset.filter(
+                project__members__user=F('assigned_to'),
+                project__members__roles=value
+            ).values_list('id', flat=True)
+            return queryset.exclude(id__in=matching_ids)
+        return queryset
 
     def filter_queryset(self, queryset):
         for name, value in self.form.cleaned_data.items():

@@ -193,6 +193,10 @@ export interface IssueFilter {
   file__exclude?: string
   file_desc?: string
   file_desc__exclude?: string
+  creator_role?: number | null
+  creator_role__exclude?: number | null
+  assignee_role?: number | null
+  assignee_role__exclude?: number | null
   created?: string
   created__gte?: string
   created__lte?: string
