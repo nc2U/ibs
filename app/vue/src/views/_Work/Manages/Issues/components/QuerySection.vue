@@ -66,6 +66,7 @@ const searchOptions = reactive<SearchOptionGroup[]>([
       { value: 'watcher', label: '업무관람자' },
       { value: 'updater', label: '수정자' },
       { value: 'last_updater', label: '최근수정자' },
+      // { value: 'parent', label: '하위 프로젝트' },
       { value: 'issue', label: '업무' },
     ],
   },
@@ -109,12 +110,16 @@ const searchOptions = reactive<SearchOptionGroup[]>([
     ],
   },
   {
+    label: '프로젝트',
+    options: [{ value: 'project_status', label: '\u00A0\u00A0\u00A0프로젝트의 상태' }],
+  },
+  {
     label: '관계',
     options: [
-      { value: 'parent_issue', label: '\u00A0\u00A0\u00A0상위업무' },
-      { value: 'parent', label: '\u00A0\u00A0\u00A0하위업무' },
-      { value: 'follows_issue', label: '\u00A0\u00A0\u00A0선행업무' },
-      { value: 'precedes_issue', label: '\u00A0\u00A0\u00A0후속업무' },
+      { value: 'precedes_issue', label: '\u00A0\u00A0\u00A0후속 업무' },
+      { value: 'follows_issue', label: '\u00A0\u00A0\u00A0선행 업무' },
+      { value: 'parent_issue', label: '\u00A0\u00A0\u00A0상위 업무' },
+      { value: 'parent', label: '\u00A0\u00A0\u00A0하위 업무' },
     ],
   },
 ])
@@ -124,30 +129,27 @@ const cond = ref({
   project: 'is' as 'is' | 'exclude',
   tracker: 'is' as 'is' | 'exclude',
   priority: 'is' as 'is' | 'exclude',
+  author: 'is' as 'is' | 'exclude',
+  assignee: 'is' as 'is' | 'exclude' | 'none' | 'any',
+  version: 'is' as 'is' | 'exclude' | 'none' | 'any',
   category: 'is' as 'is' | 'exclude' | 'none' | 'any',
+  done_ratio: 'is' as 'is' | 'gte' | 'lte' | 'between' | 'none' | 'any',
   is_private: 'is' as 'is' | 'exclude',
   watcher: 'is' as 'is' | 'exclude',
-  done_ratio: 'is' as 'is' | 'gte' | 'lte' | 'between' | 'none' | 'any',
-  author: 'is' as 'is' | 'exclude',
   updater: 'is' as 'is' | 'exclude',
   last_updater: 'is' as 'is' | 'exclude',
-  assignee: 'is' as 'is' | 'exclude' | 'none' | 'any',
-  // is_public: 'is' as 'is' | 'exclude',
-  // name: 'contains',
-  // description: 'contains',
-  version: 'is' as 'is' | 'exclude' | 'none' | 'any',
-  issue: 'is' as 'is' | 'gte' | 'lte' | 'between',
   parent: 'is' as 'is' | 'contains' | 'none' | 'any',
+  issue: 'is' as 'is' | 'gte' | 'lte' | 'between',
   subject: 'contains' as 'contains' | 'exclude',
   description: 'contains' as 'contains' | 'exclude',
   comment: 'contains' as 'contains' | 'exclude',
   any_searchable: 'contains' as 'contains' | 'exclude',
-  file: 'contains' as 'contains' | 'exclude',
-  file_desc: 'contains' as 'contains' | 'exclude',
   created: 'is' as 'is' | 'gte' | 'lte' | 'between' | 'none' | 'any',
   updated: 'is' as 'is' | 'gte' | 'lte' | 'between' | 'none' | 'any',
   start_date: 'is' as 'is' | 'gte' | 'lte' | 'between' | 'none' | 'any',
   due_date: 'is' as 'is' | 'gte' | 'lte' | 'between' | 'none' | 'any',
+  file: 'contains' as 'contains' | 'exclude',
+  file_desc: 'contains' as 'contains' | 'exclude',
   creator_role: 'is' as 'is' | 'exclude',
   assignee_role: 'is' as 'is' | 'exclude',
   version_date: 'is' as 'is' | 'lte' | 'gte' | 'between' | 'none' | 'any',
@@ -425,14 +427,15 @@ const filterSubmit = () => {
   // version_date
   if (searchCond.value.includes('version_date')) {
     if (cond.value.version_date === 'is') filterData.version_date = form.value.version_date
-    else if (cond.value.version_date === 'gte') filterData.version_date__gte = form.value.version_date__gte
-    else if (cond.value.version_date === 'lte') filterData.version_date__lte = form.value.version_date__lte
+    else if (cond.value.version_date === 'gte')
+      filterData.version_date__gte = form.value.version_date__gte
+    else if (cond.value.version_date === 'lte')
+      filterData.version_date__lte = form.value.version_date__lte
     else if (cond.value.version_date === 'between') {
       const min = form.value.version_date__between_min || ''
       const max = form.value.version_date__between_max || ''
       if (min || max) filterData.version_date__between = `${min},${max}`
-    }
-    else if (cond.value.version_date === 'none') filterData.version_date__isnull = '1'
+    } else if (cond.value.version_date === 'none') filterData.version_date__isnull = '1'
     else if (cond.value.version_date === 'any') filterData.version_date__isnull = '0'
   }
 
@@ -666,6 +669,7 @@ onBeforeMount(async () => {
               </CCol>
             </CRow>
 
+            <!-- 프로젝트 (project) -->
             <CRow v-if="searchCond.includes('project')">
               <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
                 <CFormCheck checked="true" label="프로젝트" id="project" readonly />
@@ -687,6 +691,7 @@ onBeforeMount(async () => {
               </CCol>
             </CRow>
 
+            <!-- 유형 (tracker) -->
             <CRow v-if="searchCond.includes('tracker')">
               <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
                 <CFormCheck checked="true" label="유형" id="tracker" readonly />
@@ -706,6 +711,7 @@ onBeforeMount(async () => {
               </CCol>
             </CRow>
 
+            <!-- 우선순위 (priority) -->
             <CRow v-if="searchCond.includes('priority')">
               <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
                 <CFormCheck checked="true" label="우선순위" id="priority" readonly />
@@ -725,6 +731,79 @@ onBeforeMount(async () => {
               </CCol>
             </CRow>
 
+            <!-- 작성자 (author) -->
+            <CRow v-if="searchCond.includes('author')">
+              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
+                <CFormCheck checked="true" label="작성자" id="author" readonly />
+              </CCol>
+              <CCol class="col-4 col-lg-3 col-xl-2">
+                <CFormSelect v-model="cond.author" size="sm">
+                  <option value="is">이다</option>
+                  <option value="exclude">아니다</option>
+                </CFormSelect>
+              </CCol>
+              <CCol class="col-4 col-lg-3">
+                <Multiselect
+                  v-model="form.author"
+                  :options="getUsers"
+                  placeholder="작성자"
+                  searchable
+                  @keydown.enter="filterSubmit"
+                />
+              </CCol>
+            </CRow>
+
+            <!-- 담당자 (assignee) -->
+            <CRow v-if="searchCond.includes('assignee')">
+              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
+                <CFormCheck checked="true" label="담당자" id="assignee" readonly />
+              </CCol>
+              <CCol class="col-4 col-lg-3 col-xl-2">
+                <CFormSelect v-model="cond.assignee" size="sm">
+                  <option value="is">이다</option>
+                  <option value="exclude">아니다</option>
+                  <option value="none">없음</option>
+                  <option value="any">모두</option>
+                </CFormSelect>
+              </CCol>
+              <CCol class="col-4 col-lg-3">
+                <Multiselect
+                  v-if="cond.assignee === 'is' || cond.assignee === 'exclude'"
+                  v-model="form.assignee"
+                  :options="getUsers"
+                  placeholder="담당자"
+                  searchable
+                  @keydown.enter="filterSubmit"
+                />
+              </CCol>
+            </CRow>
+
+            <!-- 목표단계 (version) -->
+            <CRow v-if="searchCond.includes('version')">
+              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
+                <CFormCheck checked="true" label="목표단계" id="version" readonly />
+              </CCol>
+              <CCol class="col-4 col-lg-3 col-xl-2">
+                <CFormSelect v-model="cond.version" size="sm">
+                  <option value="is">이다</option>
+                  <option value="exclude">아니다</option>
+                  <option value="none">없음</option>
+                  <option value="any">모두</option>
+                </CFormSelect>
+              </CCol>
+              <CCol class="col-4 col-lg-3">
+                <Multiselect
+                  v-if="cond.version === 'is' || cond.version === 'exclude'"
+                  v-model="form.version"
+                  :options="getVersions"
+                  placeholder="목표단계"
+                  searchable
+                  @keydown.enter="filterSubmit"
+                />
+              </CCol>
+            </CRow>
+
+            <!-- 범주 (category) -->
             <CRow v-if="searchCond.includes('category')">
               <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
                 <CFormCheck checked="true" label="범주" id="category" readonly />
@@ -750,152 +829,7 @@ onBeforeMount(async () => {
               </CCol>
             </CRow>
 
-            <CRow v-if="searchCond.includes('is_private')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="비공개" id="is_private" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.is_private" size="sm">
-                  <option value="is">이다</option>
-                  <option value="exclude">아니다</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-4 col-lg-3"> </CCol>
-            </CRow>
-
-            <CRow v-if="searchCond.includes('watcher')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="업무관람자" id="watcher" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.watcher" size="sm">
-                  <option value="is">이다</option>
-                  <option value="exclude">아니다</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-4 col-lg-3">
-                <Multiselect
-                  v-model="form.watcher"
-                  :options="getUsers"
-                  placeholder="업무관람자"
-                  searchable
-                  size="sm"
-                  @keydown.enter="filterSubmit"
-                />
-              </CCol>
-            </CRow>
-
-            <CRow v-if="searchCond.includes('author')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="작성자" id="author" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.author" size="sm">
-                  <option value="is">이다</option>
-                  <option value="exclude">아니다</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-4 col-lg-3">
-                <Multiselect
-                  v-model="form.author"
-                  :options="getUsers"
-                  placeholder="작성자"
-                  searchable
-                  @keydown.enter="filterSubmit"
-                />
-              </CCol>
-            </CRow>
-
-            <CRow v-if="searchCond.includes('updater')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="수정자" id="updater" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.updater" size="sm">
-                  <option value="is">이다</option>
-                  <option value="exclude">아니다</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-4 col-lg-3">
-                <Multiselect
-                  v-model="form.updater"
-                  :options="getUsers"
-                  placeholder="수정자"
-                  searchable
-                  @keydown.enter="filterSubmit"
-                />
-              </CCol>
-            </CRow>
-
-            <CRow v-if="searchCond.includes('last_updater')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="최근수정자" id="last_updater" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.last_updater" size="sm">
-                  <option value="is">이다</option>
-                  <option value="exclude">아니다</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-4 col-lg-3">
-                <Multiselect
-                  v-model="form.last_updater"
-                  :options="getUsers"
-                  placeholder="최근수정자"
-                  searchable
-                  @keydown.enter="filterSubmit"
-                />
-              </CCol>
-            </CRow>
-
-            <CRow v-if="searchCond.includes('assignee')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="담당자" id="assignee" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.assignee" size="sm">
-                  <option value="is">이다</option>
-                  <option value="exclude">아니다</option>
-                  <option value="none">없음</option>
-                  <option value="any">모두</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-4 col-lg-3">
-                <Multiselect
-                  v-if="cond.assignee === 'is' || cond.assignee === 'exclude'"
-                  v-model="form.assignee"
-                  :options="getUsers"
-                  placeholder="담당자"
-                  searchable
-                  @keydown.enter="filterSubmit"
-                />
-              </CCol>
-            </CRow>
-
-            <CRow v-if="searchCond.includes('version')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="목표단계" id="version" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.version" size="sm">
-                  <option value="is">이다</option>
-                  <option value="exclude">아니다</option>
-                  <option value="none">없음</option>
-                  <option value="any">모두</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-4 col-lg-3">
-                <Multiselect
-                  v-if="cond.version === 'is' || cond.version === 'exclude'"
-                  v-model="form.version"
-                  :options="getVersions"
-                  placeholder="목표단계"
-                  searchable
-                  @keydown.enter="filterSubmit"
-                />
-              </CCol>
-            </CRow>
-
+            <!-- 진척도 (tracker) -->
             <CRow v-if="searchCond.includes('done_ratio')">
               <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
                 <CFormCheck checked="true" label="진척도" id="done_ratio" readonly />
@@ -956,6 +890,88 @@ onBeforeMount(async () => {
               </CCol>
             </CRow>
 
+            <!-- 비공개 (is_private) -->
+            <CRow v-if="searchCond.includes('is_private')">
+              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
+                <CFormCheck checked="true" label="비공개" id="is_private" readonly />
+              </CCol>
+              <CCol class="col-4 col-lg-3 col-xl-2">
+                <CFormSelect v-model="cond.is_private" size="sm">
+                  <option value="is">이다</option>
+                  <option value="exclude">아니다</option>
+                </CFormSelect>
+              </CCol>
+              <CCol class="col-4 col-lg-3"> </CCol>
+            </CRow>
+
+            <!-- 업무 관람자 (watcher) -->
+            <CRow v-if="searchCond.includes('watcher')">
+              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
+                <CFormCheck checked="true" label="업무관람자" id="watcher" readonly />
+              </CCol>
+              <CCol class="col-4 col-lg-3 col-xl-2">
+                <CFormSelect v-model="cond.watcher" size="sm">
+                  <option value="is">이다</option>
+                  <option value="exclude">아니다</option>
+                </CFormSelect>
+              </CCol>
+              <CCol class="col-4 col-lg-3">
+                <Multiselect
+                  v-model="form.watcher"
+                  :options="getUsers"
+                  placeholder="업무관람자"
+                  searchable
+                  size="sm"
+                  @keydown.enter="filterSubmit"
+                />
+              </CCol>
+            </CRow>
+
+            <!-- 수정자 (updater) -->
+            <CRow v-if="searchCond.includes('updater')">
+              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
+                <CFormCheck checked="true" label="수정자" id="updater" readonly />
+              </CCol>
+              <CCol class="col-4 col-lg-3 col-xl-2">
+                <CFormSelect v-model="cond.updater" size="sm">
+                  <option value="is">이다</option>
+                  <option value="exclude">아니다</option>
+                </CFormSelect>
+              </CCol>
+              <CCol class="col-4 col-lg-3">
+                <Multiselect
+                  v-model="form.updater"
+                  :options="getUsers"
+                  placeholder="수정자"
+                  searchable
+                  @keydown.enter="filterSubmit"
+                />
+              </CCol>
+            </CRow>
+
+            <!-- 최근 수정자 (Last_updater) -->
+            <CRow v-if="searchCond.includes('last_updater')">
+              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
+                <CFormCheck checked="true" label="최근수정자" id="last_updater" readonly />
+              </CCol>
+              <CCol class="col-4 col-lg-3 col-xl-2">
+                <CFormSelect v-model="cond.last_updater" size="sm">
+                  <option value="is">이다</option>
+                  <option value="exclude">아니다</option>
+                </CFormSelect>
+              </CCol>
+              <CCol class="col-4 col-lg-3">
+                <Multiselect
+                  v-model="form.last_updater"
+                  :options="getUsers"
+                  placeholder="최근수정자"
+                  searchable
+                  @keydown.enter="filterSubmit"
+                />
+              </CCol>
+            </CRow>
+
+            <!-- 업무 (issue) -->
             <CRow v-if="searchCond.includes('issue')">
               <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
                 <CFormCheck checked="true" label="업무" id="issue" readonly />
@@ -1010,66 +1026,7 @@ onBeforeMount(async () => {
               </CCol>
             </CRow>
 
-            <CRow v-if="searchCond.includes('parent_issue')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="상위업무" id="parent_issue" readonly />
-              </CCol>
-              <CCol class="col-8 col-lg-3">
-                <Multiselect
-                  v-model="form.parent_issue"
-                  :options="getIssues"
-                  placeholder="상위업무 선택"
-                  searchable
-                  @keydown.enter="filterSubmit"
-                />
-              </CCol>
-            </CRow>
-
-            <CRow v-if="searchCond.includes('parent')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="하위업무" id="parent" readonly />
-              </CCol>
-              <CCol class="col-8 col-lg-3">
-                <Multiselect
-                  v-model="form.parent"
-                  :options="getIssues"
-                  placeholder="하위업무 선택"
-                  searchable
-                  @keydown.enter="filterSubmit"
-                />
-              </CCol>
-            </CRow>
-
-            <CRow v-if="searchCond.includes('follows_issue')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="선행업무" id="follows_issue" readonly />
-              </CCol>
-              <CCol class="col-8 col-lg-3">
-                <Multiselect
-                  v-model="form.follows_issue"
-                  :options="getIssues"
-                  placeholder="선행업무 선택"
-                  searchable
-                  @keydown.enter="filterSubmit"
-                />
-              </CCol>
-            </CRow>
-
-            <CRow v-if="searchCond.includes('precedes_issue')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="후속업무" id="precedes_issue" readonly />
-              </CCol>
-              <CCol class="col-8 col-lg-3">
-                <Multiselect
-                  v-model="form.precedes_issue"
-                  :options="getIssues"
-                  placeholder="후속업무 선택"
-                  searchable
-                  @keydown.enter="filterSubmit"
-                />
-              </CCol>
-            </CRow>
-
+            <!-- 제목 (subject) -->
             <CRow v-if="searchCond.includes('subject')">
               <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
                 <CFormCheck checked="true" label="제목" id="subject" readonly />
@@ -1098,6 +1055,7 @@ onBeforeMount(async () => {
               </CCol>
             </CRow>
 
+            <!-- 설명 (description) -->
             <CRow v-if="searchCond.includes('description')">
               <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
                 <CFormCheck checked="true" label="설명" id="description" readonly />
@@ -1126,6 +1084,7 @@ onBeforeMount(async () => {
               </CCol>
             </CRow>
 
+            <!-- 댓글 (comment) -->
             <CRow v-if="searchCond.includes('comment')">
               <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
                 <CFormCheck checked="true" label="댓글" id="comment" readonly />
@@ -1154,6 +1113,7 @@ onBeforeMount(async () => {
               </CCol>
             </CRow>
 
+            <!-- 전체 내용 (any_searchable) -->
             <CRow v-if="searchCond.includes('any_searchable')">
               <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
                 <CFormCheck checked="true" label="전체 내용" id="any_searchable" readonly />
@@ -1179,6 +1139,200 @@ onBeforeMount(async () => {
                   style="height: 30px"
                   @keydown.enter="filterSubmit"
                 />
+              </CCol>
+            </CRow>
+
+            <!-- 등록일 (created) -->
+            <CRow v-if="searchCond.includes('created')">
+              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
+                <CFormCheck checked="true" label="등록일" id="created" readonly />
+              </CCol>
+              <CCol class="col-4 col-lg-3 col-xl-2">
+                <CFormSelect v-model="cond.created" size="sm">
+                  <option value="is">이다</option>
+                  <option value="lte">이전</option>
+                  <option value="gte">이후</option>
+                  <option value="between">사이</option>
+                </CFormSelect>
+              </CCol>
+              <CCol class="col-8 col-lg-3">
+                <DatePicker
+                  v-if="cond.created === 'is'"
+                  v-model="form.created"
+                  placeholder="등록일"
+                  @update:model-value="filterSubmit"
+                />
+                <DatePicker
+                  v-if="cond.created === 'lte'"
+                  v-model="form.created__lte"
+                  placeholder="이전"
+                  @update:model-value="filterSubmit"
+                />
+                <DatePicker
+                  v-if="cond.created === 'gte'"
+                  v-model="form.created__gte"
+                  placeholder="이후"
+                  @update:model-value="filterSubmit"
+                />
+                <div v-if="cond.created === 'between'" class="d-flex align-items-center">
+                  <DatePicker
+                    v-model="form.created__between_min"
+                    placeholder="시작일"
+                    @update:model-value="filterSubmit"
+                  />
+                  <span class="mx-2">~</span>
+                  <DatePicker
+                    v-model="form.created__between_max"
+                    placeholder="종료일"
+                    @update:model-value="filterSubmit"
+                  />
+                </div>
+              </CCol>
+            </CRow>
+
+            <!-- 변경일 (updated) -->
+            <CRow v-if="searchCond.includes('updated')">
+              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
+                <CFormCheck checked="true" label="변경일" id="updated" readonly />
+              </CCol>
+              <CCol class="col-4 col-lg-3 col-xl-2">
+                <CFormSelect v-model="cond.updated" size="sm">
+                  <option value="is">이다</option>
+                  <option value="lte">이전</option>
+                  <option value="gte">이후</option>
+                  <option value="between">사이</option>
+                </CFormSelect>
+              </CCol>
+              <CCol class="col-8 col-lg-3">
+                <DatePicker
+                  v-if="cond.updated === 'is'"
+                  v-model="form.updated"
+                  placeholder="변경일"
+                  @update:model-value="filterSubmit"
+                />
+                <DatePicker
+                  v-if="cond.updated === 'lte'"
+                  v-model="form.updated__lte"
+                  placeholder="이전"
+                  @update:model-value="filterSubmit"
+                />
+                <DatePicker
+                  v-if="cond.updated === 'gte'"
+                  v-model="form.updated__gte"
+                  placeholder="이후"
+                  @update:model-value="filterSubmit"
+                />
+                <div v-if="cond.updated === 'between'" class="d-flex align-items-center">
+                  <DatePicker
+                    v-model="form.updated__between_min"
+                    placeholder="시작일"
+                    @update:model-value="filterSubmit"
+                  />
+                  <span class="mx-2">~</span>
+                  <DatePicker
+                    v-model="form.updated__between_max"
+                    placeholder="종료일"
+                    @update:model-value="filterSubmit"
+                  />
+                </div>
+              </CCol>
+            </CRow>
+
+            <!-- 시작일 (start_date) -->
+            <CRow v-if="searchCond.includes('start_date')">
+              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
+                <CFormCheck checked="true" label="시작일" id="start_date" readonly />
+              </CCol>
+              <CCol class="col-4 col-lg-3 col-xl-2">
+                <CFormSelect v-model="cond.start_date" size="sm">
+                  <option value="is">이다</option>
+                  <option value="lte">이전</option>
+                  <option value="gte">이후</option>
+                  <option value="between">사이</option>
+                </CFormSelect>
+              </CCol>
+              <CCol class="col-8 col-lg-3">
+                <DatePicker
+                  v-if="cond.start_date === 'is'"
+                  v-model="form.start_date"
+                  placeholder="시작일"
+                  @update:model-value="filterSubmit"
+                />
+                <DatePicker
+                  v-if="cond.start_date === 'lte'"
+                  v-model="form.start_date__lte"
+                  placeholder="이전"
+                  @update:model-value="filterSubmit"
+                />
+                <DatePicker
+                  v-if="cond.start_date === 'gte'"
+                  v-model="form.start_date__gte"
+                  placeholder="이후"
+                  @update:model-value="filterSubmit"
+                />
+                <div v-if="cond.start_date === 'between'" class="d-flex align-items-center">
+                  <DatePicker
+                    v-model="form.start_date__between_min"
+                    placeholder="시작일"
+                    @update:model-value="filterSubmit"
+                  />
+                  <span class="mx-2">~</span>
+                  <DatePicker
+                    v-model="form.start_date__between_max"
+                    placeholder="종료일"
+                    @update:model-value="filterSubmit"
+                  />
+                </div>
+              </CCol>
+            </CRow>
+
+            <!-- 완료기한 (due_date) -->
+            <CRow v-if="searchCond.includes('due_date')">
+              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
+                <CFormCheck checked="true" label="완료기한" id="due_date" readonly />
+              </CCol>
+              <CCol class="col-4 col-lg-3 col-xl-2">
+                <CFormSelect v-model="cond.due_date" size="sm">
+                  <option value="is">이다</option>
+                  <option value="lte">이전</option>
+                  <option value="gte">이후</option>
+                  <option value="between">사이</option>
+                  <option value="none">없음</option>
+                  <option value="any">모두</option>
+                </CFormSelect>
+              </CCol>
+              <CCol class="col-8 col-lg-3">
+                <DatePicker
+                  v-if="cond.due_date === 'is'"
+                  v-model="form.due_date"
+                  placeholder="완료기한"
+                  @update:model-value="filterSubmit"
+                />
+                <DatePicker
+                  v-if="cond.due_date === 'lte'"
+                  v-model="form.due_date__lte"
+                  placeholder="이전"
+                  @update:model-value="filterSubmit"
+                />
+                <DatePicker
+                  v-if="cond.due_date === 'gte'"
+                  v-model="form.due_date__gte"
+                  placeholder="이후"
+                  @update:model-value="filterSubmit"
+                />
+                <div v-if="cond.due_date === 'between'" class="d-flex align-items-center">
+                  <DatePicker
+                    v-model="form.due_date__between_min"
+                    placeholder="시작일"
+                    @update:model-value="filterSubmit"
+                  />
+                  <span class="mx-2">~</span>
+                  <DatePicker
+                    v-model="form.due_date__between_max"
+                    placeholder="종료일"
+                    @update:model-value="filterSubmit"
+                  />
+                </div>
               </CCol>
             </CRow>
 
@@ -1397,197 +1551,67 @@ onBeforeMount(async () => {
               </CCol>
             </CRow>
 
-            <!-- 등록일 (created) -->
-            <CRow v-if="searchCond.includes('created')">
+            <!-- 후속 업무 (follows_issue) -->
+            <CRow v-if="searchCond.includes('follows_issue')">
               <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="등록일" id="created" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.created" size="sm">
-                  <option value="is">이다</option>
-                  <option value="lte">이전</option>
-                  <option value="gte">이후</option>
-                  <option value="between">사이</option>
-                </CFormSelect>
+                <CFormCheck checked="true" label="선행업무" id="follows_issue" readonly />
               </CCol>
               <CCol class="col-8 col-lg-3">
-                <DatePicker
-                  v-if="cond.created === 'is'"
-                  v-model="form.created"
-                  placeholder="등록일"
-                  @update:model-value="filterSubmit"
+                <Multiselect
+                  v-model="form.follows_issue"
+                  :options="getIssues"
+                  placeholder="선행업무 선택"
+                  searchable
+                  @keydown.enter="filterSubmit"
                 />
-                <DatePicker
-                  v-if="cond.created === 'lte'"
-                  v-model="form.created__lte"
-                  placeholder="이전"
-                  @update:model-value="filterSubmit"
-                />
-                <DatePicker
-                  v-if="cond.created === 'gte'"
-                  v-model="form.created__gte"
-                  placeholder="이후"
-                  @update:model-value="filterSubmit"
-                />
-                <div v-if="cond.created === 'between'" class="d-flex align-items-center">
-                  <DatePicker
-                    v-model="form.created__between_min"
-                    placeholder="시작일"
-                    @update:model-value="filterSubmit"
-                  />
-                  <span class="mx-2">~</span>
-                  <DatePicker
-                    v-model="form.created__between_max"
-                    placeholder="종료일"
-                    @update:model-value="filterSubmit"
-                  />
-                </div>
               </CCol>
             </CRow>
 
-            <!-- 변경일 (updated) -->
-            <CRow v-if="searchCond.includes('updated')">
+            <!-- 선행 업무 (precedes_issue) -->
+            <CRow v-if="searchCond.includes('precedes_issue')">
               <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="변경일" id="updated" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.updated" size="sm">
-                  <option value="is">이다</option>
-                  <option value="lte">이전</option>
-                  <option value="gte">이후</option>
-                  <option value="between">사이</option>
-                </CFormSelect>
+                <CFormCheck checked="true" label="후속업무" id="precedes_issue" readonly />
               </CCol>
               <CCol class="col-8 col-lg-3">
-                <DatePicker
-                  v-if="cond.updated === 'is'"
-                  v-model="form.updated"
-                  placeholder="변경일"
-                  @update:model-value="filterSubmit"
+                <Multiselect
+                  v-model="form.precedes_issue"
+                  :options="getIssues"
+                  placeholder="후속업무 선택"
+                  searchable
+                  @keydown.enter="filterSubmit"
                 />
-                <DatePicker
-                  v-if="cond.updated === 'lte'"
-                  v-model="form.updated__lte"
-                  placeholder="이전"
-                  @update:model-value="filterSubmit"
-                />
-                <DatePicker
-                  v-if="cond.updated === 'gte'"
-                  v-model="form.updated__gte"
-                  placeholder="이후"
-                  @update:model-value="filterSubmit"
-                />
-                <div v-if="cond.updated === 'between'" class="d-flex align-items-center">
-                  <DatePicker
-                    v-model="form.updated__between_min"
-                    placeholder="시작일"
-                    @update:model-value="filterSubmit"
-                  />
-                  <span class="mx-2">~</span>
-                  <DatePicker
-                    v-model="form.updated__between_max"
-                    placeholder="종료일"
-                    @update:model-value="filterSubmit"
-                  />
-                </div>
               </CCol>
             </CRow>
 
-            <!-- 시작일 (start_date) -->
-            <CRow v-if="searchCond.includes('start_date')">
+            <!-- 상위 업무 (parent_issue) -->
+            <CRow v-if="searchCond.includes('parent_issue')">
               <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="시작일" id="start_date" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.start_date" size="sm">
-                  <option value="is">이다</option>
-                  <option value="lte">이전</option>
-                  <option value="gte">이후</option>
-                  <option value="between">사이</option>
-                </CFormSelect>
+                <CFormCheck checked="true" label="상위업무" id="parent_issue" readonly />
               </CCol>
               <CCol class="col-8 col-lg-3">
-                <DatePicker
-                  v-if="cond.start_date === 'is'"
-                  v-model="form.start_date"
-                  placeholder="시작일"
-                  @update:model-value="filterSubmit"
+                <Multiselect
+                  v-model="form.parent_issue"
+                  :options="getIssues"
+                  placeholder="상위업무 선택"
+                  searchable
+                  @keydown.enter="filterSubmit"
                 />
-                <DatePicker
-                  v-if="cond.start_date === 'lte'"
-                  v-model="form.start_date__lte"
-                  placeholder="이전"
-                  @update:model-value="filterSubmit"
-                />
-                <DatePicker
-                  v-if="cond.start_date === 'gte'"
-                  v-model="form.start_date__gte"
-                  placeholder="이후"
-                  @update:model-value="filterSubmit"
-                />
-                <div v-if="cond.start_date === 'between'" class="d-flex align-items-center">
-                  <DatePicker
-                    v-model="form.start_date__between_min"
-                    placeholder="시작일"
-                    @update:model-value="filterSubmit"
-                  />
-                  <span class="mx-2">~</span>
-                  <DatePicker
-                    v-model="form.start_date__between_max"
-                    placeholder="종료일"
-                    @update:model-value="filterSubmit"
-                  />
-                </div>
               </CCol>
             </CRow>
 
-            <!-- 완료기한 (due_date) -->
-            <CRow v-if="searchCond.includes('due_date')">
+            <!-- 하위 업무 (sub_issue) -->
+            <CRow v-if="searchCond.includes('parent')">
               <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="완료기한" id="due_date" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.due_date" size="sm">
-                  <option value="is">이다</option>
-                  <option value="lte">이전</option>
-                  <option value="gte">이후</option>
-                  <option value="between">사이</option>
-                  <option value="none">없음</option>
-                  <option value="any">모두</option>
-                </CFormSelect>
+                <CFormCheck checked="true" label="하위업무" id="parent" readonly />
               </CCol>
               <CCol class="col-8 col-lg-3">
-                <DatePicker
-                  v-if="cond.due_date === 'is'"
-                  v-model="form.due_date"
-                  placeholder="완료기한"
-                  @update:model-value="filterSubmit"
+                <Multiselect
+                  v-model="form.parent"
+                  :options="getIssues"
+                  placeholder="하위업무 선택"
+                  searchable
+                  @keydown.enter="filterSubmit"
                 />
-                <DatePicker
-                  v-if="cond.due_date === 'lte'"
-                  v-model="form.due_date__lte"
-                  placeholder="이전"
-                  @update:model-value="filterSubmit"
-                />
-                <DatePicker
-                  v-if="cond.due_date === 'gte'"
-                  v-model="form.due_date__gte"
-                  placeholder="이후"
-                  @update:model-value="filterSubmit"
-                />
-                <div v-if="cond.due_date === 'between'" class="d-flex align-items-center">
-                  <DatePicker
-                    v-model="form.due_date__between_min"
-                    placeholder="시작일"
-                    @update:model-value="filterSubmit"
-                  />
-                  <span class="mx-2">~</span>
-                  <DatePicker
-                    v-model="form.due_date__between_max"
-                    placeholder="종료일"
-                    @update:model-value="filterSubmit"
-                  />
-                </div>
               </CCol>
             </CRow>
           </CCol>
