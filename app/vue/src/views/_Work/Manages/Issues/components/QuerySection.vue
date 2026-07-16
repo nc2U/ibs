@@ -104,10 +104,9 @@ const searchOptions = reactive<SearchOptionGroup[]>([
   {
     label: '목표단계',
     options: [
-      { value: 'version_date', label: '\u00A0\u00A0\u00A0목표단계의 날짜', disabled: true },
-      { value: 'version_status', label: '\u00A0\u00A0\u00A0목표단계의 상태', disabled: true },
+      { value: 'version_date', label: '\u00A0\u00A0\u00A0목표단계의 날짜' },
+      { value: 'version_status', label: '\u00A0\u00A0\u00A0목표단계의 상태' },
     ],
-    disabled: true,
   },
   {
     label: '관계',
@@ -151,6 +150,8 @@ const cond = ref({
   due_date: 'is' as 'is' | 'gte' | 'lte' | 'between' | 'none' | 'any',
   creator_role: 'is' as 'is' | 'exclude',
   assignee_role: 'is' as 'is' | 'exclude',
+  version_date: 'is' as 'is' | 'lte' | 'gte' | 'between' | 'none' | 'any',
+  version_status: 'is' as 'is' | 'exclude',
 })
 
 const route = useRoute()
@@ -240,6 +241,14 @@ const form = ref<IssueFilter>({
   creator_role__exclude: null,
   assignee_role: null,
   assignee_role__exclude: null,
+  version_date: '',
+  version_date__gte: '',
+  version_date__lte: '',
+  version_date__between_min: '',
+  version_date__between_max: '',
+  version_date__isnull: '0',
+  version_status: '',
+  version_status__exclude: '',
 })
 
 const filterSubmit = () => {
@@ -411,6 +420,27 @@ const filterSubmit = () => {
     if (cond.value.assignee_role === 'is') filterData.assignee_role = form.value.assignee_role
     else if (cond.value.assignee_role === 'exclude')
       filterData.assignee_role__exclude = form.value.assignee_role__exclude
+  }
+
+  // version_date
+  if (searchCond.value.includes('version_date')) {
+    if (cond.value.version_date === 'is') filterData.version_date = form.value.version_date
+    else if (cond.value.version_date === 'gte') filterData.version_date__gte = form.value.version_date__gte
+    else if (cond.value.version_date === 'lte') filterData.version_date__lte = form.value.version_date__lte
+    else if (cond.value.version_date === 'between') {
+      const min = form.value.version_date__between_min || ''
+      const max = form.value.version_date__between_max || ''
+      if (min || max) filterData.version_date__between = `${min},${max}`
+    }
+    else if (cond.value.version_date === 'none') filterData.version_date__isnull = '1'
+    else if (cond.value.version_date === 'any') filterData.version_date__isnull = '0'
+  }
+
+  // version_status
+  if (searchCond.value.includes('version_status')) {
+    if (cond.value.version_status === 'is') filterData.version_status = form.value.version_status
+    else if (cond.value.version_status === 'exclude')
+      filterData.version_status__exclude = form.value.version_status__exclude
   }
 
   // created
@@ -1276,6 +1306,93 @@ onBeforeMount(async () => {
                   <option v-for="r in roleList" :key="r.pk" :value="r.pk">
                     {{ r.name }}
                   </option>
+                </CFormSelect>
+              </CCol>
+            </CRow>
+
+            <!-- 목표단계의 날짜 (version_date) -->
+            <CRow v-if="searchCond.includes('version_date')">
+              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
+                <CFormCheck checked="true" label="목표단계의 날짜" id="version_date" readonly />
+              </CCol>
+              <CCol class="col-4 col-lg-3 col-xl-2">
+                <CFormSelect v-model="cond.version_date" size="sm">
+                  <option value="is">이다</option>
+                  <option value="lte">이내</option>
+                  <option value="gte">이후</option>
+                  <option value="between">사이</option>
+                  <option value="none">없음</option>
+                  <option value="any">모두</option>
+                </CFormSelect>
+              </CCol>
+              <CCol class="col-8 col-lg-3">
+                <DatePicker
+                  v-if="cond.version_date === 'is'"
+                  v-model="form.version_date"
+                  placeholder="목표단계 완료 기한"
+                  @update:model-value="filterSubmit"
+                />
+                <DatePicker
+                  v-if="cond.version_date === 'lte'"
+                  v-model="form.version_date__lte"
+                  placeholder="이내"
+                  @update:model-value="filterSubmit"
+                />
+                <DatePicker
+                  v-if="cond.version_date === 'gte'"
+                  v-model="form.version_date__gte"
+                  placeholder="이후"
+                  @update:model-value="filterSubmit"
+                />
+                <div v-if="cond.version_date === 'between'" class="d-flex align-items-center">
+                  <DatePicker
+                    v-model="form.version_date__between_min"
+                    placeholder="시작일"
+                    @update:model-value="filterSubmit"
+                  />
+                  <span class="mx-2">~</span>
+                  <DatePicker
+                    v-model="form.version_date__between_max"
+                    placeholder="종료일"
+                    @update:model-value="filterSubmit"
+                  />
+                </div>
+              </CCol>
+            </CRow>
+
+            <!-- 목표단계의 상태 (version_status) -->
+            <CRow v-if="searchCond.includes('version_status')">
+              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
+                <CFormCheck checked="true" label="목표단계의 상태" id="version_status" readonly />
+              </CCol>
+              <CCol class="col-4 col-lg-3 col-xl-2">
+                <CFormSelect v-model="cond.version_status" size="sm">
+                  <option value="is">이다</option>
+                  <option value="exclude">아니다</option>
+                </CFormSelect>
+              </CCol>
+              <CCol class="col-8 col-lg-3">
+                <CFormSelect
+                  v-if="cond.version_status === 'is'"
+                  v-model="form.version_status"
+                  size="sm"
+                  @change="filterSubmit"
+                >
+                  <option value="">상태 선택</option>
+                  <option value="1">진행</option>
+                  <option value="2">잠김</option>
+                  <option value="3">닫힘</option>
+                </CFormSelect>
+                <CFormSelect
+                  v-if="cond.version_status === 'exclude'"
+                  v-model="form.version_status__exclude"
+                  size="sm"
+                  @change="filterSubmit"
+                >
+                  <option value="">상태 선택</option>
+                  <option value="1">진행</option>
+                  <option value="2">잠김</option>
+                  <option value="3">닫힘</option>
                 </CFormSelect>
               </CCol>
             </CRow>

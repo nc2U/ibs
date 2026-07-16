@@ -197,6 +197,15 @@ export interface IssueFilter {
   creator_role__exclude?: number | null
   assignee_role?: number | null
   assignee_role__exclude?: number | null
+  version_date?: string
+  version_date__gte?: string
+  version_date__lte?: string
+  version_date__between?: string
+  version_date__between_min?: string
+  version_date__between_max?: string
+  version_date__isnull?: string
+  version_status?: string
+  version_status__exclude?: string
   created?: string
   created__gte?: string
   created__lte?: string

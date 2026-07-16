@@ -56,6 +56,15 @@ class IssueFilter(FilterSet):
     assignee_role = CharFilter(method='filter_assignee_role', label='담당자역할')
     assignee_role__exclude = CharFilter(method='filter_assignee_role_exclude', label='담당자역할-제외')
 
+    version_date = CharFilter(method='filter_version_date', label='목표단계완료일자-일치')
+    version_date__gte = CharFilter(method='filter_version_date_gte', label='목표단계완료일자-이후')
+    version_date__lte = CharFilter(method='filter_version_date_lte', label='목표단계완료일자-이전')
+    version_date__between = CharFilter(method='filter_version_date_between', label='목표단계완료일자-범위')
+    version_date__isnull = BooleanFilter(field_name='fixed_version__effective_date', lookup_expr='isnull', label='목표단계완료일자-유무')
+
+    version_status = CharFilter(field_name='fixed_version__status', lookup_expr='exact', label='목표단계상태-일치')
+    version_status__exclude = CharFilter(field_name='fixed_version__status', exclude=True, label='목표단계상태-제외')
+
     created = CharFilter(method='filter_created_date', label='등록일-일치')
     created__gte = CharFilter(method='filter_created_gte', label='등록일-이후')
     created__lte = CharFilter(method='filter_created_lte', label='등록일-이전')
@@ -120,6 +129,8 @@ class IssueFilter(FilterSet):
                   'any_searchable', 'any_searchable__exclude',
                   'file', 'file__exclude', 'file_desc', 'file_desc__exclude',
                   'creator_role', 'creator_role__exclude', 'assignee_role', 'assignee_role__exclude',
+                  'version_date', 'version_date__gte', 'version_date__lte', 'version_date__between', 'version_date__isnull',
+                  'version_status', 'version_status__exclude',
                   'created', 'created__gte', 'created__lte', 'created__between',
                   'updated', 'updated__gte', 'updated__lte', 'updated__between',
                   'start_date', 'start_date__gte', 'start_date__lte', 'start_date__between',
@@ -348,6 +359,31 @@ class IssueFilter(FilterSet):
             ).values_list('id', flat=True)
             return queryset.exclude(id__in=matching_ids)
         return queryset
+
+    @staticmethod
+    def filter_version_date(queryset, name, value):
+        return queryset.filter(fixed_version__effective_date=value)
+
+    @staticmethod
+    def filter_version_date_gte(queryset, name, value):
+        return queryset.filter(fixed_version__effective_date__gte=value)
+
+    @staticmethod
+    def filter_version_date_lte(queryset, name, value):
+        return queryset.filter(fixed_version__effective_date__lte=value)
+
+    @staticmethod
+    def filter_version_date_between(queryset, name, value):
+        try:
+            start, end = value.split(',')
+            q = queryset
+            if start:
+                q = q.filter(fixed_version__effective_date__gte=start)
+            if end:
+                q = q.filter(fixed_version__effective_date__lte=end)
+            return q
+        except ValueError:
+            return queryset
 
     def filter_queryset(self, queryset):
         for name, value in self.form.cleaned_data.items():
