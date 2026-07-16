@@ -43,11 +43,24 @@ class IssueFilter(FilterSet):
     follows_issue = NumberFilter(method='filter_follows', label='선행업무-검색')
     precedes_issue = NumberFilter(method='filter_precedes', label='후속업무-검색')
 
+    project__my_project = BooleanFilter(method='filter_my_project', label='내 프로젝트 업무 여부')
+
+    def filter_my_project(self, queryset, name, value):
+        if self.request and self.request.user.is_authenticated:
+            user = self.request.user
+            if user.is_superuser or getattr(user, 'work_manager', False):
+                return queryset
+            if value:
+                return queryset.filter(project__members__user=user)
+            else:
+                return queryset.exclude(project__members__user=user)
+        return queryset
+
     class Meta:
         model = Issue
         fields = ('project__slug', 'status__closed', 'status', 'tracker', 'creator', 'assigned_to',
                   'fixed_version', 'id', 'id__gte', 'id__lte', 'id__between', 'id__any',
-                  'parent', 'parent_issue', 'precedes_issue', 'follows_issue',)
+                  'parent', 'parent_issue', 'precedes_issue', 'follows_issue', 'project__my_project')
 
     @staticmethod
     def filter_id_between(queryset, name, value):
@@ -116,7 +129,7 @@ def build_issue_queryset(user, base_qs=None):
     IssueViewSet.get_queryset() 및 SearchViewSet 검색에서 공통 사용.
     """
     if base_qs is None:
-        base_qs = Issue.objects.filter(project__status='1').select_related(
+        base_qs = Issue.all_objects.all().select_related(
             'project', 'status', 'creator', 'assigned_to', 'tracker', 'fixed_version'
         )
 
@@ -206,7 +219,7 @@ class IssueViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return build_issue_queryset(
             self.request.user,
-            self.queryset.filter(project__status='1').select_related(
+            Issue.all_objects.all().select_related(
                 'project', 'status', 'creator', 'assigned_to', 'tracker', 'fixed_version'
             )
         )

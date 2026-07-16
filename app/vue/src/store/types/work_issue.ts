@@ -140,6 +140,7 @@ export interface IssueFilter {
   status?: number | null
   status__exclude?: number | null
   project?: string
+  project__slug?: string
   project__search?: string
   project__exclude?: string
   tracker?: number | null
@@ -163,6 +164,7 @@ export interface IssueFilter {
   parent?: number | string // 하위업무
   follows_issue?: number | null // 선행업무
   precedes_issue?: number | null // 후속업무
+  project__my_project?: boolean
   page?: number
 }
 

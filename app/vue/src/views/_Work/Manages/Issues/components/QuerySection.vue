@@ -141,10 +141,16 @@ const form = ref<IssueFilter>({
   parent: '' as string | number, // 하위업무
   follows_issue: null, // 선행업무
   precedes_issue: null, // 후속업무
+  project__my_project: undefined,
 })
 
 const filterSubmit = () => {
-  const filterData = { project: form.value.project } as IssueFilter
+  const filterData = {} as IssueFilter
+
+  // 기본 프로젝트 조회 (project__slug) 세팅
+  if (form.value.project) {
+    filterData.project__slug = form.value.project
+  }
 
   if (cond.value.status === 'open') {
     filterData.status__closed = '0'
@@ -168,9 +174,28 @@ const filterSubmit = () => {
     filterData.status__exclude = null
   }
 
-  if (searchCond.value.includes('project'))
-    if (cond.value.project === 'is') filterData.project__search = form.value.project
-    else if (cond.value.project === 'exclude') filterData.project__exclude = form.value.project
+  if (searchCond.value.includes('project')) {
+    if (form.value.project === '') {
+      if (cond.value.project === 'is') {
+        filterData.project__my_project = true
+      } else if (cond.value.project === 'exclude') {
+        filterData.project__my_project = false
+      }
+      delete filterData.project__slug
+    } else {
+      if (cond.value.project === 'is') {
+        filterData.project__search = form.value.project
+      } else if (cond.value.project === 'exclude') {
+        filterData.project__exclude = form.value.project
+        // 제외 조건일 경우 기본 포함(project__slug) 조건과의 충돌을 방지하기 위해 제거
+        delete filterData.project__slug
+      }
+    }
+  }
+
+  if (form.value.project__my_project !== undefined) {
+    filterData.project__my_project = form.value.project__my_project
+  }
 
   if (searchCond.value.includes('tracker'))
     if (cond.value.tracker === 'is') filterData.tracker = form.value.tracker
@@ -216,7 +241,7 @@ watch(props, nVal => {
 })
 
 watch(searchCond, nVal => {
-  if (nVal.includes('project')) form.value.project = props.allProjects[0]?.slug
+  if (nVal.includes('project')) form.value.project = ''
   if (nVal.includes('tracker')) form.value.tracker = props.trackerList[0]?.pk
   if (!nVal.includes('status')) searchCond.value = ['status']
 })
@@ -305,7 +330,7 @@ onBeforeMount(async () => {
                 <AllProjectsSelect
                   v-model="form.project"
                   :all-projects="allProjects"
-                  default-title="---------"
+                  default-title="<< 내 프로젝트 >>"
                   size="sm"
                 />
               </CCol>

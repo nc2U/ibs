@@ -53,6 +53,7 @@ onBeforeMount(async () => {
   await issueStore.fetchAllIssueList()
   if (!route.query) await issueStore.fetchIssueList({ status__closed: '0' })
 
+  await workStore.fetchAllProjectList('', '', 'all')
   await workStore.fetchMemberList()
   await issueStore.fetchTrackerList()
   await issueStore.fetchStatusList()
