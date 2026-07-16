@@ -66,7 +66,6 @@ const searchOptions = reactive<SearchOptionGroup[]>([
       { value: 'watcher', label: '업무관람자' },
       { value: 'updater', label: '수정자' },
       { value: 'last_updater', label: '최근수정자' },
-      // { value: 'parent', label: '하위 프로젝트' },
       { value: 'issue', label: '업무' },
     ],
   },
@@ -138,7 +137,7 @@ const cond = ref({
   watcher: 'is' as 'is' | 'exclude',
   updater: 'is' as 'is' | 'exclude',
   last_updater: 'is' as 'is' | 'exclude',
-  parent: 'is' as 'is' | 'contains' | 'none' | 'any',
+  sub_project: 'any' as 'any' | 'none' | 'is' | 'exclude',
   issue: 'is' as 'is' | 'gte' | 'lte' | 'between',
   subject: 'contains' as 'contains' | 'exclude',
   description: 'contains' as 'contains' | 'exclude',
@@ -154,6 +153,8 @@ const cond = ref({
   assignee_role: 'is' as 'is' | 'exclude',
   version_date: 'is' as 'is' | 'lte' | 'gte' | 'between' | 'none' | 'any',
   version_status: 'is' as 'is' | 'exclude',
+
+  parent: 'is' as 'is' | 'contains' | 'none' | 'any',
 })
 
 const route = useRoute()
@@ -251,6 +252,9 @@ const form = ref<IssueFilter>({
   version_date__isnull: '0',
   version_status: '',
   version_status__exclude: '',
+  sub_project: null,
+  sub_project__exclude: null,
+  sub_project__isnull: '0',
 })
 
 const filterSubmit = () => {
@@ -446,6 +450,15 @@ const filterSubmit = () => {
       filterData.version_status__exclude = form.value.version_status__exclude
   }
 
+  // sub_project
+  if (searchCond.value.includes('sub_project')) {
+    if (cond.value.sub_project === 'any') filterData.sub_project__isnull = '0'
+    else if (cond.value.sub_project === 'none') filterData.sub_project__isnull = '1'
+    else if (cond.value.sub_project === 'is') filterData.sub_project = form.value.sub_project
+    else if (cond.value.sub_project === 'exclude')
+      filterData.sub_project__exclude = form.value.sub_project__exclude
+  }
+
   // created
   if (searchCond.value.includes('created')) {
     if (cond.value.created === 'is') filterData.created = form.value.created
@@ -578,6 +591,36 @@ watch(searchCond, nVal => {
     form.value.last_updater = props.getUsers[0]?.value
   if (!nVal.includes('status')) searchCond.value = ['status']
 })
+
+const subProjects = computed(() => workStore.issueProject?.sub_projects || [])
+
+const hasSubProjects = computed(() => subProjects.value.length > 0)
+
+watch(
+  hasSubProjects,
+  hasSubs => {
+    const subIdx = searchOptions[0].options.findIndex(o => o.value === 'sub_project')
+    if (hasSubs) {
+      if (subIdx === -1) {
+        const issueIdx = searchOptions[0].options.findIndex(o => o.value === 'issue')
+        if (issueIdx > -1) {
+          searchOptions[0].options.splice(issueIdx, 0, { value: 'sub_project', label: '하위 프로젝트' })
+        } else {
+          searchOptions[0].options.push({ value: 'sub_project', label: '하위 프로젝트' })
+        }
+      }
+    } else {
+      if (subIdx > -1) {
+        searchOptions[0].options.splice(subIdx, 1)
+        const activeIdx = searchCond.value.indexOf('sub_project')
+        if (activeIdx > -1) {
+          searchCond.value.splice(activeIdx, 1)
+        }
+      }
+    }
+  },
+  { immediate: true },
+)
 
 onBeforeMount(async () => {
   if (!!props.statusList.length) form.value.status = props.statusList[0]?.pk
@@ -968,6 +1011,45 @@ onBeforeMount(async () => {
                   searchable
                   @keydown.enter="filterSubmit"
                 />
+              </CCol>
+            </CRow>
+
+            <!-- 하위 프로젝트 (sub_project) -->
+            <CRow v-if="searchCond.includes('sub_project') && hasSubProjects">
+              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
+                <CFormCheck checked="true" label="하위 프로젝트" id="sub_project" readonly />
+              </CCol>
+              <CCol class="col-4 col-lg-3 col-xl-2">
+                <CFormSelect v-model="cond.sub_project" size="sm" @change="filterSubmit">
+                  <option value="any">모두</option>
+                  <option value="none">없음</option>
+                  <option value="is">이다</option>
+                  <option value="exclude">아니다</option>
+                </CFormSelect>
+              </CCol>
+              <CCol class="col-8 col-lg-3">
+                <CFormSelect
+                  v-if="cond.sub_project === 'is'"
+                  v-model="form.sub_project"
+                  size="sm"
+                  @change="filterSubmit"
+                >
+                  <option :value="null">하위 프로젝트 선택</option>
+                  <option v-for="p in subProjects" :key="p.pk" :value="p.pk">
+                    {{ p.name }}
+                  </option>
+                </CFormSelect>
+                <CFormSelect
+                  v-if="cond.sub_project === 'exclude'"
+                  v-model="form.sub_project__exclude"
+                  size="sm"
+                  @change="filterSubmit"
+                >
+                  <option :value="null">하위 프로젝트 선택</option>
+                  <option v-for="p in subProjects" :key="p.pk" :value="p.pk">
+                    {{ p.name }}
+                  </option>
+                </CFormSelect>
               </CCol>
             </CRow>
 

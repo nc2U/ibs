@@ -24,6 +24,9 @@ class IssueFilter(FilterSet):
     status__exclude = CharFilter(field_name='status', exclude=True, label='사용여부-제외')
     project__exclude = CharFilter(field_name='project__slug', exclude=True, label='프로젝트-제외')
     project__search = CharFilter(field_name='project__slug', label='프로젝트-검색')
+    sub_project = NumberFilter(method='dummy_filter', label='하위프로젝트-일치')
+    sub_project__exclude = NumberFilter(method='dummy_filter', label='하위프로젝트-제외')
+    sub_project__isnull = CharFilter(method='dummy_filter', label='하위프로젝트-유무')
     tracker__exclude = CharFilter(field_name='tracker', exclude=True, label='유형-제외')
     priority__exclude = CharFilter(field_name='priority', exclude=True, label='우선순위-제외')
     category__exclude = CharFilter(field_name='category', exclude=True, label='범주-제외')
@@ -120,7 +123,7 @@ class IssueFilter(FilterSet):
 
     class Meta:
         model = Issue
-        fields = ('project__slug', 'status__closed', 'status', 'tracker', 'priority', 'category', 'category__exclude', 'category__isnull',
+        fields = ('project__slug', 'sub_project', 'sub_project__exclude', 'sub_project__isnull', 'status__closed', 'status', 'tracker', 'priority', 'category', 'category__exclude', 'category__isnull',
                   'creator', 'assigned_to', 'fixed_version', 'id', 'id__gte', 'id__lte', 'id__between', 'id__any',
                   'done_ratio', 'done_ratio__gte', 'done_ratio__lte', 'done_ratio__between', 'done_ratio__isnull',
                   'parent', 'parent_issue', 'precedes_issue', 'follows_issue', 'project__my_project', 'is_private',
@@ -385,6 +388,10 @@ class IssueFilter(FilterSet):
         except ValueError:
             return queryset
 
+    @staticmethod
+    def dummy_filter(queryset, name, value):
+        return queryset
+
     def filter_queryset(self, queryset):
         for name, value in self.form.cleaned_data.items():
             if name == 'project__slug' and value:
@@ -400,11 +407,23 @@ class IssueFilter(FilterSet):
                                 collect_children(p)
 
                     collect_children(project)
-                    slugs = [project.slug] + sub_projects_slugs
-                    queryset = queryset.filter(project__slug__in=slugs)
+
+                    sub_project_val = self.form.cleaned_data.get('sub_project')
+                    sub_project_exclude_val = self.form.cleaned_data.get('sub_project__exclude')
+                    sub_project_isnull_val = self.form.cleaned_data.get('sub_project__isnull')
+
+                    if sub_project_isnull_val == '1': # 없음 (Only main project)
+                        queryset = queryset.filter(project__slug=project.slug)
+                    elif sub_project_val: # 이다 (Specific sub-project)
+                        queryset = queryset.filter(project_id=sub_project_val)
+                    elif sub_project_exclude_val: # 아니다 (Exclude specific sub-project)
+                        queryset = queryset.filter(project__slug__in=[project.slug] + sub_projects_slugs).exclude(project_id=sub_project_exclude_val)
+                    else: # 모두 (Default)
+                        slugs = [project.slug] + sub_projects_slugs
+                        queryset = queryset.filter(project__slug__in=slugs)
                 except IssueProject.DoesNotExist:
                     pass
-            elif value is not None and name != 'project__slug':
+            elif value is not None and name not in ['project__slug', 'sub_project', 'sub_project__exclude', 'sub_project__isnull']:
                 queryset = self.filters[name].filter(queryset, value)
 
         return queryset
