@@ -48,6 +48,27 @@ class IssueFilter(FilterSet):
     any_searchable = CharFilter(method='filter_any_searchable', label='전체내용-검색')
     any_searchable__exclude = CharFilter(method='filter_any_searchable_exclude', label='전체내용-제외')
 
+    created = CharFilter(method='filter_created_date', label='등록일-일치')
+    created__gte = CharFilter(method='filter_created_gte', label='등록일-이후')
+    created__lte = CharFilter(method='filter_created_lte', label='등록일-이전')
+    created__between = CharFilter(method='filter_created_between', label='등록일-범위')
+
+    updated = CharFilter(method='filter_updated_date', label='변경일-일치')
+    updated__gte = CharFilter(method='filter_updated_gte', label='변경일-이후')
+    updated__lte = CharFilter(method='filter_updated_lte', label='변경일-이전')
+    updated__between = CharFilter(method='filter_updated_between', label='변경일-범위')
+
+    start_date = CharFilter(method='filter_start_date', label='시작일자-일치')
+    start_date__gte = CharFilter(method='filter_start_date_gte', label='시작일자-이후')
+    start_date__lte = CharFilter(method='filter_start_date_lte', label='시작일자-이전')
+    start_date__between = CharFilter(method='filter_start_date_between', label='시작일자-범위')
+
+    due_date = CharFilter(method='filter_due_date', label='완료기한-일치')
+    due_date__gte = CharFilter(method='filter_due_date_gte', label='완료기한-이후')
+    due_date__lte = CharFilter(method='filter_due_date_lte', label='완료기한-이전')
+    due_date__between = CharFilter(method='filter_due_date_between', label='완료기한-범위')
+    due_date__isnull = BooleanFilter(field_name='due_date', lookup_expr='isnull', label='완료기한-유무')
+
     id = NumberFilter(field_name='id', lookup_expr='exact', label='ID-일치')
     id__gte = NumberFilter(field_name='id', lookup_expr='gte', label='ID-이상')
     id__lte = NumberFilter(field_name='id', lookup_expr='lte', label='ID-이하')
@@ -88,7 +109,11 @@ class IssueFilter(FilterSet):
                   'parent', 'parent_issue', 'precedes_issue', 'follows_issue', 'project__my_project', 'is_private',
                   'watcher', 'watcher__exclude', 'updater', 'updater__exclude', 'last_updater', 'last_updater__exclude',
                   'subject', 'subject__exclude', 'description', 'description__exclude', 'comment', 'comment__exclude',
-                  'any_searchable', 'any_searchable__exclude')
+                  'any_searchable', 'any_searchable__exclude',
+                  'created', 'created__gte', 'created__lte', 'created__between',
+                  'updated', 'updated__gte', 'updated__lte', 'updated__between',
+                  'start_date', 'start_date__gte', 'start_date__lte', 'start_date__between',
+                  'due_date', 'due_date__gte', 'due_date__lte', 'due_date__between', 'due_date__isnull')
 
     @staticmethod
     def filter_id_between(queryset, name, value):
@@ -175,6 +200,106 @@ class IssueFilter(FilterSet):
                 Q(comments__content__icontains=value)
             ).distinct()
         return queryset
+
+    @staticmethod
+    def filter_created_date(queryset, name, value):
+        return queryset.filter(created__date=value)
+
+    @staticmethod
+    def filter_created_gte(queryset, name, value):
+        return queryset.filter(created__date__gte=value)
+
+    @staticmethod
+    def filter_created_lte(queryset, name, value):
+        return queryset.filter(created__date__lte=value)
+
+    @staticmethod
+    def filter_created_between(queryset, name, value):
+        try:
+            start, end = value.split(',')
+            q = queryset
+            if start:
+                q = q.filter(created__date__gte=start)
+            if end:
+                q = q.filter(created__date__lte=end)
+            return q
+        except ValueError:
+            return queryset
+
+    @staticmethod
+    def filter_updated_date(queryset, name, value):
+        return queryset.filter(updated__date=value)
+
+    @staticmethod
+    def filter_updated_gte(queryset, name, value):
+        return queryset.filter(updated__date__gte=value)
+
+    @staticmethod
+    def filter_updated_lte(queryset, name, value):
+        return queryset.filter(updated__date__lte=value)
+
+    @staticmethod
+    def filter_updated_between(queryset, name, value):
+        try:
+            start, end = value.split(',')
+            q = queryset
+            if start:
+                q = q.filter(updated__date__gte=start)
+            if end:
+                q = q.filter(updated__date__lte=end)
+            return q
+        except ValueError:
+            return queryset
+
+    @staticmethod
+    def filter_start_date(queryset, name, value):
+        return queryset.filter(start_date=value)
+
+    @staticmethod
+    def filter_start_date_gte(queryset, name, value):
+        return queryset.filter(start_date__gte=value)
+
+    @staticmethod
+    def filter_start_date_lte(queryset, name, value):
+        return queryset.filter(start_date__lte=value)
+
+    @staticmethod
+    def filter_start_date_between(queryset, name, value):
+        try:
+            start, end = value.split(',')
+            q = queryset
+            if start:
+                q = q.filter(start_date__gte=start)
+            if end:
+                q = q.filter(start_date__lte=end)
+            return q
+        except ValueError:
+            return queryset
+
+    @staticmethod
+    def filter_due_date(queryset, name, value):
+        return queryset.filter(due_date=value)
+
+    @staticmethod
+    def filter_due_date_gte(queryset, name, value):
+        return queryset.filter(due_date__gte=value)
+
+    @staticmethod
+    def filter_due_date_lte(queryset, name, value):
+        return queryset.filter(due_date__lte=value)
+
+    @staticmethod
+    def filter_due_date_between(queryset, name, value):
+        try:
+            start, end = value.split(',')
+            q = queryset
+            if start:
+                q = q.filter(due_date__gte=start)
+            if end:
+                q = q.filter(due_date__lte=end)
+            return q
+        except ValueError:
+            return queryset
 
     def filter_queryset(self, queryset):
         for name, value in self.form.cleaned_data.items():

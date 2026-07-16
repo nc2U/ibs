@@ -6,6 +6,7 @@ import Multiselect from '@vueform/multiselect'
 import { useRoute } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
 import { useAccount } from '@/store/pinia/account'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import AllProjectsSelect from '@/views/_Work/components/atomics/AllProjectsSelect.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 
@@ -77,12 +78,11 @@ const searchOptions = reactive<SearchOptionGroup[]>([
   {
     label: '날짜별 검색',
     options: [
-      { value: 'created', label: '\u00A0\u00A0\u00A0등록일', disabled: true },
-      { value: 'updated', label: '\u00A0\u00A0\u00A0변경일', disabled: true },
-      { value: 'start_date', label: '\u00A0\u00A0\u00A0시작일', disabled: true },
-      { value: 'due_date', label: '\u00A0\u00A0\u00A0완료기한', disabled: true },
+      { value: 'created', label: '\u00A0\u00A0\u00A0등록일' },
+      { value: 'updated', label: '\u00A0\u00A0\u00A0변경일' },
+      { value: 'start_date', label: '\u00A0\u00A0\u00A0시작일' },
+      { value: 'due_date', label: '\u00A0\u00A0\u00A0완료기한' },
     ],
-    disabled: true,
   },
   {
     label: '파일',
@@ -141,6 +141,10 @@ const cond = ref({
   description: 'contains' as 'contains' | 'exclude',
   comment: 'contains' as 'contains' | 'exclude',
   any_searchable: 'contains' as 'contains' | 'exclude',
+  created: 'is' as 'is' | 'gte' | 'lte' | 'between' | 'none' | 'any',
+  updated: 'is' as 'is' | 'gte' | 'lte' | 'between' | 'none' | 'any',
+  start_date: 'is' as 'is' | 'gte' | 'lte' | 'between' | 'none' | 'any',
+  due_date: 'is' as 'is' | 'gte' | 'lte' | 'between' | 'none' | 'any',
 })
 
 const route = useRoute()
@@ -201,6 +205,27 @@ const form = ref<IssueFilter>({
   follows_issue: null, // 선행업무
   precedes_issue: null, // 후속업무
   project__my_project: undefined,
+  created: '',
+  created__gte: '',
+  created__lte: '',
+  created__between_min: '',
+  created__between_max: '',
+  updated: '',
+  updated__gte: '',
+  updated__lte: '',
+  updated__between_min: '',
+  updated__between_max: '',
+  start_date: '',
+  start_date__gte: '',
+  start_date__lte: '',
+  start_date__between_min: '',
+  start_date__between_max: '',
+  due_date: '',
+  due_date__gte: '',
+  due_date__lte: '',
+  due_date__between_min: '',
+  due_date__between_max: '',
+  due_date__isnull: '0',
 })
 
 const filterSubmit = () => {
@@ -349,6 +374,57 @@ const filterSubmit = () => {
       filterData.any_searchable = form.value.any_searchable
     else if (cond.value.any_searchable === 'exclude')
       filterData.any_searchable__exclude = form.value.any_searchable__exclude
+  }
+
+  // created
+  if (searchCond.value.includes('created')) {
+    if (cond.value.created === 'is') filterData.created = form.value.created
+    else if (cond.value.created === 'gte') filterData.created__gte = form.value.created__gte
+    else if (cond.value.created === 'lte') filterData.created__lte = form.value.created__lte
+    else if (cond.value.created === 'between') {
+      const min = form.value.created__between_min || ''
+      const max = form.value.created__between_max || ''
+      if (min || max) filterData.created__between = `${min},${max}`
+    }
+  }
+
+  // updated
+  if (searchCond.value.includes('updated')) {
+    if (cond.value.updated === 'is') filterData.updated = form.value.updated
+    else if (cond.value.updated === 'gte') filterData.updated__gte = form.value.updated__gte
+    else if (cond.value.updated === 'lte') filterData.updated__lte = form.value.updated__lte
+    else if (cond.value.updated === 'between') {
+      const min = form.value.updated__between_min || ''
+      const max = form.value.updated__between_max || ''
+      if (min || max) filterData.updated__between = `${min},${max}`
+    }
+  }
+
+  // start_date
+  if (searchCond.value.includes('start_date')) {
+    if (cond.value.start_date === 'is') filterData.start_date = form.value.start_date
+    else if (cond.value.start_date === 'gte')
+      filterData.start_date__gte = form.value.start_date__gte
+    else if (cond.value.start_date === 'lte')
+      filterData.start_date__lte = form.value.start_date__lte
+    else if (cond.value.start_date === 'between') {
+      const min = form.value.start_date__between_min || ''
+      const max = form.value.start_date__between_max || ''
+      if (min || max) filterData.start_date__between = `${min},${max}`
+    }
+  }
+
+  // due_date
+  if (searchCond.value.includes('due_date')) {
+    if (cond.value.due_date === 'is') filterData.due_date = form.value.due_date
+    else if (cond.value.due_date === 'gte') filterData.due_date__gte = form.value.due_date__gte
+    else if (cond.value.due_date === 'lte') filterData.due_date__lte = form.value.due_date__lte
+    else if (cond.value.due_date === 'between') {
+      const min = form.value.due_date__between_min || ''
+      const max = form.value.due_date__between_max || ''
+      if (min || max) filterData.due_date__between = `${min},${max}`
+    } else if (cond.value.due_date === 'none') filterData.due_date__isnull = '1'
+    else if (cond.value.due_date === 'any') filterData.due_date__isnull = '0'
   }
 
   if (searchCond.value.includes('done_ratio')) {
@@ -1036,6 +1112,200 @@ onBeforeMount(async () => {
                   style="height: 30px"
                   @keydown.enter="filterSubmit"
                 />
+              </CCol>
+            </CRow>
+
+            <!-- 등록일 (created) -->
+            <CRow v-if="searchCond.includes('created')">
+              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
+                <CFormCheck checked="true" label="등록일" id="created" readonly />
+              </CCol>
+              <CCol class="col-4 col-lg-3 col-xl-2">
+                <CFormSelect v-model="cond.created" size="sm">
+                  <option value="is">이다</option>
+                  <option value="lte">이전</option>
+                  <option value="gte">이후</option>
+                  <option value="between">사이</option>
+                </CFormSelect>
+              </CCol>
+              <CCol class="col-8 col-lg-3">
+                <DatePicker
+                  v-if="cond.created === 'is'"
+                  v-model="form.created"
+                  placeholder="등록일"
+                  @update:model-value="filterSubmit"
+                />
+                <DatePicker
+                  v-if="cond.created === 'lte'"
+                  v-model="form.created__lte"
+                  placeholder="이전"
+                  @update:model-value="filterSubmit"
+                />
+                <DatePicker
+                  v-if="cond.created === 'gte'"
+                  v-model="form.created__gte"
+                  placeholder="이후"
+                  @update:model-value="filterSubmit"
+                />
+                <div v-if="cond.created === 'between'" class="d-flex align-items-center">
+                  <DatePicker
+                    v-model="form.created__between_min"
+                    placeholder="시작일"
+                    @update:model-value="filterSubmit"
+                  />
+                  <span class="mx-2">~</span>
+                  <DatePicker
+                    v-model="form.created__between_max"
+                    placeholder="종료일"
+                    @update:model-value="filterSubmit"
+                  />
+                </div>
+              </CCol>
+            </CRow>
+
+            <!-- 변경일 (updated) -->
+            <CRow v-if="searchCond.includes('updated')">
+              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
+                <CFormCheck checked="true" label="변경일" id="updated" readonly />
+              </CCol>
+              <CCol class="col-4 col-lg-3 col-xl-2">
+                <CFormSelect v-model="cond.updated" size="sm">
+                  <option value="is">이다</option>
+                  <option value="lte">이전</option>
+                  <option value="gte">이후</option>
+                  <option value="between">사이</option>
+                </CFormSelect>
+              </CCol>
+              <CCol class="col-8 col-lg-3">
+                <DatePicker
+                  v-if="cond.updated === 'is'"
+                  v-model="form.updated"
+                  placeholder="변경일"
+                  @update:model-value="filterSubmit"
+                />
+                <DatePicker
+                  v-if="cond.updated === 'lte'"
+                  v-model="form.updated__lte"
+                  placeholder="이전"
+                  @update:model-value="filterSubmit"
+                />
+                <DatePicker
+                  v-if="cond.updated === 'gte'"
+                  v-model="form.updated__gte"
+                  placeholder="이후"
+                  @update:model-value="filterSubmit"
+                />
+                <div v-if="cond.updated === 'between'" class="d-flex align-items-center">
+                  <DatePicker
+                    v-model="form.updated__between_min"
+                    placeholder="시작일"
+                    @update:model-value="filterSubmit"
+                  />
+                  <span class="mx-2">~</span>
+                  <DatePicker
+                    v-model="form.updated__between_max"
+                    placeholder="종료일"
+                    @update:model-value="filterSubmit"
+                  />
+                </div>
+              </CCol>
+            </CRow>
+
+            <!-- 시작일 (start_date) -->
+            <CRow v-if="searchCond.includes('start_date')">
+              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
+                <CFormCheck checked="true" label="시작일" id="start_date" readonly />
+              </CCol>
+              <CCol class="col-4 col-lg-3 col-xl-2">
+                <CFormSelect v-model="cond.start_date" size="sm">
+                  <option value="is">이다</option>
+                  <option value="lte">이전</option>
+                  <option value="gte">이후</option>
+                  <option value="between">사이</option>
+                </CFormSelect>
+              </CCol>
+              <CCol class="col-8 col-lg-3">
+                <DatePicker
+                  v-if="cond.start_date === 'is'"
+                  v-model="form.start_date"
+                  placeholder="시작일"
+                  @update:model-value="filterSubmit"
+                />
+                <DatePicker
+                  v-if="cond.start_date === 'lte'"
+                  v-model="form.start_date__lte"
+                  placeholder="이전"
+                  @update:model-value="filterSubmit"
+                />
+                <DatePicker
+                  v-if="cond.start_date === 'gte'"
+                  v-model="form.start_date__gte"
+                  placeholder="이후"
+                  @update:model-value="filterSubmit"
+                />
+                <div v-if="cond.start_date === 'between'" class="d-flex align-items-center">
+                  <DatePicker
+                    v-model="form.start_date__between_min"
+                    placeholder="시작일"
+                    @update:model-value="filterSubmit"
+                  />
+                  <span class="mx-2">~</span>
+                  <DatePicker
+                    v-model="form.start_date__between_max"
+                    placeholder="종료일"
+                    @update:model-value="filterSubmit"
+                  />
+                </div>
+              </CCol>
+            </CRow>
+
+            <!-- 완료기한 (due_date) -->
+            <CRow v-if="searchCond.includes('due_date')">
+              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
+                <CFormCheck checked="true" label="완료기한" id="due_date" readonly />
+              </CCol>
+              <CCol class="col-4 col-lg-3 col-xl-2">
+                <CFormSelect v-model="cond.due_date" size="sm">
+                  <option value="is">이다</option>
+                  <option value="lte">이전</option>
+                  <option value="gte">이후</option>
+                  <option value="between">사이</option>
+                  <option value="none">없음</option>
+                  <option value="any">모두</option>
+                </CFormSelect>
+              </CCol>
+              <CCol class="col-8 col-lg-3">
+                <DatePicker
+                  v-if="cond.due_date === 'is'"
+                  v-model="form.due_date"
+                  placeholder="완료기한"
+                  @update:model-value="filterSubmit"
+                />
+                <DatePicker
+                  v-if="cond.due_date === 'lte'"
+                  v-model="form.due_date__lte"
+                  placeholder="이전"
+                  @update:model-value="filterSubmit"
+                />
+                <DatePicker
+                  v-if="cond.due_date === 'gte'"
+                  v-model="form.due_date__gte"
+                  placeholder="이후"
+                  @update:model-value="filterSubmit"
+                />
+                <div v-if="cond.due_date === 'between'" class="d-flex align-items-center">
+                  <DatePicker
+                    v-model="form.due_date__between_min"
+                    placeholder="시작일"
+                    @update:model-value="filterSubmit"
+                  />
+                  <span class="mx-2">~</span>
+                  <DatePicker
+                    v-model="form.due_date__between_max"
+                    placeholder="종료일"
+                    @update:model-value="filterSubmit"
+                  />
+                </div>
               </CCol>
             </CRow>
           </CCol>

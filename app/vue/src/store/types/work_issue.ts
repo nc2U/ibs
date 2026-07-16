@@ -189,6 +189,31 @@ export interface IssueFilter {
   comment__exclude?: string
   any_searchable?: string
   any_searchable__exclude?: string
+  created?: string
+  created__gte?: string
+  created__lte?: string
+  created__between?: string
+  created__between_min?: string
+  created__between_max?: string
+  updated?: string
+  updated__gte?: string
+  updated__lte?: string
+  updated__between?: string
+  updated__between_min?: string
+  updated__between_max?: string
+  start_date?: string
+  start_date__gte?: string
+  start_date__lte?: string
+  start_date__between?: string
+  start_date__between_min?: string
+  start_date__between_max?: string
+  due_date?: string
+  due_date__gte?: string
+  due_date__lte?: string
+  due_date__between?: string
+  due_date__between_min?: string
+  due_date__between_max?: string
+  due_date__isnull?: string
   parent_issue?: number | null // 상위업무
   parent?: number | string // 하위업무
   follows_issue?: number | null // 선행업무
