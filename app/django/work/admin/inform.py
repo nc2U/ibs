@@ -1,7 +1,7 @@
 from django.contrib import admin
 from import_export.admin import ImportExportMixin
 
-from work.models import News, NewsFile, NewsComment
+from work.models import News, NewsFile, NewsComment, CustomQuery
 
 
 class NewsFileInline(admin.TabularInline):
@@ -20,3 +20,8 @@ class NewsAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display_links = ('title',)
     list_editable = ('is_important',)
     inlines = (NewsFileInline, NewsCommentInline)
+
+
+@admin.register(CustomQuery)
+class CustomQueryAdmin(ImportExportMixin, admin.ModelAdmin):
+    pass

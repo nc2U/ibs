@@ -83,18 +83,6 @@ class Issue(models.Model):
         ]
 
 
-class IssueRelation(models.Model):
-    source = models.ForeignKey(Issue, on_delete=models.CASCADE, verbose_name='선행 업무(이 업무를 우선 진행)',
-                               related_name='outgoing_relations')
-    target = models.OneToOneField(Issue, on_delete=models.CASCADE, verbose_name='후속 업무(이 업무를 다음에 진행)',
-                                  related_name='incoming_relation')
-    delay = models.PositiveSmallIntegerField('대기일수', null=True, blank=True)
-    creator = models.ForeignKey(settings.AUTH_USER_MODEL, models.SET_NULL, null=True, blank=True, verbose_name='작성자')
-
-    def __str__(self):
-        return f'#{self.source.pk} ({self.source.subject}) → #{self.target.pk} ({self.target.subject})'
-
-
 class IssueFile(models.Model):
     issue = models.ForeignKey(Issue, on_delete=models.CASCADE, default=None, verbose_name='업무', related_name='files')
     file = models.FileField(upload_to=get_work_file_path, verbose_name='파일')
@@ -134,6 +122,18 @@ class IssueComment(models.Model):
         indexes = [
             GinIndex(fields=['content'], opclasses=['gin_trgm_ops'], name='work_comment_content_trgm'),
         ]
+
+
+class IssueRelation(models.Model):
+    source = models.ForeignKey(Issue, on_delete=models.CASCADE, verbose_name='선행 업무(이 업무를 우선 진행)',
+                               related_name='outgoing_relations')
+    target = models.OneToOneField(Issue, on_delete=models.CASCADE, verbose_name='후속 업무(이 업무를 다음에 진행)',
+                                  related_name='incoming_relation')
+    delay = models.PositiveSmallIntegerField('대기일수', null=True, blank=True)
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, models.SET_NULL, null=True, blank=True, verbose_name='작성자')
+
+    def __str__(self):
+        return f'#{self.source.pk} ({self.source.subject}) → #{self.target.pk} ({self.target.subject})'
 
 
 class TrackerManager(models.Manager):
@@ -198,21 +198,6 @@ class CodeIssuePriority(models.Model):
         verbose_name_plural = '12. 업무 우선 순위'
 
 
-class Workflow(models.Model):
-    role = models.ForeignKey('work.Role', on_delete=models.CASCADE, verbose_name='역할')
-    tracker = models.ForeignKey(Tracker, on_delete=models.CASCADE, verbose_name='업무 유형')
-    old_status = models.OneToOneField(IssueStatus, on_delete=models.CASCADE, verbose_name='업무 상태',
-                                      related_name='each_status')
-    new_statuses = models.ManyToManyField(IssueStatus, verbose_name='허용 업무 상태', blank=True)
-
-    def __str__(self):
-        return f'{self.role} - {self.tracker}'
-
-    class Meta:
-        verbose_name = '13. 업무 흐름'
-        verbose_name_plural = '13. 업무 흐름'
-
-
 class IssueCategory(models.Model):
     project = models.ForeignKey(IssueProject, on_delete=models.CASCADE, verbose_name='프로젝트', related_name='categories')
     name = models.CharField('범주', max_length=100, db_index=True)
@@ -224,5 +209,20 @@ class IssueCategory(models.Model):
 
     class Meta:
         ordering = ('-project', 'id',)
-        verbose_name = '14. 업무 범주'
-        verbose_name_plural = '14. 업무 범주'
+        verbose_name = '13. 업무 범주'
+        verbose_name_plural = '13. 업무 범주'
+
+
+class Workflow(models.Model):
+    role = models.ForeignKey('work.Role', on_delete=models.CASCADE, verbose_name='역할')
+    tracker = models.ForeignKey(Tracker, on_delete=models.CASCADE, verbose_name='업무 유형')
+    old_status = models.OneToOneField(IssueStatus, on_delete=models.CASCADE, verbose_name='업무 상태',
+                                      related_name='each_status')
+    new_statuses = models.ManyToManyField(IssueStatus, verbose_name='허용 업무 상태', blank=True)
+
+    def __str__(self):
+        return f'{self.role} - {self.tracker}'
+
+    class Meta:
+        verbose_name = '14. 업무 흐름'
+        verbose_name_plural = '14. 업무 흐름'

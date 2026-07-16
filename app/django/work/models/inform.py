@@ -29,8 +29,8 @@ class News(models.Model):
 
     class Meta:
         ordering = ('-is_important', '-created',)
-        verbose_name = '15. 공지'
-        verbose_name_plural = '15. 공지'
+        verbose_name = '17. 공지'
+        verbose_name_plural = '17. 공지'
         indexes = [
             GinIndex(fields=['title'], opclasses=['gin_trgm_ops'], name='work_news_title_trgm'),
             GinIndex(fields=['summary'], opclasses=['gin_trgm_ops'], name='work_news_summary_trgm'),
@@ -163,8 +163,8 @@ class CustomQuery(models.Model):
 
     class Meta:
         ordering = ('target_type', 'name', '-created')
-        verbose_name = '16. 검색 양식'
-        verbose_name_plural = '16. 검색 양식'
+        verbose_name = '18. 검색 양식'
+        verbose_name_plural = '18. 검색 양식'
 
     def __str__(self):
         scope = "공용" if self.is_public else "개인"
