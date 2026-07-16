@@ -124,7 +124,7 @@ onMounted(async () => {
       prepend-icon="mdi-filter-off"
       @click="emit('on-reset-query')"
     >
-      필터 해제 (초기화)
+      검색 해제 (초기화)
     </v-btn>
   </div>
 
