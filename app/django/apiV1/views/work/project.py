@@ -40,10 +40,26 @@ class IssueProjectFilter(FilterSet):
     from_updated = DateFilter(field_name='updated', lookup_expr='gte', label='수정일자-시작')
     to_updated = DateFilter(field_name='updated', lookup_expr='lte', label='수정일자-기한')
 
+    bookmark = BooleanFilter(method='filter_bookmark', label='북마크 여부')
+    my_project = BooleanFilter(method='filter_my_project', label='내 프로젝트 여부')
+
+    def filter_bookmark(self, queryset, name, value):
+        if value and self.request and self.request.user.is_authenticated:
+            return queryset.filter(bookmarked_by__user=self.request.user)
+        return queryset
+
+    def filter_my_project(self, queryset, name, value):
+        if value and self.request and self.request.user.is_authenticated:
+            user = self.request.user
+            if user.is_superuser or getattr(user, 'work_manager', False):
+                return queryset
+            return queryset.filter(members__user=user)
+        return queryset
+
     class Meta:
         model = IssueProject
-        fields = ('company', 'type', 'status', 'parent__slug', 'project',
-                  'is_public', 'name', 'members__user', 'description')
+        fields = ('company', 'type', 'status', 'parent__slug', 'project', 'is_public',
+                  'name', 'members__user', 'description', 'bookmark', 'my_project')
 
 
 class IssueProjectViewSet(viewsets.ModelViewSet):

@@ -185,6 +185,9 @@ export const useWork = defineStore('work', () => {
     if (payload.from_updated) url += `&from_updated=${payload.from_updated}`
     if (payload.to_updated) url += `&to_updated=${payload.to_updated}`
 
+    if (payload.bookmark !== undefined) url += `&bookmark=${payload.bookmark}`
+    if (payload.my_project !== undefined) url += `&my_project=${payload.my_project}`
+
     return await api
       .get(url)
       .then(res => (issueProjects.value = res.data.results || res.data))

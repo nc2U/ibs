@@ -99,6 +99,8 @@ export interface ProjectFilter {
   from_updated?: string
   to_updated?: string
   member?: number
+  bookmark?: boolean
+  my_project?: boolean
 }
 
 export interface Module {

@@ -40,6 +40,8 @@ const optVisible = ref(false)
 const searchCond = ref(['status'])
 const resetFilter = () => {
   searchCond.value = ['status']
+  form.value.bookmark = undefined
+  form.value.my_project = undefined
   filterSubmit()
 }
 
@@ -91,6 +93,9 @@ const form = ref<ProjectFilter>({
 
   name: '',
   description: '',
+
+  bookmark: undefined,
+  my_project: undefined,
 })
 
 const selectedProjectVal = ref<number | string>('')
@@ -201,6 +206,10 @@ const filterSubmit = () => {
     }
   }
 
+  // 검색 양식 필터(bookmark, my_project)를 직접 필터데이터에 매핑
+  if (form.value.bookmark !== undefined) filterData.bookmark = form.value.bookmark
+  if (form.value.my_project !== undefined) filterData.my_project = form.value.my_project
+
   emit('filter-submit', filterData)
 }
 
@@ -273,12 +282,21 @@ const saveQuery = async (event: Event) => {
 const applyQuery = (query: any) => {
   if (query && query.filters) {
     const f = query.filters
+    
+    // 이전 필터 상태 초기화
+    form.value.bookmark = undefined
+    form.value.my_project = undefined
+
     if (f.searchCond) searchCond.value = f.searchCond
     if (f.cond) cond.value = { ...cond.value, ...f.cond }
     if (f.form) {
       form.value = { ...form.value, ...f.form }
       if (f.form.project !== undefined) selectedProjectVal.value = f.form.project
       if (f.form.parent !== undefined) selectedParentVal.value = f.form.parent
+    } else {
+      // seeds-data.json 처럼 플랫한 필터 구조일 경우 처리
+      if (f.bookmark !== undefined) form.value.bookmark = f.bookmark
+      if (f.my_project !== undefined) form.value.my_project = f.my_project
     }
 
     filterSubmit()
