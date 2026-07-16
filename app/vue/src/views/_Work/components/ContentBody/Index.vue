@@ -90,22 +90,27 @@ onBeforeMount(async () => {
     </CCol>
 
     <!--    Off canvas-->
-    <COffcanvas placement="end" class="p-2" :visible="visible" @hide="() => (visible = !visible)">
-      <COffcanvasHeader>
-        <CCol class="mr-2">
-          <COffcanvasTitle>
-            <CFormInput
-              v-model="search"
-              placeholder="검색"
-              @keydown.enter="goSearch"
-              @focusin="search = ''"
-            />
-          </COffcanvasTitle>
-        </CCol>
-        <CCloseButton class="text-reset" @click="() => (visible = false)" />
+    <COffcanvas
+      placement="end"
+      class="px-2 pt-4"
+      :visible="visible"
+      @hide="() => (visible = !visible)"
+    >
+      <COffcanvasHeader class="mb-4">
+        <COffcanvasTitle class="w-100 pr-2">
+          <v-text-field
+            v-model="search"
+            placeholder="검색어 입력"
+            variant="outlined"
+            density="comfortable"
+            prepend-inner-icon="mdi-magnify"
+            hide-details
+            @keydown.enter="goSearch"
+            @focusin="search = ''"
+            class="search-field"
+          />
+        </COffcanvasTitle>
       </COffcanvasHeader>
-
-      <v-divider />
 
       <COffcanvasBody class="p-0">
         <v-card class="mx-auto mb-5 pointer" max-width="500" border flat>
@@ -138,10 +143,7 @@ onBeforeMount(async () => {
 
         <v-divider />
 
-        <slot name="aside">
-          Content for the offcanvas goes here. You can place just about any Bootstrap component or
-          custom elements here.
-        </slot>
+        <slot name="aside"></slot>
       </COffcanvasBody>
     </COffcanvas>
   </CRow>
