@@ -702,7 +702,7 @@ defineExpose({ applyQuery })
               <AllProjectsSelect
                 v-model="selectedProjectVal"
                 :all-projects="allProjects"
-                default-title="---------"
+                default-title="<< 내 프로젝트 >>"
                 size="sm"
               />
             </CCol>
