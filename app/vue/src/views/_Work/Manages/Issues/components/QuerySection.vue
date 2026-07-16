@@ -87,10 +87,9 @@ const searchOptions = reactive<SearchOptionGroup[]>([
   {
     label: '파일',
     options: [
-      { value: 'file', label: '\u00A0\u00A0\u00A0파일', disabled: true },
-      { value: 'file_desc', label: '\u00A0\u00A0\u00A0파일설명', disabled: true },
+      { value: 'file', label: '\u00A0\u00A0\u00A0파일' },
+      { value: 'file_desc', label: '\u00A0\u00A0\u00A0파일설명' },
     ],
-    disabled: true,
   },
   {
     label: '담당',
@@ -141,6 +140,8 @@ const cond = ref({
   description: 'contains' as 'contains' | 'exclude',
   comment: 'contains' as 'contains' | 'exclude',
   any_searchable: 'contains' as 'contains' | 'exclude',
+  file: 'contains' as 'contains' | 'exclude',
+  file_desc: 'contains' as 'contains' | 'exclude',
   created: 'is' as 'is' | 'gte' | 'lte' | 'between' | 'none' | 'any',
   updated: 'is' as 'is' | 'gte' | 'lte' | 'between' | 'none' | 'any',
   start_date: 'is' as 'is' | 'gte' | 'lte' | 'between' | 'none' | 'any',
@@ -198,6 +199,10 @@ const form = ref<IssueFilter>({
   comment__exclude: '',
   any_searchable: '',
   any_searchable__exclude: '',
+  file: '',
+  file__exclude: '',
+  file_desc: '',
+  file_desc__exclude: '',
   parent__subject: '',
   parent__isnull: '0',
   parent_issue: null, // 상위업무
@@ -374,6 +379,18 @@ const filterSubmit = () => {
       filterData.any_searchable = form.value.any_searchable
     else if (cond.value.any_searchable === 'exclude')
       filterData.any_searchable__exclude = form.value.any_searchable__exclude
+  }
+
+  if (searchCond.value.includes('file')) {
+    if (cond.value.file === 'contains') filterData.file = form.value.file
+    else if (cond.value.file === 'exclude')
+      filterData.file__exclude = form.value.file__exclude
+  }
+
+  if (searchCond.value.includes('file_desc')) {
+    if (cond.value.file_desc === 'contains') filterData.file_desc = form.value.file_desc
+    else if (cond.value.file_desc === 'exclude')
+      filterData.file_desc__exclude = form.value.file_desc__exclude
   }
 
   // created
@@ -1109,6 +1126,64 @@ onBeforeMount(async () => {
                   v-if="cond.any_searchable === 'exclude'"
                   v-model="form.any_searchable__exclude"
                   placeholder="제외할 검색 키워드"
+                  style="height: 30px"
+                  @keydown.enter="filterSubmit"
+                />
+              </CCol>
+            </CRow>
+
+            <!-- 파일 (file) -->
+            <CRow v-if="searchCond.includes('file')">
+              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
+                <CFormCheck checked="true" label="파일" id="file" readonly />
+              </CCol>
+              <CCol class="col-4 col-lg-3 col-xl-2">
+                <CFormSelect v-model="cond.file" size="sm">
+                  <option value="contains">포함되는 키워드</option>
+                  <option value="exclude">포함하지 않는 키워드</option>
+                </CFormSelect>
+              </CCol>
+              <CCol class="col-8 col-lg-3">
+                <CFormInput
+                  v-if="cond.file === 'contains'"
+                  v-model="form.file"
+                  placeholder="파일명 키워드"
+                  style="height: 30px"
+                  @keydown.enter="filterSubmit"
+                />
+                <CFormInput
+                  v-if="cond.file === 'exclude'"
+                  v-model="form.file__exclude"
+                  placeholder="제외할 파일명 키워드"
+                  style="height: 30px"
+                  @keydown.enter="filterSubmit"
+                />
+              </CCol>
+            </CRow>
+
+            <!-- 파일설명 (file_desc) -->
+            <CRow v-if="searchCond.includes('file_desc')">
+              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
+                <CFormCheck checked="true" label="파일설명" id="file_desc" readonly />
+              </CCol>
+              <CCol class="col-4 col-lg-3 col-xl-2">
+                <CFormSelect v-model="cond.file_desc" size="sm">
+                  <option value="contains">포함되는 키워드</option>
+                  <option value="exclude">포함하지 않는 키워드</option>
+                </CFormSelect>
+              </CCol>
+              <CCol class="col-8 col-lg-3">
+                <CFormInput
+                  v-if="cond.file_desc === 'contains'"
+                  v-model="form.file_desc"
+                  placeholder="파일설명 키워드"
+                  style="height: 30px"
+                  @keydown.enter="filterSubmit"
+                />
+                <CFormInput
+                  v-if="cond.file_desc === 'exclude'"
+                  v-model="form.file_desc__exclude"
+                  placeholder="제외할 파일설명 키워드"
                   style="height: 30px"
                   @keydown.enter="filterSubmit"
                 />

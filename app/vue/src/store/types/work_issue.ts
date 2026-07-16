@@ -189,6 +189,10 @@ export interface IssueFilter {
   comment__exclude?: string
   any_searchable?: string
   any_searchable__exclude?: string
+  file?: string
+  file__exclude?: string
+  file_desc?: string
+  file_desc__exclude?: string
   created?: string
   created__gte?: string
   created__lte?: string

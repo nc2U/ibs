@@ -47,6 +47,10 @@ class IssueFilter(FilterSet):
     comment__exclude = CharFilter(field_name='comments__content', lookup_expr='icontains', exclude=True, label='댓글-제외')
     any_searchable = CharFilter(method='filter_any_searchable', label='전체내용-검색')
     any_searchable__exclude = CharFilter(method='filter_any_searchable_exclude', label='전체내용-제외')
+    file = CharFilter(field_name='files__file_name', lookup_expr='icontains', label='파일명')
+    file__exclude = CharFilter(field_name='files__file_name', lookup_expr='icontains', exclude=True, label='파일명-제외')
+    file_desc = CharFilter(field_name='files__description', lookup_expr='icontains', label='파일설명')
+    file_desc__exclude = CharFilter(field_name='files__description', lookup_expr='icontains', exclude=True, label='파일설명-제외')
 
     created = CharFilter(method='filter_created_date', label='등록일-일치')
     created__gte = CharFilter(method='filter_created_gte', label='등록일-이후')
@@ -110,6 +114,7 @@ class IssueFilter(FilterSet):
                   'watcher', 'watcher__exclude', 'updater', 'updater__exclude', 'last_updater', 'last_updater__exclude',
                   'subject', 'subject__exclude', 'description', 'description__exclude', 'comment', 'comment__exclude',
                   'any_searchable', 'any_searchable__exclude',
+                  'file', 'file__exclude', 'file_desc', 'file_desc__exclude',
                   'created', 'created__gte', 'created__lte', 'created__between',
                   'updated', 'updated__gte', 'updated__lte', 'updated__between',
                   'start_date', 'start_date__gte', 'start_date__lte', 'start_date__between',
