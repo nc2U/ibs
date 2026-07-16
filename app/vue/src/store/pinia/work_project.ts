@@ -492,17 +492,31 @@ export const useWork = defineStore('work', () => {
       .then(res => (version.value = res.data))
       .catch(err => errorHandle(err.response.data))
 
-  const fetchVersionList = async (payload: {
-    project: string
-    status?: '' | '1' | '2' | '3'
-    exclude?: '' | '1' | '2' | '3'
-    search?: string
-  }) => {
-    const { project } = payload
-    let url = `/version/?project__slug=${project}`
-    if (payload.status) url += `&status=${payload.status}`
-    if (payload.exclude) url += `&status__exclude=${payload.exclude}`
-    if (payload.search) url += `&search=${payload.search}`
+  const fetchVersionList = async (
+    payload?:
+      | string
+      | {
+          project?: string
+          status?: '' | '1' | '2' | '3'
+          exclude?: '' | '1' | '2' | '3'
+          search?: string
+        },
+  ) => {
+    let url = `/version/`
+    const params = new URLSearchParams()
+
+    if (typeof payload === 'string') {
+      params.append('project__slug', payload)
+    } else if (payload && typeof payload === 'object') {
+      if (payload.project) params.append('project__slug', payload.project)
+      if (payload.status) params.append('status', payload.status)
+      if (payload.exclude) params.append('status__exclude', payload.exclude)
+      if (payload.search) params.append('search', payload.search)
+    }
+
+    const queryString = params.toString()
+    if (queryString) url += `?${queryString}`
+
     return await api
       .get(url)
       .then(res => (versionList.value = res.data.results))

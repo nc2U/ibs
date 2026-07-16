@@ -38,8 +38,7 @@ const searchOptions = reactive([
       { value: 'author', label: '작성자' },
       { value: 'assignee', label: '담당자' },
       { value: 'version', label: '목표단계' },
-      { value: 'category', label: '범주', disabled: true },
-      { value: 'done_ratio', label: '진척도', disabled: true },
+      { value: 'done_ratio', label: '진척도' },
       { value: 'is_private', label: '비공개', disabled: true },
       { value: 'watcher', label: '업무관람자', disabled: true },
       { value: 'updater', label: '수정자', disabled: true },
@@ -270,8 +269,7 @@ watch(
 
 watch(searchCond, nVal => {
   if (nVal.includes('project')) form.value.project = ''
-  if (nVal.includes('tracker') && !form.value.tracker)
-    form.value.tracker = props.trackerList[0]?.pk
+  if (nVal.includes('tracker') && !form.value.tracker) form.value.tracker = props.trackerList[0]?.pk
   if (nVal.includes('priority') && !form.value.priority)
     form.value.priority = props.priorityList[0]?.pk
   if (!nVal.includes('status')) searchCond.value = ['status']

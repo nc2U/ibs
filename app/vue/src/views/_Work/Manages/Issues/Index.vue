@@ -56,6 +56,7 @@ onBeforeMount(async () => {
 
   await workStore.fetchAllProjectList('', '', 'all')
   await workStore.fetchMemberList()
+  await workStore.fetchVersionList() // 전역 목표단계(버전) 목록 로드
   await issueStore.fetchTrackerList()
   await issueStore.fetchStatusList()
   await issueStore.fetchPriorityList()
