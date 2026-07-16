@@ -236,13 +236,26 @@ const filterSubmit = () => {
   emit('filter-submit', filterData)
 }
 
-watch(props, nVal => {
-  if (nVal.statusList.length) form.value.status = props.statusList[0]?.pk
-})
+watch(
+  () => props.statusList,
+  nVal => {
+    if (nVal.length && !form.value.status) form.value.status = nVal[0]?.pk
+  },
+  { immediate: true },
+)
+
+watch(
+  () => props.trackerList,
+  nVal => {
+    if (nVal.length && !form.value.tracker) form.value.tracker = nVal[0]?.pk
+  },
+  { immediate: true },
+)
 
 watch(searchCond, nVal => {
   if (nVal.includes('project')) form.value.project = ''
-  if (nVal.includes('tracker')) form.value.tracker = props.trackerList[0]?.pk
+  if (nVal.includes('tracker') && !form.value.tracker)
+    form.value.tracker = props.trackerList[0]?.pk
   if (!nVal.includes('status')) searchCond.value = ['status']
 })
 
