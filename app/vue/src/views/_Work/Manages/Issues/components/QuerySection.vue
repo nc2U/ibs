@@ -49,52 +49,52 @@ const searchOptions = reactive([
   {
     label: '문자열 검색',
     options: [
-      { value: 'subject', label: '제목' },
-      { value: 'description', label: '설명' },
-      { value: 'comment', label: '댓글' },
+      { value: 'subject', label: '\u00A0\u00A0\u00A0제목' },
+      { value: 'description', label: '\u00A0\u00A0\u00A0설명' },
+      { value: 'comment', label: '\u00A0\u00A0\u00A0댓글' },
     ],
     disabled: true,
   },
   {
     label: '날짜별 검색',
     options: [
-      { value: 'created', label: '등록일', disabled: true },
-      { value: 'updated', label: '변경일', disabled: true },
-      { value: 'start_date', label: '시작일', disabled: true },
-      { value: 'due_date', label: '완료기한', disabled: true },
+      { value: 'created', label: '\u00A0\u00A0\u00A0등록일', disabled: true },
+      { value: 'updated', label: '\u00A0\u00A0\u00A0변경일', disabled: true },
+      { value: 'start_date', label: '\u00A0\u00A0\u00A0시작일', disabled: true },
+      { value: 'due_date', label: '\u00A0\u00A0\u00A0완료기한', disabled: true },
     ],
     disabled: true,
   },
   {
     label: '파일',
     options: [
-      { value: 'file', label: '파일', disabled: true },
-      { value: 'file_desc', label: '파일설명', disabled: true },
+      { value: 'file', label: '\u00A0\u00A0\u00A0파일', disabled: true },
+      { value: 'file_desc', label: '\u00A0\u00A0\u00A0파일설명', disabled: true },
     ],
     disabled: true,
   },
   {
     label: '담당',
     options: [
-      { value: 'group', label: '할당된 사람의 그룹', disabled: true },
-      { value: 'role', label: '할당된 사람의 역할', disabled: true },
+      { value: 'group', label: '\u00A0\u00A0\u00A0할당된 사람의 그룹', disabled: true },
+      { value: 'role', label: '\u00A0\u00A0\u00A0할당된 사람의 역할', disabled: true },
     ],
   },
   {
     label: '목표단계',
     options: [
-      { value: 'version_date', label: '목표단계의 날짜', disabled: true },
-      { value: 'version_status', label: '목표단계의 상태', disabled: true },
+      { value: 'version_date', label: '\u00A0\u00A0\u00A0목표단계의 날짜', disabled: true },
+      { value: 'version_status', label: '\u00A0\u00A0\u00A0목표단계의 상태', disabled: true },
     ],
     disabled: true,
   },
   {
     label: '관계',
     options: [
-      { value: 'parent_issue', label: '상위업무' },
-      { value: 'parent', label: '하위업무' },
-      { value: 'follows_issue', label: '선행업무' },
-      { value: 'precedes_issue', label: '후속업무' },
+      { value: 'parent_issue', label: '\u00A0\u00A0\u00A0상위업무' },
+      { value: 'parent', label: '\u00A0\u00A0\u00A0하위업무' },
+      { value: 'follows_issue', label: '\u00A0\u00A0\u00A0선행업무' },
+      { value: 'precedes_issue', label: '\u00A0\u00A0\u00A0후속업무' },
     ],
   },
 ])
