@@ -6,7 +6,7 @@ defineProps({
   allProjects: { type: Array as PropType<selectProject[]>, default: () => [] },
   defaultTitle: { type: String, default: '전체 프로젝트' },
   defaultValue: { type: String, default: '' },
-  valueType: { type: String as PropType<'value' | 'slug'>, default: 'pk' },
+  valueType: { type: String as PropType<'pk' | 'slug'>, default: 'pk' },
 })
 </script>
 
