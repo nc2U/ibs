@@ -118,7 +118,7 @@ const searchOptions = reactive<SearchOptionGroup[]>([
       { value: 'precedes_issue', label: '\u00A0\u00A0\u00A0후속 업무' },
       { value: 'follows_issue', label: '\u00A0\u00A0\u00A0선행 업무' },
       { value: 'parent_issue', label: '\u00A0\u00A0\u00A0상위 업무' },
-      { value: 'parent', label: '\u00A0\u00A0\u00A0하위 업무' },
+      { value: 'sub_issue', label: '\u00A0\u00A0\u00A0하위 업무' },
     ],
   },
 ])
@@ -156,8 +156,8 @@ const cond = ref({
   version_date: 'is' as 'is' | 'lte' | 'gte' | 'between' | 'none' | 'any',
   follows_issue: 'is' as 'is' | 'exclude',
   precedes_issue: 'is' as 'is' | 'exclude',
-
-  parent: 'is' as 'is' | 'contains' | 'none' | 'any',
+  parent_issue: 'is' as 'is' | 'exclude' | 'contains' | 'none' | 'any',
+  parent: 'is' as 'is' | 'exclude' | 'contains' | 'none' | 'any',
 })
 
 const route = useRoute()
@@ -215,10 +215,14 @@ const form = ref<IssueFilter>({
   file__exclude: '',
   file_desc: '',
   file_desc__exclude: '',
-  parent__subject: '',
-  parent__isnull: '0',
   parent_issue: null, // 상위업무
-  parent: '' as string | number, // 하위업무
+  parent_issue__exclude: null,
+  parent_issue__contains: '',
+  parent_issue__isnull: '0',
+  parent: null, // 하위업무
+  parent__exclude: null,
+  parent__contains: '',
+  parent__isnull: '0',
   follows_issue: null, // 선행업무
   follows_issue__exclude: null,
   precedes_issue: null, // 후속업무
@@ -487,6 +491,28 @@ const filterSubmit = () => {
       filterData.precedes_issue__exclude = form.value.precedes_issue__exclude
   }
 
+  // parent_issue
+  if (searchCond.value.includes('parent_issue')) {
+    if (cond.value.parent_issue === 'is') filterData.parent_issue = form.value.parent_issue
+    else if (cond.value.parent_issue === 'exclude')
+      filterData.parent_issue__exclude = form.value.parent_issue__exclude
+    else if (cond.value.parent_issue === 'contains')
+      filterData.parent_issue__contains = form.value.parent_issue__contains
+    else if (cond.value.parent_issue === 'none') filterData.parent_issue__isnull = '1'
+    else if (cond.value.parent_issue === 'any') filterData.parent_issue__isnull = '0'
+  }
+
+  // parent (sub_issue)
+  if (searchCond.value.includes('sub_issue')) {
+    if (cond.value.parent === 'is') filterData.parent = form.value.parent
+    else if (cond.value.parent === 'exclude')
+      filterData.parent__exclude = form.value.parent__exclude
+    else if (cond.value.parent === 'contains')
+      filterData.parent__contains = form.value.parent__contains
+    else if (cond.value.parent === 'none') filterData.parent__isnull = '1'
+    else if (cond.value.parent === 'any') filterData.parent__isnull = '0'
+  }
+
   // created
   if (searchCond.value.includes('created')) {
     if (cond.value.created === 'is') filterData.created = form.value.created
@@ -562,12 +588,7 @@ const filterSubmit = () => {
     else if (cond.value.done_ratio === 'any') filterData.done_ratio__isnull = '0'
   }
 
-  if (form.value.parent)
-    if (cond.value.parent === 'is') filterData.parent = form.value.parent
-    else if (cond.value.parent === 'contains')
-      filterData.parent__subject = form.value.parent as string
-    else if (cond.value.parent === 'none') filterData.parent__isnull = '1'
-    else if (cond.value.parent === 'any') filterData.parent__isnull = '0'
+
 
   console.log(filterData)
 
@@ -1762,28 +1783,78 @@ onBeforeMount(async () => {
               <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
                 <CFormCheck checked="true" label="상위업무" id="parent_issue" readonly />
               </CCol>
+              <CCol class="col-4 col-lg-3 col-xl-2">
+                <CFormSelect v-model="cond.parent_issue" size="sm" @change="filterSubmit">
+                  <option value="is">이다</option>
+                  <option value="exclude">아니다</option>
+                  <option value="contains">포함되는 키워드</option>
+                  <option value="none">없음</option>
+                  <option value="any">모두</option>
+                </CFormSelect>
+              </CCol>
               <CCol class="col-8 col-lg-3">
-                <Multiselect
-                  v-model="form.parent_issue"
-                  :options="getIssues"
-                  placeholder="상위업무 선택"
-                  searchable
+                <CFormInput
+                  v-if="cond.parent_issue === 'is'"
+                  v-model.number="form.parent_issue"
+                  type="number"
+                  placeholder="상위업무 ID 입력"
+                  size="sm"
+                  @keydown.enter="filterSubmit"
+                />
+                <CFormInput
+                  v-if="cond.parent_issue === 'exclude'"
+                  v-model.number="form.parent_issue__exclude"
+                  type="number"
+                  placeholder="상위업무 ID 입력"
+                  size="sm"
+                  @keydown.enter="filterSubmit"
+                />
+                <CFormInput
+                  v-if="cond.parent_issue === 'contains'"
+                  v-model="form.parent_issue__contains"
+                  placeholder="제목 키워드 입력"
+                  size="sm"
                   @keydown.enter="filterSubmit"
                 />
               </CCol>
             </CRow>
 
             <!-- 하위 업무 (sub_issue) -->
-            <CRow v-if="searchCond.includes('parent')">
+            <CRow v-if="searchCond.includes('sub_issue')">
               <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
                 <CFormCheck checked="true" label="하위업무" id="parent" readonly />
               </CCol>
+              <CCol class="col-4 col-lg-3 col-xl-2">
+                <CFormSelect v-model="cond.parent" size="sm" @change="filterSubmit">
+                  <option value="is">이다</option>
+                  <option value="exclude">아니다</option>
+                  <option value="contains">포함되는 키워드</option>
+                  <option value="none">없음</option>
+                  <option value="any">모두</option>
+                </CFormSelect>
+              </CCol>
               <CCol class="col-8 col-lg-3">
-                <Multiselect
-                  v-model="form.parent"
-                  :options="getIssues"
-                  placeholder="하위업무 선택"
-                  searchable
+                <CFormInput
+                  v-if="cond.parent === 'is'"
+                  v-model.number="form.parent"
+                  type="number"
+                  placeholder="하위업무 ID 입력"
+                  size="sm"
+                  @keydown.enter="filterSubmit"
+                />
+                <CFormInput
+                  v-if="cond.parent === 'exclude'"
+                  v-model.number="form.parent__exclude"
+                  type="number"
+                  placeholder="하위업무 ID 입력"
+                  size="sm"
+                  @keydown.enter="filterSubmit"
+                />
+                <CFormInput
+                  v-if="cond.parent === 'contains'"
+                  v-model="form.parent__contains"
+                  placeholder="제목 키워드 입력"
+                  size="sm"
                   @keydown.enter="filterSubmit"
                 />
               </CCol>

@@ -179,8 +179,6 @@ export interface IssueFilter {
   done_ratio__between_min?: number | null
   done_ratio__between_max?: number | null
   done_ratio__isnull?: string
-  parent__subject?: string
-  parent__isnull?: string
   subject?: string
   subject__exclude?: string
   description?: string
@@ -236,8 +234,14 @@ export interface IssueFilter {
   due_date__between_min?: string
   due_date__between_max?: string
   due_date__isnull?: string
+  parent?: number | null // 하위업무
+  parent__exclude?: number | null
+  parent__contains?: string
+  parent__isnull?: string
   parent_issue?: number | null // 상위업무
-  parent?: number | string // 하위업무
+  parent_issue__exclude?: number | null
+  parent_issue__contains?: string
+  parent_issue__isnull?: string
   follows_issue?: number | null // 선행업무
   follows_issue__exclude?: number | null
   precedes_issue?: number | null // 후속업무

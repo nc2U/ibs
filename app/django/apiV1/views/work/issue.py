@@ -104,10 +104,15 @@ class IssueFilter(FilterSet):
     done_ratio__between = CharFilter(method='filter_done_ratio_between', label='진척도-범위 (예: 10,20)')
     done_ratio__isnull = BooleanFilter(field_name='done_ratio', lookup_expr='isnull', label='진척도-유무')
 
-    parent__subject = CharFilter(field_name='parent__subject', lookup_expr='icontains', label='상위업무-제목')
-    parent__isnull = BooleanFilter(field_name='parent', lookup_expr='isnull', label='상위업무-유무')
-    parent_issue = NumberFilter(method='filter_parent_issue', label='상위업무-검색')
-    parent = NumberFilter(method='filter_parent', label='하위업무-검색')
+    parent_issue = NumberFilter(field_name='parent', lookup_expr='exact', label='상위업무-일치')
+    parent_issue__exclude = NumberFilter(field_name='parent', exclude=True, label='상위업무-제외')
+    parent_issue__contains = CharFilter(field_name='parent__subject', lookup_expr='icontains', label='상위업무-제목포함')
+    parent_issue__isnull = BooleanFilter(field_name='parent', lookup_expr='isnull', label='상위업무-유무')
+
+    parent = NumberFilter(method='filter_sub_issue', label='하위업무-일치')
+    parent__exclude = NumberFilter(method='filter_sub_issue_exclude', label='하위업무-제외')
+    parent__contains = CharFilter(field_name='issue_set__subject', lookup_expr='icontains', label='하위업무-제목포함')
+    parent__isnull = BooleanFilter(field_name='issue_set', lookup_expr='isnull', label='하위업무-유무')
     follows_issue = NumberFilter(method='filter_follows', label='선행업무-검색')
     follows_issue__exclude = NumberFilter(method='filter_follows_exclude', label='선행업무-제외')
     precedes_issue = NumberFilter(method='filter_precedes', label='후속업무-검색')
@@ -131,7 +136,9 @@ class IssueFilter(FilterSet):
         fields = ('project__slug', 'sub_project', 'sub_project__exclude', 'sub_project__isnull', 'status__closed', 'status', 'tracker', 'priority', 'category', 'category__exclude', 'category__isnull',
                   'creator', 'assigned_to', 'fixed_version', 'id', 'id__gte', 'id__lte', 'id__between', 'id__any',
                   'done_ratio', 'done_ratio__gte', 'done_ratio__lte', 'done_ratio__between', 'done_ratio__isnull',
-                  'parent', 'parent_issue', 'precedes_issue', 'precedes_issue__exclude', 'follows_issue', 'follows_issue__exclude', 'project__my_project', 'is_private',
+                  'parent', 'parent__exclude', 'parent__contains', 'parent__isnull',
+                  'parent_issue', 'parent_issue__exclude', 'parent_issue__contains', 'parent_issue__isnull',
+                  'precedes_issue', 'precedes_issue__exclude', 'follows_issue', 'follows_issue__exclude', 'project__my_project', 'is_private',
                   'watcher', 'watcher__exclude', 'updater', 'updater__exclude', 'last_updater', 'last_updater__exclude',
                   'subject', 'subject__exclude', 'description', 'description__exclude', 'comment', 'comment__exclude',
                   'any_searchable', 'any_searchable__exclude',
@@ -167,16 +174,12 @@ class IssueFilter(FilterSet):
         return queryset
 
     @staticmethod
-    def filter_parent_issue(queryset, name, value):
-        try:
-            parent = Issue.objects.get(pk=value).parent
-            return queryset.filter(pk=parent.pk) if parent else queryset.none()
-        except Issue.DoesNotExist:
-            return queryset.none()
+    def filter_sub_issue(queryset, name, value):
+        return queryset.filter(issue_set=value).distinct()
 
     @staticmethod
-    def filter_parent(queryset, name, value):
-        return queryset.filter(parent=value)
+    def filter_sub_issue_exclude(queryset, name, value):
+        return queryset.exclude(issue_set=value).distinct()
 
     @staticmethod
     def filter_precedes(queryset, name, value):
