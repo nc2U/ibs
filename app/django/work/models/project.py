@@ -290,7 +290,7 @@ class Role(models.Model):
         return self.name
 
     class Meta:
-        ordering = ('order', 'id',)
+        ordering = ('order', '-id',)
         verbose_name = '03. 역할'
         verbose_name_plural = '03. 역할'
 
