@@ -25,7 +25,7 @@ const props = defineProps({
 const { can, PERM } = usePerms()
 const accStore = useAccount()
 const workStore = useWork()
-const roleList = computed(() => workStore.roleList.filter(r => r.pk !== 1 && r.pk !== 2))
+const roleList = computed(() => workStore.roleList.filter(r => ![1, 2].includes(r.pk)))
 
 const emit = defineEmits(['filter-submit'])
 
@@ -593,8 +593,6 @@ const filterSubmit = () => {
     } else if (cond.value.done_ratio === 'none') filterData.done_ratio__isnull = '1'
     else if (cond.value.done_ratio === 'any') filterData.done_ratio__isnull = '0'
   }
-
-
 
   console.log(filterData)
 
