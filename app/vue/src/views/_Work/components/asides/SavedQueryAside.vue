@@ -128,7 +128,7 @@ onMounted(async () => {
     </v-btn>
   </div>
 
-  <ConfirmModal ref="refConfirmDelete" @confirm-func="onDeleteConfirm" />
+  <ConfirmModal ref="refConfirmDelete" item-name="검색양식" @confirm-func="onDeleteConfirm" />
 </template>
 
 <style lang="scss" scoped>

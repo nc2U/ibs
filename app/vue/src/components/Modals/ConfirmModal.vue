@@ -1,12 +1,15 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
 
-defineProps({ size: { type: String, default: '' } })
+const props = defineProps({
+  itemName: { type: String, default: '아이템' },
+  size: { type: String, default: '' },
+})
 
 const emit = defineEmits(['confirm-func'])
 
 const visible = ref(false)
-const headerMessage = ref('아이템 삭제 확인')
+const headerMessage = ref(`${props.itemName} 삭제 확인`)
 const bodyMessage = ref('')
 const headIcon = ref('mdi-alert-octagram')
 const headerColor = ref()
@@ -40,12 +43,12 @@ defineExpose({ callModal, close })
     </CModalHeader>
     <CModalBody class="text-body" style="line-height: 26px">
       <slot>
-        {{ bodyMessage || '이 아이템을 삭제 하시겠습니까?' }}
+        {{ bodyMessage || `이 ${itemName}을(를) 삭제 하시겠습니까?` }}
       </slot>
     </CModalBody>
     <CModalFooter>
       <slot name="footer">
-        <v-btn size="small" color="warning" @click="emit('confirm-func')">삭제</v-btn>
+        <v-btn size="small" color="error" @click="emit('confirm-func')">삭제</v-btn>
       </slot>
       <v-btn color="light" size="small" @click="() => (visible = false)" flat> 닫기</v-btn>
     </CModalFooter>
