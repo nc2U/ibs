@@ -11024,5 +11024,45 @@
       "updated": "2024-02-29T04:29:24.243Z",
       "creator": 1
     }
+  },
+  {
+    "model": "work.customquery",
+    "pk": 1,
+    "fields": {
+      "name": "내 북마크",
+      "description": "내가 즐겨찾기(북마크)한 프로젝트/업무 조회",
+      "target_type": "project",
+      "project": null,
+      "user": 1,
+      "is_public": true,
+      "filters": {
+        "bookmark": true
+      },
+      "column_names": [],
+      "sort_criteria": [],
+      "group_by": "",
+      "created": "2026-07-16T10:40:00.000Z",
+      "updated": "2026-07-16T10:40:00.000Z"
+    }
+  },
+  {
+    "model": "work.customquery",
+    "pk": 2,
+    "fields": {
+      "name": "내 프로젝트",
+      "description": "내가 참여 중인 프로젝트 조회",
+      "target_type": "project",
+      "project": null,
+      "user": 1,
+      "is_public": true,
+      "filters": {
+        "my_project": true
+      },
+      "column_names": [],
+      "sort_criteria": [],
+      "group_by": "",
+      "created": "2026-07-16T10:40:00.000Z",
+      "updated": "2026-07-16T10:40:00.000Z"
+    }
   }
 ]
