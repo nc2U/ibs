@@ -48,7 +48,7 @@ defineExpose({ callModal, close })
     </CModalBody>
     <CModalFooter>
       <slot name="footer">
-        <v-btn size="small" color="error" @click="emit('confirm-func')">삭제</v-btn>
+        <v-btn size="small" color="red-darken-3" @click="emit('confirm-func')">삭제</v-btn>
       </slot>
       <v-btn color="light" size="small" @click="() => (visible = false)" flat> 닫기</v-btn>
     </CModalFooter>
