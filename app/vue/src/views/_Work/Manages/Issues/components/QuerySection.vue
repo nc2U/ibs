@@ -154,6 +154,8 @@ const cond = ref({
   creator_role: 'is' as 'is' | 'exclude',
   assignee_role: 'is' as 'is' | 'exclude',
   version_date: 'is' as 'is' | 'lte' | 'gte' | 'between' | 'none' | 'any',
+  follows_issue: 'is' as 'is' | 'exclude',
+  precedes_issue: 'is' as 'is' | 'exclude',
 
   parent: 'is' as 'is' | 'contains' | 'none' | 'any',
 })
@@ -218,7 +220,9 @@ const form = ref<IssueFilter>({
   parent_issue: null, // 상위업무
   parent: '' as string | number, // 하위업무
   follows_issue: null, // 선행업무
+  follows_issue__exclude: null,
   precedes_issue: null, // 후속업무
+  precedes_issue__exclude: null,
   project__my_project: undefined,
   created: '',
   created__gte: '',
@@ -467,6 +471,20 @@ const filterSubmit = () => {
     else if (cond.value.sub_project === 'is') filterData.sub_project = form.value.sub_project
     else if (cond.value.sub_project === 'exclude')
       filterData.sub_project__exclude = form.value.sub_project__exclude
+  }
+
+  // follows_issue
+  if (searchCond.value.includes('follows_issue')) {
+    if (cond.value.follows_issue === 'is') filterData.follows_issue = form.value.follows_issue
+    else if (cond.value.follows_issue === 'exclude')
+      filterData.follows_issue__exclude = form.value.follows_issue__exclude
+  }
+
+  // precedes_issue
+  if (searchCond.value.includes('precedes_issue')) {
+    if (cond.value.precedes_issue === 'is') filterData.precedes_issue = form.value.precedes_issue
+    else if (cond.value.precedes_issue === 'exclude')
+      filterData.precedes_issue__exclude = form.value.precedes_issue__exclude
   }
 
   // created
@@ -1682,12 +1700,27 @@ onBeforeMount(async () => {
               <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
                 <CFormCheck checked="true" label="선행업무" id="follows_issue" readonly />
               </CCol>
+              <CCol class="col-4 col-lg-3 col-xl-2">
+                <CFormSelect v-model="cond.follows_issue" size="sm">
+                  <option value="is">이다</option>
+                  <option value="exclude">아니다</option>
+                </CFormSelect>
+              </CCol>
               <CCol class="col-8 col-lg-3">
-                <Multiselect
-                  v-model="form.follows_issue"
-                  :options="getIssues"
-                  placeholder="선행업무 선택"
-                  searchable
+                <CFormInput
+                  v-if="cond.follows_issue === 'is'"
+                  v-model.number="form.follows_issue"
+                  type="number"
+                  placeholder="선행업무 ID 입력"
+                  size="sm"
+                  @keydown.enter="filterSubmit"
+                />
+                <CFormInput
+                  v-if="cond.follows_issue === 'exclude'"
+                  v-model.number="form.follows_issue__exclude"
+                  type="number"
+                  placeholder="선행업무 ID 입력"
+                  size="sm"
                   @keydown.enter="filterSubmit"
                 />
               </CCol>
@@ -1698,12 +1731,27 @@ onBeforeMount(async () => {
               <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
                 <CFormCheck checked="true" label="후속업무" id="precedes_issue" readonly />
               </CCol>
+              <CCol class="col-4 col-lg-3 col-xl-2">
+                <CFormSelect v-model="cond.precedes_issue" size="sm">
+                  <option value="is">이다</option>
+                  <option value="exclude">아니다</option>
+                </CFormSelect>
+              </CCol>
               <CCol class="col-8 col-lg-3">
-                <Multiselect
-                  v-model="form.precedes_issue"
-                  :options="getIssues"
-                  placeholder="후속업무 선택"
-                  searchable
+                <CFormInput
+                  v-if="cond.precedes_issue === 'is'"
+                  v-model.number="form.precedes_issue"
+                  type="number"
+                  placeholder="후속업무 ID 입력"
+                  size="sm"
+                  @keydown.enter="filterSubmit"
+                />
+                <CFormInput
+                  v-if="cond.precedes_issue === 'exclude'"
+                  v-model.number="form.precedes_issue__exclude"
+                  type="number"
+                  placeholder="후속업무 ID 입력"
+                  size="sm"
                   @keydown.enter="filterSubmit"
                 />
               </CCol>

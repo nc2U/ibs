@@ -169,7 +169,9 @@ export const useIssue = defineStore('issue', () => {
       due_date__isnull: 'due_date__isnull',
       parent_issue: 'parent_issue',
       follows_issue: 'follows_issue',
+      follows_issue__exclude: 'follows_issue__exclude',
       precedes_issue: 'precedes_issue',
+      precedes_issue__exclude: 'precedes_issue__exclude',
     }
 
     Object.entries(payload).forEach(([key, value]) => {

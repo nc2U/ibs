@@ -109,7 +109,9 @@ class IssueFilter(FilterSet):
     parent_issue = NumberFilter(method='filter_parent_issue', label='상위업무-검색')
     parent = NumberFilter(method='filter_parent', label='하위업무-검색')
     follows_issue = NumberFilter(method='filter_follows', label='선행업무-검색')
+    follows_issue__exclude = NumberFilter(method='filter_follows_exclude', label='선행업무-제외')
     precedes_issue = NumberFilter(method='filter_precedes', label='후속업무-검색')
+    precedes_issue__exclude = NumberFilter(method='filter_precedes_exclude', label='후속업무-제외')
 
     project__my_project = BooleanFilter(method='filter_my_project', label='내 프로젝트 업무 여부')
 
@@ -129,7 +131,7 @@ class IssueFilter(FilterSet):
         fields = ('project__slug', 'sub_project', 'sub_project__exclude', 'sub_project__isnull', 'status__closed', 'status', 'tracker', 'priority', 'category', 'category__exclude', 'category__isnull',
                   'creator', 'assigned_to', 'fixed_version', 'id', 'id__gte', 'id__lte', 'id__between', 'id__any',
                   'done_ratio', 'done_ratio__gte', 'done_ratio__lte', 'done_ratio__between', 'done_ratio__isnull',
-                  'parent', 'parent_issue', 'precedes_issue', 'follows_issue', 'project__my_project', 'is_private',
+                  'parent', 'parent_issue', 'precedes_issue', 'precedes_issue__exclude', 'follows_issue', 'follows_issue__exclude', 'project__my_project', 'is_private',
                   'watcher', 'watcher__exclude', 'updater', 'updater__exclude', 'last_updater', 'last_updater__exclude',
                   'subject', 'subject__exclude', 'description', 'description__exclude', 'comment', 'comment__exclude',
                   'any_searchable', 'any_searchable__exclude',
@@ -183,10 +185,20 @@ class IssueFilter(FilterSet):
         return queryset.filter(pk__in=pks)
 
     @staticmethod
+    def filter_precedes_exclude(queryset, name, value):
+        pks = IssueRelation.objects.filter(source_id=value).values_list('target_id', flat=True)
+        return queryset.exclude(pk__in=pks)
+
+    @staticmethod
     def filter_follows(queryset, name, value):
         # 내가 후속하는 업무들 (내가 target이므로, 대상 source_id들을 찾음)
         pks = IssueRelation.objects.filter(target_id=value).values_list('source_id', flat=True)
         return queryset.filter(pk__in=pks)
+
+    @staticmethod
+    def filter_follows_exclude(queryset, name, value):
+        pks = IssueRelation.objects.filter(target_id=value).values_list('source_id', flat=True)
+        return queryset.exclude(pk__in=pks)
 
     @staticmethod
     def filter_updater(queryset, name, value):

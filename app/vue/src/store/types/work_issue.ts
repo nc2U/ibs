@@ -239,7 +239,9 @@ export interface IssueFilter {
   parent_issue?: number | null // 상위업무
   parent?: number | string // 하위업무
   follows_issue?: number | null // 선행업무
+  follows_issue__exclude?: number | null
   precedes_issue?: number | null // 후속업무
+  precedes_issue__exclude?: number | null
   project__my_project?: boolean
   page?: number
 }
