@@ -37,6 +37,7 @@ const issueCommentList = computed(() => issueStore.issueCommentList)
 const statusList = computed(() => issueStore.statusList)
 const trackerList = computed(() => issueStore.trackerList)
 const priorityList = computed(() => issueStore.priorityList)
+const categoryList = computed(() => issueStore.categoryList)
 const getIssues = computed(() => issueStore.getIssues)
 
 const onSubmit = async (payload: any) => {
@@ -137,6 +138,7 @@ onBeforeMount(async () => {
   await issueStore.fetchTrackerList()
   await issueStore.fetchStatusList()
   await issueStore.fetchPriorityList()
+  await issueStore.fetchCategoryList(projId.value) // 프로젝트 카테고리(범주) 목록 로드
   await workStore.fetchVersionList({ project: projId.value })
   loading.value = false
 })
@@ -154,6 +156,7 @@ onBeforeMount(async () => {
         :status-list="statusList"
         :tracker-list="trackerList"
         :priority-list="priorityList"
+        :category-list="categoryList"
         :get-issues="getIssues"
         :get-users="getUsers"
         :get-versions="getVersions"

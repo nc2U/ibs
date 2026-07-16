@@ -12,6 +12,7 @@ const props = defineProps({
   statusList: { type: Array as PropType<IssueStatus[]>, default: () => [] },
   trackerList: { type: Array as PropType<Tracker[]>, default: () => [] },
   priorityList: { type: Array as PropType<any[]>, default: () => [] },
+  categoryList: { type: Array as PropType<any[]>, default: () => [] },
   getIssues: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },
   getUsers: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },
   getVersions: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },
@@ -29,7 +30,19 @@ const resetFilter = () => {
   filterSubmit()
 }
 
-const searchOptions = reactive([
+interface OptionItem {
+  value: string
+  label: string
+  disabled?: boolean
+}
+
+interface SearchOptionGroup {
+  label?: string
+  options: OptionItem[]
+  disabled?: boolean
+}
+
+const searchOptions = reactive<SearchOptionGroup[]>([
   {
     options: [
       { value: 'status', label: '상태', disabled: true },
@@ -38,7 +51,7 @@ const searchOptions = reactive([
       { value: 'author', label: '작성자' },
       { value: 'assignee', label: '담당자' },
       { value: 'version', label: '목표단계' },
-      { value: 'category', label: '범주', disabled: true },
+      { value: 'category', label: '범주' },
       { value: 'done_ratio', label: '진척도' },
       { value: 'is_private', label: '비공개', disabled: true },
       { value: 'watcher', label: '업무관람자', disabled: true },
@@ -105,6 +118,7 @@ const cond = ref({
   project: 'is' as 'is' | 'exclude',
   tracker: 'is' as 'is' | 'exclude',
   priority: 'is' as 'is' | 'exclude',
+  category: 'is' as 'is' | 'exclude' | 'none' | 'any',
   done_ratio: 'is' as 'is' | 'gte' | 'lte' | 'between' | 'none' | 'any',
   author: 'is' as 'is' | 'exclude',
   assignee: 'is' as 'is' | 'exclude' | 'none' | 'any',
@@ -128,6 +142,9 @@ const form = ref<IssueFilter>({
   tracker__exclude: null,
   priority: null,
   priority__exclude: null,
+  category: null,
+  category__exclude: null,
+  category__isnull: '0',
   done_ratio: null,
   done_ratio__gte: null,
   done_ratio__lte: null,
@@ -215,6 +232,12 @@ const filterSubmit = () => {
     if (cond.value.priority === 'is') filterData.priority = form.value.priority
     else if (cond.value.priority === 'exclude') filterData.priority__exclude = form.value.priority
 
+  if (searchCond.value.includes('category'))
+    if (cond.value.category === 'is') filterData.category = form.value.category
+    else if (cond.value.category === 'exclude') filterData.category__exclude = form.value.category
+    else if (cond.value.category === 'none') filterData.category__isnull = '1'
+    else if (cond.value.category === 'any') filterData.category__isnull = '0'
+
   if (searchCond.value.includes('author'))
     if (cond.value.author === 'is') filterData.author = form.value.author
     else if (cond.value.author === 'exclude') filterData.author__exclude = form.value.author
@@ -240,8 +263,10 @@ const filterSubmit = () => {
 
   if (searchCond.value.includes('done_ratio')) {
     if (cond.value.done_ratio === 'is') filterData.done_ratio = form.value.done_ratio
-    else if (cond.value.done_ratio === 'gte') filterData.done_ratio__gte = form.value.done_ratio__gte
-    else if (cond.value.done_ratio === 'lte') filterData.done_ratio__lte = form.value.done_ratio__lte
+    else if (cond.value.done_ratio === 'gte')
+      filterData.done_ratio__gte = form.value.done_ratio__gte
+    else if (cond.value.done_ratio === 'lte')
+      filterData.done_ratio__lte = form.value.done_ratio__lte
     else if (cond.value.done_ratio === 'between')
       filterData.done_ratio__between = form.value.done_ratio__between
     else if (cond.value.done_ratio === 'none') filterData.done_ratio__isnull = '1'
@@ -284,16 +309,36 @@ watch(
   { immediate: true },
 )
 
+watch(
+  () => props.categoryList,
+  nVal => {
+    if (nVal.length && !form.value.category) form.value.category = nVal[0]?.pk
+  },
+  { immediate: true },
+)
+
 watch(searchCond, nVal => {
   if (nVal.includes('project')) form.value.project = ''
   if (nVal.includes('tracker') && !form.value.tracker) form.value.tracker = props.trackerList[0]?.pk
   if (nVal.includes('priority') && !form.value.priority)
     form.value.priority = props.priorityList[0]?.pk
+  if (nVal.includes('category') && !form.value.category)
+    form.value.category = props.categoryList[0]?.pk
   if (!nVal.includes('status')) searchCond.value = ['status']
 })
 
 onBeforeMount(async () => {
   if (!!props.statusList.length) form.value.status = props.statusList[0]?.pk
+
+  // 프로젝트 환경인지 체크하여 범주(category) 옵션 제어
+  if (route.params.projId) {
+    const categoryOpt = searchOptions[0].options.find(o => o.value === 'category')
+    if (categoryOpt) delete categoryOpt.disabled
+  } else {
+    const categoryIdx = searchOptions[0].options.findIndex(o => o.value === 'category')
+    if (categoryIdx > -1) searchOptions[0].options.splice(categoryIdx, 1)
+  }
+
   if (route.name === '업무')
     searchOptions[0].options.splice(1, 0, { value: 'project', label: '프로젝트' })
 
@@ -416,6 +461,31 @@ onBeforeMount(async () => {
                 <CFormSelect v-model="form.priority" size="sm">
                   <option v-for="priority in priorityList" :key="priority.pk" :value="priority.pk">
                     {{ priority.name }}
+                  </option>
+                </CFormSelect>
+              </CCol>
+            </CRow>
+
+            <CRow v-if="searchCond.includes('category')">
+              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
+                <CFormCheck checked="true" label="범주" id="category" readonly />
+              </CCol>
+              <CCol class="col-4 col-lg-3 col-xl-2">
+                <CFormSelect v-model="cond.category" size="sm">
+                  <option value="is">이다</option>
+                  <option value="exclude">아니다</option>
+                  <option value="none">없음</option>
+                  <option value="any">모두</option>
+                </CFormSelect>
+              </CCol>
+              <CCol class="col-4 col-lg-3">
+                <CFormSelect
+                  v-if="cond.category === 'is' || cond.category === 'exclude'"
+                  v-model="form.category"
+                  size="sm"
+                >
+                  <option v-for="category in categoryList" :key="category.pk" :value="category.pk">
+                    {{ category.name }}
                   </option>
                 </CFormSelect>
               </CCol>

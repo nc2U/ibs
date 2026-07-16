@@ -147,6 +147,9 @@ export interface IssueFilter {
   tracker__exclude?: number | null
   priority?: number | null
   priority__exclude?: number | null
+  category?: number | null
+  category__exclude?: number | null
+  category__isnull?: string
   author?: number | null
   author__exclude?: number | null
   assignee?: number | null
