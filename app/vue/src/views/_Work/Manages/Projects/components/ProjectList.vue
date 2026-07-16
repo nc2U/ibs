@@ -67,13 +67,13 @@ const updateBreakpoint = () => {
 const colProps = computed(() => {
   switch (breakpoint.value) {
     case 'sm':
-      return { xs: 12 }
+      return { xs: 12 } // 768px 미만
     case 'md':
-      return { sm: 6 }
+      return { md: 6 } // 768px 이상, 992px 미만 (기존 sm: 6 수정)
     case 'lg':
-      return { sm: 4 }
+      return { lg: 4 } // 992px 이상, 1200px 미만 (기존 sm: 4 수정)
     default:
-      return { sm: 3 }
+      return { xl: 3 } // 1200px 이상 (기존 sm: 3 수정)
   }
 })
 
@@ -141,7 +141,11 @@ onBeforeMount(() => {
       <CRow v-else>
         <template v-for="proj in issueProjectsTree" :key="proj.pk">
           <CCol v-if="hasVisible(proj)" v-bind="colProps">
-            <ProjectCard :project="proj" />
+            <CCard class="my-2 my-lg-3">
+              <CCardBody class="pb-1">
+                <ProjectCard :project="proj" />
+              </CCardBody>
+            </CCard>
           </CCol>
         </template>
       </CRow>
@@ -177,14 +181,14 @@ onBeforeMount(() => {
         </CCol>
       </CRow>
     </template>
-<template v-slot:aside>
-  <SavedQueryAside
-    target-type="project"
-    :active-query-id="activeQueryId ?? undefined"
-    :canProjectPubQuery="can(PERM.PROJECT_PUB_QUERY)"
-    @on-query-click="onQueryClick"
-    @on-reset-query="onResetQuery"
-  />
-</template>
+    <template v-slot:aside>
+      <SavedQueryAside
+        target-type="project"
+        :active-query-id="activeQueryId ?? undefined"
+        :canProjectPubQuery="can(PERM.PROJECT_PUB_QUERY)"
+        @on-query-click="onQueryClick"
+        @on-reset-query="onResetQuery"
+      />
+    </template>
   </ContentBody>
 </template>

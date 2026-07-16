@@ -4,6 +4,11 @@ import { useAccount } from '@/store/pinia/account.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import { markdownRender } from '@/utils/helper.ts'
 
+// 컴포넌트 자체 참조를 위해 이름 명시
+defineOptions({
+  name: 'ProjectCard',
+})
+
 defineProps({
   project: {
     type: Object as PropType<IssueProject>,
@@ -14,177 +19,62 @@ defineProps({
 const accStore = useAccount()
 const userInfo = computed(() => accStore.userInfo)
 
-const hasVisible = (project: IssueProject) => {
-  if (project.visible) return true
-  if (project.sub_projects && project.sub_projects.length > 0)
-    for (let sub of project.sub_projects) {
-      if (hasVisible(sub)) return true
-    }
-  return false
-}
-
 const isOwnProject = (project: IssueProject) =>
   project.all_members?.map(m => m.user.pk).includes(userInfo?.value?.pk as number)
 </script>
 
 <template>
-  <CCard v-if="hasVisible(project)" class="my-2">
-    <CCardBody class="project-set">
-      <span v-if="project.visible">
-        <router-link
-          :to="{ name: '(개요)', params: { projId: project.slug } }"
-          :class="{ 'text-grey': project.status === '9' }"
-          class="mr-2"
-        >
-          {{ project.name }}
-        </router-link>
-        <v-icon
-          v-if="isOwnProject(project)"
-          icon="mdi-account-tag"
-          color="success"
-          size="15"
-          class="ml-1"
-        />
-        <v-icon
-          v-if="project?.is_bookmarked"
-          icon="mdi-bookmark"
-          color="info"
-          size="15"
-          class="ml-1"
-        />
-        <span v-html="markdownRender(project.description)" />
-      </span>
-
-      <!-- c1 -->
-      <div
-        v-if="!!project.sub_projects?.length"
-        :class="{ child: project.visible, 'project-set': !project.visible }"
+  <div v-if="project.visible" class="project-item">
+    <div class="project-header">
+      <router-link
+        :to="{ name: '(개요)', params: { projId: project.slug } }"
+        :class="{ 'text-grey': project.status === '9' }"
       >
-        <blockquote v-for="c1 in project.sub_projects" :key="c1.pk">
-          <span v-if="c1.visible">
-            <router-link :to="{ name: '(개요)', params: { projId: c1.slug } }">
-              {{ c1.name }}
-            </router-link>
-            <v-icon
-              v-if="isOwnProject(c1)"
-              icon="mdi-account-tag"
-              color="success"
-              size="15"
-              class="ml-1"
-            />
-            <span v-html="markdownRender(c1.description)" />
-          </span>
+        {{ project.name }}
+      </router-link>
+      <v-icon
+        v-if="isOwnProject(project)"
+        icon="mdi-account-tag"
+        color="success"
+        size="15"
+        class="ml-1"
+      />
+      <v-icon
+        v-if="project?.is_bookmarked"
+        icon="mdi-bookmark"
+        color="info"
+        size="15"
+        class="ml-1"
+      />
+      <span v-html="markdownRender(project.description)" />
+    </div>
 
-          <!-- c2 -->
-          <div
-            v-if="!!c1.sub_projects?.length"
-            :class="{ child: c1.visible, 'project-set': !c1.visible }"
-          >
-            <blockquote v-for="c2 in c1.sub_projects" :key="c2.pk">
-              <span v-if="c2.visible">
-                <router-link :to="{ name: '(개요)', params: { projId: c2.slug } }">
-                  {{ c2.name }}
-                </router-link>
-                <v-icon
-                  v-if="isOwnProject(c2)"
-                  icon="mdi-account-tag"
-                  color="success"
-                  size="15"
-                  class="ml-1"
-                />
-                <span v-html="markdownRender(c2.description)" />
-              </span>
-
-              <!-- c3 -->
-              <div
-                v-if="!!c2.sub_projects?.length"
-                :class="{ child: c2.visible, 'project-set': !c2.visible }"
-              >
-                <blockquote v-for="c3 in c2.sub_projects" :key="c3.pk">
-                  <span v-if="c3.visible">
-                    <router-link :to="{ name: '(개요)', params: { projId: c3.slug } }">
-                      {{ c3.name }}
-                    </router-link>
-                    <v-icon
-                      v-if="isOwnProject(c3)"
-                      icon="mdi-account-tag"
-                      color="success"
-                      size="15"
-                      class="ml-1"
-                    />
-                    <span v-html="markdownRender(c3.description)" />
-                  </span>
-
-                  <!-- c4 -->
-                  <div
-                    v-if="!!c3.sub_projects?.length"
-                    :class="{ child: c3.visible, 'project-set': !c3.visible }"
-                  >
-                    <blockquote v-for="c4 in c3.sub_projects" :key="c4.pk">
-                      <span v-if="c4.visible">
-                        <router-link :to="{ name: '(개요)', params: { projId: c4.slug } }">
-                          {{ c4.name }}
-                        </router-link>
-                        <v-icon
-                          v-if="isOwnProject(c4)"
-                          icon="mdi-account-tag"
-                          color="success"
-                          size="15"
-                          class="ml-1"
-                        />
-                        <span v-html="markdownRender(c4.description)" />
-                      </span>
-
-                      <!-- c5 -->
-                      <div
-                        v-if="!!c4.sub_projects?.length"
-                        :class="{ child: c4.visible, 'project-set': !c4.visible }"
-                      >
-                        <blockquote v-for="c5 in c4.sub_projects" :key="c5.pk">
-                          <span v-if="c5.visible">
-                            <router-link :to="{ name: '(개요)', params: { projId: c5.slug } }">
-                              {{ c5.name }}
-                            </router-link>
-                            <v-icon
-                              v-if="isOwnProject(c5)"
-                              icon="mdi-account-tag"
-                              color="success"
-                              size="15"
-                              class="ml-1"
-                            />
-                            <span v-html="markdownRender(c5.description)" />
-                          </span>
-                        </blockquote>
-                      </div>
-                    </blockquote>
-                  </div>
-                </blockquote>
-              </div>
-            </blockquote>
-          </div>
-        </blockquote>
-      </div>
-    </CCardBody>
-  </CCard>
+    <!-- 재귀 호출: 하위 프로젝트가 있는 경우 -->
+    <div v-if="project.sub_projects && project.sub_projects.length > 0" class="child">
+      <ProjectCard v-for="sub in project.sub_projects" :key="sub.pk" :project="sub" />
+    </div>
+  </div>
 </template>
 
 <style lang="scss" scoped>
-.project-set {
-  padding-bottom: 0;
+.project-item {
+  margin-bottom: 0; // margin 제거
 }
 
-.project-set a {
+.project-header a {
   font-weight: bold;
   font-size: 1.13em;
 }
 
-.project-set .child {
-  a {
-    font-size: 0.96em;
-    font-weight: normal;
-  }
-
+.child {
   padding-left: 12px;
   border-left: 3px solid #ddd;
+  margin-top: 0.15rem; // 아주 작은 간격 추가
+
+  // 하위 레벨일수록 폰트 크기 조절
+  .project-header a {
+    font-size: 1em;
+    font-weight: normal;
+  }
 }
 </style>
