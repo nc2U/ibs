@@ -206,6 +206,8 @@ export interface IssueFilter {
   version_date__isnull?: string
   version_status?: string
   version_status__exclude?: string
+  project_status?: string
+  project_status__exclude?: string
   sub_project?: number | null
   sub_project__exclude?: number | null
   sub_project__isnull?: string

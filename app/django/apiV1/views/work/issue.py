@@ -68,6 +68,9 @@ class IssueFilter(FilterSet):
     version_status = CharFilter(field_name='fixed_version__status', lookup_expr='exact', label='목표단계상태-일치')
     version_status__exclude = CharFilter(field_name='fixed_version__status', exclude=True, label='목표단계상태-제외')
 
+    project_status = CharFilter(field_name='project__status', lookup_expr='exact', label='프로젝트상태-일치')
+    project_status__exclude = CharFilter(field_name='project__status', exclude=True, label='프로젝트상태-제외')
+
     created = CharFilter(method='filter_created_date', label='등록일-일치')
     created__gte = CharFilter(method='filter_created_gte', label='등록일-이후')
     created__lte = CharFilter(method='filter_created_lte', label='등록일-이전')
@@ -134,6 +137,7 @@ class IssueFilter(FilterSet):
                   'creator_role', 'creator_role__exclude', 'assignee_role', 'assignee_role__exclude',
                   'version_date', 'version_date__gte', 'version_date__lte', 'version_date__between', 'version_date__isnull',
                   'version_status', 'version_status__exclude',
+                  'project_status', 'project_status__exclude',
                   'created', 'created__gte', 'created__lte', 'created__between',
                   'updated', 'updated__gte', 'updated__lte', 'updated__between',
                   'start_date', 'start_date__gte', 'start_date__lte', 'start_date__between',

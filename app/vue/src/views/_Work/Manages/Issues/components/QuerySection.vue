@@ -137,6 +137,8 @@ const cond = ref({
   watcher: 'is' as 'is' | 'exclude',
   updater: 'is' as 'is' | 'exclude',
   last_updater: 'is' as 'is' | 'exclude',
+  version_status: 'is' as 'is' | 'exclude',
+  project_status: 'is' as 'is' | 'exclude',
   sub_project: 'any' as 'any' | 'none' | 'is' | 'exclude',
   issue: 'is' as 'is' | 'gte' | 'lte' | 'between',
   subject: 'contains' as 'contains' | 'exclude',
@@ -152,7 +154,6 @@ const cond = ref({
   creator_role: 'is' as 'is' | 'exclude',
   assignee_role: 'is' as 'is' | 'exclude',
   version_date: 'is' as 'is' | 'lte' | 'gte' | 'between' | 'none' | 'any',
-  version_status: 'is' as 'is' | 'exclude',
 
   parent: 'is' as 'is' | 'contains' | 'none' | 'any',
 })
@@ -252,6 +253,8 @@ const form = ref<IssueFilter>({
   version_date__isnull: '0',
   version_status: '',
   version_status__exclude: '',
+  project_status: '',
+  project_status__exclude: '',
   sub_project: null,
   sub_project__exclude: null,
   sub_project__isnull: '0',
@@ -448,6 +451,13 @@ const filterSubmit = () => {
     if (cond.value.version_status === 'is') filterData.version_status = form.value.version_status
     else if (cond.value.version_status === 'exclude')
       filterData.version_status__exclude = form.value.version_status__exclude
+  }
+
+  // project_status
+  if (searchCond.value.includes('project_status')) {
+    if (cond.value.project_status === 'is') filterData.project_status = form.value.project_status
+    else if (cond.value.project_status === 'exclude')
+      filterData.project_status__exclude = form.value.project_status__exclude
   }
 
   // sub_project
@@ -1052,6 +1062,39 @@ onBeforeMount(async () => {
                   <option v-for="p in subProjects" :key="p.pk" :value="p.pk">
                     {{ p.name }}
                   </option>
+                </CFormSelect>
+              </CCol>
+            </CRow>
+
+            <!-- 프로젝트의 상태 (project_status) -->
+            <CRow v-if="searchCond.includes('project_status')">
+              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
+                <CFormCheck checked="true" label="프로젝트의 상태" id="project_status" readonly />
+              </CCol>
+              <CCol class="col-4 col-lg-3 col-xl-2">
+                <CFormSelect v-model="cond.project_status" size="sm">
+                  <option value="is">이다</option>
+                  <option value="exclude">아니다</option>
+                </CFormSelect>
+              </CCol>
+              <CCol class="col-8 col-lg-3">
+                <CFormSelect
+                  v-if="cond.project_status === 'is'"
+                  v-model="form.project_status"
+                  size="sm"
+                  @change="filterSubmit"
+                >
+                  <option value="1">사용</option>
+                  <option value="9">잠금보관</option>
+                </CFormSelect>
+                <CFormSelect
+                  v-if="cond.project_status === 'exclude'"
+                  v-model="form.project_status__exclude"
+                  size="sm"
+                  @change="filterSubmit"
+                >
+                  <option value="1">사용</option>
+                  <option value="9">잠금보관</option>
                 </CFormSelect>
               </CCol>
             </CRow>

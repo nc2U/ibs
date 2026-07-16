@@ -145,6 +145,8 @@ export const useIssue = defineStore('issue', () => {
       version_date__isnull: 'version_date__isnull',
       version_status: 'version_status',
       version_status__exclude: 'version_status__exclude',
+      project_status: 'project_status',
+      project_status__exclude: 'project_status__exclude',
       sub_project: 'sub_project',
       sub_project__exclude: 'sub_project__exclude',
       sub_project__isnull: 'sub_project__isnull',
