@@ -149,6 +149,8 @@ const form = ref<IssueFilter>({
   done_ratio__gte: null,
   done_ratio__lte: null,
   done_ratio__between: '',
+  done_ratio__between_min: null,
+  done_ratio__between_max: null,
   done_ratio__isnull: '0',
   author: null,
   author__exclude: null,
@@ -267,9 +269,21 @@ const filterSubmit = () => {
       filterData.done_ratio__gte = form.value.done_ratio__gte
     else if (cond.value.done_ratio === 'lte')
       filterData.done_ratio__lte = form.value.done_ratio__lte
-    else if (cond.value.done_ratio === 'between')
-      filterData.done_ratio__between = form.value.done_ratio__between
-    else if (cond.value.done_ratio === 'none') filterData.done_ratio__isnull = '1'
+    else if (cond.value.done_ratio === 'between') {
+      const min =
+        form.value.done_ratio__between_min !== null &&
+        form.value.done_ratio__between_min !== undefined
+          ? form.value.done_ratio__between_min
+          : ''
+      const max =
+        form.value.done_ratio__between_max !== null &&
+        form.value.done_ratio__between_max !== undefined
+          ? form.value.done_ratio__between_max
+          : ''
+      if (min !== '' || max !== '') {
+        filterData.done_ratio__between = `${min},${max}`
+      }
+    } else if (cond.value.done_ratio === 'none') filterData.done_ratio__isnull = '1'
     else if (cond.value.done_ratio === 'any') filterData.done_ratio__isnull = '0'
   }
 
@@ -507,7 +521,6 @@ onBeforeMount(async () => {
                   :options="getUsers"
                   placeholder="작성자"
                   searchable
-                  size="sm"
                   @keydown.enter="filterSubmit"
                 />
               </CCol>
@@ -532,7 +545,6 @@ onBeforeMount(async () => {
                   :options="getUsers"
                   placeholder="담당자"
                   searchable
-                  size="sm"
                   @keydown.enter="filterSubmit"
                 />
               </CCol>
@@ -557,52 +569,6 @@ onBeforeMount(async () => {
                   :options="getVersions"
                   placeholder="목표단계"
                   searchable
-                  size="sm"
-                  @keydown.enter="filterSubmit"
-                />
-              </CCol>
-            </CRow>
-
-            <CRow v-if="searchCond.includes('issue')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="업무" id="issue" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.issue" size="sm">
-                  <option value="is">이다</option>
-                  <option value="gte">&gt;=</option>
-                  <option value="lte">&lt;=</option>
-                  <option value="between">사이</option>
-                  <option value="any">모두</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-4 col-lg-3" id="issue-search">
-                <CFormInput
-                  v-if="cond.issue === 'is'"
-                  v-model="form.id"
-                  placeholder="ID"
-                  size="sm"
-                  @keydown.enter="filterSubmit"
-                />
-                <CFormInput
-                  v-if="cond.issue === 'gte'"
-                  v-model="form.id__gte"
-                  placeholder="이상"
-                  size="sm"
-                  @keydown.enter="filterSubmit"
-                />
-                <CFormInput
-                  v-if="cond.issue === 'lte'"
-                  v-model="form.id__lte"
-                  placeholder="이하"
-                  size="sm"
-                  @keydown.enter="filterSubmit"
-                />
-                <CFormInput
-                  v-if="cond.issue === 'between'"
-                  v-model="form.id__between"
-                  placeholder="10,20"
-                  size="sm"
                   @keydown.enter="filterSubmit"
                 />
               </CCol>
@@ -628,7 +594,7 @@ onBeforeMount(async () => {
                   v-model="form.done_ratio"
                   type="number"
                   placeholder="진척도 (%)"
-                  size="sm"
+                  style="height: 30px"
                   @keydown.enter="filterSubmit"
                 />
                 <CFormInput
@@ -636,7 +602,7 @@ onBeforeMount(async () => {
                   v-model="form.done_ratio__gte"
                   type="number"
                   placeholder="이상 (%)"
-                  size="sm"
+                  style="height: 30px"
                   @keydown.enter="filterSubmit"
                 />
                 <CFormInput
@@ -644,14 +610,70 @@ onBeforeMount(async () => {
                   v-model="form.done_ratio__lte"
                   type="number"
                   placeholder="이하 (%)"
-                  size="sm"
+                  style="height: 30px"
                   @keydown.enter="filterSubmit"
                 />
                 <CFormInput
                   v-if="cond.done_ratio === 'between'"
-                  v-model="form.done_ratio__between"
+                  v-model="form.done_ratio__between_min"
+                  type="number"
+                  placeholder="최소 (%)"
+                  style="height: 30px"
+                  @keydown.enter="filterSubmit"
+                />
+              </CCol>
+
+              <CCol v-if="cond.done_ratio === 'between'" class="col-4 col-lg-3">
+                <CFormInput
+                  v-model="form.done_ratio__between_max"
+                  type="number"
+                  placeholder="최대 (%)"
+                  style="height: 30px"
+                  @keydown.enter="filterSubmit"
+                />
+              </CCol>
+            </CRow>
+
+            <CRow v-if="searchCond.includes('issue')">
+              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
+                <CFormCheck checked="true" label="업무" id="issue" readonly />
+              </CCol>
+              <CCol class="col-4 col-lg-3 col-xl-2">
+                <CFormSelect v-model="cond.issue" size="sm">
+                  <option value="is">이다</option>
+                  <option value="gte">&gt;=</option>
+                  <option value="lte">&lt;=</option>
+                  <option value="between">사이</option>
+                  <option value="any">모두</option>
+                </CFormSelect>
+              </CCol>
+              <CCol class="col-4 col-lg-3" id="issue-search">
+                <CFormInput
+                  v-if="cond.issue === 'is'"
+                  v-model="form.id"
+                  placeholder="ID"
+                  style="height: 30px"
+                  @keydown.enter="filterSubmit"
+                />
+                <CFormInput
+                  v-if="cond.issue === 'gte'"
+                  v-model="form.id__gte"
+                  placeholder="이상"
+                  style="height: 30px"
+                  @keydown.enter="filterSubmit"
+                />
+                <CFormInput
+                  v-if="cond.issue === 'lte'"
+                  v-model="form.id__lte"
+                  placeholder="이하"
+                  style="height: 30px"
+                  @keydown.enter="filterSubmit"
+                />
+                <CFormInput
+                  v-if="cond.issue === 'between'"
+                  v-model="form.id__between"
                   placeholder="10,20"
-                  size="sm"
+                  style="height: 30px"
                   @keydown.enter="filterSubmit"
                 />
               </CCol>
@@ -667,7 +689,6 @@ onBeforeMount(async () => {
                   :options="getIssues"
                   placeholder="상위업무 선택"
                   searchable
-                  size="sm"
                   @keydown.enter="filterSubmit"
                 />
               </CCol>
@@ -683,7 +704,6 @@ onBeforeMount(async () => {
                   :options="getIssues"
                   placeholder="하위업무 선택"
                   searchable
-                  size="sm"
                   @keydown.enter="filterSubmit"
                 />
               </CCol>
@@ -699,7 +719,6 @@ onBeforeMount(async () => {
                   :options="getIssues"
                   placeholder="선행업무 선택"
                   searchable
-                  size="sm"
                   @keydown.enter="filterSubmit"
                 />
               </CCol>
@@ -715,7 +734,6 @@ onBeforeMount(async () => {
                   :options="getIssues"
                   placeholder="후속업무 선택"
                   searchable
-                  size="sm"
                   @keydown.enter="filterSubmit"
                 />
               </CCol>
@@ -737,7 +755,6 @@ onBeforeMount(async () => {
                   id="searchOptions"
                   :groups="true"
                   :options="searchOptions"
-                  size="sm"
                   class="multiselect-blue"
                   placeholder="검색조건 추가"
                 />

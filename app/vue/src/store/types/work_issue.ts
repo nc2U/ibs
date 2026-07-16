@@ -167,6 +167,8 @@ export interface IssueFilter {
   done_ratio__gte?: number | null
   done_ratio__lte?: number | null
   done_ratio__between?: string
+  done_ratio__between_min?: number | null
+  done_ratio__between_max?: number | null
   done_ratio__isnull?: string
   parent__subject?: string
   parent__isnull?: string
