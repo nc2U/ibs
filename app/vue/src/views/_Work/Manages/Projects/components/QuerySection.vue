@@ -290,10 +290,35 @@ const saveQuery = async (event: Event) => {
 const applyQuery = (query: any) => {
   if (query && query.filters) {
     const f = query.filters
-
-    // 이전 필터 상태 초기화
-    form.value.bookmark = undefined
-    form.value.my_project = undefined
+    
+    // 이전 필터 상태 완전 초기화
+    searchCond.value = ['status']
+    cond.value = {
+      status: 'is',
+      project: 'is',
+      parent: 'all',
+      is_public: 'is',
+      created: 'is',
+      updated: 'is',
+      name: 'contains',
+      description: 'contains',
+    }
+    form.value = {
+      status: '1',
+      is_public: '1',
+      created_date: '',
+      created_date2: '',
+      updated_date: '',
+      updated_date2: '',
+      name: '',
+      description: '',
+      bookmark: undefined,
+      my_project: undefined,
+    }
+    selectedProjectVal.value = ''
+    if (props.allProjects.length) {
+      selectedParentVal.value = props.allProjects[0]?.value
+    }
 
     if (f.searchCond) searchCond.value = f.searchCond
     if (f.cond) cond.value = { ...cond.value, ...f.cond }
