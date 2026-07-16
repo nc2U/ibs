@@ -27,9 +27,9 @@ const emit = defineEmits(['on-query-click', 'on-delete-query', 'on-reset-query']
           class="rounded-lg mb-1 px-2 query-item pr-3"
         >
           <template v-slot:prepend>
-            <v-icon icon="mdi-filter-variant" size="small" class="mr-1" color="indigo" />
+            <v-icon icon="mdi-filter-variant" size="small" class="mr-0" color="indigo" />
           </template>
-          <v-list-item-title style="font-size: 1em">{{ q.name }}</v-list-item-title>
+          <v-list-item-title class="text-primary">{{ q.name }}</v-list-item-title>
           <template v-slot:append v-if="![1, 2].includes(q.pk)">
             <v-btn
               icon="mdi-close-circle"
@@ -41,13 +41,6 @@ const emit = defineEmits(['on-query-click', 'on-delete-query', 'on-reset-query']
             />
           </template>
         </v-list-item>
-        <div
-          v-if="!myQueries.length"
-          class="text-caption text-grey pl-2 py-1"
-          style="font-size: 0.9rem"
-        >
-          저장된 개인 검색 양식이 없습니다.
-        </div>
       </v-list>
     </div>
 
@@ -66,9 +59,9 @@ const emit = defineEmits(['on-query-click', 'on-delete-query', 'on-reset-query']
           class="rounded-lg mb-1 px-2 query-item pr-3"
         >
           <template v-slot:prepend>
-            <v-icon icon="mdi-filter-variant" size="small" class="mr-2" color="brown-darken-4" />
+            <v-icon icon="mdi-filter-variant" size="small" class="mr-0" color="brown-darken-4" />
           </template>
-          <v-list-item-title style="font-size: 1em">{{ q.name }}</v-list-item-title>
+          <v-list-item-title class="text-primary">{{ q.name }}</v-list-item-title>
           <template v-slot:append v-if="canProjectPubQuery && ![1, 2].includes(q.pk)">
             <v-btn
               icon="mdi-close-circle"
