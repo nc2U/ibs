@@ -24,4 +24,8 @@ class NewsAdmin(ImportExportMixin, admin.ModelAdmin):
 
 @admin.register(CustomQuery)
 class CustomQueryAdmin(ImportExportMixin, admin.ModelAdmin):
-    pass
+    list_display = ('pk', 'name', 'target_type', 'user', 'is_public', 'created', 'updated')
+    list_display_links = ('name',)
+    list_filter = ('target_type', 'is_public', 'user')
+    search_fields = ('name', 'description')
+    readonly_fields = ('created', 'updated')

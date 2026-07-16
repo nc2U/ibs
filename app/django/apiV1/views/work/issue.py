@@ -551,6 +551,18 @@ class IssueViewSet(viewsets.ModelViewSet):
             )
         )
 
+    def filter_queryset(self, queryset):
+        if self.request and self.request.user and self.request.user.is_authenticated:
+            user_pk = str(self.request.user.pk)
+            q_params_mutable = self.request.query_params._mutable
+            self.request.query_params._mutable = True
+            for key in ['watcher', 'watcher__exclude', 'creator', 'creator__exclude', 'assigned_to', 'assigned_to__exclude', 'updater', 'updater__exclude', 'last_updater', 'last_updater__exclude']:
+                val = self.request.query_params.get(key)
+                if val == 'me':
+                    self.request.query_params[key] = user_pk
+            self.request.query_params._mutable = q_params_mutable
+        return super().filter_queryset(queryset)
+
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
 

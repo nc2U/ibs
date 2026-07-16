@@ -11064,5 +11064,85 @@
       "created": "2026-07-16T10:40:00.000Z",
       "updated": "2026-07-16T10:40:00.000Z"
     }
+  },
+  {
+    "model": "work.customquery",
+    "pk": 3,
+    "fields": {
+      "name": "지켜보고 있는 업무",
+      "description": "내가 관람자(Watcher)로 지정된 업무 조회",
+      "target_type": "issue",
+      "project": null,
+      "user": 1,
+      "is_public": true,
+      "filters": {
+        "watcher": "me"
+      },
+      "column_names": [],
+      "sort_criteria": [],
+      "group_by": "",
+      "created": "2026-07-16T10:40:00.000Z",
+      "updated": "2026-07-16T10:40:00.000Z"
+    }
+  },
+  {
+    "model": "work.customquery",
+    "pk": 4,
+    "fields": {
+      "name": "작성한 업무",
+      "description": "내가 등록(작성)한 업무 조회",
+      "target_type": "issue",
+      "project": null,
+      "user": 1,
+      "is_public": true,
+      "filters": {
+        "creator": "me"
+      },
+      "column_names": [],
+      "sort_criteria": [],
+      "group_by": "",
+      "created": "2026-07-16T10:40:00.000Z",
+      "updated": "2026-07-16T10:40:00.000Z"
+    }
+  },
+  {
+    "model": "work.customquery",
+    "pk": 5,
+    "fields": {
+      "name": "수정한 업무",
+      "description": "내가 수정한 적이 있는 업무 조회",
+      "target_type": "issue",
+      "project": null,
+      "user": 1,
+      "is_public": true,
+      "filters": {
+        "updater": "me"
+      },
+      "column_names": [],
+      "sort_criteria": [],
+      "group_by": "",
+      "created": "2026-07-16T10:40:00.000Z",
+      "updated": "2026-07-16T10:40:00.000Z"
+    }
+  },
+  {
+    "model": "work.customquery",
+    "pk": 6,
+    "fields": {
+      "name": "내가 맡은 업무",
+      "description": "나에게 배정된(담당) 업무 조회",
+      "target_type": "issue",
+      "project": null,
+      "user": 1,
+      "is_public": true,
+      "filters": {
+        "assigned_to": "me"
+      },
+      "column_names": [],
+      "sort_criteria": [],
+      "group_by": "",
+      "created": "2026-07-16T10:40:00.000Z",
+      "updated": "2026-07-16T10:40:00.000Z"
+    }
   }
 ]
