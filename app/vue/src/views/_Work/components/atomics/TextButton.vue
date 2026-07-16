@@ -2,12 +2,15 @@
 import type { PropType } from 'vue'
 import type { selectProject } from '@/store/types/work_project.ts'
 
+type Variant = 'flat' | 'text' | 'elevated' | 'outlined' | 'plain' | 'tonal' | undefined
+
 defineProps({
   name: { type: String, default: '새 아이템' },
   to: { type: Object, default: undefined },
   icon: { type: String, default: 'mdi-plus-circle' },
   color: { type: String, default: 'primary' },
   iconColor: { type: String, default: 'success' },
+  variant: { type: String as PropType<Variant>, default: 'text' },
 
   projectList: { type: Array as PropType<selectProject[]>, default: () => [] },
   projectTo: { type: Object, default: undefined },
@@ -20,7 +23,7 @@ defineProps({
     :to="to"
     :prepend-icon="icon"
     :color="color"
-    variant="text"
+    :variant="variant"
     size="small"
     class="no-underline"
     :style="`font-size: ${fontSize}em`"
