@@ -152,12 +152,12 @@ const filterSubmit = () => {
     filterData.status__exclude = null
   } else if (cond.value.status === 'is') {
     filterData.status = form.value.status
-    filterData.status__closed = null
+    filterData.status__closed = ''
     filterData.status__exclude = null
   } else if (cond.value.status === 'exclude') {
     filterData.status__exclude = form.value.status
     filterData.status = null
-    filterData.status__closed = null
+    filterData.status__closed = ''
   } else if (cond.value.status === 'closed') {
     filterData.status__closed = '1'
     filterData.status = null
