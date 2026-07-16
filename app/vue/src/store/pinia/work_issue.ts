@@ -99,6 +99,8 @@ export const useIssue = defineStore('issue', () => {
       watcher__exclude: 'watcher__exclude',
       updater: 'updater',
       updater__exclude: 'updater__exclude',
+      last_updater: 'last_updater',
+      last_updater__exclude: 'last_updater__exclude',
       author: 'creator',
       author__exclude: 'creator__exclude',
       assignee: 'assigned_to',

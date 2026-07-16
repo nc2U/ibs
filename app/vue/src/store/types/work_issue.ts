@@ -155,6 +155,8 @@ export interface IssueFilter {
   watcher__exclude?: number | null
   updater?: number | null
   updater__exclude?: number | null
+  last_updater?: number | null
+  last_updater__exclude?: number | null
   author?: number | null
   author__exclude?: number | null
   assignee?: number | null

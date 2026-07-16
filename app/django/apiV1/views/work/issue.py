@@ -37,6 +37,8 @@ class IssueFilter(FilterSet):
     fixed_version__isnull = BooleanFilter(field_name='fixed_version', lookup_expr='isnull', label='목표단계-유무')
     updater = NumberFilter(method='filter_updater', label='수정자')
     updater__exclude = NumberFilter(method='filter_updater_exclude', label='수정자-제외')
+    last_updater = NumberFilter(field_name='updater', lookup_expr='exact', label='최근수정자-일치')
+    last_updater__exclude = NumberFilter(field_name='updater', exclude=True, label='최근수정자-제외')
 
     id = NumberFilter(field_name='id', lookup_expr='exact', label='ID-일치')
     id__gte = NumberFilter(field_name='id', lookup_expr='gte', label='ID-이상')
@@ -76,7 +78,7 @@ class IssueFilter(FilterSet):
                   'creator', 'assigned_to', 'fixed_version', 'id', 'id__gte', 'id__lte', 'id__between', 'id__any',
                   'done_ratio', 'done_ratio__gte', 'done_ratio__lte', 'done_ratio__between', 'done_ratio__isnull',
                   'parent', 'parent_issue', 'precedes_issue', 'follows_issue', 'project__my_project', 'is_private',
-                  'watcher', 'watcher__exclude', 'updater', 'updater__exclude')
+                  'watcher', 'watcher__exclude', 'updater', 'updater__exclude', 'last_updater', 'last_updater__exclude')
 
     @staticmethod
     def filter_id_between(queryset, name, value):
