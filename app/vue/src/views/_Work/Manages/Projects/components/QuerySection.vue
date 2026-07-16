@@ -40,8 +40,32 @@ const optVisible = ref(false)
 const searchCond = ref(['status'])
 const resetFilter = () => {
   searchCond.value = ['status']
-  form.value.bookmark = undefined
-  form.value.my_project = undefined
+  cond.value = {
+    status: 'is',
+    project: 'is',
+    parent: 'all',
+    is_public: 'is',
+    created: 'is',
+    updated: 'is',
+    name: 'contains',
+    description: 'contains',
+  }
+  form.value = {
+    status: '1',
+    is_public: '1',
+    created_date: '',
+    created_date2: '',
+    updated_date: '',
+    updated_date2: '',
+    name: '',
+    description: '',
+    bookmark: undefined,
+    my_project: undefined,
+  }
+  selectedProjectVal.value = ''
+  if (props.allProjects.length) {
+    selectedParentVal.value = props.allProjects[0]?.value
+  }
   filterSubmit()
 }
 
@@ -347,7 +371,7 @@ const onQuerySelect = (event: Event) => {
   }
 }
 
-defineExpose({ applyQuery })
+defineExpose({ applyQuery, resetFilter })
 </script>
 
 <template>
