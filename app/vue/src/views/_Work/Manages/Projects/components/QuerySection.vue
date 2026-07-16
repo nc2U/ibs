@@ -108,11 +108,19 @@ const filterSubmit = () => {
   else if (cond.value.status === 'exclude') filterData.status__exclude = form.value.status
 
   if (searchCond.value.includes('project')) {
-    const selectedProj = props.allProjects.find(p => p.value === Number(selectedProjectVal.value))
-    const projectVal = selectedProj ? selectedProj.slug : String(selectedProjectVal.value)
+    if (selectedProjectVal.value === '') {
+      if (cond.value.project === 'is') {
+        filterData.my_project = true
+      } else if (cond.value.project === 'exclude') {
+        filterData.my_project = false
+      }
+    } else {
+      const selectedProj = props.allProjects.find(p => p.value === Number(selectedProjectVal.value))
+      const projectVal = selectedProj ? selectedProj.slug : String(selectedProjectVal.value)
 
-    if (cond.value.project === 'is') filterData.project = projectVal
-    else if (cond.value.project === 'exclude') filterData.project__exclude = projectVal
+      if (cond.value.project === 'is') filterData.project = projectVal
+      else if (cond.value.project === 'exclude') filterData.project__exclude = projectVal
+    }
   }
 
   if (searchCond.value.includes('parent')) {
@@ -218,8 +226,8 @@ watch(searchCond, nVal => {
 })
 
 onBeforeMount(() => {
+  selectedProjectVal.value = ''
   if (props.allProjects.length) {
-    selectedProjectVal.value = props.allProjects[0]?.value
     selectedParentVal.value = props.allProjects[0]?.value
   }
 })
@@ -282,7 +290,7 @@ const saveQuery = async (event: Event) => {
 const applyQuery = (query: any) => {
   if (query && query.filters) {
     const f = query.filters
-    
+
     // 이전 필터 상태 초기화
     form.value.bookmark = undefined
     form.value.my_project = undefined
@@ -361,7 +369,7 @@ defineExpose({ applyQuery })
                 <AllProjectsSelect
                   v-model="selectedProjectVal"
                   :all-projects="allProjects"
-                  default-title="---------"
+                  default-title="<< 내 프로젝트 >>"
                   size="sm"
                 />
               </CCol>

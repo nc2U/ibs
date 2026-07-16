@@ -49,11 +49,14 @@ class IssueProjectFilter(FilterSet):
         return queryset
 
     def filter_my_project(self, queryset, name, value):
-        if value and self.request and self.request.user.is_authenticated:
+        if self.request and self.request.user.is_authenticated:
             user = self.request.user
             if user.is_superuser or getattr(user, 'work_manager', False):
                 return queryset
-            return queryset.filter(members__user=user)
+            if value:
+                return queryset.filter(members__user=user)
+            else:
+                return queryset.exclude(members__user=user)
         return queryset
 
     class Meta:
