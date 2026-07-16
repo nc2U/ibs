@@ -169,6 +169,8 @@ export interface IssueFilter {
   id__gte?: number | null
   id__lte?: number | null
   id__between?: string // 'ID 범위 예: 10,20'
+  id__between_min?: number | null
+  id__between_max?: number | null
   id__any?: string // 'ID 포함목록 예: 1,2,3'
   done_ratio?: number | null
   done_ratio__gte?: number | null

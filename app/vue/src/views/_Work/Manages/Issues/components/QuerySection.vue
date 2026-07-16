@@ -135,7 +135,7 @@ const cond = ref({
   // name: 'contains',
   // description: 'contains',
   version: 'is' as 'is' | 'exclude' | 'none' | 'any',
-  issue: 'is' as 'is' | 'gte' | 'lte' | 'between' | 'none' | 'any',
+  issue: 'is' as 'is' | 'gte' | 'lte' | 'between',
   parent: 'is' as 'is' | 'contains' | 'none' | 'any',
 })
 
@@ -179,6 +179,8 @@ const form = ref<IssueFilter>({
   id__gte: null,
   id__lte: null,
   id__between: '',
+  id__between_min: null,
+  id__between_max: null,
   id__any: '',
   parent__subject: '',
   parent__isnull: '0',
@@ -277,7 +279,8 @@ const filterSubmit = () => {
 
   if (searchCond.value.includes('last_updater')) {
     if (cond.value.last_updater === 'is') filterData.last_updater = form.value.last_updater
-    else if (cond.value.last_updater === 'exclude') filterData.last_updater__exclude = form.value.last_updater__exclude
+    else if (cond.value.last_updater === 'exclude')
+      filterData.last_updater__exclude = form.value.last_updater__exclude
   }
 
   if (searchCond.value.includes('assignee'))
@@ -296,7 +299,19 @@ const filterSubmit = () => {
     if (cond.value.issue === 'is') filterData.id = form.value.id
     else if (cond.value.issue === 'gte') filterData.id__gte = form.value.id__gte
     else if (cond.value.issue === 'lte') filterData.id__lte = form.value.id__lte
-    else if (cond.value.issue === 'between') filterData.id__between = form.value.id__between
+    else if (cond.value.issue === 'between') {
+      const min =
+        form.value.id__between_min !== null && form.value.id__between_min !== undefined
+          ? form.value.id__between_min
+          : ''
+      const max =
+        form.value.id__between_max !== null && form.value.id__between_max !== undefined
+          ? form.value.id__between_max
+          : ''
+      if (min !== '' || max !== '') {
+        filterData.id__between = `${min},${max}`
+      }
+    }
   }
 
   if (searchCond.value.includes('done_ratio')) {
@@ -376,7 +391,8 @@ watch(searchCond, nVal => {
     form.value.category = props.categoryList[0]?.pk
   if (nVal.includes('watcher') && !form.value.watcher) form.value.watcher = props.getUsers[0]?.value
   if (nVal.includes('updater') && !form.value.updater) form.value.updater = props.getUsers[0]?.value
-  if (nVal.includes('last_updater') && !form.value.last_updater) form.value.last_updater = props.getUsers[0]?.value
+  if (nVal.includes('last_updater') && !form.value.last_updater)
+    form.value.last_updater = props.getUsers[0]?.value
   if (!nVal.includes('status')) searchCond.value = ['status']
 })
 
@@ -770,7 +786,6 @@ onBeforeMount(async () => {
                   <option value="gte">&gt;=</option>
                   <option value="lte">&lt;=</option>
                   <option value="between">사이</option>
-                  <option value="any">모두</option>
                 </CFormSelect>
               </CCol>
               <CCol class="col-4 col-lg-3" id="issue-search">
@@ -797,8 +812,18 @@ onBeforeMount(async () => {
                 />
                 <CFormInput
                   v-if="cond.issue === 'between'"
-                  v-model="form.id__between"
-                  placeholder="10,20"
+                  v-model="form.id__between_min"
+                  type="number"
+                  placeholder="최소 ID"
+                  style="height: 30px"
+                  @keydown.enter="filterSubmit"
+                />
+              </CCol>
+              <CCol v-if="cond.issue === 'between'" class="col-4 col-lg-3">
+                <CFormInput
+                  v-model="form.id__between_max"
+                  type="number"
+                  placeholder="최대 ID"
                   style="height: 30px"
                   @keydown.enter="filterSubmit"
                 />
