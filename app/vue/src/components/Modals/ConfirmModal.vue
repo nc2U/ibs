@@ -14,7 +14,7 @@ const bodyMessage = ref('')
 const headIcon = ref('mdi-alert-octagram')
 const headerColor = ref()
 
-const callModal = (head?: string, body?: string, icon?: string, color = 'warning') => {
+const callModal = (head?: string, body?: string, icon?: string, color = 'red-lighten-2') => {
   if (head) headerMessage.value = head
   if (body) bodyMessage.value = body
   if (icon) headIcon.value = icon
