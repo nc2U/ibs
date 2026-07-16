@@ -75,7 +75,7 @@ class ModuleAdmin(admin.ModelAdmin):
 
 @admin.register(Role)
 class RoleAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('pk', 'name', 'issue_visible', 'user_visible')
+    list_display = ('pk', 'name', 'issue_visible', 'user_visible', 'order')
     list_display_links = ('name',)
     filter_horizontal = ('permissions',)  # ✅ 이렇게 하면 UI에서 다중 선택 가능
 
