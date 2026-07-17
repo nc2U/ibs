@@ -25,6 +25,7 @@ const toggleStatus = async () => {
   await workStore.toggleProjectStatus(props.project.slug as string)
   RefProjectCloseConfirm.value.close()
 }
+
 const onToggleBookmark = (projectPk: number) => workStore.toggleBookmark(projectPk)
 
 const projectDelete = () => {
@@ -35,10 +36,6 @@ const projectDelete = () => {
 }
 
 const isBookMarked = computed(() => props.project?.is_bookmarked)
-
-const bookMarkIcon = computed(() =>
-  isBookMarked.value ? 'mdi-bookmark-off' : 'mdi-bookmark-multiple',
-)
 </script>
 
 <template>
@@ -55,7 +52,7 @@ const bookMarkIcon = computed(() =>
           :name="isBookMarked ? '북마크 해제' : '북마크 추가'"
           :icon="isBookMarked ? 'mdi-bookmark-off' : 'mdi-bookmark-multiple'"
           :icon-color="isBookMarked ? 'warning' : 'primary'"
-          :disabled="project.status !== '1'"
+          :disabled="project?.status !== '1'"
           @click="onToggleBookmark(project?.pk as number)"
         />
       </span>
@@ -79,8 +76,8 @@ const bookMarkIcon = computed(() =>
               @click="router.push({ name: '프로젝트 - 추가', query: { parent: project?.pk } })"
             >
               <span class="text-primary">
-                <v-icon icon="mdi-plus-circle" color="success" size="sm" class="mr-2" />새 하위
-                프로젝트
+                <v-icon icon="mdi-plus-circle" color="success" size="sm" class="mr-1" />
+                새 하위 프로젝트
               </span>
             </CDropdownItem>
             <CDropdownItem
@@ -104,7 +101,8 @@ const bookMarkIcon = computed(() =>
               @click="RefProjectDeleteConfirm.callModal()"
             >
               <span class="text-primary">
-                <v-icon icon="mdi-trash-can-outline" color="danger" size="sm" class="mr-1" />삭제
+                <v-icon icon="mdi-trash-can-outline" color="danger" size="sm" class="mr-1" />
+                삭제
               </span>
             </CDropdownItem>
             <CDropdownItem
@@ -113,7 +111,8 @@ const bookMarkIcon = computed(() =>
               @click="router.push({ name: '(설정)' })"
             >
               <span class="text-primary">
-                <v-icon icon="mdi-cog" color="secondary" size="sm" class="mr-1" />설정
+                <v-icon icon="mdi-cog" color="secondary" size="sm" class="mr-1" />
+                설정
               </span>
             </CDropdownItem>
           </CDropdownMenu>
