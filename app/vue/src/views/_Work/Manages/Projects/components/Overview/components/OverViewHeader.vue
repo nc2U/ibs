@@ -55,6 +55,7 @@ const bookMarkIcon = computed(() =>
           :name="isBookMarked ? '북마크 해제' : '북마크 추가'"
           :icon="isBookMarked ? 'mdi-bookmark-off' : 'mdi-bookmark-multiple'"
           :icon-color="isBookMarked ? 'warning' : 'primary'"
+          :disabled="project.status !== '1'"
           @click="onToggleBookmark(project?.pk as number)"
         />
       </span>

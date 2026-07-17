@@ -44,7 +44,7 @@ export interface IssueProject {
   is_public: boolean
   parent: number | null
   allowed_roles: { pk: number; name: string; inherited: boolean }[]
-  status: '1' | '9'
+  status: '1' | '2' | '9'
   slack_notifications_enabled: boolean
   created?: string
   updated?: string

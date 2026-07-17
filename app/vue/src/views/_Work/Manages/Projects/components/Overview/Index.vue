@@ -98,7 +98,7 @@ onBeforeMount(async () => {
         @delete-project="deleteProject"
       />
 
-      <CAlert v-if="iProject?.status === '9'" color="warning">
+      <CAlert v-if="iProject?.status === '2'" color="warning">
         <v-icon icon="mdi-lock" color="warning" size="sm" />
         이 프로젝트는 닫혀 있으며 읽기 전용입니다.
       </CAlert>

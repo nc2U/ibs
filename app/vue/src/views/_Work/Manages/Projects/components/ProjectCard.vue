@@ -28,7 +28,7 @@ const isOwnProject = (project: IssueProject) =>
     <div class="project-header">
       <router-link
         :to="{ name: '(개요)', params: { projId: project.slug } }"
-        :class="{ 'text-grey': project.status === '9' }"
+        :class="{ 'text-grey': project.status !== '1' }"
       >
         {{ project.name }}
       </router-link>
