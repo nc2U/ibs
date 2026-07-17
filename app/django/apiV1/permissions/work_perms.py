@@ -352,10 +352,6 @@ class IssuePermission(ProjectPermission):
             if not project:
                 return False
 
-            # [닫힘/잠금보관 프로젝트 제한] 관리자 포함 모든 사용자 제한
-            if project and project.status in ['2', '9']:
-                return False
-
             # 일반 관리자 예외 처리
             if is_admin:
                 return True
