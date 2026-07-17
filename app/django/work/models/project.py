@@ -25,8 +25,9 @@ class IssueProject(models.Model):
                                         verbose_name='기본 단계', help_text='기존 공유 단계에서만 작동합니다.')
     allowed_roles = models.ManyToManyField('Role', blank=True, related_name='projects', verbose_name='허용 역할')
     trackers = models.ManyToManyField('Tracker', blank=True, related_name='projects', verbose_name='허용유형')
-    status = models.CharField('사용여부', max_length=1, default='1',
-                              choices=(('1', '사용'), ('2', '닫힘'), ('9', '잠금보관(모든 접근이 차단됨)')))
+    STATUS_CHOICES = ('1', '사용중'), ('2', '닫힘'), ('9', '잠금보관(모든 접근이 차단됨)')
+    status = models.CharField('사용여부', max_length=1, default='1', choices=STATUS_CHOICES,
+                              help_text='사용중: 활성화 상태, 닫힘: 읽기 전용 상태, 잠금보관: 관리자외 접근 제한')
     order = models.PositiveSmallIntegerField('정렬순서', default=0)
     slack_notifications_enabled = models.BooleanField(
         'Slack 알림 활성화',
