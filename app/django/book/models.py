@@ -1,12 +1,10 @@
-import hashlib
-from datetime import datetime
-
 from django.conf import settings
 from django.db import models
 from django.urls import reverse_lazy
 from mdeditor.fields import MDTextField
-from _utils.file_upload import get_book_image_path
+
 from _utils.file_cleanup import file_cleanup_signals
+from _utils.file_upload import get_book_image_path
 
 
 class Book(models.Model):

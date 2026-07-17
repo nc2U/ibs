@@ -24,7 +24,7 @@ class MeetingCategory(models.Model):
 
 
 class Meeting(models.Model):
-    project = models.ForeignKey(IssueProject, on_delete=models.CASCADE, verbose_name='프로젝트',
+    project = models.ForeignKey(IssueProject, on_delete=models.PROTECT, verbose_name='프로젝트',
                                 related_name='meetings')
     title = models.CharField('회의 제목', max_length=255)
     category = models.ForeignKey(MeetingCategory, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='카테고리',

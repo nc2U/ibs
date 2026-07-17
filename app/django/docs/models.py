@@ -154,7 +154,7 @@ file_cleanup_signals(Image)  # 파일인스턴스 직접 삭제시
 
 
 class LawsuitCase(models.Model):
-    issue_project = models.ForeignKey('work.IssueProject', on_delete=models.CASCADE, verbose_name='업무 프로젝트')
+    issue_project = models.ForeignKey('work.IssueProject', on_delete=models.PROTECT, verbose_name='업무 프로젝트')
     SORT_CHOICES = (('1', '민사'), ('2', '형사'), ('3', '행정'), ('4', '신청'), ('5', '집행'))
     sort = models.CharField('유형', max_length=1, choices=SORT_CHOICES)
     LEVEL_CHOICES = (
