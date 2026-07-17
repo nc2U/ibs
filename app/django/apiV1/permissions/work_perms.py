@@ -243,10 +243,6 @@ class IssuePermission(ProjectPermission):
 
         # 2. 신규 생성 시의 업무 도메인 특화 검사
         if view.action == 'create':
-            # 슈퍼유저/관리자 예외 처리
-            if request.user.is_superuser or getattr(request.user, 'work_manager', False):
-                return True
-
             project_slug = self.get_project_slug(view, request.data)
             project = None
 
@@ -265,6 +261,18 @@ class IssuePermission(ProjectPermission):
             if not project:
                 return False
 
+            # [잠금보관 프로젝트 제한] 아카이브 - 관리자 포함 모든 사용자 제한
+            if project.status == '9':
+                return False
+
+            # [닫힘 프로젝트 제한] 읽기 전용 - 관리자 포함 모든 사용자 제한
+            if project.status == '2':
+                return False
+
+            # 슈퍼유저/관리자 예외 처리 (생성 시)
+            if request.user.is_superuser or getattr(request.user, 'work_manager', False):
+                return True
+
             user_perms = project.get_user_permissions(request.user)
 
             # (A) issue.create 혹은 issue.copy 권한 보유 여부 확인 (이전 캡슐화 완료)
@@ -272,6 +280,7 @@ class IssuePermission(ProjectPermission):
                 return False
 
             # (B) 비공개 업무 생성 권한 체크 (Method D)
+            # issue_visible='ALL' OR issue.private OR (issue.own_private AND is_own) OR is_own(creator/assignee)
             is_private_req = request.data.get('is_private', False)
             if isinstance(is_private_req, str):
                 is_private_req = is_private_req.lower() in ['true', '1']
@@ -292,15 +301,22 @@ class IssuePermission(ProjectPermission):
         if not super().has_object_permission(request, view, obj):
             return False
 
+        # 슈퍼유저/관리자
+        user = request.user
+        is_admin = user.is_superuser or getattr(user, 'work_manager', False)
+
         # 2. issue_visible에 의한 개별 업무 읽기 권한(SAFE_METHODS) 검사
         if request.method in permissions.SAFE_METHODS:
-            user = request.user
-            if user.is_superuser or getattr(user, 'work_manager', False):
-                return True
-
             project = getattr(obj, 'project', None)
             if not project:
                 return False
+
+            # [잠금보관 프로젝트 제한]
+            if project and project.status == '9':
+                return False
+
+            if is_admin:
+                return True
 
             user_perms = project.get_user_permissions(user)
             role_attrs = project.get_user_role_attributes(user)
@@ -332,10 +348,17 @@ class IssuePermission(ProjectPermission):
 
         # 3. 수정 및 삭제 관련 로직
         if view.action in ['update', 'partial_update', 'destroy', 'toggle_private']:
-            user = request.user
             project = getattr(obj, 'project', None)
             if not project:
                 return False
+
+            # [닫힘/잠금보관 프로젝트 제한] 관리자 포함 모든 사용자 제한
+            if project and project.status in ['2', '9']:
+                return False
+
+            # 일반 관리자 예외 처리
+            if is_admin:
+                return True
 
             user_perms = project.get_user_permissions(user)
 
@@ -367,7 +390,6 @@ class IssuePermission(ProjectPermission):
                         )
                         if not has_write_private:
                             return False
-
                 return True
 
             # (B) 삭제 권한 처리
