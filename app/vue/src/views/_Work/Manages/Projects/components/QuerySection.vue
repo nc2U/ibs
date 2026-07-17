@@ -399,7 +399,7 @@ defineExpose({ applyQuery, resetFilter })
               <CCol class="col-8 col-lg-3">
                 <CFormSelect v-model="form.status" size="sm">
                   <option value="1">사용중</option>
-                  <option value="9">잠금보관</option>
+                  <option value="2">닫힘</option>
                 </CFormSelect>
               </CCol>
             </CRow>
@@ -731,7 +731,7 @@ defineExpose({ applyQuery, resetFilter })
             <CCol class="col-4">
               <CFormSelect v-model="form.status" size="sm">
                 <option value="1">사용중</option>
-                <option value="9">잠금/닫힘</option>
+                <option value="2">닫힘</option>
               </CFormSelect>
             </CCol>
           </CRow>

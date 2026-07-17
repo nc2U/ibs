@@ -1127,8 +1127,8 @@ onBeforeMount(async () => {
                   size="sm"
                   @change="filterSubmit"
                 >
-                  <option value="1">사용</option>
-                  <option value="9">잠금보관</option>
+                  <option value="1">사용중</option>
+                  <option value="2">닫힘</option>
                 </CFormSelect>
                 <CFormSelect
                   v-if="cond.project_status === 'exclude'"
@@ -1136,8 +1136,8 @@ onBeforeMount(async () => {
                   size="sm"
                   @change="filterSubmit"
                 >
-                  <option value="1">사용</option>
-                  <option value="9">잠금보관</option>
+                  <option value="1">사용중</option>
+                  <option value="2">닫힘</option>
                 </CFormSelect>
               </CCol>
             </CRow>
