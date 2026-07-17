@@ -14,6 +14,7 @@ import DocsForm from '@/views/_Work/Manages/Documents/components/DocsForm.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
+import DocsListAside from '@/views/_Work/Manages/Documents/components/atomics/DocsListAside.vue'
 
 const cBody = ref()
 const toggle = () => cBody.value.toggle()
@@ -239,85 +240,16 @@ onBeforeMount(async () => {
     </template>
 
     <template v-slot:aside>
-      <CRow class="mb-4 pr-2 mr-2">
-        <CCol>
-          <h6 class="text-subtitle-1 mb-2">문서 카테고리</h6>
-          <v-divider class="mt-0" />
-          <v-list density="compact" nav class="pa-0 aside-menu card-white">
-            <v-list-item
-              :active="docsFilter.category === '' || docsFilter.category === 0"
-              @click="selectCate(0)"
-              rounded="lg"
-            >
-              <template v-slot:prepend>
-                <v-icon icon="mdi-folder-outline" size="small" />
-              </template>
-              <v-list-item-title>전체 문서</v-list-item-title>
-            </v-list-item>
-
-            <v-list-item
-              v-for="cate in categoryList"
-              :key="cate.pk as number"
-              :active="docsFilter.category === cate.pk"
-              @click="selectCate(cate.pk as number)"
-              rounded="lg"
-            >
-              <template v-slot:prepend>
-                <v-icon
-                  icon="mdi-folder-text-outline"
-                  size="small"
-                  :color="cate.color ?? 'secondary'"
-                />
-              </template>
-              <v-list-item-title>{{ cate.name }}</v-list-item-title>
-            </v-list-item>
-          </v-list>
-        </CCol>
-      </CRow>
-
-      <CRow>
-        <CCol class="mt-4">
-          <h6 class="text-subtitle-1 mb-2">{{ typeNumber === 1 ? '키워드' : '관련 사건' }}</h6>
-          <v-divider class="mt-0" />
-        </CCol>
-      </CRow>
-
-      <template v-if="typeNumber === 2">
-        <CRow v-if="getSuitCase.length" class="mb-3 mr-2">
-          <CCol>
-            <MultiSelect
-              mode="single"
-              v-model="docsFilter.lawsuit"
-              :options="getSuitCase"
-              placeholder="관련 사건 목록"
-            />
-          </CCol>
-        </CRow>
-      </template>
-
-      <CRow class="mb-5 mr-2">
-        <CCol>
-          <div class="input-group mb-3">
-            <CFormInput
-              v-model="docsFilter.search"
-              placeholder="검색어 입력"
-              aria-label="search-keyword"
-              aria-describedby="button-addon"
-              @keydown.enter="fetchDocsList(docsFilter)"
-            />
-            <button
-              class="btn btn-outline-secondary"
-              type="button"
-              id="button-addon"
-              color="secondary"
-              @click="fetchDocsList(docsFilter)"
-            >
-              <v-btn icon="mdi-magnify" size="sm" color="light" flat />
-              검색
-            </button>
-          </div>
-        </CCol>
-      </CRow>
+      <DocsListAside
+        v-if="route.name !== '(문서) - 보기'"
+        :type-number="typeNumber"
+        :category-list="categoryList"
+        :suit-case-options="getSuitCase"
+        :filter="docsFilter"
+        @select-cate="selectCate"
+        @search="fetchDocsList(docsFilter)"
+        @update:filter="docsFilter = $event"
+      />
     </template>
   </ContentBody>
 </template>
