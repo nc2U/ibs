@@ -14,7 +14,6 @@ import AllProjectsSelect from '@/views/_Work/components/atomics/AllProjectsSelec
 
 const props = defineProps({
   project: { type: Object as PropType<IssueProject | null>, default: null },
-  redirect: { type: Boolean, default: true },
 })
 
 const emit = defineEmits(['modal-close'])
@@ -153,7 +152,7 @@ const onSubmit = async (event: Event) => {
   } else {
     localStorage.setItem('workSettingMenu', '프로젝트')
 
-    if (form.pk) {
+    if (props.project?.pk) {
       // 1. 일반 프로젝트 정보 업데이트 (is_public은 제외하고 업데이트)
       const { is_public, ...projectData } = form
       await workStore.updateIssueProject({ ...projectData, ...module } as any)
@@ -166,12 +165,7 @@ const onSubmit = async (event: Event) => {
       }
     } else {
       await workStore.createIssueProject({ ...form, ...module } as any)
-      if (props.redirect)
-        await router.push({
-          name: '(설정)',
-          params: { projId: (workStore.issueProject as IssueProject)?.slug },
-        })
-      else emit('modal-close')
+      await router.push({ name: '(설정)', params: { projId: form.slug } })
     }
     validated.value = false
   }
