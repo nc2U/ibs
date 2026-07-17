@@ -31,7 +31,8 @@ class ProjectPermission(permissions.BasePermission):
                         pass
         return None
 
-    def find_project(self, project_slug):
+    @staticmethod
+    def find_project(project_slug):
         from work.models.project import IssueProject
 
         if isinstance(project_slug, int):
@@ -42,7 +43,8 @@ class ProjectPermission(permissions.BasePermission):
 
         return IssueProject.objects.filter(slug=project_slug).first()
 
-    def extract_project(self, obj):
+    @staticmethod
+    def extract_project(obj):
         from work.models.project import IssueProject
 
         if isinstance(obj, IssueProject):
@@ -147,15 +149,24 @@ class ProjectPermission(permissions.BasePermission):
         return True
 
     def has_object_permission(self, request, view, obj):
-        # 슈퍼유저/관리자 예외 처리
-        if request.user.is_superuser or getattr(request.user, 'work_manager', False):
-            return True
-
         # obj가 프로젝트 모델인지 확인 (혹은 프로젝트를 참조하는 모델인지 지능형 추적)
         project = self.extract_project(obj)
 
         if not project:
             return False
+
+        if project:
+            # [잠금보관(9)] 조회/수정 모두 차단
+            if project.status == '9':
+                return False
+
+            # [닫힘(2)] 읽기 전용
+            if project.status == '2' and request.method not in permissions.SAFE_METHODS:
+                return False
+
+        # 슈퍼유저/관리자 예외 처리
+        if request.user.is_superuser or getattr(request.user, 'work_manager', False):
+            return True
 
         # 공개 프로젝트이고 단순 조회(SAFE_METHODS) 요청인 경우 즉시 허용 (목록/상세 조회 정합성 유지)
         if project.is_public and request.method in permissions.SAFE_METHODS:
