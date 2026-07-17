@@ -92,7 +92,7 @@ const emit = defineEmits(['select-cate', 'update:filter', 'search'])
         <CFormInput
           :model-value="filter.search"
           @update:model-value="emit('update:filter', { ...filter, search: $event })"
-          placeholder="검색어 입력"
+          placeholder="문서 내 검색"
           @keydown.enter="emit('search')"
         />
         <button

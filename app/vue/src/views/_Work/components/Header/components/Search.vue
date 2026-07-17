@@ -22,7 +22,7 @@ onBeforeMount(async () => {
     <v-col cols="6" class="pa-1">
       <v-text-field
         v-model="search"
-        placeholder="검색어 입력"
+        placeholder="통합 검색 - 업무관리시스템"
         density="compact"
         variant="outlined"
         prepend-inner-icon="mdi-magnify"
