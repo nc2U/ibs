@@ -146,7 +146,7 @@ class ProjectPermission(permissions.BasePermission):
                     return False
                 return required_perm in user_perms
 
-        return True
+        return False
 
     def has_object_permission(self, request, view, obj):
         # obj가 프로젝트 모델인지 확인 (혹은 프로젝트를 참조하는 모델인지 지능형 추적)
@@ -280,10 +280,6 @@ class IssuePermission(ProjectPermission):
             if project.status == '2':
                 return False
 
-            # 슈퍼유저/관리자 예외 처리 (생성 시)
-            if request.user.is_superuser or getattr(request.user, 'work_manager', False):
-                return True
-
             user_perms = project.get_user_permissions(request.user)
 
             # (A) issue.create 혹은 issue.copy 권한 보유 여부 확인 (이전 캡슐화 완료)
@@ -312,9 +308,7 @@ class IssuePermission(ProjectPermission):
         if not super().has_object_permission(request, view, obj):
             return False
 
-        # 슈퍼유저/관리자
         user = request.user
-        is_admin = user.is_superuser or getattr(user, 'work_manager', False)
 
         # 2. issue_visible에 의한 개별 업무 읽기 권한(SAFE_METHODS) 검사
         if request.method in permissions.SAFE_METHODS:
@@ -325,9 +319,6 @@ class IssuePermission(ProjectPermission):
             # [잠금보관 프로젝트 제한]
             if project and project.status == '9':
                 return False
-
-            if is_admin:
-                return True
 
             user_perms = project.get_user_permissions(user)
             role_attrs = project.get_user_role_attributes(user)
@@ -362,10 +353,6 @@ class IssuePermission(ProjectPermission):
             project = getattr(obj, 'project', None)
             if not project:
                 return False
-
-            # 일반 관리자 예외 처리
-            if is_admin:
-                return True
 
             user_perms = project.get_user_permissions(user)
 
@@ -433,10 +420,6 @@ class IssueRelationPermission(ProjectPermission):
         if not project:
             return False
 
-        # 슈퍼유저/관리자 예외 처리
-        if request.user.is_superuser or getattr(request.user, 'work_manager', False):
-            return True
-
         user_perms = project.get_user_permissions(request.user)
         required_perm = getattr(view, 'required_permission', None)
 
@@ -459,11 +442,7 @@ class IssueCommentPermission(ProjectPermission):
         if not project:
             return False
 
-        # 슈퍼유저 / 업무 관리자는 모든 검증을 통과
         user = request.user
-        if user.is_superuser or getattr(user, 'work_manager', False):
-            return True
-
         user_perms = project.get_user_permissions(user)
 
         # [비공개 댓글 가드] 작성자가 아니고 비공개 댓글 보기 권한이 없으면 접근 전면 차단
@@ -516,7 +495,28 @@ class IssueCommentPermission(ProjectPermission):
 
 
 class NewsPermission(ProjectPermission):
-    pass
+    def has_object_permission(self, request, view, obj):
+        # 1. 상위 클래스를 통한 프로젝트 접근 제한 (상태 체크 등)
+        if not super().has_object_permission(request, view, obj):
+            return False
+
+        # 3. 액션 기반 권한 제어
+        user_perms = obj.project.get_user_permissions(request.user)
+
+        # 2. 안전한 메서드(GET, HEAD, OPTIONS)는 읽기 권한 확인
+        if request.method in permissions.SAFE_METHODS:
+            return 'news.read' in user_perms
+
+        # 수정 및 삭제 로직
+        if view.action in ['update', 'partial_update', 'destroy', 'create']:
+            from work.models import News, NewsComment # 모델 임포트
+            
+            if isinstance(obj, News):
+                return 'news.manage' in user_perms
+            elif isinstance(obj, NewsComment):
+                return 'news.comment' in user_perms
+                
+        return False
 
 
 class DocumentPermission(ProjectPermission):
