@@ -58,7 +58,7 @@ const workManager = computed(() => accStore.workManager)
   <CRow v-else>
     <CCol>
       <v-divider class="mb-0" />
-      <CTable hover small striped responsive>
+      <CTable hover striped responsive align="middle">
         <CTableHead>
           <CTableRow color="">
             <CTableHeaderCell>
