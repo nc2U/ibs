@@ -363,10 +363,6 @@ class IssuePermission(ProjectPermission):
             if not project:
                 return False
 
-            # [닫힘/잠금보관 프로젝트 제한] 관리자 포함 모든 사용자 제한
-            if project and project.status in ['2', '9']:
-                return False
-
             # 일반 관리자 예외 처리
             if is_admin:
                 return True
@@ -433,13 +429,13 @@ class IssueRelationPermission(ProjectPermission):
         if not super().has_object_permission(request, view, obj):
             return False
 
-        # 슈퍼유저/관리자 예외 처리
-        if request.user.is_superuser or getattr(request.user, 'work_manager', False):
-            return True
-
         project = self.extract_project(obj)
         if not project:
             return False
+
+        # 슈퍼유저/관리자 예외 처리
+        if request.user.is_superuser or getattr(request.user, 'work_manager', False):
+            return True
 
         user_perms = project.get_user_permissions(request.user)
         required_perm = getattr(view, 'required_permission', None)
@@ -456,18 +452,17 @@ class IssueCommentPermission(ProjectPermission):
         if not super().has_object_permission(request, view, obj):
             return False
 
-        user = request.user
-
-        # 슈퍼유저 / 업무 관리자는 모든 검증을 통과
-        if user.is_superuser or getattr(user, 'work_manager', False):
-            return True
-
         project = None
         if hasattr(obj, 'issue') and hasattr(obj.issue, 'project'):
             project = obj.issue.project
 
         if not project:
             return False
+
+        # 슈퍼유저 / 업무 관리자는 모든 검증을 통과
+        user = request.user
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return True
 
         user_perms = project.get_user_permissions(user)
 
@@ -551,11 +546,11 @@ class ForumPermission(ProjectPermission):
         if not super().has_object_permission(request, view, obj):
             return False
 
-        user = request.user
         project = self.extract_project(obj)
         if not project:
             return False
 
+        user = request.user
         user_perms = project.get_user_permissions(user)
 
         # 2. 조회(SAFE_METHODS) 요청 시 forum.read 권한 엄격히 대조 (레드마인 모델 준수)
