@@ -10,7 +10,7 @@ defineProps({
 
 <template>
   <v-divider class="mb-0" />
-  <CTable striped hover small responsive align="middle">
+  <CTable striped hover responsive align="middle">
     <colgroup>
       <col style="width: 40%" />
       <col style="width: 15%" />
@@ -26,7 +26,7 @@ defineProps({
     <CTableBody>
       <CTableRow v-for="proj in issueProjectsFlat" :key="proj.pk">
         <CTableDataCell class="pl-4">
-          <div :style="{ paddingLeft: `${proj.depth * 20}px` }">
+          <span :style="{ paddingLeft: `${proj.depth * 10}px` }">
             <v-icon
               v-if="proj.depth > 0"
               icon="mdi-chevron-right"
@@ -39,18 +39,18 @@ defineProps({
             </router-link>
             <v-badge
               v-if="proj.status === '9'"
-              color="secondary"
+              color="brown-lighten-2"
               content="잠금보관"
               inline
               rounded="1"
               size="x-small"
               class="ml-2"
             />
-          </div>
+          </span>
         </CTableDataCell>
         <CTableDataCell class="text-center">{{ proj.slug }}</CTableDataCell>
         <CTableDataCell>
-          <div v-html="markdownRender(proj.description)" class="form-text" />
+          <span v-html="markdownRender(proj.description)" class="text-muted" />
         </CTableDataCell>
       </CTableRow>
     </CTableBody>
@@ -60,5 +60,16 @@ defineProps({
 <style lang="scss" scoped>
 .bold {
   font-weight: bold;
+}
+
+// 1. 마크다운 내부의 p 태그 마진 제거
+.text-muted :deep(p) {
+  margin-bottom: 0 !important;
+  line-height: 1.5;
+}
+
+// 2. 셀의 수직 정렬 강화 (CTableDataCell에 적용)
+:deep(td) {
+  vertical-align: middle !important;
 }
 </style>
