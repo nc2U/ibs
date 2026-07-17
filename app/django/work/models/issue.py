@@ -20,7 +20,7 @@ class IssueManager(models.Manager):
         return super().get_queryset().select_related(
             'project', 'tracker', 'status', 'priority', 'category',
             'fixed_version', 'assigned_to', 'parent', 'creator', 'updater', 'meeting'
-        ).filter(project__status='1')
+        ).filter(project__status__in=['1', '2'])
 
 
 class ExpectedDuration(models.TextChoices):

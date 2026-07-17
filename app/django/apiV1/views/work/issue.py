@@ -53,7 +53,8 @@ class IssueFilter(FilterSet):
     file = CharFilter(field_name='files__file_name', lookup_expr='icontains', label='파일명')
     file__exclude = CharFilter(field_name='files__file_name', lookup_expr='icontains', exclude=True, label='파일명-제외')
     file_desc = CharFilter(field_name='files__description', lookup_expr='icontains', label='파일설명')
-    file_desc__exclude = CharFilter(field_name='files__description', lookup_expr='icontains', exclude=True, label='파일설명-제외')
+    file_desc__exclude = CharFilter(field_name='files__description', lookup_expr='icontains', exclude=True,
+                                    label='파일설명-제외')
     creator_role = CharFilter(method='filter_creator_role', label='등록자역할')
     creator_role__exclude = CharFilter(method='filter_creator_role_exclude', label='등록자역할-제외')
     assignee_role = CharFilter(method='filter_assignee_role', label='담당자역할')
@@ -63,7 +64,8 @@ class IssueFilter(FilterSet):
     version_date__gte = CharFilter(method='filter_version_date_gte', label='목표단계완료일자-이후')
     version_date__lte = CharFilter(method='filter_version_date_lte', label='목표단계완료일자-이전')
     version_date__between = CharFilter(method='filter_version_date_between', label='목표단계완료일자-범위')
-    version_date__isnull = BooleanFilter(field_name='fixed_version__effective_date', lookup_expr='isnull', label='목표단계완료일자-유무')
+    version_date__isnull = BooleanFilter(field_name='fixed_version__effective_date', lookup_expr='isnull',
+                                         label='목표단계완료일자-유무')
 
     version_status = CharFilter(field_name='fixed_version__status', lookup_expr='exact', label='목표단계상태-일치')
     version_status__exclude = CharFilter(field_name='fixed_version__status', exclude=True, label='목표단계상태-제외')
@@ -135,18 +137,21 @@ class IssueFilter(FilterSet):
 
     class Meta:
         model = Issue
-        fields = ('project__slug', 'sub_project', 'sub_project__exclude', 'sub_project__isnull', 'status__closed', 'status', 'tracker', 'priority', 'category', 'category__exclude', 'category__isnull',
+        fields = ('project__slug', 'sub_project', 'sub_project__exclude', 'sub_project__isnull', 'status__closed',
+                  'status', 'tracker', 'priority', 'category', 'category__exclude', 'category__isnull',
                   'creator', 'assigned_to', 'fixed_version', 'id', 'id__gte', 'id__lte', 'id__between', 'id__any',
                   'done_ratio', 'done_ratio__gte', 'done_ratio__lte', 'done_ratio__between', 'done_ratio__isnull',
                   'parent', 'parent__exclude', 'parent__contains', 'parent__isnull',
                   'parent_issue', 'parent_issue__exclude', 'parent_issue__contains', 'parent_issue__isnull',
-                  'precedes_issue', 'precedes_issue__exclude', 'precedes_issue__isnull', 'follows_issue', 'follows_issue__exclude', 'follows_issue__isnull', 'project__my_project', 'is_private',
+                  'precedes_issue', 'precedes_issue__exclude', 'precedes_issue__isnull', 'follows_issue',
+                  'follows_issue__exclude', 'follows_issue__isnull', 'project__my_project', 'is_private',
                   'watcher', 'watcher__exclude', 'updater', 'updater__exclude', 'last_updater', 'last_updater__exclude',
                   'subject', 'subject__exclude', 'description', 'description__exclude', 'comment', 'comment__exclude',
                   'any_searchable', 'any_searchable__exclude',
                   'file', 'file__exclude', 'file_desc', 'file_desc__exclude',
                   'creator_role', 'creator_role__exclude', 'assignee_role', 'assignee_role__exclude',
-                  'version_date', 'version_date__gte', 'version_date__lte', 'version_date__between', 'version_date__isnull',
+                  'version_date', 'version_date__gte', 'version_date__lte', 'version_date__between',
+                  'version_date__isnull',
                   'version_status', 'version_status__exclude',
                   'project_status', 'project_status__exclude',
                   'created', 'created__gte', 'created__lte', 'created__between',
@@ -433,18 +438,20 @@ class IssueFilter(FilterSet):
                     sub_project_exclude_val = self.form.cleaned_data.get('sub_project__exclude')
                     sub_project_isnull_val = self.form.cleaned_data.get('sub_project__isnull')
 
-                    if sub_project_isnull_val == '1': # 없음 (Only main project)
+                    if sub_project_isnull_val == '1':  # 없음 (Only main project)
                         queryset = queryset.filter(project__slug=project.slug)
-                    elif sub_project_val: # 이다 (Specific sub-project)
+                    elif sub_project_val:  # 이다 (Specific sub-project)
                         queryset = queryset.filter(project_id=sub_project_val)
-                    elif sub_project_exclude_val: # 아니다 (Exclude specific sub-project)
-                        queryset = queryset.filter(project__slug__in=[project.slug] + sub_projects_slugs).exclude(project_id=sub_project_exclude_val)
-                    else: # 모두 (Default)
+                    elif sub_project_exclude_val:  # 아니다 (Exclude specific sub-project)
+                        queryset = queryset.filter(project__slug__in=[project.slug] + sub_projects_slugs).exclude(
+                            project_id=sub_project_exclude_val)
+                    else:  # 모두 (Default)
                         slugs = [project.slug] + sub_projects_slugs
                         queryset = queryset.filter(project__slug__in=slugs)
                 except IssueProject.DoesNotExist:
                     pass
-            elif value is not None and name not in ['project__slug', 'sub_project', 'sub_project__exclude', 'sub_project__isnull']:
+            elif value is not None and name not in ['project__slug', 'sub_project', 'sub_project__exclude',
+                                                    'sub_project__isnull']:
                 queryset = self.filters[name].filter(queryset, value)
 
         return queryset
@@ -546,7 +553,7 @@ class IssueViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return build_issue_queryset(
             self.request.user,
-            Issue.all_objects.all().select_related(
+            Issue.objects.all().select_related(
                 'project', 'status', 'creator', 'assigned_to', 'tracker', 'fixed_version'
             )
         )
@@ -556,7 +563,8 @@ class IssueViewSet(viewsets.ModelViewSet):
             user_pk = str(self.request.user.pk)
             q_params_mutable = self.request.query_params._mutable
             self.request.query_params._mutable = True
-            for key in ['watcher', 'watcher__exclude', 'creator', 'creator__exclude', 'assigned_to', 'assigned_to__exclude', 'updater', 'updater__exclude', 'last_updater', 'last_updater__exclude']:
+            for key in ['watcher', 'watcher__exclude', 'creator', 'creator__exclude', 'assigned_to',
+                        'assigned_to__exclude', 'updater', 'updater__exclude', 'last_updater', 'last_updater__exclude']:
                 val = self.request.query_params.get(key)
                 if val == 'me':
                     self.request.query_params[key] = user_pk
