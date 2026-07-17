@@ -80,6 +80,7 @@ class IssueProjectViewSet(viewsets.ModelViewSet):
             'update': 'project.update',
             'partial_update': 'project.update',
             'toggle_status': 'project.close',
+            'set_status': 'project.close',
             'toggle_public': 'project.public',
             'update_members': 'project.member',
             'destroy': 'project.delete'
@@ -140,9 +141,24 @@ class IssueProjectViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def toggle_status(self, request, slug=None):
+        """일반 사용자용: 사용중(1) <-> 닫힘(2) 토글"""
         project = self.get_object()
-        # 상태 전환 로직 (예: '1' -> '9', '9' -> '1')
-        project.status = '9' if project.status == '1' else '1'
+        if project.status not in ['1', '2']:
+            return Response({'detail': '잠금보관된 프로젝트는 관리자만 변경 가능합니다.'}, status=403)
+
+        project.status = '2' if project.status == '1' else '1'
+        project.save()
+        return Response({'status': project.status})
+
+    @action(detail=True, methods=['post'])
+    def set_status(self, request, slug=None):
+        """관리자 전용: 잠금보관(9) 포함 임의 상태 설정"""
+        new_status = request.data.get('status')
+        if new_status not in ['1', '2', '9']:
+            return Response({'detail': '유효하지 않은 상태값입니다.'}, status=400)
+
+        project = self.get_object()
+        project.status = new_status
         project.save()
         return Response({'status': project.status})
 

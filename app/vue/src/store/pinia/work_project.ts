@@ -175,10 +175,14 @@ export const useWork = defineStore('work', () => {
     if (payload.member) url += `&members__user=${payload.member}`
 
     if (payload.description) url += `&description=${payload.description}`
-    else if (payload.description__exclude) url += `&description__exclude=${payload.description__exclude}`
-    else if (payload.description__startswith) url += `&description__startswith=${payload.description__startswith}`
-    else if (payload.description__endswith) url += `&description__endswith=${payload.description__endswith}`
-    else if (payload.description__isnull !== undefined) url += `&description__isnull=${payload.description__isnull}`
+    else if (payload.description__exclude)
+      url += `&description__exclude=${payload.description__exclude}`
+    else if (payload.description__startswith)
+      url += `&description__startswith=${payload.description__startswith}`
+    else if (payload.description__endswith)
+      url += `&description__endswith=${payload.description__endswith}`
+    else if (payload.description__isnull !== undefined)
+      url += `&description__isnull=${payload.description__isnull}`
 
     if (payload.from_created) url += `&from_created=${payload.from_created}`
     if (payload.to_created) url += `&to_created=${payload.to_created}`
@@ -279,6 +283,15 @@ export const useWork = defineStore('work', () => {
       .then(async () => {
         await fetchIssueProject(slug)
         message()
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const setProjectStatus = (slug: string, status: '1' | '2' | '9') =>
+    api
+      .post(`/issue-project/${slug}/set_status/`, { status })
+      .then(async () => {
+        await fetchIssueProject(slug)
+        message('success', '성공!', '프로젝트 상태가 변경되었습니다.')
       })
       .catch(err => errorHandle(err.response.data))
 
@@ -585,6 +598,7 @@ export const useWork = defineStore('work', () => {
     updateMembers,
     deleteIssueProject,
     toggleProjectStatus,
+    setProjectStatus,
     toggleProjectPublic,
 
     role,
