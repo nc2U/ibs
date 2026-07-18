@@ -5,7 +5,7 @@ import { useRoute } from 'vue-router'
 import { dateFormat } from '@/utils/baseMixins'
 
 defineProps({
-  currentProject: { type: Array as PropType<IssueProject[]>, default: () => [] },
+  projectResults: { type: Array as PropType<IssueProject[]>, default: () => [] },
 })
 
 const route = useRoute()
@@ -31,7 +31,7 @@ const getMember = (members: any[]) => {
         </CTableHead>
 
         <CTableBody>
-          <template v-for="proj in currentProject" :key="proj.pk">
+          <template v-for="proj in projectResults" :key="proj.pk">
             <CTableRow>
               <CTableDataCell class="text-left">
                 <router-link :to="{ name: '(개요)', params: { projId: proj.slug } }">

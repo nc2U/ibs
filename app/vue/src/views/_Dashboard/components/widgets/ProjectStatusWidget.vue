@@ -14,7 +14,7 @@ const workStore = useWork()
 const issueStore = useIssue()
 const loading = ref(false)
 
-const projects = computed(() => workStore.issueProjects)
+const projects = computed(() => workStore.issueProjectsFlat)
 const myIssues = computed(() => issueStore.issueNumByMember)
 
 const totalProjects = computed(() => projects.value.length)

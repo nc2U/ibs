@@ -33,7 +33,7 @@ const accStore = useAccount()
 const usersList = computed(() => accStore.usersList)
 
 const workStore = useWork()
-const issueProjectsTree = computed(() => workStore.issueProjectsTree)
+const projectResultsTree = computed(() => workStore.projectResultsTree)
 const fetchIssueProjectList = (payload: any) => workStore.fetchIssueProjectList(payload)
 
 const issueStore = useIssue()
@@ -75,7 +75,7 @@ onBeforeMount(async () => {
 
       <UserDetail
         v-else-if="component === '상세보기'"
-        :issue-projects="issueProjectsTree"
+        :project-results="projectResultsTree"
         :issue-num="issueNumByMember"
       />
 

@@ -27,7 +27,7 @@ export const useWork = defineStore('work', () => {
   // const projectResults = ref([]) // 검색 결과 - 표시 목록용(필터 기본 값은 상태: 사용중 - 권한 기본 적용, 모든 필터 사용)
 
   const searchProjects = ref<IssueProject[]>([]) // 프로젝트 검색 선택 목록용(상태: 사용중 + 닫힘 - 권한 기본 적용)
-  const issueProjects = ref<IssueProject[]>([]) // 검색 결과 - 표시 목록용(필터 기본 값은 상태: 사용중 - 권한 기본 적용, 모든 필터 사용)
+  const projectResults = ref<IssueProject[]>([]) // 검색 결과 - 표시 목록용(필터 기본 값은 상태: 사용중 - 권한 기본 적용, 모든 필터 사용)
   const myProjects = ref<IssueProject[]>([]) // 내가 멤버인 프로젝트(권한 기본 적용)
   const activeFilters = ref<ProjectFilter>({})
 
@@ -61,8 +61,8 @@ export const useWork = defineStore('work', () => {
 
   // 최상위 루트 노드 바인딩 (parent === null)
   const searchProjectsTree = computed(() => buildProjectTree(searchProjects.value))
-  const issueProjectsTree = computed(() => {
-    let list = issueProjects.value
+  const projectResultsTree = computed(() => {
+    let list = projectResults.value
 
     const filters = activeFilters.value
     if (filters) {
@@ -112,7 +112,7 @@ export const useWork = defineStore('work', () => {
 
   // 재귀적 평탄화 가공 상태 (Computed)
   const searchProjectsFlat = computed(() => flattenTree(searchProjectsTree.value))
-  const issueProjectsFlat = computed(() => flattenTree(issueProjectsTree.value))
+  const issueProjectsFlat = computed(() => flattenTree(projectResultsTree.value))
   const myProjectsFlat = computed(() => flattenTree(myProjectsTree.value))
 
   // 4. 셀렉박스 UI 옵션 가공 상태 - PK + SLUG 형태 (Computed)
@@ -137,7 +137,7 @@ export const useWork = defineStore('work', () => {
   const allActiveProjects = computed(() => searchProjects.value.filter(p => p.status === '1'))
 
   const getIssueProjects = computed(() =>
-    issueProjects.value.map(i => ({
+    projectResults.value.map(i => ({
       value: i.pk as number,
       label:
         (i.depth && i.parent_visible ? '\u00A0'.repeat(i.depth * 2) + '» \u00A0' : '') + i.name,
@@ -205,7 +205,7 @@ export const useWork = defineStore('work', () => {
 
     return await api
       .get(url)
-      .then(res => (issueProjects.value = res.data.results || res.data))
+      .then(res => (projectResults.value = res.data.results || res.data))
       .catch(err => errorHandle(err.response.data))
   }
 
@@ -481,8 +481,8 @@ export const useWork = defineStore('work', () => {
         const targetAll = searchProjects.value.find(p => p.pk === projectId)
         if (targetAll) targetAll.is_bookmarked = isBookmarked
 
-        // 3. issueProjects 리스트 갱신
-        const targetIssue = issueProjects.value.find(p => p.pk === projectId)
+        // 3. projectResults 리스트 갱신
+        const targetIssue = projectResults.value.find(p => p.pk === projectId)
         if (targetIssue) targetIssue.is_bookmarked = isBookmarked
 
         // 4. myProjects 리스트 갱신
@@ -583,11 +583,10 @@ export const useWork = defineStore('work', () => {
     currentProject,
 
     searchProjects,
-    issueProjects,
     myProjects,
 
     searchProjectsTree,
-    issueProjectsTree,
+    projectResultsTree,
     myProjectsTree,
 
     searchProjectsFlat,

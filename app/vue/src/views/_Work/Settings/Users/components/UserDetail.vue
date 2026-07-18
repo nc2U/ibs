@@ -12,7 +12,7 @@ import ActivityLog from '@/views/_Work/Manages/Activity/components/ActivityLog.v
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 
 const props = defineProps({
-  issueProjects: { type: Array as PropType<IssueProject[]>, default: () => [] },
+  projectResults: { type: Array as PropType<IssueProject[]>, default: () => [] },
   issueNum: {
     type: Object,
     default: () => {},
@@ -31,7 +31,7 @@ const groupedActivities = computed<{ [key: string]: ActLogEntry[] }>(
   () => logStore.groupedActivities,
 )
 
-const issueProjects = computed(() => props.issueProjects.slice())
+const projectResults = computed(() => props.projectResults.slice())
 </script>
 
 <template>
@@ -86,14 +86,14 @@ const issueProjects = computed(() => props.issueProjects.slice())
 
       <IssueSummary :issue-num="issueNum" />
 
-      <template v-if="issueProjects.length">
+      <template v-if="projectResults.length">
         <CRow>
           <CCol>
             <span class="h5" style="font-size: 1.15em">프로젝트</span>
           </CCol>
         </CRow>
 
-        <ProjectSummary :issue-projects="issueProjects" />
+        <ProjectSummary :project-results="projectResults" />
       </template>
     </CCol>
 
