@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, type PropType, ref, watch } from 'vue'
+import { computed, type PropType, ref, watch } from 'vue'
 import { useStore } from '@/store'
 import { useRoute, useRouter } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project.ts'
@@ -61,8 +61,6 @@ const cngProject = async (slug: any) => {
     else await router.push({ name, params: { projId: slug } })
   }
 }
-
-onBeforeMount(workStore.fetchAllProjectList)
 </script>
 
 <template>
