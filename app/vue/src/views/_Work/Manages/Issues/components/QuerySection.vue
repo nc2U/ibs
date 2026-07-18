@@ -271,7 +271,10 @@ const form = ref<IssueFilter>({
 })
 
 const filterSubmit = () => {
-  const filterData = {} as IssueFilter
+  const filterData = {
+    status__closed: '0',
+    project_status: '1',
+  } as IssueFilter
 
   // 기본 프로젝트 조회 (project__slug) 세팅
   if (form.value.project) {
@@ -690,8 +693,8 @@ onBeforeMount(async () => {
     if (categoryIdx > -1) searchOptions[0].options.splice(categoryIdx, 1)
   }
 
-  // 비공개 업무 권한 검사 (수퍼유저/관리자 혹은 issue.private 권한)
-  const canPrivate = accStore.workManager || can(PERM.ISSUE_PRIVATE)
+  // 비공개 업무 권한 검사 (issue.private 권한)
+  const canPrivate = can(PERM.ISSUE_PRIVATE)
   if (canPrivate) {
     const privateOpt = searchOptions[0].options.find(o => o.value === 'is_private')
     if (privateOpt) delete privateOpt.disabled

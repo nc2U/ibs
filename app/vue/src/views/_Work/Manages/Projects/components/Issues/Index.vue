@@ -91,7 +91,11 @@ const onSubmit = async (payload: any) => {
 const projId = computed(() => (route.params.projId as string) ?? '')
 const issueId = computed(() => (route.params.issueId as string) ?? '')
 
-const listFilter = ref<IssueFilter>({ status__closed: '0', project: projId.value })
+const listFilter = ref<IssueFilter>({
+  status__closed: '0',
+  project_status: '1',
+  project: projId.value,
+})
 
 const filterSubmit = (payload: IssueFilter) => {
   listFilter.value = payload
@@ -106,7 +110,11 @@ watch(
   () => projId.value,
   nVal => {
     if (nVal && nVal.length > 0)
-      issueStore.fetchIssueList({ status__closed: '0', project: nVal as string })
+      issueStore.fetchIssueList({
+        status__closed: '0',
+        project_status: '1',
+        project: nVal as string,
+      })
   },
 )
 const logStore = useLogging()
@@ -126,8 +134,6 @@ watch(
 const loading = ref<boolean>(true)
 onBeforeMount(async () => {
   await workStore.fetchIssueProject(projId.value)
-  await issueStore.fetchAllIssueList(projId.value)
-  await issueStore.fetchIssueList({ ...listFilter.value })
 
   if (issueId.value) {
     await issueStore.fetchIssue(Number(issueId.value))
@@ -140,6 +146,7 @@ onBeforeMount(async () => {
   await issueStore.fetchPriorityList()
   await issueStore.fetchCategoryList(projId.value) // 프로젝트 카테고리(범주) 목록 로드
   await workStore.fetchVersionList({ project: projId.value })
+  await issueStore.fetchAllIssueList(projId.value)
   loading.value = false
 })
 </script>

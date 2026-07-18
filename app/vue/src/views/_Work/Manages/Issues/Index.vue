@@ -63,14 +63,13 @@ const onResetQuery = () => {
 
 const loading = ref<boolean>(true)
 onBeforeMount(async () => {
-  await issueStore.fetchAllIssueList()
-  if (!route.query) await issueStore.fetchIssueList({ status__closed: '0', project_status: '1' })
   await workStore.fetchMemberList()
   await workStore.fetchVersionList() // 전역 목표단계(버전) 목록 로드
   await issueStore.fetchTrackerList()
   await issueStore.fetchStatusList()
   await issueStore.fetchPriorityList()
   await accStore.fetchUsersList()
+  await issueStore.fetchAllIssueList()
   loading.value = false
 })
 </script>
