@@ -6,7 +6,6 @@ import { useAccount } from '@/store/pinia/account'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
 import { useCompany } from '@/store/pinia/company.ts'
-import { useInform } from '@/store/pinia/work_inform.ts'
 import type { Company } from '@/store/types/settings'
 import type { Issue, IssueFilter } from '@/store/types/work_issue.ts'
 import Header from '@/views/_Work/components/Header/Index.vue'
@@ -41,7 +40,7 @@ const route = useRoute()
 provide('navMenu', navMenu)
 provide('query', route?.query)
 
-const listFilter = ref<IssueFilter>({ status__closed: '0' })
+const listFilter = ref<IssueFilter>({ status__closed: '0', project_status: '1' })
 const filterSubmit = (payload: IssueFilter) => {
   listFilter.value = payload
   issueStore.fetchIssueList(payload)
@@ -65,8 +64,7 @@ const onResetQuery = () => {
 const loading = ref<boolean>(true)
 onBeforeMount(async () => {
   await issueStore.fetchAllIssueList()
-  if (!route.query) await issueStore.fetchIssueList({ status__closed: '0' })
-
+  if (!route.query) await issueStore.fetchIssueList({ status__closed: '0', project_status: '1' })
   await workStore.fetchMemberList()
   await workStore.fetchVersionList() // 전역 목표단계(버전) 목록 로드
   await issueStore.fetchTrackerList()
