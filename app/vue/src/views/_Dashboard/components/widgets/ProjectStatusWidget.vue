@@ -131,10 +131,10 @@ onMounted(fetchWidgetData)
               <v-icon
                 :icon="
                   proj.type === '1'
-                    ? 'mdi-office-building-outline'
+                    ? 'mdi-domain'
                     : proj.type === '2'
-                      ? 'mdi-home-city-outline'
-                      : 'mdi-folder-open-outline'
+                      ? 'mdi-office-building-cog-outline'
+                      : 'mdi-laptop'
                 "
                 size="small"
                 class="mr-2"
