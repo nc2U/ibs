@@ -67,7 +67,6 @@ onBeforeMount(async () => {
   await issueStore.fetchAllIssueList()
   if (!route.query) await issueStore.fetchIssueList({ status__closed: '0' })
 
-  await workStore.fetchAllProjectList('', '', 'all')
   await workStore.fetchMemberList()
   await workStore.fetchVersionList() // 전역 목표단계(버전) 목록 로드
   await issueStore.fetchTrackerList()
