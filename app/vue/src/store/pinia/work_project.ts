@@ -25,7 +25,7 @@ export const useWork = defineStore('work', () => {
 
   // 1. 원시 플랫 상태 (Refs)
   const searchProjects = ref([]) // 프로젝트 검색 선택 목록용(상태: 사용중 + 닫힘 - 권한 기본 적용)
-  const projectResults = ref([])
+  const projectResults = ref([]) // 검색 결과 - 표시 목록용(필터 기본 값은 상태: 사용중 - 권한 기본 적용, 모든 필터 사용)
   // const myProjects = ref([])
 
   const allProjects = ref<IssueProject[]>([]) // 모든 프로젝트 - 선택 목록용(타입/회사/상태 만 검색 가능 - 권한 기본 적용)
@@ -127,6 +127,15 @@ export const useWork = defineStore('work', () => {
       module: i.module,
     })),
   )
+  const headerProjects = computed(() => {
+    return allProjects.value
+      .filter(p => p.status === '1')
+      .map(i => ({
+        value: i.slug as string,
+        label:
+          (i.depth && i.parent_visible ? '\u00A0'.repeat(i.depth * 2) + '» \u00A0' : '') + i.name,
+      }))
+  }) // 헤더 프로젝트 바로가기용 (상태 : 사용중 - 권한 기본 적용)
   const getIssueProjects = computed(() =>
     issueProjects.value.map(i => ({
       value: i.pk as number,
@@ -586,6 +595,7 @@ export const useWork = defineStore('work', () => {
     myProjectsFlat,
 
     getAllProjects,
+    headerProjects,
     getIssueProjects,
     getMyProjects,
 

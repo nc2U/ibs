@@ -33,8 +33,8 @@ const sideNavCall = () => emit('side-nav-call')
 
 // 프로젝트 선택 기능 시작
 const workStore = useWork()
-const getProjects = computed(() =>
-  workStore.getAllProjects.filter(p => p.slug !== route.params.projId),
+const headerProjects = computed(() =>
+  workStore.headerProjects.filter(p => p.value !== route.params.projId),
 )
 
 const chkModules = (slug: string) => {
@@ -105,9 +105,9 @@ const cngProject = async (slug: any) => {
                 <v-card class="mx-auto mt-3" :max-width="1000">
                   <v-list density="compact" :base-color="baseColor" :bg-color="bgColor">
                     <v-list-item
-                      v-for="proj in getProjects"
-                      :key="proj.slug"
-                      @click="cngProject(proj.slug)"
+                      v-for="proj in headerProjects"
+                      :key="proj.value"
+                      @click="cngProject(proj.value)"
                     >
                       {{ proj.label }}
                     </v-list-item>
@@ -122,7 +122,7 @@ const cngProject = async (slug: any) => {
           <v-app-bar-nav-icon @click="sideNavCall" />
         </CCol>
         <CCol class="d-none d-lg-block text-right">
-          <HeaderSearch :get-projects="getProjects" @change-project="cngProject" />
+          <HeaderSearch :get-projects="headerProjects" @change-project="cngProject" />
         </CCol>
       </CRow>
 
