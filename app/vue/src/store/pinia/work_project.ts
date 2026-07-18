@@ -112,7 +112,7 @@ export const useWork = defineStore('work', () => {
 
   // 재귀적 평탄화 가공 상태 (Computed)
   const searchProjectsFlat = computed(() => flattenTree(searchProjectsTree.value))
-  const issueProjectsFlat = computed(() => flattenTree(projectResultsTree.value))
+  const projectResultsFlat = computed(() => flattenTree(projectResultsTree.value))
   const myProjectsFlat = computed(() => flattenTree(myProjectsTree.value))
 
   // 4. 셀렉박스 UI 옵션 가공 상태 - PK + SLUG 형태 (Computed)
@@ -590,7 +590,7 @@ export const useWork = defineStore('work', () => {
     myProjectsTree,
 
     searchProjectsFlat,
-    issueProjectsFlat,
+    projectResultsFlat,
     myProjectsFlat,
 
     getAllProjects,

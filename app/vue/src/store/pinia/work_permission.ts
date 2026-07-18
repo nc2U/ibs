@@ -31,7 +31,7 @@ export const usePermission = defineStore('permission', () => {
 
     // 2. 특정 프로젝트 ID나 Slug가 주어졌을 때는 해당 프로젝트의 역할 정보를 반환
     if (projectIdentifier !== undefined) {
-      const targetProj = workStore.issueProjectsFlat.find(
+      const targetProj = workStore.searchProjectsFlat.find(
         (p: any) => p.pk === projectIdentifier || p.slug === projectIdentifier,
       )
       return (
@@ -121,7 +121,7 @@ export const usePermission = defineStore('permission', () => {
 
       // 특정 프로젝트 ID나 Slug가 주어졌을 때는 해당 프로젝트의 권한을 체크
       if (projectIdentifier !== undefined) {
-        const targetProj = workStore.issueProjectsFlat.find(
+        const targetProj = workStore.searchProjectsFlat.find(
           (p: any) => p.pk === projectIdentifier || p.slug === projectIdentifier,
         )
         return targetProj?.my_perms ? targetProj.my_perms.includes(c) : false

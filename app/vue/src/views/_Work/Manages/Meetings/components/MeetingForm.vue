@@ -194,9 +194,9 @@ onBeforeMount(async () => {
   await issueStore.fetchPriorityList()
   await issueStore.fetchTrackerList()
   if (route.params.projId) {
-    const proj = workStore.issueProjectsFlat.find(p => p.slug === route.params.projId)
+    const proj = workStore.getAllProjects.find(p => p.slug === route.params.projId)
     if (proj) {
-      form.value.project = proj.pk as number
+      form.value.project = proj.value as number
       await issueStore.fetchAllIssueList(proj.slug)
     }
     await meetingStore.fetchCategoryList(route.params.projId as string)
@@ -209,7 +209,7 @@ watch(
   () => form.value.project,
   async newProjPk => {
     if (newProjPk) {
-      const proj = workStore.issueProjectsFlat.find(p => p.pk === newProjPk)
+      const proj = workStore.getAllProjects.find(p => p.value === newProjPk)
       if (proj) await issueStore.fetchAllIssueList(proj.slug)
     }
   },
@@ -601,7 +601,7 @@ const onConfirmToggle = async () => {
       <IssueForm
         :key="modalKey"
         :issue="selectedIssue"
-        :issue-project="workStore.issueProjectsFlat.find(p => p.pk === form.project)"
+        :current-project="workStore.searchProjectsFlat.find(p => p.pk === form.project)"
         :all-projects="allProjects"
         :status-list="statusList"
         :priority-list="priorityList"
