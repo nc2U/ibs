@@ -24,11 +24,9 @@ export const useWork = defineStore('work', () => {
   const currentProject = ref<IssueProject | null>(null)
 
   // 1. 원시 플랫 상태 (Refs)
-  const searchProjects = ref([]) // 프로젝트 검색 선택 목록용(상태: 사용중 + 닫힘 - 권한 기본 적용)
-  const projectResults = ref([]) // 검색 결과 - 표시 목록용(필터 기본 값은 상태: 사용중 - 권한 기본 적용, 모든 필터 사용)
-  // const myProjects = ref([])
+  // const projectResults = ref([]) // 검색 결과 - 표시 목록용(필터 기본 값은 상태: 사용중 - 권한 기본 적용, 모든 필터 사용)
 
-  const allProjects = ref<IssueProject[]>([]) // 모든 프로젝트 - 선택 목록용(타입/회사/상태 만 검색 가능 - 권한 기본 적용)
+  const searchProjects = ref<IssueProject[]>([]) // 프로젝트 검색 선택 목록용(상태: 사용중 + 닫힘 - 권한 기본 적용)
   const issueProjects = ref<IssueProject[]>([]) // 검색 결과 - 표시 목록용(필터 기본 값은 상태: 사용중 - 권한 기본 적용, 모든 필터 사용)
   const myProjects = ref<IssueProject[]>([]) // 내가 멤버인 프로젝트(권한 기본 적용)
   const activeFilters = ref<ProjectFilter>({})
@@ -62,7 +60,7 @@ export const useWork = defineStore('work', () => {
   }
 
   // 최상위 루트 노드 바인딩 (parent === null)
-  const allProjectsTree = computed(() => buildProjectTree(allProjects.value))
+  const allProjectsTree = computed(() => buildProjectTree(searchProjects.value))
   const issueProjectsTree = computed(() => {
     let list = issueProjects.value
 
@@ -78,14 +76,14 @@ export const useWork = defineStore('work', () => {
       }
       // 2. parent__slug 필터 (parent가 일치)
       if (filters.parent) {
-        const parentProj = allProjects.value.find(p => p.slug === filters.parent)
+        const parentProj = searchProjects.value.find(p => p.slug === filters.parent)
         if (parentProj) {
           list = list.filter(p => p.parent === parentProj.pk)
         }
       }
       // 3. parent__exclude 필터 (parent가 일치하지 않음)
       if (filters.parent__exclude) {
-        const parentProj = allProjects.value.find(p => p.slug === filters.parent__exclude)
+        const parentProj = searchProjects.value.find(p => p.slug === filters.parent__exclude)
         if (parentProj) {
           list = list.filter(p => p.parent !== parentProj.pk)
         }
@@ -119,7 +117,7 @@ export const useWork = defineStore('work', () => {
 
   // 4. 셀렉박스 UI 옵션 가공 상태 - PK + SLUG 형태 (Computed)
   const getAllProjects = computed(() =>
-    allProjects.value.map(i => ({
+    searchProjects.value.map(i => ({
       value: i.pk as number,
       label:
         (i.depth && i.parent_visible ? '\u00A0'.repeat(i.depth * 2) + '» \u00A0' : '') + i.name,
@@ -128,7 +126,7 @@ export const useWork = defineStore('work', () => {
     })),
   )
   const headerProjects = computed(() => {
-    return allProjects.value
+    return searchProjects.value
       .filter(p => p.status === '1')
       .map(i => ({
         value: i.slug as string,
@@ -136,6 +134,8 @@ export const useWork = defineStore('work', () => {
           (i.depth && i.parent_visible ? '\u00A0'.repeat(i.depth * 2) + '» \u00A0' : '') + i.name,
       }))
   }) // 헤더 프로젝트 바로가기용 (상태 : 사용중 - 권한 기본 적용)
+  const allActiveProjects = computed(() => searchProjects.value.filter(p => p.status === '1'))
+
   const getIssueProjects = computed(() =>
     issueProjects.value.map(i => ({
       value: i.pk as number,
@@ -162,7 +162,7 @@ export const useWork = defineStore('work', () => {
   ) => {
     return await api
       .get(`/issue-project/?type=${type}&company=${company}&status__exclude='9'`)
-      .then(res => (allProjects.value = res.data.results || res.data))
+      .then(res => (searchProjects.value = res.data.results || res.data))
       .catch(err => errorHandle(err.response.data))
   }
 
@@ -477,8 +477,8 @@ export const useWork = defineStore('work', () => {
           currentProject.value.is_bookmarked = isBookmarked
         }
 
-        // 2. allProjects 리스트 갱신
-        const targetAll = allProjects.value.find(p => p.pk === projectId)
+        // 2. searchProjects 리스트 갱신
+        const targetAll = searchProjects.value.find(p => p.pk === projectId)
         if (targetAll) targetAll.is_bookmarked = isBookmarked
 
         // 3. issueProjects 리스트 갱신
@@ -582,7 +582,7 @@ export const useWork = defineStore('work', () => {
   return {
     currentProject,
 
-    allProjects,
+    searchProjects,
     issueProjects,
     myProjects,
 
@@ -596,6 +596,7 @@ export const useWork = defineStore('work', () => {
 
     getAllProjects,
     headerProjects,
+    allActiveProjects,
     getIssueProjects,
     getMyProjects,
 

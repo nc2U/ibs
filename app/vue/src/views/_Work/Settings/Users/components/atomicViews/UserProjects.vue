@@ -74,7 +74,7 @@ const selectedProject = ref<number | null>(null)
 const selectedRoles = ref<number[]>([])
 
 const activeProject = computed(() =>
-  workStore.allProjects.find(p => Number(p.pk) === Number(selectedProject.value)),
+  workStore.allActiveProjects.find(p => Number(p.pk) === Number(selectedProject.value)),
 )
 const allowedRoleIds = computed<number[]>(
   () => activeProject.value?.allowed_roles?.map((r: any) => r.pk) ?? [],
@@ -101,7 +101,7 @@ const onSubmit = (event: Event) => {
 
 const modalAction = async () => {
   if (!userPk.value || !selectedProject.value) return
-  const proj = workStore.allProjects.find(p => p.pk === selectedProject.value)
+  const proj = workStore.allActiveProjects.find(p => p.pk === selectedProject.value)
   if (proj) {
     await workStore.createMember({
       user: userPk.value,
@@ -121,7 +121,7 @@ const modalAction = async () => {
 const addComma = (total: number, i: number) => total > i + 1
 
 const getAllowedRoleIdsByProject = (projPk: number) => {
-  const proj = workStore.allProjects.find(p => Number(p.pk) === Number(projPk))
+  const proj = workStore.allActiveProjects.find(p => Number(p.pk) === Number(projPk))
   return proj?.allowed_roles?.map((r: any) => Number(r.pk)) ?? []
 }
 
@@ -268,12 +268,12 @@ watch(
                 추가할 프로젝트 선택
               </CCardHeader>
               <CCardBody class="pb-5">
-                <span v-if="!workStore.allProjects.length" class="text-grey-darken-1">
+                <span v-if="!workStore.allActiveProjects.length" class="text-grey-darken-1">
                   추가 가능한 프로젝트가 없습니다.
                 </span>
                 <div v-else class="d-flex flex-wrap gap-2">
                   <div
-                    v-for="p in workStore.allProjects"
+                    v-for="p in workStore.allActiveProjects"
                     :key="p.pk"
                     class="form-check form-check-inline"
                   >

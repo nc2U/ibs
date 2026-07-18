@@ -22,14 +22,14 @@ const route = useRoute()
 
 const accStore = useAccount()
 const userInfo = computed(() => accStore.userInfo)
-const projectStore = useWork()
+const workStore = useWork()
 
 const { can, PERM } = usePerms()
 
-// 프로젝트 종료 여부 및 내 권한 연동 연산 추가
+// 프로젝트 닫힘 여부 및 내 권한 연동 연산 추가
 const isProjectClosed = computed(() => {
-  const proj = projectStore.allProjects.find(p => p.slug === props.issue.project.slug)
-  return proj?.status === '9'
+  const proj = workStore.searchProjects.find(p => p.slug === props.issue.project.slug)
+  return proj?.status === '2'
 })
 
 const issueCreator = computed(() => (props.issue as any).creator?.pk ?? null)
@@ -107,8 +107,8 @@ const fetchMembersOnDemand = async (visible: boolean) => {
   if (visible && members.value.length === 0) {
     loadingMembers.value = true
     try {
-      await projectStore.fetchProjectMembers(props.issue?.project.slug)
-      members.value = projectStore.projectMembers
+      await workStore.fetchProjectMembers(props.issue?.project.slug)
+      members.value = workStore.projectMembers
     } catch (err: any) {
       errorHandle(err.response?.data)
     } finally {

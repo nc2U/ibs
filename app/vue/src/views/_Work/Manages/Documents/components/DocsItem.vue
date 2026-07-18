@@ -1,25 +1,19 @@
 <script lang="ts" setup="">
 import { computed, type PropType } from 'vue'
 import { useRoute } from 'vue-router'
-import { useWork } from '@/store/pinia/work_project.ts'
 import type { Docs } from '@/store/types/docs'
 import { usePerms } from '@/composables/usePerms.ts'
 import { cutString, timeFormat } from '@/utils/baseMixins'
 import DOMPurify from 'dompurify'
 
-const props = defineProps({ docs: { type: Object as PropType<Docs>, required: true } })
+defineProps({ docs: { type: Object as PropType<Docs>, required: true } })
 
 const route = useRoute()
-const workStore = useWork()
 
 const { can, PERM } = usePerms()
 const canDocsRead = computed(() => can(PERM.DOCS_READ))
 
-const projId = computed(() => {
-  if (route.params.projId) return route.params.projId as string
-  const proj = workStore.allProjects.find(p => p.pk === props.docs.issue_project)
-  return proj?.slug || ''
-})
+const projId = computed(() => (route.params.projId as string) || '')
 </script>
 
 <template>

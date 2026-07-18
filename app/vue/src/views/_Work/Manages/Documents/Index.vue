@@ -154,7 +154,7 @@ watch(
           :type-number="typeNumber"
           :categories="getCategories"
           :get-suit-case="getSuitCase"
-          :all-projects="myProjects"
+          :my-projects="myProjects"
           @close-form="viewForm = false"
         />
 

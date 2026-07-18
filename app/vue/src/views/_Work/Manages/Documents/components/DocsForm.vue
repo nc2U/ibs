@@ -19,7 +19,7 @@ const props = defineProps({
   docs: { type: Object as PropType<Docs>, default: () => null },
   typeNumber: { type: Number, default: 1 },
   projectPk: { type: Number, default: () => null },
-  allProjects: { type: Array as PropType<selectProject[]>, default: () => [] },
+  myProjects: { type: Array as PropType<selectProject[]>, default: () => [] },
   categories: { type: Array as PropType<CodeValue[]>, default: () => [] },
   getSuitCase: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },
 })
@@ -223,7 +223,7 @@ onBeforeMount(() => dataSetup())
             <CCol class="col-sm-10 col-md-6 col-lg-4 col-xl-3">
               <CFormSelect v-model="form.issue_project" required>
                 <option value="">---------</option>
-                <option v-for="pjt in allProjects" :value="pjt.value" :key="pjt.value">
+                <option v-for="pjt in myProjects" :value="pjt.value" :key="pjt.value">
                   {{ pjt.label }}
                 </option>
               </CFormSelect>
