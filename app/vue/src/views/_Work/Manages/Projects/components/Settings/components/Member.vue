@@ -16,12 +16,12 @@ const { can, PERM } = usePerms()
 const canManageMembers = computed(() => can(PERM.PROJECT_MEMBER))
 
 const workStore = useWork()
-const iProject = computed(() => workStore.issueProject as IssueProject)
+const currentProject = computed(() => workStore.currentProject as IssueProject)
 const memberList = computed<SimpleMember[]>(
-  () => (workStore.issueProject as IssueProject)?.members ?? [],
+  () => (workStore.currentProject as IssueProject)?.members ?? [],
 )
 const allMembers = computed<SimpleMember[]>(
-  () => (workStore.issueProject as IssueProject)?.all_members ?? [],
+  () => (workStore.currentProject as IssueProject)?.all_members ?? [],
 )
 
 const updateMembers = (payload: {
@@ -66,7 +66,7 @@ const cancelEdit = () => {
 }
 
 const editSubmit = (mem: SimpleMember, roles: number[]) => {
-  const slug = iProject?.value.slug as string
+  const slug = currentProject?.value.slug as string
   const parent_roles = mem.roles.filter(r => r.inherited).map(r => r.pk)
   const calc_roles = roles.filter(r => !parent_roles.includes(r))
   const me = memberList.value.filter(m => m.user.pk === mem.user.pk).map(m => m.pk)[0]
@@ -91,7 +91,7 @@ const deleteMember = ref<number | null>(null)
 
 const deleteSubmit = () => {
   updateMembers({
-    slug: iProject?.value.slug as string,
+    slug: currentProject?.value.slug as string,
     users: [],
     roles: [],
     del_mem: deleteMember.value ?? undefined,
@@ -139,7 +139,7 @@ const onSubmit = (event: Event) => {
 const modalAction = () => {
   const _memList = [...users.value.sort((a, b) => a - b)]
   const _roles = [...roles.value.sort((a, b) => a - b)]
-  updateMembers({ slug: iProject?.value.slug as string, users: _memList, roles: _roles })
+  updateMembers({ slug: currentProject?.value.slug as string, users: _memList, roles: _roles })
   users.value = []
   roles.value = []
 }
@@ -192,7 +192,7 @@ onBeforeMount(() => accStore.fetchUsersList())
 
             <CTableDataCell class="pl-3">
               <div v-if="editMode === mem.pk">
-                <div v-for="role in iProject?.allowed_roles" :key="role.pk">
+                <div v-for="role in currentProject?.allowed_roles" :key="role.pk">
                   <CFormCheck
                     v-model="memberRole"
                     :label="role.name"
@@ -296,7 +296,7 @@ onBeforeMount(() => accStore.fetchUsersList())
             <CCardBody>
               <CFormCheck
                 inline
-                v-for="r in iProject?.allowed_roles"
+                v-for="r in currentProject?.allowed_roles"
                 :key="r.pk"
                 :value="r.pk"
                 :id="r.name"

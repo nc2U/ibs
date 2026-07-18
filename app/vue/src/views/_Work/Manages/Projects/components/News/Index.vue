@@ -1,10 +1,9 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, type PropType, ref, watch } from 'vue'
+import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
 import { useInform } from '@/store/pinia/work_inform.ts'
 import type { News } from '@/store/types/work_inform.ts'
-import type { IssueProject } from '@/store/types/work_project.ts'
 import Loading from '@/components/Loading/Index.vue'
 import NewsList from '@/views/_Work/Manages/News/components/NewsList.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
@@ -12,10 +11,6 @@ import NewsForm from '@/views/_Work/Manages/News/components/NewsForm.vue'
 import NewsDetail from '@/views/_Work/Manages/News/components/NewsDetail.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
-
-defineProps({
-  issueProject: { type: Object as PropType<IssueProject>, default: () => null },
-})
 
 const cBody = ref()
 const toggle = () => cBody.value.toggle()

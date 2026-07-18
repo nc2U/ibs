@@ -150,7 +150,7 @@ const createRelatedIssue = async (payload: any) => {
         })
       } else {
         if (key === 'project' && !val) {
-          const projectSlug = workStore.issueProject?.slug || ''
+          const projectSlug = workStore.currentProject?.slug || ''
           if (projectSlug) formData.append(key, projectSlug)
         } else formData.append(key, val as string)
       }

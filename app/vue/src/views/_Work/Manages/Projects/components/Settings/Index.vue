@@ -64,7 +64,7 @@ const initMenu = computed(() => settingMenus.value[0] || '')
 const settingMenus = computed(() => {
   const menus: { no: number; menu: string }[] = []
 
-  const isForumEnabled = !issueProject.value?.module || issueProject.value.module.forum
+  const isForumEnabled = !currentProject.value?.module || currentProject.value.module.forum
 
   // PERM 상수를 기반으로 권한 체크 + 프로젝트 모듈 활성화 여부 반영
   if (canAccessProject.value) menus.push({ no: 1, menu: '프로젝트' })
@@ -78,17 +78,17 @@ const settingMenus = computed(() => {
 })
 
 const workStore = useWork()
-const issueProject = computed<IssueProject | null>(() => workStore.issueProject)
+const currentProject = computed<IssueProject | null>(() => workStore.currentProject)
 const versionList = computed(() => workStore.versionList)
 const memberList = computed(() =>
   (
-    (issueProject.value
-      ? issueProject.value.all_members
+    (currentProject.value
+      ? currentProject.value.all_members
       : [...new Map(workStore.memberList.map(m => [m.user.pk, m])).values()]) as any[]
   ).map(m => m.user),
 )
 
-const deleteVersion = (pk: number) => workStore.deleteVersion(pk, issueProject.value?.slug)
+const deleteVersion = (pk: number) => workStore.deleteVersion(pk, currentProject.value?.slug)
 
 const issueStore = useIssue()
 
@@ -97,7 +97,7 @@ const categorySubmit = (payload: ICategory) => {
   else issueStore.createCategory(payload)
   router.push({ name: '(설정)' })
 }
-const deleteCategory = (pk: number) => issueStore.deleteCategory(pk, issueProject.value?.slug)
+const deleteCategory = (pk: number) => issueStore.deleteCategory(pk, currentProject.value?.slug)
 
 const versionFilter = async (payload: { status?: '' | '1' | '2' | '3'; search?: string }) => {
   const { status, search } = payload
@@ -177,7 +177,7 @@ const handleMenuClick = (m: string) => {
           </CCol>
         </CRow>
 
-        <ProjectForm v-if="menu === '프로젝트'" :project="issueProject" />
+        <ProjectForm v-if="menu === '프로젝트'" :project="currentProject" />
 
         <Member v-if="menu === '구성원'" />
 
@@ -186,18 +186,18 @@ const handleMenuClick = (m: string) => {
         <Version
           v-if="menu === '단계'"
           :versions="versionList"
-          :current-project-slug="issueProject?.slug as string"
+          :current-project-slug="currentProject?.slug as string"
           @version-filter="versionFilter"
           @delete-version="deleteVersion"
         />
 
         <IssueCategory
           v-if="menu === '업무범주'"
-          :categories="issueProject?.categories"
+          :categories="currentProject?.categories"
           @delete-category="deleteCategory"
         />
 
-        <Forum v-if="menu === '게시판'" :project="issueProject?.pk as number" />
+        <Forum v-if="menu === '게시판'" :project="currentProject?.pk as number" />
       </template>
 
       <template v-if="route.name === '(설정) - 범주추가' || route.name === '(설정) - 범주수정'">

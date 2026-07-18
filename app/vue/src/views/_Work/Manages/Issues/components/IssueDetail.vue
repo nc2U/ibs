@@ -21,7 +21,7 @@ import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 const props = defineProps({
   issue: { type: Object as PropType<Issue>, required: true },
-  issueProject: { type: Object as PropType<IssueProject>, default: null },
+  currentProject: { type: Object as PropType<IssueProject>, default: null },
   allProjects: { type: Array as PropType<selectProject[]>, default: () => [] },
   issueCommentList: { type: Array as PropType<IssueComment[]>, default: () => [] },
   statusList: { type: Array as PropType<IssueStatus[]>, default: () => [] },
@@ -35,7 +35,7 @@ const editForm = ref(false)
 
 const { can, canViewUser, PERM } = usePerms()
 const canCommentCreate = computed(
-  () => props.issueProject?.status !== '9' && can(PERM.ISSUE_COMMENT_CREATE),
+  () => props.currentProject?.status !== '9' && can(PERM.ISSUE_COMMENT_CREATE),
 )
 
 const isClosed = computed(() => props.issue?.closed)
@@ -113,7 +113,7 @@ const callReply = (payload?: { id: number; user: string; content: string }) => {
 const goMeeting = () => {
   if (props.issue?.meeting_desc) {
     const meetingId = props.issue.meeting_desc.pk
-    const projId = props.issueProject?.slug || props.issue.project.slug
+    const projId = props.currentProject?.slug || props.issue.project.slug
     if (projId) router.push({ name: '(회의) - 보기', params: { projId, meetingId } })
     else router.push({ name: '회의' })
   }
@@ -213,7 +213,7 @@ onBeforeMount(async () => {
     </CCol>
 
     <IssueControl
-      :proj-status="issueProject?.status"
+      :proj-status="currentProject?.status"
       :watchers="issue.watchers"
       :issue="issue"
       @call-edit-form="callEditForm"
@@ -327,7 +327,7 @@ onBeforeMount(async () => {
             </CCol>
           </CRow>
 
-          <CRow v-if="issueProject?.categories?.length">
+          <CRow v-if="currentProject?.categories?.length">
             <CCol class="title">범주 :</CCol>
             <CCol>{{ issue.category }}</CCol>
           </CRow>
@@ -405,16 +405,16 @@ onBeforeMount(async () => {
         <CCol v-html="markdownRender(issue.description)" />
       </CRow>
 
-      <v-divider v-if="issueProject?.status !== '9' || issue.files.length" />
+      <v-divider v-if="currentProject?.status !== '9' || issue.files.length" />
 
       <IssueFiles
         v-if="issue.files?.length"
-        :proj-status="issueProject?.status"
+        :proj-status="currentProject?.status"
         :issue-pk="issue.pk"
         :issue-files="issue.files"
       />
 
-      <CRow v-if="issueProject?.status !== '9'" class="mb-2">
+      <CRow v-if="currentProject?.status !== '9'" class="mb-2">
         <CCol class="col-10">
           <span class="title mr-2">하위 업무</span>
           <SubSummary
@@ -436,9 +436,9 @@ onBeforeMount(async () => {
         <SubIssue :sub="sub" @unlink-sub-issue="unlinkSubIssue" />
       </template>
 
-      <v-divider v-if="issueProject?.status !== '9'" />
+      <v-divider v-if="currentProject?.status !== '9'" />
 
-      <CRow v-if="issueProject?.status !== '9'" class="mb-2">
+      <CRow v-if="currentProject?.status !== '9'" class="mb-2">
         <CCol class="col-10">
           <span class="title mr-2">연결된 업무</span>
           <RelSummary
@@ -505,7 +505,7 @@ onBeforeMount(async () => {
 
   <div v-if="issueLogList.length">
     <IssueControl
-      :proj-status="issueProject?.status"
+      :proj-status="currentProject?.status"
       :watchers="issue.watchers"
       :issue="issue"
       @call-edit-form="callEditForm"
@@ -517,7 +517,7 @@ onBeforeMount(async () => {
   <div v-if="editForm">
     <IssueForm
       ref="issueFormRef"
-      :issue-project="issueProject"
+      :current-project="currentProject"
       :issue="issue"
       :all-projects="allProjects"
       :status-list="statusList"

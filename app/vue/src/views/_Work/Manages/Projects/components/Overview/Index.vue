@@ -17,9 +17,9 @@ const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
 
 const workStore = useWork()
-const iProject = computed<IssueProject | null>(() => workStore.issueProject)
+const currentProject = computed<IssueProject | null>(() => workStore.currentProject)
 const allMembers = computed<SimpleMember[]>(
-  () => (workStore.issueProject as IssueProject)?.all_members ?? [],
+  () => (workStore.currentProject as IssueProject)?.all_members ?? [],
 )
 const infStore = useInform()
 const newsList = computed(() => infStore.newsList)
@@ -63,7 +63,7 @@ const issueStore = useIssue()
 const trackerSum = computed(() => issueStore.trackerSum)
 
 watch(
-  () => iProject.value,
+  () => currentProject.value,
   nVal => {
     if (nVal?.pk) issueStore.fetchTrackerSummary(nVal.pk)
   },
@@ -79,9 +79,9 @@ const deleteProject = (slug: string) => {
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  if (iProject.value) {
-    await issueStore.fetchTrackerSummary(iProject.value?.pk)
-    await infStore.fetchNewsList({ project: iProject.value.slug })
+  if (currentProject.value) {
+    await issueStore.fetchTrackerSummary(currentProject.value?.pk)
+    await infStore.fetchNewsList({ project: currentProject.value.slug })
   }
   loading.value = false
 })
@@ -92,31 +92,31 @@ onBeforeMount(async () => {
   <ContentBody ref="cBody" :aside="false">
     <template v-slot:default>
       <OverViewHeader
-        :project="iProject as IssueProject"
+        :project="currentProject as IssueProject"
         @close-project="closeProject"
         @reopen-project="reopenProject"
         @delete-project="deleteProject"
       />
 
-      <CAlert v-if="iProject?.status === '2'" color="warning">
+      <CAlert v-if="currentProject?.status === '2'" color="warning">
         <v-icon icon="mdi-lock" color="warning" size="sm" />
         이 프로젝트는 닫혀 있으며 읽기 전용입니다.
       </CAlert>
 
       <CRow class="my-2">
-        <CCol class="text-muted">{{ iProject?.description }}</CCol>
+        <CCol class="text-muted">{{ currentProject?.description }}</CCol>
       </CRow>
 
-      <CRow v-if="iProject?.homepage" class="pl-2 my-2">
+      <CRow v-if="currentProject?.homepage" class="pl-2 my-2">
         <li>
-          <a :href="iProject.homepage" target="_blank">{{ iProject?.homepage }}</a>
+          <a :href="currentProject.homepage" target="_blank">{{ currentProject?.homepage }}</a>
         </li>
       </CRow>
 
       <CRow>
         <CCol lg="6">
           <CRow class="mb-3">
-            <IssueTracker :trackers="iProject?.trackers" :tracker-summary="trackerSum" />
+            <IssueTracker :trackers="currentProject?.trackers" :tracker-summary="trackerSum" />
           </CRow>
         </CCol>
 
@@ -129,8 +129,8 @@ onBeforeMount(async () => {
           />
 
           <SubProjects
-            v-if="iProject?.sub_projects?.length"
-            :sub-projects="iProject?.sub_projects"
+            v-if="currentProject?.sub_projects?.length"
+            :sub-projects="currentProject?.sub_projects"
           />
         </CCol>
       </CRow>

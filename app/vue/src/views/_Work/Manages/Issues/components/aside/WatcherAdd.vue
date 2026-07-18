@@ -30,10 +30,12 @@ const userAdding = () => {
 }
 
 const workStore = useWork()
-const iProject = computed(() => workStore.issueProject as IssueProject)
+const currentProject = computed(() => workStore.currentProject as IssueProject)
 
 const members = computed(() =>
-  (iProject?.value ? iProject?.value?.all_members : workStore?.memberList)?.map(m => m.user),
+  (currentProject?.value ? currentProject?.value?.all_members : workStore?.memberList)?.map(
+    m => m.user,
+  ),
 ) // 기본 멤버리스트
 
 const accStore = useAccount()

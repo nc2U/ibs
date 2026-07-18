@@ -117,7 +117,7 @@ const createRelatedIssue = async (payload: any) => {
       } else {
         if (key === 'project' && !val) {
           const projectSlug =
-            meeting.value?.project_desc?.slug || workStore.issueProject?.slug || ''
+            meeting.value?.project_desc?.slug || workStore.currentProject?.slug || ''
           if (projectSlug) formData.append(key, projectSlug)
         } else {
           formData.append(key, val as string)
@@ -513,7 +513,7 @@ const refConfirmModal = ref()
     <template #header>회의 관련 업무 생성</template>
     <template #default>
       <IssueForm
-        :issue-project="workStore.issueProject ?? undefined"
+        :current-project="workStore.currentProject ?? undefined"
         :all-projects="workStore.getAllProjects"
         :status-list="statusList"
         :priority-list="priorityList"

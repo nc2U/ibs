@@ -117,8 +117,8 @@ const workStore = useWork()
 const accStore = useAccount()
 const userInfo = computed(() => accStore.userInfo)
 const getUsers = computed(() =>
-  workStore.issueProject
-    ? workStore.issueProject?.all_members?.map(m => ({
+  workStore.currentProject
+    ? workStore.currentProject?.all_members?.map(m => ({
         value: m.user.pk,
         label: m.user.username,
       }))

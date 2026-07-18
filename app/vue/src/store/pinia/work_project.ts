@@ -21,7 +21,7 @@ export const useWork = defineStore('work', () => {
   const permStore = usePermission()
 
   // Issue Project states & getters
-  const issueProject = ref<IssueProject | null>(null)
+  const currentProject = ref<IssueProject | null>(null)
 
   // 1. 원시 플랫 상태 (Refs)
   const allProjects = ref<IssueProject[]>([]) // 모든 프로젝트 - 선택 목록용(타입/회사/상태 만 검색 가능 - 권한 기본 적용)
@@ -209,14 +209,14 @@ export const useWork = defineStore('work', () => {
     api
       .get(`/issue-project/${slug}/`)
       .then(async res => {
-        issueProject.value = res.data
+        currentProject.value = res.data
         permStore.setProjectPermissions(res.data.my_perms || [])
         permStore.setProjectRole(res.data.my_role || null)
         await comStore.fetchCompany(res.data.company)
       })
       .catch(err => errorHandle(err.response.data))
 
-  const removeIssueProject = () => (issueProject.value = null)
+  const removeIssueProject = () => (currentProject.value = null)
 
   const createIssueProject = (payload: IssueProject) =>
     api
@@ -462,8 +462,8 @@ export const useWork = defineStore('work', () => {
         const isBookmarked = res.data.bookmarked
 
         // 1. 단일 활성 프로젝트 상세 정보 갱신
-        if (issueProject.value && issueProject.value.pk === projectId) {
-          issueProject.value.is_bookmarked = isBookmarked
+        if (currentProject.value && currentProject.value.pk === projectId) {
+          currentProject.value.is_bookmarked = isBookmarked
         }
 
         // 2. allProjects 리스트 갱신
@@ -569,7 +569,7 @@ export const useWork = defineStore('work', () => {
       .catch(err => errorHandle(err.response.data))
 
   return {
-    issueProject,
+    currentProject,
 
     allProjects,
     issueProjects,

@@ -23,7 +23,7 @@ const company = computed<Company | null>(() => comStore.company)
 const comName = computed(() => company?.value?.name)
 
 const headerTitle = computed(() =>
-  routeName.value.includes('프로젝트') ? comName.value : issueProject.value?.name,
+  routeName.value.includes('프로젝트') ? comName.value : currentProject.value?.name,
 )
 
 const navMenus = computed(() => (!allProjectsTree.value.length ? navMenu1 : navMenu2))
@@ -58,7 +58,7 @@ const projectNavMenus = computed(() => {
     { no: 3, menu: '(업무실행내역)' },
   ]
 
-  const project = issueProject.value
+  const project = currentProject.value
 
   if (project) {
     const modules = project.module
@@ -84,7 +84,7 @@ provide('navMenu', navMenu)
 provide('query', route?.query)
 
 const workStore = useWork()
-const issueProject = computed(() => workStore.issueProject as IssueProject)
+const currentProject = computed(() => workStore.currentProject as IssueProject)
 const allProjectsTree = computed(() => workStore.allProjectsTree)
 
 const infStore = useInform()
@@ -110,14 +110,14 @@ onBeforeMount(async () => {
   <Header
     :page-title="headerTitle"
     :nav-menu="navMenu"
-    :ancestors="issueProject?.ancestors ?? []"
+    :ancestors="currentProject?.ancestors ?? []"
     @side-nav-call="sideNavCAll"
   />
 
   <router-view v-slot="{ Component }">
     <component
       :is="Component"
-      :issue-project="issueProject"
+      :current-project="currentProject"
       :nav-menu="navMenu"
       :query="route?.query"
       ref="cBody"

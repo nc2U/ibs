@@ -16,7 +16,7 @@ const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
 
 const workStore = useWork()
-const hasSubs = computed(() => !!(workStore.issueProject as IssueProject)?.sub_projects.length)
+const hasSubs = computed(() => !!(workStore.currentProject as IssueProject)?.sub_projects.length)
 
 const toDate = ref(new Date())
 const fromDate = computed(() => new Date(toDate.value.getTime() - 9 * 24 * 60 * 60 * 1000))

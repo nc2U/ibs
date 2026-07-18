@@ -18,7 +18,7 @@ import FormInIssueCategory from './FormInIssueCategory.vue'
 import WatcherAdd from './aside/WatcherAdd.vue'
 
 const props = defineProps({
-  issueProject: { type: Object as PropType<IssueProject>, default: null },
+  currentProject: { type: Object as PropType<IssueProject>, default: null },
   issue: { type: Object as PropType<Issue>, default: null },
   allProjects: { type: Array as PropType<any[]>, default: () => [] },
   statusList: { type: Array as PropType<any[]>, default: () => [] },
@@ -130,7 +130,6 @@ const formsCheck = computed(() => {
 
 const route = useRoute()
 const workStore = useWork()
-const issueProject = computed<IssueProject | null>(() => workStore.issueProject)
 
 const watcherList = ref<{ pk: number; username: string }[]>([])
 
@@ -197,8 +196,8 @@ const filteredWatcherList = computed(() => {
 const issueStore = useIssue()
 
 const trackers = computed(() => {
-  if (props.issueProject?.trackers) {
-    return props.issueProject.trackers
+  if (props.currentProject?.trackers) {
+    return props.currentProject.trackers
   } else {
     return issueStore.trackerList
   }
@@ -249,8 +248,8 @@ const newIssueStatusList = computed(() => {
   return props.statusList // 수정 모드일 때는 모든 상태 반환
 })
 
-const categories = computed(() => (props.issueProject?.categories as SimpleCategory[]) ?? [])
-const versions = computed(() => props.issueProject?.versions ?? [])
+const categories = computed(() => (props.currentProject?.categories as SimpleCategory[]) ?? [])
+const versions = computed(() => props.currentProject?.versions ?? [])
 
 watch(
   () => versions.value,
@@ -503,7 +502,7 @@ defineExpose({ callComment, callReply })
                     v-model="form.project"
                     id="issue-project"
                     required
-                    :disabled="!!props.issueProject || !!issue"
+                    :disabled="!!props.currentProject || !!issue"
                   >
                     <option value="">---------</option>
                     <option v-for="proj in allProjects" :key="proj.pk" :value="proj.slug">
@@ -749,7 +748,7 @@ defineExpose({ callComment, callReply })
     <template #header>새 업무 범주</template>
     <template #default>
       <FormInIssueCategory
-        :issue-project="issueProject"
+        :member-list="memberList"
         @close="RefCategoryModal.close()"
         @create-category="createCategory"
       />

@@ -645,7 +645,7 @@ watch(searchCond, nVal => {
   if (!nVal.includes('status')) searchCond.value = ['status']
 })
 
-const subProjects = computed(() => workStore.issueProject?.sub_projects || [])
+const subProjects = computed(() => workStore.currentProject?.sub_projects || [])
 
 const hasSubProjects = computed(() => subProjects.value.length > 0)
 

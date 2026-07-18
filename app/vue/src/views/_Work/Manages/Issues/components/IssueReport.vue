@@ -31,7 +31,7 @@ const allIssues = computed(() => issueStore.allIssueList || [])
 
 // 1. 유형별 (Tracker)
 const trackerReport = computed(() => {
-  const currentProjectPk = workStore.issueProject?.pk
+  const currentProjectPk = workStore.currentProject?.pk
   const filteredTrackers = currentProjectPk
     ? issueStore.trackerList.filter(t =>
         t.projects?.map((p: any) => p.pk).includes(currentProjectPk),

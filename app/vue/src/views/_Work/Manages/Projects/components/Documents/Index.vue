@@ -30,7 +30,7 @@ const types = ref<any[]>([
 ])
 
 const { can, PERM } = usePerms()
-const canDocsCreate = computed(() => can(PERM.DOCS_CREATE) && issueProject.value?.status !== '9')
+const canDocsCreate = computed(() => can(PERM.DOCS_CREATE) && currentProject.value?.status === '1')
 const canDocsUpdate = computed(() => can(PERM.DOCS_UPDATE))
 const canDocsDelete = computed(() => can(PERM.DOCS_DELETE))
 
@@ -51,7 +51,7 @@ const route = useRoute()
 const router = useRouter()
 
 const workStore = useWork()
-const issueProject = computed<IssueProject | null>(() => workStore.issueProject)
+const currentProject = computed<IssueProject | null>(() => workStore.currentProject)
 
 const docStore = useDocs()
 const docs = computed<Docs | null>(() => docStore.docs)
@@ -111,14 +111,14 @@ const dataSetup = async (docId?: string | string[]) => {
     await workStore.fetchIssueProject(projId)
   }
 
-  if (issueProject.value?.type === '3') {
+  if (currentProject.value?.type === '3') {
     typeNumber.value = 3
   } else if (typeNumber.value === 3) {
     typeNumber.value = 1
   }
   docsFilter.value.doc_type = typeNumber.value
 
-  docsFilter.value.issue_project = (issueProject.value as IssueProject)?.pk
+  docsFilter.value.issue_project = (currentProject.value as IssueProject)?.pk
   await fetchCategoryList(typeNumber.value)
   await fetchDocsList(docsFilter.value)
   await fetchAllSuitCaseList({ issue_project: docsFilter.value.issue_project })
@@ -203,7 +203,7 @@ onBeforeMount(async () => {
 
         <DocsForm
           v-if="viewForm"
-          :project-pk="issueProject?.pk"
+          :project-pk="currentProject?.pk"
           :type-number="typeNumber"
           :categories="getCategories"
           :get-suit-case="getSuitCase"

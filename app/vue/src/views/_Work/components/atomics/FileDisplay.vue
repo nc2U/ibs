@@ -27,7 +27,7 @@ const deleteFile = () => {
 }
 
 const workStore = useWork()
-const projStatus = computed(() => workStore.issueProject?.status)
+const projStatus = computed(() => workStore.currentProject?.status)
 </script>
 
 <template>

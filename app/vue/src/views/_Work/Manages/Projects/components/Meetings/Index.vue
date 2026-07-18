@@ -13,7 +13,7 @@ import MeetingForm from '@/views/_Work/Manages/Meetings/components/MeetingForm.v
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 
 const props = defineProps({
-  issueProject: { type: Object as () => IssueProject, default: null },
+  currentProject: { type: Object as () => IssueProject, default: null },
 })
 
 const cBody = ref()
@@ -29,7 +29,7 @@ const categories = computed(() => meetingStore.categoryList)
 const { can, PERM } = usePerms()
 
 const canMeetingCreate = computed(() => {
-  const opened = props.issueProject?.status !== '9'
+  const opened = props.currentProject?.status === '1'
   const isList = viewMode.value === 'list'
   return opened && can(PERM.MEETING_CREATE) && isList
 })
