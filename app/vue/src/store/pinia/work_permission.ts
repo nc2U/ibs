@@ -140,7 +140,7 @@ export const usePermission = defineStore('permission', () => {
         const targetPerm = workStore.permissionList.find((p: any) => p.code === c)
         const hasAuthRolePerm =
           authRole?.permissions && targetPerm ? authRole.permissions.includes(targetPerm.pk) : false
-        const hasPublicProject = workStore.allProjectsFlat.some((p: any) => p.is_public)
+        const hasPublicProject = workStore.searchProjectsFlat.some((p: any) => p.is_public)
 
         return hasAuthRolePerm && hasPublicProject
       }

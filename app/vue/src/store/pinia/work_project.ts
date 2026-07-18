@@ -111,7 +111,7 @@ export const useWork = defineStore('work', () => {
   }
 
   // 재귀적 평탄화 가공 상태 (Computed)
-  const allProjectsFlat = computed(() => flattenTree(allProjectsTree.value))
+  const searchProjectsFlat = computed(() => flattenTree(allProjectsTree.value))
   const issueProjectsFlat = computed(() => flattenTree(issueProjectsTree.value))
   const myProjectsFlat = computed(() => flattenTree(myProjectsTree.value))
 
@@ -590,7 +590,7 @@ export const useWork = defineStore('work', () => {
     issueProjectsTree,
     myProjectsTree,
 
-    allProjectsFlat,
+    searchProjectsFlat,
     issueProjectsFlat,
     myProjectsFlat,
 

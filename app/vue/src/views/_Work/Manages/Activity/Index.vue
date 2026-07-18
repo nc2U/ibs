@@ -20,10 +20,10 @@ const comName = computed(() => company?.value?.name)
 
 const sideNavCAll = () => cBody.value.toggle()
 
-const navMenu = computed(() => (!allProjectsTree.value.length ? navMenu1 : navMenu2))
+const navMenu = computed(() => (!searchProjectsFlat.value.length ? navMenu1 : navMenu2))
 
 const workStore = useWork()
-const allProjectsTree = computed(() => workStore.allProjectsTree)
+const searchProjectsFlat = computed(() => workStore.searchProjectsFlat)
 
 const route = useRoute()
 

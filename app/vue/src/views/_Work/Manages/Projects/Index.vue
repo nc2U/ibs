@@ -26,7 +26,7 @@ const headerTitle = computed(() =>
   routeName.value.includes('프로젝트') ? comName.value : currentProject.value?.name,
 )
 
-const navMenus = computed(() => (!allProjectsTree.value.length ? navMenu1 : navMenu2))
+const navMenus = computed(() => (!searchProjectsFlat.value.length ? navMenu1 : navMenu2))
 
 const { can, PERM } = usePerms()
 
@@ -85,7 +85,7 @@ provide('query', route?.query)
 
 const workStore = useWork()
 const currentProject = computed(() => workStore.currentProject as IssueProject)
-const allProjectsTree = computed(() => workStore.allProjectsTree)
+const searchProjectsFlat = computed(() => workStore.searchProjectsFlat)
 
 const infStore = useInform()
 onBeforeRouteUpdate(async to => {
