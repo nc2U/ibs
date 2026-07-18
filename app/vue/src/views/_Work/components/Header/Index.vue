@@ -34,7 +34,7 @@ const sideNavCall = () => emit('side-nav-call')
 // 프로젝트 선택 기능 시작
 const workStore = useWork()
 const headerProjects = computed(() =>
-  workStore.headerProjects.filter(p => p.value !== route.params.projId),
+  workStore.getHeaderProjects.filter(p => p.value !== route.params.projId),
 )
 
 const chkModules = (slug: string) => {
@@ -122,7 +122,7 @@ const cngProject = async (slug: any) => {
           <v-app-bar-nav-icon @click="sideNavCall" />
         </CCol>
         <CCol class="d-none d-lg-block text-right">
-          <HeaderSearch :get-projects="headerProjects" @change-project="cngProject" />
+          <HeaderSearch :header-projects="headerProjects" @change-project="cngProject" />
         </CCol>
       </CRow>
 

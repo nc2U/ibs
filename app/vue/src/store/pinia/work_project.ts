@@ -24,12 +24,11 @@ export const useWork = defineStore('work', () => {
   const currentProject = ref<IssueProject | null>(null)
 
   // 1. 원시 플랫 상태 (Refs)
-  // const projectResults = ref([]) // 검색 결과 - 표시 목록용(필터 기본 값은 상태: 사용중 - 권한 기본 적용, 모든 필터 사용)
+  const activeFilters = ref<ProjectFilter>({})
 
   const searchProjects = ref<IssueProject[]>([]) // 프로젝트 검색 선택 목록용(상태: 사용중 + 닫힘 - 권한 기본 적용)
   const projectResults = ref<IssueProject[]>([]) // 검색 결과 - 표시 목록용(필터 기본 값은 상태: 사용중 - 권한 기본 적용, 모든 필터 사용)
   const myProjects = ref<IssueProject[]>([]) // 내가 멤버인 프로젝트(권한 기본 적용)
-  const activeFilters = ref<ProjectFilter>({})
 
   // 2. 트리 재구성 함수 및 트리 가공 상태 (Computed)
   const buildProjectTree = (projects: IssueProject[]): IssueProject[] => {
@@ -115,7 +114,19 @@ export const useWork = defineStore('work', () => {
   const projectResultsFlat = computed(() => flattenTree(projectResultsTree.value))
   const myProjectsFlat = computed(() => flattenTree(myProjectsTree.value))
 
+  // 사용중 프로젝트 - 원시 플랫 상태
+  const allActiveProjects = computed(() => searchProjects.value.filter(p => p.status === '1'))
+
   // 4. 셀렉박스 UI 옵션 가공 상태 - PK + SLUG 형태 (Computed)
+  const getHeaderProjects = computed(() => {
+    return searchProjects.value
+      .filter(p => p.status === '1')
+      .map(i => ({
+        value: i.slug as string,
+        label:
+          (i.depth && i.parent_visible ? '\u00A0'.repeat(i.depth * 2) + '» \u00A0' : '') + i.name,
+      }))
+  }) // 헤더 프로젝트 바로가기용 (상태 : 사용중 - 권한 기본 적용)
   const getSearchProjects = computed(() =>
     searchProjects.value.map(i => ({
       value: i.pk as number,
@@ -125,30 +136,10 @@ export const useWork = defineStore('work', () => {
       module: i.module,
     })),
   )
-  const headerProjects = computed(() => {
-    return searchProjects.value
-      .filter(p => p.status === '1')
-      .map(i => ({
-        value: i.slug as string,
-        label:
-          (i.depth && i.parent_visible ? '\u00A0'.repeat(i.depth * 2) + '» \u00A0' : '') + i.name,
-      }))
-  }) // 헤더 프로젝트 바로가기용 (상태 : 사용중 - 권한 기본 적용)
-  const allActiveProjects = computed(() => searchProjects.value.filter(p => p.status === '1'))
   const getAllActiveProjects = computed(() =>
     allActiveProjects.value.map(i => ({
       value: i.pk as number,
       label: i.name,
-      slug: i.slug as string,
-      module: i.module,
-    })),
-  )
-
-  const getIssueProjects = computed(() =>
-    projectResults.value.map(i => ({
-      value: i.pk as number,
-      label:
-        (i.depth && i.parent_visible ? '\u00A0'.repeat(i.depth * 2) + '» \u00A0' : '') + i.name,
       slug: i.slug as string,
       module: i.module,
     })),
@@ -601,11 +592,11 @@ export const useWork = defineStore('work', () => {
     projectResultsFlat,
     myProjectsFlat,
 
-    getSearchProjects,
-    headerProjects,
     allActiveProjects,
+
+    getHeaderProjects,
+    getSearchProjects,
     getAllActiveProjects,
-    getIssueProjects,
     getMyProjects,
 
     fetchAllProjectList,

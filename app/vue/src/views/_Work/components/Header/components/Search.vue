@@ -3,7 +3,7 @@ import { onBeforeMount, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MultiSelect from '@/components/MultiSelect/index.vue'
 
-defineProps({ getProjects: { type: Array, default: () => [] } })
+defineProps({ headerProjects: { type: Array, default: () => [] } })
 const emit = defineEmits(['change-project'])
 
 const [route, router] = [useRoute(), useRouter()]
@@ -37,7 +37,7 @@ onBeforeMount(async () => {
     <v-col cols="6" class="pa-1 text-body">
       <MultiSelect
         mode="single"
-        :options="getProjects"
+        :options="headerProjects"
         placeholder="프로젝트 바로가기"
         @change="emit('change-project', $event)"
       />
