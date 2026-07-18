@@ -146,7 +146,7 @@ export const useWork = defineStore('work', () => {
   const fetchAllProjectList = async (
     type: '' | '1' | '2' | '3' = '',
     company: '' | number = '',
-    status: '' | '1' | '9' | 'all' = '1',
+    status: '' | '1' | '2' | '9' | 'all' = '1',
   ) => {
     const statusParam = status === 'all' ? '' : status
     return await api
