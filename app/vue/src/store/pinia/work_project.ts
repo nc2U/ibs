@@ -60,7 +60,7 @@ export const useWork = defineStore('work', () => {
   }
 
   // 최상위 루트 노드 바인딩 (parent === null)
-  const allProjectsTree = computed(() => buildProjectTree(searchProjects.value))
+  const searchProjectsTree = computed(() => buildProjectTree(searchProjects.value))
   const issueProjectsTree = computed(() => {
     let list = issueProjects.value
 
@@ -111,7 +111,7 @@ export const useWork = defineStore('work', () => {
   }
 
   // 재귀적 평탄화 가공 상태 (Computed)
-  const searchProjectsFlat = computed(() => flattenTree(allProjectsTree.value))
+  const searchProjectsFlat = computed(() => flattenTree(searchProjectsTree.value))
   const issueProjectsFlat = computed(() => flattenTree(issueProjectsTree.value))
   const myProjectsFlat = computed(() => flattenTree(myProjectsTree.value))
 
@@ -586,7 +586,7 @@ export const useWork = defineStore('work', () => {
     issueProjects,
     myProjects,
 
-    allProjectsTree,
+    searchProjectsTree,
     issueProjectsTree,
     myProjectsTree,
 
