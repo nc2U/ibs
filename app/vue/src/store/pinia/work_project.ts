@@ -24,8 +24,12 @@ export const useWork = defineStore('work', () => {
   const currentProject = ref<IssueProject | null>(null)
 
   // 1. 원시 플랫 상태 (Refs)
+  const searchProjects = ref([]) // 프로젝트 검색 선택 목록용(상태: 사용중 + 닫힘 - 권한 기본 적용)
+  const projectResults = ref([])
+  // const myProjects = ref([])
+
   const allProjects = ref<IssueProject[]>([]) // 모든 프로젝트 - 선택 목록용(타입/회사/상태 만 검색 가능 - 권한 기본 적용)
-  const issueProjects = ref<IssueProject[]>([]) // 검색용 - 표시 목록용(모든 검색 사용가능 - 권한 기본 적용)
+  const issueProjects = ref<IssueProject[]>([]) // 검색 결과 - 표시 목록용(필터 기본 값은 상태: 사용중 - 권한 기본 적용, 모든 필터 사용)
   const myProjects = ref<IssueProject[]>([]) // 내가 멤버인 프로젝트(권한 기본 적용)
   const activeFilters = ref<ProjectFilter>({})
 
@@ -146,11 +150,9 @@ export const useWork = defineStore('work', () => {
   const fetchAllProjectList = async (
     type: '' | '1' | '2' | '3' = '',
     company: '' | number = '',
-    status: '' | '1' | '2' | '9' | 'all' = '1',
   ) => {
-    const statusParam = status === 'all' ? '' : status
     return await api
-      .get(`/issue-project/?type=${type}&company=${company}&status=${statusParam}`)
+      .get(`/issue-project/?type=${type}&company=${company}&status__exclude='9'`)
       .then(res => (allProjects.value = res.data.results || res.data))
       .catch(err => errorHandle(err.response.data))
   }
