@@ -1,8 +1,6 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref } from 'vue'
 import { navMenu, pageTitle } from '@/views/projects/_menu/headermixin1'
-import { useWork } from '@/store/pinia/work_project.ts'
-import { useIssue } from '@/store/pinia/work_issue.ts'
 import { useProject } from '@/store/pinia/project'
 import { type Project } from '@/store/types/project'
 import Loading from '@/components/Loading/Index.vue'
@@ -32,16 +30,8 @@ const toSubmit = async (payload: Project) => {
   compName.value = 'IndexDetail'
 }
 
-const workStore = useWork()
-const getAllProjects = computed(() => workStore.getAllProjects)
-
-const issueStore = useIssue()
-
 const loading = ref(true)
 onBeforeMount(async () => {
-  await workStore.fetchAllProjectList('2')
-  await workStore.fetchRoleList()
-  await issueStore.fetchTrackerList()
   loading.value = false
 })
 </script>
@@ -60,17 +50,11 @@ onBeforeMount(async () => {
         @update-form="updateForm"
       />
 
-      <IndexForm
-        v-if="compName === 'CreateForm'"
-        :get-projects="getAllProjects"
-        @to-submit="toSubmit"
-        @reset-form="resetForm"
-      />
+      <IndexForm v-if="compName === 'CreateForm'" @to-submit="toSubmit" @reset-form="resetForm" />
 
       <IndexForm
         v-if="compName === 'UpdateForm'"
         :project="project as Project"
-        :get-projects="getAllProjects"
         @to-submit="toSubmit"
         @reset-form="resetForm"
       />

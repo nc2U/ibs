@@ -10,10 +10,6 @@ import AlertModal from '@/components/Modals/AlertModal.vue'
 
 const props = defineProps({
   project: { type: Object as PropType<Project>, default: null },
-  getProjects: {
-    type: Array as PropType<{ value: number | undefined; label: string }[]>,
-    default: () => [],
-  },
 })
 
 const emit = defineEmits(['to-submit', 'reset-form'])
