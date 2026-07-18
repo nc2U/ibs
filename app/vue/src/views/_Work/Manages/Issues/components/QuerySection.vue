@@ -12,7 +12,7 @@ import AllProjectsSelect from '@/views/_Work/components/atomics/AllProjectsSelec
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 
 const props = defineProps({
-  allProjects: { type: Array as PropType<selectProject[]>, default: () => [] },
+  searchProjects: { type: Array as PropType<selectProject[]>, default: () => [] },
   statusList: { type: Array as PropType<IssueStatus[]>, default: () => [] },
   trackerList: { type: Array as PropType<Tracker[]>, default: () => [] },
   priorityList: { type: Array as PropType<any[]>, default: () => [] },
@@ -782,7 +782,7 @@ onBeforeMount(async () => {
               <CCol class="col-4 col-lg-3">
                 <AllProjectsSelect
                   v-model="form.project"
-                  :all-projects="allProjects"
+                  :search-projects="searchProjects"
                   default-title="<< 내 프로젝트 >>"
                   value-type="slug"
                   size="sm"

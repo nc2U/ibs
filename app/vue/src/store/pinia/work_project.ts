@@ -116,7 +116,7 @@ export const useWork = defineStore('work', () => {
   const myProjectsFlat = computed(() => flattenTree(myProjectsTree.value))
 
   // 4. 셀렉박스 UI 옵션 가공 상태 - PK + SLUG 형태 (Computed)
-  const getAllProjects = computed(() =>
+  const getSearchProjects = computed(() =>
     searchProjects.value.map(i => ({
       value: i.pk as number,
       label:
@@ -135,6 +135,14 @@ export const useWork = defineStore('work', () => {
       }))
   }) // 헤더 프로젝트 바로가기용 (상태 : 사용중 - 권한 기본 적용)
   const allActiveProjects = computed(() => searchProjects.value.filter(p => p.status === '1'))
+  const getAllActiveProjects = computed(() =>
+    allActiveProjects.value.map(i => ({
+      value: i.pk as number,
+      label: i.name,
+      slug: i.slug as string,
+      module: i.module,
+    })),
+  )
 
   const getIssueProjects = computed(() =>
     projectResults.value.map(i => ({
@@ -593,9 +601,10 @@ export const useWork = defineStore('work', () => {
     projectResultsFlat,
     myProjectsFlat,
 
-    getAllProjects,
+    getSearchProjects,
     headerProjects,
     allActiveProjects,
+    getAllActiveProjects,
     getIssueProjects,
     getMyProjects,
 

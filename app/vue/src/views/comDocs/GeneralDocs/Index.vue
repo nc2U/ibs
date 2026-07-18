@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed, onBeforeMount, ref, watch, nextTick } from 'vue'
+import { computed, onBeforeMount, ref, watch } from 'vue'
 import { navMenu, pageTitle } from '@/views/comDocs/_menu/headermixin'
 import {
-  onBeforeRouteUpdate,
   onBeforeRouteLeave,
+  onBeforeRouteUpdate,
   type RouteLocationNormalizedLoaded as Loaded,
   useRoute,
   useRouter,
@@ -23,7 +23,7 @@ import ComDocsAuthGuard from '@/components/AuthGuard/ComDocsAuthGuard.vue'
 import ListController from '@/components/Documents/ListController.vue'
 import CategoryTabs from '@/components/Documents/CategoryTabs.vue'
 import DocsList from '@/components/Documents/DocsList.vue'
-import DocsDetail from '../../../components/Documents/DocsDetail.vue'
+import DocsDetail from '@/components/Documents/DocsDetail.vue'
 import DocsForm from '@/components/Documents/DocsForm.vue'
 
 const { can, PERM } = usePerms()
@@ -62,7 +62,7 @@ const listFiltering = (payload: DocsFilter) => {
   } else {
     docsFilter.value.issue_project = payload.issue_project
     docsFilter.value.is_real_dev = ''
-    formTitle.value = getAllProjects.value.filter(p => p.value == payload.issue_project)[0].label
+    formTitle.value = allActiveProjects.value.filter(p => p.value == payload.issue_project)[0].label
   }
 
   docsFilter.value.ordering = payload.ordering
@@ -86,7 +86,7 @@ const comStore = useCompany()
 const company = computed(() => (comStore.company as Company)?.pk)
 
 const workStore = useWork()
-const getAllProjects = computed(() => workStore.getAllProjects)
+const allActiveProjects = computed(() => workStore.getAllActiveProjects)
 
 const accStore = useAccount()
 const writeAuth = computed(() => accStore.writeComDocs)
@@ -370,7 +370,7 @@ onBeforeRouteLeave(() => {
             ref="fController"
             :com-from="true"
             :company="company ?? undefined"
-            :projects="getAllProjects"
+            :projects="allActiveProjects"
             :docs-filter="docsFilter"
             @list-filter="listFiltering"
           />

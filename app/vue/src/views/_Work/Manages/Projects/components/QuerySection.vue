@@ -11,7 +11,7 @@ import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
 
 const props = defineProps({
-  allProjects: { type: Array as PropType<selectProject[]>, default: () => [] },
+  searchProjects: { type: Array as PropType<selectProject[]>, default: () => [] },
   targetType: {
     type: String as PropType<'project' | 'calendar' | 'issue' | 'meeting'>,
     default: 'project',
@@ -63,8 +63,8 @@ const resetFilter = () => {
     my_project: undefined,
   }
   selectedProjectVal.value = ''
-  if (props.allProjects.length) {
-    selectedParentVal.value = props.allProjects[0]?.value
+  if (props.searchProjects.length) {
+    selectedParentVal.value = props.searchProjects[0]?.value
   }
   filterSubmit()
 }
@@ -139,7 +139,9 @@ const filterSubmit = () => {
         filterData.my_project = false
       }
     } else {
-      const selectedProj = props.allProjects.find(p => p.value === Number(selectedProjectVal.value))
+      const selectedProj = props.searchProjects.find(
+        p => p.value === Number(selectedProjectVal.value),
+      )
       const projectVal = selectedProj ? selectedProj.slug : String(selectedProjectVal.value)
 
       if (cond.value.project === 'is') filterData.project = projectVal
@@ -153,12 +155,12 @@ const filterSubmit = () => {
     } else if (cond.value.parent === 'none') {
       filterData.parent__isnull = true
     } else if (cond.value.parent === 'is') {
-      const selectedParent = props.allProjects.find(
+      const selectedParent = props.searchProjects.find(
         p => p.value === Number(selectedParentVal.value),
       )
       filterData.parent = selectedParent ? selectedParent.slug : String(selectedParentVal.value)
     } else if (cond.value.parent === 'exclude') {
-      const selectedParent = props.allProjects.find(
+      const selectedParent = props.searchProjects.find(
         p => p.value === Number(selectedParentVal.value),
       )
       filterData.parent__exclude = selectedParent
@@ -251,8 +253,8 @@ watch(searchCond, nVal => {
 
 onBeforeMount(() => {
   selectedProjectVal.value = ''
-  if (props.allProjects.length) {
-    selectedParentVal.value = props.allProjects[0]?.value
+  if (props.searchProjects.length) {
+    selectedParentVal.value = props.searchProjects[0]?.value
   }
 })
 
@@ -340,8 +342,8 @@ const applyQuery = (query: any) => {
       my_project: undefined,
     }
     selectedProjectVal.value = ''
-    if (props.allProjects.length) {
-      selectedParentVal.value = props.allProjects[0]?.value
+    if (props.searchProjects.length) {
+      selectedParentVal.value = props.searchProjects[0]?.value
     }
 
     if (f.searchCond) searchCond.value = f.searchCond
@@ -417,7 +419,7 @@ defineExpose({ applyQuery, resetFilter })
               <CCol class="col-4 col-lg-3">
                 <AllProjectsSelect
                   v-model="selectedProjectVal"
-                  :all-projects="allProjects"
+                  :search-projects="searchProjects"
                   default-title="<< 내 프로젝트 >>"
                   size="sm"
                 />
@@ -440,7 +442,7 @@ defineExpose({ applyQuery, resetFilter })
                 <AllProjectsSelect
                   v-if="cond.parent === 'is' || cond.parent === 'exclude'"
                   v-model="selectedParentVal"
-                  :all-projects="allProjects"
+                  :search-projects="searchProjects"
                   default-title="---------"
                   size="sm"
                 />
@@ -750,7 +752,7 @@ defineExpose({ applyQuery, resetFilter })
             <CCol class="col-4">
               <AllProjectsSelect
                 v-model="selectedProjectVal"
-                :all-projects="allProjects"
+                :search-projects="searchProjects"
                 default-title="<< 내 프로젝트 >>"
                 size="sm"
               />
@@ -774,7 +776,7 @@ defineExpose({ applyQuery, resetFilter })
               <AllProjectsSelect
                 v-if="cond.parent === 'is' || cond.parent === 'exclude'"
                 v-model="selectedParentVal"
-                :all-projects="allProjects"
+                :search-projects="searchProjects"
                 default-title="---------"
                 size="sm"
               />

@@ -514,7 +514,7 @@ const refConfirmModal = ref()
     <template #default>
       <IssueForm
         :current-project="workStore.currentProject ?? undefined"
-        :all-projects="workStore.getAllProjects"
+        :search-projects="workStore.getSearchProjects"
         :status-list="statusList"
         :priority-list="priorityList"
         :get-issues="getIssues"

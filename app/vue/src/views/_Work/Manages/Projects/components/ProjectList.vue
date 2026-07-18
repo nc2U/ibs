@@ -20,7 +20,7 @@ const workStore = useWork()
 const { can, PERM } = usePerms() // 사용자 권한 데이터
 const projectResultsTree = computed<IssueProject[]>(() => workStore.projectResultsTree)
 const projectResultsFlat = computed<IssueProject[]>(() => workStore.projectResultsFlat)
-const allProjects = computed(() => workStore.getAllProjects)
+const searchProjects = computed(() => workStore.getSearchProjects)
 const rollList = computed(() => workStore.roleList)
 
 const viewMode = ref<'board' | 'list'>(
@@ -125,7 +125,7 @@ onBeforeMount(() => {
 
       <QuerySection
         ref="querySectionRef"
-        :all-projects="allProjects"
+        :search-projects="searchProjects"
         @filter-submit="filterSubmit"
         @change-view-mode="onChangeViewMode"
       />

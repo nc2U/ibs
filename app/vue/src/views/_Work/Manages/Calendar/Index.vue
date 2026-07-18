@@ -26,7 +26,7 @@ const calendarStore = useCalendar()
 provide('navMenu', navMenu)
 provide('query', route?.query)
 
-const allProjects = computed(() => workStore.getAllProjects)
+const searchProjects = computed(() => workStore.getSearchProjects)
 
 const sideNavCAll = () => cBody.value.toggle()
 
@@ -64,7 +64,7 @@ const summary = computed(() => {
         </CCol>
       </CRow>
 
-      <QuerySection :all-projects="allProjects" @filter-submit="filterSubmit" />
+      <QuerySection :search-projects="searchProjects" @filter-submit="filterSubmit" />
 
       <CRow class="mb-3">
         <CCol>

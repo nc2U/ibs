@@ -44,7 +44,7 @@ const createProfile = (payload: FormData) => accStore.createProfile(payload)
 const patchProfile = (payload: { pk: number; form: FormData }) => accStore.patchProfile(payload)
 
 const workStore = useWork()
-const projectList = computed(() => workStore.getAllProjects)
+const allActiveProjects = computed(() => workStore.getAllActiveProjects)
 const subscribedProjects = computed(() => workStore.subscribedProjects)
 
 const transProfileForm = (img?: File) => (form.image = img)
@@ -351,7 +351,7 @@ onBeforeRouteUpdate(async to => {
                     <CCol xs="12" class="mb-4" style="width: 420px">
                       <v-autocomplete
                         v-model="form.subscribed_projects"
-                        :items="projectList"
+                        :items="allActiveProjects"
                         item-title="label"
                         item-value="value"
                         label="알림 구독 프로젝트"

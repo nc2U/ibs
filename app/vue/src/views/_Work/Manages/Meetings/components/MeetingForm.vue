@@ -22,7 +22,7 @@ const meetingStore = useMeeting()
 const issueStore = useIssue()
 
 const meeting = computed(() => meetingStore.meeting)
-const allProjects = computed(() => workStore.getAllProjects)
+const searchProjects = computed(() => workStore.getSearchProjects)
 const users = computed(() => accStore.usersList)
 const categories = computed(() => meetingStore.categoryList)
 
@@ -194,7 +194,7 @@ onBeforeMount(async () => {
   await issueStore.fetchPriorityList()
   await issueStore.fetchTrackerList()
   if (route.params.projId) {
-    const proj = workStore.getAllProjects.find(p => p.slug === route.params.projId)
+    const proj = searchProjects.value.find(p => p.slug === route.params.projId)
     if (proj) {
       form.value.project = proj.value as number
       await issueStore.fetchAllIssueList(proj.slug)
@@ -209,7 +209,7 @@ watch(
   () => form.value.project,
   async newProjPk => {
     if (newProjPk) {
-      const proj = workStore.getAllProjects.find(p => p.value === newProjPk)
+      const proj = searchProjects.value.find(p => p.value === newProjPk)
       if (proj) await issueStore.fetchAllIssueList(proj.slug)
     }
   },
@@ -476,7 +476,7 @@ const onConfirmToggle = async () => {
               <CCol sm="8">
                 <AllProjectsSelect
                   v-model="form.project"
-                  :all-projects="allProjects"
+                  :search-projects="searchProjects"
                   required
                   :disabled="!!route.params.projId"
                 />
@@ -602,7 +602,7 @@ const onConfirmToggle = async () => {
         :key="modalKey"
         :issue="selectedIssue"
         :current-project="workStore.searchProjectsFlat.find(p => p.pk === form.project)"
-        :all-projects="allProjects"
+        :search-projects="searchProjects"
         :status-list="statusList"
         :priority-list="priorityList"
         :get-issues="getIssues"
@@ -627,7 +627,7 @@ const onConfirmToggle = async () => {
           <CCol sm="9">
             <AllProjectsSelect
               v-model="categoryForm.project"
-              :all-projects="allProjects"
+              :search-projects="searchProjects"
               id="cat-project"
               disabled
             />

@@ -34,8 +34,8 @@ const comStore = useCompany()
 const comSelect = computed(() => comStore.comSelect)
 
 const workStore = useWork()
-const getAllProjects = computed(() =>
-  workStore.getAllProjects.filter(p => p.value !== props.project?.pk),
+const searchProjects = computed(() =>
+  workStore.getSearchProjects.filter(p => p.value !== props.project?.pk),
 )
 const allRoles = computed(() => workStore.getRoles.filter(r => r.value !== 1 && r.value !== 2))
 
@@ -320,7 +320,7 @@ onBeforeMount(() => {
           <CCol>
             <AllProjectsSelect
               v-model.number.lazy="form.parent"
-              :all-projects="getAllProjects"
+              :search-projects="searchProjects"
               default-title="---------"
               :disabled="!can(PERM.PROJECT_CREATE_SUB)"
             />
