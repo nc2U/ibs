@@ -24,12 +24,13 @@ const route = useRoute()
 
 const sideNavCAll = () => cBody.value.toggle()
 
-const navMenu = computed(() => (!myProjects.value.length ? navMenu1 : navMenu2))
+const navMenu = computed(() => (!allReadableProjectsFlat.value.length ? navMenu1 : navMenu2))
 
 const { can, PERM } = usePerms()
 const canMeetingCreate = computed(() => can(PERM.MEETING_CREATE))
 
 const workStore = useWork()
+const allReadableProjectsFlat = computed(() => workStore.allReadableProjectsFlat)
 const myProjects = computed(() => workStore.getMyProjects)
 
 const meetingStore = useMeeting()

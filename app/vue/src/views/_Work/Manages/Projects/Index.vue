@@ -88,13 +88,17 @@ const currentProject = computed(() => workStore.currentProject as IssueProject)
 const allReadableProjectsFlat = computed(() => workStore.allReadableProjectsFlat)
 
 const infStore = useInform()
-onBeforeRouteUpdate(async to => {
+onBeforeRouteUpdate(async (to, from) => {
   if (to.params.projId) {
-    await workStore.fetchIssueProject(to.params.projId as string)
+    if (to.params.projId !== from.params.projId) {
+      await workStore.fetchIssueProject(to.params.projId as string)
+    }
   } else {
-    await workStore.fetchAllProjectList()
-    workStore.removeIssueProject()
-    infStore.newsList = []
+    if (from.params.projId) {
+      await workStore.fetchAllProjectList()
+      workStore.removeIssueProject()
+      infStore.newsList = []
+    }
   }
 })
 
