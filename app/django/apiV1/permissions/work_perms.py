@@ -144,8 +144,8 @@ class ProjectPermission(permissions.BasePermission):
                 return False
             return required_perm in user_perms
 
-        # list 액션에 대한 선제 검증
-        if action == 'list':
+        # list 또는 커스텀 컬렉션 GET 액션에 대한 선제 검증
+        if action == 'list' or (request.method in permissions.SAFE_METHODS and not getattr(view, 'detail', False)):
             project_slug = self.get_project_slug(view, request.query_params)
 
             if project_slug:
