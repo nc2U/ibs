@@ -134,6 +134,10 @@ class ProjectPermission(permissions.BasePermission):
             if not project:
                 return False
 
+            # [잠금보관(9) 또는 닫힘(2) 프로젝트 제한]
+            if project.status in ['2', '9']:
+                return False
+
             user_perms = project.get_user_permissions(request.user)
 
             if not required_perm:
@@ -148,6 +152,10 @@ class ProjectPermission(permissions.BasePermission):
                 project = self.find_project(project_slug, request)
 
                 if not project:
+                    return False
+
+                # [잠금보관(9)] 프로젝트는 목록 조회조차 허용 안 함
+                if project.status == '9':
                     return False
 
                 if project.is_public:
@@ -292,14 +300,6 @@ class IssuePermission(ProjectPermission):
             if not project:
                 return False
 
-            # [잠금보관 프로젝트 제한] 아카이브 - 관리자 포함 모든 사용자 제한
-            if project.status == '9':
-                return False
-
-            # [닫힘 프로젝트 제한] 읽기 전용 - 관리자 포함 모든 사용자 제한
-            if project.status == '2':
-                return False
-
             user_perms = project.get_user_permissions(request.user)
 
             # (A) issue.create 혹은 issue.copy 권한 보유 여부 확인 (이전 캡슐화 완료)
@@ -334,10 +334,6 @@ class IssuePermission(ProjectPermission):
         if request.method in permissions.SAFE_METHODS:
             project = getattr(obj, 'project', None)
             if not project:
-                return False
-
-            # [잠금보관 프로젝트 제한]
-            if project and project.status == '9':
                 return False
 
             user_perms = project.get_user_permissions(user)
@@ -521,7 +517,10 @@ class NewsPermission(ProjectPermission):
             return False
 
         # 3. 액션 기반 권한 제어
-        user_perms = obj.project.get_user_permissions(request.user)
+        project = self.extract_project(obj)
+        if not project:
+            return False
+        user_perms = project.get_user_permissions(request.user)
 
         # 2. 안전한 메서드(GET, HEAD, OPTIONS)는 읽기 권한 확인
         if request.method in permissions.SAFE_METHODS:
