@@ -94,7 +94,7 @@ const searchOptions = reactive([
   },
 ])
 
-const cond = ref({
+const cond = ref<Record<string, any>>({
   status: 'is' as 'is' | 'exclude',
   project: 'is' as 'is' | 'exclude',
   parent: 'all' as 'all' | 'none' | 'is' | 'exclude',
@@ -106,7 +106,7 @@ const cond = ref({
   description: 'contains',
 })
 
-const form = ref<ProjectFilter>({
+const form = ref<ProjectFilter & Record<string, any>>({
   status: '1',
   is_public: '1',
 
@@ -125,120 +125,172 @@ const form = ref<ProjectFilter>({
 const selectedProjectVal = ref<number | string>('')
 const selectedParentVal = ref<number | string>('')
 
+const filterFieldsConfig = computed(() => [
+  {
+    key: 'project',
+    label: '프로젝트',
+    type: 'project',
+    condOptions: [
+      { value: 'is', label: '이다' },
+      { value: 'exclude', label: '아니다' },
+    ],
+  },
+  {
+    key: 'parent',
+    label: '상위 프로젝트',
+    type: 'parent',
+    condOptions: [
+      { value: 'all', label: '모두' },
+      { value: 'none', label: '없음' },
+      { value: 'is', label: '이다' },
+      { value: 'exclude', label: '아니다' },
+    ],
+  },
+  {
+    key: 'is_public',
+    label: '공개여부',
+    type: 'select',
+    condOptions: [
+      { value: 'is', label: '이다' },
+      { value: 'exclude', label: '아니다' },
+    ],
+    options: [
+      { value: '1', label: '예' },
+      { value: '0', label: '아니오' },
+    ],
+  },
+  {
+    key: 'name',
+    label: '이름',
+    type: 'text-match',
+    placeholder: '키워드 입력',
+    condOptions: [
+      { value: 'contains', label: '포함되는 키워드' },
+      { value: 'exclude', label: '포함하지 않는 키워드' },
+      { value: 'startswith', label: '앞문자 일치' },
+      { value: 'endswith', label: '뒷문자 일치' },
+      { value: 'none', label: '없음' },
+      { value: 'any', label: '모두' },
+    ],
+  },
+  {
+    key: 'description',
+    label: '설명',
+    type: 'text-match',
+    placeholder: '키워드 입력',
+    condOptions: [
+      { value: 'contains', label: '포함되는 키워드' },
+      { value: 'exclude', label: '포함하지 않는 키워드' },
+      { value: 'startswith', label: '앞문자 일치' },
+      { value: 'endswith', label: '뒷문자 일치' },
+      { value: 'none', label: '없음' },
+      { value: 'any', label: '모두' },
+    ],
+  },
+  {
+    key: 'created',
+    label: '등록일자',
+    type: 'date',
+    condOptions: [
+      { value: 'is', label: '이다' },
+      { value: 'gte', label: '>=' },
+      { value: 'lte', label: '<=' },
+      { value: 'between', label: '사이' },
+    ],
+  },
+  {
+    key: 'updated',
+    label: '수정일자',
+    type: 'date',
+    condOptions: [
+      { value: 'is', label: '이다' },
+      { value: 'gte', label: '>=' },
+      { value: 'lte', label: '<=' },
+      { value: 'between', label: '사이' },
+    ],
+  },
+])
+
+const activeFields = computed(() => {
+  return filterFieldsConfig.value.filter(field => searchCond.value.includes(field.key))
+})
+
 const filterSubmit = () => {
-  const filterData = {} as ProjectFilter
+  const filterData = {} as ProjectFilter & Record<string, any>
 
   if (cond.value.status === 'is') filterData.status = form.value.status
   else if (cond.value.status === 'exclude') filterData.status__exclude = form.value.status
 
-  if (searchCond.value.includes('project')) {
-    if (selectedProjectVal.value === '') {
-      if (cond.value.project === 'is') {
-        filterData.my_project = true
-      } else if (cond.value.project === 'exclude') {
-        filterData.my_project = false
+  searchCond.value.forEach(key => {
+    if (key === 'status') return
+
+    const operator = cond.value[key]
+    const val = form.value[key]
+
+    if (key === 'project') {
+      if (selectedProjectVal.value === '') {
+        if (operator === 'is') filterData.my_project = true
+        else if (operator === 'exclude') filterData.my_project = false
+      } else {
+        const selectedProj = props.allReadableProjects.find(
+          p => p.value === Number(selectedProjectVal.value),
+        )
+        const projectVal = selectedProj ? selectedProj.slug : String(selectedProjectVal.value)
+        if (operator === 'is') filterData.project = projectVal
+        else if (operator === 'exclude') filterData.project__exclude = projectVal
       }
-    } else {
-      const selectedProj = props.allReadableProjects.find(
-        p => p.value === Number(selectedProjectVal.value),
-      )
-      const projectVal = selectedProj ? selectedProj.slug : String(selectedProjectVal.value)
+    } else if (key === 'parent') {
+      if (operator === 'all') {
+        filterData.parent__isnull = false
+      } else if (operator === 'none') {
+        filterData.parent__isnull = true
+      } else if (operator === 'is') {
+        const selectedParent = props.allReadableProjects.find(
+          p => p.value === Number(selectedParentVal.value),
+        )
+        filterData.parent = selectedParent ? selectedParent.slug : String(selectedParentVal.value)
+      } else if (operator === 'exclude') {
+        const selectedParent = props.allReadableProjects.find(
+          p => p.value === Number(selectedParentVal.value),
+        )
+        filterData.parent__exclude = selectedParent
+          ? selectedParent.slug
+          : String(selectedParentVal.value)
+      }
+    } else if (key === 'is_public') {
+      if (operator === 'is') filterData.is_public = form.value.is_public
+      else if (operator === 'exclude') filterData.is_public__exclude = form.value.is_public
+    } else if (key === 'name' || key === 'description') {
+      if (operator === 'none') {
+        filterData[`${key}__isnull`] = true
+      } else if (operator === 'any') {
+        filterData[`${key}__isnull`] = false
+      } else if (val) {
+        if (operator === 'contains') filterData[key] = val
+        else if (operator === 'exclude') filterData[`${key}__exclude`] = val
+        else if (operator === 'startswith') filterData[`${key}__startswith`] = val
+        else if (operator === 'endswith') filterData[`${key}__endswith`] = val
+      }
+    } else if (key === 'created' || key === 'updated') {
+      const fieldPrefix = key === 'created' ? 'created' : 'updated'
+      const minVal = form.value[`${fieldPrefix}_date`]
+      const maxVal = form.value[`${fieldPrefix}_date2`]
+      const targetFrom = key === 'created' ? 'from_created' : 'from_updated'
+      const targetTo = key === 'created' ? 'to_created' : 'to_updated'
 
-      if (cond.value.project === 'is') filterData.project = projectVal
-      else if (cond.value.project === 'exclude') filterData.project__exclude = projectVal
+      if (operator === 'is' && minVal) {
+        filterData[targetFrom] = minVal
+        filterData[targetTo] = minVal
+      } else if (operator === 'gte' && minVal) {
+        filterData[targetFrom] = minVal
+      } else if (operator === 'lte' && minVal) {
+        filterData[targetTo] = minVal
+      } else if (operator === 'between' && minVal && maxVal) {
+        filterData[targetFrom] = minVal
+        filterData[targetTo] = maxVal
+      }
     }
-  }
-
-  if (searchCond.value.includes('parent')) {
-    if (cond.value.parent === 'all') {
-      filterData.parent__isnull = false
-    } else if (cond.value.parent === 'none') {
-      filterData.parent__isnull = true
-    } else if (cond.value.parent === 'is') {
-      const selectedParent = props.allReadableProjects.find(
-        p => p.value === Number(selectedParentVal.value),
-      )
-      filterData.parent = selectedParent ? selectedParent.slug : String(selectedParentVal.value)
-    } else if (cond.value.parent === 'exclude') {
-      const selectedParent = props.allReadableProjects.find(
-        p => p.value === Number(selectedParentVal.value),
-      )
-      filterData.parent__exclude = selectedParent
-        ? selectedParent.slug
-        : String(selectedParentVal.value)
-    }
-  }
-
-  if (searchCond.value.includes('is_public'))
-    if (cond.value.is_public === 'is' && searchCond.value.includes('is_public'))
-      filterData.is_public = form.value.is_public
-    else if (cond.value.is_public === 'exclude' && searchCond.value.includes('is_public'))
-      filterData.is_public__exclude = form.value.is_public
-
-  if (searchCond.value.includes('name')) {
-    if (cond.value.name === 'none') {
-      filterData.name__isnull = true
-    } else if (cond.value.name === 'any') {
-      filterData.name__isnull = false
-    } else if (form.value.name) {
-      if (cond.value.name === 'contains') filterData.name = form.value.name
-      else if (cond.value.name === 'exclude') filterData.name__exclude = form.value.name
-      else if (cond.value.name === 'startswith') filterData.name__startswith = form.value.name
-      else if (cond.value.name === 'endswith') filterData.name__endswith = form.value.name
-    }
-  }
-
-  if (searchCond.value.includes('description')) {
-    if (cond.value.description === 'none') {
-      filterData.description__isnull = true
-    } else if (cond.value.description === 'any') {
-      filterData.description__isnull = false
-    } else if (form.value.description) {
-      if (cond.value.description === 'contains') filterData.description = form.value.description
-      else if (cond.value.description === 'exclude')
-        filterData.description__exclude = form.value.description
-      else if (cond.value.description === 'startswith')
-        filterData.description__startswith = form.value.description
-      else if (cond.value.description === 'endswith')
-        filterData.description__endswith = form.value.description
-    }
-  }
-
-  if (searchCond.value.includes('created')) {
-    if (cond.value.created === 'is' && form.value.created_date) {
-      filterData.from_created = form.value.created_date
-      filterData.to_created = form.value.created_date
-    } else if (cond.value.created === 'gte' && form.value.created_date) {
-      filterData.from_created = form.value.created_date
-    } else if (cond.value.created === 'lte' && form.value.created_date) {
-      filterData.to_created = form.value.created_date
-    } else if (
-      cond.value.created === 'between' &&
-      form.value.created_date &&
-      form.value.created_date2
-    ) {
-      filterData.from_created = form.value.created_date
-      filterData.to_created = form.value.created_date2
-    }
-  }
-
-  if (searchCond.value.includes('updated')) {
-    if (cond.value.updated === 'is' && form.value.updated_date) {
-      filterData.from_updated = form.value.updated_date
-      filterData.to_updated = form.value.updated_date
-    } else if (cond.value.updated === 'gte' && form.value.updated_date) {
-      filterData.from_updated = form.value.updated_date
-    } else if (cond.value.updated === 'lte' && form.value.updated_date) {
-      filterData.to_updated = form.value.updated_date
-    } else if (
-      cond.value.updated === 'between' &&
-      form.value.updated_date &&
-      form.value.updated_date2
-    ) {
-      filterData.from_updated = form.value.updated_date
-      filterData.to_updated = form.value.updated_date2
-    }
-  }
+  })
 
   // 검색 양식 필터(bookmark, my_project)를 직접 필터데이터에 매핑
   if (form.value.bookmark !== undefined) filterData.bookmark = form.value.bookmark
@@ -288,8 +340,6 @@ const saveQuery = async (event: Event) => {
     return
   }
   validated.value = false
-
-  // if (!queryName.value.trim()) return
 
   const payload = {
     name: queryName.value,
@@ -353,7 +403,6 @@ const applyQuery = (query: any) => {
       if (f.form.project !== undefined) selectedProjectVal.value = f.form.project
       if (f.form.parent !== undefined) selectedParentVal.value = f.form.parent
     } else {
-      // seeds-data.json 처럼 플랫한 필터 구조일 경우 처리
       if (f.bookmark !== undefined) form.value.bookmark = f.bookmark
       if (f.my_project !== undefined) form.value.my_project = f.my_project
     }
@@ -388,6 +437,7 @@ defineExpose({ applyQuery, resetFilter })
       <slot name="condition">
         <CRow class="m-2" color="light">
           <CCol class="col-12 col-md-8">
+            <!-- 고정 필터: 상태 -->
             <CRow>
               <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
                 <CFormCheck label="상태" id="status" checked="true" readonly />
@@ -406,154 +456,69 @@ defineExpose({ applyQuery, resetFilter })
               </CCol>
             </CRow>
 
-            <CRow v-if="searchCond.includes('project')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="프로젝트" id="project" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.project" size="sm">
-                  <option value="is">이다</option>
-                  <option value="exclude">아니다</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-4 col-lg-3">
-                <AllProjectsSelect
-                  v-model="selectedProjectVal"
-                  :search-projects="allReadableProjects"
-                  default-title="<< 내 프로젝트 >>"
-                  size="sm"
-                />
-              </CCol>
-            </CRow>
+            <!-- 동적 검색조건 루프 -->
+            <template v-for="field in activeFields" :key="field.key">
+              <CRow>
+                <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
+                  <CFormCheck checked readonly :label="field.label" :id="field.key" />
+                </CCol>
+                <CCol class="col-4 col-lg-3 col-xl-2">
+                  <CFormSelect v-model="cond[field.key]" size="sm">
+                    <option v-for="opt in field.condOptions" :key="opt.value" :value="opt.value">
+                      {{ opt.label }}
+                    </option>
+                  </CFormSelect>
+                </CCol>
+                <CCol class="col-4 col-lg-3">
+                  <template v-if="field.type === 'project'">
+                    <AllProjectsSelect
+                      v-model="selectedProjectVal"
+                      :search-projects="allReadableProjects"
+                      default-title="<< 내 프로젝트 >>"
+                      size="sm"
+                    />
+                  </template>
 
-            <CRow v-if="searchCond.includes('parent')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="상위 프로젝트" id="parent" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.parent" size="sm">
-                  <option value="all">모두</option>
-                  <option value="none">없음</option>
-                  <option value="is">이다</option>
-                  <option value="exclude">아니다</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-4 col-lg-3">
-                <AllProjectsSelect
-                  v-if="cond.parent === 'is' || cond.parent === 'exclude'"
-                  v-model="selectedParentVal"
-                  :search-projects="allReadableProjects"
-                  default-title="---------"
-                  size="sm"
-                />
-              </CCol>
-            </CRow>
+                  <template v-else-if="field.type === 'parent'">
+                    <AllProjectsSelect
+                      v-if="cond.parent === 'is' || cond.parent === 'exclude'"
+                      v-model="selectedParentVal"
+                      :search-projects="allReadableProjects"
+                      default-title="---------"
+                      size="sm"
+                    />
+                  </template>
 
-            <CRow v-if="searchCond.includes('is_public')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="공개여부" id="is_public" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.is_public" size="sm">
-                  <option value="is">이다</option>
-                  <option value="exclude">아니다</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-4 col-lg-3">
-                <CFormSelect v-model="form.is_public" size="sm">
-                  <option value="1">예</option>
-                  <option value="0">아니오</option>
-                </CFormSelect>
-              </CCol>
-            </CRow>
+                  <template v-else-if="field.type === 'select'">
+                    <CFormSelect v-model="form[field.key]" size="sm">
+                      <option v-for="opt in field.options" :key="opt.value" :value="opt.value">
+                        {{ opt.label }}
+                      </option>
+                    </CFormSelect>
+                  </template>
 
-            <CRow v-if="searchCond.includes('name')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="이름" id="name" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.name" size="sm">
-                  <option value="contains">포함되는 키워드</option>
-                  <option value="exclude">포함하지 않는 키워드</option>
-                  <option value="startswith">앞문자 일치</option>
-                  <option value="endswith">뒷문자 일치</option>
-                  <option value="none">없음</option>
-                  <option value="any">모두</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-4 col-lg-3">
-                <CFormInput
-                  v-if="cond.name !== 'none' && cond.name !== 'any'"
-                  v-model="form.name"
-                  placeholder="키워드 입력"
-                  size="sm"
-                />
-              </CCol>
-            </CRow>
+                  <template v-else-if="field.type === 'text-match'">
+                    <CFormInput
+                      v-if="cond[field.key] !== 'none' && cond[field.key] !== 'any'"
+                      v-model="form[field.key]"
+                      :placeholder="field.placeholder"
+                      size="sm"
+                    />
+                  </template>
 
-            <CRow v-if="searchCond.includes('description')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="설명" id="description" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.description" size="sm">
-                  <option value="contains">포함되는 키워드</option>
-                  <option value="exclude">포함하지 않는 키워드</option>
-                  <option value="startswith">앞문자 일치</option>
-                  <option value="endswith">뒷문자 일치</option>
-                  <option value="none">없음</option>
-                  <option value="any">모두</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-4 col-lg-3">
-                <CFormInput
-                  v-if="cond.description !== 'none' && cond.description !== 'any'"
-                  v-model="form.description"
-                  placeholder="키워드 입력"
-                  size="sm"
-                />
-              </CCol>
-            </CRow>
+                  <template v-else-if="field.type === 'date'">
+                    <DatePicker v-model="form[`${field.key}_date`]" size="sm" />
+                  </template>
+                </CCol>
 
-            <CRow v-if="searchCond.includes('created')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="등록일" id="created" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.created" size="sm">
-                  <option value="is">이다</option>
-                  <option value="gte">&gt;=</option>
-                  <option value="lte">&lt;=</option>
-                  <option value="between">사이</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-4 col-lg-3">
-                <DatePicker v-model="form.created_date" size="sm" />
-              </CCol>
-              <CCol v-if="cond.created === 'between'" class="col-4 col-lg-3">
-                <DatePicker v-model="form.created_date2" size="sm" />
-              </CCol>
-            </CRow>
-
-            <CRow v-if="searchCond.includes('updated')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="수정일" id="updated" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.updated" size="sm">
-                  <option value="is">이다</option>
-                  <option value="gte">&gt;=</option>
-                  <option value="lte">&lt;=</option>
-                  <option value="between">사이</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-4 col-lg-3">
-                <DatePicker v-model="form.updated_date" size="sm" />
-              </CCol>
-              <CCol v-if="cond.updated === 'between'" class="col-4 col-lg-3">
-                <DatePicker v-model="form.updated_date2" size="sm" />
-              </CCol>
-            </CRow>
+                <CCol
+                  v-if="field.type === 'date' && cond[field.key] === 'between'"
+                  class="col-4 col-lg-3"
+                >
+                  <DatePicker v-model="form[`${field.key}_date2`]" size="sm" />
+                </CCol>
+              </CRow>
+            </template>
           </CCol>
 
           <CCol md="4" class="text-right">
@@ -738,161 +703,69 @@ defineExpose({ applyQuery, resetFilter })
             </CCol>
           </CRow>
 
-          <!-- 프로젝트 -->
-          <CRow v-if="searchCond.includes('project')" class="mb-2 align-items-center">
-            <CCol class="col-3 pt-1 text-right">
-              <strong>프로젝트</strong>
-            </CCol>
-            <CCol class="col-3">
-              <CFormSelect v-model="cond.project" size="sm">
-                <option value="is">이다</option>
-                <option value="exclude">아니다</option>
-              </CFormSelect>
-            </CCol>
-            <CCol class="col-4">
-              <AllProjectsSelect
-                v-model="selectedProjectVal"
-                :search-projects="allReadableProjects"
-                default-title="<< 내 프로젝트 >>"
-                size="sm"
-              />
-            </CCol>
-          </CRow>
+          <!-- 저장 조건 설정용 동적 검색조건 루프 -->
+          <template v-for="field in activeFields" :key="'modal-' + field.key">
+            <CRow class="mb-2 align-items-center">
+              <CCol class="col-3 pt-1 text-right">
+                <strong>{{ field.label }}</strong>
+              </CCol>
+              <CCol class="col-3">
+                <CFormSelect v-model="cond[field.key]" size="sm">
+                  <option v-for="opt in field.condOptions" :key="opt.value" :value="opt.value">
+                    {{ opt.label }}
+                  </option>
+                </CFormSelect>
+              </CCol>
+              <CCol class="col-4">
+                <template v-if="field.type === 'project'">
+                  <AllProjectsSelect
+                    v-model="selectedProjectVal"
+                    :search-projects="allReadableProjects"
+                    default-title="<< 내 프로젝트 >>"
+                    size="sm"
+                  />
+                </template>
 
-          <!-- 상위 프로젝트 -->
-          <CRow v-if="searchCond.includes('parent')" class="mb-2 align-items-center">
-            <CCol class="col-3 pt-1 text-right">
-              <strong>상위 프로젝트</strong>
-            </CCol>
-            <CCol class="col-3">
-              <CFormSelect v-model="cond.parent" size="sm">
-                <option value="all">모두</option>
-                <option value="none">없음</option>
-                <option value="is">이다</option>
-                <option value="exclude">아니다</option>
-              </CFormSelect>
-            </CCol>
-            <CCol class="col-4">
-              <AllProjectsSelect
-                v-if="cond.parent === 'is' || cond.parent === 'exclude'"
-                v-model="selectedParentVal"
-                :search-projects="allReadableProjects"
-                default-title="---------"
-                size="sm"
-              />
-            </CCol>
-          </CRow>
+                <template v-else-if="field.type === 'parent'">
+                  <AllProjectsSelect
+                    v-if="cond.parent === 'is' || cond.parent === 'exclude'"
+                    v-model="selectedParentVal"
+                    :search-projects="allReadableProjects"
+                    default-title="---------"
+                    size="sm"
+                  />
+                </template>
 
-          <!-- 공개여부 -->
-          <CRow v-if="searchCond.includes('is_public')" class="mb-2 align-items-center">
-            <CCol class="col-3 pt-1 text-right">
-              <strong>공개여부</strong>
-            </CCol>
-            <CCol class="col-3">
-              <CFormSelect v-model="cond.is_public" size="sm">
-                <option value="is">이다</option>
-                <option value="exclude">아니다</option>
-              </CFormSelect>
-            </CCol>
-            <CCol class="col-4">
-              <CFormSelect v-model="form.is_public" size="sm">
-                <option value="1">예</option>
-                <option value="0">아니오</option>
-              </CFormSelect>
-            </CCol>
-          </CRow>
+                <template v-else-if="field.type === 'select'">
+                  <CFormSelect v-model="form[field.key]" size="sm">
+                    <option v-for="opt in field.options" :key="opt.value" :value="opt.value">
+                      {{ opt.label }}
+                    </option>
+                  </CFormSelect>
+                </template>
 
-          <!-- 이름 -->
-          <CRow v-if="searchCond.includes('name')" class="mb-2 align-items-center">
-            <CCol class="col-3 pt-1 text-right">
-              <strong>이름</strong>
-            </CCol>
-            <CCol class="col-3">
-              <CFormSelect v-model="cond.name" size="sm">
-                <option value="contains">포함되는 키워드</option>
-                <option value="exclude">포함하지 않는 키워드</option>
-                <option value="startswith">앞문자 일치</option>
-                <option value="endswith">뒷문자 일치</option>
-                <option value="none">없음</option>
-                <option value="any">모두</option>
-              </CFormSelect>
-            </CCol>
-            <CCol class="col-4">
-              <CFormInput
-                v-if="cond.name !== 'none' && cond.name !== 'any'"
-                v-model="form.name"
-                placeholder="키워드 입력"
-                size="sm"
-              />
-            </CCol>
-          </CRow>
+                <template v-else-if="field.type === 'text-match'">
+                  <CFormInput
+                    v-if="cond[field.key] !== 'none' && cond[field.key] !== 'any'"
+                    v-model="form[field.key]"
+                    :placeholder="field.placeholder"
+                    size="sm"
+                  />
+                </template>
 
-          <!-- 설명 -->
-          <CRow v-if="searchCond.includes('description')" class="mb-2 align-items-center">
-            <CCol class="col-3 pt-1 text-right">
-              <strong>설명</strong>
-            </CCol>
-            <CCol class="col-3">
-              <CFormSelect v-model="cond.description" size="sm">
-                <option value="contains">포함되는 키워드</option>
-                <option value="exclude">포함하지 않는 키워드</option>
-                <option value="startswith">앞문자 일치</option>
-                <option value="endswith">뒷문자 일치</option>
-                <option value="none">없음</option>
-                <option value="any">모두</option>
-              </CFormSelect>
-            </CCol>
-            <CCol class="col-4">
-              <CFormInput
-                v-if="cond.description !== 'none' && cond.description !== 'any'"
-                v-model="form.description"
-                placeholder="키워드 입력"
-                size="sm"
-              />
-            </CCol>
-          </CRow>
+                <template v-else-if="field.type === 'date'">
+                  <DatePicker v-model="form[`${field.key}_date`]" size="sm" />
+                </template>
+              </CCol>
 
-          <!-- 등록일자 -->
-          <CRow v-if="searchCond.includes('created')" class="mb-2 align-items-center">
-            <CCol class="col-3 pt-1 text-right">
-              <strong>등록일자</strong>
-            </CCol>
-            <CCol class="col-3">
-              <CFormSelect v-model="cond.created" size="sm">
-                <option value="is">이다</option>
-                <option value="gte">&gt;=</option>
-                <option value="lte">&lt;=</option>
-                <option value="between">사이</option>
-              </CFormSelect>
-            </CCol>
-            <CCol class="col-3">
-              <DatePicker v-model="form.created_date" size="sm" />
-            </CCol>
-            <CCol v-if="cond.created === 'between'" class="col-3">
-              <DatePicker v-model="form.created_date2" size="sm" />
-            </CCol>
-          </CRow>
-
-          <!-- 수정일자 -->
-          <CRow v-if="searchCond.includes('updated')" class="mb-2 align-items-center">
-            <CCol class="col-3 pt-1 text-right">
-              <strong>수정일자</strong>
-            </CCol>
-            <CCol class="col-3">
-              <CFormSelect v-model="cond.updated" size="sm">
-                <option value="is">이다</option>
-                <option value="gte">&gt;=</option>
-                <option value="lte">&lt;=</option>
-                <option value="between">사이</option>
-              </CFormSelect>
-            </CCol>
-            <CCol class="col-3">
-              <DatePicker v-model="form.updated_date" size="sm" />
-            </CCol>
-            <CCol v-if="cond.updated === 'between'" class="col-3">
-              <DatePicker v-model="form.updated_date2" size="sm" />
-            </CCol>
-          </CRow>
+              <CCol
+                v-if="field.type === 'date' && cond[field.key] === 'between'"
+                class="col-3"
+              >
+                <DatePicker v-model="form[`${field.key}_date2`]" size="sm" />
+              </CCol>
+            </CRow>
+          </template>
         </div>
       </CModalBody>
       <CModalFooter>
