@@ -21,13 +21,29 @@ export const useCalendar = defineStore('calendar', () => {
   const events = ref<CalendarEvent[]>([])
   const loading = ref<boolean>(false)
 
-  const fetchCalendarEvents = async (projectSlug?: string, start?: string, end?: string) => {
+  const fetchCalendarEvents = async (
+    projectOrFilters?: string | Record<string, any>,
+    start?: string,
+    end?: string,
+  ) => {
     loading.value = true
     try {
       const params = new URLSearchParams()
-      if (projectSlug) params.append('project', projectSlug)
       if (start) params.append('start', start)
       if (end) params.append('end', end)
+
+      if (projectOrFilters) {
+        if (typeof projectOrFilters === 'string') {
+          params.append('project', projectOrFilters)
+        } else if (typeof projectOrFilters === 'object') {
+          Object.keys(projectOrFilters).forEach(key => {
+            const val = projectOrFilters[key]
+            if (val !== null && val !== undefined && val !== '') {
+              params.append(key, String(val))
+            }
+          })
+        }
+      }
 
       const url = `/work-calendar/?${params.toString()}`
       const res = await api.get(url)

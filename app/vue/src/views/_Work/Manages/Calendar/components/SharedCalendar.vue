@@ -10,9 +10,11 @@ import type { CalendarOptions } from '@fullcalendar/core'
 import FullCalendar from '@fullcalendar/vue3'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import interactionPlugin from '@fullcalendar/interaction'
+import { type PropType } from 'vue'
 
 const props = defineProps({
   projectSlug: { type: String, default: undefined },
+  issueFilters: { type: Object as PropType<Record<string, any>>, default: () => ({}) },
 })
 
 const router = useRouter()
@@ -163,7 +165,12 @@ const handleDatesSet = (dateInfo: any) => {
   const startStr = dateInfo.startStr.split('T')[0]
   const endStr = dateInfo.endStr.split('T')[0]
   currentRange.value = { start: startStr, end: endStr }
-  calendarStore.fetchCalendarEvents(props.projectSlug, startStr, endStr)
+
+  const reqFilters = { ...props.issueFilters }
+  if (props.projectSlug && !reqFilters.project) {
+    reqFilters.project = props.projectSlug
+  }
+  calendarStore.fetchCalendarEvents(reqFilters, startStr, endStr)
 }
 
 const handleEventDidMount = (info: any) => {

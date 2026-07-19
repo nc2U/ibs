@@ -1,15 +1,17 @@
 <script setup lang="ts">
-import { computed, provide, ref } from 'vue'
+import { computed, provide, ref, onBeforeMount } from 'vue'
 import { navMenu2 as navMenu } from '@/views/_Work/_menu/headermixin1'
 import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project'
 import { useCompany } from '@/store/pinia/company.ts'
 import { useCalendar } from '@/store/pinia/work_calendar'
+import { useAccount } from '@/store/pinia/account'
+import { useIssue } from '@/store/pinia/work_issue'
 import type { Company } from '@/store/types/settings'
 import type { IssueFilter } from '@/store/types/work_issue'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
-import QuerySection from '@/views/_Work/Manages/Projects/components/QuerySection.vue'
+import QuerySection from '@/views/_Work/Manages/Issues/components/QuerySection.vue'
 import SharedCalendar from './components/SharedCalendar.vue'
 import SummaryStatus from '@/views/_Work/Manages/Calendar/components/SummaryStatus.vue'
 import Loading from '@/components/Loading/Index.vue'
@@ -27,17 +29,39 @@ const comName = computed(() => company?.value?.name)
 
 const workStore = useWork()
 const calendarStore = useCalendar()
+const accStore = useAccount()
+const issueStore = useIssue()
 
 const allReadableProjects = computed(() => workStore.getAllReadableProjects)
+const getUsers = computed(() => accStore.getUsers)
+const getVersions = computed(() => workStore.getVersions)
+const statusList = computed(() => issueStore.statusList)
+const trackerList = computed(() => issueStore.trackerList)
+const priorityList = computed(() => issueStore.priorityList)
+const categoryList = computed(() => issueStore.categoryList)
+const getIssues = computed(() => issueStore.getIssues)
 
 const activeProject = ref<string | undefined>(route.query.project as string | undefined)
+const activeFilters = ref<Record<string, any>>({})
 const calendarRef = ref()
 
 const filterSubmit = (payload: IssueFilter) => {
   activeProject.value = payload.project
+  activeFilters.value = { ...payload }
   const range = calendarRef.value?.currentRange || { start: '', end: '' }
-  calendarStore.fetchCalendarEvents(payload.project, range.start, range.end)
+  calendarStore.fetchCalendarEvents(payload, range.start, range.end)
 }
+
+const loading = ref(true)
+onBeforeMount(async () => {
+  await workStore.fetchMemberList()
+  await workStore.fetchVersionList()
+  await issueStore.fetchTrackerList()
+  await issueStore.fetchStatusList()
+  await issueStore.fetchPriorityList()
+  await accStore.fetchUsersList()
+  loading.value = false
+})
 
 const summary = computed(() => {
   const events = calendarStore.events
@@ -51,7 +75,7 @@ const summary = computed(() => {
 </script>
 
 <template>
-  <Loading :active="calendarStore.loading" />
+  <Loading :active="loading || calendarStore.loading" />
   <Header :page-title="comName" :nav-menu="navMenu" @side-nav-call="sideNavCAll" />
 
   <ContentBody ref="cBody" :nav-menu="navMenu" :query="route?.query">
@@ -64,11 +88,25 @@ const summary = computed(() => {
         </CCol>
       </CRow>
 
-      <QuerySection :search-projects="allReadableProjects" @filter-submit="filterSubmit" />
+      <QuerySection
+        :search-projects="allReadableProjects"
+        :status-list="statusList"
+        :tracker-list="trackerList"
+        :priority-list="priorityList"
+        :category-list="categoryList"
+        :get-issues="getIssues"
+        :get-users="getUsers"
+        :get-versions="getVersions"
+        @filter-submit="filterSubmit"
+      />
 
       <CRow class="mb-3">
         <CCol>
-          <SharedCalendar ref="calendarRef" :project-slug="activeProject" />
+          <SharedCalendar
+            ref="calendarRef"
+            :project-slug="activeProject"
+            :issue-filters="activeFilters"
+          />
         </CCol>
       </CRow>
 

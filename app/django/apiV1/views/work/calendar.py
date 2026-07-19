@@ -27,6 +27,8 @@ class CalendarViewSet(viewsets.ViewSet):
 
         is_admin = user.is_superuser or getattr(user, 'work_manager', False)
 
+        from apiV1.views.work.issue import IssueFilter
+
         # 1. Issue 쿼리셋 필터링
         issue_qs = Issue.objects.filter(project__status='1')
         if project_slug:
@@ -36,6 +38,8 @@ class CalendarViewSet(viewsets.ViewSet):
             issue_qs = issue_qs.filter(
                 Q(project__is_public=True) | Q(project__members__user=user)
             ).distinct()
+
+        issue_qs = IssueFilter(request.GET, queryset=issue_qs).qs
 
         # 기간 필터 적용 (업무의 진행 기간이 조회 기간과 오버랩되는지 판별)
         if start_date_str and end_date_str:
