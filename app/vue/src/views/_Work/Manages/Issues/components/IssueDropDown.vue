@@ -28,7 +28,7 @@ const { can, PERM } = usePerms()
 
 // 프로젝트 닫힘 여부 및 내 권한 연동 연산 추가
 const isProjectClosed = computed(() => {
-  const proj = workStore.searchProjects.find(p => p.slug === props.issue.project.slug)
+  const proj = workStore.allReadableProjectsFlat.find(p => p.slug === props.issue.project.slug)
   return proj?.status === '2'
 })
 
