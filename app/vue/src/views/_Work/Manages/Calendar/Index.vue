@@ -55,11 +55,6 @@ const filterSubmit = (payload: IssueFilter) => {
 const loading = ref(true)
 onBeforeMount(async () => {
   await workStore.fetchMemberList()
-  await workStore.fetchVersionList()
-  await issueStore.fetchTrackerList()
-  await issueStore.fetchStatusList()
-  await issueStore.fetchPriorityList()
-  await accStore.fetchUsersList()
   loading.value = false
 })
 
