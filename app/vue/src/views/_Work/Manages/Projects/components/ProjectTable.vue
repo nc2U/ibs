@@ -1,11 +1,18 @@
 <script lang="ts" setup>
-import { type PropType } from 'vue'
+import { computed, type PropType } from 'vue'
+import { useAccount } from '@/store/pinia/account.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import { markdownRender } from '@/utils/helper.ts'
 
 defineProps({
   issueProjectsFlat: { type: Array as PropType<IssueProject[]>, default: () => [] },
 })
+
+const accStore = useAccount()
+const userInfo = computed(() => accStore.userInfo)
+
+const isOwnProject = (project: IssueProject) =>
+  project.all_members?.map(m => m.user.pk).includes(userInfo?.value?.pk as number)
 </script>
 
 <template>
@@ -34,17 +41,36 @@ defineProps({
               color="grey"
               class="mr-1"
             />
-            <router-link :to="{ name: '(개요)', params: { projId: proj.slug } }" class="bold">
+            <router-link
+              :to="{ name: '(개요)', params: { projId: proj.slug } }"
+              class="bold"
+              :class="{ 'text-grey': proj.status !== '1' }"
+            >
               {{ proj.name }}
             </router-link>
-            <v-badge
-              v-if="proj.status === '9'"
-              color="brown-lighten-2"
-              content="잠금보관"
-              inline
-              rounded="1"
-              size="x-small"
+            <v-icon
+              v-if="!proj.is_public"
+              icon="mdi-lock"
+              size="15"
+              color="blue-grey-lighten-2"
               class="ml-2"
+              title="비공개 프로젝트"
+            />
+            <v-icon
+              v-if="isOwnProject(proj)"
+              icon="mdi-account-tag"
+              color="success"
+              size="15"
+              class="ml-2"
+              title="내 프로젝트"
+            />
+            <v-icon
+              v-if="proj?.is_bookmarked"
+              icon="mdi-bookmark"
+              color="info"
+              size="15"
+              class="ml-2"
+              title="북마크됨"
             />
           </span>
         </CTableDataCell>

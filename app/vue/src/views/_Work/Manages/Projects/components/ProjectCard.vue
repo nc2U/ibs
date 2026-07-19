@@ -33,18 +33,26 @@ const isOwnProject = (project: IssueProject) =>
         {{ project.name }}
       </router-link>
       <v-icon
+        v-if="!project.is_public"
+        icon="mdi-lock"
+        color="blue-grey-lighten-2"
+        size="15"
+        class="ml-2"
+        title="비공개 프로젝트"
+      />
+      <v-icon
         v-if="isOwnProject(project)"
         icon="mdi-account-tag"
         color="success"
         size="15"
-        class="ml-1"
+        class="ml-2"
       />
       <v-icon
         v-if="project?.is_bookmarked"
         icon="mdi-bookmark"
         color="info"
         size="15"
-        class="ml-1"
+        class="ml-2"
       />
       <span v-html="markdownRender(project.description)" />
     </div>

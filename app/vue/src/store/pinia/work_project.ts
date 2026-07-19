@@ -295,12 +295,12 @@ export const useWork = defineStore('work', () => {
       })
       .catch(err => errorHandle(err.response.data))
 
-  const toggleProjectPublic = (slug: string) =>
+  const toggleProjectPublic = (slug: string, showMessage = false) =>
     api
       .post(`/issue-project/${slug}/toggle_public/`)
       .then(async () => {
         await fetchIssueProject(slug)
-        message()
+        if (showMessage) message()
       })
       .catch(err => errorHandle(err.response.data))
 

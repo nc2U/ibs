@@ -153,12 +153,16 @@ const onSubmit = async (event: Event) => {
     localStorage.setItem('workSettingMenu', '프로젝트')
 
     if (props.project?.pk) {
+      // 0. 현재 설정된 공개 여부 값을 미리 캡처 (onUpdated/dataSetup에 의한 덮어쓰기 방지)
+      const targetPublic = form.is_public
+      const originPublic = props.project.is_public
+
       // 1. 일반 프로젝트 정보 업데이트 (is_public은 제외하고 업데이트)
       const { is_public, ...projectData } = form
       await workStore.updateIssueProject({ ...projectData, ...module } as any)
 
       // 2. 공개 여부 변경 시 별도 액션 호출
-      if (props.project && form.is_public !== props.project.is_public) {
+      if (targetPublic !== originPublic) {
         if (canProjectPublic.value) {
           await workStore.toggleProjectPublic(props.project.slug as string)
         }
