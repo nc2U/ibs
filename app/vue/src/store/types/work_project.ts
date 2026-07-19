@@ -19,6 +19,7 @@ export interface SimpleProject {
   name: string
   slug: string
   visible: boolean
+  status: '1' | '2' | '9'
 }
 
 export interface selectProject {

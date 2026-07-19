@@ -82,7 +82,7 @@ class SimpleIssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSeri
 
     class Meta:
         model = IssueProject
-        fields = ('pk', 'name', 'slug', 'visible')
+        fields = ('pk', 'name', 'slug', 'visible', 'status')
 
 
 class RoleInMemberSerializer(serializers.ModelSerializer):
@@ -532,7 +532,7 @@ class ProjectBookmarkSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         if request and request.user:
             if not validated_data.get('user') or not (
-                request.user.is_superuser or request.user.work_manager
+                    request.user.is_superuser or request.user.work_manager
             ):
                 validated_data['user'] = request.user
         return super().create(validated_data)
