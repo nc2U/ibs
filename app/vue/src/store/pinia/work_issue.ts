@@ -71,11 +71,21 @@ export const useIssue = defineStore('issue', () => {
 
   const removeIssue = () => (issue.value = null)
 
-  const fetchAllIssueList = (project?: string, closed = '0') =>
-    api
+  const cachedProject = ref<string>('')
+
+  const fetchAllIssueList = (project?: string, closed = '0', force = false) => {
+    const currentKey = `${project ?? 'global'}_${closed}`
+    if (!force && cachedProject.value === currentKey && allIssueList.value.length > 0) {
+      return Promise.resolve()
+    }
+    return api
       .get(`/issue/?project__slug=${project ?? ''}&status__closed=${closed}&limit=1000`)
-      .then(res => (allIssueList.value = res.data.results))
+      .then(res => {
+        allIssueList.value = res.data.results
+        cachedProject.value = currentKey
+      })
       .catch(err => errorHandle(err.response.data))
+  }
 
   const fetchIssueList = async (payload: IssueFilter) => {
     issueFilter.value = payload
@@ -201,6 +211,7 @@ export const useIssue = defineStore('issue', () => {
     api
       .post(`/issue/`, payload, config_headers)
       .then(async res => {
+        cachedProject.value = ''
         await fetchIssue(res.data.pk)
         await fetchIssueList(issueFilter.value)
         await logStore.fetchIssueLogList({ issue: res.data.pk })
@@ -213,6 +224,7 @@ export const useIssue = defineStore('issue', () => {
     api
       .put(`/issue/${pk}/`, payload, config_headers)
       .then(async () => {
+        cachedProject.value = ''
         await fetchIssue(pk)
         await fetchIssueList(issueFilter.value)
         await logStore.fetchIssueLogList({ issue: pk })
@@ -224,6 +236,7 @@ export const useIssue = defineStore('issue', () => {
     api
       .patch(`/issue/${pk}/`, payload, config_headers)
       .then(async () => {
+        cachedProject.value = ''
         await fetchIssue(pk)
         await fetchIssueList(issueFilter.value)
         await logStore.fetchIssueLogList({ issue: pk })
@@ -246,6 +259,7 @@ export const useIssue = defineStore('issue', () => {
     api
       .delete(`/issue/${pk}/`)
       .then(async () => {
+        cachedProject.value = ''
         await fetchIssueList(issueFilter.value)
         message('warning', '알림!', '해당 오브젝트가 삭제되었습니다.')
       })
