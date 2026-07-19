@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, ref } from 'vue'
+import { computed, type PropType, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from '@/utils/helper.ts'
 import { usePerms } from '@/composables/usePerms.ts'
@@ -10,7 +10,6 @@ import type { CalendarOptions } from '@fullcalendar/core'
 import FullCalendar from '@fullcalendar/vue3'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import interactionPlugin from '@fullcalendar/interaction'
-import { type PropType } from 'vue'
 
 const props = defineProps({
   projectSlug: { type: String, default: undefined },
