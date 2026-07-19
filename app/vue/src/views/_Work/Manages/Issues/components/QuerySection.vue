@@ -1,11 +1,10 @@
 <script lang="ts" setup>
-import { onBeforeMount, type PropType, reactive, ref, watch, computed } from 'vue'
+import { computed, onBeforeMount, type PropType, reactive, ref, watch } from 'vue'
 import type { selectProject } from '@/store/types/work_project.ts'
 import type { IssueFilter, IssueStatus, Tracker } from '@/store/types/work_issue.ts'
 import Multiselect from '@vueform/multiselect'
 import { useRoute } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
-import { useAccount } from '@/store/pinia/account'
 import { useWork } from '@/store/pinia/work_project'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import AllProjectsSelect from '@/views/_Work/components/atomics/AllProjectsSelect.vue'
@@ -23,7 +22,6 @@ const props = defineProps({
 })
 
 const { can, PERM } = usePerms()
-const accStore = useAccount()
 const workStore = useWork()
 const roleList = computed(() => workStore.roleList.filter(r => ![1, 2].includes(r.pk)))
 
