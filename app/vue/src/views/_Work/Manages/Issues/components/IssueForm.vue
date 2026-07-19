@@ -407,7 +407,7 @@ defineExpose({ callComment, callReply })
                   <CFormSelect v-model="form.tracker" id="tracker" required>
                     <option value="">---------</option>
                     <option v-for="tracker in trackers" :value="tracker.pk" :key="tracker.pk">
-                      {{ tracker.name }}
+                      {{ tracker.name }} - [{{ tracker.description }}]
                     </option>
                   </CFormSelect>
                 </CCol>
