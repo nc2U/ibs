@@ -123,7 +123,7 @@ const searchOptions = reactive<SearchOptionGroup[]>([
   },
 ])
 
-const cond = ref({
+const cond = ref<Record<string, any>>({
   status: 'open' as 'open' | 'is' | 'exclude' | 'closed' | 'any',
   project: 'is' as 'is' | 'exclude',
   tracker: 'is' as 'is' | 'exclude',
@@ -161,7 +161,7 @@ const cond = ref({
 })
 
 const route = useRoute()
-const form = ref<IssueFilter>({
+const form = ref<IssueFilter & Record<string, any>>({
   status__closed: '',
   status: null,
   status__exclude: null,
@@ -270,17 +270,406 @@ const form = ref<IssueFilter>({
   sub_project__isnull: '0',
 })
 
+const subProjects = computed(() => workStore.currentProject?.sub_projects || [])
+const hasSubProjects = computed(() => subProjects.value.length > 0)
+
+// Dynamic Form field rendering configuration
+const filterFieldsConfig = computed(() => {
+  return [
+    {
+      key: 'project',
+      label: '프로젝트',
+      type: 'project',
+      condOptions: [
+        { value: 'is', label: '이다' },
+        { value: 'exclude', label: '아니다' },
+      ],
+    },
+    {
+      key: 'tracker',
+      label: '유형',
+      type: 'select',
+      condOptions: [
+        { value: 'is', label: '이다' },
+        { value: 'exclude', label: '아니다' },
+      ],
+      options: props.trackerList.map(t => ({ value: t.pk, label: t.name })),
+    },
+    {
+      key: 'priority',
+      label: '우선순위',
+      type: 'select',
+      condOptions: [
+        { value: 'is', label: '이다' },
+        { value: 'exclude', label: '아니다' },
+      ],
+      options: props.priorityList.map(p => ({ value: p.pk, label: p.name })),
+    },
+    {
+      key: 'author',
+      label: '작성자',
+      type: 'multiselect',
+      placeholder: '작성자',
+      condOptions: [
+        { value: 'is', label: '이다' },
+        { value: 'exclude', label: '아니다' },
+      ],
+      options: props.getUsers,
+    },
+    {
+      key: 'assignee',
+      label: '담당자',
+      type: 'multiselect',
+      placeholder: '담당자',
+      condOptions: [
+        { value: 'is', label: '이다' },
+        { value: 'exclude', label: '아니다' },
+        { value: 'none', label: '없음' },
+        { value: 'any', label: '모두' },
+      ],
+      options: props.getUsers,
+    },
+    {
+      key: 'version',
+      label: '목표단계',
+      type: 'multiselect',
+      placeholder: '목표단계',
+      condOptions: [
+        { value: 'is', label: '이다' },
+        { value: 'exclude', label: '아니다' },
+        { value: 'none', label: '없음' },
+        { value: 'any', label: '모두' },
+      ],
+      options: props.getVersions,
+    },
+    {
+      key: 'category',
+      label: '범주',
+      type: 'select',
+      condOptions: [
+        { value: 'is', label: '이다' },
+        { value: 'exclude', label: '아니다' },
+        { value: 'none', label: '없음' },
+        { value: 'any', label: '모두' },
+      ],
+      options: props.categoryList.map(c => ({ value: c.pk, label: c.name })),
+    },
+    {
+      key: 'done_ratio',
+      label: '진척도',
+      type: 'range',
+      placeholder: '진척도 (%)',
+      condOptions: [
+        { value: 'is', label: '이다' },
+        { value: 'gte', label: '>=' },
+        { value: 'lte', label: '<=' },
+        { value: 'between', label: '사이' },
+        { value: 'none', label: '없음' },
+        { value: 'any', label: '모두' },
+      ],
+    },
+    {
+      key: 'is_private',
+      label: '비공개',
+      type: 'none',
+      condOptions: [
+        { value: 'is', label: '이다' },
+        { value: 'exclude', label: '아니다' },
+      ],
+    },
+    {
+      key: 'watcher',
+      label: '업무관람자',
+      type: 'multiselect',
+      placeholder: '업무관람자',
+      condOptions: [
+        { value: 'is', label: '이다' },
+        { value: 'exclude', label: '아니다' },
+      ],
+      options: props.getUsers,
+    },
+    {
+      key: 'updater',
+      label: '수정자',
+      type: 'multiselect',
+      placeholder: '수정자',
+      condOptions: [
+        { value: 'is', label: '이다' },
+        { value: 'exclude', label: '아니다' },
+      ],
+      options: props.getUsers,
+    },
+    {
+      key: 'last_updater',
+      label: '최근수정자',
+      type: 'multiselect',
+      placeholder: '최근수정자',
+      condOptions: [
+        { value: 'is', label: '이다' },
+        { value: 'exclude', label: '아니다' },
+      ],
+      options: props.getUsers,
+    },
+    {
+      key: 'sub_project',
+      label: '하위 프로젝트',
+      type: 'sub_project',
+      condOptions: [
+        { value: 'any', label: '모두' },
+        { value: 'none', label: '없음' },
+        { value: 'is', label: '이다' },
+        { value: 'exclude', label: '아니다' },
+      ],
+    },
+    {
+      key: 'project_status',
+      label: '프로젝트의 상태',
+      type: 'select',
+      condOptions: [
+        { value: 'is', label: '이다' },
+        { value: 'exclude', label: '아니다' },
+      ],
+      options: [
+        { value: '1', label: '사용중' },
+        { value: '2', label: '닫힘' },
+      ],
+    },
+    {
+      key: 'issue',
+      label: '업무',
+      type: 'range',
+      placeholder: 'ID',
+      condOptions: [
+        { value: 'is', label: '이다' },
+        { value: 'gte', label: '>=' },
+        { value: 'lte', label: '<=' },
+        { value: 'between', label: '사이' },
+      ],
+    },
+    {
+      key: 'subject',
+      label: '제목',
+      type: 'text-match',
+      placeholder: '제목 키워드',
+      condOptions: [
+        { value: 'contains', label: '포함되는 키워드' },
+        { value: 'exclude', label: '포함하지 않는 키워드' },
+      ],
+    },
+    {
+      key: 'description',
+      label: '설명',
+      type: 'text-match',
+      placeholder: '설명 키워드',
+      condOptions: [
+        { value: 'contains', label: '포함되는 키워드' },
+        { value: 'exclude', label: '포함하지 않는 키워드' },
+      ],
+    },
+    {
+      key: 'comment',
+      label: '댓글',
+      type: 'text-match',
+      placeholder: '댓글 키워드',
+      condOptions: [
+        { value: 'contains', label: '포함되는 키워드' },
+        { value: 'exclude', label: '포함하지 않는 키워드' },
+      ],
+    },
+    {
+      key: 'any_searchable',
+      label: '전체 내용',
+      type: 'text-match',
+      placeholder: '검색 키워드 (제목, 설명, 댓글)',
+      condOptions: [
+        { value: 'contains', label: '포함되는 키워드' },
+        { value: 'exclude', label: '포함하지 않는 키워드' },
+      ],
+    },
+    {
+      key: 'created',
+      label: '등록일',
+      type: 'date',
+      condOptions: [
+        { value: 'is', label: '이다' },
+        { value: 'lte', label: '이전' },
+        { value: 'gte', label: '이후' },
+        { value: 'between', label: '사이' },
+      ],
+    },
+    {
+      key: 'updated',
+      label: '변경일',
+      type: 'date',
+      condOptions: [
+        { value: 'is', label: '이다' },
+        { value: 'lte', label: '이전' },
+        { value: 'gte', label: '이후' },
+        { value: 'between', label: '사이' },
+      ],
+    },
+    {
+      key: 'start_date',
+      label: '시작일',
+      type: 'date',
+      condOptions: [
+        { value: 'is', label: '이다' },
+        { value: 'lte', label: '이전' },
+        { value: 'gte', label: '이후' },
+        { value: 'between', label: '사이' },
+      ],
+    },
+    {
+      key: 'due_date',
+      label: '완료기한',
+      type: 'date',
+      condOptions: [
+        { value: 'is', label: '이다' },
+        { value: 'lte', label: '이전' },
+        { value: 'gte', label: '이후' },
+        { value: 'between', label: '사이' },
+        { value: 'none', label: '없음' },
+        { value: 'any', label: '모두' },
+      ],
+    },
+    {
+      key: 'file',
+      label: '파일',
+      type: 'text-match',
+      placeholder: '파일명 키워드',
+      condOptions: [
+        { value: 'contains', label: '포함되는 키워드' },
+        { value: 'exclude', label: '포함하지 않는 키워드' },
+      ],
+    },
+    {
+      key: 'file_desc',
+      label: '파일설명',
+      type: 'text-match',
+      placeholder: '파일설명 키워드',
+      condOptions: [
+        { value: 'contains', label: '포함되는 키워드' },
+        { value: 'exclude', label: '포함하지 않는 키워드' },
+      ],
+    },
+    {
+      key: 'creator_role',
+      label: '작성자의 역할',
+      type: 'role',
+      condOptions: [
+        { value: 'is', label: '이다' },
+        { value: 'exclude', label: '아니다' },
+      ],
+    },
+    {
+      key: 'assignee_role',
+      label: '담당자의 역할',
+      type: 'role',
+      condOptions: [
+        { value: 'is', label: '이다' },
+        { value: 'exclude', label: '아니다' },
+      ],
+    },
+    {
+      key: 'version_date',
+      label: '목표단계의 날짜',
+      type: 'date',
+      placeholder: '목표단계 완료 기한',
+      condOptions: [
+        { value: 'is', label: '이다' },
+        { value: 'lte', label: '이내' },
+        { value: 'gte', label: '이후' },
+        { value: 'between', label: '사이' },
+        { value: 'none', label: '없음' },
+        { value: 'any', label: '모두' },
+      ],
+    },
+    {
+      key: 'version_status',
+      label: '목표단계의 상태',
+      type: 'select',
+      condOptions: [
+        { value: 'is', label: '이다' },
+        { value: 'exclude', label: '아니다' },
+      ],
+      options: [
+        { value: '1', label: '진행' },
+        { value: '2', label: '잠김' },
+        { value: '3', label: '닫힘' },
+      ],
+    },
+    {
+      key: 'follows_issue',
+      label: '선행업무',
+      type: 'number',
+      placeholder: '선행업무 ID 입력',
+      condOptions: [
+        { value: 'is', label: '이다' },
+        { value: 'exclude', label: '아니다' },
+        { value: 'none', label: '없음' },
+        { value: 'any', label: '모두' },
+      ],
+    },
+    {
+      key: 'precedes_issue',
+      label: '후속업무',
+      type: 'number',
+      placeholder: '후속업무 ID 입력',
+      condOptions: [
+        { value: 'is', label: '이다' },
+        { value: 'exclude', label: '아니다' },
+        { value: 'none', label: '없음' },
+        { value: 'any', label: '모두' },
+      ],
+    },
+    {
+      key: 'parent_issue',
+      label: '상위업무',
+      type: 'relation',
+      placeholder: '상위업무 ID 입력',
+      condOptions: [
+        { value: 'is', label: '이다' },
+        { value: 'exclude', label: '아니다' },
+        { value: 'contains', label: '포함되는 키워드' },
+        { value: 'none', label: '없음' },
+        { value: 'any', label: '모두' },
+      ],
+    },
+    {
+      key: 'sub_issue',
+      label: '하위업무',
+      type: 'relation',
+      placeholder: '하위업무 ID 입력',
+      condOptions: [
+        { value: 'is', label: '이다' },
+        { value: 'exclude', label: '아니다' },
+        { value: 'contains', label: '포함되는 키워드' },
+        { value: 'none', label: '없음' },
+        { value: 'any', label: '모두' },
+      ],
+    },
+  ]
+})
+
+const activeFields = computed(() => {
+  return filterFieldsConfig.value.filter(
+    field =>
+      searchCond.value.includes(field.key) && (field.key !== 'sub_project' || hasSubProjects.value),
+  )
+})
+
 const filterSubmit = () => {
   const filterData = {
     status__closed: '0',
     project_status: '1',
-  } as IssueFilter
+  } as IssueFilter & Record<string, any>
 
   // 기본 프로젝트 조회 (project__slug) 세팅
   if (form.value.project) {
     filterData.project__slug = form.value.project
   }
 
+  // 1. 상태 필터링 처리
   if (cond.value.status === 'open') {
     filterData.status__closed = '0'
     filterData.status = null
@@ -303,333 +692,95 @@ const filterSubmit = () => {
     filterData.status__exclude = null
   }
 
-  if (searchCond.value.includes('project')) {
-    if (form.value.project === '') {
-      if (cond.value.project === 'is') {
-        filterData.project__my_project = true
-      } else if (cond.value.project === 'exclude') {
-        filterData.project__my_project = false
+  // 2. 검색 활성화 필드들에 대해 일반 규칙에 의거하여 dynamic payload 빌드
+  searchCond.value.forEach(key => {
+    // status는 특수 처리했으므로 제외
+    if (key === 'status') return
+
+    // sub_issue는 form/cond 내부 키가 parent임
+    const fieldKey = key === 'sub_issue' ? 'parent' : key
+    const operator = cond.value[fieldKey]
+    const val = form.value[fieldKey]
+
+    // 단순 필드 및 예외/isnull 공통 매핑
+    if (operator === 'is') {
+      if (key === 'project') {
+        if (form.value.project === '') {
+          filterData.project__my_project = true
+          delete filterData.project__slug
+        } else {
+          filterData.project__search = form.value.project
+        }
+      } else if (key === 'is_private') {
+        filterData.is_private = true
+      } else {
+        filterData[fieldKey] = val
       }
-      delete filterData.project__slug
-    } else {
-      if (cond.value.project === 'is') {
-        filterData.project__search = form.value.project
-      } else if (cond.value.project === 'exclude') {
-        filterData.project__exclude = form.value.project
-        // 제외 조건일 경우 기본 포함(project__slug) 조건과의 충돌을 방지하기 위해 제거
-        delete filterData.project__slug
+    } else if (operator === 'exclude') {
+      if (key === 'project') {
+        if (form.value.project === '') {
+          filterData.project__my_project = false
+          delete filterData.project__slug
+        } else {
+          filterData.project__exclude = form.value.project
+          delete filterData.project__slug
+        }
+      } else if (key === 'is_private') {
+        filterData.is_private = false
+      } else {
+        filterData[`${fieldKey}__exclude`] = val
+      }
+    } else if (operator === 'none') {
+      filterData[`${fieldKey}__isnull`] = '1'
+    } else if (operator === 'any') {
+      filterData[`${fieldKey}__isnull`] = '0'
+    } else if (operator === 'contains') {
+      filterData[fieldKey] = val
+    } else if (operator === 'gte') {
+      if (key === 'issue') filterData.id__gte = form.value.id__gte
+      else filterData[`${fieldKey}__gte`] = form.value[`${fieldKey}__gte`]
+    } else if (operator === 'lte') {
+      if (key === 'issue') filterData.id__lte = form.value.id__lte
+      else filterData[`${fieldKey}__lte`] = form.value[`${fieldKey}__lte`]
+    } else if (operator === 'between') {
+      let min = ''
+      let max = ''
+      if (key === 'issue') {
+        min = form.value.id__between_min !== null ? String(form.value.id__between_min) : ''
+        max = form.value.id__between_max !== null ? String(form.value.id__between_max) : ''
+        if (min || max) filterData.id__between = `${min},${max}`
+      } else {
+        min = form.value[`${fieldKey}__between_min`] || ''
+        max = form.value[`${fieldKey}__between_max`] || ''
+        if (min || max) filterData[`${fieldKey}__between`] = `${min},${max}`
       }
     }
-  }
+  })
 
+  // my project 강제 덮어쓰기가 있을 경우
   if (form.value.project__my_project !== undefined) {
     filterData.project__my_project = form.value.project__my_project
   }
 
-  if (searchCond.value.includes('tracker'))
-    if (cond.value.tracker === 'is') filterData.tracker = form.value.tracker
-    else if (cond.value.tracker === 'exclude') filterData.tracker__exclude = form.value.tracker
-
-  if (searchCond.value.includes('priority'))
-    if (cond.value.priority === 'is') filterData.priority = form.value.priority
-    else if (cond.value.priority === 'exclude') filterData.priority__exclude = form.value.priority
-
-  if (searchCond.value.includes('category'))
-    if (cond.value.category === 'is') filterData.category = form.value.category
-    else if (cond.value.category === 'exclude') filterData.category__exclude = form.value.category
-    else if (cond.value.category === 'none') filterData.category__isnull = '1'
-    else if (cond.value.category === 'any') filterData.category__isnull = '0'
-
-  if (searchCond.value.includes('is_private')) {
-    if (cond.value.is_private === 'is') filterData.is_private = true
-    else if (cond.value.is_private === 'exclude') filterData.is_private = false
-  }
-
-  if (searchCond.value.includes('watcher')) {
-    if (cond.value.watcher === 'is') filterData.watcher = form.value.watcher
-    else if (cond.value.watcher === 'exclude') filterData.watcher__exclude = form.value.watcher
-  }
-
-  if (searchCond.value.includes('author'))
-    if (cond.value.author === 'is') filterData.author = form.value.author
-    else if (cond.value.author === 'exclude') filterData.author__exclude = form.value.author
-
-  if (searchCond.value.includes('updater')) {
-    if (cond.value.updater === 'is') filterData.updater = form.value.updater
-    else if (cond.value.updater === 'exclude') filterData.updater__exclude = form.value.updater
-  }
-
-  if (searchCond.value.includes('last_updater')) {
-    if (cond.value.last_updater === 'is') filterData.last_updater = form.value.last_updater
-    else if (cond.value.last_updater === 'exclude')
-      filterData.last_updater__exclude = form.value.last_updater__exclude
-  }
-
-  if (searchCond.value.includes('assignee'))
-    if (cond.value.assignee === 'is') filterData.assignee = form.value.assignee
-    else if (cond.value.assignee === 'exclude') filterData.assignee__exclude = form.value.assignee
-    else if (cond.value.assignee === 'none') filterData.assignee__isnull = '1'
-    else if (cond.value.assignee === 'any') filterData.assignee__isnull = '0'
-
-  if (searchCond.value.includes('version'))
-    if (cond.value.version === 'is') filterData.version = form.value.version
-    else if (cond.value.version === 'exclude') filterData.version__exclude = form.value.version
-    else if (cond.value.version === 'none') filterData.version__isnull = '1'
-    else if (cond.value.version === 'any') filterData.version__isnull = '0'
-
-  if (searchCond.value.includes('issue')) {
-    if (cond.value.issue === 'is') filterData.id = form.value.id
-    else if (cond.value.issue === 'gte') filterData.id__gte = form.value.id__gte
-    else if (cond.value.issue === 'lte') filterData.id__lte = form.value.id__lte
-    else if (cond.value.issue === 'between') {
-      const min =
-        form.value.id__between_min !== null && form.value.id__between_min !== undefined
-          ? form.value.id__between_min
-          : ''
-      const max =
-        form.value.id__between_max !== null && form.value.id__between_max !== undefined
-          ? form.value.id__between_max
-          : ''
-      if (min !== '' || max !== '') {
-        filterData.id__between = `${min},${max}`
-      }
-    }
-  }
-
-  if (searchCond.value.includes('subject')) {
-    if (cond.value.subject === 'contains') filterData.subject = form.value.subject
-    else if (cond.value.subject === 'exclude')
-      filterData.subject__exclude = form.value.subject__exclude
-  }
-
-  if (searchCond.value.includes('description')) {
-    if (cond.value.description === 'contains') filterData.description = form.value.description
-    else if (cond.value.description === 'exclude')
-      filterData.description__exclude = form.value.description__exclude
-  }
-
-  if (searchCond.value.includes('comment')) {
-    if (cond.value.comment === 'contains') filterData.comment = form.value.comment
-    else if (cond.value.comment === 'exclude')
-      filterData.comment__exclude = form.value.comment__exclude
-  }
-
-  if (searchCond.value.includes('any_searchable')) {
-    if (cond.value.any_searchable === 'contains')
-      filterData.any_searchable = form.value.any_searchable
-    else if (cond.value.any_searchable === 'exclude')
-      filterData.any_searchable__exclude = form.value.any_searchable__exclude
-  }
-
-  if (searchCond.value.includes('file')) {
-    if (cond.value.file === 'contains') filterData.file = form.value.file
-    else if (cond.value.file === 'exclude') filterData.file__exclude = form.value.file__exclude
-  }
-
-  if (searchCond.value.includes('file_desc')) {
-    if (cond.value.file_desc === 'contains') filterData.file_desc = form.value.file_desc
-    else if (cond.value.file_desc === 'exclude')
-      filterData.file_desc__exclude = form.value.file_desc__exclude
-  }
-
-  if (searchCond.value.includes('creator_role')) {
-    if (cond.value.creator_role === 'is') filterData.creator_role = form.value.creator_role
-    else if (cond.value.creator_role === 'exclude')
-      filterData.creator_role__exclude = form.value.creator_role__exclude
-  }
-
-  if (searchCond.value.includes('assignee_role')) {
-    if (cond.value.assignee_role === 'is') filterData.assignee_role = form.value.assignee_role
-    else if (cond.value.assignee_role === 'exclude')
-      filterData.assignee_role__exclude = form.value.assignee_role__exclude
-  }
-
-  // version_date
-  if (searchCond.value.includes('version_date')) {
-    if (cond.value.version_date === 'is') filterData.version_date = form.value.version_date
-    else if (cond.value.version_date === 'gte')
-      filterData.version_date__gte = form.value.version_date__gte
-    else if (cond.value.version_date === 'lte')
-      filterData.version_date__lte = form.value.version_date__lte
-    else if (cond.value.version_date === 'between') {
-      const min = form.value.version_date__between_min || ''
-      const max = form.value.version_date__between_max || ''
-      if (min || max) filterData.version_date__between = `${min},${max}`
-    } else if (cond.value.version_date === 'none') filterData.version_date__isnull = '1'
-    else if (cond.value.version_date === 'any') filterData.version_date__isnull = '0'
-  }
-
-  // version_status
-  if (searchCond.value.includes('version_status')) {
-    if (cond.value.version_status === 'is') filterData.version_status = form.value.version_status
-    else if (cond.value.version_status === 'exclude')
-      filterData.version_status__exclude = form.value.version_status__exclude
-  }
-
-  // project_status
-  if (searchCond.value.includes('project_status')) {
-    if (cond.value.project_status === 'is') filterData.project_status = form.value.project_status
-    else if (cond.value.project_status === 'exclude')
-      filterData.project_status__exclude = form.value.project_status__exclude
-  }
-
-  // sub_project
-  if (searchCond.value.includes('sub_project')) {
-    if (cond.value.sub_project === 'any') filterData.sub_project__isnull = '0'
-    else if (cond.value.sub_project === 'none') filterData.sub_project__isnull = '1'
-    else if (cond.value.sub_project === 'is') filterData.sub_project = form.value.sub_project
-    else if (cond.value.sub_project === 'exclude')
-      filterData.sub_project__exclude = form.value.sub_project__exclude
-  }
-
-  // follows_issue
-  if (searchCond.value.includes('follows_issue')) {
-    if (cond.value.follows_issue === 'is') filterData.follows_issue = form.value.follows_issue
-    else if (cond.value.follows_issue === 'exclude')
-      filterData.follows_issue__exclude = form.value.follows_issue__exclude
-    else if (cond.value.follows_issue === 'none') filterData.follows_issue__isnull = '1'
-    else if (cond.value.follows_issue === 'any') filterData.follows_issue__isnull = '0'
-  }
-
-  // precedes_issue
-  if (searchCond.value.includes('precedes_issue')) {
-    if (cond.value.precedes_issue === 'is') filterData.precedes_issue = form.value.precedes_issue
-    else if (cond.value.precedes_issue === 'exclude')
-      filterData.precedes_issue__exclude = form.value.precedes_issue__exclude
-    else if (cond.value.precedes_issue === 'none') filterData.precedes_issue__isnull = '1'
-    else if (cond.value.precedes_issue === 'any') filterData.precedes_issue__isnull = '0'
-  }
-
-  // parent_issue
-  if (searchCond.value.includes('parent_issue')) {
-    if (cond.value.parent_issue === 'is') filterData.parent_issue = form.value.parent_issue
-    else if (cond.value.parent_issue === 'exclude')
-      filterData.parent_issue__exclude = form.value.parent_issue__exclude
-    else if (cond.value.parent_issue === 'contains')
-      filterData.parent_issue__contains = form.value.parent_issue__contains
-    else if (cond.value.parent_issue === 'none') filterData.parent_issue__isnull = '1'
-    else if (cond.value.parent_issue === 'any') filterData.parent_issue__isnull = '0'
-  }
-
-  // parent (sub_issue)
-  if (searchCond.value.includes('sub_issue')) {
-    if (cond.value.parent === 'is') filterData.parent = form.value.parent
-    else if (cond.value.parent === 'exclude')
-      filterData.parent__exclude = form.value.parent__exclude
-    else if (cond.value.parent === 'contains')
-      filterData.parent__contains = form.value.parent__contains
-    else if (cond.value.parent === 'none') filterData.parent__isnull = '1'
-    else if (cond.value.parent === 'any') filterData.parent__isnull = '0'
-  }
-
-  // created
-  if (searchCond.value.includes('created')) {
-    if (cond.value.created === 'is') filterData.created = form.value.created
-    else if (cond.value.created === 'gte') filterData.created__gte = form.value.created__gte
-    else if (cond.value.created === 'lte') filterData.created__lte = form.value.created__lte
-    else if (cond.value.created === 'between') {
-      const min = form.value.created__between_min || ''
-      const max = form.value.created__between_max || ''
-      if (min || max) filterData.created__between = `${min},${max}`
-    }
-  }
-
-  // updated
-  if (searchCond.value.includes('updated')) {
-    if (cond.value.updated === 'is') filterData.updated = form.value.updated
-    else if (cond.value.updated === 'gte') filterData.updated__gte = form.value.updated__gte
-    else if (cond.value.updated === 'lte') filterData.updated__lte = form.value.updated__lte
-    else if (cond.value.updated === 'between') {
-      const min = form.value.updated__between_min || ''
-      const max = form.value.updated__between_max || ''
-      if (min || max) filterData.updated__between = `${min},${max}`
-    }
-  }
-
-  // start_date
-  if (searchCond.value.includes('start_date')) {
-    if (cond.value.start_date === 'is') filterData.start_date = form.value.start_date
-    else if (cond.value.start_date === 'gte')
-      filterData.start_date__gte = form.value.start_date__gte
-    else if (cond.value.start_date === 'lte')
-      filterData.start_date__lte = form.value.start_date__lte
-    else if (cond.value.start_date === 'between') {
-      const min = form.value.start_date__between_min || ''
-      const max = form.value.start_date__between_max || ''
-      if (min || max) filterData.start_date__between = `${min},${max}`
-    }
-  }
-
-  // due_date
-  if (searchCond.value.includes('due_date')) {
-    if (cond.value.due_date === 'is') filterData.due_date = form.value.due_date
-    else if (cond.value.due_date === 'gte') filterData.due_date__gte = form.value.due_date__gte
-    else if (cond.value.due_date === 'lte') filterData.due_date__lte = form.value.due_date__lte
-    else if (cond.value.due_date === 'between') {
-      const min = form.value.due_date__between_min || ''
-      const max = form.value.due_date__between_max || ''
-      if (min || max) filterData.due_date__between = `${min},${max}`
-    } else if (cond.value.due_date === 'none') filterData.due_date__isnull = '1'
-    else if (cond.value.due_date === 'any') filterData.due_date__isnull = '0'
-  }
-
-  if (searchCond.value.includes('done_ratio')) {
-    if (cond.value.done_ratio === 'is') filterData.done_ratio = form.value.done_ratio
-    else if (cond.value.done_ratio === 'gte')
-      filterData.done_ratio__gte = form.value.done_ratio__gte
-    else if (cond.value.done_ratio === 'lte')
-      filterData.done_ratio__lte = form.value.done_ratio__lte
-    else if (cond.value.done_ratio === 'between') {
-      const min =
-        form.value.done_ratio__between_min !== null &&
-        form.value.done_ratio__between_min !== undefined
-          ? form.value.done_ratio__between_min
-          : ''
-      const max =
-        form.value.done_ratio__between_max !== null &&
-        form.value.done_ratio__between_max !== undefined
-          ? form.value.done_ratio__between_max
-          : ''
-      if (min !== '' || max !== '') {
-        filterData.done_ratio__between = `${min},${max}`
-      }
-    } else if (cond.value.done_ratio === 'none') filterData.done_ratio__isnull = '1'
-    else if (cond.value.done_ratio === 'any') filterData.done_ratio__isnull = '0'
-  }
-
   console.log(filterData)
-
   emit('filter-submit', filterData)
 }
 
-watch(
-  () => props.statusList,
-  nVal => {
-    if (nVal.length && !form.value.status) form.value.status = nVal[0]?.pk
-  },
-  { immediate: true },
-)
+// 4개의 리스트에 대해 watchEffect로 통합 감시하여 초기 설정 처리
+const listStateToWatch = computed(() => ({
+  status: props.statusList,
+  tracker: props.trackerList,
+  priority: props.priorityList,
+  category: props.categoryList,
+}))
 
 watch(
-  () => props.trackerList,
-  nVal => {
-    if (nVal.length && !form.value.tracker) form.value.tracker = nVal[0]?.pk
-  },
-  { immediate: true },
-)
-
-watch(
-  () => props.priorityList,
-  nVal => {
-    if (nVal.length && !form.value.priority) form.value.priority = nVal[0]?.pk
-  },
-  { immediate: true },
-)
-
-watch(
-  () => props.categoryList,
-  nVal => {
-    if (nVal.length && !form.value.category) form.value.category = nVal[0]?.pk
+  listStateToWatch,
+  lists => {
+    if (lists.status.length && !form.value.status) form.value.status = lists.status[0]?.pk
+    if (lists.tracker.length && !form.value.tracker) form.value.tracker = lists.tracker[0]?.pk
+    if (lists.priority.length && !form.value.priority) form.value.priority = lists.priority[0]?.pk
+    if (lists.category.length && !form.value.category) form.value.category = lists.category[0]?.pk
   },
   { immediate: true },
 )
@@ -647,10 +798,6 @@ watch(searchCond, nVal => {
     form.value.last_updater = props.getUsers[0]?.value
   if (!nVal.includes('status')) searchCond.value = ['status']
 })
-
-const subProjects = computed(() => workStore.currentProject?.sub_projects || [])
-
-const hasSubProjects = computed(() => subProjects.value.length > 0)
 
 watch(
   hasSubProjects,
@@ -745,6 +892,7 @@ onBeforeMount(async () => {
       <slot name="condition">
         <CRow class="m-2" color="light">
           <CCol class="col-12 col-md-8">
+            <!-- 1. 고정 필터: 상태 (Status) -->
             <CRow>
               <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
                 <CFormCheck label="상태" id="status" checked="true" readonly />
@@ -771,1105 +919,278 @@ onBeforeMount(async () => {
               </CCol>
             </CRow>
 
-            <!-- 프로젝트 (project) -->
-            <CRow v-if="searchCond.includes('project')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="프로젝트" id="project" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.project" size="sm">
-                  <option value="is">이다</option>
-                  <option value="exclude">아니다</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-4 col-lg-3">
-                <AllProjectsSelect
-                  v-model="form.project"
-                  :search-projects="searchProjects"
-                  default-title="<< 내 프로젝트 >>"
-                  value-type="slug"
-                  size="sm"
-                />
-              </CCol>
-            </CRow>
+            <!-- 2. 동적 추가 필터 리스트 루프 렌더링 -->
+            <template v-for="field in activeFields" :key="field.key">
+              <CRow>
+                <!-- 라벨 & 체크박스 (Readonly) -->
+                <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
+                  <CFormCheck checked readonly :label="field.label" :id="field.key" />
+                </CCol>
 
-            <!-- 유형 (tracker) -->
-            <CRow v-if="searchCond.includes('tracker')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="유형" id="tracker" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.tracker" size="sm">
-                  <option value="is">이다</option>
-                  <option value="exclude">아니다</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-4 col-lg-3">
-                <CFormSelect v-model="form.tracker" size="sm">
-                  <option v-for="tracker in trackerList" :key="tracker.pk" :value="tracker.pk">
-                    {{ tracker.name }}
-                  </option>
-                </CFormSelect>
-              </CCol>
-            </CRow>
+                <!-- 연산자 조건 선택기 (is, exclude, gte, lte, between 등) -->
+                <CCol class="col-4 col-lg-3 col-xl-2">
+                  <CFormSelect
+                    v-model="cond[field.key === 'sub_issue' ? 'parent' : field.key]"
+                    size="sm"
+                  >
+                    <option v-for="opt in field.condOptions" :key="opt.value" :value="opt.value">
+                      {{ opt.label }}
+                    </option>
+                  </CFormSelect>
+                </CCol>
 
-            <!-- 우선순위 (priority) -->
-            <CRow v-if="searchCond.includes('priority')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="우선순위" id="priority" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.priority" size="sm">
-                  <option value="is">이다</option>
-                  <option value="exclude">아니다</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-4 col-lg-3">
-                <CFormSelect v-model="form.priority" size="sm">
-                  <option v-for="priority in priorityList" :key="priority.pk" :value="priority.pk">
-                    {{ priority.name }}
-                  </option>
-                </CFormSelect>
-              </CCol>
-            </CRow>
+                <!-- 실제 입력 필드 렌더링부 -->
+                <CCol class="col-4 col-lg-3">
+                  <!-- 프로젝트 전용 셀렉트 -->
+                  <template v-if="field.type === 'project'">
+                    <AllProjectsSelect
+                      v-model="form.project"
+                      :search-projects="searchProjects"
+                      default-title="<< 내 프로젝트 >>"
+                      value-type="slug"
+                      size="sm"
+                    />
+                  </template>
 
-            <!-- 작성자 (author) -->
-            <CRow v-if="searchCond.includes('author')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="작성자" id="author" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.author" size="sm">
-                  <option value="is">이다</option>
-                  <option value="exclude">아니다</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-4 col-lg-3">
-                <Multiselect
-                  v-model="form.author"
-                  :options="getUsers"
-                  placeholder="작성자"
-                  searchable
-                  @keydown.enter="filterSubmit"
-                />
-              </CCol>
-            </CRow>
+                  <!-- 일반 셀렉트 -->
+                  <template v-else-if="field.type === 'select'">
+                    <CFormSelect
+                      v-if="cond[field.key] === 'is' || cond[field.key] === 'exclude'"
+                      v-model="form[field.key]"
+                      size="sm"
+                      @change="filterSubmit"
+                    >
+                      <option v-for="opt in field.options" :key="opt.value" :value="opt.value">
+                        {{ opt.label }}
+                      </option>
+                    </CFormSelect>
+                  </template>
 
-            <!-- 담당자 (assignee) -->
-            <CRow v-if="searchCond.includes('assignee')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="담당자" id="assignee" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.assignee" size="sm">
-                  <option value="is">이다</option>
-                  <option value="exclude">아니다</option>
-                  <option value="none">없음</option>
-                  <option value="any">모두</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-4 col-lg-3">
-                <Multiselect
-                  v-if="cond.assignee === 'is' || cond.assignee === 'exclude'"
-                  v-model="form.assignee"
-                  :options="getUsers"
-                  placeholder="담당자"
-                  searchable
-                  @keydown.enter="filterSubmit"
-                />
-              </CCol>
-            </CRow>
+                  <!-- 역할 셀렉트 -->
+                  <template v-else-if="field.type === 'role'">
+                    <CFormSelect
+                      v-if="cond[field.key] === 'is'"
+                      v-model="form[field.key]"
+                      size="sm"
+                      @change="filterSubmit"
+                    >
+                      <option v-for="r in roleList" :key="r.pk" :value="r.pk">
+                        {{ r.name }}
+                      </option>
+                    </CFormSelect>
+                    <CFormSelect
+                      v-if="cond[field.key] === 'exclude'"
+                      v-model="form[`${field.key}__exclude`]"
+                      size="sm"
+                      @change="filterSubmit"
+                    >
+                      <option v-for="r in roleList" :key="r.pk" :value="r.pk">
+                        {{ r.name }}
+                      </option>
+                    </CFormSelect>
+                  </template>
 
-            <!-- 목표단계 (version) -->
-            <CRow v-if="searchCond.includes('version')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="목표단계" id="version" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.version" size="sm">
-                  <option value="is">이다</option>
-                  <option value="exclude">아니다</option>
-                  <option value="none">없음</option>
-                  <option value="any">모두</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-4 col-lg-3">
-                <Multiselect
-                  v-if="cond.version === 'is' || cond.version === 'exclude'"
-                  v-model="form.version"
-                  :options="getVersions"
-                  placeholder="목표단계"
-                  searchable
-                  @keydown.enter="filterSubmit"
-                />
-              </CCol>
-            </CRow>
+                  <!-- 하위 프로젝트 셀렉트 -->
+                  <template v-else-if="field.type === 'sub_project'">
+                    <CFormSelect
+                      v-if="cond.sub_project === 'is'"
+                      v-model="form.sub_project"
+                      size="sm"
+                      @change="filterSubmit"
+                    >
+                      <option :value="null">하위 프로젝트 선택</option>
+                      <option v-for="p in subProjects" :key="p.pk" :value="p.pk">
+                        {{ p.name }}
+                      </option>
+                    </CFormSelect>
+                    <CFormSelect
+                      v-if="cond.sub_project === 'exclude'"
+                      v-model="form.sub_project__exclude"
+                      size="sm"
+                      @change="filterSubmit"
+                    >
+                      <option :value="null">하위 프로젝트 선택</option>
+                      <option v-for="p in subProjects" :key="p.pk" :value="p.pk">
+                        {{ p.name }}
+                      </option>
+                    </CFormSelect>
+                  </template>
 
-            <!-- 범주 (category) -->
-            <CRow v-if="searchCond.includes('category')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="범주" id="category" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.category" size="sm">
-                  <option value="is">이다</option>
-                  <option value="exclude">아니다</option>
-                  <option value="none">없음</option>
-                  <option value="any">모두</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-4 col-lg-3">
-                <CFormSelect
-                  v-if="cond.category === 'is' || cond.category === 'exclude'"
-                  v-model="form.category"
-                  size="sm"
+                  <!-- 멀티 셀렉트 (Multiselect) -->
+                  <template v-else-if="field.type === 'multiselect'">
+                    <Multiselect
+                      v-if="cond[field.key] === 'is' || cond[field.key] === 'exclude'"
+                      v-model="form[field.key]"
+                      :options="field.options"
+                      :placeholder="field.placeholder"
+                      searchable
+                      @keydown.enter="filterSubmit"
+                    />
+                  </template>
+
+                  <!-- 텍스트 매칭 검색 필드 -->
+                  <template v-else-if="field.type === 'text-match'">
+                    <CFormInput
+                      v-if="cond[field.key] === 'contains'"
+                      v-model="form[field.key]"
+                      :placeholder="field.placeholder"
+                      style="height: 30px"
+                      @keydown.enter="filterSubmit"
+                    />
+                    <CFormInput
+                      v-if="cond[field.key] === 'exclude'"
+                      v-model="form[`${field.key}__exclude`]"
+                      :placeholder="'제외할 ' + field.placeholder"
+                      style="height: 30px"
+                      @keydown.enter="filterSubmit"
+                    />
+                  </template>
+
+                  <!-- 수치 범위 검색 필드 (done_ratio, issue 등) -->
+                  <template v-else-if="field.type === 'range'">
+                    <CFormInput
+                      v-if="cond[field.key] === 'is'"
+                      v-model="form[field.key === 'issue' ? 'id' : field.key]"
+                      placeholder="ID"
+                      style="height: 30px"
+                      @keydown.enter="filterSubmit"
+                    />
+                    <CFormInput
+                      v-if="cond[field.key] === 'gte'"
+                      v-model="form[field.key === 'issue' ? 'id__gte' : `${field.key}__gte`]"
+                      :placeholder="field.key === 'done_ratio' ? '이상 (%)' : '이상'"
+                      style="height: 30px"
+                      @keydown.enter="filterSubmit"
+                    />
+                    <CFormInput
+                      v-if="cond[field.key] === 'lte'"
+                      v-model="form[field.key === 'issue' ? 'id__lte' : `${field.key}__lte`]"
+                      :placeholder="field.key === 'done_ratio' ? '이하 (%)' : '이하'"
+                      style="height: 30px"
+                      @keydown.enter="filterSubmit"
+                    />
+                    <CFormInput
+                      v-if="cond[field.key] === 'between'"
+                      v-model="
+                        form[
+                          field.key === 'issue' ? 'id__between_min' : `${field.key}__between_min`
+                        ]
+                      "
+                      type="number"
+                      :placeholder="field.key === 'done_ratio' ? '최소 (%)' : '최소 ID'"
+                      style="height: 30px"
+                      @keydown.enter="filterSubmit"
+                    />
+                  </template>
+
+                  <!-- 날짜 입력 필드 (DatePicker) -->
+                  <template v-else-if="field.type === 'date'">
+                    <DatePicker
+                      v-if="cond[field.key] === 'is'"
+                      v-model="form[field.key]"
+                      :placeholder="field.placeholder || field.label"
+                      @update:model-value="filterSubmit"
+                    />
+                    <DatePicker
+                      v-if="cond[field.key] === 'lte'"
+                      v-model="form[`${field.key}__lte`]"
+                      placeholder="이전"
+                      @update:model-value="filterSubmit"
+                    />
+                    <DatePicker
+                      v-if="cond[field.key] === 'gte'"
+                      v-model="form[`${field.key}__gte`]"
+                      placeholder="이후"
+                      @update:model-value="filterSubmit"
+                    />
+                    <div v-if="cond[field.key] === 'between'" class="d-flex align-items-center">
+                      <DatePicker
+                        v-model="form[`${field.key}__between_min`]"
+                        placeholder="시작일"
+                        @update:model-value="filterSubmit"
+                      />
+                      <span class="mx-2">~</span>
+                      <DatePicker
+                        v-model="form[`${field.key}__between_max`]"
+                        placeholder="종료일"
+                        @update:model-value="filterSubmit"
+                      />
+                    </div>
+                  </template>
+
+                  <!-- 단순 수치형 입력 필드 -->
+                  <template v-else-if="field.type === 'number'">
+                    <CFormInput
+                      v-if="cond[field.key] === 'is'"
+                      v-model.number="form[field.key]"
+                      type="number"
+                      :placeholder="field.placeholder"
+                      size="sm"
+                      @keydown.enter="filterSubmit"
+                    />
+                    <CFormInput
+                      v-if="cond[field.key] === 'exclude'"
+                      v-model.number="form[`${field.key}__exclude`]"
+                      type="number"
+                      :placeholder="field.placeholder"
+                      size="sm"
+                      @keydown.enter="filterSubmit"
+                    />
+                  </template>
+
+                  <!-- 관계 업무 입력 필드 (상위업무, 하위업무) -->
+                  <template v-else-if="field.type === 'relation'">
+                    <CFormInput
+                      v-if="cond[field.key === 'sub_issue' ? 'parent' : field.key] === 'is'"
+                      v-model.number="form[field.key === 'sub_issue' ? 'parent' : field.key]"
+                      type="number"
+                      :placeholder="field.label + ' ID 입력'"
+                      size="sm"
+                      @keydown.enter="filterSubmit"
+                    />
+                    <CFormInput
+                      v-if="cond[field.key === 'sub_issue' ? 'parent' : field.key] === 'exclude'"
+                      v-model.number="
+                        form[
+                          field.key === 'sub_issue' ? 'parent__exclude' : `${field.key}__exclude`
+                        ]
+                      "
+                      type="number"
+                      :placeholder="field.label + ' ID 입력'"
+                      size="sm"
+                      @keydown.enter="filterSubmit"
+                    />
+                    <CFormInput
+                      v-if="cond[field.key === 'sub_issue' ? 'parent' : field.key] === 'contains'"
+                      v-model="
+                        form[
+                          field.key === 'sub_issue' ? 'parent__contains' : `${field.key}__contains`
+                        ]
+                      "
+                      placeholder="제목 키워드 입력"
+                      size="sm"
+                      @keydown.enter="filterSubmit"
+                    />
+                  </template>
+                </CCol>
+
+                <!-- 범위형에서 '사이(between)' 조건일 때 출력할 최대값 입력창 -->
+                <CCol
+                  v-if="field.type === 'range' && cond[field.key] === 'between'"
+                  class="col-4 col-lg-3"
                 >
-                  <option v-for="category in categoryList" :key="category.pk" :value="category.pk">
-                    {{ category.name }}
-                  </option>
-                </CFormSelect>
-              </CCol>
-            </CRow>
-
-            <!-- 진척도 (tracker) -->
-            <CRow v-if="searchCond.includes('done_ratio')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="진척도" id="done_ratio" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.done_ratio" size="sm">
-                  <option value="is">이다</option>
-                  <option value="gte">&gt;=</option>
-                  <option value="lte">&lt;=</option>
-                  <option value="between">사이</option>
-                  <option value="none">없음</option>
-                  <option value="any">모두</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-4 col-lg-3">
-                <CFormInput
-                  v-if="cond.done_ratio === 'is'"
-                  v-model="form.done_ratio"
-                  type="number"
-                  placeholder="진척도 (%)"
-                  style="height: 30px"
-                  @keydown.enter="filterSubmit"
-                />
-                <CFormInput
-                  v-if="cond.done_ratio === 'gte'"
-                  v-model="form.done_ratio__gte"
-                  type="number"
-                  placeholder="이상 (%)"
-                  style="height: 30px"
-                  @keydown.enter="filterSubmit"
-                />
-                <CFormInput
-                  v-if="cond.done_ratio === 'lte'"
-                  v-model="form.done_ratio__lte"
-                  type="number"
-                  placeholder="이하 (%)"
-                  style="height: 30px"
-                  @keydown.enter="filterSubmit"
-                />
-                <CFormInput
-                  v-if="cond.done_ratio === 'between'"
-                  v-model="form.done_ratio__between_min"
-                  type="number"
-                  placeholder="최소 (%)"
-                  style="height: 30px"
-                  @keydown.enter="filterSubmit"
-                />
-              </CCol>
-
-              <CCol v-if="cond.done_ratio === 'between'" class="col-4 col-lg-3">
-                <CFormInput
-                  v-model="form.done_ratio__between_max"
-                  type="number"
-                  placeholder="최대 (%)"
-                  style="height: 30px"
-                  @keydown.enter="filterSubmit"
-                />
-              </CCol>
-            </CRow>
-
-            <!-- 비공개 (is_private) -->
-            <CRow v-if="searchCond.includes('is_private')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="비공개" id="is_private" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.is_private" size="sm">
-                  <option value="is">이다</option>
-                  <option value="exclude">아니다</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-4 col-lg-3"> </CCol>
-            </CRow>
-
-            <!-- 업무 관람자 (watcher) -->
-            <CRow v-if="searchCond.includes('watcher')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="업무관람자" id="watcher" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.watcher" size="sm">
-                  <option value="is">이다</option>
-                  <option value="exclude">아니다</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-4 col-lg-3">
-                <Multiselect
-                  v-model="form.watcher"
-                  :options="getUsers"
-                  placeholder="업무관람자"
-                  searchable
-                  size="sm"
-                  @keydown.enter="filterSubmit"
-                />
-              </CCol>
-            </CRow>
-
-            <!-- 수정자 (updater) -->
-            <CRow v-if="searchCond.includes('updater')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="수정자" id="updater" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.updater" size="sm">
-                  <option value="is">이다</option>
-                  <option value="exclude">아니다</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-4 col-lg-3">
-                <Multiselect
-                  v-model="form.updater"
-                  :options="getUsers"
-                  placeholder="수정자"
-                  searchable
-                  @keydown.enter="filterSubmit"
-                />
-              </CCol>
-            </CRow>
-
-            <!-- 최근 수정자 (Last_updater) -->
-            <CRow v-if="searchCond.includes('last_updater')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="최근수정자" id="last_updater" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.last_updater" size="sm">
-                  <option value="is">이다</option>
-                  <option value="exclude">아니다</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-4 col-lg-3">
-                <Multiselect
-                  v-model="form.last_updater"
-                  :options="getUsers"
-                  placeholder="최근수정자"
-                  searchable
-                  @keydown.enter="filterSubmit"
-                />
-              </CCol>
-            </CRow>
-
-            <!-- 하위 프로젝트 (sub_project) -->
-            <CRow v-if="searchCond.includes('sub_project') && hasSubProjects">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="하위 프로젝트" id="sub_project" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.sub_project" size="sm" @change="filterSubmit">
-                  <option value="any">모두</option>
-                  <option value="none">없음</option>
-                  <option value="is">이다</option>
-                  <option value="exclude">아니다</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-8 col-lg-3">
-                <CFormSelect
-                  v-if="cond.sub_project === 'is'"
-                  v-model="form.sub_project"
-                  size="sm"
-                  @change="filterSubmit"
-                >
-                  <option :value="null">하위 프로젝트 선택</option>
-                  <option v-for="p in subProjects" :key="p.pk" :value="p.pk">
-                    {{ p.name }}
-                  </option>
-                </CFormSelect>
-                <CFormSelect
-                  v-if="cond.sub_project === 'exclude'"
-                  v-model="form.sub_project__exclude"
-                  size="sm"
-                  @change="filterSubmit"
-                >
-                  <option :value="null">하위 프로젝트 선택</option>
-                  <option v-for="p in subProjects" :key="p.pk" :value="p.pk">
-                    {{ p.name }}
-                  </option>
-                </CFormSelect>
-              </CCol>
-            </CRow>
-
-            <!-- 프로젝트의 상태 (project_status) -->
-            <CRow v-if="searchCond.includes('project_status')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="프로젝트의 상태" id="project_status" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.project_status" size="sm">
-                  <option value="is">이다</option>
-                  <option value="exclude">아니다</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-8 col-lg-3">
-                <CFormSelect
-                  v-if="cond.project_status === 'is'"
-                  v-model="form.project_status"
-                  size="sm"
-                  @change="filterSubmit"
-                >
-                  <option value="1">사용중</option>
-                  <option value="2">닫힘</option>
-                </CFormSelect>
-                <CFormSelect
-                  v-if="cond.project_status === 'exclude'"
-                  v-model="form.project_status__exclude"
-                  size="sm"
-                  @change="filterSubmit"
-                >
-                  <option value="1">사용중</option>
-                  <option value="2">닫힘</option>
-                </CFormSelect>
-              </CCol>
-            </CRow>
-
-            <!-- 업무 (issue) -->
-            <CRow v-if="searchCond.includes('issue')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="업무" id="issue" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.issue" size="sm">
-                  <option value="is">이다</option>
-                  <option value="gte">&gt;=</option>
-                  <option value="lte">&lt;=</option>
-                  <option value="between">사이</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-4 col-lg-3" id="issue-search">
-                <CFormInput
-                  v-if="cond.issue === 'is'"
-                  v-model="form.id"
-                  placeholder="ID"
-                  style="height: 30px"
-                  @keydown.enter="filterSubmit"
-                />
-                <CFormInput
-                  v-if="cond.issue === 'gte'"
-                  v-model="form.id__gte"
-                  placeholder="이상"
-                  style="height: 30px"
-                  @keydown.enter="filterSubmit"
-                />
-                <CFormInput
-                  v-if="cond.issue === 'lte'"
-                  v-model="form.id__lte"
-                  placeholder="이하"
-                  style="height: 30px"
-                  @keydown.enter="filterSubmit"
-                />
-                <CFormInput
-                  v-if="cond.issue === 'between'"
-                  v-model="form.id__between_min"
-                  type="number"
-                  placeholder="최소 ID"
-                  style="height: 30px"
-                  @keydown.enter="filterSubmit"
-                />
-              </CCol>
-              <CCol v-if="cond.issue === 'between'" class="col-4 col-lg-3">
-                <CFormInput
-                  v-model="form.id__between_max"
-                  type="number"
-                  placeholder="최대 ID"
-                  style="height: 30px"
-                  @keydown.enter="filterSubmit"
-                />
-              </CCol>
-            </CRow>
-
-            <!-- 제목 (subject) -->
-            <CRow v-if="searchCond.includes('subject')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="제목" id="subject" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.subject" size="sm">
-                  <option value="contains">포함되는 키워드</option>
-                  <option value="exclude">포함하지 않는 키워드</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-8 col-lg-3">
-                <CFormInput
-                  v-if="cond.subject === 'contains'"
-                  v-model="form.subject"
-                  placeholder="제목 키워드"
-                  style="height: 30px"
-                  @keydown.enter="filterSubmit"
-                />
-                <CFormInput
-                  v-if="cond.subject === 'exclude'"
-                  v-model="form.subject__exclude"
-                  placeholder="제외할 제목 키워드"
-                  style="height: 30px"
-                  @keydown.enter="filterSubmit"
-                />
-              </CCol>
-            </CRow>
-
-            <!-- 설명 (description) -->
-            <CRow v-if="searchCond.includes('description')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="설명" id="description" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.description" size="sm">
-                  <option value="contains">포함되는 키워드</option>
-                  <option value="exclude">포함하지 않는 키워드</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-8 col-lg-3">
-                <CFormInput
-                  v-if="cond.description === 'contains'"
-                  v-model="form.description"
-                  placeholder="설명 키워드"
-                  style="height: 30px"
-                  @keydown.enter="filterSubmit"
-                />
-                <CFormInput
-                  v-if="cond.description === 'exclude'"
-                  v-model="form.description__exclude"
-                  placeholder="제외할 설명 키워드"
-                  style="height: 30px"
-                  @keydown.enter="filterSubmit"
-                />
-              </CCol>
-            </CRow>
-
-            <!-- 댓글 (comment) -->
-            <CRow v-if="searchCond.includes('comment')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="댓글" id="comment" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.comment" size="sm">
-                  <option value="contains">포함되는 키워드</option>
-                  <option value="exclude">포함하지 않는 키워드</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-8 col-lg-3">
-                <CFormInput
-                  v-if="cond.comment === 'contains'"
-                  v-model="form.comment"
-                  placeholder="댓글 키워드"
-                  style="height: 30px"
-                  @keydown.enter="filterSubmit"
-                />
-                <CFormInput
-                  v-if="cond.comment === 'exclude'"
-                  v-model="form.comment__exclude"
-                  placeholder="제외할 댓글 키워드"
-                  style="height: 30px"
-                  @keydown.enter="filterSubmit"
-                />
-              </CCol>
-            </CRow>
-
-            <!-- 전체 내용 (any_searchable) -->
-            <CRow v-if="searchCond.includes('any_searchable')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="전체 내용" id="any_searchable" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.any_searchable" size="sm">
-                  <option value="contains">포함되는 키워드</option>
-                  <option value="exclude">포함하지 않는 키워드</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-8 col-lg-3">
-                <CFormInput
-                  v-if="cond.any_searchable === 'contains'"
-                  v-model="form.any_searchable"
-                  placeholder="검색 키워드 (제목, 설명, 댓글)"
-                  style="height: 30px"
-                  @keydown.enter="filterSubmit"
-                />
-                <CFormInput
-                  v-if="cond.any_searchable === 'exclude'"
-                  v-model="form.any_searchable__exclude"
-                  placeholder="제외할 검색 키워드"
-                  style="height: 30px"
-                  @keydown.enter="filterSubmit"
-                />
-              </CCol>
-            </CRow>
-
-            <!-- 등록일 (created) -->
-            <CRow v-if="searchCond.includes('created')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="등록일" id="created" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.created" size="sm">
-                  <option value="is">이다</option>
-                  <option value="lte">이전</option>
-                  <option value="gte">이후</option>
-                  <option value="between">사이</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-8 col-lg-3">
-                <DatePicker
-                  v-if="cond.created === 'is'"
-                  v-model="form.created"
-                  placeholder="등록일"
-                  @update:model-value="filterSubmit"
-                />
-                <DatePicker
-                  v-if="cond.created === 'lte'"
-                  v-model="form.created__lte"
-                  placeholder="이전"
-                  @update:model-value="filterSubmit"
-                />
-                <DatePicker
-                  v-if="cond.created === 'gte'"
-                  v-model="form.created__gte"
-                  placeholder="이후"
-                  @update:model-value="filterSubmit"
-                />
-                <div v-if="cond.created === 'between'" class="d-flex align-items-center">
-                  <DatePicker
-                    v-model="form.created__between_min"
-                    placeholder="시작일"
-                    @update:model-value="filterSubmit"
+                  <CFormInput
+                    v-model="
+                      form[field.key === 'issue' ? 'id__between_max' : `${field.key}__between_max`]
+                    "
+                    type="number"
+                    :placeholder="field.key === 'done_ratio' ? '최대 (%)' : '최대 ID'"
+                    style="height: 30px"
+                    @keydown.enter="filterSubmit"
                   />
-                  <span class="mx-2">~</span>
-                  <DatePicker
-                    v-model="form.created__between_max"
-                    placeholder="종료일"
-                    @update:model-value="filterSubmit"
-                  />
-                </div>
-              </CCol>
-            </CRow>
-
-            <!-- 변경일 (updated) -->
-            <CRow v-if="searchCond.includes('updated')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="변경일" id="updated" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.updated" size="sm">
-                  <option value="is">이다</option>
-                  <option value="lte">이전</option>
-                  <option value="gte">이후</option>
-                  <option value="between">사이</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-8 col-lg-3">
-                <DatePicker
-                  v-if="cond.updated === 'is'"
-                  v-model="form.updated"
-                  placeholder="변경일"
-                  @update:model-value="filterSubmit"
-                />
-                <DatePicker
-                  v-if="cond.updated === 'lte'"
-                  v-model="form.updated__lte"
-                  placeholder="이전"
-                  @update:model-value="filterSubmit"
-                />
-                <DatePicker
-                  v-if="cond.updated === 'gte'"
-                  v-model="form.updated__gte"
-                  placeholder="이후"
-                  @update:model-value="filterSubmit"
-                />
-                <div v-if="cond.updated === 'between'" class="d-flex align-items-center">
-                  <DatePicker
-                    v-model="form.updated__between_min"
-                    placeholder="시작일"
-                    @update:model-value="filterSubmit"
-                  />
-                  <span class="mx-2">~</span>
-                  <DatePicker
-                    v-model="form.updated__between_max"
-                    placeholder="종료일"
-                    @update:model-value="filterSubmit"
-                  />
-                </div>
-              </CCol>
-            </CRow>
-
-            <!-- 시작일 (start_date) -->
-            <CRow v-if="searchCond.includes('start_date')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="시작일" id="start_date" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.start_date" size="sm">
-                  <option value="is">이다</option>
-                  <option value="lte">이전</option>
-                  <option value="gte">이후</option>
-                  <option value="between">사이</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-8 col-lg-3">
-                <DatePicker
-                  v-if="cond.start_date === 'is'"
-                  v-model="form.start_date"
-                  placeholder="시작일"
-                  @update:model-value="filterSubmit"
-                />
-                <DatePicker
-                  v-if="cond.start_date === 'lte'"
-                  v-model="form.start_date__lte"
-                  placeholder="이전"
-                  @update:model-value="filterSubmit"
-                />
-                <DatePicker
-                  v-if="cond.start_date === 'gte'"
-                  v-model="form.start_date__gte"
-                  placeholder="이후"
-                  @update:model-value="filterSubmit"
-                />
-                <div v-if="cond.start_date === 'between'" class="d-flex align-items-center">
-                  <DatePicker
-                    v-model="form.start_date__between_min"
-                    placeholder="시작일"
-                    @update:model-value="filterSubmit"
-                  />
-                  <span class="mx-2">~</span>
-                  <DatePicker
-                    v-model="form.start_date__between_max"
-                    placeholder="종료일"
-                    @update:model-value="filterSubmit"
-                  />
-                </div>
-              </CCol>
-            </CRow>
-
-            <!-- 완료기한 (due_date) -->
-            <CRow v-if="searchCond.includes('due_date')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="완료기한" id="due_date" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.due_date" size="sm">
-                  <option value="is">이다</option>
-                  <option value="lte">이전</option>
-                  <option value="gte">이후</option>
-                  <option value="between">사이</option>
-                  <option value="none">없음</option>
-                  <option value="any">모두</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-8 col-lg-3">
-                <DatePicker
-                  v-if="cond.due_date === 'is'"
-                  v-model="form.due_date"
-                  placeholder="완료기한"
-                  @update:model-value="filterSubmit"
-                />
-                <DatePicker
-                  v-if="cond.due_date === 'lte'"
-                  v-model="form.due_date__lte"
-                  placeholder="이전"
-                  @update:model-value="filterSubmit"
-                />
-                <DatePicker
-                  v-if="cond.due_date === 'gte'"
-                  v-model="form.due_date__gte"
-                  placeholder="이후"
-                  @update:model-value="filterSubmit"
-                />
-                <div v-if="cond.due_date === 'between'" class="d-flex align-items-center">
-                  <DatePicker
-                    v-model="form.due_date__between_min"
-                    placeholder="시작일"
-                    @update:model-value="filterSubmit"
-                  />
-                  <span class="mx-2">~</span>
-                  <DatePicker
-                    v-model="form.due_date__between_max"
-                    placeholder="종료일"
-                    @update:model-value="filterSubmit"
-                  />
-                </div>
-              </CCol>
-            </CRow>
-
-            <!-- 파일 (file) -->
-            <CRow v-if="searchCond.includes('file')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="파일" id="file" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.file" size="sm">
-                  <option value="contains">포함되는 키워드</option>
-                  <option value="exclude">포함하지 않는 키워드</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-8 col-lg-3">
-                <CFormInput
-                  v-if="cond.file === 'contains'"
-                  v-model="form.file"
-                  placeholder="파일명 키워드"
-                  style="height: 30px"
-                  @keydown.enter="filterSubmit"
-                />
-                <CFormInput
-                  v-if="cond.file === 'exclude'"
-                  v-model="form.file__exclude"
-                  placeholder="제외할 파일명 키워드"
-                  style="height: 30px"
-                  @keydown.enter="filterSubmit"
-                />
-              </CCol>
-            </CRow>
-
-            <!-- 파일설명 (file_desc) -->
-            <CRow v-if="searchCond.includes('file_desc')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="파일설명" id="file_desc" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.file_desc" size="sm">
-                  <option value="contains">포함되는 키워드</option>
-                  <option value="exclude">포함하지 않는 키워드</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-8 col-lg-3">
-                <CFormInput
-                  v-if="cond.file_desc === 'contains'"
-                  v-model="form.file_desc"
-                  placeholder="파일설명 키워드"
-                  style="height: 30px"
-                  @keydown.enter="filterSubmit"
-                />
-                <CFormInput
-                  v-if="cond.file_desc === 'exclude'"
-                  v-model="form.file_desc__exclude"
-                  placeholder="제외할 파일설명 키워드"
-                  style="height: 30px"
-                  @keydown.enter="filterSubmit"
-                />
-              </CCol>
-            </CRow>
-
-            <!-- 작성자 역할 (creator_role) -->
-            <CRow v-if="searchCond.includes('creator_role')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="작성자의 역할" id="creator_role" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.creator_role" size="sm">
-                  <option value="is">이다</option>
-                  <option value="exclude">아니다</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-8 col-lg-3">
-                <CFormSelect
-                  v-if="cond.creator_role === 'is'"
-                  v-model="form.creator_role"
-                  size="sm"
-                  @change="filterSubmit"
-                >
-                  <option v-for="r in roleList" :key="r.pk" :value="r.pk">
-                    {{ r.name }}
-                  </option>
-                </CFormSelect>
-                <CFormSelect
-                  v-if="cond.creator_role === 'exclude'"
-                  v-model="form.creator_role__exclude"
-                  size="sm"
-                  @change="filterSubmit"
-                >
-                  <option v-for="r in roleList" :key="r.pk" :value="r.pk">
-                    {{ r.name }}
-                  </option>
-                </CFormSelect>
-              </CCol>
-            </CRow>
-
-            <!-- 담당자 역할 (assignee_role) -->
-            <CRow v-if="searchCond.includes('assignee_role')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="담당자의 역할" id="assignee_role" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.assignee_role" size="sm">
-                  <option value="is">이다</option>
-                  <option value="exclude">아니다</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-8 col-lg-3">
-                <CFormSelect
-                  v-if="cond.assignee_role === 'is'"
-                  v-model="form.assignee_role"
-                  size="sm"
-                  @change="filterSubmit"
-                >
-                  <option v-for="r in roleList" :key="r.pk" :value="r.pk">
-                    {{ r.name }}
-                  </option>
-                </CFormSelect>
-                <CFormSelect
-                  v-if="cond.assignee_role === 'exclude'"
-                  v-model="form.assignee_role__exclude"
-                  size="sm"
-                  @change="filterSubmit"
-                >
-                  <option v-for="r in roleList" :key="r.pk" :value="r.pk">
-                    {{ r.name }}
-                  </option>
-                </CFormSelect>
-              </CCol>
-            </CRow>
-
-            <!-- 목표단계의 날짜 (version_date) -->
-            <CRow v-if="searchCond.includes('version_date')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="목표단계의 날짜" id="version_date" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.version_date" size="sm">
-                  <option value="is">이다</option>
-                  <option value="lte">이내</option>
-                  <option value="gte">이후</option>
-                  <option value="between">사이</option>
-                  <option value="none">없음</option>
-                  <option value="any">모두</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-8 col-lg-3">
-                <DatePicker
-                  v-if="cond.version_date === 'is'"
-                  v-model="form.version_date"
-                  placeholder="목표단계 완료 기한"
-                  @update:model-value="filterSubmit"
-                />
-                <DatePicker
-                  v-if="cond.version_date === 'lte'"
-                  v-model="form.version_date__lte"
-                  placeholder="이내"
-                  @update:model-value="filterSubmit"
-                />
-                <DatePicker
-                  v-if="cond.version_date === 'gte'"
-                  v-model="form.version_date__gte"
-                  placeholder="이후"
-                  @update:model-value="filterSubmit"
-                />
-                <div v-if="cond.version_date === 'between'" class="d-flex align-items-center">
-                  <DatePicker
-                    v-model="form.version_date__between_min"
-                    placeholder="시작일"
-                    @update:model-value="filterSubmit"
-                  />
-                  <span class="mx-2">~</span>
-                  <DatePicker
-                    v-model="form.version_date__between_max"
-                    placeholder="종료일"
-                    @update:model-value="filterSubmit"
-                  />
-                </div>
-              </CCol>
-            </CRow>
-
-            <!-- 목표단계의 상태 (version_status) -->
-            <CRow v-if="searchCond.includes('version_status')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="목표단계의 상태" id="version_status" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.version_status" size="sm">
-                  <option value="is">이다</option>
-                  <option value="exclude">아니다</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-8 col-lg-3">
-                <CFormSelect
-                  v-if="cond.version_status === 'is'"
-                  v-model="form.version_status"
-                  size="sm"
-                  @change="filterSubmit"
-                >
-                  <option value="1">진행</option>
-                  <option value="2">잠김</option>
-                  <option value="3">닫힘</option>
-                </CFormSelect>
-                <CFormSelect
-                  v-if="cond.version_status === 'exclude'"
-                  v-model="form.version_status__exclude"
-                  size="sm"
-                  @change="filterSubmit"
-                >
-                  <option value="1">진행</option>
-                  <option value="2">잠김</option>
-                  <option value="3">닫힘</option>
-                </CFormSelect>
-              </CCol>
-            </CRow>
-
-            <!-- 후속 업무 (follows_issue) -->
-            <CRow v-if="searchCond.includes('follows_issue')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="선행업무" id="follows_issue" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.follows_issue" size="sm" @change="filterSubmit">
-                  <option value="is">이다</option>
-                  <option value="exclude">아니다</option>
-                  <option value="none">없음</option>
-                  <option value="any">모두</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-8 col-lg-3">
-                <CFormInput
-                  v-if="cond.follows_issue === 'is'"
-                  v-model.number="form.follows_issue"
-                  type="number"
-                  placeholder="선행업무 ID 입력"
-                  size="sm"
-                  @keydown.enter="filterSubmit"
-                />
-                <CFormInput
-                  v-if="cond.follows_issue === 'exclude'"
-                  v-model.number="form.follows_issue__exclude"
-                  type="number"
-                  placeholder="선행업무 ID 입력"
-                  size="sm"
-                  @keydown.enter="filterSubmit"
-                />
-              </CCol>
-            </CRow>
-
-            <!-- 선행 업무 (precedes_issue) -->
-            <CRow v-if="searchCond.includes('precedes_issue')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="후속업무" id="precedes_issue" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.precedes_issue" size="sm" @change="filterSubmit">
-                  <option value="is">이다</option>
-                  <option value="exclude">아니다</option>
-                  <option value="none">없음</option>
-                  <option value="any">모두</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-8 col-lg-3">
-                <CFormInput
-                  v-if="cond.precedes_issue === 'is'"
-                  v-model.number="form.precedes_issue"
-                  type="number"
-                  placeholder="후속업무 ID 입력"
-                  size="sm"
-                  @keydown.enter="filterSubmit"
-                />
-                <CFormInput
-                  v-if="cond.precedes_issue === 'exclude'"
-                  v-model.number="form.precedes_issue__exclude"
-                  type="number"
-                  placeholder="후속업무 ID 입력"
-                  size="sm"
-                  @keydown.enter="filterSubmit"
-                />
-              </CCol>
-            </CRow>
-
-            <!-- 상위 업무 (parent_issue) -->
-            <CRow v-if="searchCond.includes('parent_issue')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="상위업무" id="parent_issue" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.parent_issue" size="sm" @change="filterSubmit">
-                  <option value="is">이다</option>
-                  <option value="exclude">아니다</option>
-                  <option value="contains">포함되는 키워드</option>
-                  <option value="none">없음</option>
-                  <option value="any">모두</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-8 col-lg-3">
-                <CFormInput
-                  v-if="cond.parent_issue === 'is'"
-                  v-model.number="form.parent_issue"
-                  type="number"
-                  placeholder="상위업무 ID 입력"
-                  size="sm"
-                  @keydown.enter="filterSubmit"
-                />
-                <CFormInput
-                  v-if="cond.parent_issue === 'exclude'"
-                  v-model.number="form.parent_issue__exclude"
-                  type="number"
-                  placeholder="상위업무 ID 입력"
-                  size="sm"
-                  @keydown.enter="filterSubmit"
-                />
-                <CFormInput
-                  v-if="cond.parent_issue === 'contains'"
-                  v-model="form.parent_issue__contains"
-                  placeholder="제목 키워드 입력"
-                  size="sm"
-                  @keydown.enter="filterSubmit"
-                />
-              </CCol>
-            </CRow>
-
-            <!-- 하위 업무 (sub_issue) -->
-            <CRow v-if="searchCond.includes('sub_issue')">
-              <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck checked="true" label="하위업무" id="parent" readonly />
-              </CCol>
-              <CCol class="col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.parent" size="sm" @change="filterSubmit">
-                  <option value="is">이다</option>
-                  <option value="exclude">아니다</option>
-                  <option value="contains">포함되는 키워드</option>
-                  <option value="none">없음</option>
-                  <option value="any">모두</option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-8 col-lg-3">
-                <CFormInput
-                  v-if="cond.parent === 'is'"
-                  v-model.number="form.parent"
-                  type="number"
-                  placeholder="하위업무 ID 입력"
-                  size="sm"
-                  @keydown.enter="filterSubmit"
-                />
-                <CFormInput
-                  v-if="cond.parent === 'exclude'"
-                  v-model.number="form.parent__exclude"
-                  type="number"
-                  placeholder="하위업무 ID 입력"
-                  size="sm"
-                  @keydown.enter="filterSubmit"
-                />
-                <CFormInput
-                  v-if="cond.parent === 'contains'"
-                  v-model="form.parent__contains"
-                  placeholder="제목 키워드 입력"
-                  size="sm"
-                  @keydown.enter="filterSubmit"
-                />
-              </CCol>
-            </CRow>
+                </CCol>
+              </CRow>
+            </template>
           </CCol>
 
           <CCol md="4" class="text-right">
