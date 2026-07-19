@@ -19,7 +19,7 @@ export interface SimpleProject {
   name: string
   slug: string
   visible: boolean
-  status: '1' | '2' | '9'
+  status: '1' | '2' | '9' // '1': 사용중, '2': 닫힘, '3': 잠금보관
 }
 
 export interface selectProject {
@@ -38,7 +38,7 @@ export interface MyRole {
 export interface IssueProject {
   pk?: number
   company: number | null
-  type: '1' | '2' | '3'
+  type: '1' | '2' | '3' // '1': 본사관리, '2': 부동산개발, '3': 기타 프로젝트
   name: string
   slug: string
   description: string
