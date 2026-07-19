@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, type PropType, reactive, ref, watch } from 'vue'
+import { computed, onBeforeMount, onMounted, nextTick, type PropType, reactive, ref, watch } from 'vue'
 import type { selectProject } from '@/store/types/work_project.ts'
 import type { IssueFilter, IssueStatus, Tracker } from '@/store/types/work_issue.ts'
 import Multiselect from '@vueform/multiselect'
@@ -838,15 +838,29 @@ onBeforeMount(async () => {
     if (categoryIdx > -1) searchOptions[0].options.splice(categoryIdx, 1)
   }
 
-  // 비공개 업무 권한 검사 (issue.private 권한)
-  const canPrivate = can(PERM.ISSUE_PRIVATE)
-  if (canPrivate) {
-    const privateOpt = searchOptions[0].options.find(o => o.value === 'is_private')
-    if (privateOpt) delete privateOpt.disabled
-  } else {
-    const privateIdx = searchOptions[0].options.findIndex(o => o.value === 'is_private')
-    if (privateIdx > -1) searchOptions[0].options.splice(privateIdx, 1)
-  }
+  // 비공개 업무 권한 검사 (issue.private 권한) - 비동기 권한 로드에 대응하여 반응형 watch로 처리
+  watch(
+    () => can(PERM.ISSUE_PRIVATE),
+    (canPrivate) => {
+      if (canPrivate) {
+        const privateOpt = searchOptions[0].options.find(o => o.value === 'is_private')
+        if (privateOpt) {
+          delete privateOpt.disabled
+        } else {
+          const exists = searchOptions[0].options.some(o => o.value === 'is_private')
+          if (!exists) {
+            searchOptions[0].options.push({ value: 'is_private', label: '비공개' })
+          }
+        }
+      } else {
+        const privateIdx = searchOptions[0].options.findIndex(o => o.value === 'is_private')
+        if (privateIdx > -1) {
+          searchOptions[0].options.splice(privateIdx, 1)
+        }
+      }
+    },
+    { immediate: true }
+  )
 
   if (route.name === '업무')
     searchOptions[0].options.splice(1, 0, { value: 'project', label: '프로젝트' })
@@ -874,7 +888,12 @@ onBeforeMount(async () => {
     searchCond.value.push('parent')
     form.value.parent = Number(route.query.parent)
   }
-  setTimeout(() => filterSubmit(), 50)
+})
+
+onMounted(() => {
+  nextTick(() => {
+    filterSubmit()
+  })
 })
 </script>
 
