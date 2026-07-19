@@ -933,3 +933,12 @@ body:not(.dark-theme) .hljs {
     text-decoration: underline;
   }
 }
+
+// 다크모드/라이트모드 통합 링크 회색 강제 클래스 (다크테마 wrapper 링크 스타일 무력화용 고특이성 선택자 적용)
+.dark-theme .wrapper a:link.text-grey,
+.dark-theme .wrapper a:visited.text-grey,
+.dark-theme .wrapper a:active.text-grey,
+.dark-theme .wrapper a.text-grey,
+.dark-theme a.text-grey {
+  color: #b7b7b7 !important;
+}

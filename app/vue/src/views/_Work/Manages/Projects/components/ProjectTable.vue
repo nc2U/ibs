@@ -88,6 +88,10 @@ const isOwnProject = (project: IssueProject) =>
   font-weight: bold;
 }
 
+.dark-theme .text-grey {
+  color: #888888 !important;
+}
+
 // 1. 마크다운 내부의 p 태그 마진 제거
 .text-muted :deep(p) {
   margin-bottom: 0 !important;

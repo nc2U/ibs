@@ -74,6 +74,10 @@ const isOwnProject = (project: IssueProject) =>
   font-size: 1.13em;
 }
 
+.project-header a.text-grey {
+  color: #888888 !important;
+}
+
 .child {
   padding-left: 12px;
   border-left: 3px solid #ddd;
