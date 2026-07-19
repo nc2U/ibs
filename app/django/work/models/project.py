@@ -117,6 +117,12 @@ class IssueProject(models.Model):
         로그인하지 않은 경우 '익명' 역할(pk=1)의 권한,
         로그인했으나 멤버가 아닌 '회원' 역할(pk=2)의 권한을 반환합니다.
         """
+        if not hasattr(self, '_user_permission_cache'):
+            self._user_permission_cache = {}
+        user_key = user.pk if user and user.is_authenticated else 'anonymous'
+        if user_key in self._user_permission_cache:
+            return self._user_permission_cache[user_key]
+
         permission_codes = set()
 
         if not user or not user.is_authenticated:
@@ -126,7 +132,9 @@ class IssueProject(models.Model):
                     permission_codes.add(perm.code)
             except Role.DoesNotExist:
                 pass
-            return list(permission_codes)
+            result = list(permission_codes)
+            self._user_permission_cache[user_key] = result
+            return result
 
         # 1. 상속 가능한 상위 프로젝트 목록 계산 (PK 리스트 사용)
         project_ids = [self.pk]
@@ -159,7 +167,9 @@ class IssueProject(models.Model):
             except Role.DoesNotExist:
                 pass
 
-        return list(permission_codes)
+        result = list(permission_codes)
+        self._user_permission_cache[user_key] = result
+        return result
 
     def get_user_role_attributes(self, user):
         """

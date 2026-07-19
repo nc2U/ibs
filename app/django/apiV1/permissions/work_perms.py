@@ -26,22 +26,35 @@ class ProjectPermission(permissions.BasePermission):
                     from work.models.issue import Issue
                     try:
                         issue = Issue.objects.select_related('project').get(pk=issue_id)
-                        return issue.project.pk
+                        project = issue.project
+                        request = getattr(view, 'request', None)
+                        if request and project:
+                            request._cached_project = project
+                        return project.slug
                     except (Issue.DoesNotExist, ValueError, TypeError):
                         pass
         return None
 
     @staticmethod
-    def find_project(project_slug):
+    def find_project(project_slug, request=None):
+        if request and hasattr(request, '_cached_project'):
+            cached = request._cached_project
+            if cached and (
+                    cached.slug == project_slug or cached.pk == project_slug or str(cached.pk) == str(project_slug)):
+                return cached
+
         from work.models.project import IssueProject
 
         if isinstance(project_slug, int):
-            return IssueProject.objects.filter(pk=project_slug).first()
+            project = IssueProject.objects.filter(pk=project_slug).first()
+        elif isinstance(project_slug, str) and project_slug.isdigit():
+            project = IssueProject.objects.filter(pk=int(project_slug)).first()
+        else:
+            project = IssueProject.objects.filter(slug=project_slug).first()
 
-        if isinstance(project_slug, str) and project_slug.isdigit():
-            return IssueProject.objects.filter(pk=int(project_slug)).first()
-
-        return IssueProject.objects.filter(slug=project_slug).first()
+        if request and project:
+            request._cached_project = project
+        return project
 
     @staticmethod
     def extract_project(obj):
@@ -116,7 +129,7 @@ class ProjectPermission(permissions.BasePermission):
             if not project_slug:
                 return False
 
-            project = self.find_project(project_slug)
+            project = self.find_project(project_slug, request)
 
             if not project:
                 return False
@@ -132,7 +145,7 @@ class ProjectPermission(permissions.BasePermission):
             project_slug = self.get_project_slug(view, request.query_params)
 
             if project_slug:
-                project = self.find_project(project_slug)
+                project = self.find_project(project_slug, request)
 
                 if not project:
                     return False
@@ -148,6 +161,10 @@ class ProjectPermission(permissions.BasePermission):
             else:
                 # 전역 목록 조회 요청인 경우 허용 (get_queryset 등 Row-Level Security에서 데이터 필터링 처리)
                 return True
+
+        # 개별 객체 조회 및 수정/삭제 액션의 경우, has_object_permission으로 검증을 넘기기 위해 True 반환
+        if action in ['retrieve', 'update', 'partial_update', 'destroy'] or getattr(view, 'detail', False):
+            return True
 
         return False
 
@@ -270,7 +287,7 @@ class IssuePermission(ProjectPermission):
                 except Issue.DoesNotExist:
                     return False
             elif project_slug:
-                project = self.find_project(project_slug)
+                project = self.find_project(project_slug, request)
 
             if not project:
                 return False
@@ -512,13 +529,13 @@ class NewsPermission(ProjectPermission):
 
         # 수정 및 삭제 로직
         if view.action in ['update', 'partial_update', 'destroy', 'create']:
-            from work.models import News, NewsComment # 모델 임포트
-            
+            from work.models import News, NewsComment  # 모델 임포트
+
             if isinstance(obj, News):
                 return 'news.manage' in user_perms
             elif isinstance(obj, NewsComment):
                 return 'news.comment' in user_perms
-                
+
         return False
 
 
