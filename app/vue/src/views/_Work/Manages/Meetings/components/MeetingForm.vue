@@ -601,7 +601,7 @@ const onConfirmToggle = async () => {
       <IssueForm
         :key="modalKey"
         :issue="selectedIssue"
-        :current-project="workStore.searchProjectsFlat.find(p => p.pk === form.project)"
+        :current-project="workStore.allReadableProjectsFlat.find(p => p.pk === form.project)"
         :all-readable-projects="allReadableProjects"
         :status-list="statusList"
         :priority-list="priorityList"

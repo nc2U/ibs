@@ -39,7 +39,7 @@ const allActiveProjects = computed(() =>
 
 const chkModules = (slug: string) => {
   const routeName = (route.name as string) ?? ''
-  const project = workStore.searchProjectsFlat.filter(p => p.slug === slug)[0]
+  const project = workStore.allReadableProjectsFlat.filter(p => p.slug === slug)[0]
   if ((route.meta as any)?.title === '설 정 관 리' || routeName.includes('프로젝트')) return false
   else if (!project) return true
   else {
