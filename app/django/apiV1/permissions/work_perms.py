@@ -145,6 +145,9 @@ class ProjectPermission(permissions.BasePermission):
                 if not required_perm:
                     return False
                 return required_perm in user_perms
+            else:
+                # 전역 목록 조회 요청인 경우 허용 (get_queryset 등 Row-Level Security에서 데이터 필터링 처리)
+                return True
 
         return False
 
