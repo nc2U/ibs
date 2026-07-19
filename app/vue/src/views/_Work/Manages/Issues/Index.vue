@@ -25,7 +25,7 @@ const accStore = useAccount()
 const getUsers = computed(() => accStore.getUsers)
 
 const workStore = useWork()
-const searchProjects = computed(() => workStore.getSearchProjects)
+const allReadableProjects = computed(() => workStore.getAllReadableProjects)
 const getVersions = computed(() => workStore.getVersions)
 
 const issueStore = useIssue()
@@ -83,7 +83,7 @@ onBeforeMount(async () => {
       <!-- 전역 업무 인덱스는 항상 리스트 뷰만 노출 -->
       <IssueList
         :issue-list="issueList as Issue[]"
-        :search-projects="searchProjects"
+        :search-projects="allReadableProjects"
         :status-list="statusList"
         :tracker-list="trackerList"
         :priority-list="priorityList"

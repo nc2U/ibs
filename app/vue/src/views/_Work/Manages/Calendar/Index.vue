@@ -15,20 +15,20 @@ import SummaryStatus from '@/views/_Work/Manages/Calendar/components/SummaryStat
 import Loading from '@/components/Loading/Index.vue'
 
 const cBody = ref()
+const sideNavCAll = () => cBody.value.toggle()
+
+const route = useRoute()
+provide('navMenu', navMenu)
+provide('query', route?.query)
+
 const comStore = useCompany()
 const company = computed<Company | null>(() => comStore.company)
 const comName = computed(() => company?.value?.name)
 
-const route = useRoute()
 const workStore = useWork()
 const calendarStore = useCalendar()
 
-provide('navMenu', navMenu)
-provide('query', route?.query)
-
-const searchProjects = computed(() => workStore.getSearchProjects)
-
-const sideNavCAll = () => cBody.value.toggle()
+const allReadableProjects = computed(() => workStore.getAllReadableProjects)
 
 const activeProject = ref<string | undefined>(route.query.project as string | undefined)
 const calendarRef = ref()
@@ -64,7 +64,7 @@ const summary = computed(() => {
         </CCol>
       </CRow>
 
-      <QuerySection :search-projects="searchProjects" @filter-submit="filterSubmit" />
+      <QuerySection :search-projects="allReadableProjects" @filter-submit="filterSubmit" />
 
       <CRow class="mb-3">
         <CCol>

@@ -20,7 +20,7 @@ import WatcherAdd from './aside/WatcherAdd.vue'
 const props = defineProps({
   currentProject: { type: Object as PropType<IssueProject>, default: null },
   issue: { type: Object as PropType<Issue>, default: null },
-  searchProjects: { type: Array as PropType<any[]>, default: () => [] },
+  allReadableProjects: { type: Array as PropType<any[]>, default: () => [] },
   statusList: { type: Array as PropType<any[]>, default: () => [] },
   priorityList: { type: Array as PropType<any[]>, default: () => [] },
   getIssues: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },
@@ -505,7 +505,7 @@ defineExpose({ callComment, callReply })
                     :disabled="!!props.currentProject || !!issue"
                   >
                     <option value="">---------</option>
-                    <option v-for="proj in searchProjects" :key="proj.pk" :value="proj.slug">
+                    <option v-for="proj in allReadableProjects" :key="proj.pk" :value="proj.slug">
                       <span v-if="!!proj.depth && proj.parent_visible">
                         {{ '&nbsp;'.repeat(proj.depth) }} »
                       </span>

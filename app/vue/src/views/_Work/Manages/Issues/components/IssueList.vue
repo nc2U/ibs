@@ -16,7 +16,7 @@ import IssueItem from './IssueItem.vue'
 const props = defineProps({
   projStatus: { type: String, default: '' },
   issueList: { type: Array as PropType<Issue[]>, default: () => [] },
-  searchProjects: { type: Array as PropType<selectProject[]>, default: () => [] },
+  allReadableProjects: { type: Array as PropType<selectProject[]>, default: () => [] },
   statusList: { type: Array as PropType<IssueStatus[]>, default: () => [] },
   trackerList: { type: Array as PropType<Tracker[]>, default: () => [] },
   priorityList: { type: Array as PropType<any[]>, default: () => [] },
@@ -128,7 +128,7 @@ const pageSelect = (page: number) => emit('page-select', page)
   </CRow>
 
   <QuerySection
-    :search-projects="searchProjects"
+    :all-readable-projects="allReadableProjects"
     :status-list="statusList"
     :tracker-list="trackerList"
     :priority-list="priorityList"

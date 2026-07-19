@@ -22,7 +22,7 @@ import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 const props = defineProps({
   issue: { type: Object as PropType<Issue>, required: true },
   currentProject: { type: Object as PropType<IssueProject>, default: null },
-  searchProjects: { type: Array as PropType<selectProject[]>, default: () => [] },
+  allReadableProjects: { type: Array as PropType<selectProject[]>, default: () => [] },
   issueCommentList: { type: Array as PropType<IssueComment[]>, default: () => [] },
   statusList: { type: Array as PropType<IssueStatus[]>, default: () => [] },
   priorityList: { type: Array as PropType<CodeValue[]>, default: () => [] },
@@ -519,7 +519,7 @@ onBeforeMount(async () => {
       ref="issueFormRef"
       :current-project="currentProject"
       :issue="issue"
-      :search-projects="searchProjects"
+      :all-readable-projects="allReadableProjects"
       :status-list="statusList"
       :priority-list="priorityList"
       :get-issues="getIssues"

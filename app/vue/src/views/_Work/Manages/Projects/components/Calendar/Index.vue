@@ -21,7 +21,7 @@ const workStore = useWork()
 const meetingStore = useMeeting()
 const calendarStore = useCalendar()
 
-const searchProjects = computed(() => workStore.getSearchProjects)
+const allReadableProjects = computed(() => workStore.getAllReadableProjects)
 
 const fetchData = async (slug: string) => {
   await issueStore.fetchIssueList({ project: slug })
@@ -76,7 +76,7 @@ onBeforeMount(async () => {
         </CCol>
       </CRow>
 
-      <QuerySection :search-projects="searchProjects" @filter-submit="filterSubmit" />
+      <QuerySection :all-readable-projects="allReadableProjects" @filter-submit="filterSubmit" />
 
       <CRow class="mb-3">
         <CCol>

@@ -26,7 +26,7 @@ const getUsers = computed(() => accStore.getUsers)
 
 const workStore = useWork()
 const getVersions = computed(() => workStore.getVersions)
-const searchProjects = computed(() => workStore.getSearchProjects)
+const allReadableProjects = computed(() => workStore.getAllReadableProjects)
 const currentProject = computed<IssueProject | null>(() => workStore.currentProject)
 
 const issueStore = useIssue()
@@ -159,7 +159,7 @@ onBeforeMount(async () => {
         v-if="route.name === '(업무)'"
         :proj-status="currentProject?.status"
         :issue-list="issueList as Issue[]"
-        :search-projects="searchProjects"
+        :all-readable-projects="allReadableProjects"
         :status-list="statusList"
         :tracker-list="trackerList"
         :priority-list="priorityList"
@@ -175,7 +175,7 @@ onBeforeMount(async () => {
         v-if="route.name === '(업무) - 보기' && issue"
         :current-project="currentProject as IssueProject"
         :issue="issue"
-        :search-projects="searchProjects"
+        :all-readable-projects="allReadableProjects"
         :status-list="statusList"
         :priority-list="priorityList"
         :issue-comment-list="issueCommentList"
@@ -185,7 +185,7 @@ onBeforeMount(async () => {
       <IssueForm
         v-if="route.name === '(업무) - 추가'"
         :current-project="currentProject as IssueProject"
-        :search-projects="searchProjects"
+        :all-readable-projects="allReadableProjects"
         :status-list="statusList"
         :priority-list="priorityList"
         :get-issues="getIssues"
