@@ -28,7 +28,7 @@ class IssueProject(models.Model):
     STATUS_CHOICES = ('1', '사용중'), ('2', '닫힘'), ('9', '잠금보관(모든 접근이 차단됨)')
     status = models.CharField('사용여부', max_length=1, default='1', choices=STATUS_CHOICES,
                               help_text='사용중: 활성화 상태, 닫힘: 읽기 전용 상태, 잠금보관: 관리자외 접근 제한')
-    order = models.PositiveSmallIntegerField('정렬순서', default=0)
+    order = models.PositiveSmallIntegerField('정렬순서', default=10)
     slack_notifications_enabled = models.BooleanField(
         'Slack 알림 활성화',
         default=False,
