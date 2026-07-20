@@ -69,7 +69,7 @@ class ContractPriceBulkUpdateService:
         """
         contracts = Contract.objects.filter(
             project=self.project,
-            activation=True
+            is_active=True
         )
 
         updated_contracts = []
@@ -177,7 +177,7 @@ class ContractPriceBulkUpdateService:
         """
         return Contract.objects.filter(
             project=self.project,
-            activation=True
+            is_active=True
         ).select_related('unit_type', 'order_group', 'contractor')
 
     def validate_project(self):
@@ -210,7 +210,7 @@ class ContractPriceBulkUpdateService:
             unit_type__project=self.project,
         ).exclude(
             key_unit__contract__isnull=False,  # 계약이 있는 세대는 제외
-            key_unit__contract__activation=True  # 활성화된 계약만 제외
+            key_unit__contract__is_active=True  # 활성화된 계약만 제외
         ).select_related('unit_type', 'floor_type')
 
         for house_unit in uncontracted_houses:
@@ -804,9 +804,9 @@ class ContractCreationService:
     def _create_base_contract(data):
         """기본 계약 객체 생성"""
         # Convert string 'true'/'false' to boolean
-        activation_value = data.get('activation', True)
-        if isinstance(activation_value, str):
-            activation_value = activation_value.lower() == 'true'
+        is_active_value = data.get('is_active', True)
+        if isinstance(is_active_value, str):
+            is_active_value = is_active_value.lower() == 'true'
 
         # Convert string 'true'/'false' to boolean for is_sup_cont
         is_sup_cont_value = data.get('is_sup_cont', False)
@@ -837,7 +837,7 @@ class ContractCreationService:
             serial_number=serial_number,
             order_group_id=clean_id_value(data.get('order_group')),
             unit_type_id=unit_type_id,
-            activation=activation_value,
+            is_active=is_active_value,
             is_sup_cont=is_sup_cont_value,
             sup_cont_date=sup_cont_date_value
         )
@@ -995,7 +995,7 @@ class ContractorReleaseService:
 
         # 1. 계약 상태 변경
         contract.serial_number = f"{contract.serial_number}-terminated-{completion_date}"
-        contract.activation = False
+        contract.is_active = False
         result['contract_updated'] = True
 
         # 2. 동호수 연결 해제

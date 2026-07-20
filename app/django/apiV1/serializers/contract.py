@@ -164,7 +164,7 @@ def get_installments(project):
 class ContractSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contract
-        fields = ('pk', 'project', 'order_group', 'unit_type', 'serial_number', 'activation')
+        fields = ('pk', 'project', 'order_group', 'unit_type', 'serial_number', 'is_active')
 
     @transaction.atomic
     def update(self, instance, validated_data):
@@ -246,7 +246,7 @@ class ContractSetSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contract
         fields = ('pk', 'project', 'order_group_sort', 'order_group', 'unit_type', 'unit_type_desc',
-                  'serial_number', 'activation', 'is_sup_cont', 'sup_cont_date', 'key_unit', 'contractprice',
+                  'serial_number', 'is_active', 'is_sup_cont', 'sup_cont_date', 'key_unit', 'contractprice',
                   'contractor', 'payments', 'last_paid_order', 'total_paid', 'order_group_desc', 'contract_files',
                   'updator')
 
@@ -410,7 +410,7 @@ class ContractorSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         instance = self.instance
         now_status = attrs.get('now_status', instance.now_status if instance else '1')
-        
+
         # 만약 'now_status'가 '1' 또는 '2'로 변경되는 상태라면 change_type을 null(None)로 명시하거나 비워두어야 함.
         # 프론트엔드에서 편의상 명시적으로 지우지 않고 넘어오는 케이스를 대비하여, 
         # API 단에서 null이 아닌 값으로 넘어온 경우 강제 반려 또는 null 초기화 처리할 수 있습니다.
@@ -430,7 +430,7 @@ class ContractorSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError({
                     'change_type': f"상태가 '{'청약' if now_status == '1' else '계약'}'으로 복원될 때 변경유형(change_type)은 반드시 null(없음)이어야 합니다."
                 })
-            
+
         return attrs
 
 

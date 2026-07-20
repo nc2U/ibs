@@ -559,10 +559,10 @@ class MessageViewSet(viewsets.ViewSet):
                 'error': 'group_type 파라미터가 필요합니다.'
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        # 기본 필터: 유효한 계약(activation=True) + 유효한 계약자(is_active=True)
+        # 기본 필터: 유효한 계약(is_active=True) + 유효한 계약자(is_active=True)
         base_filter = Q(
             contractor__contract__project_id=project_id,
-            contractor__contract__activation=True,  # 계약 유효성 (해지 제외)
+            contractor__contract__is_active=True,  # 계약 유효성 (해지 제외)
             contractor__is_active=True  # 계약자 유효성 (양도인 제외)
         )
 
@@ -580,12 +580,12 @@ class MessageViewSet(viewsets.ViewSet):
 
             active_contracts = Contract.objects.filter(
                 project_id=project_id,
-                activation=True
+                is_active=True
             ).count()
 
             active_contractors = Contractor.objects.filter(
                 contract__project_id=project_id,
-                contract__activation=True,
+                contract__is_active=True,
                 is_active=True
             ).count()
 

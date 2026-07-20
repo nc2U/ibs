@@ -119,7 +119,7 @@ class ExportContracts(ExcelExportMixin):
         # Get some data to write to the spreadsheet.
         # Use select_related to optimize and ensure we get the current address
         queryset = Contract.objects.filter(project=project,
-                                           activation=True,
+                                           is_active=True,
                                            contractor__status=status).select_related(
             'contractor'
         ).prefetch_related(

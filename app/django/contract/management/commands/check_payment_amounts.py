@@ -25,12 +25,12 @@ class Command(BaseCommand):
 
         if contract_id:
             try:
-                contracts = [Contract.objects.get(id=contract_id, activation=True)]
+                contracts = [Contract.objects.get(id=contract_id, is_active=True)]
             except Contract.DoesNotExist:
                 self.stdout.write(f'Contract {contract_id} not found or not active')
                 return
         else:
-            contracts = Contract.objects.filter(activation=True)[:limit]
+            contracts = Contract.objects.filter(is_active=True)[:limit]
 
         self.stdout.write(f"=== ContractPrice payment_amounts 상태 확인 ===")
         self.stdout.write(f"확인 시간: {timezone.now()}")
@@ -69,7 +69,7 @@ class Command(BaseCommand):
             self.stdout.write("")  # 빈 줄
 
         # 전체 통계
-        total_contracts = Contract.objects.filter(activation=True).count()
+        total_contracts = Contract.objects.filter(is_active=True).count()
         total_contract_prices = ContractPrice.objects.count()
         valid_cache_count = ContractPrice.objects.filter(is_cache_valid=True).count()
         with_payment_amounts = ContractPrice.objects.exclude(payment_amounts={}).count()

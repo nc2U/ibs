@@ -63,7 +63,7 @@ const form = reactive({
   order_group: null as number | null,
   unit_type: null as number | null,
   serial_number: '',
-  activation: true,
+  is_active: true,
   is_sup_cont: false,
   sup_cont_date: null as string | null,
 

@@ -84,7 +84,7 @@ class ContractFilter(FilterSet):
 
     class Meta:
         model = Contract
-        fields = ('project', 'activation', 'contractor__status', 'order_group', 'unit_type',
+        fields = ('project', 'is_active', 'contractor__status', 'order_group', 'unit_type',
                   'key_unit__houseunit__building_unit', 'houseunit__isnull', 'is_sup_cont',
                   'contractor__qualification', 'from_contract_date', 'to_contract_date')
 
@@ -141,7 +141,7 @@ class ContractViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='recent-logs')
     def recent_logs(self, request):
         """대시보드 위젯용 최근 5개 계약 로그 조회 (가벼운 직렬화 적용)"""
-        queryset = Contract.objects.filter(activation=True).select_related(
+        queryset = Contract.objects.filter(is_active=True).select_related(
             'project',
             'contractor',
             'unit_type',
@@ -458,7 +458,7 @@ class SimpleContractViewSet(ContractViewSet):
     pagination_class = PageNumberPaginationThreeThousand
 
     def get_queryset(self):
-        return Contract.objects.filter(activation=True, contractor__is_active=True)
+        return Contract.objects.filter(is_active=True, contractor__is_active=True)
 
 
 class ContractPriceViewSet(viewsets.ModelViewSet):
@@ -466,7 +466,7 @@ class ContractPriceViewSet(viewsets.ModelViewSet):
     serializer_class = ContractPriceSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
     filterset_fields = ('contract__project', 'contract__order_group',
-                        'contract__unit_type', 'contract__activation',
+                        'contract__unit_type', 'contract__is_active',
                         'contract__contractor__status')
 
 
@@ -476,7 +476,7 @@ class SubsSummaryViewSet(viewsets.ModelViewSet):
     filterset_fields = ('project',)
 
     def get_queryset(self):
-        return Contract.objects.filter(activation=True, contractor__status=1) \
+        return Contract.objects.filter(is_active=True, contractor__status=1) \
             .values('unit_type') \
             .annotate(num_cont=Count('pk'))
 
@@ -495,7 +495,7 @@ class ContSummaryViewSet(viewsets.ModelViewSet):
     filterset_class = ContSumFilter
 
     def get_queryset(self):
-        return Contract.objects.filter(activation=True, contractor__status=2) \
+        return Contract.objects.filter(is_active=True, contractor__status=2) \
             .values('order_group', 'unit_type') \
             .annotate(conts_num=Count('order_group')) \
             .annotate(price_sum=Sum('contractprice__price'))
@@ -1004,7 +1004,7 @@ def contract_price_update_preview(request):
                 unit_type__project=project,
             ).exclude(
                 key_unit__contract__isnull=False,
-                key_unit__contract__activation=True
+                key_unit__contract__is_active=True
             ).count()
 
             uncontracted_info = {

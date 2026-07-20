@@ -8,6 +8,9 @@ from django.conf import settings
 from django.db import migrations, models
 
 
+from django.contrib.postgres.operations import BtreeGinExtension, TrigramExtension
+
+
 class Migration(migrations.Migration):
 
     initial = True
@@ -20,6 +23,8 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        BtreeGinExtension(),
+        TrigramExtension(),
         migrations.CreateModel(
             name='Permission',
             fields=[

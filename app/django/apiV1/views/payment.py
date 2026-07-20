@@ -112,7 +112,7 @@ def get_sales_amount_by_unit_type(project_id, order_group_id, unit_type_id):
                              WHERE c.project_id = %s
                                AND c.order_group_id = %s
                                AND c.unit_type_id = %s
-                               AND c.activation = true
+                               AND c.is_active = true
                                AND cp.is_cache_valid = true
                              """
 
@@ -203,7 +203,7 @@ def get_contract_data_by_unit_type(project_id, order_group_id, unit_type_id):
                     WHERE c.project_id = %s
                       AND c.order_group_id = %s
                       AND c.unit_type_id = %s
-                      AND c.activation = true
+                      AND c.is_active = true
                       AND cp.is_cache_valid = true
                     """
 
@@ -244,7 +244,7 @@ def get_paid_amount_by_unit_type(project_id, order_group_id, unit_type_id, date,
                         WHERE cp.project_id = %s
                           AND c.order_group_id = %s
                           AND c.unit_type_id = %s
-                          AND c.activation = true
+                          AND c.is_active = true
                           AND pa.is_payment = true
                           AND cp.is_payment_mismatch = false
                           {date_filter}
@@ -259,7 +259,7 @@ def get_paid_amount_by_unit_type(project_id, order_group_id, unit_type_id, date,
                         WHERE cp.project_id = %s
                           AND c.order_group_id = %s
                           AND c.unit_type_id = %s
-                          AND c.activation = true
+                          AND c.is_active = true
                           AND pae.amount IS NOT NULL
                           AND pa.is_payment = true
                           AND cp.is_payment_mismatch = false
@@ -678,7 +678,7 @@ class OverallSummaryViewSet(viewsets.ViewSet):
                         WHERE contract_id IN (SELECT id
                                               FROM contract_contract
                                               WHERE project_id = %s
-                                                AND activation = %s)
+                                                AND is_active = %s)
                           AND is_cache_valid = %s
                           AND key = %s \
                         """
@@ -691,7 +691,7 @@ class OverallSummaryViewSet(viewsets.ViewSet):
             # 캐시 무효화된 계약이 있으면 동적 계산으로 폴백
             invalid_cache_count = ContractPrice.objects.filter(
                 contract__project_id=project_id,
-                contract__activation=True,
+                contract__is_active=True,
                 is_cache_valid=False
             ).count()
 
@@ -714,7 +714,7 @@ class OverallSummaryViewSet(viewsets.ViewSet):
         """캐시 실패 시 동적 계산 폴백"""
         contracts = Contract.objects.filter(
             project_id=project_id,
-            activation=True
+            is_active=True
         ).select_related('contractprice').filter(
             contractprice__is_cache_valid=False
         )
@@ -748,7 +748,7 @@ class OverallSummaryViewSet(viewsets.ViewSet):
                                SELECT COUNT(*)
                                FROM contract_contract
                                WHERE project_id = %s
-                                 AND activation = %s
+                                 AND is_active = %s
                                """, [project_id, True])
                 total_active_contracts = cursor.fetchone()[0]
 
@@ -758,7 +758,7 @@ class OverallSummaryViewSet(viewsets.ViewSet):
                                FROM contract_contractprice cp
                                         JOIN contract_contract cc ON cp.contract_id = cc.id
                                WHERE cc.project_id = %s
-                                 AND cc.activation = %s
+                                 AND cc.is_active = %s
                                  AND cp.is_cache_valid = %s
                                """, [project_id, True, True])
                 valid_cache_contracts = cursor.fetchone()[0]
@@ -772,7 +772,7 @@ class OverallSummaryViewSet(viewsets.ViewSet):
                             WHERE contract_id IN (SELECT id
                                                   FROM contract_contract
                                                   WHERE project_id = %s
-                                                    AND activation = %s)
+                                                    AND is_active = %s)
                               AND is_cache_valid = %s
                               AND key = %s \
                             """
@@ -952,7 +952,7 @@ class OverallSummaryViewSet(viewsets.ViewSet):
             project_id=project_id,
             installment_order__in=order_ids,
             contract__isnull=False,
-            contract__activation=True,
+            contract__is_active=True,
             deal_date__lte=date
         ).values('installment_order').annotate(
             total_collected=Sum('accounting_entry__amount')
@@ -1215,7 +1215,7 @@ class OverallSummaryViewSet(viewsets.ViewSet):
         # 계약 세대수
         conts_num = Contract.objects.filter(
             project_id=project_id,
-            activation=True,
+            is_active=True,
             contractor__status=2
         ).count()
 
@@ -1482,7 +1482,7 @@ class ContractPaymentStatusByUnitTypeViewSet(viewsets.ViewSet):
                                  WHERE c.project_id = %s
                                    AND c.order_group_id = %s
                                    AND c.unit_type_id = %s
-                                   AND c.activation = true
+                                   AND c.is_active = true
                                    AND cp.is_cache_valid = true \
                                  """
 
@@ -1573,7 +1573,7 @@ class ContractPaymentStatusByUnitTypeViewSet(viewsets.ViewSet):
                         WHERE c.project_id = %s
                           AND c.order_group_id = %s
                           AND c.unit_type_id = %s
-                          AND c.activation = true
+                          AND c.is_active = true
                           AND cp.is_cache_valid = true
                         """
 
@@ -1614,7 +1614,7 @@ class ContractPaymentStatusByUnitTypeViewSet(viewsets.ViewSet):
                         WHERE cp.project_id = %s
                           AND c.order_group_id = %s
                           AND c.unit_type_id = %s
-                          AND c.activation = true
+                          AND c.is_active = true
                           AND pa.is_payment = true
                           AND cp.is_payment_mismatch = false
                           {date_filter}
@@ -1823,7 +1823,7 @@ class ContractPaymentOverallSummaryViewSet(viewsets.ViewSet):
                             WHERE contract_id IN (SELECT id
                                                   FROM contract_contract
                                                   WHERE project_id = %s
-                                                    AND activation = %s)
+                                                    AND is_active = %s)
                               AND is_cache_valid = %s
                               AND key = %s
                             """
@@ -1856,9 +1856,9 @@ class ContractPaymentOverallSummaryViewSet(viewsets.ViewSet):
                             FROM contract_contractprice cp, jsonb_each_text(payment_amounts)
                             WHERE cp.contract_id IS NULL
                               AND cp.house_unit_id IN (SELECT hu.id
-                                                    FROM items_houseunit hu
-                                                             JOIN items_unittype ut ON hu.unit_type_id = ut.id
-                                                    WHERE ut.project_id = %s)
+                                                       FROM items_houseunit hu
+                                                                JOIN items_unittype ut ON hu.unit_type_id = ut.id
+                                                       WHERE ut.project_id = %s)
                               AND cp.is_cache_valid = %s
                               AND key = %s
                             """
@@ -2102,7 +2102,7 @@ class ContractPaymentOverallSummaryViewSet(viewsets.ViewSet):
         # 계약 세대수
         conts_num = Contract.objects.filter(
             project_id=project_id,
-            activation=True,
+            is_active=True,
             contractor__status=2
         ).count()
 

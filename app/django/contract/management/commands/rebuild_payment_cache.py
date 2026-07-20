@@ -25,7 +25,7 @@ class Command(BaseCommand):
 
         # 쿼리셋 준비
         queryset = ContractPrice.objects.select_related(
-            'contract', 'contract__project').filter(contract__activation=True)
+            'contract', 'contract__project').filter(contract__is_active=True)
 
         if project_id:
             queryset = queryset.filter(contract__project_id=project_id)

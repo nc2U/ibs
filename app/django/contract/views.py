@@ -96,11 +96,11 @@ class ContractLV(LoginRequiredMixin, ListView):
             for j, og in enumerate(context['groups']):  # 차수
                 cnum.append(Contract.objects.filter(project=self.get_project(),
                                                     unit_type=type,
-                                                    activation=True,
+                                                    is_active=True,
                                                     contractor__status='2',
                                                     order_group=og).count())
                 ocn.append(Contract.objects.filter(project=self.get_project(),
-                                                   activation=True,
+                                                   is_active=True,
                                                    contractor__status='2',
                                                    order_group=og).count())
 
@@ -470,7 +470,7 @@ class ContractorReleaseRegister(LoginRequiredMixin, ListView, FormView):
 
                     # 2. 계약 상태 변경
                     contract.serial_number = f"{contract.serial_number}-terminated-{completion_date}"
-                    contract.activation = False  # 일련번호 활성 해제
+                    contract.is_active = False  # 일련번호 활성 해제
 
                     # 3. 동호수 연결 해제
                     try:  # 동호수 존재 여부 확인

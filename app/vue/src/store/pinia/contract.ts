@@ -232,7 +232,7 @@ export const useContract = defineStore('contract', () => {
   const getContractFilterParams = (filters: ContFilter) => {
     const params: Record<string, any> = {
       project: filters.project,
-      activation: true,
+      is_active: true,
       contractor__status: filters.status ?? '2',
       limit: filters.limit ?? 10,
       order_group: filters.order_group,

@@ -263,9 +263,9 @@ def get_contract_payment_plan(contract):
 def get_project_payment_summary(project, order_group=None, unit_type=None):
     if not project: return {'installment_summaries': [], 'grand_total': 0, 'total_contracts': 0}
     try:
-        contracts_q = project.contract_set.filter(activation=True).select_related('contractprice', 'order_group',
-                                                                                  'unit_type',
-                                                                                  'key_unit__houseunit__floor_type')
+        contracts_q = project.contract_set.filter(is_active=True).select_related('contractprice', 'order_group',
+                                                                                 'unit_type',
+                                                                                 'key_unit__houseunit__floor_type')
         if order_group: contracts_q = contracts_q.filter(order_group=order_group)
         if unit_type: contracts_q = contracts_q.filter(unit_type=unit_type)
         contracts = list(contracts_q)

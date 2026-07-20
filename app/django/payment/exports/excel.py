@@ -12,7 +12,7 @@ from django.db.models import Q, Sum
 from _excel.mixins import ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMixin
 from contract.models import Contract
 from ledger.models import ProjectBankAccount
-from payment.models import InstallmentPaymentOrder, SalesPriceByGT, DownPayment
+from payment.models import InstallmentPaymentOrder, ContractPayment, SalesPriceByGT, DownPayment
 from project.models import ProjectIncBudget
 
 TODAY = datetime.date.today().strftime('%Y-%m-%d')
@@ -138,7 +138,7 @@ class ExportLedgerPayments(ExcelExportMixin, ProjectFilterMixin, AdvancedExcelMi
                 project=project,
                 deal_date__range=(sd, ed),
                 contract__isnull=False,
-                contract__activation=True,  # 유효 계약만
+                contract__is_active=True,  # 유효 계약만
                 is_payment_mismatch=False  # 유효한 계약자 납부만
             )
             .order_by('deal_date', 'created_at')
@@ -363,7 +363,7 @@ class ExportLedgerPaymentsByCont(ExcelExportMixin, ProjectFilterMixin, AdvancedE
         # ----------------- get_queryset start ----------------- #
         # Get some data to write to the spreadsheet.
         obj_list = Contract.objects.filter(project=project,
-                                           activation=True,
+                                           is_active=True,
                                            contractor__status='2',
                                            contractor__contract_date__lte=date) \
             .order_by('contractor__contract_date', 'created')
@@ -383,7 +383,7 @@ class ExportLedgerPaymentsByCont(ExcelExportMixin, ProjectFilterMixin, AdvancedE
                 project=project,
                 deal_date__lte=date,
                 contract__isnull=False,
-                contract__activation=True,
+                contract__is_active=True,
                 is_payment_mismatch=False  # 유효한 계약자 납부만
             )
         )
@@ -486,14 +486,14 @@ def get_ledger_standardized_payment_sum(project, date=None, date_range=None):
 
     ContractPayment 사용으로 일관된 집계 기준 적용:
     - is_payment_mismatch=False (유효한 계약자 납부만)
-    - 유효 계약만 (activation=True)
+    - 유효 계약만 (is_active=True)
     """
     from payment.models import ContractPayment
 
     queryset = ContractPayment.objects.filter(
         project=project,
         contract__isnull=False,
-        contract__activation=True,
+        contract__is_active=True,
         is_payment_mismatch=False
     )
 
@@ -521,7 +521,7 @@ def get_ledger_standardized_payment_sum_by_order(project, date, installment_orde
                 project=project,
                 installment_order_id=installment_order_id,
                 contract__isnull=False,
-                contract__activation=True,
+                contract__is_active=True,
                 is_payment_mismatch=False,
                 deal_date__lte=date
             )
@@ -656,7 +656,6 @@ class ExportLedgerPaymentStatus(ExcelExportMixin, ProjectFilterMixin, AdvancedEx
             return same_order_group_items[0]['unit_type_id'] == item['unit_type_id']
 
         # 개별 차수×타입별 실수납 금액을 표준화된 방식으로 재계산 (Ledger 기반)
-        from payment.models import ContractPayment
 
         for item in api_data:
             # 해당 차수×타입에 대한 표준화된 실수납 금액 계산 (ContractPayment 사용)
@@ -665,7 +664,7 @@ class ExportLedgerPaymentStatus(ExcelExportMixin, ProjectFilterMixin, AdvancedEx
                 .filter(
                     project=project,
                     contract__isnull=False,
-                    contract__activation=True,
+                    contract__is_active=True,
                     contract__order_group_id=item['order_group_id'],
                     contract__unit_type_id=item['unit_type_id'],
                     is_payment_mismatch=False

@@ -50,10 +50,10 @@ class ContractorInline(admin.StackedInline):
 @admin.register(Contract)
 class ContractAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('id', 'project', 'serial_number', 'key_unit', 'order_group', 'unit_type',
-                    'activation', 'contractor', 'contractprice', 'is_sup_cont',
+                    'is_active', 'contractor', 'contractprice', 'is_sup_cont',
                     'sup_cont_date', 'created', 'creator')
     list_display_links = ('project', 'serial_number',)
-    list_filter = ('project', 'order_group', 'unit_type', 'activation', 'contractor__status')
+    list_filter = ('project', 'order_group', 'unit_type', 'is_active', 'contractor__status')
     search_fields = ('serial_number', 'contractor__name')
     inlines = [ContractPriceInline, ContractorInline]
 

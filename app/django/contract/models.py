@@ -139,7 +139,6 @@ class Contract(models.Model):
                                     verbose_name='계약유닛', related_name='contract')
     is_sup_cont = models.BooleanField('공급계약 체결여부', default=False)
     sup_cont_date = models.DateField('공급계약 체결일', null=True, blank=True)
-    activation = models.BooleanField('계약 활성 여부', default=True)  # deprecated is_active 로 대체 예정
     is_active = models.BooleanField('계약 활성 여부', default=True)
     is_completed = models.BooleanField('계약 완료 여부', default=False)
     created = models.DateTimeField('등록일시', auto_now_add=True)

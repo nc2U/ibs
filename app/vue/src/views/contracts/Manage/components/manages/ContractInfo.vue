@@ -220,8 +220,8 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
       <CRow>
         <CCol :sm="6">
           <strong>활성화 :</strong>
-          <CBadge :color="contract.activation ? 'success' : 'secondary'" class="ml-2">
-            {{ contract.activation ? '활성' : '비활성' }}
+          <CBadge :color="contract.is_active ? 'success' : 'secondary'" class="ml-2">
+            {{ contract.is_active ? '활성' : '비활성' }}
           </CBadge>
         </CCol>
         <CCol :sm="6">
