@@ -337,7 +337,7 @@ class SuccessionAdmin(ImportExportMixin, admin.ModelAdmin):
 
 @admin.register(ContractorRelease)
 class ContractorReleaseAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'contractor', 'status', 'refund_amount',
+    list_display = ('id', 'contractor', 'status', 'release_type', 'new_status', 'refund_amount',
                     'refund_account_bank', 'refund_account_number',
                     'refund_account_depositor', 'request_date', 'completion_date')
-    list_editable = ('request_date', 'completion_date')
+    list_editable = ('release_type', 'new_status', 'request_date', 'completion_date')
