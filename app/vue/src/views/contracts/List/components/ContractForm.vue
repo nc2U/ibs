@@ -12,7 +12,6 @@ import {
 } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
 import { useStore } from '@/store'
-import { btnLight } from '@/utils/cssMixins.ts'
 import { write_contract } from '@/utils/pageAuth'
 import { useAccount } from '@/store/pinia/account'
 import { useProjectData } from '@/store/pinia/project_data'
@@ -64,6 +63,7 @@ const form = reactive({
   unit_type: null as number | null,
   serial_number: '',
   is_active: true,
+  is_completed: false,
   is_sup_cont: false,
   sup_cont_date: null as string | null,
 
@@ -166,6 +166,7 @@ const formsCheck = computed(() => {
     const c = form.key_unit === props.contract.key_unit?.pk
     const d = form.houseunit === props.contract.key_unit?.houseunit?.pk
     const e = form.is_sup_cont === props.contract.is_sup_cont
+    const e_comp = form.is_completed === props.contract.is_completed
     const f = form.sup_cont_date === props.contract.sup_cont_date
     const g = form.reservation_date === contractor.value.reservation_date
     const h = form.contract_date === contractor.value?.contract_date
@@ -197,7 +198,7 @@ const formsCheck = computed(() => {
     const g1 = !cngFile.value
     const h1 = !delFile.value
 
-    const cond1 = a && b && c && d && e && f && g && h && i && j && u
+    const cond1 = a && b && c && d && e && e_comp && f && g && h && i && j && u
     const cond2 = k && l && m && n && o && p && q && r && s && t && v
     const cond3 = w && x && y && z && a1 && b1 && c1 && d1 && e1 && f1 && g1 && h1
     return cond1 && cond2 && cond3
@@ -298,7 +299,12 @@ const typeSelect = () => {
   })
 }
 
-const remove_sup_cDate = () => (form.is_sup_cont ? (form.sup_cont_date = null) : null)
+const remove_sup_cDate = () => {
+  if (form.is_sup_cont) {
+    form.sup_cont_date = null
+    form.is_completed = false
+  }
+}
 
 const formDataReset = () => {
   form.pk = null
@@ -308,6 +314,7 @@ const formDataReset = () => {
   form.unit_type = null
   form.serial_number = ''
   form.is_sup_cont = false
+  form.is_completed = false
   form.sup_cont_date = null
   form.key_unit = null
   form.houseunit = null
@@ -370,6 +377,7 @@ const formDataSetup = () => {
     form.unit_type = props.contract.unit_type
     form.serial_number = props.contract.serial_number
     form.is_sup_cont = form.is_sup_cont || props.contract.is_sup_cont
+    form.is_completed = props.contract.is_completed
     form.sup_cont_date = form.sup_cont_date ?? props.contract.sup_cont_date ?? ''
     form.key_unit = props.contract.key_unit?.pk ?? null
     form.key_unit_code = props.contract.key_unit?.unit_code ?? ''
@@ -671,13 +679,24 @@ onBeforeRouteLeave(() => formDataReset())
               />
               <CFormFeedback invalid>공급계약 체결일을 입력하세요.</CFormFeedback>
             </CCol>
+            <CFormLabel class="col-sm-2 col-lg-1 col-form-label">계약완료</CFormLabel>
+            <CCol sm="10" lg="2" class="pt-1">
+              <v-checkbox-btn
+                v-model="form.is_completed"
+                label="완료 여부"
+                :color="isDark ? '#857DCC' : '#321FDB'"
+                density="compact"
+                :disabled="!form.is_sup_cont"
+              />
+            </CCol>
             <CCol class="form-text">
               공급계약이란 조합원 가입계약이 아닌
               <b>
                 사업계획승인 후 조합원이 시공사와 체결하는 주택공급계약 체결 또는 일반(임의)분양
                 계약
               </b>
-              을 지칭하는 것으로 이에 해당되는 경우 이 항목을 체크.
+              을 지칭하는 것으로 이에 해당되는 경우 이 항목을 체크. <b>완료 여부</b>는 대금 완납 및
+              공급 물건 인도 완료시 체크.
             </CCol>
           </CRow>
         </CAlert>
@@ -1099,7 +1118,6 @@ onBeforeRouteLeave(() => formDataReset())
     </CCardBody>
 
     <CCardFooter class="text-right">
-      <v-btn type="button" :color="btnLight" @click="$emit('close')">닫기</v-btn>
       <!--      <v-btn-->
       <!--        v-if="write_contract && contract"-->
       <!--        type="button"-->
@@ -1117,6 +1135,7 @@ onBeforeRouteLeave(() => formDataReset())
         <v-icon icon="mdi-check-circle-outline" class="mr-2" />
         저장
       </v-btn>
+      <v-btn type="button" color="ㅣight" @click="$emit('close')" flat>닫기</v-btn>
     </CCardFooter>
   </CForm>
 

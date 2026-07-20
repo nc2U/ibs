@@ -218,16 +218,22 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
         </CCol>
       </CRow>
       <CRow>
-        <CCol :sm="6">
+        <CCol :sm="4">
           <strong>활성화 :</strong>
           <CBadge :color="contract.is_active ? 'success' : 'secondary'" class="ml-2">
             {{ contract.is_active ? '활성' : '비활성' }}
           </CBadge>
         </CCol>
-        <CCol :sm="6">
+        <CCol :sm="4">
           <strong>공급계약 :</strong>
           <CBadge :color="contract.is_sup_cont ? 'success' : 'secondary'" class="ml-2">
             {{ contract.is_sup_cont ? '완료' : '미완료' }}
+          </CBadge>
+        </CCol>
+        <CCol :sm="4">
+          <strong>계약종결 :</strong>
+          <CBadge :color="contract.is_completed ? 'success' : 'info'" class="ml-2">
+            {{ contract.is_completed ? '종결' : '진행중' }}
           </CBadge>
         </CCol>
       </CRow>

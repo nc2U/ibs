@@ -164,7 +164,7 @@ def get_installments(project):
 class ContractSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contract
-        fields = ('pk', 'project', 'order_group', 'unit_type', 'serial_number', 'is_active')
+        fields = ('pk', 'project', 'order_group', 'unit_type', 'serial_number', 'is_active', 'is_completed')
 
     @transaction.atomic
     def update(self, instance, validated_data):
@@ -246,7 +246,7 @@ class ContractSetSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contract
         fields = ('pk', 'project', 'order_group_sort', 'order_group', 'unit_type', 'unit_type_desc',
-                  'serial_number', 'is_active', 'is_sup_cont', 'sup_cont_date', 'key_unit', 'contractprice',
+                  'serial_number', 'is_active', 'is_completed', 'is_sup_cont', 'sup_cont_date', 'key_unit', 'contractprice',
                   'contractor', 'payments', 'last_paid_order', 'total_paid', 'order_group_desc', 'contract_files',
                   'updator')
 

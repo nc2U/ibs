@@ -117,6 +117,7 @@ export interface Contract {
   unit_type_desc: UnitType
   serial_number: string
   is_active: boolean
+  is_completed: boolean
   is_sup_cont: boolean
   sup_cont_date: string | null
   key_unit: KeyUnit | null
