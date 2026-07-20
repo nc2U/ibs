@@ -18,6 +18,7 @@ import AddContract from '@/views/contracts/List/components/AddContract.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import SelectItems from '@/views/contracts/List/components/SelectItems.vue'
 import ContractList from '@/views/contracts/List/components/ContractList.vue'
+import { CCardBody } from '@coreui/vue'
 
 const route = useRoute()
 const listControl = ref()
@@ -347,16 +348,11 @@ onBeforeMount(async () => {
           @subscription-created="handleSubscription"
           @contract-converted="handleContract"
         />
-        <TableTitleRow
-          excel
-          :url="excelUrl"
-          :filename="`${title}.xlsx`"
-          :disabled="!project"
-        >
+        <TableTitleRow excel :url="excelUrl" :filename="`${title}.xlsx`" :disabled="!project">
           <template #title>
             <v-tabs v-model="curr_status" density="compact" class="mb-0">
-              <v-tab value="1" variant="tonal" :active="curr_status === '1'">청약 현황</v-tab>
               <v-tab value="2" variant="tonal" :active="curr_status === '2'">계약 현황</v-tab>
+              <v-tab value="1" variant="tonal" :active="curr_status === '1'">청약 현황</v-tab>
             </v-tabs>
           </template>
           <v-btn
