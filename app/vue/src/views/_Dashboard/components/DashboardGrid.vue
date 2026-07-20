@@ -75,6 +75,29 @@ const getWidgetIcon = (widgetId: string) => {
 const isInitialized = ref(false)
 // breakpoint 전환 중 자동 재배치로 인한 @layout-updated 를 무시하기 위한 플래그
 let isBreakpointChanging = false
+// 사용자가 마우스나 터치로 직접 드래그/리사이징 중인지 여부를 감지하는 플래그
+const isUserInteracting = ref(false)
+
+const handleDragStart = () => {
+  isUserInteracting.value = true
+}
+
+const handleDragEnd = () => {
+  // layout-updated가 최종적으로 동기화될 수 있도록 다음 틱에 인터랙션 플래그 해제
+  nextTick(() => {
+    isUserInteracting.value = false
+  })
+}
+
+const handleResizeStart = () => {
+  isUserInteracting.value = true
+}
+
+const handleResizeEnd = () => {
+  nextTick(() => {
+    isUserInteracting.value = false
+  })
+}
 
 const handleBreakpointChange = (newBreakpoint: string) => {
   isBreakpointChanging = true
@@ -90,6 +113,9 @@ const handleLayoutUpdated = (newLayout: LayoutItem[]) => {
   if (!isInitialized.value) return
   // breakpoint 전환에 의한 자동 재배치는 저장하지 않음
   if (isBreakpointChanging) return
+  // 사용자가 직접 드래그/리사이즈한 경우가 아니면 저장하지 않음 (반응형 자동 조정을 저장에서 제외)
+  if (!isUserInteracting.value) return
+
   dashboardStore.updateLayout(
     newLayout.map(item => ({
       ...item,
@@ -124,6 +150,10 @@ onMounted(async () => {
       :margin="[12, 12]"
       @breakpoint-change="handleBreakpointChange"
       @layout-updated="handleLayoutUpdated"
+      @drag-start="handleDragStart"
+      @drag-end="handleDragEnd"
+      @resize-start="handleResizeStart"
+      @resize-end="handleResizeEnd"
     >
       <template #item="{ item }">
         <component
