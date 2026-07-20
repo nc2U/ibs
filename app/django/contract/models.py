@@ -135,11 +135,13 @@ class Contract(models.Model):
     order_group = models.ForeignKey(OrderGroup, on_delete=models.PROTECT, verbose_name='차수')
     unit_type = models.ForeignKey('items.UnitType', on_delete=models.PROTECT, verbose_name='타입',
                                   null=True, blank=True)
-    activation = models.BooleanField('계약 활성 여부', default=True)
-    is_sup_cont = models.BooleanField('공급계약 체결여부', default=False)
-    sup_cont_date = models.DateField('공급계약 체결일', null=True, blank=True)
     key_unit = models.OneToOneField('items.KeyUnit', on_delete=models.SET_NULL, null=True, blank=True,
                                     verbose_name='계약유닛', related_name='contract')
+    is_sup_cont = models.BooleanField('공급계약 체결여부', default=False)
+    sup_cont_date = models.DateField('공급계약 체결일', null=True, blank=True)
+    activation = models.BooleanField('계약 활성 여부', default=True)  # deprecated is_active 로 대체 예정
+    is_active = models.BooleanField('계약 활성 여부', default=True)
+    is_completed = models.BooleanField('계약 완료 여부', default=False)
     created = models.DateTimeField('등록일시', auto_now_add=True)
     updated = models.DateTimeField('편집일시', auto_now=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
@@ -408,8 +410,12 @@ class Contractor(models.Model):
     gender = models.CharField('성별', max_length=1, choices=GENDER_CHOICES, blank=True)
     QUA_CHOICES = (('1', '일반분양'), ('2', '미인가조합원'), ('3', '인가조합원'), ('4', '부적격조합원'))
     qualification = models.CharField('등록상태', max_length=1, choices=QUA_CHOICES, default='1')
-    STATUS_CHOICES = (('1', '청약'), ('2', '계약'), ('3', '청약 해지'), ('4', '계약 해지'), ('5', '양도 승계'))
-    status = models.CharField('계약상태', max_length=1, choices=STATUS_CHOICES)
+    OLD_STATUS_CHOICES = (('1', '청약'), ('2', '계약'), ('3', '청약 해지'), ('4', '계약 해지'), ('5', '양도 승계'))
+    status = models.CharField('계약상태', max_length=1, choices=OLD_STATUS_CHOICES)  # deprecated 삭제 예정
+    STATUS_CHOICES = (('1', '청약'), ('2', '계약'), ('3', '변경처리중'), ('4', '계약종결'))
+    now_status = models.CharField('계약자 상태', max_length=1, choices=(STATUS_CHOICES), default='1')
+    CHANGE_TYPE_CHOICES = (('1', '해지신청'), ('2', '부적격확인'), ('3', '승계신청'),)
+    change_type = models.CharField('변경 유형', max_length=1, choices=CHANGE_TYPE_CHOICES, null=True, blank=True)
     reservation_date = models.DateField('청약일자', null=True, blank=True)
     contract_date = models.DateField('계약일자', null=True, blank=True)
     is_active = models.BooleanField('유효계약자여부', default=True)
@@ -426,6 +432,21 @@ class Contractor(models.Model):
     def contractoraddress(self):
         """현주소 반환 (하위 호환성을 위한 프로퍼티)"""
         return self.addresses.filter(is_current=True).first()
+
+    def clean(self):
+        super().clean()
+        if self.now_status in ['3', '4']:
+            if not self.change_type:
+                status_display = self.get_now_status_display()
+                raise ValidationError({
+                    'change_type': f"상태가 '{status_display}'인 경우 변경 유형(change_type)을 등록해야 합니다."
+                })
+        else:
+            # now_status가 '1'(청약), '2'(계약)인 경우 change_type은 null이어야 함
+            if self.change_type is not None:
+                raise ValidationError({
+                    'change_type': f"상태가 '{self.get_now_status_display()}'인 경우 변경 유형(change_type)은 없어야(null) 합니다."
+                })
 
     class Meta:
         verbose_name = '06. 계약자 정보'
@@ -643,7 +664,14 @@ class Succession(models.Model):
     apply_date = models.DateField('승계신청일')
     trading_date = models.DateField('매매계약일')
     approval_date = models.DateField('변경인가일', null=True, blank=True)
-    is_approval = models.BooleanField('변경인가여부', default=False)
+    is_approval = models.BooleanField('변경인가여부', default=False)  # deprecated 삭제 예정
+    SUCCESSION_STATUS_CHOICES = (
+        ('1', '신청접수'),
+        ('2', '변경인가대기'),
+        ('3', '승계완료'),
+        ('9', '승계취소'),
+    )
+    status = models.CharField('상태', choices=SUCCESSION_STATUS_CHOICES, default='1')
     note = models.TextField('비고', blank=True)
     created = models.DateTimeField('등록일시', auto_now_add=True)
     updated = models.DateTimeField('편집일시', auto_now=True)

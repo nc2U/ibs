@@ -404,8 +404,34 @@ class ContractorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contractor
         fields = ('pk', 'contract', 'name', '__str__', 'birth_date', 'gender',
-                  'qualification', 'qualifi_display', 'status', 'reservation_date',
-                  'contract_date', 'is_active', 'note', 'succession', 'contractorrelease')
+                  'qualification', 'qualifi_display', 'status', 'now_status', 'change_type',
+                  'reservation_date', 'contract_date', 'is_active', 'note', 'succession', 'contractorrelease')
+
+    def validate(self, attrs):
+        instance = self.instance
+        now_status = attrs.get('now_status', instance.now_status if instance else '1')
+        
+        # 만약 'now_status'가 '1' 또는 '2'로 변경되는 상태라면 change_type을 null(None)로 명시하거나 비워두어야 함.
+        # 프론트엔드에서 편의상 명시적으로 지우지 않고 넘어오는 케이스를 대비하여, 
+        # API 단에서 null이 아닌 값으로 넘어온 경우 강제 반려 또는 null 초기화 처리할 수 있습니다.
+        # 여기서는 검증을 명확히 수행합니다.
+        change_type = attrs.get('change_type', instance.change_type if instance else None)
+
+        if now_status in ['3', '4']:
+            if not change_type:
+                status_display = "변경처리중" if now_status == '3' else "계약종결"
+                raise serializers.ValidationError({
+                    'change_type': f"상태가 '{status_display}'인 경우 변경유형(change_type)을 필수로 입력해야 합니다."
+                })
+        else:
+            # now_status가 '1'(청약) 또는 '2'(계약) 인 경우 change_type은 null 이어야 함
+            # (프론트에서 null로 보내지 않고 기존 값이 넘어왔다면 에러를 내어 명시적으로 지우게 유도합니다.)
+            if change_type is not None:
+                raise serializers.ValidationError({
+                    'change_type': f"상태가 '{'청약' if now_status == '1' else '계약'}'으로 복원될 때 변경유형(change_type)은 반드시 null(없음)이어야 합니다."
+                })
+            
+        return attrs
 
 
 class SimpleContractorSerializer(serializers.ModelSerializer):
