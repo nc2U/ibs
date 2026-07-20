@@ -409,16 +409,19 @@ class Contractor(models.Model):
     gender = models.CharField('성별', max_length=1, choices=GENDER_CHOICES, blank=True)
     QUA_CHOICES = (('1', '일반분양'), ('2', '미인가조합원'), ('3', '인가조합원'), ('4', '부적격조합원'))
     qualification = models.CharField('등록상태', max_length=1, choices=QUA_CHOICES, default='1')
+
     OLD_STATUS_CHOICES = (('1', '청약'), ('2', '계약'), ('3', '청약 해지'), ('4', '계약 해지'), ('5', '양도 승계'))
     status = models.CharField('계약상태', max_length=1, choices=OLD_STATUS_CHOICES)  # deprecated 삭제 예정
+
     STATUS_CHOICES = (('1', '청약'), ('2', '계약'), ('3', '변경처리중'), ('4', '계약종결'))
     now_status = models.CharField('계약자 상태', max_length=1, choices=(STATUS_CHOICES), default='1')
     CHANGE_TYPE_CHOICES = (('1', '해지신청'), ('2', '부적격확인'), ('3', '승계신청'),)
     change_type = models.CharField('변경 유형', max_length=1, choices=CHANGE_TYPE_CHOICES, null=True, blank=True)
+
     reservation_date = models.DateField('청약일자', null=True, blank=True)
     contract_date = models.DateField('계약일자', null=True, blank=True)
     is_active = models.BooleanField('유효계약자여부', default=True)
-    note = models.TextField('비고', blank=True)
+    note = models.TextField('비고', blank=True, default='')
     created = models.DateTimeField('등록일시', auto_now_add=True)
     updated = models.DateTimeField('편집일시', auto_now=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,

@@ -153,7 +153,7 @@ class ContractorInContractSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contractor
         fields = ('pk', 'name', 'birth_date', 'gender', 'qualification', 'qualifi_display',
-                  'contractoraddress', 'contractorcontact', 'status',
+                  'contractoraddress', 'contractorcontact', 'status', 'now_status', 'change_type',
                   'reservation_date', 'contract_date', 'is_active', 'note')
 
 
