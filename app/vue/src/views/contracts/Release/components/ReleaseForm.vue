@@ -122,8 +122,8 @@ watch([() => props.release, () => props.contractor], () => formDataSet(), { deep
             <CFormLabel class="col-sm-4 col-form-label required">진행상태</CFormLabel>
             <CCol sm="8" class="text-left">
               <CFormSelect v-model="form.new_status" required>
-                <option value="1">신청접수</option>
-                <option value="2">해지승인</option>
+                <option value="1">접수등록</option>
+                <option value="2">해지승인대기</option>
                 <option value="3">변경인가대기</option>
                 <option value="4">해지확정</option>
                 <option value="9">신청취소</option>

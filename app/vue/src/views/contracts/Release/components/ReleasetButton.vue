@@ -19,7 +19,7 @@ const callFormModal = () => emit('call-form', props.contractor.pk)
 <template>
   <CAlert :color="AlertLight" variant="solid" class="text-right">
     <v-btn
-      :color="contRelease ? 'secondary' : 'warning'"
+      :color="contRelease ? 'brown-lighten-2' : 'warning'"
       :disabled="isSuccession"
       @click="callFormModal"
     >

@@ -695,8 +695,8 @@ class ContractorRelease(models.Model):
     OLD_STATUS_CHOICES = (('0', '신청 취소'), ('3', '해지 신청'), ('4', '해지 완료'), ('5', '자격 상실'))
     status = models.CharField('상태', choices=OLD_STATUS_CHOICES, max_length=1)
     STATUS_CHOICES = (
-        ('1', '신청접수'),
-        ('2', '해지승인'),
+        ('1', '접수등록'),
+        ('2', '해지승인대기'),
         ('3', '변경인가대기'),
         ('4', '해지확정'),
         ('9', '신청취소'),

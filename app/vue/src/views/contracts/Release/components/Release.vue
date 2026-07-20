@@ -15,8 +15,8 @@ const releaseTypeLabel = computed(() => {
 
 const statusLabel = computed(() => {
   const statusMap: Record<string, string> = {
-    '1': '신청접수',
-    '2': '해지승인',
+    '1': '접수등록',
+    '2': '해지승인대기',
     '3': '변경인가대기',
     '4': '해지확정',
     '9': '신청취소',
