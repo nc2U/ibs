@@ -96,8 +96,8 @@ const formsCheck = computed(() => {
 })
 
 const contStore = useContract()
-const contractor = computed<Contractor>(() => contStore.contractor)
 const contract = computed<Contract | null>(() => contStore.contract)
+const contractor = computed<Contractor | null>(() => contStore.contractor)
 
 const statusOptions = computed(() => {
   const isGeneral = contract.value?.order_group_sort === '2'
@@ -576,13 +576,10 @@ watch([() => props.succession, contractor], () => formDataSet(), { deep: true })
 
   <DaumPostcode ref="postCode" @address-callback="addressCallback" />
 
-  <ConfirmModal ref="refConfirmModal">
+  <ConfirmModal ref="refConfirmModal" @confirm-func="modalAction">
     <template #header> 권리 의무 승계 정보 - [삭제]</template>
     <template #default>
       삭제 후 복구할 수 없습니다. 해당 권리 의무 승계 정보 삭제를 진행하시겠습니까?
-    </template>
-    <template #footer>
-      <v-btn color="warning" size="small" @click="modalAction">삭제</v-btn>
     </template>
   </ConfirmModal>
 
