@@ -204,12 +204,12 @@ class ContractDocumentInline(admin.TabularInline):
 @admin.register(Contractor)
 class ContactorAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('id', 'name', 'contract', 'birth_date', 'gender', 'qualification', 'status',
-                    'is_active', 'reservation_date', 'contract_date', 'created')
+                    'now_status', 'change_type', 'is_active', 'reservation_date', 'contract_date', 'created')
     search_fields = ('name',)
     list_display_links = ('name',)
     list_filter = ('contract__project', 'contract__order_group', 'contract__unit_type',
                    'contract_date', 'gender', 'qualification', 'status')
-    list_editable = ('gender', 'qualification', 'is_active')
+    list_editable = ('gender', 'qualification', 'now_status', 'change_type', 'is_active')
     inlines = (CContactInline, CAdressInline, ContractFileAdmin, ContractDocumentInline)
 
     def save_model(self, request, obj, form, change):
