@@ -670,7 +670,7 @@ class Succession(models.Model):
         ('4', '승계취소'),
     )
     status = models.CharField('상태', choices=SUCCESSION_STATUS_CHOICES, default='1')
-    note = models.TextField('비고', blank=True)
+    note = models.TextField('비고', blank=True, default='')
     created = models.DateTimeField('등록일시', auto_now_add=True)
     updated = models.DateTimeField('편집일시', auto_now=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
@@ -708,7 +708,7 @@ class ContractorRelease(models.Model):
     refund_account_depositor = models.CharField('환불계좌(예금주)', max_length=20, null=True, blank=True)
     request_date = models.DateField('해지신청일')
     completion_date = models.DateField('해지(환불)처리일', null=True, blank=True)
-    note = models.TextField('비고', blank=True)
+    note = models.TextField('비고', blank=True, default='')
     created = models.DateTimeField('등록일시', auto_now_add=True)
     updated = models.DateTimeField('편집일시', auto_now=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
