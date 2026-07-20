@@ -1,6 +1,5 @@
 <script lang="ts" setup>
-import { ref, reactive, computed, watch, onBeforeMount, type PropType } from 'vue'
-import { btnLight } from '@/utils/cssMixins.ts'
+import { computed, onBeforeMount, type PropType, reactive, ref, watch } from 'vue'
 import { write_contract } from '@/utils/pageAuth'
 import { isValidate } from '@/utils/helper'
 import { type Contractor, type ContractRelease } from '@/store/types/contract'
@@ -9,8 +8,8 @@ import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
 const props = defineProps({
-  release: { type: Object as PropType<ContractRelease>, default: null },
-  contractor: { type: Object as PropType<Contractor>, default: null },
+  release: { type: Object as PropType<ContractRelease>, default: () => null },
+  contractor: { type: Object as PropType<Contractor>, default: () => null },
 })
 
 const emit = defineEmits(['on-submit', 'close'])
@@ -87,7 +86,12 @@ watch([() => props.release, () => props.contractor], () => formDataSet(), { deep
 </script>
 
 <template>
-  <CForm class="needs-validation" novalidate :validated="validated" @submit.prevent="onSubmit">
+  <CForm
+    class="needs-validation text-body"
+    novalidate
+    :validated="validated"
+    @submit.prevent="onSubmit"
+  >
     <CModalBody class="p-4">
       <CRow class="mb-2">
         <CCol xs="6">

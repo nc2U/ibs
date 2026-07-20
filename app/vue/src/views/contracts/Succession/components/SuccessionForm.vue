@@ -3,7 +3,12 @@ import { computed, nextTick, onBeforeMount, type PropType, reactive, ref, watch 
 import { write_contract } from '@/utils/pageAuth'
 import { isValidate } from '@/utils/helper'
 import { useContract } from '@/store/pinia/contract'
-import { type BuyerForm, type Succession } from '@/store/types/contract'
+import {
+  type BuyerForm,
+  type Contract,
+  type Contractor,
+  type Succession,
+} from '@/store/types/contract'
 import { type AddressData, callAddress } from '@/components/DaumPostcode/address'
 import DaumPostcode from '@/components/DaumPostcode/index.vue'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
@@ -11,7 +16,7 @@ import AlertModal from '@/components/Modals/AlertModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 const props = defineProps({
-  succession: { type: Object as PropType<Succession>, default: null },
+  succession: { type: Object as PropType<Succession>, default: () => null },
   isSuccession: { type: Boolean, default: false },
 })
 
@@ -91,8 +96,8 @@ const formsCheck = computed(() => {
 })
 
 const contStore = useContract()
-const contractor = computed(() => contStore.contractor)
-const contract = computed(() => contStore.contract)
+const contractor = computed<Contractor>(() => contStore.contractor)
+const contract = computed<Contract | null>(() => contStore.contract)
 
 const statusOptions = computed(() => {
   const isGeneral = contract.value?.order_group_sort === '2'
@@ -216,7 +221,12 @@ watch([() => props.succession, contractor], () => formDataSet(), { deep: true })
 </script>
 
 <template>
-  <CForm class="needs-validation" novalidate :validated="validated" @submit.prevent="onSubmit">
+  <CForm
+    class="needs-validation text-body"
+    novalidate
+    :validated="validated"
+    @submit.prevent="onSubmit"
+  >
     <CModalBody class="p-4">
       <CRow class="mb-2">
         <CCol xs="6">
