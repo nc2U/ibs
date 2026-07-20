@@ -362,15 +362,72 @@ class CompanyCompositeTransactionSerializer(serializers.Serializer):
             if company_id:
                 cal = CompanyLedgerCalculation.objects.get(company_id=company_id)
                 if cal.calculated:
-                    deal_date = attrs.get('deal_date', instance.deal_date if instance else None)
-                    if deal_date and deal_date <= cal.calculated:
-                        raise serializers.ValidationError({
-                            'deal_date': f'정산 마감일({cal.calculated}) 이전 날짜로 거래를 생성하거나 수정할 수 없습니다.'
-                        })
-                    if instance and instance.deal_date <= cal.calculated:
-                        raise serializers.ValidationError({
-                            'deal_date': f'정산 마감일({cal.calculated}) 이전의 기존 거래는 수정할 수 없습니다.'
-                        })
+                    # 계정(account)만 변경되는 경우인지 판별
+                    is_only_account_changed = False
+                    if is_update:
+                        # 검증할 주요 필드들 중 변경된 것이 있는지 확인
+                        # (거래일자, 금액, 구분, 은행계좌, 내용, 비고, 관계회사, 거래처 등 중요 정보)
+                        tx_changed = (
+                                ('deal_date' in attrs and attrs['deal_date'] != instance.deal_date) or
+                                ('amount' in attrs and attrs['amount'] != instance.amount) or
+                                ('sort' in attrs and attrs['sort'] != instance.sort_id) or
+                                ('bank_account' in attrs and attrs['bank_account'] != instance.bank_account_id) or
+                                ('content' in attrs and attrs['content'] != instance.content) or
+                                ('note' in attrs and attrs['note'] != instance.note)
+                        )
+
+                        # 분개 정보 변경 확인
+                        entries_data = attrs.get('accounting_entries', [])
+                        entry_important_changed = False
+                        entry_account_changed = False
+
+                        # 들어온 entries_data 분석
+                        for entry_data in entries_data:
+                            pk = entry_data.get('pk')
+                            if pk:
+                                try:
+                                    existing_entry = instance.accounting_entries.get(pk=pk)
+                                    # 계정 이외의 중요 정보가 변경되는지 검사
+                                    if (
+                                            ('amount' in entry_data and entry_data[
+                                                'amount'] != existing_entry.amount) or
+                                            ('trader' in entry_data and entry_data[
+                                                'trader'] != existing_entry.trader) or
+                                            ('evidence_type' in entry_data and entry_data[
+                                                'evidence_type'] != existing_entry.evidence_type) or
+                                            ('affiliate' in entry_data and entry_data[
+                                                'affiliate'] != existing_entry.affiliate_id)
+                                    ):
+                                        entry_important_changed = True
+                                    if 'account' in entry_data and entry_data['account'] != existing_entry.account_id:
+                                        entry_account_changed = True
+                                except instance.accounting_entries.model.DoesNotExist:
+                                    entry_important_changed = True  # 존재하지 않는 pk
+                            else:
+                                # 신규 분개 추가가 있는 경우 중요 변경으로 간주
+                                entry_important_changed = True
+
+                        # PUT 요청의 경우, entries_data에 명시되지 않은 기존 분개가 삭제될 수 있음
+                        if not self.partial:
+                            existing_pks = [entry.pk for entry in instance.accounting_entries.all()]
+                            incoming_pks = {e.get('pk') for e in entries_data if e.get('pk')}
+                            pks_to_delete = set(existing_pks) - incoming_pks
+                            if pks_to_delete:
+                                entry_important_changed = True
+
+                        if not tx_changed and not entry_important_changed and entry_account_changed:
+                            is_only_account_changed = True
+
+                    if not is_only_account_changed:
+                        deal_date = attrs.get('deal_date', instance.deal_date if instance else None)
+                        if deal_date and deal_date <= cal.calculated:
+                            raise serializers.ValidationError({
+                                'deal_date': f'정산 마감일({cal.calculated}) 이전 날짜로 거래를 생성하거나 수정할 수 없습니다.'
+                            })
+                        if instance and instance.deal_date <= cal.calculated:
+                            raise serializers.ValidationError({
+                                'deal_date': f'정산 마감일({cal.calculated}) 이전의 기존 거래는 수정할 수 없습니다.'
+                            })
         except CompanyLedgerCalculation.DoesNotExist:
             pass
 
@@ -602,15 +659,74 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
             if project_id:
                 cal = ProjectLedgerCalculation.objects.get(project_id=project_id)
                 if cal.calculated:
-                    deal_date = attrs.get('deal_date', instance.deal_date if instance else None)
-                    if deal_date and deal_date <= cal.calculated:
-                        raise serializers.ValidationError({
-                            'deal_date': f'정산 마감일({cal.calculated}) 이전 날짜로 거래를 생성하거나 수정할 수 없습니다.'
-                        })
-                    if instance and instance.deal_date <= cal.calculated:
-                        raise serializers.ValidationError({
-                            'deal_date': f'정산 마감일({cal.calculated}) 이전의 기존 거래는 수정할 수 없습니다.'
-                        })
+                    # 계정(account)만 변경되는 경우인지 판별
+                    is_only_account_changed = False
+                    if is_update:
+                        # 검증할 주요 필드들 중 변경된 것이 있는지 확인
+                        tx_changed = (
+                                ('deal_date' in attrs and attrs['deal_date'] != instance.deal_date) or
+                                ('amount' in attrs and attrs['amount'] != instance.amount) or
+                                ('sort' in attrs and attrs['sort'] != instance.sort_id) or
+                                ('bank_account' in attrs and attrs['bank_account'] != instance.bank_account_id) or
+                                ('content' in attrs and attrs['content'] != instance.content) or
+                                ('note' in attrs and attrs['note'] != instance.note)
+                        )
+
+                        # 분개 정보 변경 확인
+                        entries_data = attrs.get('accounting_entries', [])
+                        entry_important_changed = False
+                        entry_account_changed = False
+
+                        # 들어온 entries_data 분석
+                        for entry_data in entries_data:
+                            pk = entry_data.get('pk')
+                            if pk:
+                                try:
+                                    existing_entry = instance.accounting_entries.get(pk=pk)
+                                    # 계정 이외의 중요 정보가 변경되는지 검사
+                                    if (
+                                            ('amount' in entry_data and entry_data[
+                                                'amount'] != existing_entry.amount) or
+                                            ('trader' in entry_data and entry_data[
+                                                'trader'] != existing_entry.trader) or
+                                            ('evidence_type' in entry_data and entry_data[
+                                                'evidence_type'] != existing_entry.evidence_type) or
+                                            # ('contract' in entry_data and entry_data['contract'] != existing_entry.contract_id) or
+                                            # ('contractor' in entry_data and entry_data['contractor'] != existing_entry.contractor_id) or
+                                            ('installment_order' in entry_data and entry_data['installment_order'] != (
+                                            existing_entry.contract_payment.installment_order_id if hasattr(
+                                                existing_entry, 'contract_payment') else None))
+                                    ):
+                                        entry_important_changed = True
+                                    if 'account' in entry_data and entry_data['account'] != existing_entry.account_id:
+                                        entry_account_changed = True
+                                except instance.accounting_entries.model.DoesNotExist:
+                                    entry_important_changed = True  # 존재하지 않는 pk
+                            else:
+                                # 신규 분개 추가가 있는 경우 중요 변경으로 간주
+                                entry_important_changed = True
+
+                        # PUT 요청의 경우, entries_data에 명시되지 않은 기존 분개가 삭제될 수 있음
+                        if not self.partial:
+                            existing_pks = [entry.pk for entry in instance.accounting_entries.all()]
+                            incoming_pks = {e.get('pk') for e in entries_data if e.get('pk')}
+                            pks_to_delete = set(existing_pks) - incoming_pks
+                            if pks_to_delete:
+                                entry_important_changed = True
+
+                        if not tx_changed and not entry_important_changed and entry_account_changed:
+                            is_only_account_changed = True
+
+                    if not is_only_account_changed:
+                        deal_date = attrs.get('deal_date', instance.deal_date if instance else None)
+                        if deal_date and deal_date <= cal.calculated:
+                            raise serializers.ValidationError({
+                                'deal_date': f'정산 마감일({cal.calculated}) 이전 날짜로 거래를 생성하거나 수정할 수 없습니다.'
+                            })
+                        if instance and instance.deal_date <= cal.calculated:
+                            raise serializers.ValidationError({
+                                'deal_date': f'정산 마감일({cal.calculated}) 이전의 기존 거래는 수정할 수 없습니다.'
+                            })
         except ProjectLedgerCalculation.DoesNotExist:
             pass
 
@@ -638,7 +754,7 @@ class ProjectCompositeTransactionSerializer(serializers.Serializer):
             # 수정 모드: 같은 transaction_id를 가진 모든 기존 분개 포함
             # account.is_payment=False인 분개(읽기 전용)도 합계에 포함해야 함
             for pk, amount in ProjectAccountingEntry.objects.filter(
-                transaction_id=instance.transaction_id
+                    transaction_id=instance.transaction_id
             ).values_list('pk', 'amount'):
                 final_entry_amounts[pk] = amount
 
