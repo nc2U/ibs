@@ -164,10 +164,12 @@ export interface Contractor {
   __str__: string
   birth_date: string
   gender: 'M' | 'F' | ''
-  qualification: '1' | '2' | '3' | '4' | ''
-  qualifi_display: '일반분양' | '미인가' | '인가' | '부적격'
-  status: '1' | '2' | '3' | '4' | '5' | ''
+  qualification: '1' | '2' | '3' | ''
+  qualifi_display: '일반분양' | '미인가조합원' | '인가조합원'
+  status: '1' | '2' | '3' | '4' | ''
+  status_display: '청약' | '계약' | '변경처리중' | '계약종결'
   change_type: '1' | '2' | '3' | null
+  change_type_display: '해지신청' | '부적격확인' | '승계신청'
   reservation_date: string | null
   contract_date: string | null
   is_active: boolean
@@ -318,7 +320,7 @@ export interface Succession {
   buyer: Buyer
   apply_date: string
   trading_date: string
-  status: '1' | '2' | '3' | '9'
+  status: '1' | '2' | '3' | '9' // '1': '신청접수', '2': '변경인가대기','3': '승계완료', '9': '승계취소'
   approval_date: string | null
   note: string
 }

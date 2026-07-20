@@ -151,21 +151,9 @@ const deleteFile = async () => {
 }
 
 // 자격구분 색상
-const getQualificationColor = (q: '1' | '2' | '3' | '4' | '') => {
+const getQualificationColor = (q: '1' | '2' | '3' | '') => {
   if (!q) return 'secondary'
-  return { '1': 'info', '2': 'warning', '3': 'success', '4': 'danger' }[q]
-}
-
-// 계약자 상태 텍스트
-const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
-  if (!status) return '-'
-  return {
-    '1': '청약',
-    '2': '계약',
-    '3': '해지',
-    '4': '승계(매도)',
-    '5': '승계(매수)',
-  }[status]
+  return { '1': 'info', '2': 'warning', '3': 'success' }[q]
 }
 </script>
 
@@ -274,7 +262,15 @@ const getStatusText = (status: '1' | '2' | '3' | '4' | '5' | '') => {
         <CRow>
           <CCol :sm="6">
             <strong>상태 :</strong>
-            <span class="ml-2">{{ getStatusText(contractor.status) }}</span>
+            <span
+              class="ml-2 strong"
+              :class="contractor.status !== '1' ? 'text-muted underline' : 'text-primary'"
+            >
+              {{ contractor.status_display }}
+            </span>
+            <CBadge v-if="contractor.change_type" color="danger" class="ml-2">
+              {{ contractor.change_type_display }}
+            </CBadge>
           </CCol>
           <CCol :sm="6">
             <strong>청약일 :</strong>

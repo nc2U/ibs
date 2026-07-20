@@ -663,12 +663,7 @@ class Succession(models.Model):
     apply_date = models.DateField('승계신청일')
     trading_date = models.DateField('매매계약일')
     approval_date = models.DateField('변경인가일', null=True, blank=True)
-    SUCCESSION_STATUS_CHOICES = (
-        ('1', '신청접수'),
-        ('2', '변경인가대기'),
-        ('3', '승계완료'),
-        ('9', '승계취소'),
-    )
+    SUCCESSION_STATUS_CHOICES = (('2', '변경인가대기'), ('3', '승계완료'), ('9', '승계취소'))
     status = models.CharField('상태', choices=SUCCESSION_STATUS_CHOICES, default='1')
     note = models.TextField('비고', blank=True, default='')
     created = models.DateTimeField('등록일시', auto_now_add=True)
@@ -694,13 +689,7 @@ class ContractorRelease(models.Model):
     release_type = models.CharField('해지 유형', choices=RELEASE_TYPE_CHOICES, max_length=1, default='1')
     OLD_STATUS_CHOICES = (('0', '신청 취소'), ('3', '해지 신청'), ('4', '해지 완료'), ('5', '자격 상실'))
     status = models.CharField('상태', choices=OLD_STATUS_CHOICES, max_length=1)
-    STATUS_CHOICES = (
-        ('1', '접수등록'),
-        ('2', '해지승인대기'),
-        ('3', '변경인가대기'),
-        ('4', '해지확정'),
-        ('9', '신청취소'),
-    )
+    STATUS_CHOICES = (('1', '접수등록'), ('2', '해지승인대기'), ('3', '변경인가대기'), ('4', '해지확정'), ('9', '신청취소'))
     new_status = models.CharField('새 상태', choices=STATUS_CHOICES, max_length=1, default='1')
     refund_amount = models.PositiveIntegerField('환불(예정)금액', null=True, blank=True)
     refund_account_bank = models.CharField('환불계좌(은행)', max_length=20, null=True, blank=True)

@@ -246,7 +246,8 @@ class ContractSetSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contract
         fields = ('pk', 'project', 'order_group_sort', 'order_group', 'unit_type', 'unit_type_desc',
-                  'serial_number', 'is_active', 'is_completed', 'is_sup_cont', 'sup_cont_date', 'key_unit', 'contractprice',
+                  'serial_number', 'is_active', 'is_completed', 'is_sup_cont', 'sup_cont_date', 'key_unit',
+                  'contractprice',
                   'contractor', 'payments', 'last_paid_order', 'total_paid', 'order_group_desc', 'contract_files',
                   'updator')
 
@@ -398,13 +399,15 @@ class SuccessionInContractorSerializer(serializers.ModelSerializer):
 
 class ContractorSerializer(serializers.ModelSerializer):
     qualifi_display = serializers.CharField(source='get_qualification_display', read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    change_type_display = serializers.CharField(source='get_change_type_display', read_only=True)
     succession = SuccessionInContractorSerializer(source='curr_contractor', read_only=True)
     contractorrelease = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = Contractor
-        fields = ('pk', 'contract', 'name', '__str__', 'birth_date', 'gender',
-                  'qualification', 'qualifi_display', 'status', 'change_type',
+        fields = ('pk', 'contract', 'name', '__str__', 'birth_date', 'gender', 'qualification',
+                  'qualifi_display', 'status', 'status_display', 'change_type', 'change_type_display',
                   'reservation_date', 'contract_date', 'is_active', 'note', 'succession', 'contractorrelease')
 
     def validate(self, attrs):
