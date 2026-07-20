@@ -329,10 +329,10 @@ class ContractorConsultationLogsAdmin(ImportExportMixin, admin.ModelAdmin):
 @admin.register(Succession)
 class SuccessionAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('pk', 'contract', 'seller', 'buyer', 'apply_date', 'trading_date',
-                    'is_approval', 'approval_date', 'creator')
+                    'status', 'approval_date', 'creator')
     search_fields = ('seller', 'buyer')
     list_display_links = ('contract', 'seller', 'buyer')
-    list_editable = ('is_approval', 'approval_date')
+    list_editable = ('status', 'approval_date')
 
 
 @admin.register(ContractorRelease)

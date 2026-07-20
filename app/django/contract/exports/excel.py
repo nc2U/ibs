@@ -293,7 +293,7 @@ class ExportSuccessions(ExcelExportMixin):
                       ['승계신청일', 'apply_date', 15],
                       ['매매계약일', 'trading_date', 15],
                       ['변경인가일', 'approval_date', 15],
-                      ['변경인가여부', 'is_approval', 13],
+                      ['상태', 'status', 13],
                       ['비고', 'note', 45]]
 
         # 1. Title
@@ -354,7 +354,8 @@ class ExportSuccessions(ExcelExportMixin):
                 else:
                     body_format['num_format'] = 'yyyy-mm-dd'
                 if col_num == 7:
-                    cell_data = '완료' if cell_data else ''
+                    status_dict = {'1': '신청접수', '2': '변경인가대기', '3': '승계완료', '4': '승계취소'}
+                    cell_data = status_dict.get(cell_data, '')
                 if col_num == 8:
                     body_format['align'] = 'left'
                 else:

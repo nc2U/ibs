@@ -393,7 +393,7 @@ class ContractInContractorSerializer(serializers.ModelSerializer):
 class SuccessionInContractorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Succession
-        fields = ('pk', 'is_approval')
+        fields = ('pk', 'status')
 
 
 class ContractorSerializer(serializers.ModelSerializer):
@@ -589,7 +589,7 @@ class SuccessionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Succession
         fields = ('pk', 'contract', 'seller', 'buyer', 'apply_date',
-                  'trading_date', 'is_approval', 'approval_date', 'note', 'updator')
+                  'trading_date', 'status', 'approval_date', 'note', 'updator')
 
     @transaction.atomic
     def create(self, validated_data):
@@ -699,7 +699,7 @@ class SuccessionSerializer(serializers.ModelSerializer):
         qua_false = '1' if contract.order_group.sort == '2' else '2'  # 일반분양이면 일반('1') 조합이면 미인가('2')
 
         seller = instance.seller
-        if instance.is_approval is True:  # 변경인가 완료로 변경 시 (승계 완료 확정)
+        if instance.status == '3':  # 변경인가 완료 / 승계 완료 확정 시
             # 매도인 확정 처리
             seller.contract = None
             seller.prev_contract = contract
@@ -714,8 +714,23 @@ class SuccessionSerializer(serializers.ModelSerializer):
             buyer.change_type = None
             buyer.is_active = True
             buyer.qualification = qua_true
-        else:  # 변경인가 진행중으로 변경 시 (신청 대기 상태 롤백)
-            # 매도인 상태 복원
+        elif instance.status == '4':  # 승계 취소 처리
+            # 매도인 상태 복원 (일반적인 정상 계약 상태)
+            seller.contract = contract
+            seller.prev_contract = None
+            seller.status = '2'  # 계약
+            seller.change_type = None
+            seller.is_active = True
+            seller.qualification = qua_true
+
+            # 매수인 상태 복원 (비활성화 계약종결)
+            buyer.contract = None
+            buyer.status = '4'  # 계약종결
+            buyer.change_type = '3'  # 승계신청
+            buyer.is_active = False
+            buyer.qualification = qua_false
+        else:  # 신청접수(1) 또는 변경인가대기(2) 상태 (대기 상태)
+            # 매도인 대기 상태
             seller.contract = contract
             seller.prev_contract = None
             seller.status = '3'  # 변경처리중
@@ -723,7 +738,7 @@ class SuccessionSerializer(serializers.ModelSerializer):
             seller.is_active = True
             seller.qualification = qua_true
 
-            # 매수인 상태 복원
+            # 매수인 대기 상태
             buyer.contract = None
             buyer.status = '3'  # 변경처리중
             buyer.change_type = '3'  # 승계신청
@@ -745,7 +760,7 @@ class ContractorReleaseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ContractorRelease
-        fields = ('pk', 'project', 'contractor', '__str__', 'status', 'refund_amount',
+        fields = ('pk', 'project', 'contractor', '__str__', 'release_type', 'status', 'new_status', 'refund_amount',
                   'refund_account_bank', 'refund_account_number', 'refund_account_depositor',
                   'request_date', 'completion_date', 'note', 'updator')
 
@@ -754,14 +769,24 @@ class ContractorReleaseSerializer(serializers.ModelSerializer):
         """
         계약자 해지 정보 업데이트
 
-        해지 최종 완결 처리(status 4 또는 5)는 ContractorReleaseService에 위임
+        해지 최종 완결 처리(new_status == '4')는 ContractorReleaseService에 위임
+        기존 status 필드와의 하위 호환성을 위해 상태 동기화 처리
         """
 
-        released_done = instance.status in ('4', '5')  # 이미 해지 완결 여부
-        new_status = validated_data.get('status')
+        released_done = instance.new_status == '4'  # 이미 해지 완결 여부
+        new_status = validated_data.get('new_status', instance.new_status)
+        release_type = validated_data.get('release_type', instance.release_type)
 
-        # 미완료 → 최종 완결 (처리완료:4 또는 자격상실:5)로 변경
-        if not released_done and new_status in ('4', '5'):
+        # 신구 상태 필드 동기화 맵핑
+        if new_status == '4':
+            validated_data['status'] = '5' if release_type == '2' else '4'
+        elif new_status == '0':
+            validated_data['status'] = '0'
+        else:
+            validated_data['status'] = '3'
+
+        # 미완료 → 최종 완결 (해지확정:4)로 변경
+        if not released_done and new_status == '4':
             completion_date = self.initial_data.get('completion_date')
 
             # Service로 해지 처리 위임

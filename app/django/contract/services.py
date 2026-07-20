@@ -1022,7 +1022,7 @@ class ContractorReleaseService:
         result['payments_refunded'] = refund_count
 
         # 6. 계약자 최종 해지 상태로 변경
-        ContractorReleaseService._update_contractor_status(contractor, contract)
+        ContractorReleaseService._update_contractor_status(contractor, contract, contractor_release)
         result['contractor_updated'] = True
 
         return result
@@ -1154,7 +1154,7 @@ class ContractorReleaseService:
             bank_tx.save()
 
     @staticmethod
-    def _update_contractor_status(contractor, contract):
+    def _update_contractor_status(contractor, contract, contractor_release):
         """계약자 최종 해지 상태로 변경"""
         contractor.prev_contract = contract
         contractor.contract = None
@@ -1163,6 +1163,6 @@ class ContractorReleaseService:
             contractor.qualification = '2'  # 인가 등록 취소
 
         contractor.is_active = False  # 비활성 상태로 변경
-        contractor.now_status = '4'  # 계약종결로 변경
-        contractor.change_type = '1'  # 해지신청으로 변경
+        contractor.status = '4'  # 계약종결로 변경
+        contractor.change_type = contractor_release.release_type  # ContractorRelease의 해지유형으로 대입
         contractor.save()
