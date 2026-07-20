@@ -286,7 +286,7 @@ export interface ConsultationLogPagination {
 
 interface SimpleSuccession {
   pk: number
-  is_approval: boolean
+  status: '1' | '2' | '3' | '9'
 }
 
 export interface SubsSummary {
@@ -314,7 +314,7 @@ export interface Succession {
   buyer: Buyer
   apply_date: string
   trading_date: string
-  is_approval: boolean
+  status: '1' | '2' | '3' | '9'
   approval_date: string | null
   note: string
 }

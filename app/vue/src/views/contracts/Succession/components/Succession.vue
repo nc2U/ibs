@@ -11,8 +11,18 @@ const props = defineProps({
 })
 const emit = defineEmits(['call-form', 'done-alert'])
 
-const done = computed(() => props.succession?.is_approval)
+const done = computed(() => props.succession?.status === '3')
 const buttonColor = computed(() => (!done.value ? 'success' : 'secondary'))
+
+const statusLabel = computed(() => {
+  const statusMap: Record<string, string> = {
+    '1': '신청접수',
+    '2': '변경인가대기',
+    '3': '승계완료',
+    '9': '승계취소',
+  }
+  return statusMap[props.succession?.status] || ''
+})
 
 const callFormModal = () => {
   if (!done.value) {
@@ -53,7 +63,7 @@ const callFormModal = () => {
     {{ succession.approval_date }}
   </CTableDataCell>
   <CTableDataCell class="text-primary text-center fw-bold">
-    {{ done ? '완료' : '' }}
+    {{ statusLabel }}
   </CTableDataCell>
   <CTableDataCell class="text-center">
     <v-btn type="button" :color="buttonColor" size="x-small" @click="callFormModal"> 확인</v-btn>

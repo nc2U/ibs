@@ -1,6 +1,5 @@
 <script lang="ts" setup>
-import { ref, reactive, computed, onBeforeMount, nextTick, type PropType } from 'vue'
-import { btnLight } from '@/utils/cssMixins.ts'
+import { computed, nextTick, onBeforeMount, type PropType, reactive, ref, watch } from 'vue'
 import { write_contract } from '@/utils/pageAuth'
 import { isValidate } from '@/utils/helper'
 import { useContract } from '@/store/pinia/contract'
@@ -34,7 +33,7 @@ const form = reactive({
   buyer: null as number | null,
   apply_date: '',
   trading_date: '',
-  is_approval: false,
+  status: '1',
   approval_date: null as string | null,
   note: '',
 })
@@ -63,7 +62,7 @@ const formsCheck = computed(() => {
     const b = form.buyer === props.succession.buyer.pk
     const c = form.apply_date === props.succession.apply_date
     const d = form.trading_date === props.succession.trading_date
-    const e = form.is_approval === props.succession.is_approval
+    const e = form.status === props.succession.status
     const f = form.approval_date === props.succession.approval_date
     const g = form.note === props.succession.note
     const h = buyer_data.name === props.succession.buyer.name
@@ -93,6 +92,24 @@ const formsCheck = computed(() => {
 
 const contStore = useContract()
 const contractor = computed(() => contStore.contractor)
+const contract = computed(() => contStore.contract)
+
+const statusOptions = computed(() => {
+  const isGeneral = contract.value?.order_group_sort === '2'
+  if (isGeneral) {
+    return [
+      { value: '1', label: '신청접수' },
+      { value: '3', label: '승계완료' },
+      { value: '9', label: '승계취소' },
+    ]
+  }
+  return [
+    { value: '1', label: '신청접수' },
+    { value: '2', label: '변경인가대기' },
+    { value: '3', label: '승계완료' },
+    { value: '9', label: '승계취소' },
+  ]
+})
 
 const seller = computed(() => ({
   pk: props.isSuccession ? props.succession.seller.pk : contractor.value?.pk,
@@ -149,9 +166,9 @@ const toSame = () => {
   }
 }
 
-const chkApproval = () => {
+const chkStatus = () => {
   nextTick(() => {
-    if (!form.is_approval) form.approval_date = null
+    if (form.status !== '3') form.approval_date = null
   })
 }
 
@@ -164,7 +181,7 @@ const formDataSet = () => {
     form.buyer = buyer.pk as number
     form.apply_date = props.succession.apply_date
     form.trading_date = props.succession.trading_date
-    form.is_approval = props.succession.is_approval
+    form.status = props.succession.status
     form.approval_date = props.succession.approval_date
     form.note = props.succession.note
 
@@ -194,6 +211,8 @@ const formDataSet = () => {
 }
 
 onBeforeMount(() => formDataSet())
+
+watch([() => props.succession, contractor], () => formDataSet(), { deep: true })
 </script>
 
 <template>
@@ -478,15 +497,18 @@ onBeforeMount(() => formDataSet())
       <CRow class="mb-2">
         <CCol xs="6">
           <CRow>
-            <CFormLabel class="col-sm-4 col-form-label"> 변경인가여부</CFormLabel>
-            <CCol sm="8" class="pt-2">
-              <CFormSwitch
-                id="isApproval"
-                v-model="form.is_approval"
+            <CFormLabel class="col-sm-4 col-form-label">진행상태</CFormLabel>
+            <CCol sm="8">
+              <CFormSelect
+                id="status"
+                v-model="form.status"
                 :disabled="!succession"
-                label="변경인가완료"
-                @change="chkApproval"
-              />
+                @change="chkStatus"
+              >
+                <option v-for="opt in statusOptions" :key="opt.value" :value="opt.value">
+                  {{ opt.label }}
+                </option>
+              </CFormSelect>
             </CCol>
           </CRow>
         </CCol>
@@ -497,8 +519,8 @@ onBeforeMount(() => formDataSet())
             <CCol sm="8">
               <DatePicker
                 v-model="form.approval_date"
-                :required="form.is_approval"
-                :disabled="!form.is_approval"
+                :required="form.status === '3'"
+                :disabled="form.status !== '3'"
                 placeholder="변경인가일"
               />
             </CCol>
@@ -519,7 +541,6 @@ onBeforeMount(() => formDataSet())
     </CModalBody>
 
     <CModalFooter>
-      <v-btn type="button" size="small" :color="btnLight" @click="emit('close')"> 닫기</v-btn>
       <slot name="footer">
         <v-btn
           type="submit"
@@ -538,6 +559,7 @@ onBeforeMount(() => formDataSet())
         >
           삭제
         </v-btn>
+        <v-btn type="button" size="small" color="light" @click="emit('close')" flat> 닫기</v-btn>
       </slot>
     </CModalFooter>
   </CForm>

@@ -10,7 +10,7 @@ const props = defineProps({
 const emit = defineEmits(['call-form'])
 
 const isSuccession = computed(
-  () => !!props.contractor?.succession && !props.contractor?.succession.is_approval,
+  () => !!props.contractor?.succession && props.contractor?.succession.status !== '3',
 )
 
 const callFormModal = () => emit('call-form', props.contractor.pk)

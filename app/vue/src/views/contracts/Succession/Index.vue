@@ -45,7 +45,7 @@ const contStore = useContract()
 const contractor = computed<Contractor | null>(() => contStore.contractor)
 const contOn = computed(() => contractor.value && contractor.value.status < '3')
 const succession = computed<Succession | null>(() => contStore.succession)
-const isSuccession = computed(() => !!succession.value && !succession.value.is_approval)
+const isSuccession = computed(() => !!succession.value && succession.value.status !== '3')
 
 const fetchContract = (cont: number) => contStore.fetchContract(cont)
 const fetchContractor = (contor: number) => contStore.fetchContractor(contor)
@@ -139,9 +139,16 @@ const loadHighlightPage = async (projectId: number) => {
   }
 }
 
-const callFormModal = () => {
-  if (write_contract.value) successionFormModal.value.callModal()
-  else successionAlertModal.value.callModal()
+const callFormModal = (suc?: Succession) => {
+  if (write_contract.value) {
+    if (suc) {
+      contStore.succession = suc
+      if (suc.buyer.pk !== undefined) {
+        fetchContractor(suc.buyer.pk)
+      }
+    }
+    successionFormModal.value.callModal()
+  } else successionAlertModal.value.callModal()
 }
 
 const doneAlert = () =>

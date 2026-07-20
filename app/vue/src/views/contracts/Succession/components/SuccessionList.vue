@@ -17,7 +17,7 @@ const successionList = computed(() => contractStore.successionList)
 const successionPages = computed(() => contractStore.successionPages)
 
 const pageSelect = (page: number) => emit('page-select', page)
-const callForm = () => emit('call-form')
+const callForm = (suc: any) => emit('call-form', suc)
 const doneAlert = () => emit('done-alert')
 </script>
 
@@ -42,7 +42,7 @@ const doneAlert = () => emit('done-alert')
         <CTableHeaderCell>승계신청일</CTableHeaderCell>
         <CTableHeaderCell>매매계약일</CTableHeaderCell>
         <CTableHeaderCell>변경인가일</CTableHeaderCell>
-        <CTableHeaderCell>변경인가여부</CTableHeaderCell>
+        <CTableHeaderCell>진행상태</CTableHeaderCell>
         <CTableHeaderCell>확인</CTableHeaderCell>
       </CTableRow>
     </CTableHead>
@@ -50,7 +50,7 @@ const doneAlert = () => emit('done-alert')
       <CTableRow
         v-for="suc in successionList"
         :key="suc.pk"
-        :class="suc.is_approval ? bgLight : ''"
+        :class="suc.status === '3' ? bgLight : ''"
         :color="props.highlightId === suc.pk ? 'warning' : ''"
         :data-succession-id="suc.pk"
       >
