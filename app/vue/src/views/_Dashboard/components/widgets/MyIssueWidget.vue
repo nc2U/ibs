@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useAccount } from '@/store/pinia/account'
 import { useIssue } from '@/store/pinia/work_issue'
+import type { User } from '@/store/types/accounts.ts'
 import WidgetWrapper from '../WidgetWrapper.vue'
 
 defineProps<{
@@ -16,7 +17,7 @@ const issueStore = useIssue()
 const isLoading = ref(false)
 
 // 로그인한 사용자 정보
-const userInfo = computed(() => accountStore.userInfo)
+const userInfo = computed<User | null>(() => accountStore.userInfo)
 
 // 내 미완료 업무 목록 (최대 5개 표시)
 const myIssues = computed(() => issueStore.issueList.slice(0, 5))

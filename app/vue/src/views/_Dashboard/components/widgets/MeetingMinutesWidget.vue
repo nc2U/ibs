@@ -38,9 +38,9 @@ onBeforeMount(() => {
         <v-table density="compact" hover>
           <thead>
             <tr>
-              <th class="text-left" style="width: 200px">프로젝트</th>
+              <th class="text-left project-col">프로젝트</th>
               <th class="text-left">제목</th>
-              <th class="text-right" style="width: 150px">날짜</th>
+              <th class="text-right date-col">날짜</th>
             </tr>
           </thead>
           <tbody>
@@ -100,5 +100,41 @@ onBeforeMount(() => {
 
 .meeting-minutes-widget :deep(.v-table) {
   background: transparent;
+  table-layout: fixed;
+  width: 100%;
+}
+
+/* Column width settings */
+.project-col {
+  width: 140px;
+}
+
+.date-col {
+  width: 90px;
+}
+
+/* Ensure links truncate correctly on small screens */
+.meeting-minutes-widget :deep(td) {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 0; /* Important for table-layout: fixed text-truncation */
+}
+
+.meeting-minutes-widget :deep(td a) {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .project-col {
+    width: 90px;
+  }
+  .date-col {
+    width: 80px;
+  }
 }
 </style>
