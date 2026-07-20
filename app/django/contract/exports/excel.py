@@ -354,7 +354,7 @@ class ExportSuccessions(ExcelExportMixin):
                 else:
                     body_format['num_format'] = 'yyyy-mm-dd'
                 if col_num == 7:
-                    status_dict = {'1': '신청접수', '2': '변경인가대기', '3': '승계완료', '4': '승계취소'}
+                    status_dict = {'1': '신청접수', '2': '변경인가대기', '3': '승계완료', '9': '승계취소'}
                     cell_data = status_dict.get(cell_data, '')
                 if col_num == 8:
                     body_format['align'] = 'left'

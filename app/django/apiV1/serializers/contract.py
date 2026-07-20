@@ -714,7 +714,7 @@ class SuccessionSerializer(serializers.ModelSerializer):
             buyer.change_type = None
             buyer.is_active = True
             buyer.qualification = qua_true
-        elif instance.status == '4':  # 승계 취소 처리
+        elif instance.status == '9':  # 승계 취소 처리
             # 매도인 상태 복원 (일반적인 정상 계약 상태)
             seller.contract = contract
             seller.prev_contract = None
@@ -780,7 +780,7 @@ class ContractorReleaseSerializer(serializers.ModelSerializer):
         # 신구 상태 필드 동기화 맵핑
         if new_status == '4':
             validated_data['status'] = '5' if release_type == '2' else '4'
-        elif new_status == '0':
+        elif new_status == '9':
             validated_data['status'] = '0'
         else:
             validated_data['status'] = '3'
