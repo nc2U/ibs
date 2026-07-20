@@ -319,7 +319,16 @@ class ContractRegisterView(LoginRequiredMixin, FormView):
                     contractor.birth_date = form.cleaned_data.get('birth_date')
                     contractor.gender = form.cleaned_data.get('gender')
                     contractor.qualification = form.cleaned_data.get('qualification')
-                    contractor.status = form.cleaned_data.get('task')
+                    task = form.cleaned_data.get('task')
+                    if task in ('3', '4'):
+                        contractor.status = '4'
+                        contractor.change_type = '1'
+                    elif task == '5':
+                        contractor.status = '4'
+                        contractor.change_type = '3'
+                    else:
+                        contractor.status = task
+                        contractor.change_type = None
                     contractor.reservation_date = form.cleaned_data.get('reservation_date')
                     contractor.contract_date = form.cleaned_data.get('contract_date')
                     contractor.note = form.cleaned_data.get('note')
@@ -488,7 +497,8 @@ class ContractorReleaseRegister(LoginRequiredMixin, ListView, FormView):
                     # 5. 최종 해지상태로 변경
                     if contractor.qualification == '3':
                         contractor.qualification = '2'  # 인가 등록 취소
-                    contractor.status = '4'  # 해지 상태로 변경
+                    contractor.status = '4'  # 계약종결
+                    contractor.change_type = '1'  # 해지신청
                     contractor.creator = request.user  # 해지 등록 작업자
                     contractor.save()
 

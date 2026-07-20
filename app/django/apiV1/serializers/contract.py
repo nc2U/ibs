@@ -153,7 +153,7 @@ class ContractorInContractSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contractor
         fields = ('pk', 'name', 'birth_date', 'gender', 'qualification', 'qualifi_display',
-                  'contractoraddress', 'contractorcontact', 'status', 'now_status', 'change_type',
+                  'contractoraddress', 'contractorcontact', 'status', 'change_type',
                   'reservation_date', 'contract_date', 'is_active', 'note')
 
 
@@ -404,31 +404,31 @@ class ContractorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contractor
         fields = ('pk', 'contract', 'name', '__str__', 'birth_date', 'gender',
-                  'qualification', 'qualifi_display', 'status', 'now_status', 'change_type',
+                  'qualification', 'qualifi_display', 'status', 'change_type',
                   'reservation_date', 'contract_date', 'is_active', 'note', 'succession', 'contractorrelease')
 
     def validate(self, attrs):
         instance = self.instance
-        now_status = attrs.get('now_status', instance.now_status if instance else '1')
+        status = attrs.get('status', instance.status if instance else '1')
 
-        # 만약 'now_status'가 '1' 또는 '2'로 변경되는 상태라면 change_type을 null(None)로 명시하거나 비워두어야 함.
+        # 만약 'status'가 '1' 또는 '2'로 변경되는 상태라면 change_type을 null(None)로 명시하거나 비워두어야 함.
         # 프론트엔드에서 편의상 명시적으로 지우지 않고 넘어오는 케이스를 대비하여, 
         # API 단에서 null이 아닌 값으로 넘어온 경우 강제 반려 또는 null 초기화 처리할 수 있습니다.
         # 여기서는 검증을 명확히 수행합니다.
         change_type = attrs.get('change_type', instance.change_type if instance else None)
 
-        if now_status in ['3', '4']:
+        if status in ['3', '4']:
             if not change_type:
-                status_display = "변경처리중" if now_status == '3' else "계약종결"
+                status_display = "변경처리중" if status == '3' else "계약종결"
                 raise serializers.ValidationError({
                     'change_type': f"상태가 '{status_display}'인 경우 변경유형(change_type)을 필수로 입력해야 합니다."
                 })
         else:
-            # now_status가 '1'(청약) 또는 '2'(계약) 인 경우 change_type은 null 이어야 함
+            # status가 '1'(청약) 또는 '2'(계약) 인 경우 change_type은 null 이어야 함
             # (프론트에서 null로 보내지 않고 기존 값이 넘어왔다면 에러를 내어 명시적으로 지우게 유도합니다.)
             if change_type is not None:
                 raise serializers.ValidationError({
-                    'change_type': f"상태가 '{'청약' if now_status == '1' else '계약'}'으로 복원될 때 변경유형(change_type)은 반드시 null(없음)이어야 합니다."
+                    'change_type': f"상태가 '{'청약' if status == '1' else '계약'}'으로 복원될 때 변경유형(change_type)은 반드시 null(없음)이어야 합니다."
                 })
 
         return attrs
@@ -598,11 +598,10 @@ class SuccessionSerializer(serializers.ModelSerializer):
         contract = Contract.objects.get(pk=validated_data['contract_id'])
 
         # 2. 기존 계약자(양도인) 처리 (해지 신청 중인 경우 신청 취소 처리)
+        # 접수 시점에는 매도인이 그대로 계약을 유지하되 상태만 '변경처리중(3)'/'승계신청(3)'으로 전환
         seller = contract.contractor
-        seller.contract = None
-        seller.prev_contract = contract
-        seller.status = '5'
-        seller.is_active = False
+        seller.status = '3'
+        seller.change_type = '3'
         seller.save()
 
         # 해지신청 계약자인지 확인
@@ -614,15 +613,18 @@ class SuccessionSerializer(serializers.ModelSerializer):
         except ObjectDoesNotExist:
             pass
 
-        # 3. 양수계약자 데이터 생성
+        # 3. 양수계약자 데이터 생성 (접수 시점에는 contract와 연결 안함)
         qualification = '1' if contract.order_group.sort == '2' else '2'  # 일반분양이면 일반('1') 조합이면 미인가('2')
 
-        buyer = Contractor(contract=contract,
+        buyer = Contractor(contract=None,
+                           prev_contract=None,
                            name=self.initial_data.get('name'),
                            birth_date=self.initial_data.get('birth_date'),
                            gender=self.initial_data.get('gender'),
                            qualification=qualification,
-                           status='2',
+                           status='3',
+                           change_type='3',
+                           is_active=False,
                            contract_date=validated_data.get('apply_date'),  # 승계신청일을 계약일자로 기록
                            note=validated_data.get('note'))
         buyer.save()
@@ -691,20 +693,43 @@ class SuccessionSerializer(serializers.ModelSerializer):
         buyer_contact.email = self.initial_data.get('email')
         buyer_contact.save()
 
-        # 3. 변경인가완료 처리 여부 확인
-
+        # 3. 변경인가완료 처리 여부 확인 (승계 완료 처리)
         contract = instance.contract
         qua_true = '1' if contract.order_group.sort == '2' else '3'  # 일반분양이면 일반('1') 조합이면 인가('3')
         qua_false = '1' if contract.order_group.sort == '2' else '2'  # 일반분양이면 일반('1') 조합이면 미인가('2')
 
-        # 최초 변경인가 처리 변경 시 (조합원이면 인가/미인가 상태 적용)
         seller = instance.seller
-        if instance.is_approval is True:  # 변경인가 완료로 변경 시
-            buyer.qualification = qua_true
+        if instance.is_approval is True:  # 변경인가 완료로 변경 시 (승계 완료 확정)
+            # 매도인 확정 처리
+            seller.contract = None
+            seller.prev_contract = contract
+            seller.status = '4'  # 계약종결
+            seller.change_type = '3'  # 승계신청
+            seller.is_active = False
             seller.qualification = qua_false
-        else:  # 변경인가 진행중으로 변경 시
-            buyer.qualification = qua_false
+
+            # 매수인 확정 처리
+            buyer.contract = contract
+            buyer.status = '2'  # 계약
+            buyer.change_type = None
+            buyer.is_active = True
+            buyer.qualification = qua_true
+        else:  # 변경인가 진행중으로 변경 시 (신청 대기 상태 롤백)
+            # 매도인 상태 복원
+            seller.contract = contract
+            seller.prev_contract = None
+            seller.status = '3'  # 변경처리중
+            seller.change_type = '3'  # 승계신청
+            seller.is_active = True
             seller.qualification = qua_true
+
+            # 매수인 상태 복원
+            buyer.contract = None
+            buyer.status = '3'  # 변경처리중
+            buyer.change_type = '3'  # 승계신청
+            buyer.is_active = False
+            buyer.qualification = qua_false
+
         buyer.save()
         seller.save()
 

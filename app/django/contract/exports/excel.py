@@ -577,7 +577,7 @@ class ExportUnitStatus(ExcelExportMixin):
                         else:
                             worksheet.write(row_num, col_num, int(unit.name), unit_formats)
                             if unit.key_unit:
-                                if int(unit.key_unit.contract.contractor.status) % 2 == 0:
+                                if unit.key_unit.contract.contractor.status in ('2', '4'):
                                     status_format['bg_color'] = '#DDDDDD'
                                     status_format['font_color'] = 'black'
                                 else:

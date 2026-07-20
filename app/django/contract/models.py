@@ -407,14 +407,11 @@ class Contractor(models.Model):
     birth_date = models.DateField('생년월일', null=True, blank=True)
     GENDER_CHOICES = (('M', '남자'), ('F', '여자'))
     gender = models.CharField('성별', max_length=1, choices=GENDER_CHOICES, blank=True)
-    QUA_CHOICES = (('1', '일반분양'), ('2', '미인가조합원'), ('3', '인가조합원'), ('4', '부적격조합원'))
+    QUA_CHOICES = (('1', '일반분양'), ('2', '미인가조합원'), ('3', '인가조합원'))
     qualification = models.CharField('등록상태', max_length=1, choices=QUA_CHOICES, default='1')
 
-    OLD_STATUS_CHOICES = (('1', '청약'), ('2', '계약'), ('3', '청약 해지'), ('4', '계약 해지'), ('5', '양도 승계'))
-    status = models.CharField('계약상태', max_length=1, choices=OLD_STATUS_CHOICES)  # deprecated 삭제 예정
-
     STATUS_CHOICES = (('1', '청약'), ('2', '계약'), ('3', '변경처리중'), ('4', '계약종결'))
-    now_status = models.CharField('계약자 상태', max_length=1, choices=(STATUS_CHOICES), default='1')
+    status = models.CharField('계약자 상태', max_length=1, choices=STATUS_CHOICES, default='1')
     CHANGE_TYPE_CHOICES = (('1', '해지신청'), ('2', '부적격확인'), ('3', '승계신청'),)
     change_type = models.CharField('변경 유형', max_length=1, choices=CHANGE_TYPE_CHOICES, null=True, blank=True)
 
@@ -437,17 +434,17 @@ class Contractor(models.Model):
 
     def clean(self):
         super().clean()
-        if self.now_status in ['3', '4']:
+        if self.status in ['3', '4']:
             if not self.change_type:
-                status_display = self.get_now_status_display()
+                status_display = self.get_status_display()
                 raise ValidationError({
                     'change_type': f"상태가 '{status_display}'인 경우 변경 유형(change_type)을 등록해야 합니다."
                 })
         else:
-            # now_status가 '1'(청약), '2'(계약)인 경우 change_type은 null이어야 함
+            # status가 '1'(청약), '2'(계약)인 경우 change_type은 null이어야 함
             if self.change_type is not None:
                 raise ValidationError({
-                    'change_type': f"상태가 '{self.get_now_status_display()}'인 경우 변경 유형(change_type)은 없어야(null) 합니다."
+                    'change_type': f"상태가 '{self.get_status_display()}'인 경우 변경 유형(change_type)은 없어야(null) 합니다."
                 })
 
     class Meta:
