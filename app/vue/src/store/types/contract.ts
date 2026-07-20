@@ -11,6 +11,8 @@ export interface ContFilter {
   null_unit?: boolean
   qualification?: string
   is_sup_cont?: 'true' | 'false' | ''
+  is_completed?: 'true' | 'false' | ''
+  change_type?: string
   ordering?: string
   from_date?: string
   to_date?: string
@@ -102,6 +104,7 @@ export interface ContractorInContract {
   contractoraddress: AddressInContractor
   contractorcontact: ContractorContact
   status: '1' | '2' | '3' | '4' | '5'
+  change_type: '1' | '2' | '3' | null
   reservation_date: string | null
   contract_date: string | null
   is_active: boolean
@@ -164,6 +167,7 @@ export interface Contractor {
   qualification: '1' | '2' | '3' | '4' | ''
   qualifi_display: '일반분양' | '미인가' | '인가' | '부적격'
   status: '1' | '2' | '3' | '4' | '5' | ''
+  change_type: '1' | '2' | '3' | null
   reservation_date: string | null
   contract_date: string | null
   is_active: boolean

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, reactive, computed, watch, nextTick, onMounted } from 'vue'
+import { ref, reactive, computed, watch, nextTick } from 'vue'
 import { bgLight } from '@/utils/cssMixins'
 import { useProjectData } from '@/store/pinia/project_data'
 import { useContract } from '@/store/pinia/contract'
@@ -7,7 +7,6 @@ import type { ContFilter } from '@/store/types/contract'
 import { numFormat } from '@/utils/baseMixins'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 
-const props = defineProps({ status: { type: String, default: '2' } })
 const emit = defineEmits(['cont-filtering'])
 
 const from_date = ref('')
@@ -15,31 +14,34 @@ const to_date = ref('')
 
 const form = reactive<ContFilter>({
   limit: '',
-  status: props.status,
   order_group: '',
   unit_type: '',
   null_unit: false,
   building: '',
   qualification: '',
+  change_type: '',
+  is_completed: '',
   is_sup_cont: '',
   ordering: '-created',
   search: '',
 })
 
+const combinedStatus = ref('')
+
 const formsCheck = computed(() => {
   const a = form.limit === ''
-  const b = form.status === '2'
   const c = form.order_group === ''
   const d = form.unit_type === ''
   const e = form.null_unit === false
   const f = form.building === ''
-  const g = form.qualification === ''
+  const g = combinedStatus.value === ''
   const h = !from_date.value
   const i = !to_date.value
   const j = form.ordering === '-created'
   const k = (form.search as string)?.trim() === ''
-  const groupA = a && b && c && d && e
-  const groupB = f && g && h && i && j && k
+  const l = form.is_completed === ''
+  const groupA = a && c && d && e
+  const groupB = f && g && h && i && j && k && l
   return groupA && groupB
 })
 
@@ -55,12 +57,19 @@ watch(from_date, () => listFiltering(1))
 
 watch(to_date, () => listFiltering(1))
 
-watch(
-  () => props.status,
-  newStatus => {
-    form.status = newStatus
-  },
-)
+watch(combinedStatus, val => {
+  if (val.startsWith('q')) {
+    form.qualification = val.substring(1)
+    form.change_type = ''
+  } else if (val.startsWith('c')) {
+    form.qualification = ''
+    form.change_type = val.substring(1)
+  } else {
+    form.qualification = ''
+    form.change_type = ''
+  }
+  listFiltering(1)
+})
 
 const listFiltering = (page = 1) => {
   form.search = (form.search as string)?.trim()
@@ -78,22 +87,20 @@ defineExpose({ listFiltering })
 
 const resetForm = () => {
   form.limit = ''
-  form.status = '2'
   form.order_group = ''
   form.unit_type = ''
   form.null_unit = false
   form.building = ''
   form.qualification = ''
+  form.change_type = ''
+  form.is_completed = ''
+  combinedStatus.value = ''
   from_date.value = ''
   to_date.value = ''
   form.ordering = '-created'
   form.search = ''
   listFiltering(1)
 }
-
-onMounted(() => {
-  if (props.status === '1') listFiltering(1)
-})
 </script>
 
 <template>
@@ -124,19 +131,15 @@ onMounted(() => {
           </CCol>
 
           <CCol md="4" xl="2" class="mb-3">
-            <CFormSelect v-model="form.qualification" @change="listFiltering(1)">
-              <option value="">등록상태</option>
-              <option value="1">일반분양</option>
-              <option value="2">미인가조합원</option>
-              <option value="3">인가조합원</option>
-              <option value="4">부적격조합원</option>
-            </CFormSelect>
-          </CCol>
-
-          <CCol md="4" xl="2" class="mb-3">
-            <CFormSelect v-model="form.status" @change="listFiltering(1)">
-              <option value="1">청약 현황</option>
-              <option value="2">계약 현황</option>
+            <CFormSelect v-model="combinedStatus">
+              <option value="">등록/변경 상태</option>
+              <option value="q1">일반분양</option>
+              <option value="q2">미인가조합원</option>
+              <option value="q3">인가조합원</option>
+              <option disabled>-----------------</option>
+              <option value="c1">해지신청중</option>
+              <option value="c2">부적격확인중</option>
+              <option value="c3">승계진행중</option>
             </CFormSelect>
           </CCol>
 
@@ -157,16 +160,24 @@ onMounted(() => {
               </option>
             </CFormSelect>
           </CCol>
+
+          <CCol md="4" xl="2" class="mb-3">
+            <CFormSelect v-model="form.is_sup_cont" @change="listFiltering(1)">
+              <option value="">공급계약 (전체)</option>
+              <option value="true">체결</option>
+              <option value="false">미체결</option>
+            </CFormSelect>
+          </CCol>
         </CRow>
       </CCol>
 
       <CCol lg="6">
         <CRow>
           <CCol md="4" xl="2" class="mb-3">
-            <CFormSelect v-model="form.is_sup_cont" @change="listFiltering(1)">
-              <option value="">공급계약 (전체)</option>
-              <option value="true">체결</option>
-              <option value="false">미체결</option>
+            <CFormSelect v-model="form.is_completed" @change="listFiltering(1)">
+              <option value="">계약종결 (전체)</option>
+              <option value="true">종결</option>
+              <option value="false">미종결</option>
             </CFormSelect>
           </CCol>
 

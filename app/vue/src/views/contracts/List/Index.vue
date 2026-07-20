@@ -62,6 +62,12 @@ watch(project, nVal => {
     if (nVal?.is_unit_set && !printItems.value.includes('6-7')) printItems.value.splice(4, 0, '6-7')
 })
 
+watch(curr_status, () => {
+  if (listControl.value) {
+    listControl.value.listFiltering(1)
+  }
+})
+
 const contStore = useContract()
 const fetchOrderGroupList = (pk: number) => contStore.fetchOrderGroupList(pk)
 const fetchContractList = (payload: ContFilter) => contStore.fetchContractList(payload)
@@ -89,6 +95,7 @@ const onContFiltering = (payload: ContFilter) => {
   // 필터링 시 query string 정리
   clearQueryString()
 
+  payload.status = curr_status.value
   const {
     status,
     order_group,
@@ -96,6 +103,8 @@ const onContFiltering = (payload: ContFilter) => {
     building,
     null_unit,
     qualification,
+    change_type,
+    is_completed,
     is_sup_cont,
     from_date,
     to_date,
@@ -106,7 +115,7 @@ const onContFiltering = (payload: ContFilter) => {
   payload.limit = payload.limit || 10
   limit.value = payload.limit
   curr_status.value = status as '1' | '2'
-  filteredStr.value = `&limit=${limit.value}&status=${status}&group=${order_group}&type=${unit_type}&dong=${building}&is_null=${is_unit}&quali=${qualification}&sup=${is_sup_cont}&sdate=${from_date}&edate=${to_date}&q=${search}`
+  filteredStr.value = `&limit=${limit.value}&status=${status}&group=${order_group}&type=${unit_type}&dong=${building}&is_null=${is_unit}&quali=${qualification}&change_type=${change_type ?? ''}&completed=${is_completed ?? ''}&sup=${is_sup_cont}&sdate=${from_date}&edate=${to_date}&q=${search}`
 
   if (payload.project) fetchContractList(payload)
 }
@@ -330,7 +339,7 @@ onBeforeMount(async () => {
 
     <ContentBody>
       <CCardBody class="pb-5">
-        <ListController ref="listControl" :status="curr_status" @cont-filtering="onContFiltering" />
+        <ListController ref="listControl" @cont-filtering="onContFiltering" />
         <AddContract
           :project="project?.pk"
           :unit-set="unitSet"
@@ -338,12 +347,17 @@ onBeforeMount(async () => {
           @contract-converted="handleContract"
         />
         <TableTitleRow
-          :title="title"
           excel
           :url="excelUrl"
           :filename="`${title}.xlsx`"
           :disabled="!project"
         >
+          <template #title>
+            <v-tabs v-model="curr_status" density="compact" class="mb-0">
+              <v-tab value="1" variant="tonal" :active="curr_status === '1'">청약 현황</v-tab>
+              <v-tab value="2" variant="tonal" :active="curr_status === '2'">계약 현황</v-tab>
+            </v-tabs>
+          </template>
           <v-btn
             size="small"
             rounded="0"

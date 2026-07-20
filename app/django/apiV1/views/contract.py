@@ -77,6 +77,7 @@ class ContractFilter(FilterSet):
     houseunit__isnull = BooleanFilter(field_name='key_unit__houseunit', lookup_expr='isnull', label='동호미지정 여부')
     key_unit__houseunit__building_unit = ModelChoiceFilter(queryset=BuildingUnit.objects.all(), label='동(건물)')
     contractor__status = ChoiceFilter(field_name='contractor__status', choices=Contractor.STATUS_CHOICES, label='현재상태')
+    contractor__change_type = ChoiceFilter(field_name='contractor__change_type', choices=Contractor.CHANGE_TYPE_CHOICES, label='변경유형')
     contractor__qualification = ChoiceFilter(field_name='contractor__qualification',
                                              choices=Contractor.QUA_CHOICES, label='등록상태')
     from_contract_date = DateFilter(field_name='contractor__contract_date', lookup_expr='gte', label='계약일자부터')
@@ -84,7 +85,7 @@ class ContractFilter(FilterSet):
 
     class Meta:
         model = Contract
-        fields = ('project', 'is_active', 'contractor__status', 'order_group', 'unit_type',
+        fields = ('project', 'is_active', 'is_completed', 'contractor__status', 'contractor__change_type', 'order_group', 'unit_type',
                   'key_unit__houseunit__building_unit', 'houseunit__isnull', 'is_sup_cont',
                   'contractor__qualification', 'from_contract_date', 'to_contract_date')
 

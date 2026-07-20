@@ -233,7 +233,9 @@ export const useContract = defineStore('contract', () => {
     const params: Record<string, any> = {
       project: filters.project,
       is_active: true,
+      is_completed: filters.is_completed,
       contractor__status: filters.status ?? '2',
+      contractor__change_type: filters.change_type,
       limit: filters.limit ?? 10,
       order_group: filters.order_group,
       unit_type: filters.unit_type,

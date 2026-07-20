@@ -23,6 +23,24 @@ const contractorPk = computed(() => props.contract?.contractor?.pk)
 
 const getColor = (q: '1' | '2' | '3' | '4' | undefined) =>
   q ? { '1': 'info', '2': 'warning', '3': 'success', '4': 'danger' }[q] : ''
+
+const changeTypeLabel = computed(() => {
+  const typeMap: Record<string, string> = {
+    '1': '해지신청중',
+    '2': '부적격확인중',
+    '3': '승계진행중',
+  }
+  return props.contract.contractor?.change_type ? typeMap[props.contract.contractor.change_type] : ''
+})
+
+const changeTypeColor = computed(() => {
+  const colorMap: Record<string, string> = {
+    '1': 'danger',
+    '2': 'warning',
+    '3': 'info',
+  }
+  return props.contract.contractor?.change_type ? colorMap[props.contract.contractor.change_type] : ''
+})
 </script>
 
 <template>
@@ -43,9 +61,12 @@ const getColor = (q: '1' | '2' | '3' | '4' | undefined) =>
         {{ contract.serial_number }}
       </router-link>
     </CTableDataCell>
-    <CTableDataCell>
+    <CTableDataCell class="text-left">
       <CBadge :color="getColor(contract.contractor?.qualification)">
         {{ contract.contractor?.qualifi_display }}
+      </CBadge>
+      <CBadge v-if="changeTypeLabel" :color="changeTypeColor" class="ml-1">
+        {{ changeTypeLabel }}
       </CBadge>
     </CTableDataCell>
     <CTableDataCell>
