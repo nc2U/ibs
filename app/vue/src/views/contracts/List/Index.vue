@@ -43,7 +43,7 @@ const urlPage = computed(() => {
 
 const visible = ref(false)
 
-const filteredStr = ref(`&status=${curr_status.value}`)
+const filteredStr = ref(`&is_contract=true`)
 const printItems = ref(['1', '3', '4', '5', '8', '13', '14'])
 
 const excelUrl = computed(() => {
@@ -115,7 +115,8 @@ const onContFiltering = (payload: ContFilter) => {
   payload.limit = payload.limit || 10
   limit.value = payload.limit
   curr_status.value = status as '1' | '2'
-  filteredStr.value = `&limit=${limit.value}&status=${status}&group=${order_group}&type=${unit_type}&dong=${building}&is_null=${is_unit}&quali=${qualification}&change_type=${change_type ?? ''}&completed=${is_completed ?? ''}&sup=${is_sup_cont}&sdate=${from_date}&edate=${to_date}&q=${search}`
+  const isContractParam = status === '2' ? 'true' : 'false'
+  filteredStr.value = `&limit=${limit.value}&is_contract=${isContractParam}&group=${order_group}&type=${unit_type}&dong=${building}&is_null=${is_unit}&quali=${qualification}&change_type=${change_type ?? ''}&completed=${is_completed ?? ''}&sup=${is_sup_cont}&sdate=${from_date}&edate=${to_date}&q=${search}`
 
   if (payload.project) fetchContractList(payload)
 }

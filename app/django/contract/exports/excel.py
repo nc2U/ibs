@@ -118,13 +118,6 @@ class ExportContracts(ExcelExportMixin):
         # ----------------- get_queryset start ----------------- #
         # Get some data to write to the spreadsheet.
         # Use select_related to optimize and ensure we get the current address
-        queryset = Contract.objects.filter(project=project,
-                                           is_active=True,
-                                           contractor__status=status).select_related(
-            'contractor'
-        ).prefetch_related(
-            'contractor__addresses'
-        ).order_by('contractor__contract_date')
         status = request.GET.get('status')
         group = request.GET.get('group')
         unit_type = request.GET.get('type')
@@ -136,7 +129,29 @@ class ExportContracts(ExcelExportMixin):
         edate = request.GET.get('edate')
         q = request.GET.get('q')
 
-        queryset = queryset.filter(contractor__status=status) if status else queryset
+        # status='2'(계약) 탭 선택 시 '3'(변경처리중)도 유효한 계약자이므로 함께 포함
+        # is_contract 파라미터 우선: True → status__in=['2','3'], False → status='1'
+        is_contract_str = request.GET.get('is_contract')
+        if is_contract_str is not None:
+            if is_contract_str.lower() == 'true':
+                base_status_filter = {'contractor__status__in': ['2', '3']}
+            else:
+                base_status_filter = {'contractor__status': '1'}
+        elif status == '2':
+            base_status_filter = {'contractor__status__in': ['2', '3']}
+        elif status:
+            base_status_filter = {'contractor__status': status}
+        else:
+            base_status_filter = {}
+
+        queryset = Contract.objects.filter(project=project,
+                                           is_active=True,
+                                           **base_status_filter).select_related(
+            'contractor'
+        ).prefetch_related(
+            'contractor__addresses'
+        ).order_by('contractor__contract_date')
+
         queryset = queryset.filter(order_group=group) if group else queryset
         queryset = queryset.filter(unit_type=unit_type) if unit_type else queryset
         queryset = queryset.filter(key_unit__houseunit__building_unit=dong) if dong else queryset

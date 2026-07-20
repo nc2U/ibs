@@ -230,11 +230,22 @@ export const useContract = defineStore('contract', () => {
   const removeContract = () => (contract.value = null)
 
   const getContractFilterParams = (filters: ContFilter) => {
+    // status='2'(계약 탭): is_contract=true → backend에서 status__in=['2','3'] 처리
+    // status='1'(청약 탭): is_contract=false → backend에서 status='1' 처리
+    // 명시적 status 필터(ContractFilter의 contractor__status)는 사용자가 직접 선택 시에만 사용
+    const status = filters.status ?? '2'
+    const statusParam: Record<string, any> =
+      status === '2'
+        ? { is_contract: true }
+        : status === '1'
+          ? { is_contract: false }
+          : { contractor__status: status }
+
     const params: Record<string, any> = {
       project: filters.project,
       is_active: true,
       is_completed: filters.is_completed,
-      contractor__status: filters.status ?? '2',
+      ...statusParam,
       contractor__change_type: filters.change_type,
       limit: filters.limit ?? 10,
       order_group: filters.order_group,

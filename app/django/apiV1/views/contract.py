@@ -10,6 +10,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+import django_filters
 
 from _utils.contract_price import get_project_payment_summary, get_multiple_projects_payment_summary, \
     get_contract_price, get_contract_payment_plan
@@ -82,12 +83,24 @@ class ContractFilter(FilterSet):
                                              choices=Contractor.QUA_CHOICES, label='등록상태')
     from_contract_date = DateFilter(field_name='contractor__contract_date', lookup_expr='gte', label='계약일자부터')
     to_contract_date = DateFilter(field_name='contractor__contract_date', lookup_expr='lte', label='계약일자까지')
+    # 계약 탭 전용: status '2'(계약) + '3'(변경처리중) 동시 조회
+    is_contract = django_filters.BooleanFilter(method='filter_is_contract', label='계약자여부')
+
+    def filter_is_contract(self, queryset, name, value):
+        if value is True:
+            # 계약 탭: '2'(계약) + '3'(변경처리중) 모두 유효한 계약자
+            return queryset.filter(contractor__status__in=['2', '3'])
+        elif value is False:
+            # 청약 탭: '1'(청약)
+            return queryset.filter(contractor__status='1')
+        return queryset
 
     class Meta:
         model = Contract
-        fields = ('project', 'is_active', 'is_completed', 'contractor__status', 'contractor__change_type', 'order_group', 'unit_type',
-                  'key_unit__houseunit__building_unit', 'houseunit__isnull', 'is_sup_cont',
-                  'contractor__qualification', 'from_contract_date', 'to_contract_date')
+        fields = ('project', 'is_active', 'is_completed', 'contractor__status', 'contractor__change_type',
+                  'order_group', 'unit_type', 'key_unit__houseunit__building_unit', 'houseunit__isnull',
+                  'is_sup_cont', 'contractor__qualification', 'from_contract_date', 'to_contract_date',
+                  'is_contract')
 
 
 class ContractViewSet(viewsets.ModelViewSet):
@@ -496,7 +509,8 @@ class ContSummaryViewSet(viewsets.ModelViewSet):
     filterset_class = ContSumFilter
 
     def get_queryset(self):
-        return Contract.objects.filter(is_active=True, contractor__status=2) \
+        # status '2'(계약) 및 '3'(변경처리중) 모두 유효한 계약자 상태임
+        return Contract.objects.filter(is_active=True, contractor__status__in=['2', '3']) \
             .values('order_group', 'unit_type') \
             .annotate(conts_num=Count('order_group')) \
             .annotate(price_sum=Sum('contractprice__price'))
@@ -520,7 +534,8 @@ class ContractAggreateView(APIView):
         # 계약 ID를 가진 Contractor를 기준으로 count
         contractors = Contractor.objects.filter(contract__project=project)
         subs_num = contractors.filter(contract_id__in=contract_ids, status='1').count()
-        conts_num = contractors.filter(contract_id__in=contract_ids, status='2').count()
+        # status '2'(계약) 및 '3'(변경처리중) 모두 유효한 계약자로 집계
+        conts_num = contractors.filter(contract_id__in=contract_ids, status__in=['2', '3']).count()
         non_conts_num = project.num_unit - conts_num if project.num_unit else 0
 
         data = {
