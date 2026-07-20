@@ -1,6 +1,6 @@
 from django.core.cache import cache
 from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import Count, Sum, Q, Prefetch
+from django.db.models import Case, When, Value, IntegerField, Count, Sum, Q, Prefetch
 from django.shortcuts import get_object_or_404
 from django_filters import ChoiceFilter, ModelChoiceFilter, DateFilter, BooleanFilter
 from django_filters.rest_framework import FilterSet
@@ -691,6 +691,16 @@ class SuccessionViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
     filterset_fields = ('contract__project',)
 
+    def get_queryset(self):
+        queryset = Succession.objects.all()
+        return queryset.annotate(
+            is_ongoing=Case(
+                When(status__in=['1', '2'], then=Value(1)),
+                default=Value(0),
+                output_field=IntegerField()
+            )
+        ).order_by('-is_ongoing', '-apply_date', '-id')
+
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
 
@@ -715,7 +725,7 @@ class SuccessionViewSet(viewsets.ModelViewSet):
             return Response({'error': 'highlight_id and project must be integers'}, status=400)
 
         # 프로젝트별 전체 Succession 목록 및 필터 적용
-        queryset = self.filter_queryset(Succession.objects.filter(contract__project_id=project_id))
+        queryset = self.filter_queryset(self.get_queryset().filter(contract__project_id=project_id))
 
         # 해당 ID가 존재하는지 확인
         try:
@@ -726,13 +736,24 @@ class SuccessionViewSet(viewsets.ModelViewSet):
         # limit 파라미터 가져오기 (기본값은 10)
         limit = int(request.query_params.get('limit', 10))
 
-        # Succession 모델의 정확한 ordering: ['-apply_date', '-trading_date', '-id']
-        # 필터링된 목록에서 target_item보다 앞에 있는 항목들의 개수 계산
-        items_before = queryset.filter(
-            Q(apply_date__gt=target_item.apply_date) |
-            Q(apply_date=target_item.apply_date, trading_date__gt=target_item.trading_date) |
-            Q(apply_date=target_item.apply_date, trading_date=target_item.trading_date, id__gt=target_item.id)
-        ).count()
+        # Succession 모델의 정확한 신규 ordering: ['-is_ongoing', '-apply_date', '-id']
+        target_is_ongoing = 1 if target_item.status in ('1', '2') else 0
+        if target_is_ongoing == 1:
+            items_before = queryset.filter(
+                status__in=['1', '2']
+            ).filter(
+                Q(apply_date__gt=target_item.apply_date) |
+                Q(apply_date=target_item.apply_date, id__gt=target_item.id)
+            ).count()
+        else:
+            ongoing_count = queryset.filter(status__in=['1', '2']).count()
+            finished_before_count = queryset.exclude(
+                status__in=['1', '2']
+            ).filter(
+                Q(apply_date__gt=target_item.apply_date) |
+                Q(apply_date=target_item.apply_date, id__gt=target_item.id)
+            ).count()
+            items_before = ongoing_count + finished_before_count
 
         page_number = (items_before // limit) + 1
 
@@ -740,10 +761,21 @@ class SuccessionViewSet(viewsets.ModelViewSet):
 
 
 class ContReleaseViewSet(viewsets.ModelViewSet):
-    queryset = ContractorRelease.objects.all().order_by('-request_date', '-created')
+    queryset = ContractorRelease.objects.all()
     serializer_class = ContractorReleaseSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
     filterset_fields = ('project', 'status')
+
+    def get_queryset(self):
+        queryset = ContractorRelease.objects.all()
+        from django.db.models import Case, When, Value, IntegerField
+        return queryset.annotate(
+            is_ongoing=Case(
+                When(new_status__in=['1', '2', '3'], then=Value(1)),
+                default=Value(0),
+                output_field=IntegerField()
+            )
+        ).order_by('-is_ongoing', '-request_date', '-id')
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
@@ -769,7 +801,7 @@ class ContReleaseViewSet(viewsets.ModelViewSet):
             return Response({'error': 'highlight_id and project must be integers'}, status=400)
 
         # 프로젝트별 전체 ContractorRelease 목록 및 필터 적용
-        queryset = self.filter_queryset(ContractorRelease.objects.filter(project_id=project_id))
+        queryset = self.filter_queryset(self.get_queryset().filter(project_id=project_id))
 
         # 해당 ID가 존재하는지 확인
         try:
@@ -780,12 +812,24 @@ class ContReleaseViewSet(viewsets.ModelViewSet):
         # limit 파라미터 가져오기 (기본값은 10)
         limit = int(request.query_params.get('limit', 10))
 
-        # ContractorRelease 모델의 정확한 ordering: ['-request_date', '-created']
-        # 필터링된 목록에서 target_item보다 앞에 있는 항목들의 개수 계산
-        items_before = queryset.filter(
-            Q(request_date__gt=target_item.request_date) |
-            Q(request_date=target_item.request_date, created__gt=target_item.created)
-        ).count()
+        # ContractorRelease 모델의 정확한 신규 ordering: ['-is_ongoing', '-request_date', '-id']
+        target_is_ongoing = 1 if target_item.new_status in ('1', '2', '3') else 0
+        if target_is_ongoing == 1:
+            items_before = queryset.filter(
+                new_status__in=['1', '2', '3']
+            ).filter(
+                Q(request_date__gt=target_item.request_date) |
+                Q(request_date=target_item.request_date, id__gt=target_item.id)
+            ).count()
+        else:
+            ongoing_count = queryset.filter(new_status__in=['1', '2', '3']).count()
+            finished_before_count = queryset.exclude(
+                new_status__in=['1', '2', '3']
+            ).filter(
+                Q(request_date__gt=target_item.request_date) |
+                Q(request_date=target_item.request_date, id__gt=target_item.id)
+            ).count()
+            items_before = ongoing_count + finished_before_count
 
         page_number = (items_before // limit) + 1
 
