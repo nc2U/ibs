@@ -367,13 +367,15 @@ export interface ContractRelease {
   project: number
   contractor: number
   __str__?: string
+  release_type: '1' | '2'
   status: string
-  refund_amount: number
+  new_status: '1' | '2' | '3' | '4' | '9'
+  refund_amount: number | null
   refund_account_bank: string
   refund_account_number: string
   refund_account_depositor: string
   request_date: string
-  completion_date: string
+  completion_date: string | null
   note: string
 }
 

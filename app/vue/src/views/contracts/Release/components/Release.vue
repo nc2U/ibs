@@ -9,26 +9,31 @@ const props = defineProps({
 })
 const emit = defineEmits(['call-form'])
 
-const getStatus = (num: string) => {
-  const status = [
-    { code: '0', text: '신청 취소' },
-    { code: '3', text: '해지 신청' },
-    { code: '4', text: '해지 완료' },
-    { code: '5', text: '자격 상실' },
-  ]
-  return status.filter(s => s.code === num).map(s => s.text)[0]
-}
+const releaseTypeLabel = computed(() => {
+  return props.release?.release_type === '2' ? '부적격' : '해지'
+})
+
+const statusLabel = computed(() => {
+  const statusMap: Record<string, string> = {
+    '1': '신청접수',
+    '2': '해지승인',
+    '3': '변경인가대기',
+    '4': '해지확정',
+    '9': '신청취소',
+  }
+  return statusMap[props.release?.new_status] || ''
+})
 
 const textColor = computed(() => {
-  if (props.release?.status === '0') return 'text-primary'
-  else if (props.release?.status === '3') return 'text-danger'
+  if (props.release?.new_status === '9') return 'text-primary'
+  else if (props.release?.new_status === '1') return 'text-danger'
   else return ''
 })
 
 const buttonColor = computed(() => {
-  if (props.release?.status === '0') return 'info'
-  else if (props.release?.status === '3') return 'warning'
-  else return 'secondary'
+  if (props.release?.new_status === '9') return 'info'
+  else if (props.release?.new_status === '4') return 'secondary'
+  else return 'warning'
 })
 
 const callFormModal = () => emit('call-form', props.release?.contractor)
@@ -41,10 +46,10 @@ const callFormModal = () => emit('call-form', props.release?.contractor)
     </router-link>
   </CTableDataCell>
   <CTableDataCell :class="textColor" class="text-center">
-    {{ getStatus(release.status) }}
+    [{{ releaseTypeLabel }}] {{ statusLabel }}
   </CTableDataCell>
   <CTableDataCell class="text-right">
-    {{ numFormat(release.refund_amount) }}
+    {{ numFormat(release.refund_amount ?? 0) }}
   </CTableDataCell>
   <CTableDataCell class="text-left">
     {{ release.refund_account_bank }}

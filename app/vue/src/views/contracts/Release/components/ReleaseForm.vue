@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, reactive, computed, onBeforeMount, type PropType } from 'vue'
+import { ref, reactive, computed, watch, onBeforeMount, type PropType } from 'vue'
 import { btnLight } from '@/utils/cssMixins.ts'
 import { write_contract } from '@/utils/pageAuth'
 import { isValidate } from '@/utils/helper'
@@ -22,7 +22,9 @@ const validated = ref(false)
 const form = reactive({
   pk: null as number | null,
   contractor: null as number | null,
+  release_type: '1' as '1' | '2',
   status: '',
+  new_status: '1' as '1' | '2' | '3' | '4' | '9',
   refund_amount: null as number | null,
   refund_account_bank: '',
   refund_account_number: '',
@@ -34,15 +36,16 @@ const form = reactive({
 
 const formsCheck = computed(() => {
   if (props.release) {
-    const a = form.status === props.release.status
-    const b = !form.refund_amount || form.refund_amount === props.release.refund_amount
-    const c = form.refund_account_bank === props.release.refund_account_bank
-    const d = form.refund_account_number === props.release.refund_account_number
-    const e = form.refund_account_depositor === props.release.refund_account_depositor
-    const f = form.request_date === props.release.request_date
-    const g = form.completion_date === props.release.completion_date
-    const h = form.note === props.release.note
-    return a && b && c && d && e && f && g && h
+    const a = form.release_type === props.release.release_type
+    const b = form.new_status === props.release.new_status
+    const c = !form.refund_amount || form.refund_amount === props.release.refund_amount
+    const d = form.refund_account_bank === props.release.refund_account_bank
+    const e = form.refund_account_number === props.release.refund_account_number
+    const f = form.refund_account_depositor === props.release.refund_account_depositor
+    const g = form.request_date === props.release.request_date
+    const h = form.completion_date === props.release.completion_date
+    const i = form.note === props.release.note
+    return a && b && c && d && e && f && g && h && i
   } else return false
 })
 
@@ -65,7 +68,9 @@ const formDataSet = () => {
   if (props.release) {
     form.pk = props.release.pk
     form.contractor = props.release.contractor
+    form.release_type = props.release.release_type
     form.status = props.release.status
+    form.new_status = props.release.new_status
     form.refund_amount = props.release.refund_amount
     form.refund_account_bank = props.release.refund_account_bank
     form.refund_account_number = props.release.refund_account_number
@@ -77,6 +82,8 @@ const formDataSet = () => {
 }
 
 onBeforeMount(() => formDataSet())
+
+watch([() => props.release, () => props.contractor], () => formDataSet(), { deep: true })
 </script>
 
 <template>
@@ -98,17 +105,34 @@ onBeforeMount(() => formDataSet())
 
         <CCol xs="6">
           <CRow>
-            <CFormLabel class="col-sm-4 col-form-label required">구분</CFormLabel>
+            <CFormLabel class="col-sm-4 col-form-label required">해지유형</CFormLabel>
             <CCol sm="8" class="text-left">
-              <CFormSelect v-model="form.status" required>
-                <option value="">---------</option>
-                <option v-if="release && release.status < '4'" value="0">신청 취소</option>
-                <option v-if="!release || release.status < '4'" value="3">해지 신청</option>
-                <option v-if="release" value="4">해지 완료</option>
-                <option v-if="release" value="5">자격 상실</option>
+              <CFormSelect v-model="form.release_type" required>
+                <option value="1">해지신청</option>
+                <option value="2">부적격확인</option>
               </CFormSelect>
-              <small v-if="form.status >= '4' && release.status < '4'" class="text-danger">
-                해지 완료, 자격 상실 처리된 계약 건은 계약상태로 되돌릴 수 없으므로 최종 확정된
+            </CCol>
+          </CRow>
+        </CCol>
+      </CRow>
+
+      <CRow class="mb-2">
+        <CCol xs="6">
+          <CRow>
+            <CFormLabel class="col-sm-4 col-form-label required">진행상태</CFormLabel>
+            <CCol sm="8" class="text-left">
+              <CFormSelect v-model="form.new_status" required>
+                <option value="1">신청접수</option>
+                <option value="2">해지승인</option>
+                <option value="3">변경인가대기</option>
+                <option value="4">해지확정</option>
+                <option value="9">신청취소</option>
+              </CFormSelect>
+              <small
+                v-if="form.new_status === '4' && (!release || release.new_status !== '4')"
+                class="text-danger"
+              >
+                해지 완료/확정 처리된 계약 건은 이전 계약 상태로 되돌릴 수 없으므로 최종 확정된
                 상태에서만 진행하십시요.
               </small>
             </CCol>
@@ -189,7 +213,7 @@ onBeforeMount(() => formDataSet())
             <CCol sm="8">
               <DatePicker
                 v-model="form.completion_date"
-                :required="form.status === '4'"
+                :required="form.new_status === '4'"
                 placeholder="해지종결일"
               />
             </CCol>
@@ -210,7 +234,6 @@ onBeforeMount(() => formDataSet())
     </CModalBody>
 
     <CModalFooter>
-      <v-btn type="button" :color="btnLight" size="small" @click="emit('close')"> 닫기</v-btn>
       <slot name="footer">
         <v-btn
           type="submit"
@@ -223,6 +246,7 @@ onBeforeMount(() => formDataSet())
         <v-btn v-if="release" type="button" color="warning" size="small" @click="deleteConfirm">
           삭제
         </v-btn>
+        <v-btn type="button" color="light" size="small" @click="emit('close')" flat> 닫기</v-btn>
       </slot>
     </CModalFooter>
   </CForm>
