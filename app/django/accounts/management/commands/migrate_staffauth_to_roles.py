@@ -133,9 +133,9 @@ class Command(BaseCommand):
         # 일치하는 Role이 없으면 신규 생성
         role_name = f"StaffRole_{creator.pk}"
         if dry_run:
-            role = Role(name=role_name, creator=creator)
+            role = Role(name=role_name, is_work_role=False, creator=creator)
             return role
 
-        role = Role.objects.create(name=role_name, creator=creator)
+        role = Role.objects.create(name=role_name, is_work_role=False, creator=creator)
         role.permissions.set(permissions)
         return role

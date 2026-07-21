@@ -287,6 +287,7 @@ class Module(models.Model):
 
 class Role(models.Model):
     name = models.CharField('이름', max_length=20, db_index=True)
+    is_work_role = models.BooleanField('업무 전용 역할', default=True, help_text='업무관리(이슈/회의) 전용 역할인지 여부. 체크 해제 시 IBS 건설데이터(계약/수납/회계/부지/인사 등) 관리 역할로 구분됩니다.')
     assignable = models.BooleanField('업무할당 가능 여부', default=True)
     ISSUE_VIEW_PERM = (('ALL', '모든 업무'), ('PUB', '비공개 업무 제외'), ('PRI', '직접 생성 또는 담당한 업무'), ('NOP', '없음'))
     issue_visible = models.CharField('업무 보기 권한', max_length=3, choices=ISSUE_VIEW_PERM, default='PUB')
