@@ -9840,12 +9840,13 @@
     "pk": 1,
     "fields": {
       "name": "익명",
+      "is_work_role": true,
       "assignable": false,
       "issue_visible": "PUB",
       "user_visible": "PRJ",
-      "order": 0,
+      "order": 1,
       "created": "2024-02-29T03:46:04Z",
-      "updated": "2026-07-07T09:18:23.141Z",
+      "updated": "2026-07-19T05:53:28.921Z",
       "creator": 1,
       "permissions": [
         19,
@@ -9861,12 +9862,13 @@
     "pk": 2,
     "fields": {
       "name": "일반사용자",
+      "is_work_role": true,
       "assignable": false,
       "issue_visible": "PUB",
       "user_visible": "PRJ",
-      "order": 0,
+      "order": 1,
       "created": "2024-02-29T03:47:14Z",
-      "updated": "2026-07-07T09:17:49.247Z",
+      "updated": "2026-07-19T05:53:21.312Z",
       "creator": 1,
       "permissions": [
         11,
@@ -9887,6 +9889,7 @@
     "pk": 3,
     "fields": {
       "name": "관리자",
+      "is_work_role": true,
       "assignable": true,
       "issue_visible": "ALL",
       "user_visible": "ALL",
@@ -9956,6 +9959,7 @@
     "pk": 4,
     "fields": {
       "name": "개발자",
+      "is_work_role": true,
       "assignable": true,
       "issue_visible": "PUB",
       "user_visible": "PRJ",
@@ -10003,6 +10007,7 @@
     "pk": 5,
     "fields": {
       "name": "보고자",
+      "is_work_role": true,
       "assignable": true,
       "issue_visible": "PUB",
       "user_visible": "PRJ",
@@ -10046,6 +10051,7 @@
     "pk": 6,
     "fields": {
       "name": "프로젝트 관리자",
+      "is_work_role": true,
       "assignable": true,
       "issue_visible": "ALL",
       "user_visible": "ALL",
@@ -10115,6 +10121,7 @@
     "pk": 7,
     "fields": {
       "name": "프로젝트 스태프",
+      "is_work_role": true,
       "assignable": true,
       "issue_visible": "PUB",
       "user_visible": "PRJ",
@@ -10161,13 +10168,14 @@
     "model": "work.role",
     "pk": 8,
     "fields": {
-      "name": "프로젝트 참여자",
+      "name": "프로젝트 관계자",
+      "is_work_role": true,
       "assignable": false,
       "issue_visible": "PUB",
       "user_visible": "PRJ",
       "order": 1,
       "created": "2024-07-14T00:09:41.189Z",
-      "updated": "2026-07-07T09:19:43.134Z",
+      "updated": "2026-07-19T05:52:18.472Z",
       "creator": 1,
       "permissions": [
         11,
@@ -10184,6 +10192,303 @@
         49,
         51,
         53
+      ]
+    }
+  },
+  {
+    "model": "work.role",
+    "pk": 9,
+    "fields": {
+      "name": "StaffRole_21",
+      "is_work_role": false,
+      "assignable": true,
+      "issue_visible": "PUB",
+      "user_visible": "ALL",
+      "order": 1,
+      "created": "2026-07-21T05:50:37.893Z",
+      "updated": "2026-07-21T05:50:37.893Z",
+      "creator": 21,
+      "permissions": [
+        1,
+        2,
+        3,
+        4,
+        6,
+        7,
+        8,
+        42,
+        43,
+        44,
+        45,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79
+      ]
+    }
+  },
+  {
+    "model": "work.role",
+    "pk": 10,
+    "fields": {
+      "name": "StaffRole_19",
+      "is_work_role": false,
+      "assignable": true,
+      "issue_visible": "PUB",
+      "user_visible": "ALL",
+      "order": 1,
+      "created": "2026-07-21T05:50:37.968Z",
+      "updated": "2026-07-21T05:50:37.968Z",
+      "creator": 19,
+      "permissions": [
+        1,
+        2,
+        3,
+        4,
+        6,
+        7,
+        8,
+        42,
+        43,
+        44,
+        45,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        72,
+        73,
+        74,
+        75,
+        76
+      ]
+    }
+  },
+  {
+    "model": "work.role",
+    "pk": 11,
+    "fields": {
+      "name": "StaffRole_17",
+      "is_work_role": false,
+      "assignable": true,
+      "issue_visible": "PUB",
+      "user_visible": "ALL",
+      "order": 1,
+      "created": "2026-07-21T05:50:38.035Z",
+      "updated": "2026-07-21T05:50:38.035Z",
+      "creator": 17,
+      "permissions": [
+        1,
+        2,
+        3,
+        4,
+        6,
+        7,
+        8,
+        42,
+        43,
+        44,
+        45,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        72,
+        73,
+        74,
+        75
+      ]
+    }
+  },
+  {
+    "model": "work.role",
+    "pk": 12,
+    "fields": {
+      "name": "StaffRole_10",
+      "is_work_role": false,
+      "assignable": true,
+      "issue_visible": "PUB",
+      "user_visible": "ALL",
+      "order": 1,
+      "created": "2026-07-21T05:50:38.074Z",
+      "updated": "2026-07-21T05:50:38.074Z",
+      "creator": 10,
+      "permissions": [
+        10,
+        42,
+        43,
+        44,
+        45,
+        54,
+        60,
+        64,
+        68,
+        72
+      ]
+    }
+  },
+  {
+    "model": "work.role",
+    "pk": 13,
+    "fields": {
+      "name": "StaffRole_9",
+      "is_work_role": false,
+      "assignable": true,
+      "issue_visible": "PUB",
+      "user_visible": "ALL",
+      "order": 1,
+      "created": "2026-07-21T05:50:38.103Z",
+      "updated": "2026-07-21T05:50:38.103Z",
+      "creator": 9,
+      "permissions": [
+        10,
+        42,
+        54,
+        60,
+        64,
+        68,
+        72
+      ]
+    }
+  },
+  {
+    "model": "work.role",
+    "pk": 14,
+    "fields": {
+      "name": "StaffRole_7",
+      "is_work_role": false,
+      "assignable": true,
+      "issue_visible": "PUB",
+      "user_visible": "ALL",
+      "order": 1,
+      "created": "2026-07-21T05:50:38.126Z",
+      "updated": "2026-07-21T05:50:38.126Z",
+      "creator": 7,
+      "permissions": [
+        1,
+        2,
+        3,
+        4,
+        6,
+        7,
+        8,
+        42,
+        43,
+        44,
+        45,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76
+      ]
+    }
+  },
+  {
+    "model": "work.role",
+    "pk": 15,
+    "fields": {
+      "name": "StaffRole_3",
+      "is_work_role": false,
+      "assignable": true,
+      "issue_visible": "PUB",
+      "user_visible": "ALL",
+      "order": 1,
+      "created": "2026-07-21T05:50:38.296Z",
+      "updated": "2026-07-21T05:50:38.296Z",
+      "creator": 3,
+      "permissions": [
+        10,
+        42,
+        43,
+        44,
+        45,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79
       ]
     }
   },
@@ -10771,6 +11076,292 @@
     }
   },
   {
+    "model": "work.permission",
+    "pk": 54,
+    "fields": {
+      "module": "contract",
+      "code": "contract.read",
+      "name": "계약 조회",
+      "is_default": false,
+      "description": "계약 목록/상세/현황 조회"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 55,
+    "fields": {
+      "module": "contract",
+      "code": "contract.create",
+      "name": "계약 등록",
+      "is_default": false,
+      "description": "신규 계약 생성"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 56,
+    "fields": {
+      "module": "contract",
+      "code": "contract.update",
+      "name": "계약 수정",
+      "is_default": false,
+      "description": "계약 정보 수정"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 57,
+    "fields": {
+      "module": "contract",
+      "code": "contract.delete",
+      "name": "계약 삭제",
+      "is_default": false,
+      "description": "계약 삭제"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 58,
+    "fields": {
+      "module": "contract",
+      "code": "contract.release",
+      "name": "계약 해지 처리",
+      "is_default": false,
+      "description": "해지 신청~확정 처리"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 59,
+    "fields": {
+      "module": "contract",
+      "code": "contract.succession",
+      "name": "계약 승계 처리",
+      "is_default": false,
+      "description": "승계 신청~완료 처리"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 60,
+    "fields": {
+      "module": "payment",
+      "code": "payment.read",
+      "name": "수납 조회",
+      "is_default": false,
+      "description": "수납 내역 조회"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 61,
+    "fields": {
+      "module": "payment",
+      "code": "payment.create",
+      "name": "수납 등록",
+      "is_default": false,
+      "description": "수납 등록"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 62,
+    "fields": {
+      "module": "payment",
+      "code": "payment.update",
+      "name": "수납 수정",
+      "is_default": false,
+      "description": "수납 정보 수정"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 63,
+    "fields": {
+      "module": "payment",
+      "code": "payment.delete",
+      "name": "수납 삭제",
+      "is_default": false,
+      "description": "수납 삭제"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 64,
+    "fields": {
+      "module": "notice",
+      "code": "notice.read",
+      "name": "고지 조회",
+      "is_default": false,
+      "description": "고지 내역 조회"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 65,
+    "fields": {
+      "module": "notice",
+      "code": "notice.create",
+      "name": "고지 발송",
+      "is_default": false,
+      "description": "고지서 발송/라벨/SMS"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 66,
+    "fields": {
+      "module": "notice",
+      "code": "notice.update",
+      "name": "고지 수정",
+      "is_default": false,
+      "description": "발송 내역 수정"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 67,
+    "fields": {
+      "module": "notice",
+      "code": "notice.delete",
+      "name": "고지 삭제",
+      "is_default": false,
+      "description": "발송 내역 삭제"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 68,
+    "fields": {
+      "module": "ledger",
+      "code": "ledger.read",
+      "name": "원장 조회",
+      "is_default": false,
+      "description": "자금 현황 조회"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 69,
+    "fields": {
+      "module": "ledger",
+      "code": "ledger.create",
+      "name": "원장 등록",
+      "is_default": false,
+      "description": "회계 분개 생성"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 70,
+    "fields": {
+      "module": "ledger",
+      "code": "ledger.update",
+      "name": "원장 수정",
+      "is_default": false,
+      "description": "회계 분개 수정"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 71,
+    "fields": {
+      "module": "ledger",
+      "code": "ledger.delete",
+      "name": "원장 삭제",
+      "is_default": false,
+      "description": "회계 분개 삭제"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 72,
+    "fields": {
+      "module": "site",
+      "code": "site.read",
+      "name": "부지 조회",
+      "is_default": false,
+      "description": "부지/소유자/계약 조회"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 73,
+    "fields": {
+      "module": "site",
+      "code": "site.create",
+      "name": "부지 등록",
+      "is_default": false,
+      "description": "부지 정보 등록"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 74,
+    "fields": {
+      "module": "site",
+      "code": "site.update",
+      "name": "부지 수정",
+      "is_default": false,
+      "description": "부지 정보 수정"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 75,
+    "fields": {
+      "module": "site",
+      "code": "site.delete",
+      "name": "부지 삭제",
+      "is_default": false,
+      "description": "부지 정보 삭제"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 76,
+    "fields": {
+      "module": "hr_work",
+      "code": "hr_work.read",
+      "name": "인사 조회",
+      "is_default": false,
+      "description": "직원/부서/직급 조회"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 77,
+    "fields": {
+      "module": "hr_work",
+      "code": "hr_work.create",
+      "name": "인사 등록",
+      "is_default": false,
+      "description": "직원/부서 등록"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 78,
+    "fields": {
+      "module": "hr_work",
+      "code": "hr_work.update",
+      "name": "인사 수정",
+      "is_default": false,
+      "description": "직원/부서 수정"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 79,
+    "fields": {
+      "module": "hr_work",
+      "code": "hr_work.delete",
+      "name": "인사 삭제",
+      "is_default": false,
+      "description": "직원/부서 삭제"
+    }
+  },
+  {
     "model": "work.tracker",
     "pk": 1,
     "fields": {
@@ -10845,12 +11436,12 @@
     "pk": 6,
     "fields": {
       "name": "대관업무",
-      "description": "인허가 관련 협의, 심의, 신고, 공문 대응 등 대관업무",
+      "description": "인허가 관련 행정 협의, 심의, 신고, 공문 대응 등 대관업무",
       "is_in_roadmap": true,
       "default_status": 1,
       "order": 1,
       "created": "2024-07-10T03:51:24.595Z",
-      "updated": "2026-06-07T17:19:49.248Z",
+      "updated": "2026-07-19T15:56:46.636Z",
       "creator": 1
     }
   },
@@ -10859,12 +11450,12 @@
     "pk": 7,
     "fields": {
       "name": "협력업체",
-      "description": "외부 민간 파트너(금융/시공/신탁/기타) 협력 업무",
+      "description": "외부 민간 파트너(금융/시공/신탁/설계/기타) 협력 업무",
       "is_in_roadmap": true,
       "default_status": 1,
       "order": 1,
       "created": "2024-12-23T02:08:33.472Z",
-      "updated": "2026-06-07T04:42:33.333Z",
+      "updated": "2026-07-19T15:53:14.092Z",
       "creator": 1
     }
   },
@@ -10873,12 +11464,12 @@
     "pk": 8,
     "fields": {
       "name": "지원업무",
-      "description": "회계, 법무, IT 시스템, 기타 관리 지원 업무",
+      "description": "회계, 총무, 인사, 법무, IT 시스템, 기타 운영 지원 업무",
       "is_in_roadmap": true,
       "default_status": 1,
       "order": 1,
       "created": "2026-06-07T04:41:28.236Z",
-      "updated": "2026-06-07T04:41:28.236Z",
+      "updated": "2026-07-19T16:00:55.688Z",
       "creator": 1
     }
   },
@@ -11041,8 +11632,8 @@
       "column_names": [],
       "sort_criteria": [],
       "group_by": "",
-      "created": "2026-07-16T10:40:00.000Z",
-      "updated": "2026-07-16T10:40:00.000Z"
+      "created": "2026-07-16T10:40:00Z",
+      "updated": "2026-07-16T10:40:00Z"
     }
   },
   {
@@ -11061,8 +11652,8 @@
       "column_names": [],
       "sort_criteria": [],
       "group_by": "",
-      "created": "2026-07-16T10:40:00.000Z",
-      "updated": "2026-07-16T10:40:00.000Z"
+      "created": "2026-07-16T10:40:00Z",
+      "updated": "2026-07-16T10:40:00Z"
     }
   },
   {
@@ -11081,8 +11672,8 @@
       "column_names": [],
       "sort_criteria": [],
       "group_by": "",
-      "created": "2026-07-16T10:40:00.000Z",
-      "updated": "2026-07-16T10:40:00.000Z"
+      "created": "2026-07-16T10:40:00Z",
+      "updated": "2026-07-16T10:40:00Z"
     }
   },
   {
@@ -11101,8 +11692,8 @@
       "column_names": [],
       "sort_criteria": [],
       "group_by": "",
-      "created": "2026-07-16T10:40:00.000Z",
-      "updated": "2026-07-16T10:40:00.000Z"
+      "created": "2026-07-16T10:40:00Z",
+      "updated": "2026-07-16T10:40:00Z"
     }
   },
   {
@@ -11121,8 +11712,8 @@
       "column_names": [],
       "sort_criteria": [],
       "group_by": "",
-      "created": "2026-07-16T10:40:00.000Z",
-      "updated": "2026-07-16T10:40:00.000Z"
+      "created": "2026-07-16T10:40:00Z",
+      "updated": "2026-07-16T10:40:00Z"
     }
   },
   {
@@ -11141,8 +11732,8 @@
       "column_names": [],
       "sort_criteria": [],
       "group_by": "",
-      "created": "2026-07-16T10:40:00.000Z",
-      "updated": "2026-07-16T10:40:00.000Z"
+      "created": "2026-07-16T10:40:00Z",
+      "updated": "2026-07-16T10:40:00Z"
     }
   }
 ]
