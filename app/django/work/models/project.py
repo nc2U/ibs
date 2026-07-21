@@ -309,7 +309,9 @@ class Role(models.Model):
 
 class Permission(models.Model):
     MODULE_CHOICES = (('project', '프로젝트'), ('meeting', '회의'), ('issue', '업무'),
-                      ('news', '공지'), ('docs', '문서'), ('forum', '게시판'), ('calendar', '캘린더'))
+                      ('news', '공지'), ('docs', '문서'), ('forum', '게시판'), ('calendar', '캘린더'),
+                      ('contract', '계약 관리'), ('payment', '수납 관리'), ('notice', '고지 관리'),
+                      ('ledger', '자금/원장 관리'), ('site', '사업 부지 관리'), ('hr_work', '인사 관리'))
     module = models.CharField('모듈', max_length=10, choices=MODULE_CHOICES, db_index=True)
     code = models.CharField('코드', max_length=30, unique=True)
     name = models.CharField('이름', max_length=20)

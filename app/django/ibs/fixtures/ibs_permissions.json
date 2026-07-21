@@ -1,0 +1,288 @@
+[
+  {
+    "model": "work.permission",
+    "pk": 54,
+    "fields": {
+      "module": "contract",
+      "code": "contract.read",
+      "name": "계약 조회",
+      "is_default": false,
+      "description": "계약 목록/상세/현황 조회"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 55,
+    "fields": {
+      "module": "contract",
+      "code": "contract.create",
+      "name": "계약 등록",
+      "is_default": false,
+      "description": "신규 계약 생성"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 56,
+    "fields": {
+      "module": "contract",
+      "code": "contract.update",
+      "name": "계약 수정",
+      "is_default": false,
+      "description": "계약 정보 수정"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 57,
+    "fields": {
+      "module": "contract",
+      "code": "contract.delete",
+      "name": "계약 삭제",
+      "is_default": false,
+      "description": "계약 삭제"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 58,
+    "fields": {
+      "module": "contract",
+      "code": "contract.release",
+      "name": "계약 해지 처리",
+      "is_default": false,
+      "description": "해지 신청~확정 처리"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 59,
+    "fields": {
+      "module": "contract",
+      "code": "contract.succession",
+      "name": "계약 승계 처리",
+      "is_default": false,
+      "description": "승계 신청~완료 처리"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 60,
+    "fields": {
+      "module": "payment",
+      "code": "payment.read",
+      "name": "수납 조회",
+      "is_default": false,
+      "description": "수납 내역 조회"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 61,
+    "fields": {
+      "module": "payment",
+      "code": "payment.create",
+      "name": "수납 등록",
+      "is_default": false,
+      "description": "수납 등록"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 62,
+    "fields": {
+      "module": "payment",
+      "code": "payment.update",
+      "name": "수납 수정",
+      "is_default": false,
+      "description": "수납 정보 수정"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 63,
+    "fields": {
+      "module": "payment",
+      "code": "payment.delete",
+      "name": "수납 삭제",
+      "is_default": false,
+      "description": "수납 삭제"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 64,
+    "fields": {
+      "module": "notice",
+      "code": "notice.read",
+      "name": "고지 조회",
+      "is_default": false,
+      "description": "고지 내역 조회"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 65,
+    "fields": {
+      "module": "notice",
+      "code": "notice.create",
+      "name": "고지 발송",
+      "is_default": false,
+      "description": "고지서 발송/라벨/SMS"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 66,
+    "fields": {
+      "module": "notice",
+      "code": "notice.update",
+      "name": "고지 수정",
+      "is_default": false,
+      "description": "발송 내역 수정"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 67,
+    "fields": {
+      "module": "notice",
+      "code": "notice.delete",
+      "name": "고지 삭제",
+      "is_default": false,
+      "description": "발송 내역 삭제"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 68,
+    "fields": {
+      "module": "ledger",
+      "code": "ledger.read",
+      "name": "원장 조회",
+      "is_default": false,
+      "description": "자금 현황 조회"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 69,
+    "fields": {
+      "module": "ledger",
+      "code": "ledger.create",
+      "name": "원장 등록",
+      "is_default": false,
+      "description": "회계 분개 생성"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 70,
+    "fields": {
+      "module": "ledger",
+      "code": "ledger.update",
+      "name": "원장 수정",
+      "is_default": false,
+      "description": "회계 분개 수정"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 71,
+    "fields": {
+      "module": "ledger",
+      "code": "ledger.delete",
+      "name": "원장 삭제",
+      "is_default": false,
+      "description": "회계 분개 삭제"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 72,
+    "fields": {
+      "module": "site",
+      "code": "site.read",
+      "name": "부지 조회",
+      "is_default": false,
+      "description": "부지/소유자/계약 조회"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 73,
+    "fields": {
+      "module": "site",
+      "code": "site.create",
+      "name": "부지 등록",
+      "is_default": false,
+      "description": "부지 정보 등록"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 74,
+    "fields": {
+      "module": "site",
+      "code": "site.update",
+      "name": "부지 수정",
+      "is_default": false,
+      "description": "부지 정보 수정"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 75,
+    "fields": {
+      "module": "site",
+      "code": "site.delete",
+      "name": "부지 삭제",
+      "is_default": false,
+      "description": "부지 정보 삭제"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 76,
+    "fields": {
+      "module": "hr_work",
+      "code": "hr_work.read",
+      "name": "인사 조회",
+      "is_default": false,
+      "description": "직원/부서/직급 조회"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 77,
+    "fields": {
+      "module": "hr_work",
+      "code": "hr_work.create",
+      "name": "인사 등록",
+      "is_default": false,
+      "description": "직원/부서 등록"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 78,
+    "fields": {
+      "module": "hr_work",
+      "code": "hr_work.update",
+      "name": "인사 수정",
+      "is_default": false,
+      "description": "직원/부서 수정"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 79,
+    "fields": {
+      "module": "hr_work",
+      "code": "hr_work.delete",
+      "name": "인사 삭제",
+      "is_default": false,
+      "description": "직원/부서 삭제"
+    }
+  }
+]
