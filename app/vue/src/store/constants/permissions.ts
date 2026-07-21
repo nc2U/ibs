@@ -65,6 +65,44 @@ export const PERM = {
 
   // Calendar permissions
   CALENDAR_READ: 'calendar.read',
+
+  // Contract permissions
+  CONTRACT_READ: 'contract.read',
+  CONTRACT_CREATE: 'contract.create',
+  CONTRACT_UPDATE: 'contract.update',
+  CONTRACT_DELETE: 'contract.delete',
+  CONTRACT_RELEASE: 'contract.release',
+  CONTRACT_SUCCESSION: 'contract.succession',
+
+  // Payment permissions
+  PAYMENT_READ: 'payment.read',
+  PAYMENT_CREATE: 'payment.create',
+  PAYMENT_UPDATE: 'payment.update',
+  PAYMENT_DELETE: 'payment.delete',
+
+  // Notice permissions
+  NOTICE_READ: 'notice.read',
+  NOTICE_CREATE: 'notice.create',
+  NOTICE_UPDATE: 'notice.update',
+  NOTICE_DELETE: 'notice.delete',
+
+  // Ledger permissions
+  LEDGER_READ: 'ledger.read',
+  LEDGER_CREATE: 'ledger.create',
+  LEDGER_UPDATE: 'ledger.update',
+  LEDGER_DELETE: 'ledger.delete',
+
+  // Site permissions
+  SITE_READ: 'site.read',
+  SITE_CREATE: 'site.create',
+  SITE_UPDATE: 'site.update',
+  SITE_DELETE: 'site.delete',
+
+  // HR Work permissions
+  HR_WORK_READ: 'hr_work.read',
+  HR_WORK_CREATE: 'hr_work.create',
+  HR_WORK_UPDATE: 'hr_work.update',
+  HR_WORK_DELETE: 'hr_work.delete',
 } as const
 
 export type PermissionCode = (typeof PERM)[keyof typeof PERM]
