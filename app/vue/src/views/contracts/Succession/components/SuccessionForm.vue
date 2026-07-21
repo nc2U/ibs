@@ -525,12 +525,12 @@ watch([() => props.succession, contractor], () => formDataSet(), { deep: true })
 
         <CCol xs="6">
           <CRow>
-            <CFormLabel class="col-sm-4 col-form-label"> 변경인가일</CFormLabel>
+            <CFormLabel class="col-sm-4 col-form-label" :class="{ required: form.status === '3' && contract?.order_group_sort !== '2' }"> 변경인가일</CFormLabel>
             <CCol sm="8">
               <DatePicker
                 v-model="form.approval_date"
-                :required="form.status === '3'"
-                :disabled="form.status !== '3'"
+                :required="form.status === '3' && contract?.order_group_sort !== '2'"
+                :disabled="form.status !== '3' || contract?.order_group_sort === '2'"
                 placeholder="변경인가일"
               />
             </CCol>
