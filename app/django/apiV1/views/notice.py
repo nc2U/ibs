@@ -14,6 +14,7 @@ from contract.models import ContractorContact, Contractor, Contract
 from notice.models import SalesBillIssue, RegisteredSenderNumber, MessageTemplate, MessageSendHistory
 from notice.utils import IwinvSMSService
 from apiV1.permissions.auth_perms import permissions, IsProjectStaffOrReadOnly
+from apiV1.permissions.ibs_perms import IbsModulePermission
 from ..serializers.notice import SallesBillIssueSerializer, RegisteredSenderNumberSerializer, \
     MessageTemplateSerializer, SMSMessageSerializer, MMSMessageSerializer, KakaoMessageSerializer, \
     SMSHistoryQuerySerializer, MessageSendHistoryListSerializer, MessageSendHistorySerializer
@@ -23,7 +24,11 @@ class BillIssueViewSet(viewsets.ModelViewSet):
     queryset = SalesBillIssue.objects.all()
     serializer_class = SallesBillIssueSerializer
     filterset_fields = ('project',)
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
+
+    @property
+    def required_permission(self):
+        return 'notice.read' if self.action in ('list', 'retrieve') else 'notice.create' if self.action == 'create' else 'notice.update' if self.action in ('update', 'partial_update') else 'notice.delete' if self.action == 'destroy' else 'notice.read'
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)

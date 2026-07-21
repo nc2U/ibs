@@ -15,6 +15,7 @@ import django_filters
 from _utils.contract_price import get_project_payment_summary, get_multiple_projects_payment_summary, \
     get_contract_price, get_contract_payment_plan
 from apiV1.permissions.auth_perms import permissions, IsProjectStaffOrReadOnly
+from apiV1.permissions.ibs_perms import IbsModulePermission
 from contract.models import OrderGroup, DocumentType, RequiredDocument, Contractor, Contract, ContractPrice, \
     ContractFile, ContractDocument, ContractDocumentFile, ContractorAddress, ContractorContact, \
     ContractorConsultationLogs, Succession, ContractorRelease
@@ -36,9 +37,13 @@ from ..serializers.contract import OrderGroupSerializer, DocumentTypeSerializer,
 class OrderGroupViewSet(viewsets.ModelViewSet):
     queryset = OrderGroup.objects.all()
     serializer_class = OrderGroupSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     filterset_fields = ('project', 'sort')
     search_fields = ('name',)
+
+    @property
+    def required_permission(self):
+        return 'contract.read' if self.action in ('list', 'retrieve') else 'contract.create' if self.action == 'create' else 'contract.update' if self.action in ('update', 'partial_update') else 'contract.delete' if self.action == 'destroy' else 'contract.read'
 
 
 class DocumentTypeViewSet(viewsets.ModelViewSet):
@@ -106,8 +111,12 @@ class ContractFilter(FilterSet):
 class ContractViewSet(viewsets.ModelViewSet):
     queryset = Contract.objects.all()
     serializer_class = ContractSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     pagination_class = PageNumberPaginationFifteen
+
+    @property
+    def required_permission(self):
+        return 'contract.read' if self.action in ('list', 'retrieve', 'recent_logs', 'find_page', 'payment_summary', 'payment_plan', 'price_payment_plan', 'multi_project_payment_summary') else 'contract.create' if self.action == 'create' else 'contract.update' if self.action in ('update', 'partial_update') else 'contract.delete' if self.action == 'destroy' else 'contract.read'
     filterset_class = ContractFilter
     search_fields = ('serial_number', 'contractor__name',
                      'contractor__note', 'succession__seller__name',
@@ -704,8 +713,12 @@ class ContractorConsultationLogsViewSet(viewsets.ModelViewSet):
 class SuccessionViewSet(viewsets.ModelViewSet):
     queryset = Succession.objects.all()
     serializer_class = SuccessionSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     filterset_fields = ('contract__project',)
+
+    @property
+    def required_permission(self):
+        return 'contract.read' if self.action in ('list', 'retrieve', 'find_page') else 'contract.succession'
 
     def get_queryset(self):
         queryset = Succession.objects.all()
@@ -779,8 +792,12 @@ class SuccessionViewSet(viewsets.ModelViewSet):
 class ContReleaseViewSet(viewsets.ModelViewSet):
     queryset = ContractorRelease.objects.all()
     serializer_class = ContractorReleaseSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     filterset_fields = ('project', 'status')
+
+    @property
+    def required_permission(self):
+        return 'contract.read' if self.action in ('list', 'retrieve', 'find_page') else 'contract.release'
 
     def get_queryset(self):
         queryset = ContractorRelease.objects.all()

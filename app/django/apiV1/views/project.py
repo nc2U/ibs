@@ -12,6 +12,7 @@ from project.models import Project, ProjectIncBudget, ProjectOutBudget, Site, Si
 from ..pagination import PageNumberPaginationFifty, PageNumberPaginationOneHundred, \
     PageNumberPaginationFiveHundred, PageNumberPaginationOneThousand
 from apiV1.permissions.auth_perms import permissions, IsProjectStaffOrReadOnly
+from apiV1.permissions.ibs_perms import IbsModulePermission
 from ..serializers.project import ProjectSerializer, ProjectIncBudgetSerializer, ProjectOutBudgetSerializer, \
     StatusOutBudgetSerializer, LedgerExecAmountToBudgetSerializer, TotalSiteAreaSerializer, SiteSerializer, \
     AllSiteSerializer, TotalOwnerAreaSerializer, SiteOwnerSerializer, AllOwnerSerializer, \
@@ -170,8 +171,12 @@ class TotalOwnerAreaViewSet(viewsets.ReadOnlyModelViewSet):
 class SiteOwnerViewSet(viewsets.ModelViewSet):
     queryset = SiteOwner.objects.all()
     serializer_class = SiteOwnerSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     pagination_class = PageNumberPaginationOneHundred
+
+    @property
+    def required_permission(self):
+        return 'site.read' if self.action in ('list', 'retrieve', 'find_page') else 'site.create' if self.action == 'create' else 'site.update' if self.action in ('update', 'partial_update') else 'site.delete' if self.action == 'destroy' else 'site.read'
     filterset_fields = ('project', 'own_sort', 'use_consent')
     search_fields = ('owner', 'phone1', 'phone2', 'sites__lot_number', 'note')
 
@@ -244,8 +249,12 @@ class TotalContractedAreaViewSet(viewsets.ReadOnlyModelViewSet):
 class SiteContractViewSet(viewsets.ModelViewSet):
     queryset = SiteContract.objects.all()
     serializer_class = SiteContractSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     pagination_class = PageNumberPaginationOneHundred
+
+    @property
+    def required_permission(self):
+        return 'site.read' if self.action in ('list', 'retrieve', 'find_page') else 'site.create' if self.action == 'create' else 'site.update' if self.action in ('update', 'partial_update') else 'site.delete' if self.action == 'destroy' else 'site.read'
     filterset_fields = ('project', 'owner__own_sort')
     search_fields = ('owner__owner', 'owner__phone1', 'acc_bank', 'acc_owner', 'note')
 

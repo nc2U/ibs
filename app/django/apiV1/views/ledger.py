@@ -21,6 +21,7 @@ from ledger.services.company_transaction import get_company_transactions
 from ledger.services.project_transaction import get_project_transactions, prefetch_project_transactions
 from ..pagination import PageNumberPaginationFifteen, PageNumberPaginationFifty, PageNumberPaginationThreeHundred
 from apiV1.permissions.auth_perms import IsStaffOrReadOnly
+from apiV1.permissions.ibs_perms import IbsModulePermission
 from ..serializers.ledger import (
     CompanyAccountSerializer, ProjectAccountSerializer, AffiliateSerializer,
     AccountSearchResultSerializer, LedgerBankCodeSerializer,
@@ -542,11 +543,15 @@ class CompanyBankTransactionViewSet(viewsets.ModelViewSet):
 
 
 class ProjectBankTransactionViewSet(viewsets.ModelViewSet):
-    """프로젝트 은행 거래 ViewSet"""
+    """프로젝트 거래 내역 ViewSet"""
     queryset = ProjectBankTransaction.objects.all()
     serializer_class = ProjectBankTransactionSerializer
-    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly, IbsModulePermission)
     pagination_class = PageNumberPaginationFifteen
+
+    @property
+    def required_permission(self):
+        return 'ledger.read' if self.action in ('list', 'retrieve') else 'ledger.create' if self.action == 'create' else 'ledger.update' if self.action in ('update', 'partial_update') else 'ledger.delete' if self.action == 'destroy' else 'ledger.read'
 
     def get_queryset(self):
         """기본 상세 조회 및 생성/수정용 쿼리셋 반환"""

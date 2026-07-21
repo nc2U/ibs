@@ -21,6 +21,7 @@ from project.models import ProjectIncBudget
 from ..pagination import PageNumberPaginationTwenty, PageNumberPaginationFifty, \
     PageNumberPaginationTen, PageNumberPaginationOneHundred
 from apiV1.permissions.auth_perms import permissions, IsProjectStaffOrReadOnly
+from apiV1.permissions.ibs_perms import IbsModulePermission
 from ..serializers.payment import InstallmentOrderSerializer, SalesPriceSerializer, \
     PaymentPerInstallmentSerializer, DownPaymentSerializer, OverDueRuleSerializer, \
     PaymentSummaryComponentSerializer, PaymentStatusByUnitTypeSerializer, OverallSummarySerializer, \
@@ -79,6 +80,20 @@ class PaymentPerInstallmentViewSet(viewsets.ModelViewSet):
     pagination_class = PageNumberPaginationTwenty
     filterset_fields = ('sales_price', 'sales_price__project', 'sales_price__order_group',
                         'sales_price__unit_type', 'pay_order')
+
+
+class ContractPaymentViewSet(viewsets.ModelViewSet):
+    queryset = ContractPayment.objects.all()
+    serializer_class = ContractPaymentSerializer
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
+    pagination_class = PageNumberPaginationTwenty
+    filterset_fields = ('contract__project', 'installment_order', 'contract', 'contract__contractor__status')
+    search_fields = ('contract__serial_number', 'contract__contractor__name')
+    ordering = ('-deal_date', '-id')
+
+    @property
+    def required_permission(self):
+        return 'payment.read' if self.action in ('list', 'retrieve') else 'payment.create' if self.action == 'create' else 'payment.update' if self.action in ('update', 'partial_update') else 'payment.delete' if self.action == 'destroy' else 'payment.read'
 
 
 class DownPaymentViewSet(viewsets.ModelViewSet):
