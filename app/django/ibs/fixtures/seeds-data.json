@@ -9840,7 +9840,6 @@
     "pk": 1,
     "fields": {
       "name": "익명",
-      "is_work_role": true,
       "assignable": false,
       "issue_visible": "PUB",
       "user_visible": "PRJ",
@@ -9862,7 +9861,6 @@
     "pk": 2,
     "fields": {
       "name": "일반사용자",
-      "is_work_role": true,
       "assignable": false,
       "issue_visible": "PUB",
       "user_visible": "PRJ",
@@ -9889,7 +9887,6 @@
     "pk": 3,
     "fields": {
       "name": "관리자",
-      "is_work_role": true,
       "assignable": true,
       "issue_visible": "ALL",
       "user_visible": "ALL",
@@ -9959,7 +9956,6 @@
     "pk": 4,
     "fields": {
       "name": "개발자",
-      "is_work_role": true,
       "assignable": true,
       "issue_visible": "PUB",
       "user_visible": "PRJ",
@@ -10007,7 +10003,6 @@
     "pk": 5,
     "fields": {
       "name": "보고자",
-      "is_work_role": true,
       "assignable": true,
       "issue_visible": "PUB",
       "user_visible": "PRJ",
@@ -10051,7 +10046,6 @@
     "pk": 6,
     "fields": {
       "name": "프로젝트 관리자",
-      "is_work_role": true,
       "assignable": true,
       "issue_visible": "ALL",
       "user_visible": "ALL",
@@ -10121,7 +10115,6 @@
     "pk": 7,
     "fields": {
       "name": "프로젝트 스태프",
-      "is_work_role": true,
       "assignable": true,
       "issue_visible": "PUB",
       "user_visible": "PRJ",
@@ -10169,7 +10162,6 @@
     "pk": 8,
     "fields": {
       "name": "프로젝트 관계자",
-      "is_work_role": true,
       "assignable": false,
       "issue_visible": "PUB",
       "user_visible": "PRJ",

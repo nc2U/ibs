@@ -6,51 +6,51 @@
 
 ## 1. 현 시스템 전체 메뉴 vs pageAuth 함수 매핑
 
-| Vue 뷰 디렉토리 | 실제 메뉴 | 현재 pageAuth 함수 | 신규 Permission 모듈 |
-|---|---|---|---|
-| `views/projects/List` | 프로젝트 기본 정보 | `write_project` | `project` (기존) |
-| `views/projects/Building` | 동·호수 관리 | `write_project` | `project` |
-| `views/projects/Floor` | 층 정보 관리 | `write_project` | `project` |
-| `views/projects/Type`, `Unit` | 타입/유닛 관리 | `write_project` | `project` |
-| `views/projects/OrderGroup` | 차수 관리 | `write_project` | `project` |
-| `views/projects/PayOrder` | 납부 순서 관리 | `write_project` | `project` |
-| `views/projects/Price` | 분양 가격 관리 | `write_project` | `project` |
-| `views/projects/DownPay` | 계약금 옵션 | `write_project` | `project` |
-| `views/projects/PaidOption` | 유상 옵션 | `write_project` | `project` |
-| `views/projects/Required` | 필수 서류 관리 | `write_project` | `project` |
-| `views/projects/IncBudget` | 수입 예산 | `write_project` | `project` |
-| `views/projects/OutBudget` | 지출 예산 | `write_project` | `project` |
-| `views/projects/SiteList` | 사업 부지 목록 | `write_project_site` | **`site`** (신규) |
-| `views/projects/SiteOwner` | 사업 부지 소유자 | `write_project_site` | **`site`** |
-| `views/projects/SiteContract` | 부지 매입 계약 | `write_project_site` | **`site`** |
-| `views/contracts/List` | 계약 목록/등록 | `write_contract` | **`contract`** (신규) |
-| `views/contracts/Manage` | 계약 상세 관리 | `write_contract` | **`contract`** |
-| `views/contracts/Succession` | 계약 승계 | `write_contract` | **`contract`** |
-| `views/contracts/Release` | 계약 해지 | `write_contract` | **`contract`** |
-| `views/contracts/Status` | 계약 현황 | `read_contract` | **`contract`** |
-| `views/payment/List` | 수납 목록 | `write_payment` | **`payment`** (신규) |
-| `views/payment/Register` | 수납 등록 | `write_payment` | **`payment`** |
-| `views/notices/Bill` | 분양 대금 고지 | `write_notice` | **`notice`** (신규) |
-| `views/notices/Label` | 고지 라벨 출력 | `write_notice` | **`notice`** |
-| `views/notices/Mailing` | 우편 발송 관리 | `write_notice` | **`notice`** |
-| `views/notices/Sms` | SMS 발송 관리 | `write_notice` | **`notice`** |
-| `views/notices/Log` | 고지 발송 이력 | `read_notice` | **`notice`** |
-| `views/proLedger/Manage` | 사업비 자금 관리 | `write_project_cash` | **`ledger`** (신규) |
-| `views/proLedger/Imprest` | 소액 운영비 관리 | `write_project_cash` | **`ledger`** |
-| `views/proLedger/Status` | 자금 현황 | `read_project_cash` | **`ledger`** |
-| `views/comLedger/Manage` | 본사 회계 관리 | `write_company_cash` | **`ledger`** |
-| `views/comLedger/Status` | 본사 회계 현황 | `read_project_cash` | **`ledger`** |
-| `views/proDocs/GeneralDocs` | 사업지 일반 문서 | `write_project_docs` | `docs` (기존) |
-| `views/proDocs/LawsuitCase` | 소송 사건 | `write_project_docs` | `docs` |
-| `views/proDocs/LawsuitDocs` | 소송 문서 | `write_project_docs` | `docs` |
-| `views/comDocs/*` | 본사 문서 전반 | `write_company_docs` | `docs` |
-| `views/hrManage/Staff` | 직원 관리 | `write_human_resource` | **`hr_work`** (신규) |
-| `views/hrManage/Department` | 부서 관리 | `write_human_resource` | **`hr_work`** |
-| `views/hrManage/Duty` | 업무 분장 | `write_human_resource` | **`hr_work`** |
-| `views/hrManage/Grade` | 직급 관리 | `write_human_resource` | **`hr_work`** |
-| `views/hrManage/Position` | 직위 관리 | `write_human_resource` | **`hr_work`** |
-| `views/settings/Authorization` | 권한 설정 | `write_auth_manage` | `project` (기존) |
-| `views/settings/Company` | 회사 설정 | `write_company_settings` | `project` (기존) |
+| Vue 뷰 디렉토리                     | 실제 메뉴      | 현재 pageAuth 함수           | 신규 Permission 모듈    |
+|--------------------------------|------------|--------------------------|---------------------|
+| `views/projects/List`          | 프로젝트 기본 정보 | `write_project`          | `project` (기존)      |
+| `views/projects/Building`      | 동·호수 관리    | `write_project`          | `project`           |
+| `views/projects/Floor`         | 층 정보 관리    | `write_project`          | `project`           |
+| `views/projects/Type`, `Unit`  | 타입/유닛 관리   | `write_project`          | `project`           |
+| `views/projects/OrderGroup`    | 차수 관리      | `write_project`          | `project`           |
+| `views/projects/PayOrder`      | 납부 순서 관리   | `write_project`          | `project`           |
+| `views/projects/Price`         | 분양 가격 관리   | `write_project`          | `project`           |
+| `views/projects/DownPay`       | 계약금 옵션     | `write_project`          | `project`           |
+| `views/projects/PaidOption`    | 유상 옵션      | `write_project`          | `project`           |
+| `views/projects/Required`      | 필수 서류 관리   | `write_project`          | `project`           |
+| `views/projects/IncBudget`     | 수입 예산      | `write_project`          | `project`           |
+| `views/projects/OutBudget`     | 지출 예산      | `write_project`          | `project`           |
+| `views/projects/SiteList`      | 사업 부지 목록   | `write_project_site`     | **`site`** (신규)     |
+| `views/projects/SiteOwner`     | 사업 부지 소유자  | `write_project_site`     | **`site`**          |
+| `views/projects/SiteContract`  | 부지 매입 계약   | `write_project_site`     | **`site`**          |
+| `views/contracts/List`         | 계약 목록/등록   | `write_contract`         | **`contract`** (신규) |
+| `views/contracts/Manage`       | 계약 상세 관리   | `write_contract`         | **`contract`**      |
+| `views/contracts/Succession`   | 계약 승계      | `write_contract`         | **`contract`**      |
+| `views/contracts/Release`      | 계약 해지      | `write_contract`         | **`contract`**      |
+| `views/contracts/Status`       | 계약 현황      | `read_contract`          | **`contract`**      |
+| `views/payment/List`           | 수납 목록      | `write_payment`          | **`payment`** (신규)  |
+| `views/payment/Register`       | 수납 등록      | `write_payment`          | **`payment`**       |
+| `views/notices/Bill`           | 분양 대금 고지   | `write_notice`           | **`notice`** (신규)   |
+| `views/notices/Label`          | 고지 라벨 출력   | `write_notice`           | **`notice`**        |
+| `views/notices/Mailing`        | 우편 발송 관리   | `write_notice`           | **`notice`**        |
+| `views/notices/Sms`            | SMS 발송 관리  | `write_notice`           | **`notice`**        |
+| `views/notices/Log`            | 고지 발송 이력   | `read_notice`            | **`notice`**        |
+| `views/proLedger/Manage`       | 사업비 자금 관리  | `write_project_cash`     | **`ledger`** (신규)   |
+| `views/proLedger/Imprest`      | 소액 운영비 관리  | `write_project_cash`     | **`ledger`**        |
+| `views/proLedger/Status`       | 자금 현황      | `read_project_cash`      | **`ledger`**        |
+| `views/comLedger/Manage`       | 본사 회계 관리   | `write_company_cash`     | **`ledger`**        |
+| `views/comLedger/Status`       | 본사 회계 현황   | `read_project_cash`      | **`ledger`**        |
+| `views/proDocs/GeneralDocs`    | 사업지 일반 문서  | `write_project_docs`     | `docs` (기존)         |
+| `views/proDocs/LawsuitCase`    | 소송 사건      | `write_project_docs`     | `docs`              |
+| `views/proDocs/LawsuitDocs`    | 소송 문서      | `write_project_docs`     | `docs`              |
+| `views/comDocs/*`              | 본사 문서 전반   | `write_company_docs`     | `docs`              |
+| `views/hrManage/Staff`         | 직원 관리      | `write_human_resource`   | **`hr_work`** (신규)  |
+| `views/hrManage/Department`    | 부서 관리      | `write_human_resource`   | **`hr_work`**       |
+| `views/hrManage/Duty`          | 업무 분장      | `write_human_resource`   | **`hr_work`**       |
+| `views/hrManage/Grade`         | 직급 관리      | `write_human_resource`   | **`hr_work`**       |
+| `views/hrManage/Position`      | 직위 관리      | `write_human_resource`   | **`hr_work`**       |
+| `views/settings/Authorization` | 권한 설정      | `write_auth_manage`      | `project` (기존)      |
+| `views/settings/Company`       | 회사 설정      | `write_company_settings` | `project` (기존)      |
 
 ---
 
@@ -58,26 +58,26 @@
 
 ### 기존 모듈 (유지/재사용)
 
-| 모듈 코드 | 설명 | 해당 StaffAuth 필드 |
-|---|---|---|
-| `project` | 건설 프로젝트 설정/관리 + 시스템 설정 | `project`, `project_site`(일부), `company_settings`, `auth_manage` |
-| `meeting` | 회의 관리 (업무시스템) | *(StaffAuth 없음, 기존 work 권한)* |
-| `issue` | 업무(이슈) 관리 | *(StaffAuth 없음, 기존 work 권한)* |
-| `news` | 업무 공지 | *(StaffAuth 없음, 기존 work 권한)* |
-| `docs` | 문서 관리 (사업지 + 본사) | `project_docs`, `company_docs` |
-| `forum` | 게시판 | *(StaffAuth 없음, 기존 work 권한)* |
-| `calendar` | 캘린더 | *(StaffAuth 없음, 기존 work 권한)* |
+| 모듈 코드      | 설명                     | 해당 StaffAuth 필드                              |
+|------------|------------------------|----------------------------------------------|
+| `project`  | 건설 프로젝트 설정/관리 + 시스템 설정 | `project`, `company_settings`, `auth_manage` |
+| `meeting`  | 회의 관리 (업무시스템)          | *(StaffAuth 없음, 기존 work 권한)*                 |
+| `issue`    | 업무(이슈) 관리              | *(StaffAuth 없음, 기존 work 권한)*                 |
+| `news`     | 업무 공지                  | *(StaffAuth 없음, 기존 work 권한)*                 |
+| `docs`     | 문서 관리 (사업지 + 본사)       | `project_docs`, `company_docs`               |
+| `forum`    | 게시판                    | *(StaffAuth 없음, 기존 work 권한)*                 |
+| `calendar` | 캘린더                    | *(StaffAuth 없음, 기존 work 권한)*                 |
 
 ### 신규 추가 모듈
 
-| 모듈 코드 | 설명 | 해당 StaffAuth 필드 |
-|---|---|---|
-| **`contract`** | 분양 계약 관리 전반 | `contract` |
-| **`payment`** | 분양 수납 관리 | `payment` |
-| **`notice`** | 고객 고지 관리 | `notice` |
-| **`ledger`** | 자금/회계 원장 (사업비 + 본사) | `project_ledger`, `company_ledger` |
-| **`site`** | 사업 부지 정보 관리 | `project_site` |
-| **`hr_work`** | 인사 관리 (직원/부서/직급) | `human_resource` |
+| 모듈 코드          | 설명                  | 해당 StaffAuth 필드                    |
+|----------------|---------------------|------------------------------------|
+| **`contract`** | 분양 계약 관리 전반         | `contract`                         |
+| **`payment`**  | 분양 수납 관리            | `payment`                          |
+| **`notice`**   | 고객 고지 관리            | `notice`                           |
+| **`ledger`**   | 자금/회계 원장 (사업비 + 본사) | `project_ledger`, `company_ledger` |
+| **`site`**     | 사업 부지 정보 관리         | `project_site`                     |
+| **`hr_work`**  | 인사 관리 (직원/부서/직급)    | `human_resource`                   |
 
 ---
 
@@ -85,59 +85,59 @@
 
 ### 신규 모듈: `contract`
 
-| code | name | is_default | 비고 |
-|---|---|---|---|
-| `contract.read` | 계약 조회 | False | 계약 목록/상세/현황 조회 |
-| `contract.create` | 계약 등록 | False | 신규 계약 생성 |
-| `contract.update` | 계약 수정 | False | 계약 정보 수정 |
-| `contract.delete` | 계약 삭제 | False | 계약 삭제 |
-| `contract.release` | 계약 해지 처리 | False | 해지 신청~확정 처리 |
-| `contract.succession` | 계약 승계 처리 | False | 승계 신청~완료 처리 |
+| code                  | name     | is_default | 비고             |
+|-----------------------|----------|------------|----------------|
+| `contract.read`       | 계약 조회    | False      | 계약 목록/상세/현황 조회 |
+| `contract.create`     | 계약 등록    | False      | 신규 계약 생성       |
+| `contract.update`     | 계약 수정    | False      | 계약 정보 수정       |
+| `contract.delete`     | 계약 삭제    | False      | 계약 삭제          |
+| `contract.release`    | 계약 해지 처리 | False      | 해지 신청~확정 처리    |
+| `contract.succession` | 계약 승계 처리 | False      | 승계 신청~완료 처리    |
 
 ### 신규 모듈: `payment`
 
-| code | name | is_default | 비고 |
-|---|---|---|---|
-| `payment.read` | 수납 조회 | False | 수납 내역 조회 |
-| `payment.create` | 수납 등록 | False | 수납 등록 |
-| `payment.update` | 수납 수정 | False | 수납 정보 수정 |
-| `payment.delete` | 수납 삭제 | False | 수납 삭제 |
+| code             | name  | is_default | 비고       |
+|------------------|-------|------------|----------|
+| `payment.read`   | 수납 조회 | False      | 수납 내역 조회 |
+| `payment.create` | 수납 등록 | False      | 수납 등록    |
+| `payment.update` | 수납 수정 | False      | 수납 정보 수정 |
+| `payment.delete` | 수납 삭제 | False      | 수납 삭제    |
 
 ### 신규 모듈: `notice`
 
-| code | name | is_default | 비고 |
-|---|---|---|---|
-| `notice.read` | 고지 조회 | False | 고지 내역 조회 |
-| `notice.create` | 고지 발송 | False | 고지서 발송/라벨/SMS |
-| `notice.update` | 고지 수정 | False | 발송 내역 수정 |
-| `notice.delete` | 고지 삭제 | False | 발송 내역 삭제 |
+| code            | name  | is_default | 비고            |
+|-----------------|-------|------------|---------------|
+| `notice.read`   | 고지 조회 | False      | 고지 내역 조회      |
+| `notice.create` | 고지 발송 | False      | 고지서 발송/라벨/SMS |
+| `notice.update` | 고지 수정 | False      | 발송 내역 수정      |
+| `notice.delete` | 고지 삭제 | False      | 발송 내역 삭제      |
 
 ### 신규 모듈: `ledger`
 
-| code | name | is_default | 비고 |
-|---|---|---|---|
-| `ledger.read` | 원장 조회 | False | 자금 현황 조회 |
-| `ledger.create` | 원장 등록 | False | 회계 분개 생성 |
-| `ledger.update` | 원장 수정 | False | 회계 분개 수정 |
-| `ledger.delete` | 원장 삭제 | False | 회계 분개 삭제 |
+| code            | name  | is_default | 비고       |
+|-----------------|-------|------------|----------|
+| `ledger.read`   | 원장 조회 | False      | 자금 현황 조회 |
+| `ledger.create` | 원장 등록 | False      | 회계 분개 생성 |
+| `ledger.update` | 원장 수정 | False      | 회계 분개 수정 |
+| `ledger.delete` | 원장 삭제 | False      | 회계 분개 삭제 |
 
 ### 신규 모듈: `site`
 
-| code | name | is_default | 비고 |
-|---|---|---|---|
-| `site.read` | 부지 조회 | False | 부지/소유자/계약 조회 |
-| `site.create` | 부지 등록 | False | 부지 정보 등록 |
-| `site.update` | 부지 수정 | False | 부지 정보 수정 |
-| `site.delete` | 부지 삭제 | False | 부지 정보 삭제 |
+| code          | name  | is_default | 비고           |
+|---------------|-------|------------|--------------|
+| `site.read`   | 부지 조회 | False      | 부지/소유자/계약 조회 |
+| `site.create` | 부지 등록 | False      | 부지 정보 등록     |
+| `site.update` | 부지 수정 | False      | 부지 정보 수정     |
+| `site.delete` | 부지 삭제 | False      | 부지 정보 삭제     |
 
 ### 신규 모듈: `hr_work`
 
-| code | name | is_default | 비고 |
-|---|---|---|---|
-| `hr_work.read` | 인사 조회 | False | 직원/부서/직급 조회 |
-| `hr_work.create` | 인사 등록 | False | 직원/부서 등록 |
-| `hr_work.update` | 인사 수정 | False | 직원/부서 수정 |
-| `hr_work.delete` | 인사 삭제 | False | 직원/부서 삭제 |
+| code             | name  | is_default | 비고          |
+|------------------|-------|------------|-------------|
+| `hr_work.read`   | 인사 조회 | False      | 직원/부서/직급 조회 |
+| `hr_work.create` | 인사 등록 | False      | 직원/부서 등록    |
+| `hr_work.update` | 인사 수정 | False      | 직원/부서 수정    |
+| `hr_work.delete` | 인사 삭제 | False      | 직원/부서 삭제    |
 
 ---
 
@@ -216,6 +216,7 @@ write_auth_manage           →  project.member
 # apiV1/permissions/ibs_perms.py
 from apiV1.permissions.work_perms import ProjectPermission
 
+
 class IbsModulePermission(ProjectPermission):
     """
     project.Project → work.IssueProject 역추적을 통해
@@ -225,9 +226,9 @@ class IbsModulePermission(ProjectPermission):
     def _resolve_issue_project(self, request, view):
         """request 에서 project.Project.id를 추출해 IssueProject를 반환"""
         project_id = (
-            view.kwargs.get('project') or
-            request.data.get('project') or
-            request.query_params.get('project')
+                view.kwargs.get('project') or
+                request.data.get('project') or
+                request.query_params.get('project')
         )
         if not project_id:
             return None
@@ -266,18 +267,19 @@ class IbsModulePermission(ProjectPermission):
 # 예시: ContractViewSet
 from apiV1.permissions.ibs_perms import IbsModulePermission
 
+
 class ContractViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated, IbsModulePermission)
 
     @property
     def required_permission(self):
         action_map = {
-            'list':           'contract.read',
-            'retrieve':       'contract.read',
-            'create':         'contract.create',
-            'update':         'contract.update',
+            'list': 'contract.read',
+            'retrieve': 'contract.read',
+            'create': 'contract.create',
+            'update': 'contract.update',
             'partial_update': 'contract.update',
-            'destroy':        'contract.delete',
+            'destroy': 'contract.delete',
         }
         return action_map.get(self.action, 'contract.read')
 ```
@@ -288,81 +290,101 @@ class ContractViewSet(viewsets.ModelViewSet):
 
 ---
 
-### Phase 4 — 데이터 이관: StaffAuth → Role/Member
-
-#### 권한 매핑 전략
-
-```
-StaffAuth.contract == '1'  → contract.read 권한을 가진 Role 부여
-StaffAuth.contract == '2'  → contract.read + create + update + delete + release + succession 부여
-
-StaffAuth.payment == '2'   → payment.read + create + update + delete 부여
-
-StaffAuth.notice == '2'    → notice.read + create + update + delete 부여
-
-StaffAuth.project_ledger == '2' → ledger.read + create + update + delete 부여
-StaffAuth.company_ledger == '2' → ledger.read + create + update + delete (본사 IssueProject)
-
-StaffAuth.project_site == '2'  → site.read + create + update + delete 부여
-
-StaffAuth.human_resource == '2' → hr_work.read + create + update + delete 부여
-```
-
-#### 관리 커맨드로 실행
-
-```bash
-# 개발 환경 검증
-docker compose exec web python manage.py migrate_staffauth_to_roles --dry-run
-
-# 실제 이관
-docker compose exec web python manage.py migrate_staffauth_to_roles
-```
-
 ---
 
-### Phase 5 — 프론트엔드: permissions.ts + pageAuth.ts 교체
+### Phase 4 — 프론트엔드: permissions.ts + pageAuth.ts 교체
 
-#### 5-1. permissions.ts 상수 추가
+#### 4-1. permissions.ts 상수 추가
 
 ```typescript
 // store/constants/permissions.ts 에 추가
-  // Contract
-  CONTRACT_READ:       'contract.read',
-  CONTRACT_CREATE:     'contract.create',
-  CONTRACT_UPDATE:     'contract.update',
-  CONTRACT_DELETE:     'contract.delete',
-  CONTRACT_RELEASE:    'contract.release',
-  CONTRACT_SUCCESSION: 'contract.succession',
+// Contract
+CONTRACT_READ:       'contract.read',
+  CONTRACT_CREATE
+:
+'contract.create',
+  CONTRACT_UPDATE
+:
+'contract.update',
+  CONTRACT_DELETE
+:
+'contract.delete',
+  CONTRACT_RELEASE
+:
+'contract.release',
+  CONTRACT_SUCCESSION
+:
+'contract.succession',
 
   // Payment
-  PAYMENT_READ:   'payment.read',
-  PAYMENT_CREATE: 'payment.create',
-  PAYMENT_UPDATE: 'payment.update',
-  PAYMENT_DELETE: 'payment.delete',
+  PAYMENT_READ
+:
+'payment.read',
+  PAYMENT_CREATE
+:
+'payment.create',
+  PAYMENT_UPDATE
+:
+'payment.update',
+  PAYMENT_DELETE
+:
+'payment.delete',
 
   // Notice
-  NOTICE_READ:   'notice.read',
-  NOTICE_CREATE: 'notice.create',
-  NOTICE_UPDATE: 'notice.update',
-  NOTICE_DELETE: 'notice.delete',
+  NOTICE_READ
+:
+'notice.read',
+  NOTICE_CREATE
+:
+'notice.create',
+  NOTICE_UPDATE
+:
+'notice.update',
+  NOTICE_DELETE
+:
+'notice.delete',
 
   // Ledger
-  LEDGER_READ:   'ledger.read',
-  LEDGER_CREATE: 'ledger.create',
-  LEDGER_UPDATE: 'ledger.update',
-  LEDGER_DELETE: 'ledger.delete',
+  LEDGER_READ
+:
+'ledger.read',
+  LEDGER_CREATE
+:
+'ledger.create',
+  LEDGER_UPDATE
+:
+'ledger.update',
+  LEDGER_DELETE
+:
+'ledger.delete',
 
   // Site
-  SITE_READ:   'site.read',
-  SITE_CREATE: 'site.create',
-  SITE_UPDATE: 'site.update',
-  SITE_DELETE: 'site.delete',
+  SITE_READ
+:
+'site.read',
+  SITE_CREATE
+:
+'site.create',
+  SITE_UPDATE
+:
+'site.update',
+  SITE_DELETE
+:
+'site.delete',
 
   // HR Work
-  HR_WORK_READ:   'hr_work.read',
-  HR_WORK_CREATE: 'hr_work.create',
-  HR_WORK_UPDATE: 'hr_work.update',
-  HR_WORK_DELETE: 'hr_work.delete',
+  HR_WORK_READ
+:
+'hr_work.read',
+  HR_WORK_CREATE
+:
+'hr_work.create',
+  HR_WORK_UPDATE
+:
+'hr_work.update',
+  HR_WORK_DELETE
+:
+'hr_work.delete',
 ```
 
 #### 5-2. Pinia 스토어 확장 (account.ts)
@@ -381,9 +403,9 @@ interface AccountState {
 
 ```typescript
 // utils/pageAuth.ts (리팩터링 완료 버전)
-import { computed } from 'vue'
-import { useAccount } from '@/store/pinia/account'
-import { PERM } from '@/store/constants/permissions'
+import {computed} from 'vue'
+import {useAccount} from '@/store/pinia/account'
+import {PERM} from '@/store/constants/permissions'
 
 export const isSuperUser = computed(() => useAccount().superAuth)
 const perms = computed(() => new Set(useAccount().projectPermissions))
@@ -391,37 +413,37 @@ const has = (code: string) => isSuperUser.value || perms.value.has(code)
 
 // ── 기존 함수명 완전 유지 ── 내부 구현만 교체 ──────────────────────
 
-export const read_contract    = computed(() => has(PERM.CONTRACT_READ))
-export const write_contract   = computed(() => has(PERM.CONTRACT_CREATE))
+export const read_contract = computed(() => has(PERM.CONTRACT_READ))
+export const write_contract = computed(() => has(PERM.CONTRACT_CREATE))
 
-export const read_payment     = computed(() => has(PERM.PAYMENT_READ))
-export const write_payment    = computed(() => has(PERM.PAYMENT_CREATE))
+export const read_payment = computed(() => has(PERM.PAYMENT_READ))
+export const write_payment = computed(() => has(PERM.PAYMENT_CREATE))
 
-export const read_notice      = computed(() => has(PERM.NOTICE_READ))
-export const write_notice     = computed(() => has(PERM.NOTICE_CREATE))
+export const read_notice = computed(() => has(PERM.NOTICE_READ))
+export const write_notice = computed(() => has(PERM.NOTICE_CREATE))
 
-export const read_project_cash  = computed(() => has(PERM.LEDGER_READ))
+export const read_project_cash = computed(() => has(PERM.LEDGER_READ))
 export const write_project_cash = computed(() => has(PERM.LEDGER_CREATE))
-export const read_company_cash  = computed(() => has(PERM.LEDGER_READ))
+export const read_company_cash = computed(() => has(PERM.LEDGER_READ))
 export const write_company_cash = computed(() => has(PERM.LEDGER_CREATE))
 
-export const read_project_docs  = computed(() => has(PERM.DOCS_READ))
+export const read_project_docs = computed(() => has(PERM.DOCS_READ))
 export const write_project_docs = computed(() => has(PERM.DOCS_CREATE))
-export const read_company_docs  = computed(() => has(PERM.DOCS_READ))
+export const read_company_docs = computed(() => has(PERM.DOCS_READ))
 export const write_company_docs = computed(() => has(PERM.DOCS_CREATE))
 
-export const read_project_site  = computed(() => has(PERM.SITE_READ))
+export const read_project_site = computed(() => has(PERM.SITE_READ))
 export const write_project_site = computed(() => has(PERM.SITE_CREATE))
 
-export const read_human_resource  = computed(() => has(PERM.HR_WORK_READ))
+export const read_human_resource = computed(() => has(PERM.HR_WORK_READ))
 export const write_human_resource = computed(() => has(PERM.HR_WORK_CREATE))
 
-export const read_project          = computed(() => has(PERM.PROJECT_UPDATE))
-export const write_project         = computed(() => has(PERM.PROJECT_UPDATE))
+export const read_project = computed(() => has(PERM.PROJECT_UPDATE))
+export const write_project = computed(() => has(PERM.PROJECT_UPDATE))
 export const read_company_settings = computed(() => has(PERM.PROJECT_UPDATE))
-export const write_company_settings= computed(() => has(PERM.PROJECT_UPDATE))
-export const read_auth_manage      = computed(() => has(PERM.PROJECT_MEMBER))
-export const write_auth_manage     = computed(() => has(PERM.PROJECT_MEMBER))
+export const write_company_settings = computed(() => has(PERM.PROJECT_UPDATE))
+export const read_auth_manage = computed(() => has(PERM.PROJECT_MEMBER))
+export const write_auth_manage = computed(() => has(PERM.PROJECT_MEMBER))
 ```
 
 > [!IMPORTANT]
@@ -480,10 +502,10 @@ Phase 6  □ Phase 1~5 완료 및 충분한 검증 확인
 
 ## 7. 주요 위험 요소 및 대응
 
-| 위험 요소 | 대응 방안 |
-|---|---|
-| `project.Project`와 `IssueProject`가 연결 안 된 경우 | Phase 4 이관 스크립트에서 누락 감지 및 로그 출력 |
-| `company_cash` / `project_cash` 동일 모듈 사용 | 두 경우 모두 `ledger.*` 사용하되, **본사 IssueProject** 컨텍스트로 분리 |
-| `docs` 모듈 - 사업지/본사 혼용 | 마찬가지로 컨텍스트(IssueProject)로 분리, 코드는 동일 사용 |
-| StaffAuth 즉시 폐기 시 권한 공백 | 원칙: Phase 6은 Phase 1~5 **완전 완료 후** 단독 배포 |
-| `write_project_site` 일부 파일에서 `write_project`와 혼용 | Phase 5 pageAuth.ts 교체 시 두 함수 모두 `site.*`로 일관 처리 |
+| 위험 요소                                            | 대응 방안                                                 |
+|--------------------------------------------------|-------------------------------------------------------|
+| `project.Project`와 `IssueProject`가 연결 안 된 경우     | Phase 4 이관 스크립트에서 누락 감지 및 로그 출력                       |
+| `company_cash` / `project_cash` 동일 모듈 사용         | 두 경우 모두 `ledger.*` 사용하되, **본사 IssueProject** 컨텍스트로 분리 |
+| `docs` 모듈 - 사업지/본사 혼용                            | 마찬가지로 컨텍스트(IssueProject)로 분리, 코드는 동일 사용               |
+| StaffAuth 즉시 폐기 시 권한 공백                          | 원칙: Phase 6은 Phase 1~5 **완전 완료 후** 단독 배포              |
+| `write_project_site` 일부 파일에서 `write_project`와 혼용 | Phase 5 pageAuth.ts 교체 시 두 함수 모두 `site.*`로 일관 처리      |
