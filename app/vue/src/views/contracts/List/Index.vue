@@ -372,6 +372,7 @@ onBeforeMount(async () => {
           :unit-set="unitSet"
           :highlight-id="highlightId ?? undefined"
           :current-page="contStore.contractFilter.page || 1"
+          :border-top="!visible"
           @page-select="pageSelect"
           @contract-converted="handleContract"
         />

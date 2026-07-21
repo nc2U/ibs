@@ -23,7 +23,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <CCollapse :visible="visible" class="bg-grey-lighten-4">
+  <CCollapse :visible="visible" class="bg-more-light border">
     <v-container class="m-0" fluid>
       <v-row class="my-checkbox d-flex py-2">
         <v-checkbox-btn

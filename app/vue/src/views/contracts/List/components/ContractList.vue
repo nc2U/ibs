@@ -5,6 +5,7 @@ import { write_contract } from '@/utils/pageAuth'
 import { TableSecondary } from '@/utils/cssMixins'
 import Pagination from '@/components/Pagination'
 import ContractItem from './ContractItem.vue'
+import { CTable } from '@coreui/vue'
 
 const emit = defineEmits(['page-select', 'contract-converted'])
 
@@ -13,6 +14,7 @@ const props = defineProps({
   unitSet: { type: Boolean, default: false },
   highlightId: { type: [Number, null] as PropType<number | null>, default: null },
   currentPage: { type: Number, default: 1 },
+  borderTop: { type: Boolean, default: false },
 })
 
 const contractStore = useContract()
@@ -23,7 +25,7 @@ const pageSelect = (page: number) => emit('page-select', page)
 </script>
 
 <template>
-  <CTable hover responsive align="middle">
+  <CTable hover responsive align="middle" :class="{ 'border-top': borderTop }">
     <colgroup>
       <col style="width: 7%" />
       <col style="width: 7%" />
