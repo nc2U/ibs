@@ -77,6 +77,7 @@ class ModuleAdmin(admin.ModelAdmin):
 class RoleAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('pk', 'name', 'issue_visible', 'user_visible', 'order')
     list_display_links = ('name',)
+    list_editable = ('order',)
     filter_horizontal = ('permissions',)  # ✅ 이렇게 하면 UI에서 다중 선택 가능
 
     def get_form(self, request, obj=None, **kwargs):
