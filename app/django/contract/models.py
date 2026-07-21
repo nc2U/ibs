@@ -663,7 +663,7 @@ class Succession(models.Model):
     apply_date = models.DateField('승계신청일')
     trading_date = models.DateField('매매계약일')
     approval_date = models.DateField('변경인가일', null=True, blank=True)
-    SUCCESSION_STATUS_CHOICES = (('2', '변경인가대기'), ('3', '승계완료'), ('9', '승계취소'))
+    SUCCESSION_STATUS_CHOICES = (('1', '신청접수'), ('2', '변경인가대기'), ('3', '승계완료'), ('9', '승계취소'))
     status = models.CharField('상태', choices=SUCCESSION_STATUS_CHOICES, default='1')
     note = models.TextField('비고', blank=True, default='')
     created = models.DateTimeField('등록일시', auto_now_add=True)

@@ -290,11 +290,6 @@ export interface ConsultationLogPagination {
   results: ConsultationLog[]
 }
 
-interface SimpleSuccession {
-  pk: number
-  status: '1' | '2' | '3' | '9'
-}
-
 export interface SubsSummary {
   unit_type: number | null
   num_cont: number
