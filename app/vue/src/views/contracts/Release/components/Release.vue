@@ -21,18 +21,18 @@ const statusLabel = computed(() => {
     '4': '해지확정',
     '9': '신청취소',
   }
-  return statusMap[props.release?.new_status] || ''
+  return statusMap[props.release?.status] || ''
 })
 
 const textColor = computed(() => {
-  if (props.release?.new_status === '9') return 'text-primary'
-  else if (props.release?.new_status === '1') return 'text-danger'
+  if (props.release?.status === '9') return 'text-primary'
+  else if (props.release?.status === '1') return 'text-danger'
   else return ''
 })
 
 const buttonColor = computed(() => {
-  if (props.release?.new_status === '9') return 'info'
-  else if (props.release?.new_status === '4') return 'secondary'
+  if (props.release?.status === '9') return 'info'
+  else if (props.release?.status === '4') return 'secondary'
   else return 'warning'
 })
 

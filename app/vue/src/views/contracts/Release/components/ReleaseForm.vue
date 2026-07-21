@@ -22,8 +22,7 @@ const form = reactive({
   pk: null as number | null,
   contractor: null as number | null,
   release_type: '1' as '1' | '2',
-  status: '',
-  new_status: '1' as '1' | '2' | '3' | '4' | '9',
+  status: '1' as '1' | '2' | '3' | '4' | '9',
   refund_amount: null as number | null,
   refund_account_bank: '',
   refund_account_number: '',
@@ -36,7 +35,7 @@ const form = reactive({
 const formsCheck = computed(() => {
   if (props.release) {
     const a = form.release_type === props.release.release_type
-    const b = form.new_status === props.release.new_status
+    const b = form.status === props.release.status
     const c = !form.refund_amount || form.refund_amount === props.release.refund_amount
     const d = form.refund_account_bank === props.release.refund_account_bank
     const e = form.refund_account_number === props.release.refund_account_number
@@ -46,6 +45,20 @@ const formsCheck = computed(() => {
     const i = form.note === props.release.note
     return a && b && c && d && e && f && g && h && i
   } else return false
+})
+
+const statusOptions = computed(() => {
+  const options = [
+    { value: '1', label: '접수등록' },
+    { value: '2', label: '해지승인대기' },
+    { value: '3', label: '변경인가대기' },
+    { value: '4', label: '해지확정' },
+    { value: '9', label: '신청취소' },
+  ]
+  if (form.release_type === '2') {
+    return options.filter(opt => opt.value !== '2')
+  }
+  return options
 })
 
 const onSubmit = (event: Event) => {
@@ -69,7 +82,6 @@ const formDataSet = () => {
     form.contractor = props.release.contractor
     form.release_type = props.release.release_type
     form.status = props.release.status
-    form.new_status = props.release.new_status
     form.refund_amount = props.release.refund_amount
     form.refund_account_bank = props.release.refund_account_bank
     form.refund_account_number = props.release.refund_account_number
@@ -125,15 +137,13 @@ watch([() => props.release, () => props.contractor], () => formDataSet(), { deep
           <CRow>
             <CFormLabel class="col-sm-4 col-form-label required">진행상태</CFormLabel>
             <CCol sm="8" class="text-left">
-              <CFormSelect v-model="form.new_status" required>
-                <option value="1">접수등록</option>
-                <option value="2">해지승인대기</option>
-                <option value="3">변경인가대기</option>
-                <option value="4">해지확정</option>
-                <option value="9">신청취소</option>
+              <CFormSelect v-model="form.status" required>
+                <option v-for="opt in statusOptions" :key="opt.value" :value="opt.value">
+                  {{ opt.label }}
+                </option>
               </CFormSelect>
               <small
-                v-if="form.new_status === '4' && (!release || release.new_status !== '4')"
+                v-if="form.status === '4' && (!release || release.status !== '4')"
                 class="text-danger"
               >
                 해지 완료/확정 처리된 계약 건은 이전 계약 상태로 되돌릴 수 없으므로 최종 확정된
@@ -217,7 +227,7 @@ watch([() => props.release, () => props.contractor], () => formDataSet(), { deep
             <CCol sm="8">
               <DatePicker
                 v-model="form.completion_date"
-                :required="form.new_status === '4'"
+                :required="form.status === '4'"
                 placeholder="해지종결일"
               />
             </CCol>

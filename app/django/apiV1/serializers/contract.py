@@ -763,7 +763,7 @@ class ContractorReleaseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ContractorRelease
-        fields = ('pk', 'project', 'contractor', '__str__', 'release_type', 'status', 'new_status', 'refund_amount',
+        fields = ('pk', 'project', 'contractor', '__str__', 'release_type', 'status', 'refund_amount',
                   'refund_account_bank', 'refund_account_number', 'refund_account_depositor',
                   'request_date', 'completion_date', 'note', 'updator')
 
@@ -772,24 +772,14 @@ class ContractorReleaseSerializer(serializers.ModelSerializer):
         """
         계약자 해지 정보 업데이트
 
-        해지 최종 완결 처리(new_status == '4')는 ContractorReleaseService에 위임
-        기존 status 필드와의 하위 호환성을 위해 상태 동기화 처리
+        해지 최종 완결 처리(status == '4')는 ContractorReleaseService에 위임
         """
 
-        released_done = instance.new_status == '4'  # 이미 해지 완결 여부
-        new_status = validated_data.get('new_status', instance.new_status)
-        release_type = validated_data.get('release_type', instance.release_type)
-
-        # 신구 상태 필드 동기화 맵핑
-        if new_status == '4':
-            validated_data['status'] = '5' if release_type == '2' else '4'
-        elif new_status == '9':
-            validated_data['status'] = '0'
-        else:
-            validated_data['status'] = '3'
+        released_done = instance.status == '4'  # 이미 해지 완결 여부
+        status = validated_data.get('status', instance.status)
 
         # 미완료 → 최종 완결 (해지확정:4)로 변경
-        if not released_done and new_status == '4':
+        if not released_done and status == '4':
             completion_date = self.initial_data.get('completion_date')
 
             # Service로 해지 처리 위임

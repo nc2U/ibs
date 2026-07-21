@@ -787,7 +787,7 @@ class ContReleaseViewSet(viewsets.ModelViewSet):
         from django.db.models import Case, When, Value, IntegerField
         return queryset.annotate(
             is_ongoing=Case(
-                When(new_status__in=['1', '2', '3'], then=Value(1)),
+                When(status__in=['1', '2', '3'], then=Value(1)),
                 default=Value(0),
                 output_field=IntegerField()
             )
@@ -829,18 +829,18 @@ class ContReleaseViewSet(viewsets.ModelViewSet):
         limit = int(request.query_params.get('limit', 10))
 
         # ContractorRelease 모델의 정확한 신규 ordering: ['-is_ongoing', '-request_date', '-id']
-        target_is_ongoing = 1 if target_item.new_status in ('1', '2', '3') else 0
+        target_is_ongoing = 1 if target_item.status in ('1', '2', '3') else 0
         if target_is_ongoing == 1:
             items_before = queryset.filter(
-                new_status__in=['1', '2', '3']
+                status__in=['1', '2', '3']
             ).filter(
                 Q(request_date__gt=target_item.request_date) |
                 Q(request_date=target_item.request_date, id__gt=target_item.id)
             ).count()
         else:
-            ongoing_count = queryset.filter(new_status__in=['1', '2', '3']).count()
+            ongoing_count = queryset.filter(status__in=['1', '2', '3']).count()
             finished_before_count = queryset.exclude(
-                new_status__in=['1', '2', '3']
+                status__in=['1', '2', '3']
             ).filter(
                 Q(request_date__gt=target_item.request_date) |
                 Q(request_date=target_item.request_date, id__gt=target_item.id)

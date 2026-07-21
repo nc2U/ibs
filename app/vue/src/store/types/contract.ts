@@ -369,8 +369,7 @@ export interface ContractRelease {
   contractor: number
   __str__?: string
   release_type: '1' | '2'
-  status: string
-  new_status: '1' | '2' | '3' | '4' | '9'
+  status: '1' | '2' | '3' | '4' | '9'
   refund_amount: number | null
   refund_account_bank: string
   refund_account_number: string
