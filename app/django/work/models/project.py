@@ -295,6 +295,8 @@ class Role(models.Model):
     USER_VIEW_PERM = (('ALL', '모든 활성 사용자'), ('PRJ', '보이는 프로젝트 사용자'), ('NOP', '없음'))
     user_visible = models.CharField('사용자 보기 권한', max_length=3, choices=USER_VIEW_PERM, default='ALL')
     permissions = models.ManyToManyField('work.Permission', related_name='roles')
+    CATEGORY_CHOICES = (('work_core', '업무관리 중심'), ('ibs_global', '비즈니스 데이터 지원'))
+    category = models.CharField('구분', max_length=15, choices=CATEGORY_CHOICES, default='work_core')
     order = models.PositiveSmallIntegerField('정렬', default=1)
     created = models.DateTimeField('등록일', auto_now_add=True)
     updated = models.DateTimeField('수정일', auto_now=True)
@@ -315,6 +317,8 @@ class Permission(models.Model):
                       ('contract', '계약 관리'), ('payment', '수납 관리'), ('notice', '고지 관리'),
                       ('ledger', '자금/원장 관리'), ('site', '사업 부지 관리'), ('hr_work', '인사 관리'))
     module = models.CharField('모듈', max_length=10, choices=MODULE_CHOICES, db_index=True)
+    CATEGORY_CHOICES = (('work_core', '업무관리 중심'), ('ibs_global', '비즈니스 데이터 지원'))
+    category = models.CharField('구분', max_length=15, choices=CATEGORY_CHOICES, default='work_core')
     code = models.CharField('코드', max_length=30, unique=True)
     name = models.CharField('이름', max_length=20)
     is_default = models.BooleanField('기본 활성여부', default=False)

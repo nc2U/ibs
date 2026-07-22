@@ -1,9 +1,7 @@
 from django.db import models
 
-from _utils.file_upload import get_company_image_path
 from _utils.file_cleanup import file_cleanup_signals
-from accounts.models import User
-from project.models import Project
+from _utils.file_upload import get_company_image_path
 
 
 class Company(models.Model):
@@ -129,6 +127,11 @@ class Staff(models.Model):
     STATUS_CHOICES = (('1', '근무 중'), ('2', '휴직 중'), ('3', '퇴직신청'), ('4', '퇴사처리'))
     status = models.CharField('상태', max_length=1, choices=STATUS_CHOICES, default='1')
     date_leave = models.DateField('퇴사일', null=True, blank=True)
+    is_hq_financial_officer = models.BooleanField(
+        '본사 금융 총괄 권한',
+        default=False,
+        help_text='본사 프로젝트의 상세 자금 흐름을 열람할 수 있는 은밀한 권한입니다. Django Admin에서만 제어합니다.'
+    )
 
     def __str__(self):
         return self.name

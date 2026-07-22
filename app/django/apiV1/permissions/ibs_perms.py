@@ -78,8 +78,15 @@ class IbsModulePermission(ProjectPermission):
         if not request.user or not request.user.is_authenticated:
             return False
 
-        # 2. 슈퍼유저 / work_manager 전체 허용
-        if request.user.is_superuser or getattr(request.user, 'work_manager', False):
+        project_pk = self._get_project_pk(request, view)
+        if project_pk:
+            issue_project = self._resolve_issue_project(project_pk, request)
+            # 1-A. 잠금보관(9) 프로젝트는 슈퍼유저를 포함하여 비즈니스 데이터 접근 전면 차단
+            if issue_project and issue_project.status == '9':
+                return False
+
+        # 2. 슈퍼유저 전체 허용
+        if request.user.is_superuser:
             return True
 
         required_perm = getattr(view, 'required_permission', None)
@@ -88,8 +95,6 @@ class IbsModulePermission(ProjectPermission):
         if not required_perm:
             return True
 
-        project_pk = self._get_project_pk(request, view)
-
         # 4. list 또는 안전 메서드 + project 미지정 → Row-Level Security에서 필터링
         action = getattr(view, 'action', None)
         if not project_pk:
@@ -97,14 +102,21 @@ class IbsModulePermission(ProjectPermission):
                 return True
             return False
 
-        # 5. IssueProject 역추적
+        # 5. IssueProject 역추적 (앞에서 이미 resolve 했다면 캐시됨)
         issue_project = self._resolve_issue_project(project_pk, request)
         if not issue_project:
             return False
 
-        # 6. 잠금보관(9) 프로젝트 전면 차단
-        if issue_project.status == '9':
-            return False
+        # 6. 본사 프로젝트(type='1')의 자금(ledger) 관련 요청 검증 (은밀한 플래그 체크)
+        if issue_project.type == '1' and 'ledger' in required_perm:
+            try:
+                if not getattr(request.user.staff, 'is_hq_financial_officer', False):
+                    return False
+            except AttributeError:
+                return False
+        # 본사 자금이 아닌 일반 요청인 경우 work_manager 허용
+        elif getattr(request.user, 'work_manager', False):
+            return True
 
         # 7. 닫힘(2) 프로젝트 — 읽기만 허용
         if issue_project.status == '2' and request.method not in permissions.SAFE_METHODS:
@@ -114,16 +126,23 @@ class IbsModulePermission(ProjectPermission):
         user_perms = set(issue_project.get_user_permissions(request.user))
         return required_perm in user_perms
 
+
     def has_object_permission(self, request, view, obj):
-        # 2. 슈퍼유저 / work_manager 전체 허용
-        if request.user.is_superuser or getattr(request.user, 'work_manager', False):
+        # obj에서 project.Project PK를 추출합니다.
+        project_pk = getattr(obj, 'project_id', None) or getattr(obj, 'project', None)
+        if project_pk is not None:
+            project_pk_int = int(project_pk) if not isinstance(project_pk, int) else project_pk
+            issue_project = self._resolve_issue_project(project_pk_int, request)
+            # 1-A. 잠금보관(9) 프로젝트는 슈퍼유저를 포함하여 비즈니스 데이터 접근 전면 차단
+            if issue_project and issue_project.status == '9':
+                return False
+
+        # 2. 슈퍼유저 전체 허용
+        if request.user.is_superuser:
             return True
 
         required_perm = getattr(view, 'required_permission', None)
 
-        # obj에서 project.Project PK를 추출합니다.
-        # IBS 모델은 obj.project_id (project.Project FK) 를 가집니다.
-        project_pk = getattr(obj, 'project_id', None) or getattr(obj, 'project', None)
         if project_pk is None:
             return False
 
@@ -133,6 +152,17 @@ class IbsModulePermission(ProjectPermission):
         )
         if not issue_project:
             return False
+
+        # 본사 프로젝트(type='1')의 자금(ledger) 관련 요청 검증 (은밀한 플래그 체크)
+        if required_perm and issue_project.type == '1' and 'ledger' in required_perm:
+            try:
+                if not getattr(request.user.staff, 'is_hq_financial_officer', False):
+                    return False
+            except AttributeError:
+                return False
+        # 본사 자금이 아닌 일반 요청인 경우 work_manager 허용
+        elif getattr(request.user, 'work_manager', False):
+            return True
 
         # 잠금보관 → 전면 차단
         if issue_project.status == '9':

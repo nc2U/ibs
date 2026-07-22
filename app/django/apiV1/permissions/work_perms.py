@@ -86,6 +86,17 @@ class ProjectPermission(permissions.BasePermission):
         if not request.user or not request.user.is_authenticated:
             return False
 
+        # 잠금보관('9') 프로젝트 선제 차단 (슈퍼유저/관리자라도 프로젝트 자체 수정/조회 외에는 차단)
+        project_slug = self.get_project_slug(view, request.data, request.query_params)
+        if project_slug:
+            project = self.find_project(project_slug, request)
+            if project and project.status == '9':
+                is_project_view = 'project' in view.__class__.__name__.lower()
+                is_allowed_action = getattr(view, 'action', None) in ['retrieve', 'update', 'partial_update']
+                is_admin = request.user.is_superuser or getattr(request.user, 'work_manager', False)
+                if not (is_project_view and is_allowed_action and is_admin):
+                    return False
+
         # 슈퍼유저/관리자 예외 처리
         if request.user.is_superuser or getattr(request.user, 'work_manager', False):
             return True
@@ -184,9 +195,13 @@ class ProjectPermission(permissions.BasePermission):
             return False
 
         if project:
-            # [잠금보관(9)] 조회/수정 모두 차단
+            # [잠금보관(9)] 조회/수정 모두 차단 (슈퍼유저/관리자라도 프로젝트 자체 수정/조회 외에는 차단)
             if project.status == '9':
-                return False
+                is_project_view = 'project' in view.__class__.__name__.lower()
+                is_allowed_action = getattr(view, 'action', None) in ['retrieve', 'update', 'partial_update']
+                is_admin = request.user.is_superuser or getattr(request.user, 'work_manager', False)
+                if not (is_project_view and is_allowed_action and is_admin):
+                    return False
 
             # [닫힘(2)] 읽기 전용
             if project.status == '2' and request.method not in permissions.SAFE_METHODS:
