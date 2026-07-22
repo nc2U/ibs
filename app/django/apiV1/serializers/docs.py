@@ -129,8 +129,7 @@ def validate_link(value):
 
 class DocumentSerializer(serializers.ModelSerializer):
     project = SimpleIssueProjectSerializer(source='issue_project', read_only=True)
-    # proj_name = serializers.SlugField(source='issue_project', read_only=True)
-    proj_sort = serializers.SerializerMethodField(read_only=True)
+    proj_type = serializers.SerializerMethodField(read_only=True)
     type_name = serializers.SerializerMethodField()
     cate_name = serializers.SlugField(source='category', read_only=True)
     cate_color = serializers.SerializerMethodField(read_only=True)
@@ -148,7 +147,7 @@ class DocumentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Document
-        fields = ('pk', 'project', 'proj_sort', 'doc_type', 'type_name',
+        fields = ('pk', 'project', 'proj_type', 'doc_type', 'type_name',
                   'category', 'cate_name', 'cate_color', 'lawsuit', 'lawsuit_name', 'title',
                   'execution_date', 'description', 'hit', 'scrape', 'my_scrape', 'ip', 'device',
                   'is_pinned', 'is_secret', 'password', 'is_blind', 'deleted', 'links', 'files',
@@ -174,7 +173,7 @@ class DocumentSerializer(serializers.ModelSerializer):
         return True
 
     @staticmethod
-    def get_proj_sort(obj):
+    def get_proj_type(obj):
         return obj.issue_project.type if obj.issue_project else None
 
     @staticmethod

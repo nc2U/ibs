@@ -77,7 +77,7 @@ export type Docs = {
     | { pk: number; file: File }[]
   pk?: number
   project?: SimpleProject
-  proj_sort?: '1' | '2' | '3'
+  proj_type?: '1' | '2' | '3' // 본사업무 | 부동산개발 | 기타 프로젝트
   doc_type: number | null
   type_name?: string
   category: number | null
