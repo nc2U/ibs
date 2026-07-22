@@ -1,3 +1,5 @@
+import type { SimpleProject } from '@/store/types/work_project.ts'
+
 export interface DocType {
   value: number
   label: string
@@ -67,14 +69,14 @@ export type Docs = {
     | null
     | string
     | boolean
+    | SimpleProject
     | SimpleUser
     | Link[]
     | AFile[]
     | File[]
     | { pk: number; file: File }[]
   pk?: number
-  issue_project: number | null
-  proj_name?: string
+  project?: SimpleProject
   proj_sort?: '1' | '2' | '3'
   doc_type: number | null
   type_name?: string

@@ -43,7 +43,7 @@ const refCaseForm = ref()
 
 const attach = ref(true)
 const validated = ref(false)
-const form = reactive<Docs>({
+const form = reactive<Docs & { issue_project: number | null }>({
   pk: undefined,
   issue_project: null,
   doc_type: props.typeNum,
@@ -148,7 +148,7 @@ const caseCreate = (payload: SuitCase) => emit('create-lawsuit', payload)
 const dataSetup = () => {
   if (props.docs) {
     form.pk = props.docs.pk
-    form.issue_project = props.docs.issue_project
+    form.issue_project = props.docs?.project?.pk as number
     form.doc_type = props.docs.doc_type
     form.category = props.docs.category
     form.lawsuit = props.docs.lawsuit

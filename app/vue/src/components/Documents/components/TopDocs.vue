@@ -12,7 +12,7 @@ const props = defineProps({
 
 const { can, PERM } = usePerms()
 
-const sortName = computed(() => props.docs?.proj_name || '본사 문서')
+const sortName = computed(() => props.docs?.project?.name || '본사 문서')
 const sortColor = computed(() => (props.docs?.project ? 'success' : 'info'))
 </script>
 

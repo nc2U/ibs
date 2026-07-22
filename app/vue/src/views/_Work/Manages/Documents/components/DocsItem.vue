@@ -12,15 +12,13 @@ const route = useRoute()
 
 const { can, PERM } = usePerms()
 const canDocsRead = computed(() => can(PERM.DOCS_READ))
-
-const projId = computed(() => (route.params.projId as string) || '')
 </script>
 
 <template>
   <v-card
     :to="
-      canDocsRead && projId
-        ? { name: '(문서) - 보기', params: { projId, docId: docs.pk } }
+      canDocsRead
+        ? { name: '(문서) - 보기', params: { projId: docs.project?.slug, docId: docs.pk } }
         : undefined
     "
     border
@@ -29,7 +27,7 @@ const projId = computed(() => (route.params.projId as string) || '')
     flat
   >
     <v-card-text class="pa-3">
-      <CRow align="center">
+      <CRow align="center" :class="{ 'pinned-item-bg': docs.is_pinned }">
         <CCol sm="8" class="d-flex align-center">
           <!-- 핀 고정 아이콘 -->
           <v-icon
@@ -60,9 +58,7 @@ const projId = computed(() => (route.params.projId as string) || '')
             class="mr-2"
           />
 
-          <span v-if="!route.params.projId && docs.proj_name" class="mr-2 text-grey">
-            [{{ docs.proj_name }}]
-          </span>
+          <span class="mr-2 text-grey"> [{{ docs.project?.name }}] </span>
           <span v-if="docs.cate_name" class="mr-2" :style="{ color: docs.cate_color || 'inherit' }">
             [{{ docs.cate_name }}]
           </span>

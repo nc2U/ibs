@@ -7,6 +7,7 @@ from rest_framework import serializers
 
 from _utils.file_service import FileService
 from apiV1.serializers.accounts import SimpleUserSerializer
+from apiV1.serializers.work import SimpleIssueProjectSerializer
 from docs.models import Category, LawsuitCase, Document, Link, File, Image, OfficialLetter
 
 
@@ -127,7 +128,8 @@ def validate_link(value):
 
 
 class DocumentSerializer(serializers.ModelSerializer):
-    proj_name = serializers.SlugField(source='issue_project', read_only=True)
+    project = SimpleIssueProjectSerializer(source='issue_project', read_only=True)
+    # proj_name = serializers.SlugField(source='issue_project', read_only=True)
     proj_sort = serializers.SerializerMethodField(read_only=True)
     type_name = serializers.SerializerMethodField()
     cate_name = serializers.SlugField(source='category', read_only=True)
@@ -146,7 +148,7 @@ class DocumentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Document
-        fields = ('pk', 'issue_project', 'proj_name', 'proj_sort', 'doc_type', 'type_name',
+        fields = ('pk', 'project', 'proj_sort', 'doc_type', 'type_name',
                   'category', 'cate_name', 'cate_color', 'lawsuit', 'lawsuit_name', 'title',
                   'execution_date', 'description', 'hit', 'scrape', 'my_scrape', 'ip', 'device',
                   'is_pinned', 'is_secret', 'password', 'is_blind', 'deleted', 'links', 'files',
