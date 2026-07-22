@@ -363,7 +363,7 @@ spec:
                 exit 1
             fi
 
-            # 백업 파일 복원
+            # 백업 파일 복원 (NFS 환경 고속화를 위해 단일 트랜잭션 적용)
             echo "=== Restoring from backup file ===" | tee -a "\$LOG_FILE"
             echo "Progress will be displayed below..." | tee -a "\$LOG_FILE"
             PGPASSWORD="\$POSTGRES_PASSWORD" pg_restore \
@@ -374,7 +374,7 @@ spec:
               --no-owner \
               --no-privileges \
               --disable-triggers \
-              --jobs=4 \
+              --single-transaction \
               --verbose \
               "\$DUMP_FILE" 2>&1 | tee -a "\$LOG_FILE"
 
