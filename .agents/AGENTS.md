@@ -173,15 +173,27 @@ pnpm type-check
 - **볼륨**: 영구 데이터(Persistent data), 정적/미디어 파일, DB 백업, Redis 데이터를 볼륨으로 유지
 - **환경 설정**: 타임존 `Asia/Seoul`, 한국어 지원 설정
 
-### Kubernetes 배포
+### Kubernetes 배포 및 인프라 아키텍처
 
+- **하드웨어 및 노드 구성**:
+    - **Master 노드** (`Ubuntu 26.04 LTS`, 4 vCPU / 4GB RAM / NVMe 50 GB / Traffic 620GB / Network 2.5Gbps)
+        - 역할: 관리 서버 겸 컨트롤 플레인.
+        - 내장 NFS 서버 역할 수행: `CNPG` 데이터베이스 영구 볼륨, Django 정적 파일(`static`), Django 비밀 설정 파일(`.env`) 보관.
+        - 관리 기능: K3s 및 기본 인프라 패키지(Ingress-Nginx, Cert-Manager 등)의 **설치/재시작 스크립트들을 내부에 직접 보관 및 관리**함.
+    - **Worker 노드 1** (`Ubuntu 26.04 LTS`, 4 vCPU / 4GB RAM / NVMe 50 GB / Traffic 620GB / Network 2.5Gbps)
+        - 역할: 컨테이너 실행 및 트래픽 처리.
+    - **시놀로지 NAS** (외부 NFS 서버)
+        - 역할: Django 미디어 파일(`media`) 보관 및 데이터베이스 정기 백업 파일 저장.
+- **실제 서비스 배포 경로**:
+    - 모든 애플리케이션 및 헬름 차트 배포는 **`.github/workflows/` 기반의 GitHub Actions 자동 배포(Git Push 트리거)**와 **로컬/마스터 서버 내 배포 스크립트를 통한
+      수동 배포** 방식을 병행하여 지원함.
 - **Helm 차트**: `deploy/helm/` 내에 전체 배포 설정 위치
 - **CI/CD**: 자동 배포를 위한 종합적인 GitHub Actions 워크플로우 구성
     - Django 백엔드 및 Vue 컴포넌트 각각을 위한 워크플로우 분리
-- **스토리지**: 영구 스토리지를 위한 NFS 서브디렉토리 외부 프로비저너 사용
+- **스토리지**: 영구 스토리지를 위한 NFS 서브디렉토리 외부 프로비저너 사용 (`nfs-subdir-external-provisioner`)
 - **보안**: SSL 인증서 관리를 위한 `cert-manager` 적용
-- **수신 트래픽**: 트래픽 제어를 위한 `nginx-ingress` 설정
-- **데이터베이스**: 백업 및 복제를 지원하는 PostgreSQL 설정들
+- **수신 트래픽**: 트래픽 제어를 위한 `ingress-nginx` 설정
+- **데이터베이스**: 백업 및 복제를 지원하는 CloudNative-PG (`cnpg`) 오퍼레이터 기반 PostgreSQL 설정들
 
 ## 테스트
 
