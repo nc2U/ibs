@@ -105,6 +105,6 @@ class StaffSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Staff
-        fields = ('pk', 'company', 'sort', 'sort_desc', 'name', 'id_number',
-                  'personal_phone', 'email', 'department', 'grade', 'position',
-                  'duty', 'date_join', 'status', 'status_desc', 'date_leave', 'user')
+        fields = ('pk', 'company', 'sort', 'sort_desc', 'name', 'id_number', 'personal_phone',
+                  'email', 'department', 'grade', 'position', 'duty', 'date_join', 'status',
+                  'status_desc', 'date_leave', 'user', 'is_hq_financial_officer')
