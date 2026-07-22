@@ -128,9 +128,9 @@ class Staff(models.Model):
     status = models.CharField('상태', max_length=1, choices=STATUS_CHOICES, default='1')
     date_leave = models.DateField('퇴사일', null=True, blank=True)
     is_hq_financial_officer = models.BooleanField(
-        '본사 금융 총괄 권한',
+        '본사 금융 관리 권한',
         default=False,
-        help_text='본사 프로젝트의 상세 자금 흐름을 열람할 수 있는 은밀한 권한입니다. Django Admin에서만 제어합니다.'
+        help_text='본사 프로젝트의 상세 자금 흐름을 열람할 수 있는 권한입니다. Django Admin 에서만 제어 합니다.'
     )
 
     def __str__(self):
