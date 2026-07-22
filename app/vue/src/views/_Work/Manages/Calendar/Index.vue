@@ -78,7 +78,8 @@ const summary = computed(() => {
       <CRow class="py-2">
         <CCol>
           <h5>
-            <v-icon icon="mdi-calendar-clock" color="primary" size="small" class="mr-2" />캘린더
+            <v-icon icon="mdi-calendar-clock" color="primary" size="small" class="mr-2" />
+            캘린더
           </h5>
         </CCol>
       </CRow>
@@ -150,18 +151,22 @@ const summary = computed(() => {
     .fc-daygrid-day-number {
       color: #e55353 !important; // CoreUI danger/red
     }
+
     background-color: rgba(229, 83, 83, 0.02);
   }
+
   .fc-day-sat {
     .fc-col-header-cell-cushion,
     .fc-daygrid-day-number {
       color: #3399ff !important; // CoreUI info/blue
     }
+
     background-color: rgba(51, 153, 255, 0.02);
   }
 
   .fc-day-today {
     background: rgba(var(--v-theme-primary), 0.05) !important;
+
     .fc-daygrid-day-number {
       background: rgb(var(--v-theme-primary)) !important;
       color: white !important;
@@ -197,20 +202,21 @@ const summary = computed(() => {
   }
 }
 
-.dark-theme :deep(.fc) {
+:global(.dark-theme) :deep(.fc),
+:global(.dark-layout) :deep(.fc) {
   --fc-border-color: rgba(255, 255, 255, 0.1);
 
   .fc-col-header-cell {
-    background: rgba(255, 255, 255, 0.05);
-    color: #d1d5db;
+    background: rgba(0, 0, 0, 0.3) !important;
+    color: #e5e7eb !important;
   }
 
   .fc-col-header-cell-cushion {
-    color: #d1d5db !important;
+    color: #e5e7eb !important;
   }
 
   .fc-daygrid-day-number {
-    color: #d1d5db;
+    color: #d1d5db !important;
   }
 
   .fc-day-sun {
