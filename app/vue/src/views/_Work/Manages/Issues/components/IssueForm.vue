@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
 import { useAccount } from '@/store/pinia/account.ts'
+import type { User } from '@/store/types/accounts.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import type { Issue, SimpleCategory } from '@/store/types/work_issue.ts'
 import { isValidate } from '@/utils/helper.ts'
@@ -31,7 +32,7 @@ const emit = defineEmits(['on-submit', 'close-form'])
 
 const validated = ref(false)
 const accStore = useAccount()
-const userInfo = computed(() => accStore.userInfo)
+const userInfo = computed<User | null>(() => accStore.userInfo)
 const workManager = computed(() => accStore.workManager)
 
 const form = ref({
@@ -321,12 +322,16 @@ const refWatcherAdd = ref()
 const createCategory = (payload: any) => issueStore.createCategory(payload)
 const createVersion = (payload: any) => workStore.createVersion(payload)
 
+const projId = computed(() => route.params.projId as string | undefined)
+watch(projId, newVal => {
+  if (newVal) form.value.project = newVal
+})
+
 onBeforeMount(async () => {
-  const pId = route.params.projId as string | undefined
-  if (pId) await workStore.fetchProjectMembers(pId)
+  if (projId.value) await workStore.fetchProjectMembers(projId.value)
 
   const copyId = route.query.copy ? Number(route.query.copy) : null
-  const copyIssueObj = copyId ? issueStore.allIssueList.find(i => i.pk === copyId) : null
+  const copyIssueObj = copyId ? (issueStore.allIssueList.find(i => i.pk === copyId) as Issue) : null
 
   if (props.issue) {
     form.value.pk = props.issue.pk
@@ -375,7 +380,7 @@ onBeforeMount(async () => {
       }
     })
   } else {
-    if (pId) form.value.project = pId
+    if (projId.value) form.value.project = projId.value
     if (route.query.parent) {
       form.value.parent = Number(route.query.parent)
       form.value.tracker = Number(route.query.tracker)
@@ -730,7 +735,7 @@ defineExpose({ callComment, callReply })
             >
               확인
             </v-btn>
-            <v-btn color="light" :size="btnSize" @click="emit('close-form')" flat> 취소 </v-btn>
+            <v-btn color="light" :size="btnSize" @click="emit('close-form')" flat> 취소</v-btn>
           </CCol>
         </CRow>
       </CForm>
