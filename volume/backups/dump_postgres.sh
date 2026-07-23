@@ -27,4 +27,4 @@ fi
 echo "PostgreSQL Backup completed successfully: ${DUMP_FILE}"
 
 # 퍼미션 변경
-chmod 777 ${DUMP_FILE}
+chmod 666 ${DUMP_FILE}

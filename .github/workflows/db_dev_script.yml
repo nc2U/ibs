@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - "volume/backups/**"
+      - "deploy/helm/scripts/**"
       - ".github/workflows/db_dev_script.yml"
     branches: [ "develop" ]
   
@@ -32,7 +33,7 @@ jobs:
           host: ${{ secrets.NFS_HOST }}
           username: ${{ secrets.NFS_USER }}
           password: ${{ secrets.NFS_PASS }}
-          source: 'volume/backups'
+          source: 'volume/backups/**,deploy/helm/scripts/**'
           target: ${{ secrets.NFS_PATH }}/dev/
 
       # slack --> notification
