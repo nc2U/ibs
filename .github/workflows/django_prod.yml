@@ -178,6 +178,9 @@ jobs:
             --set postgres.auth.postgresPassword=${{ secrets.DATABASE_PASS }} \
             --set postgres.auth.password=${{ secrets.DATABASE_PASS }} \
             --set postgres.auth.replicationPassword=${{ secrets.DATABASE_PASS }} \
+            --set cnpg.backup.s3.endpoint="http://${{ secrets.NFS_HOST }}:9000" \
+            --set cnpg.backup.s3.accessKeyId="${{ secrets.NFS_USER }}" \
+            --set cnpg.backup.s3.secretAccessKey="${{ secrets.NFS_PASS }}" \
             --set 'nginx.ingress.hosts[0].host'=ibs.${{ secrets.DOMAIN_NAME }} \
             --set 'nginx.ingress.hosts[1].host'=ibs.dyibs.co.kr \
             --set 'nginx.ingress.hosts[2].host'=ibs.brdnc.co.kr \

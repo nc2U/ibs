@@ -69,19 +69,27 @@ jobs:
           command: |
             cd ${{ secrets.CICD_PATH }}/prod/deploy
 
-            # Restore values-prod-custom.yaml if backup exists
-            if [ -f "../values-prod-custom.yaml.bak" ]; then
-              cp ../values-prod-custom.yaml.bak ../values-prod-custom.yaml
-              rm ../values-prod-custom.yaml.bak
-              echo "Restored values-prod-custom.yaml to parent directory"
-            fi
+            # Build values-prod-custom.yaml dynamically using github secrets
+            cat > ../values-prod-custom.yaml <<EOF
+            # Local Custom overrides for Production CNPG (Synology MinIO)
+            cnpg:
+              enabled: true
+              backup:
+                enabled: true
+                s3:
+                  enabled: true
+                  bucket: "postgres-backup"
+                  region: "ap-northeast-2"
+                  endpoint: "http://${{ secrets.NFS_HOST }}:9000"
+                  accessKeyId: "${{ secrets.NFS_USER }}"
+                  secretAccessKey: "${{ secrets.NFS_PASS }}"
+            EOF
+            echo "Generated values-prod-custom.yaml"
 
             # Create symlink from helm to parent custom values
-            if [ -f "../values-prod-custom.yaml" ]; then
-              cd helm
-              ln -sf ../values-prod-custom.yaml ./values-prod-custom.yaml
-              echo "Created symlink: helm/values-prod-custom.yaml -> ../values-prod-custom.yaml"
-            fi
+            cd helm
+            ln -sf ../values-prod-custom.yaml ./values-prod-custom.yaml
+            echo "Created symlink: helm/values-prod-custom.yaml -> ../values-prod-custom.yaml"
       
       # helm upgrade --> install
       - name: SSH Remote Commands from ci/cd server
