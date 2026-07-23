@@ -37,7 +37,7 @@ const workStore = useWork()
 const searchProjects = computed(() =>
   workStore.getAllReadableProjects.filter(p => p.value !== props.project?.pk),
 )
-const allRoles = computed(() => workStore.getRoles.filter(r => r.value !== 1 && r.value !== 2))
+const allRoles = computed(() => workStore.getRoles)
 
 const issueStore = useIssue()
 const allTrackers = computed(() => issueStore.getTrackers)
