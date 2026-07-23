@@ -73,13 +73,20 @@ class UserSerializer(serializers.ModelSerializer):
     )
     staff_auth = StaffAuthInUserSerializer(read_only=True)
     profile = ProfileInUserSerializer(read_only=True)
+    is_hq_financial_officer = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = User
         fields = ('pk', 'email', 'username', 'is_active', 'is_superuser',
                   'is_staff', 'work_manager', 'date_joined', 'password',
-                  'staff_auth', 'profile', 'last_login')
+                  'staff_auth', 'profile', 'last_login', 'is_hq_financial_officer')
         read_only_fields = ('date_joined', 'last_login')
+
+    def get_is_hq_financial_officer(self, obj):
+        try:
+            return getattr(obj.staff, 'is_hq_financial_officer', False)
+        except AttributeError:
+            return False
 
     def create(self, validated_data):
         user = User(email=validated_data['email'],

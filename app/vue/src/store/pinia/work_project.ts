@@ -315,11 +315,13 @@ export const useWork = defineStore('work', () => {
       .then(res => (role.value = res.data))
       .catch(err => errorHandle(err.response.data))
 
-  const fetchRoleList = () =>
-    api
-      .get(`/role/`)
+  const fetchRoleList = (category?: 'work_core' | 'ibs_global') => {
+    const url = category ? `/role/?category=${category}` : `/role/`
+    return api
+      .get(url)
       .then(res => (roleList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
+  }
 
   const createRole = (payload: Role) =>
     api
@@ -355,11 +357,13 @@ export const useWork = defineStore('work', () => {
 
   const permissionList = ref<Permission[]>([])
 
-  const fetchPermissionList = () =>
-    api
-      .get(`/permission/`)
+  const fetchPermissionList = (category?: 'work_core' | 'ibs_global') => {
+    const url = category ? `/permission/?category=${category}` : `/permission/`
+    return api
+      .get(url)
       .then(res => (permissionList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
+  }
 
   // member states & getters
   const member = ref<Member | null>(null)

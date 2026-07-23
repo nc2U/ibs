@@ -323,13 +323,13 @@ class RoleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Role
         fields = ('pk', 'name', 'assignable', 'issue_visible', 'issue_visible_desc', 'user_visible',
-                  'user_visible_desc', 'permissions', 'order', 'creator', 'created', 'updated')
+                  'user_visible_desc', 'permissions', 'category', 'order', 'creator', 'created', 'updated')
 
 
 class PermissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Permission
-        fields = ('pk', 'module', 'code', 'name', 'description')
+        fields = ('pk', 'module', 'category', 'code', 'name', 'description')
 
 
 class MemberSerializer(serializers.ModelSerializer):

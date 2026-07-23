@@ -29,19 +29,31 @@ class IbsModulePermission(ProjectPermission):
     def _get_project_pk(request, view):
         """
         요청에서 project.Project PK를 추출합니다.
-        우선순위: URL kwargs → request.data → query_params
+        우선순위: URL kwargs → request.data → query_params → HQ Project Fallback
         """
         pk = (
             view.kwargs.get('project')
             or request.data.get('project')
             or request.query_params.get('project')
         )
-        if pk is None:
-            return None
-        try:
-            return int(pk)
-        except (TypeError, ValueError):
-            return None
+        if pk is not None:
+            try:
+                return int(pk)
+            except (TypeError, ValueError):
+                pass
+
+        # 본사(Company) 회계/자금 관련 ViewSet인 경우 자동으로 본사 프로젝트 PK 매핑
+        view_name = view.__class__.__name__
+        if 'Company' in view_name and ('BankAccount' in view_name or 'Ledger' in view_name or 'Transaction' in view_name or 'AccountingEntry' in view_name):
+            from project.models import Project
+            try:
+                hq_project = Project.objects.filter(issue_project__type='1').first()
+                if hq_project:
+                    return hq_project.pk
+            except Exception:
+                pass
+
+        return None
 
     @staticmethod
     def _resolve_issue_project(project_pk, request=None):

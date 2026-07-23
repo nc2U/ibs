@@ -53,10 +53,21 @@ class LedgerCompanyBankAccountViewSet(viewsets.ModelViewSet):
     """본사 은행 계좌 ViewSet"""
     queryset = CompanyBankAccount.objects.select_related('bankcode', 'company', 'depart').all()
     serializer_class = LedgerCompanyBankAccountSerializer
-    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly, IbsModulePermission)
     pagination_class = PageNumberPaginationFifty
     filterset_fields = ('company', 'depart', 'bankcode', 'is_hide', 'inactive')
     search_fields = ('alias_name', 'number', 'holder')
+
+    @property
+    def required_permission(self):
+        return {
+            'list': 'ledger.read',
+            'retrieve': 'ledger.read',
+            'create': 'ledger.create',
+            'update': 'ledger.update',
+            'partial_update': 'ledger.update',
+            'destroy': 'ledger.delete',
+        }.get(self.action, 'ledger.read')
 
 
 class LedgerProjectBankAccountViewSet(viewsets.ModelViewSet):
@@ -385,8 +396,19 @@ class CompanyBankTransactionViewSet(viewsets.ModelViewSet):
     """본사 은행 거래 ViewSet"""
     queryset = CompanyBankTransaction.objects.all()
     serializer_class = CompanyBankTransactionSerializer
-    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly, IbsModulePermission)
     pagination_class = PageNumberPaginationFifteen
+
+    @property
+    def required_permission(self):
+        return {
+            'list': 'ledger.read',
+            'retrieve': 'ledger.read',
+            'create': 'ledger.create',
+            'update': 'ledger.update',
+            'partial_update': 'ledger.update',
+            'destroy': 'ledger.delete',
+        }.get(self.action, 'ledger.read')
 
     def get_queryset(self):
         """
@@ -746,12 +768,23 @@ class CompanyAccountingEntryViewSet(BankTransactionPreloadMixin, viewsets.ModelV
         'company', 'account', 'affiliate', 'affiliate__company', 'affiliate__project'
     ).all()
     serializer_class = CompanyAccountingEntrySerializer
-    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly, IbsModulePermission)
     pagination_class = PageNumberPaginationFifteen
     filterset_class = CompanyAccountingEntryFilterSet
     search_fields = ('transaction_id', 'account_code', 'trader')
     ordering = ['-created_at']
     bank_transaction_model = CompanyBankTransaction
+
+    @property
+    def required_permission(self):
+        return {
+            'list': 'ledger.read',
+            'retrieve': 'ledger.read',
+            'create': 'ledger.create',
+            'update': 'ledger.update',
+            'partial_update': 'ledger.update',
+            'destroy': 'ledger.delete',
+        }.get(self.action, 'ledger.read')
 
 
 class ProjectAccountingEntryFilterSet(FilterSet):
@@ -788,7 +821,16 @@ class CompanyCompositeTransactionViewSet(viewsets.ViewSet):
     은행 거래와 회계 분개를 한 번에 생성/수정/관리합니다.
     프론트엔드 거래 관리 UI에서 사용합니다.
     """
-    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly, IbsModulePermission)
+
+    @property
+    def required_permission(self):
+        return {
+            'create': 'ledger.create',
+            'update': 'ledger.update',
+            'partial_update': 'ledger.update',
+            'destroy': 'ledger.delete',
+        }.get(self.action, 'ledger.read')
 
     def create(self, request):
         """본사 거래 생성 (은행거래 + 회계분개)"""

@@ -242,6 +242,7 @@ class RoleViewSet(viewsets.ModelViewSet):
     serializer_class = RoleSerializer
     permission_classes = (permissions.IsAuthenticated, IsWorkManagerReadOnly)
     pagination_class = PageNumberPaginationTwenty
+    filterset_fields = ('category',)
     search_fields = ('id',)
 
     def perform_create(self, serializer):
@@ -253,6 +254,7 @@ class PermissionViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = PermissionSerializer
     permission_classes = (permissions.IsAuthenticated,)
     pagination_class = PageNumberPaginationOneHundred
+    filterset_fields = ('category',)
 
 
 class MemberViewSet(viewsets.ModelViewSet):

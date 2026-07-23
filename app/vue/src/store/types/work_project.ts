@@ -123,6 +123,7 @@ export interface Role {
   user_visible: 'ALL' | 'PRJ' | 'NOP'
   user_visible_desc: string
   permissions: number[]
+  category?: 'work_core' | 'ibs_global'
   order: number
   creator: number
   created: string
@@ -131,7 +132,21 @@ export interface Role {
 
 export interface Permission {
   pk: number
-  module: 'project' | 'meeting' | 'issue' | 'news' | 'docs' | 'forum' | 'calendar'
+  module:
+    | 'project'
+    | 'meeting'
+    | 'issue'
+    | 'news'
+    | 'docs'
+    | 'forum'
+    | 'calendar'
+    | 'contract'
+    | 'payment'
+    | 'notice'
+    | 'ledger'
+    | 'site'
+    | 'hr_work'
+  category?: 'work_core' | 'ibs_global'
   code: string
   name: string
   description: string
