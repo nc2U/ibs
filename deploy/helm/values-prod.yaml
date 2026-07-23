@@ -1,65 +1,12 @@
-# Default values for IBS.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
-
-global:
-  appMode: prod
-  dbType: "postgres" # postgres | mariadb
-  dbPassword: "my-secret"
-  nfsServerHost: "nfs-server-host"
-  nfsPath: "nfs-path" # nfs volume path
-  cicdServerHost: "cicd-server-host"
-  cicdPath: "cicd-path" # cicd server path
-  domainHost: "http://abc.com/"
-  emailHost: "smtp-server.com" # your-smtp-server.com
-  emailHostUser: "email@example.com" # 'your-email@example.com
-  emailHostPassword: "my-email-host-secret" # your-email-password
-  defaultFromEmail: "email@example.com"
-  database:
-    type: "postgres"
-    cnpg:
-      directConnection: true  # Enable direct primary pod connection for migrations
-
-# CloudNativePG 설정
+# Production values override for CNPG (Mock Backup Config)
 cnpg:
   enabled: true
-  replication:
-    instances: 3
-
-web:
-  resources: # Web application resource configuration
-    requests:
-      cpu: 300m
-      memory: 768Mi
-    limits:
-      cpu: 2000m
-      memory: 3Gi
-
-  celery: # Celery worker configuration
-    resources:
-      requests:
-        cpu: 200m
-        memory: 512Mi
-      limits:
-        cpu: 1500m
-        memory: 2Gi
-
-redis:
-  enabled: true
-  replicaCount: 1
-  persistence:
+  backup:
     enabled: true
-    size: 2Gi
-
-nginx:
-  service:
-    port: 8880
-
-  ingress:
-    hosts:
-      - host: my-host.com # Host address
-        paths: [{ path: "/", pathType: Prefix }]
-    tls:
-      - secretName: web-devbox-kr-cert
-        hosts:
-          - my-host.com
+    s3:
+      enabled: true
+      bucket: "postgres-backup-prod-mock"
+      region: "ap-northeast-2"
+      endpoint: "http://192.168.0.200:9000"
+      accessKeyId: "YOUR_PROD_ACCESS_KEY"
+      secretAccessKey: "YOUR_PROD_SECRET_KEY"
