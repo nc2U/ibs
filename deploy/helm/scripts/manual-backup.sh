@@ -55,32 +55,36 @@ echo "🔑 Verifying postgres password..."
 echo "----------------------------------------"
 
 # Primary pod 찾기 (cnpg cluster status에서 직접 primary를 가져옴으로써 API 호환성 보장)
-# set -e 우회를 위해 || true 추가
-CLUSTER_NAME=$(kubectl get cluster -n "$NAMESPACE" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
+echo "🔍 Debug: Listing namespaces to verify connectivity..."
+kubectl get ns || true
+
+echo "🔍 Debug: Attempting to get cluster name in namespace $NAMESPACE..."
+CLUSTER_NAME=$(kubectl get cluster -n "$NAMESPACE" -o jsonpath='{.items[0].metadata.name}' || true)
 echo "🔍 Debug: Resolved CLUSTER_NAME='$CLUSTER_NAME'"
 if [ -z "$CLUSTER_NAME" ]; then
     CLUSTER_NAME="postgres"
     echo "🔍 Debug: CLUSTER_NAME was empty, fallback to default 'postgres'"
 fi
 
-PRIMARY_POD=$(kubectl get cluster -n "$NAMESPACE" "$CLUSTER_NAME" -o jsonpath='{.status.currentPrimary}' 2>/dev/null || true)
+echo "🔍 Debug: Attempting to get primary from cluster..."
+PRIMARY_POD=$(kubectl get cluster -n "$NAMESPACE" "$CLUSTER_NAME" -o jsonpath='{.status.currentPrimary}' || true)
 echo "🔍 Debug: Step 1 (via cluster status) resolved PRIMARY_POD='$PRIMARY_POD'"
 
 if [ -z "$PRIMARY_POD" ]; then
     # 클러스터 status 조회가 실패할 경우를 대비한 레이블 기반 폴백
-    PRIMARY_POD=$(kubectl get pods -n "$NAMESPACE" -l "cnpg.io/cluster=$CLUSTER_NAME,cnpg.io/role=primary" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
+    PRIMARY_POD=$(kubectl get pods -n "$NAMESPACE" -l "cnpg.io/cluster=$CLUSTER_NAME,cnpg.io/role=primary" -o jsonpath='{.items[0].metadata.name}' || true)
     echo "🔍 Debug: Step 2 (via cluster label & role=primary) resolved PRIMARY_POD='$PRIMARY_POD'"
 fi
 
 if [ -z "$PRIMARY_POD" ]; then
     # 클러스터 이름이 다를 수 있으므로 cnpg.io/role=primary 필터만 사용하여 조회 시도
-    PRIMARY_POD=$(kubectl get pods -n "$NAMESPACE" -l "cnpg.io/role=primary" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
+    PRIMARY_POD=$(kubectl get pods -n "$NAMESPACE" -l "cnpg.io/role=primary" -o jsonpath='{.items[0].metadata.name}' || true)
     echo "🔍 Debug: Step 3 (via role=primary only) resolved PRIMARY_POD='$PRIMARY_POD'"
 fi
 
 if [ -z "$PRIMARY_POD" ]; then
     # 이전 버전 레이블 기반 폴백
-    PRIMARY_POD=$(kubectl get pods -n "$NAMESPACE" -l "cnpg.io/cluster=postgres,role=primary" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
+    PRIMARY_POD=$(kubectl get pods -n "$NAMESPACE" -l "cnpg.io/cluster=postgres,role=primary" -o jsonpath='{.items[0].metadata.name}' || true)
     echo "🔍 Debug: Step 4 (via fallback cluster=postgres,role=primary) resolved PRIMARY_POD='$PRIMARY_POD'"
 fi
 
