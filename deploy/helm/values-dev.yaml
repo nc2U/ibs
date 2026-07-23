@@ -1,6 +1,26 @@
-# Development values override for CNPG (Mock Backup Config)
+global:
+  appMode: dev
+  dbType: "postgres" # postgres | mariadb
+  dbPassword: "my-secret"
+  nfsServerHost: "nfs-server-host"
+  nfsPath: "nfs-path" # nfs volume path
+  cicdServerHost: "cicd-server-host"
+  cicdPath: "cicd-path" # cicd server path
+  domainHost: "http://abc.com/"
+  emailHost: "smtp-server.com" # your-smtp-server.com
+  emailHostUser: "email@example.com" # 'your-email@example.com
+  emailHostPassword: "my-email-host-secret" # your-email-password
+  defaultFromEmail: "email@example.com"
+  database:
+    type: "postgres"
+    cnpg:
+      directConnection: true  # Enable direct primary pod connection for migrations
+
+# CloudNativePG 설정
 cnpg:
   enabled: true
+  replication:
+    instances: 1
   backup:
     enabled: true
     s3:
@@ -10,3 +30,33 @@ cnpg:
       endpoint: "http://192.168.0.100:9000"
       accessKeyId: "YOUR_DEV_ACCESS_KEY"
       secretAccessKey: "YOUR_DEV_SECRET_KEY"
+
+web:
+  image:
+    tag: dev-latest  # Overridden by GitHub Actions with git SHA
+
+  celery:
+    replicaCount: 1
+
+nginx:
+  image:
+    tag: "latest"
+
+  # Django web image for init container (to copy static files)
+  web:
+    image:
+      tag: dev-latest  # Overridden by GitHub Actions with git SHA
+
+  service:
+    port: 8881
+
+  ingress:
+    hosts:
+      - host: my-dev-host.com # Host address
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: web-devbox-kr-cert
+        hosts:
+          - my-dev-host.com
