@@ -204,9 +204,11 @@ class IssueProject(models.Model):
                 for role in member.roles.all():
                     if role.assignable:
                         assignable = True
-                    if issue_visibility_order.get(role.issue_visible, 0) > issue_visibility_order.get(best_issue_visible, 0):
+                    if issue_visibility_order.get(role.issue_visible, 0) > issue_visibility_order.get(
+                            best_issue_visible, 0):
                         best_issue_visible = role.issue_visible
-                    if user_visibility_order.get(role.user_visible, 0) > user_visibility_order.get(best_user_visible, 0):
+                    if user_visibility_order.get(role.user_visible, 0) > user_visibility_order.get(best_user_visible,
+                                                                                                   0):
                         best_user_visible = role.user_visible
 
             return {
@@ -281,7 +283,7 @@ class Permission(models.Model):
         return f"{self.code}({self.name})"
 
     class Meta:
-        ordering = ('-category', 'module', 'id',)
+        ordering = ('-category', 'id',)
         verbose_name = '04. 권한'
         verbose_name_plural = '04. 권한'
 
