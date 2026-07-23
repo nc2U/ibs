@@ -395,6 +395,7 @@ EOF
         if [ "${FOLLOW_LOGS:-true}" = "true" ]; then
             echo "Following logs (Ctrl+C to stop)..."
             echo "----------------------------------------"
+            sleep 3
             kubectl wait --for=condition=ready pod -n "$NAMESPACE" -l "job-name=$JOB_NAME" --timeout=30s
             kubectl logs -n "$NAMESPACE" -l "job-name=$JOB_NAME" -f
         fi
