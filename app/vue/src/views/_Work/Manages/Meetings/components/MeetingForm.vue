@@ -8,6 +8,8 @@ import { useIssue } from '@/store/pinia/work_issue.ts'
 import { usePerms } from '@/composables/usePerms.ts'
 import { timeFormat } from '@/utils/baseMixins.ts'
 import { isValidate } from '@/utils/helper.ts'
+import type { Meeting } from '@/store/types/work_meeting.ts'
+import type { IssueProject } from '@/store/types/work_project.ts'
 import MdEditor from '@/components/MdEditor/Index.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
 import DateTimePicker from '@/components/DatePicker/DateTimePicker.vue'
@@ -21,7 +23,7 @@ const workStore = useWork()
 const meetingStore = useMeeting()
 const issueStore = useIssue()
 
-const meeting = computed(() => meetingStore.meeting)
+const meeting = computed<Meeting | null>(() => meetingStore.meeting)
 const allReadableProjects = computed(() => workStore.getAllReadableProjects)
 const users = computed(() => accStore.usersList)
 const categories = computed(() => meetingStore.categoryList)
@@ -150,7 +152,7 @@ const createRelatedIssue = async (payload: any) => {
         })
       } else {
         if (key === 'project' && !val) {
-          const projectSlug = workStore.currentProject?.slug || ''
+          const projectSlug = (workStore.currentProject as IssueProject)?.slug || ''
           if (projectSlug) formData.append(key, projectSlug)
         } else formData.append(key, val as string)
       }
@@ -186,24 +188,6 @@ const fetchMeeting = async (pk: number) => {
       await issueStore.fetchAllIssueList(meeting.value.project_desc.slug)
   }
 }
-
-onBeforeMount(async () => {
-  await accStore.fetchUsersList()
-  await workStore.fetchAllProjectList()
-  await issueStore.fetchStatusList()
-  await issueStore.fetchPriorityList()
-  await issueStore.fetchTrackerList()
-  if (route.params.projId) {
-    const proj = allReadableProjects.value.find(p => p.slug === route.params.projId)
-    if (proj) {
-      form.value.project = proj.value as number
-      await issueStore.fetchAllIssueList(proj.slug)
-    }
-    await meetingStore.fetchCategoryList(route.params.projId as string)
-  } else await meetingStore.fetchCategoryList()
-
-  if (route.params.meetingId) await fetchMeeting(Number(route.params.meetingId))
-})
 
 watch(
   () => form.value.project,
@@ -250,6 +234,29 @@ const onCategorySubmit = (event: Event) => {
 const onConfirmToggle = async () => {
   if (form.value.pk) await meetingStore.confirmMeeting(form.value.pk)
 }
+
+const projId = computed(() => route.params.projId as string | undefined)
+watch(projId, newVal => {
+  if (newVal)
+    form.value.project = allReadableProjects.value.find(p => p.slug === newVal)?.value as number
+})
+onBeforeMount(async () => {
+  await accStore.fetchUsersList()
+  await workStore.fetchAllProjectList()
+  await issueStore.fetchStatusList()
+  await issueStore.fetchPriorityList()
+  await issueStore.fetchTrackerList()
+  if (projId.value) {
+    const proj = allReadableProjects.value.find(p => p.slug === projId.value)
+    if (proj) {
+      form.value.project = proj.value as number
+      await issueStore.fetchAllIssueList(proj.slug)
+    }
+    await meetingStore.fetchCategoryList(projId.value as string)
+  } else await meetingStore.fetchCategoryList()
+
+  if (route.params.meetingId) await fetchMeeting(Number(route.params.meetingId))
+})
 </script>
 
 <template>
@@ -343,7 +350,7 @@ const onConfirmToggle = async () => {
                           <CFormCheck
                             label="삭제"
                             v-model="files_del"
-                            :value="file.pk"
+                            :value="`${file.pk}`"
                             inline
                             class="ml-2"
                             :id="`del-${index}`"
@@ -388,8 +395,13 @@ const onConfirmToggle = async () => {
                   multiple
                   style="display: none"
                 />
-                <v-btn color="info" size="x-small" @click="fileInput?.click()">
-                  <v-icon icon="mdi-paperclip" size="small" class="mr-1" /> 첨부 파일 추가
+                <v-btn
+                  color="info"
+                  size="x-small"
+                  @click="(fileInput as HTMLInputElement)?.click()"
+                >
+                  <v-icon icon="mdi-paperclip" size="small" class="mr-1" />
+                  첨부 파일 추가
                 </v-btn>
               </CCol>
             </CRow>
@@ -452,7 +464,8 @@ const onConfirmToggle = async () => {
                   </div>
                   <CCol v-if="canIssueCreate" class="text-right">
                     <v-btn color="info" size="x-small" @click="callIssueModal()">
-                      <v-icon icon="mdi-plus" size="small" class="mr-1" /> 관련 업무 추가
+                      <v-icon icon="mdi-plus" size="small" class="mr-1" />
+                      관련 업무 추가
                     </v-btn>
                   </CCol>
                 </div>
@@ -478,7 +491,7 @@ const onConfirmToggle = async () => {
                   v-model="form.project"
                   :all-readable-projects="allReadableProjects"
                   required
-                  :disabled="!!route.params.projId"
+                  :disabled="!!projId"
                 />
                 <CFormFeedback invalid>프로젝트를 선택해 주세요.</CFormFeedback>
               </CCol>
@@ -614,7 +627,7 @@ const onConfirmToggle = async () => {
   </FormModal>
 
   <FormModal ref="refCategoryModal">
-    <template #header> 회의록 카테고리 추가 </template>
+    <template #header> 회의록 카테고리 추가</template>
     <template #default>
       <CForm
         class="needs-validation p-4"
@@ -663,8 +676,8 @@ const onConfirmToggle = async () => {
 
         <CRow>
           <CCol class="text-right">
-            <v-btn type="submit" color="primary" size="small"> 저장 </v-btn>
-            <v-btn color="light" size="small" @click="refCategoryModal.close()" flat> 취소 </v-btn>
+            <v-btn type="submit" color="primary" size="small"> 저장</v-btn>
+            <v-btn color="light" size="small" @click="refCategoryModal.close()" flat> 취소</v-btn>
           </CCol>
         </CRow>
       </CForm>
