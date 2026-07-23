@@ -11,12 +11,8 @@ import AuthManageAuthGuard from '@/components/AuthGuard/AuthManageAuthGuard.vue'
 import UserSelect from './components/UserSelect.vue'
 import SideBarManageAuth from './components/SideBarManageAuth.vue'
 import AddUserFormModal from './components/AddUserFormModal.vue'
-import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
-import AlertModal from '@/components/Modals/AlertModal.vue'
 
 const refFormModal = ref()
-const refAlertModal = ref()
-const refConfirmModal = ref()
 
 const comInfo = ref<{ company: number | null; is_hq_staff: boolean }>({
   company: null,
@@ -39,93 +35,12 @@ const changeProStaff = (val: boolean) => {
   comInfo.value.is_hq_staff = !val
 }
 
-type Auth = '0' | '1' | '2'
-export type UserAuth = {
-  pk?: number
-  contract: Auth
-  payment: Auth
-  notice: Auth
-  project: Auth
-  project_site: Auth
-  project_ledger: Auth
-  project_docs: Auth
-  human_resource: Auth
-  company_settings: Auth
-  company_ledger: Auth
-  company_docs: Auth
-  auth_manage: Auth
-}
-const menuAuth = ref<UserAuth>({
-  pk: undefined,
-  contract: '0',
-  payment: '0',
-  notice: '0',
-  project_ledger: '0',
-  project_docs: '0',
-  project: '0',
-  project_site: '0',
-  company_ledger: '0',
-  company_docs: '0',
-  human_resource: '0',
-  company_settings: '0',
-  auth_manage: '0',
-})
-
-const formsCheck = computed(() => {
-  if (!!user.value) {
-    const pa = projectAuth.value
-    const ma = menuAuth.value
-    const sa = user.value.staff_auth
-
-    if (!!sa) {
-      const a = comInfo.value.is_hq_staff === sa.is_hq_staff
-      const b = pa.is_pjt_staff === sa.is_pjt_staff
-      const c = JSON.stringify(pa.allowed_projects) === JSON.stringify(sa.allowed_projects)
-      const d = pa.default_project === sa?.default_project
-      const e = ma.contract === sa.contract
-      const f = ma.payment === sa.payment
-      const g = ma.notice === sa.notice
-      const h = ma.project_ledger === sa.project_ledger
-      const i = ma.project_docs === sa.project_docs
-      const j = ma.project === sa.project
-      const k = ma.project_site === sa.project_site
-      const l = ma.company_ledger === sa.company_ledger
-      const m = ma.company_docs === sa.company_docs
-      const n = ma.human_resource === sa.human_resource
-      const o = ma.company_settings === sa.company_settings
-      const p = ma.auth_manage === sa.auth_manage
-
-      return a && b && c && d && e && f && g && h && i && j && k && l && m && n && o && p
-    } else {
-      const a = comInfo.value.is_hq_staff === false
-      const b = pa.is_pjt_staff === false
-      const c = JSON.stringify(pa.allowed_projects) === JSON.stringify([])
-      const d = pa.default_project === null
-      const e = ma.contract === '0'
-      const f = ma.payment === '0'
-      const g = ma.notice === '0'
-      const h = ma.project_ledger === '0'
-      const i = ma.project_docs === '0'
-      const j = ma.project === '0'
-      const k = ma.project_site === '0'
-      const l = ma.company_ledger === '0'
-      const m = ma.company_docs === '0'
-      const n = ma.human_resource === '0'
-      const o = ma.company_settings === '0'
-      const p = ma.auth_manage === '0'
-
-      return a && b && c && d && e && f && g && h && i && j && k && l && m && n && o && p
-    }
-  } else return true
-})
-
 const comStore = useCompany()
 const comId = computed(() => comStore.company?.pk)
 const fetchCompany = async (pk: number) => await comStore.fetchCompany(pk)
 
 const accStore = useAccount()
 const user = computed<User | null>(() => accStore.user)
-const isStaffAuth = computed(() => !!user.value?.staff_auth)
 
 const adminCreateUser = (payload: UserByAdmin) => accStore.adminCreateUser(payload)
 
@@ -142,45 +57,17 @@ const selectUser = (pk: number | null) => {
 
 const getAllowed = (payload: number[]) => (projectAuth.value.allowed_projects = payload)
 const getAssigned = (payload: number | null) => (projectAuth.value.default_project = payload)
-const selectAuth = (payload: UserAuth) => (menuAuth.value = payload)
 
 const authReset = () => {
   comInfo.value.is_hq_staff = false
   projectAuth.value.is_pjt_staff = false
   projectAuth.value.default_project = null
   projectAuth.value.allowed_projects = []
-  menuAuth.value.pk = undefined
-  menuAuth.value.contract = '0'
-  menuAuth.value.payment = '0'
-  menuAuth.value.notice = '0'
-  menuAuth.value.project_ledger = '0'
-  menuAuth.value.project_docs = '0'
-  menuAuth.value.project = '0'
-  menuAuth.value.project_site = '0'
-  menuAuth.value.company_ledger = '0'
-  menuAuth.value.company_docs = '0'
-  menuAuth.value.human_resource = '0'
-  menuAuth.value.company_settings = '0'
-  menuAuth.value.auth_manage = '0'
 }
-
-const toSave = () => refConfirmModal.value.callModal()
 
 const onSubmit = (payload: any) => {
   console.log(payload)
   adminCreateUser(payload)
-}
-
-const modalAction = () => {
-  const authData = { ...comInfo.value, ...projectAuth.value, ...menuAuth.value }
-  if (user.value && user.value.pk) {
-    if (!!authData.pk)
-      accStore.patchAuth(authData, user.value.pk) // staffauth patch
-    else accStore.createAuth(authData, user.value.pk) // staffauth create
-    refConfirmModal.value.close()
-  } else {
-    refAlertModal.value.callModal()
-  }
 }
 
 watch(
@@ -191,19 +78,6 @@ watch(
       projectAuth.value.is_pjt_staff = nVal.is_pjt_staff
       projectAuth.value.default_project = nVal.default_project
       projectAuth.value.allowed_projects = nVal.allowed_projects
-      menuAuth.value.pk = nVal.pk
-      menuAuth.value.contract = nVal.contract
-      menuAuth.value.payment = nVal.payment
-      menuAuth.value.notice = nVal.notice
-      menuAuth.value.project_ledger = nVal.project_ledger
-      menuAuth.value.project_docs = nVal.project_docs
-      menuAuth.value.project = nVal.project
-      menuAuth.value.project_site = nVal.project_site
-      menuAuth.value.company_ledger = nVal.company_ledger
-      menuAuth.value.company_docs = nVal.company_docs
-      menuAuth.value.human_resource = nVal.human_resource
-      menuAuth.value.company_settings = nVal.company_settings
-      menuAuth.value.auth_manage = nVal.auth_manage
     }
   },
 )
@@ -247,37 +121,10 @@ onBeforeMount(async () => {
           :allowed="projectAuth.allowed_projects"
           @get-allowed="getAllowed"
           @get-assigned="getAssigned"
-          @select-auth="selectAuth"
         />
       </CCardBody>
 
-      <template #footer>
-        <CCardFooter class="text-right">
-          <v-btn
-            type="button"
-            :color="isStaffAuth ? 'success' : 'primary'"
-            :disabled="!comId || formsCheck"
-            @click="toSave"
-          >
-            <CIcon name="cil-check-circle" />
-            저장
-          </v-btn>
-        </CCardFooter>
-      </template>
-
       <AddUserFormModal ref="refFormModal" @on-submit="onSubmit" />
-
-      <ConfirmModal ref="refConfirmModal">
-        <template #header>사용자 권한설정</template>
-        <template #default>사용자 권한설정 저장을 진행하시겠습니까?</template>
-        <template #footer>
-          <v-btn size="small" :color="isStaffAuth ? 'success' : 'primary'" @click="modalAction">
-            저장
-          </v-btn>
-        </template>
-      </ConfirmModal>
-
-      <AlertModal ref="refAlertModal" />
     </ContentBody>
   </AuthManageAuthGuard>
 </template>

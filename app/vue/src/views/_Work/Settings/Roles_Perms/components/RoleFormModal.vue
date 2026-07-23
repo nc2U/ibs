@@ -24,6 +24,7 @@ const form = ref({
   assignable: true,
   issue_visible: 'PUB' as 'ALL' | 'PUB' | 'PRI' | 'NOP',
   user_visible: 'ALL' as 'ALL' | 'PRJ' | 'NOP',
+  category: 'work_core' as 'work_core' | 'ibs_global',
   order: 1,
   permissions: [] as number[],
 })
@@ -33,7 +34,10 @@ watch(
   val => {
     if (val) {
       if (props.role) {
-        form.value = { ...props.role }
+        form.value = { 
+          ...props.role,
+          category: props.role.category || 'work_core'
+        }
       } else {
         form.value = {
           pk: 0,
@@ -41,6 +45,7 @@ watch(
           assignable: true,
           issue_visible: 'PUB',
           user_visible: 'ALL',
+          category: 'work_core',
           order: props.maxOrder + 1,
           permissions: [],
         }
@@ -89,6 +94,13 @@ const saveRole = async (event: Event) => {
             <option value="ALL">모든 활성 사용자</option>
             <option value="PRJ">보이는 프로젝트 사용자</option>
             <option value="NOP">없음</option>
+          </CFormSelect>
+        </div>
+        <div class="mb-3">
+          <CFormLabel>권한 구분(카테고리)</CFormLabel>
+          <CFormSelect v-model="form.category">
+            <option value="work_core">협업 및 업무 관리 권한 (work_core)</option>
+            <option value="ibs_global">비즈니스 데이터 관리 권한 (ibs_global)</option>
           </CFormSelect>
         </div>
         <div class="mt-4">

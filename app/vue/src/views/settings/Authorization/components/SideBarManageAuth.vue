@@ -1,413 +1,180 @@
 <script lang="ts" setup>
-import { ref, reactive, computed, nextTick, onMounted, onUpdated, type PropType } from 'vue'
-import { type UserAuth } from '@/views/settings/Authorization/Index.vue'
+import { ref, computed, onMounted, watch, type PropType } from 'vue'
+import { useWork } from '@/store/pinia/work_project'
 import type { User } from '@/store/types/accounts'
+import type { Role, Member } from '@/store/types/work_project'
 import { write_auth_manage } from '@/utils/pageAuth'
-import { useStore } from '@/store'
 import ProjectManageAuth from './ProjectManageAuth.vue'
 
 const props = defineProps({
   user: { type: Object as PropType<User | null>, default: null },
-  allowed: { type: Array, default: () => [] },
+  allowed: { type: Array as PropType<number[]>, default: () => [] },
 })
 
-const emit = defineEmits(['select-auth', 'get-allowed', 'get-assigned'])
+const emit = defineEmits(['get-allowed', 'get-assigned'])
 
-const store = useStore()
-const isDark = computed(() => store.theme === 'dark')
+const workStore = useWork()
+const roleList = computed<Role[]>(() => workStore.roleList)
 
-const authData = ref<UserAuth>({
-  pk: undefined,
-  contract: '0',
-  payment: '0',
-  notice: '0',
-  project_ledger: '0',
-  project_docs: '0',
-  project: '0',
-  project_site: '0',
-  company_ledger: '0',
-  company_docs: '0',
-  human_resource: '0',
-  company_settings: '1',
-  auth_manage: '1',
-})
+// ibs_global 카테고리의 역할 목록 필터링
+const ibsRoles = computed(() => roleList.value.filter(r => r.category === 'ibs_global'))
 
-const auths = reactive([
-  { label: '권한없음', value: '0' },
-  { label: '읽기권한', value: '1' },
-  { label: '쓰기권한', value: '2' },
-])
+const memberList = ref<Member[]>([])
+const loading = ref(false)
 
-const isCoInActive = computed(() => !props.user)
-const isPrInActive = computed(() => !props.user || props.allowed?.length === 0)
-
-const getColor = (status: '0' | '1' | '2') => {
-  if (status === '1') return ['yellow-darken-2', '#fcfced']
-  else if (status === '2') return ['success', '#edf7f2']
-  else return ['blue-grey-lighten-1', '']
-}
-
-const getAllowed = (payload: number[]) => emit('get-allowed', payload)
-
-const getAssigned = (payload: number | null) => emit('get-assigned', payload)
-
-const selectAuth = () =>
-  nextTick(() => {
-    const auth = { ...authData.value }
-    if (!!props.user?.staff_auth) auth.pk = props.user.staff_auth.pk
-    else auth.pk = undefined
-    emit('select-auth', auth)
-  })
-
-const dataSetup = () => {
-  if (props.user && props.user?.staff_auth) {
-    authData.value.pk = props.user.staff_auth.pk
-    authData.value.contract = props.user.staff_auth.contract
-    authData.value.payment = props.user.staff_auth.payment
-    authData.value.notice = props.user.staff_auth.notice
-    authData.value.project_ledger = props.user.staff_auth.project_ledger
-    authData.value.project_docs = props.user.staff_auth.project_docs
-    authData.value.project = props.user.staff_auth.project
-    authData.value.project_site = props.user.staff_auth.project_site
-    authData.value.company_ledger = props.user.staff_auth.company_ledger
-    authData.value.company_docs = props.user.staff_auth.company_docs
-    authData.value.human_resource = props.user.staff_auth.human_resource
-    authData.value.company_settings = props.user.staff_auth.company_settings
-    authData.value.auth_manage = props.user.staff_auth.auth_manage
-  } else {
-    authData.value.pk = undefined
-    authData.value.contract = '0'
-    authData.value.payment = '0'
-    authData.value.notice = '0'
-    authData.value.project_ledger = '0'
-    authData.value.project_docs = '0'
-    authData.value.project = '0'
-    authData.value.project_site = '0'
-    authData.value.company_ledger = '0'
-    authData.value.company_docs = '0'
-    authData.value.human_resource = '0'
-    authData.value.company_settings = '1'
-    authData.value.auth_manage = '1'
+// 선택된 사용자가 각 프로젝트에서 가지는 Member 정보 로드
+const fetchUserMembers = async () => {
+  if (!props.user?.pk) {
+    memberList.value = []
+    return
+  }
+  loading.value = true
+  try {
+    // workStore 또는 API를 직접 호출해 사용자의 프로젝트 멤버 리스트 조회
+    // Member API 엔드포인트: /api/v1/member/?user={user_id}
+    const response = await workStore.fetchMemberList({ user: props.user.pk })
+    if (response) {
+      memberList.value = response
+    }
+  } catch (error) {
+    console.error('Failed to fetch user members:', error)
+  } finally {
+    loading.value = false
   }
 }
 
-onMounted(() => dataSetup())
-onUpdated(() => dataSetup())
+watch(
+  () => props.user,
+  () => fetchUserMembers(),
+  { immediate: true }
+)
+
+const getAllowed = (payload: number[]) => {
+  emit('get-allowed', payload)
+  // 허용 프로젝트가 변경되면 멤버 리스트 갱신
+  setTimeout(() => fetchUserMembers(), 500)
+}
+
+const getAssigned = (payload: number | null) => emit('get-assigned', payload)
+
+// 멤버의 역할 보유 여부 확인
+const hasRole = (member: Member, rolePk: number) => {
+  return member.roles.some(r => r.pk === rolePk)
+}
+
+// 멤버의 역할 토글 및 업데이트
+const toggleRole = async (member: Member, rolePk: number) => {
+  if (!write_auth_manage.value) return
+  
+  const currentRolePks = member.roles.map(r => r.pk)
+  const index = currentRolePks.indexOf(rolePk)
+  
+  if (index === -1) {
+    currentRolePks.push(rolePk)
+  } else {
+    currentRolePks.splice(index, 1)
+  }
+
+  try {
+    await workStore.patchMember({
+      pk: member.pk,
+      roles: currentRolePks,
+    })
+    // 갱신을 위해 재로드
+    await fetchUserMembers()
+  } catch (error) {
+    console.error('Failed to update member role:', error)
+  }
+}
+
+onMounted(() => {
+  workStore.fetchRoleList()
+})
 </script>
 
 <template>
-  <CRow v-if="user?.staff_auth?.is_hq_staff">
-    <CCol>
-      <CRow>
-        <CCol>
-          <h6 class="font-weight-bold">
-            <v-icon icon="mdi-domain" color="primary" size="sm" />
-            본사 관리
-          </h6>
-        </CCol>
-      </CRow>
+  <div class="mt-4">
+    <!-- 프로젝트 할당 영역 -->
+    <CRow>
+      <CCol>
+        <h6 class="font-weight-bold mb-3">
+          <v-icon icon="mdi-sitemap" color="success" size="sm" class="mr-2" />
+          허용 프로젝트 설정
+        </h6>
+      </CCol>
+    </CRow>
 
-      <CRow>
-        <CCol md="6" lg="4">
-          <CRow class="m-1">
-            <CFormLabel class="col-md-4 col-form-label mb-2 mb-md-1 bg-grey-lighten-3">
-              <v-icon
-                icon="mdi mdi-account-arrow-left"
-                :color="getColor(authData.company_ledger)[0]"
-              />
-              본사 자금 관리
-            </CFormLabel>
-            <CCol>
-              <CFormSelect
-                v-model="authData.company_ledger"
-                :options="auths"
-                :disabled="isCoInActive || !write_auth_manage"
-                :style="{
-                  backgroundColor: isDark ? '' : getColor(authData.company_ledger)[1],
-                }"
-                @change="selectAuth"
-              />
-            </CCol>
-          </CRow>
-        </CCol>
-        <CCol md="6" lg="4">
-          <CRow class="m-1">
-            <CFormLabel class="col-md-4 col-form-label mb-2 mb-md-1 bg-grey-lighten-3">
-              <v-icon
-                icon="mdi mdi-account-arrow-left"
-                :color="getColor(authData.company_docs)[0]"
-              />
-              본사 문서 관리
-            </CFormLabel>
-            <CCol>
-              <CFormSelect
-                v-model="authData.company_docs"
-                :options="auths"
-                :disabled="isCoInActive || !write_auth_manage"
-                :style="{
-                  backgroundColor: isDark ? '' : getColor(authData.company_docs)[1],
-                }"
-                @change="selectAuth"
-              />
-            </CCol>
-          </CRow>
-        </CCol>
-        <CCol md="6" lg="4">
-          <CRow class="m-1">
-            <CFormLabel class="col-md-4 col-form-label mb-2 mb-md-1 bg-grey-lighten-3">
-              <v-icon
-                icon="mdi mdi-account-arrow-left"
-                :color="getColor(authData.human_resource)[0]"
-              />
-              본사 인사 관리
-            </CFormLabel>
-            <CCol>
-              <CFormSelect
-                v-model="authData.human_resource"
-                :options="auths"
-                :disabled="isCoInActive || !write_auth_manage"
-                :style="{
-                  backgroundColor: isDark ? '' : getColor(authData.human_resource)[1],
-                }"
-                @change="selectAuth"
-              />
-            </CCol>
-          </CRow>
-        </CCol>
-      </CRow>
-    </CCol>
-  </CRow>
+    <ProjectManageAuth
+      :user="user as User"
+      @get-allowed="getAllowed"
+      @get-assigned="getAssigned"
+    />
 
-  <v-divider v-if="user?.staff_auth?.is_hq_staff" />
+    <v-divider class="my-4" />
 
-  <CRow>
-    <CCol>
-      <CRow>
-        <CCol>
-          <h6 class="font-weight-bold">
-            <v-icon icon="mdi-sitemap" color="success" size="sm" />
-            프로젝트 관리
-          </h6>
-        </CCol>
-      </CRow>
-    </CCol>
-  </CRow>
+    <!-- 프로젝트별 비즈니스 데이터 권한(Role) 매핑 -->
+    <CRow>
+      <CCol>
+        <h6 class="font-weight-bold mb-3">
+          <v-icon icon="mdi-shield-key-outline" color="primary" size="sm" class="mr-2" />
+          프로젝트별 비즈니스 권한 (ibs_global 역할 매핑)
+        </h6>
+        
+        <div v-if="!user" class="text-center py-4 text-muted border rounded bg-light">
+          사용자를 선택해 주세요.
+        </div>
+        
+        <div v-else-if="loading" class="text-center py-4">
+          <v-progress-circular indeterminate color="primary" />
+        </div>
+        
+        <div v-else-if="memberList.length === 0" class="text-center py-4 text-muted border rounded bg-light">
+          할당된 프로젝트가 없습니다. 위의 '허용 프로젝트 설정'에서 프로젝트를 먼저 허용해 주세요.
+        </div>
 
-  <ProjectManageAuth :user="user as User" @get-allowed="getAllowed" @get-assigned="getAssigned" />
-
-  <CRow>
-    <CCol>
-      <CRow class="mb-3">
-        <CRow>
-          <CCol md="6" lg="4">
-            <CRow class="m-1">
-              <CFormLabel class="col-md-4 col-form-label mb-2 mb-md-1 bg-grey-lighten-3">
-                <v-icon icon="mdi mdi-account-arrow-left" :color="getColor(authData.contract)[0]" />
-                계약 정보 관리
-              </CFormLabel>
-              <CCol>
-                <CFormSelect
-                  v-model="authData.contract"
-                  :options="auths"
-                  :disabled="isPrInActive || !write_auth_manage"
-                  :style="{
-                    backgroundColor: isDark ? '' : getColor(authData.contract)[1],
-                  }"
-                  @change="selectAuth"
-                />
-              </CCol>
-            </CRow>
-          </CCol>
-          <CCol md="6" lg="4">
-            <CRow class="m-1">
-              <CFormLabel class="col-md-4 col-form-label mb-2 mb-md-1 bg-grey-lighten-3">
-                <v-icon icon="mdi mdi-account-arrow-left" :color="getColor(authData.payment)[0]" />
-                계약 납부 관리
-              </CFormLabel>
-              <CCol>
-                <CFormSelect
-                  v-model="authData.payment"
-                  :options="auths"
-                  :disabled="isPrInActive || !write_auth_manage"
-                  :style="{
-                    backgroundColor: isDark ? '' : getColor(authData.payment)[1],
-                  }"
-                  @change="selectAuth"
-                />
-              </CCol>
-            </CRow>
-          </CCol>
-          <CCol md="6" lg="4">
-            <CRow class="m-1">
-              <CFormLabel class="col-md-4 col-form-label mb-2 mb-md-1 bg-grey-lighten-3">
-                <v-icon icon="mdi mdi-account-arrow-left" :color="getColor(authData.notice)[0]" />
-                고객 고지 관리
-              </CFormLabel>
-              <CCol>
-                <CFormSelect
-                  v-model="authData.notice"
-                  :options="auths"
-                  :disabled="isPrInActive || !write_auth_manage"
-                  :style="{
-                    backgroundColor: isDark ? '' : getColor(authData.notice)[1],
-                  }"
-                  @change="selectAuth"
-                />
-              </CCol>
-            </CRow>
-          </CCol>
-
-          <CCol md="6" lg="4">
-            <CRow class="m-1">
-              <CFormLabel class="col-md-4 col-form-label mb-2 mb-md-1 bg-grey-lighten-3">
-                <v-icon
-                  icon="mdi mdi-account-arrow-left"
-                  :color="getColor(authData.project_ledger)[0]"
-                />
-                회계 자금 관리
-              </CFormLabel>
-              <CCol>
-                <CFormSelect
-                  v-model="authData.project_ledger"
-                  :options="auths"
-                  :disabled="isPrInActive || !write_auth_manage"
-                  :style="{
-                    backgroundColor: isDark ? '' : getColor(authData.project_ledger)[1],
-                  }"
-                  @change="selectAuth"
-                />
-              </CCol>
-            </CRow>
-          </CCol>
-          <CCol md="6" lg="4">
-            <CRow class="m-1">
-              <CFormLabel class="col-md-4 col-form-label mb-2 mb-md-1 bg-grey-lighten-3">
-                <v-icon
-                  icon="mdi mdi-account-arrow-left"
-                  :color="getColor(authData.project_docs)[0]"
-                />
-                문서 소송 관리
-              </CFormLabel>
-              <CCol>
-                <CFormSelect
-                  v-model="authData.project_docs"
-                  :options="auths"
-                  :disabled="isPrInActive || !write_auth_manage"
-                  :style="{
-                    backgroundColor: isDark ? '' : getColor(authData.project_docs)[1],
-                  }"
-                  @change="selectAuth"
-                />
-              </CCol>
-            </CRow>
-          </CCol>
-          <CCol md="6" lg="4">
-            <CRow class="m-1">
-              <CFormLabel class="col-md-4 col-form-label mb-2 mb-md-1 bg-grey-lighten-3">
-                <v-icon icon="mdi mdi-account-arrow-left" :color="getColor(authData.project)[0]" />
-                프로젝트 설정
-              </CFormLabel>
-              <CCol>
-                <CFormSelect
-                  v-model="authData.project"
-                  :options="auths"
-                  :disabled="isPrInActive || !write_auth_manage"
-                  :style="{
-                    backgroundColor: isDark ? '' : getColor(authData.project)[1],
-                  }"
-                  @change="selectAuth"
-                />
-              </CCol>
-            </CRow>
-          </CCol>
-          <CCol md="6" lg="4">
-            <CRow class="m-1">
-              <CFormLabel class="col-md-4 col-form-label mb-2 mb-md-1 bg-grey-lighten-3">
-                <v-icon icon="mdi mdi-account-arrow-left" :color="getColor(authData.project)[0]" />
-                부지 정보 관리
-              </CFormLabel>
-              <CCol>
-                <CFormSelect
-                  v-model="authData.project_site"
-                  :options="auths"
-                  :disabled="isPrInActive || !write_auth_manage"
-                  :style="{
-                    backgroundColor: isDark ? '' : getColor(authData.project_site)[1],
-                  }"
-                  @change="selectAuth"
-                />
-              </CCol>
-            </CRow>
-          </CCol>
-        </CRow>
-      </CRow>
-    </CCol>
-  </CRow>
-
-  <v-divider />
-
-  <CRow>
-    <CCol>
-      <CRow>
-        <CRow>
-          <CCol>
-            <h6 class="font-weight-bold">
-              <v-icon icon="mdi-cog" color="secondary" size="sm" />
-              기타 관리
-            </h6>
-          </CCol>
-        </CRow>
-
-        <CRow>
-          <CCol md="6" lg="4">
-            <CRow class="m-1">
-              <CFormLabel class="col-md-4 col-form-label mb-2 mb-md-1 bg-grey-lighten-3">
-                <v-icon
-                  icon="mdi mdi-account-arrow-left"
-                  :color="getColor(authData.company_settings)[0]"
-                />
-                회사 정보 관리
-              </CFormLabel>
-              <CCol>
-                <CFormSelect
-                  v-model="authData.company_settings"
-                  :options="auths"
-                  :disabled="isCoInActive || !write_auth_manage"
-                  :style="{
-                    backgroundColor: isDark ? '' : getColor(authData.company_settings)[1],
-                  }"
-                  @change="selectAuth"
-                />
-              </CCol>
-            </CRow>
-          </CCol>
-          <CCol md="6" lg="4">
-            <CRow class="m-1">
-              <CFormLabel class="col-md-4 col-form-label mb-2 mb-md-1 bg-grey-lighten-3">
-                <v-icon
-                  icon="mdi mdi-account-arrow-left"
-                  :color="getColor(authData.auth_manage)[0]"
-                />
-                권한 설정 관리
-              </CFormLabel>
-              <CCol>
-                <CFormSelect
-                  v-model="authData.auth_manage"
-                  :options="auths"
-                  :disabled="isCoInActive || !write_auth_manage"
-                  :style="{
-                    backgroundColor: isDark ? '' : getColor(authData.auth_manage)[1],
-                  }"
-                  @change="selectAuth"
-                />
-              </CCol>
-            </CRow>
-          </CCol>
-          <CCol md="6" lg="4">
-            <CRow class="m-1"></CRow>
-          </CCol>
-        </CRow>
-      </CRow>
-    </CCol>
-  </CRow>
+        <div v-else class="space-y-4">
+          <CCard v-for="mem in memberList" :key="mem.pk" class="mb-3">
+            <CCardHeader class="bg-light d-flex align-items-center justify-content-between">
+              <span class="fw-bold text-dark">
+                <v-icon icon="mdi-folder-outline" size="small" class="mr-1" />
+                {{ mem.project.name }}
+              </span>
+              <span class="badge bg-secondary">Project Assignment</span>
+            </CCardHeader>
+            <CCardBody>
+              <CRow>
+                <CCol v-if="ibsRoles.length === 0" class="text-muted small">
+                  시스템에 등록된 비즈니스 데이터 역할([ibs_global] 카테고리)이 없습니다.
+                </CCol>
+                <template v-else>
+                  <CCol
+                    v-for="role in ibsRoles"
+                    :key="role.pk"
+                    xs="12"
+                    sm="6"
+                    md="4"
+                    class="py-1"
+                  >
+                    <CFormCheck
+                      :id="`member-role-${mem.pk}-${role.pk}`"
+                      :label="role.name"
+                      :checked="hasRole(mem, role.pk)"
+                      :disabled="!write_auth_manage"
+                      @change="toggleRole(mem, role.pk)"
+                    />
+                  </CCol>
+                </template>
+              </CRow>
+            </CCardBody>
+          </CCard>
+        </div>
+      </CCol>
+    </CRow>
+  </div>
 </template>
+
+<style scoped>
+.space-y-4 > * + * {
+  margin-top: 1rem;
+}
+</style>

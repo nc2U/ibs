@@ -23,7 +23,7 @@ const copyRole = (role: Role) => {
     </CCol>
   </div>
 
-  <CTable hover responsive align="middle">
+  <CTable hover responsive align="middle" class="border-top">
     <CTableHead color="light">
       <CTableRow>
         <CTableHeaderCell scope="col">역할</CTableHeaderCell>
