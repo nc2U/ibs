@@ -400,6 +400,7 @@ jobs:
           username: ${{ secrets.CICD_USER }}
           password: ${{ secrets.CICD_PASS }}
           command: |
+            export KUBECONFIG=$HOME/.kube/config
             echo "🔄 Restarting Nginx and Web pods..."
             kubectl rollout restart deployment/nginx -n ibs-prod
             kubectl rollout restart deployment/web -n ibs-prod
