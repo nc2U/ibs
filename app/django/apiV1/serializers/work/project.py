@@ -319,11 +319,34 @@ class ModuleSerializer(serializers.ModelSerializer):
 class RoleSerializer(serializers.ModelSerializer):
     issue_visible_desc = serializers.CharField(source='get_issue_visible_display', read_only=True)
     user_visible_desc = serializers.CharField(source='get_user_visible_display', read_only=True)
+    permissions = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=Permission.objects.all(),
+        required=False
+    )
+
+    def validate(self, attrs):
+        category = attrs.get('category')
+        if category is None and self.instance:
+            category = self.instance.category
+        if category is None:
+            category = 'work_core'
+
+        permissions = attrs.get('permissions')
+        if permissions is not None:
+            for perm in permissions:
+                perm_category = perm.category if perm.category else 'work_core'
+                if perm_category != category:
+                    raise serializers.ValidationError({
+                        'permissions': f"역할 카테고리({category})와 불일치하는 권한({perm.name} - {perm_category})을 매핑할 수 없습니다."
+                    })
+        return attrs
 
     class Meta:
         model = Role
         fields = ('pk', 'name', 'assignable', 'issue_visible', 'issue_visible_desc', 'user_visible',
                   'user_visible_desc', 'permissions', 'category', 'order', 'creator', 'created', 'updated')
+        read_only_fields = ('creator',)
 
 
 class PermissionSerializer(serializers.ModelSerializer):

@@ -33,9 +33,21 @@ const pkToDelete = ref<number | null>(null)
 
 const roleModal = ref(false)
 const selectedRole = ref<Role | null>(null)
-const maxOrder = computed(() =>
-  roleList.value.length ? Math.max(...roleList.value.map(r => r.order)) : 0,
-)
+const maxOrder = computed(() => {
+  const normalRoles = roleList.value.filter(r => r.order < 1000)
+  return normalRoles.length ? Math.max(...normalRoles.map(r => r.order)) : 0
+})
+
+const sortedRoleList = computed(() => {
+  return [...roleList.value].sort((a, b) => {
+    const catA = a.category || 'work_core'
+    const catB = b.category || 'work_core'
+    if (catA !== catB) {
+      return catA === 'work_core' ? -1 : 1
+    }
+    return a.order - b.order
+  })
+})
 
 const showRoleModal = (role: Role | null = null) => {
   selectedRole.value = role

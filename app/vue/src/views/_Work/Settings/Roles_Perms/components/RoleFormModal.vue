@@ -34,9 +34,15 @@ watch(
   val => {
     if (val) {
       if (props.role) {
-        form.value = { 
-          ...props.role,
-          category: props.role.category || 'work_core'
+        form.value = {
+          pk: props.role.pk,
+          name: props.role.name,
+          assignable: props.role.assignable,
+          issue_visible: props.role.issue_visible,
+          user_visible: props.role.user_visible,
+          category: props.role.category || 'work_core',
+          order: props.role.order,
+          permissions: props.role.permissions || [],
         }
       } else {
         form.value = {

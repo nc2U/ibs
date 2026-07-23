@@ -69,61 +69,104 @@ const togglePermission = async (role: Role, permissionPk: number) => {
 </script>
 
 <template>
-  <div class="table-responsive">
-    <table class="table table-bordered table-hover align-middle">
-      <thead class="table-light">
-        <tr>
-          <th scope="col" class="sticky-col-header" style="min-width: 200px">권한</th>
-          <th
-            v-for="role in roleList"
-            :key="role.pk"
-            scope="col"
-            class="text-center"
-            style="min-width: 100px"
-          >
-            {{ role.name }}
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        <template v-for="(modules, cat) in permissionGroups" :key="cat">
-          <!-- 대카테고리 구분 행 (work_core / ibs_global) -->
-          <tr class="table-primary">
-            <td :colspan="roleList.length + 1" class="fw-bold fs-6 py-2 text-primary">
-              <v-icon
-                :icon="cat === 'work_core' ? 'mdi-account-group-outline' : 'mdi-database-outline'"
-                size="small"
-                class="mr-2"
-              />
-              {{ categoryLabel(cat as string) }}
-            </td>
-          </tr>
-          
-          <template v-for="(perms, sort) in modules" :key="sort">
-            <!-- 소모듈 구분 행 (프로젝트, 회의, 계약 등) -->
-            <tr class="table-secondary">
-              <td :colspan="roleList.length + 1" class="fw-bold ps-3">
-                {{ sortLabel(sort as string) }}
-              </td>
+  <div class="space-y-5">
+    <!-- 1. 협업 및 업무 관리 권한 (work_core) 테이블 -->
+    <div class="mb-5">
+      <h6 class="fw-bold text-success mb-3">
+        <v-icon icon="mdi-account-group-outline" size="small" class="mr-2" />
+        {{ categoryLabel('work_core') }}
+      </h6>
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th scope="col" class="sticky-col-header" style="min-width: 200px">권한</th>
+              <th
+                v-for="role in roleList.filter(r => (r.category || 'work_core') === 'work_core')"
+                :key="role.pk"
+                scope="col"
+                class="text-center"
+                style="min-width: 100px"
+              >
+                {{ role.name }}
+              </th>
             </tr>
-            <tr v-for="perm in perms" :key="perm.pk">
-              <td class="ps-4">
-                <div class="fw-semibold">{{ perm.name }}</div>
-                <small class="text-muted">{{ perm.description }}</small>
-              </td>
-              <td v-for="role in roleList" :key="role.pk" class="text-center">
-                <CFormCheck
-                  :id="`perm-${role.pk}-${perm.pk}`"
-                  :checked="hasPermission(role, perm.pk)"
-                  :disabled="!workManager"
-                  @change="togglePermission(role, perm.pk)"
-                />
-              </td>
+          </thead>
+          <tbody>
+            <template v-for="(perms, sort) in permissionGroups.work_core" :key="sort">
+              <tr class="table-secondary">
+                <td :colspan="roleList.filter(r => (r.category || 'work_core') === 'work_core').length + 1" class="fw-bold ps-3">
+                  {{ sortLabel(sort as string) }}
+                </td>
+              </tr>
+              <tr v-for="perm in perms" :key="perm.pk">
+                <td class="ps-4">
+                  <div class="fw-semibold">{{ perm.name }}</div>
+                  <small class="text-muted">{{ perm.description }}</small>
+                </td>
+                <td v-for="role in roleList.filter(r => (r.category || 'work_core') === 'work_core')" :key="role.pk" class="text-center">
+                  <CFormCheck
+                    :id="`perm-${role.pk}-${perm.pk}`"
+                    :checked="hasPermission(role, perm.pk)"
+                    :disabled="!workManager"
+                    @change="togglePermission(role, perm.pk)"
+                  />
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 2. 비즈니스 데이터 관리 권한 (ibs_global) 테이블 -->
+    <div>
+      <h6 class="fw-bold text-primary mb-3">
+        <v-icon icon="mdi-database-outline" size="small" class="mr-2" />
+        {{ categoryLabel('ibs_global') }}
+      </h6>
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th scope="col" class="sticky-col-header" style="min-width: 200px">권한</th>
+              <th
+                v-for="role in roleList.filter(r => r.category === 'ibs_global')"
+                :key="role.pk"
+                scope="col"
+                class="text-center"
+                style="min-width: 100px"
+              >
+                {{ role.name }}
+              </th>
             </tr>
-          </template>
-        </template>
-      </tbody>
-    </table>
+          </thead>
+          <tbody>
+            <template v-for="(perms, sort) in permissionGroups.ibs_global" :key="sort">
+              <tr class="table-secondary">
+                <td :colspan="roleList.filter(r => r.category === 'ibs_global').length + 1" class="fw-bold ps-3">
+                  {{ sortLabel(sort as string) }}
+                </td>
+              </tr>
+              <tr v-for="perm in perms" :key="perm.pk">
+                <td class="ps-4">
+                  <div class="fw-semibold">{{ perm.name }}</div>
+                  <small class="text-muted">{{ perm.description }}</small>
+                </td>
+                <td v-for="role in roleList.filter(r => r.category === 'ibs_global')" :key="role.pk" class="text-center">
+                  <CFormCheck
+                    :id="`perm-${role.pk}-${perm.pk}`"
+                    :checked="hasPermission(role, perm.pk)"
+                    :disabled="!workManager"
+                    @change="togglePermission(role, perm.pk)"
+                  />
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </template>
 

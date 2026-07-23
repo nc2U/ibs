@@ -26,6 +26,7 @@ const copyRole = (role: Role) => {
   <CTable hover responsive align="middle" class="border-top">
     <CTableHead color="light">
       <CTableRow>
+        <CTableHeaderCell scope="col">구분</CTableHeaderCell>
         <CTableHeaderCell scope="col">역할</CTableHeaderCell>
         <CTableHeaderCell scope="col" class="text-center">업무 할당 가능 여부</CTableHeaderCell>
         <CTableHeaderCell scope="col" class="text-center">업무 보기 권한</CTableHeaderCell>
@@ -35,10 +36,20 @@ const copyRole = (role: Role) => {
     </CTableHead>
     <CTableBody>
       <CTableRow v-for="role in roleList" :key="role.pk">
+        <CTableDataCell>
+          <span :class="role.category === 'ibs_global' ? 'text-primary' : 'text-success'">
+            <v-icon
+              :icon="role.category === 'ibs_global' ? 'mdi-database-outline' : 'mdi-account-group-outline'"
+              size="small"
+              class="mr-1"
+            />
+            {{ role.category === 'ibs_global' ? '비즈니스' : '업무관리' }}
+          </span>
+        </CTableDataCell>
         <CTableHeaderCell scope="row">
           <a
             href="javascript:void(0)"
-            class="text-decoration-none"
+            class="text-decoration-none fw-bold"
             @click="emit('show-modal', role)"
           >
             {{ role.name }}
@@ -63,7 +74,6 @@ const copyRole = (role: Role) => {
             복사
           </v-btn>
           <v-btn
-            v-if="role.pk > 2"
             color="success"
             size="x-small"
             class="me-1"
@@ -73,7 +83,6 @@ const copyRole = (role: Role) => {
             수정
           </v-btn>
           <v-btn
-            v-if="role.pk > 2"
             color="warning"
             size="x-small"
             :disabled="!workManager"

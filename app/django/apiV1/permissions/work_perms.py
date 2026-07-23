@@ -114,26 +114,6 @@ class ProjectPermission(permissions.BasePermission):
                     roles__permissions__code='project.create'
                 ).exists()
 
-            # 검색양식 저장의 경우 익명(pk=1) 및 일반사용자 권한(pk=2 등)을 기본 허용하므로 프로젝트 검사 전 우선 판별
-            if required_perm == 'project.save_query':
-                from work.models.project import Role
-                user_perms = set(
-                    Role.objects.filter(
-                        projects__members__user=request.user
-                    ).filter(
-                        permissions__code__in=['project.save_query', 'project.pub_query']
-                    ).values_list('permissions__code', flat=True)
-                )
-                try:
-                    # pk=1 (익명) 및 pk=2 (일반사용자) 기본 권한 합산
-                    default_roles = Role.objects.prefetch_related('permissions').filter(pk__in=[1, 2])
-                    for role in default_roles:
-                        user_perms.update(role.permissions.values_list('code', flat=True))
-                except Exception:
-                    pass
-                if 'project.save_query' in user_perms:
-                    return True
-
             # 2. 리소스 생성 시 프로젝트 식별자 추출 (하위 프로젝트, 회의록, 업무 등)
             project_slug = self.get_project_slug(view, request.data, request.query_params)
 

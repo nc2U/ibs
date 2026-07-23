@@ -113,30 +113,21 @@ class IssueProject(models.Model):
 
     def get_user_permissions(self, user):
         """
-        사용자의 프로젝트 내 권한 코드 세트를 계산합니다. (특정 사용자에 맞춘 최적화 쿼리 버전)
-        로그인하지 않은 경우 '익명' 역할(pk=1)의 권한,
-        로그인했으나 멤버가 아닌 '회원' 역할(pk=2)의 권한을 반환합니다.
+        사용자의 프로젝트 내 권한 코드 세트를 계산합니다.
+        프로젝트 멤버가 아니거나 로그인하지 않은 경우 빈 리스트를 반환합니다.
         """
+        if not user or not user.is_authenticated:
+            return []
+
         if not hasattr(self, '_user_permission_cache'):
             self._user_permission_cache = {}
-        user_key = user.pk if user and user.is_authenticated else 'anonymous'
+        user_key = user.pk
         if user_key in self._user_permission_cache:
             return self._user_permission_cache[user_key]
 
         permission_codes = set()
 
-        if not user or not user.is_authenticated:
-            try:
-                role = Role.objects.prefetch_related('permissions').get(pk=1)
-                for perm in role.permissions.all():
-                    permission_codes.add(perm.code)
-            except Role.DoesNotExist:
-                pass
-            result = list(permission_codes)
-            self._user_permission_cache[user_key] = result
-            return result
-
-        # 1. 상속 가능한 상위 프로젝트 목록 계산 (PK 리스트 사용)
+        # 1. 상속 가능한 상위 프로젝트 목록 계산
         project_ids = [self.pk]
         curr = self
         while curr.is_inherit_members and curr.parent:
@@ -145,27 +136,19 @@ class IssueProject(models.Model):
             project_ids.append(curr.parent.pk)
             curr = curr.parent
 
-        # 2. 해당 사용자(user)가 속한 Member 정보와 Role만 한정하여 조회 (user_id 및 project_id__in 사용)
+        # 2. 해당 사용자가 속한 Member 정보와 Role 조회
         from work.models.project import Member
         user_members = Member.objects.filter(
             project_id__in=project_ids,
             user_id=user.pk
         ).prefetch_related('roles__permissions')
 
-        # 3. 모든 역할에 연결된 권한 코드 추출
+        # 3. 역할에 연결된 권한 코드 추출
         if user_members.exists():
             for member in user_members:
                 for role in member.roles.all():
                     for perm in role.permissions.all():
                         permission_codes.add(perm.code)
-        else:
-            # 멤버가 아닌 경우 -> '비회원' 역할(pk=2)의 권한 추출
-            try:
-                role = Role.objects.prefetch_related('permissions').get(pk=2)
-                for perm in role.permissions.all():
-                    permission_codes.add(perm.code)
-            except Role.DoesNotExist:
-                pass
 
         result = list(permission_codes)
         self._user_permission_cache[user_key] = result
@@ -174,7 +157,6 @@ class IssueProject(models.Model):
     def get_user_role_attributes(self, user):
         """
         사용자의 프로젝트 내 종합 역할(Role) 속성을 계산합니다.
-        반환 딕셔너리: {'assignable': bool, 'issue_visible': str, 'user_visible': str}
         """
         default_attrs = {
             'assignable': False,
@@ -182,7 +164,7 @@ class IssueProject(models.Model):
             'user_visible': 'NOP'
         }
 
-        if not user:
+        if not user or not user.is_authenticated:
             return default_attrs
 
         # 1. 슈퍼유저 / work_manager 이면 최대 권한 반환
@@ -193,20 +175,7 @@ class IssueProject(models.Model):
                 'user_visible': 'ALL'
             }
 
-        # 2. 로그인하지 않은 익명 사용자인 경우 -> '익명(pk=1)' 역할의 속성 반환
-        if not user.is_authenticated:
-            try:
-                role = Role.objects.get(pk=1)
-                return {
-                    'assignable': role.assignable,
-                    'issue_visible': role.issue_visible,
-                    'user_visible': role.user_visible
-                }
-            except Role.DoesNotExist:
-                return default_attrs
-
-        # 3. 로그인된 사용자
-        # 3-A. 상속 가능한 상위 프로젝트 목록 계산
+        # 2. 상속 가능한 상위 프로젝트 목록 계산
         projects_to_fetch = [self]
         curr = self
         while curr.is_inherit_members and curr.parent:
@@ -215,7 +184,7 @@ class IssueProject(models.Model):
             projects_to_fetch.append(curr.parent)
             curr = curr.parent
 
-        # 3-B. 해당 사용자(user)가 속한 Member 정보 조회
+        # 3. 해당 사용자(user)가 속한 Member 정보 조회
         from work.models.project import Member
         user_members = Member.objects.filter(
             project__in=projects_to_fetch,
@@ -227,7 +196,6 @@ class IssueProject(models.Model):
         user_visibility_order = {'ALL': 2, 'PRJ': 1, 'NOP': 0}
 
         if user_members.exists():
-            # 멤버인 경우 -> 멤버의 역할들을 수집하여 병합
             assignable = False
             best_issue_visible = 'NOP'
             best_user_visible = 'NOP'
@@ -236,13 +204,9 @@ class IssueProject(models.Model):
                 for role in member.roles.all():
                     if role.assignable:
                         assignable = True
-                    # issue_visible 우선순위 병합
-                    if issue_visibility_order.get(role.issue_visible,
-                                                  0) > issue_visibility_order.get(best_issue_visible, 0):
+                    if issue_visibility_order.get(role.issue_visible, 0) > issue_visibility_order.get(best_issue_visible, 0):
                         best_issue_visible = role.issue_visible
-                    # user_visible 우선순위 병합
-                    if user_visibility_order.get(role.user_visible,
-                                                 0) > user_visibility_order.get(best_user_visible, 0):
+                    if user_visibility_order.get(role.user_visible, 0) > user_visibility_order.get(best_user_visible, 0):
                         best_user_visible = role.user_visible
 
             return {
@@ -251,16 +215,7 @@ class IssueProject(models.Model):
                 'user_visible': best_user_visible
             }
         else:
-            # 멤버가 아닌 로그인 회원 -> '비회원(pk=2)' 역할의 속성 반환
-            try:
-                role = Role.objects.get(pk=2)
-                return {
-                    'assignable': role.assignable,
-                    'issue_visible': role.issue_visible,
-                    'user_visible': role.user_visible
-                }
-            except Role.DoesNotExist:
-                return default_attrs
+            return default_attrs
 
     class Meta:
         ordering = ('order', 'id')
@@ -304,7 +259,7 @@ class Role(models.Model):
         return self.name
 
     class Meta:
-        ordering = ('order', 'id',)
+        ordering = ('-category', 'order', 'id',)
         verbose_name = '03. 역할'
         verbose_name_plural = '03. 역할'
 
@@ -326,7 +281,7 @@ class Permission(models.Model):
         return f"{self.code}({self.name})"
 
     class Meta:
-        ordering = ('id',)
+        ordering = ('-category', 'module', 'id',)
         verbose_name = '04. 권한'
         verbose_name_plural = '04. 권한'
 
