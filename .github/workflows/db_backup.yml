@@ -28,6 +28,7 @@ jobs:
           username: ${{ secrets.CICD_USER }}
           password: ${{ secrets.CICD_PASS }}
           command: |
+            export KUBECONFIG=$HOME/.kube/config
             cd ${{ secrets.CICD_PATH }}/prod/deploy/helm/scripts
 
             # CloudNativePG 백업 실행 (manual-backup.sh 사용)
