@@ -175,8 +175,7 @@ spec:
     retentionPolicy: {{ .Values.backup.retentionPolicy | default "30d" | quote }}
     {{- with .Values.backup.jobTTL }}
     # TTL for completed backup jobs (in seconds)
-    target:
-      backupJobTTL: {{ int . }}
+    backupJobTTL: {{ int . }}
     {{- end }}
   {{- end }}
 
@@ -245,8 +244,7 @@ spec:
   {{- with .Values.backup.jobTTL }}
   # TTL for completed backup jobs (in seconds)
   # Jobs will be automatically deleted after this time
-  target:
-    backupJobTTL: {{ . | quote }}
+  backupJobTTL: {{ int . }}
   {{- end }}
 {{- end }}
 
