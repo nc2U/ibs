@@ -56,11 +56,21 @@ echo "----------------------------------------"
 
 # Primary pod 찾기 (cnpg cluster status에서 직접 primary를 가져옴으로써 API 호환성 보장)
 # set -e 우회를 위해 || true 추가
-PRIMARY_POD=$(kubectl get cluster -n "$NAMESPACE" postgres -o jsonpath='{.status.currentPrimary}' 2>/dev/null || true)
+CLUSTER_NAME=$(kubectl get cluster -n "$NAMESPACE" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
+if [ -z "$CLUSTER_NAME" ]; then
+    CLUSTER_NAME="postgres"
+fi
+
+PRIMARY_POD=$(kubectl get cluster -n "$NAMESPACE" "$CLUSTER_NAME" -o jsonpath='{.status.currentPrimary}' 2>/dev/null || true)
 
 if [ -z "$PRIMARY_POD" ]; then
     # 클러스터 status 조회가 실패할 경우를 대비한 레이블 기반 폴백
-    PRIMARY_POD=$(kubectl get pods -n "$NAMESPACE" -l "cnpg.io/cluster=postgres,cnpg.io/role=primary" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
+    PRIMARY_POD=$(kubectl get pods -n "$NAMESPACE" -l "cnpg.io/cluster=$CLUSTER_NAME,cnpg.io/role=primary" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
+fi
+
+if [ -z "$PRIMARY_POD" ]; then
+    # 클러스터 이름이 다를 수 있으므로 cnpg.io/role=primary 필터만 사용하여 조회 시도
+    PRIMARY_POD=$(kubectl get pods -n "$NAMESPACE" -l "cnpg.io/role=primary" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
 fi
 
 if [ -z "$PRIMARY_POD" ]; then
