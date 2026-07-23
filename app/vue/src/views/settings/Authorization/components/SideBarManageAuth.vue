@@ -32,9 +32,9 @@ const fetchUserMembers = async () => {
   try {
     // workStore 또는 API를 직접 호출해 사용자의 프로젝트 멤버 리스트 조회
     // Member API 엔드포인트: /api/v1/member/?user={user_id}
-    const response = await workStore.fetchMemberList({ user: props.user.pk })
+    const response = await workStore.fetchMemberList(props.user.pk)
     if (response) {
-      memberList.value = response
+      memberList.value = response as Member[]
     }
   } catch (error) {
     console.error('Failed to fetch user members:', error)
@@ -46,7 +46,7 @@ const fetchUserMembers = async () => {
 watch(
   () => props.user,
   () => fetchUserMembers(),
-  { immediate: true }
+  { immediate: true },
 )
 
 const getAllowed = (payload: number[]) => {
@@ -65,10 +65,10 @@ const hasRole = (member: Member, rolePk: number) => {
 // 멤버의 역할 토글 및 업데이트
 const toggleRole = async (member: Member, rolePk: number) => {
   if (!write_auth_manage.value) return
-  
+
   const currentRolePks = member.roles.map(r => r.pk)
   const index = currentRolePks.indexOf(rolePk)
-  
+
   if (index === -1) {
     currentRolePks.push(rolePk)
   } else {
@@ -104,11 +104,7 @@ onMounted(() => {
       </CCol>
     </CRow>
 
-    <ProjectManageAuth
-      :user="user as User"
-      @get-allowed="getAllowed"
-      @get-assigned="getAssigned"
-    />
+    <ProjectManageAuth :user="user as User" @get-allowed="getAllowed" @get-assigned="getAssigned" />
 
     <v-divider class="my-4" />
 
@@ -119,16 +115,19 @@ onMounted(() => {
           <v-icon icon="mdi-shield-key-outline" color="primary" size="sm" class="mr-2" />
           프로젝트별 비즈니스 권한 (ibs_global 역할 매핑)
         </h6>
-        
+
         <div v-if="!user" class="text-center py-4 text-muted border rounded bg-light">
           사용자를 선택해 주세요.
         </div>
-        
+
         <div v-else-if="loading" class="text-center py-4">
           <v-progress-circular indeterminate color="primary" />
         </div>
-        
-        <div v-else-if="memberList.length === 0" class="text-center py-4 text-muted border rounded bg-light">
+
+        <div
+          v-else-if="memberList.length === 0"
+          class="text-center py-4 text-muted border rounded bg-light"
+        >
           할당된 프로젝트가 없습니다. 위의 '허용 프로젝트 설정'에서 프로젝트를 먼저 허용해 주세요.
         </div>
 
@@ -147,14 +146,7 @@ onMounted(() => {
                   시스템에 등록된 비즈니스 데이터 역할([ibs_global] 카테고리)이 없습니다.
                 </CCol>
                 <template v-else>
-                  <CCol
-                    v-for="role in ibsRoles"
-                    :key="role.pk"
-                    xs="12"
-                    sm="6"
-                    md="4"
-                    class="py-1"
-                  >
+                  <CCol v-for="role in ibsRoles" :key="role.pk" xs="12" sm="6" md="4" class="py-1">
                     <CFormCheck
                       :id="`member-role-${mem.pk}-${role.pk}`"
                       :label="role.name"
