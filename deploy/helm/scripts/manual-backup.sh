@@ -54,8 +54,18 @@ echo ""
 echo "🔑 Verifying postgres password..."
 echo "----------------------------------------"
 
-# Primary pod 찾기
-PRIMARY_POD=$(kubectl get pods -n "$NAMESPACE" -l "cnpg.io/cluster=postgres,role=primary" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+# Primary pod 찾기 (cnpg cluster status에서 직접 primary를 가져옴으로써 API 호환성 보장)
+PRIMARY_POD=$(kubectl get cluster -n "$NAMESPACE" postgres -o jsonpath='{.status.currentPrimary}' 2>/dev/null)
+
+if [ -z "$PRIMARY_POD" ]; then
+    # 클러스터 status 조회가 실패할 경우를 대비한 레이블 기반 폴백
+    PRIMARY_POD=$(kubectl get pods -n "$NAMESPACE" -l "cnpg.io/cluster=postgres,cnpg.io/role=primary" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+fi
+
+if [ -z "$PRIMARY_POD" ]; then
+    # 이전 버전 레이블 기반 폴백
+    PRIMARY_POD=$(kubectl get pods -n "$NAMESPACE" -l "cnpg.io/cluster=postgres,role=primary" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+fi
 
 if [ -z "$PRIMARY_POD" ]; then
     echo "❌ Error: Cannot find primary postgres pod"
