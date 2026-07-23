@@ -34,6 +34,7 @@ jobs:
           username: ${{ secrets.CICD_USER }}
           password: ${{ secrets.CICD_PASS }}
           command: |
+            export KUBECONFIG=$HOME/.kube/config
             cd ${{ secrets.CICD_PATH }}/dev/deploy/helm/scripts
 
             # CloudNativePG 복원 실행 (자동 모드로 최신 백업 사용)
