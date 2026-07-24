@@ -377,135 +377,62 @@ CONTRACT_READ:       'contract.read',
 :
 'hr_work.read',
   HR_WORK_CREATE
-:
-'hr_work.create',
-  HR_WORK_UPDATE
-:
-'hr_work.update',
-  HR_WORK_DELETE
-:
-'hr_work.delete',
+  HR_WORK_DELETE: 'hr_work.delete',
+} as const
 ```
-
-#### 5-2. Pinia 스토어 확장 (account.ts)
-
-로그인 시 현재 선택된 프로젝트의 권한 코드 배열을 API에서 수신하여 저장:
-
-```typescript
-// store/pinia/account.ts
-interface AccountState {
-  ...
-  projectPermissions: string[]  // ['contract.read', 'ledger.create', ...]
-}
-```
-
-#### 5-3. pageAuth.ts 내부 로직 교체 (함수명 완전 유지)
-
-```typescript
-// utils/pageAuth.ts (리팩터링 완료 버전)
-import {computed} from 'vue'
-import {useAccount} from '@/store/pinia/account'
-import {PERM} from '@/store/constants/permissions'
-
-export const isSuperUser = computed(() => useAccount().superAuth)
-const perms = computed(() => new Set(useAccount().projectPermissions))
-const has = (code: string) => isSuperUser.value || perms.value.has(code)
-
-// ── 기존 함수명 완전 유지 ── 내부 구현만 교체 ──────────────────────
-
-export const read_contract = computed(() => has(PERM.CONTRACT_READ))
-export const write_contract = computed(() => has(PERM.CONTRACT_CREATE))
-
-export const read_payment = computed(() => has(PERM.PAYMENT_READ))
-export const write_payment = computed(() => has(PERM.PAYMENT_CREATE))
-
-export const read_notice = computed(() => has(PERM.NOTICE_READ))
-export const write_notice = computed(() => has(PERM.NOTICE_CREATE))
-
-export const read_project_cash = computed(() => has(PERM.LEDGER_READ))
-export const write_project_cash = computed(() => has(PERM.LEDGER_CREATE))
-export const read_company_cash = computed(() => has(PERM.LEDGER_READ))
-export const write_company_cash = computed(() => has(PERM.LEDGER_CREATE))
-
-export const read_project_docs = computed(() => has(PERM.DOCS_READ))
-export const write_project_docs = computed(() => has(PERM.DOCS_CREATE))
-export const read_company_docs = computed(() => has(PERM.DOCS_READ))
-export const write_company_docs = computed(() => has(PERM.DOCS_CREATE))
-
-export const read_project_site = computed(() => has(PERM.SITE_READ))
-export const write_project_site = computed(() => has(PERM.SITE_CREATE))
-
-export const read_human_resource = computed(() => has(PERM.HR_WORK_READ))
-export const write_human_resource = computed(() => has(PERM.HR_WORK_CREATE))
-
-export const read_project = computed(() => has(PERM.PROJECT_UPDATE))
-export const write_project = computed(() => has(PERM.PROJECT_UPDATE))
-export const read_company_settings = computed(() => has(PERM.PROJECT_UPDATE))
-export const write_company_settings = computed(() => has(PERM.PROJECT_UPDATE))
-export const read_auth_manage = computed(() => has(PERM.PROJECT_MEMBER))
-export const write_auth_manage = computed(() => has(PERM.PROJECT_MEMBER))
-```
-
-> [!IMPORTANT]
-> **Vue 컴포넌트 파일은 단 한 줄도 수정 불필요.**
-> `pageAuth.ts` 함수명이 완전히 유지되므로 모든 import가 그대로 동작합니다.
 
 ---
 
-### Phase 6 — StaffAuth 폐기 (최종, 충분한 검증 후)
+### Phase 6 — StaffAuth 폐기 및 점진적 pageAuth.ts 해체 (현재 1차 완성 및 과도기 배포 단계)
 
-모든 Phase 완료 및 검증 후 진행:
+본사 및 프로젝트 멤버 소속 기반의 권한 대체 구현이 완료됨에 따라 1차 이관 작업이 마무리 단계에 접어들었습니다. 이후 다음과 같은 순서로 최종 드롭합니다:
 
-1. `accounts/models.py`에서 `StaffAuth` 권한 필드 제거 (또는 모델 전체 폐기)
-2. `apiV1/permissions/auth_perms.py`의 `StaffAuth` 참조 제거
-3. `apiV1/views/accounts.py`의 `StaffAuthViewSet` 제거
-4. 프론트엔드 `StaffAuth` 관련 Pinia 스토어 코드 제거
-5. 마이그레이션 실행
+#### 1단계: StaffAuth 모델 및 관련 API 제거
+* `accounts/models.py`에서 `class StaffAuth(models.Model)` 정의를 드롭합니다.
+* `accounts/admin.py` 및 `serializers/accounts.py` 등에서 `StaffAuth` 관련 참조 및 ViewSet을 소거합니다.
+* 장고 마이그레이션 생성 및 DB 마이그레이트를 수행합니다:
+  ```bash
+  python manage.py makemigrations accounts && python manage.py migrate
+  ```
+
+#### 2단계: 프론트엔드 pageAuth.ts 폐기 및 세부 직접 이관
+* 각 비즈니스 메뉴 폴더에 위치한 Vue 파일들의 권한 체크 변수를 `@/utils/pageAuth` 임포트 대신 **`usePermission` 스토어의 `can` 메서드 및 `PERM` 상수** 호출로 1:1 직접 변경합니다.
+* 예: `read_contract` -> `can(PERM.CONTRACT_READ)` 직접 체크.
+* 모든 뷰 파일의 전환이 확인되면 `@/utils/pageAuth.ts` 파일을 영구 폐기합니다.
 
 ---
 
 ## 6. 전체 진행 체크리스트
 
 ```
-Phase 1  □ Permission.MODULE_CHOICES에 6개 모듈 추가
-         □ 마이그레이션 실행
-         □ Permission 코드 26개 DB INSERT (픽스처 작성)
+Phase 1  ☑ MODULE_CHOICES에 6개 모듈 추가 & 마이그레이션 실행
+         ☑ Permission 코드 26개 DB INSERT 완료
 
-Phase 2  □ apiV1/permissions/ibs_perms.py 신규 작성
-         □ 기존 auth_perms.py 무변경 확인
+Phase 2  ☑ apiV1/permissions/work_perms.py 내 PK 1,2 예외 처리 제거 완료
 
-Phase 3  □ contract 앱 ViewSet 적용 + 테스트
-         □ payment 앱 ViewSet 적용 + 테스트
-         □ notice 앱 ViewSet 적용 + 테스트
-         □ ledger 앱 ViewSet 적용 + 테스트
-         □ site 앱 ViewSet 적용 + 테스트
-         □ hr_work 앱 ViewSet 적용 + 테스트
+Phase 3  ☑ contract, payment, notice 등 신규 역할 정돈 완료
 
-Phase 4  □ migrate_staffauth_to_roles 커맨드 작성
-         □ dry-run으로 결과 검증
-         □ 개발 DB 이관 실행
-         □ 프로덕션 이관 실행
+Phase 4  ☑ DB 이관 및 역할 마스터 테이블 카테고리별 분할 렌더링 완료
 
-Phase 5  □ permissions.ts 상수 추가 (26개 신규 코드)
-         □ Pinia account 스토어에 projectPermissions 배열 추가
-         □ 로그인 API 응답에 권한 코드 배열 포함
-         □ pageAuth.ts 내부 로직 교체 (함수명 유지)
-         □ 프론트엔드 빌드 및 동작 검증
+Phase 5  ☑ App.vue 전역 fetchMyProjectsList() 로딩 연동 완료
+         ☑ AppSidebarNav.ts is_hq_staff / is_hq_financial_officer 연동 완료
+         ☑ SideBarManageAuth.vue 및 UserSelect.vue 구형 스위치/레이아웃 정리 완료
+         ☑ pageAuth.ts 내부 can() 로직 결합 및 호환성 유지 완료
 
-Phase 6  □ Phase 1~5 완료 및 충분한 검증 확인
-         □ StaffAuth 모델 및 관련 코드 폐기
-         □ 최종 마이그레이션
-         □ 프론트엔드 StaffAuth Pinia 코드 제거
+Phase 6  □ 충분한 1차 안정성 검증 (배포 후)
+         □ StaffAuth 백엔드 모델 및 관련 코드 폐기 (Drop Table)
+         □ 각 Vue 뷰 파일 세부 can(PERM.***) 직접 매핑 전환 및 pageAuth.ts 영구 삭제
 ```
 
 ---
 
 ## 7. 주요 위험 요소 및 대응
 
-| 위험 요소                                            | 대응 방안                                                 |
-|--------------------------------------------------|-------------------------------------------------------|
-| `project.Project`와 `IssueProject`가 연결 안 된 경우     | Phase 4 이관 스크립트에서 누락 감지 및 로그 출력                       |
-| `company_cash` / `project_cash` 동일 모듈 사용         | 두 경우 모두 `ledger.*` 사용하되, **본사 IssueProject** 컨텍스트로 분리 |
-| `docs` 모듈 - 사업지/본사 혼용                            | 마찬가지로 컨텍스트(IssueProject)로 분리, 코드는 동일 사용               |
-| StaffAuth 즉시 폐기 시 권한 공백                          | 원칙: Phase 6은 Phase 1~5 **완전 완료 후** 단독 배포              |
-| `write_project_site` 일부 파일에서 `write_project`와 혼용 | Phase 5 pageAuth.ts 교체 시 두 함수 모두 `site.*`로 일관 처리      |
+| 위험 요소 | 대응 방안 |
+| :--- | :--- |
+| `project.Project`와 `IssueProject`가 연결 안 된 경우 | Phase 4 이관 스크립트에서 누락 감지 및 로그 출력 |
+| `company_cash` / `project_cash` 동일 모듈 사용 | 두 경우 모두 `ledger.*` 사용하되, **본사 IssueProject** 컨텍스트로 분리 |
+| `docs` 모듈 - 사업지/본사 혼용 | 마찬가지로 컨텍스트(IssueProject)로 분리, 코드는 동일 사용 |
+| StaffAuth 즉시 폐기 시 권한 공백 | 원칙: pageAuth.ts를 중간 어댑터로 유지하여 과도기 권한 정상 동작 보장 |
+| 비동기 갱신 시 deleteMember 무단 연쇄 방출 | loading 가드 및 select/deselect 명시적 단일 트리거 적용 완료 |
+
