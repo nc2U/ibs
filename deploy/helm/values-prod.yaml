@@ -23,6 +23,11 @@ cnpg:
     instances: 3
   backup:
     enabled: true
+    schedule: "0 0 2 * * *"
+    retentionPolicy: "30d"
+    nfs:
+      enabled: true
+      cronJobEnabled: false
     s3:
       enabled: true
       bucket: "postgres-backup-prod-mock"
@@ -39,6 +44,16 @@ web:
     limits:
       cpu: 2000m
       memory: 3Gi
+
+  imageConfigMaps:
+    djangoSettingsModule: _config.settings
+    awsStorageBucketName: "ibs-media-prod-mock"
+    awsS3EndpointUrl: "https://your-minio-s3-domain.com"
+    awsRegion: "ap-northeast-2"
+    awsQuerystringExpire: "3600"
+    imageSecrets:
+      awsAccessKeyId: "YOUR_PROD_ACCESS_KEY"
+      awsSecretAccessKey: "YOUR_PROD_SECRET_KEY"
 
   celery: # Celery worker configuration
     resources:

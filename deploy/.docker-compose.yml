@@ -50,9 +50,12 @@ services:
       DATABASE_NAME: my-db-name # 실제 데이터로 수정
       DATABASE_USER: my-db-user # 실제 데이터로 수정
       DATABASE_PASSWORD: my-db-password # 실제 데이터로 수정
-      # AWS_STORAGE_BUCKET_NAME: aws-s3-bucket-name # 실제 데이터로 수정
-      # AWS_ACCESS_KEY_ID: aws-access-key-id # 실제 데이터로 수정
-      # AWS_SECRET_ACCESS_KEY: aws-secret-access-key # 실제 데이터로 수정
+      AWS_STORAGE_BUCKET_NAME: ibs-media
+      AWS_ACCESS_KEY_ID: readonly-dev
+      AWS_SECRET_ACCESS_KEY: 'dev-secret-password-123'
+      AWS_S3_ENDPOINT_URL: https://s3.dyibs.com
+      AWS_REGION: ap-northeast-2
+      AWS_QUERYSTRING_EXPIRE: 3600
       DOMAIN_HOST: https://abc.com/ # 실제 데이터로 수정
       EMAIL_HOST: your-smtp-server.com # 실제 데이터로 수정
       EMAIL_PORT: 587   # 기본값은 587, 기본값과 다를 경우 실제 데이터로 수정
@@ -81,6 +84,12 @@ services:
       DATABASE_NAME: my-db-name # 실제 데이터로 수정
       DATABASE_USER: my-db-user # 실제 데이터로 수정
       DATABASE_PASSWORD: my-db-password # 실제 데이터로 수정
+      AWS_STORAGE_BUCKET_NAME: ibs-media
+      AWS_ACCESS_KEY_ID: readonly-dev
+      AWS_SECRET_ACCESS_KEY: 'dev-secret-password-123'
+      AWS_S3_ENDPOINT_URL: https://s3.dyibs.com
+      AWS_REGION: ap-northeast-2
+      AWS_QUERYSTRING_EXPIRE: 3600
       EMAIL_HOST: your-smtp-server.com # 실제 데이터로 수정
       EMAIL_PORT: 587   # 기본값은 587, 기본값과 다를 경우 실제 데이터로 수정
       EMAIL_HOST_USER: your-access-id-or-email # 실제 데이터로 수정

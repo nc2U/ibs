@@ -19,6 +19,14 @@ EMAIL_HOST_PASSWORD=          # required, set the helm chart values.global.email
 DEFAULT_FROM_EMAIL=           # required, set the helm chart values.global.defaultFromEmail
 SLACK_NOTIFICATIONS_ENABLED=  # default=True, IBS work notifications
 
+### FOR OBJECT STORAGE (MinIO / S3) ----------------------------------------------------
+AWS_STORAGE_BUCKET_NAME=ibs-media
+AWS_ACCESS_KEY_ID=readonly-dev
+AWS_SECRET_ACCESS_KEY=dev-secret-password-123
+AWS_S3_ENDPOINT_URL=https://s3.dyibs.com
+AWS_REGION=ap-northeast-2
+AWS_QUERYSTRING_EXPIRE=3600
+
 ### FOR DEPLOYMENT ------------------------------------------------------------------------------------
 CICD_HOST=                  # required, nfs server for django app source & database data
 CICD_USER=
