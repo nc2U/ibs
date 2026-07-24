@@ -161,7 +161,11 @@ jobs:
                 --set 'nginx.ingress.tls[0].hosts[1]'=ibs.dyibs.co.kr \
                 --set 'nginx.ingress.tls[0].hosts[2]'=ibs.brdnc.co.kr \
                 --set 'nginx.ingress.tls[0].hosts[3]'=erp.${{ secrets.DOMAIN_NAME }} \
-                --set 'nginx.ingress.tls[0].secretName'=web-devbox-kr-cert
+                --set 'nginx.ingress.tls[0].secretName'=web-devbox-kr-cert \
+                --set web.imageConfigMaps.awsStorageBucketName="ibs-media" \
+                --set web.imageConfigMaps.awsS3EndpointUrl="https://s3.dyibs.com" \
+                --set web.imageConfigMaps.imageSecrets.awsAccessKeyId="${{ secrets.AWS_ACCESS_KEY_ID }}" \
+                --set web.imageConfigMaps.imageSecrets.awsSecretAccessKey="${{ secrets.AWS_SECRET_ACCESS_KEY }}"
             fi
       
       # slack --> notification

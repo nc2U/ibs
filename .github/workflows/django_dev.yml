@@ -187,8 +187,11 @@ jobs:
             --set 'nginx.ingress.hosts[1].paths[0].path'=/ \
             --set 'nginx.ingress.hosts[1].paths[0].pathType'=Prefix \
             --set 'nginx.ingress.tls[0].hosts[0]'=dev.${{ secrets.DOMAIN_NAME }} \
-            --set 'nginx.ingress.tls[0].hosts[1]'=dev.brdnc.co.kr \
             --set 'nginx.ingress.tls[0].secretName'=web-devbox-kr-cert \
+            --set web.imageConfigMaps.awsStorageBucketName="ibs-media" \
+            --set web.imageConfigMaps.awsS3EndpointUrl="https://s3.dyibs.com" \
+            --set web.imageConfigMaps.imageSecrets.awsAccessKeyId="readonly-dev" \
+            --set web.imageConfigMaps.imageSecrets.awsSecretAccessKey="dev-secret-password-123" \
             --cleanup-on-fail
 
       - name: Wait for rollout completion
