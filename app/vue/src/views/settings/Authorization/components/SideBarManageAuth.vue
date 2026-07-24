@@ -125,7 +125,7 @@ onMounted(() => {
       <CCol>
         <h6 class="font-weight-bold mb-3">
           <v-icon icon="mdi-shield-key-outline" color="primary" size="sm" class="mr-2" />
-          프로젝트별 비즈니스 권한 (ibs_global 역할 매핑)
+          프로젝트 별 담당 권한
         </h6>
 
         <div v-if="!user" class="text-center py-4 text-muted border rounded bg-light">
@@ -145,17 +145,28 @@ onMounted(() => {
 
         <div v-else class="space-y-4">
           <CCard v-for="proj in allDevProjects" :key="proj.pk" class="mb-3">
-            <CCardHeader class="bg-light d-flex align-items-center justify-content-between">
-              <span class="fw-bold text-dark">
-                <v-icon icon="mdi-folder-outline" size="small" class="mr-1" />
+            <CCardHeader class="bg-more-light d-flex align-items-center justify-content-between">
+              <span class="fw-bold text-dark d-flex align-items-center text-body">
+                <v-icon icon="mdi-folder" color="grey" size="small" class="pt-1 mr-1" />
                 {{ proj.name }}
+                <v-chip
+                  v-if="!proj.is_public"
+                  color="danger"
+                  size="x-small"
+                  variant="flat"
+                  class="ml-2 p-2 font-weight-bold text-white"
+                  density="comfortable"
+                >
+                  <v-icon icon="mdi-lock" size="x-small" class="mr-2" />
+                  비공개
+                </v-chip>
               </span>
-              <span class="badge bg-secondary">Business Perms</span>
+              <v-chip size="x-small" variant="tonal" color="grey"> Business Perms</v-chip>
             </CCardHeader>
             <CCardBody>
               <CRow>
                 <CCol v-if="ibsRoles.length === 0" class="text-muted small">
-                  시스템에 등록된 비즈니스 데이터 역할([ibs_global] 카테고리)이 없습니다.
+                  시스템에 등록된 비즈니스 데이터 관련 역할([ibs_global] 카테고리)이 없습니다.
                 </CCol>
                 <template v-else>
                   <CCol v-for="role in ibsRoles" :key="role.pk" xs="12" sm="6" md="4" class="py-1">
