@@ -2,6 +2,7 @@
 import { computed, onBeforeMount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useProject } from '@/store/pinia/project'
+import { useWork } from '@/store/pinia/work_project'
 import Multiselect from '@vueform/multiselect'
 
 const emit = defineEmits(['proj-select'])
@@ -10,8 +11,10 @@ const router = useRouter()
 const route = useRoute()
 
 const projStore = useProject()
+const workStore = useWork()
+
 const project = computed(() => projStore.project?.pk)
-const projSelectList = computed(() => projStore.projSelect)
+const projSelectList = computed(() => workStore.getDevProjects)
 
 // URL에서 project 파라미터 읽기
 const urlProjectId = computed(() => {

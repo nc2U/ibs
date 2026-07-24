@@ -58,10 +58,12 @@ class ProjectPermission(permissions.BasePermission):
 
     @staticmethod
     def extract_project(obj):
-        from work.models.project import IssueProject
+        from work.models.project import IssueProject, Member
 
         if isinstance(obj, IssueProject):
             return obj
+        if isinstance(obj, Member):
+            return obj.project
         if hasattr(obj, 'project'):
             return obj.project
         if hasattr(obj, 'issue_project'):

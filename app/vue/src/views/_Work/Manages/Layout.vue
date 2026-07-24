@@ -15,7 +15,6 @@ onBeforeMount(async () => {
     // 업무 및 일정 관리에 필수적인 공통/메타 데이터 전역 페치
     await Promise.all([
       workStore.fetchAllProjectList(),
-      workStore.fetchMyProjectsList(),
       workStore.fetchRoleList(),
       workStore.fetchPermissionList(),
       workStore.fetchVersionList(),

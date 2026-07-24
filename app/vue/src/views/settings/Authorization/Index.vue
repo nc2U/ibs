@@ -14,26 +14,9 @@ import AddUserFormModal from './components/AddUserFormModal.vue'
 
 const refFormModal = ref()
 
-const comInfo = ref<{ company: number | null; is_hq_staff: boolean }>({
+const comInfo = ref<{ company: number | null }>({
   company: null,
-  is_hq_staff: false,
 })
-
-const changeStaff = (val: boolean) => {
-  comInfo.value.is_hq_staff = val
-  projectAuth.value.is_pjt_staff = !val
-}
-
-const projectAuth = ref({
-  is_pjt_staff: false,
-  allowed_projects: [] as number[],
-  default_project: null as number | null,
-})
-
-const changeProStaff = (val: boolean) => {
-  projectAuth.value.is_pjt_staff = val
-  comInfo.value.is_hq_staff = !val
-}
 
 const comStore = useCompany()
 const comId = computed(() => comStore.company?.pk)
@@ -46,41 +29,16 @@ const adminCreateUser = (payload: UserByAdmin) => accStore.adminCreateUser(paylo
 
 const selectUser = (pk: number | null) => {
   if (!!pk) {
-    accStore.fetchUser(pk).then(() => {
-      if (user.value && !user.value.staff_auth) authReset()
-    })
+    accStore.fetchUser(pk)
   } else {
     accStore.removeUser()
-    authReset()
   }
-}
-
-const getAllowed = (payload: number[]) => (projectAuth.value.allowed_projects = payload)
-const getAssigned = (payload: number | null) => (projectAuth.value.default_project = payload)
-
-const authReset = () => {
-  comInfo.value.is_hq_staff = false
-  projectAuth.value.is_pjt_staff = false
-  projectAuth.value.default_project = null
-  projectAuth.value.allowed_projects = []
 }
 
 const onSubmit = (payload: any) => {
   console.log(payload)
   adminCreateUser(payload)
 }
-
-watch(
-  () => user.value?.staff_auth,
-  nVal => {
-    if (nVal) {
-      comInfo.value.is_hq_staff = nVal.is_hq_staff
-      projectAuth.value.is_pjt_staff = nVal.is_pjt_staff
-      projectAuth.value.default_project = nVal.default_project
-      projectAuth.value.allowed_projects = nVal.allowed_projects
-    }
-  },
-)
 
 watch(comId, async val => (!!val ? await dataSetup(val) : dataReset()))
 
@@ -108,19 +66,12 @@ onBeforeMount(async () => {
       <CCardBody>
         <UserSelect
           :sel-user="user?.pk"
-          :is-staff="comInfo.is_hq_staff"
-          :is-project-staff="projectAuth.is_pjt_staff"
-          @change-staff="changeStaff"
-          @change-pro-staff="changeProStaff"
           @select-user="selectUser"
           @add-user-modal="refFormModal.callModal()"
         />
 
         <SideBarManageAuth
           :user="user as User"
-          :allowed="projectAuth.allowed_projects"
-          @get-allowed="getAllowed"
-          @get-assigned="getAssigned"
         />
       </CCardBody>
 

@@ -4,20 +4,21 @@ import { useWork } from '@/store/pinia/work_project'
 import type { User } from '@/store/types/accounts'
 import type { Role, Member } from '@/store/types/work_project'
 import { write_auth_manage } from '@/utils/pageAuth'
-import ProjectManageAuth from './ProjectManageAuth.vue'
 
 const props = defineProps({
   user: { type: Object as PropType<User | null>, default: null },
-  allowed: { type: Array as PropType<number[]>, default: () => [] },
 })
-
-const emit = defineEmits(['get-allowed', 'get-assigned'])
 
 const workStore = useWork()
 const roleList = computed<Role[]>(() => workStore.roleList)
 
 // ibs_global 카테고리의 역할 목록 필터링
 const ibsRoles = computed(() => roleList.value.filter(r => r.category === 'ibs_global'))
+
+// 사용 가능한 전체 부동산 개발 (type='2', status='1') 프로젝트 목록
+const allDevProjects = computed(() =>
+  workStore.allReadableProjects.filter(p => p.type === '2' && p.status === '1'),
+)
 
 const memberList = ref<Member[]>([])
 const loading = ref(false)
@@ -30,8 +31,6 @@ const fetchUserMembers = async () => {
   }
   loading.value = true
   try {
-    // workStore 또는 API를 직접 호출해 사용자의 프로젝트 멤버 리스트 조회
-    // Member API 엔드포인트: /api/v1/member/?user={user_id}
     const response = await workStore.fetchMemberList(props.user.pk)
     if (response) {
       memberList.value = response as Member[]
@@ -49,65 +48,78 @@ watch(
   { immediate: true },
 )
 
-const getAllowed = (payload: number[]) => {
-  emit('get-allowed', payload)
-  // 허용 프로젝트가 변경되면 멤버 리스트 갱신
-  setTimeout(() => fetchUserMembers(), 500)
-}
-
-const getAssigned = (payload: number | null) => emit('get-assigned', payload)
-
-// 멤버의 역할 보유 여부 확인
-const hasRole = (member: Member, rolePk: number) => {
+// 특정 프로젝트에서 해당 역할을 부여받았는지 확인
+const hasRole = (projPk: number, rolePk: number) => {
+  const member = memberList.value.find(m => m.project.pk === projPk)
+  if (!member) return false
   return member.roles.some(r => r.pk === rolePk)
 }
 
 // 멤버의 역할 토글 및 업데이트
-const toggleRole = async (member: Member, rolePk: number) => {
-  if (!write_auth_manage.value) return
+const toggleRole = async (projPk: number, rolePk: number) => {
+  if (!write_auth_manage.value || !props.user?.pk) return
 
-  const currentRolePks = member.roles.map(r => r.pk)
-  const index = currentRolePks.indexOf(rolePk)
+  const member = memberList.value.find(m => m.project.pk === projPk)
 
-  if (index === -1) {
-    currentRolePks.push(rolePk)
+  if (!member) {
+    // 1. 해당 프로젝트에 멤버로 등록되어 있지 않은 경우 -> 멤버 생성 및 역할 할당
+    const proj = workStore.allReadableProjects.find(p => p.pk === projPk)
+    if (!proj?.slug) return
+
+    try {
+      loading.value = true
+      await workStore.createMember({
+        project: projPk,
+        slug: proj.slug,
+        user_id: props.user.pk,
+        role_ids: [rolePk],
+      } as any)
+      await fetchUserMembers()
+    } catch (error) {
+      console.error('Failed to create member and assign role:', error)
+    } finally {
+      loading.value = false
+    }
   } else {
-    currentRolePks.splice(index, 1)
-  }
+    // 2. 이미 멤버인 경우 -> 역할 추가 또는 제거
+    const currentRolePks = member.roles.map(r => r.pk)
+    const index = currentRolePks.indexOf(rolePk)
 
-  try {
-    await workStore.patchMember({
-      pk: member.pk,
-      roles: currentRolePks,
-    })
-    // 갱신을 위해 재로드
-    await fetchUserMembers()
-  } catch (error) {
-    console.error('Failed to update member role:', error)
+    if (index === -1) {
+      currentRolePks.push(rolePk)
+    } else {
+      currentRolePks.splice(index, 1)
+    }
+
+    try {
+      loading.value = true
+      if (currentRolePks.length === 0) {
+        // 지정된 역할이 0개가 되면 멤버십 완전히 삭제(탈퇴)
+        await workStore.deleteMember(member.pk)
+      } else {
+        // 역할 목록 수정
+        await workStore.patchMember({
+          pk: member.pk,
+          roles: currentRolePks,
+        })
+      }
+      await fetchUserMembers()
+    } catch (error) {
+      console.error('Failed to update member roles:', error)
+    } finally {
+      loading.value = false
+    }
   }
 }
 
 onMounted(() => {
+  workStore.fetchAllProjectList()
   workStore.fetchRoleList()
 })
 </script>
 
 <template>
   <div class="mt-4">
-    <!-- 프로젝트 할당 영역 -->
-    <CRow>
-      <CCol>
-        <h6 class="font-weight-bold mb-3">
-          <v-icon icon="mdi-sitemap" color="success" size="sm" class="mr-2" />
-          허용 프로젝트 설정
-        </h6>
-      </CCol>
-    </CRow>
-
-    <ProjectManageAuth :user="user as User" @get-allowed="getAllowed" @get-assigned="getAssigned" />
-
-    <v-divider class="my-4" />
-
     <!-- 프로젝트별 비즈니스 데이터 권한(Role) 매핑 -->
     <CRow>
       <CCol>
@@ -125,20 +137,20 @@ onMounted(() => {
         </div>
 
         <div
-          v-else-if="memberList.length === 0"
+          v-else-if="allDevProjects.length === 0"
           class="text-center py-4 text-muted border rounded bg-light"
         >
-          할당된 프로젝트가 없습니다. 위의 '허용 프로젝트 설정'에서 프로젝트를 먼저 허용해 주세요.
+          사용 가능한 부동산 개발 프로젝트가 존재하지 않습니다.
         </div>
 
         <div v-else class="space-y-4">
-          <CCard v-for="mem in memberList" :key="mem.pk" class="mb-3">
+          <CCard v-for="proj in allDevProjects" :key="proj.pk" class="mb-3">
             <CCardHeader class="bg-light d-flex align-items-center justify-content-between">
               <span class="fw-bold text-dark">
                 <v-icon icon="mdi-folder-outline" size="small" class="mr-1" />
-                {{ mem.project.name }}
+                {{ proj.name }}
               </span>
-              <span class="badge bg-secondary">Project Assignment</span>
+              <span class="badge bg-secondary">Business Perms</span>
             </CCardHeader>
             <CCardBody>
               <CRow>
@@ -148,11 +160,11 @@ onMounted(() => {
                 <template v-else>
                   <CCol v-for="role in ibsRoles" :key="role.pk" xs="12" sm="6" md="4" class="py-1">
                     <CFormCheck
-                      :id="`member-role-${mem.pk}-${role.pk}`"
+                      :id="`member-role-${proj.pk}-${role.pk}`"
                       :label="role.name"
-                      :checked="hasRole(mem, role.pk)"
+                      :checked="hasRole(proj.pk || 0, role.pk)"
                       :disabled="!write_auth_manage"
-                      @change="toggleRole(mem, role.pk)"
+                      @change="toggleRole(proj.pk || 0, role.pk)"
                     />
                   </CCol>
                 </template>

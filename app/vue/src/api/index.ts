@@ -59,7 +59,7 @@ api.interceptors.response.use(
       } else if (error.response.status === 403 || error.response.status === 404) {
         // 403 Forbidden / 404 Not Found 발생 시 이전 페이지로 이동 (히스토리가 없으면 홈으로 이동)
         if (window.history.state && window.history.state.back) {
-          router.go(-1)
+          // router.go(-1)
         } else {
           await router.push('/')
         }

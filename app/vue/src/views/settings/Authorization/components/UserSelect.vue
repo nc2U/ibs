@@ -6,14 +6,10 @@ import Multiselect from '@vueform/multiselect'
 
 const props = defineProps({
   selUser: { type: Number, default: null },
-  isStaff: { type: Boolean, default: false },
-  isProjectStaff: { type: Boolean, default: false },
 })
-const emit = defineEmits(['select-user', 'change-staff', 'change-pro-staff', 'add-user-modal'])
+const emit = defineEmits(['select-user', 'add-user-modal'])
 
 const userId = ref<number | null>(null)
-const staff = ref(false)
-const projectStaff = ref(false)
 
 const accountStore = useAccount()
 const userInfo = computed(() => accountStore.userInfo)
@@ -40,42 +36,15 @@ watch(
   },
 )
 
-watch(
-  () => props.isStaff,
-  nVal => (staff.value = nVal),
-)
-
-watch(
-  () => props.isProjectStaff,
-  nVal => (projectStaff.value = nVal),
-)
-
-const changeStaff = () =>
-  nextTick(() => {
-    projectStaff.value = !staff.value
-    emit('change-staff', staff.value)
-  })
-
-const changeProStaff = () =>
-  nextTick(() => {
-    staff.value = !projectStaff.value
-    emit('change-pro-staff', projectStaff.value)
-  })
-
 const addUserModal = () => emit('add-user-modal')
-
-onBeforeMount(() => {
-  if (props.isStaff) staff.value = props.isStaff
-  if (props.isProjectStaff) projectStaff.value = props.isProjectStaff
-})
 </script>
 
 <template>
   <CCallout color="dark" class="mb-4" :class="bgLight">
-    <CRow>
-      <CCol lg="6" xl="4">
-        <CRow class="m-1">
-          <CFormLabel class="col-md-4 col-form-label"> 사용자 선택</CFormLabel>
+    <CRow class="align-items-center">
+      <CCol lg="8" xl="6">
+        <CRow class="m-1 align-items-center">
+          <CFormLabel class="col-md-3 col-form-label fw-bold">사용자 선택</CFormLabel>
           <CCol>
             <Multiselect
               v-model="userId"
@@ -90,25 +59,7 @@ onBeforeMount(() => {
           </CCol>
         </CRow>
       </CCol>
-      <CCol md="6" lg="3" xl="2" class="pt-2">
-        <CFormSwitch
-          v-model="staff"
-          label="본사 관리자 (프로젝트 관리 가능)"
-          @change="changeStaff"
-          id="is_hq_staff"
-          :disabled="!superAuth"
-        />
-      </CCol>
-      <CCol md="6" lg="3" xl="2" class="pt-2">
-        <CFormSwitch
-          v-model="projectStaff"
-          label="프로젝트 관리자"
-          @change="changeProStaff"
-          id="is_pjt_staff"
-          :disabled="!superAuth"
-        />
-      </CCol>
-      <CCol xl="2" v-if="superAuth" class="pt-1">
+      <CCol xl="4" v-if="superAuth" class="text-end pt-1">
         <v-btn variant="tonal" color="primary" @click="addUserModal">사용자 생성</v-btn>
       </CCol>
     </CRow>
