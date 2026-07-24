@@ -22,9 +22,9 @@ cnpg:
   replication:
     instances: 1
   backup:
-    enabled: true
+    enabled: false
     s3:
-      enabled: true
+      enabled: false
       bucket: "postgres-backup-dev-mock"
       region: "ap-northeast-2"
       endpoint: "http://192.168.0.100:9000"
