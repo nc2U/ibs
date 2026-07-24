@@ -226,26 +226,44 @@ USE_I18N = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
 
+# ── Object Storage (MinIO S3-compatible) ────────────────────────────────────
 AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME', default='')
 AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID', default='')
 AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY', default='')
-AWS_REGION = 'ap-northeast-2'
-AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com'
-AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400', }
-AWS_DEFAULT_ACL = 'public-read'
+AWS_REGION = config('AWS_REGION', default='ap-northeast-2')
+
+# MinIO 전용 엔드포인트 (설정 시 MinIO, 미설정 시 AWS S3 기본값)
+AWS_S3_ENDPOINT_URL = config('AWS_S3_ENDPOINT_URL', default='')  # ex: https://s3.dyibs.com
+
+# Private 버킷: Pre-signed URL 유효기간 (초, 기본 1시간)
+AWS_QUERYSTRING_AUTH = True
+AWS_QUERYSTRING_EXPIRE = config('AWS_QUERYSTRING_EXPIRE', default=3600, cast=int)
+
+# MinIO는 Path-style URL 사용 (버킷명이 도메인이 아닌 경로에 위치)
+AWS_S3_ADDRESSING_STYLE = 'path'
+
+# Private 버킷이므로 ACL 미사용
+AWS_DEFAULT_ACL = None
+AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400'}
+
+# MinIO 사용 시 custom domain 불필요 (endpoint_url로 직접 접근)
+AWS_S3_CUSTOM_DOMAIN = None
+# ─────────────────────────────────────────────────────────────────────────────
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'static'
 STATICFILES_DIRS = [BASE_DIR / '_assets']
 
+_use_s3 = bool(AWS_STORAGE_BUCKET_NAME and AWS_S3_ENDPOINT_URL)
+
 DEFAULT_FILE_STORAGE = ('_config.asset_storage.MediaStorage'
-                        if AWS_STORAGE_BUCKET_NAME else
+                        if _use_s3 else
                         'django.core.files.storage.FileSystemStorage')
 
 # 각 media 파일에 관한 URL prefix
-MEDIA_URL = (f'https://{AWS_S3_CUSTOM_DOMAIN}/media/'
-             if AWS_STORAGE_BUCKET_NAME else '/media/')
-MEDIA_ROOT = BASE_DIR / 'media'  # 업로드된 파일을 저장할 디렉토리 경로
+# S3/MinIO 사용 시 Pre-signed URL이 자동 생성되므로 MEDIA_URL은 폴백용
+MEDIA_URL = '/media/'  # S3 사용 시 실제 URL은 스토리지 백엔드가 Pre-signed URL로 생성
+MEDIA_ROOT = BASE_DIR / 'media'  # 로컬 폴백용 미디어 디렉토리
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
