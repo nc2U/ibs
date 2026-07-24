@@ -393,9 +393,24 @@ EOF
 
         # 자동으로 로그 따라가기 (옵션)
         if [ "${FOLLOW_LOGS:-true}" = "true" ]; then
+            echo "⏳ Waiting for Kubernetes scheduler to create backup pod..."
+            POD_NAME=""
+            for i in {1..15}; do
+                POD_NAME=$(kubectl get pods -n "$NAMESPACE" -l "job-name=$JOB_NAME" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+                if [ -n "$POD_NAME" ]; then
+                    echo "✅ Backup pod registered: $POD_NAME"
+                    break
+                fi
+                sleep 1
+            done
+
+            if [ -z "$POD_NAME" ]; then
+                echo "❌ Error: Pod was not created by Kubernetes in time"
+                exit 1
+            fi
+
             echo "Following logs (Ctrl+C to stop)..."
             echo "----------------------------------------"
-            sleep 3
             kubectl wait --for=condition=ready pod -n "$NAMESPACE" -l "job-name=$JOB_NAME" --timeout=30s
             kubectl logs -n "$NAMESPACE" -l "job-name=$JOB_NAME" -f
         fi
