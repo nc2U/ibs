@@ -118,7 +118,8 @@ backup:
   enabled: false
 
   # Backup schedule (daily at 2 AM KST)
-  schedule: "0 2 * * *"
+  # NOTE: CNPG ScheduledBackup requires 6-field cron (seconds minutes hours day month weekday)
+  schedule: "0 0 2 * * *"
 
   # Backup retention policy
   retentionPolicy: "30d"
@@ -135,6 +136,7 @@ backup:
   nfs:
     enabled: true
     storage: "200Mi"  # PV/PVC size
+    cronJobEnabled: false  # Set to false when S3 backup is active (avoids duplicate backups)
 
   # S3-compatible storage configuration
   # IMPORTANT: backup.enabled and s3.enabled must both be true to enable backups

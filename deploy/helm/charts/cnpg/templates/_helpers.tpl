@@ -123,7 +123,9 @@ Return the backup destination path
 {{- define "cnpg.backupDestination" -}}
 {{- if .Values.backup.s3.enabled }}
 {{- printf "s3://%s/%s" .Values.backup.s3.bucket (include "cnpg.fullname" .) }}
+{{- else if .Values.backup.destinationPath }}
+{{- .Values.backup.destinationPath }}
 {{- else }}
-{{- .Values.backup.destinationPath | default "file:///var/lib/postgresql/backup" }}
+{{- "file:///var/lib/postgresql/backup" }}
 {{- end }}
 {{- end }}

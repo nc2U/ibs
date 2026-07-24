@@ -1,4 +1,4 @@
-{{- if and .Values.enabled .Values.backup.nfs.enabled (eq .Values.global.appMode "prod") }}
+{{- if and .Values.enabled .Values.backup.nfs.enabled (.Values.backup.nfs.cronJobEnabled | default false) (eq .Values.global.appMode "prod") }}
 apiVersion: batch/v1
 kind: CronJob
 metadata:

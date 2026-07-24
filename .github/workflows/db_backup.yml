@@ -1,27 +1,28 @@
-name: Database Backup
+name: Database Backup (Manual)
 
 on:
-  schedule:
-    - cron: "0 */8 * * *"
-  
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
+  # CNPG ScheduledBackup이 매일 자동으로 S3 백업을 수행합니다.
+  # 이 워크플로우는 긴급 수동 백업이 필요할 때만 사용합니다.
+  # schedule:
+  #   - cron: "0 */8 * * *"  # CNPG S3 자동 백업으로 대체되어 비활성화
 
-# job은 사용자가 정한 플랫폼을 통해 steps 라는 일련의 과정을 실행.
-# 여러 개의 job 을 사용할 수 있으며, 여러 개의 job 을 사용할 때는 서로 정보도 교환 가능.
-# 각각 독립적으로도 실행 가능.
+  workflow_dispatch:
+    inputs:
+      backup_name:
+        description: '백업 식별 이름 (예: pre-deploy, emergency)'
+        required: false
+        default: 'manual'
+
 jobs:
-  build:
-    name: Build
+  backup:
+    name: Manual CNPG Backup
     runs-on: ubuntu-latest
 
     steps:
-      # 레파지터리 체크 아웃
       - name: Check out source code
         uses: actions/checkout@v4
 
-      # database backup (CloudNativePG via Kubernetes Job)
-      - name: database backup
+      - name: Setup kubeconfig
         uses: garygrossgarten/github-action-ssh@release
         with:
           host: ${{ secrets.CICD_HOST }}
@@ -29,23 +30,39 @@ jobs:
           password: ${{ secrets.CICD_PASS }}
           command: |
             export KUBECONFIG=$HOME/.kube/config
-            cd ${{ secrets.CICD_PATH }}/prod/deploy/helm/scripts
 
-            # CloudNativePG 백업 실행 (manual-backup.sh 사용)
-            echo "Running CloudNativePG backup for production..."
-            sh manual-backup.sh prod
+            BACKUP_NAME="manual-${{ github.event.inputs.backup_name }}-$(date +%Y%m%d-%H%M%S)"
 
-            # 백업 결과 확인
-            if [ $? -eq 0 ]; then
-              echo "✅ PostgreSQL backup completed successfully"
+            echo "🚀 Triggering CNPG manual backup: ${BACKUP_NAME}"
+
+            kubectl create -f - <<EOF
+            apiVersion: postgresql.cnpg.io/v1
+            kind: Backup
+            metadata:
+              name: ${BACKUP_NAME}
+              namespace: ibs-prod
+            spec:
+              method: barmanObjectStore
+              cluster:
+                name: postgres
+            EOF
+
+            echo "⏳ Waiting for backup to complete..."
+            sleep 10
+
+            # 백업 상태 확인
+            kubectl get backup ${BACKUP_NAME} -n ibs-prod -o jsonpath='{.status.phase}'
+            BACKUP_STATUS=$(kubectl get backup ${BACKUP_NAME} -n ibs-prod -o jsonpath='{.status.phase}')
+
+            if [ "$BACKUP_STATUS" = "completed" ]; then
+              echo "✅ Backup completed successfully: ${BACKUP_NAME}"
             else
-              echo "❌ PostgreSQL backup failed"
-              exit 1
+              echo "⏳ Backup is running (status: ${BACKUP_STATUS}). Check with:"
+              echo "   kubectl get backup ${BACKUP_NAME} -n ibs-prod"
             fi
 
-      # slack --> notification
       - name: Send slack when failed
-        if: ${{ failure() }}                    # 실패했을 때 실행
-        uses: ./.github/actions/slack-notify    # 직접 '만든' Action이므로 uses 키워드를 이용해서 아래 경로를 입력해줍니다.
+        if: ${{ failure() }}
+        uses: ./.github/actions/slack-notify
         with:
           slack_incoming_url: ${{ secrets.SLACK_INCOMING_URL }}
