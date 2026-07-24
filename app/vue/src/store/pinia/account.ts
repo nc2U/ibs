@@ -5,8 +5,14 @@ import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { errorHandle, message } from '@/utils/helper'
 import { useDocs } from '@/store/pinia/docs'
+import {
+  write_company_docs,
+  write_project_docs,
+  write_company_cash,
+  write_project_cash,
+} from '@/utils/pageAuth'
 import type { LocationQueryValue } from 'vue-router'
-import type { User, StaffAuth, Profile, Scrape, Todo } from '@/store/types/accounts'
+import type { User, Profile, Scrape, Todo } from '@/store/types/accounts'
 
 export type UserByAdmin = {
   username: string
@@ -210,37 +216,13 @@ export const useAccount = defineStore('account', () => {
   // getters
   const superAuth = computed(() => userInfo.value?.is_superuser)
   const workManager = computed(() => userInfo.value?.work_manager || superAuth.value)
-  const staffAuth = computed(() => (userInfo.value?.staff_auth ? userInfo.value.staff_auth : null)) // 장고 어드민 관리 권한
-  const isStaff = computed(() => !!superAuth.value || staffAuth.value?.is_hq_staff) // 본사 관리 권한
+  const isStaff = computed(() => !!superAuth.value || !!userInfo.value?.is_hq_staff) // 본사 관리 권한
 
-  const writeComDocs = computed(() => superAuth.value || staffAuth.value?.company_docs == '2')
-  const writeProDocs = computed(() => superAuth.value || staffAuth.value?.project_docs == '2')
-  const isComLedger = computed(() => {
-    if (superAuth.value) return true
-    const comLedger = Number(staffAuth.value?.company_ledger || 0)
-    return !!(isStaff.value && comLedger)
-  })
-  const writeComLedger = computed(() => superAuth.value || staffAuth.value?.company_ledger == '2')
-  const writeProLedger = computed(() => superAuth.value || staffAuth.value?.project_ledger == '2')
-
-  // actions
-  const createAuth = async (payload: StaffAuth, userPk: number) => {
-    payload.user = userPk
-    return await api
-      .post(`/staff-auth/`, payload)
-      .then(() => api.get(`/user/${userPk}/`).then(() => fetchUser(userPk).then(() => message())))
-      .catch(err => errorHandle(err.response.data))
-  }
-
-  const patchAuth = async (payload: StaffAuth, userPk: number) => {
-    const { pk, ...authData } = payload
-    return await api
-      .patch(`/staff-auth/${pk}/`, authData)
-      .then(() => api.get(`/user/${userPk}/`).then(() => fetchUser(userPk).then(() => message())))
-      .catch(err => errorHandle(err.response.data))
-  }
-
-  // states
+  const writeComDocs = computed(() => !!superAuth.value || !!write_company_docs.value)
+  const writeProDocs = computed(() => !!superAuth.value || !!write_project_docs.value)
+  const isComLedger = computed(() => !!superAuth.value || !!userInfo.value?.is_hq_financial_officer)
+  const writeComLedger = computed(() => !!superAuth.value || !!write_company_cash.value)
+  const writeProLedger = computed(() => !!superAuth.value || !!write_project_cash.value)  // states
   const profile = ref<Profile | null>(null)
 
   // actions
@@ -454,16 +436,12 @@ export const useAccount = defineStore('account', () => {
 
     superAuth,
     workManager,
-    staffAuth,
     isStaff,
     writeComDocs,
     writeProDocs,
     isComLedger,
     writeComLedger,
     writeProLedger,
-
-    createAuth,
-    patchAuth,
 
     profile,
 

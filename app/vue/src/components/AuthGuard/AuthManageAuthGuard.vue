@@ -1,17 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useAccount } from '@/store/pinia/account'
+import { read_auth_manage } from '@/utils/pageAuth'
 import NoAuth from '@/views/_Accounts/NoAuth.vue'
 
 const account = useAccount()
 
 const isLoading = computed(() => account.userInfo === null || account.userInfo === undefined)
 
-const hasAuth = computed(
-  () =>
-    account.userInfo?.is_superuser ||
-    (account.userInfo?.staff_auth && account.userInfo.staff_auth?.auth_manage > '0'),
-)
+const hasAuth = computed(() => !!read_auth_manage.value)
 </script>
 
 <template>

@@ -3,7 +3,7 @@ from django.core.mail import send_mail
 from django.db import transaction
 from rest_framework import serializers
 
-from accounts.models import User, StaffAuth, Profile, Todo, DocScrape, PasswordResetToken, PostScrape
+from accounts.models import User, Profile, Todo, DocScrape, PasswordResetToken, PostScrape
 from forum.models import Post
 from docs.models import Document
 from work.models.project import IssueProject
@@ -15,40 +15,6 @@ class SimpleUserSerializer(serializers.ModelSerializer):
         model = User
         fields = ('pk', 'username')
 
-
-class StaffAuthInUserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = StaffAuth
-        fields = ('pk', 'user', 'is_hq_staff', 'is_pjt_staff', 'allowed_projects',
-                  'default_project', 'contract', 'payment', 'notice', 'project_ledger',
-                  'project_docs', 'project', 'project_site', 'company_ledger',
-                  'company_docs', 'human_resource', 'company_settings', 'auth_manage')
-
-    @transaction.atomic
-    def create(self, validated_data):
-        # 1. M2M 분리
-        allowed_projects = validated_data.pop('allowed_projects')
-
-        # 2. 인스턴스 생성
-        instance = StaffAuth.objects.create(**validated_data)
-        instance.allowed_projects.set(allowed_projects)
-
-        # 3. 프로필 없으면 생성
-        Profile.objects.get_or_create(user=instance.user)
-
-        # 4. 승인 메일 발송
-        try:
-            subject = f'[IBS] 워크스페이스 회원가입이 승인되었습니다.'
-            message = (f'안녕하세요, {instance.user.username}님.\n\n'
-                       '회원가입 신청이 관리자의 승인을 받아 정상적으로 완료되었습니다.\n'
-                       '회원가입 시 등록한 이메일 주소로 로그인하여 서비스를 이용해 주시기 바랍니다.\n\n'
-                       f'로그인: {settings.DOMAIN_HOST}/\n\n'
-                       '감사합니다.')
-            send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [instance.user.email])
-        except Exception as e:
-            print(f"메일 발송 실패: {e}")
-
-        return instance
 
 
 class ProfileInUserSerializer(serializers.ModelSerializer):
@@ -71,15 +37,15 @@ class UserSerializer(serializers.ModelSerializer):
         help_text='변경할 필요가 없으면 비워 두십시오.',
         style={'input_type': 'password', 'placeholder': '비밀번호'}
     )
-    staff_auth = StaffAuthInUserSerializer(read_only=True)
     profile = ProfileInUserSerializer(read_only=True)
     is_hq_financial_officer = serializers.SerializerMethodField(read_only=True)
+    is_hq_staff = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = User
         fields = ('pk', 'email', 'username', 'is_active', 'is_superuser',
                   'is_staff', 'work_manager', 'date_joined', 'password',
-                  'staff_auth', 'profile', 'last_login', 'is_hq_financial_officer')
+                  'profile', 'last_login', 'is_hq_financial_officer', 'is_hq_staff')
         read_only_fields = ('date_joined', 'last_login')
 
     def get_is_hq_financial_officer(self, obj):
@@ -87,6 +53,11 @@ class UserSerializer(serializers.ModelSerializer):
             return getattr(obj.staff, 'is_hq_financial_officer', False)
         except AttributeError:
             return False
+
+    def get_is_hq_staff(self, obj):
+        if obj.is_superuser:
+            return True
+        return obj.member_set.filter(project__type='1').exists()
 
     def create(self, validated_data):
         user = User(email=validated_data['email'],

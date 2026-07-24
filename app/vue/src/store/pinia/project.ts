@@ -2,6 +2,7 @@ import api from '@/api'
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { useAccount } from '@/store/pinia/account'
+import { useWork } from '@/store/pinia/work_project'
 import { errorHandle, message } from '@/utils/helper'
 import {
   type ExecAmountToBudget,
@@ -18,11 +19,10 @@ export const useProject = defineStore('project', () => {
   // states & getters
   const projectList = ref<Project[]>([])
   const projectsCount = ref(0)
-  const allowed_projects = computed(() =>
-    accountStore.userInfo && accountStore.userInfo.staff_auth
-      ? accountStore.userInfo.staff_auth.allowed_projects
-      : [],
-  )
+  const allowed_projects = computed(() => {
+    const workStore = useWork()
+    return workStore.myProjects.map(mp => mp.pk)
+  })
   const projSelect = computed(() => {
     const getProject = accountStore.superAuth
       ? projectList.value
@@ -47,11 +47,7 @@ export const useProject = defineStore('project', () => {
 
   // states & getters
   const project = ref<Project | null>(null)
-  const assingedProject = computed(() =>
-    accountStore.userInfo?.staff_auth?.default_project
-      ? accountStore.userInfo.staff_auth.default_project
-      : 0,
-  )
+  const assingedProject = computed(() => 0)
 
   const currentProject = Number(localStorage.getItem('curr-project'))
   const initProjId = computed(() => (currentProject ? currentProject : assingedProject.value))

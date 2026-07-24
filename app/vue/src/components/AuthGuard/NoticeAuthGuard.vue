@@ -1,17 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useAccount } from '@/store/pinia/account'
+import { read_notice } from '@/utils/pageAuth'
 import NoAuth from '@/views/_Accounts/NoAuth.vue'
 
 const account = useAccount()
 
 const isLoading = computed(() => account.userInfo === null || account.userInfo === undefined)
 
-const hasAuth = computed(
-  () =>
-    account.userInfo?.is_superuser ||
-    (account.userInfo?.staff_auth && account.userInfo.staff_auth?.notice > '0'),
-)
+const hasAuth = computed(() => !!read_notice.value)
 </script>
 
 <template>

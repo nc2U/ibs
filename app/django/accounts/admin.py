@@ -6,11 +6,7 @@ from django.utils.translation import gettext_lazy as _
 from import_export.admin import ImportExportMixin
 
 from .forms import UserCreationForm, UserChangeForm
-from .models import User, DocScrape, StaffAuth  # , PostScrape
-
-
-class StaffAuthInline(admin.StackedInline):
-    model = StaffAuth
+from .models import User, DocScrape  # , PostScrape
 
 
 # class ProfileInline(admin.StackedInline):
@@ -56,7 +52,7 @@ class UserAdmin(ImportExportMixin, BaseUserAdmin):
     search_fields = ('email', 'username')
     ordering = ('-date_joined',)
     filter_horizontal = ('groups', 'user_permissions',)
-    inlines = (StaffAuthInline,)  # ProfileInline, TodosInline)
+    inlines = ()  # ProfileInline, TodosInline)
 
     def send_test_email(self, request, queryset):
         # 예시: 선택된 첫 번째 객체를 기준으로 메일 전송

@@ -79,7 +79,6 @@ describe('AppHeaderDropdownAccnt Component Test', () => {
         is_staff: true, // 관리자로 변경
         work_manager: false,
         date_joined: '2022-01-30T19:16:53+09:00',
-        staff_auth: null,
         profile: null,
         last_login: '2023-01-30T19:16:53+09:00',
       },

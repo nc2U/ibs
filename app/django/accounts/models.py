@@ -81,45 +81,6 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.work_projects().values_list('id', flat=True)
 
 
-class StaffAuth(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='staff_auth')
-    is_hq_staff = models.BooleanField('본사 근무 직원', default=False, help_text='외부 관계자가 아닌 본사 직원(관리자)일 경우 선택')
-    is_pjt_staff = models.BooleanField('프로젝트 관리자', default=False, help_text='본사 직원 외 프로젝트 관리 직원(관리자)일 경우 선택')
-    allowed_projects = models.ManyToManyField('project.Project', related_name='allowed_projects',
-                                              blank=True, verbose_name='허용 프로젝트',
-                                              help_text='사용자가 조회 및 관리할 수 있는 프로젝트들을 선택합니다.')
-    default_project = models.ForeignKey('project.Project',
-                                        on_delete=models.SET_NULL, null=True,
-                                        blank=True, verbose_name='담당 메인 프로젝트',
-                                        help_text='선택한 프로젝트를 사용자의 각 화면에서 기본 프로젝트로 보여줍니다.')
-
-    class AuthChoice(models.TextChoices):
-        NONE = '0', '권한없음'
-        READ = '1', '읽기권한'
-        WRITE = '2', '쓰기권한'
-
-    contract = models.CharField('분양 계약 관리', max_length=1, choices=AuthChoice.choices, default='0')
-    payment = models.CharField('분양 수납 관리', max_length=1, choices=AuthChoice.choices, default='0')
-    notice = models.CharField('고객 고지 관리', max_length=1, choices=AuthChoice.choices, default='0')
-    project_ledger = models.CharField('회계 자금 관리', max_length=1, choices=AuthChoice.choices, default='0')
-    project_docs = models.CharField('문서 소송 관리', max_length=1, choices=AuthChoice.choices, default='0')
-    project = models.CharField('신규 프로젝트', max_length=1, choices=AuthChoice.choices, default='0')
-    project_site = models.CharField('부지 정보 관리', max_length=1, choices=AuthChoice.choices, default='0')
-    company_ledger = models.CharField('본사 회계 관리', max_length=1, choices=AuthChoice.choices, default='0')
-    company_docs = models.CharField('본사 문서 관리', max_length=1, choices=AuthChoice.choices, default='0')
-    human_resource = models.CharField('본사 인사 관리', max_length=1, choices=AuthChoice.choices, default='0')
-    company_settings = models.CharField('회사 관련설정', max_length=1, choices=AuthChoice.choices, default='0')
-    auth_manage = models.CharField('권한 설정 관리', max_length=1, choices=AuthChoice.choices, default='0')
-
-    def __str__(self):
-        return f'{self.user}'
-
-    class Meta:
-        ordering = ('-id',)
-        verbose_name = '사용자 정의 권한'
-        verbose_name_plural = '사용자 정의 권한'
-
-
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     name = models.CharField('성명', max_length=20, blank=True)

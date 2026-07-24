@@ -7,7 +7,6 @@ export declare interface User {
   is_staff: boolean
   work_manager: boolean
   date_joined: string
-  staff_auth: StaffAuth | null
   profile: null | {
     pk: number
     name: string
@@ -19,30 +18,10 @@ export declare interface User {
     meeting_confirmed_notification?: boolean
   }
   last_login: string | null
+  is_hq_financial_officer?: boolean
+  is_hq_staff?: boolean
 }
 
-type Auth = '0' | '1' | '2'
-
-export interface StaffAuth {
-  pk?: number
-  user?: number
-  is_hq_staff: boolean
-  is_pjt_staff: boolean
-  allowed_projects: number[]
-  default_project: number | null
-  contract: Auth
-  payment: Auth
-  notice: Auth
-  project_ledger: Auth
-  project_docs: Auth
-  project: Auth
-  project_site: Auth
-  company_ledger: Auth
-  company_docs: Auth
-  human_resource: Auth
-  company_settings: Auth
-  auth_manage: Auth
-}
 
 export type Profile = {
   [key: string]: undefined | number | number[] | null | string | boolean | File

@@ -1,7 +1,5 @@
 from rest_framework import permissions
 
-from accounts.models import StaffAuth
-
 
 class IsSuperUserOnly(permissions.BasePermission):
     def has_permission(self, request, view):
@@ -38,10 +36,7 @@ class IsStaffOnly(permissions.BasePermission):
         if request.user.is_superuser or getattr(request.user, 'work_manager', False):
             return True
         else:
-            try:
-                return request.user.staff_auth.is_hq_staff
-            except StaffAuth.DoesNotExist:
-                return False
+            return request.user.member_set.filter(project__type='1').exists()
 
 
 class IsStaffOrReadOnly(permissions.BasePermission):
@@ -52,10 +47,7 @@ class IsStaffOrReadOnly(permissions.BasePermission):
             if request.user.is_superuser or getattr(request.user, 'work_manager', False):
                 return True
             else:
-                try:
-                    return request.user.staff_auth.is_hq_staff
-                except StaffAuth.DoesNotExist:
-                    return False
+                return request.user.member_set.filter(project__type='1').exists()
 
 
 class IsProjectStaffOnly(permissions.BasePermission):
@@ -63,10 +55,7 @@ class IsProjectStaffOnly(permissions.BasePermission):
         if request.user.is_superuser or getattr(request.user, 'work_manager', False):
             return True
         else:
-            try:
-                return request.user.staff_auth.is_hq_staff or request.user.staff_auth.is_pjt_staff
-            except StaffAuth.DoesNotExist:
-                return False
+            return request.user.member_set.exists()
 
 
 class IsProjectStaffOrReadOnly(permissions.BasePermission):
@@ -77,10 +66,7 @@ class IsProjectStaffOrReadOnly(permissions.BasePermission):
             if request.user.is_superuser or getattr(request.user, 'work_manager', False):
                 return True
             else:
-                try:
-                    return request.user.staff_auth.is_hq_staff or request.user.staff_auth.is_pjt_staff
-                except StaffAuth.DoesNotExist:
-                    return False
+                return request.user.member_set.exists()
 
 
 class IsOwnerOnly(permissions.BasePermission):

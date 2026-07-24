@@ -13,10 +13,10 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.db import transaction
 
-from accounts.models import User, StaffAuth, Profile, DocScrape, PostScrape, Todo, PasswordResetToken
+from accounts.models import User, Profile, DocScrape, PostScrape, Todo, PasswordResetToken
 from apiV1.permissions.auth_perms import IsStaffOrReadOnly, IsOwnerOnly, IsWorkManagerOnly
 from ..pagination import PageNumberPaginationThreeThousand, PageNumberPaginationFifty
-from ..serializers.accounts import UserSerializer, StaffAuthInUserSerializer, ProfileSerializer, \
+from ..serializers.accounts import UserSerializer, ProfileSerializer, \
     DocScrapeSerializer, PostScrapeSerializer, TodoSerializer, ChangePasswordSerializer, \
     PasswordResetSerializer, PasswordResetTokenSerializer, AdminCreateUserSerializer
 
@@ -85,11 +85,6 @@ class UserViewSet(viewsets.ModelViewSet):
 
         return queryset.none()
 
-
-class StaffAuthViewSet(viewsets.ModelViewSet):
-    queryset = StaffAuth.objects.all()
-    serializer_class = StaffAuthInUserSerializer
-    permission_classes = (IsAuthenticated, IsStaffOrReadOnly)
 
 
 class ProfileViewSet(viewsets.ModelViewSet):
@@ -299,8 +294,7 @@ class AdminManageUserView(APIView):
                 user.set_password(password)
                 user.save()
 
-                # 2. 기본 스태프 권한 및 프로필 등록
-                StaffAuth.objects.create(user=user, is_pjt_staff=True)
+                # 2. 기본 프로필 등록
                 Profile.objects.create(user=user)
 
                 # 3. 메일 발송 로직 (mail_sending이 True인 경우)

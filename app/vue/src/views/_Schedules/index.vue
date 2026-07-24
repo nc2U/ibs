@@ -53,7 +53,7 @@ const newEvent = reactive<CalEvent>({
 
 const accountStore = useAccount()
 const handleDateSelect = (selectInfo: DateSelectArg) => {
-  if (accountStore.staffAuth) {
+  if (accountStore.isStaff) {
     mode.value = 'create'
     eventTitle.value = ''
     refFormModal.value.callModal()
@@ -100,7 +100,7 @@ const handleChange = (el: EventChangeArg) => {
 
 const refConfirmModal = ref()
 const handleEventClick = (clickInfo: EventClickArg) => {
-  if (accountStore.staffAuth) {
+  if (accountStore.isStaff) {
     mode.value = 'update'
     eventId.value = clickInfo.event.id
     eventTitle.value = clickInfo.event.title

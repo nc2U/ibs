@@ -11,6 +11,7 @@ import {
 } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useAccount } from '@/store/pinia/account'
+import { useWork } from '@/store/pinia/work_project'
 import { type RouteLocationNormalized, RouterLink, useRoute } from 'vue-router'
 import { CBadge, CNavGroup, CSidebarNav } from '@coreui/vue'
 import { CIcon } from '@coreui/icons-vue'
@@ -77,13 +78,11 @@ const AppSidebarNav = defineComponent({
 
     // Pinia store
     const account = useAccount()
-    const { isStaff, isComLedger } = storeToRefs(account)
 
     const predicates = computed(() => {
       // 권한 키별 접근 제어 매핑
       const authMap: Record<string, boolean> = {
-        comLedger: !!isComLedger.value,
-        isStaff: !!isStaff.value,
+        is_hq_financial_officer: account.superAuth || !!account.userInfo?.is_hq_financial_officer,
       }
 
       return [
