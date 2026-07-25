@@ -150,48 +150,80 @@ jobs:
 
           echo "Existing resources adopted into Helm management"
 
+      - name: Generate custom helm values
+        run: |
+          cat > ./values-dev-custom.yaml <<EOF
+          global:
+            dbPassword: "${{ secrets.DATABASE_PASS }}"
+            cicdServerHost: "${{ secrets.CICD_HOST }}"
+            cicdPath: "${{ secrets.CICD_PATH }}"
+            nfsServerHost: "${{ secrets.NFS_HOST }}"
+            nfsPath: "${{ secrets.NFS_PATH }}"
+            domainHost: "https://dev.${{ secrets.DOMAIN_NAME }}/"
+            emailHost: "${{ secrets.EMAIL_HOST }}"
+            emailHostUser: "${{ secrets.EMAIL_HOST_USER }}"
+            emailHostPassword: '${{ secrets.EMAIL_HOST_PASSWORD }}'
+            defaultFromEmail: "${{ secrets.EMAIL_DEFAULT_FROM }}"
+
+          postgres:
+            auth:
+              postgresPassword: "${{ secrets.DATABASE_PASS }}"
+              password: "${{ secrets.DATABASE_PASS }}"
+              replicationPassword: "${{ secrets.DATABASE_PASS }}"
+
+          cnpg:
+            enabled: true
+            backup:
+              enabled: true
+              s3:
+                enabled: true
+                bucket: "postgres-backup"
+                region: "ap-northeast-2"
+                endpoint: "http://${{ secrets.NFS_HOST }}:9000"
+                accessKeyId: "${{ secrets.NFS_USER }}"
+                secretAccessKey: "${{ secrets.NFS_PASS }}"
+
+          nginx:
+            ingress:
+              hosts:
+                - host: dev.${{ secrets.DOMAIN_NAME }}
+                  paths:
+                    - path: /
+                      pathType: Prefix
+                - host: dev.brdnc.co.kr
+                  paths:
+                    - path: /
+                      pathType: Prefix
+              tls:
+                - secretName: web-devbox-kr-cert
+                  hosts:
+                    - dev.${{ secrets.DOMAIN_NAME }}
+                    - dev.brdnc.co.kr
+
+          web:
+            imageConfigMaps:
+              awsStorageBucketName: "ibs-media-dev"
+              awsS3EndpointUrl: "https://s3.dyibs.com"
+              imageSecrets:
+                awsAccessKeyId: "dev-user"
+                awsSecretAccessKey: "dev-secret-password-123"
+          EOF
+
       - name: Deploy with Helm
         run: |
-          # Helm upgrade with new image tag
+          # Helm upgrade with new image tag and custom values file
           helm upgrade ${HELM_RELEASE_NAME} ./deploy/helm \
             --install \
             --namespace ${KUBE_NAMESPACE} \
             --create-namespace \
             --values ./deploy/helm/values-dev.yaml \
+            --values ./values-dev-custom.yaml \
             --set web.image.tag=${{ steps.meta.outputs.image_tag }} \
             --set nginx.web.image.tag=${{ steps.meta.outputs.image_tag }} \
             --history-max 5 \
             --wait \
             --timeout 20m \
             --atomic \
-            --set global.dbPassword=${{ secrets.DATABASE_PASS }} \
-            --set global.cicdServerHost=${{ secrets.CICD_HOST }} \
-            --set global.cicdPath=${{ secrets.CICD_PATH }} \
-            --set global.nfsServerHost=${{ secrets.NFS_HOST }} \
-            --set global.nfsPath=${{ secrets.NFS_PATH }} \
-            --set global.domainHost=https://dev.${{ secrets.DOMAIN_NAME }}/ \
-            --set global.emailHost=${{ secrets.EMAIL_HOST }} \
-            --set global.emailHostUser=${{ secrets.EMAIL_HOST_USER }} \
-            --set-string global.emailHostPassword='${{ secrets.EMAIL_HOST_PASSWORD }}' \
-            --set global.defaultFromEmail=${{ secrets.EMAIL_DEFAULT_FROM }} \
-            --set postgres.auth.postgresPassword=${{ secrets.DATABASE_PASS }} \
-            --set postgres.auth.password=${{ secrets.DATABASE_PASS }} \
-            --set postgres.auth.replicationPassword=${{ secrets.DATABASE_PASS }} \
-            --set cnpg.backup.s3.endpoint="http://${{ secrets.NFS_HOST }}:9000" \
-            --set cnpg.backup.s3.accessKeyId="${{ secrets.NFS_USER }}" \
-            --set cnpg.backup.s3.secretAccessKey="${{ secrets.NFS_PASS }}" \
-            --set 'nginx.ingress.hosts[0].host'=dev.${{ secrets.DOMAIN_NAME }} \
-            --set 'nginx.ingress.hosts[1].host'=dev.brdnc.co.kr \
-            --set 'nginx.ingress.hosts[0].paths[0].path'=/ \
-            --set 'nginx.ingress.hosts[0].paths[0].pathType'=Prefix \
-            --set 'nginx.ingress.hosts[1].paths[0].path'=/ \
-            --set 'nginx.ingress.hosts[1].paths[0].pathType'=Prefix \
-            --set 'nginx.ingress.tls[0].hosts[0]'=dev.${{ secrets.DOMAIN_NAME }} \
-            --set 'nginx.ingress.tls[0].secretName'=web-devbox-kr-cert \
-            --set web.imageConfigMaps.awsStorageBucketName="ibs-media-dev" \
-            --set web.imageConfigMaps.awsS3EndpointUrl="https://s3.dyibs.com" \
-            --set web.imageConfigMaps.imageSecrets.awsAccessKeyId="dev-user" \
-            --set web.imageConfigMaps.imageSecrets.awsSecretAccessKey="dev-secret-password-123" \
             --cleanup-on-fail
 
       - name: Wait for rollout completion

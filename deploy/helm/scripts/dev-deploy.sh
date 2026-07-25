@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -e
 
 # .env 스크립트가 있는 디렉터리 경로 계산
 # scripts/ -> helm/ 로 이동
