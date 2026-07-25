@@ -24,7 +24,18 @@ jobs:
           username: ${{ secrets.NFS_USER }}
           password: ${{ secrets.NFS_PASS }}
           command: |
-            sh "${{ secrets.NFS_PATH }}"/prod/volume/backups/copy_script.sh
+            PROD_DIR="${{ secrets.NFS_PATH }}/prod/volume/backups"
+            DEV_DIR="${{ secrets.NFS_PATH }}/dev/volume/backups"
+            mkdir -p "$DEV_DIR"
+            LATEST_DUMP=$(ls -1t "$PROD_DIR"/ibs-backup-postgres-*.dump 2>/dev/null | head -n 1)
+            if [ -n "$LATEST_DUMP" ]; then
+              echo "Copying latest dump: $LATEST_DUMP -> $DEV_DIR"
+              cp "$LATEST_DUMP" "$DEV_DIR"/
+              echo "✅ Dump copy completed"
+            else
+              echo "❌ Error: No dump file found in $PROD_DIR"
+              exit 1
+            fi
 
       # CloudNativePG restore to Dev
       - name: Restore database to dev environment
