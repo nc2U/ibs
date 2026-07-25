@@ -41,7 +41,7 @@ jobs:
 
             # Backup values-prod-custom.yaml if exists
             if [ -f "./helm/values-prod-custom.yaml" ]; then
-              cp ./helm/values-prod-custom.yaml ../values-prod-custom.yaml.bak
+              cp ./helm/values-prod-custom.yaml ./values-prod-custom.yaml.bak
               echo "Backed up values-prod-custom.yaml"
             fi
 
@@ -70,8 +70,8 @@ jobs:
             cd ${{ secrets.CICD_PATH }}/prod/deploy
 
             # Build values-prod-custom.yaml dynamically using github secrets if not exists
-            if [ ! -f "../values-prod-custom.yaml" ]; then
-              cat > ../values-prod-custom.yaml <<EOF
+            if [ ! -f "./values-prod-custom.yaml" ]; then
+              cat > ./values-prod-custom.yaml <<EOF
             # Local Custom overrides for Production CNPG (Synology MinIO)
             cnpg:
               enabled: true

@@ -45,9 +45,9 @@ if [ -z "$CICD_HOST" ] || [ -z "$CICD_USER" ] || [ -z "$CICD_PATH" ]; then
   exit 1
 fi
 
-TARGET_DIR="${CICD_PATH}/${ENV}"
+TARGET_DIR="${CICD_PATH}/${ENV}/deploy"
 TARGET_FILE="${TARGET_DIR}/values-${ENV}-custom.yaml"
-DEPLOY_HELM_DIR="${TARGET_DIR}/deploy/helm"
+DEPLOY_HELM_DIR="${TARGET_DIR}/helm"
 
 echo "==================================================="
 echo " Syncing custom values to server (${ENV})"
