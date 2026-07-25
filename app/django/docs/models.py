@@ -4,6 +4,7 @@ from django.conf import settings
 from django.db import models
 from django.utils import timezone
 from django.contrib.postgres.indexes import GinIndex
+from django.core.files.storage import default_storage
 
 from _utils.file_cleanup import file_cleanup_signals
 from _utils.file_upload import get_docs_file_path, get_docs_image_path, get_letter_pdf_path, populate_file_meta
@@ -109,7 +110,7 @@ class Link(models.Model):
 
 class File(models.Model):
     docs = models.ForeignKey(Document, on_delete=models.CASCADE, default=None, verbose_name='문서', related_name='files')
-    file = models.FileField(upload_to=get_docs_file_path, verbose_name='파일')
+    file = models.FileField(upload_to=get_docs_file_path, storage=default_storage, verbose_name='파일')
     file_name = models.CharField('파일명', max_length=255, blank=True, db_index=True)
     file_type = models.CharField('타입', max_length=80, blank=True)
     file_size = models.PositiveBigIntegerField('사이즈', blank=True, null=True)
@@ -134,7 +135,7 @@ file_cleanup_signals(File)  # 파일인스턴스 직접 삭제시
 class Image(models.Model):
     docs = models.ForeignKey(Document, on_delete=models.CASCADE, default=None, verbose_name='문서',
                              related_name='images')
-    image = models.ImageField(upload_to=get_docs_image_path, verbose_name='이미지')
+    image = models.ImageField(upload_to=get_docs_image_path, storage=default_storage, verbose_name='이미지')
     image_name = models.CharField('파일명', max_length=255, blank=True, db_index=True)
     image_type = models.CharField('타입', max_length=30, blank=True)
     image_size = models.PositiveBigIntegerField('사이즈', blank=True, null=True)
@@ -250,7 +251,7 @@ class OfficialLetter(models.Model):
     content = models.TextField('내용')  # 내용
     issue_date = models.DateField('발신일자')  # 발신일자
     pdf_file = models.FileField('PDF 파일', upload_to=get_letter_pdf_path,
-                                null=True, blank=True)  # 생성된 PDF
+                                storage=default_storage, null=True, blank=True)  # 생성된 PDF
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
                                 null=True, verbose_name='작성자', related_name='created_letters')  # 메타데이터
     updator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,

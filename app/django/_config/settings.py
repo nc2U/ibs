@@ -228,8 +228,8 @@ USE_I18N = True
 
 # ── Object Storage (MinIO S3-compatible) ────────────────────────────────────
 AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME', default='')
-AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID', default='')
-AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY', default='')
+AWS_S3_ACCESS_KEY_ID = config('AWS_S3_ACCESS_KEY_ID', default='')
+AWS_S3_SECRET_ACCESS_KEY = config('AWS_S3_SECRET_ACCESS_KEY', default='')
 AWS_REGION = config('AWS_REGION', default='ap-northeast-2')
 
 # MinIO 전용 엔드포인트 (설정 시 MinIO, 미설정 시 AWS S3 기본값)
@@ -255,6 +255,15 @@ STATIC_ROOT = BASE_DIR / 'static'
 STATICFILES_DIRS = [BASE_DIR / '_assets']
 
 _use_s3 = bool(AWS_STORAGE_BUCKET_NAME and AWS_S3_ENDPOINT_URL)
+
+STORAGES = {
+    "default": {
+        "BACKEND": "_config.asset_storage.MediaStorage" if _use_s3 else "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}
 
 DEFAULT_FILE_STORAGE = ('_config.asset_storage.MediaStorage'
                         if _use_s3 else

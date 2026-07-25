@@ -51,8 +51,8 @@ services:
       DATABASE_USER: my-db-user # 실제 데이터로 수정
       DATABASE_PASSWORD: my-db-password # 실제 데이터로 수정
       AWS_STORAGE_BUCKET_NAME: ibs-media
-      AWS_ACCESS_KEY_ID: readonly-dev
-      AWS_SECRET_ACCESS_KEY: 'dev-secret-password-123'
+      AWS_S3_ACCESS_KEY_ID: readonly-dev
+      AWS_S3_SECRET_ACCESS_KEY: 'dev-secret-password-123'
       AWS_S3_ENDPOINT_URL: https://s3.dyibs.com
       AWS_REGION: ap-northeast-2
       AWS_QUERYSTRING_EXPIRE: 3600
@@ -85,8 +85,8 @@ services:
       DATABASE_USER: my-db-user # 실제 데이터로 수정
       DATABASE_PASSWORD: my-db-password # 실제 데이터로 수정
       AWS_STORAGE_BUCKET_NAME: ibs-media
-      AWS_ACCESS_KEY_ID: readonly-dev
-      AWS_SECRET_ACCESS_KEY: 'dev-secret-password-123'
+      AWS_S3_ACCESS_KEY_ID: readonly-dev
+      AWS_S3_SECRET_ACCESS_KEY: 'dev-secret-password-123'
       AWS_S3_ENDPOINT_URL: https://s3.dyibs.com
       AWS_REGION: ap-northeast-2
       AWS_QUERYSTRING_EXPIRE: 3600

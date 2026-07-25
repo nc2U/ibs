@@ -17,8 +17,8 @@ data:
   {{- with  .Values.imageConfigMaps }}
   DJANGO_SETTINGS_MODULE: "{{ .djangoSettingsModule }}"
   AWS_STORAGE_BUCKET_NAME: "{{ .awsStorageBucketName }}"
-  AWS_ACCESS_KEY_ID: "{{ .imageSecrets.awsAccessKeyId }}"
-  AWS_SECRET_ACCESS_KEY: "{{ .imageSecrets.awsSecretAccessKey }}"
+  AWS_S3_ACCESS_KEY_ID: "{{ .imageSecrets.awsAccessKeyId }}"
+  AWS_S3_SECRET_ACCESS_KEY: "{{ .imageSecrets.awsSecretAccessKey }}"
   AWS_S3_ENDPOINT_URL: "{{ .awsS3EndpointUrl }}"
   AWS_REGION: "{{ .awsRegion | default "ap-northeast-2" }}"
   AWS_QUERYSTRING_EXPIRE: "{{ .awsQuerystringExpire | default "3600" }}"
