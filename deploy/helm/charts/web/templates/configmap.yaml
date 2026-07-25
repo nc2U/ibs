@@ -6,6 +6,8 @@ metadata:
     {{- include "web.labels" . | nindent 4 }}
 data:
   DATABASE_TYPE: "{{ .Values.global.dbType }}"
+  DATABASE_NAME: "{{ .Values.global.databaseName | default "ibs" }}"
+  DATABASE_USER: "{{ .Values.global.databaseUser | default "ibs" }}"
   NAMESPACE: "{{ .Release.Namespace }}"
   DJANGO_SETTINGS_MODULE: "_config.settings"
 

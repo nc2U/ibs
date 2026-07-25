@@ -1,6 +1,8 @@
 global:
   appMode: dev
   dbType: "postgres" # postgres | mariadb
+  databaseName: "ibs"
+  databaseUser: "ibs"
   dbPassword: "my-secret"
   nfsServerHost: "nfs-server-host"
   nfsPath: "nfs-path" # nfs volume path
