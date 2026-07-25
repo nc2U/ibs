@@ -13,18 +13,22 @@ set -e
 # 인자 파싱
 ENV_ARG=""
 AUTO_MODE=false
+DIRECT_MODE=false
 
 for arg in "$@"; do
   case "$arg" in
     --auto)
       AUTO_MODE=true
       ;;
+    --direct)
+      DIRECT_MODE=true
+      ;;
     dev|prod)
       ENV_ARG="$arg"
       ;;
     *)
       echo "❌ Error: Invalid argument '$arg'"
-      echo "Usage: $0 [dev|prod] [--auto]"
+      echo "Usage: $0 [dev|prod] [--auto] [--direct]"
       exit 1
       ;;
   esac
@@ -58,6 +62,47 @@ echo "Namespace: $NAMESPACE"
 echo "Backup PVC: $BACKUP_PVC"
 echo "Release: $RELEASE"
 echo ""
+
+# Dev 환경이고 --direct 모드가 아닐 경우 GitHub Actions (db_sync.yml) 트리거
+if [ "$NAMESPACE" = "ibs-dev" ] && [ "$DIRECT_MODE" = false ]; then
+  # .env 수동 로딩
+  if [ -f "$SCRIPT_DIR/.env" ]; then
+    while IFS='=' read -r key value || [ -n "$key" ]; do
+      case "$key" in
+        ''|\#*) ;;
+        *)
+          clean_key="$(echo "$key" | sed -e 's/^\s*//' -e 's/\s*$//')"
+          clean_value=$(echo "$value" | sed -e 's/^\\s*[\"\\'\\']//' -e 's/[\"\\'\\']\\s*$//')
+          export "$clean_key=$clean_value"
+          ;;
+      esac
+    done < "$SCRIPT_DIR/.env"
+  fi
+
+  if [ -n "$GITHUB_TOKEN" ]; then
+    echo "=========================================="
+    echo "🚀 Triggering GitHub Actions: Database Dev Sync (db_sync.yml)"
+    echo "=========================================="
+    echo "This will restore DB data & sync S3 media files (ibs-media -> ibs-media-dev)."
+
+    RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+      -H "Accept: application/vnd.github+json" \
+      -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+      https://api.github.com/repos/austinkho/ibs/actions/workflows/db_sync.yml/dispatches \
+      -d '{"ref":"develop"}')
+
+    HTTP_STATUS=$(echo "$RESPONSE" | tail -n1)
+    if [ "$HTTP_STATUS" = "204" ]; then
+      echo "✅ Successfully triggered GitHub Actions db_sync.yml!"
+      echo "Check progress at: https://github.com/austinkho/ibs/actions"
+      exit 0
+    else
+      echo "⚠️ Failed to trigger GitHub Actions (HTTP $HTTP_STATUS). Falling back to direct restore..."
+    fi
+  else
+    echo "ℹ️ GITHUB_TOKEN is not set in .env. Proceeding with direct DB restore..."
+  fi
+fi
 
 # 사용 가능한 백업 파일 목록 조회 (임시 pod 사용)
 echo "📋 Available backup files:"

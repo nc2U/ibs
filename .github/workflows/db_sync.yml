@@ -41,8 +41,8 @@ jobs:
             echo "Restoring production data to dev environment..."
             echo "Using auto mode: latest backup will be selected automatically"
 
-            # --auto 옵션으로 비대화형 모드 실행
-            sh manual-restore.sh dev --auto
+            # --auto --direct 옵션으로 비대화형 직접 모드 실행
+            sh manual-restore.sh dev --auto --direct
 
             if [ $? -eq 0 ]; then
               echo "✅ Database sync to dev completed successfully"
