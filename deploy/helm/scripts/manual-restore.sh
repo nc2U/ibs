@@ -393,7 +393,8 @@ spec:
             BEGIN
                 FOR r IN (SELECT c.relname AS tablename FROM pg_class c
                          WHERE c.relkind = 'r'
-                         AND c.relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = '\$SCHEMA'))
+                         AND c.relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = '\$SCHEMA')
+                         AND c.relname != 'django_migrations')
                 LOOP
                     BEGIN
                         SELECT EXISTS (
