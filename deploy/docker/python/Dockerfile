@@ -1,5 +1,7 @@
 # ========================================
 # Stage 1: Builder
+# Rebuild trigger for latest settings.py MinIO S3 custom domain fix
+# Multi-stage build for Django Application
 # ========================================
 FROM python:3.12 AS builder
 
