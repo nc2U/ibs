@@ -9,11 +9,10 @@ fullnameOverride: "postgres"
 
 # PostgreSQL Image Configuration
 image:
-  # CNPG 공식 최적화 이미지 사용 (barman-cloud-wal-archive 등 S3 백업 도구 내장)
-  # docker.io/postgres 공식 이미지는 barman 도구가 없어 WAL 아카이빙 불가
-  registry: ghcr.io
-  repository: cloudnative-pg/postgresql
-  tag: "18.0"   # PostgreSQL 버전은 기존과 동일하게 유지 (데이터 파일 호환성 보장)
+  # Using an official PostgreSQL image from Docker Hub
+  registry: docker.io
+  repository: postgres
+  tag: "18.0"
   pullPolicy: IfNotPresent
 
 # Authentication Configuration
