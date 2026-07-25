@@ -366,8 +366,8 @@ class OfficialLetterViewSet(viewsets.ModelViewSet):
         queryset = super().get_queryset()
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset
-        if hasattr(user, 'staff_auth') and user.staff_auth.company:
-            return queryset.filter(company=user.staff_auth.company)
+        if hasattr(user, 'staff') and user.staff.company:
+            return queryset.filter(company=user.staff.company)
         return queryset.none()
 
     def perform_create(self, serializer):

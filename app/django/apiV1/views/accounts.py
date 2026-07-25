@@ -42,11 +42,8 @@ class UserViewSet(viewsets.ModelViewSet):
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset
 
-        try:
-            if hasattr(user, 'staff_auth') and user.staff_auth.is_hq_staff:
-                return queryset
-        except AttributeError:
-            pass
+        if user.member_set.filter(project__type='1').exists():
+            return queryset
 
         # 1. 사용자의 프로젝트별 user_visible 권한 수준 판별
         from work.models.project import Member
