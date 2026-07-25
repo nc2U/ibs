@@ -20,7 +20,7 @@ celery:
 image:
   repository: nc2u/django
   tag: "latest" # Overridden by GitHub Actions with git SHA
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
 
 imagePullSecrets: [ ]
 nameOverride:
