@@ -14,21 +14,9 @@ data:
   NAMESPACE: "{{ .Release.Namespace }}"
   DJANGO_SETTINGS_MODULE: "_config.settings"
 
-  {{- with .Values.imageConfigMaps }}
-  AWS_STORAGE_BUCKET_NAME: "{{ .awsStorageBucketName | default "ibs-media" }}"
-  AWS_S3_ENDPOINT_URL: "{{ .awsS3EndpointUrl | default "https://s3.dyibs.com" }}"
-  {{- if .awsRegion }}
-  AWS_REGION: "{{ .awsRegion }}"
-  {{- end }}
-  {{- if .awsQuerystringExpire }}
-  AWS_QUERYSTRING_EXPIRE: "{{ .awsQuerystringExpire }}"
-  {{- end }}
-  {{- if .imageSecrets }}
-  {{- if .imageSecrets.awsAccessKeyId }}
-  AWS_S3_ACCESS_KEY_ID: "{{ .imageSecrets.awsAccessKeyId }}"
-  {{- end }}
-  {{- if .imageSecrets.awsSecretAccessKey }}
-  AWS_S3_SECRET_ACCESS_KEY: "{{ .imageSecrets.awsSecretAccessKey }}"
-  {{- end }}
-  {{- end }}
-  {{- end }}
+  AWS_STORAGE_BUCKET_NAME: "{{ .Values.web.imageConfigMaps.awsStorageBucketName | default .Values.awsStorageBucketName | default "ibs-media" }}"
+  AWS_S3_ENDPOINT_URL: "{{ .Values.web.imageConfigMaps.awsS3EndpointUrl | default .Values.awsS3EndpointUrl | default "https://s3.dyibs.com" }}"
+  AWS_REGION: "{{ .Values.web.imageConfigMaps.awsRegion | default .Values.awsRegion | default "ap-northeast-2" }}"
+  AWS_QUERYSTRING_EXPIRE: "{{ .Values.web.imageConfigMaps.awsQuerystringExpire | default .Values.awsQuerystringExpire | default "3600" }}"
+  AWS_S3_ACCESS_KEY_ID: "{{ .Values.web.imageConfigMaps.imageSecrets.awsAccessKeyId | default .Values.imageSecrets.awsAccessKeyId | default "austin" }}"
+  AWS_S3_SECRET_ACCESS_KEY: "{{ .Values.web.imageConfigMaps.imageSecrets.awsSecretAccessKey | default .Values.imageSecrets.awsSecretAccessKey | default "$Sc1965112" }}"
