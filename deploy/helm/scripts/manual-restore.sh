@@ -8,7 +8,10 @@
 #   sh manual-restore.sh dev --auto   # 자동 모드 (최신 백업 파일 사용)
 #   sh manual-restore.sh              # 기본값: dev, 대화형
 #
-set -e
+# 디렉터리 경로 계산
+SCRIPT_PATH="$(cd "$(dirname "$0")" && pwd)"
+CURR_DIR="$(cd "$SCRIPT_PATH/.." && pwd)"
+SCRIPT_DIR="$(cd "$CURR_DIR/../../app/django" && pwd)"
 
 # 인자 파싱
 ENV_ARG=""
