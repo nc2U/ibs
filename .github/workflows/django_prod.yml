@@ -150,90 +150,29 @@ jobs:
 
           echo "Existing resources adopted into Helm management"
 
-      - name: Generate custom helm values
-        run: |
-          cat > ./values-prod-custom.yaml <<EOF
-          global:
-            dbPassword: "${{ secrets.DATABASE_PASS }}"
-            cicdServerHost: "${{ secrets.CICD_HOST }}"
-            cicdPath: "${{ secrets.CICD_PATH }}"
-            nfsServerHost: "${{ secrets.NFS_HOST }}"
-            nfsPath: "${{ secrets.NFS_PATH }}"
-            domainHost: "https://ibs.${{ secrets.DOMAIN_NAME }}/"
-            emailHost: "${{ secrets.EMAIL_HOST }}"
-            emailHostUser: "${{ secrets.EMAIL_HOST_USER }}"
-            emailHostPassword: '${{ secrets.EMAIL_HOST_PASSWORD }}'
-            defaultFromEmail: "${{ secrets.EMAIL_DEFAULT_FROM }}"
+      # Copy helm chart files to CI/CD server
+      - name: Copy helm to CI/CD server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.CICD_HOST }}
+          username: ${{ secrets.CICD_USER }}
+          password: ${{ secrets.CICD_PASS }}
+          source: 'deploy/helm,deploy/kubectl'
+          target: ${{ secrets.CICD_PATH }}/prod/
 
-          erpRedirect:
-            enabled: true
-
-          postgres:
-            auth:
-              postgresPassword: "${{ secrets.DATABASE_PASS }}"
-              password: "${{ secrets.DATABASE_PASS }}"
-              replicationPassword: "${{ secrets.DATABASE_PASS }}"
-
-          cnpg:
-            enabled: true
-            backup:
-              enabled: true
-              s3:
-                enabled: true
-                bucket: "postgres-backup"
-                region: "ap-northeast-2"
-                endpoint: "http://${{ secrets.NFS_HOST }}:9000"
-                accessKeyId: "${{ secrets.NFS_USER }}"
-                secretAccessKey: "${{ secrets.NFS_PASS }}"
-
-          nginx:
-            ingress:
-              hosts:
-                - host: ibs.${{ secrets.DOMAIN_NAME }}
-                  paths:
-                    - path: /
-                      pathType: Prefix
-                - host: ibs.dyibs.co.kr
-                  paths:
-                    - path: /
-                      pathType: Prefix
-                - host: ibs.brdnc.co.kr
-                  paths:
-                    - path: /
-                      pathType: Prefix
-              tls:
-                - secretName: web-devbox-kr-cert
-                  hosts:
-                    - ibs.${{ secrets.DOMAIN_NAME }}
-                    - ibs.dyibs.co.kr
-                    - ibs.brdnc.co.kr
-                    - erp.${{ secrets.DOMAIN_NAME }}
-
-          web:
-            imageConfigMaps:
-              awsStorageBucketName: "ibs-media"
-              awsS3EndpointUrl: "https://s3.dyibs.com"
-              imageSecrets:
-                awsAccessKeyId: "${{ secrets.AWS_ACCESS_KEY_ID }}"
-                awsSecretAccessKey: "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
-          EOF
-
-      - name: Deploy with Helm
-        run: |
-          # Helm upgrade with new image tag and custom values file
-          helm upgrade ${HELM_RELEASE_NAME} ./deploy/helm \
-            --install \
-            --namespace ${KUBE_NAMESPACE} \
-            --create-namespace \
-            --values ./deploy/helm/values-prod.yaml \
-            --values ./values-prod-custom.yaml \
-            --set web.image.tag=${{ steps.meta.outputs.image_tag }} \
-            --set nginx.web.image.tag=${{ steps.meta.outputs.image_tag }} \
-            --history-max 5 \
-            --wait \
-            --timeout 20m \
-            --atomic \
-            --cleanup-on-fail
+      # Restore symlink and deploy with prod-deploy.sh
+      - name: Deploy with Helm via prod-deploy.sh
+        uses: garygrossgarten/github-action-ssh@release
+        with:
+          host: ${{ secrets.CICD_HOST }}
+          username: ${{ secrets.CICD_USER }}
+          password: ${{ secrets.CICD_PASS }}
+          command: |
+            cd ${{ secrets.CICD_PATH }}/prod/deploy
+            ln -sf ../values-prod-custom.yaml ./helm/values-prod-custom.yaml 2>/dev/null || true
+            cd helm
+            echo "Running scripts/prod-deploy.sh..."
+            sh scripts/prod-deploy.sh
 
       - name: Wait for rollout completion
         run: |
