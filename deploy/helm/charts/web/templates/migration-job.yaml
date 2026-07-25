@@ -52,8 +52,8 @@ spec:
               while [ $DB_RETRY_COUNT -lt $DB_RETRIES ]; do
                 echo "Checking database connection (attempt $((DB_RETRY_COUNT + 1))/$DB_RETRIES)..."
 
-                # Try to connect to database using Django's showmigrations command
-                if python manage.py showmigrations --database default > /dev/null 2>&1; then
+                # Try to connect to database safely using Django's connection check without DDL side-effects
+                if python -c "import django; django.setup(); from django.db import connection; connection.ensure_connection()" > /dev/null 2>&1; then
                   echo "Database connection successful!"
                   break
                 fi
@@ -62,7 +62,7 @@ spec:
                 if [ $DB_RETRY_COUNT -eq $DB_RETRIES ]; then
                   echo "ERROR: Database is not ready after $DB_RETRIES attempts (20 minutes)"
                   echo "Last connection attempt output:"
-                  python manage.py showmigrations --database default 2>&1 || true
+                  python -c "import django; django.setup(); from django.db import connection; connection.ensure_connection()" 2>&1 || true
                   exit 1
                 fi
 
