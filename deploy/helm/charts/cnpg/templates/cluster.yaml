@@ -173,10 +173,6 @@ spec:
         jobs: {{ . }}
         {{- end }}
     retentionPolicy: {{ .Values.backup.retentionPolicy | default "30d" | quote }}
-    {{- with .Values.backup.jobTTL }}
-    # TTL for completed backup jobs (in seconds)
-    backupJobTTL: {{ int . }}
-    {{- end }}
   {{- end }}
 
   # Monitoring
@@ -241,11 +237,6 @@ spec:
   cluster:
     name: {{ include "cnpg.clusterName" . }}
   immediate: false
-  {{- with .Values.backup.jobTTL }}
-  # TTL for completed backup jobs (in seconds)
-  # Jobs will be automatically deleted after this time
-  backupJobTTL: {{ int . }}
-  {{- end }}
 {{- end }}
 
 {{- if .Values.pgbouncer.enabled }}
