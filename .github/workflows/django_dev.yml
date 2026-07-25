@@ -39,7 +39,7 @@ jobs:
       - name: Strip version pins for dev build
         run: |
           echo "🔧 Stripping version pins from requirements.txt for dev build..."
-          sed -E 's/^([a-zA-Z0-9_\-\[\.]+).*/\1/' ./deploy/docker/python/requirements.txt > ./deploy/docker/python/requirements.txt.tmp
+          sed -E 's/[<>=!~]=?.*//' ./deploy/docker/python/requirements.txt > ./deploy/docker/python/requirements.txt.tmp
           mv ./deploy/docker/python/requirements.txt.tmp ./deploy/docker/python/requirements.txt
 
       - name: Log in to Docker Hub

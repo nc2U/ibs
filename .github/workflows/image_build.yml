@@ -34,9 +34,9 @@ jobs:
             echo "SHA_TAG=dev-${{ github.sha }}" >> $GITHUB_ENV
             echo "DEPLOY_SCRIPT=dev-deploy.sh" >> $GITHUB_ENV
           
-            # Dev 환경: requirements.txt 에서 버전 지정을 제거하여 최신 패키지 설치 유도
+            # Dev 환경: requirements.txt 에서 버전 지정을 제거하여 최신 패키지 설치 유도 (extras 대괄호 보존)
             echo "🔧 Stripping version pins from requirements.txt for dev build..."
-            sed -E 's/^([a-zA-Z0-9_\-\[\.]+).*/\1/' ./deploy/docker/python/requirements.txt > ./deploy/docker/python/requirements.txt.tmp
+            sed -E 's/[<>=!~]=?.*//' ./deploy/docker/python/requirements.txt > ./deploy/docker/python/requirements.txt.tmp
             mv ./deploy/docker/python/requirements.txt.tmp ./deploy/docker/python/requirements.txt
           fi
 
