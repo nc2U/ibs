@@ -253,8 +253,7 @@ AWS_S3_ADDRESSING_STYLE = 'path'
 AWS_DEFAULT_ACL = None
 AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400'}
 
-# MinIO 사용 시 custom domain 불필요 (endpoint_url로 직접 접근)
-AWS_S3_CUSTOM_DOMAIN = None
+# MinIO 사용 시 custom domain 설정 자동 처리 완료
 # ─────────────────────────────────────────────────────────────────────────────
 
 STATIC_URL = '/static/'

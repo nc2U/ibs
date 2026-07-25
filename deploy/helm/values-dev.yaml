@@ -6,11 +6,6 @@ global:
   nfsPath: "nfs-path" # nfs volume path
   cicdServerHost: "cicd-server-host"
   cicdPath: "cicd-path" # cicd server path
-  domainHost: "http://abc.com/"
-  emailHost: "smtp-server.com" # your-smtp-server.com
-  emailHostUser: "email@example.com" # 'your-email@example.com
-  emailHostPassword: "my-email-host-secret" # your-email-password
-  defaultFromEmail: "email@example.com"
   database:
     type: "postgres"
     cnpg:

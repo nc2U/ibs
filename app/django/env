@@ -1,52 +1,57 @@
 ### FOR DJANGO APP ----------------------------------------------------------------------------------
 SECRET_KEY=                   # required, Set random characters of at least 50 characters.
 DEBUG=                        # default=False
-ALLOWED_HOSTS=                # default=*, set the like this -> host1,host2,host3...
-CSRF_TRUSTED_ORIGINS=         # default='http://localhost:8000'
+ALLOWED_HOSTS=                # default=*, set like this -> host1,host2,host3...
+CSRF_TRUSTED_ORIGINS=         # default='https://ibs.dyibs.com'
 
-DATABASE_TYPE=                # default=postgres, set the helm chart values.global.dbType
-DATABASE_USER=                # required, This name is referenced when releasing helm.
-DATABASE_PASSWORD=            # default='', set the helm chart values.global.dbPassword
+DATABASE_USER=                # default=ibs
+DATABASE_PASS=                # default=secret
 
-DOMAIN_HOST=                  # default=http://localhost/, set the helm chart values.global.domainHost
-DOMAIN_NAME=                  # default=localhost, Representative domain when using multiple hosts via Ingress
-SESSION_COOKIE_DOMAIN =       # ".domain.com" // 서브도메인간 이동 시 세션 유지
-CSRF_COOKIE_DOMAIN =          # ".domain.com" // 서브도메인간 이동 시 세션 유지
+DOMAIN_HOST=                  # default=https://ibs.dyibs.com/
+DOMAIN_NAME=                  # default=ibs.dyibs.com
+SESSION_COOKIE_DOMAIN=        # ".dyibs.com" // 서브도메인 간 이동 시 세션 유지
+CSRF_COOKIE_DOMAIN=           # ".dyibs.com" // 서브도메인 간 이동 시 CSRF 유지
 
-EMAIL_HOST=                   # required, set the helm chart values.global.emailHost
-EMAIL_HOST_USER=              # required, set the helm chart values.global.emailHostUser
-EMAIL_HOST_PASSWORD=          # required, set the helm chart values.global.emailHostPassword
-DEFAULT_FROM_EMAIL=           # required, set the helm chart values.global.defaultFromEmail
+EMAIL_HOST=                   # required, ex: mail.dyibs.com
+EMAIL_HOST_USER=              # required, ex: austin
+EMAIL_HOST_PASSWORD=          # required, ex: '$Sc1965112'
+EMAIL_DEFAULT_FROM=           # required, ex: '대영아이비에스 관리자 <info@dyibs.com>'
 SLACK_NOTIFICATIONS_ENABLED=  # default=True, IBS work notifications
 
 ### FOR OBJECT STORAGE (MinIO / S3) ----------------------------------------------------
-AWS_STORAGE_BUCKET_NAME=ibs-media-dev
-AWS_S3_ACCESS_KEY_ID=dev-user
-AWS_S3_SECRET_ACCESS_KEY=dev-secret-password-123
-AWS_S3_ENDPOINT_URL=https://s3.dyibs.com
-AWS_REGION=ap-northeast-2
-AWS_QUERYSTRING_EXPIRE=3600
+AWS_STORAGE_BUCKET_NAME=      # ibs-media (prod) | ibs-media-dev (dev)
+AWS_S3_ACCESS_KEY_ID=         # austin
+AWS_S3_SECRET_ACCESS_KEY=     # '$Sc1965112'
+AWS_S3_ENDPOINT_URL=          # https://s3.dyibs.com
+AWS_REGION=                   # ap-northeast-2
+AWS_QUERYSTRING_EXPIRE=       # 3600
 
 ### FOR DEPLOYMENT ------------------------------------------------------------------------------------
-CICD_HOST=                  # required, nfs server for django app source & database data
-CICD_USER=
-CICD_PASS=
-CICD_PATH=
+CICD_HOST=                    # 49.247.206.58 (Master NVMe SSD Server)
+CICD_USER=                    # ibs
+CICD_PASS=                    # 0088
+CICD_PATH=                    # /nfs/app/ibs
 
-NFS_HOST=                   # required, nfs server for database backup files & django media files
-NFS_USER=
-NFS_PASS=
-NFS_PATH=                   # path where set the django media files & backup files
+NFS_HOST=                     # 14.37.233.92 (Synology NAS Server)
+NFS_USER=                     # austin
+NFS_PASS=                     # '$Sc1965112'
+NFS_PATH=                     # /volume1/mnt/ibs
 
-### FOR SMS SERVICE
+### FOR GITHUB API DISPATCH --------------------------------------------------
+GITHUB_TOKEN=                 # ghp_xxx... (Personal Access Token for db_sync trigger)
+
+### FOR SMS SERVICE ------------------------------------------------------------------------------------
 IWINV_API_KEY=
 IWINV_AUTH_KEY=
 
-### FOR DEVELOPMENT - OPTIONAL  ------------------------------------------------------------------------
+### FOR DEVELOPMENT - OPTIONAL -------------------------------------------------------------------------
 DOCKERHUB_USER=
 DOCKERHUB_TOKEN=
 
 SLACK_INCOMING_URL=
 
 SLACK_COMPANY_URL=
-SLACK_PROJECT_PROJECT_NAME=
+SLACK_PROJECT_DONGCHUN=
+SLACK_PROJECT_CHOWOL=
+SLACK_PROJECT_OSAN_SEGYO=
+SLACK_PROJECT_MAPO=
