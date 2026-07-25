@@ -70,6 +70,7 @@ jobs:
           username: ${{ secrets.NFS_USER }}
           password: ${{ secrets.NFS_PASS }}
           command: |
+            export PATH=$PATH:/usr/local/bin:/usr/bin:/bin
             echo "🔄 Synchronizing S3 media buckets (ibs-media -> ibs-media-dev)..."
             mc alias set minio-s3 https://s3.dyibs.com ${{ secrets.NFS_USER }} '${{ secrets.NFS_PASS }}'
             mc mb minio-s3/ibs-media-dev --ignore-existing
