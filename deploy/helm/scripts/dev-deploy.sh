@@ -12,6 +12,8 @@ if [ -f "$HOME/.kube/config" ]; then
   export KUBECONFIG="$HOME/.kube/config"
 fi
 
+RELEASE_NAME="${HELM_RELEASE_NAME:-ibs}"
+
 # .env 수동 로딩 (POSIX 호환)
 if [ -f "$SCRIPT_DIR/.env" ]; then
   while IFS='=' read -r key value || [ -n "$key" ]; do
@@ -46,7 +48,7 @@ if [ -f "$SCRIPT_DIR/.env" ]; then
     kubectl delete job -n ibs-dev -l app.kubernetes.io/name=web --ignore-not-found=true 2>/dev/null || true
     kubectl apply -f "$CURR_DIR/../kubectl/class-roles"
     cd "$CURR_DIR"
-    helm upgrade ${DATABASE_USER} . -f ./values-dev-custom.yaml \
+    helm upgrade ${RELEASE_NAME} . -f ./values-dev-custom.yaml \
       --install -n ibs-dev --create-namespace --history-max 5
   else
     echo "values-dev-custom.yaml file not found in Current directory."
