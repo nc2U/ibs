@@ -41,7 +41,8 @@ if [ -f "$SCRIPT_DIR/.env" ]; then
           --set nfs.path=/mnt/nfs-subdir-external-provisioner
     fi
 
-    # Role 적용 및 Helm 배포
+    # Role 적용 및 Helm 배포 (Pending 락 자동 해제 포함)
+    kubectl delete secret -n ibs-prod -l owner=helm,status=pending-upgrade --ignore-not-found=true 2>/dev/null || true
     kubectl apply -f "$CURR_DIR/../kubectl/class-roles"
     cd "$CURR_DIR"
     helm upgrade ${DATABASE_USER} . -f ./values-prod-custom.yaml \
