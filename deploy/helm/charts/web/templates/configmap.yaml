@@ -9,14 +9,12 @@ metadata:
     {{- include "web.labels" . | nindent 4 }}
 data:
   DATABASE_TYPE: "{{ .Values.global.dbType }}"
-  DATABASE_NAME: "{{ .Values.global.databaseName | default "ibs" }}"
-  DATABASE_USER: "{{ .Values.global.databaseUser | default "ibs" }}"
+  DATABASE_NAME: "{{ .Values.global.databaseName | default .Release.Name }}"
+  DATABASE_USER: "{{ .Values.global.databaseUser | default .Release.Name }}"
   NAMESPACE: "{{ .Release.Namespace }}"
   DJANGO_SETTINGS_MODULE: "_config.settings"
 
-  AWS_STORAGE_BUCKET_NAME: "{{ .Values.web.imageConfigMaps.awsStorageBucketName | default .Values.awsStorageBucketName | default "ibs-media" }}"
-  AWS_S3_ENDPOINT_URL: "{{ .Values.web.imageConfigMaps.awsS3EndpointUrl | default .Values.awsS3EndpointUrl | default "https://s3.dyibs.com" }}"
-  AWS_REGION: "{{ .Values.web.imageConfigMaps.awsRegion | default .Values.awsRegion | default "ap-northeast-2" }}"
-  AWS_QUERYSTRING_EXPIRE: "{{ .Values.web.imageConfigMaps.awsQuerystringExpire | default .Values.awsQuerystringExpire | default "3600" }}"
-  AWS_S3_ACCESS_KEY_ID: "{{ .Values.web.imageConfigMaps.imageSecrets.awsAccessKeyId | default .Values.imageSecrets.awsAccessKeyId | default "austin" }}"
-  AWS_S3_SECRET_ACCESS_KEY: "{{ .Values.web.imageConfigMaps.imageSecrets.awsSecretAccessKey | default .Values.imageSecrets.awsSecretAccessKey | default "$Sc1965112" }}"
+  AWS_STORAGE_BUCKET_NAME: "{{ .Values.imageConfigMaps.awsStorageBucketName }}"
+  AWS_S3_ENDPOINT_URL: "{{ .Values.imageConfigMaps.awsS3EndpointUrl }}"
+  AWS_REGION: "{{ .Values.imageConfigMaps.awsRegion }}"
+  AWS_QUERYSTRING_EXPIRE: "{{ .Values.imageConfigMaps.awsQuerystringExpire }}"
