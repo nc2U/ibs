@@ -235,6 +235,13 @@ AWS_REGION = config('AWS_REGION', default='ap-northeast-2')
 # MinIO 전용 엔드포인트 (설정 시 MinIO, 미설정 시 AWS S3 기본값)
 AWS_S3_ENDPOINT_URL = config('AWS_S3_ENDPOINT_URL', default='')  # ex: https://s3.dyibs.com
 
+# MinIO 커스텀 도메인 자동 계산 (MinIO Presigned / Public URL 생성용)
+if AWS_S3_ENDPOINT_URL:
+    _clean_endpoint = AWS_S3_ENDPOINT_URL.replace('https://', '').replace('http://', '').rstrip('/')
+    AWS_S3_CUSTOM_DOMAIN = f"{_clean_endpoint}/{AWS_STORAGE_BUCKET_NAME}" if AWS_STORAGE_BUCKET_NAME else _clean_endpoint
+else:
+    AWS_S3_CUSTOM_DOMAIN = None
+
 # Private 버킷: Pre-signed URL 유효기간 (초, 기본 1시간)
 AWS_QUERYSTRING_AUTH = True
 AWS_QUERYSTRING_EXPIRE = config('AWS_QUERYSTRING_EXPIRE', default=3600, cast=int)
