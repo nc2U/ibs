@@ -45,8 +45,7 @@ if [ -f "$SCRIPT_DIR/.env" ]; then
     kubectl apply -f "$CURR_DIR/../kubectl/class-roles"
     cd "$CURR_DIR"
     helm upgrade ${DATABASE_USER} . -f ./values-dev-custom.yaml \
-      --install -n ibs-dev --create-namespace --history-max 5 --wait --timeout 10m \
-      --atomic --cleanup-on-fail
+      --install -n ibs-dev --create-namespace --history-max 5
   else
     echo "values-dev-custom.yaml file not found in Current directory."
     exit 1
