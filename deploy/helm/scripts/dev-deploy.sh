@@ -7,6 +7,11 @@ SCRIPT_PATH="$(cd "$(dirname "$0")" && pwd)"
 CURR_DIR="$(cd "$SCRIPT_PATH/.." && pwd)"
 SCRIPT_DIR="$(cd "$CURR_DIR/../../app/django" && pwd)"
 
+# KUBECONFIG 위치 지정 (~/.kube/config 우선 참조)
+if [ -f "$HOME/.kube/config" ]; then
+  export KUBECONFIG="$HOME/.kube/config"
+fi
+
 # .env 수동 로딩 (POSIX 호환)
 if [ -f "$SCRIPT_DIR/.env" ]; then
   while IFS='=' read -r key value || [ -n "$key" ]; do
