@@ -55,3 +55,5 @@ else
   echo ".env file not found in $SCRIPT_DIR"
   exit 1
 fi
+
+exit 0
