@@ -51,6 +51,19 @@ jobs:
               exit 1
             fi
 
+      # Sync S3 media files (Production Bucket -> Dev Bucket)
+      - name: Sync S3 media files (Production to Dev)
+        uses: garygrossgarten/github-action-ssh@release
+        with:
+          host: ${{ secrets.NFS_HOST }}
+          username: ${{ secrets.NFS_USER }}
+          password: ${{ secrets.NFS_PASS }}
+          command: |
+            echo "🔄 Synchronizing S3 media buckets (ibs-media -> ibs-media-dev)..."
+            # mc를 이용해 운영 버킷 데이터를 개발 버킷으로 100% 미러링하고 개발 전용 파일(쓰레기 파일)은 제거
+            mc mirror minio/ibs-media minio/ibs-media-dev --overwrite --remove
+            echo "✅ S3 media sync completed successfully"
+
       # slack --> notification
       - name: Send slack when failed
         if: ${{ failure() }}                    # 실패했을 때 실행
