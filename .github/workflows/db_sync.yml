@@ -71,8 +71,9 @@ jobs:
           password: ${{ secrets.NFS_PASS }}
           command: |
             echo "🔄 Synchronizing S3 media buckets (ibs-media -> ibs-media-dev)..."
-            # mc를 이용해 운영 버킷 데이터를 개발 버킷으로 100% 미러링하고 개발 전용 파일(쓰레기 파일)은 제거
-            mc mirror minio/ibs-media minio/ibs-media-dev --overwrite --remove
+            mc alias set minio-s3 https://s3.dyibs.com ${{ secrets.NFS_USER }} '${{ secrets.NFS_PASS }}'
+            mc mb minio-s3/ibs-media-dev --ignore-existing
+            mc mirror minio-s3/ibs-media minio-s3/ibs-media-dev --overwrite --remove
             echo "✅ S3 media sync completed successfully"
 
       # slack --> notification
