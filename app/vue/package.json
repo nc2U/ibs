@@ -99,5 +99,8 @@
     "vitest": "^4.1.10",
     "vue-cli-plugin-vuetify": "^2.5.8",
     "vue-tsc": "^2.2.12"
+  },
+  "overrides": {
+    "brace-expansion": "^5.0.8"
   }
 }
