@@ -1,0 +1,39 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "web.fullname" . }}-image-cleaner
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "web.labels" . | nindent 4 }}
+spec:
+  schedule: "0 18 * * 6" # UTC 기준 매주 토요일 18시 (KST 매주 일요일 새벽 3시)
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          hostNetwork: true
+          hostPID: true
+          tolerations:
+          - operator: Exists
+          containers:
+          - name: crictl-cleaner
+            image: alpine:3.20
+            securityContext:
+              privileged: true
+            command:
+            - /bin/sh
+            - -c
+            - |
+              echo "🧹 Cleaning unused container images on node..."
+              chroot /host crictl rmi --prune || chroot /host /usr/local/bin/crictl rmi --prune || true
+              echo "✅ Image cleanup completed."
+            volumeMounts:
+            - name: host-root
+              mountPath: /host
+          volumes:
+          - name: host-root
+            hostPath:
+              path: /
+          restartPolicy: OnFailure

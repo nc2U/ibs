@@ -1,4 +1,4 @@
-name: Image(Djanog) Rebuild Docker & Deploy
+name: Image(Django) Rebuild Docker & Deploy
 
 on:
   workflow_dispatch:
@@ -14,14 +14,14 @@ on:
 
 jobs:
   build_and_deploy:
-    name: Force Build & Deploy
+    name: Image Build & Deploy
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set environment variables
+      - name:  Set environment variables & Prepare requirements
         run: |
           if [ "${{ inputs.target_env }}" = "prod" ]; then
             echo "ENV_NAMESPACE=ibs-prod" >> $GITHUB_ENV
@@ -33,6 +33,11 @@ jobs:
             echo "IMAGE_TAG=dev-latest" >> $GITHUB_ENV
             echo "SHA_TAG=dev-${{ github.sha }}" >> $GITHUB_ENV
             echo "DEPLOY_SCRIPT=dev-deploy.sh" >> $GITHUB_ENV
+          
+            # Dev 환경: requirements.txt 에서 버전 지정을 제거하여 최신 패키지 설치 유도
+            echo "🔧 Stripping version pins from requirements.txt for dev build..."
+            sed -E 's/^([a-zA-Z0-9_\-\[\.]+).*/\1/' ./deploy/docker/python/requirements.txt > ./deploy/docker/python/requirements.txt.tmp
+            mv ./deploy/docker/python/requirements.txt.tmp ./deploy/docker/python/requirements.txt
           fi
 
       - name: Set up Docker Buildx
