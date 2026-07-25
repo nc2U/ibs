@@ -233,6 +233,7 @@ AWS_S3_SECRET_ACCESS_KEY = config('AWS_S3_SECRET_ACCESS_KEY', default='')
 AWS_REGION = config('AWS_REGION', default='ap-northeast-2')
 
 # MinIO 전용 엔드포인트 (설정 시 MinIO, 미설정 시 AWS S3 기본값)
+# Force docker build trigger for updated settings
 AWS_S3_ENDPOINT_URL = config('AWS_S3_ENDPOINT_URL', default='')  # ex: https://s3.dyibs.com
 
 # MinIO 커스텀 도메인 자동 계산 (MinIO Presigned / Public URL 생성용)
