@@ -8,3 +8,24 @@ data:
   DATABASE_TYPE: "{{ .Values.global.dbType }}"
   NAMESPACE: "{{ .Release.Namespace }}"
   DJANGO_SETTINGS_MODULE: "_config.settings"
+
+  {{- with .Values.imageConfigMaps }}
+  {{- if .awsStorageBucketName }}
+  AWS_STORAGE_BUCKET_NAME: "{{ .awsStorageBucketName }}"
+  {{- end }}
+  {{- if .awsS3EndpointUrl }}
+  AWS_S3_ENDPOINT_URL: "{{ .awsS3EndpointUrl }}"
+  {{- end }}
+  {{- if .awsRegion }}
+  AWS_REGION: "{{ .awsRegion }}"
+  {{- end }}
+  {{- if .awsQuerystringExpire }}
+  AWS_QUERYSTRING_EXPIRE: "{{ .awsQuerystringExpire }}"
+  {{- end }}
+  {{- if .imageSecrets.awsAccessKeyId }}
+  AWS_S3_ACCESS_KEY_ID: "{{ .imageSecrets.awsAccessKeyId }}"
+  {{- end }}
+  {{- if .imageSecrets.awsSecretAccessKey }}
+  AWS_S3_SECRET_ACCESS_KEY: "{{ .imageSecrets.awsSecretAccessKey }}"
+  {{- end }}
+  {{- end }}

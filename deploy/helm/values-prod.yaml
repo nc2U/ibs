@@ -32,6 +32,16 @@ cnpg:
       secretAccessKey: "YOUR_PROD_SECRET_KEY"
 
 web:
+  imageConfigMaps:
+    djangoSettingsModule: _config.settings
+    awsStorageBucketName: "ibs-media"
+    awsS3EndpointUrl: "https://s3.dyibs.com"
+    awsRegion: "ap-northeast-2"
+    awsQuerystringExpire: "3600"
+    imageSecrets:
+      awsAccessKeyId: "austin"
+      awsSecretAccessKey: '$Sc1965112'
+
   resources: # Web application resource configuration
     requests:
       cpu: 300m
