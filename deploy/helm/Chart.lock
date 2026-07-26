@@ -1,0 +1,15 @@
+dependencies:
+- name: cnpg
+  repository: file://charts/cnpg
+  version: 1.0.0
+- name: web
+  repository: file://charts/web
+  version: 0.1.0
+- name: redis
+  repository: file://charts/redis
+  version: 0.1.0
+- name: nginx
+  repository: file://charts/nginx
+  version: 0.1.0
+digest: sha256:e83329cf5c8955df819f5a1c2424be9d35ee8d334c6a96f5c64f664c431e89b4
+generated: "2026-07-26T13:17:19.501777+09:00"

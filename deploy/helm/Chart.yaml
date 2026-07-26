@@ -22,3 +22,17 @@ version: 0.1.2
 # follow Semantic Versioning. They should reflect the version the application is using.
 # It is recommended to use it with quotes.
 appVersion: "1"
+
+dependencies:
+  - name: cnpg
+    version: 1.0.0
+    repository: "file://charts/cnpg"
+  - name: web
+    version: 0.1.0
+    repository: "file://charts/web"
+  - name: redis
+    version: 0.1.0
+    repository: "file://charts/redis"
+  - name: nginx
+    version: 0.1.0
+    repository: "file://charts/nginx"

@@ -20,9 +20,9 @@ spec:
   imagePullPolicy: {{ . }}
   {{- end }}
 
-  # PostgreSQL user/group IDs (official postgres image uses 999:999)
-  postgresUID: 999
-  postgresGID: 999
+  # PostgreSQL user/group IDs (official ghcr.io/cloudnative-pg/postgresql image uses 26:26)
+  postgresUID: 26
+  postgresGID: 26
 
   # Primary update strategy
   primaryUpdateStrategy: unsupervised
