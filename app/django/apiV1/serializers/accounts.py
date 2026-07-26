@@ -49,16 +49,15 @@ class UserSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_is_hq_financial_officer(obj):
-        # 1. 수퍼유저인 경우 무조건 True
-        if getattr(obj, 'is_superuser', False):
+        if obj.is_superuser:
             return True
-        # 2. staff.is_hq_financial_officer=True 인 경우
         try:
             return getattr(obj.staff, 'is_hq_financial_officer', False)
         except AttributeError:
             return False
 
-    def get_is_hq_staff(self, obj):
+    @staticmethod
+    def get_is_hq_staff(obj):
         if obj.is_superuser:
             return True
         return obj.member_set.filter(project__type='1').exists()

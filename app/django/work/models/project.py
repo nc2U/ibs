@@ -220,7 +220,7 @@ class IssueProject(models.Model):
             return default_attrs
 
     class Meta:
-        ordering = ('order', 'id')
+        ordering = ('status', 'order', 'id')
         verbose_name = '01. 프로젝트(업무)'
         verbose_name_plural = '01. 프로젝트(업무)'
 
