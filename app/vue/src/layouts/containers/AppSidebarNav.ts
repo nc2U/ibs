@@ -9,9 +9,7 @@ import {
   resolveComponent,
   watch,
 } from 'vue'
-import { storeToRefs } from 'pinia'
 import { useAccount } from '@/store/pinia/account'
-import { useWork } from '@/store/pinia/work_project'
 import { type RouteLocationNormalized, RouterLink, useRoute } from 'vue-router'
 import { CBadge, CNavGroup, CSidebarNav } from '@coreui/vue'
 import { CIcon } from '@coreui/icons-vue'
@@ -82,7 +80,9 @@ const AppSidebarNav = defineComponent({
     const predicates = computed(() => {
       // 권한 키별 접근 제어 매핑
       const authMap: Record<string, boolean> = {
-        is_hq_financial_officer: account.superAuth || !!account.userInfo?.is_hq_financial_officer,
+        isComMenu: account.isStaff || account.isFinancial,
+        isStaff: account.isStaff,
+        isFinancial: account.isFinancial,
       }
 
       return [

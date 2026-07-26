@@ -23,7 +23,7 @@ const companyLedger = {
   component: 'CNavGroup',
   name: '본사 회계 관리',
   to: '/ledger',
-  auth: 'comLedger',
+  auth: 'isFinancial',
   icon: 'cil-laptop',
   items: [
     {
@@ -417,7 +417,7 @@ const nav = [
   {
     component: 'CNavTitle',
     name: '본사 관리',
-    auth: 'isStaff',
+    auth: 'isComMenu',
   },
   companyLedger,
   companyDocs,

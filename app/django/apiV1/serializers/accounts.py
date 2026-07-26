@@ -16,7 +16,6 @@ class SimpleUserSerializer(serializers.ModelSerializer):
         fields = ('pk', 'username')
 
 
-
 class ProfileInUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
@@ -48,7 +47,12 @@ class UserSerializer(serializers.ModelSerializer):
                   'profile', 'last_login', 'is_hq_financial_officer', 'is_hq_staff')
         read_only_fields = ('date_joined', 'last_login')
 
-    def get_is_hq_financial_officer(self, obj):
+    @staticmethod
+    def get_is_hq_financial_officer(obj):
+        # 1. 수퍼유저인 경우 무조건 True
+        if getattr(obj, 'is_superuser', False):
+            return True
+        # 2. staff.is_hq_financial_officer=True 인 경우
         try:
             return getattr(obj.staff, 'is_hq_financial_officer', False)
         except AttributeError:

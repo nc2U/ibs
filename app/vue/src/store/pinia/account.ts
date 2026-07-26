@@ -217,12 +217,13 @@ export const useAccount = defineStore('account', () => {
   const superAuth = computed(() => userInfo.value?.is_superuser)
   const workManager = computed(() => userInfo.value?.work_manager || superAuth.value)
   const isStaff = computed(() => !!superAuth.value || !!userInfo.value?.is_hq_staff) // 본사 관리 권한
+  const isFinancial = computed(() => !!userInfo.value?.is_hq_financial_officer)
 
   const writeComDocs = computed(() => !!superAuth.value || !!write_company_docs.value)
   const writeProDocs = computed(() => !!superAuth.value || !!write_project_docs.value)
   const isComLedger = computed(() => !!superAuth.value || !!userInfo.value?.is_hq_financial_officer)
   const writeComLedger = computed(() => !!superAuth.value || !!write_company_cash.value)
-  const writeProLedger = computed(() => !!superAuth.value || !!write_project_cash.value)  // states
+  const writeProLedger = computed(() => !!superAuth.value || !!write_project_cash.value) // states
   const profile = ref<Profile | null>(null)
 
   // actions
@@ -437,6 +438,7 @@ export const useAccount = defineStore('account', () => {
     superAuth,
     workManager,
     isStaff,
+    isFinancial,
     writeComDocs,
     writeProDocs,
     isComLedger,
