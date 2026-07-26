@@ -11,6 +11,8 @@ spec:
   failedJobsHistoryLimit: 1
   jobTemplate:
     spec:
+      activeDeadlineSeconds: 1800 # 최대 30분 실행 허용
+      ttlSecondsAfterFinished: 300 # 완료 후 5분 뒤 자동 삭제
       template:
         spec:
           hostNetwork: true
