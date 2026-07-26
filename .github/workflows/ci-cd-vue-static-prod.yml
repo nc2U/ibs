@@ -234,89 +234,49 @@ jobs:
           command: |
             cd ${{ secrets.CICD_PATH }}/prod/app/django/static
 
-            # 새 빌드 디렉터리명
             NEW_BUILD="dist_${{ github.run_number }}_${{ github.sha }}"
 
             echo "📦 Deploying: $NEW_BUILD"
 
-            # 새 빌드 디렉터리 존재 재확인
+            # 1. 새 빌드 디렉터리 존재 검증
             if [ ! -d "$NEW_BUILD" ]; then
               echo "❌ ERROR: Build directory not found: $NEW_BUILD"
               exit 1
             fi
 
-            # 이전 활성 빌드 기록 (롤백용)
+            # 2. 이전 활성 빌드 기록 (안전 롤백용)
+            PREVIOUS_BUILD=""
             if [ -L "dist" ]; then
               PREVIOUS_BUILD=$(readlink dist)
-              echo "Previous build: $PREVIOUS_BUILD"
-            elif [ -d "dist" ]; then
-              echo "⚠️  WARNING: dist is a directory, not a symlink. Converting to symlink..."
-              PREVIOUS_BUILD=""
+              echo "Previous active build: $PREVIOUS_BUILD"
             fi
 
-            # 심볼릭 링크 원자적 교체 (디렉터리도 처리)
-            ln -sfn "$NEW_BUILD" dist.new
+            # 3. 진정한 원자적 심볼릭 링크 교체 (Atomic Symlink Swap - Zero Downtime)
+            ln -sfn "$NEW_BUILD" dist
 
-            # 기존 dist 백업 (롤백용)
-            if [ -e "dist" ] || [ -L "dist" ]; then
-              mv dist dist.backup
-            fi
-
-            # 새 심볼릭 링크를 dist로 이동
-            mv dist.new dist
-
-            # 심볼릭 링크 검증
-            if [ ! -L "dist" ]; then
-              echo "❌ ERROR: Failed to create symlink!"
-              # 롤백
-              if [ -e "dist.backup" ]; then
-                mv dist.backup dist
-                echo "Rolled back to previous state"
-              fi
-              exit 1
-            fi
-
-            CURRENT_LINK=$(readlink dist)
-            if [ "$CURRENT_LINK" != "$NEW_BUILD" ]; then
-              echo "❌ ERROR: Symlink points to wrong target: $CURRENT_LINK"
-              exit 1
-            fi
-
-            # 심볼릭 링크가 실제 디렉터리를 가리키는지 확인 (깨진 링크 방지)
-            if [ ! -d "dist" ]; then
-              echo "❌ ERROR: Symlink is broken! Rolling back..."
-              rm -f dist
-              if [ -e "dist.backup" ]; then
-                mv dist.backup dist
-                echo "Rolled back to previous state"
-              elif [ -n "$PREVIOUS_BUILD" ] && [ -d "$PREVIOUS_BUILD" ]; then
+            # 4. 교체 무결성 검증
+            CURRENT_LINK=$(readlink dist 2>/dev/null || true)
+            if [ "$CURRENT_LINK" != "$NEW_BUILD" ] || [ ! -d "dist" ]; then
+              echo "❌ ERROR: Symlink swap failed or target broken! Attempting rollback..."
+              if [ -n "$PREVIOUS_BUILD" ] && [ -d "$PREVIOUS_BUILD" ]; then
                 ln -sfn "$PREVIOUS_BUILD" dist
-                echo "Rolled back to: $PREVIOUS_BUILD"
+                echo "⏪ Rolled back to previous build: $PREVIOUS_BUILD"
               fi
               exit 1
             fi
 
-            echo "✅ Symlink verified: dist -> $CURRENT_LINK"
+            echo "✅ Symlink atomically updated & verified: dist -> $CURRENT_LINK"
 
-            # 백업 제거 (성공 시)
-            rm -rf dist.backup
-
-            # 안전한 구 빌드 정리 (최근 3개 유지로 증가)
+            # 5. 구 빌드 안전 정리 (최근 3개 유지)
             echo ""
             echo "🧹 Cleaning old builds (keeping 3 most recent)..."
+            ALL_BUILDS=$(ls -dt dist_* 2>/dev/null || true)
+            BUILD_COUNT=$(echo "$ALL_BUILDS" | grep -v '^$' | wc -l)
 
-            # 모든 빌드 디렉터리 나열 (시간순 역순)
-            ALL_BUILDS=$(ls -dt dist_* 2>/dev/null)
-            BUILD_COUNT=$(echo "$ALL_BUILDS" | wc -l)
-
-            echo "Total builds found: $BUILD_COUNT"
-
-            # 최근 3개 제외하고 삭제
             if [ "$BUILD_COUNT" -gt 3 ]; then
-              echo "$ALL_BUILDS" | tail -n +4 | while read OLD_BUILD; do
-                # 현재 활성 빌드는 절대 삭제 안 함 (이중 안전장치)
+              echo "$ALL_BUILDS" | tail -n +4 | while read -r OLD_BUILD; do
                 if [ "$OLD_BUILD" != "$CURRENT_LINK" ]; then
-                  echo "  Removing: $OLD_BUILD"
+                  echo "  Removing old build: $OLD_BUILD"
                   rm -rf "$OLD_BUILD"
                 else
                   echo "  Skipping active build: $OLD_BUILD"
@@ -324,12 +284,7 @@ jobs:
               done
             fi
 
-            echo ""
             echo "✅ Deployment complete!"
-            echo "📊 Current state:"
-            echo "  Active: $(readlink dist)"
-            echo "  Remaining builds:"
-            ls -lth | grep "^d" | grep "dist_" | head -5
 
       # NFS 동기화 대기
       - name: Wait for NFS sync
