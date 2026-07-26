@@ -13,9 +13,14 @@ name: "CodeQL"
 
 on:
   push:
+    branches: [ "master" ]
     paths:
       - "app/**"
+  pull_request:
     branches: [ "master" ]
+    paths:
+      - "app/**"
+  workflow_dispatch:
 
 jobs:
   analyze:

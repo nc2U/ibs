@@ -1,0 +1,175 @@
+name: Django App + Helm Deployment [Prod]
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'app/django/**'
+      - 'deploy/docker/**'
+      - 'deploy/helm/**'
+  workflow_dispatch:
+
+# Prevent concurrent deployments to the same environment
+concurrency:
+  group: ibs-prod-deployment
+  cancel-in-progress: false
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: nc2u/django
+  KUBE_NAMESPACE: ibs-prod
+  HELM_RELEASE_NAME: ibs
+  DOCKERFILE_PATH: deploy/docker/python/Dockerfile
+  BUILD_CONTEXT: .
+
+jobs:
+  build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    # 소스 코드나 도커 관련 파일이 변경된 경우에만 실행
+    if: |
+      github.event_name == 'workflow_dispatch' || 
+      contains(github.event.head_commit.modified, 'app/django/') || 
+      contains(github.event.head_commit.modified, 'deploy/docker/')
+    outputs:
+      image_tag: ${{ steps.meta.outputs.image_tag }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Generate image tags
+        id: meta
+        run: |
+          SHORT_SHA=$(git rev-parse --short=7 HEAD)
+          echo "image_tag=${SHORT_SHA}" >> $GITHUB_OUTPUT
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ env.BUILD_CONTEXT }}
+          file: ${{ env.DOCKERFILE_PATH }}
+          push: true
+          no-cache: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.image_tag }}
+            ${{ env.IMAGE_NAME }}:latest
+
+  deploy:
+    name: Deploy to Kubernetes
+    runs-on: ubuntu-latest
+    needs: build
+    # 빌드 Job이 성공했거나, 빌드 Job이 아예 실행되지 않았을 때(헬름만 변경된 경우)
+    if: always() && (needs.build.result == 'success' || needs.build.result == 'skipped')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set Kubernetes Context
+        uses: azure/k8s-set-context@v4
+        with:
+          kubeconfig: ${{ secrets.KUBE_CONFIG }}
+          context: default
+
+      - name: Verify cluster connection
+        run: kubectl get nodes
+
+      - name: Setup NFS Provisioner
+        run: |
+          if ! helm repo list | grep -q 'nfs-subdir-external-provisioner'; then
+            helm repo add nfs-subdir-external-provisioner https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner
+          fi
+          helm repo update
+          if ! helm status nfs-subdir-external-provisioner -n kube-system >/dev/null 2>&1; then
+            helm upgrade --install nfs-subdir-external-provisioner \
+              nfs-subdir-external-provisioner/nfs-subdir-external-provisioner \
+              -n kube-system \
+              --set nfs.server=${{ secrets.NFS_SERVER }} \
+              --set nfs.path=/mnt/nfs-subdir-external-provisioner
+          fi
+
+      - name: Apply RBAC Roles
+        run: |
+          kubectl apply -f ./deploy/kubectl/class-roles
+
+      - name: Clean up pending Helm releases and orphaned resources
+        run: |
+          kubectl delete secret -n ${KUBE_NAMESPACE} -l owner=helm,status=pending-upgrade --ignore-not-found=true
+          kubectl delete secret -n ${KUBE_NAMESPACE} -l owner=helm,status=pending-install --ignore-not-found=true
+          kubectl delete secret -n ${KUBE_NAMESPACE} -l owner=helm,status=pending-rollback --ignore-not-found=true
+          
+          for pvc in ibs-nginx-prod-static-pvc ibs-nginx-prod-media-pvc ibs-web-prod-django-pvc; do
+            if kubectl get pvc $pvc -n ${KUBE_NAMESPACE} >/dev/null 2>&1; then
+              kubectl label pvc $pvc -n ${KUBE_NAMESPACE} app.kubernetes.io/managed-by=Helm --overwrite || true
+              kubectl annotate pvc $pvc -n ${KUBE_NAMESPACE} meta.helm.sh/release-name=${HELM_RELEASE_NAME} meta.helm.sh/release-namespace=${KUBE_NAMESPACE} --overwrite || true
+            fi
+          done
+
+      - name: Copy helm to CI/CD server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.CICD_HOST }}
+          username: ${{ secrets.CICD_USER }}
+          password: ${{ secrets.CICD_PASS }}
+          source: 'deploy/helm,deploy/kubectl'
+          target: ${{ secrets.CICD_PATH }}/prod/
+
+      - name: Deploy with Helm via prod-deploy.sh
+        uses: garygrossgarten/github-action-ssh@release
+        with:
+          host: ${{ secrets.CICD_HOST }}
+          username: ${{ secrets.CICD_USER }}
+          password: ${{ secrets.CICD_PASS }}
+          command: |
+            cd ${{ secrets.CICD_PATH }}/prod/deploy
+
+            # 1. 서버에 최신 values-prod-custom.yaml 이 있으면 이를 최우선 사용하고 .bak 갱신
+            if [ -f "./values-prod-custom.yaml" ]; then
+              cp ./values-prod-custom.yaml ./values-prod-custom.yaml.bak
+              chmod 600 ./values-prod-custom.yaml.bak
+              echo "Preserved existing values-prod-custom.yaml and updated .bak backup"
+            # 2. 최신 파일이 없고 .bak 파일만 있을 때만 백업에서 복원 (Fallback)
+            elif [ -f "./values-prod-custom.yaml.bak" ]; then
+              cp ./values-prod-custom.yaml.bak ./values-prod-custom.yaml
+              echo "Fallback: Restored missing values-prod-custom.yaml from .bak backup"
+            else
+              echo "Notice: No values-prod-custom.yaml or .bak backup found on server"
+            fi
+
+            # 3. SCP 수신 헬름 디렉터리 정리 및 심볼릭 링크 연결
+            rm -rf ./helm
+            mkdir -p helm
+            if [ -f "./values-prod-custom.yaml" ]; then
+              ln -sf ../values-prod-custom.yaml ./helm/values-prod-custom.yaml
+              echo "Created symlink: helm/values-prod-custom.yaml -> ../values-prod-custom.yaml"
+            fi
+
+            cd helm
+            echo "Running scripts/prod-deploy.sh..."
+            sh scripts/prod-deploy.sh
+      - name: Wait for rollout completion
+        run: |
+          kubectl rollout status deployment/web -n ${KUBE_NAMESPACE} --timeout=15m
+          kubectl rollout status deployment/web-celery -n ${KUBE_NAMESPACE} --timeout=15m
+          kubectl rollout status deployment/nginx -n ${KUBE_NAMESPACE} --timeout=15m
+
+      - name: Send Slack notification
+        if: always()
+        run: |
+          STATUS_TEXT="✅ Django Production Deployment Successful"
+          if [ "${{ job.status }}" != "success" ]; then STATUS_TEXT="❌ Django Production Deployment Failed"; fi
+          curl -X POST ${{ secrets.SLACK_INCOMING_URL }} \
+            -H 'Content-Type: application/json' \
+            -d "{\"text\": \"$STATUS_TEXT\"}"

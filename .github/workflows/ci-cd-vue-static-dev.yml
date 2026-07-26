@@ -1,10 +1,9 @@
-name: Vue [Dev]
+name: Vue Build [Dev]
 
 on:
   push:
     paths:
       - "app/vue/**"
-      - ".github/workflows/vue_dev.yml"
     branches: [ "develop" ]
   
   # Allows you to run this workflow manually from the Actions tab
@@ -206,6 +205,13 @@ jobs:
             echo "  ✓ CSS files: $CSS_COUNT"
             echo "  ✓ Total assets: $ASSET_COUNT files"
 
+      # Kubernetes Context 설정 (공식 액션 사용)
+      - name: Set Kubernetes Context
+        uses: azure/k8s-set-context@v4
+        with:
+          kubeconfig: ${{ secrets.KUBE_CONFIG }}
+          context: default
+
       # 원자적 배포 (Symlink Swap)
       - name: Atomic deployment with symlink swap
         env:
@@ -372,7 +378,6 @@ jobs:
           username: ${{ secrets.CICD_USER }}
           password: ${{ secrets.CICD_PASS }}
           command: |
-            export KUBECONFIG=$HOME/.kube/config
             echo "🔄 Restarting Nginx and Web pods..."
             kubectl rollout restart deployment/nginx -n ibs-dev
             kubectl rollout restart deployment/web -n ibs-dev

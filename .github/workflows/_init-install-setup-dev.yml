@@ -136,15 +136,11 @@ jobs:
             ls -la
 
       # Step 5: Deploy infrastructure with Helm
-      - name: Configure kubectl
-        run: |
-          mkdir -p $HOME/.kube
-          cat > $HOME/.kube/config <<'EOF'
-          ${{ secrets.KUBE_CONFIG }}
-          EOF
-          chmod 600 $HOME/.kube/config
-          kubectl config use-context default
-          kubectl get nodes
+      - name: Set Kubernetes Context
+        uses: azure/k8s-set-context@v4
+        with:
+          kubeconfig: ${{ secrets.KUBE_CONFIG }}
+          context: default
 
       - name: Setup NFS Provisioner
         run: |
