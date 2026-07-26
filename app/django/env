@@ -2,40 +2,41 @@
 SECRET_KEY=                   # required, Set random characters of at least 50 characters.
 DEBUG=                        # default=False
 ALLOWED_HOSTS=                # default=*, set like this -> host1,host2,host3...
-CSRF_TRUSTED_ORIGINS=         # default='https://ibs.dyibs.com'
+CSRF_TRUSTED_ORIGINS=         # default='https://***.*****.com'
 
-DATABASE_USER=                # default=ibs
-DATABASE_PASS=                # default=secret
+DATABASE_USER=                # default=db-user
+DATABASE_PASS=                # default=db-secret
 
-DOMAIN_HOST=                  # default=https://ibs.dyibs.com/
+DOMAIN_HOST=                  # default=https://***.*****.com/
 DOMAIN_NAME=                  # default=ibs.dyibs.com
-SESSION_COOKIE_DOMAIN=        # ".dyibs.com" // 서브도메인 간 이동 시 세션 유지
-CSRF_COOKIE_DOMAIN=           # ".dyibs.com" // 서브도메인 간 이동 시 CSRF 유지
+SESSION_COOKIE_DOMAIN=        # ".*****.com" // 서브도메인 간 이동 시 세션 유지
+CSRF_COOKIE_DOMAIN=           # ".*****.com" // 서브도메인 간 이동 시 CSRF 유지
 
-EMAIL_HOST=                   # required, ex: mail.dyibs.com
-EMAIL_HOST_USER=              # required, ex: austin
-EMAIL_HOST_PASSWORD=          # required, ex: '$Sc1965112'
-EMAIL_DEFAULT_FROM=           # required, ex: '대영아이비에스 관리자 <info@dyibs.com>'
+EMAIL_HOST=                   # required, ex: mail.*****.com
+EMAIL_PORT=                   # default=587
+EMAIL_HOST_USER=              # required, ex: 'my-account'
+EMAIL_HOST_PASSWORD=          # required, ex: 'my-password'
+DEFAULT_FROM_EMAIL=           # required, ex: '관리자 <info@*****.com>'
 SLACK_NOTIFICATIONS_ENABLED=  # default=True, IBS work notifications
 
 ### FOR OBJECT STORAGE (MinIO / S3) ----------------------------------------------------
 AWS_STORAGE_BUCKET_NAME=      # ibs-media (prod) | ibs-media-dev (dev)
-AWS_S3_ACCESS_KEY_ID=         # austin
-AWS_S3_SECRET_ACCESS_KEY=     # '$Sc1965112'
-AWS_S3_ENDPOINT_URL=          # https://s3.dyibs.com
+AWS_S3_ACCESS_KEY_ID=         # 'my-account'
+AWS_S3_SECRET_ACCESS_KEY=     # 'my-password'
+AWS_S3_ENDPOINT_URL=          # https://s3.*****.com
 AWS_REGION=                   # ap-northeast-2
 AWS_QUERYSTRING_EXPIRE=       # 3600
 
 ### FOR DEPLOYMENT ------------------------------------------------------------------------------------
-CICD_HOST=                    # 49.247.206.58 (Master NVMe SSD Server)
-CICD_USER=                    # ibs
-CICD_PASS=                    # 0088
-CICD_PATH=                    # /nfs/app/ibs
+CICD_HOST=                    # 49.***.206.** (Master NVMe SSD Server)
+CICD_USER=                    # host-user
+CICD_PASS=                    # host-password
+CICD_PATH=                    # /nfs/***/ibs
 
-NFS_HOST=                     # 14.37.233.92 (Synology NAS Server)
-NFS_USER=                     # austin
-NFS_PASS=                     # '$Sc1965112'
-NFS_PATH=                     # /volume1/mnt/ibs
+NFS_HOST=                     # 14.**.233.** (Synology NAS Server)
+NFS_USER=                     # 'my-account'
+NFS_PASS=                     # 'my-password'
+NFS_PATH=                     # /*****/mnt/ibs
 
 ### FOR GITHUB API DISPATCH --------------------------------------------------
 GITHUB_TOKEN=                 # ghp_xxx... (Personal Access Token for db_sync trigger)

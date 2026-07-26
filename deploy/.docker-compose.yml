@@ -49,6 +49,9 @@ services:
       - ../app/django/.env
     environment:
       DATABASE_TYPE: postgres
+      DATABASE_NAME: my-db-name # 실제 데이터로 수정
+      DATABASE_USER: my-db-user # 실제 데이터로 수정
+      DATABASE_PASSWORD: my-db-password # 실제 데이터로 수정
       DJANGO_SETTINGS_MODULE: _config.settings # Django settings 모드 지정
       REDIS_URL: redis://redis:6379/1
       CELERY_BROKER_URL: redis://redis:6379/0 # Celery 브로커 URL 추가
@@ -70,6 +73,9 @@ services:
       - ../app/django/.env
     environment:
       DATABASE_TYPE: postgres
+      DATABASE_NAME: my-db-name # 실제 데이터로 수정
+      DATABASE_USER: my-db-user # 실제 데이터로 수정
+      DATABASE_PASSWORD: my-db-password # 실제 데이터로 수정
       DJANGO_SETTINGS_MODULE: _config.settings
       REDIS_URL: redis://redis:6379/1
       CELERY_BROKER_URL: redis://redis:6379/0
