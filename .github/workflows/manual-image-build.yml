@@ -1,4 +1,4 @@
-name: Image(Django) Rebuild Docker & Deploy
+name: Image(Django) Build Docker & Deploy
 
 on:
   workflow_dispatch:
