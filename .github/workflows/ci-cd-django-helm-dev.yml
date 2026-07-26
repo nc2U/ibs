@@ -1,4 +1,4 @@
-name: Django App + Helm Deploy [Dev]
+name: [Dev] Django App + Helm Deploy
 
 on:
   push:

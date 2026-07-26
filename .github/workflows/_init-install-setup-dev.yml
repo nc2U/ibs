@@ -1,4 +1,4 @@
-name: Initial Setup - Development Environment
+name: [Dev] Initial Setup
 
 on:
   workflow_dispatch:

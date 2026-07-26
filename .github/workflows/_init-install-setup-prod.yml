@@ -1,4 +1,4 @@
-name: Initial Setup - Production Environment
+name: [Prod] Initial Setup
 
 on:
   workflow_dispatch:
