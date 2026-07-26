@@ -1,4 +1,4 @@
-name: [Prod] Vue Build & Deploy
+name: "[Prod] Vue Build & Deploy"
 
 on:
   push:

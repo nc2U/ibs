@@ -1,4 +1,4 @@
-name: [Prod] Django App + Helm Deploy
+name: "[Prod] Django App + Helm Deploy"
 
 on:
   push:

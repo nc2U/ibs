@@ -1,4 +1,4 @@
-name: Sync Database Prod to Dev
+name: "Sync Database Prod to Dev"
 
 on:
   schedule:

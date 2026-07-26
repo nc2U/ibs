@@ -1,4 +1,4 @@
-name: [Manual] Docker(Django) Build & Deploy
+name: "[Manual] Docker(Django) Build & Deploy"
 
 on:
   workflow_dispatch:
