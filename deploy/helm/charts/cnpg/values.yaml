@@ -11,7 +11,7 @@ fullnameOverride: "postgres"
 image:
   registry: ghcr.io
   repository: cloudnative-pg/postgresql
-  tag: "18"
+  tag: "18-bookworm"
   pullPolicy: IfNotPresent
 
 # Authentication Configuration
