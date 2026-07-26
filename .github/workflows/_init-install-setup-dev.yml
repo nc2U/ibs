@@ -1,4 +1,4 @@
-name: "[Dev] Initial Setup"
+name: "_[Dev] Initial Setup"
 
 on:
   workflow_dispatch:
