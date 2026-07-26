@@ -64,6 +64,18 @@ spec:
       {{- if .Values.bootstrap.initdb.postInitApplicationSQL }}
       postInitApplicationSQL:
         {{- toYaml .Values.bootstrap.initdb.postInitApplicationSQL | nindent 8 }}
+      {{- else }}
+      postInitApplicationSQL:
+        {{- $dbUser := include "cnpg.username" . }}
+        {{- $dbName := include "cnpg.database" . }}
+        - "CREATE SCHEMA IF NOT EXISTS {{ $dbName }} AUTHORIZATION {{ $dbUser }};"
+        - "ALTER SCHEMA {{ $dbName }} OWNER TO {{ $dbUser }};"
+        - "GRANT ALL PRIVILEGES ON DATABASE {{ $dbName }} TO {{ $dbUser }};"
+        - "GRANT ALL ON SCHEMA {{ $dbName }} TO {{ $dbUser }};"
+        - "ALTER DEFAULT PRIVILEGES IN SCHEMA {{ $dbName }} GRANT ALL ON TABLES TO {{ $dbUser }};"
+        - "ALTER DEFAULT PRIVILEGES IN SCHEMA {{ $dbName }} GRANT ALL ON SEQUENCES TO {{ $dbUser }};"
+        - "ALTER DATABASE {{ $dbName }} SET search_path TO {{ $dbName }}, public;"
+        - "CREATE EXTENSION IF NOT EXISTS pg_trgm;"
       {{- end }}
     {{- end }}
 

@@ -238,12 +238,8 @@ bootstrap:
     postInitSQL: [ ]
 
     # Post-init Application SQL (runs as superuser after application database creation)
-    postInitApplicationSQL:
-      - "CREATE SCHEMA IF NOT EXISTS ibs AUTHORIZATION ibs;"
-      - "GRANT ALL PRIVILEGES ON DATABASE ibs TO ibs;"
-      - "GRANT ALL ON SCHEMA ibs TO ibs;"
-      - "ALTER DATABASE ibs SET search_path TO ibs, public;"
-      - "CREATE EXTENSION IF NOT EXISTS pg_trgm;"  # Work 앱 통합검색 GIN 인덱스용
+    # If empty, cluster.yaml template will automatically generate dynamic SQL using dbUser and dbName
+    postInitApplicationSQL: [ ]
 
   # Major version upgrade configuration
   pg_upgrade:
