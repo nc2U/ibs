@@ -10,7 +10,7 @@ image:
   repository: nginx
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "1.29.0"
+  tag: "1.31.3"
 
 # Django web image for init container (to copy static files)
 web:

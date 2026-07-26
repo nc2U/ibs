@@ -105,10 +105,25 @@ data:
 
         location /static/ {
             alias /django/static/;
+
+            # index.html 등 html 파일은 캐시하지 않음
+            location ~* \.html$ {
+                add_header Cache-Control "no-cache, no-store, must-revalidate";
+                add_header Pragma "no-cache";
+                add_header Expires "0";
+            }
+
+            # 기타 정적 파일(JS, CSS, 이미지 등)은 1년 동안 캐시
+            location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+                expires 1y;
+                add_header Cache-Control "public, immutable";
+            }
         }
 
         location /media/ {
             alias /django/media/;
+            expires 30d;
+            add_header Cache-Control "public";
         }
     }
 
