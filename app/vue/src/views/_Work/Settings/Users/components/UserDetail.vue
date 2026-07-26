@@ -1,11 +1,12 @@
 <script lang="ts" setup>
 import { computed, type PropType } from 'vue'
+import type { User } from '@/store/types/accounts.ts'
 import type { ActLogEntry } from '@/store/types/work_logging.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
-import { dateFormat, elapsedTime, timeFormat } from '@/utils/baseMixins'
 import { useRoute } from 'vue-router'
 import { useAccount } from '@/store/pinia/account'
 import { useLogging } from '@/store/pinia/work_logging.ts'
+import { dateFormat, elapsedTime, timeFormat } from '@/utils/baseMixins'
 import IssueSummary from './atomicViews/IssueSummary.vue'
 import ProjectSummary from './atomicViews/ProjectSummary.vue'
 import ActivityLog from '@/views/_Work/Manages/Activity/components/ActivityLog.vue'
@@ -22,8 +23,8 @@ const props = defineProps({
 const route = useRoute()
 
 const accStore = useAccount()
-const user = computed(() => accStore.user)
-const userInfo = computed(() => accStore.userInfo)
+const user = computed<User | null>(() => accStore.user)
+const userInfo = computed<User | null>(() => accStore.userInfo)
 const workManager = computed(() => accStore.workManager)
 
 const logStore = useLogging()
