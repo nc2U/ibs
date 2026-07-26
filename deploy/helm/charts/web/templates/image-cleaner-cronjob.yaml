@@ -6,7 +6,7 @@ metadata:
   labels:
     {{- include "web.labels" . | nindent 4 }}
 spec:
-  schedule: "0 18 * * *" # UTC 기준 매일 18시 (KST 매일 새벽 3시)
+  schedule: "0 3 * * *" # KST 기준 매일 새벽 3시
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 1
   jobTemplate:
@@ -16,24 +16,24 @@ spec:
           hostNetwork: true
           hostPID: true
           tolerations:
-          - operator: Exists
+            - operator: Exists
           containers:
-          - name: crictl-cleaner
-            image: alpine:3.20
-            securityContext:
-              privileged: true
-            command:
-            - /bin/sh
-            - -c
-            - |
-              echo "🧹 Cleaning unused container images on node..."
-              chroot /host crictl rmi --prune || chroot /host /usr/local/bin/crictl rmi --prune || true
-              echo "✅ Image cleanup completed."
-            volumeMounts:
-            - name: host-root
-              mountPath: /host
+            - name: crictl-cleaner
+              image: alpine:3.20
+              securityContext:
+                privileged: true
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  echo "🧹 Cleaning unused container images on node..."
+                  chroot /host crictl rmi --prune || chroot /host /usr/local/bin/crictl rmi --prune || true
+                  echo "✅ Image cleanup completed."
+              volumeMounts:
+                - name: host-root
+                  mountPath: /host
           volumes:
-          - name: host-root
-            hostPath:
-              path: /
+            - name: host-root
+              hostPath:
+                path: /
           restartPolicy: OnFailure
