@@ -117,6 +117,15 @@ jobs:
             fi
           done
 
+      - name: Chart & Script Clean
+        uses: garygrossgarten/github-action-ssh@release
+        with:
+          host: ${{ secrets.CICD_HOST }}
+          username: ${{ secrets.CICD_USER }}
+          password: ${{ secrets.CICD_PASS }}
+          command: |
+            cd ${{ secrets.CICD_PATH }}/prod/deploy && rm -rf helm kubectl
+
       - name: Copy helm to CI/CD server
         uses: appleboy/scp-action@master
         with:
@@ -149,8 +158,6 @@ jobs:
             fi
 
             # 3. SCP 수신 헬름 디렉터리 정리 및 심볼릭 링크 연결
-            rm -rf ./helm
-            mkdir -p helm
             if [ -f "./values-prod-custom.yaml" ]; then
               ln -sf ../values-prod-custom.yaml ./helm/values-prod-custom.yaml
               echo "Created symlink: helm/values-prod-custom.yaml -> ../values-prod-custom.yaml"
