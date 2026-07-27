@@ -3,8 +3,8 @@ import { computed, onBeforeMount, onBeforeUpdate, type PropType, reactive, ref }
 import { useCompany } from '@/store/pinia/company'
 import { useComLedger } from '@/store/pinia/comLedger.ts'
 import type { CompanyBank } from '@/store/types/comLedger'
-import { write_company_ledger } from '@/utils/pageAuth'
 import { isValidate } from '@/utils/helper'
+import { useAccount } from '@/store/pinia/account.ts'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
@@ -15,6 +15,9 @@ const props = defineProps({
 
 const refAlertModal = ref()
 const refConfirmModal = ref()
+
+const accountStore = useAccount()
+const isFinancial = computed(() => accountStore.isFinancial)
 
 const validated = ref(false)
 
@@ -59,7 +62,7 @@ const onSubmit = (event: Event) => {
   if (isValidate(event)) {
     validated.value = true
   } else {
-    if (write_company_ledger.value) {
+    if (isFinancial.value) {
       refConfirmModal.value.callModal()
     } else refAlertModal.value.callModal()
     validated.value = false

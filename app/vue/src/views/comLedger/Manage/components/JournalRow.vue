@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed, type ComputedRef, inject, ref, watch } from 'vue'
-import { write_company_ledger } from '@/utils/pageAuth.ts'
+import { useAccount } from '@/store/pinia/account.ts'
 import type { AccountPicker } from '@/store/types/comLedger.ts'
 import LedgerAccount from '@/components/LedgerAccount/Index.vue'
 
@@ -51,6 +51,9 @@ interface Emits {
 }
 
 const emit = defineEmits<Emits>()
+
+const accountStore = useAccount()
+const isFinancial = computed(() => accountStore.isFinancial)
 
 const affiliates = inject<ComputedRef<{ value: number; label: string }[]>>('affiliates')
 const comAccounts = inject<ComputedRef<AccountPicker[]>>('comAccounts')
@@ -143,7 +146,7 @@ const isEvidenceRequired = (row: NewEntryForm): boolean => {
       <col style="width: 24%" />
       <col style="width: 16%" />
       <col style="width: 22%" />
-      <col v-if="write_company_ledger" style="width: 6%" />
+      <col v-if="isFinancial" style="width: 6%" />
     </colgroup>
 
     <!-- 모든 행을 수정 가능한 폼으로 렌더링 -->
@@ -195,7 +198,7 @@ const isEvidenceRequired = (row: NewEntryForm): boolean => {
           <option value="6">지로용지 및 청구서</option>
         </CFormSelect>
       </CTableDataCell>
-      <CTableDataCell v-if="write_company_ledger" class="text-right pr-2">
+      <CTableDataCell v-if="isFinancial" class="text-right pr-2">
         <v-icon
           v-if="sort === 2 && !row.trader?.includes('이체수수료')"
           icon="mdi-playlist-plus"

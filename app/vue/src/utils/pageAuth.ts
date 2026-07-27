@@ -4,7 +4,6 @@ import { usePermission } from '@/store/pinia/work_permission'
 import { PERM, type PermissionCode } from '@/store/constants/permissions'
 
 const isSuperUser = computed(() => useAccount().superAuth)
-const isFinancial = computed(() => useAccount().isFinancial)
 
 /**
  * usePermission 스토어의 can() 메서드와 연동하여 권한을 체크합니다.
@@ -61,10 +60,6 @@ export const read_project_site = computed(() => hasPermission(PERM.SITE_READ))
 export const write_project_site = computed(() =>
   hasPermission([PERM.SITE_CREATE, PERM.SITE_UPDATE, PERM.SITE_DELETE]),
 )
-
-// ── 본사 회계 관리 ──────────────────────────────────────────────────────
-export const read_company_ledger = computed(() => isFinancial.value)
-export const write_company_ledger = computed(() => isFinancial.value)
 
 // ── 본사 문서 관리 ──────────────────────────────────────────────────────
 export const read_company_docs = computed(() => hasPermission(PERM.DOCS_READ))

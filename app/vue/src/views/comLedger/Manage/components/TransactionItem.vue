@@ -3,9 +3,8 @@ import { computed, type ComputedRef, inject, nextTick, type PropType, ref, watch
 import { useRouter } from 'vue-router'
 import { cutString, diffDate, numFormat } from '@/utils/baseMixins'
 import { useAccount } from '@/store/pinia/account.ts'
-import { write_company_ledger } from '@/utils/pageAuth'
 import { useComLedger } from '@/store/pinia/comLedger.ts'
-import type { AccountPicker, AccountingEntry, BankTransaction } from '@/store/types/comLedger'
+import type { AccountingEntry, AccountPicker, BankTransaction } from '@/store/types/comLedger'
 import LedgerAccountPicker from '@/components/LedgerAccount/Picker.vue'
 import AffiliateSelectModal from './AffiliateSelectModal.vue'
 
@@ -22,10 +21,11 @@ const rowColor = computed(() => (props.isHighlighted ? 'warning' : ''))
 
 const accStore = useAccount()
 const superAuth = computed(() => accStore.superAuth)
+const isFinancial = computed(() => accStore.isFinancial)
 const allowedPeriod = computed(
   () =>
     (superAuth as any).value ||
-    (write_company_ledger &&
+    (isFinancial &&
       diffDate(props.transaction?.deal_date as string, new Date(props.calculated)) <= 10),
 )
 
@@ -106,7 +106,9 @@ watch(
           }
         }
       } else if (type === 'entry') {
-        const entry = (props.transaction?.accounting_entries as AccountingEntry[])?.find(e => e.pk === pk)
+        const entry = (props.transaction?.accounting_entries as AccountingEntry[])?.find(
+          e => e.pk === pk,
+        )
         if (entry) {
           if (field === 'account_affiliate') {
             editValue.value = {
@@ -228,7 +230,9 @@ const handlePickerClose = async () => {
       // 현재 편집 중인 entry 찾기 (clearSharedPickerState 전에 pk와 account 저장)
       const entryPk = editingState.value?.pk
       const selectedAccountId = editValue.value.account
-      const entry = (props.transaction?.accounting_entries as AccountingEntry[])?.find(e => e.pk === entryPk)
+      const entry = (props.transaction?.accounting_entries as AccountingEntry[])?.find(
+        e => e.pk === entryPk,
+      )
 
       // Picker 상태 정리 (Picker를 닫음)
       ledgerStore.clearSharedPickerState()
@@ -292,7 +296,9 @@ const handleUpdate = async () => {
       }
     }
   } else {
-    const entry = (props.transaction?.accounting_entries as AccountingEntry[])?.find(e => e.pk === pk)
+    const entry = (props.transaction?.accounting_entries as AccountingEntry[])?.find(
+      e => e.pk === pk,
+    )
     if (!entry) {
       ledgerStore.sharedEditingState = null // No entry found, cancel editing
       return
@@ -505,7 +511,7 @@ const collapseAll = () => {
             <col style="width: 26%" />
             <col style="width: 16%" />
             <col style="width: 24%" />
-            <col v-if="write_company_ledger" style="width: 6%" />
+            <col v-if="isFinancial" style="width: 6%" />
           </colgroup>
           <CTableRow v-for="entry in visibleEntries" :key="entry.pk" class="bg-yellow-lighten-5">
             <CTableDataCell
@@ -640,7 +646,7 @@ const collapseAll = () => {
             <CTableDataCell class="pl-3">
               {{ cutString(entry.evidence_type_display, 10) }}
             </CTableDataCell>
-            <CTableDataCell v-if="write_company_ledger" class="text-right pr-2">
+            <CTableDataCell v-if="isFinancial" class="text-right pr-2">
               <v-icon
                 v-if="allowedPeriod"
                 icon="mdi-pencil"

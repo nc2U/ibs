@@ -8,7 +8,7 @@ import {
 } from 'vue-router'
 import { navMenu, pageTitle } from '@/views/comLedger/_menu/headermixin'
 import { useCompany } from '@/store/pinia/company'
-import { write_company_ledger } from '@/utils/pageAuth'
+import { useAccount } from '@/store/pinia/account.ts'
 import type { Company } from '@/store/types/settings.ts'
 import { type DataFilter as Filter, useComLedger } from '@/store/pinia/comLedger'
 import Loading from '@/components/Loading/Index.vue'
@@ -20,6 +20,9 @@ import AddTransaction from './components/AddTransaction.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import TransactionList from './components/TransactionList.vue'
 import TransForm from './components/TransForm.vue'
+
+const accountStore = useAccount()
+const isFinancial = computed(() => accountStore.isFinancial)
 
 const listControl = ref()
 const [route, router] = [useRoute() as Loaded & { name: string }, useRouter()]
@@ -222,7 +225,7 @@ onBeforeRouteLeave(() => {
             @list-filtering="listFiltering"
           />
 
-          <AddTransaction v-if="write_company_ledger" :company="company as number" />
+          <AddTransaction v-if="isFinancial" :company="company as number" />
 
           <TableTitleRow
             title="본사 입출금 관리"
