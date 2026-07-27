@@ -272,7 +272,7 @@ class Permission(models.Model):
                       ('contract', '계약 관리'), ('payment', '수납 관리'), ('notice', '고지 관리'),
                       ('ledger', '자금/원장 관리'), ('site', '사업 부지 관리'), ('hr_work', '인사 관리'))
     module = models.CharField('모듈', max_length=10, choices=MODULE_CHOICES, db_index=True)
-    CATEGORY_CHOICES = (('work_core', '업무관리 중심'), ('ibs_global', '비즈니스 데이터 지원'))
+    CATEGORY_CHOICES = (('work_core', '업무관리 중심'), ('ibs_global', '비즈니스 데이터 지원'), ('shared', '공통 공유 모듈'))
     category = models.CharField('구분', max_length=15, choices=CATEGORY_CHOICES, default='work_core')
     code = models.CharField('코드', max_length=30, unique=True)
     name = models.CharField('이름', max_length=20)
