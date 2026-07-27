@@ -462,7 +462,7 @@ class BankTransaction(models.Model):
         if self.amount is not None and self.amount <= 0:
             raise ValidationError({'amount': '거래 금액은 0보다 커야 합니다.'})
 
-        if self.deal_date and self.deal_date > timezone.now().date():
+        if self.deal_date and self.deal_date > timezone.localdate():
             raise ValidationError({'deal_date': '미래 날짜로 거래를 생성할 수 없습니다.'})
 
     def save(self, *args, **kwargs):
