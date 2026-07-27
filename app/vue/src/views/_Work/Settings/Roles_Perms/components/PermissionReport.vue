@@ -17,18 +17,20 @@ const permissionGroups = computed(() => {
     ibs_global: {},
   }
   props.permissionList.forEach(p => {
-    const cat = p.category || 'work_core'
-    if (!groups[cat]) groups[cat] = {}
-    if (!groups[cat][p.module]) groups[cat][p.module] = []
-    groups[cat][p.module].push(p)
+    const cats = p.category === 'shared' ? ['work_core', 'ibs_global'] : [p.category || 'work_core']
+    cats.forEach(cat => {
+      if (!groups[cat]) groups[cat] = {}
+      if (!groups[cat][p.module]) groups[cat][p.module] = []
+      groups[cat][p.module].push(p)
+    })
   })
   return groups
 })
 
 const categoryLabel = (cat: string) => {
   const labels: Record<string, string> = {
-    work_core: '협업 및 업무 관리 권한 (work_core)',
-    ibs_global: '비즈니스 데이터 관리 권한 (ibs_global)',
+    work_core: '업무 관리 관련 권한 (work_core)',
+    ibs_global: '개발 사업 관련 권한 (ibs_global)',
   }
   return labels[cat] || cat
 }
@@ -95,7 +97,12 @@ const togglePermission = async (role: Role, permissionPk: number) => {
           <tbody>
             <template v-for="(perms, sort) in permissionGroups.work_core" :key="sort">
               <tr class="table-secondary">
-                <td :colspan="roleList.filter(r => (r.category || 'work_core') === 'work_core').length + 1" class="fw-bold ps-3">
+                <td
+                  :colspan="
+                    roleList.filter(r => (r.category || 'work_core') === 'work_core').length + 1
+                  "
+                  class="fw-bold ps-3"
+                >
                   {{ sortLabel(sort as string) }}
                 </td>
               </tr>
@@ -104,7 +111,11 @@ const togglePermission = async (role: Role, permissionPk: number) => {
                   <div class="fw-semibold">{{ perm.name }}</div>
                   <small class="text-muted">{{ perm.description }}</small>
                 </td>
-                <td v-for="role in roleList.filter(r => (r.category || 'work_core') === 'work_core')" :key="role.pk" class="text-center">
+                <td
+                  v-for="role in roleList.filter(r => (r.category || 'work_core') === 'work_core')"
+                  :key="role.pk"
+                  class="text-center"
+                >
                   <CFormCheck
                     :id="`perm-${role.pk}-${perm.pk}`"
                     :checked="hasPermission(role, perm.pk)"
@@ -144,7 +155,10 @@ const togglePermission = async (role: Role, permissionPk: number) => {
           <tbody>
             <template v-for="(perms, sort) in permissionGroups.ibs_global" :key="sort">
               <tr class="table-secondary">
-                <td :colspan="roleList.filter(r => r.category === 'ibs_global').length + 1" class="fw-bold ps-3">
+                <td
+                  :colspan="roleList.filter(r => r.category === 'ibs_global').length + 1"
+                  class="fw-bold ps-3"
+                >
                   {{ sortLabel(sort as string) }}
                 </td>
               </tr>
@@ -153,7 +167,11 @@ const togglePermission = async (role: Role, permissionPk: number) => {
                   <div class="fw-semibold">{{ perm.name }}</div>
                   <small class="text-muted">{{ perm.description }}</small>
                 </td>
-                <td v-for="role in roleList.filter(r => r.category === 'ibs_global')" :key="role.pk" class="text-center">
+                <td
+                  v-for="role in roleList.filter(r => r.category === 'ibs_global')"
+                  :key="role.pk"
+                  class="text-center"
+                >
                   <CFormCheck
                     :id="`perm-${role.pk}-${perm.pk}`"
                     :checked="hasPermission(role, perm.pk)"
