@@ -147,7 +147,7 @@ export interface Permission {
     | 'ledger'
     | 'site'
     | 'hr_work'
-  category?: 'work_core' | 'ibs_global'
+  category?: 'work_core' | 'ibs_global' | 'shared'
   code: string
   name: string
   description: string
