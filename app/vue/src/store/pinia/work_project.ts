@@ -368,12 +368,14 @@ export const useWork = defineStore('work', () => {
 
   const permissionList = ref<Permission[]>([])
 
-  const fetchPermissionList = (category?: 'work_core' | 'ibs_global') => {
+  const fetchPermissionList = async (category?: 'work_core' | 'ibs_global') => {
     const url = category ? `/permission/?category=${category}` : `/permission/`
-    return api
-      .get(url)
-      .then(res => (permissionList.value = res.data.results))
-      .catch(err => errorHandle(err.response.data))
+    try {
+      const res = await api.get(url)
+      return (permissionList.value = res.data.results)
+    } catch (err: any) {
+      return errorHandle(err.response.data)
+    }
   }
 
   // member states & getters
