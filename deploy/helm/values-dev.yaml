@@ -25,8 +25,8 @@ cnpg:
       bucket: "postgres-backup-dev-mock"
       region: "ap-northeast-2"
       endpoint: "http://192.168.0.100:9000"
-      accessKeyId: "YOUR_DEV_ACCESS_KEY"
-      secretAccessKey: "YOUR_DEV_SECRET_KEY"
+      accessKeyId: "dev-user"
+      secretAccessKey: "dev-secret-password-123"
 
 web:
   imageConfigMaps:
@@ -36,8 +36,8 @@ web:
     awsRegion: "ap-northeast-2"
     awsQuerystringExpire: "3600"
     imageSecrets:
-      awsAccessKeyId: "austin"
-      awsSecretAccessKey: '$Sc1965112'
+      awsAccessKeyId: "dev-user"
+      awsSecretAccessKey: 'dev-secret-password-123'
 
   image:
     tag: dev-latest  # Overridden by GitHub Actions with git SHA
