@@ -6,9 +6,9 @@ import NoAuth from '@/views/_Accounts/NoAuth.vue'
 
 const account = useAccount()
 
-const isLoading = computed(() => account.userInfo === null || account.userInfo === undefined)
+const isLoading = computed(() => !account.userInfo)
 
-const hasAuth = computed(() => !!read_auth_manage.value)
+const hasAuth = computed(() => read_auth_manage.value)
 </script>
 
 <template>
