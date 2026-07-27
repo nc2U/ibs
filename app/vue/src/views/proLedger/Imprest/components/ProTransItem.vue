@@ -2,7 +2,7 @@
 import { computed, type ComputedRef, inject, nextTick, type PropType, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { cutString, diffDate, numFormat } from '@/utils/baseMixins'
-import { write_project_cash } from '@/utils/pageAuth'
+import { write_project_ledger } from '@/utils/pageAuth'
 import { useProLedger } from '@/store/pinia/proLedger.ts'
 import { useAccount } from '@/store/pinia/account.ts'
 import type { AccountPicker } from '@/store/types/comLedger.ts'
@@ -26,7 +26,7 @@ const superAuth = computed(() => accStore.superAuth)
 const allowedPeriod = computed(
   () =>
     (superAuth as any).value ||
-    (write_project_cash && diffDate(props.proTrans.deal_date, new Date(props.calculated)) <= 10),
+    (write_project_ledger && diffDate(props.proTrans.deal_date, new Date(props.calculated)) <= 10),
 )
 
 const proAccounts = inject<ComputedRef<AccountPicker[]>>('proAccounts')
@@ -514,7 +514,7 @@ const handleUpdate = async () => {
             <col style="width: 26%" />
             <col style="width: 16%" />
             <col style="width: 24%" />
-            <col v-if="write_project_cash" style="width: 6%" />
+            <col v-if="write_project_ledger" style="width: 6%" />
           </colgroup>
           <CTableRow v-for="entry in visibleEntries" :key="entry.pk" class="bg-amber-lighten-5">
             <CTableDataCell
@@ -704,7 +704,7 @@ const handleUpdate = async () => {
             <CTableDataCell class="pl-3">
               {{ cutString(entry.evidence_type_display, 10) }}
             </CTableDataCell>
-            <CTableDataCell v-if="write_project_cash" class="text-right pr-2">
+            <CTableDataCell v-if="write_project_ledger" class="text-right pr-2">
               <v-icon
                 v-if="allowedPeriod"
                 icon="mdi-pencil"

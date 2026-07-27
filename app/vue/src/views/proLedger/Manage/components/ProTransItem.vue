@@ -3,7 +3,7 @@ import { computed, type ComputedRef, inject, nextTick, type PropType, ref, watch
 import { useRouter } from 'vue-router'
 import { cutString, diffDate, numFormat } from '@/utils/baseMixins'
 import { useAccount } from '@/store/pinia/account.ts'
-import { write_project_cash } from '@/utils/pageAuth'
+import { write_project_ledger } from '@/utils/pageAuth'
 import { useProLedger } from '@/store/pinia/proLedger.ts'
 import type { AccountPicker } from '@/store/types/comLedger.ts'
 import type { ProAccountingEntry, ProBankTrans } from '@/store/types/proLedger.ts'
@@ -26,7 +26,8 @@ const superAuth = computed(() => accStore.superAuth)
 const allowedPeriod = computed(
   () =>
     (superAuth as any).value ||
-    (write_project_cash && diffDate(props.proTrans.deal_date, new Date(props.calculated)) <= 10),
+    (write_project_ledger &&
+      diffDate(props.proTrans?.deal_date as string, new Date(props.calculated)) <= 10),
 )
 
 const proAccounts = inject<ComputedRef<AccountPicker[]>>('proAccounts')
@@ -38,7 +39,7 @@ const getAccountById = (accountId: number | null | undefined): AccountPicker | u
 }
 
 const sortType = computed(() => {
-  if (props.proTrans.sort === 1) return 'deposit' // 입금
+  if (props.proTrans?.sort === 1) return 'deposit' // 입금
   if (props.proTrans.sort === 2) return 'withdraw' // 출금
   return null // 전체
 })
@@ -63,7 +64,7 @@ const handleSelect = async (id: number | null) => {
   const type = selectModalType.value
 
   const payload: any = {
-    pk: props.proTrans.pk!,
+    pk: props.proTrans?.pk!,
     accounting_entries: [
       {
         pk: entry.pk,
@@ -90,15 +91,15 @@ watch(
   newVal => {
     if (newVal) {
       const { type, pk, field } = newVal
-      if (type === 'tran' && pk === props.proTrans.pk) {
+      if (type === 'tran' && pk === props.proTrans?.pk) {
         if (field === 'note') {
-          editValue.value = props.proTrans.note
+          editValue.value = props.proTrans?.note
         } else if (field === 'content') {
-          editValue.value = props.proTrans.content
+          editValue.value = props.proTrans?.content
         } else if (field === 'sort_amount') {
           editValue.value = {
-            sort: props.proTrans.sort,
-            amount: props.proTrans.amount || 0,
+            sort: props.proTrans?.sort,
+            amount: props.proTrans?.amount || 0,
           }
         }
       } else if (type === 'entry') {
@@ -514,7 +515,7 @@ const handleUpdate = async () => {
             <col style="width: 26%" />
             <col style="width: 16%" />
             <col style="width: 24%" />
-            <col v-if="write_project_cash" style="width: 6%" />
+            <col v-if="write_project_ledger" style="width: 6%" />
           </colgroup>
           <CTableRow v-for="entry in visibleEntries" :key="entry.pk" class="bg-lime-lighten-5">
             <CTableDataCell
@@ -704,7 +705,7 @@ const handleUpdate = async () => {
             <CTableDataCell class="pl-3">
               {{ cutString(entry.evidence_type_display, 10) }}
             </CTableDataCell>
-            <CTableDataCell v-if="write_project_cash" class="text-right pr-2">
+            <CTableDataCell v-if="write_project_ledger" class="text-right pr-2">
               <v-icon
                 v-if="allowedPeriod"
                 icon="mdi-pencil"

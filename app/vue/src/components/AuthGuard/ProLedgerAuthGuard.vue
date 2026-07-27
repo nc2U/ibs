@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useAccount } from '@/store/pinia/account'
-import { read_project_cash } from '@/utils/pageAuth'
+import { read_project_ledger } from '@/utils/pageAuth'
 import NoAuth from '@/views/_Accounts/NoAuth.vue'
 
 const account = useAccount()
 
 const isLoading = computed(() => account.userInfo === null || account.userInfo === undefined)
 
-const hasAuth = computed(() => !!read_project_cash.value)
+const hasAuth = computed(() => read_project_ledger.value)
 </script>
 
 <template>

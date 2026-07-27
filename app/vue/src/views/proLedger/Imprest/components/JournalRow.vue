@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed, type ComputedRef, inject, ref, watch } from 'vue'
-import { write_project_cash } from '@/utils/pageAuth.ts'
+import { write_project_ledger } from '@/utils/pageAuth.ts'
 import type { AccountPicker } from '@/store/types/comLedger.ts'
 import LedgerAccount from '@/components/LedgerAccount/Index.vue'
 import MultiSelect from '@/components/MultiSelect/index.vue'
@@ -20,6 +20,7 @@ interface Props {
   displayRows: NewEntryForm[]
   transAmount: number | null
 }
+
 const props = defineProps<Props>() // Assign defineProps to a variable
 
 watch(
@@ -47,8 +48,10 @@ watch(
 
 interface Emits {
   (e: 'removeEntry', index: number): void
+
   (e: 'insertTransferFee', index: number): void
 }
+
 const emit = defineEmits<Emits>()
 
 const getContracts = inject<ComputedRef<{ value: number; label: string }[]>>('getContracts')
@@ -150,7 +153,7 @@ const isEvidenceRequired = (row: NewEntryForm): boolean => {
       <col style="width: 24%" />
       <col style="width: 16%" />
       <col style="width: 22%" />
-      <col v-if="write_project_cash" style="width: 6%" />
+      <col v-if="write_project_ledger" style="width: 6%" />
     </colgroup>
 
     <!-- 모든 행을 수정 가능한 폼으로 렌더링 -->
@@ -213,7 +216,7 @@ const isEvidenceRequired = (row: NewEntryForm): boolean => {
           <option value="6">지로용지 및 청구서</option>
         </CFormSelect>
       </CTableDataCell>
-      <CTableDataCell v-if="write_project_cash" class="text-right pr-2">
+      <CTableDataCell v-if="write_project_ledger" class="text-right pr-2">
         <v-icon
           v-if="sort === 2 && !row.trader?.includes('이체수수료')"
           icon="mdi-playlist-plus"

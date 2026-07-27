@@ -6,7 +6,7 @@ import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import { useProLedger } from '@/store/pinia/proLedger.ts'
 import { useContract } from '@/store/pinia/contract.ts'
 import { TableSecondary } from '@/utils/cssMixins.ts'
-import { write_project_cash } from '@/utils/pageAuth.ts'
+import { write_project_ledger } from '@/utils/pageAuth.ts'
 import type { ProBankTrans } from '@/store/types/proLedger.ts'
 import type { ParseResult } from '@/composables/useExcelUpload'
 import { useExcelUpload } from '@/composables/useExcelUpload'
@@ -780,13 +780,13 @@ onBeforeRouteLeave((to, from, next) => {
         <col style="width: 12%" />
         <col style="width: 8%" />
         <col style="width: 11%" />
-        <col v-if="write_project_cash" style="width: 3%" />
+        <col v-if="write_project_ledger" style="width: 3%" />
       </colgroup>
 
       <CTableHead class="sticky-table-head">
         <CTableRow :color="TableSecondary" class="sticky-header-row-1">
           <CTableHeaderCell class="pl-3" colspan="5">은행거래내역</CTableHeaderCell>
-          <CTableHeaderCell class="pl-0" :colspan="write_project_cash ? 4 : 3">
+          <CTableHeaderCell class="pl-0" :colspan="write_project_ledger ? 4 : 3">
             <span class="text-grey mr-2">|</span> 분류 내역
           </CTableHeaderCell>
           <CTableHeaderCell class="px-0">
@@ -841,7 +841,7 @@ onBeforeRouteLeave((to, from, next) => {
           <CTableHeaderCell scope="col">거래처</CTableHeaderCell>
           <CTableHeaderCell scope="col">분류 금액</CTableHeaderCell>
           <CTableHeaderCell scope="col">지출증빙</CTableHeaderCell>
-          <CTableHeaderCell v-if="write_project_cash" scope="col"></CTableHeaderCell>
+          <CTableHeaderCell v-if="write_project_ledger" scope="col"></CTableHeaderCell>
         </CTableRow>
       </CTableHead>
 
@@ -951,7 +951,7 @@ onBeforeRouteLeave((to, from, next) => {
           color="warning"
           size="small"
           @click="confirmModal.callModal()"
-          :disabled="!write_project_cash"
+          :disabled="!write_project_ledger"
         >
           삭제
         </v-btn>

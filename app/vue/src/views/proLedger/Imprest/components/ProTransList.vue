@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
 import { TableSecondary } from '@/utils/cssMixins'
-import { write_project_cash } from '@/utils/pageAuth'
+import { write_project_ledger } from '@/utils/pageAuth'
 import { useProLedger } from '@/store/pinia/proLedger.ts'
 import type { ProjectBank } from '@/store/types/proLedger.ts'
 import Pagination from '@/components/Pagination'
@@ -46,13 +46,13 @@ const accCallModal = () => {
       <col style="width: 13%" />
       <col style="width: 8%" />
       <col style="width: 12%" />
-      <col v-if="write_project_cash" style="width: 3%" />
+      <col v-if="write_project_ledger" style="width: 3%" />
     </colgroup>
 
     <CTableHead>
       <CTableRow :color="TableSecondary">
         <CTableHeaderCell class="pl-3" colspan="6">은행거래내역</CTableHeaderCell>
-        <CTableHeaderCell class="pl-0" :colspan="write_project_cash ? 6 : 5">
+        <CTableHeaderCell class="pl-0" :colspan="write_project_ledger ? 6 : 5">
           <span class="text-grey mr-2">|</span> 분류 내역
         </CTableHeaderCell>
       </CTableRow>
@@ -78,7 +78,7 @@ const accCallModal = () => {
         <CTableHeaderCell scope="col">거래처</CTableHeaderCell>
         <CTableHeaderCell scope="col">분류 금액</CTableHeaderCell>
         <CTableHeaderCell scope="col">지출증빙</CTableHeaderCell>
-        <CTableHeaderCell v-if="write_project_cash" scope="col"></CTableHeaderCell>
+        <CTableHeaderCell v-if="write_project_ledger" scope="col"></CTableHeaderCell>
       </CTableRow>
     </CTableHead>
 

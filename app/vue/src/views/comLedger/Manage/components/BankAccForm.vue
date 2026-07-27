@@ -3,7 +3,7 @@ import { computed, onBeforeMount, onBeforeUpdate, type PropType, reactive, ref }
 import { useCompany } from '@/store/pinia/company'
 import { useComLedger } from '@/store/pinia/comLedger.ts'
 import type { CompanyBank } from '@/store/types/comLedger'
-import { write_company_cash } from '@/utils/pageAuth'
+import { write_company_ledger } from '@/utils/pageAuth'
 import { isValidate } from '@/utils/helper'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
@@ -59,7 +59,7 @@ const onSubmit = (event: Event) => {
   if (isValidate(event)) {
     validated.value = true
   } else {
-    if (write_company_cash.value) {
+    if (write_company_ledger.value) {
       refConfirmModal.value.callModal()
     } else refAlertModal.value.callModal()
     validated.value = false

@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
-import { write_project_cash } from '@/utils/pageAuth'
+import { write_project_ledger } from '@/utils/pageAuth'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 defineProps({
@@ -21,7 +21,7 @@ const modalAction = () => {
 
 <template>
   <CAlert
-    v-if="write_project_cash"
+    v-if="write_project_ledger"
     :color="isCalculated ? 'success' : 'warning'"
     class="text-right"
   >

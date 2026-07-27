@@ -2,7 +2,7 @@
 import { ref, reactive, computed, onMounted, onUpdated, type PropType } from 'vue'
 import { useComLedger } from '@/store/pinia/comLedger.ts'
 import type { ProjectBank } from '@/store/types/proLedger.ts'
-import { write_project_cash } from '@/utils/pageAuth'
+import { write_project_ledger } from '@/utils/pageAuth'
 import { isValidate } from '@/utils/helper'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
@@ -57,7 +57,7 @@ const onSubmit = (event: Event) => {
   if (isValidate(event)) {
     validated.value = true
   } else {
-    if (write_project_cash.value) {
+    if (write_project_ledger.value) {
       refConfirmModal.value.callModal()
     } else refAlertModal.value.callModal()
     validated.value = false

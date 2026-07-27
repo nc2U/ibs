@@ -9,8 +9,7 @@ import {
 import { navMenu, pageTitle } from '@/views/proLedger/_menu/headermixin'
 import { useProject } from '@/store/pinia/project.ts'
 import { useContract } from '@/store/pinia/contract.ts'
-import { useComLedger } from '@/store/pinia/comLedger.ts'
-import { write_project_cash } from '@/utils/pageAuth'
+import { write_project_ledger } from '@/utils/pageAuth'
 import { useProLedger } from '@/store/pinia/proLedger'
 import { type DataFilter as Filter } from '@/store/types/proLedger'
 import Loading from '@/components/Loading/Index.vue'
@@ -232,7 +231,7 @@ onBeforeRouteLeave(() => {
             @list-filtering="listFiltering"
           />
 
-          <AddProTrans v-if="write_project_cash" :project="project as number" />
+          <AddProTrans v-if="write_project_ledger" :project="project as number" />
 
           <TableTitleRow
             title="프로젝트 입출금 관리"

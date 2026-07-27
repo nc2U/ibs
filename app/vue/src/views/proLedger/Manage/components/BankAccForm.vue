@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { ref, reactive, computed, onMounted, onUpdated, type PropType } from 'vue'
-import { write_project_cash } from '@/utils/pageAuth'
+import { write_project_ledger } from '@/utils/pageAuth'
 import type { ProjectBank } from '@/store/types/proLedger.ts'
 import { isValidate, errorHandle } from '@/utils/helper'
 import api from '@/api'
@@ -62,7 +62,7 @@ const onSubmit = (event: Event) => {
   if (isValidate(event)) {
     validated.value = true
   } else {
-    if (write_project_cash.value) {
+    if (write_project_ledger.value) {
       refConfirmModal.value.callModal()
     } else refAlertModal.value.callModal()
     validated.value = false

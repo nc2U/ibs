@@ -8,7 +8,7 @@ import {
 } from 'vue-router'
 import { navMenu, pageTitle } from '@/views/comLedger/_menu/headermixin'
 import { useCompany } from '@/store/pinia/company'
-import { write_company_cash } from '@/utils/pageAuth'
+import { write_company_ledger } from '@/utils/pageAuth'
 import type { Company } from '@/store/types/settings.ts'
 import { type DataFilter as Filter, useComLedger } from '@/store/pinia/comLedger'
 import Loading from '@/components/Loading/Index.vue'
@@ -222,7 +222,7 @@ onBeforeRouteLeave(() => {
             @list-filtering="listFiltering"
           />
 
-          <AddTransaction v-if="write_company_cash" :company="company as number" />
+          <AddTransaction v-if="write_company_ledger" :company="company as number" />
 
           <TableTitleRow
             title="본사 입출금 관리"

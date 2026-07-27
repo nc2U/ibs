@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { ref, computed } from 'vue'
 import { useProject } from '@/store/pinia/project'
-import { write_project_cash } from '@/utils/pageAuth'
+import { write_project_ledger } from '@/utils/pageAuth'
 import { numFormat } from '@/utils/baseMixins'
 import { TableInfo, TableSecondary } from '@/utils/cssMixins'
 import type {
@@ -88,7 +88,7 @@ const sumTotal = computed(() => {
 
 const patchBudget = (pk: number, budget: string, oldBudget: number, isRevised = false) => {
   formNumber.value = 1000
-  if (write_project_cash.value) {
+  if (write_project_ledger.value) {
     const bg = parseInt(budget)
     if (bg !== oldBudget) emit('patch-budget', pk, bg, isRevised)
   } else {

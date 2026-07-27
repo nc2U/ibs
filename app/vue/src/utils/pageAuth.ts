@@ -38,8 +38,8 @@ export const write_notice = computed(() =>
 )
 
 // ── 사업비 자금/회계 원장 ──────────────────────────────────────────────
-export const read_project_cash = computed(() => hasPermission(PERM.LEDGER_READ))
-export const write_project_cash = computed(() =>
+export const read_project_ledger = computed(() => hasPermission(PERM.LEDGER_READ))
+export const write_project_ledger = computed(() =>
   hasPermission([PERM.LEDGER_CREATE, PERM.LEDGER_UPDATE, PERM.LEDGER_DELETE]),
 )
 
@@ -62,8 +62,8 @@ export const write_project_site = computed(() =>
 )
 
 // ── 본사 회계 관리 ──────────────────────────────────────────────────────
-export const read_company_cash = computed(() => hasPermission(PERM.LEDGER_READ))
-export const write_company_cash = computed(() =>
+export const read_company_ledger = computed(() => hasPermission(PERM.LEDGER_READ))
+export const write_company_ledger = computed(() =>
   hasPermission([PERM.LEDGER_CREATE, PERM.LEDGER_UPDATE, PERM.LEDGER_DELETE]),
 )
 
@@ -88,5 +88,3 @@ export const write_company_settings = computed(() =>
 // ── 권한 설정 관리 ──────────────────────────────────────────────────────
 export const read_auth_manage = computed(() => hasPermission(PERM.PROJECT_MEMBER))
 export const write_auth_manage = computed(() => hasPermission(PERM.PROJECT_MEMBER))
-
-

@@ -35,11 +35,11 @@
 | `views/notices/Mailing`        | 우편 발송 관리   | `write_notice`           | **`notice`**        |
 | `views/notices/Sms`            | SMS 발송 관리  | `write_notice`           | **`notice`**        |
 | `views/notices/Log`            | 고지 발송 이력   | `read_notice`            | **`notice`**        |
-| `views/proLedger/Manage`       | 사업비 자금 관리  | `write_project_cash`     | **`ledger`** (신규)   |
-| `views/proLedger/Imprest`      | 소액 운영비 관리  | `write_project_cash`     | **`ledger`**        |
-| `views/proLedger/Status`       | 자금 현황      | `read_project_cash`      | **`ledger`**        |
-| `views/comLedger/Manage`       | 본사 회계 관리   | `write_company_cash`     | **`ledger`**        |
-| `views/comLedger/Status`       | 본사 회계 현황   | `read_project_cash`      | **`ledger`**        |
+| `views/proLedger/Manage`       | 사업비 자금 관리  | `write_project_ledger`   | **`ledger`** (신규)   |
+| `views/proLedger/Imprest`      | 소액 운영비 관리  | `write_project_ledger`   | **`ledger`**        |
+| `views/proLedger/Status`       | 자금 현황      | `read_project_ledger`    | **`ledger`**        |
+| `views/comLedger/Manage`       | 본사 회계 관리   | `write_company_ledger`   | **`ledger`**        |
+| `views/comLedger/Status`       | 본사 회계 현황   | `read_project_ledger`    | **`ledger`**        |
 | `views/proDocs/GeneralDocs`    | 사업지 일반 문서  | `write_project_docs`     | `docs` (기존)         |
 | `views/proDocs/LawsuitCase`    | 소송 사건      | `write_project_docs`     | `docs`              |
 | `views/proDocs/LawsuitDocs`    | 소송 문서      | `write_project_docs`     | `docs`              |
@@ -155,11 +155,11 @@ write_payment               →  payment.create
 read_notice                 →  notice.read
 write_notice                →  notice.create
 
-read_project_cash           →  ledger.read
-write_project_cash          →  ledger.create
+read_project_ledger         →  ledger.read
+write_project_ledger        →  ledger.create
 
-read_company_cash           →  ledger.read        ← 동일 모듈, 컨텍스트(본사 프로젝트)로 분리
-write_company_cash          →  ledger.create
+read_company_ledger         →  ledger.read        ← 동일 모듈, 컨텍스트(본사 프로젝트)로 분리
+write_company_ledger        →  ledger.create
 
 read_project_docs           →  docs.read
 write_project_docs          →  docs.create
@@ -377,8 +377,10 @@ CONTRACT_READ:       'contract.read',
 :
 'hr_work.read',
   HR_WORK_CREATE
-  HR_WORK_DELETE: 'hr_work.delete',
-} as const
+HR_WORK_DELETE: 'hr_work.delete',
+}
+as
+const
 ```
 
 ---
@@ -388,6 +390,7 @@ CONTRACT_READ:       'contract.read',
 본사 및 프로젝트 멤버 소속 기반의 권한 대체 구현이 완료됨에 따라 1차 이관 작업이 마무리 단계에 접어들었습니다. 이후 다음과 같은 순서로 최종 드롭합니다:
 
 #### 1단계: StaffAuth 모델 및 관련 API 제거
+
 * `accounts/models.py`에서 `class StaffAuth(models.Model)` 정의를 드롭합니다.
 * `accounts/admin.py` 및 `serializers/accounts.py` 등에서 `StaffAuth` 관련 참조 및 ViewSet을 소거합니다.
 * 장고 마이그레이션 생성 및 DB 마이그레이트를 수행합니다:
@@ -396,7 +399,9 @@ CONTRACT_READ:       'contract.read',
   ```
 
 #### 2단계: 프론트엔드 pageAuth.ts 폐기 및 세부 직접 이관
-* 각 비즈니스 메뉴 폴더에 위치한 Vue 파일들의 권한 체크 변수를 `@/utils/pageAuth` 임포트 대신 **`usePermission` 스토어의 `can` 메서드 및 `PERM` 상수** 호출로 1:1 직접 변경합니다.
+
+* 각 비즈니스 메뉴 폴더에 위치한 Vue 파일들의 권한 체크 변수를 `@/utils/pageAuth` 임포트 대신 **`usePermission` 스토어의 `can` 메서드 및 `PERM` 상수** 호출로 1:1
+  직접 변경합니다.
 * 예: `read_contract` -> `can(PERM.CONTRACT_READ)` 직접 체크.
 * 모든 뷰 파일의 전환이 확인되면 `@/utils/pageAuth.ts` 파일을 영구 폐기합니다.
 
@@ -428,11 +433,11 @@ Phase 6  □ 충분한 1차 안정성 검증 (배포 후)
 
 ## 7. 주요 위험 요소 및 대응
 
-| 위험 요소 | 대응 방안 |
-| :--- | :--- |
-| `project.Project`와 `IssueProject`가 연결 안 된 경우 | Phase 4 이관 스크립트에서 누락 감지 및 로그 출력 |
-| `company_cash` / `project_cash` 동일 모듈 사용 | 두 경우 모두 `ledger.*` 사용하되, **본사 IssueProject** 컨텍스트로 분리 |
-| `docs` 모듈 - 사업지/본사 혼용 | 마찬가지로 컨텍스트(IssueProject)로 분리, 코드는 동일 사용 |
-| StaffAuth 즉시 폐기 시 권한 공백 | 원칙: pageAuth.ts를 중간 어댑터로 유지하여 과도기 권한 정상 동작 보장 |
-| 비동기 갱신 시 deleteMember 무단 연쇄 방출 | loading 가드 및 select/deselect 명시적 단일 트리거 적용 완료 |
+| 위험 요소                                        | 대응 방안                                                 |
+|:---------------------------------------------|:------------------------------------------------------|
+| `project.Project`와 `IssueProject`가 연결 안 된 경우 | Phase 4 이관 스크립트에서 누락 감지 및 로그 출력                       |
+| `company_cash` / `project_cash` 동일 모듈 사용     | 두 경우 모두 `ledger.*` 사용하되, **본사 IssueProject** 컨텍스트로 분리 |
+| `docs` 모듈 - 사업지/본사 혼용                        | 마찬가지로 컨텍스트(IssueProject)로 분리, 코드는 동일 사용               |
+| StaffAuth 즉시 폐기 시 권한 공백                      | 원칙: pageAuth.ts를 중간 어댑터로 유지하여 과도기 권한 정상 동작 보장         |
+| 비동기 갱신 시 deleteMember 무단 연쇄 방출               | loading 가드 및 select/deselect 명시적 단일 트리거 적용 완료         |
 

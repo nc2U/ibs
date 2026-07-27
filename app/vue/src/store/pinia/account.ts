@@ -8,8 +8,8 @@ import { useDocs } from '@/store/pinia/docs'
 import {
   write_company_docs,
   write_project_docs,
-  write_company_cash,
-  write_project_cash,
+  write_company_ledger,
+  write_project_ledger,
 } from '@/utils/pageAuth'
 import type { LocationQueryValue } from 'vue-router'
 import type { User, Profile, Scrape, Todo } from '@/store/types/accounts'
@@ -219,11 +219,11 @@ export const useAccount = defineStore('account', () => {
   const isStaff = computed(() => !!superAuth.value || !!userInfo.value?.is_hq_staff) // 본사 관리 권한
   const isFinancial = computed(() => !!userInfo.value?.is_hq_financial_officer)
 
-  const writeComDocs = computed(() => !!superAuth.value || !!write_company_docs.value)
-  const writeProDocs = computed(() => !!superAuth.value || !!write_project_docs.value)
+  const writeComDocs = computed(() => !!superAuth.value || write_company_docs.value)
+  const writeProDocs = computed(() => !!superAuth.value || write_project_docs.value)
   const isComLedger = computed(() => !!superAuth.value || !!userInfo.value?.is_hq_financial_officer)
-  const writeComLedger = computed(() => !!superAuth.value || !!write_company_cash.value)
-  const writeProLedger = computed(() => !!superAuth.value || !!write_project_cash.value) // states
+  const writeComLedger = computed(() => !!superAuth.value || write_company_ledger.value)
+  const writeProLedger = computed(() => !!superAuth.value || write_project_ledger.value) // states
   const profile = ref<Profile | null>(null)
 
   // actions
