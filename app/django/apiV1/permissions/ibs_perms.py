@@ -212,13 +212,12 @@ class IbsModulePermission(ProjectPermission):
                 .get(pk=project_pk)
                 .issue_project
             )
-        except (Project.DoesNotExist, AttributeError):
+        except (Project.DoesNotExist, Project.issue_project.RelatedObjectDoesNotExist, AttributeError):
             issue_project = None
 
         if request is not None:
             setattr(request, cache_key, issue_project)
         return issue_project
-
     def has_permission(self, request, view):
         # 1. 미인증 요청 차단
         if not request.user or not request.user.is_authenticated:

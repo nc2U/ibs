@@ -38,6 +38,7 @@ export interface MyRole {
 export interface IssueProject {
   pk?: number
   company: number | null
+  project: number | null
   type: '1' | '2' | '3' // '1': 본사관리, '2': 부동산개발, '3': 기타 프로젝트
   name: string
   slug: string

@@ -147,7 +147,7 @@ export const useWork = defineStore('work', () => {
     myProjects.value
       .filter(i => i.type === '2')
       .map(i => ({
-        value: i.pk as number,
+        value: i.project as number,
         label:
           (i.depth && i.parent_visible ? '\u00A0'.repeat(i.depth * 2) + '» \u00A0' : '') + i.name,
         slug: i.slug as string,

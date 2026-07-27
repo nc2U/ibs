@@ -148,6 +148,7 @@ class IssueCategoryInIssueProjectSerializer(serializers.ModelSerializer):
 
 class IssueProjectListSerializer(ProjectPermissionMixin, serializers.ModelSerializer):
     company = serializers.SlugRelatedField('name', read_only=True)
+    project = serializers.PrimaryKeyRelatedField(read_only=True)
     module = ModuleInIssueProjectSerializer(read_only=True)
     creator = serializers.SlugRelatedField('username', read_only=True)
     visible = serializers.SerializerMethodField(read_only=True)
@@ -161,10 +162,10 @@ class IssueProjectListSerializer(ProjectPermissionMixin, serializers.ModelSerial
 
     class Meta:
         model = IssueProject
-        fields = ('pk', 'company', 'type', 'name', 'slug', 'description', 'is_public', 'parent',
-                  'allowed_roles', 'status', 'slack_notifications_enabled', 'created', 'updated',
-                  'creator', 'sub_projects', 'depth', 'module', 'my_role', 'my_perms', 'all_members',
-                  'visible', 'parent_visible', 'is_bookmarked')
+        fields = ('pk', 'company', 'project', 'type', 'name', 'slug', 'description', 'is_public',
+                  'parent', 'allowed_roles', 'status', 'slack_notifications_enabled', 'created',
+                  'updated', 'creator', 'sub_projects', 'depth', 'module', 'my_role', 'my_perms',
+                  'all_members', 'visible', 'parent_visible', 'is_bookmarked')
 
     def get_sub_projects(self, obj):
         sub_projects = obj.issueproject_set.exclude(status='9')
