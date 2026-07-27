@@ -52,10 +52,10 @@ services:
       DATABASE_NAME: my-db-name # 실제 데이터로 수정
       DATABASE_USER: my-db-user # 실제 데이터로 수정
       DATABASE_PASSWORD: my-db-password # 실제 데이터로 수정
-      DJANGO_SETTINGS_MODULE: _config.settings # Django settings 모드 지정
       REDIS_URL: redis://redis:6379/1
       CELERY_BROKER_URL: redis://redis:6379/0 # Celery 브로커 URL 추가
       CELERY_RESULT_BACKEND: redis://redis:6379/0 # Celery 결과 백엔드 추가
+      DJANGO_SETTINGS_MODULE: _config.settings # Django settings 모드 지정
     volumes:
       - ../app/django:/app/django
     depends_on:
@@ -76,10 +76,10 @@ services:
       DATABASE_NAME: my-db-name # 실제 데이터로 수정
       DATABASE_USER: my-db-user # 실제 데이터로 수정
       DATABASE_PASSWORD: my-db-password # 실제 데이터로 수정
-      DJANGO_SETTINGS_MODULE: _config.settings
       REDIS_URL: redis://redis:6379/1
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/0
+      DJANGO_SETTINGS_MODULE: _config.settings
     volumes:
       - ../app/django:/app/django
     depends_on:
