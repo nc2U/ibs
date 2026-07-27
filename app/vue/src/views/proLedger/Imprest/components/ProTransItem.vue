@@ -26,7 +26,8 @@ const superAuth = computed(() => accStore.superAuth)
 const allowedPeriod = computed(
   () =>
     (superAuth as any).value ||
-    (write_project_ledger && diffDate(props.proTrans.deal_date, new Date(props.calculated)) <= 10),
+    (write_project_ledger &&
+      diffDate(props.proTrans?.deal_date as string, new Date(props.calculated)) <= 10),
 )
 
 const proAccounts = inject<ComputedRef<AccountPicker[]>>('proAccounts')
@@ -38,7 +39,7 @@ const getAccountById = (accountId: number | null | undefined): AccountPicker | u
 }
 
 const sortType = computed(() => {
-  if (props.proTrans.sort === 1) return 'deposit' // 입금
+  if (props.proTrans?.sort === 1) return 'deposit' // 입금
   if (props.proTrans.sort === 2) return 'withdraw' // 출금
   return null // 전체
 })
@@ -58,12 +59,12 @@ const openSelectModal = (entry: ProAccountingEntry, type: 'contract' | 'contract
 const handleSelect = async (id: number | null) => {
   if (!selectedEntryForSelect.value) return
 
-  const entry = selectedEntryForSelect.value
+  const entry = selectedEntryForSelect.value as ProAccountingEntry
   const accountToSave = editValue.value?.account || entry.account
   const type = selectModalType.value
 
   const payload: any = {
-    pk: props.proTrans.pk!,
+    pk: props.proTrans?.pk!,
     accounting_entries: [
       {
         pk: entry.pk,
@@ -82,7 +83,11 @@ const handleSelect = async (id: number | null) => {
 }
 
 // --- 제네릭 인라인 편집을 위한 상태 및 로직 ---
-const editingState = computed(() => proLedgerStore.sharedEditingState) // Use computed for reactivity
+const editingState = computed<{
+  type: 'tran' | 'entry'
+  pk: number
+  field: string
+} | null>(() => proLedgerStore.sharedEditingState) // Use computed for reactivity
 const editValue = ref<any>(null)
 
 watch(
@@ -90,19 +95,19 @@ watch(
   newVal => {
     if (newVal) {
       const { type, pk, field } = newVal
-      if (type === 'tran' && pk === props.proTrans.pk) {
+      if (type === 'tran' && pk === props.proTrans?.pk) {
         if (field === 'note') {
-          editValue.value = props.proTrans.note
+          editValue.value = props.proTrans?.note
         } else if (field === 'content') {
-          editValue.value = props.proTrans.content
+          editValue.value = props.proTrans?.content
         } else if (field === 'sort_amount') {
           editValue.value = {
-            sort: props.proTrans.sort,
-            amount: props.proTrans.amount || 0,
+            sort: props.proTrans?.sort,
+            amount: props.proTrans?.amount || 0,
           }
         }
       } else if (type === 'entry') {
-        const entry = props.proTrans.accounting_entries?.find(e => e.pk === pk)
+        const entry = (props.proTrans?.accounting_entries as any[])?.find(e => e.pk === pk)
         if (entry) {
           if (field === 'account_contract') {
             editValue.value = {
@@ -212,7 +217,7 @@ const restoreScrollAndOpenModal = (type: 'contract' | 'contractor') => {
 
   const entryPk = editingState.value?.pk
   const selectedAccountId = editValue.value.account
-  const entry = props.proTrans.accounting_entries?.find(e => e.pk === entryPk)
+  const entry = (props.proTrans?.accounting_entries as any[])?.find(e => e.pk === entryPk)
 
   proLedgerStore.clearSharedPickerState()
 
@@ -274,14 +279,14 @@ const handlePickerClose = async () => {
 const DEFAULT_VISIBLE_COUNT = 3
 const visibleEntryCount = ref<number>(DEFAULT_VISIBLE_COUNT)
 
-const totalEntryCount = computed(() => props.proTrans.accounting_entries?.length || 0)
+const totalEntryCount = computed(() => props.proTrans?.accounting_entries?.length || 0)
 const shouldShowExpand = computed(() => totalEntryCount.value > DEFAULT_VISIBLE_COUNT)
 
 const visibleEntries = computed(() => {
   if (!shouldShowExpand.value || visibleEntryCount.value >= totalEntryCount.value) {
-    return props.proTrans.accounting_entries
+    return props.proTrans?.accounting_entries
   }
-  return props.proTrans.accounting_entries?.slice(0, visibleEntryCount.value)
+  return props.proTrans?.accounting_entries?.slice(0, visibleEntryCount.value)
 })
 
 const remainingCount = computed(() => Math.max(0, totalEntryCount.value - visibleEntryCount.value))
@@ -313,8 +318,8 @@ const handleUpdate = async () => {
 
   if (type === 'tran') {
     if (field === 'sort_amount') {
-      const originalSort = props.proTrans.sort
-      const originalAmount = props.proTrans.amount || 0
+      const originalSort = props.proTrans?.sort
+      const originalAmount = props.proTrans?.amount || 0
       const newSort = editValue.value.sort
       const newAmount = Number(editValue.value.amount) || 0
 
@@ -323,22 +328,22 @@ const handleUpdate = async () => {
         return
       }
     } else {
-      const originalValue = props.proTrans[field as keyof ProBankTrans]
+      const originalValue = (props.proTrans as ProBankTrans)[field as keyof ProBankTrans]
       if (editValue.value === originalValue) {
         proLedgerStore.sharedEditingState = null
         return
       }
     }
   } else {
-    const entry = props.proTrans.accounting_entries?.find(e => e.pk === pk)
+    const entry = (props.proTrans?.accounting_entries as any[])?.find(e => e.pk === pk)
     if (!entry) {
       proLedgerStore.sharedEditingState = null // No entry found, cancel editing
       return
     }
 
     if (field === 'sort_amount') {
-      const originalSort = props.proTrans.sort
-      const originalAmount = props.proTrans.amount || 0
+      const originalSort = props.proTrans?.sort
+      const originalAmount = props.proTrans?.amount || 0
       const newSort = editValue.value.sort
       const newAmount = Number(editValue.value.amount) || 0
 
@@ -372,7 +377,7 @@ const handleUpdate = async () => {
     }
   }
 
-  const payload: { pk: number; [key: string]: any } = { pk: props.proTrans.pk! }
+  const payload: { pk: number; [key: string]: any } = { pk: props.proTrans?.pk! }
 
   if (type === 'tran') {
     if (field === 'sort_amount') {
@@ -755,9 +760,9 @@ const handleUpdate = async () => {
     <BaseSelectModal
       v-model="selectModalVisible"
       :type="selectModalType"
-      :contract="selectedEntryForSelect?.contract"
-      :contractor="selectedEntryForSelect?.contractor"
-      :account-name="selectedEntryForSelect?.account_name"
+      :contract="(selectedEntryForSelect as ProAccountingEntry)?.contract"
+      :contractor="(selectedEntryForSelect as ProAccountingEntry)?.contractor"
+      :account-name="(selectedEntryForSelect as ProAccountingEntry)?.account_name"
       @select="handleSelect"
     />
   </template>

@@ -26,7 +26,7 @@ const allowedPeriod = computed(
   () =>
     (superAuth as any).value ||
     (write_company_ledger &&
-      diffDate(props.transaction.deal_date, new Date(props.calculated)) <= 10),
+      diffDate(props.transaction?.deal_date as string, new Date(props.calculated)) <= 10),
 )
 
 const comAccounts = inject<ComputedRef<AccountPicker[]>>('comAccounts')
@@ -38,7 +38,7 @@ const getAccountById = (accountId: number | null | undefined): AccountPicker | u
 }
 
 const sortType = computed(() => {
-  if (props.transaction.sort === 1) return 'deposit' // 입금
+  if (props.transaction?.sort === 1) return 'deposit' // 입금
   if (props.transaction.sort === 2) return 'withdraw' // 출금
   return null // 전체
 })
@@ -56,13 +56,13 @@ const openAffiliateModal = (entry: AccountingEntry) => {
 const handleAffiliateSelect = async (affiliateId: number | null) => {
   if (!selectedEntryForAffiliate.value) return
 
-  const entry = selectedEntryForAffiliate.value
+  const entry = selectedEntryForAffiliate.value as AccountingEntry
 
   // 계정 피커에서 관계회사 모달로 넘어온 경우, 계정도 함께 저장
   const accountToSave = editValue.value?.account || entry.account
 
   const payload: any = {
-    pk: props.transaction.pk!,
+    pk: props.transaction?.pk!,
     accounting_entries: [
       {
         pk: entry.pk,
@@ -82,7 +82,11 @@ const handleAffiliateSelect = async (affiliateId: number | null) => {
 }
 
 // --- 제네릭 인라인 편집을 위한 상태 및 로직 ---
-const editingState = computed(() => ledgerStore.sharedEditingState) // Use computed for reactivity
+const editingState = computed<{
+  type: 'tran' | 'entry'
+  pk: number
+  field: string
+} | null>(() => ledgerStore.sharedEditingState) // Use computed for reactivity
 const editValue = ref<any>(null)
 
 watch(
@@ -90,19 +94,19 @@ watch(
   newVal => {
     if (newVal) {
       const { type, pk, field } = newVal
-      if (type === 'tran' && pk === props.transaction.pk) {
+      if (type === 'tran' && pk === props.transaction?.pk) {
         if (field === 'note') {
-          editValue.value = props.transaction.note
+          editValue.value = props.transaction?.note
         } else if (field === 'content') {
-          editValue.value = props.transaction.content
+          editValue.value = props.transaction?.content
         } else if (field === 'sort_amount') {
           editValue.value = {
-            sort: props.transaction.sort,
-            amount: props.transaction.amount || 0,
+            sort: props.transaction?.sort,
+            amount: props.transaction?.amount || 0,
           }
         }
       } else if (type === 'entry') {
-        const entry = props.transaction.accounting_entries?.find(e => e.pk === pk)
+        const entry = (props.transaction?.accounting_entries as any[])?.find(e => e.pk === pk)
         if (entry) {
           if (field === 'account_affiliate') {
             editValue.value = {
@@ -224,7 +228,7 @@ const handlePickerClose = async () => {
       // 현재 편집 중인 entry 찾기 (clearSharedPickerState 전에 pk와 account 저장)
       const entryPk = editingState.value?.pk
       const selectedAccountId = editValue.value.account
-      const entry = props.transaction.accounting_entries?.find(e => e.pk === entryPk)
+      const entry = (props.transaction?.accounting_entries as any[])?.find(e => e.pk === entryPk)
 
       // Picker 상태 정리 (Picker를 닫음)
       ledgerStore.clearSharedPickerState()
@@ -271,8 +275,8 @@ const handleUpdate = async () => {
 
   if (type === 'tran') {
     if (field === 'sort_amount') {
-      const originalSort = props.transaction.sort
-      const originalAmount = props.transaction.amount || 0
+      const originalSort = props.transaction?.sort
+      const originalAmount = props.transaction?.amount || 0
       const newSort = editValue.value.sort
       const newAmount = Number(editValue.value.amount) || 0
 
@@ -281,22 +285,22 @@ const handleUpdate = async () => {
         return
       }
     } else {
-      const originalValue = props.transaction[field as keyof BankTransaction]
+      const originalValue = (props.transaction as BankTransaction)[field as keyof BankTransaction]
       if (editValue.value === originalValue) {
         ledgerStore.sharedEditingState = null
         return
       }
     }
   } else {
-    const entry = props.transaction.accounting_entries?.find(e => e.pk === pk)
+    const entry = (props.transaction?.accounting_entries as any[])?.find(e => e.pk === pk)
     if (!entry) {
       ledgerStore.sharedEditingState = null // No entry found, cancel editing
       return
     }
 
     if (field === 'sort_amount') {
-      const originalSort = props.transaction.sort
-      const originalAmount = props.transaction.amount || 0
+      const originalSort = props.transaction?.sort
+      const originalAmount = props.transaction?.amount || 0
       const newSort = editValue.value.sort
       const newAmount = Number(editValue.value.amount) || 0
 
@@ -324,7 +328,7 @@ const handleUpdate = async () => {
     }
   }
 
-  const payload: { pk: number; [key: string]: any } = { pk: props.transaction.pk! }
+  const payload: { pk: number; [key: string]: any } = { pk: props.transaction?.pk! }
 
   if (type === 'tran') {
     if (field === 'sort_amount') {
@@ -355,14 +359,14 @@ const handleUpdate = async () => {
 const DEFAULT_VISIBLE_COUNT = 3
 const visibleEntryCount = ref<number>(DEFAULT_VISIBLE_COUNT)
 
-const totalEntryCount = computed(() => props.transaction.accounting_entries?.length || 0)
+const totalEntryCount = computed(() => props.transaction?.accounting_entries?.length || 0)
 const shouldShowExpand = computed(() => totalEntryCount.value > DEFAULT_VISIBLE_COUNT)
 
 const visibleEntries = computed(() => {
   if (!shouldShowExpand.value || visibleEntryCount.value >= totalEntryCount.value) {
-    return props.transaction.accounting_entries
+    return props.transaction?.accounting_entries
   }
-  return props.transaction.accounting_entries?.slice(0, visibleEntryCount.value)
+  return props.transaction?.accounting_entries?.slice(0, visibleEntryCount.value)
 })
 
 const remainingCount = computed(() => Math.max(0, totalEntryCount.value - visibleEntryCount.value))
@@ -686,8 +690,8 @@ const collapseAll = () => {
     <!-- 관계회사 선택 모달 -->
     <AffiliateSelectModal
       v-model="affiliateModalVisible"
-      :affiliate="selectedEntryForAffiliate?.affiliate"
-      :account-name="selectedEntryForAffiliate?.account_name"
+      :affiliate="(selectedEntryForAffiliate as AccountingEntry)?.affiliate"
+      :account-name="(selectedEntryForAffiliate as AccountingEntry)?.account_name"
       @select="handleAffiliateSelect"
     />
   </template>
