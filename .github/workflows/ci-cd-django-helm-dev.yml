@@ -24,14 +24,35 @@ env:
   BUILD_CONTEXT: .
 
 jobs:
+  # 1. 변경 사항 감지
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      django: ${{ steps.filter.outputs.django }}
+      docker: ${{ steps.filter.outputs.docker }}
+      helm: ${{ steps.filter.outputs.helm }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Detect file changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            django:
+              - 'app/django/**'
+            docker:
+              - 'deploy/docker/**'
+            helm:
+              - 'deploy/helm/**'
+
+  # 2. 빌드: 코드나 도커 파일이 변경된 경우만 실행
   build:
     name: Build Docker Image
+    needs: changes
     runs-on: ubuntu-latest
-    # 소스 코드나 도커 관련 파일이 변경된 경우에만 실행
-    if: |
-      github.event_name == 'workflow_dispatch' || 
-      contains(github.event.head_commit.modified, 'app/django/') || 
-      contains(github.event.head_commit.modified, 'deploy/docker/')
+    # Django, Docker 관련 변경이 있거나 수동 실행 시에만 빌드
+    if: needs.changes.outputs.django == 'true' || needs.changes.outputs.docker == 'true' || github.event_name == 'workflow_dispatch'
     outputs:
       image_tag: ${{ steps.meta.outputs.image_tag }}
     steps:
@@ -73,10 +94,11 @@ jobs:
             ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.image_tag }}
             ${{ env.IMAGE_NAME }}:dev-latest
 
+  # 3. 배포: 항상 실행 (build가 건너뛰어지거나 성공하면)
   deploy:
     name: Deploy to Kubernetes
+    needs: [changes, build]
     runs-on: ubuntu-latest
-    needs: build
     # 빌드 Job이 성공했거나, 빌드 Job이 아예 실행되지 않았을 때(헬름만 변경된 경우)
     if: always() && (needs.build.result == 'success' || needs.build.result == 'skipped')
     steps:
