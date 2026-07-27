@@ -244,7 +244,7 @@ class Module(models.Model):
 
 class Role(models.Model):
     name = models.CharField('이름', max_length=20, db_index=True)
-    CATEGORY_CHOICES = (('work_core', '업무관리 중심'), ('ibs_global', '비즈니스 데이터 지원'))
+    CATEGORY_CHOICES = (('work_core', '업무 관리'), ('ibs_global', '개발 사업'))
     category = models.CharField('구분', max_length=15, choices=CATEGORY_CHOICES, default='work_core')
     assignable = models.BooleanField('업무할당 가능 여부', default=True)
     ISSUE_VIEW_PERM = (('ALL', '모든 업무'), ('PUB', '비공개 업무 제외'), ('PRI', '직접 생성 또는 담당한 업무'), ('NOP', '없음'))
@@ -272,7 +272,7 @@ class Permission(models.Model):
                       ('contract', '계약 관리'), ('payment', '수납 관리'), ('notice', '고지 관리'),
                       ('ledger', '자금/원장 관리'), ('site', '사업 부지 관리'), ('hr_work', '인사 관리'))
     module = models.CharField('모듈', max_length=10, choices=MODULE_CHOICES, db_index=True)
-    CATEGORY_CHOICES = (('work_core', '업무관리 중심'), ('ibs_global', '비즈니스 데이터 지원'), ('shared', '공통 공유 모듈'))
+    CATEGORY_CHOICES = (('work_core', '업무 관리'), ('ibs_global', '개발 사업'), ('shared', '공통 모듈'))
     category = models.CharField('구분', max_length=15, choices=CATEGORY_CHOICES, default='work_core')
     code = models.CharField('코드', max_length=30, unique=True)
     name = models.CharField('이름', max_length=20)
