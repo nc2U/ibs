@@ -106,7 +106,7 @@ watch(
           }
         }
       } else if (type === 'entry') {
-        const entry = (props.transaction?.accounting_entries as any[])?.find(e => e.pk === pk)
+        const entry = (props.transaction?.accounting_entries as AccountingEntry[])?.find(e => e.pk === pk)
         if (entry) {
           if (field === 'account_affiliate') {
             editValue.value = {
@@ -228,7 +228,7 @@ const handlePickerClose = async () => {
       // 현재 편집 중인 entry 찾기 (clearSharedPickerState 전에 pk와 account 저장)
       const entryPk = editingState.value?.pk
       const selectedAccountId = editValue.value.account
-      const entry = (props.transaction?.accounting_entries as any[])?.find(e => e.pk === entryPk)
+      const entry = (props.transaction?.accounting_entries as AccountingEntry[])?.find(e => e.pk === entryPk)
 
       // Picker 상태 정리 (Picker를 닫음)
       ledgerStore.clearSharedPickerState()
@@ -292,7 +292,7 @@ const handleUpdate = async () => {
       }
     }
   } else {
-    const entry = (props.transaction?.accounting_entries as any[])?.find(e => e.pk === pk)
+    const entry = (props.transaction?.accounting_entries as AccountingEntry[])?.find(e => e.pk === pk)
     if (!entry) {
       ledgerStore.sharedEditingState = null // No entry found, cancel editing
       return

@@ -107,7 +107,9 @@ watch(
           }
         }
       } else if (type === 'entry') {
-        const entry = (props.proTrans?.accounting_entries as any[])?.find(e => e.pk === pk)
+        const entry = (props.proTrans?.accounting_entries as ProAccountingEntry[])?.find(
+          e => e.pk === pk,
+        )
         if (entry) {
           if (field === 'account_contract') {
             editValue.value = {
@@ -217,7 +219,9 @@ const restoreScrollAndOpenModal = (type: 'contract' | 'contractor') => {
 
   const entryPk = editingState.value?.pk
   const selectedAccountId = editValue.value.account
-  const entry = (props.proTrans?.accounting_entries as any[])?.find(e => e.pk === entryPk)
+  const entry = (props.proTrans?.accounting_entries as ProAccountingEntry[])?.find(
+    e => e.pk === entryPk,
+  )
 
   proLedgerStore.clearSharedPickerState()
 
@@ -335,7 +339,9 @@ const handleUpdate = async () => {
       }
     }
   } else {
-    const entry = (props.proTrans?.accounting_entries as any[])?.find(e => e.pk === pk)
+    const entry = (props.proTrans?.accounting_entries as ProAccountingEntry[])?.find(
+      e => e.pk === pk,
+    )
     if (!entry) {
       proLedgerStore.sharedEditingState = null // No entry found, cancel editing
       return
