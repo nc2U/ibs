@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onMounted, watch } from 'vue'
+import { computed, onBeforeMount, onMounted, watch } from 'vue'
 import { useStore } from '@/store'
 import { useCompany } from '@/store/pinia/company'
 import { useWork } from '@/store/pinia/work_project'
@@ -26,12 +26,11 @@ onMounted(async () => {
     ? document.body.classList.add('dark-theme')
     : document.body.classList.remove('dark-theme')
   if (!company.value) await comStore.fetchCompany(comStore.initComId)
+})
 
-  // 로그인된 경우 전역에서 사용할 수 있게 참여 프로젝트 리스트 로딩
-  if (accountStore.userInfo) {
-    await workStore.fetchMyProjectsList()
-    await workStore.fetchPermissionList('ibs_global')
-  }
+onBeforeMount(async () => {
+  await workStore.fetchMyProjectsList()
+  await workStore.fetchPermissionList('ibs_global')
 })
 </script>
 
