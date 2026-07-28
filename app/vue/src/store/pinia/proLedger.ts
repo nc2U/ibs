@@ -206,7 +206,7 @@ export const useProLedger = defineStore('proLedger', () => {
       .delete(`/ledger/project-composite-transaction/${pk}/`)
       .then(async () => {
         return await fetchProBankTransList(proBankTransFilter.value).then(() =>
-          message('warning', '알림!', '본사 거래 데이터가 삭제되었습니다.'),
+          message('warning', '알림!', '거래 내역 데이터가 삭제되었습니다.'),
         )
       })
       .catch(err => errorHandle(err.response?.data))

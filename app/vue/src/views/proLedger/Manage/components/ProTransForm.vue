@@ -962,7 +962,7 @@ onBeforeRouteLeave((to, from, next) => {
   </CForm>
 
   <ConfirmModal ref="confirmModal">
-    <template #header>본서 거래 내역 삭제</template>
+    <template #header>거래 내역 삭제</template>
     <template #default>
       삭제한 데이터는 복구할 수 없습니다. 해당 입출금 거래 정보를 삭제하시겠습니까?
     </template>
