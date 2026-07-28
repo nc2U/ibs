@@ -297,11 +297,11 @@ onBeforeUpdate(() => dataSetup())
 
     <CRow>
       <CCol class="text-right">
-        <v-btn :color="btnLight" @click="router.push({ name: `${viewRoute}` })"> 목록으로</v-btn>
-        <v-btn v-if="route.params.docsId" :color="btnLight" @click="router.go(-1)"> 뒤로</v-btn>
         <v-btn v-if="can(PERM.DOCS_CREATE)" :color="btnClass" type="submit" :disabled="formsCheck">
           저장하기
         </v-btn>
+        <v-btn v-if="route.params.docsId" color="light" @click="router.go(-1)" flat> 뒤로</v-btn>
+        <v-btn color="light" @click="router.push({ name: `${viewRoute}` })" flat> 목록으로</v-btn>
       </CCol>
     </CRow>
   </CForm>
