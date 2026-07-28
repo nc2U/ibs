@@ -337,7 +337,7 @@ class RoleSerializer(serializers.ModelSerializer):
         if permissions is not None:
             for perm in permissions:
                 perm_category = perm.category if perm.category else 'work_core'
-                if perm_category != category:
+                if perm_category != category and perm_category != 'shared':
                     raise serializers.ValidationError({
                         'permissions': f"역할 카테고리({category})와 불일치하는 권한({perm.name} - {perm_category})을 매핑할 수 없습니다."
                     })
