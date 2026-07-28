@@ -50,7 +50,7 @@ export const write_project_docs = computed(() =>
 )
 
 // ── 신규 프로젝트 ──────────────────────────────────────────────────────
-export const read_project = computed(() => hasPermission(PERM.PROJECT_UPDATE))
+export const read_project = computed(() => true)
 export const write_project = computed(() =>
   hasPermission([PERM.PROJECT_CREATE, PERM.PROJECT_UPDATE, PERM.PROJECT_DELETE]),
 )
