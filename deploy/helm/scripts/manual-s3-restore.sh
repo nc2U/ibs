@@ -19,9 +19,17 @@ TARGET_TIME_KST="${2:-}"
 if [ "$ENV_ARG" = "prod" ]; then
   NAMESPACE="ibs-prod"
   RESTORE_CLUSTER_NAME="postgres-restored"
+  S3_BUCKET="postgres-backup"
+  SECRET_NAME="postgres-backup-s3"
+  KEY_ACCESS="ACCESS_KEY_ID"
+  KEY_SECRET="ACCESS_SECRET_KEY"
 elif [ "$ENV_ARG" = "dev" ]; then
   NAMESPACE="ibs-dev"
   RESTORE_CLUSTER_NAME="postgres-restored"
+  S3_BUCKET="postgres-backup-dev"
+  SECRET_NAME="postgres-backup-s3"
+  KEY_ACCESS="ACCESS_KEY_ID"
+  KEY_SECRET="ACCESS_SECRET_KEY"
 else
   echo "❌ Error: Invalid environment '$ENV_ARG'. Use 'dev' or 'prod'."
   exit 1
@@ -35,7 +43,6 @@ echo "Target Cluster Name: $RESTORE_CLUSTER_NAME"
 
 # S3 시크릿에서 자격증명 정보 동적 추출
 echo "🔑 Reading S3 credentials from K8s secrets..."
-SECRET_NAME="postgres-backup-s3"
 
 if ! kubectl get secret "$SECRET_NAME" -n "$NAMESPACE" >/dev/null 2>&1; then
   echo "❌ Error: Secret '$SECRET_NAME' not found in namespace '$NAMESPACE'."
@@ -43,8 +50,8 @@ if ! kubectl get secret "$SECRET_NAME" -n "$NAMESPACE" >/dev/null 2>&1; then
   exit 1
 fi
 
-S3_ACCESS_KEY=$(kubectl get secret "$SECRET_NAME" -n "$NAMESPACE" -o jsonpath='{.data.ACCESS_KEY_ID}' | base64 -d)
-S3_SECRET_KEY=$(kubectl get secret "$SECRET_NAME" -n "$NAMESPACE" -o jsonpath='{.data.ACCESS_SECRET_KEY}' | base64 -d)
+S3_ACCESS_KEY=$(kubectl get secret "$SECRET_NAME" -n "$NAMESPACE" -o jsonpath="{.data.$KEY_ACCESS}" | base64 -d)
+S3_SECRET_KEY=$(kubectl get secret "$SECRET_NAME" -n "$NAMESPACE" -o jsonpath="{.data.$KEY_SECRET}" | base64 -d)
 
 # 복원 시점 설정 및 KST -> UTC 변환
 RECOVERY_TARGET_SECTION=""
@@ -98,15 +105,15 @@ spec:
   externalClusters:
     - name: postgres-s3
       barmanObjectStore:
-        destinationPath: s3://postgres-backup/postgres
+        destinationPath: s3://${S3_BUCKET}/postgres/
         endpointURL: https://s3.dyibs.com
         s3Credentials:
           accessKeyId:
             name: ${SECRET_NAME}
-            key: ACCESS_KEY_ID
+            key: ${KEY_ACCESS}
           secretAccessKey:
             name: ${SECRET_NAME}
-            key: ACCESS_SECRET_KEY
+            key: ${KEY_SECRET}
   storage:
     storageClass: nfs-client
     size: 1Gi
@@ -124,4 +131,4 @@ echo "----------------------------------------"
 echo "🔍 Monitoring recovery progress (Ctrl+C to stop following logs):"
 echo "----------------------------------------"
 kubectl wait --for=condition=ready pod -l "cnpg.io/cluster=${RESTORE_CLUSTER_NAME}" -n "$NAMESPACE" --timeout=3m || true
-kubectl logs -n "$NAMESPACE" -l "cnpg.io/cluster=${RESTORE_CLUSTER_NAME}" -c postgres -f --tail=50
+kubectl logs -n "$NAMESPACE" -l "cnpg.io/cluster=${RESTORE_CLUSTER_NAME}" -c full-recovery -f --tail=50
