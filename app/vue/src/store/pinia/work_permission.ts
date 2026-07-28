@@ -1,12 +1,14 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import { type PermissionCode } from '@/store/constants/permissions'
-import type { MyRole } from '@/store/types/work_project.ts'
-import { useWork } from '@/store/pinia/work_project'
 import { useAccount } from '@/store/pinia/account'
+import { useWork } from '@/store/pinia/work_project'
+import type { MyRole } from '@/store/types/work_project.ts'
+import { type PermissionCode } from '@/store/constants/permissions'
+
+const workStore = useWork()
+const accountStore = useAccount()
 
 export const usePermission = defineStore('permission', () => {
-  const accountStore = useAccount()
   const projectPermSet = ref<Set<PermissionCode>>(new Set())
   const projectRole = ref<MyRole | null>(null)
 
@@ -26,8 +28,6 @@ export const usePermission = defineStore('permission', () => {
         user_visible: 'ALL',
       }
     }
-
-    const workStore = useWork()
 
     // 2. 특정 프로젝트 ID나 Slug가 주어졌을 때는 해당 프로젝트의 역할 정보를 반환
     if (projectIdentifier !== undefined) {
@@ -117,8 +117,6 @@ export const usePermission = defineStore('permission', () => {
     if (accountStore.workManager) return true
 
     const check = (c: PermissionCode) => {
-      const workStore = useWork()
-
       // 특정 프로젝트 ID나 Slug가 주어졌을 때는 해당 프로젝트의 권한을 체크
       if (projectIdentifier !== undefined) {
         const targetProj = workStore.allReadableProjectsFlat.find(

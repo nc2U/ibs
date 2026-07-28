@@ -374,7 +374,7 @@ export const useWork = defineStore('work', () => {
     const url = category ? `/permission/?category=${category}` : `/permission/`
     try {
       const res = await api.get(url)
-      return (permissionList.value = res.data.results)
+      return (permissionList.value = res.data.results || res.data)
     } catch (err: any) {
       return errorHandle(err.response.data)
     }
@@ -382,8 +382,12 @@ export const useWork = defineStore('work', () => {
 
   const fetchGroupedPermissions = async () => {
     try {
-      const res = await api.get('/permission/grouped/')
-      return (groupedPermissions.value = res.data)
+      const [rawRes, groupedRes] = await Promise.all([
+        api.get('/permission/'),
+        api.get('/permission/grouped/'),
+      ])
+      permissionList.value = rawRes.data.results || rawRes.data
+      groupedPermissions.value = groupedRes.data
     } catch (err: any) {
       return errorHandle(err.response.data)
     }
