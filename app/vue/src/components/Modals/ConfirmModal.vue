@@ -1,9 +1,10 @@
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { onBeforeMount, ref } from 'vue'
 
 const props = defineProps({
   itemName: { type: String, default: '아이템' },
   size: { type: String, default: '' },
+  checked: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['confirm-func'])
@@ -12,9 +13,9 @@ const visible = ref(false)
 const headerMessage = ref(`${props.itemName} 삭제 확인`)
 const bodyMessage = ref('')
 const headIcon = ref('mdi-alert-octagram')
-const headerColor = ref()
+const headerColor = ref('red-lighten-2')
 
-const callModal = (head?: string, body?: string, icon?: string, color = 'red-lighten-2') => {
+const callModal = (head?: string, body?: string, icon?: string, color?: string) => {
   if (head) headerMessage.value = head
   if (body) bodyMessage.value = body
   if (icon) headIcon.value = icon
@@ -23,6 +24,13 @@ const callModal = (head?: string, body?: string, icon?: string, color = 'red-lig
 }
 const close = () => (visible.value = false)
 defineExpose({ callModal, close })
+
+onBeforeMount(() => {
+  if (props.checked) {
+    headIcon.value = 'mdi-checkbox-marked-outline'
+    headerColor.value = 'brown-lighten-3'
+  }
+})
 </script>
 
 <template>

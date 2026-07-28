@@ -314,7 +314,7 @@ onBeforeUpdate(() => dataSetup())
     </template>
   </ConfirmModal>
 
-  <ConfirmModal ref="refConfirmModal">
+  <ConfirmModal ref="refConfirmModal" checked>
     <template #header> {{ viewRoute }}</template>
     <template #default> {{ viewRoute }} 저장을 진행하시겠습니까?</template>
     <template #footer>
