@@ -74,10 +74,10 @@ jobs:
         env:
           NODE_ENV: production
           BUILD_TIMESTAMP: ${{ github.run_number }}_${{ github.sha }}
+          BUILD_DIR: ../django/static/dist_${{ github.run_number }}_${{ github.sha }}
         run: |
           cd app/vue
-          # 타임스탬프 디렉터리로 빌드
-          export BUILD_DIR="../django/static/dist_${BUILD_TIMESTAMP}"
+          echo "Building to: $BUILD_DIR"
           pnpm build && pnpm docs:build
 
       # 배포 메타데이터 생성
@@ -354,6 +354,8 @@ jobs:
             echo "Active build: $(readlink dist)"
 
       # Kubernetes Pod 재시작 (Django 템플릿 캐시 클리어)
+      # ⚠️ 순서 중요: Nginx 완전 교체 후 Web 재시작
+      #   동시 재시작 시 old Web(구 index.html) + new Nginx(신 dist) 조합 → 404 발생
       - name: Restart web and nginx pods
         uses: garygrossgarten/github-action-ssh@release
         with:
@@ -361,15 +363,17 @@ jobs:
           username: ${{ secrets.CICD_USER }}
           password: ${{ secrets.CICD_PASS }}
           command: |
-            echo "🔄 Restarting Nginx and Web pods..."
+            echo "🔄 [1/2] Restarting Nginx pods (new dist mount)..."
             kubectl rollout restart deployment/nginx -n ibs-prod
-            kubectl rollout restart deployment/web -n ibs-prod
-
-            echo "⏳ Waiting for rollout to complete..."
             kubectl rollout status deployment/nginx -n ibs-prod --timeout=120s
-            kubectl rollout status deployment/web -n ibs-prod --timeout=120s
+            echo "✅ Nginx rollout complete — all pods now mount new dist"
 
-            echo "✅ Pods restarted successfully"
+            echo "🔄 [2/2] Restarting Web pods (new index.html)..."
+            kubectl rollout restart deployment/web -n ibs-prod
+            kubectl rollout status deployment/web -n ibs-prod --timeout=120s
+            echo "✅ Web rollout complete"
+
+            echo "✅ All pods restarted successfully"
 
       # slack --> notification
       - name: Send slack when failed
