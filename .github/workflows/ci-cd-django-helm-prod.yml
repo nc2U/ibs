@@ -187,7 +187,7 @@ jobs:
 
             cd helm
             echo "Running scripts/prod-deploy.sh..."
-            sh scripts/prod-deploy.sh
+            IMAGE_TAG="${{ needs.build.outputs.image_tag }}" sh scripts/prod-deploy.sh
       - name: Wait for rollout completion
         run: |
           kubectl rollout status deployment/web -n ${KUBE_NAMESPACE} --timeout=15m

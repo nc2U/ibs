@@ -48,7 +48,16 @@ if [ -f "$SCRIPT_DIR/.env" ]; then
     kubectl delete job -n ibs-dev -l app.kubernetes.io/name=web --ignore-not-found=true 2>/dev/null || true
     kubectl apply -f "$CURR_DIR/../kubectl/class-roles"
     cd "$CURR_DIR"
+    # IMAGE_TAG가 전달된 경우 --set으로 이미지 태그를 주입하여 Pod 롤아웃을 강제합니다.
+    IMAGE_TAG_ARG=""
+    if [ -n "${IMAGE_TAG:-}" ]; then
+      IMAGE_TAG_ARG="--set web.image.tag=${IMAGE_TAG}"
+      echo "Using image tag: ${IMAGE_TAG}"
+    else
+      echo "IMAGE_TAG not set, using default tag from values (latest)"
+    fi
     helm upgrade ${RELEASE_NAME} . -f ./values-dev-custom.yaml \
+      ${IMAGE_TAG_ARG} \
       --install -n ibs-dev --create-namespace --history-max 5
   else
     echo "values-dev-custom.yaml file not found in Current directory."
