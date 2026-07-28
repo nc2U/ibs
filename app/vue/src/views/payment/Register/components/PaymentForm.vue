@@ -785,7 +785,7 @@ onBeforeMount(() => {
     </CModalFooter>
   </CForm>
 
-  <ConfirmModal ref="cngConfirmModal">
+  <ConfirmModal ref="cngConfirmModal" checked>
     <template #header> 건별 납부 정보 - [변경]</template>
     <template #default>
       이 수납 건에 대한 현재 계약 건 귀속을 해제합니다. <br /><br />

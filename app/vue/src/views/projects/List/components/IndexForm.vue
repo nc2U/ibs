@@ -313,7 +313,7 @@ watch(
               />
             </CCol>
 
-            <CFormLabel class="col-md-2 col-lg-1 col-form-label">Slack 알림 사용 </CFormLabel>
+            <CFormLabel class="col-md-2 col-lg-1 col-form-label">Slack 알림 사용</CFormLabel>
             <CCol md="10" lg="2" class="mb-md-3">
               <CFormCheck
                 id="slack-toggle"
@@ -387,8 +387,8 @@ watch(
 
           <CRow>
             <CFormLabel class="col-md-2 col-lg-1 col-form-label required"
-              >월별집계시작일</CFormLabel
-            >
+              >월별집계시작일
+            </CFormLabel>
             <CCol md="10" lg="2" class="mb-md-3">
               <DatePicker
                 v-model="form.monthly_aggr_start_date"
@@ -619,7 +619,7 @@ watch(
     </template>
   </ConfirmModal>
 
-  <ConfirmModal ref="refConfirmModal">
+  <ConfirmModal ref="refConfirmModal" checked>
     <template #header> 프로젝트정보 {{ confirmText }}</template>
     <template #default> 프로젝트정보 {{ confirmText }}을 진행하시겠습니까?</template>
     <template #footer>

@@ -1152,7 +1152,7 @@ onBeforeRouteLeave(() => formDataReset())
     </template>
   </FormModal>
 
-  <ConfirmModal ref="refConfirmModal">
+  <ConfirmModal ref="refConfirmModal" checked>
     <template #header> {{ contLabel }} 정보 등록</template>
     <template #default>
       {{ contLabel }} 정보 {{ contract ? '수정등록' : '신규등록' }}을 진행하시겠습니까?

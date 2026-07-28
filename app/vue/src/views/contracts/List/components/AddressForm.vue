@@ -353,7 +353,7 @@ onBeforeUnmount(() => {
 
   <DaumPostcode ref="refModalPost" @address-callback="addressCallback" />
 
-  <ConfirmModal ref="refConfirmChk">
+  <ConfirmModal ref="refConfirmChk" checked>
     <template #footer>
       <v-btn size="small" color="primary" @click="modalAction">확인</v-btn>
     </template>

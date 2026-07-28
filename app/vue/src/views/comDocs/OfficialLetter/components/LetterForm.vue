@@ -106,7 +106,7 @@ const goBack = () => {
         <CCardBody>
           <CRow class="mb-3">
             <CCol md="6">
-              <CFormLabel> 제목 <span class="text-danger">*</span> </CFormLabel>
+              <CFormLabel> 제목 <span class="text-danger">*</span></CFormLabel>
               <CFormInput
                 v-model="form.title"
                 placeholder="공문 제목을 입력하세요"
@@ -116,7 +116,7 @@ const goBack = () => {
               <CFormFeedback invalid>제목을 입력해주세요.</CFormFeedback>
             </CCol>
             <CCol md="6">
-              <CFormLabel> 발신일자 <span class="text-danger">*</span> </CFormLabel>
+              <CFormLabel> 발신일자 <span class="text-danger">*</span></CFormLabel>
               <DatePicker v-model="form.issue_date" placeholder="발신일자 선택" required />
             </CCol>
           </CRow>
@@ -131,7 +131,7 @@ const goBack = () => {
         <CCardBody>
           <CRow class="mb-3">
             <CCol md="6">
-              <CFormLabel> 수신처명 <span class="text-danger">*</span> </CFormLabel>
+              <CFormLabel> 수신처명 <span class="text-danger">*</span></CFormLabel>
               <CFormInput
                 v-model="form.recipient_name"
                 placeholder="수신처명 (예: OO주식회사)"
@@ -172,7 +172,7 @@ const goBack = () => {
         <CCardBody>
           <CRow class="mb-3">
             <CCol md="4">
-              <CFormLabel> 발신자명 <span class="text-danger">*</span> </CFormLabel>
+              <CFormLabel> 발신자명 <span class="text-danger">*</span></CFormLabel>
               <CFormInput
                 v-model="form.sender_name"
                 placeholder="발신자명 (예: 홍길동)"
@@ -199,7 +199,7 @@ const goBack = () => {
           <strong>공문 내용</strong>
         </CCardHeader>
         <CCardBody>
-          <CFormLabel> 내용 <span class="text-danger">*</span> </CFormLabel>
+          <CFormLabel> 내용 <span class="text-danger">*</span></CFormLabel>
           <CFormTextarea
             v-model="form.content"
             placeholder="공문 본문을 입력하세요"
@@ -209,7 +209,7 @@ const goBack = () => {
           />
           <CFormFeedback invalid>공문 내용을 입력해주세요.</CFormFeedback>
           <CFormText class="text-muted">
-            줄바꿈은 그대로 반영됩니다. 문단을 구분하려면 빈 줄을 추가하세요.
+            줄 바꿈은 그대로 반영 됩니다. 문단을 구분하려면 빈 줄을 추가하세요.
           </CFormText>
         </CCardBody>
       </CCard>
@@ -221,9 +221,9 @@ const goBack = () => {
             <CIcon name="cilArrowLeft" class="me-1" />
             취소
           </CButton>
-          <CButton type="submit" color="primary" :disabled="!writeAuth">
+          <CButton type="submit" :color="isEdit ? 'success' : 'primary'" :disabled="!writeAuth">
             <CIcon name="cilSave" class="me-1" />
-            {{ isEdit ? '수정 저장' : '저장' }}
+            {{ isEdit ? '수정' : '저장' }}
           </CButton>
         </CCol>
       </CRow>

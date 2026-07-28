@@ -525,7 +525,12 @@ watch([() => props.succession, contractor], () => formDataSet(), { deep: true })
 
         <CCol xs="6">
           <CRow>
-            <CFormLabel class="col-sm-4 col-form-label" :class="{ required: form.status === '3' && contract?.order_group_sort !== '2' }"> 변경인가일</CFormLabel>
+            <CFormLabel
+              class="col-sm-4 col-form-label"
+              :class="{ required: form.status === '3' && contract?.order_group_sort !== '2' }"
+            >
+              변경인가일
+            </CFormLabel>
             <CCol sm="8">
               <DatePicker
                 v-model="form.approval_date"
@@ -579,7 +584,7 @@ watch([() => props.succession, contractor], () => formDataSet(), { deep: true })
   <ConfirmModal ref="refConfirmModal" @confirm-func="modalAction">
     <template #header> 권리 의무 승계 정보 - [삭제]</template>
     <template #default>
-      삭제 후 복구할 수 없습니다. 해당 권리 의무 승계 정보 삭제를 진행하시겠습니까?
+      삭제 후 복구할 수 없습니다. 해당 권리 의무 승계 정보를 삭제 하시겠습니까?
     </template>
   </ConfirmModal>
 

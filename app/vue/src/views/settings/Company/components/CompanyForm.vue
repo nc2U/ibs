@@ -324,7 +324,7 @@ onBeforeMount(() => formDataSetup())
     </template>
   </ConfirmModal>
 
-  <ConfirmModal ref="refConfirmModal">
+  <ConfirmModal ref="refConfirmModal" checked>
     <template #header>회사정보</template>
     <template #default> 회사정보 {{ confirmText }}을 진행하시겠습니까?</template>
     <template #footer>

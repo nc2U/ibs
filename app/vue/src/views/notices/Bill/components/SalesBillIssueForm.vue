@@ -414,7 +414,7 @@ onUpdated(() => formDataSetup())
 
   <DaumPostcode ref="postCode" @address-callback="addressCallback" />
 
-  <ConfirmModal ref="refConfirmModal">
+  <ConfirmModal ref="refConfirmModal" checked>
     <template #header> 수납 고지서 발행 정보</template>
     <template #default> 수납 고지서 발행 정보 {{ confirmText }}을(를) 진행하시겠습니까?</template>
     <template #footer>
