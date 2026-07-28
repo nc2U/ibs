@@ -79,7 +79,7 @@ const togglePermission = async (role: Role, permissionPk: number) => {
 <template>
   <div class="space-y-5">
     <!-- 1. 협업 및 업무 관리 권한 (work_core) 테이블 -->
-    <div class="mb-5">
+    <div class="pt-4 mb-5">
       <h6 class="fw-bold text-success mb-3">
         <v-icon icon="mdi-account-group-outline" size="small" class="mr-2" />
         {{ categoryLabel('work_core') }}
