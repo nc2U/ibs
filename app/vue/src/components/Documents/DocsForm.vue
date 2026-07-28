@@ -11,11 +11,8 @@ import {
 import { useRoute, useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms.ts'
 import type { AFile, Docs, Link, SuitCase } from '@/store/types/docs'
-import { btnLight } from '@/utils/cssMixins'
 import Multiselect from '@vueform/multiselect'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
-// Async component for QuillEditor (heavy quill library)
-const QuillEditor = defineAsyncComponent(() => import('@/components/QuillEditor/index.vue'))
 import FileModify from '@/components/FileControl/FileModify.vue'
 import FileUpload from '@/components/FileControl/FileUpload.vue'
 import LinkModify from '@/components/LinkControl/LinkModify.vue'
@@ -23,6 +20,8 @@ import LinkUpload from '@/components/LinkControl/LinkUpload.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 import ModalCaseForm from '@/components/Documents/ModalCaseForm.vue'
+// Async component for QuillEditor (heavy quill library)
+const QuillEditor = defineAsyncComponent(() => import('@/components/QuillEditor/index.vue'))
 
 const props = defineProps({
   sortName: { type: String, default: '[본사]' },
