@@ -5,10 +5,9 @@ import { useWork } from '@/store/pinia/work_project'
 import type { MyRole } from '@/store/types/work_project.ts'
 import { type PermissionCode } from '@/store/constants/permissions'
 
-const workStore = useWork()
-const accountStore = useAccount()
-
 export const usePermission = defineStore('permission', () => {
+  const workStore = useWork()
+  const accountStore = useAccount()
   const projectPermSet = ref<Set<PermissionCode>>(new Set())
   const projectRole = ref<MyRole | null>(null)
 
