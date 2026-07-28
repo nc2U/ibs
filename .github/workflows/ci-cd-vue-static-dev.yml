@@ -256,30 +256,8 @@ jobs:
             fi
 
             echo "✅ Symlink atomically updated & verified: dist -> $CURRENT_LINK"
+            echo "✅ Deployment complete! (old build cleanup will run after pod rollout)"
 
-            # 5. 구 빌드 안전 정리 (최근 3개 유지)
-            echo ""
-            echo "🧹 Cleaning old builds (keeping 3 most recent)..."
-            ALL_BUILDS=$(ls -dt dist_* 2>/dev/null || true)
-            BUILD_COUNT=$(echo "$ALL_BUILDS" | grep -v '^$' | wc -l)
-
-            if [ "$BUILD_COUNT" -gt 3 ]; then
-              echo "$ALL_BUILDS" | tail -n +4 | while read -r OLD_BUILD; do
-                if [ "$OLD_BUILD" != "$CURRENT_LINK" ]; then
-                  echo "  Removing old build: $OLD_BUILD"
-                  rm -rf "$OLD_BUILD"
-                else
-                  echo "  Skipping active build: $OLD_BUILD"
-                fi
-              done
-            fi
-
-            echo ""
-            echo "✅ Deployment complete!"
-            echo "📊 Current state:"
-            echo "  Active: $(readlink dist)"
-            echo "  Remaining builds:"
-            ls -lth | grep "^d" | grep "dist_" | head -5
 
       # NFS 동기화 대기
       - name: Wait for NFS sync
@@ -363,6 +341,39 @@ jobs:
             echo "✅ Web rollout complete"
 
             echo "✅ All pods restarted successfully"
+            
+      # Pod 롤아웃 완료 후 구 빌드 정리
+      # ⚠️ 반드시 pod rollout 이후에 실행해야 함:
+      #   구 Pod의 subPath bind mount가 삭제된 디렉터리를 가리키면 NFS stale handle → 500 발생
+      - name: Cleanup old builds (after pod rollout)
+        uses: garygrossgarten/github-action-ssh@release
+        with:
+          host: ${{ secrets.CICD_HOST }}
+          username: ${{ secrets.CICD_USER }}
+          password: ${{ secrets.CICD_PASS }}
+          command: |
+            cd ${{ secrets.CICD_PATH }}/dev/app/django/static
+
+            CURRENT_LINK=$(readlink dist 2>/dev/null || true)
+            echo "🧹 Cleaning old builds (keeping 3 most recent, active: $CURRENT_LINK)..."
+
+            ALL_BUILDS=$(ls -dt dist_* 2>/dev/null || true)
+            BUILD_COUNT=$(echo "$ALL_BUILDS" | grep -v '^$' | wc -l)
+
+            if [ "$BUILD_COUNT" -gt 3 ]; then
+              echo "$ALL_BUILDS" | tail -n +4 | while read -r OLD_BUILD; do
+                if [ "$OLD_BUILD" != "$CURRENT_LINK" ]; then
+                  echo "  Removing old build: $OLD_BUILD"
+                  rm -rf "$OLD_BUILD"
+                else
+                  echo "  Skipping active build: $OLD_BUILD"
+                fi
+              done
+            else
+              echo "  Build count ($BUILD_COUNT) within limit, no cleanup needed"
+            fi
+
+            echo "✅ Cleanup complete"
 
       # slack --> notification
       - name: Send slack when failed
