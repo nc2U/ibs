@@ -35,6 +35,12 @@ const categoryLabel = (cat: string) => {
   return labels[cat] || cat
 }
 
+const getRolesByCategory = (category: string) => {
+  return props.roleList.filter(r => {
+    return r.category === category
+  })
+}
+
 const sortLabel = (sort: string) => {
   const labels: Record<string, string> = {
     project: '프로젝트',
@@ -84,7 +90,7 @@ const togglePermission = async (role: Role, permissionPk: number) => {
             <tr>
               <th scope="col" class="sticky-col-header" style="min-width: 200px">권한</th>
               <th
-                v-for="role in roleList.filter(r => (r.category || 'work_core') === 'work_core')"
+                v-for="role in getRolesByCategory('work_core')"
                 :key="role.pk"
                 scope="col"
                 class="text-center"
@@ -112,7 +118,7 @@ const togglePermission = async (role: Role, permissionPk: number) => {
                   <small class="text-muted">{{ perm.description }}</small>
                 </td>
                 <td
-                  v-for="role in roleList.filter(r => (r.category || 'work_core') === 'work_core')"
+                  v-for="role in getRolesByCategory('work_core')"
                   :key="role.pk"
                   class="text-center"
                 >
@@ -142,7 +148,7 @@ const togglePermission = async (role: Role, permissionPk: number) => {
             <tr>
               <th scope="col" class="sticky-col-header" style="min-width: 200px">권한</th>
               <th
-                v-for="role in roleList.filter(r => r.category === 'ibs_global')"
+                v-for="role in getRolesByCategory('ibs_global')"
                 :key="role.pk"
                 scope="col"
                 class="text-center"
