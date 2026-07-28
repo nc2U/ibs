@@ -153,6 +153,13 @@ export interface Permission {
   description: string
 }
 
+export type ModulePermissionMap = Record<string, Permission[]>
+
+export interface GroupedPermissions {
+  work_core: ModulePermissionMap
+  ibs_global: ModulePermissionMap
+}
+
 export interface Member {
   pk: number
   user: SimpleUser

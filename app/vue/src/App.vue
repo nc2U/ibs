@@ -31,6 +31,7 @@ onMounted(async () => {
 onBeforeMount(async () => {
   await workStore.fetchMyProjectsList()
   await workStore.fetchPermissionList('ibs_global')
+  await workStore.fetchGroupedPermissions()
 })
 </script>
 

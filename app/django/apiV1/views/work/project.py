@@ -256,6 +256,27 @@ class PermissionViewSet(viewsets.ReadOnlyModelViewSet):
     pagination_class = PageNumberPaginationOneHundred
     filterset_fields = ('category',)
 
+    @action(detail=False, methods=['get'])
+    def grouped(self, request, slug=None):
+        """
+        카테고리와 모듈별로 그룹화된 권한 목록 반환
+        """
+        queryset = self.get_queryset()
+        data = {'work_core': {}, 'ibs_global': {}}
+
+        for perm in queryset:
+            # 'shared' 일 경우 두 카테고리 모두에 추가, 아니면 해당 카테고리만
+            categories = ['work_core', 'ibs_global'] if perm.category == 'shared' else [perm.category or 'work_core']
+
+            for cate in categories:
+                if cate not in data:
+                    data[cate] = {}
+                if perm.module not in data[cate]:
+                    data[cate][perm.module] = []
+                # 시리얼라이저를 사용하여 데이터 직렬화
+                data[cate][perm.module].append(PermissionSerializer(perm).data)
+        return Response(data)
+
 
 class MemberViewSet(viewsets.ModelViewSet):
     queryset = Member.objects.all()

@@ -9,6 +9,7 @@ import type {
   IssueProject,
   Role,
   Permission,
+  GroupedPermissions,
   Member,
   ProjectMember,
   Version,
@@ -367,12 +368,22 @@ export const useWork = defineStore('work', () => {
       .catch(err => errorHandle(err.response.data))
 
   const permissionList = ref<Permission[]>([])
+  const groupedPermissions = ref<GroupedPermissions | null>(null)
 
   const fetchPermissionList = async (category?: 'work_core' | 'ibs_global') => {
     const url = category ? `/permission/?category=${category}` : `/permission/`
     try {
       const res = await api.get(url)
       return (permissionList.value = res.data.results)
+    } catch (err: any) {
+      return errorHandle(err.response.data)
+    }
+  }
+
+  const fetchGroupedPermissions = async () => {
+    try {
+      const res = await api.get('/permission/grouped/')
+      return (groupedPermissions.value = res.data)
     } catch (err: any) {
       return errorHandle(err.response.data)
     }
@@ -631,7 +642,9 @@ export const useWork = defineStore('work', () => {
     deleteRole,
 
     permissionList,
+    groupedPermissions,
     fetchPermissionList,
+    fetchGroupedPermissions,
 
     member,
     memberList,

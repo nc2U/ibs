@@ -1,31 +1,14 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useWork } from '@/store/pinia/work_project'
-import type { Role, Permission } from '@/store/types/work_project'
+import type { Role, GroupedPermissions } from '@/store/types/work_project'
 
 const props = defineProps<{
   roleList: Role[]
-  permissionList: Permission[]
+  groupedPermissions: GroupedPermissions | null
   workManager: boolean
 }>()
 
 const workStore = useWork()
-
-const permissionGroups = computed(() => {
-  const groups: Record<string, Record<string, Permission[]>> = {
-    work_core: {},
-    ibs_global: {},
-  }
-  props.permissionList.forEach(p => {
-    const cats = p.category === 'shared' ? ['work_core', 'ibs_global'] : [p.category || 'work_core']
-    cats.forEach(cat => {
-      if (!groups[cat]) groups[cat] = {}
-      if (!groups[cat][p.module]) groups[cat][p.module] = []
-      groups[cat][p.module].push(p)
-    })
-  })
-  return groups
-})
 
 const categoryLabel = (cat: string) => {
   const labels: Record<string, string> = {
@@ -101,7 +84,7 @@ const togglePermission = async (role: Role, permissionPk: number) => {
             </tr>
           </thead>
           <tbody>
-            <template v-for="(perms, sort) in permissionGroups.work_core" :key="sort">
+            <template v-for="(perms, sort) in groupedPermissions?.work_core" :key="sort">
               <tr class="table-secondary">
                 <td
                   :colspan="
@@ -159,7 +142,7 @@ const togglePermission = async (role: Role, permissionPk: number) => {
             </tr>
           </thead>
           <tbody>
-            <template v-for="(perms, sort) in permissionGroups.ibs_global" :key="sort">
+            <template v-for="(perms, sort) in groupedPermissions?.ibs_global" :key="sort">
               <tr class="table-secondary">
                 <td
                   :colspan="roleList.filter(r => r.category === 'ibs_global').length + 1"

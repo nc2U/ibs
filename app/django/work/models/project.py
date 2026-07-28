@@ -283,7 +283,7 @@ class Permission(models.Model):
         return f"{self.code}({self.name})"
 
     class Meta:
-        ordering = ('-category', 'id',)
+        ordering = ('id',)
         verbose_name = '04. 권한'
         verbose_name_plural = '04. 권한'
 

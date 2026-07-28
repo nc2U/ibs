@@ -20,7 +20,7 @@ const accStore = useAccount()
 const workManager = computed(() => accStore.workManager)
 
 const workStore = useWork()
-const { roleList, permissionList } = storeToRefs(workStore)
+const { roleList, groupedPermissions } = storeToRefs(workStore)
 
 const cBody = ref()
 const sideNavCAll = () => cBody.value.toggle()
@@ -108,9 +108,9 @@ onBeforeMount(() => {
 
           <div v-else-if="activeTab === 1">
             <PermissionReport
-              :role-list="roleList"
+              :role-list="sortedRoleList"
               :work-manager="!!workManager"
-              :permission-list="permissionList"
+              :grouped-permissions="groupedPermissions"
             />
           </div>
         </CCol>
