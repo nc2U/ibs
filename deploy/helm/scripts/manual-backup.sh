@@ -171,6 +171,9 @@ spec:
       containers:
         - name: postgres-backup
           image: postgres:18.0
+          env:
+            - name: TZ
+              value: "Asia/Seoul"
           imagePullPolicy: IfNotPresent
           command:
             - /bin/bash
@@ -311,6 +314,9 @@ spec:
       containers:
         - name: postgres-backup
           image: postgres:18.0
+          env:
+            - name: TZ
+              value: "Asia/Seoul"
           imagePullPolicy: IfNotPresent
           command:
             - /bin/bash
