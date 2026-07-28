@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref } from 'vue'
 import { navMenu, pageTitle } from '@/views/projects/_menu/headermixin6'
+import { usePerms } from '@/composables/usePerms.ts'
 import { useProject } from '@/store/pinia/project.ts'
 import { useContract } from '@/store/pinia/contract.ts'
 import type { Project } from '@/store/types/project.ts'
@@ -10,6 +11,9 @@ import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ProjectAuthGuard from '@/components/AuthGuard/ProjectAuthGuard.vue'
 import RequiredAddForm from '@/views/projects/Required/components/RequiredAddForm.vue'
 import RequiredFormList from '@/views/projects/Required/components/RequiredFormList.vue'
+
+const { can, PERM } = usePerms()
+const canProjectCreate = computed(() => can(PERM.PROJECT_CREATE))
 
 const projStore = useProject()
 const contStore = useContract()
@@ -48,7 +52,7 @@ onBeforeMount(async () => {
 
     <ContentBody>
       <CCardBody class="pb-5">
-        <RequiredAddForm />
+        <RequiredAddForm v-if="canProjectCreate" />
         <RequiredFormList />
       </CCardBody>
     </ContentBody>
