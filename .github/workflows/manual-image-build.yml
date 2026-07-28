@@ -72,6 +72,7 @@ jobs:
             sh ${{ env.DEPLOY_SCRIPT }}
             kubectl rollout restart deployment/web -n ${{ env.ENV_NAMESPACE }}
             kubectl rollout restart deployment/web-celery -n ${{ env.ENV_NAMESPACE }}
+            kubectl rollout restart deployment/nginx -n ${{ env.ENV_NAMESPACE }}
             echo "✅ Force Rebuild & Rollout Restart Completed Successfully!"
 
       - name: Send Slack Notification when failed

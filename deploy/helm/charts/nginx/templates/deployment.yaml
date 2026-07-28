@@ -31,7 +31,7 @@ spec:
       initContainers:
         - name: copy-static-files
           image: "{{ .Values.web.image.repository }}:{{ .Values.web.image.tag | default "latest" }}"
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           command: [ "sh", "-c" ]
           args:
             - |
