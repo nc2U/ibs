@@ -31,6 +31,17 @@ echo "Namespace: $NAMESPACE"
 echo "Backup Name: $BACKUP_NAME"
 echo "----------------------------------------"
 
+# 해당 네임스페이스의 실제 CNPG Cluster 이름 동적 감지
+echo "🔍 Detecting CNPG cluster name in $NAMESPACE..."
+CLUSTER_NAME=$(kubectl get cluster -n "$NAMESPACE" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
+
+if [ -z "$CLUSTER_NAME" ]; then
+  echo "⚠️  Could not detect CNPG cluster automatically, falling back to 'postgres'"
+  CLUSTER_NAME="postgres"
+else
+  echo "✅ Target CNPG Cluster: $CLUSTER_NAME"
+fi
+
 # 임시 yaml 생성 후 배포
 TEMP_YAML=$(mktemp)
 cat > "$TEMP_YAML" <<EOF
@@ -42,7 +53,7 @@ metadata:
 spec:
   method: barmanObjectStore
   cluster:
-    name: postgres
+    name: ${CLUSTER_NAME}
 EOF
 
 echo "🚀 Submitting Backup CRD to Kubernetes..."
