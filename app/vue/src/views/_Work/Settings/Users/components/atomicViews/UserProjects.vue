@@ -1,12 +1,16 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useAccount } from '@/store/pinia/account'
+import { usePerms } from '@/composables/usePerms.ts'
 import { useWork } from '@/store/pinia/work_project.ts'
 import type { Member } from '@/store/types/work_project.ts'
 import NoData from '@/components/NoData/Index.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
+
+const { can, PERM } = usePerms()
+const canProjectMember = computed(() => can(PERM.PROJECT_MEMBER))
 
 // ────────────────────────────────────────────────────
 // 스토어 & 데이터
@@ -145,7 +149,7 @@ watch(
 <template>
   <CCol>
     <!-- 헤더 액션 -->
-    <CRow class="py-2">
+    <CRow v-if="canProjectMember" class="py-2">
       <CCol>
         <span class="mr-2 form-text">
           <TextButton name="프로젝트 추가" @click="callModal" />
