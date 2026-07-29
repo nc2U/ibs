@@ -149,6 +149,11 @@ const onSubmitConfirm = async () => {
   }
 }
 
+const setMyAccount = async () => {
+  accStore.user = userInfo.value
+  await router.push({ name: '사용자 - 프로젝트 보기' })
+}
+
 onBeforeMount(async () => {
   await workStore.fetchIssueProjectList({})
   await formDataSetup()
@@ -167,6 +172,14 @@ onBeforeRouteUpdate(async to => {
       </CCol>
 
       <CCol class="text-right form-text">
+        <span class="mr-2">
+          <TextButton
+            name="내 프로젝트 보기"
+            @click="setMyAccount"
+            icon="mdi-chart-box-multiple-outline"
+            icon-color="info"
+          />
+        </span>
         <span class="mr-2">
           <TextButton
             name="비밀번호 변경"
@@ -294,7 +307,7 @@ onBeforeRouteUpdate(async to => {
               </CRow>
 
               <CRow class="mb-3">
-                <CFormLabel for="password" class="col-sm-3 col-form-label"> 휴대전화 </CFormLabel>
+                <CFormLabel for="password" class="col-sm-3 col-form-label"> 휴대전화</CFormLabel>
                 <CCol>
                   <input
                     v-model="form.cell_phone"
@@ -396,7 +409,7 @@ onBeforeRouteUpdate(async to => {
   </div>
 
   <ConfirmModal ref="refConfirmModal">
-    <template #default> 내 계정 정보를 저장하시겠습니까? </template>
+    <template #default> 내 계정 정보를 저장하시겠습니까?</template>
     <template #footer>
       <v-btn color="success" size="small" @click="onSubmitConfirm">저장</v-btn>
     </template>

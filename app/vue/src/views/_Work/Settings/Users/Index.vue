@@ -15,6 +15,7 @@ import UserDetail from './components/UserDetail.vue'
 import AdminUserManage from './components/AdminUserManage.vue'
 import MyAccountForm from './components/MyAccountForm.vue'
 import MyPasswordForm from './components/MyPasswordForm.vue'
+import MyProjectView from '@/views/_Work/Settings/Users/components/MyProjectView.vue'
 
 const cBody = ref()
 
@@ -26,6 +27,7 @@ const component = computed(() => {
   if (route.name === '사용자 - 생성' || route.name === '사용자 - 수정') return '관리자 메뉴'
   if (route.name === '사용자 - 내 계정') return '내 계정'
   if (route.name === '사용자 - 비밀번호 변경') return '비밀번호 변경'
+  if (route.name === '사용자 - 프로젝트 보기') return '프로젝트 보기'
   return '목록'
 })
 
@@ -83,6 +85,7 @@ onBeforeMount(async () => {
 
       <MyAccountForm v-else-if="component === '내 계정'" />
       <MyPasswordForm v-else-if="component === '비밀번호 변경'" />
+      <MyProjectView v-else-if="component === '프로젝트 보기'" />
     </template>
 
     <template v-slot:aside></template>

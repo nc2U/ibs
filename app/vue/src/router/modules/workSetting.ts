@@ -30,6 +30,10 @@ const workSetting = {
           path: 'my/password',
           name: '사용자 - 비밀번호 변경',
         },
+        {
+          path: 'my/project-view',
+          name: '사용자 - 프로젝트 보기',
+        },
       ],
     },
     {
