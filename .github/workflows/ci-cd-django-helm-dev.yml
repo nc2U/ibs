@@ -150,7 +150,7 @@ jobs:
           if kubectl get cluster postgres -n ${KUBE_NAMESPACE} >/dev/null 2>&1; then
             kubectl label cluster postgres -n ${KUBE_NAMESPACE} app.kubernetes.io/managed-by=Helm --overwrite || true
             kubectl annotate cluster postgres -n ${KUBE_NAMESPACE} meta.helm.sh/release-name=${HELM_RELEASE_NAME} meta.helm.sh/release-namespace=${KUBE_NAMESPACE} --overwrite || true
-            kubectl get cluster postgres -n ${KUBE_NAMESPACE} -o json | kubectl apply --server-side --force-conflicts -f - || true
+            kubectl get cluster postgres -n ${KUBE_NAMESPACE} -o json | kubectl apply --server-side --force-conflicts --field-manager=helm -f - || true
           fi
 
       - name: Chart & Script Clean
