@@ -273,6 +273,8 @@ class DocumentSerializer(serializers.ModelSerializer):
             validated_data['title'] = self.initial_data.get('title')
         if 'description' in self.initial_data:
             validated_data['description'] = self.initial_data.get('description')
+        if 'issue_project' in self.initial_data:
+            validated_data['issue_project_id'] = self.initial_data.get('issue_project')
 
         validated_data['ip'] = request.META.get('REMOTE_ADDR')
         validated_data['device'] = request.META.get('HTTP_USER_AGENT')
