@@ -230,7 +230,7 @@ fi
 
 echo ""
 echo "🚀 Deploying Restore Cluster '$RESTORE_CLUSTER_NAME' to Kubernetes..."
-kubectl apply -f "$TEMP_YAML"
+kubectl apply --server-side --force-conflicts -f "$TEMP_YAML"
 rm "$TEMP_YAML"
 
 echo "⏳ Waiting for restore pod to be created by CNPG operator..."
