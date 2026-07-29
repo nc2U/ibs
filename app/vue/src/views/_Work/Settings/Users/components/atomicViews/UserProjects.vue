@@ -232,7 +232,7 @@ watch(
               </CTableDataCell>
 
               <!-- 액션 버튼 -->
-              <CTableDataCell class="px-3">
+              <CTableDataCell v-if="canProjectMember" class="px-3">
                 <span v-if="editMode === null || editMode !== mem.pk" class="mr-2">
                   <v-icon icon="mdi-pencil" color="amber" size="sm" />
                   <router-link to="" @click="toEdit(mem)">편집</router-link>
