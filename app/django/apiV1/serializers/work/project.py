@@ -82,7 +82,7 @@ class SimpleIssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSeri
 
     class Meta:
         model = IssueProject
-        fields = ('pk', 'name', 'slug', 'visible', 'status')
+        fields = ('pk', 'type', 'name', 'slug', 'visible', 'status')
 
 
 class RoleInMemberSerializer(serializers.ModelSerializer):

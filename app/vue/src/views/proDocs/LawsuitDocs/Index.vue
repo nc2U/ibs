@@ -67,7 +67,6 @@ const projStore = useProject()
 const projObj = computed(() => projStore.project as Project | null)
 const project = computed(() => projObj.value?.pk)
 const projName = computed(() => projObj.value?.name)
-const company = computed(() => projObj.value?.company)
 
 const accStore = useAccount()
 const writeAuth = computed(() => accStore.writeProDocs)

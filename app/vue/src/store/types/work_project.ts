@@ -16,6 +16,7 @@ export interface SimpleMember {
 
 export interface SimpleProject {
   pk: number
+  type: '1' | '2' | '3' // '1': 본사업무, '2': 개발사업, '3': 기타사업
   name: string
   slug: string
   visible: boolean
