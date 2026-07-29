@@ -1,40 +1,32 @@
 #!/bin/bash
 # CloudNativePG S3 백업 기반 복원(Restore/PITR) 자동화 스크립트
 #
-# 사용법:
-#   sh manual-s3-restore.sh [dev|prod] [복원타겟시점-KST] [storage-size] [s3-destination] [server-name]
+# 명확하고 심플한 사용법:
+#   1) 최신 시점으로 메인 DB 깔끔하게 복구 (기본값):
+#      sh manual-s3-restore.sh [dev|prod]
+#      예: sh manual-s3-restore.sh dev
 #
-# 예시:
-#   1) 최신 시점으로 복원 (기본 storage 10Gi):
-#      sh manual-s3-restore.sh prod
+#   2) 특정 시점(KST 한국시간)으로 메인 DB 복구 (PITR):
+#      sh manual-s3-restore.sh [dev|prod] "2026-07-29 15:30:00"
 #
-#   2) 특정 시점(KST 한국시간)으로 복원:
-#      sh manual-s3-restore.sh prod "2026-07-25 15:30:00"
-#
-#   3) 특정 시점 + storage 크기 직접 지정:
-#      sh manual-s3-restore.sh prod "2026-07-25 15:30:00" 20Gi
-#
-#   4) S3 경로 및 serverName 직접 지정 (mc ls로 실제 경로 확인 후 사용):
-#      sh manual-s3-restore.sh dev "" 10Gi "s3://postgres-backup-dev/postgres" "postgres"
+#   3) 복원 테스트 전용 모드 (메인 DB 건드리지 않고 'postgres-restored' 검증용 띄우기):
+#      sh manual-s3-restore.sh [dev|prod] "" test
+#      sh manual-s3-restore.sh [dev|prod] "2026-07-29 15:30:00" test
 #
 set -e
 
 ENV_ARG="${1:-dev}"
 TARGET_TIME_KST="${2:-}"
-STORAGE_SIZE="${3:-10Gi}"
-DESTINATION_OVERRIDE="${4:-}"  # 4번째 인자: S3 경로 직접 지정 (동적 감지 실패 시 사용)
-SERVER_NAME_OVERRIDE="${5:-}"  # 5번째 인자: serverName 직접 지정 (원본 클러스터 이름)
+MODE_ARG="${3:-restore}"  # 'test' 일 때만 postgres-restored, 기본값은 메인 postgres 직접 복구
 
 if [ "$ENV_ARG" = "prod" ]; then
   NAMESPACE="ibs-prod"
-  RESTORE_CLUSTER_NAME="postgres-restored"
   S3_BUCKET="postgres-backup"
   SECRET_NAME="postgres-backup-s3"
   KEY_ACCESS="ACCESS_KEY_ID"
   KEY_SECRET="ACCESS_SECRET_KEY"
 elif [ "$ENV_ARG" = "dev" ]; then
   NAMESPACE="ibs-dev"
-  RESTORE_CLUSTER_NAME="postgres-restored"
   S3_BUCKET="postgres-backup-dev"
   SECRET_NAME="postgres-backup-s3"
   KEY_ACCESS="ACCESS_KEY_ID"
@@ -44,15 +36,27 @@ else
   exit 1
 fi
 
+if [ "$MODE_ARG" = "test" ]; then
+  RESTORE_CLUSTER_NAME="postgres-restored"
+  IS_TEST_MODE=true
+else
+  RESTORE_CLUSTER_NAME="postgres"
+  IS_TEST_MODE=false
+fi
+
 echo "=========================================="
 echo "CloudNativePG S3 Restore (PITR) Automation"
 echo "=========================================="
 echo "Environment    : $ENV_ARG"
 echo "Namespace      : $NAMESPACE"
 echo "Target Cluster : $RESTORE_CLUSTER_NAME"
-echo "Storage Size   : $STORAGE_SIZE"
+if [ "$IS_TEST_MODE" = "true" ]; then
+  echo "Mode           : 🧪 TEST MODE (Creating temporary 'postgres-restored' cluster)"
+else
+  echo "Mode           : 🚀 MAIN RESTORE MODE (Restoring main 'postgres' cluster directly)"
+fi
 
-# S3 Secret 존재 여부 및 필수 키 포함 여부 검증
+# S3 Secret 검증
 echo ""
 echo "🔑 Verifying S3 credentials secret in K8s..."
 
@@ -62,77 +66,34 @@ if ! kubectl get secret "$SECRET_NAME" -n "$NAMESPACE" > /dev/null 2>&1; then
   exit 1
 fi
 
-# 필수 키 포함 여부 확인 (실제 값은 CNPG 오퍼레이터가 직접 Secret 참조)
-if ! kubectl get secret "$SECRET_NAME" -n "$NAMESPACE" \
-    -o jsonpath="{.data.${KEY_ACCESS}}" 2>/dev/null | grep -q .; then
-  echo "❌ Error: Key '$KEY_ACCESS' not found in secret '$SECRET_NAME'."
-  exit 1
-fi
+# 내부 파라미터 자동 감지 (Storage Size, S3 Destination, Server Name, PG Image)
+DETECTED_STORAGE_SIZE=$(kubectl get cluster "$RESTORE_CLUSTER_NAME" -n "$NAMESPACE" \
+  -o jsonpath='{.spec.storage.size}' 2>/dev/null || \
+  kubectl get cluster -n "$NAMESPACE" -o jsonpath='{.items[0].spec.storage.size}' 2>/dev/null || true)
+STORAGE_SIZE="${DETECTED_STORAGE_SIZE:-10Gi}"
 
-if ! kubectl get secret "$SECRET_NAME" -n "$NAMESPACE" \
-    -o jsonpath="{.data.${KEY_SECRET}}" 2>/dev/null | grep -q .; then
-  echo "❌ Error: Key '$KEY_SECRET' not found in secret '$SECRET_NAME'."
-  exit 1
-fi
+DETECTED_DESTINATION=$(kubectl get cluster -n "$NAMESPACE" \
+  -o jsonpath='{.items[0].spec.backup.barmanObjectStore.destinationPath}' 2>/dev/null || true)
+S3_DESTINATION="${DETECTED_DESTINATION:-s3://${S3_BUCKET}/postgres}"
 
-echo "✅ Secret '$SECRET_NAME' verified (keys: $KEY_ACCESS, $KEY_SECRET)"
-
-# S3 destinationPath 결정 (우선순위: 4번째 인자 > 운영 Cluster 동적 감지 > 기본값)
-echo ""
-echo "📍 Resolving S3 backup destination path..."
-
-if [ -n "$DESTINATION_OVERRIDE" ]; then
-  S3_DESTINATION="$DESTINATION_OVERRIDE"
-  echo "✅ Using explicitly specified destination: $S3_DESTINATION"
-else
-  ACTUAL_DESTINATION=$(kubectl get cluster -n "$NAMESPACE" \
-    -o jsonpath='{.items[0].spec.backup.barmanObjectStore.destinationPath}' 2>/dev/null || true)
-
-  if [ -n "$ACTUAL_DESTINATION" ]; then
-    S3_DESTINATION="$ACTUAL_DESTINATION"
-    echo "✅ Detected from running cluster: $S3_DESTINATION"
-  else
-    S3_DESTINATION="s3://${S3_BUCKET}/postgres"
-    echo "⚠️  Could not detect from running cluster. Using fallback: $S3_DESTINATION"
-  fi
-fi
-
-# serverName 결정
-echo ""
-echo "🏷️  Resolving source cluster serverName..."
-
-if [ -n "$SERVER_NAME_OVERRIDE" ]; then
-  SOURCE_SERVER_NAME="$SERVER_NAME_OVERRIDE"
-  echo "✅ Using explicitly specified serverName: $SOURCE_SERVER_NAME"
-else
-  DETECTED_SERVER_NAME=$(kubectl get cluster -n "$NAMESPACE" \
-    -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
-
-  if [ -n "$DETECTED_SERVER_NAME" ]; then
-    SOURCE_SERVER_NAME="$DETECTED_SERVER_NAME"
-    echo "✅ Detected from running cluster: $SOURCE_SERVER_NAME"
-  else
-    SOURCE_SERVER_NAME="postgres"
-    echo "⚠️  Could not detect cluster name. Using fallback: $SOURCE_SERVER_NAME"
-  fi
-fi
-
-echo "   → S3 lookup path: ${S3_DESTINATION}/${SOURCE_SERVER_NAME}/base/..."
-
-# PostgreSQL Image 결정 (PG 18 기준 이미지 적용)
-echo ""
-echo "🐳 Resolving PostgreSQL image version..."
+SOURCE_SERVER_NAME="postgres"
 
 DETECTED_IMAGE=$(kubectl get cluster -n "$NAMESPACE" \
   -o jsonpath='{.items[0].spec.imageName}' 2>/dev/null || true)
+PG_IMAGE="${DETECTED_IMAGE:-ghcr.io/cloudnative-pg/postgresql:18-bookworm}"
 
-if [ -n "$DETECTED_IMAGE" ]; then
-  PG_IMAGE="$DETECTED_IMAGE"
-  echo "✅ Detected from running cluster: $PG_IMAGE"
-else
-  PG_IMAGE="ghcr.io/cloudnative-pg/postgresql:18-bookworm"
-  echo "⚠️  Could not detect image. Using default PG 18 image: $PG_IMAGE"
-fi
+# DB 접속 정보 자동 감지
+DETECTED_DB_USER=$(kubectl get cluster -n "$NAMESPACE" \
+  -o jsonpath='{.items[0].spec.bootstrap.initdb.owner}' 2>/dev/null || true)
+DETECTED_DB_NAME=$(kubectl get cluster -n "$NAMESPACE" \
+  -o jsonpath='{.items[0].spec.bootstrap.initdb.database}' 2>/dev/null || true)
+
+DB_USER="${DETECTED_DB_USER:-ibs}"
+DB_NAME="${DETECTED_DB_NAME:-ibs}"
+
+echo "📍 S3 Backup Path : ${S3_DESTINATION}/${SOURCE_SERVER_NAME}/base/..."
+echo "🐳 PG Image       : $PG_IMAGE"
+echo "💾 Storage Size   : $STORAGE_SIZE"
 
 # 복원 시점 설정 및 KST -> UTC 변환
 RECOVERY_TARGET_YAML=""
@@ -156,16 +117,24 @@ else
   echo "🕒 No target time specified — restoring to latest available point."
 fi
 
-# 기존 복원 클러스터가 존재할 경우 충돌 방지를 위해 선제 삭제 안내
+# 대상 클러스터가 이미 존재하는 경우 안전한 선제 삭제 처리
 if kubectl get cluster "$RESTORE_CLUSTER_NAME" -n "$NAMESPACE" > /dev/null 2>&1; then
   echo ""
-  echo "⚠️  Warning: Cluster '$RESTORE_CLUSTER_NAME' already exists in '$NAMESPACE'."
-  printf "   Do you want to delete the existing restored cluster first? (yes/no): "
-  read -r DELETE_CONFIRM
-  if [ "$DELETE_CONFIRM" = "yes" ]; then
-    echo "🗑️  Deleting existing restored cluster..."
+  if [ "$IS_TEST_MODE" = "true" ]; then
+    echo "⚠️  Warning: Test Cluster '$RESTORE_CLUSTER_NAME' already exists."
+    printf "   Do you want to delete the existing test cluster and recreate? (yes/no): "
+    read -r CONFIRM
+  else
+    echo "⚠️  CRITICAL WARNING: Database Cluster '$RESTORE_CLUSTER_NAME' already exists in $ENV_ARG."
+    echo "   Restoring will DELETE the current cluster and replace it with S3 backup data."
+    printf "   Are you SURE you want to restore cluster '$RESTORE_CLUSTER_NAME'? (yes/no): "
+    read -r CONFIRM
+  fi
+
+  if [ "$CONFIRM" = "yes" ]; then
+    echo "🗑️  Deleting existing cluster '$RESTORE_CLUSTER_NAME'..."
     kubectl delete cluster "$RESTORE_CLUSTER_NAME" -n "$NAMESPACE"
-    echo "   Waiting for pods to terminate (up to 5m)..."
+    echo "   Waiting for pods and PVCs to clean up (up to 5m)..."
     kubectl wait --for=delete pod -l "cnpg.io/cluster=${RESTORE_CLUSTER_NAME}" \
       -n "$NAMESPACE" --timeout=5m || true
     echo "✅ Existing cluster removed."
@@ -175,7 +144,7 @@ if kubectl get cluster "$RESTORE_CLUSTER_NAME" -n "$NAMESPACE" > /dev/null 2>&1;
   fi
 fi
 
-# 임시 yaml 생성 및 배포
+# 복원 YAML 생성 및 배포
 TEMP_YAML=$(mktemp)
 
 if [ -n "$RECOVERY_TARGET_YAML" ]; then
@@ -242,7 +211,7 @@ YAML_EOF
 fi
 
 echo ""
-echo "🚀 Deploying Restore Cluster resource to Kubernetes..."
+echo "🚀 Deploying Restore Cluster '$RESTORE_CLUSTER_NAME' to Kubernetes..."
 kubectl apply -f "$TEMP_YAML"
 rm "$TEMP_YAML"
 
@@ -252,7 +221,7 @@ for i in $(seq 1 30); do
   POD_COUNT=$(kubectl get pod -l "cnpg.io/cluster=${RESTORE_CLUSTER_NAME}" \
     -n "$NAMESPACE" --no-headers 2>/dev/null | wc -l | tr -d ' ')
   if [ "$POD_COUNT" -gt 0 ]; then
-    echo "✅ Restore pod detected (${POD_COUNT} pod(s)). Waiting for ready state..."
+    echo "✅ Restore pod detected (${POD_COUNT} pod(s)). Waiting for full recovery..."
     POD_FOUND=true
     break
   fi
@@ -261,57 +230,35 @@ for i in $(seq 1 30); do
 done
 
 if [ "$POD_FOUND" = "false" ]; then
-  echo "⚠️  Pod did not appear within 5 minutes. Check cluster status:"
-  echo "    kubectl describe cluster $RESTORE_CLUSTER_NAME -n $NAMESPACE"
-  echo "    kubectl get events -n $NAMESPACE --sort-by='.lastTimestamp'"
-else
-  # Pod 준비 대기 (최대 10분, 대용량 S3 복원 고려)
-  kubectl wait --for=condition=ready pod -l "cnpg.io/cluster=${RESTORE_CLUSTER_NAME}" \
-    -n "$NAMESPACE" --timeout=10m || true
+  echo "❌ Error: Restore pod did not appear within 5 minutes."
+  exit 1
 fi
 
-# 진행 상태 추적
+# 복원 Pod 준비 완료 대기 (S3 다운로드 및 DB 렌더링 완료까지 대기)
+echo "⏳ Restoring database from S3..."
+kubectl wait --for=condition=ready pod -l "cnpg.io/cluster=${RESTORE_CLUSTER_NAME}" \
+  -n "$NAMESPACE" --timeout=10m
+
+# 결과 가이드 출력
 echo ""
-echo "----------------------------------------"
-echo "🔍 Monitoring recovery progress (Ctrl+C to stop log tailing):"
-echo "   Restore will continue running in background even if you stop."
-echo "----------------------------------------"
+echo "=========================================="
+echo "🎉 Restore Completed Successfully!"
+echo "=========================================="
+echo "  Target Cluster: $RESTORE_CLUSTER_NAME (namespace: $NAMESPACE)"
+echo ""
+echo "  ① 데이터 검증 (복원 서비스 DB 접속 및 테이블 조회):"
+echo "    1) 슈퍼유저 접속: kubectl exec -it \$(kubectl get pod -l cnpg.io/cluster=$RESTORE_CLUSTER_NAME -n $NAMESPACE -o name | head -1) -n $NAMESPACE -- psql -U postgres -d $DB_NAME -c \"\dt\""
+echo "    2) 앱 유저 접속:   kubectl exec -it \$(kubectl get pod -l cnpg.io/cluster=$RESTORE_CLUSTER_NAME -n $NAMESPACE -o name | head -1) -n $NAMESPACE -- psql -h 127.0.0.1 -U $DB_USER -d $DB_NAME -c \"\dt\""
+echo ""
 
-POD_EXISTS=$(kubectl get pod -l "cnpg.io/cluster=${RESTORE_CLUSTER_NAME}" \
-  -n "$NAMESPACE" --no-headers 2>/dev/null | wc -l | tr -d ' ')
-
-if [ "$POD_EXISTS" -gt 0 ]; then
-  kubectl logs -n "$NAMESPACE" -l "cnpg.io/cluster=${RESTORE_CLUSTER_NAME}" \
-    -c full-recovery -f --tail=50 || true
+if [ "$IS_TEST_MODE" = "true" ]; then
+  echo "  ② 테스트 복원 클러스터 정리 (검증 완료 후):"
+  echo "    kubectl delete cluster $RESTORE_CLUSTER_NAME -n $NAMESPACE"
 else
-  echo "⚠️  No pods found. Check cluster events:"
-  echo "    kubectl get events -n $NAMESPACE --sort-by='.lastTimestamp' | grep $RESTORE_CLUSTER_NAME"
-  echo "    kubectl describe cluster $RESTORE_CLUSTER_NAME -n $NAMESPACE"
+  echo "  ② 복원 완료 안내:"
+  echo "    - 메인 클러스터 '$RESTORE_CLUSTER_NAME'가 성공적으로 S3 백업 데이터로 복원되었습니다."
+  echo "    - 웹 애플리케이션(Django) 서비스가 복구된 DB와 자동으로 연결되어 동작합니다."
 fi
 
-# 복원 완료 후 서비스 전환 가이드
-echo ""
-echo "=========================================="
-echo "📋 Post-Restore Checklist"
-echo "=========================================="
-echo ""
-echo "  복원 클러스터: $RESTORE_CLUSTER_NAME (namespace: $NAMESPACE)"
-echo "  현재 상태 확인:"
-echo "    kubectl get cluster $RESTORE_CLUSTER_NAME -n $NAMESPACE"
-echo "    kubectl get pods -l cnpg.io/cluster=$RESTORE_CLUSTER_NAME -n $NAMESPACE"
-echo ""
-echo "  ① 데이터 검증 (복원 DB 접속):"
-echo "    kubectl exec -it \$(kubectl get pod -l cnpg.io/cluster=$RESTORE_CLUSTER_NAME \\"
-echo "      -n $NAMESPACE -o name | head -1) -n $NAMESPACE -- psql -U postgres"
-echo ""
-echo "  ② 운영 서비스 전환이 필요한 경우 (선택):"
-echo "    - Helm values에서 DB 연결 정보를 $RESTORE_CLUSTER_NAME 으로 변경 후 재배포"
-echo "    - 또는 기존 postgres 클러스터 이름 변경 후 복원 클러스터를 postgres로 rename"
-echo ""
-echo "  ③ 복원 클러스터를 운영으로 격상 시 replication 인스턴스 수 확장:"
-echo "    현재 instances: 1 → 운영 권장: instances: 3"
-echo ""
-echo "  ④ 복원 클러스터 정리 (검증 완료 후):"
-echo "    kubectl delete cluster $RESTORE_CLUSTER_NAME -n $NAMESPACE"
 echo ""
 echo "=========================================="
