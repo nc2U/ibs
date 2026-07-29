@@ -84,9 +84,9 @@ PG_IMAGE="${DETECTED_IMAGE:-ghcr.io/cloudnative-pg/postgresql:18-bookworm}"
 
 # DB 접속 정보 자동 감지
 DETECTED_DB_USER=$(kubectl get cluster -n "$NAMESPACE" \
-  -o jsonpath='{.items[0].spec.bootstrap.initdb.owner}' 2>/dev/null || true)
+  -o jsonpath='{.spec.bootstrap.initdb.owner}' 2>/dev/null || true)
 DETECTED_DB_NAME=$(kubectl get cluster -n "$NAMESPACE" \
-  -o jsonpath='{.items[0].spec.bootstrap.initdb.database}' 2>/dev/null || true)
+  -o jsonpath='{.spec.bootstrap.initdb.database}' 2>/dev/null || true)
 
 DB_USER="${DETECTED_DB_USER:-ibs}"
 DB_NAME="${DETECTED_DB_NAME:-ibs}"
@@ -117,6 +117,20 @@ else
   echo "🕒 No target time specified — restoring to latest available point."
 fi
 
+# 메인 복구 모드일 때 Nginx Maintenance 페이지 즉시 활성화 (503 점검 모드)
+if [ "$IS_TEST_MODE" = "false" ]; then
+  echo ""
+  echo "🚧 Enabling Maintenance Mode in Nginx..."
+  NGINX_POD=$(kubectl get pod -n "$NAMESPACE" -l "app.kubernetes.io/name=nginx" -o name 2>/dev/null | head -1 || true)
+
+  if [ -n "$NGINX_POD" ]; then
+    kubectl exec "$NGINX_POD" -n "$NAMESPACE" -- touch /django/static/maintenance.flag 2>/dev/null || true
+    echo "✅ Maintenance page activated (Nginx 503)"
+  else
+    echo "⚠️  Could not find Nginx pod to enable maintenance flag."
+  fi
+fi
+
 # 대상 클러스터가 이미 존재하는 경우 안전한 선제 삭제 처리
 if kubectl get cluster "$RESTORE_CLUSTER_NAME" -n "$NAMESPACE" > /dev/null 2>&1; then
   echo ""
@@ -132,16 +146,6 @@ if kubectl get cluster "$RESTORE_CLUSTER_NAME" -n "$NAMESPACE" > /dev/null 2>&1;
   fi
 
   if [ "$CONFIRM" = "yes" ]; then
-    # 메인 복구 모드일 때 Nginx Maintenance 페이지 활성화 (503 점검 모드)
-    if [ "$IS_TEST_MODE" = "false" ]; then
-      echo "🚧 Enabling Maintenance Mode in Nginx..."
-      NGINX_POD=$(kubectl get pod -l app.kubernetes.io/name=nginx -n "$NAMESPACE" -o name | head -1 || true)
-      if [ -n "$NGINX_POD" ]; then
-        kubectl exec "$NGINX_POD" -n "$NAMESPACE" -- touch /django/static/maintenance.flag 2>/dev/null || true
-        echo "✅ Maintenance page activated (Nginx 503)"
-      fi
-    fi
-
     echo "🗑️  Deleting existing cluster '$RESTORE_CLUSTER_NAME'..."
     kubectl delete cluster "$RESTORE_CLUSTER_NAME" -n "$NAMESPACE"
     echo "   Waiting for pods and PVCs to clean up (up to 5m)..."
@@ -149,6 +153,10 @@ if kubectl get cluster "$RESTORE_CLUSTER_NAME" -n "$NAMESPACE" > /dev/null 2>&1;
       -n "$NAMESPACE" --timeout=5m || true
     echo "✅ Existing cluster removed."
   else
+    # 복원 취소 시 점검 모드 해제
+    if [ "$IS_TEST_MODE" = "false" ] && [ -n "$NGINX_POD" ]; then
+      kubectl exec "$NGINX_POD" -n "$NAMESPACE" -- rm -f /django/static/maintenance.flag 2>/dev/null || true
+    fi
     echo "❌ Restore cancelled by user."
     exit 0
   fi
@@ -253,7 +261,7 @@ kubectl wait --for=condition=ready pod -l "cnpg.io/cluster=${RESTORE_CLUSTER_NAM
 if [ "$IS_TEST_MODE" = "false" ]; then
   echo ""
   echo "🎉 Disabling Maintenance Mode in Nginx..."
-  NGINX_POD=$(kubectl get pod -l app.kubernetes.io/name=nginx -n "$NAMESPACE" -o name | head -1 || true)
+  NGINX_POD=$(kubectl get pod -n "$NAMESPACE" -l "app.kubernetes.io/name=nginx" -o name 2>/dev/null | head -1 || true)
   if [ -n "$NGINX_POD" ]; then
     kubectl exec "$NGINX_POD" -n "$NAMESPACE" -- rm -f /django/static/maintenance.flag 2>/dev/null || true
     echo "✅ Maintenance page disabled — Normal service restored!"
@@ -282,6 +290,11 @@ else
   echo "  ② 복원 완료 안내:"
   echo "    - 메인 클러스터 '$RESTORE_CLUSTER_NAME'가 성공적으로 S3 백업 데이터로 복원되었습니다."
   echo "    - Nginx 점검 모드가 해제되고 웹 애플리케이션(Django) 서비스가 정상 복구되었습니다."
+  echo ""
+  echo "  ③ 참고 (마이그레이션 디렉터리 리셋 후 복원한 경우):"
+  echo "    - 소스코드의 migrations/ 디렉터리를 새로 리셋(Squash)하여 배포한 경우,"
+  echo "      web 파드에서 아래 명령어로 DB 마이그레이션 이력을 동기화하세요:"
+  echo "      kubectl exec -it \$(kubectl get pod -l app.kubernetes.io/name=web -n $NAMESPACE -o name | head -1) -n $NAMESPACE -- sh migrate.sh -r"
 fi
 
 echo ""

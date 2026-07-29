@@ -4,9 +4,9 @@
 #   sh migrate.sh                      # 일반 migrate
 #   sh migrate.sh -m                   # makemigrations + migrate
 #   sh migrate.sh -f                   # 단순 migrate --fake
-#   sh migrate.sh -r                   # TRUNCATE django_migrations + migrate --fake
+#   sh migrate.sh -r                   # TRUNCATE django_migrations (RESTART IDENTITY) + migrate --fake
 #   sh migrate.sh -mf / -fm            # makemigrations + migrate --fake
-#   sh migrate.sh -mr / -rm            # makemigrations + TRUNCATE django_migrations + migrate --fake
+#   sh migrate.sh -mr / -rm            # makemigrations + TRUNCATE django_migrations (RESTART IDENTITY) + migrate --fake
 
 APPS="accounts book company contract docs forum ibs items ledger notice payment project work"
 
@@ -40,7 +40,7 @@ if [ "$DO_RESET" = "true" ]; then
     echo "=========================================="
     echo "Clearing django_migrations table & applying --fake"
     echo "=========================================="
-    python manage.py shell -c "from django.db import connection; cursor = connection.cursor(); cursor.execute('TRUNCATE TABLE django_migrations CASCADE;')" 2>/dev/null || true
+    python manage.py shell -c "from django.db import connection; cursor = connection.cursor(); cursor.execute('TRUNCATE TABLE django_migrations RESTART IDENTITY CASCADE;')" 2>/dev/null || true
     python manage.py migrate --database=default --fake
 elif [ "$DO_FAKE" = "true" ]; then
     echo "=========================================="
