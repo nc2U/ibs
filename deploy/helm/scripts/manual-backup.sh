@@ -1,428 +1,76 @@
 #!/bin/bash
-# CloudNativePG 수동 백업 스크립트
+# PostgreSQL DB Dump 수동 백업 및 로컬 다운로드 스크립트
 #
 # 사용법:
 #   sh manual-backup.sh [dev|prod]
+#   sh manual-backup.sh dev          # 기본값: dev
 #   sh manual-backup.sh prod
-#   sh manual-backup.sh dev
-#   sh manual-backup.sh           # 기본값: dev
+#
+# 결과:
+#   프로젝트 루트의 volume/backups/ibs-backup-postgres-YYYY-MM-DD.dump 파일로 바로 다운로드됩니다.
 #
 set -e
 
-# 첫 번째 인자로 환경 설정
-ENV_ARG="${1:-}"
+ENV_ARG="${1:-dev}"
 
-# 환경 인자 처리
-if [ -n "$ENV_ARG" ]; then
-  if [ "$ENV_ARG" = "prod" ]; then
-    NAMESPACE="ibs-prod"
-    ENV="prod"
-  elif [ "$ENV_ARG" = "dev" ]; then
-    NAMESPACE="ibs-dev"
-    ENV="dev"
-  else
-    echo "❌ Error: Invalid environment '$ENV_ARG'"
-    echo "Usage: $0 [dev|prod]"
-    echo "  dev  - Development environment (ibs-dev)"
-    echo "  prod - Production environment (ibs-prod)"
-    exit 1
-  fi
+if [ "$ENV_ARG" = "prod" ]; then
+  NAMESPACE="ibs-prod"
+elif [ "$ENV_ARG" = "dev" ]; then
+  NAMESPACE="ibs-dev"
 else
-  # 환경 변수로 설정 (기존 방식 호환)
-  NAMESPACE="${NAMESPACE:-ibs-dev}"
-  ENV="${ENV:-dev}"
+  echo "❌ Error: Invalid environment '$ENV_ARG'. Use 'dev' or 'prod'."
+  exit 1
 fi
 
-RELEASE="${RELEASE:-ibs}"
+SCRIPT_PATH="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_PATH/../../.." && pwd)"
+LOCAL_BACKUP_DIR="$PROJECT_ROOT/volume/backups"
 
-# 환경별 PVC 이름 설정 (Helm 템플릿 패턴 일치)
-if [ "$NAMESPACE" = "ibs-prod" ]; then
-  BACKUP_PVC="postgres-backup-prod-pvc"
-else
-  BACKUP_PVC="postgres-backup-dev-pvc"
-fi
+mkdir -p "$LOCAL_BACKUP_DIR"
+
+DATE_STR=$(date +"%Y-%m-%d")
+DUMP_FILENAME="ibs-backup-postgres-${DATE_STR}.dump"
+LOCAL_DUMP_PATH="${LOCAL_BACKUP_DIR}/${DUMP_FILENAME}"
 
 echo "=========================================="
-echo "CloudNativePG Manual Backup"
+echo "PostgreSQL Local Dump Backup"
 echo "=========================================="
-echo "Namespace: $NAMESPACE"
-echo "Release: $RELEASE"
-echo "Backup PVC: $BACKUP_PVC"
-echo ""
+echo "Environment : $ENV_ARG"
+echo "Namespace   : $NAMESPACE"
+echo "Target Path : $LOCAL_DUMP_PATH"
+echo "=========================================="
 
-# postgres 비밀번호 확인 및 동기화
-echo "🔑 Verifying postgres password..."
-echo "----------------------------------------"
-
-# Primary pod 찾기 (cnpg cluster status에서 직접 primary를 가져옴으로써 API 호환성 보장)
-echo "🔍 Debug: Listing namespaces to verify connectivity..."
-kubectl get ns || true
-
-echo "🔍 Debug: Attempting to get cluster name in namespace $NAMESPACE..."
-CLUSTER_NAME=$(kubectl get cluster -n "$NAMESPACE" -o jsonpath='{.items[0].metadata.name}' || true)
-echo "🔍 Debug: Resolved CLUSTER_NAME='$CLUSTER_NAME'"
-if [ -z "$CLUSTER_NAME" ]; then
-    CLUSTER_NAME="postgres"
-    echo "🔍 Debug: CLUSTER_NAME was empty, fallback to default 'postgres'"
-fi
-
-echo "🔍 Debug: Attempting to get primary from cluster..."
-PRIMARY_POD=$(kubectl get cluster -n "$NAMESPACE" "$CLUSTER_NAME" -o jsonpath='{.status.currentPrimary}' || true)
-echo "🔍 Debug: Step 1 (via cluster status) resolved PRIMARY_POD='$PRIMARY_POD'"
+# Primary Pod 찾기
+CLUSTER_NAME=$(kubectl get cluster -n "$NAMESPACE" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "postgres")
+PRIMARY_POD=$(kubectl get cluster -n "$NAMESPACE" "$CLUSTER_NAME" -o jsonpath='{.status.currentPrimary}' 2>/dev/null || true)
 
 if [ -z "$PRIMARY_POD" ]; then
-    # 클러스터 status 조회가 실패할 경우를 대비한 레이블 기반 폴백
-    PRIMARY_POD=$(kubectl get pods -n "$NAMESPACE" -l "cnpg.io/cluster=$CLUSTER_NAME,cnpg.io/role=primary" -o jsonpath='{.items[0].metadata.name}' || true)
-    echo "🔍 Debug: Step 2 (via cluster label & role=primary) resolved PRIMARY_POD='$PRIMARY_POD'"
+  PRIMARY_POD=$(kubectl get pods -n "$NAMESPACE" -l "cnpg.io/cluster=$CLUSTER_NAME,cnpg.io/role=primary" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
 fi
 
 if [ -z "$PRIMARY_POD" ]; then
-    # 클러스터 이름이 다를 수 있으므로 cnpg.io/role=primary 필터만 사용하여 조회 시도
-    PRIMARY_POD=$(kubectl get pods -n "$NAMESPACE" -l "cnpg.io/role=primary" -o jsonpath='{.items[0].metadata.name}' || true)
-    echo "🔍 Debug: Step 3 (via role=primary only) resolved PRIMARY_POD='$PRIMARY_POD'"
+  PRIMARY_POD=$(kubectl get pods -n "$NAMESPACE" -l "cnpg.io/role=primary" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
 fi
 
 if [ -z "$PRIMARY_POD" ]; then
-    # 이전 버전 레이블 기반 폴백
-    PRIMARY_POD=$(kubectl get pods -n "$NAMESPACE" -l "cnpg.io/cluster=postgres,role=primary" -o jsonpath='{.items[0].metadata.name}' || true)
-    echo "🔍 Debug: Step 4 (via fallback cluster=postgres,role=primary) resolved PRIMARY_POD='$PRIMARY_POD'"
+  echo "❌ Error: Cannot find primary postgres pod in namespace '$NAMESPACE'"
+  exit 1
 fi
 
-if [ -z "$PRIMARY_POD" ]; then
-    echo "❌ Error: Cannot find primary postgres pod"
-    exit 1
-fi
+echo "📌 Primary Pod: $PRIMARY_POD"
 
-echo "Primary pod: $PRIMARY_POD"
-
-# Secret에서 비밀번호 읽기
-EXPECTED_PASSWORD=$(kubectl get secret -n "$NAMESPACE" postgres-superuser -o jsonpath='{.data.password}' 2>/dev/null | base64 -d)
-
-if [ -z "$EXPECTED_PASSWORD" ]; then
-    echo "❌ Error: Cannot read password from secret postgres-superuser"
-    exit 1
-fi
-
-echo "Testing postgres authentication..."
-
-# postgres 서비스로 연결 테스트
-if kubectl exec -n "$NAMESPACE" "$PRIMARY_POD" -c postgres -- bash -c "PGPASSWORD='$EXPECTED_PASSWORD' psql -h postgres-rw -U postgres -d ibs -c 'SELECT 1;'" > /dev/null 2>&1; then
-    echo "✅ postgres password is correct"
-else
-    echo "⚠️  postgres password mismatch detected"
-    echo "🔧 Setting postgres password to match secret..."
-
-    if kubectl exec -n "$NAMESPACE" "$PRIMARY_POD" -c postgres -- psql -U postgres -c "ALTER USER postgres WITH PASSWORD '$EXPECTED_PASSWORD';" > /dev/null 2>&1; then
-        echo "✅ postgres password updated successfully"
-
-        # 비밀번호 변경 후 재확인
-        sleep 2
-        if kubectl exec -n "$NAMESPACE" "$PRIMARY_POD" -c postgres -- bash -c "PGPASSWORD='$EXPECTED_PASSWORD' psql -h postgres-rw -U postgres -d ibs -c 'SELECT 1;'" > /dev/null 2>&1; then
-            echo "✅ Password verified after update"
-        else
-            echo "❌ Error: Password verification failed after update"
-            exit 1
-        fi
-    else
-        echo "❌ Error: Failed to update postgres password"
-        exit 1
-    fi
-fi
+# DB 정보 자동 감지
+DB_NAME=$(kubectl get cluster "$CLUSTER_NAME" -n "$NAMESPACE" -o jsonpath='{.spec.bootstrap.initdb.database}' 2>/dev/null || echo "ibs")
 
 echo ""
+echo "🚀 Streaming pg_dump directly to local file..."
+kubectl exec -n "$NAMESPACE" "$PRIMARY_POD" -c postgres -- \
+  pg_dump -U postgres -d "$DB_NAME" -n ibs --data-only --exclude-table=ibs.django_migrations --column-inserts -Fc > "$LOCAL_DUMP_PATH"
 
-# Job 이름 생성 (타임스탬프 포함)
-JOB_NAME="postgres-backup-manual-$(date +%Y%m%d-%H%M%S)"
-
-# CronJob 존재 확인
-CRONJOB_NAME="postgres-backup"
-# kubectl alias 우회를 위해 출력 결과를 직접 체크
-# set -e 우회: || true로 에러 무시
-CRONJOB_CHECK=$(kubectl get cronjob -n "$NAMESPACE" "$CRONJOB_NAME" 2>&1 || true)
-if echo "$CRONJOB_CHECK" | grep -q "NotFound" || [ -z "$CRONJOB_CHECK" ]; then
-    # CronJob 없음 - standalone backup job 생성
-    if echo "$CRONJOB_CHECK" | grep -q "NotFound"; then
-        echo "⚠️  CronJob not found, creating standalone backup job..."
-        echo "This is normal for dev environment (manual backup only)"
-    else
-        echo "⚠️  Cannot check CronJob, creating standalone backup job..."
-    fi
-    echo ""
-
-    # 직접 Job manifest 생성
-    TEMP_JOB=$(mktemp)
-
-    cat > "$TEMP_JOB" <<EOF
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: ${JOB_NAME}
-  namespace: ${NAMESPACE}
-spec:
-  ttlSecondsAfterFinished: 300
-  template:
-    metadata:
-      labels:
-        app.kubernetes.io/name: postgres
-        app.kubernetes.io/component: backup
-    spec:
-      restartPolicy: OnFailure
-      automountServiceAccountToken: false
-      containers:
-        - name: postgres-backup
-          image: postgres:18.0
-          env:
-            - name: TZ
-              value: "Asia/Seoul"
-          imagePullPolicy: IfNotPresent
-          command:
-            - /bin/bash
-            - -c
-            - |
-              set -eu
-
-              # CloudNativePG 환경 변수 설정
-              DATE=\$(date +"%Y-%m-%d-%H%M%S")
-              DUMP_FILE=/var/backups/ibs-backup-postgres-\${DATE}.dump
-              POSTGRES_SCHEMA="ibs"
-              POSTGRES_DATABASE="ibs"
-              POSTGRES_USER="postgres"
-              POSTGRES_PASSWORD=\$(cat /run/secrets/postgres-password)
-              PSQL_HOST="postgres-rw"
-
-              # 이전 백업 삭제 (2일 이상된 파일)
-              find /var/backups \( -name "*.dump" -o -name "*.log" \) -type f -mtime +2 -delete
-
-              if [ -f "\$DUMP_FILE" ]; then
-                  rm "\$DUMP_FILE"
-              fi
-
-              echo "Starting PostgreSQL backup: \${DUMP_FILE}"
-
-              # pg_dump로 백업 실행
-              PGPASSWORD="\$POSTGRES_PASSWORD" pg_dump \\
-                -h "\$PSQL_HOST" \\
-                -U "\$POSTGRES_USER" \\
-                -d "\$POSTGRES_DATABASE" \\
-                -n "\$POSTGRES_SCHEMA" \\
-                --data-only \\
-                --exclude-table="\${POSTGRES_SCHEMA}.django_migrations" \\
-                --column-inserts \\
-                -Fc \\
-                -f "\$DUMP_FILE"
-
-              # 퍼미션 변경
-              chmod 644 \${DUMP_FILE}
-
-              # 백업 성공 확인
-              if [ \$? -eq 0 ]; then
-                  echo "PostgreSQL Backup completed successfully: \${DUMP_FILE}"
-                  ls -lh "\$DUMP_FILE"
-              else
-                  echo "PostgreSQL Backup failed." >&2
-                  exit 1
-              fi
-          volumeMounts:
-            - name: backup-volume
-              mountPath: /var/backups
-            - name: postgres-password
-              mountPath: /run/secrets
-              readOnly: true
-      volumes:
-        - name: backup-volume
-          persistentVolumeClaim:
-            claimName: ${BACKUP_PVC}
-        - name: postgres-password
-          secret:
-            secretName: postgres-superuser
-            items:
-              - key: password
-                path: postgres-password
-EOF
-
-    # Job 생성 및 성공 확인
-    if kubectl apply -f "$TEMP_JOB"; then
-        rm "$TEMP_JOB"
-        echo ""
-        echo "✅ Backup job created successfully!"
-        echo ""
-        echo "Monitor progress with:"
-        echo "  kubectl get jobs -n $NAMESPACE"
-        echo "  kubectl logs -n $NAMESPACE job/$JOB_NAME -f"
-        echo ""
-        echo "Check backup files:"
-        echo "  kubectl exec -n $NAMESPACE -l job-name=$JOB_NAME -- ls -lh /var/backups/"
-        echo ""
-
-        # 자동으로 로그 따라가기 (옵션)
-        if [ "${FOLLOW_LOGS:-true}" = "true" ]; then
-            echo "Following logs (Ctrl+C to stop)..."
-            echo "----------------------------------------"
-            kubectl wait --for=condition=ready pod -n "$NAMESPACE" -l "job-name=$JOB_NAME" --timeout=30s
-            kubectl logs -n "$NAMESPACE" -l "job-name=$JOB_NAME" -f
-        fi
-    else
-        rm "$TEMP_JOB"
-        echo "❌ Error: Failed to create backup job"
-        exit 1
-    fi
-else
-    # CronJob 있음 - CronJob에서 job 생성
-    echo "✅ CronJob '$CRONJOB_NAME' found, creating job from CronJob..."
-
-    # Job 생성 및 성공 확인 (ShellCheck 권장 방식)
-    if kubectl create job -n "$NAMESPACE" "$JOB_NAME" --from="cronjob/$CRONJOB_NAME"; then
-        echo ""
-        echo "✅ Backup job created successfully!"
-        echo ""
-        echo "Monitor progress with:"
-        echo "  kubectl get jobs -n $NAMESPACE"
-        echo "  kubectl logs -n $NAMESPACE job/$JOB_NAME -f"
-        echo ""
-
-        # 자동으로 로그 따라가기 (옵션)
-        if [ "${FOLLOW_LOGS:-true}" = "true" ]; then
-            echo "Following logs (Ctrl+C to stop)..."
-            echo "----------------------------------------"
-            kubectl wait --for=condition=ready pod -n "$NAMESPACE" -l "job-name=$JOB_NAME" --timeout=30s
-            kubectl logs -n "$NAMESPACE" -l "job-name=$JOB_NAME" -f
-        fi
-        exit 0
-    fi
-    echo "⚠️  Failed to create job from CronJob, falling back to standalone job..."
-    echo ""
-
-    # 직접 Job manifest 생성
-    TEMP_JOB=$(mktemp)
-
-    cat > "$TEMP_JOB" <<EOF
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: ${JOB_NAME}
-  namespace: ${NAMESPACE}
-spec:
-  ttlSecondsAfterFinished: 300
-  template:
-    metadata:
-      labels:
-        app.kubernetes.io/name: postgres
-        app.kubernetes.io/component: backup
-    spec:
-      restartPolicy: OnFailure
-      automountServiceAccountToken: false
-      containers:
-        - name: postgres-backup
-          image: postgres:18.0
-          env:
-            - name: TZ
-              value: "Asia/Seoul"
-          imagePullPolicy: IfNotPresent
-          command:
-            - /bin/bash
-            - -c
-            - |
-              set -eu
-
-              # CloudNativePG 환경 변수 설정
-              DATE=\$(date +"%Y-%m-%d-%H%M%S")
-              DUMP_FILE=/var/backups/ibs-backup-postgres-\${DATE}.dump
-              POSTGRES_SCHEMA="ibs"
-              POSTGRES_DATABASE="ibs"
-              POSTGRES_USER="postgres"
-              POSTGRES_PASSWORD=\$(cat /run/secrets/postgres-password)
-              PSQL_HOST="postgres-rw"
-
-              # 이전 백업 삭제 (2일 이상된 파일)
-              find /var/backups \( -name "*.dump" -o -name "*.log" \) -type f -mtime +2 -delete
-
-              if [ -f "\$DUMP_FILE" ]; then
-                  rm "\$DUMP_FILE"
-              fi
-
-              echo "Starting PostgreSQL backup: \${DUMP_FILE}"
-
-              # pg_dump로 백업 실행
-              PGPASSWORD="\$POSTGRES_PASSWORD" pg_dump \\
-                -h "\$PSQL_HOST" \\
-                -U "\$POSTGRES_USER" \\
-                -d "\$POSTGRES_DATABASE" \\
-                -n "\$POSTGRES_SCHEMA" \\
-                --data-only \\
-                --exclude-table="\${POSTGRES_SCHEMA}.django_migrations" \\
-                --column-inserts \\
-                -Fc \\
-                -f "\$DUMP_FILE"
-
-              # 퍼미션 변경
-              chmod 644 \${DUMP_FILE}
-
-              # 백업 성공 확인
-              if [ \$? -eq 0 ]; then
-                  echo "PostgreSQL Backup completed successfully: \${DUMP_FILE}"
-                  ls -lh "\$DUMP_FILE"
-              else
-                  echo "PostgreSQL Backup failed." >&2
-                  exit 1
-              fi
-          volumeMounts:
-            - name: backup-volume
-              mountPath: /var/backups
-            - name: postgres-password
-              mountPath: /run/secrets
-              readOnly: true
-      volumes:
-        - name: backup-volume
-          persistentVolumeClaim:
-            claimName: ${BACKUP_PVC}
-        - name: postgres-password
-          secret:
-            secretName: postgres-superuser
-            items:
-              - key: password
-                path: postgres-password
-EOF
-
-    # Job 생성 및 성공 확인
-    if kubectl apply -f "$TEMP_JOB"; then
-        rm "$TEMP_JOB"
-        echo ""
-        echo "✅ Backup job created successfully!"
-        echo ""
-        echo "Monitor progress with:"
-        echo "  kubectl get jobs -n $NAMESPACE"
-        echo "  kubectl logs -n $NAMESPACE job/$JOB_NAME -f"
-        echo ""
-        echo "Check backup files:"
-        echo "  kubectl exec -n $NAMESPACE -l job-name=$JOB_NAME -- ls -lh /var/backups/"
-        echo ""
-
-        # 자동으로 로그 따라가기 (옵션)
-        if [ "${FOLLOW_LOGS:-true}" = "true" ]; then
-            echo "⏳ Waiting for Kubernetes scheduler to create backup pod..."
-            POD_NAME=""
-            for i in {1..15}; do
-                POD_NAME=$(kubectl get pods -n "$NAMESPACE" -l "job-name=$JOB_NAME" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
-                if [ -n "$POD_NAME" ]; then
-                    echo "✅ Backup pod registered: $POD_NAME"
-                    break
-                fi
-                sleep 1
-            done
-
-            if [ -z "$POD_NAME" ]; then
-                echo "❌ Error: Pod was not created by Kubernetes in time"
-                exit 1
-            fi
-
-            echo "Following logs (Ctrl+C to stop)..."
-            echo "----------------------------------------"
-            kubectl wait --for=condition=ready pod -n "$NAMESPACE" -l "job-name=$JOB_NAME" --timeout=30s
-            kubectl logs -n "$NAMESPACE" -l "job-name=$JOB_NAME" -f
-        fi
-    else
-        rm "$TEMP_JOB"
-        echo "❌ Error: Failed to create backup job"
-        exit 1
-    fi
-fi
+echo ""
+echo "=========================================="
+echo "🎉 Local Dump Backup Completed Successfully!"
+echo "=========================================="
+echo "  File: $LOCAL_DUMP_PATH"
+echo "  Size: $(du -sh "$LOCAL_DUMP_PATH" | cut -f1)"
+echo "=========================================="
