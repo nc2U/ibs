@@ -3,8 +3,8 @@ import { computed, onBeforeMount, reactive, ref, watch } from 'vue'
 import { onBeforeRouteUpdate, useRouter } from 'vue-router'
 import { useAccount } from '@/store/pinia/account'
 import { useWork } from '@/store/pinia/work_project'
-import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
+import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 import AvatarInput from '@/views/_MyPage/Modify/components/AvatarInput.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
@@ -355,10 +355,10 @@ onBeforeRouteUpdate(async to => {
                 </CCol>
               </CRow>
 
-              <!-- 자동 관람 설정 -->
+              <!-- 자동 알림 설정 -->
               <v-divider class="my-4" />
               <CRow class="mb-3">
-                <CFormLabel class="col-sm-3 col-form-label">업무 관람 설정</CFormLabel>
+                <CFormLabel class="col-sm-3 col-form-label">업무 알림 설정</CFormLabel>
                 <CCol sm="9" class="pt-2">
                   <CRow>
                     <CCol xs="12" class="mb-4" style="width: 420px">

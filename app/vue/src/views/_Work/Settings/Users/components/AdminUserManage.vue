@@ -70,6 +70,6 @@ watch(menu, newVal => {
   </CRow>
 
   <CRow v-else>
-    <UserProjects v-if="menu === '프로젝트'" />
+    <UserProjects v-if="menu === '프로젝트'" :user-pk="user?.pk as number" />
   </CRow>
 </template>

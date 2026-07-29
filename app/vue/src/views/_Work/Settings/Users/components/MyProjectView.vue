@@ -18,6 +18,6 @@ const usernameVal = computed(() => userInfo.value?.username || '')
   </CRow>
 
   <CRow>
-    <UserProjects />
+    <UserProjects :user-pk="userInfo?.pk as number" />
   </CRow>
 </template>

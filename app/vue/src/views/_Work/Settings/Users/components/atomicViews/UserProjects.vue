@@ -9,6 +9,8 @@ import FormModal from '@/components/Modals/FormModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 
+const props = defineProps({ userPk: { type: Number, required: true } })
+
 const { can, PERM } = usePerms()
 const canProjectMember = computed(() => can(PERM.PROJECT_MEMBER))
 
@@ -22,7 +24,7 @@ const accStore = useAccount()
 const workStore = useWork()
 
 // 현재 편집 대상 유저 (AdminUserManage 에서 accStore.user 로 관리)
-const userPk = computed(() => accStore.user?.pk as number | undefined)
+// const userPk = computed(() => accStore.user?.pk as number | undefined)
 
 // 이 유저가 소속된 멤버십 목록 (Member[]): { pk, user, project, roles, created }
 const memberList = computed<Member[]>(() => workStore.memberList)
@@ -48,7 +50,7 @@ const cancelEdit = () => {
 
 const editSubmit = (mem: Member, roles: number[]) => {
   workStore.patchMember({ pk: mem.pk, roles }).then(() => {
-    if (userPk.value) workStore.fetchMemberList(userPk.value)
+    if (props.userPk) workStore.fetchMemberList(props.userPk)
   })
   cancelEdit()
 }
@@ -65,7 +67,7 @@ const toDelete = (pk: number) => {
 
 const deleteSubmit = () => {
   if (deleteMemberPk.value !== null) {
-    workStore.deleteMember(deleteMemberPk.value, userPk.value)
+    workStore.deleteMember(deleteMemberPk.value, props.userPk)
   }
   confirmModal.value.close()
 }
@@ -104,17 +106,17 @@ const onSubmit = (event: Event) => {
 }
 
 const modalAction = async () => {
-  if (!userPk.value || !selectedProject.value) return
+  if (!props.userPk || !selectedProject.value) return
   const proj = workStore.allActiveProjects.find(p => p.pk === selectedProject.value)
   if (proj) {
     await workStore.createMember({
-      user: userPk.value,
+      user: props.userPk,
       roles: selectedRoles.value,
       slug: proj.slug,
     })
   }
   // 전체 목록 갱신
-  await workStore.fetchMemberList(userPk.value)
+  await workStore.fetchMemberList(props.userPk)
   selectedProject.value = null
   selectedRoles.value = []
 }
@@ -135,15 +137,8 @@ const getAllowedRoleIdsByProject = (projPk: number) => {
 onBeforeMount(async () => {
   await workStore.fetchAllProjectList()
   await workStore.fetchRoleList()
+  await workStore.fetchMemberList(props.userPk)
 })
-
-watch(
-  userPk,
-  async newVal => {
-    if (newVal) await workStore.fetchMemberList(newVal)
-  },
-  { immediate: true },
-)
 </script>
 
 <template>
