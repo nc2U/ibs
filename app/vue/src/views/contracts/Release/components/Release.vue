@@ -64,9 +64,12 @@ const callFormModal = () => emit('call-form', props.release?.contractor)
     {{ release.request_date }}
   </CTableDataCell>
   <CTableDataCell class="fw-bold text-primary text-center">
+    {{ release.refund_completion_date }}
+  </CTableDataCell>
+  <CTableDataCell class="fw-bold text-primary text-center">
     {{ release.completion_date }}
   </CTableDataCell>
   <CTableDataCell class="text-center">
-    <v-btn type="button" :color="buttonColor" size="x-small" @click="callFormModal"> 확인</v-btn>
+    <v-btn type="button" :color="buttonColor" size="x-small" @click="callFormModal">확인</v-btn>
   </CTableDataCell>
 </template>

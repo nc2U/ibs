@@ -21,29 +21,31 @@ const validated = ref(false)
 const form = reactive({
   pk: null as number | null,
   contractor: null as number | null,
+  request_date: null as string | null,
   release_type: '1' as '1' | '2',
   status: '1' as '1' | '2' | '3' | '4' | '9',
   refund_amount: null as number | null,
   refund_account_bank: '',
   refund_account_number: '',
   refund_account_depositor: '',
-  request_date: null as string | null,
+  refund_completion_date: null as string | null,
   completion_date: null as string | null,
   note: '',
 })
 
 const formsCheck = computed(() => {
   if (props.release) {
-    const a = form.release_type === props.release.release_type
-    const b = form.status === props.release.status
-    const c = !form.refund_amount || form.refund_amount === props.release.refund_amount
-    const d = form.refund_account_bank === props.release.refund_account_bank
-    const e = form.refund_account_number === props.release.refund_account_number
-    const f = form.refund_account_depositor === props.release.refund_account_depositor
-    const g = form.request_date === props.release.request_date
-    const h = form.completion_date === props.release.completion_date
-    const i = form.note === props.release.note
-    return a && b && c && d && e && f && g && h && i
+    const a = form.request_date === props.release.request_date
+    const b = form.release_type === props.release.release_type
+    const c = form.status === props.release.status
+    const d = !form.refund_amount || form.refund_amount === props.release.refund_amount
+    const e = form.refund_account_bank === props.release.refund_account_bank
+    const f = form.refund_account_number === props.release.refund_account_number
+    const g = form.refund_account_depositor === props.release.refund_account_depositor
+    const h = form.refund_completion_date === props.release.refund_completion_date
+    const i = form.completion_date === props.release.completion_date
+    const j = form.note === props.release.note
+    return a && b && c && d && e && f && g && h && i && j
   } else return false
 })
 
@@ -80,13 +82,14 @@ const formDataSet = () => {
   if (props.release) {
     form.pk = props.release.pk
     form.contractor = props.release.contractor
+    form.request_date = props.release.request_date
     form.release_type = props.release.release_type
     form.status = props.release.status
     form.refund_amount = props.release.refund_amount
     form.refund_account_bank = props.release.refund_account_bank
     form.refund_account_number = props.release.refund_account_number
     form.refund_account_depositor = props.release.refund_account_depositor
-    form.request_date = props.release.request_date
+    form.refund_completion_date = props.release.refund_completion_date
     form.completion_date = props.release.completion_date
     form.note = props.release.note
   } else form.contractor = props.contractor.pk
@@ -121,6 +124,17 @@ watch([() => props.release, () => props.contractor], () => formDataSet(), { deep
 
         <CCol xs="6">
           <CRow>
+            <CFormLabel class="col-sm-4 col-form-label required"> 해지신청일</CFormLabel>
+            <CCol sm="8">
+              <DatePicker v-model="form.request_date" required placeholder="해지신청일" />
+            </CCol>
+          </CRow>
+        </CCol>
+      </CRow>
+
+      <CRow class="mb-2">
+        <CCol xs="6">
+          <CRow>
             <CFormLabel class="col-sm-4 col-form-label required">해지유형</CFormLabel>
             <CCol sm="8" class="text-left">
               <CFormSelect v-model="form.release_type" required>
@@ -130,9 +144,6 @@ watch([() => props.release, () => props.contractor], () => formDataSet(), { deep
             </CCol>
           </CRow>
         </CCol>
-      </CRow>
-
-      <CRow class="mb-2">
         <CCol xs="6">
           <CRow>
             <CFormLabel class="col-sm-4 col-form-label required">진행상태</CFormLabel>
@@ -214,21 +225,25 @@ watch([() => props.release, () => props.contractor], () => formDataSet(), { deep
       <CRow class="mb-3">
         <CCol xs="6">
           <CRow>
-            <CFormLabel class="col-sm-4 col-form-label required"> 해지신청일</CFormLabel>
+            <CFormLabel class="col-sm-4 col-form-label"> 환불완료 처리일</CFormLabel>
             <CCol sm="8">
-              <DatePicker v-model="form.request_date" required placeholder="해지신청일" />
+              <DatePicker
+                v-model="form.refund_completion_date"
+                required
+                placeholder="환불완료 처리일자"
+              />
             </CCol>
           </CRow>
         </CCol>
 
         <CCol xs="6">
           <CRow>
-            <CFormLabel class="col-sm-4 col-form-label"> 해지(환불)처리일</CFormLabel>
+            <CFormLabel class="col-sm-4 col-form-label"> 해지 확정일</CFormLabel>
             <CCol sm="8">
               <DatePicker
                 v-model="form.completion_date"
                 :required="form.status === '4'"
-                placeholder="해지종결일"
+                placeholder="해지확정 처리일자"
               />
             </CCol>
           </CRow>

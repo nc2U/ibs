@@ -763,9 +763,9 @@ class ContractorReleaseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ContractorRelease
-        fields = ('pk', 'project', 'contractor', '__str__', 'release_type', 'status', 'refund_amount',
-                  'refund_account_bank', 'refund_account_number', 'refund_account_depositor',
-                  'request_date', 'completion_date', 'note', 'updator')
+        fields = ('pk', 'project', 'contractor', 'request_date', '__str__', 'release_type', 'status',
+                  'refund_amount', 'refund_account_bank', 'refund_account_number', 'refund_account_depositor',
+                  'refund_completion_date', 'completion_date', 'note', 'updator')
 
     @transaction.atomic
     def update(self, instance, validated_data):

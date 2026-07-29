@@ -22,17 +22,17 @@ const callForm = (contractor: number) => emit('call-form', contractor)
 
 <template>
   <CTable hover responsive align="middle">
-    <colgroup>
-      <col style="width: 25%" />
-      <col style="width: 10%" />
-      <col style="width: 12%" />
-      <col style="width: 10%" />
-      <col style="width: 12%" />
-      <col style="width: 9%" />
-      <col style="width: 9%" />
-      <col style="width: 9%" />
-      <col style="width: 5%" />
-    </colgroup>
+    <!--    <colgroup>-->
+    <!--      <col style="width: 25%" />-->
+    <!--      <col style="width: 10%" />-->
+    <!--      <col style="width: 12%" />-->
+    <!--      <col style="width: 10%" />-->
+    <!--      <col style="width: 12%" />-->
+    <!--      <col style="width: 9%" />-->
+    <!--      <col style="width: 9%" />-->
+    <!--      <col style="width: 9%" />-->
+    <!--      <col style="width: 5%" />-->
+    <!--    </colgroup>-->
 
     <CTableHead :color="TableSecondary" class="text-center">
       <CTableRow>
@@ -42,8 +42,9 @@ const callForm = (contractor: number) => emit('call-form', contractor)
         <CTableHeaderCell>(환불)은행명</CTableHeaderCell>
         <CTableHeaderCell>(환불)계좌번호</CTableHeaderCell>
         <CTableHeaderCell>(환불)예금주</CTableHeaderCell>
-        <CTableHeaderCell>해지신청일</CTableHeaderCell>
-        <CTableHeaderCell>환불처리일</CTableHeaderCell>
+        <CTableHeaderCell>해지 신청일</CTableHeaderCell>
+        <CTableHeaderCell>환불 처리일</CTableHeaderCell>
+        <CTableHeaderCell>해지 확정일</CTableHeaderCell>
         <CTableHeaderCell>비고</CTableHeaderCell>
       </CTableRow>
     </CTableHead>

@@ -4,12 +4,9 @@ Contract Excel Export Views
 계약 관련 Excel 내보내기 뷰들
 """
 import datetime
-import io
 
-import xlsxwriter
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q, Max, OuterRef, Subquery
-from django.http import HttpResponse
 
 from _excel.mixins import ExcelExportMixin
 from contract.models import Contract, Succession, ContractorRelease
@@ -414,11 +411,12 @@ class ExportReleases(ExcelExportMixin):
                       ['해지일련번호', 'contractor__contract__serial_number', 30],
                       ['현재상태', 'status', 12],
                       ['환불(예정)금액', 'refund_amount', 15],
-                      ['은행', 'refund_account_bank', 15],
-                      ['계좌번호', 'refund_account_number', 18],
+                      ['환불 은행', 'refund_account_bank', 15],
+                      ['환불 계좌번호', 'refund_account_number', 18],
                       ['예금주', 'refund_account_depositor', 12],
-                      ['해지신청일', 'request_date', 14],
-                      ['환불처리일', 'completion_date', 14],
+                      ['해지 신청일', 'request_date', 14],
+                      ['환불 처리일', 'refund_completion_date', 14],
+                      ['해지 확정일', 'completion_date', 14],
                       ['비고', 'note', 45]]
 
         # 1. Title
@@ -488,7 +486,7 @@ class ExportReleases(ExcelExportMixin):
                     body_format['num_format'] = 'yyyy-mm-dd'
                 if col_num == 4:
                     body_format['num_format'] = 41
-                elif col_num == 10:
+                elif col_num == 11:
                     body_format['align'] = 'left'
                 else:
                     body_format['align'] = 'center'

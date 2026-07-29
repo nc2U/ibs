@@ -685,6 +685,7 @@ class Succession(models.Model):
 class ContractorRelease(models.Model):
     project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트')
     contractor = models.OneToOneField('Contractor', on_delete=models.CASCADE, verbose_name='계약자 정보')
+    request_date = models.DateField('해지신청일')
     RELEASE_TYPE_CHOICES = (('1', '해지신청'), ('2', '부적격확인'))
     release_type = models.CharField('해지 유형', choices=RELEASE_TYPE_CHOICES, max_length=1, default='1')
     STATUS_CHOICES = (('1', '접수등록'), ('2', '해지승인대기'), ('3', '변경인가대기'), ('4', '해지확정'), ('9', '신청취소'))
@@ -693,8 +694,8 @@ class ContractorRelease(models.Model):
     refund_account_bank = models.CharField('환불계좌(은행)', max_length=20, null=True, blank=True)
     refund_account_number = models.CharField('환불계좌(번호)', max_length=25, null=True, blank=True)
     refund_account_depositor = models.CharField('환불계좌(예금주)', max_length=20, null=True, blank=True)
-    request_date = models.DateField('해지신청일')
-    completion_date = models.DateField('해지(환불)처리일', null=True, blank=True)
+    refund_completion_date = models.DateField('해지(환불)처리일', null=True, blank=True)
+    completion_date = models.DateField('해지 확정 처리일', null=True, blank=True)
     note = models.TextField('비고', blank=True, default='')
     created = models.DateTimeField('등록일시', auto_now_add=True)
     updated = models.DateTimeField('편집일시', auto_now=True)

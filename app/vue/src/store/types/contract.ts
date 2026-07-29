@@ -367,6 +367,7 @@ export interface ContractRelease {
   pk: number
   project: number
   contractor: number
+  request_date: string
   __str__?: string
   release_type: '1' | '2'
   status: '1' | '2' | '3' | '4' | '9'
@@ -374,8 +375,8 @@ export interface ContractRelease {
   refund_account_bank: string
   refund_account_number: string
   refund_account_depositor: string
-  request_date: string
-  completion_date: string | null
+  refund_completion_date: string | null // 환불 완료일
+  completion_date: string | null // 해지 확정일
   note: string
 }
 
