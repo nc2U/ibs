@@ -139,6 +139,11 @@ jobs:
             fi
           done
 
+          if kubectl get cluster postgres -n ${KUBE_NAMESPACE} >/dev/null 2>&1; then
+            kubectl label cluster postgres -n ${KUBE_NAMESPACE} app.kubernetes.io/managed-by=Helm --overwrite || true
+            kubectl annotate cluster postgres -n ${KUBE_NAMESPACE} meta.helm.sh/release-name=${HELM_RELEASE_NAME} meta.helm.sh/release-namespace=${KUBE_NAMESPACE} --overwrite || true
+          fi
+
       - name: Chart & Script Clean
         uses: garygrossgarten/github-action-ssh@release
         with:
