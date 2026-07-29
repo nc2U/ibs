@@ -1,7 +1,7 @@
 #!/bin/bash
 # CloudNativePG S3 백업 기반 복원(Restore/PITR) 자동화 스크립트
 #
-# 명확하고 심플한 사용법:
+# 간소화된 사용법:
 #   1) 최신 시점으로 메인 DB 깔끔하게 복구 (기본값):
 #      sh manual-s3-restore.sh [dev|prod]
 #      예: sh manual-s3-restore.sh dev
@@ -132,6 +132,16 @@ if kubectl get cluster "$RESTORE_CLUSTER_NAME" -n "$NAMESPACE" > /dev/null 2>&1;
   fi
 
   if [ "$CONFIRM" = "yes" ]; then
+    # 메인 복구 모드일 때 Nginx Maintenance 페이지 활성화 (503 점검 모드)
+    if [ "$IS_TEST_MODE" = "false" ]; then
+      echo "🚧 Enabling Maintenance Mode in Nginx..."
+      NGINX_POD=$(kubectl get pod -l app.kubernetes.io/name=nginx -n "$NAMESPACE" -o name | head -1 || true)
+      if [ -n "$NGINX_POD" ]; then
+        kubectl exec "$NGINX_POD" -n "$NAMESPACE" -- touch /django/static/maintenance.flag 2>/dev/null || true
+        echo "✅ Maintenance page activated (Nginx 503)"
+      fi
+    fi
+
     echo "🗑️  Deleting existing cluster '$RESTORE_CLUSTER_NAME'..."
     kubectl delete cluster "$RESTORE_CLUSTER_NAME" -n "$NAMESPACE"
     echo "   Waiting for pods and PVCs to clean up (up to 5m)..."
@@ -239,6 +249,17 @@ echo "⏳ Restoring database from S3..."
 kubectl wait --for=condition=ready pod -l "cnpg.io/cluster=${RESTORE_CLUSTER_NAME}" \
   -n "$NAMESPACE" --timeout=10m
 
+# 복원 완료 후 Nginx Maintenance 페이지 해제 (정상 모드 원복)
+if [ "$IS_TEST_MODE" = "false" ]; then
+  echo ""
+  echo "🎉 Disabling Maintenance Mode in Nginx..."
+  NGINX_POD=$(kubectl get pod -l app.kubernetes.io/name=nginx -n "$NAMESPACE" -o name | head -1 || true)
+  if [ -n "$NGINX_POD" ]; then
+    kubectl exec "$NGINX_POD" -n "$NAMESPACE" -- rm -f /django/static/maintenance.flag 2>/dev/null || true
+    echo "✅ Maintenance page disabled — Normal service restored!"
+  fi
+fi
+
 # 결과 가이드 출력
 echo ""
 echo "=========================================="
@@ -247,8 +268,11 @@ echo "=========================================="
 echo "  Target Cluster: $RESTORE_CLUSTER_NAME (namespace: $NAMESPACE)"
 echo ""
 echo "  ① 데이터 검증 (복원 서비스 DB 접속 및 테이블 조회):"
-echo "    1) 슈퍼유저 접속: kubectl exec -it \$(kubectl get pod -l cnpg.io/cluster=$RESTORE_CLUSTER_NAME -n $NAMESPACE -o name | head -1) -n $NAMESPACE -- psql -U postgres -d $DB_NAME -c \"\dt\""
-echo "    2) 앱 유저 접속:   kubectl exec -it \$(kubectl get pod -l cnpg.io/cluster=$RESTORE_CLUSTER_NAME -n $NAMESPACE -o name | head -1) -n $NAMESPACE -- psql -h 127.0.0.1 -U $DB_USER -d $DB_NAME -c \"\dt\""
+echo "    1) 슈퍼유저 접속:
+          kubectl exec -it \$(kubectl get pod -l cnpg.io/cluster=$RESTORE_CLUSTER_NAME -n $NAMESPACE -o name | head -1) -n $NAMESPACE -- psql -U postgres -d $DB_NAME -c \"\dt\""
+
+echo "    2) 앱 유저 접속:
+          kubectl exec -it \$(kubectl get pod -l cnpg.io/cluster=$RESTORE_CLUSTER_NAME -n $NAMESPACE -o name | head -1) -n $NAMESPACE -- psql -h 127.0.0.1 -U $DB_USER -d $DB_NAME -c \"\dt\""
 echo ""
 
 if [ "$IS_TEST_MODE" = "true" ]; then
@@ -257,7 +281,7 @@ if [ "$IS_TEST_MODE" = "true" ]; then
 else
   echo "  ② 복원 완료 안내:"
   echo "    - 메인 클러스터 '$RESTORE_CLUSTER_NAME'가 성공적으로 S3 백업 데이터로 복원되었습니다."
-  echo "    - 웹 애플리케이션(Django) 서비스가 복구된 DB와 자동으로 연결되어 동작합니다."
+  echo "    - Nginx 점검 모드가 해제되고 웹 애플리케이션(Django) 서비스가 정상 복구되었습니다."
 fi
 
 echo ""

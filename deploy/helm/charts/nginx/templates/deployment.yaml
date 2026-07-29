@@ -2,8 +2,13 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "nginx.fullname" . }}
+  namespace: {{ .Release.Namespace }}
   labels:
     {{- include "nginx.labels" . | nindent 4 }}
+  {{- with .Values.commonAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
@@ -14,38 +19,37 @@ spec:
       {{- include "nginx.selectorLabels" . | nindent 6 }}
   template:
     metadata:
+      labels:
+        {{- include "nginx.selectorLabels" . | nindent 8 }}
       {{- with .Values.podAnnotations }}
       annotations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      labels:
-        {{- include "nginx.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "nginx.serviceAccountName" . }}
+      serviceAccountName: {{ include "nginx.serviceAccountName" . | default "default" }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+
+      # Django web 컨테이너에서 정적 파일(/django/static)을 동적으로 복사해오는 initContainer
       initContainers:
-        - name: copy-static-files
-          image: "{{ .Values.web.image.repository }}:{{ .Values.web.image.tag | default "latest" }}"
+        - name: copy-static
+          image: "{{ .Values.web.image.repository | default "nc2u/django" }}:{{ .Values.web.image.tag | default "latest" }}"
           imagePullPolicy: Always
-          command: [ "sh", "-c" ]
-          args:
+          command:
+            - sh
+            - -c
             - |
-              echo "Copying Django static files (excluding dist/) to emptyDir volume..."
-              cd /app/django/static
-              for item in *; do
-                if [ "$item" != "dist" ]; then
-                  cp -rv "$item" /static-files/ || true
-                fi
-              done
-              echo "Django static files copy completed."
+              echo "Copying static files from web container..."
+              cp -ru /django/static/* /target-static/ || true
+              echo "Static files copy completed."
           volumeMounts:
             - name: static
-              mountPath: /static-files
+              mountPath: /target-static
+
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
@@ -94,6 +98,10 @@ spec:
             - name: conf-d
               mountPath: /etc/nginx/conf.d
               readOnly: true
+            - name: maintenance-html
+              mountPath: /usr/share/nginx/html/maintenance.html
+              readOnly: true
+              subPath: maintenance.html
             - name: static
               mountPath: /django/static
             - name: vue-frontend-nfs
@@ -121,6 +129,12 @@ spec:
                 path: upstream.conf
               - key: PUBLIC.CONF
                 path: public.conf
+        - name: maintenance-html
+          configMap:
+            name: {{ include "nginx.fullname" . }}-config
+            items:
+              - key: MAINTENANCE.HTML
+                path: maintenance.html
         - name: static
           emptyDir: { }
         - name: vue-frontend-nfs
