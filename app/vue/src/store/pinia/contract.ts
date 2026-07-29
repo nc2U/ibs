@@ -722,16 +722,21 @@ export const useContract = defineStore('contract', () => {
   const createRelease = (payload: ContractRelease) =>
     api
       .post(`/contractor-release/`, payload)
-      .then(res => {
+      .then(async res => {
         contRelease.value = res.data
-        fetchContReleaseList(payload.project).then(() => message())
+        await fetchContReleaseList(payload.project)
+        message()
       })
       .catch(err => errorHandle(err.response.data))
 
   const updateRelease = (payload: ContractRelease & { page: number }) =>
     api
       .put(`/contractor-release/${payload.pk}/`, payload)
-      .then(() => fetchContReleaseList(payload.project, payload.page).then(() => message()))
+      .then(async res => {
+        contRelease.value = res.data
+        await fetchContReleaseList(payload.project, payload.page)
+        message()
+      })
       .catch(err => errorHandle(err.response.data))
 
   // 일괄 가격 업데이트 미리보기

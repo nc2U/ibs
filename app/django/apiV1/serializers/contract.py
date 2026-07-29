@@ -794,9 +794,8 @@ class ContractorReleaseSerializer(serializers.ModelSerializer):
                 logger.warning(f"ContractorRelease {instance.pk} 일부 처리 실패: {result}")
 
         # 해지정보 테이블 업데이트
-        instance.__dict__.update(**validated_data)
-        instance.updator = self.context['request'].user
-        instance.save()
+        validated_data['updator'] = self.context['request'].user
+        instance = super().update(instance, validated_data)
 
         return instance
 
