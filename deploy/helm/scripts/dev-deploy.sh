@@ -56,14 +56,9 @@ if [ -f "$SCRIPT_DIR/.env" ]; then
     else
       echo "IMAGE_TAG not set, using default tag from values (latest)"
     fi
-    if kubectl get cluster postgres -n ibs-dev >/dev/null 2>&1; then
-      kubectl label cluster postgres -n ibs-dev app.kubernetes.io/managed-by=Helm --overwrite 2>/dev/null || true
-      kubectl annotate cluster postgres -n ibs-dev meta.helm.sh/release-name="${RELEASE_NAME}" meta.helm.sh/release-namespace="ibs-dev" --overwrite 2>/dev/null || true
-    fi
-
     helm upgrade ${RELEASE_NAME} . -f ./values-dev-custom.yaml \
       ${IMAGE_TAG_ARG} \
-      --install -n ibs-dev --create-namespace --history-max 5 --server-side
+      --install -n ibs-dev --create-namespace --history-max 5
   else
     echo "values-dev-custom.yaml file not found in Current directory."
     exit 1
