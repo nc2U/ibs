@@ -227,11 +227,7 @@ watch([() => props.release, () => props.contractor], () => formDataSet(), { deep
           <CRow>
             <CFormLabel class="col-sm-4 col-form-label"> 환불완료 처리일</CFormLabel>
             <CCol sm="8">
-              <DatePicker
-                v-model="form.refund_completion_date"
-                required
-                placeholder="환불완료 처리일자"
-              />
+              <DatePicker v-model="form.refund_completion_date" placeholder="환불완료 처리일자" />
             </CCol>
           </CRow>
         </CCol>
