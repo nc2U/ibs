@@ -181,16 +181,17 @@ spec:
 ${RECOVERY_TARGET_YAML}
   externalClusters:
     - name: postgres-s3
-      plugins:
-        - name: barman-cloud-backup.cnpg.io
-          parameters:
-            destinationPath: "${S3_DESTINATION}"
-            serverName: "${SOURCE_SERVER_NAME}"
-            endpointURL: "https://s3.dyibs.com"
-            "s3Credentials.accessKeyId.name": "${SECRET_NAME}"
-            "s3Credentials.accessKeyId.key": "${KEY_ACCESS}"
-            "s3Credentials.secretAccessKey.name": "${SECRET_NAME}"
-            "s3Credentials.secretAccessKey.key": "${KEY_SECRET}"
+      barmanObjectStore:
+        destinationPath: "${S3_DESTINATION}"
+        serverName: "${SOURCE_SERVER_NAME}"
+        endpointURL: "https://s3.dyibs.com"
+        s3Credentials:
+          accessKeyId:
+            name: "${SECRET_NAME}"
+            key: "${KEY_ACCESS}"
+          secretAccessKey:
+            name: "${SECRET_NAME}"
+            key: "${KEY_SECRET}"
   storage:
     storageClass: nfs-client
     size: ${STORAGE_SIZE}
@@ -210,16 +211,17 @@ spec:
       source: postgres-s3
   externalClusters:
     - name: postgres-s3
-      plugins:
-        - name: barman-cloud-backup.cnpg.io
-          parameters:
-            destinationPath: "${S3_DESTINATION}"
-            serverName: "${SOURCE_SERVER_NAME}"
-            endpointURL: "https://s3.dyibs.com"
-            "s3Credentials.accessKeyId.name": "${SECRET_NAME}"
-            "s3Credentials.accessKeyId.key": "${KEY_ACCESS}"
-            "s3Credentials.secretAccessKey.name": "${SECRET_NAME}"
-            "s3Credentials.secretAccessKey.key": "${KEY_SECRET}"
+      barmanObjectStore:
+        destinationPath: "${S3_DESTINATION}"
+        serverName: "${SOURCE_SERVER_NAME}"
+        endpointURL: "https://s3.dyibs.com"
+        s3Credentials:
+          accessKeyId:
+            name: "${SECRET_NAME}"
+            key: "${KEY_ACCESS}"
+          secretAccessKey:
+            name: "${SECRET_NAME}"
+            key: "${KEY_SECRET}"
   storage:
     storageClass: nfs-client
     size: ${STORAGE_SIZE}
