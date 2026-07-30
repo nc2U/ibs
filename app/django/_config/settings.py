@@ -223,8 +223,13 @@ USE_TZ = True
 
 USE_I18N = True
 
-# MinIO 사용 시 custom domain 설정 자동 처리 완료
-# ─────────────────────────────────────────────────────────────────────────────
+# ── Object Storage (MinIO S3-compatible) ────────────────────────────────────
+AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME', default='')
+AWS_S3_ACCESS_KEY_ID = config('AWS_S3_ACCESS_KEY_ID', default='')
+AWS_S3_SECRET_ACCESS_KEY = config('AWS_S3_SECRET_ACCESS_KEY', default='')
+AWS_REGION = config('AWS_REGION', default='ap-northeast-2')
+AWS_S3_ENDPOINT_URL = config('AWS_S3_ENDPOINT_URL', default='')  # ex: https://s3.dyibs.com
+
 _use_s3 = bool(AWS_STORAGE_BUCKET_NAME and AWS_S3_ENDPOINT_URL)
 
 STORAGES = {
@@ -249,16 +254,6 @@ MEDIA_ROOT = BASE_DIR / 'media'  # 로컬 폴백용 미디어 디렉토리
 DATA_UPLOAD_MAX_MEMORY_SIZE = 104857600  # 100MB (100 * 1024 * 1024)
 # 메모리(RAM) 상 직접 버퍼링 한도: 5MB (이상의 대용량 파일은 디스크 임시공간으로 안전하게 스트리밍)
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB (5 * 1024 * 1024)
-
-# ── Object Storage (MinIO S3-compatible) ────────────────────────────────────
-AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME', default='')
-AWS_S3_ACCESS_KEY_ID = config('AWS_S3_ACCESS_KEY_ID', default='')
-AWS_S3_SECRET_ACCESS_KEY = config('AWS_S3_SECRET_ACCESS_KEY', default='')
-AWS_REGION = config('AWS_REGION', default='ap-northeast-2')
-
-# MinIO 전용 엔드포인트 (설정 시 MinIO, 미설정 시 AWS S3 기본값)
-# Force docker build trigger for updated settings
-AWS_S3_ENDPOINT_URL = config('AWS_S3_ENDPOINT_URL', default='')  # ex: https://s3.dyibs.com
 
 # MinIO 커스텀 도메인 자동 계산 (MinIO Presigned / Public URL 생성용)
 if AWS_S3_ENDPOINT_URL:
