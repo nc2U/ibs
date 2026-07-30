@@ -186,6 +186,7 @@ spec:
   {{- if and .Values.backup.enabled .Values.backup.s3.enabled }}
   plugins:
     - name: barman-cloud-backup.cnpg.io
+      enabled: true
       parameters:
         destinationPath: {{ include "cnpg.backupDestination" . | quote }}
         {{- with .Values.backup.s3.endpoint }}
@@ -203,8 +204,7 @@ spec:
         {{- with .Values.backup.data.jobs }}
         "data.jobs": {{ . | quote }}
         {{- end }}
-  backup:
-    retentionPolicy: {{ .Values.backup.retentionPolicy | default "30d" | quote }}
+        "retentionPolicy": {{ .Values.backup.retentionPolicy | default "30d" | quote }}
   {{- end }}
 
   # Monitoring
