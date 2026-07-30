@@ -257,6 +257,35 @@ echo "⏳ Restoring database from S3..."
 kubectl wait --for=condition=ready pod -l "cnpg.io/cluster=${RESTORE_CLUSTER_NAME}" \
   -n "$NAMESPACE" --timeout=10m
 
+# 실제 PostgreSQL 접속 가능 여부 및 Primary Pod 정상화 확인
+echo "⏳ Verifying actual PostgreSQL database connection and Primary readiness..."
+DB_READY=false
+PRIMARY_POD_NAME="${RESTORE_CLUSTER_NAME}-1"
+for i in $(seq 1 30); do
+  # primary 파드 명칭 감지 (role=primary 또는 clustername-1)
+  PRIMARY_POD=$(kubectl get pod -n "$NAMESPACE" -l "cnpg.io/cluster=${RESTORE_CLUSTER_NAME},role=primary" -o name 2>/dev/null | head -1 || true)
+  if [ -z "$PRIMARY_POD" ]; then
+    PRIMARY_POD=$(kubectl get pod -n "$NAMESPACE" -l "cnpg.io/cluster=${RESTORE_CLUSTER_NAME}" -o name 2>/dev/null | head -1 || true)
+  fi
+
+  if [ -n "$PRIMARY_POD" ]; then
+    # PostgreSQL 파드 내부에서 실제 쿼리 실행 가능 여부 확인
+    if kubectl exec "$PRIMARY_POD" -n "$NAMESPACE" -c postgres -- psql -U postgres -d postgres -c "SELECT 1;" >/dev/null 2>&1; then
+      echo "✅ Database connection verified and primary instance is fully responsive!"
+      DB_READY=true
+      break
+    fi
+  fi
+  echo "   [${i}/30] Database is still initializing/restoring connections, waiting 10s..."
+  sleep 10
+done
+
+if [ "$DB_READY" = "false" ]; then
+  echo "⚠️ Warning: Database pod is ready, but active SQL connection check timed out."
+  echo "   Maintenance mode will remain ACTIVE for safety."
+  exit 1
+fi
+
 # 복원 완료 후 Nginx Maintenance 페이지 해제 (정상 모드 원복)
 if [ "$IS_TEST_MODE" = "false" ]; then
   echo ""
