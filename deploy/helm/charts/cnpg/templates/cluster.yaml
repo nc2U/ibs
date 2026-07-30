@@ -185,7 +185,7 @@ spec:
   # Backup configuration using Barman Cloud Plugin (barman-cloud-backup.cnpg.io)
   {{- if and .Values.backup.enabled .Values.backup.s3.enabled }}
   plugins:
-    - name: barman-cloud-backup.cnpg.io
+    - name: barman-cloud.cloudnative-pg.io
       enabled: true
       parameters:
         destinationPath: {{ include "cnpg.backupDestination" . | quote }}
