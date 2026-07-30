@@ -425,7 +425,9 @@ class Contractor(models.Model):
                                 null=True, blank=True, verbose_name='등록자')
 
     def __str__(self):
-        return f'{self.name}({self.contract.serial_number if self.contract else self.prev_contract.serial_number})'
+        contract = getattr(self, 'contract', None) or getattr(self, 'prev_contract', None)
+        serial = contract.serial_number if contract else '미계약'
+        return f'{self.name}({serial})'
 
     @property
     def contractoraddress(self):

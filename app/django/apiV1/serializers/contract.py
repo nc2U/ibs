@@ -450,7 +450,10 @@ class SimpleContractorSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_label(obj):
-        return str(obj)
+        try:
+            return str(obj)
+        except Exception:
+            return f'{obj.name}(미계약)'
 
 
 class ContractFileSerializer(serializers.ModelSerializer):
