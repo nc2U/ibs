@@ -223,8 +223,32 @@ USE_TZ = True
 
 USE_I18N = True
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/4.0/howto/static-files/
+# MinIO 사용 시 custom domain 설정 자동 처리 완료
+# ─────────────────────────────────────────────────────────────────────────────
+_use_s3 = bool(AWS_STORAGE_BUCKET_NAME and AWS_S3_ENDPOINT_URL)
+
+STORAGES = {
+    "default": {
+        "BACKEND": "_config.asset_storage.MediaStorage" if _use_s3 else "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}
+
+DEFAULT_FILE_STORAGE = ('_config.asset_storage.MediaStorage'
+                        if _use_s3 else
+                        'django.core.files.storage.FileSystemStorage')
+
+# 각 media 파일에 관한 URL prefix
+# S3/MinIO 사용 시 Pre-signed URL이 자동 생성되므로 MEDIA_URL은 폴백용
+MEDIA_URL = '/media/'  # S3 사용 시 실제 URL은 스토리지 백엔드가 Pre-signed URL로 생성
+MEDIA_ROOT = BASE_DIR / 'media'  # 로컬 폴백용 미디어 디렉토리
+
+# 업로드 허용 전체 맥스 사이즈: 100MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 104857600  # 100MB (100 * 1024 * 1024)
+# 메모리(RAM) 상 직접 버퍼링 한도: 5MB (이상의 대용량 파일은 디스크 임시공간으로 안전하게 스트리밍)
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB (5 * 1024 * 1024)
 
 # ── Object Storage (MinIO S3-compatible) ────────────────────────────────────
 AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME', default='')
@@ -254,32 +278,12 @@ AWS_S3_ADDRESSING_STYLE = 'path'
 AWS_DEFAULT_ACL = None
 AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400'}
 
-# MinIO 사용 시 custom domain 설정 자동 처리 완료
-# ─────────────────────────────────────────────────────────────────────────────
+# Static files (CSS, JavaScript, Images)
+# https://docs.djangoproject.com/en/4.0/howto/static-files/
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'static'
 STATICFILES_DIRS = [BASE_DIR / '_assets']
-
-_use_s3 = bool(AWS_STORAGE_BUCKET_NAME and AWS_S3_ENDPOINT_URL)
-
-STORAGES = {
-    "default": {
-        "BACKEND": "_config.asset_storage.MediaStorage" if _use_s3 else "django.core.files.storage.FileSystemStorage",
-    },
-    "staticfiles": {
-        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
-    },
-}
-
-DEFAULT_FILE_STORAGE = ('_config.asset_storage.MediaStorage'
-                        if _use_s3 else
-                        'django.core.files.storage.FileSystemStorage')
-
-# 각 media 파일에 관한 URL prefix
-# S3/MinIO 사용 시 Pre-signed URL이 자동 생성되므로 MEDIA_URL은 폴백용
-MEDIA_URL = '/media/'  # S3 사용 시 실제 URL은 스토리지 백엔드가 Pre-signed URL로 생성
-MEDIA_ROOT = BASE_DIR / 'media'  # 로컬 폴백용 미디어 디렉토리
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
