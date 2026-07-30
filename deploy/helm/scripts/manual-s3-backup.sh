@@ -51,7 +51,9 @@ metadata:
   name: ${BACKUP_NAME}
   namespace: ${NAMESPACE}
 spec:
-  method: barmanObjectStore
+  method: plugin
+  plugin:
+    name: barman-cloud-backup.cnpg.io
   cluster:
     name: ${CLUSTER_NAME}
 EOF
