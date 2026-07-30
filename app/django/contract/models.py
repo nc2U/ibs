@@ -425,13 +425,8 @@ class Contractor(models.Model):
                                 null=True, blank=True, verbose_name='등록자')
 
     def __str__(self):
-<<<<<<< HEAD
-        contract = self.contract or self.prev_contract
-        serial = contract.serial_number if contract else '계약없음'
-=======
         contract = getattr(self, 'contract', None) or getattr(self, 'prev_contract', None)
         serial = contract.serial_number if contract else '미계약'
->>>>>>> develop
         return f'{self.name}({serial})'
 
     @property
