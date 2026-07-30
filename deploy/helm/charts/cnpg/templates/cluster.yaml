@@ -187,27 +187,22 @@ spec:
   plugins:
     - name: barman-cloud-backup.cnpg.io
       parameters:
-        destinationPath: {{ include "cnpg.backupDestination" . }}
+        destinationPath: {{ include "cnpg.backupDestination" . | quote }}
         {{- with .Values.backup.s3.endpoint }}
-        endpointURL: {{ . }}
+        endpointURL: {{ . | quote }}
         {{- end }}
-        s3Credentials:
-          accessKeyId:
-            name: {{ include "cnpg.fullname" . }}-backup-s3
-            key: ACCESS_KEY_ID
-          secretAccessKey:
-            name: {{ include "cnpg.fullname" . }}-backup-s3
-            key: ACCESS_SECRET_KEY
-        wal:
-          compression: {{ .Values.backup.wal.compression | default "gzip" }}
-          {{- with .Values.backup.wal.maxParallel }}
-          maxParallel: {{ . }}
-          {{- end }}
-        data:
-          compression: {{ .Values.backup.data.compression | default "gzip" }}
-          {{- with .Values.backup.data.jobs }}
-          jobs: {{ . }}
-          {{- end }}
+        "s3Credentials.accessKeyId.name": {{ printf "%s-backup-s3" (include "cnpg.fullname" .) | quote }}
+        "s3Credentials.accessKeyId.key": "ACCESS_KEY_ID"
+        "s3Credentials.secretAccessKey.name": {{ printf "%s-backup-s3" (include "cnpg.fullname" .) | quote }}
+        "s3Credentials.secretAccessKey.key": "ACCESS_SECRET_KEY"
+        "wal.compression": {{ .Values.backup.wal.compression | default "gzip" | quote }}
+        {{- with .Values.backup.wal.maxParallel }}
+        "wal.maxParallel": {{ . | quote }}
+        {{- end }}
+        "data.compression": {{ .Values.backup.data.compression | default "gzip" | quote }}
+        {{- with .Values.backup.data.jobs }}
+        "data.jobs": {{ . | quote }}
+        {{- end }}
   backup:
     retentionPolicy: {{ .Values.backup.retentionPolicy | default "30d" | quote }}
   {{- end }}
