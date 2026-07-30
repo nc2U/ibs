@@ -13,8 +13,3 @@ data:
   DATABASE_USER: "{{ .Values.global.databaseUser | default .Release.Name }}"
   NAMESPACE: "{{ .Release.Namespace }}"
   DJANGO_SETTINGS_MODULE: "_config.settings"
-
-  AWS_STORAGE_BUCKET_NAME: "{{ .Values.imageConfigMaps.awsStorageBucketName }}"
-  AWS_S3_ENDPOINT_URL: "{{ .Values.imageConfigMaps.awsS3EndpointUrl }}"
-  AWS_REGION: "{{ .Values.imageConfigMaps.awsRegion }}"
-  AWS_QUERYSTRING_EXPIRE: "{{ .Values.imageConfigMaps.awsQuerystringExpire }}"

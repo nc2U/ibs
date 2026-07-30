@@ -29,16 +29,6 @@ cnpg:
       secretAccessKey: "dev-secret-password-123"
 
 web:
-  imageConfigMaps:
-    djangoSettingsModule: _config.settings
-    awsStorageBucketName: "ibs-media-dev"
-    awsS3EndpointUrl: "https://s3.dyibs.com"
-    awsRegion: "ap-northeast-2"
-    awsQuerystringExpire: "3600"
-    imageSecrets:
-      awsAccessKeyId: "dev-user"
-      awsSecretAccessKey: 'dev-secret-password-123'
-
   image:
     tag: dev-latest  # Overridden by GitHub Actions with git SHA
 
