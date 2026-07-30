@@ -182,29 +182,13 @@ spec:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 
-  # Backup configuration using Barman Cloud Plugin (barman-cloud-backup.cnpg.io)
+  # Backup configuration using Barman Cloud Plugin (barman-cloud.cloudnative-pg.io)
   {{- if and .Values.backup.enabled .Values.backup.s3.enabled }}
   plugins:
     - name: barman-cloud.cloudnative-pg.io
       enabled: true
-      parameters:
-        destinationPath: {{ include "cnpg.backupDestination" . | quote }}
-        {{- with .Values.backup.s3.endpoint }}
-        endpointURL: {{ . | quote }}
-        {{- end }}
-        "s3Credentials.accessKeyId.name": {{ printf "%s-backup-s3" (include "cnpg.fullname" .) | quote }}
-        "s3Credentials.accessKeyId.key": "ACCESS_KEY_ID"
-        "s3Credentials.secretAccessKey.name": {{ printf "%s-backup-s3" (include "cnpg.fullname" .) | quote }}
-        "s3Credentials.secretAccessKey.key": "ACCESS_SECRET_KEY"
-        "wal.compression": {{ .Values.backup.wal.compression | default "gzip" | quote }}
-        {{- with .Values.backup.wal.maxParallel }}
-        "wal.maxParallel": {{ . | quote }}
-        {{- end }}
-        "data.compression": {{ .Values.backup.data.compression | default "gzip" | quote }}
-        {{- with .Values.backup.data.jobs }}
-        "data.jobs": {{ . | quote }}
-        {{- end }}
-        "retentionPolicy": {{ .Values.backup.retentionPolicy | default "30d" | quote }}
+      objectStoreRef:
+        name: {{ include "cnpg.fullname" . }}-objectstore
   {{- end }}
 
   # Monitoring

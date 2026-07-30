@@ -1,0 +1,33 @@
+{{- if and .Values.enabled .Values.backup.enabled .Values.backup.s3.enabled }}
+apiVersion: barmancloud.cnpg.io/v1
+kind: ObjectStore
+metadata:
+  name: {{ include "cnpg.fullname" . }}-objectstore
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cnpg.labels" . | nindent 4 }}
+spec:
+  configuration:
+    destinationPath: {{ include "cnpg.backupDestination" . | quote }}
+    {{- with .Values.backup.s3.endpoint }}
+    endpointURL: {{ . | quote }}
+    {{- end }}
+    s3Credentials:
+      accessKeyId:
+        name: {{ printf "%s-backup-s3" (include "cnpg.fullname" .) | quote }}
+        key: "ACCESS_KEY_ID"
+      secretAccessKey:
+        name: {{ printf "%s-backup-s3" (include "cnpg.fullname" .) | quote }}
+        key: "ACCESS_SECRET_KEY"
+    wal:
+      compression: {{ .Values.backup.wal.compression | default "gzip" | quote }}
+      {{- with .Values.backup.wal.maxParallel }}
+      maxParallel: {{ . }}
+      {{- end }}
+    data:
+      compression: {{ .Values.backup.data.compression | default "gzip" | quote }}
+      {{- with .Values.backup.data.jobs }}
+      jobs: {{ . }}
+      {{- end }}
+  retentionPolicy: {{ .Values.backup.retentionPolicy | default "30d" | quote }}
+{{- end }}
