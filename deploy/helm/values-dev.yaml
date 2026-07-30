@@ -1,32 +1,36 @@
+# Default values for IBS (dev mockup).
+# This is a YAML-formatted mockup file for values-dev-custom.yaml.
+
 global:
   appMode: dev
-  dbType: "postgres" # postgres | mariadb
+  dbType: "postgres"
   databaseName: "ibs"
   databaseUser: "ibs"
   dbPassword: "my-secret"
-  nfsServerHost: "nfs-server-host"
-  nfsPath: "nfs-path" # nfs volume path
   cicdServerHost: "cicd-server-host"
-  cicdPath: "cicd-path" # cicd server path
+  cicdPath: "/cicd-path" # cicd server path
+  nfsServerHost: "nfs-server-host"
+  nfsPath: "/nfs-path" # nfs volume path
   database:
     type: "postgres"
     cnpg:
       directConnection: true  # Enable direct primary pod connection for migrations
 
-# CloudNativePG 설정
 cnpg:
   enabled: true
   replication:
     instances: 1
   backup:
-    enabled: false
+    enabled: true
+    schedule: "0 0 2 * * *"
+    retentionPolicy: "30d"
     s3:
-      enabled: false
+      enabled: true
       bucket: "postgres-backup-dev-mock"
       region: "ap-northeast-2"
       endpoint: "http://192.168.0.100:9000"
-      accessKeyId: "dev-user"
-      secretAccessKey: "dev-secret-password-123"
+      accessKeyId: "dev-user-mock"
+      secretAccessKey: "dev-secret-password-mock"
 
 web:
   image:
@@ -53,7 +57,12 @@ nginx:
         paths:
           - path: /
             pathType: Prefix
+      - host: my-dev-subhost.com # Host address
+        paths:
+          - path: /
+            pathType: Prefix
     tls:
       - secretName: web-devbox-kr-cert
         hosts:
           - my-dev-host.com
+          - my-dev-subhost.com

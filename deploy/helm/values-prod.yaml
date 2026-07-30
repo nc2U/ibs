@@ -1,30 +1,33 @@
+# Default values for IBS (prod mockup).
+# This is a YAML-formatted mockup file for values-prod-custom.yaml.
+
 global:
   appMode: prod
-  dbType: "postgres" # postgres | mariadb
+  dbType: "postgres"
   databaseName: "ibs"
   databaseUser: "ibs"
   dbPassword: "my-secret"
-  nfsServerHost: "nfs-server-host"
-  nfsPath: "nfs-path" # nfs volume path
   cicdServerHost: "cicd-server-host"
-  cicdPath: "cicd-path" # cicd server path
+  cicdPath: "/cicd-path" # cicd server path
+  nfsServerHost: "nfs-server-host"
+  nfsPath: "/nfs-path" # nfs volume path
   database:
+    pullPolicy: "Always"
     type: "postgres"
     cnpg:
       directConnection: true  # Enable direct primary pod connection for migrations
 
-# CloudNativePG 설정
 cnpg:
   enabled: true
   replication:
     instances: 3
   backup:
-    enabled: true
-    schedule: "0 0 2 * * *"
-    retentionPolicy: "30d"
+    enabled: true               # CNPG barmanObjectStore + ScheduledBackup 활성화
+    schedule: "0 0 2 * * *"     # 매일 새벽 2시 (6필드 크론: 초 분 시 일 월 요일)
+    retentionPolicy: "30d"      # 30일 보존
     nfs:
-      enabled: true
-      cronJobEnabled: false
+      enabled: true             # manual-backup.sh용 PV/PVC 유지
+      cronJobEnabled: false     # S3 백업으로 대체, NFS CronJob 비활성화
     s3:
       enabled: true
       bucket: "postgres-backup-prod-mock"
@@ -45,7 +48,7 @@ web:
   celery: # Celery worker configuration
     resources:
       requests:
-        cpu: 200m
+        cpu: 300m
         memory: 512Mi
       limits:
         cpu: 1500m
@@ -66,10 +69,17 @@ nginx:
     hosts:
       - host: my-host.com # Host address
         paths: [{ path: "/", pathType: Prefix }]
+      - host: my-subhost-1.com # Host address
+        paths: [{ path: "/", pathType: Prefix }]
+      - host: my-subhost-2.com # Host address
+        paths: [{ path: "/", pathType: Prefix }]
     tls:
       - secretName: web-devbox-kr-cert
         hosts:
           - my-host.com
+          - my-subhost-1.com
+          - my-subhost-2.com
+          - my-legacy-host.com # 추후 삭제
 
 erpRedirect: # 추후 삭제
   enabled: true # 추후 삭제
