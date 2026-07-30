@@ -41,6 +41,14 @@ spec:
       source:
         clusterName: {{ .Values.bootstrap.pg_upgrade.sourceCluster }}
       {{- end }}
+    {{- else if eq .Values.bootstrap.method "recovery" }}
+    # Restore/Recovery from external S3 backup
+    recovery:
+      source: {{ .Values.bootstrap.recovery.source | default "postgres-s3" }}
+      {{- with .Values.bootstrap.recovery.targetTime }}
+      recoveryTarget:
+        targetTime: {{ . | quote }}
+      {{- end }}
     {{- else }}
     # Initialize a new cluster
     initdb:
@@ -78,6 +86,12 @@ spec:
         - "CREATE EXTENSION IF NOT EXISTS pg_trgm;"
       {{- end }}
     {{- end }}
+
+  {{- if .Values.externalClusters }}
+  # External Clusters configuration (e.g. S3 restore sources)
+  externalClusters:
+    {{- toYaml .Values.externalClusters | nindent 4 }}
+  {{- end }}
 
   # Superuser secret
   superuserSecret:
