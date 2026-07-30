@@ -43,12 +43,10 @@ class IssueProjectAdmin(ImportExportMixin, admin.ModelAdmin):
             'fields': ('default_version', 'allowed_roles', 'trackers', 'status', 'order')
         }),
         ('Slack 알림 설정', {
-            'fields': ('slack_notifications_enabled',),
-            'classes': ('collapse',),
+            'fields': ('slack_notifications_enabled', 'slack_webhook_url'),
             'description': '''
             이 프로젝트의 데이터 변동을 실시간으로 Slack에 알림받을 수 있습니다.
-            웹훅 URL은 환경변수에서 관리됩니다: 본사관리(type=1)는 "SLACK_COMPANY_URL",
-            개별 프로젝트는 "SLACK_PROJECT_{slug..replace("-", "_").upper()}"
+            웹훅 URL을 지정하면 해당 Slack 채널로 알림이 전송되며, 미입력 시 시스템 기본 웹훅 URL이 사용됩니다.
             '''
         }),
         ('생성 정보', {

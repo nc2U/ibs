@@ -79,18 +79,30 @@ def send_bulk_import_summary(summary_data, user=None, target_instance=None):
 
 
 def get_slack_webhook_url(issue_project):
-    """IssueProject의 type과 slug를 기반으로 환경변수에서 웹훅 URL 조회"""
+    """IssueProject DB의 slack_webhook_url을 1순위로 조회하고, 미설정 시 환경변수/본사 URL 폴백"""
+    if not issue_project:
+        return config('SLACK_COMPANY_URL', default=None)
+
+    # 1순위: IssueProject DB에 직접 등록된 슬랙 웹훅 URL
+    if getattr(issue_project, 'slack_webhook_url', None) and issue_project.slack_webhook_url.strip():
+        print(f"Slack 웹훅 URL 조회 성공 (DB): {issue_project.name}")
+        return issue_project.slack_webhook_url.strip()
+
+    # 2순위: 기존 레거시 환경변수 (SLACK_COMPANY_URL 또는 SLACK_PROJECT_{SLUG})
     if issue_project.type == '1':  # 본사관리
         key = 'SLACK_COMPANY_URL'
-    else:  # 개별 프로젝트
-        # slug에 하이픈(-)이 있으면 언더스코어로 변환 (환경변수 키 규칙)
+    else:
         key = f"SLACK_PROJECT_{issue_project.slug.replace('-', '_').upper()}"
 
     webhook_url = config(key, default=None)
+    if not webhook_url and issue_project.type != '1':
+        # 프로젝트 전용 환경변수가 없으면 본사 기본 URL 폴백
+        webhook_url = config('SLACK_COMPANY_URL', default=None)
+
     if webhook_url:
-        print(f"Slack 웹훅 URL 조회 성공: {key}")
+        print(f"Slack 웹훅 URL 조회 성공 (Env Fallback): {key}")
     else:
-        print(f"Slack 웹훅 URL 조회 실패 - 환경변수 '{key}'가 설정되지 않음")
+        print(f"Slack 웹훅 URL 조회 실패: {issue_project.name} (웹훅 URL 미설정)")
 
     return webhook_url
 

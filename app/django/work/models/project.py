@@ -32,7 +32,14 @@ class IssueProject(models.Model):
     slack_notifications_enabled = models.BooleanField(
         'Slack 알림 활성화',
         default=False,
-        help_text='이 프로젝트의 Slack 알림 사용 여부. 웹훅 URL은 환경변수로 관리: 본사관리(sort=1)는 "com_slack_key", 개별 프로젝트는 "{slug}_slack_key"'
+        help_text='이 프로젝트의 데이터 변동을 Slack으로 실시간 알림받습니다.'
+    )
+    slack_webhook_url = models.CharField(
+        'Slack Webhook URL',
+        max_length=255,
+        blank=True,
+        default='',
+        help_text='Slack Incoming Webhook URL (미입력 시 본사/기본 알림 URL을 사용합니다).'
     )
     created = models.DateTimeField('등록일', auto_now_add=True)
     updated = models.DateTimeField('수정일', auto_now=True)
