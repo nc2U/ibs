@@ -266,22 +266,6 @@ if [ "$IS_TEST_MODE" = "false" ]; then
     kubectl exec "$NGINX_POD" -n "$NAMESPACE" -- rm -f /django/static/maintenance.flag 2>/dev/null || true
     echo "✅ Maintenance page disabled — Normal service restored!"
   fi
-
-  # Helm 커스텀 values 파일(values-dev-custom.yaml 또는 values-prod-custom.yaml)에 bootstrap.method: recovery 동기화
-  CUSTOM_VALUES_FILE="../values-${ENV_ARG}-custom.yaml"
-  if [ -f "$CUSTOM_VALUES_FILE" ]; then
-    echo "📝 Synchronizing Helm custom values file ($CUSTOM_VALUES_FILE) with recovery state..."
-    
-    # cnpg.bootstrap.method가 이미 있는지 검사 후 업데이트/추가
-    if grep -q "cnpg:" "$CUSTOM_VALUES_FILE"; then
-      if ! grep -q "method:" "$CUSTOM_VALUES_FILE"; then
-        sed -i '/cnpg:/a \  bootstrap:\n    method: "recovery"' "$CUSTOM_VALUES_FILE"
-      else
-        sed -i 's/method: .*/method: "recovery"/' "$CUSTOM_VALUES_FILE"
-      fi
-    fi
-    echo "✅ Updated $CUSTOM_VALUES_FILE to use bootstrap.method=recovery"
-  fi
 fi
 
 # 결과 가이드 출력

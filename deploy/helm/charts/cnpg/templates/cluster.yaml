@@ -28,9 +28,15 @@ spec:
   primaryUpdateStrategy: unsupervised
   primaryUpdateMethod: switchover
 
+  # Lookup existing cluster to preserve live bootstrap configuration across upgrades
+  {{- $existingCluster := lookup "postgresql.cnpg.io/v1" "Cluster" .Release.Namespace (include "cnpg.clusterName" .) }}
+
   # Bootstrap configuration
   bootstrap:
-    {{- if eq .Values.bootstrap.method "pg_upgrade" }}
+    {{- if and $existingCluster $existingCluster.spec $existingCluster.spec.bootstrap }}
+    # Preserve live cluster bootstrap configuration to prevent CNPG operator webhook conflict
+    {{- toYaml $existingCluster.spec.bootstrap | nindent 4 }}
+    {{- else if eq .Values.bootstrap.method "pg_upgrade" }}
     # Major version upgrade using pg_upgrade
     pg_upgrade:
       database: {{ include "cnpg.database" . }}
@@ -87,7 +93,10 @@ spec:
       {{- end }}
     {{- end }}
 
-  {{- if .Values.externalClusters }}
+  {{- if and $existingCluster $existingCluster.spec $existingCluster.spec.externalClusters }}
+  externalClusters:
+    {{- toYaml $existingCluster.spec.externalClusters | nindent 4 }}
+  {{- else if .Values.externalClusters }}
   # External Clusters configuration (e.g. S3 restore sources)
   externalClusters:
     {{- toYaml .Values.externalClusters | nindent 4 }}
