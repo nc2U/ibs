@@ -263,8 +263,6 @@ spec:
       owner: "${DB_USER}"
       secret:
         name: postgres-app
-      recoveryTarget:
-        targetImmediate: true
   externalClusters:
     - name: postgres-s3
       barmanObjectStore:
