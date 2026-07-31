@@ -54,6 +54,7 @@ if [ -f "$SCRIPT_DIR/.env" ]; then
     # CNPG 오퍼레이터가 자동 생성한 Secret의 Helm 릴리즈 소유권 자동 편입 (Adoption)
     for secret_name in postgres-app postgres-superuser postgres-ca postgres-replication postgres-server; do
       if kubectl get secret "$secret_name" -n ibs-dev > /dev/null 2>&1; then
+        kubectl label secret "$secret_name" -n ibs-dev app.kubernetes.io/managed-by- --overwrite 2>/dev/null || true
         kubectl label secret "$secret_name" -n ibs-dev app.kubernetes.io/managed-by=Helm --overwrite || true
         kubectl annotate secret "$secret_name" -n ibs-dev meta.helm.sh/release-name=${RELEASE_NAME} meta.helm.sh/release-namespace=ibs-dev --overwrite || true
       fi
