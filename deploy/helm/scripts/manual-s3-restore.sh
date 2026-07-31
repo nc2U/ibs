@@ -227,23 +227,6 @@ ${RECOVERY_TARGET_YAML}
           secretAccessKey:
             name: "${SECRET_NAME}"
             key: "${KEY_SECRET}"
-  backup:
-    barmanObjectStore:
-      destinationPath: "${S3_DESTINATION}"
-      endpointURL: "https://s3.dyibs.com"
-      s3Credentials:
-        accessKeyId:
-          name: "${SECRET_NAME}"
-          key: "${KEY_ACCESS}"
-        secretAccessKey:
-          name: "${SECRET_NAME}"
-          key: "${KEY_SECRET}"
-      wal:
-        compression: "gzip"
-        maxParallel: 2
-      data:
-        compression: "gzip"
-        jobs: 2
   storage:
     storageClass: nfs-client
     size: ${STORAGE_SIZE}
@@ -279,23 +262,6 @@ spec:
           secretAccessKey:
             name: "${SECRET_NAME}"
             key: "${KEY_SECRET}"
-  backup:
-    barmanObjectStore:
-      destinationPath: "${S3_DESTINATION}"
-      endpointURL: "https://s3.dyibs.com"
-      s3Credentials:
-        accessKeyId:
-          name: "${SECRET_NAME}"
-          key: "${KEY_ACCESS}"
-        secretAccessKey:
-          name: "${SECRET_NAME}"
-          key: "${KEY_SECRET}"
-      wal:
-        compression: "gzip"
-        maxParallel: 2
-      data:
-        compression: "gzip"
-        jobs: 2
   storage:
     storageClass: nfs-client
     size: ${STORAGE_SIZE}
@@ -359,6 +325,14 @@ if [ "$DB_READY" = "false" ]; then
   echo "   Maintenance mode will remain ACTIVE for safety."
   exit 1
 fi
+
+# 복원 완료 후 헬름 설정(spec.backup) 동기화로 지속적 WAL 아카이빙 즉시 재개
+echo "🔄 Synchronizing Helm release spec to re-enable continuous S3 WAL archiving..."
+helm upgrade ${HELM_RELEASE_NAME:-ibs} deploy/helm/ \
+  -n "$NAMESPACE" \
+  -f "deploy/helm/values-${ENV_ARG}-custom.yaml" \
+  --reuse-values >/dev/null 2>&1 || true
+echo "✅ Continuous S3 WAL archiving re-enabled successfully!"
 
 # 복원 완료 후 Nginx Maintenance 페이지 해제 (정상 모드 원복)
 if [ "$IS_TEST_MODE" = "false" ]; then
