@@ -364,7 +364,7 @@ class ExportLedgerPaymentsByCont(ExcelExportMixin, ProjectFilterMixin, AdvancedE
         # Get some data to write to the spreadsheet.
         obj_list = Contract.objects.filter(project=project,
                                            is_active=True,
-                                           contractor__status='2',
+                                           contractor__status__in=['2', '3'],
                                            contractor__contract_date__lte=date) \
             .order_by('contractor__contract_date', 'created')
 
@@ -406,7 +406,7 @@ class ExportLedgerPaymentsByCont(ExcelExportMixin, ProjectFilterMixin, AdvancedE
             due_amt_sum = 0  # 납부 약정액 합계
             unpaid_amt = 0  # 미납액
 
-            contract = Contract.objects.get(serial_number=row[1], contractor__name=row[2])
+            contract = Contract.objects.get(pk=row[0])
             prices = SalesPriceByGT.objects.filter(project_id=project,
                                                    order_group__name=row[3],
                                                    unit_type__name=row[4])
@@ -414,11 +414,12 @@ class ExportLedgerPaymentsByCont(ExcelExportMixin, ProjectFilterMixin, AdvancedE
                 floor = contract.key_unit.houseunit.floor_type
                 cont_price = prices.get(unit_floor_type=floor).price  # 분양가
             except ObjectDoesNotExist:
-                cont_price = ProjectIncBudget.objects.get(order_group__name=row[3],
-                                                          unit_type__name=row[4]).average_price
-            except ProjectIncBudget.DoesNotExsist:
-                price = contract.key_unit.unit_type.average_price
-                cont_price = price if price else 0  # 분양가
+                try:
+                    cont_price = ProjectIncBudget.objects.get(order_group__name=row[3],
+                                                              unit_type__name=row[4]).average_price
+                except ObjectDoesNotExist:
+                    price = contract.key_unit.unit_type.average_price
+                    cont_price = price if price else 0  # 분양가
 
             for pi, po in enumerate(due_pay_orders):  # 회차별 납입 내역 삽입
                 # 해당 차수 제외 여부 확인
