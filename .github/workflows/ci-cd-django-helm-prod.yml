@@ -95,6 +95,7 @@ jobs:
     name: Deploy to Kubernetes
     needs: [changes, build]
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     # 빌드 Job이 성공했거나, 빌드 Job이 아예 실행되지 않았을 때(헬름만 변경된 경우)
     if: always() && (needs.build.result == 'success' || needs.build.result == 'skipped')
     steps:
