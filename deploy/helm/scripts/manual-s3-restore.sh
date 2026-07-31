@@ -219,7 +219,6 @@ spec:
   bootstrap:
     recovery:
       source: postgres-s3
-      node: "${TARGET_PRIMARY}"
       database: "${DB_NAME}"
       owner: "${DB_USER}"
       secret:
@@ -260,11 +259,12 @@ spec:
   bootstrap:
     recovery:
       source: postgres-s3
-      node: "${TARGET_PRIMARY}"
       database: "${DB_NAME}"
       owner: "${DB_USER}"
       secret:
         name: postgres-app
+      recoveryTarget:
+        targetImmediate: true
   externalClusters:
     - name: postgres-s3
       barmanObjectStore:

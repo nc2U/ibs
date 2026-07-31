@@ -58,10 +58,12 @@ spec:
       owner: {{ include "cnpg.username" . }}
       secret:
         name: {{ include "cnpg.fullname" . }}-app
-      {{- with .Values.bootstrap.recovery.targetTime }}
       recoveryTarget:
-        targetTime: {{ . | quote }}
-      {{- end }}
+        {{- if .Values.bootstrap.recovery.targetTime }}
+        targetTime: {{ .Values.bootstrap.recovery.targetTime | quote }}
+        {{- else }}
+        targetImmediate: true
+        {{- end }}
     {{- else }}
     # Initialize a new cluster
     initdb:
