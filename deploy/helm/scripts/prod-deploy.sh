@@ -50,9 +50,9 @@ if [ -f "$SCRIPT_DIR/.env" ]; then
     if kubectl get cluster postgres -n ibs-prod > /dev/null 2>&1; then
       kubectl label cluster postgres -n ibs-prod app.kubernetes.io/managed-by=Helm --overwrite || true
       kubectl annotate cluster postgres -n ibs-prod meta.helm.sh/release-name=${RELEASE_NAME} meta.helm.sh/release-namespace=ibs-prod --overwrite || true
-      # Helm field manager 충돌 방지: managedFields 초기화 후 Helm이 소유권을 재취득하도록 함
-      kubectl patch cluster postgres -n ibs-prod --type=json \
-        -p='[{"op":"remove","path":"/metadata/managedFields"}]' 2>/dev/null || true
+      # spec.instances 등 kubectl이 소유한 field manager를 helm으로 강제 이전
+      kubectl get cluster postgres -n ibs-prod -o json | \
+        kubectl apply --server-side --force-conflicts --field-manager=helm -f - || true
     fi
     kubectl apply -f "$CURR_DIR/../kubectl/class-roles"
     cd "$CURR_DIR"
