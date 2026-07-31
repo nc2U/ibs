@@ -85,6 +85,7 @@ spec:
         {{- $dbName := include "cnpg.database" . }}
         - "CREATE SCHEMA IF NOT EXISTS {{ $dbName }} AUTHORIZATION {{ $dbUser }};"
         - "ALTER SCHEMA {{ $dbName }} OWNER TO {{ $dbUser }};"
+        - "ALTER USER {{ $dbUser }} WITH PASSWORD '{{ .Values.auth.password | default .Values.global.dbPassword | default "secret" }}';"
         - "GRANT ALL PRIVILEGES ON DATABASE {{ $dbName }} TO {{ $dbUser }};"
         - "GRANT ALL ON SCHEMA {{ $dbName }} TO {{ $dbUser }};"
         - "ALTER DEFAULT PRIVILEGES IN SCHEMA {{ $dbName }} GRANT ALL ON TABLES TO {{ $dbUser }};"
