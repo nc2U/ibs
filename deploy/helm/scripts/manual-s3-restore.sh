@@ -120,10 +120,16 @@ DETECTED_DB_NAME=$(kubectl get cluster -n "$NAMESPACE" \
 DB_USER="${DETECTED_DB_USER:-ibs}"
 DB_NAME="${DETECTED_DB_NAME:-ibs}"
 
+# 기존 Primary 파드명 자동 감지 (기본값 postgres-1)
+DETECTED_PRIMARY=$(kubectl get cluster "$RESTORE_CLUSTER_NAME" -n "$NAMESPACE" \
+  -o jsonpath='{.status.currentPrimary}' 2>/dev/null || true)
+TARGET_PRIMARY="${DETECTED_PRIMARY:-postgres-1}"
+
 echo "📍 S3 Backup Path : ${S3_DESTINATION}/${SOURCE_SERVER_NAME}/base/..."
 echo "🐳 PG Image       : $PG_IMAGE"
 echo "💾 Storage Size   : $STORAGE_SIZE"
 echo "👥 Instances      : $INSTANCES"
+echo "👑 Target Primary : $TARGET_PRIMARY"
 
 # 복원 시점 설정 및 KST -> UTC 변환
 RECOVERY_TARGET_YAML=""
@@ -213,6 +219,7 @@ spec:
   bootstrap:
     recovery:
       source: postgres-s3
+      node: "${TARGET_PRIMARY}"
       database: "${DB_NAME}"
       owner: "${DB_USER}"
 ${RECOVERY_TARGET_YAML}
@@ -251,6 +258,7 @@ spec:
   bootstrap:
     recovery:
       source: postgres-s3
+      node: "${TARGET_PRIMARY}"
       database: "${DB_NAME}"
       owner: "${DB_USER}"
   externalClusters:
