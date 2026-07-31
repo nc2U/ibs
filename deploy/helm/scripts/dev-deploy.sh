@@ -64,7 +64,8 @@ if [ -f "$SCRIPT_DIR/.env" ]; then
     fi
     helm upgrade ${RELEASE_NAME} . -f ./values-dev-custom.yaml \
       ${IMAGE_TAG_ARG} \
-      --install -n ibs-dev --create-namespace --history-max 5
+      --install -n ibs-dev --create-namespace --history-max 5 \
+      --server-side --force-conflicts
   else
     echo "values-dev-custom.yaml file not found in Current directory."
     exit 1
