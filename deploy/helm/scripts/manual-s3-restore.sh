@@ -66,7 +66,36 @@ if ! kubectl get secret "$SECRET_NAME" -n "$NAMESPACE" > /dev/null 2>&1; then
   exit 1
 fi
 
-# 내부 파라미터 자동 감지 (Storage Size, S3 Destination, Server Name, PG Image)
+# 내부 파라미터 자동 감지 (Storage Size, S3 Destination, Server Name, PG Image, Replication Instances)
+DETECTED_INSTANCES=$(kubectl get cluster "$RESTORE_CLUSTER_NAME" -n "$NAMESPACE" \
+  -o jsonpath='{.spec.instances}' 2>/dev/null || \
+  kubectl get cluster -n "$NAMESPACE" -o jsonpath='{.items[0].spec.instances}' 2>/dev/null || true)
+
+# Cluster 리소스에서 감지되지 않은 경우 values-{env}-custom.yaml 또는 values-{env}.yaml 파싱 시도
+if [ -z "$DETECTED_INSTANCES" ]; then
+  HELM_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+  VALUES_FILE=""
+  if [ -f "$HELM_DIR/values-${ENV_ARG}-custom.yaml" ]; then
+    VALUES_FILE="$HELM_DIR/values-${ENV_ARG}-custom.yaml"
+  elif [ -f "$HELM_DIR/values-${ENV_ARG}.yaml" ]; then
+    VALUES_FILE="$HELM_DIR/values-${ENV_ARG}.yaml"
+  fi
+
+  if [ -n "$VALUES_FILE" ]; then
+    PARSED_INSTANCES=$(awk '/cnpg:/ {in_cnpg=1} in_cnpg && /replication:/ {in_rep=1} in_rep && /instances:/ {print $2; exit}' "$VALUES_FILE" 2>/dev/null || true)
+    if [ -n "$PARSED_INSTANCES" ]; then
+      DETECTED_INSTANCES="$PARSED_INSTANCES"
+    fi
+  fi
+fi
+
+# 테스트 모드인 경우 복원 검증 속도를 위해 1개로 설정, 메인 복구 모드인 경우 설정값(기본 3) 사용
+if [ "$IS_TEST_MODE" = "true" ]; then
+  INSTANCES=1
+else
+  INSTANCES="${DETECTED_INSTANCES:-3}"
+fi
+
 DETECTED_STORAGE_SIZE=$(kubectl get cluster "$RESTORE_CLUSTER_NAME" -n "$NAMESPACE" \
   -o jsonpath='{.spec.storage.size}' 2>/dev/null || \
   kubectl get cluster -n "$NAMESPACE" -o jsonpath='{.items[0].spec.storage.size}' 2>/dev/null || true)
@@ -94,6 +123,7 @@ DB_NAME="${DETECTED_DB_NAME:-ibs}"
 echo "📍 S3 Backup Path : ${S3_DESTINATION}/${SOURCE_SERVER_NAME}/base/..."
 echo "🐳 PG Image       : $PG_IMAGE"
 echo "💾 Storage Size   : $STORAGE_SIZE"
+echo "👥 Instances      : $INSTANCES"
 
 # 복원 시점 설정 및 KST -> UTC 변환
 RECOVERY_TARGET_YAML=""
@@ -173,7 +203,7 @@ metadata:
   name: ${RESTORE_CLUSTER_NAME}
   namespace: ${NAMESPACE}
 spec:
-  instances: 1
+  instances: ${INSTANCES}
   imageName: ${PG_IMAGE}
   bootstrap:
     recovery:
@@ -204,7 +234,7 @@ metadata:
   name: ${RESTORE_CLUSTER_NAME}
   namespace: ${NAMESPACE}
 spec:
-  instances: 1
+  instances: ${INSTANCES}
   imageName: ${PG_IMAGE}
   bootstrap:
     recovery:
