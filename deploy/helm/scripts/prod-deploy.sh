@@ -50,9 +50,12 @@ if [ -f "$SCRIPT_DIR/.env" ]; then
     if kubectl get cluster postgres -n ibs-prod > /dev/null 2>&1; then
       kubectl label cluster postgres -n ibs-prod app.kubernetes.io/managed-by=Helm --overwrite || true
       kubectl annotate cluster postgres -n ibs-prod meta.helm.sh/release-name=${RELEASE_NAME} meta.helm.sh/release-namespace=ibs-prod --overwrite || true
-      # spec.instances 등 kubectl이 소유한 field manager를 helm으로 강제 이전
-      kubectl get cluster postgres -n ibs-prod -o json | \
-        kubectl apply --server-side --force-conflicts --field-manager=helm -f - || true
+      # spec.instances 필드를 직접 패치하여 "kubectl" -> "helm" field manager 소유권 강제 이전
+      # (SSA 전체 re-apply는 값 변경 없는 필드의 소유권을 갱신하지 않는 문제가 있음)
+      CURRENT_INST=$(kubectl get cluster postgres -n ibs-prod -o jsonpath='{.spec.instances}' 2>/dev/null || echo "3")
+      kubectl patch cluster postgres -n ibs-prod \
+        --server-side --force-conflicts --field-manager=helm --type=merge \
+        -p "{\"spec\":{\"instances\":${CURRENT_INST}}}" 2>/dev/null || true
     fi
     kubectl apply -f "$CURR_DIR/../kubectl/class-roles"
     cd "$CURR_DIR"
