@@ -46,6 +46,11 @@ if [ -f "$SCRIPT_DIR/.env" ]; then
     # Pending 락 및 이전 migration-job 자동 청소
     kubectl delete secret -n ibs-dev -l owner=helm,status=pending-upgrade --ignore-not-found=true 2>/dev/null || true
     kubectl delete job -n ibs-dev -l app.kubernetes.io/name=web --ignore-not-found=true 2>/dev/null || true
+    if kubectl get cluster postgres -n ibs-dev >/dev/null 2>&1; then
+      kubectl label cluster postgres -n ibs-dev app.kubernetes.io/managed-by=Helm --overwrite || true
+      kubectl annotate cluster postgres -n ibs-dev meta.helm.sh/release-name=${RELEASE_NAME} meta.helm.sh/release-namespace=ibs-dev --overwrite || true
+      kubectl get cluster postgres -n ibs-dev -o json | kubectl apply --server-side --force-conflicts --field-manager=helm -f - || true
+    fi
     kubectl apply -f "$CURR_DIR/../kubectl/class-roles"
     cd "$CURR_DIR"
     # IMAGE_TAG가 전달된 경우 --set으로 이미지 태그를 주입하여 Pod 롤아웃을 강제합니다.
