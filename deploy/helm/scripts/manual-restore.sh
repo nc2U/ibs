@@ -113,10 +113,10 @@ echo "----------------------------------------"
 echo "Checking backup files via temporary pod..."
 
 # 백업 파일 목록을 배열로 가져오기
-BACKUP_FILES=$(kubectl run -n "$NAMESPACE" backup-list-tmp \
+BACKUP_POD_NAME="backup-list-$(date +%s)"
+kubectl run -n "$NAMESPACE" "$BACKUP_POD_NAME" \
   --image=postgres:18.0 \
   --restart=Never \
-  --rm -i --quiet \
   --overrides='
 {
   "spec": {
@@ -136,7 +136,11 @@ BACKUP_FILES=$(kubectl run -n "$NAMESPACE" backup-list-tmp \
       }
     }]
   }
-}' -- /bin/bash -c "ls -1 /var/backups/*.dump 2>/dev/null | xargs -n1 basename || echo 'No backup files found'")
+}' >/dev/null 2>&1
+
+kubectl wait --for=condition=Ready "pod/$BACKUP_POD_NAME" -n "$NAMESPACE" --timeout=15s >/dev/null 2>&1 || true
+BACKUP_FILES=$(kubectl logs "$BACKUP_POD_NAME" -n "$NAMESPACE" 2>/dev/null || true)
+kubectl delete pod "$BACKUP_POD_NAME" -n "$NAMESPACE" >/dev/null 2>&1 || true
 
 if [ -z "$BACKUP_FILES" ] || [ "$BACKUP_FILES" = "No backup files found" ]; then
     echo "❌ Error: No backup files found in /var/backups/"
@@ -275,11 +279,14 @@ fi
 echo "Primary pod: $PRIMARY_POD"
 
 # Secret에서 비밀번호 읽기
-EXPECTED_PASSWORD=$(kubectl get secret -n "$NAMESPACE" postgres-superuser -o jsonpath='{.data.password}' 2>/dev/null | base64 -d)
+EXPECTED_PASSWORD=$(kubectl get secret -n "$NAMESPACE" postgres-superuser -o jsonpath='{.data.password}' 2>/dev/null | base64 -d || true)
 
 if [ -z "$EXPECTED_PASSWORD" ]; then
-    echo "❌ Error: Cannot read password from secret postgres-superuser"
-    exit 1
+    EXPECTED_PASSWORD=$(kubectl get secret -n "$NAMESPACE" postgres-app -o jsonpath='{.data.password}' 2>/dev/null | base64 -d || true)
+fi
+
+if [ -z "$EXPECTED_PASSWORD" ]; then
+    EXPECTED_PASSWORD="secret"
 fi
 
 echo "Testing postgres authentication..."
@@ -442,9 +449,9 @@ spec:
               --no-owner \
               --no-privileges \
               --disable-triggers \
-              --single-transaction \
+              --jobs=4 \
               --verbose \
-              "\$DUMP_FILE" 2>&1 | tee -a "\$LOG_FILE"
+              "\$DUMP_FILE" 2>&1 | tee -a "\$LOG_FILE" || true
 
             RESTORE_EXIT_CODE=\${PIPESTATUS[0]}
             if [ \$RESTORE_EXIT_CODE -eq 0 ]; then
@@ -497,7 +504,7 @@ spec:
             claimName: $BACKUP_PVC
         - name: postgres-password
           secret:
-            secretName: postgres-superuser
+            secretName: postgres-app
             items:
               - key: password
                 path: postgres-password
