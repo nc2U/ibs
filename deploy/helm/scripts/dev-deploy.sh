@@ -50,10 +50,6 @@ if [ -f "$SCRIPT_DIR/.env" ]; then
     if kubectl get cluster postgres -n ibs-dev > /dev/null 2>&1; then
       kubectl label cluster postgres -n ibs-dev app.kubernetes.io/managed-by=Helm --overwrite || true
       kubectl annotate cluster postgres -n ibs-dev meta.helm.sh/release-name=${RELEASE_NAME} meta.helm.sh/release-namespace=ibs-dev --overwrite || true
-      # SSA field-manager 충돌 해소: kubectl이 점유 중인 instances field-manager 삭제
-      kubectl get cluster postgres -n ibs-dev -o json | \
-        jq 'del(.metadata.managedFields)' | \
-        kubectl replace -f - --save-config || true
     fi
     kubectl apply -f "$CURR_DIR/../kubectl/class-roles"
     cd "$CURR_DIR"

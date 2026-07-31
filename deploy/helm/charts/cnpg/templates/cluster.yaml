@@ -6,13 +6,16 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "cnpg.labels" . | nindent 4 }}
-  {{- with .Values.commonAnnotations }}
   annotations:
+    helm.sh/resource-policy: keep
+    {{- with .Values.commonAnnotations }}
     {{- toYaml . | nindent 4 }}
-  {{- end }}
+    {{- end }}
 spec:
+  # Lookup existing cluster to prevent field-manager conflict on spec.instances across manual restores / helm upgrades
+  {{- $existingCluster := lookup "postgresql.cnpg.io/v1" "Cluster" .Release.Namespace (include "cnpg.clusterName" .) }}
   # Number of instances (primary + replicas)
-  instances: {{ .Values.replication.instances | default 2 }}
+  instances: {{ if and $existingCluster $existingCluster.spec $existingCluster.spec.instances }}{{ $existingCluster.spec.instances }}{{ else }}{{ .Values.replication.instances | default 2 }}{{ end }}
 
   # PostgreSQL image
   imageName: {{ include "cnpg.image" . }}
