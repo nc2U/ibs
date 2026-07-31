@@ -106,7 +106,7 @@ spec:
                 claimName: {{ include "cnpg.fullname" . }}-backup-{{ .Values.global.appMode }}-pvc
             - name: postgres-password
               secret:
-                secretName: {{ include "cnpg.fullname" . }}-superuser
+                secretName: {{ include "cnpg.fullname" . }}-app
                 items:
                   - key: password
                     path: postgres-password
