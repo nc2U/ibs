@@ -43,9 +43,10 @@ if [ -f "$SCRIPT_DIR/.env" ]; then
           --set nfs.path=/mnt/nfs-subdir-external-provisioner
     fi
 
-    # Pending 락 및 이전 migration-job 자동 청소
+    # Pending 락 및 이전 migration-job/pod 자동 강제 청소
     kubectl delete secret -n ibs-prod -l owner=helm,status=pending-upgrade --ignore-not-found=true 2>/dev/null || true
-    kubectl delete job -n ibs-prod -l app.kubernetes.io/name=web --ignore-not-found=true 2>/dev/null || true
+    kubectl delete job -n ibs-prod -l app.kubernetes.io/component=migration --ignore-not-found=true 2>/dev/null || true
+    kubectl delete pod -n ibs-prod -l app.kubernetes.io/component=migration --ignore-not-found=true 2>/dev/null || true
     if kubectl get cluster postgres -n ibs-prod >/dev/null 2>&1; then
       kubectl label cluster postgres -n ibs-prod app.kubernetes.io/managed-by=Helm --overwrite || true
       kubectl annotate cluster postgres -n ibs-prod meta.helm.sh/release-name=${RELEASE_NAME} meta.helm.sh/release-namespace=ibs-prod --overwrite || true
