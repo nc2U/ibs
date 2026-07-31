@@ -327,10 +327,12 @@ if [ "$DB_READY" = "false" ]; then
 fi
 
 # 복원 완료 후 헬름 설정(spec.backup) 동기화로 지속적 WAL 아카이빙 즉시 재개
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+HELM_CHART_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 echo "🔄 Synchronizing Helm release spec to re-enable continuous S3 WAL archiving..."
-helm upgrade ${HELM_RELEASE_NAME:-ibs} deploy/helm/ \
+helm upgrade ${HELM_RELEASE_NAME:-ibs} "$HELM_CHART_DIR" \
   -n "$NAMESPACE" \
-  -f "deploy/helm/values-${ENV_ARG}-custom.yaml" \
+  -f "$HELM_CHART_DIR/values-${ENV_ARG}-custom.yaml" \
   --reuse-values >/dev/null 2>&1 || true
 echo "✅ Continuous S3 WAL archiving re-enabled successfully!"
 
