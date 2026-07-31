@@ -222,6 +222,8 @@ spec:
       node: "${TARGET_PRIMARY}"
       database: "${DB_NAME}"
       owner: "${DB_USER}"
+      secret:
+        name: postgres-app
 ${RECOVERY_TARGET_YAML}
   externalClusters:
     - name: postgres-s3
@@ -261,6 +263,8 @@ spec:
       node: "${TARGET_PRIMARY}"
       database: "${DB_NAME}"
       owner: "${DB_USER}"
+      secret:
+        name: postgres-app
   externalClusters:
     - name: postgres-s3
       barmanObjectStore:

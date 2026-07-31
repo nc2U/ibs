@@ -54,6 +54,10 @@ spec:
     # Restore/Recovery from external S3 backup
     recovery:
       source: {{ .Values.bootstrap.recovery.source | default "postgres-s3" }}
+      database: {{ include "cnpg.database" . }}
+      owner: {{ include "cnpg.username" . }}
+      secret:
+        name: {{ include "cnpg.fullname" . }}-app
       {{- with .Values.bootstrap.recovery.targetTime }}
       recoveryTarget:
         targetTime: {{ . | quote }}
