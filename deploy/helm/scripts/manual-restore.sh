@@ -317,214 +317,80 @@ fi
 
 echo ""
 
-# Helm template으로 Job manifest 생성
-echo ""
-echo "Generating restore job manifest..."
-TEMP_JOB=$(mktemp)
 
-cat > "$TEMP_JOB" <<EOF
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: ${RELEASE}-postgres-restore-$(date +%Y%m%d-%H%M%S)
-  namespace: ${NAMESPACE}
-spec:
-  ttlSecondsAfterFinished: 300
-  template:
-    spec:
-      restartPolicy: Never
-      automountServiceAccountToken: false
-      containers:
-      - name: postgres-restore
-        image: postgres:18.0
-        command:
-          - /bin/bash
-          - -c
-          - |
-            set -eu
-
-            DUMP_FILE="$BACKUP_FILE"
-
-            if [ ! -f "\$DUMP_FILE" ]; then
-                echo "❌ Error: Backup file not found: \$DUMP_FILE" >&2
-                echo "Available backups:" >&2
-                ls -lh /var/backups/*.dump 2>/dev/null || echo "No backup files found" >&2
-                exit 1
-            fi
-
-            SCHEMA="ibs"
-            DATE=\$(date +"%Y-%m-%d-%H%M%S")
-            LOG_FILE="/var/backups/restore-\${DATE}.log"
-            POSTGRES_DATABASE="ibs"
-            POSTGRES_USER="postgres"
-            POSTGRES_PASSWORD=\$(cat /run/secrets/postgres-password)
-            PSQL_HOST="postgres-rw"
-
-            echo "=== PostgreSQL Restore Started ===" | tee "\$LOG_FILE"
-            echo "Backup file: \$DUMP_FILE" | tee -a "\$LOG_FILE"
-            echo "Database: \$POSTGRES_DATABASE" | tee -a "\$LOG_FILE"
-            echo "Schema: \$SCHEMA" | tee -a "\$LOG_FILE"
-            echo "Host: \$PSQL_HOST" | tee -a "\$LOG_FILE"
-            echo "" | tee -a "\$LOG_FILE"
-
-            # 스키마 존재 확인 및 생성
-            echo "=== Checking/Creating schema ===" | tee -a "\$LOG_FILE"
-            PGPASSWORD="\$POSTGRES_PASSWORD" psql -h "\$PSQL_HOST" -U "\$POSTGRES_USER" -d "\$POSTGRES_DATABASE" -c "
-            DO \\\$\\\$
-            BEGIN
-                IF NOT EXISTS (SELECT 1 FROM information_schema.schemata WHERE schema_name = '\$SCHEMA') THEN
-                    RAISE NOTICE 'Schema \$SCHEMA does not exist, creating...';
-                    EXECUTE format('CREATE SCHEMA %I AUTHORIZATION ibs', '\$SCHEMA');
-                    EXECUTE format('GRANT ALL ON SCHEMA %I TO ibs', '\$SCHEMA');
-                    RAISE NOTICE 'Schema \$SCHEMA created successfully';
-                ELSE
-                    RAISE NOTICE 'Schema \$SCHEMA already exists';
-                END IF;
-            END \\\$\\\$;
-            ALTER DATABASE \$POSTGRES_DATABASE SET search_path TO \$SCHEMA, public;
-            " 2>&1 | tee -a "\$LOG_FILE"
-
-            if [ \${PIPESTATUS[0]} -ne 0 ]; then
-                echo "❌ Schema check/creation failed!" >&2
-                cat "\$LOG_FILE" >&2
-                exit 1
-            fi
-
-            # 테이블 데이터 삭제
-            echo "=== Truncating tables (excluding django_migrations) ===" | tee -a "\$LOG_FILE"
-            PGPASSWORD="\$POSTGRES_PASSWORD" psql -h "\$PSQL_HOST" -U "\$POSTGRES_USER" -d "\$POSTGRES_DATABASE" -c "
-            BEGIN;
-            SET CONSTRAINTS ALL DEFERRED;
-
-            DO \\\$\\\$
-            DECLARE
-                r RECORD;
-                has_sequence BOOLEAN;
-            BEGIN
-                FOR r IN (SELECT c.relname AS tablename FROM pg_class c
-                         WHERE c.relkind = 'r'
-                         AND c.relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = '\$SCHEMA')
-                         AND c.relname != 'django_migrations')
-                LOOP
-                    BEGIN
-                        SELECT EXISTS (
-                            SELECT 1 FROM information_schema.columns
-                            WHERE table_schema = '\$SCHEMA'
-                            AND table_name = r.tablename
-                            AND column_default LIKE 'nextval%'
-                        ) INTO has_sequence;
-
-                        IF has_sequence THEN
-                            EXECUTE format('TRUNCATE TABLE %I.%I CASCADE RESTART IDENTITY', '\$SCHEMA', r.tablename);
-                            RAISE NOTICE 'Truncated table %.% with RESTART IDENTITY', '\$SCHEMA', r.tablename;
-                        ELSE
-                            EXECUTE format('TRUNCATE TABLE %I.%I CASCADE', '\$SCHEMA', r.tablename);
-                            RAISE NOTICE 'Truncated table %.%', '\$SCHEMA', r.tablename;
-                        END IF;
-                    EXCEPTION WHEN OTHERS THEN
-                        RAISE WARNING 'Failed to truncate table %.%: %', '\$SCHEMA', r.tablename, SQLERRM;
-                        CONTINUE;
-                    END;
-                END LOOP;
-                RAISE NOTICE 'Completed truncating tables in schema \$SCHEMA';
-            END \\\$\\\$;
-
-            COMMIT;
-            " 2>&1 | tee -a "\$LOG_FILE"
-
-            if [ \${PIPESTATUS[0]} -ne 0 ]; then
-                echo "❌ Truncate failed! Check log: \$LOG_FILE" >&2
-                cat "\$LOG_FILE" >&2
-                exit 1
-            fi
-
-            # 백업 파일 복원 (NFS 환경 고속화를 위해 단일 트랜잭션 적용)
-            echo "=== Restoring from backup file ===" | tee -a "\$LOG_FILE"
-            echo "Progress will be displayed below..." | tee -a "\$LOG_FILE"
-            PGPASSWORD="\$POSTGRES_PASSWORD" pg_restore \
-              -h "\$PSQL_HOST" \
-              -U "\$POSTGRES_USER" \
-              -d "\$POSTGRES_DATABASE" \
-              --data-only \
-              --no-owner \
-              --no-privileges \
-              --disable-triggers \
-              --jobs=4 \
-              --verbose \
-              "\$DUMP_FILE" 2>&1 | tee -a "\$LOG_FILE" || true
-
-            RESTORE_EXIT_CODE=\${PIPESTATUS[0]}
-            if [ \$RESTORE_EXIT_CODE -eq 0 ]; then
-                # 시퀀스 조정
-                echo "=== Adjusting sequences ===" | tee -a "\$LOG_FILE"
-                PGPASSWORD="\$POSTGRES_PASSWORD" psql -h "\$PSQL_HOST" -U "\$POSTGRES_USER" -d "\$POSTGRES_DATABASE" -c "
-                DO \\\$\\\$
-                DECLARE
-                    r RECORD;
-                BEGIN
-                    FOR r IN (
-                        SELECT c.relname AS tablename
-                        FROM pg_class c
-                        JOIN pg_depend d ON c.oid = d.objid
-                        JOIN pg_class s ON d.refobjid = s.oid
-                        WHERE c.relkind = 'r'
-                        AND s.relkind = 'S'
-                        AND c.relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = '\$SCHEMA')
-                    )
-                    LOOP
-                        EXECUTE 'SELECT setval(pg_get_serial_sequence(' || quote_literal('\$SCHEMA.' || r.tablename) || ', ''id''),
-                                (SELECT COALESCE(MAX(id), 0) + 1 FROM ' || quote_ident('\$SCHEMA') || '.' || quote_ident(r.tablename) || '))';
-                        RAISE NOTICE 'Reset sequence for table %.%', '\$SCHEMA', r.tablename;
-                    END LOOP;
-                    RAISE NOTICE 'All sequences adjusted';
-                END \\\$\\\$;
-                " 2>&1 | tee -a "\$LOG_FILE"
-
-                echo "" | tee -a "\$LOG_FILE"
-                echo "🎉 PostgreSQL Restore completed successfully!" | tee -a "\$LOG_FILE"
-                echo "Log file: \$LOG_FILE" | tee -a "\$LOG_FILE"
-                exit 0
-            else
-                echo "❌ Restore failed! Check log: \$LOG_FILE" >&2
-                cat "\$LOG_FILE" >&2
-                exit 1
-            fi
-        env:
-          - name: BACKUP_FILE
-            value: "$BACKUP_FILE"
-        volumeMounts:
-          - name: backup-volume
-            mountPath: /var/backups
-          - name: postgres-password
-            mountPath: /run/secrets
-            readOnly: true
-      volumes:
-        - name: backup-volume
-          persistentVolumeClaim:
-            claimName: $BACKUP_PVC
-        - name: postgres-password
-          secret:
-            secretName: postgres-app
-            items:
-              - key: password
-                path: postgres-password
-EOF
-
-# Job 생성
-echo "Creating restore job..."
-JOB_NAME=$(kubectl apply -f "$TEMP_JOB" -o jsonpath='{.metadata.name}')
-rm "$TEMP_JOB"
-
-echo ""
-echo "✅ Restore job created: $JOB_NAME"
-echo ""
-echo "Monitor progress with:"
-echo "  kubectl get jobs -n $NAMESPACE"
-echo "  kubectl logs -n $NAMESPACE job/$JOB_NAME -f"
-echo ""
-
-# 자동으로 로그 따라가기
-echo "Following logs (Ctrl+C to stop)..."
+echo "Executing postgres_restore.sh directly inside primary pod ($PRIMARY_POD)..."
 echo "----------------------------------------"
-kubectl wait --for=condition=ready pod -n "$NAMESPACE" -l "job-name=$JOB_NAME" --timeout=60s
-kubectl logs -n "$NAMESPACE" -l "job-name=$JOB_NAME" -f
+
+kubectl exec -i -n "$NAMESPACE" "$PRIMARY_POD" -c postgres -- bash -c "
+  export PGDATABASE='ibs'
+  export PGUSER='postgres'
+  export PGPASSWORD='$EXPECTED_PASSWORD'
+  export DUMP_FILE='$BACKUP_FILE'
+  export LOG_FILE='/var/backups/restore-\$(date +%Y-%m-%d-%H%M%S).log'
+
+  echo '=== 테이블 데이터 삭제 및 복원 시작 ===' | tee -a \"\$LOG_FILE\"
+  psql -U \"\$PGUSER\" -d \"\$PGDATABASE\" -c \"
+  BEGIN;
+  SET CONSTRAINTS ALL DEFERRED;
+
+  DO \\\$\\\$
+  BEGIN
+      IF NOT EXISTS (SELECT 1 FROM information_schema.schemata WHERE schema_name = '\$PGDATABASE') THEN
+          RAISE EXCEPTION 'Schema \$PGDATABASE does not exist';
+      END IF;
+  END \\\$\\\$;
+
+  DO \\\$\\\$
+  DECLARE
+      r RECORD;
+      has_sequence BOOLEAN;
+  BEGIN
+      FOR r IN (SELECT c.relname AS tablename FROM pg_class c WHERE c.relkind = 'r'
+                AND c.relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = '\$PGDATABASE')
+                AND c.relname != 'django_migrations')
+      LOOP
+          BEGIN
+              SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = '\$PGDATABASE'
+                            AND table_name = r.tablename AND column_default LIKE 'nextval%') INTO has_sequence;
+              IF has_sequence THEN
+                  EXECUTE format('TRUNCATE TABLE %I.%I CASCADE RESTART IDENTITY', '\$PGDATABASE', r.tablename);
+                  RAISE NOTICE 'Truncated table %.% with RESTART IDENTITY', '\$PGDATABASE', r.tablename;
+              ELSE
+                  EXECUTE format('TRUNCATE TABLE %I.%I CASCADE', '\$PGDATABASE', r.tablename);
+                  RAISE NOTICE 'Truncated table %.% without RESTART IDENTITY', '\$PGDATABASE', r.tablename;
+              END IF;
+          EXCEPTION WHEN OTHERS THEN
+              RAISE WARNING 'Failed to truncate table %.%: %', '\$PGDATABASE', r.tablename, SQLERRM;
+              CONTINUE;
+          END;
+      END LOOP;
+      RAISE NOTICE 'Completed truncating tables in schema \$PGDATABASE';
+  END \\\$\\\$;
+
+  COMMIT;
+  \" >> \"\$LOG_FILE\" 2>&1
+
+  echo '=== 백업 파일 복원 중: '\$DUMP_FILE' ===' | tee -a \"\$LOG_FILE\"
+  pg_restore -U \"\$PGUSER\" -d \"\$PGDATABASE\" --data-only --no-owner --no-privileges --disable-triggers --jobs=4 \"\$DUMP_FILE\" >> \"\$LOG_FILE\" 2>&1
+
+  echo '=== 시퀀스 조정 (id 컬럼 기준) 시작 ===' | tee -a \"\$LOG_FILE\"
+  psql -U \"\$PGUSER\" -d \"\$PGDATABASE\" -c \"
+  DO \\\$\\\$
+  DECLARE
+      r RECORD;
+  BEGIN
+      FOR r IN (SELECT c.relname AS tablename FROM pg_class c JOIN pg_depend d ON c.oid = d.objid JOIN pg_class s ON d.refobjid = s.oid
+          WHERE c.relkind = 'r' AND s.relkind = 'S' AND c.relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = '\$PGDATABASE'))
+      LOOP
+          EXECUTE 'SELECT setval(pg_get_serial_sequence(' || quote_literal('\$PGDATABASE.' || r.tablename) || ', ''id''),
+                  (SELECT COALESCE(MAX(id), 0) + 1 FROM ' || quote_ident('\$PGDATABASE') || '.' || quote_ident(r.tablename) || '))';
+          RAISE NOTICE 'Reset sequence for table %.%', '\$PGDATABASE', r.tablename;
+      END LOOP;
+  END \\\$\\\$;
+  \" >> \"\$LOG_FILE\" 2>&1
+
+  echo '🎉🎉🎉 데이터 복원 완료 및 시퀀스 초기화 완료! 🎉🎉🎉' | tee -a \"\$LOG_FILE\"
+"
+
+echo "----------------------------------------"
+echo "✅ Manual restore completed successfully!"
