@@ -63,8 +63,6 @@ spec:
     initdb:
       database: {{ include "cnpg.database" . }}
       owner: {{ include "cnpg.username" . }}
-      secret:
-        name: {{ include "cnpg.fullname" . }}-app
       {{- with .Values.bootstrap.initdb.encoding }}
       encoding: {{ . }}
       {{- end }}
@@ -105,9 +103,7 @@ spec:
     {{- toYaml .Values.externalClusters | nindent 4 }}
   {{- end }}
 
-  # Superuser secret
-  superuserSecret:
-    name: {{ include "cnpg.fullname" . }}-superuser
+
 
   # Storage configuration
   storage:
