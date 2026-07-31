@@ -213,6 +213,8 @@ spec:
   bootstrap:
     recovery:
       source: postgres-s3
+      database: "${DB_NAME}"
+      owner: "${DB_USER}"
 ${RECOVERY_TARGET_YAML}
   externalClusters:
     - name: postgres-s3
@@ -249,6 +251,8 @@ spec:
   bootstrap:
     recovery:
       source: postgres-s3
+      database: "${DB_NAME}"
+      owner: "${DB_USER}"
   externalClusters:
     - name: postgres-s3
       barmanObjectStore:
