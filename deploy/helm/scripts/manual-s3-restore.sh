@@ -227,6 +227,23 @@ ${RECOVERY_TARGET_YAML}
           secretAccessKey:
             name: "${SECRET_NAME}"
             key: "${KEY_SECRET}"
+  backup:
+    barmanObjectStore:
+      destinationPath: "${S3_DESTINATION}"
+      endpointURL: "https://s3.dyibs.com"
+      s3Credentials:
+        accessKeyId:
+          name: "${SECRET_NAME}"
+          key: "${KEY_ACCESS}"
+        secretAccessKey:
+          name: "${SECRET_NAME}"
+          key: "${KEY_SECRET}"
+      wal:
+        compression: "gzip"
+        maxParallel: 2
+      data:
+        compression: "gzip"
+        jobs: 2
   storage:
     storageClass: nfs-client
     size: ${STORAGE_SIZE}
@@ -262,6 +279,23 @@ spec:
           secretAccessKey:
             name: "${SECRET_NAME}"
             key: "${KEY_SECRET}"
+  backup:
+    barmanObjectStore:
+      destinationPath: "${S3_DESTINATION}"
+      endpointURL: "https://s3.dyibs.com"
+      s3Credentials:
+        accessKeyId:
+          name: "${SECRET_NAME}"
+          key: "${KEY_ACCESS}"
+        secretAccessKey:
+          name: "${SECRET_NAME}"
+          key: "${KEY_SECRET}"
+      wal:
+        compression: "gzip"
+        maxParallel: 2
+      data:
+        compression: "gzip"
+        jobs: 2
   storage:
     storageClass: nfs-client
     size: ${STORAGE_SIZE}
