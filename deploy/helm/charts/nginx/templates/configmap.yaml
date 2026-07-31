@@ -182,11 +182,11 @@ data:
                     <path d="M16 16h5v5"/>
                 </svg>
             </div>
-            <h1>시스템 정기 점검 및 데이터 복구 중</h1>
+            <h1>시스템 점검 및 데이터 복구 중</h1>
             <p>안전한 데이터 최신화 및 시스템 점검 작업을 진행하고 있습니다.<br>작업이 완료되는 대로 서비스가 자동 정상화됩니다.</p>
 
             <div class="time-box">
-                ⏱️ 예상 소요 시간: <strong>약 2 ~ 3분 내외</strong>
+                ⏱️ 예상 소요 시간: <strong>약 5 ~ 10분 내외</strong>
             </div>
 
             <div class="status-badge">
