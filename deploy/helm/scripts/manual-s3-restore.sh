@@ -202,6 +202,11 @@ kind: Cluster
 metadata:
   name: ${RESTORE_CLUSTER_NAME}
   namespace: ${NAMESPACE}
+  labels:
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    meta.helm.sh/release-name: ${HELM_RELEASE_NAME:-ibs}
+    meta.helm.sh/release-namespace: ${NAMESPACE}
 spec:
   instances: ${INSTANCES}
   imageName: ${PG_IMAGE}
@@ -233,6 +238,11 @@ kind: Cluster
 metadata:
   name: ${RESTORE_CLUSTER_NAME}
   namespace: ${NAMESPACE}
+  labels:
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    meta.helm.sh/release-name: ${HELM_RELEASE_NAME:-ibs}
+    meta.helm.sh/release-namespace: ${NAMESPACE}
 spec:
   instances: ${INSTANCES}
   imageName: ${PG_IMAGE}

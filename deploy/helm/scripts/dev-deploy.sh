@@ -50,11 +50,6 @@ if [ -f "$SCRIPT_DIR/.env" ]; then
     if kubectl get cluster postgres -n ibs-dev > /dev/null 2>&1; then
       kubectl label cluster postgres -n ibs-dev app.kubernetes.io/managed-by=Helm --overwrite || true
       kubectl annotate cluster postgres -n ibs-dev meta.helm.sh/release-name=${RELEASE_NAME} meta.helm.sh/release-namespace=ibs-dev --overwrite || true
-      # spec.instances 필드를 직접 패치하여 "kubectl" -> "helm" field manager 소유권 강제 이전
-      CURRENT_INST=$(kubectl get cluster postgres -n ibs-dev -o jsonpath='{.spec.instances}' 2>/dev/null || echo "3")
-      kubectl patch cluster postgres -n ibs-dev \
-        --server-side --force-conflicts --field-manager=helm --type=merge \
-        -p "{\"spec\":{\"instances\":${CURRENT_INST}}}" 2>/dev/null || true
     fi
     kubectl apply -f "$CURR_DIR/../kubectl/class-roles"
     cd "$CURR_DIR"
