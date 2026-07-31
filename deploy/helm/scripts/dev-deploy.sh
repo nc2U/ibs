@@ -47,10 +47,12 @@ if [ -f "$SCRIPT_DIR/.env" ]; then
     kubectl delete secret -n ibs-dev -l owner=helm,status=pending-upgrade --ignore-not-found=true 2>/dev/null || true
     kubectl delete job -n ibs-dev -l app.kubernetes.io/component=migration --ignore-not-found=true 2>/dev/null || true
     kubectl delete pod -n ibs-dev -l app.kubernetes.io/component=migration --ignore-not-found=true 2>/dev/null || true
-    if kubectl get cluster postgres -n ibs-dev >/dev/null 2>&1; then
+    if kubectl get cluster postgres -n ibs-dev > /dev/null 2>&1; then
       kubectl label cluster postgres -n ibs-dev app.kubernetes.io/managed-by=Helm --overwrite || true
       kubectl annotate cluster postgres -n ibs-dev meta.helm.sh/release-name=${RELEASE_NAME} meta.helm.sh/release-namespace=ibs-dev --overwrite || true
-      kubectl get cluster postgres -n ibs-dev -o json | kubectl apply --server-side --force-conflicts --field-manager=helm -f - || true
+      # Helm field manager 충돌 방지: managedFields 초기화 후 Helm이 소유권을 재취득하도록 함
+      kubectl patch cluster postgres -n ibs-dev --type=json \
+        -p='[{"op":"remove","path":"/metadata/managedFields"}]' 2>/dev/null || true
     fi
     kubectl apply -f "$CURR_DIR/../kubectl/class-roles"
     cd "$CURR_DIR"
@@ -64,8 +66,7 @@ if [ -f "$SCRIPT_DIR/.env" ]; then
     fi
     helm upgrade ${RELEASE_NAME} . -f ./values-dev-custom.yaml \
       ${IMAGE_TAG_ARG} \
-      --install -n ibs-dev --create-namespace --history-max 5 \
-      --server-side --force-conflicts
+      --install -n ibs-dev --create-namespace --history-max 5
   else
     echo "values-dev-custom.yaml file not found in Current directory."
     exit 1
