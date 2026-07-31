@@ -321,102 +321,120 @@ echo ""
 echo "Launching temporary restore pod with Synology NAS PVC ($BACKUP_PVC) mounted..."
 echo "----------------------------------------"
 
+# 기존 수동 복구 파드 정리
+kubectl delete pod -n "$NAMESPACE" -l "app.kubernetes.io/component=manual-restore" > /dev/null 2>&1 || true
+
 RESTORE_POD_NAME="postgres-manual-restore-$(date +%s)"
+TEMP_POD_MANIFEST=$(mktemp)
 
-kubectl run -n "$NAMESPACE" "$RESTORE_POD_NAME" \
-  --image=postgres:18.0 \
-  --restart=Never \
-  --rm -i --quiet \
-  --overrides='
-{
-  "spec": {
-    "containers": [{
-      "name": "manual-restore",
-      "image": "postgres:18.0",
-      "command": ["/bin/bash", "-c", "
-        export PGDATABASE=\"ibs\"
-        export PGUSER=\"postgres\"
-        export PGPASSWORD=\"'"$EXPECTED_PASSWORD"'\"
-        export PSQL_HOST=\"postgres-rw\"
-        export DUMP_FILE=\"'"$BACKUP_FILE"'\"
-        export LOG_FILE=\"/var/backups/restore-$(date +%Y-%m-%d-%H%M%S).log\"
+cat > "$TEMP_POD_MANIFEST" << EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: $RESTORE_POD_NAME
+  namespace: $NAMESPACE
+  labels:
+    app.kubernetes.io/component: manual-restore
+spec:
+  restartPolicy: Never
+  containers:
+    - name: manual-restore
+      image: postgres:18.0
+      command:
+        - /bin/bash
+        - -c
+        - |
+          set -eu
+          export PGDATABASE="ibs"
+          export PGUSER="postgres"
+          export PGPASSWORD="$EXPECTED_PASSWORD"
+          export PSQL_HOST="postgres-rw"
+          export DUMP_FILE="$BACKUP_FILE"
+          export LOG_FILE="/var/backups/restore-\$(date +%Y-%m-%d-%H%M%S).log"
 
-        echo \"=== 테이블 데이터 삭제 및 복원 시작 ===\" | tee -a \"\$LOG_FILE\"
-        psql -h \"\$PSQL_HOST\" -U \"\$PGUSER\" -d \"\$PGDATABASE\" -c \"
-        BEGIN;
-        SET CONSTRAINTS ALL DEFERRED;
+          echo "=== 테이블 데이터 삭제 및 복원 시작 ===" | tee -a "\$LOG_FILE"
+          psql -h "\$PSQL_HOST" -U "\$PGUSER" -d "\$PGDATABASE" -c "
+          BEGIN;
+          SET CONSTRAINTS ALL DEFERRED;
 
-        DO \\\$\\\$
-        BEGIN
-            IF NOT EXISTS (SELECT 1 FROM information_schema.schemata WHERE schema_name = '\''\$PGDATABASE'\'') THEN
-                RAISE EXCEPTION '\''Schema \$PGDATABASE does not exist'\'';
-            END IF;
-        END \\\$\\\$;
+          DO '
+          BEGIN
+              IF NOT EXISTS (SELECT 1 FROM information_schema.schemata WHERE schema_name = ''\$PGDATABASE'') THEN
+                  RAISE EXCEPTION ''Schema \$PGDATABASE does not exist'';
+              END IF;
+          END;';
 
-        DO \\\$\\\$
-        DECLARE
-            r RECORD;
-            has_sequence BOOLEAN;
-        BEGIN
-            FOR r IN (SELECT c.relname AS tablename FROM pg_class c WHERE c.relkind = '\''r'\''
-                      AND c.relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = '\''\$PGDATABASE'\'')
-                      AND c.relname != '\''django_migrations'\'')
-            LOOP
-                BEGIN
-                    SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = '\''\$PGDATABASE'\''
-                                  AND table_name = r.tablename AND column_default LIKE '\''nextval%'\'') INTO has_sequence;
-                    IF has_sequence THEN
-                        EXECUTE format('\''TRUNCATE TABLE %I.%I CASCADE RESTART IDENTITY'\'', '\''\$PGDATABASE'\'', r.tablename);
-                        RAISE NOTICE '\''Truncated table %.% with RESTART IDENTITY'\'', '\''\$PGDATABASE'\'', r.tablename;
-                    ELSE
-                        EXECUTE format('\''TRUNCATE TABLE %I.%I CASCADE'\'', '\''\$PGDATABASE'\'', r.tablename);
-                        RAISE NOTICE '\''Truncated table %.% without RESTART IDENTITY'\'', '\''\$PGDATABASE'\'', r.tablename;
-                    END IF;
-                EXCEPTION WHEN OTHERS THEN
-                    RAISE WARNING '\''Failed to truncate table %.%: %'\'', '\''\$PGDATABASE'\'', r.tablename, SQLERRM;
-                    CONTINUE;
-                END;
-            END LOOP;
-            RAISE NOTICE '\''Completed truncating tables in schema \$PGDATABASE'\'';
-        END \\\$\\\$;
+          DO '
+          DECLARE
+              r RECORD;
+              has_sequence BOOLEAN;
+          BEGIN
+              FOR r IN (SELECT c.relname AS tablename FROM pg_class c WHERE c.relkind = ''r''
+                        AND c.relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = ''\$PGDATABASE'')
+                        AND c.relname != ''django_migrations'')
+              LOOP
+                  BEGIN
+                      SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = ''\$PGDATABASE''
+                                    AND table_name = r.tablename AND column_default LIKE ''nextval%'') INTO has_sequence;
+                      IF has_sequence THEN
+                          EXECUTE format(''TRUNCATE TABLE %I.%I CASCADE RESTART IDENTITY'', ''\$PGDATABASE'', r.tablename);
+                          RAISE NOTICE ''Truncated table %.% with RESTART IDENTITY'', ''\$PGDATABASE'', r.tablename;
+                      ELSE
+                          EXECUTE format(''TRUNCATE TABLE %I.%I CASCADE'', ''\$PGDATABASE'', r.tablename);
+                          RAISE NOTICE ''Truncated table %.% without RESTART IDENTITY'', ''\$PGDATABASE'', r.tablename;
+                      END IF;
+                  EXCEPTION WHEN OTHERS THEN
+                      RAISE WARNING ''Failed to truncate table %.%: %'', ''\$PGDATABASE'', r.tablename, SQLERRM;
+                      CONTINUE;
+                  END;
+              END LOOP;
+              RAISE NOTICE ''Completed truncating tables in schema \$PGDATABASE'';
+          END;';
 
-        COMMIT;
-        \" >> \"\$LOG_FILE\" 2>&1
+          COMMIT;
+          " >> "\$LOG_FILE" 2>&1
 
-        echo \"=== 백업 파일 복원 중: \$DUMP_FILE ===\" | tee -a \"\$LOG_FILE\"
-        pg_restore -h \"\$PSQL_HOST\" -U \"\$PGUSER\" -d \"\$PGDATABASE\" --data-only --no-owner --no-privileges --disable-triggers --jobs=4 \"\$DUMP_FILE\" >> \"\$LOG_FILE\" 2>&1 || true
+          echo "=== 백업 파일 복원 중 (초고속 가속 세션 활성화): \$DUMP_FILE ===" | tee -a "\$LOG_FILE"
+          PGOPTIONS="-c synchronous_commit=off -c full_page_writes=off" PGPASSWORD="\$PGPASSWORD" pg_restore -h "\$PSQL_HOST" -U "\$PGUSER" -d "\$PGDATABASE" --data-only --no-owner --no-privileges --disable-triggers --single-transaction --jobs=4 --verbose "\$DUMP_FILE" 2>&1 | tee -a "\$LOG_FILE" || true
 
-        echo \"=== 시퀀스 조정 (id 컬럼 기준) 시작 ===\" | tee -a \"\$LOG_FILE\"
-        psql -h \"\$PSQL_HOST\" -U \"\$PGUSER\" -d \"\$PGDATABASE\" -c \"
-        DO \\\$\\\$
-        DECLARE
-            r RECORD;
-        BEGIN
-            FOR r IN (SELECT c.relname AS tablename FROM pg_class c JOIN pg_depend d ON c.oid = d.objid JOIN pg_class s ON d.refobjid = s.oid
-                WHERE c.relkind = '\''r'\'' AND s.relkind = '\''S'\'' AND c.relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = '\''\$PGDATABASE'\''))
-            LOOP
-                EXECUTE '\''SELECT setval(pg_get_serial_sequence('\'' || quote_literal('\''\$PGDATABASE.'\'' || r.tablename) || '\'', '\''id'\''),
-                        (SELECT COALESCE(MAX(id), 0) + 1 FROM '\'' || quote_ident('\''\$PGDATABASE'\'') || '\''.'\'' || quote_ident(r.tablename) || '\''))'\'';
-                RAISE NOTICE '\''Reset sequence for table %.%'\'', '\''\$PGDATABASE'\'', r.tablename;
-            END LOOP;
-        END \\\$\\\$;
-        \" >> \"\$LOG_FILE\" 2>&1
+          echo "=== 시퀀스 조정 (id 컬럼 기준) 시작 ===" | tee -a "\$LOG_FILE"
+          psql -h "\$PSQL_HOST" -U "\$PGUSER" -d "\$PGDATABASE" -c "
+          SELECT concat('SELECT setval(pg_get_serial_sequence(''ibs.', tablename, ''', ''id''), COALESCE(MAX(id), 1)) FROM ibs.', tablename, ';')
+          FROM pg_tables WHERE schemaname='ibs' AND tablename != 'django_migrations';
+          " -t | psql -h "\$PSQL_HOST" -U "\$PGUSER" -d "\$PGDATABASE" >> "\$LOG_FILE" 2>&1 || true
 
-        echo \"🎉🎉🎉 데이터 복원 완료 및 시퀀스 초기화 완료! 🎉🎉🎉\" | tee -a \"\$LOG_FILE\"
-      "],
-      "volumeMounts": [{
-        "name": "backup-volume",
-        "mountPath": "/var/backups"
-      }]
-    }],
-    "volumes": [{
-      "name": "backup-volume",
-      "persistentVolumeClaim": {
-        "claimName": "'"$BACKUP_PVC"'"
-      }
-    }]
-  }
-}'
+          echo "🎉🎉🎉 데이터 복원 완료 및 시퀀스 초기화 완료! 🎉🎉🎉" | tee -a "\$LOG_FILE"
+      volumeMounts:
+        - name: backup-volume
+          mountPath: /var/backups
+  volumes:
+    - name: backup-volume
+      persistentVolumeClaim:
+        claimName: $BACKUP_PVC
+EOF
+
+kubectl apply -f "$TEMP_POD_MANIFEST" > /dev/null
+rm -f "$TEMP_POD_MANIFEST"
+
+echo "Waiting for restore pod to start running..."
+while true; do
+  PHASE=$(kubectl get pod "$RESTORE_POD_NAME" -n "$NAMESPACE" -o jsonpath='{.status.phase}' 2>/dev/null || true)
+  if [ "$PHASE" = "Running" ] || [ "$PHASE" = "Succeeded" ] || [ "$PHASE" = "Failed" ]; then
+    break
+  fi
+  sleep 1
+done
+
+echo "Streaming logs from restore pod (Ctrl+C to stop view)..."
+kubectl logs -n "$NAMESPACE" -f "pod/$RESTORE_POD_NAME"
+RESTORE_STATUS=$?
 
 echo "----------------------------------------"
-echo "✅ Manual restore completed successfully!"
+if [ $RESTORE_STATUS -eq 0 ]; then
+  echo "✅ Manual restore completed successfully!"
+  echo "Restore pod '$RESTORE_POD_NAME' will be cleaned up automatically on next run."
+else
+  echo "❌ Manual restore failed!"
+  echo "Inspect pod logs with: kubectl logs -n $NAMESPACE $RESTORE_POD_NAME"
+  exit 1
+fi
