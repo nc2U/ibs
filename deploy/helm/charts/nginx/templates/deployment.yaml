@@ -44,7 +44,7 @@ spec:
             - -c
             - |
               echo "Copying static files from web container..."
-              cp -ru /django/static/* /target-static/ || true
+              cp -ru /app/django/static/* /target-static/ || true
               echo "Static files copy completed."
           volumeMounts:
             - name: static
