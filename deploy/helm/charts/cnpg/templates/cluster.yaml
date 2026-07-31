@@ -69,6 +69,8 @@ spec:
     initdb:
       database: {{ include "cnpg.database" . }}
       owner: {{ include "cnpg.username" . }}
+      secret:
+        name: {{ include "cnpg.fullname" . }}-app
       {{- with .Values.bootstrap.initdb.encoding }}
       encoding: {{ . }}
       {{- end }}
