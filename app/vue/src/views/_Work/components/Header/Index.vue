@@ -107,7 +107,7 @@ const cngProject = async (slug: any) => {
                     <v-list-item
                       v-for="proj in allActiveProjects"
                       :key="proj.value"
-                      @click="cngProject(proj.value)"
+                      @click="cngProject(proj.slug)"
                     >
                       {{ proj.label }}
                     </v-list-item>
