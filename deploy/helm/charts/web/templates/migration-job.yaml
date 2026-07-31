@@ -80,8 +80,13 @@ spec:
               MIGRATION_STATUS=$?
 
               echo "=========================================="
+              echo "Collecting static files..."
+              echo "=========================================="
+              python manage.py collectstatic --noinput
+
+              echo "=========================================="
               if [ $MIGRATION_STATUS -eq 0 ]; then
-                echo "Migration completed successfully!"
+                echo "Migration and collectstatic completed successfully!"
               else
                 echo "Migration FAILED with exit code: $MIGRATION_STATUS"
                 exit $MIGRATION_STATUS
@@ -107,6 +112,8 @@ spec:
               mountPath: /app/django/.env
               subPath: .env
               readOnly: true
+            - name: static
+              mountPath: /app/django/static
           resources:
             limits:
               cpu: 1000m
@@ -119,3 +126,6 @@ spec:
           nfs:
             server: {{ .Values.global.cicdServerHost }}
             path: {{ .Values.global.cicdPath }}/{{ .Values.global.appMode }}/app/django
+        - name: static
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-nginx-{{ .Values.global.appMode }}-static-pvc
