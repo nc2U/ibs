@@ -212,9 +212,15 @@ EOF
     if [ -n "$POD_NAME" ]; then
       echo "📌 Backup Pod: $POD_NAME"
       echo "----------------------------------------"
-      # 파드가 Running 또는 Completed 상태가 될 때까지 기다린 후 안전하게 로그 출력
-      kubectl wait --for=condition=Ready pod/"$POD_NAME" -n "$NAMESPACE" --timeout=60s 2>/dev/null || true
-      kubectl logs -n "$NAMESPACE" pod/"$POD_NAME" -f 2>/dev/null || kubectl logs -n "$NAMESPACE" pod/"$POD_NAME"
+      # 파드의 컨테이너가 Running / Completed / Failed 될 때까지 안전하게 대기
+      while true; do
+        PHASE=$(kubectl get pod "$POD_NAME" -n "$NAMESPACE" -o jsonpath='{.status.phase}' 2>/dev/null || true)
+        if [ "$PHASE" = "Running" ] || [ "$PHASE" = "Succeeded" ] || [ "$PHASE" = "Failed" ]; then
+          break
+        fi
+        sleep 1
+      done
+      kubectl logs -n "$NAMESPACE" pod/"$POD_NAME" -f
     else
       echo "⚠️ Job created, but pod took longer to start. Check status with:"
       echo "   kubectl get jobs -n $NAMESPACE"
