@@ -255,6 +255,8 @@ spec:
       owner: "${DB_USER}"
       secret:
         name: postgres-app
+      backup:
+        name: "latest"
 ${RECOVERY_TARGET_YAML}
   externalClusters:
     - name: postgres-s3
@@ -295,6 +297,8 @@ spec:
       owner: "${DB_USER}"
       secret:
         name: postgres-app
+      backup:
+        name: "latest"
   externalClusters:
     - name: postgres-s3
       barmanObjectStore:
