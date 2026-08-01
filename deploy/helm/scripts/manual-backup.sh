@@ -113,6 +113,18 @@ fi
 JOB_NAME="postgres-backup-manual-$(date +%Y%m%d-%H%M%S)"
 CRONJOB_NAME="postgres-backup"
 
+# Secret에서 DB 비밀번호 동적 감지 (web-db-auth, postgres-app, postgres-superuser 순)
+DB_PASS=$(kubectl get secret web-db-auth -n "$NAMESPACE" -o jsonpath='{.data.DATABASE_PASSWORD}' 2>/dev/null | base64 -d || true)
+if [ -z "$DB_PASS" ]; then
+  DB_PASS=$(kubectl get secret ${CLUSTER_NAME}-app -n "$NAMESPACE" -o jsonpath='{.data.password}' 2>/dev/null | base64 -d || true)
+fi
+if [ -z "$DB_PASS" ]; then
+  DB_PASS=$(kubectl get secret ${CLUSTER_NAME}-superuser -n "$NAMESPACE" -o jsonpath='{.data.password}' 2>/dev/null | base64 -d || true)
+fi
+if [ -z "$DB_PASS" ]; then
+  DB_PASS="secret"
+fi
+
 # CronJob이 있으면 CronJob 기반으로 Job 실행
 CRONJOB_CHECK=$(kubectl get cronjob -n "$NAMESPACE" "$CRONJOB_NAME" 2>&1 || true)
 if echo "$CRONJOB_CHECK" | grep -q "NotFound" || [ -z "$CRONJOB_CHECK" ]; then
@@ -153,8 +165,8 @@ spec:
               DUMP_FILE=/var/backups/ibs-backup-postgres-\${DATE}.dump
               POSTGRES_SCHEMA="${DB_NAME}"
               POSTGRES_DATABASE="${DB_NAME}"
-              POSTGRES_USER="app"
-              POSTGRES_PASSWORD=\$(cat /run/secrets/postgres-password)
+              POSTGRES_USER="${DB_USER:-ibs}"
+              POSTGRES_PASSWORD="${DB_PASS}"
               PSQL_HOST="${CLUSTER_NAME}-rw"
 
               # 이전 백업 정리 (2일 이상 지난 파일)
@@ -178,19 +190,10 @@ spec:
           volumeMounts:
             - name: backup-volume
               mountPath: /var/backups
-            - name: postgres-password
-              mountPath: /run/secrets
-              readOnly: true
       volumes:
         - name: backup-volume
           persistentVolumeClaim:
             claimName: ${BACKUP_PVC}
-        - name: postgres-password
-          secret:
-            secretName: ${CLUSTER_NAME}-app
-            items:
-              - key: password
-                path: postgres-password
 EOF
 
   if kubectl apply -f "$TEMP_JOB"; then
