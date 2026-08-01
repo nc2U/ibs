@@ -398,6 +398,9 @@ else
   echo "    - 소스코드의 migrations/ 디렉터리를 새로 리셋(Squash)하여 배포한 경우,"
   echo "      web 파드에서 아래 명령어로 DB 마이그레이션 이력을 동기화하세요:"
   echo "      kubectl exec -it \$(kubectl get pod -l app.kubernetes.io/name=web -n $NAMESPACE -o name | head -1) -n $NAMESPACE -- sh migrate.sh -r"
+  echo "    - **마이그레이션 리셋 및 복원이 완료된 직후 반드시 새로운 S3 수동 백업을 생성해야 합니다.**"
+  echo "    - S3 실시간 WAL 로그에 리셋 이전의 옛 마이그레이션 트랜잭션이 보관되어 있으므로, 새로운 백업을 찍어주어야 향후 S3 복원 시 **리셋된 최신 마이그레이션 상태로 깨끗하게 기준점이 설정**됩니다:"
+  echo "      ./manual-s3-backup.sh prod   # 또는 dev"
 fi
 
 echo ""

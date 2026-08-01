@@ -12,81 +12,12 @@ CloudNativePG 환경에서 PostgreSQL 데이터베이스의 수동 백업과 복
 - **PVC 보존**: Helm uninstall 시에도 PVC 보존 설정 적용
 - **버전 업그레이드**: PostgreSQL 메이저 버전 업그레이드 가이드 제공
 
-## ⚠️ 중요: PVC 데이터 보존
-
-**CNPG 1.27.1 제한사항**: `persistentVolumeClaimPolicy` 기능이 없어 Cluster 삭제 시 PVC도 함께 삭제됩니다.
-Helm uninstall 전에 **반드시** PVC ownerReferences를 제거해야 합니다.
-
-참고: [CNPG GitHub Discussion #5253](https://github.com/cloudnative-pg/cloudnative-pg/discussions/5253)
-
-### 방법 1: preserve-pvcs.sh 스크립트 사용 (권장)
-```bash
-# CI/CD 서버에서 실행
-cd $CICD_PATH/dev/deploy/helm/scripts
-
-# PVC ownerReferences 제거
-./preserve-pvcs.sh
-
-# 출력 예시:
-# 🔒 CloudNativePG PVC 보존 스크립트
-# ====================================
-# Namespace: ibs-dev
-# Cluster: postgres
-#
-# 📋 현재 PVC 목록:
-# persistentvolumeclaim/postgres-1
-# persistentvolumeclaim/postgres-2
-#
-# 🔓 PVC ownerReferences 제거 중...
-#   - persistentvolumeclaim/postgres-1
-#   - persistentvolumeclaim/postgres-2
-#
-# ✅ 완료! 이제 helm uninstall을 실행해도 PVC가 보존됩니다.
-
-# 이제 안전하게 uninstall
-helm uninstall ibs -n ibs-dev
-
-# PVC 확인 (보존되어 있어야 함)
-kubectl get pvc -n ibs-dev | grep postgres
-
-# 재설치 (기존 PVC 자동 재사용)
-helm upgrade ibs . -f values-dev.yaml --install -n ibs-dev
-```
-
-### 방법 2: 수동으로 ownerReferences 제거
-```bash
-# 모든 CNPG PVC의 ownerReferences 제거
-kubectl patch pvc -n ibs-dev postgres-1 --type=json \
-  -p='[{"op": "remove", "path": "/metadata/ownerReferences"}]'
-kubectl patch pvc -n ibs-dev postgres-2 --type=json \
-  -p='[{"op": "remove", "path": "/metadata/ownerReferences"}]'
-
-# 또는 한번에
-for pvc in $(kubectl get pvc -n ibs-dev -l cnpg.io/cluster=postgres -o name); do
-  kubectl patch $pvc -n ibs-dev --type=json \
-    -p='[{"op": "remove", "path": "/metadata/ownerReferences"}]'
-done
-```
-
-### 방법 3: kubectl cnpg plugin 사용
-```bash
-# CNPG kubectl plugin 설치
-kubectl krew install cnpg
-
-# --keep-pvc 옵션으로 클러스터 삭제
-kubectl cnpg destroy postgres -n ibs-dev --keep-pvc
-```
-
-### 주의사항
-- ⚠️ **ownerReferences 제거 없이 helm uninstall하면 PVC도 삭제됩니다!**
-- 💡 재설치 시 CNPG는 기존 PVC 이름이 일치하면 자동으로 재사용합니다
-- 🔐 완전한 데이터 보존을 위해서는 **백업도 함께 실행**하세요: `./manual-backup.sh`
-
 ## 🚀 사용 방법
 
 ### 📍 CI/CD 서버에서 실행
 
 GitHub Actions (`helm_dev.yml`)가 실행되면 이 스크립트들이 CI/CD 서버의 다음 경로로 복사됩니다:
+
 ```
 $CICD_PATH/dev/deploy/helm/scripts/
 ```
@@ -108,37 +39,59 @@ FOLLOW_LOGS=false ./manual-backup.sh
 ```
 
 **생성되는 백업 파일**:
+
 - 파일명: `ibs-backup-postgres-YYYY-MM-DD.dump`
 - 위치: NFS `/var/backups/` 디렉터리
 - 형식: PostgreSQL custom format (`-Fc`)
 - 내용: `ibs` 스키마의 데이터만 (마이그레이션 제외)
 
-### 2️⃣ 수동 복원
+### 3️⃣ S3 기반 물리 백업 및 시점 복구 (S3 Backup & PITR Restore)
+
+CloudNativePG (CNPG) In-tree Barman Cloud를 활용한 MinIO S3 오브젝트 스토리지 기반 초고속 물리 백업 및 PITR 복원 방식입니다.
 
 ```bash
-# CI/CD 서버에서 실행
-cd $CICD_PATH/dev/deploy/helm/scripts
+# 1. S3 수동 물리 백업 (prod / dev)
+./manual-s3-backup.sh prod
+./manual-s3-backup.sh dev
 
-# 기본 실행 (ibs-dev 네임스페이스)
-./manual-restore.sh
+# 2. S3 백업 기반 최신 시점 DB 복원
+./manual-s3-restore.sh prod
+./manual-s3-restore.sh dev
 
-# 프로덕션 환경 복원
-./manual-restore.sh prod
+# 3. S3 특정 시점(KST 한국시간) 복구 (Point-in-Time Recovery)
+./manual-s3-restore.sh prod "2026-08-01 15:30:00"
+
+# 4. S3 복원 테스트 모드 (메인 DB 건드리지 않고 'postgres-restored' 파드 생성)
+./manual-s3-restore.sh dev "" test
 ```
 
-**복원 프로세스**:
-1. 사용 가능한 백업 파일 목록 표시
-2. 복원할 백업 파일명 입력
-3. 확인 메시지 (yes 입력 필요)
-4. 모든 테이블 TRUNCATE (`django_migrations` 제외)
-5. 백업 파일로부터 데이터 복원
-6. 시퀀스(Sequence) 자동 조정
+---
 
-⚠️ **주의**: 복원은 모든 테이블을 TRUNCATE하므로 반드시 확인 후 실행하세요!
+### ⚠️ 마이그레이션 디렉터리 리셋 후 복원 가이드 (Django Migrations Reset Workflow)
+
+Django `migrations` 디렉터리를 0001_initial로 리셋 및 롤백한 후 DB를 복원할 때의 **필수 절차**입니다:
+
+1. **로컬 마이그레이션 리셋 및 데이터 복원**:
+    - 각 앱 내부 migrations 디렉터리를 모두 제거 하고, 로컬 DB 리셋 후 `sh migrate.sh -m`으로 0001_initial 마이그레이션을 새로 생성하고 백업 데이터를 주입하여 무결성을
+      검증합니다.
+2. **리셋 마이그레이션 코드 배포**:
+    - 리셋된 마이그레이션 코드를 Git에 커밋/푸시하고 서버 (Dev/Prod)에 배포합니다.
+3. **DB 복원 및 마이그레이션 족보 맞추기**:
+    - `manual-s3-restore.sh` 또는 `manual-restore.sh`로 DB 복원 수행 후, Web 파드에서 마이그레이션 테이블 족보를 동기화합니다:
+      ```bash
+      kubectl exec -it $(kubectl get pod -l app.kubernetes.io/name=web -n ibs-prod -o name | head -1) -n ibs-prod -- sh migrate.sh -r
+      ```
+4. **📌 [필수] S3 기준점 백업 생성 (Post-Migration Baseline S3 Backup)**:
+    - **마이그레이션 리셋 및 복원이 완료된 직후 반드시 새로운 S3 수동 백업을 생성해야 합니다.**
+    - S3 실시간 WAL 로그에 리셋 이전의 옛 마이그레이션 트랜잭션이 보관되어 있으므로, 새로운 백업을 찍어주어야 향후 S3 복원 시 **리셋된 최신 마이그레이션 상태로 깨끗하게 기준점이 설정**됩니다:
+      ```bash
+      ./manual-s3-backup.sh prod   # 또는 dev
+      ```
 
 ### 3️⃣ kubectl로 직접 실행 (고급)
 
 #### 수동 백업
+
 ```bash
 # CronJob에서 즉시 Job 생성
 kubectl create job -n ibs-dev postgres-backup-manual-$(date +%Y%m%d-%H%M%S) \
@@ -150,6 +103,7 @@ kubectl logs -n ibs-dev job/postgres-backup-manual-XXXXXX -f
 ```
 
 #### 백업 파일 확인
+
 ```bash
 # 임시 pod로 백업 파일 목록 조회
 kubectl run -n ibs-dev backup-list --image=postgres:18.0 --rm -i \
@@ -192,6 +146,7 @@ kubectl run -n ibs-dev backup-list --image=postgres:18.0 --rm -i \
 ### CronJob 스케줄 변경
 
 `deploy/helm/charts/cnpg/values.yaml`:
+
 ```yaml
 backup:
   schedule: "0 2 * * *"  # 매일 새벽 2시 (KST)
@@ -201,6 +156,7 @@ backup:
 ```
 
 **스케줄 예시**:
+
 - `0 2 * * *` - 매일 새벽 2시
 - `0 */6 * * *` - 6시간마다
 - `0 0 * * 0` - 매주 일요일 자정
@@ -211,6 +167,7 @@ backup:
 기본 설정: 2일 이상된 백업 파일은 자동 삭제
 
 변경하려면 `charts/cnpg/templates/backup-cronjob.yaml:44`:
+
 ```bash
 find /var/backups \( -name "*.dump" -o -name "*.log" \) -type f -mtime +2 -delete
 #                                                                        ^^
@@ -281,6 +238,7 @@ fi
 ### 스크립트 업데이트
 
 스크립트를 수정하고 Git에 푸시하면:
+
 ```bash
 git add deploy/helm/scripts/
 git commit -m "Update deployment/backup scripts"
@@ -336,6 +294,7 @@ SCRIPT_DIR="$(cd "$CURR_DIR/../../app/django" && pwd)" # app/django/
 ## 🐛 트러블슈팅
 
 ### 백업 파일이 없어요
+
 ```bash
 # PVC 마운트 확인
 kubectl get pvc -n ibs-dev ibs-postgres-backup-pvc
@@ -348,6 +307,7 @@ kubectl describe pv ibs-postgres-backup-pv
 ```
 
 ### CronJob이 실행되지 않아요
+
 ```bash
 # CronJob 상태 확인
 kubectl get cronjob -n ibs-dev
@@ -360,6 +320,7 @@ kubectl create job -n ibs-dev test-backup --from=cronjob/ibs-postgres-backup
 ```
 
 ### 복원이 실패해요
+
 ```bash
 # 복원 Job 로그 확인
 kubectl logs -n ibs-dev job/ibs-postgres-restore-XXXXXX
@@ -371,6 +332,7 @@ kubectl run -n ibs-dev backup-check --image=postgres:18.0 --rm -i \
 ```
 
 ### 디스크 공간 부족
+
 ```bash
 # 오래된 백업 수동 삭제
 kubectl run -n ibs-dev cleanup --image=postgres:18.0 --rm -i \
@@ -402,6 +364,7 @@ backup:
 ```
 
 ### CI/CD 서버 접근 방법
+
 ```bash
 # SSH 접속
 ssh $CICD_USER@$CICD_HOST
@@ -415,11 +378,11 @@ kubectl get pods -n ibs-dev
 
 ## ⚙️ 환경 변수
 
-| 변수 | 기본값 | 설명 |
-|------|--------|------|
-| `NAMESPACE` | `ibs-dev` | Kubernetes 네임스페이스 |
-| `RELEASE` | `ibs` | Helm 릴리스 이름 |
-| `FOLLOW_LOGS` | `true` | 로그 자동 추적 여부 |
+| 변수          | 기본값    | 설명                    |
+|---------------|-----------|-------------------------|
+| `NAMESPACE`   | `ibs-dev` | Kubernetes 네임스페이스 |
+| `RELEASE`     | `ibs`     | Helm 릴리스 이름        |
+| `FOLLOW_LOGS` | `true`    | 로그 자동 추적 여부     |
 
 ## 📚 참고 자료
 
