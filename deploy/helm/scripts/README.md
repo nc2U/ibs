@@ -65,28 +65,29 @@ CloudNativePG (CNPG) In-tree Barman Cloud를 활용한 MinIO S3 오브젝트 스
 ./manual-s3-restore.sh dev "" test
 ```
 
----
+### ⚠️ 마이그레이션 디렉터리 리셋 절차 (Django Migrations Reset Workflow - 정석 지침)
 
-### ⚠️ 마이그레이션 디렉터리 리셋 후 복원 가이드 (Django Migrations Reset Workflow)
+Django `migrations` 디렉터리를 0001_initial로 리셋한 후 배포 및 DB 복원을 수행하는 **정석 절차**입니다. (Helm 프리훅 마이그레이션 충돌 방지)
 
-Django `migrations` 디렉터리를 0001_initial로 리셋 및 롤백한 후 DB를 복원할 때의 **필수 절차**입니다:
-
-1. **로컬 마이그레이션 리셋 및 데이터 복원**:
-    - 각 앱 내부 migrations 디렉터리를 모두 제거 하고, 로컬 DB 리셋 후 `sh migrate.sh -m`으로 0001_initial 마이그레이션을 새로 생성하고 백업 데이터를 주입하여 무결성을
-      검증합니다.
-2. **리셋 마이그레이션 코드 배포**:
-    - 리셋된 마이그레이션 코드를 Git에 커밋/푸시하고 서버 (Dev/Prod)에 배포합니다.
-3. **DB 복원 및 마이그레이션 족보 맞추기**:
-    - `manual-s3-restore.sh` 또는 `manual-restore.sh`로 DB 복원 수행 후, Web 파드에서 마이그레이션 테이블 족보를 동기화합니다:
-      ```bash
-      kubectl exec -it $(kubectl get pod -l app.kubernetes.io/name=web -n ibs-prod -o name | head -1) -n ibs-prod -- sh migrate.sh -r
-      ```
+1. **언인스톨 및 기존 DB 클러스터 선제 삭제**:
+   - 기존 DB와 마이그레이션 훅 충돌을 막기 위해 Helm 언인스톨 및 DB 클러스터를 삭제합니다:
+     ```bash
+     helm uninstall ibs -n ibs-prod   # 또는 ibs-dev
+     kubectl delete cluster postgres -n ibs-prod
+     ```
+2. **새 마이그레이션 코드 배포 (GitHub Actions / Git Push)**:
+   - 로컬에서 리셋된 `migrations/0001_initial.py` 코드를 Git에 커밋/푸시하여 서버에 배포합니다.
+3. **S3 수동 복구 & 마이그레이션 족보 동기화**:
+   - S3 백업 데이터 기반으로 DB 복원 및 Django 마이그레이션 이력을 동기화합니다:
+     ```bash
+     ./manual-s3-restore.sh prod
+     kubectl exec -it $(kubectl get pod -l app.kubernetes.io/name=web -n ibs-prod -o name | head -1) -n ibs-prod -- sh migrate.sh -r
+     ```
 4. **📌 [필수] S3 기준점 백업 생성 (Post-Migration Baseline S3 Backup)**:
-    - **마이그레이션 리셋 및 복원이 완료된 직후 반드시 새로운 S3 수동 백업을 생성해야 합니다.**
-    - S3 실시간 WAL 로그에 리셋 이전의 옛 마이그레이션 트랜잭션이 보관되어 있으므로, 새로운 백업을 찍어주어야 향후 S3 복원 시 **리셋된 최신 마이그레이션 상태로 깨끗하게 기준점이 설정**됩니다:
-      ```bash
-      ./manual-s3-backup.sh prod   # 또는 dev
-      ```
+   - 복원 및 마이그레이션 족보 동기화가 완료된 즉시 **새로운 S3 수동 백업을 생성하여 최신 마이그레이션 상태로 S3 아카이브 기준점을 재설정**합니다:
+     ```bash
+     ./manual-s3-backup.sh prod   # 또는 dev
+     ```
 
 ### 3️⃣ kubectl로 직접 실행 (고급)
 
