@@ -2,16 +2,21 @@
 # CloudNativePG S3 백업 기반 복원(Restore/PITR) 자동화 스크립트
 #
 # 간소화된 사용법:
-#   1) 최신 시점으로 메인 DB 깔끔하게 복구 (기본값):
+#   1) 대화형 터미널 수동 복구 (확인 프롬프트 표시):
 #      sh manual-s3-restore.sh [dev|prod]
 #      예: sh manual-s3-restore.sh dev
 #
-#   2) 특정 시점(KST 한국시간)으로 메인 DB 복구 (PITR):
-#      sh manual-s3-restore.sh [dev|prod] "2026-07-29 15:30:00"
+#   2) CI/CD 비대화형 자동 복구 (--auto 또는 --yes 옵션):
+#      sh manual-s3-restore.sh [dev|prod] --auto
+#      (대화형 프롬프트 없이 기존 DB 삭제 후 즉시 복원)
 #
-#   3) 복원 테스트 전용 모드 (메인 DB 건드리지 않고 'postgres-restored' 검증용 띄우기):
+#   3) 특정 시점(KST 한국시간)으로 메인 DB 복구 (PITR):
+#      sh manual-s3-restore.sh [dev|prod] "2026-08-01 15:30:00"
+#      sh manual-s3-restore.sh [dev|prod] "2026-08-01 15:30:00" restore --auto
+#
+#   4) 복원 테스트 전용 모드 (메인 DB 건드리지 않고 'postgres-restored' 검증용 띄우기):
 #      sh manual-s3-restore.sh [dev|prod] "" test
-#      sh manual-s3-restore.sh [dev|prod] "2026-07-29 15:30:00" test
+#      sh manual-s3-restore.sh [dev|prod] "2026-08-01 15:30:00" test --auto
 #
 set -e
 
@@ -25,6 +30,13 @@ for arg in "$@"; do
     AUTO_CONFIRM=true
   fi
 done
+
+if [ "$TARGET_TIME_KST" = "--auto" ] || [ "$TARGET_TIME_KST" = "--yes" ] || [ "$TARGET_TIME_KST" = "-y" ]; then
+  TARGET_TIME_KST=""
+fi
+if [ "$MODE_ARG" = "--auto" ] || [ "$MODE_ARG" = "--yes" ] || [ "$MODE_ARG" = "-y" ]; then
+  MODE_ARG="restore"
+fi
 
 if [ "$ENV_ARG" = "prod" ]; then
   NAMESPACE="ibs-prod"
