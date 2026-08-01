@@ -193,6 +193,7 @@ spec:
   backup:
     barmanObjectStore:
       destinationPath: {{ include "cnpg.backupDestination" . | quote }}
+      serverName: {{ include "cnpg.fullname" . | quote }}
       {{- with .Values.backup.s3.endpoint }}
       endpointURL: {{ . | quote }}
       {{- end }}

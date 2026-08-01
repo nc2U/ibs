@@ -394,8 +394,8 @@ spec:
           COMMIT;
           " >> "\$LOG_FILE" 2>&1
 
-          echo "=== 백업 파일 복원 중 (초고속 가속 세션 활성화): \$DUMP_FILE ===" | tee -a "\$LOG_FILE"
-          PGOPTIONS="-c synchronous_commit=off -c full_page_writes=off" PGPASSWORD="\$PGPASSWORD" pg_restore -h "\$PSQL_HOST" -U "\$PGUSER" -d "\$PGDATABASE" --data-only --no-owner --no-privileges --disable-triggers --single-transaction --jobs=4 --verbose "\$DUMP_FILE" 2>&1 | tee -a "\$LOG_FILE" || true
+          echo "=== 백업 파일 복원 중: \$DUMP_FILE ===" | tee -a "\$LOG_FILE"
+          PGPASSWORD="\$PGPASSWORD" pg_restore -h "\$PSQL_HOST" -U "\$PGUSER" -d "\$PGDATABASE" --data-only --no-owner --no-privileges --disable-triggers --jobs=4 "\$DUMP_FILE" >> "\$LOG_FILE" 2>&1 || true
 
           echo "=== 시퀀스 조정 (id 컬럼 기준) 시작 ===" | tee -a "\$LOG_FILE"
           psql -h "\$PSQL_HOST" -U "\$PGUSER" -d "\$PGDATABASE" -c "
