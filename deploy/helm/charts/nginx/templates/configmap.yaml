@@ -93,7 +93,7 @@ data:
                 backdrop-filter: blur(16px);
                 -webkit-backdrop-filter: blur(16px);
                 border: 1px solid rgba(255, 255, 255, 0.1);
-                border-radius: 1.5rem;
+                border-radius: 0.5rem;
                 padding: 3rem 2.5rem;
                 max-width: 500px;
                 width: 100%;
@@ -136,7 +136,7 @@ data:
             .time-box {
                 background: rgba(15, 23, 42, 0.6);
                 border: 1px dashed rgba(255, 255, 255, 0.15);
-                border-radius: 0.75rem;
+                border-radius: 0.3rem;
                 padding: 0.85rem 1rem;
                 margin-bottom: 1.75rem;
                 font-size: 0.88rem;
@@ -151,15 +151,16 @@ data:
                 gap: 0.5rem;
                 background: rgba(59, 130, 246, 0.1);
                 border: 1px solid rgba(59, 130, 246, 0.2);
-                padding: 0.5rem 1rem;
+                padding: 0.55rem 1.5rem;
                 border-radius: 9999px;
                 font-size: 0.85rem;
-                color: #60a5fa;
-                font-weight: 500;
+                color: #a0ccff;
+                font-weight: 180;
             }
             .pulse-dot {
-                width: 8px;
-                height: 8px;
+                width: 9px;
+                height: 9px;
+                margin-right: 5px;
                 background-color: #3b82f6;
                 border-radius: 50%;
                 box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
