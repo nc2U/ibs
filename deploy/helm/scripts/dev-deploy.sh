@@ -40,7 +40,8 @@ if [ -f "$SCRIPT_DIR/.env" ]; then
         nfs-subdir-external-provisioner/nfs-subdir-external-provisioner \
           -n kube-system \
           --set nfs.server=${CICD_HOST} \
-          --set nfs.path=/mnt/nfs-subdir-external-provisioner
+          --set nfs.path=/mnt/nfs-subdir-external-provisioner \
+          --set storageClass.archiveOnDelete=false
     fi
 
     # Pending 락 및 이전 migration-job/pod 자동 강제 청소
