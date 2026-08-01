@@ -228,13 +228,6 @@ if kubectl get cluster "$RESTORE_CLUSTER_NAME" -n "$NAMESPACE" > /dev/null 2>&1;
   fi
 fi
 
-# 복원 시점이 지정되지 않은 경우, 복원 시작 현재 시각(UTC)을 recoveryTarget으로 자동 주입하여 S3의 모든 WAL을 끝까지 Replay
-if [ -z "$RECOVERY_TARGET_YAML" ]; then
-  NOW_UTC=$(date -u +"%Y-%m-%d %H:%M:%S")
-  RECOVERY_TARGET_YAML="      recoveryTarget:
-        targetTime: \"${NOW_UTC}\""
-fi
-
 # 복원 YAML 생성 및 배포
 TEMP_YAML=$(mktemp)
 
