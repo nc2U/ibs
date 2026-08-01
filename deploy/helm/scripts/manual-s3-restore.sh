@@ -185,11 +185,13 @@ if [ "$IS_TEST_MODE" = "false" ]; then
     echo "⚠️  Could not find Nginx pod to enable maintenance flag."
   fi
 
-  # 복원 직전 현재 Primary 파드에 pg_switch_wal()을 전송하여 최신 WAL을 S3로 강제 Flush
+  # 복원 직전 현재 Primary 파드에 pg_switch_wal()을 전송하여 최신 WAL을 S3로 강제 Flush 후 S3 전송 완료 대기
   ACTIVE_PRIMARY=$(kubectl get cluster "$RESTORE_CLUSTER_NAME" -n "$NAMESPACE" -o jsonpath='{.status.currentPrimary}' 2>/dev/null || true)
   if [ -n "$ACTIVE_PRIMARY" ]; then
     echo "🔄 Flushing latest WAL log to S3 via pg_switch_wal()..."
     kubectl exec -n "$NAMESPACE" "$ACTIVE_PRIMARY" -c postgres -- psql -U postgres -d postgres -c "SELECT pg_switch_wal();" > /dev/null 2>&1 || true
+    echo "⏳ Waiting 5 seconds for S3 background WAL upload to complete..."
+    sleep 5
     echo "✅ Latest WAL flushed to S3 successfully."
   fi
 fi
