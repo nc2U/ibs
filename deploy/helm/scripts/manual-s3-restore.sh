@@ -18,6 +18,13 @@ set -e
 ENV_ARG="${1:-dev}"
 TARGET_TIME_KST="${2:-}"
 MODE_ARG="${3:-restore}"  # 'test' 일 때만 postgres-restored, 기본값은 메인 postgres 직접 복구
+AUTO_CONFIRM=false
+
+for arg in "$@"; do
+  if [ "$arg" = "--yes" ] || [ "$arg" = "-y" ] || [ "$arg" = "--auto" ]; then
+    AUTO_CONFIRM=true
+  fi
+done
 
 if [ "$ENV_ARG" = "prod" ]; then
   NAMESPACE="ibs-prod"
@@ -170,7 +177,10 @@ fi
 # 대상 클러스터가 이미 존재하는 경우 안전한 선제 삭제 처리
 if kubectl get cluster "$RESTORE_CLUSTER_NAME" -n "$NAMESPACE" > /dev/null 2>&1; then
   echo ""
-  if [ "$IS_TEST_MODE" = "true" ]; then
+  if [ "$AUTO_CONFIRM" = "true" ]; then
+    echo "🤖 Auto confirmation enabled (--auto / --yes). Proceeding with cluster replacement..."
+    CONFIRM="yes"
+  elif [ "$IS_TEST_MODE" = "true" ]; then
     echo "⚠️  Warning: Test Cluster '$RESTORE_CLUSTER_NAME' already exists."
     printf "   Do you want to delete the existing test cluster and recreate? (yes/no): "
     read -r CONFIRM
