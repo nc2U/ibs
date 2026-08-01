@@ -432,7 +432,7 @@ RESTORE_STATUS=$?
 echo "----------------------------------------"
 if [ $RESTORE_STATUS -eq 0 ]; then
   echo "✅ Manual restore completed successfully!"
-  echo "Restore pod '$RESTORE_POD_NAME' will be cleaned up automatically on next run."
+  kubectl delete pod "$RESTORE_POD_NAME" -n "$NAMESPACE" > /dev/null 2>&1 || true
 else
   echo "❌ Manual restore failed!"
   echo "Inspect pod logs with: kubectl logs -n $NAMESPACE $RESTORE_POD_NAME"
