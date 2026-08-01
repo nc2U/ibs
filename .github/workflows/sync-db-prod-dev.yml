@@ -59,7 +59,7 @@ jobs:
             cd ${{ secrets.CICD_PATH }}/dev/deploy/helm/scripts
 
             echo "Restoring production data to dev environment..."
-            sh manual-restore.sh dev --auto --direct
+            sh manual-s3-restore.sh dev
 
             if [ $? -eq 0 ]; then
               echo "✅ Database restore to dev completed successfully"
