@@ -177,7 +177,7 @@ if [ "$IS_TEST_MODE" = "false" ]; then
   ACTIVE_PRIMARY=$(kubectl get cluster "$RESTORE_CLUSTER_NAME" -n "$NAMESPACE" -o jsonpath='{.status.currentPrimary}' 2>/dev/null || true)
   if [ -n "$ACTIVE_PRIMARY" ]; then
     echo "🔄 Flushing latest WAL log to S3 via pg_switch_wal()..."
-    kubectl exec -n "$NAMESPACE" "$ACTIVE_PRIMARY" -c postgres -- psql -U postgres -c "SELECT pg_switch_wal();" > /dev/null 2>&1 || true
+    kubectl exec -n "$NAMESPACE" "$ACTIVE_PRIMARY" -c postgres -- psql -U postgres -d postgres -c "SELECT pg_switch_wal();" > /dev/null 2>&1 || true
     echo "✅ Latest WAL flushed to S3 successfully."
   fi
 fi
@@ -214,6 +214,13 @@ if kubectl get cluster "$RESTORE_CLUSTER_NAME" -n "$NAMESPACE" > /dev/null 2>&1;
     echo "❌ Restore cancelled by user."
     exit 0
   fi
+fi
+
+# 복원 시점이 지정되지 않은 경우, 복원 시작 현재 시각(UTC)을 recoveryTarget으로 자동 주입하여 S3의 모든 WAL을 끝까지 Replay
+if [ -z "$RECOVERY_TARGET_YAML" ]; then
+  NOW_UTC=$(date -u +"%Y-%m-%d %H:%M:%S")
+  RECOVERY_TARGET_YAML="      recoveryTarget:
+        targetTime: \"${NOW_UTC}\""
 fi
 
 # 복원 YAML 생성 및 배포
