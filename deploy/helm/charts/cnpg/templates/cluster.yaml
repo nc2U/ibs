@@ -133,6 +133,7 @@ spec:
   # PostgreSQL configuration
   postgresql:
     parameters:
+      # archive_timeout: "60"  # S3 WAL flush는 복원 시 pg_switch_wal() 호출로 처리
       {{- if .Values.postgresql.parameters }}
       {{- range $key, $value := .Values.postgresql.parameters }}
       {{ $key }}: {{ $value | quote }}

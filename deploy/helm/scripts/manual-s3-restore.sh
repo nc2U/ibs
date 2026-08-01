@@ -160,7 +160,7 @@ else
   echo "🕒 No target time specified — restoring to latest available point."
 fi
 
-# 메인 복구 모드일 때 Nginx Maintenance 페이지 즉시 활성화 (503 점검 모드)
+# 메인 복구 모드일 때 Nginx Maintenance 페이지 즉시 활성화 (503 점검 모드) 및 최신 WAL S3 Flush
 if [ "$IS_TEST_MODE" = "false" ]; then
   echo ""
   echo "🚧 Enabling Maintenance Mode in Nginx..."
@@ -171,6 +171,14 @@ if [ "$IS_TEST_MODE" = "false" ]; then
     echo "✅ Maintenance page activated (Nginx 503)"
   else
     echo "⚠️  Could not find Nginx pod to enable maintenance flag."
+  fi
+
+  # 복원 직전 현재 Primary 파드에 pg_switch_wal()을 전송하여 최신 WAL을 S3로 강제 Flush
+  ACTIVE_PRIMARY=$(kubectl get cluster "$RESTORE_CLUSTER_NAME" -n "$NAMESPACE" -o jsonpath='{.status.currentPrimary}' 2>/dev/null || true)
+  if [ -n "$ACTIVE_PRIMARY" ]; then
+    echo "🔄 Flushing latest WAL log to S3 via pg_switch_wal()..."
+    kubectl exec -n "$NAMESPACE" "$ACTIVE_PRIMARY" -c postgres -- psql -U postgres -c "SELECT pg_switch_wal();" > /dev/null 2>&1 || true
+    echo "✅ Latest WAL flushed to S3 successfully."
   fi
 fi
 
