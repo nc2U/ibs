@@ -2,12 +2,10 @@
 import { computed } from 'vue'
 import { useSite } from '@/store/pinia/project_site'
 import { TableSecondary } from '@/utils/cssMixins'
-import { write_project_site } from '@/utils/pageAuth'
+import { usePerms } from '@/composables/usePerms.ts'
 import { type SiteContract as siteCont } from '@/store/types/project'
 import SiteContract from './SiteContract.vue'
 import Pagination from '@/components/Pagination'
-
-import { type PropType } from 'vue'
 
 const props = defineProps({
   limit: { type: Number, default: 10 },
@@ -15,6 +13,9 @@ const props = defineProps({
   currentPage: { type: Number, default: 1 },
 })
 const emit = defineEmits(['page-select', 'on-delete', 'multi-submit'])
+
+const { can, PERM } = usePerms()
+const canSiteUpdate = computed(() => can(PERM.SITE_UPDATE))
 
 const siteStore = useSite()
 const siteContList = computed(() => siteStore.siteContList)
@@ -40,7 +41,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
       <col style="width: 10%" />
       <col style="width: 6%" />
       <col style="width: 7%" />
-      <col v-if="write_project_site" style="width: 7%" />
+      <col v-if="canSiteUpdate" style="width: 7%" />
     </colgroup>
 
     <CTableHead :color="TableSecondary">
@@ -55,7 +56,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
         <CTableHeaderCell rowspan="2" scope="col">잔금</CTableHeaderCell>
         <CTableHeaderCell rowspan="2" scope="col"> 지급<br />여부</CTableHeaderCell>
         <CTableHeaderCell rowspan="2" scope="col"> 계약서</CTableHeaderCell>
-        <CTableHeaderCell v-if="write_project_site" rowspan="2" scope="col">비고</CTableHeaderCell>
+        <CTableHeaderCell v-if="canSiteUpdate" rowspan="2" scope="col">비고</CTableHeaderCell>
       </CTableRow>
       <CTableRow class="text-center">
         <CTableHeaderCell scope="col">m<sup>2</sup></CTableHeaderCell>

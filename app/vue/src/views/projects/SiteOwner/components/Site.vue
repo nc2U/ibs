@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeMount, type PropType, reactive, ref, watch } from 'vue'
 import { numFormat } from '@/utils/baseMixins'
-import { write_project_site } from '@/utils/pageAuth'
+import { usePerms } from '@/composables/usePerms.ts'
 import { type SiteOwner, type SimpleSite } from '@/store/types/project'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 
@@ -12,6 +12,9 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['show-detail', 'relation-patch'])
+
+const { can, PERM } = usePerms()
+const canSiteUpdate = computed(() => can(PERM.SITE_UPDATE))
 
 type semiRel = {
   pk: number | null
@@ -114,10 +117,10 @@ onBeforeMount(() => {
   <CTableDataCell :class="{ 'bg-success': owner.use_consent }">
     {{ owner.use_consent ? '동의' : '' }}
   </CTableDataCell>
-  <CTableDataCell v-if="write_project_site">
+  <CTableDataCell v-if="canSiteUpdate">
     <v-btn color="success" size="x-small" :disabled="formsCheck" @click="relPatch"> 적용</v-btn>
   </CTableDataCell>
-  <CTableDataCell v-if="index === 0 && write_project_site" :rowspan="sitesNum">
+  <CTableDataCell v-if="index === 0 && canSiteUpdate" :rowspan="sitesNum">
     <v-btn color="info" size="x-small" @click="showDetail"> 확인</v-btn>
   </CTableDataCell>
 </template>

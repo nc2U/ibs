@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
+import { usePerms } from '@/composables/usePerms.ts'
 import { useSite } from '@/store/pinia/project_site'
 import { TableSecondary } from '@/utils/cssMixins'
-import { write_project_site } from '@/utils/pageAuth'
 import { type Site as S } from '@/store/types/project'
 import Site from '@/views/projects/SiteList/components/Site.vue'
 import Pagination from '@/components/Pagination'
@@ -14,6 +14,11 @@ const props = defineProps({
   currentPage: { type: Number, default: 1 },
 })
 const emit = defineEmits(['page-select', 'on-delete', 'multi-submit'])
+
+const { can, PERM } = usePerms()
+const canSiteCreate = computed(() => can(PERM.SITE_CREATE))
+const canSiteUpdate = computed(() => can(PERM.SITE_UPDATE))
+const canSiteManage = computed(() => canSiteCreate.value || canSiteUpdate.value)
 
 const siteStore = useSite()
 // const siteList = computed<S[]>(() => siteStore.getSiteList)
@@ -40,7 +45,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
       <col style="width: 30%" />
       <col style="width: 5%" />
       <col style="width: 7%" />
-      <col v-if="write_project_site" style="width: 6%" />
+      <col v-if="canSiteManage" style="width: 6%" />
     </colgroup>
 
     <CTableHead :color="TableSecondary">
@@ -54,7 +59,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
         <CTableHeaderCell rowspan="2" scope="col">소유자 목록</CTableHeaderCell>
         <CTableHeaderCell rowspan="2" scope="col">등기부 등본</CTableHeaderCell>
         <CTableHeaderCell rowspan="2" scope="col">등본 발급일</CTableHeaderCell>
-        <CTableHeaderCell v-if="write_project_site" rowspan="2" scope="col">비고</CTableHeaderCell>
+        <CTableHeaderCell v-if="canSiteManage" rowspan="2" scope="col">비고</CTableHeaderCell>
       </CTableRow>
       <CTableRow class="text-center">
         <CTableHeaderCell scope="col">m<sup>2</sup></CTableHeaderCell>

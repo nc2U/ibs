@@ -1,12 +1,12 @@
 <script lang="ts" setup>
 import { ref, computed, onBeforeMount, watch, nextTick } from 'vue'
-import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import { pageTitle, navMenu } from '@/views/projects/_menu/headermixin2'
 import { useProject } from '@/store/pinia/project'
+import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
+import { usePerms } from '@/composables/usePerms.ts'
+import { numFormat } from '@/utils/baseMixins'
 import { useSite, type SiteFilter } from '@/store/pinia/project_site'
 import type { Project, Site } from '@/store/types/project'
-import { numFormat } from '@/utils/baseMixins'
-import { write_project_site } from '@/utils/pageAuth'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
@@ -15,6 +15,9 @@ import ListController from './components/ListController.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import AddSite from './components/AddSite.vue'
 import SiteList from './components/SiteList.vue'
+
+const { can, PERM } = usePerms()
+const canSiteCreate = computed(() => can(PERM.SITE_CREATE))
 
 const route = useRoute()
 const router = useRouter()
@@ -207,11 +210,7 @@ onBeforeMount(async () => {
           :is-returned="isReturned"
           @list-filtering="listFiltering"
         />
-        <AddSite
-          v-if="write_project_site"
-          :project="project as number"
-          @multi-submit="multiSubmit"
-        />
+        <AddSite v-if="canSiteCreate" :project="project as number" @multi-submit="multiSubmit" />
         <TableTitleRow
           title="사업 부지 목록"
           excel

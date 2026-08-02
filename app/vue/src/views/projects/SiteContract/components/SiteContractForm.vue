@@ -1,10 +1,9 @@
 <script lang="ts" setup>
 import { ref, reactive, computed, watch, onBeforeMount, type PropType } from 'vue'
-import { useSite } from '@/store/pinia/project_site'
 import { isValidate } from '@/utils/helper'
+import { usePerms } from '@/composables/usePerms.ts'
+import { useSite } from '@/store/pinia/project_site'
 import type { SiteContract, SiteOwner } from '@/store/types/project'
-import { btnLight } from '@/utils/cssMixins.ts'
-import { write_project } from '@/utils/pageAuth'
 import Multiselect from '@vueform/multiselect'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import AttatchFile from '@/components/AttatchFile/Index.vue'
@@ -17,6 +16,12 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['multi-submit', 'on-delete', 'close'])
+
+const { can, PERM } = usePerms()
+const canSiteCreate = computed(() => can(PERM.SITE_CREATE))
+const canSiteUpdate = computed(() => can(PERM.SITE_UPDATE))
+const canSiteDelete = computed(() => can(PERM.SITE_DELETE))
+const canSiteManage = computed(() => (!props.contract ? canSiteCreate.value : canSiteUpdate.value))
 
 const refDelModal = ref()
 const refAlertModal = ref()
@@ -58,6 +63,7 @@ const getOwners = computed(() => siteStore.getOwners)
 
 const formsCheck = computed(() => {
   if (props.contract) {
+    if (!canSiteUpdate.value) return true
     const a = form.owner === props.contract?.owner
     const b = form.contract_date === props.contract.contract_date
     const c = form.total_price === props.contract.total_price
@@ -93,7 +99,8 @@ const formsCheck = computed(() => {
     const air = s && t && u && v && w && x && y && z && a1 && b1
 
     return sky && sea && air
-  } else return false
+  }
+  return !canSiteCreate.value
 })
 
 const getAreaByOwner = computed(() =>
@@ -113,7 +120,6 @@ watch(
 
 watch(getAreaByOwner, val => (form.contract_area = val))
 
-const RefSiteContFile = ref()
 const newFile = ref<File | ''>('')
 const editFile = ref<number | ''>('')
 const cngFile = ref<File | ''>('')
@@ -139,7 +145,7 @@ const onSubmit = (event: Event) => {
   if (isValidate(event)) {
     validated.value = true
   } else {
-    if (write_project.value) multiSubmit({ ...form })
+    if (canSiteManage.value) multiSubmit({ ...form })
     else refAlertModal.value.callModal()
     validated.value = false
   }
@@ -163,7 +169,7 @@ const deleteObject = () => {
 }
 
 const deleteConfirm = () => {
-  if (write_project.value) refDelModal.value.callModal()
+  if (canSiteDelete.value) refDelModal.value.callModal()
   else refAlertModal.value.callModal()
 }
 
@@ -525,7 +531,6 @@ onBeforeMount(() => dataSetup())
     </CModalBody>
 
     <CModalFooter>
-      <v-btn type="button" size="small" :color="btnLight" @click="emit('close')"> 닫기</v-btn>
       <slot name="footer">
         <v-btn
           type="submit"
@@ -538,6 +543,7 @@ onBeforeMount(() => dataSetup())
         <v-btn v-if="contract" size="small" type="button" color="warning" @click="deleteConfirm">
           삭제
         </v-btn>
+        <v-btn type="button" size="small" color="light" @click="emit('close')" flat> 닫기</v-btn>
       </slot>
     </CModalFooter>
   </CForm>

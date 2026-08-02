@@ -1,19 +1,22 @@
 <script lang="ts" setup>
-import { ref } from 'vue'
-import { type SiteOwner } from '@/store/types/project'
-import { write_project } from '@/utils/pageAuth'
+import { computed, ref } from 'vue'
+import { usePerms } from '@/composables/usePerms.ts'
 import { AlertLight } from '@/utils/cssMixins'
+import { type SiteOwner } from '@/store/types/project'
 import FormModal from '@/components/Modals/FormModal.vue'
 import SiteOwnerForm from '@/views/projects/SiteOwner/components/SiteOwnerForm.vue'
 
 defineProps({ project: { type: Number, default: null } })
 const emit = defineEmits(['multi-submit'])
 
+const { can, PERM } = usePerms()
+const canSiteCreate = computed(() => can(PERM.SITE_CREATE))
+
 const refFormModal = ref()
 const refAlertModal = ref()
 
 const createConfirm = () => {
-  if (write_project.value) refFormModal.value.callModal()
+  if (canSiteCreate.value) refFormModal.value.callModal()
   else refAlertModal.value.callModal()
 }
 

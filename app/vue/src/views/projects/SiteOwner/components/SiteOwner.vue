@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { onBeforeMount, type PropType, reactive, ref } from 'vue'
-import { type SiteOwner, type Relation, type SimpleSite } from '@/store/types/project'
+import { type Relation, type SimpleSite, type SiteOwner } from '@/store/types/project'
 import Site from '@/views/projects/SiteOwner/components/Site.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
 import SiteOwnerForm from '@/views/projects/SiteOwner/components/SiteOwnerForm.vue'

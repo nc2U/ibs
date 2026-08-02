@@ -1,13 +1,11 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
+import { usePerms } from '@/composables/usePerms.ts'
 import { useSite } from '@/store/pinia/project_site'
-import { write_project_site } from '@/utils/pageAuth'
-import { type Relation, type SiteOwner as Owner } from '@/store/types/project'
 import { TableInfo, TableSuccess, TableSecondary } from '@/utils/cssMixins'
+import { type Relation, type SiteOwner as Owner } from '@/store/types/project'
 import SiteOwner from '@/views/projects/SiteOwner/components/SiteOwner.vue'
 import Pagination from '@/components/Pagination'
-
-import { type PropType } from 'vue'
 
 const props = defineProps({
   isReturned: { type: Boolean },
@@ -16,6 +14,9 @@ const props = defineProps({
   currentPage: { type: Number, default: 1 },
 })
 const emit = defineEmits(['relation-patch', 'page-select', 'on-delete', 'multi-submit'])
+
+const { can, PERM } = usePerms()
+const canSiteUpdate = computed(() => can(PERM.SITE_UPDATE))
 
 const siteStore = useSite()
 const siteOwnerList = computed(() => siteStore.siteOwnerList)
@@ -41,14 +42,14 @@ const onDelete = (pk: number) => emit('on-delete', pk)
       <col style="width: 9%" />
       <col style="width: 10%" />
       <col style="width: 6%" />
-      <col v-if="write_project_site" style="width: 4%" />
-      <col v-if="write_project_site" style="width: 4%" />
+      <col v-if="canSiteUpdate" style="width: 4%" />
+      <col v-if="canSiteUpdate" style="width: 4%" />
     </colgroup>
 
     <CTableHead :color="TableSecondary">
       <CTableRow class="text-center">
         <CTableHeaderCell colspan="5" :color="TableInfo"> 소유자 관련 정보</CTableHeaderCell>
-        <CTableHeaderCell :colspan="write_project_site ? 7 : 5" :color="TableSuccess">
+        <CTableHeaderCell :colspan="canSiteUpdate ? 7 : 5" :color="TableSuccess">
           소유권 관련 정보
         </CTableHeaderCell>
       </CTableRow>
@@ -64,7 +65,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
         </CTableHeaderCell>
         <CTableHeaderCell rowspan="2" scope="col"> 소유권 취득일</CTableHeaderCell>
         <CTableHeaderCell rowspan="2" scope="col">사용동의</CTableHeaderCell>
-        <CTableHeaderCell v-if="write_project_site" rowspan="2" colspan="2" scope="col">
+        <CTableHeaderCell v-if="canSiteUpdate" rowspan="2" colspan="2" scope="col">
           비고
         </CTableHeaderCell>
       </CTableRow>

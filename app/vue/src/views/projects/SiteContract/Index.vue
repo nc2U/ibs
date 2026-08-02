@@ -1,12 +1,12 @@
 <script lang="ts" setup>
 import { ref, computed, onBeforeMount, nextTick } from 'vue'
-import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import { pageTitle, navMenu } from '@/views/projects/_menu/headermixin2'
+import { numFormat } from '@/utils/baseMixins'
+import { usePerms } from '@/composables/usePerms.ts'
+import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import { useProject } from '@/store/pinia/project'
 import { useSite, type ContFilter } from '@/store/pinia/project_site'
 import type { Project, SiteContract } from '@/store/types/project'
-import { numFormat } from '@/utils/baseMixins'
-import { write_project_site } from '@/utils/pageAuth'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
@@ -16,9 +16,11 @@ import AddSiteContract from './components/AddSiteContract.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import SiteContractList from './components/SiteContractList.vue'
 
+const { can, PERM } = usePerms()
+const canSiteCreate = computed(() => can(PERM.SITE_CREATE))
+
 const route = useRoute()
 const router = useRouter()
-const listControl = ref()
 
 // URL에서 highlight_id 파라미터 읽기
 const highlightId = computed(() => {
@@ -211,7 +213,7 @@ onBeforeMount(async () => {
           @list-filtering="listFiltering"
         />
         <AddSiteContract
-          v-if="write_project_site"
+          v-if="canSiteCreate"
           :project="project as number"
           @multi-submit="multiSubmit"
         />

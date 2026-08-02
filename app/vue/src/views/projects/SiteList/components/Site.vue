@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import { computed, type PropType, ref } from 'vue'
 import { type Site } from '@/store/types/project'
+import { usePerms } from '@/composables/usePerms.ts'
 import { cutString, numFormat } from '@/utils/baseMixins'
-import { write_project_site } from '@/utils/pageAuth'
 import FormModal from '@/components/Modals/FormModal.vue'
 import SiteForm from './SiteForm.vue'
 
@@ -13,6 +13,11 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['multi-submit', 'on-delete'])
+
+const { can, PERM } = usePerms()
+const canSiteCreate = computed(() => can(PERM.SITE_CREATE))
+const canSiteUpdate = computed(() => can(PERM.SITE_UPDATE))
+const canSiteManage = computed(() => canSiteCreate.value || canSiteUpdate.value)
 
 const updateFormModal = ref()
 
@@ -74,7 +79,7 @@ const onDelete = (payload: { pk: number; project: number }) => emit('on-delete',
     <CTableDataCell>
       {{ site.dup_issue_date }}
     </CTableDataCell>
-    <CTableDataCell v-if="write_project_site">
+    <CTableDataCell v-if="canSiteManage">
       <v-btn color="info" size="x-small" @click="showDetail">확인</v-btn>
     </CTableDataCell>
   </CTableRow>

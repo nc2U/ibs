@@ -1,11 +1,10 @@
 <script lang="ts" setup>
 import { ref, reactive, computed, onBeforeMount, type PropType } from 'vue'
+import { isValidate } from '@/utils/helper'
+import { usePerms } from '@/composables/usePerms.ts'
 import { useProject } from '@/store/pinia/project'
 import { useSite } from '@/store/pinia/project_site'
-import { isValidate } from '@/utils/helper'
 import { type Project, type Site } from '@/store/types/project'
-import { btnLight } from '@/utils/cssMixins.ts'
-import { write_project } from '@/utils/pageAuth'
 import AttatchFile from '@/components/AttatchFile/Index.vue'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
@@ -14,6 +13,12 @@ import AlertModal from '@/components/Modals/AlertModal.vue'
 const props = defineProps({ site: { type: Object as PropType<Site>, default: null } })
 
 const emit = defineEmits(['multi-submit', 'on-delete', 'close'])
+
+const { can, PERM } = usePerms()
+const canSiteCreate = computed(() => can(PERM.SITE_CREATE))
+const canSiteUpdate = computed(() => can(PERM.SITE_UPDATE))
+const canSiteDelete = computed(() => can(PERM.SITE_DELETE))
+const canSiteManage = computed(() => (props.site ? canSiteUpdate.value : canSiteCreate.value))
 
 const refDelModal = ref()
 const refAlertModal = ref()
@@ -67,7 +72,6 @@ const formsCheck = computed(() => {
   } else return false
 })
 
-const RefSiteInfoFile = ref()
 const newFile = ref<File | ''>('')
 const editFile = ref<number | ''>('')
 const cngFile = ref<File | ''>('')
@@ -93,7 +97,7 @@ const onSubmit = (event: Event) => {
   if (isValidate(event)) {
     validated.value = true
   } else {
-    if (write_project.value) multiSubmit({ ...form })
+    if (canSiteManage.value) multiSubmit({ ...form })
     else refAlertModal.value.callModal()
   }
 }
@@ -116,7 +120,7 @@ const deleteObject = () => {
 }
 
 const deleteConfirm = () => {
-  if (write_project.value) refDelModal.value.callModal()
+  if (canSiteDelete.value) refDelModal.value.callModal()
   else refAlertModal.value.callModal()
 }
 
@@ -318,9 +322,9 @@ onBeforeMount(() => dataSetup())
     </CModalBody>
 
     <CModalFooter>
-      <v-btn type="button" size="small" :color="btnLight" @click="$emit('close')"> 닫기</v-btn>
       <slot name="footer">
         <v-btn
+          v-if="canSiteManage"
           type="submit"
           size="small"
           :color="site ? 'success' : 'primary'"
@@ -328,9 +332,16 @@ onBeforeMount(() => dataSetup())
         >
           저장
         </v-btn>
-        <v-btn v-if="site" size="small" type="button" color="warning" @click="deleteConfirm">
+        <v-btn
+          v-if="site && canSiteDelete"
+          size="small"
+          type="button"
+          color="warning"
+          @click="deleteConfirm"
+        >
           삭제
         </v-btn>
+        <v-btn type="button" size="small" color="light" @click="$emit('close')" flat> 닫기</v-btn>
       </slot>
     </CModalFooter>
   </CForm>

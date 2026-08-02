@@ -1,7 +1,7 @@
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { type SiteContract } from '@/store/types/project'
-import { write_project } from '@/utils/pageAuth'
+import { usePerms } from '@/composables/usePerms.ts'
 import { AlertLight } from '@/utils/cssMixins'
 import FormModal from '@/components/Modals/FormModal.vue'
 import SiteContractForm from './SiteContractForm.vue'
@@ -9,11 +9,14 @@ import SiteContractForm from './SiteContractForm.vue'
 defineProps({ project: { type: Number, default: null } })
 const emit = defineEmits(['multi-submit'])
 
+const { can, PERM } = usePerms()
+const canSiteCreate = computed(() => can(PERM.SITE_CREATE))
+
 const refFormModal = ref()
 const refAlertModal = ref()
 
 const createConfirm = () => {
-  if (write_project.value) refFormModal.value.callModal()
+  if (canSiteCreate.value) refFormModal.value.callModal()
   else refAlertModal.value.callModal()
 }
 const multiSubmit = (payload: SiteContract) => emit('multi-submit', payload)

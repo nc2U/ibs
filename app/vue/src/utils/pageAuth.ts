@@ -48,8 +48,3 @@ export const write_project_docs = computed(() =>
 export const write_project = computed(() =>
   hasPermission([PERM.PROJECT_CREATE, PERM.PROJECT_UPDATE, PERM.PROJECT_DELETE]),
 )
-
-// ── 부지 관리 ──────────────────────────────────────────────────────────
-export const write_project_site = computed(() =>
-  hasPermission([PERM.SITE_CREATE, PERM.SITE_UPDATE, PERM.SITE_DELETE]),
-)

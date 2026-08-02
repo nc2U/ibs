@@ -1,10 +1,9 @@
 <script lang="ts" setup>
 import { ref, reactive, computed, onBeforeMount } from 'vue'
 import { isValidate } from '@/utils/helper'
+import { usePerms } from '@/composables/usePerms.ts'
 import { useProject } from '@/store/pinia/project'
 import { useSite } from '@/store/pinia/project_site'
-import { btnLight } from '@/utils/cssMixins.ts'
-import { write_project } from '@/utils/pageAuth'
 import { type AddressData, callAddress } from '@/components/DaumPostcode/address'
 import { type SimpleSite, type SiteOwner } from '@/store/types/project'
 import DaumPostcode from '@/components/DaumPostcode/index.vue'
@@ -16,6 +15,12 @@ import Multiselect from '@/components/MultiSelect/index.vue'
 const props = defineProps({ owner: { type: Object, default: null } })
 
 const emit = defineEmits(['multi-submit', 'on-delete', 'close'])
+
+const { can, PERM } = usePerms()
+const canSiteCreate = computed(() => can(PERM.SITE_CREATE))
+const canSiteUpdate = computed(() => can(PERM.SITE_UPDATE))
+const canSiteDelete = computed(() => can(PERM.SITE_DELETE))
+const canSiteManage = computed(() => (!props.owner ? canSiteCreate.value : canSiteUpdate.value))
 
 const refDelModal = ref()
 const refAlertModal = ref()
@@ -58,6 +63,7 @@ const getSites = computed(() => siteStore.getSites)
 
 const formsCheck = computed(() => {
   if (props.owner) {
+    if (!canSiteUpdate.value) return true
     const a = form.own_sort === props.owner.own_sort
     const b = form.owner === props.owner.owner
     const c = form.use_consent === props.owner.use_consent
@@ -74,7 +80,8 @@ const formsCheck = computed(() => {
     const l = form.note === props.owner.note
 
     return a && b && c && d && e && f && g && h && i && j && k && l
-  } else return false
+  }
+  return !canSiteCreate.value
 })
 
 const addressCallback = (data: AddressData) => {
@@ -93,7 +100,7 @@ const onSubmit = (event: Event) => {
   if (isValidate(event)) {
     validated.value = true
   } else {
-    if (write_project.value) multiSubmit(form)
+    if (canSiteManage.value) multiSubmit(form)
     else refAlertModal.value.callModal()
   }
 }
@@ -110,7 +117,7 @@ const deleteObject = () => {
 }
 
 const deleteConfirm = () => {
-  if (write_project.value) refDelModal.value.callModal()
+  if (canSiteDelete.value) refDelModal.value.callModal()
   else refAlertModal.value.callModal()
 }
 
@@ -308,7 +315,6 @@ onBeforeMount(() => dataSetup())
     </CModalBody>
 
     <CModalFooter>
-      <v-btn type="button" size="small" :color="btnLight" @click="$emit('close')"> 닫기</v-btn>
       <slot name="footer">
         <v-btn
           type="submit"
@@ -321,6 +327,7 @@ onBeforeMount(() => dataSetup())
         <v-btn v-if="owner" size="small" type="button" color="warning" @click="deleteConfirm">
           삭제
         </v-btn>
+        <v-btn type="button" size="small" color="light" @click="$emit('close')" flat> 닫기</v-btn>
       </slot>
     </CModalFooter>
 

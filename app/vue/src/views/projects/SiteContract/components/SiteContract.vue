@@ -1,8 +1,8 @@
 <script lang="ts" setup>
-import { type PropType, ref } from 'vue'
+import { computed, type PropType, ref } from 'vue'
 import { type SiteContract } from '@/store/types/project'
 import { numFormat } from '@/utils/baseMixins'
-import { write_project_site } from '@/utils/pageAuth'
+import { usePerms } from '@/composables/usePerms.ts'
 import FormModal from '@/components/Modals/FormModal.vue'
 import SiteContractForm from './SiteContractForm.vue'
 
@@ -12,6 +12,9 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['multi-submit', 'on-delete'])
+
+const { can, PERM } = usePerms()
+const canSiteUpdate = computed(() => can(PERM.SITE_UPDATE))
 
 const updateFormModal = ref()
 
@@ -73,7 +76,7 @@ const onDelete = (payload: { pk: number; project: number }) => emit('on-delete',
         <v-tooltip activator="parent" location="top">미등록</v-tooltip>
       </span>
     </CTableDataCell>
-    <CTableDataCell v-if="write_project_site">
+    <CTableDataCell v-if="canSiteUpdate">
       <v-btn color="info" size="x-small" @click="showDetail">확인</v-btn>
     </CTableDataCell>
   </CTableRow>
