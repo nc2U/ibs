@@ -37,9 +37,6 @@ const letterFilter = ref<LetterFilter>({
 const comStore = useCompany()
 const company = computed(() => (comStore.company as Company)?.pk)
 
-const accStore = useAccount()
-const writeAuth = computed(() => accStore.writeComDocs)
-
 const docStore = useDocs()
 const letter = computed<OfficialLetter | null>(() => docStore.letter)
 const letterList = computed(() => docStore.letterList)
@@ -214,7 +211,6 @@ onBeforeRouteLeave(() => {
             :letter-count="letterCount"
             :letter-filter="letterFilter"
             :view-route="mainViewName"
-            :write-auth="writeAuth"
             @list-filter="listFiltering"
             @page-select="pageSelect"
           />
@@ -224,7 +220,6 @@ onBeforeRouteLeave(() => {
           <LetterView
             :letter="letter as OfficialLetter"
             :view-route="mainViewName"
-            :write-auth="writeAuth"
             :letter-filter="letterFilter"
             @on-delete="onDelete"
             @generate-pdf="onGeneratePdf"
@@ -235,7 +230,6 @@ onBeforeRouteLeave(() => {
           <LetterForm
             :company="company as number"
             :view-route="mainViewName"
-            :write-auth="writeAuth"
             @on-submit="onSubmit"
           />
         </div>
@@ -245,7 +239,6 @@ onBeforeRouteLeave(() => {
             :company="company as number"
             :letter="letter as OfficialLetter"
             :view-route="mainViewName"
-            :write-auth="writeAuth"
             @on-submit="onSubmit"
           />
         </div>

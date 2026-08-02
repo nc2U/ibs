@@ -6,22 +6,26 @@ import type { Company } from '@/store/types/settings'
 import { useDocs } from '@/store/pinia/docs'
 import { useCompany } from '@/store/pinia/company.ts'
 import { useAccount } from '@/store/pinia/account.ts'
-import { btnLight, TableSecondary } from '@/utils/cssMixins'
+import { TableSecondary } from '@/utils/cssMixins.ts'
 import { numFormat, timeFormat } from '@/utils/baseMixins'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
+import { usePerms } from '@/composables/usePerms.ts'
 
 const props = defineProps({
   suitcase: { type: Object as PropType<SuitCase>, required: true },
   viewRoute: { type: String, required: true },
   currPage: { type: Number, required: true },
-  writeAuth: { type: Boolean, default: true },
 })
 
 const emit = defineEmits(['cases-renewal', 'link-hit', 'file-hit', 'post-delete'])
 
+const { can, PERM } = usePerms()
+const canDocsCreate = computed(() => can(PERM.DOCS_CREATE))
+const canDocsUpdate = computed(() => can(PERM.DOCS_UPDATE))
+const canDocsDelete = computed(() => can(PERM.DOCS_DELETE))
+
 const refDelModal = ref()
-const refAlertModal = ref()
 
 const accStore = useAccount()
 const userInfo = computed(() => accStore.userInfo)
@@ -411,7 +415,7 @@ onBeforeMount(() => {
             v-if="editAuth"
             color="success"
             size="small"
-            :disabled="!writeAuth"
+            :disabled="!canDocsUpdate"
             @click="toEdit"
           >
             수정
@@ -420,16 +424,16 @@ onBeforeMount(() => {
             v-if="editAuth"
             color="warning"
             size="small"
-            :disabled="!writeAuth"
+            :disabled="!canDocsDelete"
             @click="deleteConfirm"
           >
             삭제
           </v-btn>
-          <v-btn :color="btnLight" size="small" @click="router.push({ name: `${viewRoute}` })">
+          <v-btn color="light" size="small" @click="router.push({ name: `${viewRoute}` })" flat>
             목록
           </v-btn>
           <v-btn
-            :color="btnLight"
+            color="light"
             size="small"
             :disabled="!prev"
             @click="
@@ -438,11 +442,12 @@ onBeforeMount(() => {
                 params: { caseId: prev },
               })
             "
+            flat
           >
             이전
           </v-btn>
           <v-btn
-            :color="btnLight"
+            color="light"
             size="small"
             :disabled="!next"
             @click="
@@ -451,6 +456,7 @@ onBeforeMount(() => {
                 params: { caseId: next },
               })
             "
+            flat
           >
             다음
           </v-btn>
@@ -458,7 +464,7 @@ onBeforeMount(() => {
       </CCol>
       <CCol class="text-right">
         <v-btn
-          v-if="writeAuth"
+          v-if="canDocsCreate"
           color="primary"
           @click="router.push({ name: `${viewRoute} - 작성` })"
         >

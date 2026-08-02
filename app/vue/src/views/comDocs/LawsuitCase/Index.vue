@@ -79,9 +79,6 @@ const pageSelect = (page: number) => {
   fetchSuitCaseList(caseFilter.value)
 }
 
-const accStore = useAccount()
-const writeAuth = computed(() => accStore.writeComDocs)
-
 const comStore = useCompany()
 const company = computed(() => (comStore.company as Company)?.pk)
 
@@ -324,7 +321,6 @@ onBeforeRouteLeave(() => {
             :page="caseFilter.page || 1"
             :case-list="suitcaseList"
             :view-route="mainViewName"
-            :write-auth="writeAuth"
             @page-select="pageSelect"
             @agency-filter="agencyFilter"
             @agency-search="agencySearch"
@@ -337,7 +333,6 @@ onBeforeRouteLeave(() => {
             :curr-page="caseFilter.page ?? 1"
             :suitcase="suitcase as SuitCase"
             :view-route="mainViewName"
-            :write-auth="writeAuth"
             @link-hit="linkHit"
             @file-hit="fileHit"
             @case-renewal="caseRenewal"
@@ -349,7 +344,6 @@ onBeforeRouteLeave(() => {
             :sort-name="formTitle"
             :get-suit-case="getSuitCase"
             :view-route="mainViewName"
-            :write-auth="writeAuth"
             @on-submit="onSubmit"
           />
         </div>
@@ -360,7 +354,6 @@ onBeforeRouteLeave(() => {
             :get-suit-case="getSuitCase"
             :suitcase="suitcase"
             :view-route="mainViewName"
-            :write-auth="writeAuth"
             @on-submit="onSubmit"
             @on-delete="onDelete"
           />

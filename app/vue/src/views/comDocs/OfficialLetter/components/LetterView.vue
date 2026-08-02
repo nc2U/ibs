@@ -5,11 +5,11 @@ import type { OfficialLetter } from '@/store/types/docs'
 import type { LetterFilter } from '@/store/pinia/docs'
 import { useDocs } from '@/store/pinia/docs'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
+import { usePerms } from '@/composables/usePerms.ts'
 
 const props = defineProps<{
   letter: OfficialLetter | null
   viewRoute: string
-  writeAuth: boolean
   letterFilter: LetterFilter
 }>()
 
@@ -17,6 +17,11 @@ const emit = defineEmits<{
   onDelete: [pk: number]
   generatePdf: [pk: number]
 }>()
+
+const { can, PERM } = usePerms()
+const canDocsCreate = computed(() => can(PERM.DOCS_CREATE))
+const canDocsUpdate = computed(() => can(PERM.DOCS_UPDATE))
+const canDocsDelete = computed(() => can(PERM.DOCS_DELETE))
 
 const router = useRouter()
 const docStore = useDocs()
@@ -226,7 +231,7 @@ const formatDateTime = (dateStr: string | undefined) => {
             다운로드
           </CButton>
           <CButton
-            v-if="writeAuth"
+            v-if="canDocsCreate"
             color="warning"
             size="sm"
             class="ms-2"
@@ -241,7 +246,7 @@ const formatDateTime = (dateStr: string | undefined) => {
         <div v-else>
           <span class="text-muted me-3">PDF 파일이 아직 생성되지 않았습니다.</span>
           <CButton
-            v-if="writeAuth"
+            v-if="canDocsCreate"
             color="primary"
             size="sm"
             :disabled="pdfLoading"
@@ -262,12 +267,18 @@ const formatDateTime = (dateStr: string | undefined) => {
           <CIcon name="cilList" class="me-1" />
           목록으로
         </CButton>
-        <div v-if="writeAuth">
-          <CButton color="danger" variant="outline" class="me-2" @click="confirmDelete">
+        <div>
+          <CButton
+            v-if="canDocsDelete"
+            color="danger"
+            variant="outline"
+            class="me-2"
+            @click="confirmDelete"
+          >
             <CIcon name="cilTrash" class="me-1" />
             삭제
           </CButton>
-          <CButton color="primary" @click="goToEdit">
+          <CButton v-if="canDocsUpdate" color="primary" @click="goToEdit">
             <CIcon name="cilPencil" class="me-1" />
             수정
           </CButton>

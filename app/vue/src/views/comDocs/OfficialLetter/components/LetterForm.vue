@@ -1,20 +1,25 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import type { OfficialLetter } from '@/store/types/docs'
+import { usePerms } from '@/composables/usePerms.ts'
 import { useDocs } from '@/store/pinia/docs'
+import { useAccount } from '@/store/pinia/account.ts'
+import type { OfficialLetter } from '@/store/types/docs'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 
 const props = defineProps<{
   company: number
   letter?: OfficialLetter
   viewRoute: string
-  writeAuth: boolean
 }>()
 
 const emit = defineEmits<{
   onSubmit: [payload: OfficialLetter]
 }>()
+
+const { can, PERM } = usePerms()
+const accStore = useAccount()
+const canOLManage = computed(() => (isEdit.value ? can(PERM.DOCS_UPDATE) : can(PERM.DOCS_CREATE)))
 
 const router = useRouter()
 const docStore = useDocs()
@@ -221,7 +226,11 @@ const goBack = () => {
             <CIcon name="cilArrowLeft" class="me-1" />
             취소
           </CButton>
-          <CButton type="submit" :color="isEdit ? 'success' : 'primary'" :disabled="!writeAuth">
+          <CButton
+            type="submit"
+            :color="isEdit ? 'success' : 'primary'"
+            :disabled="!accStore.isStaff && canOLManage"
+          >
             <CIcon name="cilSave" class="me-1" />
             {{ isEdit ? '수정' : '저장' }}
           </CButton>

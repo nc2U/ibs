@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import type { PropType } from 'vue'
+import { computed, type PropType } from 'vue'
 import { useRouter } from 'vue-router'
+import { usePerms } from '@/composables/usePerms.ts'
 import { useDocs } from '@/store/pinia/docs'
-import type { SuitCase } from '@/store/types/docs'
 import { TableSecondary } from '@/utils/cssMixins'
+import type { SuitCase } from '@/store/types/docs'
 import Pagination from '@/components/Pagination'
 import Case from './components/Case.vue'
 
@@ -13,10 +14,12 @@ defineProps({
   page: { type: Number, required: true },
   caseList: { type: Array as PropType<SuitCase[]>, default: () => [] },
   viewRoute: { type: String, required: true },
-  writeAuth: { type: Boolean, default: true },
 })
 
 const emit = defineEmits(['page-select', 'agency-filter', 'agency-search', 'related-filter'])
+
+const { can, PERM } = usePerms()
+const canDocsCreate = computed(() => can(PERM.DOCS_CREATE))
 
 const router = useRouter()
 
@@ -85,7 +88,7 @@ const pageSelect = (page: number) => emit('page-select', page)
     </CCol>
     <CCol lg="4" class="text-right pt-3">
       <v-btn
-        v-if="writeAuth"
+        v-if="canDocsCreate"
         color="primary"
         class="px-5"
         :disabled="!company"

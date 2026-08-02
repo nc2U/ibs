@@ -1,7 +1,6 @@
 <script lang="ts" setup>
-import { reactive, ref } from 'vue'
+import { ref } from 'vue'
 import type { SuitCase } from '@/store/types/docs'
-import { btnLight } from '@/utils/cssMixins.ts'
 import { courtChoices } from '@/components/LawSuitCase/components/court'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import MultiSelect from '@/components/MultiSelect/index.vue'
@@ -293,8 +292,8 @@ const modalAction = () => {
 
           <CRow>
             <CCol class="text-right">
-              <v-btn :color="btnLight" size="small" @click="refCaseForm.close()"> 닫기</v-btn>
               <v-btn color="primary" type="submit" size="small"> 저장하기</v-btn>
+              <v-btn color="light" size="small" @click="refCaseForm.close()" flat> 닫기</v-btn>
             </CCol>
           </CRow>
         </CForm>

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { usePerms } from '@/composables/usePerms.ts'
+import { useAccount } from '@/store/pinia/account.ts'
 import type { OfficialLetter } from '@/store/types/docs'
 import type { LetterFilter } from '@/store/pinia/docs'
 import Pagination from '@/components/Pagination'
@@ -12,13 +14,16 @@ const props = defineProps<{
   letterCount: number
   letterFilter: LetterFilter
   viewRoute: string
-  writeAuth: boolean
 }>()
 
 const emit = defineEmits<{
   listFilter: [payload: LetterFilter]
   pageSelect: [page: number]
 }>()
+
+const { can, PERM } = usePerms()
+const accStore = useAccount()
+const canDocsCreate = computed(() => accStore.isStaff && can(PERM.DOCS_CREATE))
 
 const router = useRouter()
 
@@ -123,7 +128,7 @@ const formatDate = (dateStr: string | undefined) => {
     <CRow class="mb-3">
       <CCol class="d-flex justify-content-between align-items-center">
         <span class="text-muted">총 {{ letterCount }}건</span>
-        <CButton v-if="writeAuth" color="primary" @click="goToCreate">
+        <CButton v-if="canDocsCreate" color="primary" @click="goToCreate">
           <CIcon name="cilPlus" class="me-1" />
           공문 작성
         </CButton>

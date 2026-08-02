@@ -7,17 +7,19 @@ import MultiSelect from '@/components/MultiSelect/index.vue'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
+import { usePerms } from '@/composables/usePerms.ts'
 
 const props = defineProps({
   sortName: { type: String, default: '[본사]' },
   getSuitCase: { type: Object, required: true },
   suitcase: { type: Object as PropType<SuitCase | null>, default: null },
   viewRoute: { type: String, required: true },
-  writeAuth: { type: Boolean, default: true },
 })
 const emit = defineEmits(['on-submit', 'close'])
 
-const refDelModal = ref()
+const { can, PERM } = usePerms()
+const canDocsManage = computed(() => can(PERM.DOCS_UPDATE) || can(PERM.DOCS_CREATE))
+
 const refConfirmModal = ref()
 const refAlertModal = ref()
 
@@ -46,6 +48,7 @@ const form = reactive<SuitCase>({
 
 const formsCheck = computed(() => {
   if (props.suitcase) {
+    if (!can(PERM.DOCS_UPDATE)) return true
     const a = form.issue_project === props.suitcase.issue_project
     const b = form.sort === props.suitcase.sort
     const c = form.level === props.suitcase.level
@@ -68,14 +71,15 @@ const formsCheck = computed(() => {
     const group1 = a && b && c && d && e && f && g && h && i
     const group2 = j && k && l && m && n && o && p && q && r
     return group1 && group2
-  } else return false
+  }
+  return !can(PERM.DOCS_CREATE)
 })
 
 const [route, router] = [useRoute(), useRouter()]
 const btnClass = computed(() => (route.params.caseId ? 'success' : 'primary'))
 
 const onSubmit = (event: Event) => {
-  if (props.writeAuth) {
+  if (canDocsManage.value) {
     const el = event.currentTarget as HTMLFormElement
     if (!el.checkValidity()) {
       event.preventDefault()

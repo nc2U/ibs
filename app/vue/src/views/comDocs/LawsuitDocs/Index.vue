@@ -29,7 +29,6 @@ import Loading from '@/components/Loading/Index.vue'
 const { can, PERM } = usePerms()
 
 const fController = ref()
-const refDocsForm = ref()
 const typeNumber = ref(2)
 const mainViewName = ref('본사 소송 문서')
 
@@ -94,8 +93,6 @@ const workStore = useWork()
 const allActiveProjects = computed(() => workStore.getAllActiveProjects)
 
 const accStore = useAccount()
-const writeAuth = computed(() => accStore.writeComDocs)
-
 const createDocScrape = (payload: { docs: number; user: number }) =>
   accStore.createDocScrape(payload)
 
@@ -396,7 +393,6 @@ onBeforeRouteLeave(() => {
             :docs-list="docsList"
             :view-route="mainViewName"
             :is-lawsuit="true"
-            :write-auth="writeAuth"
             @page-select="pageSelect"
           />
         </div>
@@ -410,7 +406,6 @@ onBeforeRouteLeave(() => {
             :docs="docs as Docs"
             :view-route="mainViewName"
             :curr-page="docsFilter.page ?? 1"
-            :write-auth="writeAuth"
             :docs-filter="docsFilter"
             @docs-hit="docsHit"
             @link-hit="linkHit"
@@ -429,7 +424,6 @@ onBeforeRouteLeave(() => {
             :category-list="categoryList"
             :get-suit-case="getSuitCase"
             :view-route="mainViewName"
-            :write-auth="writeAuth"
             @on-submit="onSubmit"
             @create-lawsuit="createLawSuit"
           />
@@ -446,7 +440,6 @@ onBeforeRouteLeave(() => {
             :get-suit-case="getSuitCase"
             :docs="docs as Docs"
             :view-route="mainViewName"
-            :write-auth="writeAuth"
             @on-submit="onSubmit"
             @create-lawsuit="createLawSuit"
           />

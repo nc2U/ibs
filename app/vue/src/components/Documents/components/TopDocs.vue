@@ -11,6 +11,7 @@ const props = defineProps({
 })
 
 const { can, PERM } = usePerms()
+const canDocsRead = computed(() => can(PERM.DOCS_READ))
 
 const sortName = computed(() => props.docs?.project?.name || '본사 문서')
 const sortColor = computed(() => (props.docs?.project ? 'success' : 'info'))
@@ -32,7 +33,7 @@ const sortColor = computed(() => (props.docs?.project ? 'success' : 'info'))
       <v-icon v-if="docs.is_blind" icon="mdi-eye-off" size="sm" class="mr-1 text-danger" />
       <v-icon v-if="docs.is_secret" icon="mdi-lock" size="sm" class="mr-1 text-grey" />
       <router-link
-        v-if="can(PERM.DOCS_READ)"
+        v-if="canDocsRead"
         :to="{ name: `${viewRoute} - 보기`, params: { docsId: docs.pk } }"
       >
         {{ cutString(docs.title, 32) }}

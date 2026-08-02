@@ -30,12 +30,10 @@ const props = defineProps({
   getSuitCase: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },
   docs: { type: Object as PropType<Docs>, default: null },
   viewRoute: { type: String, required: true },
-  writeAuth: { type: Boolean, default: true },
 })
 
 const emit = defineEmits(['on-submit', 'create-lawsuit'])
 
-const refDelModal = ref()
 const refAlertModal = ref()
 const refConfirmModal = ref()
 const refCaseForm = ref()
@@ -69,10 +67,7 @@ const enableStore = (event: Event | any) => {
 }
 
 const { can, PERM } = usePerms()
-
-const canSave = computed(() =>
-  route.params.docsId ? can(PERM.DOCS_UPDATE) : can(PERM.DOCS_CREATE),
-)
+const canDocsManage = computed(() => can(PERM.DOCS_UPDATE) || can(PERM.DOCS_CREATE))
 
 const formsCheck = computed(() => {
   if (props.docs) {
@@ -123,7 +118,7 @@ const linkDelete = (payload: { pk: number; del: boolean }): void => {
 }
 
 const onSubmit = (event: Event) => {
-  if (props.writeAuth) {
+  if (canDocsManage.value) {
     const el = event.currentTarget as HTMLFormElement
     if (!el.checkValidity()) {
       event.preventDefault()
@@ -215,7 +210,7 @@ onBeforeUpdate(() => dataSetup())
           searchable
         />
       </CCol>
-      <CCol v-if="typeNum === 2 && can(PERM.DOCS_CREATE)" md="1" style="padding-top: 7px">
+      <CCol v-if="typeNum === 2 && canDocsManage" md="1" style="padding-top: 7px">
         <div style="width: 20px">
           <v-icon
             icon="mdi-plus-circle"
@@ -296,7 +291,7 @@ onBeforeUpdate(() => dataSetup())
 
     <CRow>
       <CCol class="text-right">
-        <v-btn v-if="can(PERM.DOCS_CREATE)" :color="btnClass" type="submit" :disabled="formsCheck">
+        <v-btn v-if="canDocsManage" :color="btnClass" type="submit" :disabled="formsCheck">
           저장하기
         </v-btn>
         <v-btn v-if="route.params.docsId" color="light" @click="router.go(-1)" flat> 뒤로</v-btn>
@@ -317,7 +312,7 @@ onBeforeUpdate(() => dataSetup())
     <template #header> {{ viewRoute }}</template>
     <template #default> {{ viewRoute }} 저장을 진행하시겠습니까?</template>
     <template #footer>
-      <v-btn :color="btnClass" size="small" :disabled="!canSave" @click="modalAction">저장</v-btn>
+      <v-btn :color="btnClass" size="small" @click="modalAction"> 저장 </v-btn>
     </template>
   </ConfirmModal>
 

@@ -26,7 +26,6 @@ const props = defineProps({
   docs: { type: Object as PropType<Docs | null>, default: null },
   viewRoute: { type: String, required: true },
   currPage: { type: Number, required: true },
-  writeAuth: { type: Boolean, default: true },
   docsFilter: { type: Object as PropType<DocsFilter>, default: null },
 })
 
