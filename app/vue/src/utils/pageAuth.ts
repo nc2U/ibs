@@ -20,7 +20,7 @@ const hasPermission = (code: PermissionCode | PermissionCode[]) => {
 }
 
 // ── 계약 관리 ──────────────────────────────────────────────────────────
-export const read_contract = computed(() => hasPermission(PERM.CONTRACT_READ))
+// export const read_contract = computed(() => hasPermission(PERM.CONTRACT_READ))
 export const write_contract = computed(() =>
   hasPermission([PERM.CONTRACT_CREATE, PERM.CONTRACT_UPDATE, PERM.CONTRACT_DELETE]),
 )
