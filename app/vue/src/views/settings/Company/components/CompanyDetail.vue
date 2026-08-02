@@ -1,9 +1,9 @@
 <script lang="ts" setup>
-import { type PropType, ref } from 'vue'
-import { type Company } from '@/store/types/settings'
+import { computed, type PropType, ref } from 'vue'
+import { usePerms } from '@/composables/usePerms.ts'
 import { useAccount } from '@/store/pinia/account'
-import { write_company_settings } from '@/utils/pageAuth'
 import { TableSecondary } from '@/utils/cssMixins'
+import { type Company } from '@/store/types/settings'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
 defineProps({ company: { type: Object as PropType<Company>, default: null } })
@@ -12,8 +12,11 @@ const emit = defineEmits(['create-form', 'update-form'])
 
 const refAlertModal = ref()
 
+const { can, PERM } = usePerms()
+const canProjectUpdate = computed(() => account.isStaff && can(PERM.PROJECT_UPDATE))
+
 const toEdit = () => {
-  if (write_company_settings.value) emit('update-form')
+  if (canProjectUpdate.value) emit('update-form')
   else refAlertModal.value.callModal()
 }
 
@@ -110,8 +113,8 @@ const toCreate = () => {
     </CRow>
   </CCardBody>
 
-  <CCardFooter v-if="write_company_settings">
-    <CRow class="justify-content-between">
+  <CCardFooter>
+    <CRow v-if="canProjectUpdate" class="justify-content-between">
       <CCol xs="auto">
         <v-btn type="button" color="success" :disabled="!company" @click="toEdit">
           <v-icon icon="mdi mdi-check-circle-outline" size="small" />

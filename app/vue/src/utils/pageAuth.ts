@@ -63,8 +63,3 @@ export const write_company_docs = computed(() =>
 export const write_human_resource = computed(() =>
   hasPermission([PERM.HR_WORK_CREATE, PERM.HR_WORK_UPDATE, PERM.HR_WORK_DELETE]),
 )
-
-// ── 회사 관련 설정 ──────────────────────────────────────────────────────
-export const write_company_settings = computed(() =>
-  hasPermission([PERM.PROJECT_CREATE, PERM.PROJECT_UPDATE, PERM.PROJECT_DELETE]),
-)

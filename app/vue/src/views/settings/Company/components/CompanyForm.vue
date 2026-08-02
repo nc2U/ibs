@@ -1,11 +1,9 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, reactive, ref, watch } from 'vue'
-import { btnLight } from '@/utils/cssMixins.ts'
-import { write_company_settings } from '@/utils/pageAuth'
+import { computed, onBeforeMount, reactive, ref } from 'vue'
 import { type Company } from '@/store/types/settings'
-import { useRoute } from 'vue-router'
+import { usePerms } from '@/composables/usePerms.ts'
 import { useAccount } from '@/store/pinia/account'
-import { callAddress, type AddressData } from '@/components/DaumPostcode/address'
+import { type AddressData, callAddress } from '@/components/DaumPostcode/address'
 import DaumPostcode from '@/components/DaumPostcode/index.vue'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
@@ -14,6 +12,11 @@ import AlertModal from '@/components/Modals/AlertModal.vue'
 const emit = defineEmits(['fetch-company', 'on-submit', 'reset-form'])
 
 const account = useAccount()
+
+const { can, PERM } = usePerms()
+const canProjectCreate = computed(() => account.isStaff && can(PERM.PROJECT_CREATE))
+const canProjectUpdate = computed(() => account.isStaff && can(PERM.PROJECT_UPDATE))
+const canProjectDelete = computed(() => account.isStaff && can(PERM.PROJECT_DELETE))
 
 const props = defineProps({
   company: { type: Object, default: null },
@@ -56,7 +59,7 @@ const addressCallback = (data: AddressData) => {
 }
 
 const onSubmit = (event: Event) => {
-  if (write_company_settings.value) {
+  if (canProjectCreate.value || canProjectUpdate.value) {
     const e = event.currentTarget as HTMLSelectElement
     if (!e.checkValidity()) {
       event.preventDefault()
@@ -305,12 +308,19 @@ onBeforeMount(() => formDataSetup())
     </CCardBody>
 
     <CCardFooter class="text-right">
-      <v-btn type="button" :color="btnLight" @click="emit('reset-form')"> 취소</v-btn>
-      <v-btn v-if="company" type="button" color="warning" @click="deleteCompany"> 삭제</v-btn>
       <v-btn type="submit" :color="btnClass" :disabled="formsCheck">
         <v-icon icon="mdi mdi-check-circle-outline" size="small" />
         저장
       </v-btn>
+      <v-btn
+        v-if="company && canProjectDelete"
+        type="button"
+        color="warning"
+        @click="deleteCompany"
+      >
+        삭제
+      </v-btn>
+      <v-btn type="button" color="light" @click="emit('reset-form')" flat> 취소</v-btn>
     </CCardFooter>
   </CForm>
 
