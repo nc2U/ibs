@@ -61,7 +61,7 @@
     "vue-loading-overlay": "^6.0.6",
     "vue-router": "^4.6.4",
     "vuedraggable": "^4.1.0",
-    "vuetify": "^3.13.0",
+    "vuetify": "^4.1.7",
     "webfontloader": "^1.6.28"
   },
   "devDependencies": {
