@@ -38,8 +38,3 @@ export const write_notice = computed(() =>
 export const write_project_ledger = computed(() =>
   hasPermission([PERM.LEDGER_CREATE, PERM.LEDGER_UPDATE, PERM.LEDGER_DELETE]),
 )
-
-// ── 사업지 문서 ────────────────────────────────────────────────────────
-export const write_project_docs = computed(() =>
-  hasPermission([PERM.DOCS_CREATE, PERM.DOCS_UPDATE, PERM.DOCS_DELETE]),
-)

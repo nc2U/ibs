@@ -5,7 +5,7 @@ import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { errorHandle, message } from '@/utils/helper'
 import { useDocs } from '@/store/pinia/docs'
-import { write_project_docs, write_project_ledger } from '@/utils/pageAuth'
+import { write_project_ledger } from '@/utils/pageAuth'
 import type { LocationQueryValue } from 'vue-router'
 import type { User, Profile, Scrape, Todo } from '@/store/types/accounts'
 
@@ -213,12 +213,11 @@ export const useAccount = defineStore('account', () => {
   const workManager = computed(() => userInfo.value?.work_manager || superAuth.value)
   const isStaff = computed(() => !!superAuth.value || !!userInfo.value?.is_hq_staff) // 본사 관리 권한
   const isFinancial = computed(() => !!userInfo.value?.is_hq_financial_officer)
-
-  // const writeComDocs = computed(() => !!superAuth.value || write_company_docs.value)
-  const writeProDocs = computed(() => !!superAuth.value || write_project_docs.value)
   const isComLedger = computed(() => !!superAuth.value || !!userInfo.value?.is_hq_financial_officer)
-  const writeProLedger = computed(() => !!superAuth.value || write_project_ledger.value) // states
+
   const profile = ref<Profile | null>(null)
+
+  const writeProLedger = computed(() => !!superAuth.value || write_project_ledger.value) // states
 
   // actions
   const fetchProfile = async () => {
@@ -433,8 +432,6 @@ export const useAccount = defineStore('account', () => {
     workManager,
     isStaff,
     isFinancial,
-    // writeComDocs,
-    writeProDocs,
     isComLedger,
     writeProLedger,
 

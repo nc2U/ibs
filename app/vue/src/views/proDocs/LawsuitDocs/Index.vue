@@ -69,8 +69,6 @@ const project = computed(() => projObj.value?.pk)
 const projName = computed(() => projObj.value?.name)
 
 const accStore = useAccount()
-const writeAuth = computed(() => accStore.writeProDocs)
-
 const createDocScrape = (payload: { docs: number; user: number }) =>
   accStore.createDocScrape(payload)
 
@@ -246,7 +244,6 @@ onBeforeMount(async () => {
             :docs-list="docsList"
             :view-route="mainViewName"
             :is-lawsuit="true"
-            :write-auth="writeAuth"
             @page-select="pageSelect"
           />
         </div>
@@ -260,7 +257,6 @@ onBeforeMount(async () => {
             :docs="docs as Docs"
             :view-route="mainViewName"
             :curr-page="docsFilter.page ?? 1"
-            :write-auth="writeAuth"
             :docs-filter="docsFilter"
             @docs-hit="docsHit"
             @link-hit="linkHit"
@@ -278,7 +274,6 @@ onBeforeMount(async () => {
             :get-suit-case="getSuitCase"
             :category-list="categoryList"
             :view-route="mainViewName"
-            :write-auth="writeAuth"
             @on-submit="onSubmit"
             @create-lawsuit="createLawSuit"
           />
@@ -294,7 +289,6 @@ onBeforeMount(async () => {
             :category-list="categoryList"
             :docs="docs as Docs"
             :view-route="mainViewName"
-            :write-auth="writeAuth"
             @on-submit="onSubmit"
             @create-lawsuit="createLawSuit"
           />

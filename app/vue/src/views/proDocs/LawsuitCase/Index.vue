@@ -59,9 +59,6 @@ const pageSelect = (page: number) => {
   fetchSuitCaseList(caseFilter.value)
 }
 
-const accStore = useAccount()
-const writeAuth = computed(() => accStore.writeProDocs)
-
 const projStore = useProject()
 const project = computed(() => projStore.project?.pk)
 const projName = computed(() => projStore.project?.name)
@@ -211,7 +208,6 @@ onBeforeMount(async () => {
             :page="caseFilter.page || 1"
             :case-list="suitcaseList"
             :view-route="mainViewName"
-            :write-auth="writeAuth"
             @page-select="pageSelect"
             @agency-filter="agencyFilter"
             @agency-search="agencySearch"
@@ -224,7 +220,6 @@ onBeforeMount(async () => {
             :suitcase="suitcase as SuitCase"
             :view-route="mainViewName"
             :curr-page="caseFilter.page ?? 1"
-            :write-auth="writeAuth"
             @link-hit="linkHit"
             @file-hit="fileHit"
             @cases-renewal="casesRenewal"
@@ -236,7 +231,6 @@ onBeforeMount(async () => {
             :sort-name="projName"
             :get-suit-case="getSuitCase"
             :view-route="mainViewName"
-            :write-auth="writeAuth"
             @on-submit="onSubmit"
           />
         </div>
@@ -247,7 +241,6 @@ onBeforeMount(async () => {
             :get-suit-case="getSuitCase"
             :suitcase="suitcase"
             :view-route="mainViewName"
-            :write-auth="writeAuth"
             @on-submit="onSubmit"
             @on-delete="onDelete"
           />

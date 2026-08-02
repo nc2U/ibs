@@ -66,8 +66,6 @@ const project = computed(() => (projStore.project as Project)?.pk)
 const projName = computed(() => (projStore.project as Project)?.name)
 
 const accStore = useAccount()
-const writeAuth = computed(() => accStore.writeProDocs)
-
 const createDocScrape = (payload: { docs: number; user: number }) =>
   accStore.createDocScrape(payload)
 
@@ -230,7 +228,6 @@ onBeforeMount(async () => {
             :page="docsFilter.page || 1"
             :docs-list="docsList"
             :view-route="mainViewName"
-            :write-auth="writeAuth"
             @page-select="pageSelect"
           />
         </div>
@@ -244,7 +241,6 @@ onBeforeMount(async () => {
             :docs="docs as Docs"
             :view-route="mainViewName"
             :curr-page="docsFilter.page ?? 1"
-            :write-auth="writeAuth"
             :docs-filter="docsFilter"
             @docs-hit="docsHit"
             @link-hit="linkHit"
@@ -261,7 +257,6 @@ onBeforeMount(async () => {
             :type-num="typeNumber"
             :category-list="categoryList"
             :view-route="mainViewName"
-            :write-auth="writeAuth"
             @on-submit="onSubmit"
           />
           <CAlert v-else color="danger" class="m-3">이 페이지에 접근할 권한이 없습니다.</CAlert>
@@ -275,7 +270,6 @@ onBeforeMount(async () => {
             :category-list="categoryList"
             :docs="docs as Docs"
             :view-route="mainViewName"
-            :write-auth="writeAuth"
             @on-submit="onSubmit"
           />
           <CAlert v-else color="danger" class="m-3">이 페이지에 접근할 권한이 없습니다.</CAlert>
