@@ -2,7 +2,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { pageTitle, navMenu } from '@/views/hrManage/_menu/headermixin2'
 import { useCompany } from '@/store/pinia/company'
-import { write_human_resource } from '@/utils/pageAuth'
+import { useAccount } from '@/store/pinia/account.ts'
+import { usePerms } from '@/composables/usePerms.ts'
 import type { Company } from '@/store/types/settings.ts'
 import type { Grade, ComFilter } from '@/store/types/company'
 import Loading from '@/components/Loading/Index.vue'
@@ -14,8 +15,9 @@ import AddGrade from './components/AddGrade.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import GradeList from './components/GradeList.vue'
 
-// 직급 = Grade
-const listControl = ref()
+const { can, PERM } = usePerms()
+const accStore = useAccount()
+const canHrWorkCreate = computed(() => accStore.isStaff && can(PERM.HR_WORK_CREATE))
 
 const dataFilter = ref<ComFilter>({
   page: 1,
@@ -101,7 +103,7 @@ onMounted(async () => {
     <ContentBody>
       <CCardBody>
         <ListController ref="listControl" @list-filtering="listFiltering" />
-        <AddGrade v-if="write_human_resource" :company="comName" @multi-submit="multiSubmit" />
+        <AddGrade v-if="canHrWorkCreate" :company="comName" @multi-submit="multiSubmit" />
         <TableTitleRow
           title="직급 목록"
           excel

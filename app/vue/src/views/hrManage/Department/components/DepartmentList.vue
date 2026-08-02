@@ -2,12 +2,19 @@
 import { computed } from 'vue'
 import { useCompany } from '@/store/pinia/company'
 import { TableSecondary } from '@/utils/cssMixins'
-import { write_human_resource } from '@/utils/pageAuth'
+import { useAccount } from '@/store/pinia/account.ts'
+import { usePerms } from '@/composables/usePerms.ts'
 import { type Department as Depart } from '@/store/types/company'
 import Pagination from '@/components/Pagination'
 import Department from './Department.vue'
 
 const emit = defineEmits(['page-select', 'multi-submit', 'on-delete'])
+
+const { can, PERM } = usePerms()
+const accStore = useAccount()
+const canHrWorkCreate = computed(() => accStore.isStaff && can(PERM.HR_WORK_CREATE))
+const canHrWorkUpdate = computed(() => accStore.isStaff && can(PERM.HR_WORK_UPDATE))
+const canHrWorkManager = computed(() => canHrWorkCreate.value || canHrWorkUpdate.value)
 
 const companyStore = useCompany()
 const getPkDeparts = computed(() => companyStore.getPkDeparts)
@@ -27,7 +34,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
       <col style="width: 15%" />
       <col style="width: 15%" />
       <col style="width: 56%" />
-      <col v-if="write_human_resource" style="width: 7%" />
+      <col v-if="canHrWorkManager" style="width: 7%" />
     </colgroup>
 
     <CTableHead :color="TableSecondary">
@@ -36,7 +43,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
         <CTableHeaderCell scope="col">상위부서</CTableHeaderCell>
         <CTableHeaderCell scope="col">부서명</CTableHeaderCell>
         <CTableHeaderCell scope="col">주요업무</CTableHeaderCell>
-        <CTableHeaderCell v-if="write_human_resource" scope="col">비고</CTableHeaderCell>
+        <CTableHeaderCell v-if="canHrWorkManager" scope="col">비고</CTableHeaderCell>
       </CTableRow>
     </CTableHead>
 

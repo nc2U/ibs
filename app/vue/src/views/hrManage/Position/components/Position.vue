@@ -1,8 +1,9 @@
 <script lang="ts" setup>
 import { ref, computed, type PropType } from 'vue'
+import { usePerms } from '@/composables/usePerms.ts'
 import { useCompany } from '@/store/pinia/company'
+import { useAccount } from '@/store/pinia/account.ts'
 import { type Position } from '@/store/types/company'
-import { write_human_resource } from '@/utils/pageAuth'
 import FormModal from '@/components/Modals/FormModal.vue'
 import PositionForm from './PositionForm.vue'
 
@@ -11,6 +12,12 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['multi-submit', 'on-delete'])
+
+const { can, PERM } = usePerms()
+const accStore = useAccount()
+const canHrWorkManage = computed(
+  () => accStore.isStaff && (can(PERM.HR_WORK_CREATE) || can(PERM.HR_WORK_UPDATE)),
+)
 
 const updateFormModal = ref()
 
@@ -36,7 +43,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
     <CTableDataCell>{{ position.name }}</CTableDataCell>
     <CTableDataCell class="text-left">{{ grades }}</CTableDataCell>
     <CTableDataCell class="text-left">{{ position.desc }}</CTableDataCell>
-    <CTableDataCell v-if="write_human_resource">
+    <CTableDataCell v-if="canHrWorkManage">
       <v-btn color="info" size="x-small" @click="showDetail">확인</v-btn>
     </CTableDataCell>
   </CTableRow>

@@ -1,9 +1,9 @@
 <script lang="ts" setup>
 import { ref, computed, onBeforeMount, watch, type PropType } from 'vue'
 import { isValidate } from '@/utils/helper'
-import { btnLight } from '@/utils/cssMixins.ts'
-import { write_human_resource } from '@/utils/pageAuth'
+import { usePerms } from '@/composables/usePerms.ts'
 import { useCompany } from '@/store/pinia/company'
+import { useAccount } from '@/store/pinia/account.ts'
 import { type Department } from '@/store/types/company'
 import Multiselect from '@vueform/multiselect'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
@@ -23,6 +23,13 @@ watch(
 )
 
 const emit = defineEmits(['multi-submit', 'on-delete', 'close'])
+
+const { can, PERM } = usePerms()
+const accStore = useAccount()
+const canHrWorkCreate = computed(() => accStore.isStaff && can(PERM.HR_WORK_CREATE))
+const canHrWorkUpdate = computed(() => accStore.isStaff && can(PERM.HR_WORK_UPDATE))
+const canHrWorkManager = computed(() => canHrWorkCreate.value || canHrWorkUpdate.value)
+const canHrWorkDelete = computed(() => accStore.isStaff && can(PERM.HR_WORK_DELETE))
 
 const refDelModal = ref()
 const refAlertModal = ref()
@@ -55,7 +62,7 @@ const onSubmit = (event: Event) => {
   if (isValidate(event)) {
     validated.value = true
   } else {
-    if (write_human_resource.value) multiSubmit({ ...form.value })
+    if (canHrWorkManager.value) multiSubmit({ ...form.value })
     else refAlertModal.value.callModal()
   }
 }
@@ -72,7 +79,7 @@ const deleteObject = (pk: number) => {
 }
 
 const deleteConfirm = () => {
-  if (write_human_resource.value) refDelModal.value.callModal()
+  if (canHrWorkDelete.value) refDelModal.value.callModal()
   else refAlertModal.value.callModal()
 }
 
@@ -138,9 +145,9 @@ onBeforeMount(() => formDataSetup())
     </CModalBody>
 
     <CModalFooter>
-      <v-btn type="button" :color="btnLight" size="small" @click="$emit('close')"> 닫기</v-btn>
       <slot name="footer">
         <v-btn
+          v-if="canHrWorkManager"
           type="submit"
           :color="department ? 'success' : 'primary'"
           size="small"
@@ -148,9 +155,16 @@ onBeforeMount(() => formDataSetup())
         >
           저장
         </v-btn>
-        <v-btn v-if="department" type="button" color="warning" size="small" @click="deleteConfirm">
+        <v-btn
+          v-if="department && canHrWorkDelete"
+          type="button"
+          color="warning"
+          size="small"
+          @click="deleteConfirm"
+        >
           삭제
         </v-btn>
+        <v-btn type="button" color="light" size="small" @click="$emit('close')" flat> 닫기</v-btn>
       </slot>
     </CModalFooter>
   </CForm>

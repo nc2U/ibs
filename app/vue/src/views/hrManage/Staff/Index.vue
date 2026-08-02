@@ -3,9 +3,9 @@ import { ref, onMounted, computed } from 'vue'
 import { pageTitle, navMenu } from '@/views/hrManage/_menu/headermixin1'
 import { useAccount } from '@/store/pinia/account'
 import { useCompany } from '@/store/pinia/company'
-import { write_human_resource } from '@/utils/pageAuth'
 import type { Company } from '@/store/types/settings.ts'
 import { type Staff, type StaffFilter } from '@/store/types/company'
+import { usePerms } from '@/composables/usePerms.ts'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
@@ -15,7 +15,8 @@ import AddStaff from './components/AddStaff.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import StaffList from './components/StaffList.vue'
 
-const refListControl = ref()
+const { can, PERM } = usePerms()
+const canHrWorkCreate = computed(() => accStore.isStaff && can(PERM.HR_WORK_CREATE))
 
 const dataFilter = ref<StaffFilter>({
   page: 1,
@@ -135,7 +136,7 @@ onMounted(async () => {
     <ContentBody>
       <CCardBody>
         <ListController ref="refListControl" @list-filtering="listFiltering" />
-        <AddStaff v-if="write_human_resource" :company="comName" @multi-submit="multiSubmit" />
+        <AddStaff v-if="canHrWorkCreate" :company="comName" @multi-submit="multiSubmit" />
         <TableTitleRow
           title="직원 목록"
           excel

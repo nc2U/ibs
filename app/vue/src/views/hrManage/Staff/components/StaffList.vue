@@ -1,13 +1,20 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
+import { usePerms } from '@/composables/usePerms.ts'
 import { useCompany } from '@/store/pinia/company'
+import { useAccount } from '@/store/pinia/account.ts'
 import { TableSecondary } from '@/utils/cssMixins'
-import { write_human_resource } from '@/utils/pageAuth'
 import { type Staff as StaffType } from '@/store/types/company'
 import Pagination from '@/components/Pagination'
 import Staff from './Staff.vue'
 
 const emit = defineEmits(['page-select', 'multi-submit', 'on-delete'])
+
+const { can, PERM } = usePerms()
+const accStore = useAccount()
+const canHrWorkManage = computed(
+  () => accStore.isStaff && (can(PERM.HR_WORK_CREATE) || can(PERM.HR_WORK_UPDATE)),
+)
 
 const companyStore = useCompany()
 const staffList = computed(() => companyStore.staffList)
@@ -30,7 +37,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
       <col style="width: 18%" />
       <col style="width: 13%" />
       <col style="width: 10%" />
-      <col v-if="write_human_resource" style="width: 8%" />
+      <col v-if="canHrWorkManage" style="width: 8%" />
     </colgroup>
 
     <CTableHead :color="TableSecondary">
@@ -43,7 +50,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
         <CTableHeaderCell scope="col">이메일</CTableHeaderCell>
         <CTableHeaderCell scope="col">입사일</CTableHeaderCell>
         <CTableHeaderCell scope="col">상태</CTableHeaderCell>
-        <CTableHeaderCell v-if="write_human_resource" scope="col">비고</CTableHeaderCell>
+        <CTableHeaderCell v-if="canHrWorkManage" scope="col">비고</CTableHeaderCell>
       </CTableRow>
     </CTableHead>
 

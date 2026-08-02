@@ -2,7 +2,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { pageTitle, navMenu } from '@/views/hrManage/_menu/headermixin2'
 import { useCompany } from '@/store/pinia/company'
-import { write_human_resource } from '@/utils/pageAuth'
+import { useAccount } from '@/store/pinia/account.ts'
+import { usePerms } from '@/composables/usePerms.ts'
 import { type Duty, type ComFilter } from '@/store/types/company'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
@@ -13,8 +14,9 @@ import AddDuty from './components/AddDuty.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import DutyList from './components/DutyList.vue'
 
-// 직책 = Duty
-const listControl = ref()
+const { can, PERM } = usePerms()
+const accStore = useAccount()
+const canHrWorkCreate = computed(() => accStore.isStaff && can(PERM.HR_WORK_CREATE))
 
 const dataFilter = ref<ComFilter>({
   page: 1,
@@ -88,7 +90,7 @@ onMounted(async () => {
     <ContentBody>
       <CCardBody>
         <ListController ref="listControl" @list-filtering="listFiltering" />
-        <AddDuty v-if="write_human_resource" :company="comName" @multi-submit="multiSubmit" />
+        <AddDuty v-if="canHrWorkCreate" :company="comName" @multi-submit="multiSubmit" />
         <TableTitleRow
           title="직책 목록"
           excel

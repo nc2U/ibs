@@ -2,12 +2,19 @@
 import { computed } from 'vue'
 import { useCompany } from '@/store/pinia/company'
 import { TableSecondary } from '@/utils/cssMixins'
-import { write_human_resource } from '@/utils/pageAuth'
+import { useAccount } from '@/store/pinia/account.ts'
+import { usePerms } from '@/composables/usePerms.ts'
 import { type Grade as GradeType } from '@/store/types/company'
 import Pagination from '@/components/Pagination'
 import Grade from './Grade.vue'
 
 const emit = defineEmits(['page-select', 'multi-submit', 'on-delete'])
+
+const { can, PERM } = usePerms()
+const accStore = useAccount()
+const canHrWorkManage = computed(
+  () => accStore.isStaff && (can(PERM.HR_WORK_CREATE) || can(PERM.HR_WORK_UPDATE)),
+)
 
 const comStore = useCompany()
 const gradeList = computed(() => comStore.gradeList)
@@ -27,7 +34,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
       <col style="width: 10%" />
       <col style="width: 30%" />
       <col style="width: 30%" />
-      <col v-if="write_human_resource" style="width: 10%" />
+      <col v-if="canHrWorkManage" style="width: 10%" />
     </colgroup>
 
     <CTableHead :color="TableSecondary">
@@ -37,7 +44,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
         <CTableHeaderCell scope="col">승급표준년수</CTableHeaderCell>
         <CTableHeaderCell scope="col">허용직위</CTableHeaderCell>
         <CTableHeaderCell scope="col">신입부여 기준</CTableHeaderCell>
-        <CTableHeaderCell v-if="write_human_resource" scope="col">비고</CTableHeaderCell>
+        <CTableHeaderCell v-if="canHrWorkManage" scope="col">비고</CTableHeaderCell>
       </CTableRow>
     </CTableHead>
 

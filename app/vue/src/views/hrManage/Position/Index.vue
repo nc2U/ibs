@@ -2,7 +2,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { pageTitle, navMenu } from '@/views/hrManage/_menu/headermixin2'
 import { useCompany } from '@/store/pinia/company'
-import { write_human_resource } from '@/utils/pageAuth'
+import { useAccount } from '@/store/pinia/account.ts'
+import { usePerms } from '@/composables/usePerms.ts'
 import type { Company } from '@/store/types/settings.ts'
 import { type Position, type ComFilter } from '@/store/types/company'
 import Loading from '@/components/Loading/Index.vue'
@@ -14,8 +15,9 @@ import AddPosition from './components/AddPosition.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import PositionList from './components/PositionList.vue'
 
-// 직위 = Position
-const refListControl = ref()
+const { can, PERM } = usePerms()
+const accStore = useAccount()
+const canHrWorkCreate = computed(() => accStore.isStaff && can(PERM.HR_WORK_CREATE))
 
 const dataFilter = ref<ComFilter>({
   page: 1,
@@ -103,7 +105,7 @@ onMounted(async () => {
     <ContentBody>
       <CCardBody>
         <ListController ref="refListControl" @list-filtering="listFiltering" />
-        <AddPosition v-if="write_human_resource" :company="comName" @multi-submit="multiSubmit" />
+        <AddPosition v-if="canHrWorkCreate" :company="comName" @multi-submit="multiSubmit" />
         <TableTitleRow
           title="직위 목록"
           excel

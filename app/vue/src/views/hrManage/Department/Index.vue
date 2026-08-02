@@ -1,8 +1,9 @@
 <script lang="ts" setup>
 import { ref, onMounted, computed } from 'vue'
 import { pageTitle, navMenu } from '@/views/hrManage/_menu/headermixin1'
+import { usePerms } from '@/composables/usePerms.ts'
 import { useCompany } from '@/store/pinia/company'
-import { write_human_resource } from '@/utils/pageAuth'
+import { useAccount } from '@/store/pinia/account.ts'
 import type { Company } from '@/store/types/settings.ts'
 import { type Department as Depart, type DepFilter } from '@/store/types/company'
 import Loading from '@/components/Loading/Index.vue'
@@ -14,7 +15,9 @@ import AddDepartment from './components/AddDepartment.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import DepartmentList from './components/DepartmentList.vue'
 
-const listControl = ref()
+const { can, PERM } = usePerms()
+const accStore = useAccount()
+const canHrWorkCreate = computed(() => accStore.isStaff && can(PERM.HR_WORK_CREATE))
 
 const dataFilter = ref<DepFilter>({
   page: 1,
@@ -113,7 +116,7 @@ onMounted(async () => {
     <ContentBody>
       <CCardBody>
         <ListController ref="listControl" @list-filtering="listFiltering" />
-        <AddDepartment v-if="write_human_resource" :company="comName" @multi-submit="multiSubmit" />
+        <AddDepartment v-if="canHrWorkCreate" :company="comName" @multi-submit="multiSubmit" />
         <TableTitleRow
           title="부서 목록"
           excel

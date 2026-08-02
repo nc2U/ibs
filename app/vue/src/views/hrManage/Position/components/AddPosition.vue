@@ -1,7 +1,8 @@
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+import { usePerms } from '@/composables/usePerms.ts'
 import { AlertSecondary } from '@/utils/cssMixins'
-import { write_human_resource } from '@/utils/pageAuth'
+import { useAccount } from '@/store/pinia/account.ts'
 import { type Position } from '@/store/types/company'
 import PositionForm from './PositionForm.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
@@ -10,11 +11,15 @@ import AlertModal from '@/components/Modals/AlertModal.vue'
 defineProps({ company: { type: String, default: null } })
 const emit = defineEmits(['multi-submit'])
 
+const { can, PERM } = usePerms()
+const accStore = useAccount()
+const canHrWorkCreate = computed(() => accStore.isStaff && can(PERM.HR_WORK_CREATE))
+
 const refFormModal = ref()
 const refAlertModal = ref()
 
 const createConfirm = () => {
-  if (write_human_resource.value) refFormModal.value.callModal()
+  if (canHrWorkCreate.value) refFormModal.value.callModal()
   else refAlertModal.value.callModal()
 }
 const multiSubmit = (payload: Position) => emit('multi-submit', payload)

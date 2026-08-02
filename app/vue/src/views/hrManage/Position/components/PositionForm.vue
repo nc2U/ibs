@@ -2,8 +2,8 @@
 import { ref, computed, onBeforeMount, watch, type PropType } from 'vue'
 import { useCompany } from '@/store/pinia/company'
 import { isValidate } from '@/utils/helper'
-import { btnLight } from '@/utils/cssMixins.ts'
-import { write_human_resource } from '@/utils/pageAuth'
+import { usePerms } from '@/composables/usePerms.ts'
+import { useAccount } from '@/store/pinia/account.ts'
 import { type Position } from '@/store/types/company'
 import Multiselect from '@vueform/multiselect'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
@@ -23,6 +23,12 @@ watch(
 )
 
 const emit = defineEmits(['multi-submit', 'on-delete', 'close'])
+
+const { can, PERM } = usePerms()
+const accStore = useAccount()
+const canHrWorkCreate = computed(() => accStore.isStaff && can(PERM.HR_WORK_CREATE))
+const canHrWorkUpdate = computed(() => accStore.isStaff && can(PERM.HR_WORK_UPDATE))
+const canHrWorkDelete = computed(() => accStore.isStaff && can(PERM.HR_WORK_DELETE))
 
 const refDelModal = ref()
 const refAlertModal = ref()
@@ -54,7 +60,7 @@ const onSubmit = (event: Event) => {
   if (isValidate(event)) {
     validated.value = true
   } else {
-    if (write_human_resource.value) multiSubmit({ ...form.value })
+    if (canHrWorkCreate.value || canHrWorkUpdate.value) multiSubmit({ ...form.value })
     else refAlertModal.value.callModal()
   }
 }
@@ -71,7 +77,7 @@ const deleteObject = (pk: number) => {
 }
 
 const deleteConfirm = () => {
-  if (write_human_resource.value) refDelModal.value.callModal()
+  if (canHrWorkDelete.value) refDelModal.value.callModal()
   else refAlertModal.value.callModal()
 }
 
@@ -139,7 +145,6 @@ onBeforeMount(() => formDataSetup())
     </CModalBody>
 
     <CModalFooter>
-      <v-btn type="button" size="small" :color="btnLight" @click="$emit('close')"> 닫기</v-btn>
       <slot name="footer">
         <v-btn
           type="submit"
@@ -152,6 +157,7 @@ onBeforeMount(() => formDataSetup())
         <v-btn v-if="position" type="button" size="small" color="warning" @click="deleteConfirm">
           삭제
         </v-btn>
+        <v-btn type="button" size="small" color="light" @click="$emit('close')" flat> 닫기</v-btn>
       </slot>
     </CModalFooter>
   </CForm>

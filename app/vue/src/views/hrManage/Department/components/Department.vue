@@ -1,7 +1,8 @@
 <script lang="ts" setup>
-import { type PropType, ref } from 'vue'
+import { computed, type PropType, ref } from 'vue'
+import { useAccount } from '@/store/pinia/account.ts'
+import { usePerms } from '@/composables/usePerms.ts'
 import { type Department } from '@/store/types/company'
-import { write_human_resource } from '@/utils/pageAuth'
 import FormModal from '@/components/Modals/FormModal.vue'
 import DepartmentForm from './DepartmentForm.vue'
 
@@ -11,6 +12,12 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['multi-submit', 'on-delete'])
+
+const { can, PERM } = usePerms()
+const accStore = useAccount()
+const canHrWorkCreate = computed(() => accStore.isStaff && can(PERM.HR_WORK_CREATE))
+const canHrWorkUpdate = computed(() => accStore.isStaff && can(PERM.HR_WORK_UPDATE))
+const canHrWorkManager = computed(() => canHrWorkCreate.value || canHrWorkUpdate.value)
 
 const updateFormModal = ref()
 
@@ -37,7 +44,7 @@ const getUpperName = (up: number | null) => {
     </CTableDataCell>
     <CTableDataCell>{{ department.name }}</CTableDataCell>
     <CTableDataCell class="text-left">{{ department.task }}</CTableDataCell>
-    <CTableDataCell v-if="write_human_resource">
+    <CTableDataCell v-if="canHrWorkManager">
       <v-btn color="info" size="x-small" @click="showDetail">확인</v-btn>
     </CTableDataCell>
   </CTableRow>
