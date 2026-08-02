@@ -358,26 +358,6 @@ jobs:
 
           echo "✅ All pods restarted successfully"
 
-#      - name: Restart web and nginx pods
-#        uses: garygrossgarten/github-action-ssh@release
-#        with:
-#          host: ${{ secrets.CICD_HOST }}
-#          username: ${{ secrets.CICD_USER }}
-#          password: ${{ secrets.CICD_PASS }}
-#          command: |
-#            export KUBECONFIG=~/.kube/config
-#            echo "🔄 [1/2] Restarting Nginx pods (new dist mount)..."
-#            kubectl rollout restart deployment/nginx -n ibs-prod
-#            kubectl rollout status deployment/nginx -n ibs-prod --timeout=120s
-#            echo "✅ Nginx rollout complete — all pods now mount new dist"
-#
-#            echo "🔄 [2/2] Restarting Web pods (new index.html)..."
-#            kubectl rollout restart deployment/web -n ibs-prod
-#            kubectl rollout status deployment/web -n ibs-prod --timeout=120s
-#            echo "✅ Web rollout complete"
-#
-#            echo "✅ All pods restarted successfully"
-
       # Pod 롤아웃 완료 후 구 빌드 정리
       # ⚠️ 반드시 pod rollout 이후에 실행해야 함:
       #   구 Pod의 subPath bind mount가 삭제된 디렉터리를 가리키면 NFS stale handle → 500 발생
