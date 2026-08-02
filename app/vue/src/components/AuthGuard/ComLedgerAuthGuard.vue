@@ -7,11 +7,11 @@ const account = useAccount()
 
 const isLoading = computed(() => !account.userInfo)
 
-const hasAuth = computed(() => account.isFinancial)
+const isFinancialManager = computed(() => account.isFinancial)
 </script>
 
 <template>
   <div v-if="isLoading"></div>
-  <NoAuth v-else-if="!hasAuth" />
+  <NoAuth v-else-if="!isFinancialManager" />
   <slot v-else />
 </template>
