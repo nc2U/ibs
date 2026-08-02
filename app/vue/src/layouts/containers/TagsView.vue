@@ -128,13 +128,12 @@ onMounted(() => {
         @click.middle="!isAffix(view) ? closeSelectedTag(view) : ''"
       >
         <v-btn
-          class="mx-1 my-0 text-body"
-          :class="{ darkBtn: dark }"
-          style="text-decoration: none"
+          class="mx-1 my-0 text-body no-underline"
+          :class="{ darkBtn: dark, 'active-text': isActive(view) }"
           size="small"
           :border="true"
           :rounded="0"
-          :color="isActive(view) ? 'success' : btnColor"
+          :color="isActive(view) ? 'green-darken-1' : btnColor"
           :to="{ path: view.fullPath }"
         >
           <v-icon v-if="isActive(view)" icon="mdi-circle" size="x-small" class="mr-2" />
@@ -159,5 +158,9 @@ onMounted(() => {
 
 .dark {
   background: #2a2b36;
+}
+
+.active-text {
+  color: white !important;
 }
 </style>
