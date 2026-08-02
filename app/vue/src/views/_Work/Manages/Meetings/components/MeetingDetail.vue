@@ -493,8 +493,20 @@ const refConfirmModal = ref()
         >
           {{ meeting.is_confirmed ? '확정취소' : '회의확정' }}
         </v-btn>
-        <v-btn v-if="canMeetingUpdate" color="success" @click="goEdit"> 수정 </v-btn>
-        <v-btn v-if="canMeetingDelete" color="warning" @click="refConfirmModal.callModal()">
+        <v-btn
+          v-if="canMeetingUpdate"
+          color="success"
+          @click="goEdit"
+          :disabled="meeting.is_confirmed"
+        >
+          수정
+        </v-btn>
+        <v-btn
+          v-if="canMeetingDelete"
+          color="warning"
+          @click="refConfirmModal.callModal()"
+          :disabled="meeting.is_confirmed"
+        >
           삭제
         </v-btn>
         <v-btn color="light" @click="goList" flat> 목록으로 </v-btn>
