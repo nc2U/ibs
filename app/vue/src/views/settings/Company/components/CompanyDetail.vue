@@ -38,9 +38,9 @@ const toCreate = () => {
             <col style="width: 75%" />
           </colgroup>
           <CTableHead>
-            <CTableRow>
-              <CTableHeaderCell scope="col"></CTableHeaderCell>
-              <CTableHeaderCell scope="col"></CTableHeaderCell>
+            <CTableRow class="bg-more-light border-top">
+              <CTableHeaderCell scope="col">구분</CTableHeaderCell>
+              <CTableHeaderCell scope="col">내용</CTableHeaderCell>
             </CTableRow>
           </CTableHead>
           <CTableBody>
