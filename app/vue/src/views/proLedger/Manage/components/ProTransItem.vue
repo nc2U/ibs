@@ -2,8 +2,7 @@
 import { computed, type ComputedRef, inject, nextTick, type PropType, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { cutString, diffDate, numFormat } from '@/utils/baseMixins'
-import { useAccount } from '@/store/pinia/account.ts'
-import { write_project_ledger } from '@/utils/pageAuth'
+import { usePerms } from '@/composables/usePerms.ts'
 import { useProLedger } from '@/store/pinia/proLedger.ts'
 import type { AccountPicker } from '@/store/types/comLedger.ts'
 import type { ProAccountingEntry, ProBankTrans } from '@/store/types/proLedger.ts'
@@ -16,18 +15,18 @@ const props = defineProps({
   isHighlighted: { type: Boolean, default: false },
 })
 
+const { can, PERM } = usePerms()
+const canLedgerUpdate = computed(() => can(PERM.LEDGER_UPDATE))
+
 const router = useRouter()
 const proLedgerStore = useProLedger()
 
 const rowColor = computed(() => (props.isHighlighted ? 'warning' : ''))
 
-const accStore = useAccount()
-const superAuth = computed(() => accStore.superAuth)
 const allowedPeriod = computed(
   () =>
-    (superAuth as any).value ||
-    (write_project_ledger &&
-      diffDate(props.proTrans?.deal_date as string, new Date(props.calculated)) <= 10),
+    canLedgerUpdate.value &&
+    diffDate(props.proTrans?.deal_date as string, new Date(props.calculated)) <= 10,
 )
 
 const proAccounts = inject<ComputedRef<AccountPicker[]>>('proAccounts')
@@ -525,7 +524,7 @@ const handleUpdate = async () => {
             <col style="width: 26%" />
             <col style="width: 16%" />
             <col style="width: 24%" />
-            <col v-if="write_project_ledger" style="width: 6%" />
+            <col v-if="canLedgerUpdate" style="width: 6%" />
           </colgroup>
           <CTableRow v-for="entry in visibleEntries" :key="entry.pk" class="bg-lime-lighten-5">
             <CTableDataCell
@@ -715,7 +714,7 @@ const handleUpdate = async () => {
             <CTableDataCell class="pl-3">
               {{ cutString(entry.evidence_type_display, 10) }}
             </CTableDataCell>
-            <CTableDataCell v-if="write_project_ledger" class="text-right pr-2">
+            <CTableDataCell v-if="canLedgerUpdate" class="text-right pr-2">
               <v-icon
                 v-if="allowedPeriod"
                 icon="mdi-pencil"

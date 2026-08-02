@@ -1,9 +1,9 @@
 <script lang="ts" setup>
-import { ref, reactive, computed, onMounted, onUpdated, type PropType } from 'vue'
-import { write_project_ledger } from '@/utils/pageAuth'
-import type { ProjectBank } from '@/store/types/proLedger.ts'
-import { isValidate, errorHandle } from '@/utils/helper'
 import api from '@/api'
+import { ref, reactive, computed, onMounted, onUpdated, type PropType } from 'vue'
+import { usePerms } from '@/composables/usePerms.ts'
+import { isValidate, errorHandle } from '@/utils/helper'
+import type { ProjectBank } from '@/store/types/proLedger.ts'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
@@ -12,6 +12,10 @@ const props = defineProps({
   bankAcc: { type: Object as PropType<ProjectBank>, default: () => null },
 })
 const emit = defineEmits(['on-bank-create', 'on-bank-update'])
+
+const { can, PERM } = usePerms()
+const canLedgerCreate = computed(() => can(PERM.LEDGER_CREATE))
+const canLedgerUpdate = computed(() => can(PERM.LEDGER_UPDATE))
 
 const refConfirmModal = ref()
 const refAlertModal = ref()
@@ -62,7 +66,7 @@ const onSubmit = (event: Event) => {
   if (isValidate(event)) {
     validated.value = true
   } else {
-    if (write_project_ledger.value) {
+    if (canLedgerCreate.value || canLedgerUpdate.value) {
       refConfirmModal.value.callModal()
     } else refAlertModal.value.callModal()
     validated.value = false

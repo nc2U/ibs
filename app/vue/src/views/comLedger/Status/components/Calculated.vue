@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import { ref } from 'vue'
-import { write_project_ledger } from '@/utils/pageAuth'
+import { ref, computed } from 'vue'
+import { usePerms } from '@/composables/usePerms.ts'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 defineProps({
@@ -8,6 +8,9 @@ defineProps({
   isCalculated: { type: Boolean, default: false },
 })
 const emit = defineEmits(['to-calculate'])
+
+const { can, PERM } = usePerms()
+const canLedgerUpdate = computed(() => can(PERM.LEDGER_UPDATE))
 
 const refConfirmModal = ref()
 
@@ -20,11 +23,7 @@ const modalAction = () => {
 </script>
 
 <template>
-  <CAlert
-    v-if="write_project_ledger"
-    :color="isCalculated ? 'success' : 'warning'"
-    class="text-right"
-  >
+  <CAlert v-if="canLedgerUpdate" :color="isCalculated ? 'success' : 'warning'" class="text-right">
     <span v-if="calcDate" class="mr-3">[정산일 : {{ calcDate }}]</span>
     <v-btn v-if="isCalculated" color="success" size="x-large" disabled> 잔고정산 확인완료</v-btn>
     <v-btn v-else color="warning" size="x-large" @click="toCalculated"> 당일잔고 정산확인</v-btn>

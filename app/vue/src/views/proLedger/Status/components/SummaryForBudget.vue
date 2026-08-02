@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import { ref, computed } from 'vue'
-import { useProject } from '@/store/pinia/project'
-import { write_project_ledger } from '@/utils/pageAuth'
 import { numFormat } from '@/utils/baseMixins'
+import { usePerms } from '@/composables/usePerms.ts'
+import { useProject } from '@/store/pinia/project'
 import { TableInfo, TableSecondary } from '@/utils/cssMixins'
 import type {
   StatusOutBudget,
@@ -12,6 +12,9 @@ import type {
 defineProps({ date: { type: String, default: '' } })
 
 const emit = defineEmits(['patch-budget', 'update-revised'])
+
+const { can, PERM } = usePerms()
+const canLedgerUpdate = computed(() => can(PERM.LEDGER_UPDATE))
 
 const formNumber = ref(1000)
 const isRevised = ref('1')
@@ -88,7 +91,7 @@ const sumTotal = computed(() => {
 
 const patchBudget = (pk: number, budget: string, oldBudget: number, isRevised = false) => {
   formNumber.value = 1000
-  if (write_project_ledger.value) {
+  if (canLedgerUpdate.value) {
     const bg = parseInt(budget)
     if (bg !== oldBudget) emit('patch-budget', pk, bg, isRevised)
   } else {

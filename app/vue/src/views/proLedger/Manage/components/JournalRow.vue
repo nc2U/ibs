@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed, type ComputedRef, inject, ref, watch } from 'vue'
-import { write_project_ledger } from '@/utils/pageAuth.ts'
+import { usePerms } from '@/composables/usePerms.ts'
 import type { AccountPicker } from '@/store/types/comLedger.ts'
 import LedgerAccount from '@/components/LedgerAccount/Index.vue'
 import MultiSelect from '@/components/MultiSelect/index.vue'
@@ -53,6 +53,9 @@ interface Emits {
 }
 
 const emit = defineEmits<Emits>()
+
+const { can, PERM } = usePerms()
+const canLedgerManage = computed(() => can(PERM.LEDGER_CREATE) || can(PERM.LEDGER_UPDATE))
 
 const getContracts = inject<ComputedRef<{ value: number; label: string }[]>>('getContracts')
 const getContractors = inject<ComputedRef<{ value: number; label: string }[]>>('getAllContractors')
@@ -157,7 +160,7 @@ const isEvidenceRequired = (row: NewEntryForm): boolean => {
       <col style="width: 24%" />
       <col style="width: 16%" />
       <col style="width: 22%" />
-      <col v-if="write_project_ledger" style="width: 6%" />
+      <col v-if="canLedgerManage" style="width: 6%" />
     </colgroup>
 
     <!-- 모든 행을 수정 가능한 폼으로 렌더링 -->
@@ -220,7 +223,7 @@ const isEvidenceRequired = (row: NewEntryForm): boolean => {
           <option value="6">지로용지 및 청구서</option>
         </CFormSelect>
       </CTableDataCell>
-      <CTableDataCell v-if="write_project_ledger" class="text-right pr-2">
+      <CTableDataCell v-if="canLedgerManage" class="text-right pr-2">
         <v-icon
           v-if="sort === 2 && !row.trader?.includes('이체수수료')"
           icon="mdi-playlist-plus"

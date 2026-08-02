@@ -4,7 +4,6 @@ import { useProLedger } from '@/store/pinia/proLedger.ts'
 import type { ProjectBank } from '@/store/types/proLedger.ts'
 import BankAccForm from './BankAccForm.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
-import { CRow } from '@coreui/vue'
 
 const emit = defineEmits(['on-bank-create', 'on-bank-update'])
 

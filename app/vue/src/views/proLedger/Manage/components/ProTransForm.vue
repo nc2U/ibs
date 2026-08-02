@@ -1,15 +1,15 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, reactive, ref, watch, provide } from 'vue'
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import { isValidate } from '@/utils/helper.ts'
 import { getToday, numFormat } from '@/utils/baseMixins.ts'
-import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
+import { useExcelUpload } from '@/composables/useExcelUpload'
+import { usePerms } from '@/composables/usePerms.ts'
 import { useProLedger } from '@/store/pinia/proLedger.ts'
 import { useContract } from '@/store/pinia/contract.ts'
 import { TableSecondary } from '@/utils/cssMixins.ts'
-import { write_project_ledger } from '@/utils/pageAuth.ts'
 import type { ProBankTrans } from '@/store/types/proLedger.ts'
 import type { ParseResult } from '@/composables/useExcelUpload'
-import { useExcelUpload } from '@/composables/useExcelUpload'
 import BankTransactionRow, { type BankTransactionData } from './BankTransactionRow.vue'
 import ExcelUploadDialog from '@/components/LedgerAccount/ExcelUploadDialog.vue'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
@@ -29,6 +29,12 @@ watch(
     else router.push({ name: '거래 내역 관리' })
   },
 )
+
+const { can, PERM } = usePerms()
+const canLedgerCreate = computed(() => can(PERM.LEDGER_CREATE))
+const canLedgerUpdate = computed(() => can(PERM.LEDGER_UPDATE))
+const canLedgerDelete = computed(() => can(PERM.LEDGER_DELETE))
+const canLedgerManage = computed(() => canLedgerCreate.value || canLedgerUpdate.value)
 
 const confirmModal = ref()
 const refAccountManage = ref()
@@ -482,27 +488,27 @@ const validateForm = () => {
 }
 
 // 신규 거래 데이터 생성
-const buildCreatePayload = () => {
-  validateForm()
-
-  const validEntries = editableEntries.value
-    .filter(e => (e.amount || 0) > 0)
-    .map(entry => ({
-      ...entry,
-      evidence_type: entry.evidence_type === '' ? null : entry.evidence_type,
-    }))
-
-  return {
-    project: props.project!,
-    deal_date: bankForm.deal_date,
-    bank_account: bankForm.bank_account!,
-    amount: bankForm.amount!,
-    sort: bankForm.sort,
-    content: bankForm.content,
-    note: bankForm.note,
-    accounting_entries: validEntries,
-  } as any // API 요청 타입과 ProBankTrans 타입이 다르므로 any 처리
-}
+// const buildCreatePayload = () => {
+//   validateForm()
+//
+//   const validEntries = editableEntries.value
+//     .filter(e => (e.amount || 0) > 0)
+//     .map(entry => ({
+//       ...entry,
+//       evidence_type: entry.evidence_type === '' ? null : entry.evidence_type,
+//     }))
+//
+//   return {
+//     project: props.project!,
+//     deal_date: bankForm.deal_date,
+//     bank_account: bankForm.bank_account!,
+//     amount: bankForm.amount!,
+//     sort: bankForm.sort,
+//     content: bankForm.content,
+//     note: bankForm.note,
+//     accounting_entries: validEntries,
+//   } as any // API 요청 타입과 ProBankTrans 타입이 다르므로 any 처리
+// }
 
 // 수정 거래 데이터 생성
 const buildUpdatePayload = () => {
@@ -782,13 +788,13 @@ onBeforeRouteLeave((to, from, next) => {
         <col style="width: 12%" />
         <col style="width: 8%" />
         <col style="width: 11%" />
-        <col v-if="write_project_ledger" style="width: 3%" />
+        <col v-if="canLedgerManage" style="width: 3%" />
       </colgroup>
 
       <CTableHead class="sticky-table-head">
         <CTableRow :color="TableSecondary" class="sticky-header-row-1">
           <CTableHeaderCell class="pl-3" colspan="5">은행거래내역</CTableHeaderCell>
-          <CTableHeaderCell class="pl-0" :colspan="write_project_ledger ? 4 : 3">
+          <CTableHeaderCell class="pl-0" :colspan="canLedgerManage ? 4 : 3">
             <span class="text-grey mr-2">|</span> 분류 내역
           </CTableHeaderCell>
           <CTableHeaderCell class="px-0">
@@ -843,7 +849,7 @@ onBeforeRouteLeave((to, from, next) => {
           <CTableHeaderCell scope="col">거래처</CTableHeaderCell>
           <CTableHeaderCell scope="col">분류 금액</CTableHeaderCell>
           <CTableHeaderCell scope="col">지출증빙</CTableHeaderCell>
-          <CTableHeaderCell v-if="write_project_ledger" scope="col"></CTableHeaderCell>
+          <CTableHeaderCell v-if="canLedgerManage" scope="col"></CTableHeaderCell>
         </CTableRow>
       </CTableHead>
 
@@ -953,7 +959,7 @@ onBeforeRouteLeave((to, from, next) => {
           color="warning"
           size="small"
           @click="confirmModal.callModal()"
-          :disabled="!write_project_ledger"
+          :disabled="!canLedgerDelete"
         >
           삭제
         </v-btn>

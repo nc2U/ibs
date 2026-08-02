@@ -33,8 +33,3 @@ export const write_payment = computed(() =>
 export const write_notice = computed(() =>
   hasPermission([PERM.NOTICE_CREATE, PERM.NOTICE_UPDATE, PERM.NOTICE_DELETE]),
 )
-
-// ── 사업비 자금/회계 원장 ──────────────────────────────────────────────
-export const write_project_ledger = computed(() =>
-  hasPermission([PERM.LEDGER_CREATE, PERM.LEDGER_UPDATE, PERM.LEDGER_DELETE]),
-)

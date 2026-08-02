@@ -5,7 +5,6 @@ import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { errorHandle, message } from '@/utils/helper'
 import { useDocs } from '@/store/pinia/docs'
-import { write_project_ledger } from '@/utils/pageAuth'
 import type { LocationQueryValue } from 'vue-router'
 import type { User, Profile, Scrape, Todo } from '@/store/types/accounts'
 
@@ -216,8 +215,6 @@ export const useAccount = defineStore('account', () => {
   const isComLedger = computed(() => !!superAuth.value || !!userInfo.value?.is_hq_financial_officer)
 
   const profile = ref<Profile | null>(null)
-
-  const writeProLedger = computed(() => !!superAuth.value || write_project_ledger.value) // states
 
   // actions
   const fetchProfile = async () => {
@@ -433,7 +430,6 @@ export const useAccount = defineStore('account', () => {
     isStaff,
     isFinancial,
     isComLedger,
-    writeProLedger,
 
     profile,
 

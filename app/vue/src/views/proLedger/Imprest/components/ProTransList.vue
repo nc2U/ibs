@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
 import { TableSecondary } from '@/utils/cssMixins'
-import { write_project_ledger } from '@/utils/pageAuth'
 import { useProLedger } from '@/store/pinia/proLedger.ts'
+import { usePerms } from '@/composables/usePerms.ts'
 import type { ProjectBank } from '@/store/types/proLedger.ts'
 import Pagination from '@/components/Pagination'
 import AccountManage from '@/views/proLedger/Manage/components/AccountManage.vue'
@@ -15,6 +15,9 @@ const props = defineProps({
   currentPage: { type: Number, default: 1 },
 })
 const emit = defineEmits(['page-select', 'on-bank-create', 'on-bank-update'])
+
+const { can, PERM } = usePerms()
+const canLedgerUpdate = computed(() => can(PERM.LEDGER_UPDATE))
 
 const refAccountManage = ref()
 const refBankAcc = ref()
@@ -46,13 +49,13 @@ const accCallModal = () => {
       <col style="width: 13%" />
       <col style="width: 8%" />
       <col style="width: 12%" />
-      <col v-if="write_project_ledger" style="width: 3%" />
+      <col v-if="canLedgerUpdate" style="width: 3%" />
     </colgroup>
 
     <CTableHead>
       <CTableRow :color="TableSecondary">
         <CTableHeaderCell class="pl-3" colspan="6">은행거래내역</CTableHeaderCell>
-        <CTableHeaderCell class="pl-0" :colspan="write_project_ledger ? 6 : 5">
+        <CTableHeaderCell class="pl-0" :colspan="canLedgerUpdate ? 6 : 5">
           <span class="text-grey mr-2">|</span> 분류 내역
         </CTableHeaderCell>
       </CTableRow>
@@ -78,7 +81,7 @@ const accCallModal = () => {
         <CTableHeaderCell scope="col">거래처</CTableHeaderCell>
         <CTableHeaderCell scope="col">분류 금액</CTableHeaderCell>
         <CTableHeaderCell scope="col">지출증빙</CTableHeaderCell>
-        <CTableHeaderCell v-if="write_project_ledger" scope="col"></CTableHeaderCell>
+        <CTableHeaderCell v-if="canLedgerUpdate" scope="col"></CTableHeaderCell>
       </CTableRow>
     </CTableHead>
 
