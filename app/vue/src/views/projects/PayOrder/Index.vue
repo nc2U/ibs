@@ -1,9 +1,9 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref } from 'vue'
 import { pageTitle, navMenu } from '@/views/projects/_menu/headermixin6'
-import { write_project } from '@/utils/pageAuth'
 import { useProject } from '@/store/pinia/project'
 import { usePayment } from '@/store/pinia/payment'
+import { usePerms } from '@/composables/usePerms.ts'
 import { type PayOrder } from '@/store/types/payment'
 import type { Project } from '@/store/types/project.ts'
 import Loading from '@/components/Loading/Index.vue'
@@ -12,6 +12,9 @@ import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ProjectAuthGuard from '@/components/AuthGuard/ProjectAuthGuard.vue'
 import PayOrderAddForm from '@/views/projects/PayOrder/components/PayOrderAddForm.vue'
 import PayOrderFormList from '@/views/projects/PayOrder/components/PayOrderFormList.vue'
+
+const { can, PERM } = usePerms()
+const canProjectUpdate = computed(() => can(PERM.PROJECT_UPDATE))
 
 const projStore = useProject()
 const project = computed(() => (projStore.project as Project)?.pk)
@@ -56,7 +59,7 @@ onBeforeMount(async () => {
 
     <ContentBody>
       <CCardBody class="pb-5">
-        <PayOrderAddForm v-if="write_project" :disabled="!project" @on-submit="onSubmit" />
+        <PayOrderAddForm v-if="canProjectUpdate" :disabled="!project" @on-submit="onSubmit" />
         <PayOrderFormList @on-update="onUpdatePayOrder" @on-delete="onDeletePayOrder" />
       </CCardBody>
     </ContentBody>

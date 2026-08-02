@@ -1,9 +1,9 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, provide, ref } from 'vue'
 import { pageTitle, navMenu } from '@/views/projects/_menu/headermixin4'
-import { write_project } from '@/utils/pageAuth'
 import { useProject } from '@/store/pinia/project'
 import { useProjectData } from '@/store/pinia/project_data'
+import { usePerms } from '@/composables/usePerms.ts'
 import type { Project, UnitType } from '@/store/types/project'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
@@ -11,6 +11,9 @@ import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ProjectAuthGuard from '@/components/AuthGuard/ProjectAuthGuard.vue'
 import TypeAddForm from '@/views/projects/Type/components/TypeAddForm.vue'
 import TypeFormList from '@/views/projects/Type/components/TypeFormList.vue'
+
+const { can, PERM } = usePerms()
+const canProjectUpdate = computed(() => can(PERM.PROJECT_UPDATE))
 
 const projStore = useProject()
 const project = computed(() => (projStore.project as Project)?.pk)
@@ -63,7 +66,7 @@ onBeforeMount(async () => {
 
     <ContentBody>
       <CCardBody class="pb-5">
-        <TypeAddForm v-if="write_project" :disabled="!project" @on-submit="onSubmit" />
+        <TypeAddForm v-if="canProjectUpdate" :disabled="!project" @on-submit="onSubmit" />
         <TypeFormList @on-update="onUpdateType" @on-delete="onDeleteType" />
       </CCardBody>
     </ContentBody>

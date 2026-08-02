@@ -1,14 +1,15 @@
 <script lang="ts" setup>
 import { ref, reactive, computed, onBeforeMount, inject } from 'vue'
+import { usePerms } from '@/composables/usePerms.ts'
 import { useAccount } from '@/store/pinia/account'
-import { write_project } from '@/utils/pageAuth'
-import { type ProjectAccountD2, type ProjectAccountD3 } from '@/store/types/project'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
-import { CTableRow } from '@coreui/vue'
 
 const props = defineProps({ budget: { type: Object, required: true } })
 const emit = defineEmits(['on-update', 'on-delete'])
+
+const { can, PERM } = usePerms()
+const canProjectUpdate = computed(() => can(PERM.PROJECT_UPDATE))
 
 const accountList = inject<any>('accountList')
 
@@ -33,7 +34,7 @@ const formsCheck = computed(() => {
 })
 
 const onUpdateBudget = () => {
-  if (write_project.value) {
+  if (canProjectUpdate.value) {
     emit('on-update', { ...form })
   } else {
     refAlertModal.value.callModal()
@@ -102,7 +103,7 @@ onBeforeMount(() => dataSetup())
         @keydown.enter="onUpdateBudget"
       />
     </CTableDataCell>
-    <CTableDataCell v-if="write_project" class="text-center pt-3">
+    <CTableDataCell v-if="canProjectUpdate" class="text-center pt-3">
       <v-btn color="success" size="x-small" :disabled="formsCheck" @click="onUpdateBudget">
         수정
       </v-btn>

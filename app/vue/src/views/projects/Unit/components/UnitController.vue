@@ -1,15 +1,18 @@
 <script lang="ts" setup>
 import { computed, reactive, ref, watch } from 'vue'
 import { useProjectData } from '@/store/pinia/project_data'
-import { type BuildingUnit } from '@/store/types/project'
 import { AlertLight } from '@/utils/cssMixins'
-import { write_project } from '@/utils/pageAuth'
+import { usePerms } from '@/composables/usePerms.ts'
+import { type BuildingUnit } from '@/store/types/project'
 import FormModal from '@/components/Modals/FormModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
 const props = defineProps({ project: { type: Number, default: null } })
 const emit = defineEmits(['bldg-select', 'dong-register', 'unit-register'])
+
+const { can, PERM } = usePerms()
+const canProjectUpdate = computed(() => can(PERM.PROJECT_UPDATE))
 
 const projReset = () => {
   form.building = null
@@ -70,7 +73,7 @@ watch(form, val => {
 const dong = ref('')
 
 const onSubmit = (event: Event) => {
-  if (write_project.value) {
+  if (canProjectUpdate.value) {
     const e = event.currentTarget as HTMLSelectElement
     if (!e.checkValidity()) {
       event.preventDefault()
@@ -127,7 +130,7 @@ const typeSelect = (event: Event) => {
 }
 
 const unitRegister = () => {
-  if (write_project.value) refConfirmModal.value.callModal()
+  if (canProjectUpdate.value) refConfirmModal.value.callModal()
   else {
     refAlertModal.value.callModal()
     reset(1)
@@ -166,7 +169,7 @@ const modalAction = () => {
           </CCol>
         </CRow>
       </CCol>
-      <CCol v-if="write_project" class="pt-1">
+      <CCol v-if="canProjectUpdate" class="pt-1">
         <v-icon
           icon="mdi mdi-plus-thick"
           size="16"
@@ -178,7 +181,7 @@ const modalAction = () => {
     </CRow>
   </CCallout>
 
-  <CCallout v-if="write_project" color="danger" class="pb-2">
+  <CCallout v-if="canProjectUpdate" color="danger" class="pb-2">
     <CRow>
       <CCol md="3" class="mb-2">
         <CRow>
@@ -250,7 +253,7 @@ const modalAction = () => {
     등록되지 않도록 신중하게 진행하여 주십시요.
   </CAlert>
 
-  <CAlert v-if="write_project" :color="AlertLight" variant="solid" class="text-right">
+  <CAlert v-if="canProjectUpdate" :color="AlertLight" variant="solid" class="text-right">
     <v-btn color="primary" :disabled="!project || !form.minFloor" @click="unitRegister">
       호수(유니트) 일괄등록
     </v-btn>

@@ -2,13 +2,16 @@
 import { computed, onMounted, type PropType, ref } from 'vue'
 import { useAccount } from '@/store/pinia/account'
 import { useProjectData } from '@/store/pinia/project_data'
-import { write_project } from '@/utils/pageAuth'
+import { usePerms } from '@/composables/usePerms.ts'
 import type { AllHouseUnit } from '@/store/types/project.ts'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
 const props = defineProps({ unit: { type: Object as PropType<AllHouseUnit>, required: true } })
 const emit = defineEmits(['on-update', 'on-delete'])
+
+const { can, PERM } = usePerms()
+const canProjectUpdate = computed(() => can(PERM.PROJECT_UPDATE))
 
 const refAlertModal = ref()
 const refConfirmModal = ref()
@@ -42,7 +45,7 @@ const getFloorTypes = computed(() => proDataStore.getFloorTypes)
 const buildingList = computed(() => proDataStore.buildingList)
 
 const onUpdateUnit = () => {
-  if (write_project) {
+  if (canProjectUpdate) {
     const pk = props.unit?.pk
     emit('on-update', { ...{ pk }, ...form.value })
   } else refAlertModal.value.callModal()
@@ -138,7 +141,7 @@ onMounted(() => dataSetup())
         @keydown.enter="onUpdateUnit"
       />
     </CTableDataCell>
-    <CTableDataCell v-if="write_project">
+    <CTableDataCell v-if="canProjectUpdate">
       <v-btn color="success" size="x-small" :disabled="formCheck" @click="onUpdateUnit">
         수정
       </v-btn>

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, onBeforeMount, type PropType, reactive, ref, watch } from 'vue'
-import { type Project } from '@/store/types/project'
 import { useStore } from '@/store'
-import { write_project } from '@/utils/pageAuth'
+import { usePerms } from '@/composables/usePerms.ts'
+import { type Project } from '@/store/types/project'
 import Datepicker from '@vuepic/vue-datepicker'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
@@ -13,6 +13,11 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['to-submit', 'reset-form'])
+
+const { can, PERM } = usePerms()
+const canProjectCreate = computed(() => can(PERM.PROJECT_CREATE))
+const canProjectUpdate = computed(() => can(PERM.PROJECT_UPDATE))
+const canProjectDelete = computed(() => can(PERM.PROJECT_DELETE))
 
 const form = reactive<Project>({
   pk: undefined,
@@ -66,6 +71,7 @@ const btnClass = computed(() => (props.project ? 'success' : 'primary'))
 
 const formsCheck = computed(() => {
   if (props.project) {
+    if (!canProjectUpdate.value) return true
     const a = form.issue_project === props.project.issue_project
     const b = form.name === props.project.name
     const c = form.order === props.project.order
@@ -98,7 +104,8 @@ const formsCheck = computed(() => {
     const group3 = s && t && u && v && w && x && y && z
 
     return group1 && group2 && group3
-  } else return false
+  }
+  return !canProjectCreate.value
 })
 
 const refDelModal = ref()
@@ -110,7 +117,7 @@ const store = useStore()
 const validated = ref(false)
 
 const onSubmit = (event: Event) => {
-  if (write_project.value) {
+  if (canProjectCreate.value || canProjectUpdate.value) {
     const e = event.currentTarget as HTMLSelectElement
     if (!e.checkValidity()) {
       event.preventDefault()
@@ -138,7 +145,7 @@ const modalAction = () => {
 }
 
 const deleteProject = () => {
-  if (write_project.value) refDelModal.value.callModal()
+  if (canProjectDelete.value) refDelModal.value.callModal()
   else refAlertModal.value.callModal()
 }
 

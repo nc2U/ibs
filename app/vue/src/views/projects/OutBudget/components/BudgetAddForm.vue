@@ -1,11 +1,14 @@
 <script lang="ts" setup>
-import { inject, reactive, ref, watch } from 'vue'
-import { write_project } from '@/utils/pageAuth'
+import { computed, inject, reactive, ref, watch } from 'vue'
+import { usePerms } from '@/composables/usePerms.ts'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
 const props = defineProps({ disabled: Boolean })
 const emit = defineEmits(['on-submit'])
+
+const { can, PERM } = usePerms()
+const canProjectUpdate = computed(() => can(PERM.PROJECT_UPDATE))
 
 const accountList = inject<any>('accountList')
 
@@ -25,7 +28,7 @@ watch(props, newVal => {
 })
 
 const onSubmit = (event: Event) => {
-  if (write_project.value) {
+  if (canProjectUpdate.value) {
     const e = event.currentTarget as HTMLFormElement
     if (!e.checkValidity()) {
       event.preventDefault()

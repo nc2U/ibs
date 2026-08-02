@@ -1,14 +1,16 @@
 <script lang="ts" setup>
-import { ref, reactive } from 'vue'
-import { write_project } from '@/utils/pageAuth'
+import { ref, reactive, computed } from 'vue'
+import { usePerms } from '@/composables/usePerms.ts'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
-import { CCol, CForm, CRow } from '@coreui/vue'
 
 defineProps({ disabled: Boolean })
 
 const emit = defineEmits(['on-submit'])
+
+const { can, PERM } = usePerms()
+const canProjectUpdate = computed(() => can(PERM.PROJECT_UPDATE))
 
 const refAlertModal = ref()
 const refConfirmModal = ref()
@@ -36,7 +38,7 @@ const form = reactive({
 })
 
 const onSubmit = (event: Event) => {
-  if (write_project.value) {
+  if (canProjectUpdate.value) {
     const el = event.currentTarget as HTMLSelectElement
     if (!el.checkValidity()) {
       event.preventDefault()

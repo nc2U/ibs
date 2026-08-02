@@ -11,8 +11,8 @@ import type {
 } from '@/store/types/payment'
 import { type UnitFloorType } from '@/store/types/project'
 import { btnLight } from '@/utils/cssMixins.ts'
-import { write_project } from '@/utils/pageAuth'
 import { usePayment } from '@/store/pinia/payment'
+import { usePerms } from '@/composables/usePerms.ts'
 import PaymentPerInstallment from './PaymentPerInstallment.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
@@ -28,6 +28,9 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['on-create', 'on-update', 'on-delete', 'payment-changed'])
+
+const { can, PERM } = usePerms()
+const canProjectUpdate = computed(() => can(PERM.PROJECT_UPDATE))
 
 const refFormModal = ref()
 const refConfirmModal = ref()
@@ -69,7 +72,7 @@ const showPaymentDetails = ref(false)
 
 // 테이블 총 컬럼 수 (write_project 권한에 따라 달라짐)
 const totalColumns = computed(() => {
-  return write_project.value ? 9 : 7 // 기본 5개 + 관리 2개 컬럼
+  return canProjectUpdate.value ? 9 : 7 // 기본 5개 + 관리 2개 컬럼
 })
 
 const formsCheck = computed(() => {
@@ -85,7 +88,7 @@ const formsCheck = computed(() => {
 })
 
 const onStorePrice = () => {
-  if (write_project.value) {
+  if (canProjectUpdate.value) {
     const payload = {
       ...props.pFilters,
       ...{ unit_floor_type: props.floor?.pk },
@@ -327,13 +330,13 @@ onUpdated(() => {
         @keydown.enter="onStorePrice"
       />
     </CTableDataCell>
-    <CTableDataCell v-if="write_project" class="text-center pt-3">
+    <CTableDataCell v-if="canProjectUpdate" class="text-center pt-3">
       <v-btn :color="btnColor" size="x-small" :disabled="formsCheck" @click="onStorePrice">
         {{ btnTitle }}
       </v-btn>
       <v-btn color="warning" size="x-small" :disabled="!price" @click="deletePrice"> 삭제</v-btn>
     </CTableDataCell>
-    <CTableDataCell v-if="write_project" class="text-center pt-3">
+    <CTableDataCell v-if="canProjectUpdate" class="text-center pt-3">
       <v-btn
         :color="showPaymentDetails ? 'secondary' : 'info'"
         size="x-small"
@@ -420,7 +423,6 @@ onUpdated(() => {
           </CRow>
         </CModalBody>
         <CModalFooter>
-          <v-btn :color="btnLight" size="small" @click="refFormModal.close()"> 닫기</v-btn>
           <v-btn
             color="primary"
             size="small"
@@ -429,6 +431,7 @@ onUpdated(() => {
           >
             확인
           </v-btn>
+          <v-btn color="light" size="small" @click="refFormModal.close()" flat> 닫기</v-btn>
         </CModalFooter>
       </CForm>
       <CForm v-else>

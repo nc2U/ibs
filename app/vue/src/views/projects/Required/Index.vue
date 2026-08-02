@@ -13,7 +13,7 @@ import RequiredAddForm from '@/views/projects/Required/components/RequiredAddFor
 import RequiredFormList from '@/views/projects/Required/components/RequiredFormList.vue'
 
 const { can, PERM } = usePerms()
-const canProjectCreate = computed(() => can(PERM.PROJECT_CREATE))
+const canProjectUpdate = computed(() => can(PERM.PROJECT_UPDATE))
 
 const projStore = useProject()
 const contStore = useContract()
@@ -52,7 +52,7 @@ onBeforeMount(async () => {
 
     <ContentBody>
       <CCardBody class="pb-5">
-        <RequiredAddForm v-if="canProjectCreate" />
+        <RequiredAddForm v-if="canProjectUpdate" />
         <RequiredFormList />
       </CCardBody>
     </ContentBody>

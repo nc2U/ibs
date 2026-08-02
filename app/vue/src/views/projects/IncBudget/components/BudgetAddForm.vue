@@ -1,7 +1,6 @@
 <script lang="ts" setup>
-import { ref, reactive, inject, watch } from 'vue'
-import { write_project } from '@/utils/pageAuth'
-import { type ProjectAccountD2, type ProjectAccountD3 } from '@/store/types/project'
+import { ref, reactive, inject, watch, computed } from 'vue'
+import { usePerms } from '@/composables/usePerms.ts'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
@@ -15,6 +14,9 @@ export interface UType {
   value: number
   label: string
 }
+
+const { can, PERM } = usePerms()
+const canProjectUpdate = computed(() => can(PERM.PROJECT_UPDATE))
 
 const accountList = inject<any>('accountList')
 const orderGroups = inject<OGroup[]>('orderGroups')
@@ -43,7 +45,7 @@ watch(props, newVal => {
 })
 
 const onSubmit = (event: Event) => {
-  if (write_project.value) {
+  if (canProjectUpdate.value) {
     const e = event.currentTarget as HTMLFormElement
     if (!e.checkValidity()) {
       event.preventDefault()

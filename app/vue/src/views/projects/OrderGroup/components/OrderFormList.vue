@@ -1,12 +1,15 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
-import { write_project } from '@/utils/pageAuth'
 import { useContract } from '@/store/pinia/contract'
-import { type OrderGroup as og } from '@/store/types/contract'
 import { TableSecondary } from '@/utils/cssMixins'
+import { usePerms } from '@/composables/usePerms.ts'
+import { type OrderGroup as og } from '@/store/types/contract'
 import OrderGroup from './OrderGroup.vue'
 
 const emit = defineEmits(['on-update', 'on-delete'])
+
+const { can, PERM } = usePerms()
+const canProjectUpdate = computed(() => can(PERM.PROJECT_UPDATE))
 
 const contractStore = useContract()
 const orderGroupList = computed(() => contractStore.orderGroupList)
@@ -27,7 +30,7 @@ const onDeleteOrder = (pk: number) => emit('on-delete', pk)
       <col style="width: 20%" />
       <col style="width: 20%" />
       <col style="width: 20%" />
-      <col v-if="write_project" style="width: 20%" />
+      <col v-if="canProjectUpdate" style="width: 20%" />
     </colgroup>
 
     <CTableHead :color="TableSecondary" class="text-center">
@@ -36,7 +39,7 @@ const onDeleteOrder = (pk: number) => emit('on-delete', pk)
         <CTableHeaderCell>차수구분</CTableHeaderCell>
         <CTableHeaderCell>차수그룹명</CTableHeaderCell>
         <CTableHeaderCell>미계약세대 기본설정</CTableHeaderCell>
-        <CTableHeaderCell v-if="write_project">비 고</CTableHeaderCell>
+        <CTableHeaderCell v-if="canProjectUpdate">비 고</CTableHeaderCell>
       </CTableRow>
     </CTableHead>
 
@@ -53,7 +56,7 @@ const onDeleteOrder = (pk: number) => emit('on-delete', pk)
 
     <CTableBody v-else>
       <CTableRow>
-        <CTableDataCell :colspan="write_project ? 5 : 4" class="text-center p-5 text-danger">
+        <CTableDataCell :colspan="canProjectUpdate ? 5 : 4" class="text-center p-5 text-danger">
           등록된 데이터가 없습니다.
         </CTableDataCell>
       </CTableRow>

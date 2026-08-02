@@ -1,12 +1,15 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
-import { write_project } from '@/utils/pageAuth'
 import { useProjectData } from '@/store/pinia/project_data'
-import { type BuildingUnit } from '@/store/types/project'
 import { TableSecondary } from '@/utils/cssMixins'
+import { usePerms } from '@/composables/usePerms.ts'
+import { type BuildingUnit } from '@/store/types/project'
 import Building from '@/views/projects/Building/components/Building.vue'
 
 const emit = defineEmits(['on-update', 'on-delete'])
+
+const { can, PERM } = usePerms()
+const canProjectUpdate = computed(() => can(PERM.PROJECT_UPDATE))
 
 const projectDataStore = useProjectData()
 const buildingList = computed(() => projectDataStore.buildingList)
@@ -19,12 +22,12 @@ const onDeleteBuilding = (pk: number) => emit('on-delete', pk)
   <CTable hover responsive>
     <colgroup>
       <col style="width: 50%" />
-      <col v-if="write_project" style="width: 50%" />
+      <col v-if="canProjectUpdate" style="width: 50%" />
     </colgroup>
     <CTableHead :color="TableSecondary" class="text-center">
       <CTableRow>
         <CTableHeaderCell>동(건물)이름</CTableHeaderCell>
-        <CTableHeaderCell v-if="write_project">비 고</CTableHeaderCell>
+        <CTableHeaderCell v-if="canProjectUpdate">비 고</CTableHeaderCell>
       </CTableRow>
     </CTableHead>
     <CTableBody v-if="buildingList.length > 0">
@@ -39,7 +42,7 @@ const onDeleteBuilding = (pk: number) => emit('on-delete', pk)
 
     <CTableBody v-else>
       <CTableRow>
-        <CTableDataCell :colspan="write_project ? 2 : 1" class="text-center p-5 text-danger">
+        <CTableDataCell :colspan="canProjectUpdate ? 2 : 1" class="text-center p-5 text-danger">
           등록된 데이터가 없습니다.
         </CTableDataCell>
       </CTableRow>

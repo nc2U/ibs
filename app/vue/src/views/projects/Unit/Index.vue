@@ -13,7 +13,6 @@ import ProjectAuthGuard from '@/components/AuthGuard/ProjectAuthGuard.vue'
 import UnitController from '@/views/projects/Unit/components/UnitController.vue'
 import UnitTable from '@/views/projects/Unit/components/UnitTable.vue'
 
-const alertModal = ref()
 const refUnitController = ref()
 
 const bldgPk = ref<null | number>(null)

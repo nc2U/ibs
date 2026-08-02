@@ -1,15 +1,17 @@
 <script lang="ts" setup>
 import { ref, reactive, computed, onBeforeMount, nextTick, type PropType } from 'vue'
 import { useAccount } from '@/store/pinia/account'
-import { write_project } from '@/utils/pageAuth'
+import { usePerms } from '@/composables/usePerms.ts'
 import type { PayOrder } from '@/store/types/payment'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
-import { CFormInput, CTableDataCell, CTableHeaderCell, CTableRow } from '@coreui/vue'
 
-const emit = defineEmits(['on-update', 'on-delete'])
 const props = defineProps({ payOrder: { type: Object as PropType<PayOrder>, required: true } })
+const emit = defineEmits(['on-update', 'on-delete'])
+
+const { can, PERM } = usePerms()
+const canProjectUpdate = computed(() => can(PERM.PROJECT_UPDATE))
 
 const form = reactive<PayOrder>({
   type_sort: '1',
@@ -38,6 +40,7 @@ const refConfirmModal = ref()
 const isExpand = ref(false)
 
 const formsCheck = computed(() => {
+  if (!canProjectUpdate) return true
   const a = form.type_sort === props.payOrder?.type_sort
   const b = form.pay_sort === props.payOrder?.pay_sort
   const c = form.calculation_method === props.payOrder?.calculation_method
@@ -69,7 +72,7 @@ const remainChk = () => {
   })
 }
 const onUpdatePayOrder = () => {
-  if (write_project.value) {
+  if (canProjectUpdate.value) {
     const pk = props.payOrder?.pk
     emit('on-update', { ...{ pk }, ...form })
   } else {
@@ -218,7 +221,7 @@ onBeforeMount(() => dataSetup())
       <CFormSwitch v-model="isExpand" :id="`i-expand-${payOrder.pk}`" label="추가설정" />
     </CTableDataCell>
 
-    <CTableDataCell v-if="write_project" class="text-center pt-3">
+    <CTableDataCell v-if="canProjectUpdate" class="text-center pt-3">
       <v-btn color="success" size="x-small" :disabled="formsCheck" @click="onUpdatePayOrder">
         수정
       </v-btn>
@@ -296,7 +299,7 @@ onBeforeMount(() => dataSetup())
       />
     </CTableDataCell>
     <CTableDataCell> </CTableDataCell>
-    <CTableDataCell v-if="write_project"></CTableDataCell>
+    <CTableDataCell v-if="canProjectUpdate"></CTableDataCell>
   </CTableRow>
 
   <ConfirmModal ref="refConfirmModal">

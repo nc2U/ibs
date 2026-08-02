@@ -43,8 +43,3 @@ export const write_project_ledger = computed(() =>
 export const write_project_docs = computed(() =>
   hasPermission([PERM.DOCS_CREATE, PERM.DOCS_UPDATE, PERM.DOCS_DELETE]),
 )
-
-// ── 신규 프로젝트 ──────────────────────────────────────────────────────
-export const write_project = computed(() =>
-  hasPermission([PERM.PROJECT_CREATE, PERM.PROJECT_UPDATE, PERM.PROJECT_DELETE]),
-)

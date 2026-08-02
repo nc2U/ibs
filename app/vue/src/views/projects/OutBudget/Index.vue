@@ -1,11 +1,11 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, provide, ref } from 'vue'
 import { navMenu, pageTitle } from '@/views/projects/_menu/headermixin3'
-import { write_project } from '@/utils/pageAuth'
 import { useProject } from '@/store/pinia/project'
 import { useContract } from '@/store/pinia/contract'
 import { useProLedger } from '@/store/pinia/proLedger.ts'
 import { useProjectData } from '@/store/pinia/project_data'
+import { usePerms } from '@/composables/usePerms.ts'
 import type { Project, ProOutBudget } from '@/store/types/project'
 import type { ProAccountFilter } from '@/store/types/proLedger.ts'
 import Loading from '@/components/Loading/Index.vue'
@@ -14,6 +14,9 @@ import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ProjectAuthGuard from '@/components/AuthGuard/ProjectAuthGuard.vue'
 import BudgetAddForm from '@/views/projects/OutBudget/components/BudgetAddForm.vue'
 import BudgetFormList from '@/views/projects/OutBudget/components/BudgetFormList.vue'
+
+const { can, PERM } = usePerms()
+const canProjectUpdate = computed(() => can(PERM.PROJECT_UPDATE))
 
 const projStore = useProject()
 const project = computed(() => (projStore.project as Project)?.pk)
@@ -96,7 +99,7 @@ onBeforeMount(async () => {
 
     <ContentBody>
       <CCardBody class="pb-5">
-        <BudgetAddForm v-if="write_project" :disabled="!project" @on-submit="onSubmit" />
+        <BudgetAddForm v-if="canProjectUpdate" :disabled="!project" @on-submit="onSubmit" />
         <BudgetFormList @on-update="onUpdateBudget" @on-delete="onDeleteBudget" />
       </CCardBody>
     </ContentBody>

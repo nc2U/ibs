@@ -1,12 +1,15 @@
 <script lang="ts" setup>
-import { ref, reactive, inject } from 'vue'
-import { write_project } from '@/utils/pageAuth'
+import { ref, reactive, inject, computed } from 'vue'
+import { usePerms } from '@/composables/usePerms.ts'
 import Multiselect from '@/components/MultiSelect/index.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
 defineProps({ disabled: Boolean })
 const emit = defineEmits(['on-submit'])
+
+const { can, PERM } = usePerms()
+const canProjectUpdate = computed(() => can(PERM.PROJECT_UPDATE))
 
 const getTypes = inject('getTypes')
 
@@ -26,7 +29,7 @@ const form = reactive({
 })
 
 const onSubmit = (event: Event) => {
-  if (write_project.value) {
+  if (canProjectUpdate.value) {
     const el = event.currentTarget as HTMLFormElement
     if (!el.checkValidity()) {
       event.preventDefault()

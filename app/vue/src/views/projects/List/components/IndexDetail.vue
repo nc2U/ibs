@@ -1,24 +1,28 @@
 <script lang="ts" setup>
-import { type PropType, ref } from 'vue'
-import { write_project } from '@/utils/pageAuth'
+import { computed, type PropType, ref } from 'vue'
 import { TableSecondary } from '@/utils/cssMixins'
-import { type Project } from '@/store/types/project'
+import { usePerms } from '@/composables/usePerms.ts'
 import { numFormat } from '@/utils/baseMixins'
 import { areaM2PyFormat, ratioFormat } from '@/utils/areaMixins'
+import { type Project } from '@/store/types/project'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
 defineProps({ project: { type: Object as PropType<Project>, required: true } })
 
 const emit = defineEmits(['create-form', 'update-form'])
 
+const { can, PERM } = usePerms()
+const canProjectCreate = computed(() => can(PERM.PROJECT_CREATE))
+const canProjectUpdate = computed(() => can(PERM.PROJECT_UPDATE))
+
 const refAlertModal = ref()
 
 const toCreate = () => {
-  if (write_project.value) emit('create-form')
+  if (canProjectCreate.value) emit('create-form')
   else refAlertModal.value.callModal()
 }
 const toUpdate = () => {
-  if (write_project.value) emit('update-form')
+  if (canProjectUpdate.value) emit('update-form')
   else refAlertModal.value.callModal()
 }
 </script>
@@ -165,16 +169,22 @@ const toUpdate = () => {
     </CRow>
   </CCardBody>
 
-  <CCardFooter v-if="write_project">
+  <CCardFooter>
     <CRow class="justify-content-between">
       <CCol xs="auto">
-        <v-btn type="button" color="success" :disabled="!project" @click="toUpdate">
+        <v-btn
+          v-if="canProjectUpdate"
+          type="button"
+          color="success"
+          :disabled="!project"
+          @click="toUpdate"
+        >
           <CIcon name="cil-check-circle" />
           수정하기
         </v-btn>
       </CCol>
       <CCol xs="auto">
-        <v-btn type="button" color="primary" @click="toCreate">
+        <v-btn v-if="canProjectCreate" type="button" color="primary" @click="toCreate">
           <CIcon name="cil-check-circle" />
           등록하기
         </v-btn>

@@ -1,12 +1,15 @@
 <script lang="ts" setup>
 import { ref, reactive, computed, onBeforeMount } from 'vue'
 import { useAccount } from '@/store/pinia/account'
-import { write_project } from '@/utils/pageAuth'
+import { usePerms } from '@/composables/usePerms.ts'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
 const props = defineProps({ floor: { type: Object, required: true } })
 const emit = defineEmits(['on-update', 'on-delete'])
+
+const { can, PERM } = usePerms()
+const canProjectUpdate = computed(() => can(PERM.PROJECT_UPDATE))
 
 const refAlertModal = ref()
 const refConfirmModal = ref()
@@ -34,7 +37,7 @@ const formCheck = (bool: boolean) => {
 }
 
 const onUpdateFloor = () => {
-  if (write_project.value) {
+  if (canProjectUpdate.value) {
     const pk = props.floor.pk
     emit('on-update', { ...{ pk }, ...form })
   } else {
@@ -117,7 +120,7 @@ onBeforeMount(() => dataSetup())
         @keypress.enter="formCheck(form.alias_name !== floor.alias_name)"
       />
     </CTableDataCell>
-    <CTableDataCell v-if="write_project" class="text-center pt-3">
+    <CTableDataCell v-if="canProjectUpdate" class="text-center pt-3">
       <v-btn color="success" size="x-small" :disabled="formsCheck" @click="onUpdateFloor">
         수정
       </v-btn>

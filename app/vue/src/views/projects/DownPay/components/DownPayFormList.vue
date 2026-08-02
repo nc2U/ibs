@@ -1,12 +1,15 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
-import { write_project } from '@/utils/pageAuth'
 import { usePayment } from '@/store/pinia/payment'
-import { type DownPay as dp } from '@/store/types/payment'
 import { TableSecondary } from '@/utils/cssMixins'
+import { usePerms } from '@/composables/usePerms.ts'
+import { type DownPay as dp } from '@/store/types/payment'
 import DownPay from '@/views/projects/DownPay/components/DownPay.vue'
 
 const emit = defineEmits(['on-update', 'on-delete'])
+
+const { can, PERM } = usePerms()
+const canProjectUpdate = computed(() => can(PERM.PROJECT_UPDATE))
 
 const paymentStore = usePayment()
 const downPayList = computed(() => paymentStore.downPayList)
@@ -21,14 +24,14 @@ const onDeleteDownPay = (pk: number) => emit('on-delete', pk)
       <col style="width: 25%" />
       <col style="width: 25%" />
       <col style="width: 35%" />
-      <col v-if="write_project" style="width: 15%" />
+      <col v-if="canProjectUpdate" style="width: 15%" />
     </colgroup>
     <CTableHead :color="TableSecondary" class="text-center">
       <CTableRow>
         <CTableHeaderCell>차수</CTableHeaderCell>
         <CTableHeaderCell>타입</CTableHeaderCell>
         <CTableHeaderCell>회별 납부금액</CTableHeaderCell>
-        <CTableHeaderCell v-if="write_project">비고</CTableHeaderCell>
+        <CTableHeaderCell v-if="canProjectUpdate">비고</CTableHeaderCell>
       </CTableRow>
     </CTableHead>
     <CTableBody v-if="downPayList.length > 0">
@@ -43,7 +46,7 @@ const onDeleteDownPay = (pk: number) => emit('on-delete', pk)
 
     <CTableBody v-else>
       <CTableRow>
-        <CTableDataCell :colspan="write_project ? 4 : 3" class="text-center p-5 text-danger">
+        <CTableDataCell :colspan="canProjectUpdate ? 4 : 3" class="text-center p-5 text-danger">
           등록된 데이터가 없습니다.
         </CTableDataCell>
       </CTableRow>

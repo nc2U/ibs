@@ -1,11 +1,14 @@
 <script lang="ts" setup>
-import { ref, reactive, inject, watch } from 'vue'
-import { write_project } from '@/utils/pageAuth'
+import { ref, reactive, inject, watch, computed } from 'vue'
 import { isValidate } from '@/utils/helper'
+import { usePerms } from '@/composables/usePerms.ts'
 import { type OrderGroup } from '@/store/types/contract'
 import { type UnitType } from '@/store/types/project'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
+
+const { can, PERM } = usePerms()
+const canProjectUpdate = computed(() => can(PERM.PROJECT_UPDATE))
 
 const orders = inject<OrderGroup[]>('orders')
 const types = inject<UnitType[]>('types')
@@ -30,7 +33,7 @@ watch(props, () => {
 })
 
 const onSubmit = (event: Event) => {
-  if (write_project.value) {
+  if (canProjectUpdate.value) {
     isValidate(event) ? (validated.value = true) : refConfirmModal.value.callModal()
   } else {
     refAlertModal.value.callModal()

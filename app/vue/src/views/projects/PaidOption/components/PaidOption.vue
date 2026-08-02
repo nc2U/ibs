@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { ref, reactive, computed, onBeforeMount, inject, type PropType } from 'vue'
 import { useAccount } from '@/store/pinia/account'
-import { write_project } from '@/utils/pageAuth'
+import { usePerms } from '@/composables/usePerms.ts'
 import type { OptionItem } from '@/store/types/project'
 import Multiselect from '@/components/MultiSelect/index.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
@@ -9,6 +9,9 @@ import AlertModal from '@/components/Modals/AlertModal.vue'
 
 const props = defineProps({ optionItem: { type: Object as PropType<OptionItem>, required: true } })
 const emit = defineEmits(['on-update', 'on-delete'])
+
+const { can, PERM } = usePerms()
+const canProjectUpdate = computed(() => can(PERM.PROJECT_UPDATE))
 
 const getTypes = inject('getTypes')
 
@@ -44,7 +47,7 @@ const formCheck = (bool: boolean) => {
 }
 
 const onUpdateOption = () => {
-  if (write_project.value) {
+  if (canProjectUpdate.value) {
     const pk = props.optionItem.pk
     emit('on-update', { ...{ pk }, ...form })
   } else {
@@ -156,7 +159,7 @@ onBeforeMount(() => dataSetup())
       />
     </CTableDataCell>
 
-    <CTableDataCell v-if="write_project" class="text-center pt-3">
+    <CTableDataCell v-if="canProjectUpdate" class="text-center pt-3">
       <v-btn color="success" size="x-small" :disabled="formsCheck" @click="onUpdateOption">
         수정
       </v-btn>

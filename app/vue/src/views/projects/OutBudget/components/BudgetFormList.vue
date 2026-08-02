@@ -1,12 +1,15 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
-import { write_project } from '@/utils/pageAuth'
 import { useProject } from '@/store/pinia/project'
+import { usePerms } from '@/composables/usePerms.ts'
 import { type ProOutBudget } from '@/store/types/project'
 import { TableSecondary } from '@/utils/cssMixins'
 import OutBudget from './OutBudget.vue'
 
 const emit = defineEmits(['on-update', 'on-delete'])
+
+const { can, PERM } = usePerms()
+const canProjectUpdate = computed(() => can(PERM.PROJECT_UPDATE))
 
 const proStore = useProject()
 const proOutBudgetList = computed(() => proStore.proOutBudgetList)
@@ -22,7 +25,7 @@ const onDeleteOrder = (pk: number) => emit('on-delete', pk)
       <col style="width: 20%" />
       <col style="width: 20%" />
       <col style="width: 20%" />
-      <col v-if="write_project" style="width: 10%" />
+      <col v-if="canProjectUpdate" style="width: 10%" />
     </colgroup>
     <CTableHead :color="TableSecondary" class="text-center">
       <CTableRow>
@@ -30,7 +33,7 @@ const onDeleteOrder = (pk: number) => emit('on-delete', pk)
         <CTableHeaderCell>산출 근거</CTableHeaderCell>
         <CTableHeaderCell>기초 지출 예산</CTableHeaderCell>
         <CTableHeaderCell>현황 지출 예산</CTableHeaderCell>
-        <CTableHeaderCell v-if="write_project">비 고</CTableHeaderCell>
+        <CTableHeaderCell v-if="canProjectUpdate">비 고</CTableHeaderCell>
       </CTableRow>
     </CTableHead>
     <CTableBody v-if="proOutBudgetList.length > 0">
@@ -45,7 +48,7 @@ const onDeleteOrder = (pk: number) => emit('on-delete', pk)
 
     <CTableBody v-else>
       <CTableRow>
-        <CTableDataCell :colspan="write_project ? 7 : 6" class="text-center p-5 text-danger">
+        <CTableDataCell :colspan="canProjectUpdate ? 7 : 6" class="text-center p-5 text-danger">
           등록된 데이터가 없습니다.
         </CTableDataCell>
       </CTableRow>

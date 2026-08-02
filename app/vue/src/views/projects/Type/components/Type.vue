@@ -1,11 +1,14 @@
 <script lang="ts" setup>
 import { ref, reactive, computed, onBeforeMount, inject, type PropType } from 'vue'
 import { useAccount } from '@/store/pinia/account'
-import { write_project } from '@/utils/pageAuth'
+import { usePerms } from '@/composables/usePerms.ts'
 import type { SortType } from './TypeAddForm.vue'
 import type { UnitType } from '@/store/types/project.ts'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
+
+const { can, PERM } = usePerms()
+const canProjectUpdate = computed(() => can(PERM.PROJECT_UPDATE))
 
 const typeSort = inject<SortType[]>('typeSort')
 const props = defineProps({ type: { type: Object as PropType<UnitType>, required: true } })
@@ -46,7 +49,7 @@ const formCheck = (bool: boolean) => {
   return
 }
 const onUpdateType = () => {
-  if (write_project.value) {
+  if (canProjectUpdate.value) {
     const pk = props.type?.pk
     emit('on-update', { ...{ pk }, ...form.value })
   } else {
@@ -172,7 +175,7 @@ onBeforeMount(() => dataSetup())
         @keypress.enter="formCheck(form.num_unit !== type.num_unit)"
       />
     </CTableDataCell>
-    <CTableDataCell v-if="write_project" class="text-center pt-3">
+    <CTableDataCell v-if="canProjectUpdate" class="text-center pt-3">
       <v-btn color="success" size="x-small" :disabled="formsCheck" @click="onUpdateType">
         수정
       </v-btn>

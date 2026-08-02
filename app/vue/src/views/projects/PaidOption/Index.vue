@@ -1,9 +1,9 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, provide, ref } from 'vue'
 import { pageTitle, navMenu } from '@/views/projects/_menu/headermixin6'
-import { write_project } from '@/utils/pageAuth'
 import { useProject } from '@/store/pinia/project'
 import { useProjectData } from '@/store/pinia/project_data'
+import { usePerms } from '@/composables/usePerms.ts'
 import type { OptionItem, Project } from '@/store/types/project'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
@@ -11,6 +11,9 @@ import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ProjectAuthGuard from '@/components/AuthGuard/ProjectAuthGuard.vue'
 import OptionAddForm from '@/views/projects/PaidOption/components/OptionAddForm.vue'
 import OptionFormList from '@/views/projects/PaidOption/components/OptionFormList.vue'
+
+const { can, PERM } = usePerms()
+const canProjectUpdate = computed(() => can(PERM.PROJECT_UPDATE))
 
 const projStore = useProject()
 const project = computed(() => (projStore.project as Project)?.pk)
@@ -67,7 +70,7 @@ onBeforeMount(async () => {
     <ContentBody>
       <CCardBody class="pb-5">
         <OptionAddForm
-          v-if="write_project"
+          v-if="canProjectUpdate"
           :disabled="!project"
           :get-types="getTypes"
           @on-submit="onSubmit"

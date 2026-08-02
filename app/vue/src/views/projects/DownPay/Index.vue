@@ -1,11 +1,11 @@
 <script lang="ts" setup>
 import { computed, provide, onBeforeMount, ref } from 'vue'
 import { pageTitle, navMenu } from '@/views/projects/_menu/headermixin6'
-import { write_project } from '@/utils/pageAuth'
 import { useProject } from '@/store/pinia/project'
 import { useProjectData } from '@/store/pinia/project_data'
 import { useContract } from '@/store/pinia/contract'
 import { usePayment } from '@/store/pinia/payment'
+import { usePerms } from '@/composables/usePerms.ts'
 import { type DownPay } from '@/store/types/payment'
 import type { Project } from '@/store/types/project.ts'
 import Loading from '@/components/Loading/Index.vue'
@@ -14,6 +14,9 @@ import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ProjectAuthGuard from '@/components/AuthGuard/ProjectAuthGuard.vue'
 import DownPayAddForm from '@/views/projects/DownPay/components/DownPayAddForm.vue'
 import DownPayFormList from '@/views/projects/DownPay/components/DownPayFormList.vue'
+
+const { can, PERM } = usePerms()
+const canProjectUpdate = computed(() => can(PERM.PROJECT_UPDATE))
 
 const projStore = useProject()
 const project = computed(() => (projStore.project as Project)?.pk)
@@ -82,7 +85,7 @@ onBeforeMount(() => {
 
     <ContentBody>
       <CCardBody class="pb-5">
-        <DownPayAddForm v-if="write_project" :disabled="!project" @on-submit="onCreateDownPay" />
+        <DownPayAddForm v-if="canProjectUpdate" :disabled="!project" @on-submit="onCreateDownPay" />
         <DownPayFormList @on-update="onUpdateDownPay" @on-delete="onDeleteDownPay" />
       </CCardBody>
     </ContentBody>

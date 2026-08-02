@@ -1,11 +1,14 @@
 <script lang="ts" setup>
-import { ref, reactive } from 'vue'
-import { write_project } from '@/utils/pageAuth'
+import { ref, reactive, computed } from 'vue'
+import { usePerms } from '@/composables/usePerms.ts'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
 defineProps({ disabled: Boolean })
 const emit = defineEmits(['on-submit'])
+
+const { can, PERM } = usePerms()
+const canProjectUpdate = computed(() => can(PERM.PROJECT_UPDATE))
 
 const refAlertModal = ref()
 const refConfirmModal = ref()
@@ -14,7 +17,7 @@ const form = reactive({ name: '' })
 const validated = ref(false)
 
 const onSubmit = (event: Event) => {
-  if (write_project.value) {
+  if (canProjectUpdate.value) {
     const form = event.currentTarget as HTMLFormElement
     if (!form.checkValidity()) {
       event.preventDefault()

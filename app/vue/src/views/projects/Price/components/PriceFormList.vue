@@ -1,10 +1,10 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
-import { write_project } from '@/utils/pageAuth'
 import { TableSecondary } from '@/utils/cssMixins'
-import { type Price as P } from '@/store/types/payment'
+import { usePerms } from '@/composables/usePerms.ts'
 import { usePayment } from '@/store/pinia/payment'
 import { useProjectData } from '@/store/pinia/project_data'
+import { type Price as P } from '@/store/types/payment'
 import Price from '@/views/projects/Price/components/Price.vue'
 
 defineProps({
@@ -13,6 +13,9 @@ defineProps({
   priceSetting: { type: String, default: '2' },
 })
 const emit = defineEmits(['on-create', 'on-update', 'on-delete'])
+
+const { can, PERM } = usePerms()
+const canProjectUpdate = computed(() => can(PERM.PROJECT_UPDATE))
 
 const projectDataStore = useProjectData()
 const floorTypeList = computed(() => projectDataStore.floorTypeList)
@@ -38,8 +41,8 @@ const onDelete = (pk: number) => emit('on-delete', pk)
       <col style="width: 7%" />
       <col style="width: 7%" />
       <col style="width: 8%" />
-      <col v-if="write_project" style="width: 7%" />
-      <col v-if="write_project" style="width: 5%" />
+      <col v-if="canProjectUpdate" style="width: 7%" />
+      <col v-if="canProjectUpdate" style="width: 5%" />
     </colgroup>
     <CTableHead :color="TableSecondary" class="text-center">
       <CTableRow>
@@ -50,8 +53,8 @@ const onDelete = (pk: number) => emit('on-delete', pk)
         <CTableHeaderCell>대지가(단위:원)</CTableHeaderCell>
         <CTableHeaderCell>부가세(단위:원)</CTableHeaderCell>
         <CTableHeaderCell>기준공급가(단위:원)</CTableHeaderCell>
-        <CTableHeaderCell v-if="write_project">비고</CTableHeaderCell>
-        <CTableHeaderCell v-if="write_project">특별약정 추가</CTableHeaderCell>
+        <CTableHeaderCell v-if="canProjectUpdate">비고</CTableHeaderCell>
+        <CTableHeaderCell v-if="canProjectUpdate">특별약정 추가</CTableHeaderCell>
       </CTableRow>
     </CTableHead>
     <CTableBody v-if="!msg">
@@ -70,7 +73,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
 
     <CTableBody v-else>
       <CTableRow>
-        <CTableDataCell :colspan="write_project ? 13 : 12" class="text-center p-5 text-info">
+        <CTableDataCell :colspan="canProjectUpdate ? 13 : 12" class="text-center p-5 text-info">
           {{ msg }}
         </CTableDataCell>
       </CTableRow>
@@ -78,7 +81,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
 
     <CTableBody v-if="!msg && floorTypeList.length === 0">
       <CTableRow>
-        <CTableDataCell :colspan="write_project ? 13 : 12" class="text-center p-5 text-danger">
+        <CTableDataCell :colspan="canProjectUpdate ? 13 : 12" class="text-center p-5 text-danger">
           <p>
             <CIcon name="cilWarning" />
             등록된 [

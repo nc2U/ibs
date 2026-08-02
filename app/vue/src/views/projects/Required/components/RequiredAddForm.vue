@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { reactive, ref, computed } from 'vue'
-import { write_project } from '@/utils/pageAuth'
 import { isValidate } from '@/utils/helper'
+import { usePerms } from '@/composables/usePerms.ts'
 import { useProject } from '@/store/pinia/project.ts'
 import { useContract } from '@/store/pinia/contract.ts'
 import type { Project } from '@/store/types/project.ts'
@@ -9,6 +9,9 @@ import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
 const props = defineProps({ disabled: Boolean })
+
+const { can, PERM } = usePerms()
+const canProjectUpdate = computed(() => can(PERM.PROJECT_UPDATE))
 
 const refAlertModal = ref()
 const refConfirmModal = ref()
@@ -31,7 +34,7 @@ const documentTypeList = computed(() => contStore.documentTypeList)
 const validated = ref(false)
 
 const onSubmit = (event: Event) => {
-  if (write_project.value) {
+  if (canProjectUpdate.value) {
     isValidate(event) ? (validated.value = true) : refConfirmModal.value.callModal()
   } else {
     refAlertModal.value.callModal()

@@ -1,11 +1,14 @@
 <script lang="ts" setup>
-import { inject, reactive, ref } from 'vue'
-import { write_project } from '@/utils/pageAuth'
+import { computed, inject, reactive, ref } from 'vue'
+import { usePerms } from '@/composables/usePerms.ts'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
 defineProps({ disabled: Boolean })
 const emit = defineEmits(['on-submit'])
+
+const { can, PERM } = usePerms()
+const canProjectUpdate = computed(() => can(PERM.PROJECT_UPDATE))
 
 export type SortType = {
   value: '1' | '2' | '3' | '4' | '5' | '6'
@@ -32,7 +35,7 @@ const form = reactive({
 })
 
 const onSubmit = (event: Event) => {
-  if (write_project.value) {
+  if (canProjectUpdate.value) {
     const el = event.currentTarget as HTMLFormElement
     if (!el.checkValidity()) {
       event.preventDefault()
