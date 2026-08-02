@@ -13,7 +13,7 @@ const userId = ref<number | null>(null)
 
 const accountStore = useAccount()
 const userInfo = computed(() => accountStore.userInfo)
-const superAuth = computed(() => accountStore.superAuth)
+const workManager = computed(() => accountStore.workManager)
 const getUsers = computed(() => accountStore.getUsers)
 
 const allowGetUsers = computed(() =>
@@ -59,7 +59,7 @@ const addUserModal = () => emit('add-user-modal')
           </CCol>
         </CRow>
       </CCol>
-      <CCol xl="4" v-if="superAuth" class="text-end pt-1">
+      <CCol xl="4" v-if="workManager" class="text-end pt-1">
         <v-btn variant="tonal" color="primary" @click="addUserModal">사용자 생성</v-btn>
       </CCol>
     </CRow>

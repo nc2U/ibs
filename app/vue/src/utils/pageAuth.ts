@@ -68,6 +68,3 @@ export const write_human_resource = computed(() =>
 export const write_company_settings = computed(() =>
   hasPermission([PERM.PROJECT_CREATE, PERM.PROJECT_UPDATE, PERM.PROJECT_DELETE]),
 )
-
-// ── 권한 설정 관리 ──────────────────────────────────────────────────────
-export const write_auth_manage = computed(() => hasPermission(PERM.PROJECT_MEMBER))

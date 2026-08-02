@@ -1,13 +1,16 @@
 <script lang="ts" setup>
 import { ref, computed, onMounted, watch, type PropType } from 'vue'
 import { useWork } from '@/store/pinia/work_project'
+import { usePerms } from '@/composables/usePerms.ts'
 import type { User } from '@/store/types/accounts'
 import type { Role, Member } from '@/store/types/work_project'
-import { write_auth_manage } from '@/utils/pageAuth'
 
 const props = defineProps({
   user: { type: Object as PropType<User | null>, default: null },
 })
+
+const { can, PERM } = usePerms()
+const canManageProjectMember = computed(() => can(PERM.PROJECT_MEMBER))
 
 const workStore = useWork()
 const roleList = computed<Role[]>(() => workStore.roleList)
@@ -57,7 +60,7 @@ const hasRole = (projPk: number, rolePk: number) => {
 
 // 멤버의 역할 토글 및 업데이트
 const toggleRole = async (projPk: number, rolePk: number) => {
-  if (!write_auth_manage.value || !props.user?.pk) return
+  if (!canManageProjectMember.value || !props.user?.pk) return
 
   const member = memberList.value.find(m => m.project.pk === projPk)
 
@@ -174,7 +177,7 @@ onMounted(() => {
                       :id="`member-role-${proj.pk}-${role.pk}`"
                       :label="role.name"
                       :checked="hasRole(proj.pk || 0, role.pk)"
-                      :disabled="!write_auth_manage"
+                      :disabled="!canManageProjectMember"
                       @change="toggleRole(proj.pk || 0, role.pk)"
                     />
                   </CCol>
