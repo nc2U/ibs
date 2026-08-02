@@ -2,9 +2,9 @@
 import { ref, reactive, computed, watch, onMounted, onUpdated, type PropType } from 'vue'
 import { usePayment } from '@/store/pinia/payment'
 import { type SalesBillIssue } from '@/store/types/notice'
-import { write_notice } from '@/utils/pageAuth'
 import { isValidate } from '@/utils/helper'
 import { getToday } from '@/utils/baseMixins'
+import { usePerms } from '@/composables/usePerms.ts'
 import { type AddressData, callAddress } from '@/components/DaumPostcode/address'
 import DaumPostcode from '@/components/DaumPostcode/index.vue'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
@@ -17,6 +17,9 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['on-submit', 'get-now-order', 'set-pub-date'])
+
+const { can, PERM } = usePerms()
+const canNoticeManage = computed(() => can(PERM.NOTICE_CREATE) || can(PERM.PAYMENT_UPDATE))
 
 const address2 = ref()
 const postCode = ref()
@@ -91,7 +94,7 @@ const formsCheck = computed(() => {
 })
 
 const onSubmit = (event: Event) => {
-  if (write_notice.value) {
+  if (canNoticeManage.value) {
     if (isValidate(event)) {
       validated.value = true
     } else {
@@ -404,7 +407,7 @@ onUpdated(() => formDataSetup())
         <CCol class="d-none d-md-block d-lg-none" md="6" />
       </CRow>
 
-      <CAlert v-if="write_notice" color="secondary" class="text-right">
+      <CAlert v-if="canNoticeManage" color="secondary" class="text-right">
         <v-btn type="submit" :color="btnClass" :disabled="!project || formsCheck">
           {{ confirmText }}
         </v-btn>

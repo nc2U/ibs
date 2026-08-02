@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, watch, ref, onMounted, nextTick } from 'vue'
 import { useNotice } from '@/store/pinia/notice'
+import { usePerms } from '@/composables/usePerms.ts'
 import SenderNumberModal from './SenderNumberModal.vue'
 import MessageTemplateModal from './MessageTemplateModal.vue'
 import SpecialCharModal from './SpecialCharModal.vue'
@@ -19,6 +20,9 @@ const emit = defineEmits<{
   'update:variableNames': [value: string[]]
   'update:attachedImages': [value: File[]]
 }>()
+
+const { can, PERM } = usePerms()
+const canNoticeManage = computed(() => can(PERM.NOTICE_CREATE) || can(PERM.NOTICE_UPDATE))
 
 // Store
 const notiStore = useNotice()
@@ -338,7 +342,7 @@ watch(
             />
 
             <!-- 템플릿 선택 -->
-            <div class="mb-3">
+            <div v-if="canNoticeManage" class="mb-3">
               <div class="d-flex justify-content-between align-items-center mb-2">
                 <CFormLabel>메시지 템플릿</CFormLabel>
                 <v-btn

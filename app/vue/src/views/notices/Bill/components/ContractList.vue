@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { TableSecondary } from '@/utils/cssMixins'
 import { useContract } from '@/store/pinia/contract'
+import { usePerms } from '@/composables/usePerms.ts'
 import Contract from '@/views/notices/Bill/components/Contract.vue'
 import Pagination from '@/components/Pagination'
 
@@ -11,6 +12,9 @@ defineProps({
 })
 
 const emit = defineEmits(['page-select', 'on-cont-chk', 'all-un-checked'])
+
+const { can, PERM } = usePerms()
+const canNoticeRead = computed(() => can(PERM.NOTICE_READ))
 
 const page = ref(1)
 const allChecked = ref(false)
@@ -35,7 +39,7 @@ const onContChk = (payload: { chk: boolean; pk: number }) => emit('on-cont-chk',
 <template>
   <CTable hover responsive align="middle">
     <colgroup>
-      <col style="width: 8%" />
+      <col v-if="canNoticeRead" style="width: 8%" />
       <col style="width: 10%" />
       <col style="width: 7%" />
       <col style="width: 12%" />
@@ -48,7 +52,7 @@ const onContChk = (payload: { chk: boolean; pk: number }) => emit('on-cont-chk',
 
     <CTableHead :color="TableSecondary">
       <CTableRow class="text-center">
-        <CTableHeaderCell scope="col">
+        <CTableHeaderCell v-if="canNoticeRead" scope="col">
           <CFormCheck id="checkAll" v-model="allChecked" label="전체" @change="allUnChecked" />
         </CTableHeaderCell>
         <CTableHeaderCell scope="col">차수</CTableHeaderCell>

@@ -30,6 +30,6 @@ export const write_payment = computed(() =>
 )
 
 // ── 고지 관리 ──────────────────────────────────────────────────────────
-export const write_notice = computed(() =>
-  hasPermission([PERM.NOTICE_CREATE, PERM.NOTICE_UPDATE, PERM.NOTICE_DELETE]),
-)
+// export const write_notice = computed(() =>
+//   hasPermission([PERM.NOTICE_CREATE, PERM.NOTICE_UPDATE, PERM.NOTICE_DELETE]),
+// )

@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, type PropType, ref, watch } from 'vue'
 import { numFormat } from '@/utils/baseMixins'
+import { usePerms } from '@/composables/usePerms.ts'
 import { type Contract } from '@/store/types/contract'
 
 const props = defineProps({
@@ -11,6 +12,9 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['on-cont-chk'])
+
+const { can, PERM } = usePerms()
+const canNoticeRead = computed(() => can(PERM.NOTICE_READ))
 
 const checked = ref(false)
 
@@ -34,7 +38,7 @@ const contChk = (ctorPk: number) => {
 
 <template>
   <CTableRow v-if="contract" class="text-center" :color="checked ? 'secondary' : ''">
-    <CTableDataCell>
+    <CTableDataCell v-if="canNoticeRead">
       <CFormCheck
         :id="'check_' + contract.pk"
         v-model="checked"

@@ -290,7 +290,7 @@ defineExpose({
 
       <v-card-actions>
         <v-spacer />
-        <v-btn color="primary" variant="text" @click="closeModal"> 닫기 </v-btn>
+        <v-btn size="small" @click="closeModal" flat> 닫기 </v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

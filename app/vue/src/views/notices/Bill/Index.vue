@@ -1,12 +1,13 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, reactive, ref, watch } from 'vue'
 import { navMenu, pageTitle } from '@/views/notices/_menu/headermixin'
-import { getToday } from '@/utils/baseMixins'
 import { useNotice } from '@/store/pinia/notice'
 import { useProject } from '@/store/pinia/project'
 import { usePayment } from '@/store/pinia/payment'
 import { useProjectData } from '@/store/pinia/project_data'
 import { useContract } from '@/store/pinia/contract'
+import { getToday } from '@/utils/baseMixins'
+import { usePerms } from '@/composables/usePerms.ts'
 import { type PayOrder } from '@/store/types/payment'
 import { type SalesBillIssue } from '@/store/types/notice'
 import type { ContFilter } from '@/store/types/contract'
@@ -18,6 +19,9 @@ import SalesBillIssueForm from '@/views/notices/Bill/components/SalesBillIssueFo
 import ListController from '@/views/notices/Bill/components/ListController.vue'
 import DownloadButton from '@/views/notices/Bill/components/DownloadButton.vue'
 import ContractList from '@/views/notices/Bill/components/ContractList.vue'
+
+const { can, PERM } = usePerms()
+const canNoticeRead = computed(() => can(PERM.NOTICE_READ))
 
 const listControl = ref()
 const limit = ref(10)
@@ -173,7 +177,7 @@ onBeforeMount(() => dataSetup(project.value || projStore.initProjId))
           :now-order-name="payOrderName"
           @list-filtering="listFiltering"
         />
-        <DownloadButton :print-data="printData" :contracts="cont_ids" />
+        <DownloadButton v-if="canNoticeRead" :print-data="printData" :contracts="cont_ids" />
         <ContractList
           :now-order="payOrderTime || undefined"
           :limit="limit"

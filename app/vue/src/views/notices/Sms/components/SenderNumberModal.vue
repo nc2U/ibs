@@ -1,14 +1,16 @@
 <script lang="ts" setup>
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useNotice } from '@/store/pinia/notice'
-import { btnLight } from '@/utils/cssMixins'
+import { usePerms } from '@/composables/usePerms.ts'
 import FormModal from '@/components/Modals/FormModal.vue'
-import { CModalBody } from '@coreui/vue'
 
 // Props
 const props = defineProps<{
   editItem?: { id: number; phone_number: string; label: string } | null
 }>()
+
+const { can, PERM } = usePerms()
+const canNoticeManage = computed(() => can(PERM.NOTICE_CREATE) || can(PERM.NOTICE_UPDATE))
 
 // Store
 const notiStore = useNotice()
@@ -120,11 +122,17 @@ defineExpose({ openModal, closeModal })
     </CModalBody>
 
     <CModalFooter>
-      <v-btn :color="btnLight" size="small" @click="closeModal" :disabled="submitting">
-        취소
-      </v-btn>
-      <v-btn color="primary" size="small" @click="handleSubmit" :loading="submitting">
+      <v-btn
+        v-if="canNoticeManage"
+        color="primary"
+        size="small"
+        @click="handleSubmit"
+        :loading="submitting"
+      >
         {{ editItem ? '수정' : '등록' }}
+      </v-btn>
+      <v-btn color="light" size="small" @click="closeModal" :disabled="submitting" flat>
+        취소
       </v-btn>
     </CModalFooter>
   </FormModal>

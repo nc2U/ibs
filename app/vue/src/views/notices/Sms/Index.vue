@@ -3,6 +3,7 @@ import { computed, onBeforeMount, ref } from 'vue'
 import { navMenu, pageTitle } from '@/views/notices/_menu/headermixin'
 import { useNotice } from '@/store/pinia/notice.ts'
 import { useCompany } from '@/store/pinia/company.ts'
+import { usePerms } from '@/composables/usePerms.ts'
 import type { Company } from '@/store/types/settings.ts'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
@@ -13,6 +14,9 @@ import SelectRecipient from './components/SelectRecipient.vue'
 import SelectMessage from './components/SelectMessage.vue'
 import SendMessage from './components/SendMessage.vue'
 import HistoryTab from './components/HistoryTab.vue'
+
+const { can, PERM } = usePerms()
+const canNoticeRead = computed(() => can(PERM.NOTICE_READ))
 
 const loading = ref(true)
 const mainTab = ref('send') // 'send' or 'history'
@@ -236,7 +240,12 @@ onBeforeMount(async () => {
                 <v-tab :active="mainTab === 'send'" @click="mainTab = 'send'" variant="tonal">
                   발송
                 </v-tab>
-                <v-tab :active="mainTab === 'history'" @click="mainTab = 'history'" variant="tonal">
+                <v-tab
+                  :active="mainTab === 'history'"
+                  @click="mainTab = 'history'"
+                  variant="tonal"
+                  :disabled="!canNoticeRead"
+                >
                   내역
                 </v-tab>
               </v-tabs>

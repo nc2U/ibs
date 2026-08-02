@@ -1,9 +1,17 @@
 <script lang="ts" setup>
-import { ref } from 'vue'
-import { btnLight } from '@/utils/cssMixins'
+import { computed, ref } from 'vue'
 import { useNotice } from '@/store/pinia/notice'
-import FormModal from '@/components/Modals/FormModal.vue'
+import { usePerms } from '@/composables/usePerms.ts'
 import type { MessageTemplate } from '@/store/types/notice'
+import FormModal from '@/components/Modals/FormModal.vue'
+
+const { can, PERM } = usePerms()
+const canNoticeCreate = computed(() => can(PERM.NOTICE_CREATE))
+const canNoticeUpdate = computed(() => can(PERM.NOTICE_UPDATE))
+const canNoticeManage = computed(() =>
+  !editingId.value ? canNoticeCreate.value : canNoticeUpdate.value,
+)
+const canNoticeDelete = computed(() => can(PERM.NOTICE_DELETE))
 
 // Store
 const notiStore = useNotice()
@@ -160,19 +168,26 @@ defineExpose({ openModal, closeModal })
     </CModalBody>
 
     <CModalFooter>
-      <v-btn :color="btnLight" size="small" @click="closeModal" :disabled="submitting">
-        취소
-      </v-btn>
-      <v-btn v-if="editingId" size="small" color="primary" @click="handleCancelEdit">
-        새 템플릿
-      </v-btn>
       <v-btn
+        v-if="canNoticeManage"
         :color="editingId ? 'success' : 'primary'"
         size="small"
         @click="handleSubmit"
         :loading="submitting"
       >
         {{ editingId ? '수정' : '등록' }}
+      </v-btn>
+
+      <v-btn
+        v-if="editingId && canNoticeCreate"
+        size="small"
+        color="primary"
+        @click="handleCancelEdit"
+      >
+        새 템플릿
+      </v-btn>
+      <v-btn color="light" size="small" @click="closeModal" :disabled="submitting" flat>
+        취소
       </v-btn>
     </CModalFooter>
 
@@ -214,17 +229,21 @@ defineExpose({ openModal, closeModal })
 
             <template #append>
               <v-btn
+                v-if="canNoticeUpdate"
                 icon="mdi-pencil"
-                size="small"
+                size="20"
+                rounded
                 variant="text"
-                color="primary"
+                color="success"
                 @click="handleEdit(template)"
               />
               <v-btn
+                v-if="canNoticeDelete"
                 icon="mdi-delete"
-                size="small"
+                size="20"
+                rounded
                 variant="text"
-                color="error"
+                color="grey"
                 @click="confirmDelete(template.id)"
               />
             </template>
@@ -237,14 +256,14 @@ defineExpose({ openModal, closeModal })
   <!-- 삭제 확인 다이얼로그 -->
   <v-dialog v-model="showDeleteConfirm" max-width="400px">
     <v-card>
-      <v-card-title class="text-h6">템플릿 삭제</v-card-title>
+      <v-card-title class="">템플릿 삭제</v-card-title>
       <v-card-text>
         정말 이 템플릿을 삭제하시겠습니까? 삭제된 템플릿은 복구할 수 없습니다.
       </v-card-text>
       <v-card-actions>
         <v-spacer />
-        <v-btn variant="text" @click="showDeleteConfirm = false"> 취소 </v-btn>
-        <v-btn color="error" @click="handleDelete"> 삭제 </v-btn>
+        <v-btn size="small" color="error" @click="handleDelete"> 삭제 </v-btn>
+        <v-btn size="small" @click="showDeleteConfirm = false" flat> 취소 </v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
