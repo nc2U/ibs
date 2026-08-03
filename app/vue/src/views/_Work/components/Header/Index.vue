@@ -34,13 +34,18 @@ const sideNavCall = () => emit('side-nav-call')
 // 프로젝트 선택 기능 시작
 const workStore = useWork()
 const allActiveProjects = computed(() =>
-  workStore.getAllActiveProjects.filter(p => `${p.value}` !== route.params.projId),
+  workStore.getAllActiveProjectSlugs.filter(p => `${p.value}` !== route.params.projId),
 )
 
 const chkModules = (slug: string) => {
   const routeName = (route.name as string) ?? ''
+  const excluded = ['프로젝트', '전체검색']
   const project = workStore.allReadableProjectsFlat.filter(p => p.slug === slug)[0]
-  if ((route.meta as any)?.title === '설 정 관 리' || routeName.includes('프로젝트')) return false
+  if (
+    (route.meta as any)?.title === '설 정 관 리' ||
+    excluded.some(name => routeName.includes(name))
+  )
+    return false
   else if (!project) return true
   else {
     if (routeName.includes('로드맵') && !project.versions?.length) return false
@@ -107,7 +112,7 @@ const cngProject = async (slug: any) => {
                     <v-list-item
                       v-for="proj in allActiveProjects"
                       :key="proj.value"
-                      @click="cngProject(proj.slug)"
+                      @click="cngProject(proj.value)"
                     >
                       {{ proj.label }}
                     </v-list-item>

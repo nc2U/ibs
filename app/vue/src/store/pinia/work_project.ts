@@ -122,6 +122,7 @@ export const useWork = defineStore('work', () => {
       value: i.pk as number,
       label:
         (i.depth && i.parent_visible ? '\u00A0'.repeat(i.depth * 2) + '» \u00A0' : '') + i.name,
+      pk: i.pk as number,
       slug: i.slug as string,
       module: i.module,
     })),
@@ -131,6 +132,7 @@ export const useWork = defineStore('work', () => {
       value: i.pk as number,
       label:
         (i.depth && i.parent_visible ? '\u00A0'.repeat(i.depth * 2) + '» \u00A0' : '') + i.name,
+      pk: i.pk as number,
       slug: i.slug as string,
       module: i.module,
     })),
@@ -140,10 +142,31 @@ export const useWork = defineStore('work', () => {
       value: i.pk as number,
       label:
         (i.depth && i.parent_visible ? '\u00A0'.repeat(i.depth * 2) + '» \u00A0' : '') + i.name,
+      pk: i.pk as number,
       slug: i.slug as string,
       module: i.module,
     })),
   )
+
+  const getAllReadableProjectSlugs = computed(() =>
+    getAllReadableProjects.value.map(p => ({
+      value: p.slug,
+      label: p.label,
+    })),
+  )
+  const getAllActiveProjectSlugs = computed(() =>
+    getAllActiveProjects.value.map(p => ({
+      value: p.slug,
+      label: p.label,
+    })),
+  )
+  const getMyProjectSlugs = computed(() =>
+    getMyProjects.value.map(p => ({
+      value: p.slug,
+      label: p.label,
+    })),
+  )
+
   const getDevProjects = computed(() =>
     myProjects.value
       .filter(i => i.type === '2')
@@ -620,6 +643,10 @@ export const useWork = defineStore('work', () => {
     getAllActiveProjects,
     getMyProjects,
     getDevProjects,
+
+    getAllReadableProjectSlugs,
+    getAllActiveProjectSlugs,
+    getMyProjectSlugs,
 
     fetchAllProjectList,
     fetchIssueProjectList,
