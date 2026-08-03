@@ -303,8 +303,8 @@ class LedgerExecAmountToBudgetSerializer(serializers.Serializer):
 
 class TotalSiteAreaSerializer(serializers.ModelSerializer):
     project = serializers.IntegerField()
-    official = serializers.DecimalField(max_digits=12, decimal_places=7)
-    returned = serializers.DecimalField(max_digits=12, decimal_places=7)
+    official = serializers.DecimalField(max_digits=16, decimal_places=7, allow_null=True)
+    returned = serializers.DecimalField(max_digits=16, decimal_places=7, allow_null=True)
 
     class Meta:
         model = Site
@@ -503,7 +503,7 @@ class SiteOwnshipRelationshipSerializer(serializers.ModelSerializer):
 
 class TotalContractedAreaSerializer(serializers.ModelSerializer):
     project = serializers.IntegerField()
-    contracted_area = serializers.DecimalField(max_digits=12, decimal_places=7)
+    contracted_area = serializers.DecimalField(max_digits=12, decimal_places=7, allow_null=True)
 
     class Meta:
         model = SiteOwner
