@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { useAccount } from '@/store/pinia/account'
 import { useWork } from '@/store/pinia/work_project'
@@ -10,6 +10,20 @@ export const usePermission = defineStore('permission', () => {
   const accountStore = useAccount()
   const projectPermSet = ref<Set<PermissionCode>>(new Set())
   const projectRole = ref<MyRole | null>(null)
+
+  // 전역 권한 Set: myProjects 원시 배열 기반으로 pre-compute
+  // - myProjectsFlat(visible 필터 포함) 대신 사용 → visible 변동에 의한 오동작 방지
+  // - myProjects는 App.vue onBeforeMount에서 1회 로드 후 안정적
+  // - computed이므로 myProjects 변경 시에만 재계산 (페이지 이동과 무관)
+  const globalPermSet = computed<Set<PermissionCode>>(() => {
+    const set = new Set<PermissionCode>()
+    workStore.myProjects.forEach((p: any) => {
+      if (Array.isArray(p.my_perms)) {
+        p.my_perms.forEach((perm: PermissionCode) => set.add(perm))
+      }
+    })
+    return set
+  })
 
   // 프로젝트 권한 데이터 세팅 (프로젝트 로드 시 호출)
   const setProjectPermissions = (perms: PermissionCode[]) => (projectPermSet.value = new Set(perms))
@@ -124,22 +138,9 @@ export const usePermission = defineStore('permission', () => {
         return targetProj?.my_perms ? targetProj.my_perms.includes(c) : false
       }
 
-      // active 프로젝트가 없는 상태(전역 구간)라면,
-      // 1. 사용자가 멤버이면서 권한을 가진 프로젝트가 최소 하나라도 있거나,
-      // 2. 로그인된 사용자 권한(PK 2)이 체크 대상 권한을 갖고 있으면서 공개 프로젝트가 존재하는지 확인
+      // active 프로젝트가 없는 상태(전역 구간)에서는 globalPermSet으로 판정
       if (!workStore.currentProject) {
-        const hasMemberPerm = workStore.myProjectsFlat.some(
-          (p: any) => p.my_perms && p.my_perms.includes(c),
-        )
-        if (hasMemberPerm) return true
-
-        const authRole = workStore.roleList.find((r: any) => r.pk === 2)
-        const targetPerm = workStore.permissionList.find((p: any) => p.code === c)
-        const hasAuthRolePerm =
-          authRole?.permissions && targetPerm ? authRole.permissions.includes(targetPerm.pk) : false
-        const hasPublicProject = workStore.allReadableProjectsFlat.some((p: any) => p.is_public)
-
-        return hasAuthRolePerm && hasPublicProject
+        return globalPermSet.value.has(c)
       }
 
       // 프로젝트별 권한 세트에서 체크
@@ -148,6 +149,16 @@ export const usePermission = defineStore('permission', () => {
 
     if (Array.isArray(code)) return code.every(c => check(c))
     return check(code)
+  }
+
+  // 전역 권한 체크
+  // 주의: 기존 checkGlobal의 Path 2(익명/로그인 사용자 역할 pk=2 기반 체크)는 해당 역할 개념 폐지로 제거됨.
+  // 현재 pk=2는 일반 프로젝트 역할('개발담당')이며, 로그인 사용자 전체에 권한을 부여하는 용도가 아님.
+  // canGlobal: globalPermSet(내가 멤버인 모든 프로젝트의 권한 합집합)만으로 판정
+  const canGlobal = (code: PermissionCode | PermissionCode[]) => {
+    if (accountStore.workManager) return true
+    if (Array.isArray(code)) return code.every(c => globalPermSet.value.has(c))
+    return globalPermSet.value.has(code)
   }
 
   return {
@@ -161,5 +172,7 @@ export const usePermission = defineStore('permission', () => {
     getUserVisible,
     canViewUser,
     can,
+    canGlobal,
+    globalPermSet,
   }
 })
