@@ -1,11 +1,12 @@
 <script lang="ts" setup>
 import { computed, nextTick, onBeforeMount, ref, watch } from 'vue'
 import { navMenu, pageTitle } from '@/views/contracts/_menu/headermixin'
-import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
 import { useProject } from '@/store/pinia/project'
 import { useProLedger } from '@/store/pinia/proLedger.ts'
 import { useProjectData } from '@/store/pinia/project_data'
 import { useContract } from '@/store/pinia/contract'
+import { usePerms } from '@/composables/usePerms.ts'
+import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
 import type { Project } from '@/store/types/project'
 import type { ContFilter, UnitFilter } from '@/store/types/contract'
 import Loading from '@/components/Loading/Index.vue'
@@ -18,7 +19,9 @@ import AddContract from '@/views/contracts/List/components/AddContract.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import SelectItems from '@/views/contracts/List/components/SelectItems.vue'
 import ContractList from '@/views/contracts/List/components/ContractList.vue'
-import { CCardBody } from '@coreui/vue'
+
+const { can, PERM } = usePerms()
+const canContractCreate = computed(() => can(PERM.CONTRACT_CREATE))
 
 const route = useRoute()
 const listControl = ref()
@@ -343,6 +346,7 @@ onBeforeMount(async () => {
       <CCardBody class="pb-5">
         <ListController ref="listControl" @cont-filtering="onContFiltering" />
         <AddContract
+          v-if="canContractCreate"
           :project="project?.pk"
           :unit-set="unitSet"
           @subscription-created="handleSubscription"

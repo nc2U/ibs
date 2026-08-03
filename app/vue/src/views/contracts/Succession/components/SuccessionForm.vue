@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import { computed, nextTick, onBeforeMount, type PropType, reactive, ref, watch } from 'vue'
-import { write_contract } from '@/utils/pageAuth'
-import { isValidate } from '@/utils/helper'
 import { useContract } from '@/store/pinia/contract'
+import { isValidate } from '@/utils/helper'
+import { usePerms } from '@/composables/usePerms.ts'
 import {
   type BuyerForm,
   type Contract,
@@ -21,6 +21,9 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['on-submit', 'close'])
+
+const { can, PERM } = usePerms()
+const canContractUpdate = computed(() => can(PERM.CONTRACT_UPDATE))
 
 const postCode = ref()
 const refAlertModal = ref()
@@ -122,7 +125,7 @@ const seller = computed(() => ({
 }))
 
 const onSubmit = (event: Event) => {
-  if (write_contract.value) {
+  if (canContractUpdate.value) {
     if (isValidate(event)) {
       validated.value = true
     } else {
@@ -134,7 +137,7 @@ const onSubmit = (event: Event) => {
 }
 
 const deleteConfirm = () => {
-  if (write_contract.value) refConfirmModal.value.callModal()
+  if (canContractUpdate.value) refConfirmModal.value.callModal()
   else refAlertModal.value.callModal()
 }
 

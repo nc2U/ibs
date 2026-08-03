@@ -1,14 +1,14 @@
 <script lang="ts" setup>
 import { computed, type PropType, ref } from 'vue'
 import { useStore } from '@/store'
-import { write_contract } from '@/utils/pageAuth'
 import { useContract } from '@/store/pinia/contract'
 import { bgLight } from '@/utils/cssMixins.ts'
+import { usePerms } from '@/composables/usePerms.ts'
+import { timeFormat } from '@/utils/baseMixins.ts'
 import type { Contract, Contractor } from '@/store/types/contract'
 import AddressForm from '@/views/contracts/List/components/AddressForm.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
-import { timeFormat } from '@/utils/baseMixins.ts'
 
 const props = defineProps({
   contract: { type: Object as PropType<Contract>, required: true },
@@ -16,6 +16,9 @@ const props = defineProps({
   currentAddress: { type: Object as PropType<any>, default: null },
   pastAddresses: { type: Array as PropType<any[]>, default: () => [] },
 })
+
+const { can, PERM } = usePerms()
+const canContractUpdate = computed(() => can(PERM.CONTRACT_UPDATE))
 
 const store = useStore()
 const isDark = computed(() => store.theme === 'dark')
@@ -50,7 +53,7 @@ const noteText = ref('')
 const isSavingNote = ref(false)
 
 const enableEditNote = () => {
-  if (!write_contract.value) return // 권한 검사
+  if (!canContractUpdate.value) return // 권한 검사
   noteText.value = props.contractor.note || ''
   isEditingNote.value = true
 }
@@ -441,7 +444,9 @@ const getQualificationColor = (q: '1' | '2' | '3' | '') => {
       <div>
         <h6 class="mb-2">
           메모
-          <span v-if="write_contract" class="text-caption text-grey ml-1">(더블클릭하여 수정)</span>
+          <span v-if="canContractUpdate" class="text-caption text-grey ml-1">
+            (더블클릭하여 수정)
+          </span>
         </h6>
 
         <div v-if="!isEditingNote" @dblclick="enableEditNote" class="pointer-cursor-container">
@@ -510,7 +515,7 @@ const getQualificationColor = (q: '1' | '2' | '3' | '') => {
             </div>
             <div>
               <v-icon
-                v-if="write_contract"
+                v-if="canContractUpdate"
                 icon="mdi-pencil"
                 :color="editingFileId === file.pk ? 'warning' : 'success'"
                 size="x-small"
@@ -518,7 +523,7 @@ const getQualificationColor = (q: '1' | '2' | '3' | '') => {
                 @click="toggleEditMode(file.pk)"
               />
               <v-icon
-                v-if="write_contract"
+                v-if="canContractUpdate"
                 icon="mdi-delete"
                 color="grey"
                 size="x-small"
@@ -577,12 +582,12 @@ const getQualificationColor = (q: '1' | '2' | '3' | '') => {
               density="compact"
               label="계약서 파일"
               clearable
-              :disabled="!write_contract || isUploading"
+              :disabled="!canContractUpdate || isUploading"
             />
             <v-btn
               color="primary"
               size="small"
-              :disabled="!write_contract || !selectedFile || isUploading"
+              :disabled="!canContractUpdate || !selectedFile || isUploading"
               :loading="isUploading"
               @click="uploadFile"
             >

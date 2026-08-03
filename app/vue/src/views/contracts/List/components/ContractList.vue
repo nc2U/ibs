@@ -1,11 +1,10 @@
 <script lang="ts" setup>
 import { computed, type PropType } from 'vue'
 import { useContract } from '@/store/pinia/contract'
-import { write_contract } from '@/utils/pageAuth'
 import { TableSecondary } from '@/utils/cssMixins'
+import { usePerms } from '@/composables/usePerms.ts'
 import Pagination from '@/components/Pagination'
 import ContractItem from './ContractItem.vue'
-import { CTable } from '@coreui/vue'
 
 const emit = defineEmits(['page-select', 'contract-converted'])
 
@@ -16,6 +15,9 @@ const props = defineProps({
   currentPage: { type: Number, default: 1 },
   borderTop: { type: Boolean, default: false },
 })
+
+const { can, PERM } = usePerms()
+const canContractManage = computed(() => can(PERM.CONTRACT_READ) || can(PERM.CONTRACT_UPDATE))
 
 const contractStore = useContract()
 const contractList = computed(() => contractStore.contractList)
@@ -39,7 +41,7 @@ const pageSelect = (page: number) => emit('page-select', page)
       <col style="width: 8%" />
       <col style="width: 10%" />
       <col style="width: 6%" />
-      <col v-if="write_contract" style="width: 6%" />
+      <col v-if="canContractManage" style="width: 6%" />
     </colgroup>
 
     <CTableHead>
@@ -56,7 +58,7 @@ const pageSelect = (page: number) => emit('page-select', page)
         <CTableHeaderCell scope="col">납입금액합계</CTableHeaderCell>
         <CTableHeaderCell scope="col">최종납입회차</CTableHeaderCell>
         <CTableHeaderCell scope="col">계약서</CTableHeaderCell>
-        <CTableHeaderCell v-if="write_contract" scope="col">비고</CTableHeaderCell>
+        <CTableHeaderCell v-if="canContractManage" scope="col">비고</CTableHeaderCell>
       </CTableRow>
     </CTableHead>
 

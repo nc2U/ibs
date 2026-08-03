@@ -4,7 +4,7 @@ import { navMenu, pageTitle } from '@/views/contracts/_menu/headermixin'
 import { useProject } from '@/store/pinia/project'
 import { useContract } from '@/store/pinia/contract'
 import { useRoute, useRouter, onBeforeRouteUpdate, onBeforeRouteLeave } from 'vue-router'
-import { write_contract } from '@/utils/pageAuth'
+import { usePerms } from '@/composables/usePerms.ts'
 import type { BuyerForm, Contractor, Succession } from '@/store/types/contract'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
@@ -19,6 +19,9 @@ import SuccessionList from './components/SuccessionList.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
 import SuccessionForm from '@/views/contracts/Succession/components/SuccessionForm.vue'
+
+const { can, PERM } = usePerms()
+const canContractUpdate = computed(() => can(PERM.CONTRACT_UPDATE))
 
 const page = ref(1)
 
@@ -140,7 +143,7 @@ const loadHighlightPage = async (projectId: number) => {
 }
 
 const callFormModal = (suc?: Succession) => {
-  if (write_contract.value) {
+  if (canContractUpdate.value) {
     if (suc) {
       contStore.succession = suc
       if (suc.buyer.pk !== undefined) {

@@ -2,7 +2,7 @@
 import { computed, type PropType, ref } from 'vue'
 import { numFormat } from '@/utils/baseMixins'
 import { useRouter } from 'vue-router'
-import { write_contract } from '@/utils/pageAuth'
+import { usePerms } from '@/composables/usePerms.ts'
 import { type Contract } from '@/store/types/contract'
 import ContractForm from './ContractForm.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
@@ -15,6 +15,10 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['contract-converted'])
+
+const { can, PERM } = usePerms()
+const canContractRead = computed(() => can(PERM.CALENDAR_READ))
+const canContractUpdate = computed(() => can(PERM.CONTRACT_UPDATE))
 
 const updateFormModal = ref()
 
@@ -30,7 +34,9 @@ const changeTypeLabel = computed(() => {
     '2': '부적격확인중',
     '3': '승계진행중',
   }
-  return props.contract.contractor?.change_type ? typeMap[props.contract.contractor.change_type] : ''
+  return props.contract.contractor?.change_type
+    ? typeMap[props.contract.contractor.change_type]
+    : ''
 })
 
 const changeTypeColor = computed(() => {
@@ -39,7 +45,9 @@ const changeTypeColor = computed(() => {
     '2': 'warning',
     '3': 'info',
   }
-  return props.contract.contractor?.change_type ? colorMap[props.contract.contractor.change_type] : ''
+  return props.contract.contractor?.change_type
+    ? colorMap[props.contract.contractor.change_type]
+    : ''
 })
 </script>
 
@@ -134,8 +142,9 @@ const changeTypeColor = computed(() => {
         <v-tooltip activator="parent" location="top">미등록</v-tooltip>
       </span>
     </CTableDataCell>
-    <CTableDataCell v-if="write_contract">
+    <CTableDataCell v-if="canContractRead || canContractUpdate">
       <v-btn
+        v-if="canContractRead"
         type="button"
         color="info"
         size="x-small"
@@ -149,7 +158,13 @@ const changeTypeColor = computed(() => {
       >
         보기
       </v-btn>
-      <v-btn type="button" color="success" size="x-small" @click="updateFormModal.callModal()">
+      <v-btn
+        v-if="canContractUpdate"
+        type="button"
+        color="success"
+        size="x-small"
+        @click="updateFormModal.callModal()"
+      >
         수정
       </v-btn>
     </CTableDataCell>

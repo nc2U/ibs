@@ -6,7 +6,7 @@ import { useContract } from '@/store/pinia/contract'
 import type { Project } from '@/store/types/project.ts'
 import { type Contractor, type ContractRelease } from '@/store/types/contract'
 import { useRoute, useRouter } from 'vue-router'
-import { write_contract } from '@/utils/pageAuth'
+import { usePerms } from '@/composables/usePerms.ts'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
@@ -20,6 +20,9 @@ import ReleaseList from '@/views/contracts/Release/components/ReleaseList.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
 import ReleaseForm from '@/views/contracts/Release/components/ReleaseForm.vue'
+
+const { can, PERM } = usePerms()
+const canContractUpdate = computed(() => can(PERM.CONTRACT_UPDATE))
 
 const page = ref(1)
 
@@ -100,7 +103,7 @@ const callForm = (contractor: number) => {
   })
 
   setTimeout(() => {
-    if (write_contract.value) releaseFormModal.value.callModal()
+    if (canContractUpdate.value) releaseFormModal.value.callModal()
     else releaseAlertModal.value.callModal()
   }, 500)
 }

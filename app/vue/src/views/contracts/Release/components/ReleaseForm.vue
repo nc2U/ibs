@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, type PropType, reactive, ref, watch } from 'vue'
-import { write_contract } from '@/utils/pageAuth'
 import { isValidate } from '@/utils/helper'
+import { usePerms } from '@/composables/usePerms.ts'
 import { type Contractor, type ContractRelease } from '@/store/types/contract'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
@@ -13,6 +13,9 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['on-submit', 'close'])
+
+const { can, PERM } = usePerms()
+const canContractUpdate = computed(() => can(PERM.CONTRACT_UPDATE))
 
 const refConfirmModal = ref()
 const refAlertModal = ref()
@@ -64,7 +67,7 @@ const statusOptions = computed(() => {
 })
 
 const onSubmit = (event: Event) => {
-  if (write_contract.value) {
+  if (canContractUpdate.value) {
     if (isValidate(event)) {
       validated.value = true
     } else emit('on-submit', { ...form })
@@ -72,7 +75,7 @@ const onSubmit = (event: Event) => {
 }
 
 const deleteConfirm = () => {
-  if (write_contract.value) refConfirmModal.value.callModal()
+  if (canContractUpdate.value) refConfirmModal.value.callModal()
   else refAlertModal.value.callModal()
 }
 

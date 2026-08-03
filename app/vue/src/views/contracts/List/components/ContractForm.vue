@@ -10,19 +10,19 @@ import {
   ref,
   watch,
 } from 'vue'
-import { onBeforeRouteLeave } from 'vue-router'
 import { useStore } from '@/store'
-import { write_contract } from '@/utils/pageAuth'
 import { useAccount } from '@/store/pinia/account'
 import { useProjectData } from '@/store/pinia/project_data'
 import { usePayment } from '@/store/pinia/payment'
 import { useProLedger } from '@/store/pinia/proLedger.ts'
 import { useContract } from '@/store/pinia/contract'
-import { type PayOrder } from '@/store/types/payment'
-import type { Contract, ContractFile, Payment, UnitFilter } from '@/store/types/contract'
 import { isValidate } from '@/utils/helper'
+import { onBeforeRouteLeave } from 'vue-router'
+import { usePerms } from '@/composables/usePerms.ts'
 import { diffDate, numFormat } from '@/utils/baseMixins'
 import { type AddressData, callAddress } from '@/components/DaumPostcode/address'
+import type { Contract, ContractFile, Payment, UnitFilter } from '@/store/types/contract'
+import { type PayOrder } from '@/store/types/payment'
 import Multiselect from '@vueform/multiselect'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import AttatchFile from '@/components/AttatchFile/Index.vue'
@@ -42,6 +42,13 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['on-submit', 'close', 'subscription-created', 'contract-converted'])
+
+const { can, PERM } = usePerms()
+const canContractUpdate = computed(() => can(PERM.CONTRACT_UPDATE))
+const canContractManage = computed(() =>
+  !props.contract ? can(PERM.CONTRACT_CREATE) : can(PERM.CONTRACT_UPDATE),
+)
+const canContractDelete = computed(() => can(PERM.CONTRACT_DELETE))
 
 const refPostCode = ref()
 const refBankAcc = ref()
@@ -454,7 +461,7 @@ const onSubmit = (event: Event) => {
   if (isValidate(event)) {
     validated.value = true
   } else {
-    if (write_contract.value) refConfirmModal.value.callModal()
+    if (canContractManage.value) refConfirmModal.value.callModal()
     else refAlertModal.value.callModal()
   }
 }
@@ -1090,7 +1097,7 @@ onBeforeRouteLeave(() => formDataReset())
             color="primary"
             size="small"
             class="mt-1"
-            :disabled="!write_contract"
+            :disabled="!canContractUpdate"
             @click="refChangeAddr.callModal()"
           >
             주소변경
@@ -1118,16 +1125,8 @@ onBeforeRouteLeave(() => formDataReset())
     </CCardBody>
 
     <CCardFooter class="text-right">
-      <!--      <v-btn-->
-      <!--        v-if="write_contract && contract"-->
-      <!--        type="button"-->
-      <!--        color="warning"-->
-      <!--        @click="deleteContract"-->
-      <!--      >-->
-      <!--        삭제-->
-      <!--      </v-btn>-->
       <v-btn
-        v-if="write_contract"
+        v-if="canContractManage"
         type="submit"
         :color="contract ? 'success' : 'primary'"
         :disabled="!form.status || formsCheck"
@@ -1135,7 +1134,15 @@ onBeforeRouteLeave(() => formDataReset())
         <v-icon icon="mdi-check-circle-outline" class="mr-2" />
         저장
       </v-btn>
-      <v-btn type="button" color="ㅣight" @click="$emit('close')" flat>닫기</v-btn>
+      <!--            <v-btn-->
+      <!--              v-if="canContractDelete && contract"-->
+      <!--              type="button"-->
+      <!--              color="warning"-->
+      <!--              @click="deleteContract"-->
+      <!--            >-->
+      <!--              삭제-->
+      <!--            </v-btn>-->
+      <v-btn type="button" color="light" @click="$emit('close')" flat>닫기</v-btn>
     </CCardFooter>
   </CForm>
 
