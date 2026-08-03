@@ -11,6 +11,33 @@ body.dark-theme {
   --logo-text-color: #ffffff; /* 다크 모드일 때 하얀 글자 색상 */
 }
 
+/* Vuetify 버튼에 대해 font-size 상속 해제 */
+.v-btn,
+.v-btn--size-x-small,
+.v-btn--size-small,
+.v-btn--size-large,
+.v-btn--size-x-large {
+  font-size: var(--v-btn-size) !important;
+  border-radius: 2px !important; // 혹은 프로젝트 기존 스타일
+}
+
+/* 2. v-radio 정렬 보정 */
+.v-radio-group .v-selection-control-group {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+}
+
+.v-radio-group .v-selection-control {
+  min-height: auto !important; // Vuetify 4의 기본 높이값 무시
+  display: flex !important;
+  align-items: center !important;
+}
+
+.bg-success {
+  color: white !important;
+}
+
 .bg-primary-lighten {
   background: #ede3fe !important;
 }
