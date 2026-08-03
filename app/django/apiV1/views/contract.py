@@ -43,7 +43,15 @@ class OrderGroupViewSet(viewsets.ModelViewSet):
 
     @property
     def required_permission(self):
-        return 'contract.read' if self.action in ('list', 'retrieve') else 'contract.create' if self.action == 'create' else 'contract.update' if self.action in ('update', 'partial_update') else 'contract.delete' if self.action == 'destroy' else 'contract.read'
+        if self.action in ('list', 'retrieve'):
+            return None
+        if self.action == 'create':
+            return 'contract.create'
+        if self.action in ('update', 'partial_update'):
+            return 'contract.update'
+        if self.action == 'destroy':
+            return 'contract.delete'
+        return 'contract.read'
 
 
 class DocumentTypeViewSet(viewsets.ModelViewSet):
@@ -83,7 +91,8 @@ class ContractFilter(FilterSet):
     houseunit__isnull = BooleanFilter(field_name='key_unit__houseunit', lookup_expr='isnull', label='동호미지정 여부')
     key_unit__houseunit__building_unit = ModelChoiceFilter(queryset=BuildingUnit.objects.all(), label='동(건물)')
     contractor__status = ChoiceFilter(field_name='contractor__status', choices=Contractor.STATUS_CHOICES, label='현재상태')
-    contractor__change_type = ChoiceFilter(field_name='contractor__change_type', choices=Contractor.CHANGE_TYPE_CHOICES, label='변경유형')
+    contractor__change_type = ChoiceFilter(field_name='contractor__change_type', choices=Contractor.CHANGE_TYPE_CHOICES,
+                                           label='변경유형')
     contractor__qualification = ChoiceFilter(field_name='contractor__qualification',
                                              choices=Contractor.QUA_CHOICES, label='등록상태')
     from_contract_date = DateFilter(field_name='contractor__contract_date', lookup_expr='gte', label='계약일자부터')
@@ -116,7 +125,11 @@ class ContractViewSet(viewsets.ModelViewSet):
 
     @property
     def required_permission(self):
-        return 'contract.read' if self.action in ('list', 'retrieve', 'recent_logs', 'find_page', 'payment_summary', 'payment_plan', 'price_payment_plan', 'multi_project_payment_summary') else 'contract.create' if self.action == 'create' else 'contract.update' if self.action in ('update', 'partial_update') else 'contract.delete' if self.action == 'destroy' else 'contract.read'
+        return 'contract.read' if self.action in ('list', 'retrieve', 'recent_logs', 'find_page', 'payment_summary',
+                                                  'payment_plan', 'price_payment_plan',
+                                                  'multi_project_payment_summary') else 'contract.create' if self.action == 'create' else 'contract.update' if self.action in (
+            'update', 'partial_update') else 'contract.delete' if self.action == 'destroy' else 'contract.read'
+
     filterset_class = ContractFilter
     search_fields = ('serial_number', 'contractor__name',
                      'contractor__note', 'succession__seller__name',
