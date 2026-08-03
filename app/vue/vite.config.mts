@@ -25,13 +25,7 @@ export default defineConfig({
         assetFileNames: 'assets/[name]-[hash].[ext]',
       },
     },
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: process.env.NODE_ENV === 'production',
-        drop_debugger: process.env.NODE_ENV === 'production',
-      },
-    },
+    minify: 'esbuild',
   },
   plugins: [
     vue(),
@@ -55,6 +49,7 @@ export default defineConfig({
     },
   },
   esbuild: {
+    drop: process.env.NODE_ENV === 'production' ? ['console', 'debugger'] : [],
     target: 'ESNext',
   },
   server: {
