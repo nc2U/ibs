@@ -10,6 +10,7 @@ import {
   watch,
 } from 'vue'
 import { useAccount } from '@/store/pinia/account'
+import { usePerms } from '@/composables/usePerms.ts'
 import { type RouteLocationNormalized, RouterLink, useRoute } from 'vue-router'
 import { CBadge, CNavGroup, CSidebarNav } from '@coreui/vue'
 import { CIcon } from '@coreui/icons-vue'
@@ -76,13 +77,35 @@ const AppSidebarNav = defineComponent({
 
     // Pinia store
     const account = useAccount()
+    const isStaff = computed(() => account.isStaff)
+    const isFinancial = computed(() => account.isFinancial)
+
+    const { canGlobal, PERM } = usePerms()
+    const readDocs = computed(() => canGlobal(PERM.DOCS_READ))
+    const readHrWork = computed(() => canGlobal(PERM.HR_WORK_READ))
+    const readCont = computed(() => canGlobal(PERM.CONTRACT_READ))
+    const readPay = computed(() => canGlobal(PERM.PAYMENT_READ))
+    const readNoti = computed(() => canGlobal(PERM.NOTICE_READ))
+    const readLedger = computed(() => canGlobal(PERM.LEDGER_READ))
+    const readAuth = computed(() => canGlobal(PERM.PROJECT_MEMBER))
 
     const predicates = computed(() => {
       // 권한 키별 접근 제어 매핑
       const authMap: Record<string, boolean> = {
-        isComMenu: account.isStaff || account.isFinancial,
-        isStaff: account.isStaff,
-        isFinancial: account.isFinancial,
+        isComMenu: isStaff.value && (isFinancial.value || readDocs.value || readHrWork.value),
+        isFinancial: isFinancial.value,
+        isComDocs: isStaff.value && readDocs.value,
+        isComHrWork: isStaff.value && readHrWork.value,
+
+        isContract: readCont.value,
+        isPayment: readPay.value,
+        isNotice: readNoti.value,
+        isLedger: readLedger.value,
+        isDocument: readDocs.value,
+
+        isSetMenu: isStaff.value || readAuth.value,
+        isCompany: isStaff.value,
+        isAuthor: readAuth.value,
       }
 
       return [

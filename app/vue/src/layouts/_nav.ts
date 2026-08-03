@@ -43,7 +43,7 @@ const companyDocs = {
   component: 'CNavGroup',
   name: '본사 문서 관리',
   to: '/docs/general',
-  auth: 'isStaff',
+  auth: 'isComDocs',
   icon: 'cil-cloud-download',
   items: [
     {
@@ -77,7 +77,7 @@ const humanResource = {
   component: 'CNavGroup',
   name: '본사 인사 관리',
   to: '/hr-manage',
-  auth: 'isStaff',
+  auth: 'isComHrWork',
   icon: 'cilPeople',
   items: [
     {
@@ -120,6 +120,7 @@ const contract = {
   name: '계약 정보 관리',
   to: '/contracts',
   icon: 'cil-spreadsheet',
+  auth: 'isContract',
   items: [
     {
       component: 'CNavItem',
@@ -154,6 +155,7 @@ const payment = {
   name: '계약 납부 관리',
   to: '/payment',
   icon: 'cil-calculator',
+  auth: 'isPayment',
   items: [
     {
       component: 'CNavItem',
@@ -178,6 +180,7 @@ const notice = {
   name: '고객 고지 관리',
   to: '/notices',
   icon: 'cil-envelope-letter',
+  auth: 'isNotice',
   items: [
     {
       component: 'CNavItem',
@@ -224,6 +227,7 @@ const projectLedger = {
   name: '회계 자금 관리',
   to: '/project-ledger',
   icon: 'cil-money',
+  auth: 'isLedger',
   items: [
     {
       component: 'CNavItem',
@@ -248,6 +252,7 @@ const projectDocs = {
   name: '문서 소송 관리',
   to: '/project-docs',
   icon: 'cil-library',
+  auth: 'isDocument',
   items: [
     {
       component: 'CNavItem',
@@ -396,16 +401,19 @@ const settings = {
   name: '환 경 설 정',
   to: '/settings',
   icon: 'cil-settings',
+  auth: 'isSetMenu',
   items: [
     {
       component: 'CNavItem',
       name: '회사 정보 관리',
       to: '/settings/company',
+      auth: 'isCompany',
     },
     {
       component: 'CNavItem',
       name: '권한 설정 관리',
       to: '/settings/authorization',
+      auth: 'isAuthor',
     },
   ],
 }
@@ -435,6 +443,7 @@ const nav = [
   {
     component: 'CNavTitle',
     name: '기타 관리',
+    auth: 'isSetMenu',
   },
   settings,
 ]

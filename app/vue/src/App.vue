@@ -3,14 +3,12 @@ import { computed, onBeforeMount, onMounted, watch } from 'vue'
 import { useStore } from '@/store'
 import { useCompany } from '@/store/pinia/company'
 import { useWork } from '@/store/pinia/work_project'
-import { useAccount } from '@/store/pinia/account'
 import GlobalDownloadIndicator from '@/components/DownLoad/GlobalDownloadIndicator.vue'
 
 const comStore = useCompany()
 const company = computed(() => comStore.company)
 
 const workStore = useWork()
-const accountStore = useAccount()
 
 const store = useStore()
 const isDark = computed(() => store.theme === 'dark')
@@ -25,12 +23,11 @@ onMounted(async () => {
   isDark.value
     ? document.body.classList.add('dark-theme')
     : document.body.classList.remove('dark-theme')
-  if (!company.value) await comStore.fetchCompany(comStore.initComId)
 })
 
 onBeforeMount(async () => {
-  await workStore.fetchMyProjectsList()
-  await workStore.fetchGroupedPermissions()
+  if (!company.value) await comStore.fetchCompany(comStore.initComId)
+  await Promise.all([workStore.fetchMyProjectsList(), workStore.fetchGroupedPermissions()])
 })
 </script>
 
