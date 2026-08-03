@@ -5,6 +5,7 @@ export function usePerms() {
   const permStore = usePermission()
 
   const can = permStore.can
+  const canGlobal = permStore.canGlobal
   const setProjectPermissions = permStore.setProjectPermissions
   const isAssignable = permStore.isAssignable
   const getIssueVisible = permStore.getIssueVisible
@@ -13,6 +14,7 @@ export function usePerms() {
 
   return {
     can,
+    canGlobal,
     setProjectPermissions,
     isAssignable,
     getIssueVisible,
