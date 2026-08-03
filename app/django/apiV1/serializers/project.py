@@ -1,5 +1,9 @@
+import logging
+
 from django.db import transaction
 from rest_framework import serializers
+
+logger = logging.getLogger(__name__)
 
 from apiV1.serializers.accounts import SimpleUserSerializer
 from company.models import Company
@@ -66,6 +70,9 @@ class ProjectSerializer(serializers.ModelSerializer):
             is_active=True
         ).order_by('id')
 
+        request = self.context.get('request')
+        creator = request.user if request else None
+
         required_docs = [
             RequiredDocument(
                 project=project,
@@ -74,7 +81,7 @@ class ProjectSerializer(serializers.ModelSerializer):
                 quantity=doc_type.default_quantity,
                 require_type=doc_type.require_type,
                 description=doc_type.description,
-                creator=self.context.get('request').user if self.context.get('request') else None
+                creator=creator
             )
             for doc_type in default_document_types
         ]
@@ -97,6 +104,9 @@ class ProjectSerializer(serializers.ModelSerializer):
         existing_docs = RequiredDocument.objects.filter(project=project).select_related('document_type')
 
         # 기존 문서들의 필드를 DocumentType과 동기화
+        request = self.context.get('request')
+        updator = request.user if request else None
+
         docs_to_update = []
         for req_doc in existing_docs:
             doc_type = req_doc.document_type
@@ -109,14 +119,14 @@ class ProjectSerializer(serializers.ModelSerializer):
                 req_doc.quantity = doc_type.default_quantity
                 req_doc.require_type = doc_type.require_type
                 req_doc.description = doc_type.description
-                req_doc.updator = self.context.get('request').user if self.context.get('request') else None
+                req_doc.updator = updator
                 docs_to_update.append(req_doc)
 
-        # 변경된 문서들 일괄 업데이트
+        # 변경된 문서들 일괄 업데이트 (auto_now 필드인 'updated'는 제외)
         if docs_to_update:
             RequiredDocument.objects.bulk_update(
                 docs_to_update,
-                ['sort', 'quantity', 'require_type', 'description', 'updator', 'updated']
+                ['sort', 'quantity', 'require_type', 'description', 'updator']
             )
 
         # 현재 프로젝트에 등록된 서류 타입 ID들
@@ -128,6 +138,9 @@ class ProjectSerializer(serializers.ModelSerializer):
             is_active=True
         ).exclude(id__in=existing_doc_types).order_by('id')
 
+        request = self.context.get('request')
+        creator = request.user if request else None
+
         new_docs = [
             RequiredDocument(
                 project=project,
@@ -136,7 +149,7 @@ class ProjectSerializer(serializers.ModelSerializer):
                 quantity=doc_type.default_quantity,
                 require_type=doc_type.require_type,
                 description=doc_type.description,
-                creator=self.context.get('request').user if self.context.get('request') else None
+                creator=creator
             )
             for doc_type in default_document_types
         ]
@@ -240,7 +253,8 @@ class ProAccountParentSerializer(serializers.ModelSerializer):
         model = ProjectAccount
         fields = ('pk', 'name', 'children_pks')
 
-    def get_children_pks(self, obj):
+    @staticmethod
+    def get_children_pks(obj):
         """같은 parent 아래의 하위 계정 pk 목록 (pro_d3s 대체)"""
         return list(obj.children.filter(
             is_active=True,
@@ -330,11 +344,12 @@ class SiteSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         site = Site.objects.create(**validated_data)
 
-        request = self.context['request']
-        new_file = request.data.get('newFile', None)
-        if new_file:
-            info_file = SiteInfoFile(site=site, file=new_file, creator=request.user)
-            info_file.save()
+        request = self.context.get('request')
+        if request:
+            new_file = request.data.get('newFile', None)
+            if new_file:
+                info_file = SiteInfoFile(site=site, file=new_file, creator=request.user)
+                info_file.save()
         return site
 
     @transaction.atomic
@@ -343,42 +358,47 @@ class SiteSerializer(serializers.ModelSerializer):
             setattr(instance, attr, value)
 
         # Set updator from request context
-        instance.updator = self.context['request'].user
+        request = self.context.get('request')
+        if request:
+            instance.updator = request.user
         instance.save()
 
-        data = self.context['request'].data
-        user = self.context['request'].user
+        if request:
+            data = request.data
+            user = request.user
 
-        new_file = data.get('newFile')
-        if new_file:
-            SiteInfoFile.objects.create(site=instance, file=new_file, creator=user)
+            new_file = data.get('newFile')
+            if new_file:
+                SiteInfoFile.objects.create(site=instance, file=new_file, creator=user)
 
-        edit_file = data.get('editFile', None)  # pk of a file to edit
-        cng_file = data.get('cngFile', None)  # new file to replace
+            edit_file = data.get('editFile', None)  # pk of a file to edit
+            cng_file = data.get('cngFile', None)  # new file to replace
 
-        if edit_file and cng_file:
-            try:
-                file_to_edit = SiteInfoFile.objects.get(pk=edit_file, site=instance)
-                file_to_edit.file = cng_file  # Save new file (file_cleanup_signals will handle old file removal)
-                file_to_edit.save()
-            except SiteInfoFile.DoesNotExist:
-                raise serializers.ValidationError(f"File with ID {edit_file} does not exist.")
-            except Exception as e:
-                print(f"Exception occurred: {e}")
-                raise serializers.ValidationError('An error occurred while replacing the file.')
+            if edit_file and cng_file:
+                try:
+                    file_to_edit = SiteInfoFile.objects.get(pk=edit_file, site=instance)
+                    file_to_edit.file = cng_file  # Save new file (file_cleanup_signals will handle old file removal)
+                    file_to_edit.save()
+                except SiteInfoFile.DoesNotExist:
+                    raise serializers.ValidationError(f"File with ID {edit_file} does not exist.")
+                except Exception:
+                    logger.exception("사이트 파일 교체 중 오류 발생 (site=%s, edit_file=%s)", instance.pk, edit_file)
+                    raise serializers.ValidationError('An error occurred while replacing the file.')
 
-        del_file = data.get('delFile', None)
-        if del_file:
-            try:
-                file_to_delete = SiteInfoFile.objects.get(pk=del_file, site=instance)
-                file_to_delete.delete()
-            except SiteInfoFile.DoesNotExist:
-                raise serializers.ValidationError(f"File with ID {del_file} does not exist.")
+            del_file = data.get('delFile', None)
+            if del_file:
+                try:
+                    file_to_delete = SiteInfoFile.objects.get(pk=del_file, site=instance)
+                    file_to_delete.delete()
+                except SiteInfoFile.DoesNotExist:
+                    raise serializers.ValidationError(f"File with ID {del_file} does not exist.")
 
         return instance
 
 
 class AllSiteSerializer(serializers.ModelSerializer):
+    __str__ = serializers.ReadOnlyField()
+
     class Meta:
         model = Site
         fields = ('pk', '__str__')
@@ -428,8 +448,11 @@ class SiteOwnerSerializer(serializers.ModelSerializer):
         sites = self.initial_data.get('sites', [])
         site_owner = SiteOwner.objects.create(**validated_data)
 
-        for site in sites:
-            site_instance = Site.objects.get(pk=site)
+        for site_pk in sites:
+            try:
+                site_instance = Site.objects.get(pk=site_pk)
+            except Site.DoesNotExist:
+                raise serializers.ValidationError({"sites": f"Site with ID {site_pk} does not exist."})
             SiteOwnshipRelationship.objects.create(site=site_instance, site_owner=site_owner)
 
         return site_owner
@@ -449,14 +472,19 @@ class SiteOwnerSerializer(serializers.ModelSerializer):
 
         # 새로 추가할 관계
         for site_pk in incoming_site_pks - existing_site_pks:
-            site = Site.objects.get(pk=site_pk)
+            try:
+                site = Site.objects.get(pk=site_pk)
+            except Site.DoesNotExist:
+                raise serializers.ValidationError({"sites": f"Site with ID {site_pk} does not exist."})
             SiteOwnshipRelationship.objects.create(site=site, site_owner=instance)
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
 
         # Set updator from request context
-        instance.updator = self.context['request'].user
+        request = self.context.get('request')
+        if request:
+            instance.updator = request.user
         instance.save()
         return instance
 
@@ -502,13 +530,13 @@ class SiteContractSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         site_contract = SiteContract.objects.create(**validated_data)
 
-        owner = SiteOwner.objects.get(pk=site_contract.owner.id)
-        owner.use_consent = True
-        owner.save()
+        # 불필요한 재조회 없이 FK를 통해 직접 update 실행
+        SiteOwner.objects.filter(pk=site_contract.owner_id).update(use_consent=True)
 
         new_file = self.initial_data.get('newFile', None)
         if new_file:
-            user = self.context['request'].user
+            request = self.context.get('request')
+            user = request.user if request else None
             cont_file = SiteContractFile(site_contract=site_contract, file=new_file, creator=user)
             cont_file.save()
         return site_contract
@@ -519,36 +547,39 @@ class SiteContractSerializer(serializers.ModelSerializer):
             setattr(instance, attr, value)
 
         # Set updator from request context
-        instance.updator = self.context['request'].user
+        request = self.context.get('request')
+        if request:
+            instance.updator = request.user
         instance.save()
 
-        data = self.context['request'].data
-        user = self.context['request'].user
+        if request:
+            data = request.data
+            user = request.user
 
-        new_file = data.get('newFile')
-        if new_file:
-            SiteContractFile.objects.create(site_contract=instance, file=new_file, creator=user)
+            new_file = data.get('newFile')
+            if new_file:
+                SiteContractFile.objects.create(site_contract=instance, file=new_file, creator=user)
 
-        edit_file = data.get('editFile', None)  # pk of file to edit
-        cng_file = data.get('cngFile', None)  # new file to replace
+            edit_file = data.get('editFile', None)  # pk of file to edit
+            cng_file = data.get('cngFile', None)  # new file to replace
 
-        if edit_file and cng_file:
-            try:
-                file_to_edit = SiteContractFile.objects.get(pk=edit_file, site_contract=instance)
-                file_to_edit.file = cng_file  # Save new file (file_cleanup_signals will handle old file removal)
-                file_to_edit.save()
-            except SiteContractFile.DoesNotExist:
-                raise serializers.ValidationError(f"File with ID {edit_file} does not exist.")
-            except Exception as e:
-                print(f"Exception occurred: {e}")
-                raise serializers.ValidationError('An error occurred while replacing the file.')
+            if edit_file and cng_file:
+                try:
+                    file_to_edit = SiteContractFile.objects.get(pk=edit_file, site_contract=instance)
+                    file_to_edit.file = cng_file  # Save new file (file_cleanup_signals will handle old file removal)
+                    file_to_edit.save()
+                except SiteContractFile.DoesNotExist:
+                    raise serializers.ValidationError(f"File with ID {edit_file} does not exist.")
+                except Exception:
+                    logger.exception("계약 파일 교체 중 오류 발생 (contract=%s, edit_file=%s)", instance.pk, edit_file)
+                    raise serializers.ValidationError('An error occurred while replacing the file.')
 
-        del_file = data.get('delFile', None)
-        if del_file:
-            try:
-                file_to_delete = SiteContractFile.objects.get(pk=del_file, site_contract=instance)
-                file_to_delete.delete()
-            except SiteContractFile.DoesNotExist:
-                raise serializers.ValidationError(f"File with ID {del_file} does not exist.")
+            del_file = data.get('delFile', None)
+            if del_file:
+                try:
+                    file_to_delete = SiteContractFile.objects.get(pk=del_file, site_contract=instance)
+                    file_to_delete.delete()
+                except SiteContractFile.DoesNotExist:
+                    raise serializers.ValidationError(f"File with ID {del_file} does not exist.")
 
         return instance

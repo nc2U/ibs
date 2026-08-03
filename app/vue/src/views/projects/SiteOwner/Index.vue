@@ -106,15 +106,15 @@ const loadHighlightPage = async (projectId: number) => {
           is_use_consent: dataFilter.value.is_use_consent || '',
           search: dataFilter.value.search || '',
         }
-        await siteStore.fetchSiteOwnerList({ project: projectId, page: targetPage })
+        siteStore.fetchSiteOwnerList({ project: projectId, page: targetPage })
       } else {
         // page 파라미터가 없으면 기본 첫 페이지
-        await dataSetup(projectId)
+        dataSetup(projectId)
       }
     } catch (error) {
       console.error('Error loading highlight page:', error)
       // 오류 발생시 기본 첫 페이지 로드
-      await dataSetup(projectId)
+      dataSetup(projectId)
     }
   }
 }
@@ -151,11 +151,15 @@ const onDelete = (payload: { pk: number; project: number }) => {
   siteStore.deleteSiteOwner(pk, project)
 }
 
-const dataSetup = (pk: number) => siteStore.fetchSiteOwnerList({ project: pk })
+const dataSetup = (pk: number) => {
+  siteStore.fetchSiteOwnerList({ project: pk })
+  siteStore.fetchAllSites(pk)
+}
 
 const dataReset = () => {
   siteStore.siteOwnerList = []
   siteStore.siteOwnerCount = 0
+  siteStore.allSites = []
 }
 
 const projSelect = (target: number | null) => {
