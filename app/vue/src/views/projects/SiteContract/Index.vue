@@ -71,14 +71,6 @@ const listFiltering = (payload: ContFilter) => {
   }
 }
 
-const pageSelect = (page: number) => {
-  // 페이지 변경 시 query string 정리
-  clearQueryString()
-  dataFilter.value.project = project.value as number
-  dataFilter.value.page = page
-  if (project.value) siteStore.fetchSiteContList(dataFilter.value)
-}
-
 // 하이라이트 기능
 const scrollToHighlight = async () => {
   if (highlightId.value) {
@@ -138,7 +130,11 @@ const onDelete = (payload: { pk: number; project: number }) => {
   siteStore.deleteSiteCont(pk, project)
 }
 
-const dataSetup = (pk: number) => siteStore.fetchSiteContList({ project: pk })
+const dataSetup = (pk: number) => {
+  dataFilter.value.project = pk
+  siteStore.fetchSiteContList(dataFilter.value)
+  siteStore.fetchAllOwners(pk)
+}
 
 const dataReset = () => {
   siteStore.siteContList = []
@@ -150,6 +146,13 @@ const projSelect = (target: number | null) => {
   clearQueryString()
   dataReset()
   if (!!target) dataSetup(target)
+}
+
+const pageSelect = (page: number) => {
+  // 페이지 변경 시 query string 정리
+  clearQueryString()
+  dataFilter.value.page = page
+  if (project.value) dataSetup(project.value)
 }
 
 // Query string 정리 함수
