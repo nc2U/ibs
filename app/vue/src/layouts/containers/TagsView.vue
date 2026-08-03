@@ -129,7 +129,7 @@ onMounted(() => {
       >
         <v-btn
           class="mx-1 my-0 text-body no-underline"
-          :class="{ darkBtn: dark, 'active-text': isActive(view) }"
+          :class="{ darkBtn: dark }"
           size="small"
           :border="true"
           :rounded="0"
@@ -156,11 +156,14 @@ onMounted(() => {
   background: #ccc;
 }
 
-.dark {
-  background: #2a2b36;
+.v-btn--active.text-body {
+  color: white !important;
+  .close:hover {
+    background: #339636;
+  }
 }
 
-.active-text {
-  color: white !important;
+.dark {
+  background: #2a2b36;
 }
 </style>
