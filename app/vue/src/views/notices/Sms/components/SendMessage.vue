@@ -24,17 +24,19 @@ const handleSendMessage = () => emit('sendMessage')
 
 <template>
   <CCard class="mb-4">
-    <CCardHeader style="height: 48px; padding-top: 12px">
+    <CCardHeader style="">
       <v-icon icon="mdi-send" class="me-2" />
       <strong>발송 설정 및 실행</strong>
     </CCardHeader>
     <CCardBody>
       <CRow>
         <!-- 발송 옵션 -->
-        <CCol :md="6" :xs="12">
-          <div class="mb-3">
-            <CFormLabel>발송 시점</CFormLabel>
+        <CCol :xl="6" :lg="12">
+          <div>
             <v-radio-group v-model="props.currentForm.scheduledSend" inline>
+              <template v-slot:label>
+                <div class="strong mb-2">발송 시점</div>
+              </template>
               <v-radio label="즉시 발송" :value="false" />
               <v-radio label="예약 발송" :value="true" />
               <span>
