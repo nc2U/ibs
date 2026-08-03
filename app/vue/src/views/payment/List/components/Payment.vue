@@ -2,7 +2,7 @@
 import { computed, type PropType, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { numFormat } from '@/utils/baseMixins'
-import { write_payment } from '@/utils/pageAuth'
+import { usePerms } from '@/composables/usePerms.ts'
 import type { PaymentList } from '@/store/types/payment.ts'
 import FormModal from '@/components/Modals/FormModal.vue'
 import ContChoicer from './ContChoicer.vue'
@@ -13,6 +13,9 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['pay-match'])
+
+const { can, PERM } = usePerms()
+const canPaymentUpdate = computed(() => can(PERM.PAYMENT_UPDATE))
 
 const router = useRouter()
 const contMatchingModal = ref()
@@ -74,7 +77,7 @@ const payMatch = (payload: any) => emit('pay-match', payload)
     </CTableDataCell>
     <CTableDataCell>{{ payment.bank_account }}</CTableDataCell>
     <CTableDataCell>{{ payment.trader }}</CTableDataCell>
-    <CTableDataCell v-if="write_payment">
+    <CTableDataCell v-if="canPaymentUpdate">
       <v-btn type="button" color="info" size="x-small" @click="toManage"> 확인</v-btn>
     </CTableDataCell>
   </CTableRow>

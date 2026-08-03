@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { ref, onMounted, computed, nextTick, type PropType } from 'vue'
 import { numFormat } from '@/utils/baseMixins'
-import { write_payment } from '@/utils/pageAuth'
+import { usePerms } from '@/composables/usePerms.ts'
 import { useContract } from '@/store/pinia/contract'
 import type { Contract, ContFilter } from '@/store/types/contract'
 import type { PaymentList } from '@/store/types/payment.ts'
@@ -14,6 +14,10 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['pay-match', 'close'])
+
+const { can, PERM } = usePerms()
+const canPaymentCreate = computed(() => can(PERM.PAYMENT_CREATE))
+const canPaymentUpdate = computed(() => can(PERM.PAYMENT_UPDATE))
 
 const refAlertModal = ref()
 const refConfirmModal = ref()
@@ -52,7 +56,7 @@ const searchCont = () => {
   }
 }
 const contMatching = (contract: Contract) => {
-  if (write_payment) {
+  if (canPaymentCreate.value || canPaymentUpdate.value) {
     cont.value = contract
     refConfirmModal.value.callModal()
   } else refAlertModal.value.callModal()

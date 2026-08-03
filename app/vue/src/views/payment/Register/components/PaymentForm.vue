@@ -4,9 +4,8 @@ import { useAccount } from '@/store/pinia/account'
 import { usePayment } from '@/store/pinia/payment'
 import { useProLedger } from '@/store/pinia/proLedger.ts'
 import { getToday, diffDate } from '@/utils/baseMixins'
+import { usePerms } from '@/composables/usePerms.ts'
 import { isValidate } from '@/utils/helper'
-import { btnLight } from '@/utils/cssMixins.ts'
-import { write_payment } from '@/utils/pageAuth'
 import type { PaymentAccEntryInput, ContractPaymentPayload } from '@/store/types/payment.ts'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
@@ -18,6 +17,12 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['on-submit', 'on-delete', 'close'])
+
+const { can, PERM } = usePerms()
+const canPaymentManage = computed(() =>
+  !props.payment ? can(PERM.PAYMENT_CREATE) : can(PERM.PAYMENT_UPDATE),
+)
+const canPaymentDelete = computed(() => can(PERM.PAYMENT_DELETE))
 
 const refAlertModal = ref()
 const delConfirmModal = ref()
@@ -425,7 +430,7 @@ const buildUpdatePayload = (): ContractPaymentPayload => {
 // Event Handlers (Phase 5: CRUD Integration)
 // ============================================
 const onSubmit = (event: Event) => {
-  if (write_payment.value) {
+  if (canPaymentManage.value) {
     if (allowedPeriod.value) {
       if (isValidate(event)) {
         validated.value = true
@@ -474,7 +479,7 @@ const modalAction = () => {
 }
 
 const deleteConfirm = () => {
-  if (write_payment.value) {
+  if (canPaymentDelete.value) {
     if (allowedPeriod.value) {
       delConfirmModal.value.callModal()
     } else
@@ -768,9 +773,9 @@ onBeforeMount(() => {
     </CModalBody>
 
     <CModalFooter>
-      <v-btn type="button" size="small" :color="btnLight" @click="$emit('close')"> 닫기</v-btn>
       <slot name="footer">
         <v-btn
+          v-if="canPaymentManage"
           type="submit"
           size="small"
           :color="payment ? 'success' : 'primary'"
@@ -778,9 +783,16 @@ onBeforeMount(() => {
         >
           저장
         </v-btn>
-        <v-btn v-if="payment" type="button" size="small" color="warning" @click="deleteConfirm">
+        <v-btn
+          v-if="payment && canPaymentDelete"
+          type="button"
+          size="small"
+          color="warning"
+          @click="deleteConfirm"
+        >
           삭제
         </v-btn>
+        <v-btn type="button" size="small" color="light" @click="$emit('close')" flat> 닫기</v-btn>
       </slot>
     </CModalFooter>
   </CForm>

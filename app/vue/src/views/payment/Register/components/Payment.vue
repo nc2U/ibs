@@ -1,8 +1,8 @@
 <script lang="ts" setup>
-import { ref, onMounted, type PropType } from 'vue'
+import { ref, onMounted, type PropType, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { numFormat } from '@/utils/baseMixins'
-import { write_payment } from '@/utils/pageAuth'
+import { usePerms } from '@/composables/usePerms.ts'
 import { TableSecondary } from '@/utils/cssMixins'
 import { type OriginPayment } from '@/store/types/payment'
 import FormModal from '@/components/Modals/FormModal.vue'
@@ -14,6 +14,9 @@ const props = defineProps({
   contract: { type: Object, default: null },
 })
 const emit = defineEmits(['on-update', 'on-delete'])
+
+const { can, PERM } = usePerms()
+const canPaymentUpdate = computed(() => can(PERM.PAYMENT_UPDATE))
 
 const updateFormModal = ref()
 
@@ -55,7 +58,7 @@ const deleteObject = (bankTransactionId: number) => {
     </CTableDataCell>
     <CTableDataCell>{{ payment.bank_account.alias_name }}</CTableDataCell>
     <CTableDataCell>{{ payment.trader }}</CTableDataCell>
-    <CTableDataCell v-if="write_payment">
+    <CTableDataCell v-if="canPaymentUpdate">
       <v-btn type="button" color="info" size="x-small" @click="showDetail"> 보기</v-btn>
     </CTableDataCell>
   </CTableRow>

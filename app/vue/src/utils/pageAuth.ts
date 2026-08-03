@@ -28,8 +28,3 @@ export const write_contract = computed(() =>
 export const write_payment = computed(() =>
   hasPermission([PERM.PAYMENT_CREATE, PERM.PAYMENT_UPDATE, PERM.PAYMENT_DELETE]),
 )
-
-// ── 고지 관리 ──────────────────────────────────────────────────────────
-// export const write_notice = computed(() =>
-//   hasPermission([PERM.NOTICE_CREATE, PERM.NOTICE_UPDATE, PERM.NOTICE_DELETE]),
-// )
