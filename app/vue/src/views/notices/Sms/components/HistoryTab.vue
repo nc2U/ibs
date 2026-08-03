@@ -73,7 +73,7 @@ const loadHistory = async () => {
     if (currentFilters.value.endDate) {
       params.end_date = currentFilters.value.endDate
     }
-    if (currentFilters.value.messageType) {
+    if (currentFilters.value.messageType && currentFilters.value.messageType !== 'all') {
       params.message_type = currentFilters.value.messageType
     }
     if (currentFilters.value.senderNumber) {

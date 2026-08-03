@@ -102,14 +102,17 @@ initDates()
 
         <!-- 버튼 -->
         <CCol :md="6" lg="2" class="d-flex align-items-end">
-          <CButton color="primary" class="me-2" @click="handleSearch">
-            <CIcon name="cilSearch" class="me-1" />
+          <v-btn color="primary" class="me-2" prepend-icon="mdi-magnify" @click="handleSearch">
             검색
-          </CButton>
-          <CButton color="secondary" variant="outline" @click="handleReset">
-            <CIcon name="cilReload" class="me-1" />
+          </v-btn>
+          <v-btn
+            color="secondary"
+            variant="outlined"
+            prepend-icon="mdi-refresh"
+            @click="handleReset"
+          >
             초기화
-          </CButton>
+          </v-btn>
         </CCol>
       </CRow>
     </CCardBody>
