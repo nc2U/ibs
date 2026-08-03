@@ -386,7 +386,7 @@ class AllSiteSerializer(serializers.ModelSerializer):
 
 class TotalOwnerAreaSerializer(serializers.ModelSerializer):
     project = serializers.IntegerField()
-    owned_area = serializers.DecimalField(max_digits=12, decimal_places=7)
+    owned_area = serializers.DecimalField(max_digits=16, decimal_places=7)
 
     class Meta:
         model = SiteOwner
