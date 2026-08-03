@@ -25,6 +25,6 @@ export const write_contract = computed(() =>
 )
 
 // ── 수납 관리 ──────────────────────────────────────────────────────────
-export const write_payment = computed(() =>
-  hasPermission([PERM.PAYMENT_CREATE, PERM.PAYMENT_UPDATE, PERM.PAYMENT_DELETE]),
-)
+// export const write_payment = computed(() =>
+//   hasPermission([PERM.PAYMENT_CREATE, PERM.PAYMENT_UPDATE, PERM.PAYMENT_DELETE]),
+// )

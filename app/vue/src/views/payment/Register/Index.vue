@@ -1,19 +1,19 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, onMounted, onUpdated, ref, watch } from 'vue'
 import { navMenu, pageTitle } from '@/views/payment/_menu/headermixin'
-import { dateFormat } from '@/utils/baseMixins'
 import { downloadFile } from '@/utils/helper.ts'
-import { write_payment } from '@/utils/pageAuth'
 import { useProject } from '@/store/pinia/project'
 import { useProjectData } from '@/store/pinia/project_data'
 import { usePayment } from '@/store/pinia/payment'
 import { useProLedger } from '@/store/pinia/proLedger.ts'
 import { useContract } from '@/store/pinia/contract'
+import { dateFormat } from '@/utils/baseMixins'
+import { usePerms } from '@/composables/usePerms.ts'
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import type { Project } from '@/store/types/project.ts'
 import type { ContFilter, Contract } from '@/store/types/contract'
 import type { ProAccountFilter } from '@/store/types/proLedger.ts'
 import type { ContPayFilter, DownPayFilter, PriceFilter } from '@/store/types/payment'
-import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
@@ -24,6 +24,9 @@ import TableTitleRow from '@/components/TableTitleRow.vue'
 import PaymentListAll from './components/PaymentListAll.vue'
 import OrdersBoard from './components/OrdersBoard.vue'
 import CreateButton from './components/CreateButton.vue'
+
+const { can, PERM } = usePerms()
+const canPaymentCreate = computed(() => can(PERM.CONTRACT_CREATE))
 
 const paymentId = ref<string>('')
 const date = ref(dateFormat(new Date()))
@@ -328,7 +331,7 @@ onBeforeRouteLeave(() => {
             />
 
             <CreateButton
-              v-if="write_payment"
+              v-if="canPaymentCreate"
               :contract="contract as Contract"
               @on-create="onCreate"
             />

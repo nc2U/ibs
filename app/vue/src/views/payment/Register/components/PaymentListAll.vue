@@ -1,11 +1,10 @@
 <script lang="ts" setup>
 import { computed, type PropType } from 'vue'
+import { TableSecondary } from '@/utils/cssMixins'
 import { numFormat } from '@/utils/baseMixins'
+import { usePerms } from '@/composables/usePerms.ts'
 import { type Contract } from '@/store/types/contract'
 import { type OriginPayment } from '@/store/types/payment'
-import { type ProjectCashBook } from '@/store/types/payment'
-import { write_payment } from '@/utils/pageAuth'
-import { TableSecondary } from '@/utils/cssMixins'
 import Payment from './Payment.vue'
 
 const props = defineProps({
@@ -15,6 +14,11 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['on-update', 'on-delete'])
+
+const { can, PERM } = usePerms()
+const canPaymentManage = computed(
+  () => can(PERM.CONTRACT_CREATE) || can(PERM.CONTRACT_UPDATE) || can(PERM.PAYMENT_DELETE),
+)
 
 const paymentSum = computed(() => {
   return props.paymentList.length !== 0
@@ -37,7 +41,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
       <col style="width: 16%" />
       <col style="width: 22%" />
       <col style="width: 18%" />
-      <col v-if="write_payment" style="width: 10%" />
+      <col v-if="canPaymentManage" style="width: 10%" />
     </colgroup>
 
     <CTableHead :color="TableSecondary">
@@ -47,7 +51,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
         <CTableHeaderCell>수납금액</CTableHeaderCell>
         <CTableHeaderCell>수납계좌</CTableHeaderCell>
         <CTableHeaderCell>입금자명</CTableHeaderCell>
-        <CTableHeaderCell v-if="write_payment">비고</CTableHeaderCell>
+        <CTableHeaderCell v-if="canPaymentManage">비고</CTableHeaderCell>
       </CTableRow>
     </CTableHead>
 
