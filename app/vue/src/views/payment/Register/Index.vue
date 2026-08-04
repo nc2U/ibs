@@ -26,7 +26,7 @@ import OrdersBoard from './components/OrdersBoard.vue'
 import CreateButton from './components/CreateButton.vue'
 
 const { can, PERM } = usePerms()
-const canPaymentCreate = computed(() => can(PERM.CONTRACT_CREATE))
+const canPaymentCreate = computed(() => can(PERM.PAYMENT_CREATE))
 
 const paymentId = ref<string>('')
 const date = ref(dateFormat(new Date()))
