@@ -186,7 +186,7 @@ onBeforeMount(async () => {
     await loadHighlightPage(projectId)
     await scrollToHighlight()
   } else {
-    await dataSetup(projectId)
+    if (project.value) dataSetup(project.value)
   }
   loading.value = false
 })

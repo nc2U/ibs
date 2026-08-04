@@ -41,7 +41,7 @@ const projSelect = (target: number | null) => {
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  await fetchBuildingList(project.value || projStore.initProjId)
+  if (project.value) await fetchBuildingList(project.value || projStore.initProjId)
   loading.value = false
 })
 </script>

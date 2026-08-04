@@ -185,14 +185,14 @@ onBeforeMount(async () => {
     projectId = urlProjectId.value
   }
 
-  siteStore.fetchAllOwners(projectId)
+  if (projectId) siteStore.fetchAllOwners(projectId)
 
   // 하이라이트 항목이 있으면 해당 페이지로 이동 후 스크롤
   if (highlightId.value) {
     await loadHighlightPage(projectId)
     await scrollToHighlight()
   } else {
-    await dataSetup(projectId)
+    if (project.value) dataSetup(project.value)
   }
   loading.value = false
 })

@@ -77,7 +77,7 @@ const projSelect = (target: number | null) => {
 const loading = ref(true)
 onBeforeMount(async () => {
   await fetchProjectAccounts({ direction: 'deposit', is_active: true, is_payment: true })
-  dataSetup(project.value || projStore.initProjId)
+  if (project.value) dataSetup(project.value)
   loading.value = false
 })
 </script>

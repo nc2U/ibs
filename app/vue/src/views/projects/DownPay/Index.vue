@@ -69,7 +69,7 @@ const projSelect = (target: number | null) => {
 
 const loading = ref(true)
 onBeforeMount(() => {
-  dataSetup(project.value || projStore.initProjId)
+  if (project.value) dataSetup(project.value)
   loading.value = false
 })
 </script>

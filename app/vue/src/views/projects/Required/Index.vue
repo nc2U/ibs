@@ -35,7 +35,7 @@ const projSelect = (target: number | null) => {
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  await dataSetup(project.value || projStore.initProjId)
+  if (project.value) await dataSetup(project.value)
   loading.value = false
 })
 </script>

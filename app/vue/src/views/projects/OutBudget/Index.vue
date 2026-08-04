@@ -82,7 +82,7 @@ onBeforeMount(async () => {
     is_active: true,
     category: 'expense',
   })
-  dataSetup(project.value || projStore.initProjId)
+  if (project.value) dataSetup(project.value)
   loading.value = false
 })
 </script>
