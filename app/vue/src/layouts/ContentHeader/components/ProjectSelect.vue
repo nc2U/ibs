@@ -25,12 +25,12 @@ const urlProjectId = computed(() => {
 const projSelect = (e: { originalEvent: Event; value: any; option: any }) => emit('proj-select', e)
 const projClear = () => emit('proj-select', null)
 
-onBeforeMount(() => {
-  projStore.fetchProjectList()
+onBeforeMount(async () => {
+  await projStore.fetchProjectList()
 
   // URL에 project 파라미터가 있으면 해당 프로젝트로, 없으면 기본 프로젝트로
   const targetProjectId = urlProjectId.value || project.value || projStore.initProjId
-  projStore.fetchProject(targetProjectId)
+  if (targetProjectId) await projStore.fetchProject(targetProjectId)
 })
 </script>
 
