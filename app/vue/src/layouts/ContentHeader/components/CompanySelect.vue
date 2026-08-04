@@ -1,11 +1,15 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { usePerms } from '@/composables/usePerms.ts'
 import { useCompany } from '@/store/pinia/company'
 import type { Company } from '@/store/types/settings.ts'
 import Multiselect from '@vueform/multiselect'
 
 const emit = defineEmits(['com-select'])
+
+const { can, PERM } = usePerms()
+const canProjectCreate = computed(() => can(PERM.PROJECT_CREATE))
 
 const router = useRouter()
 const route = useRoute()
@@ -52,8 +56,12 @@ onBeforeMount(async () => {
       <v-icon
         icon="mdi mdi-plus-thick"
         color="primary"
+        :disabled="!canProjectCreate"
         @click="router.push({ name: '회사 정보 관리' })"
       />
+      <v-tooltip v-if="!canProjectCreate" activator="parent" location="end">
+        회사 및 프로젝트 생성 권한이 필요합니다.
+      </v-tooltip>
     </CCol>
   </CRow>
 </template>

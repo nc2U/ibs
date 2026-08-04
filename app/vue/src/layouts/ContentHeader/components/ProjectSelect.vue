@@ -1,11 +1,16 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { usePerms } from '@/composables/usePerms.ts'
 import { useProject } from '@/store/pinia/project'
 import { useWork } from '@/store/pinia/work_project'
 import Multiselect from '@vueform/multiselect'
+import { CCol, CRow } from '@coreui/vue'
 
 const emit = defineEmits(['proj-select'])
+
+const { can, PERM } = usePerms()
+const canProjectCreate = computed(() => can(PERM.PROJECT_CREATE))
 
 const router = useRouter()
 const route = useRoute()
@@ -54,8 +59,12 @@ onBeforeMount(async () => {
       <v-icon
         icon="mdi mdi-plus-thick"
         color="success"
+        :disabled="!canProjectCreate"
         @click="router.push({ name: '프로젝트 등록' })"
       />
+      <v-tooltip v-if="!canProjectCreate" activator="parent" location="end">
+        프로젝트 생성 권한이 필요합니다.
+      </v-tooltip>
     </CCol>
   </CRow>
 </template>
