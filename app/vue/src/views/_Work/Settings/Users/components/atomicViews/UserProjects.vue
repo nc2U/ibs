@@ -163,13 +163,13 @@ onBeforeMount(async () => {
           <colgroup>
             <col style="width: 35%" />
             <col style="width: 40%" />
-            <col style="width: 25%" />
+            <col v-if="canProjectMember" style="width: 25%" />
           </colgroup>
           <CTableHead>
             <CTableRow>
               <CTableHeaderCell class="pl-5" scope="col">프로젝트</CTableHeaderCell>
               <CTableHeaderCell class="pl-3" scope="col">역할</CTableHeaderCell>
-              <CTableHeaderCell scope="col"></CTableHeaderCell>
+              <CTableHeaderCell v-if="canProjectMember" scope="col"></CTableHeaderCell>
             </CTableRow>
           </CTableHead>
 
