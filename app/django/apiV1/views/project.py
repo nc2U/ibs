@@ -172,6 +172,10 @@ class SiteViewSet(viewsets.ModelViewSet):
             return queryset.distinct()
         return queryset
 
+    @property
+    def required_permission(self):
+        return _SITE_ACTION_PERMISSION_MAP.get(self.action, 'site.read')
+
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
 

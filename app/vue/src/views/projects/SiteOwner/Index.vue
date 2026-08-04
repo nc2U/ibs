@@ -17,6 +17,7 @@ import AddSiteOwner from '@/views/projects/SiteOwner/components/AddSiteOwner.vue
 import SiteOwnerList from '@/views/projects/SiteOwner/components/SiteOwnerList.vue'
 
 const { can, PERM } = usePerms()
+const canSiteRead = computed(() => can(PERM.SITE_READ))
 const canSiteCreate = computed(() => can(PERM.SITE_CREATE))
 
 const route = useRoute()
@@ -192,21 +193,23 @@ onBeforeRouteLeave(() => {
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  // URL에서 프로젝트 ID가 지정되어 있으면 해당 프로젝트 사용
-  let projectId = urlProjectId.value || project.value || projStore.initProjId
-  if (urlProjectId.value && urlProjectId.value !== project.value) {
-    console.log(`Using project ${urlProjectId.value} from URL parameter`)
-    projectId = urlProjectId.value
-  }
+  if (canSiteRead.value) {
+    // URL에서 프로젝트 ID가 지정되어 있으면 해당 프로젝트 사용
+    let projectId = urlProjectId.value || project.value || projStore.initProjId
+    if (urlProjectId.value && urlProjectId.value !== project.value) {
+      console.log(`Using project ${urlProjectId.value} from URL parameter`)
+      projectId = urlProjectId.value
+    }
 
-  if (projectId) siteStore.fetchAllSites(projectId)
+    if (projectId) siteStore.fetchAllSites(projectId)
 
-  // 하이라이트 항목이 있으면 해당 페이지로 이동 후 스크롤
-  if (highlightId.value) {
-    await loadHighlightPage(projectId)
-    await scrollToHighlight()
-  } else {
-    if (project.value) dataSetup(project.value)
+    // 하이라이트 항목이 있으면 해당 페이지로 이동 후 스크롤
+    if (highlightId.value) {
+      await loadHighlightPage(projectId)
+      await scrollToHighlight()
+    } else {
+      if (project.value) dataSetup(project.value)
+    }
   }
   loading.value = false
 })
