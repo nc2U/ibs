@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { TableSecondary } from '@/utils/cssMixins'
 import { useContract } from '@/store/pinia/contract'
+import { usePerms } from '@/composables/usePerms.ts'
 import Pagination from '@/components/Pagination'
 import Release from '@/views/contracts/Release/components/Release.vue'
 
@@ -11,6 +12,9 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits(['page-select', 'call-form'])
+
+const { can, PERM } = usePerms()
+const canContractUpdate = computed(() => can(PERM.CONTRACT_UPDATE))
 
 const contractStore = useContract()
 const contReleaseList = computed(() => contractStore.contReleaseList)
@@ -45,7 +49,7 @@ const callForm = (contractor: number) => emit('call-form', contractor)
         <CTableHeaderCell>해지 신청일</CTableHeaderCell>
         <CTableHeaderCell>환불 처리일</CTableHeaderCell>
         <CTableHeaderCell>해지 확정일</CTableHeaderCell>
-        <CTableHeaderCell>비고</CTableHeaderCell>
+        <CTableHeaderCell v-if="canContractUpdate">비고</CTableHeaderCell>
       </CTableRow>
     </CTableHead>
     <CTableBody>

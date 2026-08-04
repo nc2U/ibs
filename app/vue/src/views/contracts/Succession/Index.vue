@@ -301,7 +301,7 @@ onBeforeMount(async () => {
         <ContractorAlert v-if="contractor" :contractor="contractor" />
 
         <SuccessionButton
-          v-if="contractor"
+          v-if="canContractUpdate && contractor"
           :is-succession="isSuccession"
           @call-form="callFormModal"
         />

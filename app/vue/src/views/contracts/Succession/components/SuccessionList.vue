@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { computed, type PropType } from 'vue'
+import { usePerms } from '@/composables/usePerms.ts'
 import { useContract } from '@/store/pinia/contract'
 import { bgLight, TableSecondary } from '@/utils/cssMixins'
 import Pagination from '@/components/Pagination'
@@ -11,6 +12,9 @@ const props = defineProps({
   highlightId: { type: [Number, null] as PropType<number | null>, default: null },
   currentPage: { type: Number, default: 1 },
 })
+
+const { can, PERM } = usePerms()
+const canContractUpdate = computed(() => can(PERM.CONTRACT_UPDATE))
 
 const contractStore = useContract()
 const successionList = computed(() => contractStore.successionList)
@@ -31,7 +35,7 @@ const doneAlert = () => emit('done-alert')
       <col style="width: 15%" />
       <col style="width: 15%" />
       <col style="width: 11%" />
-      <col style="width: 8%" />
+      <col v-if="canContractUpdate" style="width: 8%" />
     </colgroup>
 
     <CTableHead :color="TableSecondary" class="text-center">
@@ -43,7 +47,7 @@ const doneAlert = () => emit('done-alert')
         <CTableHeaderCell>매매계약일</CTableHeaderCell>
         <CTableHeaderCell>변경인가일</CTableHeaderCell>
         <CTableHeaderCell>진행상태</CTableHeaderCell>
-        <CTableHeaderCell>확인</CTableHeaderCell>
+        <CTableHeaderCell v-if="canContractUpdate">확인</CTableHeaderCell>
       </CTableRow>
     </CTableHead>
     <CTableBody>

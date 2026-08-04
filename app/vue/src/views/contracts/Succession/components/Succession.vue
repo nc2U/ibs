@@ -1,7 +1,8 @@
 <script lang="ts" setup>
 import { computed, type PropType } from 'vue'
-import { type Succession } from '@/store/types/contract'
 import { useRouter } from 'vue-router'
+import { usePerms } from '@/composables/usePerms.ts'
+import { type Succession } from '@/store/types/contract'
 
 const router = useRouter()
 
@@ -10,6 +11,9 @@ const props = defineProps({
   isHighlighted: { type: Boolean, default: false },
 })
 const emit = defineEmits(['call-form', 'done-alert'])
+
+const { can, PERM } = usePerms()
+const canContractUpdate = computed(() => can(PERM.CONTRACT_UPDATE))
 
 const done = computed(() => props.succession?.status === '3')
 const buttonColor = computed(() => (!done.value ? 'success' : 'secondary'))
@@ -65,7 +69,7 @@ const callFormModal = () => {
   <CTableDataCell class="text-primary text-center fw-bold">
     {{ statusLabel }}
   </CTableDataCell>
-  <CTableDataCell class="text-center">
+  <CTableDataCell v-if="canContractUpdate" class="text-center">
     <v-btn type="button" :color="buttonColor" size="x-small" @click="callFormModal"> 확인</v-btn>
   </CTableDataCell>
 </template>

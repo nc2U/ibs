@@ -215,7 +215,7 @@ watch(route, async newRoute => {
         <ContractorAlert v-if="contractor" :contractor="contractor" />
 
         <ReleasetButton
-          v-if="contractor"
+          v-if="canContractUpdate && contractor"
           :contractor="contractor"
           :cont-release="contRelease ?? undefined"
           @call-form="callForm"

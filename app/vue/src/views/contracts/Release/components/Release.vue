@@ -1,13 +1,17 @@
 <script lang="ts" setup>
 import { computed, type PropType } from 'vue'
-import { type ContractRelease } from '@/store/types/contract'
+import { usePerms } from '@/composables/usePerms.ts'
 import { numFormat, cutString } from '@/utils/baseMixins'
+import { type ContractRelease } from '@/store/types/contract'
 
 const props = defineProps({
   release: { type: Object as PropType<ContractRelease>, default: null },
   highlightId: { type: Number, default: null },
 })
 const emit = defineEmits(['call-form'])
+
+const { can, PERM } = usePerms()
+const canContractUpdate = computed(() => can(PERM.CONTRACT_UPDATE))
 
 const releaseTypeLabel = computed(() => {
   return props.release?.release_type === '2' ? '부적격' : '해지'
@@ -69,7 +73,7 @@ const callFormModal = () => emit('call-form', props.release?.contractor)
   <CTableDataCell class="fw-bold text-primary text-center">
     {{ release.completion_date }}
   </CTableDataCell>
-  <CTableDataCell class="text-center">
+  <CTableDataCell v-if="canContractUpdate" class="text-center">
     <v-btn type="button" :color="buttonColor" size="x-small" @click="callFormModal">확인</v-btn>
   </CTableDataCell>
 </template>
