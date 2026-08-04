@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { ref, computed } from 'vue'
+import { message } from '@/utils/helper.ts'
 import { numFormat } from '@/utils/baseMixins'
 import { usePerms } from '@/composables/usePerms.ts'
 import { useProject } from '@/store/pinia/project'
@@ -95,7 +96,7 @@ const patchBudget = (pk: number, budget: string, oldBudget: number, isRevised = 
     const bg = parseInt(budget)
     if (bg !== oldBudget) emit('patch-budget', pk, bg, isRevised)
   } else {
-    alert('예산 수정 권한 없음!')
+    message('warning', '알림!', '예산 수정 권한이 없습니다.')
   }
 }
 
@@ -207,8 +208,8 @@ const updateRevised = ($event: any) => emit('update-revised', $event.target.valu
         <CTableDataCell
           v-show="isRevised === '1'"
           class="py-0 bg-amber-lighten-5"
-          style="cursor: pointer"
-          @dblclick="formNumber = i"
+          :class="canLedgerUpdate ? 'pointer' : ''"
+          @dblclick="formNumber = canLedgerUpdate ? i : 1000"
         >
           <span v-if="formNumber !== i">
             {{ numFormat(obj.revised_budget || obj.budget) }}

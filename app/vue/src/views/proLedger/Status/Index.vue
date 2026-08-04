@@ -15,7 +15,7 @@ import DateChoicer from '@/views/proLedger/Status/components/DateChoicer.vue'
 import TabSelect from '@/views/proLedger/Status/components/TabSelect.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import StatusByAccount from '@/views/proLedger/Status/components/StatusByAccount.vue'
-import CashListByDate from '@/views/proLedger/Status/components/CashListByDate.vue'
+import TransListByDate from '@/views/proLedger/Status/components/TransListByDate.vue'
 import SummaryForBudget from '@/views/proLedger/Status/components/SummaryForBudget.vue'
 import Calculated from '@/views/comLedger/Status/components/Calculated.vue'
 
@@ -245,7 +245,7 @@ onBeforeMount(async () => {
           @is-exist-balance="isExistBalance"
           @direct-balance="directBalance"
         />
-        <CashListByDate v-if="compName === 'CashListByDate'" :date="date" />
+        <TransListByDate v-if="compName === 'CashListByDate'" :date="date" />
 
         <SummaryForBudget
           v-if="compName === 'SummaryForBudget'"
