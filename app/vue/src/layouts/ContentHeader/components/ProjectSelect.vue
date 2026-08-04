@@ -20,6 +20,7 @@ const workStore = useWork()
 
 const project = computed(() => projStore.project?.pk)
 const projSelectList = computed(() => workStore.getDevProjects)
+const projPks = computed(() => projSelectList.value.map(p => p.value))
 
 // URL에서 project 파라미터 읽기
 const urlProjectId = computed(() => {
@@ -35,7 +36,8 @@ onBeforeMount(async () => {
 
   // URL에 project 파라미터가 있으면 해당 프로젝트로, 없으면 기본 프로젝트로
   const targetProjectId = urlProjectId.value || project.value || projStore.initProjId
-  if (targetProjectId) await projStore.fetchProject(targetProjectId)
+  if (projPks.value.length && projPks.value.includes(targetProjectId))
+    await projStore.fetchProject(targetProjectId)
 })
 </script>
 
