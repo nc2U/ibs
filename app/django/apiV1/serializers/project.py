@@ -195,6 +195,7 @@ class ProjectSerializer(serializers.ModelSerializer):
             slack_notifications_enabled=slack_notifications_enabled,
             creator=creator
         )
+        # role & tracker model - is_dev_project 플래그 설치 후 해당 데이터로 가져올 것.
         issue_project.allowed_roles.set([4, 5, 6, 7, 8, 9, 10, 11, 12])
         issue_project.trackers.set([4, 5, 6, 7, 8])
 
