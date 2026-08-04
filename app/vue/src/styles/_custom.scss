@@ -21,17 +21,35 @@ body.dark-theme {
   border-radius: 2px !important; // 혹은 프로젝트 기존 스타일
 }
 
-/* 2. v-radio 정렬 보정 */
+/* 2. v-radio 및 v-checkbox / v-checkbox-btn 정렬 보정 */
 .v-radio-group .v-selection-control-group {
   display: flex !important;
   flex-direction: row !important;
   align-items: center !important;
 }
 
-.v-radio-group .v-selection-control {
-  min-height: auto !important; // Vuetify 4의 기본 높이값 무시
+.v-selection-control,
+.v-checkbox-btn {
+  min-height: auto !important;
   display: flex !important;
   align-items: center !important;
+
+  .v-selection-control__wrapper {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex: 0 0 auto; // wrapper 크기 고정
+  }
+
+  .v-label {
+    display: flex !important;
+    align-items: center !important;
+    height: 100% !important;
+    margin-bottom: 0 !important;
+    padding: 0 !important;
+    opacity: 1 !important;
+    white-space: nowrap; // 라벨 줄바꿈 방지
+  }
 }
 
 .v-card-title {
