@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, type PropType } from 'vue'
 import { useStore } from '@/store'
-import { type SuitCase } from '@/store/types/docs'
 import { cutString } from '@/utils/baseMixins'
+import { type SuitCase } from '@/store/types/docs'
 
 const props = defineProps({
   suitCase: { type: Object as PropType<SuitCase>, default: null },
@@ -19,7 +19,7 @@ const suitCaseName = computed(() => {
 const store = useStore()
 const sortName = computed(() => props.suitCase?.proj_name || '본사 문서')
 const sortColor = computed(() => (props.suitCase?.proj_sort === '2' ? 'success' : 'info'))
-const courtColor = computed(() => (store.theme !== 'dark' ? 'secondary' : 'default'))
+const courtColor = computed(() => (store.theme !== 'dark' ? 'grey-lighten-2' : 'default'))
 const agencyName = computed(() => {
   const agency = props.suitCase?.court_desc || props.suitCase?.other_agency
   return agency ? getCourt(agency) : ''
