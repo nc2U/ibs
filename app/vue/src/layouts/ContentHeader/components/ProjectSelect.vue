@@ -5,7 +5,6 @@ import { usePerms } from '@/composables/usePerms.ts'
 import { useProject } from '@/store/pinia/project'
 import { useWork } from '@/store/pinia/work_project'
 import Multiselect from '@vueform/multiselect'
-import { CCol, CRow } from '@coreui/vue'
 
 const emit = defineEmits(['proj-select'])
 
