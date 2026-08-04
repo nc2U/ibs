@@ -174,7 +174,7 @@ onBeforeRouteUpdate(async to => {
       <CCol class="text-right form-text">
         <span class="mr-2">
           <TextButton
-            name="내 프로젝트 보기"
+            name="내 프로젝트 목록"
             @click="setMyAccount"
             icon="mdi-chart-box-multiple-outline"
             icon-color="info"
