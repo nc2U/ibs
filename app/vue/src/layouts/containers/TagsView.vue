@@ -129,7 +129,7 @@ onMounted(() => {
       >
         <v-btn
           class="mx-1 my-0 text-body no-underline"
-          :class="{ darkBtn: dark }"
+          :class="{ darkBtn: dark, 'v-btn--active': isActive(view) }"
           size="small"
           :border="true"
           :rounded="0"
