@@ -195,7 +195,7 @@ class ProjectSerializer(serializers.ModelSerializer):
             slack_notifications_enabled=slack_notifications_enabled,
             creator=creator
         )
-        issue_project.allowed_roles.set([6, 7, 8])
+        issue_project.allowed_roles.set([4, 5, 6, 7, 8, 9, 10, 11, 12])
         issue_project.trackers.set([4, 5, 6, 7, 8])
 
         # 기본 모듈(Module) 객체 연계 생성
