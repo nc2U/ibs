@@ -705,7 +705,13 @@ const handleGroupSelect = async () => {
                   />
                 </CCol>
                 <CCol cols="12" md="2">
-                  <v-btn color="primary" @click="handleAddRecipient" prepend-icon="mdi-plus" block>
+                  <v-btn
+                    color="primary"
+                    @click="handleAddRecipient"
+                    prepend-icon="mdi-plus"
+                    :disabled="!recipientInput"
+                    block
+                  >
                     {{ recipientInput?.includes('\n') ? '일괄 추가' : '추가' }}
                   </v-btn>
                 </CCol>

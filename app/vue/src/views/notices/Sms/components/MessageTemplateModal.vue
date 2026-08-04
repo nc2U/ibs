@@ -1,17 +1,8 @@
 <script lang="ts" setup>
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import { useNotice } from '@/store/pinia/notice'
-import { usePerms } from '@/composables/usePerms.ts'
 import type { MessageTemplate } from '@/store/types/notice'
 import FormModal from '@/components/Modals/FormModal.vue'
-
-const { can, PERM } = usePerms()
-const canNoticeCreate = computed(() => can(PERM.NOTICE_CREATE))
-const canNoticeUpdate = computed(() => can(PERM.NOTICE_UPDATE))
-const canNoticeManage = computed(() =>
-  !editingId.value ? canNoticeCreate.value : canNoticeUpdate.value,
-)
-const canNoticeDelete = computed(() => can(PERM.NOTICE_DELETE))
 
 // Store
 const notiStore = useNotice()
@@ -169,7 +160,6 @@ defineExpose({ openModal, closeModal })
 
     <CModalFooter>
       <v-btn
-        v-if="canNoticeManage"
         :color="editingId ? 'success' : 'primary'"
         size="small"
         @click="handleSubmit"
@@ -178,12 +168,7 @@ defineExpose({ openModal, closeModal })
         {{ editingId ? '수정' : '등록' }}
       </v-btn>
 
-      <v-btn
-        v-if="editingId && canNoticeCreate"
-        size="small"
-        color="primary"
-        @click="handleCancelEdit"
-      >
+      <v-btn v-if="editingId" size="small" color="primary" @click="handleCancelEdit">
         새 템플릿
       </v-btn>
       <v-btn color="light" size="small" @click="closeModal" :disabled="submitting" flat>
@@ -229,7 +214,6 @@ defineExpose({ openModal, closeModal })
 
             <template #append>
               <v-btn
-                v-if="canNoticeUpdate"
                 icon="mdi-pencil"
                 size="20"
                 rounded
@@ -238,7 +222,6 @@ defineExpose({ openModal, closeModal })
                 @click="handleEdit(template)"
               />
               <v-btn
-                v-if="canNoticeDelete"
                 icon="mdi-delete"
                 size="20"
                 rounded

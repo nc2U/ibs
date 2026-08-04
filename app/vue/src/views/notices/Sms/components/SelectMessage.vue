@@ -342,10 +342,11 @@ watch(
             />
 
             <!-- 템플릿 선택 -->
-            <div v-if="canNoticeManage" class="mb-3">
+            <div class="mb-3">
               <div class="d-flex justify-content-between align-items-center mb-2">
                 <CFormLabel>메시지 템플릿</CFormLabel>
                 <v-btn
+                  v-if="canNoticeManage"
                   size="small"
                   color="primary"
                   variant="outlined"
@@ -466,6 +467,7 @@ watch(
               <div class="d-flex justify-content-between align-items-center mb-2">
                 <CFormLabel>발송자 번호</CFormLabel>
                 <v-btn
+                  v-if="canNoticeManage"
                   size="small"
                   color="primary"
                   variant="outlined"
