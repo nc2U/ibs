@@ -22,6 +22,7 @@ const viewForm = ref(false)
 const route = useRoute()
 
 const { can, PERM } = usePerms()
+const canNewsRead = computed(() => can(PERM.NEWS_READ))
 
 provide('navMenu', navMenu)
 provide('query', route?.query)
@@ -88,7 +89,7 @@ onBeforeMount(async () => {
       <NewsForm v-if="viewForm" @on-submit="onSubmit" @close-form="viewForm = false" />
 
       <v-alert
-        v-if="importantNews.length && !viewForm"
+        v-if="canNewsRead && importantNews.length && !viewForm"
         color="primary"
         variant="tonal"
         class="mb-4 py-2"
@@ -98,7 +99,7 @@ onBeforeMount(async () => {
       </v-alert>
 
       <NewsList
-        v-if="can(PERM.NEWS_READ)"
+        v-if="canNewsRead"
         :page="page"
         :view-form="viewForm"
         :news-list="newsList"
@@ -119,7 +120,7 @@ onBeforeMount(async () => {
             <li v-for="news in newsList.slice(0, 5)" :key="news.pk" class="mb-2 text-truncate">
               <v-icon icon="mdi-chevron-right" size="x-small" class="mr-1" />
               <router-link
-                v-if="can(PERM.NEWS_READ)"
+                v-if="canNewsRead"
                 :to="{
                   name: '(공지) - 보기',
                   params: { projId: news.project?.slug, newsId: news.pk },
