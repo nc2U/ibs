@@ -328,7 +328,13 @@ const getQualificationColor = (q: '1' | '2' | '3' | '') => {
               우편물 수령 주소
             </v-btn>
           </v-btn-toggle>
-          <v-btn color="primary" variant="outlined" size="small" @click="refChangeAddr.callModal()">
+          <v-btn
+            v-if="canContractUpdate"
+            color="primary"
+            variant="outlined"
+            size="small"
+            @click="refChangeAddr.callModal()"
+          >
             주소변경 등록
           </v-btn>
         </div>
@@ -576,18 +582,18 @@ const getQualificationColor = (q: '1' | '2' | '3' | '') => {
         </CRow>
 
         <CRow class="text-right mt-3">
-          <CCol :sm="12">
+          <CCol v-if="canContractUpdate" :sm="12">
             <v-file-input
               v-model="selectedFile"
               density="compact"
               label="계약서 파일"
               clearable
-              :disabled="!canContractUpdate || isUploading"
+              :disabled="isUploading"
             />
             <v-btn
               color="primary"
               size="small"
-              :disabled="!canContractUpdate || !selectedFile || isUploading"
+              :disabled="!selectedFile || isUploading"
               :loading="isUploading"
               @click="uploadFile"
             >

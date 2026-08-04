@@ -17,7 +17,7 @@ const props = defineProps({
 const emit = defineEmits(['contract-converted'])
 
 const { can, PERM } = usePerms()
-const canContractRead = computed(() => can(PERM.CALENDAR_READ))
+const canContractRead = computed(() => can(PERM.CONTRACT_READ))
 const canContractUpdate = computed(() => can(PERM.CONTRACT_UPDATE))
 
 const updateFormModal = ref()

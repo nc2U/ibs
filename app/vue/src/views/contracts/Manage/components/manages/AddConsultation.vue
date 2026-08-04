@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { usePerms } from '@/composables/usePerms.ts'
 import { useContract } from '@/store/pinia/contract.ts'
 import type { ConsultationLog } from '@/store/types/contract'
 import Pagination from '@/components/Pagination'
@@ -8,6 +9,9 @@ import ConsultationForm from './atoms/ConsultationForm.vue'
 import ConsultationFilterChips from './atoms/ConsultationFilterChips.vue'
 import ConsultationListItem from './atoms/ConsultationListItem.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
+
+const { can, PERM } = usePerms()
+const canContractUpdate = computed(() => can(PERM.CONTRACT_UPDATE))
 
 const refDeleteConfirm = ref()
 
@@ -133,7 +137,7 @@ onMounted(() => {
 <template>
   <CCardBody>
     <!-- 인라인 등록 폼 -->
-    <ConsultationForm @submit="handleSubmit" />
+    <ConsultationForm v-if="canContractUpdate" @submit="handleSubmit" />
 
     <!-- 필터 영역 -->
     <ConsultationFilterChips v-model="statusFilter" />

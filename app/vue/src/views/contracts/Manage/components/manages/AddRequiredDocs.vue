@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { cutString } from '@/utils/baseMixins.ts'
+import { usePerms } from '@/composables/usePerms.ts'
 import { downloadFile } from '@/utils/helper'
 import { useContract } from '@/store/pinia/contract.ts'
 import type { ContractDocument, Contractor, RequiredDocs } from '@/store/types/contract'
@@ -10,6 +11,9 @@ import type { ContractDocument, Contractor, RequiredDocs } from '@/store/types/c
 const props = defineProps<{
   sortFilter?: 'proof' | 'pledge'
 }>()
+
+const { can, PERM } = usePerms()
+const canContractUpdate = computed(() => can(PERM.CONTRACT_UPDATE))
 
 const route = useRoute()
 const contStore = useContract()
@@ -140,7 +144,8 @@ const onQuantityChange = (doc: MergedDocument, value: number) => (doc.submitted_
 
 // 편집 모드 토글
 const startEdit = (docId: number) => {
-  editingDocId.value = docId
+  if (!canContractUpdate.value) return
+  else editingDocId.value = docId
 }
 
 const endEdit = async (doc: MergedDocument) => {
@@ -207,11 +212,12 @@ const deleteFile = async (fileId: number, contractDocId: number) => {
 
 // 서류 행 스타일 결정
 const getRowClass = (doc: MergedDocument) => {
+  const pointer = canContractUpdate.value ? 'pointer ' : ''
   if (doc.require_type === 'required' && !doc.is_complete) {
-    return 'table-danger' // 필수 서류 미제출: 빨간색
+    return `${pointer}table-danger` // 필수 서류 미제출: 빨간색
   }
   if (!doc.is_complete && doc.submitted_quantity === 0) {
-    return 'table-warning' // 미제출: 노란색
+    return `${pointer}table-warning` // 미제출: 노란색
   }
   return ''
 }
@@ -324,7 +330,7 @@ onMounted(() => {
 
           <!-- 제출수량 (편집 가능) -->
           <CTableDataCell
-            class="text-center pointer"
+            class="text-center"
             :class="getRowClass(doc)"
             @dblclick="startEdit(doc.pk)"
           >
@@ -366,6 +372,7 @@ onMounted(() => {
                 {{ cutString(file.file_name, 3) }}
               </v-chip>
               <v-icon
+                v-if="canContractUpdate"
                 icon="mdi-plus-circle"
                 size="22"
                 class="me-1 pointer"
