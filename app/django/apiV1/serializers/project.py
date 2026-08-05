@@ -32,6 +32,7 @@ class SalesBillInProjectSerializer(serializers.ModelSerializer):
 class ProjectSerializer(serializers.ModelSerializer):
     company = serializers.SerializerMethodField(read_only=True)
     issue_project = serializers.PrimaryKeyRelatedField(read_only=True)
+    issue_project_slug = serializers.CharField(source='issue_project.slug', read_only=True)
     kind = serializers.ChoiceField(choices=PROJECT_KIND_CHOICES)
     kind_desc = serializers.CharField(source='get_kind_display', read_only=True)
     salesbillissue = SalesBillInProjectSerializer(read_only=True)
@@ -45,7 +46,7 @@ class ProjectSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Project
-        fields = ('pk', 'company', 'issue_project', 'name', 'order', 'kind', 'kind_desc', 'start_year',
+        fields = ('pk', 'company', 'issue_project', 'issue_project_slug', 'name', 'order', 'kind', 'kind_desc', 'start_year',
                   'is_direct_manage', 'is_returned_area', 'is_unit_set', 'monthly_aggr_start_date',
                   'construction_start_date', 'construction_period_months', 'location', 'area_usage', 'build_size',
                   'num_unit', 'buy_land_extent', 'scheme_land_extent', 'donation_land_extent', 'on_floor_area',

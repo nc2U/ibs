@@ -2,6 +2,7 @@ export interface Project {
   pk?: number
   company: number | null
   issue_project: number | null
+  issue_project_slug?: string | null
   name: string
   order: number | null
   kind: string

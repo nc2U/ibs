@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { useAccount } from '@/store/pinia/account'
 import { useWork } from '@/store/pinia/work_project'
+import { usePermission } from '@/store/pinia/work_permission'
 import { errorHandle, message } from '@/utils/helper'
 import {
   type ExecAmountToBudget,
@@ -15,12 +16,13 @@ import {
 
 export const useProject = defineStore('project', () => {
   const accountStore = useAccount()
+  const workStore = useWork()
+  const permStore = usePermission()
 
   // states & getters
   const projectList = ref<Project[]>([])
   const projectsCount = ref(0)
   const allowed_projects = computed(() => {
-    const workStore = useWork()
     return workStore.myProjects.map(mp => mp.pk)
   })
   const projSelect = computed(() => {
@@ -55,10 +57,24 @@ export const useProject = defineStore('project', () => {
   const fetchProject = (pk: number) =>
     api
       .get(`/project/${pk}/`)
-      .then(res => (project.value = res.data))
+      .then(async res => {
+        project.value = res.data
+        if (res.data.issue_project_slug) {
+          await workStore.fetchIssueProject(res.data.issue_project_slug)
+        } else {
+          workStore.removeIssueProject()
+          permStore.setProjectPermissions([])
+          permStore.setProjectRole(null)
+        }
+      })
       .catch(err => errorHandle(err.response.data))
 
-  const removeProject = () => (project.value = null)
+  const removeProject = () => {
+    project.value = null
+    workStore.removeIssueProject()
+    permStore.setProjectPermissions([])
+    permStore.setProjectRole(null)
+  }
 
   const createProject = (payload: Project) =>
     api
