@@ -87,7 +87,7 @@ const AppSidebarNav = defineComponent({
     const readPay = computed(() => canGlobal(PERM.PAYMENT_READ))
     const readNoti = computed(() => canGlobal(PERM.NOTICE_READ))
     const readLedger = computed(() => canGlobal(PERM.LEDGER_READ))
-    const readAuth = computed(() => canGlobal(PERM.PROJECT_MEMBER))
+    const readAuth = computed(() => isStaff.value && canGlobal(PERM.PROJECT_MEMBER))
 
     const predicates = computed(() => {
       // 권한 키별 접근 제어 매핑
