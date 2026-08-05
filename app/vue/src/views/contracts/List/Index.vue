@@ -241,6 +241,9 @@ const projSelect = async (target: number | null, skipClearQuery = false) => {
       await fetchOrderGroupList(target)
       await fetchTypeList(target)
       await fetchBuildingList(target)
+      await fetchAllProBankAccList(target)
+      await fetchKeyUnitList({ project: target })
+      await fetchHouseUnitList({ project: target })
       await fetchContractList({ project: target, limit: limit.value, status: curr_status.value })
       await fetchSubsSummaryList(target)
       await fetchContSummaryList(target)
@@ -322,7 +325,7 @@ onBeforeMount(async () => {
   } else {
     // URL에 프로젝트 파라미터가 없거나 같은 경우 일반 데이터 설정
     // URL에 page 파라미터가 있으면 해당 페이지로 진입
-    await dataSetup(projectId, urlPage.value ?? undefined)
+    if (project.value?.pk) await dataSetup(project.value.pk, urlPage.value ?? undefined)
   }
 
   loading.value = false
