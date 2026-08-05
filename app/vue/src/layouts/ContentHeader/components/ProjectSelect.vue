@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount } from 'vue'
+import { computed, onBeforeMount, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { usePerms } from '@/composables/usePerms.ts'
 import { useProject } from '@/store/pinia/project'
@@ -17,26 +17,35 @@ const route = useRoute()
 const projStore = useProject()
 const workStore = useWork()
 
-const project = computed(() => projStore.project?.pk)
+const projectPk = computed(() => projStore.project?.pk)
 const projSelectList = computed(() => workStore.getDevProjects)
-const projPks = computed(() => projSelectList.value.map(p => p.value))
 
-// URL에서 project 파라미터 읽기
-const urlProjectId = computed(() => {
-  const id = route.query.project
-  return id ? parseInt(id as string, 10) : null
-})
+const loadProject = async () => {
+  const urlId = route.query.project ? parseInt(route.query.project as string, 10) : null
+  const targetId = urlId || projStore.currentProject
+  const allowedIds = projSelectList.value.map(p => p.value)
 
-const projSelect = (e: { originalEvent: Event; value: any; option: any }) => emit('proj-select', e)
-const projClear = () => emit('proj-select', null)
+  if (targetId && allowedIds.includes(targetId)) await projStore.fetchProject(targetId)
+}
 
+// 1. 초기 데이터 로드 및 초기 프로젝트 설정
 onBeforeMount(async () => {
   await projStore.fetchProjectList()
 
-  // URL에 project 파라미터가 있으면 해당 프로젝트로, 없으면 기본 프로젝트로
-  const targetProjectId = urlProjectId.value || project.value || projStore.initProjId
-  if (projPks.value.length && projPks.value.includes(targetProjectId))
-    await projStore.fetchProject(targetProjectId)
+  // 데이터가 로드된 상태에 따라 바로 로드하거나 watch를 통해 대기
+  if (projSelectList.value.length > 0) {
+    await loadProject()
+  } else {
+    const unwatch = watch(
+      () => projSelectList.value,
+      newList => {
+        if (newList.length > 0) {
+          loadProject()
+          unwatch() // 한 번만 실행하고 감시 종료
+        }
+      },
+    )
+  }
 })
 </script>
 
@@ -45,15 +54,15 @@ onBeforeMount(async () => {
     <CFormLabel class="col-lg-1 col-form-label text-body">프로젝트</CFormLabel>
     <CCol md="6" lg="3">
       <Multiselect
-        :value="project"
+        :value="projectPk"
         :options="projSelectList"
         placeholder="프로젝트선택"
         autocomplete="label"
         :classes="{ search: 'form-control multiselect-search' }"
         :add-option-on="['enter', 'tab']"
         searchable
-        @select="projSelect"
-        @clear="projClear"
+        @select="emit('proj-select', $event)"
+        @clear="emit('proj-select', null)"
       />
     </CCol>
     <CCol v-if="!projSelectList.length" class="pl-0 align-middle">

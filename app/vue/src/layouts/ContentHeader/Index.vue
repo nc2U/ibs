@@ -39,7 +39,10 @@ const projSelect = async (proj: number | null) => {
   if (!!proj) {
     localStorage.setItem('curr-project', `${proj}`)
     await projectStore.fetchProject(proj)
-  } else projectStore.removeProject()
+  } else {
+    localStorage.removeItem('curr-project')
+    projectStore.removeProject()
+  }
   emit('proj-select', proj)
 }
 </script>

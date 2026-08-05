@@ -233,7 +233,10 @@ const projSelect = async (target: number | null, skipClearQuery = false) => {
 
   dataReset()
   if (!!target) {
-    await projStore.fetchProject(target)
+    // ContentHeader의 projSelect가 이미 fetchProject를 완료한 뒤 이벤트를 emit하므로
+    // 수동 선택(@proj-select 이벤트) 시에는 중복 호출 생략
+    // skipClearQuery=true인 경우(onBeforeMount, onBeforeRouteUpdate 내부 직접 호출)에만 fetchProject 실행
+    if (skipClearQuery) await projStore.fetchProject(target)
 
     // 수동 프로젝트 선택 시에는 하이라이트 없이 일반 목록만 로드
     if (!skipClearQuery) {
@@ -252,16 +255,10 @@ const projSelect = async (target: number | null, skipClearQuery = false) => {
       // URL에서 page가 있으면 해당 페이지로 진입
       await dataSetup(target, urlPage.value ?? undefined)
     }
-
-    // ContentHeader 강제 리렌더링으로 ProjectSelect 업데이트
-    headerKey.value++
   }
 }
 
 const router = useRouter()
-
-// ContentHeader 강제 리렌더링용
-const headerKey = ref(0)
 
 // Query string 정리 함수
 const clearQueryString = () => {
@@ -319,13 +316,15 @@ onBeforeMount(async () => {
   // URL에서 프로젝트 ID가 지정되어 있으면 해당 프로젝트로 전환
   let projectId = project.value?.pk || projStore.currentProject
 
-  if (urlProjectId.value && urlProjectId.value !== projectId) {
-    // 프로젝트 전환 (query string 정리 건너뛰기)
-    await projSelect(urlProjectId.value, true)
-  } else {
-    // URL에 프로젝트 파라미터가 없거나 같은 경우 일반 데이터 설정
-    // URL에 page 파라미터가 있으면 해당 페이지로 진입
-    if (projectId) await dataSetup(projectId, urlPage.value ?? undefined)
+  if (projectId) {
+    if (urlProjectId.value && urlProjectId.value !== projectId) {
+      // 프로젝트 전환 (query string 정리 건너뛰기)
+      await projSelect(urlProjectId.value, true)
+    } else {
+      // URL에 프로젝트 파라미터가 없거나 같은 경우 일반 데이터 설정
+      // URL에 page 파라미터가 있으면 해당 페이지로 진입
+      await dataSetup(projectId, urlPage.value ?? undefined)
+    }
   }
 
   loading.value = false
@@ -336,7 +335,6 @@ onBeforeMount(async () => {
   <ContractAuthGuard>
     <Loading v-model:active="loading" />
     <ContentHeader
-      :key="headerKey"
       :page-title="pageTitle"
       :nav-menu="navMenu"
       selector="ProjectSelect"
