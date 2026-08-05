@@ -325,7 +325,7 @@ onBeforeMount(async () => {
   } else {
     // URL에 프로젝트 파라미터가 없거나 같은 경우 일반 데이터 설정
     // URL에 page 파라미터가 있으면 해당 페이지로 진입
-    if (project.value?.pk) await dataSetup(project.value.pk, urlPage.value ?? undefined)
+    await dataSetup(projectId, urlPage.value ?? undefined)
   }
 
   loading.value = false
