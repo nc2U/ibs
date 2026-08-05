@@ -475,12 +475,23 @@ const delFile = ref<number | undefined>(undefined)
 const saveContract = (payload: any) => {
   const { pk, ...getData } = payload as { [key: string]: any }
 
-  const form = new FormData()
+  const formData = new FormData()
 
-  for (const key in getData) form.set(key, getData[key] ?? '')
+  for (const key in getData) {
+    const val = getData[key]
+    // 배열(contract_files 등)은 백엔드에서 read-only로 무시되므로 전송 제외
+    if (Array.isArray(val)) continue
+    // File 객체는 그대로 append (FormData가 올바르게 처리)
+    if (val instanceof File) {
+      formData.append(key, val)
+    } else {
+      // null / undefined → 빈 문자열, 그 외는 문자열 변환
+      formData.set(key, val != null ? String(val) : '')
+    }
+  }
 
-  if (!pk) return contStore.createContractSet(form)
-  else return contStore.updateContractSet(pk, form)
+  if (!pk) return contStore.createContractSet(formData)
+  else return contStore.updateContractSet(pk, formData)
 }
 
 const modalAction = async () => {

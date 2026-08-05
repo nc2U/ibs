@@ -300,8 +300,15 @@ export const useContract = defineStore('contract', () => {
   const createContractSet = (payload: FormData) =>
     api
       .post(`/contract-set/`, payload, config_headers)
-      .then(async () => {
-        await fetchContractList(contractFilter.value)
+      .then(async res => {
+        // contractFilter가 아직 초기화되지 않은 경우(최초 생성 시),
+        // 생성된 계약의 project를 기반으로 filter를 구성해 목록을 재조회한다.
+        const projectId = res?.data?.project ?? Number(payload.get('project'))
+        const filter: ContFilter =
+          contractFilter.value.project
+            ? contractFilter.value
+            : { ...contractFilter.value, project: projectId, status: '2' }
+        await fetchContractList(filter)
         message()
       })
       .catch(err => errorHandle(err.response.data))

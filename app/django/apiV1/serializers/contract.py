@@ -251,49 +251,47 @@ class ContractSetSerializer(serializers.ModelSerializer):
                   'contractor', 'payments', 'last_paid_order', 'total_paid', 'order_group_desc', 'contract_files',
                   'updator')
 
-    def _has_address_data(self):
-        """주소 정보가 있는지 확인하는 헬퍼 메서드"""
-        address_fields = [
-            'id_zipcode', 'id_address1', 'id_address2', 'id_address3',
-            'dm_zipcode', 'dm_address1', 'dm_address2', 'dm_address3'
-        ]
-        return any(self.initial_data.get(field) for field in address_fields)
-
     @staticmethod
     def get_order_group_sort(obj):  # '1': 조합모집 or '2': 일반분양
         return obj.order_group.sort
 
-    @staticmethod
-    def get_payment_list(instance):
-        """납부 내역 조회 (거래일자 기준 정렬)"""
-        return instance.payments.order_by('deal_date', 'created_at')
-
     def get_payments(self, instance):  # 납부 분담금/분양대금 리스트
-        payments = self.get_payment_list(instance).select_related(
-            'accounting_entry',
-            'installment_order'
-        )
+        """납부 내역 조회 (거래일자 기준 정렬)
+
+        Note: ViewSet의 Prefetch에서 accounting_entry/installment_order 관계가
+        이미 로딩되므로 추가 select_related 없이 prefetch 캐시를 그대로 활용합니다.
+        """
+        payments = instance.payments.order_by('deal_date', 'created_at')
         return ContractPaymentInContractSerializer(payments, many=True, read_only=True).data
+
+    def _get_total_paid(self, instance):
+        """총 납부액 — 직렬화 중 최초 1회만 DB aggregate 쿼리를 실행하고 인스턴스에 캐싱합니다."""
+        cache_attr = '_cached_total_paid'
+        if not hasattr(instance, cache_attr):
+            total = instance.payments.aggregate(total=Sum('accounting_entry__amount'))['total'] or 0
+            setattr(instance, cache_attr, total)
+        return getattr(instance, cache_attr)
 
     def get_total_paid(self, instance):
         """총 납부액 계산 - DB 집계 쿼리로 처리 (Python 루프 합산 대비 성능 개선)"""
-        return instance.payments.aggregate(total=Sum('accounting_entry__amount'))['total'] or 0
+        return self._get_total_paid(instance)
 
     def get_last_paid_order(self, instance):  # 완납 회차 구하기
         """
-        해당 계약자가 납부 완료한 마지막 회차를 반환
+        해당 계약자가 납부 완료한 마지막 회차를 반환.
+        총 납부액은 get_total_paid와 공유되는 내부 캐시(_cached_total_paid)를 사용하여
+        동일 직렬화 사이클 내 중복 aggregate 쿼리를 방지합니다.
 
         Returns:
             Serialized InstallmentPaymentOrder data or None
         """
-
         # 1. 해당 계약의 정확한 납부 계획 조회
         payment_plan = get_contract_payment_plan(instance)
         if not payment_plan:
             return None
 
-        # 2. 총 납부액 조회 (aggregate 단일 쿼리 — get_payments 쿼리와 별개로 가볍게 실행)
-        total_paid = instance.payments.aggregate(total=Sum('accounting_entry__amount'))['total'] or 0
+        # 2. 캐시된 총 납부액 재사용 (get_total_paid와 aggregate 쿼리 공유)
+        total_paid = self._get_total_paid(instance)
         if total_paid <= 0:
             return None
 
@@ -319,17 +317,21 @@ class ContractSetSerializer(serializers.ModelSerializer):
             return SimpleInstallmentOrderSerializer(last_paid_installment).data
         return None
 
-    @transaction.atomic
     def create(self, validated_data):
-        """간소화된 계약 생성 - 서비스 레이어 위임"""
+        """간소화된 계약 생성 - 서비스 레이어 위임
 
+        Note: @transaction.atomic은 ContractCreationService.create_contract에 선언되어
+        있으므로 여기서 중복 선언하지 않습니다.
+        """
         service = ContractCreationService()
         return service.create_contract(self.initial_data, self.context['request'].user)
 
-    @transaction.atomic
     def update(self, instance, validated_data):
-        """간소화된 계약 수정 - 서비스 레이어 위임"""
+        """간소화된 계약 수정 - 서비스 레이어 위임
 
+        Note: @transaction.atomic은 ContractUpdateService.update_contract에 선언되어
+        있으므로 여기서 중복 선언하지 않습니다.
+        """
         service = ContractUpdateService()
         return service.update_contract(instance, self.context['request'].data, self.context['request'].user)
 

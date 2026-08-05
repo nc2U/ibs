@@ -453,7 +453,7 @@ class ContractorRegistrationService:
             birth_date=clean_date_value(data.get('birth_date')),
             gender=data.get('gender'),
             qualification=data.get('qualification') or '1',
-            now_status=data.get('now_status', '1'),
+            status=data.get('status', '1'),  # 프론트에서 'status' 키로 전송
             change_type=data.get('change_type'),
             reservation_date=clean_date_value(data.get('reservation_date')),
             contract_date=clean_date_value(data.get('contract_date')),
@@ -470,7 +470,7 @@ class ContractorRegistrationService:
         )
 
         # 계약자 주소 등록 (계약인 경우에만)
-        if contractor.now_status == '2' and ContractorRegistrationService._has_address_data(data):
+        if contractor.status == '2' and ContractorRegistrationService._has_address_data(data):
             ContractorAddress.objects.create(
                 contractor=contractor,
                 id_zipcode=data.get('id_zipcode', ''),
@@ -499,7 +499,7 @@ class ContractorRegistrationService:
         contractor.name = data.get('name')
         contractor.gender = data.get('gender')
         contractor.qualification = data.get('qualification') or '1'
-        contractor.now_status = data.get('now_status', '1')
+        contractor.status = data.get('status', '1')  # 프론트에서 'status' 키로 전송
         contractor.change_type = data.get('change_type')
         contractor.note = data.get('note', '')
 
@@ -527,7 +527,7 @@ class ContractorRegistrationService:
         contact.save()
 
         # 주소 정보 처리 (청약→계약 전환 시에만 새로 생성)
-        if contractor.now_status == '2' and ContractorRegistrationService._has_address_data(data):
+        if contractor.status == '2' and ContractorRegistrationService._has_address_data(data):
             try:
                 ContractorAddress.objects.get(contractor=contractor)
             except ContractorAddress.DoesNotExist:
