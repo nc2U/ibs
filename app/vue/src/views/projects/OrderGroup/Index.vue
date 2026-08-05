@@ -34,7 +34,7 @@ const onUpdateOrder = (payload: OrderGroup) =>
   updateOrderGroup({ ...{ project: project.value }, ...payload })
 
 const onDeleteOrder = (pk: number) =>
-  deleteOrderGroup({ pk, project: project.value || projStore.initProjId })
+  deleteOrderGroup({ pk, project: project.value || projStore.currentProject })
 
 const projSelect = (target: number | null) => {
   contStore.orderGroupList = []
@@ -43,7 +43,8 @@ const projSelect = (target: number | null) => {
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  if (project.value) await fetchOrderGroupList(project.value || projStore.initProjId)
+  const projId = project.value || projStore.currentProject
+  if (projId) await fetchOrderGroupList(projId)
   loading.value = false
 })
 </script>

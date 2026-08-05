@@ -163,19 +163,19 @@ const loading = ref(true)
 onBeforeMount(async () => {
   // URL에서 project 파라미터 읽기 (슬랙 링크 등에서 전달된 정확한 프로젝트)
   const urlProjectId = route.query.project ? parseInt(route.query.project as string, 10) : null
-  const projectId = urlProjectId || project.value || projStore.initProjId || 1
+  const projectId = urlProjectId || projStore.currentProject
 
-  // 하이라이트 ID가 있는 경우 해당 페이지로 이동, 없으면 일반 데이터 로딩
-  if (highlightId.value && projectId) {
-    await loadHighlightPage(highlightId.value, projectId)
-  } else {
-    await dataSetup(projectId)
-  }
+  if (projectId) {
+    // 하이라이트 ID가 있는 경우 해당 페이지로 이동, 없으면 일반 데이터 로딩
+    if (highlightId.value) {
+      await loadHighlightPage(highlightId.value, projectId)
+    } else await dataSetup(projectId)
 
-  if (route.params.contractorId) await fetchContractor(Number(route.params.contractorId))
-  else {
-    contStore.contract = null
-    contStore.contractor = null
+    if (route.params.contractorId) await fetchContractor(Number(route.params.contractorId))
+    else {
+      contStore.contract = null
+      contStore.contractor = null
+    }
   }
 
   loading.value = false
@@ -212,7 +212,7 @@ watch(route, async newRoute => {
           @search-contractor="searchContractor"
           @call-form="callForm"
         />
-        <ContractorAlert v-if="contractor" :contractor="contractor" />
+        <ContractorAlert v-if="contractor" :contractor="contractor" clear-route="계약 해지 관리" />
 
         <ReleasetButton
           v-if="canContractUpdate && contractor"

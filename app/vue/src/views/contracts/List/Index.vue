@@ -289,7 +289,7 @@ onBeforeRouteUpdate(async to => {
   } else {
     // URL에 highlight_id가 있으면 하이라이트 기능이 필요한 경우이므로 dataSetup 실행
     if (to.query.highlight_id) {
-      await dataSetup(project.value?.pk || projStore.initProjId, toPage)
+      await dataSetup(project.value?.pk || projStore.currentProject, toPage)
     }
     // 단순히 project 파라미터만 있는 경우는 이미 올바른 프로젝트가 선택되어 있으므로 추가 작업 불필요
   }
@@ -317,7 +317,7 @@ onBeforeMount(async () => {
   }
 
   // URL에서 프로젝트 ID가 지정되어 있으면 해당 프로젝트로 전환
-  let projectId = project.value?.pk || projStore.initProjId
+  let projectId = project.value?.pk || projStore.currentProject
 
   if (urlProjectId.value && urlProjectId.value !== projectId) {
     // 프로젝트 전환 (query string 정리 건너뛰기)
@@ -325,7 +325,7 @@ onBeforeMount(async () => {
   } else {
     // URL에 프로젝트 파라미터가 없거나 같은 경우 일반 데이터 설정
     // URL에 page 파라미터가 있으면 해당 페이지로 진입
-    await dataSetup(projectId, urlPage.value ?? undefined)
+    if (projectId) await dataSetup(projectId, urlPage.value ?? undefined)
   }
 
   loading.value = false

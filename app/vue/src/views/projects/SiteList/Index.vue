@@ -180,15 +180,17 @@ const loading = ref(true)
 onBeforeMount(async () => {
   if (canSiteRead.value) {
     // URL에서 프로젝트 ID가 지정되어 있으면 해당 프로젝트 사용
-    let projectId = urlProjectId.value || project.value || projStore.initProjId
-    if (urlProjectId.value && urlProjectId.value !== project.value) projectId = urlProjectId.value
+    let projectId = urlProjectId.value || project.value || projStore.currentProject
+    if (projectId) {
+      if (urlProjectId.value && urlProjectId.value !== project.value) projectId = urlProjectId.value
 
-    // 하이라이트 항목이 있으면 해당 페이지로 이동 후 스크롤
-    if (highlightId.value) {
-      await loadHighlightPage(projectId)
-      await scrollToHighlight()
-    } else {
-      if (project.value) dataSetup(project.value)
+      // 하이라이트 항목이 있으면 해당 페이지로 이동 후 스크롤
+      if (highlightId.value) {
+        await loadHighlightPage(projectId)
+        await scrollToHighlight()
+      } else {
+        dataSetup(projectId)
+      }
     }
   }
   loading.value = false

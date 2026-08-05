@@ -1,14 +1,17 @@
 <script lang="ts" setup>
 import { computed, type PropType } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useContract } from '@/store/pinia/contract'
 import { type Contractor } from '@/store/types/contract'
 
 const props = defineProps({
   isBlank: { type: Boolean, default: false },
   contractor: { type: Object as PropType<Contractor>, required: true },
+  clearRoute: { type: String, required: true },
 })
 const emit = defineEmits(['resume-form'])
+
+const router = useRouter()
 
 const isSuccession = computed(
   () => !!props.contractor?.succession && props.contractor.succession.status !== '3',
@@ -33,9 +36,10 @@ const getStatus = (num: string) => {
 }
 
 const contStore = useContract()
-const removeContractor = () => {
+const clearContractor = () => {
   contStore.contract = null
   contStore.contractor = null
+  // router.replace({ name: props.clearRoute })
 }
 
 const route = useRoute()
@@ -57,10 +61,10 @@ const resumeForm = () => {
         </strong>
       </CCol>
       <CCol class="text-right">
-        <router-link v-if="!isBlank || !contractor.contract" to="">
-          <v-icon icon="mdi mdi-close" @click="removeContractor" />
+        <span v-if="!isBlank || !contractor.contract">
+          <v-icon icon="mdi mdi-close" @click.stop="clearContractor" />
           <v-tooltip activator="parent" location="start"> 계약자 선택 해제</v-tooltip>
-        </router-link>
+        </span>
         <a v-else href="javascript:void(0)">
           <v-icon
             icon="mdi mdi-refresh"

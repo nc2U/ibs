@@ -127,14 +127,14 @@ const onUpdate = (payload: HouseUnit) =>
     ? patchUnit({
         ...payload,
         ...{
-          project: project.value || projStore.initProjId,
+          project: project.value || projStore.currentProject,
           bldg: bldgPk.value,
         },
       })
     : alert('동(건물)을 선택하세요!')
 
 const onDelete = (payload: { pk: number; type: number }) =>
-  deleteUnit(payload.pk, project.value || projStore.initProjId, payload.type)
+  deleteUnit(payload.pk, project.value || projStore.currentProject, payload.type)
 
 const dataSetup = async (pk: number) => {
   await Promise.all([fetchTypeList(pk), fetchFloorTypeList(pk), fetchBuildingList(pk)])
@@ -155,8 +155,11 @@ const projSelect = (target: number | null) => {
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  if (project.value) await dataSetup(project.value || projStore.initProjId)
-  pDataStore.houseUnitList = []
+  const projId = project.value || projStore.currentProject
+  if (projId) {
+    await dataSetup(projId)
+    pDataStore.houseUnitList = []
+  }
   loading.value = false
 })
 

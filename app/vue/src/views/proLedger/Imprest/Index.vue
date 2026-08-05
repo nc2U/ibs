@@ -185,23 +185,25 @@ const loading = ref(true)
 onBeforeMount(async () => {
   try {
     // URL에서 회사 ID가 지정되어 있으면 해당 회사로 전환
-    let projectId = project.value || proStore.initProjId
-    if (urlProjectId.value && urlProjectId.value !== projectId) {
-      console.log(`Switching to project ${urlProjectId.value} from URL parameter`)
-      // 회사 전환 (query string 정리 건너뛰기)
-      await projSelect(urlProjectId.value, true)
-      projectId = urlProjectId.value
-    }
+    let projectId = project.value || proStore.currentProject
+    if (!projectId) {
+      if (urlProjectId.value && urlProjectId.value !== projectId) {
+        console.log(`Switching to project ${urlProjectId.value} from URL parameter`)
+        // 회사 전환 (query string 정리 건너뛰기)
+        await projSelect(urlProjectId.value, true)
+        projectId = urlProjectId.value
+      }
 
-    await fetchProjectAccounts()
+      await fetchProjectAccounts()
 
-    // 하이라이트 항목이 있으면 해당 페이지로 이동 후 스크롤
-    if (highlightId.value) {
-      await loadHighlightPage()
-    } else {
-      await dataSetup(projectId)
+      // 하이라이트 항목이 있으면 해당 페이지로 이동 후 스크롤
+      if (highlightId.value) {
+        await loadHighlightPage()
+      } else {
+        await dataSetup(projectId)
+      }
+      await scrollToHighlight()
     }
-    await scrollToHighlight()
   } catch (err) {
     console.log('페이지 로딩 중 에러가 발생했습니다.', err)
   } finally {

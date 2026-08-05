@@ -1,11 +1,11 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref, watch } from 'vue'
 import { navMenu, pageTitle } from '@/views/contracts/_menu/headermixin'
-import type { Project } from '@/store/types/project'
 import { useContract } from '@/store/pinia/contract'
-import type { Contract, Contractor } from '@/store/types/contract'
-import { useRoute, useRouter } from 'vue-router'
 import { useProject } from '@/store/pinia/project'
+import { useRoute } from 'vue-router'
+import type { Project } from '@/store/types/project'
+import type { Contract, Contractor } from '@/store/types/contract'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
@@ -15,7 +15,7 @@ import ContNavigation from '@/views/contracts/Manage/components/ContNavigation.v
 import ContController from '@/views/contracts/Manage/components/ContController.vue'
 import ContractorAlert from '@/views/contracts/Manage/components/ContractorAlert.vue'
 
-const [route, router] = [useRoute(), useRouter()]
+const route = useRoute()
 
 // URL params에서 contractorId 읽기
 const contractorId = computed(() =>
@@ -66,7 +66,7 @@ const getContract = async (contor: string) => {
 
 const searchContractor = async (search: string) => {
   if (search !== '' && project.value) {
-    await fetchContractorList(project.value, search)
+    fetchContractorList(project.value, search)
   } else contStore.contractorList = []
 }
 
@@ -85,14 +85,17 @@ const projSelect = (target: number | null) => {
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  dataSetup(project.value || projStore.initProjId)
-  if (contractorId.value) {
-    await getContract(contractorId.value.toString())
-    await fetchContAddressList(contractorId.value)
-  } else {
-    contStore.removeContract()
-    contStore.removeContractor()
-    contStore.contAddressList = []
+  const projId = project.value || projStore.currentProject
+  if (projId) {
+    dataSetup(projId)
+    if (contractorId.value) {
+      await getContract(contractorId.value.toString())
+      await fetchContAddressList(contractorId.value)
+    } else {
+      contStore.removeContract()
+      contStore.removeContractor()
+      contStore.contAddressList = []
+    }
   }
   loading.value = false
 })
@@ -112,7 +115,12 @@ onBeforeMount(async () => {
       <CCardBody class="pb-5">
         <ContNavigation :cont-on="!!contract" :contractor="contractor?.pk" />
         <ContController :project="project" @search-contractor="searchContractor" />
-        <ContractorAlert v-if="contractor" :is-blank="!contract" :contractor="contractor" />
+        <ContractorAlert
+          v-if="contractor"
+          :is-blank="!contract"
+          :contractor="contractor"
+          clear-route="계약 상세 관리"
+        />
 
         <ContractManage
           :project="project ?? undefined"

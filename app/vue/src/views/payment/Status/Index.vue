@@ -89,7 +89,8 @@ watch(menu, newMenu => {
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  dataSetup(project.value || projStore.initProjId)
+  const projId = project.value || projStore.currentProject
+  if (projId) dataSetup(projId)
   loading.value = false
 })
 </script>

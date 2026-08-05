@@ -196,9 +196,12 @@ const projSelect = (target: number | null) => {
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  await fetchProjectAccounts()
-  dataSetup(project.value || projStore.initProjId)
-  compName.value = comp[Number(localStorage.getItem('proLedgerStatus') ?? 1)]
+  const projId = project.value || projStore.currentProject
+  if (projId) {
+    await fetchProjectAccounts()
+    dataSetup(projId)
+    compName.value = comp[Number(localStorage.getItem('proLedgerStatus') ?? 1)]
+  }
   loading.value = false
 })
 </script>

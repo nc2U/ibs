@@ -43,8 +43,8 @@ const form = reactive({
 })
 
 const projectStore = useProject()
-const initProjId = computed(() => projectStore.initProjId)
-const project = computed(() => (projectStore.project as Project)?.pk || initProjId.value)
+const currProject = computed(() => projectStore.currentProject)
+const project = computed(() => (projectStore.project as Project)?.pk || currProject.value)
 const isReturned = computed(() => (projectStore.project as Project)?.is_returned_area)
 const siteStore = useSite()
 

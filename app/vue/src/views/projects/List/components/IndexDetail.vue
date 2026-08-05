@@ -7,7 +7,7 @@ import { areaM2PyFormat, ratioFormat } from '@/utils/areaMixins'
 import { type Project } from '@/store/types/project'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
-defineProps({ project: { type: Object as PropType<Project>, required: true } })
+defineProps({ project: { type: Object as PropType<Project>, default: () => null } })
 
 const emit = defineEmits(['create-form', 'update-form'])
 

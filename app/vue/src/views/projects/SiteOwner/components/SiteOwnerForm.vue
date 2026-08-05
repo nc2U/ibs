@@ -55,8 +55,8 @@ const own_sort_select = [
 ]
 
 const projectStore = useProject()
-const initProjId = computed(() => projectStore.initProjId)
-const project = computed(() => projectStore.project?.pk || initProjId.value)
+const currProject = computed(() => projectStore.currentProject)
+const project = computed(() => projectStore.project?.pk || currProject.value)
 
 const siteStore = useSite()
 const getSites = computed(() => siteStore.getSites)

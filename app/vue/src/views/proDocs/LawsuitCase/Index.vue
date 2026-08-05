@@ -1,7 +1,6 @@
 <script lang="ts" setup>
-import { ref, computed, watch, onBeforeMount } from 'vue'
-import { pageTitle, navMenu } from '@/views/proDocs/_menu/headermixin1'
-import { useAccount } from '@/store/pinia/account'
+import { computed, onBeforeMount, ref, watch } from 'vue'
+import { navMenu, pageTitle } from '@/views/proDocs/_menu/headermixin1'
 import { useProject } from '@/store/pinia/project'
 import {
   onBeforeRouteUpdate,
@@ -161,15 +160,15 @@ const projSelect = (target: number | null) => {
   if (!!target) dataSetup(target)
 }
 
+const projId = computed(() => project.value || projStore.currentProject)
+
 onBeforeRouteUpdate(() => {
-  const proj = project.value || projStore.initProjId
-  dataSetup(proj, route.params?.caseId)
+  if (projId.value) dataSetup(projId.value, route.params?.caseId)
 })
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  const proj = project.value || projStore.initProjId
-  dataSetup(proj, route.params?.caseId)
+  if (projId.value) dataSetup(projId.value, route.params?.caseId)
   loading.value = false
 })
 </script>

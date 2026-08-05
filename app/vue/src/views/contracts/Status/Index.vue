@@ -68,7 +68,10 @@ const projSelect = (target: number | null) => {
   if (!!target) dataSetup(target)
 }
 
-onBeforeMount(() => dataSetup(project.value || projStore.initProjId))
+onBeforeMount(() => {
+  const projId = project.value || projStore.currentProject
+  if (projId) dataSetup(projId)
+})
 </script>
 
 <template>

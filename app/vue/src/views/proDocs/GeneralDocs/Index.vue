@@ -187,11 +187,15 @@ const projSelect = (target: number | null) => {
   else docStore.removeDocsList()
 }
 
-onBeforeRouteUpdate(to => dataSetup(project.value ?? projStore.initProjId, to.params?.docsId))
+onBeforeRouteUpdate(to => {
+  const projId = project.value || projStore.currentProject
+  if (projId) dataSetup(projId, to.params?.docsId)
+})
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  dataSetup(project.value ?? projStore.initProjId, route.params?.docsId)
+  const projId = project.value || projStore.currentProject
+  if (projId) dataSetup(projId, route.params?.docsId)
   loading.value = false
 })
 </script>

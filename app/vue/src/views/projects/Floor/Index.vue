@@ -41,7 +41,8 @@ const projSelect = (target: number | null) => {
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  if (project.value) await fetchFloorTypeList(project.value || projStore.initProjId)
+  const projId = project.value || projStore.currentProject
+  if (projId) await fetchFloorTypeList(projId)
   loading.value = false
 })
 </script>

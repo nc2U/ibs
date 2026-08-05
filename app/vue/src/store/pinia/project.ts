@@ -49,7 +49,7 @@ export const useProject = defineStore('project', () => {
   const project = ref<Project | null>(null)
 
   const currentProject = Number(localStorage.getItem('curr-project'))
-  const initProjId = computed(() => (currentProject ? currentProject : 1))
+  // const initProjId = computed(() => (currentProject ? currentProject : null))
 
   // actions
   const fetchProject = (pk: number) =>
@@ -228,7 +228,8 @@ export const useProject = defineStore('project', () => {
     fetchProjectList,
 
     project,
-    initProjId,
+    currentProject,
+    // initProjId,
     fetchProject,
     removeProject,
     createProject,

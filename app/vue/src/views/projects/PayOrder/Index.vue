@@ -42,7 +42,8 @@ const projSelect = (target: number | null) => {
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  if (project.value) await fetchPayOrderList(project.value || projStore.initProjId)
+  const projId = project.value || projStore.currentProject
+  if (projId) await fetchPayOrderList(projId)
   loading.value = false
 })
 </script>

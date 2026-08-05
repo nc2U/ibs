@@ -250,7 +250,7 @@ onBeforeRouteUpdate(async to => {
   } else {
     // URL에 highlight_id가 있으면 하이라이트 기능이 필요한 경우이므로 dataSetup 실행
     if (to.query.highlight_id) {
-      await dataSetup(project.value?.pk || projStore.initProjId)
+      await dataSetup(project.value?.pk || projStore.currentProject)
     }
   }
 })
@@ -266,20 +266,21 @@ onBeforeRouteLeave(to => {
 const loading = ref(true)
 onBeforeMount(async () => {
   // URL에서 프로젝트 ID가 지정되어 있으면 해당 프로젝트로 전환
-  let projectId = project.value?.pk || projStore.initProjId
+  let projectId = projStore.currentProject
 
-  if (urlProjectId.value && urlProjectId.value !== projectId) {
-    // 프로젝트 전환 (query string 정리 건너뛰기)
-    await projSelect(urlProjectId.value, true)
-  } else {
-    // contractor 파라미터가 있으면 contractor 설정
-    if (route.params.contractorId) await fetchContractor(Number(route.params.contractorId))
-    else contStore.contractor = null
+  if (projectId) {
+    if (urlProjectId.value && urlProjectId.value !== projectId) {
+      // 프로젝트 전환 (query string 정리 건너뛰기)
+      await projSelect(urlProjectId.value, true)
+    } else {
+      // contractor 파라미터가 있으면 contractor 설정
+      if (route.params.contractorId) await fetchContractor(Number(route.params.contractorId))
+      else contStore.contractor = null
 
-    // URL에 프로젝트 파라미터가 없거나 같은 경우 일반 데이터 설정
-    await dataSetup(projectId)
+      // URL에 프로젝트 파라미터가 없거나 같은 경우 일반 데이터 설정
+      await dataSetup(projectId)
+    }
   }
-
   loading.value = false
 })
 </script>
@@ -298,7 +299,7 @@ onBeforeMount(async () => {
       <CCardBody class="pb-5">
         <ContNavigation :cont-on="!!contOn" :contractor="contractor?.pk" />
         <ContController :project="project || undefined" @search-contractor="searchContractor" />
-        <ContractorAlert v-if="contractor" :contractor="contractor" />
+        <ContractorAlert v-if="contractor" :contractor="contractor" clear-route="권리 의무 승계" />
 
         <SuccessionButton
           v-if="canContractUpdate && contractor"

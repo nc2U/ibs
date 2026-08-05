@@ -182,7 +182,8 @@ const isLoadingPaymentList = ref(false)
 
 onBeforeMount(async () => {
   await fetchProjectAccounts({ is_payment: true })
-  dataSetup(project.value || projStore.initProjId)
+  const projId = project.value || projStore.currentProject
+  if (projId) dataSetup(projId)
   loading.value = false
 })
 
