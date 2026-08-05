@@ -69,7 +69,7 @@ jobs:
       # setup and lint 에러가 없으면 빌드
       - name: Build the Source Code
         env:
-          NODE_ENV: production
+          NODE_ENV: development
           BUILD_TIMESTAMP: ${{ github.run_number }}_${{ github.sha }}
           BUILD_DIR: ../django/static/dist_${{ github.run_number }}_${{ github.sha }}
         run: |
@@ -339,7 +339,7 @@ jobs:
           echo "✅ Web rollout complete"
 
           echo "✅ All pods restarted successfully"
-            
+
       # Pod 롤아웃 완료 후 구 빌드 정리
       # ⚠️ 반드시 pod rollout 이후에 실행해야 함:
       #   구 Pod의 subPath bind mount가 삭제된 디렉터리를 가리키면 NFS stale handle → 500 발생
