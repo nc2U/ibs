@@ -69,7 +69,8 @@ jobs:
       # setup and lint 에러가 없으면 빌드
       - name: Build the Source Code
         env:
-          NODE_ENV: development
+          NODE_ENV: production
+          VITE_DROP_CONSOLE: false  # 콘솔 로그 제거 안 함
           BUILD_TIMESTAMP: ${{ github.run_number }}_${{ github.sha }}
           BUILD_DIR: ../django/static/dist_${{ github.run_number }}_${{ github.sha }}
         run: |

@@ -73,6 +73,7 @@ jobs:
       - name: Build the Source Code
         env:
           NODE_ENV: production
+          VITE_DROP_CONSOLE: true  # 콘솔 로그 제거
           BUILD_TIMESTAMP: ${{ github.run_number }}_${{ github.sha }}
           BUILD_DIR: ../django/static/dist_${{ github.run_number }}_${{ github.sha }}
         run: |
@@ -214,7 +215,7 @@ jobs:
             echo "  ✓ Main JS: $MAIN_JS"
             echo "  ✓ CSS files: $CSS_COUNT"
             echo "  ✓ Total assets: $ASSET_COUNT files"
-
+      
       
 
       # 원자적 배포 (Symlink Swap)
