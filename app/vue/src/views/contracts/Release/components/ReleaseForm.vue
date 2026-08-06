@@ -25,7 +25,7 @@ const form = reactive({
   pk: null as number | null,
   contractor: null as number | null,
   request_date: null as string | null,
-  release_type: '1' as '1' | '2',
+  release_type: '1' as '1' | '2' | '3',
   status: '1' as '1' | '2' | '3' | '4' | '9',
   refund_amount: null as number | null,
   refund_account_bank: '',
@@ -65,6 +65,8 @@ const statusOptions = computed(() => {
   }
   return options
 })
+
+const dateOfReceipt = computed(() => (form.release_type === '3' ? '해지통보일' : '해지신청일'))
 
 const onSubmit = (event: Event) => {
   if (canContractUpdate.value) {
@@ -127,9 +129,13 @@ watch([() => props.release, () => props.contractor], () => formDataSet(), { deep
 
         <CCol xs="6">
           <CRow>
-            <CFormLabel class="col-sm-4 col-form-label required"> 해지신청일</CFormLabel>
-            <CCol sm="8">
-              <DatePicker v-model="form.request_date" required placeholder="해지신청일" />
+            <CFormLabel class="col-sm-4 col-form-label required">해지유형</CFormLabel>
+            <CCol sm="8" class="text-left">
+              <CFormSelect v-model="form.release_type" required>
+                <option value="1">해지신청 (계약자)</option>
+                <option value="2">부적격확인 (계약자)</option>
+                <option value="3">해지통보 (공급자)</option>
+              </CFormSelect>
             </CCol>
           </CRow>
         </CCol>
@@ -138,12 +144,11 @@ watch([() => props.release, () => props.contractor], () => formDataSet(), { deep
       <CRow class="mb-2">
         <CCol xs="6">
           <CRow>
-            <CFormLabel class="col-sm-4 col-form-label required">해지유형</CFormLabel>
-            <CCol sm="8" class="text-left">
-              <CFormSelect v-model="form.release_type" required>
-                <option value="1">해지신청</option>
-                <option value="2">부적격확인</option>
-              </CFormSelect>
+            <CFormLabel class="col-sm-4 col-form-label required">
+              {{ dateOfReceipt }}
+            </CFormLabel>
+            <CCol sm="8">
+              <DatePicker v-model="form.request_date" required :placeholder="dateOfReceipt" />
             </CCol>
           </CRow>
         </CCol>

@@ -773,6 +773,32 @@ class ContractorReleaseSerializer(serializers.ModelSerializer):
                   'refund_completion_date', 'completion_date', 'note', 'updator')
 
     @transaction.atomic
+    def create(self, validated_data):
+        """
+        계약자 해지 정보 생성
+
+        생성 시 바로 해지 최종 완결 처리(status == '4')되는 경우 ContractorReleaseService에 위임
+        """
+        instance = super().create(validated_data)
+
+        # 생성과 동시에 해지확정(status == '4')으로 등록되는 경우
+        if instance.status == '4':
+            completion_date = self.initial_data.get('completion_date')
+
+            # Service로 해지 처리 위임
+            result = ContractorReleaseService.process_release_completion(
+                contractor_release=instance,
+                completion_date=completion_date
+            )
+
+            # 처리 결과 로깅
+            if not all(result.values()):
+                logger = logging.getLogger(__name__)
+                logger.warning(f"ContractorRelease {instance.pk} 생성 시 해지 절차 일부 실패: {result}")
+
+        return instance
+
+    @transaction.atomic
     def update(self, instance, validated_data):
         """
         계약자 해지 정보 업데이트

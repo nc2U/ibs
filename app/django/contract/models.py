@@ -688,7 +688,7 @@ class ContractorRelease(models.Model):
     project = models.ForeignKey('project.Project', on_delete=models.CASCADE, verbose_name='프로젝트')
     contractor = models.OneToOneField('Contractor', on_delete=models.CASCADE, verbose_name='계약자 정보')
     request_date = models.DateField('해지신청일')
-    RELEASE_TYPE_CHOICES = (('1', '해지신청'), ('2', '부적격확인'))
+    RELEASE_TYPE_CHOICES = (('1', '해지신청 (계약자)'), ('2', '부적격확인 (계약자)'), ('3', '해지통보 (공급자)'))
     release_type = models.CharField('해지 유형', choices=RELEASE_TYPE_CHOICES, max_length=1, default='1')
     STATUS_CHOICES = (('1', '접수등록'), ('2', '해지승인대기'), ('3', '변경인가대기'), ('4', '해지확정'), ('9', '신청취소'))
     status = models.CharField('상태', choices=STATUS_CHOICES, max_length=1, default='1')
