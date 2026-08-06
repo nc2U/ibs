@@ -102,7 +102,7 @@ onMounted(() => {
       <!-- 업무 목록 테이블 -->
       <template v-else>
         <v-table density="compact" hover>
-          <thead>
+          <thead class="bg-more-light border-top border-bottom">
             <tr>
               <th class="text-left">프로젝트</th>
               <th class="text-left">제목</th>
@@ -112,7 +112,7 @@ onMounted(() => {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="issue in myIssues" :key="issue.pk">
+            <tr v-for="issue in myIssues" :key="issue.pk" class="border-bottom">
               <td>
                 <div class="text-truncate" style="max-width: 150px">
                   <router-link :to="{ name: '(업무)', params: { projId: issue.project?.slug } }">

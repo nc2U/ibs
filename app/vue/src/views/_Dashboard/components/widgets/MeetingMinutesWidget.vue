@@ -36,7 +36,7 @@ onBeforeMount(() => {
 
       <template v-else>
         <v-table density="compact" hover>
-          <thead>
+          <thead class="bg-more-light border-top border-bottom">
             <tr>
               <th class="text-left project-col">프로젝트</th>
               <th class="text-left">제목</th>
@@ -44,7 +44,7 @@ onBeforeMount(() => {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="item in meetingList.slice(0, 5)" :key="item.pk ?? 0">
+            <tr v-for="item in meetingList.slice(0, 5)" :key="item.pk ?? 0" class="border-bottom">
               <td>
                 <router-link
                   v-if="item.project_desc"

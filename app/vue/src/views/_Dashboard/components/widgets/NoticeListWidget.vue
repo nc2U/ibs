@@ -33,7 +33,7 @@ onBeforeMount(() => {
 
       <v-table v-else density="compact" hover>
         <thead>
-          <tr>
+          <tr class="bg-more-light border-top border-bottom">
             <th class="text-left" style="width: 190px">프로젝트</th>
             <th class="text-left">제목</th>
             <th class="text-center" style="width: 100px">날짜</th>
@@ -41,7 +41,7 @@ onBeforeMount(() => {
         </thead>
         <tbody>
           <template v-for="item in newsList.slice(0, 5)" :key="item.pk ?? 0">
-            <tr :class="item.is_important ? 'accent' : ''">
+            <tr :class="item.is_important ? 'accent' : ''" class="border-bottom">
               <td class="truncate">
                 <router-link
                   v-if="item.project"

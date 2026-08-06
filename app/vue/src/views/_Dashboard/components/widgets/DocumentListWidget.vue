@@ -53,7 +53,7 @@ onBeforeMount(() => {
       <v-progress-linear v-if="loading" indeterminate color="primary" />
 
       <v-table v-else density="compact" hover>
-        <thead>
+        <thead class="bg-more-light border-top border-bottom">
           <tr>
             <th class="text-left" style="width: 100px">분류</th>
             <th class="text-left">문서 제목</th>
@@ -62,7 +62,7 @@ onBeforeMount(() => {
         </thead>
         <tbody>
           <template v-for="item in currentDocsList" :key="item.pk ?? 0">
-            <tr>
+            <tr class="border-bottom">
               <td class="truncate">
                 <v-chip
                   size="x-small"

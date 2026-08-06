@@ -43,7 +43,7 @@ const handleClose = () => {
           v-if="refreshable"
           icon
           size="x-small"
-          variant="text"
+          variant="tonal"
           :loading="loading"
           @click.stop="handleRefresh"
         >
@@ -53,12 +53,12 @@ const handleClose = () => {
           v-if="configurable"
           icon
           size="x-small"
-          variant="text"
+          variant="tonal"
           @click.stop="emit('configure')"
         >
           <v-icon icon="mdi-cog" color="grey" size="16" />
         </v-btn>
-        <v-btn icon size="x-small" variant="text" @click.stop="handleClose">
+        <v-btn icon size="x-small" variant="tonal" @click.stop="handleClose">
           <v-icon icon="mdi-close" color="grey" size="16" />
         </v-btn>
       </div>
