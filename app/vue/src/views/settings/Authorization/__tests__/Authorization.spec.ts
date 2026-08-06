@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { mount, shallowMount } from '@vue/test-utils'
+import { describe, it } from 'vitest'
+import { mount } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
 import { createVuetify } from 'vuetify'
 import CoreuiVue from '@coreui/vue'

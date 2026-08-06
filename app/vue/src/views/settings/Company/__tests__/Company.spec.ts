@@ -1,10 +1,10 @@
-import { describe, it, expect, vi } from 'vitest'
-import { shallowMount, mount, flushPromises } from '@vue/test-utils'
+import { describe, expect, it } from 'vitest'
+import { flushPromises, mount } from '@vue/test-utils'
+import { createRouter, createWebHistory } from 'vue-router'
 import { createTestingPinia } from '@pinia/testing'
 import { createVuetify } from 'vuetify'
 import { vMaska } from 'maska/vue'
 import CoreuiVue from '@coreui/vue'
-import { createRouter, createWebHistory } from 'vue-router'
 
 import Company from '../Index.vue'
 import CompanyDetail from '../components/CompanyDetail.vue'
@@ -28,7 +28,7 @@ describe('Company app test', () => {
       global: {
         plugins: [createTestingPinia(), vuetify, CoreuiVue, router],
         stubs: {
-          CompanySettingsAuthGuard: {
+          SettingsCompanyGuard: {
             template: '<div><slot /></div>',
           },
         },
