@@ -200,7 +200,7 @@ jobs:
 
             cd helm
             echo "Running scripts/dev-deploy.sh..."
-            IMAGE_TAG="${{ needs.build.outputs.image_tag }}" sh scripts/dev-deploy.sh
+            IMAGE_TAG="${{ needs.build.outputs.image_tag || 'dev-latest' }}" sh scripts/dev-deploy.sh
 
       - name: Wait for rollout completion
         run: |
