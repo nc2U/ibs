@@ -34,9 +34,9 @@ jobs:
             echo "SHA_TAG=dev-${{ github.sha }}" >> $GITHUB_ENV
             echo "DEPLOY_SCRIPT=dev-deploy.sh" >> $GITHUB_ENV
           
-            # Dev 환경: requirements.txt 에서 버전 지정을 제거하여 최신 패키지 설치 유도 (extras 대괄호 보존)
-            echo "🔧 Stripping version pins from requirements.txt for dev build..."
-            sed -E 's/[<>=!~]=?.*//' ./deploy/docker/python/requirements.txt > ./deploy/docker/python/requirements.txt.tmp
+            # Dev 환경: requirements.txt 에서 버전 지정을 제거하되, Django만 6.0.7로 고정 (extras 대괄호 보존)
+            echo "🔧 Stripping version pins from requirements.txt for dev build (keeping Django 6.0.7)..."
+            sed -E 's/[<>=!~]=?.*//' ./deploy/docker/python/requirements.txt | sed -E 's/^Django$/Django==6.0.7/' > ./deploy/docker/python/requirements.txt.tmp
             mv ./deploy/docker/python/requirements.txt.tmp ./deploy/docker/python/requirements.txt
           fi
 

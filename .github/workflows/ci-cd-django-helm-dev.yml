@@ -66,10 +66,10 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Strip version pins for dev build
+      - name: Strip version pins for dev build (Keep Django at 6.0.7)
         run: |
-          echo "🔧 Stripping version pins from requirements.txt for dev build..."
-          sed -E 's/[<>=!~]=?.*//' ./deploy/docker/python/requirements.txt > ./deploy/docker/python/requirements.txt.tmp
+          echo "🔧 Stripping version pins from requirements.txt for dev build (keeping Django 6.0.7)..."
+          sed -E 's/[<>=!~]=?.*//' ./deploy/docker/python/requirements.txt | sed -E 's/^Django$/Django==6.0.7/' > ./deploy/docker/python/requirements.txt.tmp
           mv ./deploy/docker/python/requirements.txt.tmp ./deploy/docker/python/requirements.txt
 
       - name: Log in to Docker Hub
