@@ -81,33 +81,33 @@ const AppSidebarNav = defineComponent({
     const isFinancial = computed(() => account.isFinancial)
 
     const { canGlobal, PERM } = usePerms()
-    const readDocs = computed(() => canGlobal(PERM.DOCS_READ))
-    const readHrWork = computed(() => canGlobal(PERM.HR_WORK_READ))
-    const readCont = computed(() => canGlobal(PERM.CONTRACT_READ))
-    const readPay = computed(() => canGlobal(PERM.PAYMENT_READ))
-    const readNoti = computed(() => canGlobal(PERM.NOTICE_READ))
-    const readLedger = computed(() => canGlobal(PERM.LEDGER_READ))
-    const manPjt = computed(() => canGlobal(PERM.PROJECT_CREATE) && canGlobal(PERM.PROJECT_UPDATE))
-    const manCompany = computed(() => isStaff.value && manPjt.value)
-    const readAuth = computed(() => isStaff.value && canGlobal(PERM.PROJECT_MEMBER))
+    const docsRead = computed(() => canGlobal(PERM.DOCS_READ))
+    const hrWorkRead = computed(() => canGlobal(PERM.HR_WORK_READ))
+    const contractRead = computed(() => canGlobal(PERM.CONTRACT_READ))
+    const paymentRead = computed(() => canGlobal(PERM.PAYMENT_READ))
+    const noticeRead = computed(() => canGlobal(PERM.NOTICE_READ))
+    const ledgerRead = computed(() => canGlobal(PERM.LEDGER_READ))
+    const pjtMan = computed(() => canGlobal(PERM.PROJECT_CREATE) && canGlobal(PERM.PROJECT_UPDATE))
+    const comManage = computed(() => isStaff.value && pjtMan.value)
+    const authManage = computed(() => isStaff.value && canGlobal(PERM.PROJECT_MEMBER))
 
     const predicates = computed(() => {
       // 권한 키별 접근 제어 매핑
       const authMap: Record<string, boolean> = {
-        isComMenu: isStaff.value && (isFinancial.value || readDocs.value || readHrWork.value),
+        isComMenu: isStaff.value && (isFinancial.value || docsRead.value || hrWorkRead.value),
         isFinancial: isFinancial.value,
-        isComDocs: isStaff.value && readDocs.value,
-        isComHrWork: isStaff.value && readHrWork.value,
+        isComDocs: isStaff.value && docsRead.value,
+        isComHrWork: isStaff.value && hrWorkRead.value,
 
-        isContract: readCont.value,
-        isPayment: readPay.value,
-        isNotice: readNoti.value,
-        isLedger: readLedger.value,
-        isDocument: readDocs.value,
+        isContract: contractRead.value,
+        isPayment: paymentRead.value,
+        isNotice: noticeRead.value,
+        isLedger: ledgerRead.value,
+        isDocument: docsRead.value,
 
-        isSetMenu: manCompany.value || readAuth.value,
-        isCompany: manCompany.value,
-        isAuthor: readAuth.value,
+        isSetMenu: comManage.value || authManage.value,
+        isCompany: comManage.value,
+        isAuthor: authManage.value,
       }
 
       return [

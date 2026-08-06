@@ -7,7 +7,7 @@ import { useAccount, type UserByAdmin } from '@/store/pinia/account'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
-import AuthManageAuthGuard from '@/components/AuthGuard/AuthManageAuthGuard.vue'
+import SettingsAuthGuard from '@/components/AuthGuard/SettingsAuthGuard.vue'
 import UserSelect from './components/UserSelect.vue'
 import SideBarManageAuth from './components/SideBarManageAuth.vue'
 import AddUserFormModal from './components/AddUserFormModal.vue'
@@ -59,7 +59,7 @@ onBeforeMount(async () => {
 </script>
 
 <template>
-  <AuthManageAuthGuard>
+  <SettingsAuthGuard>
     <Loading v-model:active="loading" />
     <ContentHeader :page-title="pageTitle" :nav-menu="navMenu" selector="CompanySelect" />
     <ContentBody>
@@ -70,12 +70,10 @@ onBeforeMount(async () => {
           @add-user-modal="refFormModal.callModal()"
         />
 
-        <SideBarManageAuth
-          :user="user as User"
-        />
+        <SideBarManageAuth :user="user as User" />
       </CCardBody>
 
       <AddUserFormModal ref="refFormModal" @on-submit="onSubmit" />
     </ContentBody>
-  </AuthManageAuthGuard>
+  </SettingsAuthGuard>
 </template>
