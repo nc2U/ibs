@@ -1,3 +1,5 @@
+import logging
+
 from django.db.models import F, Q
 from django.http import FileResponse
 from django.utils import timezone
@@ -7,9 +9,12 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+logger = logging.getLogger(__name__)
+
 from apiV1.permissions.auth_perms import permissions, IsProjectStaffOrReadOnly, IsWorkManagerReadOnly, IsStaffOrReadOnly
 from apiV1.permissions.work_perms import ProjectPermission, DocumentPermission
 from company.models import Company
+from work.models import IssueProject
 from docs.models import LetterSequence, Category, LawsuitCase, Document, Link, File, Image, OfficialLetter
 from docs.utils import generate_official_letter_pdf
 from ..pagination import PageNumberPaginationOneHundred, PageNumberPaginationThreeThousand
@@ -82,6 +87,15 @@ class LawSuitCaseViewSet(viewsets.ModelViewSet):
         }
         return mapping.get(self.action, None)
 
+    def get_queryset(self):
+        user = self.request.user
+        queryset = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return queryset
+        # 사용자가 멤버로 속한 프로젝트의 소송 데이터만 반환
+        accessible_projects = IssueProject.objects.filter(members=user)
+        return queryset.filter(issue_project__in=accessible_projects)
+
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
 
@@ -89,9 +103,25 @@ class LawSuitCaseViewSet(viewsets.ModelViewSet):
         serializer.save(updator=self.request.user)
 
 
-class AllLawSuitCaseViewSet(LawSuitCaseViewSet):
+class AllLawSuitCaseViewSet(viewsets.ReadOnlyModelViewSet):
+    """문서 등록/수정 시 소송 선택 드롭다운 전용 ReadOnly 뷰셋"""
+    queryset = LawsuitCase.objects.all()
     serializer_class = SimpleLawSuitCaseSerializer
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, ProjectPermission)
     pagination_class = PageNumberPaginationThreeThousand
+    filterset_class = LawSuitCaseFilterSet
+
+    @property
+    def required_permission(self):
+        return 'docs.read'
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return queryset
+        accessible_projects = IssueProject.objects.filter(members=user)
+        return queryset.filter(issue_project__in=accessible_projects)
 
 
 class DocumentFilterSet(FilterSet):
@@ -142,7 +172,9 @@ class DocumentViewSet(viewsets.ModelViewSet):
         queryset = super().get_queryset()
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset
-        return queryset
+        return queryset.filter(
+            Q(is_secret=False) | Q(creator=user)
+        ).filter(is_blind=False)
 
     @action(detail=True, methods=['post'], url_path='hit')
     def hit(self, request, *args, **kwargs):
@@ -156,6 +188,12 @@ class DocumentViewSet(viewsets.ModelViewSet):
         origin_pk = kwargs.get('pk')
         issue_project = request.data.get('issue_project') or request.data.get('project')
         doc_type = request.data.get('doc_type')
+
+        if not issue_project:
+            return Response(
+                {'detail': 'issue_project는 필수입니다.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         try:
             org_instance = Document.objects.select_related(
@@ -203,7 +241,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         # (C) 기밀 문서 삭제 검증은 DocumentPermission 클래스에서 자동 통제됨
         instance.soft_delete()
-        return Response({'status': 'soft-deleted'}, status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class LinkViewSet(viewsets.ModelViewSet):
@@ -313,11 +351,13 @@ class DocsInTrashViewSet(DocumentViewSet):
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
+        user = request.user
+        is_admin = user.is_superuser or getattr(user, 'work_manager', False)
 
-        if instance.is_secret and not self._is_owner_or_admin(request.user, instance):
+        if instance.is_secret and not is_admin and instance.creator != user:
             return Response(
                 {'detail': 'You do not have permission to delete this secret document.'},
-                status=status.HTTP_403_FORBIDDEN
+                status=status.HTTP_403_FORBIDDEN,
             )
 
         instance.delete()
@@ -381,7 +421,8 @@ class OfficialLetterViewSet(viewsets.ModelViewSet):
         letter = self.get_object()
         try:
             pdf_file = generate_official_letter_pdf(letter)
-        except Exception:
+        except Exception as e:
+            logger.exception('PDF 생성 실패 (letter pk=%s): %s', letter.pk, e)
             return Response(
                 {'error': 'PDF 생성에 실패했습니다.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -418,14 +459,16 @@ class OfficialLetterViewSet(viewsets.ModelViewSet):
             company = Company.objects.get(pk=company_id)
             current_year = timezone.now().year
 
-            sequence = LetterSequence.objects.filter(
-                company=company,
-                year=current_year
-            ).first()
+            # select_for_update()로 동시 요청 시 Race Condition(중복 채번) 방지
+            from django.db import transaction
+            with transaction.atomic():
+                sequence = LetterSequence.objects.select_for_update().filter(
+                    company=company,
+                    year=current_year
+                ).first()
+                next_seq = (sequence.last_sequence + 1) if sequence else 1
 
-            next_seq = (sequence.last_sequence + 1) if sequence else 1
             next_number = f'{current_year}-{next_seq:03d}'
-
             return Response({'next_document_number': next_number})
         except Company.DoesNotExist:
             return Response({'error': '회사를 찾을 수 없습니다.'},

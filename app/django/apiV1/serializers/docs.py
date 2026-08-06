@@ -53,9 +53,9 @@ class LawSuitCaseSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_links(obj):
+        """뷰셋의 prefetch_related 캐시를 재사용 (중복 쿼리 방지)"""
         links = []
-        documents = obj.document_set.all().select_related('category').prefetch_related('links').order_by('id')
-        for doc in documents:
+        for doc in obj.document_set.all().order_by('id'):
             category_data = {
                 'color': doc.category.color if doc.category else '',
                 'name': doc.category.name if doc.category else ''
@@ -70,9 +70,9 @@ class LawSuitCaseSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_files(obj):
+        """뷰셋의 prefetch_related 캐시를 재사용 (중복 쿼리 방지)"""
         files = []
-        documents = obj.document_set.all().select_related('category').prefetch_related('files').order_by('id')
-        for doc in documents:
+        for doc in obj.document_set.all().order_by('id'):
             category_data = {
                 'color': doc.category.color if doc.category else '',
                 'name': doc.category.name if doc.category else ''
@@ -134,10 +134,10 @@ class DocumentSerializer(serializers.ModelSerializer):
     cate_name = serializers.SlugField(source='category', read_only=True)
     cate_color = serializers.SerializerMethodField(read_only=True)
     lawsuit_name = serializers.SlugField(source='lawsuit', read_only=True)
-    title = serializers.SerializerMethodField()
+    title = serializers.CharField()
+    description = serializers.CharField(allow_blank=True, default='')
     links = serializers.SerializerMethodField(read_only=True)
     files = serializers.SerializerMethodField(read_only=True)
-    description = serializers.SerializerMethodField()
     creator = SimpleUserSerializer(read_only=True)
     updator = SimpleUserSerializer(read_only=True)
     scrape = serializers.SerializerMethodField(read_only=True)
@@ -172,6 +172,17 @@ class DocumentSerializer(serializers.ModelSerializer):
         # 3. 일반 글인 경우 모든 유저 노출
         return True
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        # 블라인드/비밀 문서의 경우 제목과 본문을 마스킹
+        if not self._is_visible_to_user(instance):
+            if instance.is_blind:
+                data['title'] = '[HIDDEN DOCUMENT]'
+                data['description'] = '이 문서는 관리자에 의해 숨김처리 되었습니다.'
+            else:
+                data['description'] = '비밀 문서입니다.'
+        return data
+
     @staticmethod
     def get_proj_type(obj):
         return obj.issue_project.type if obj.issue_project else None
@@ -193,20 +204,6 @@ class DocumentSerializer(serializers.ModelSerializer):
         if not user or not user.is_authenticated:
             return False
         return obj.docscrape_set.filter(user=user).exists()
-
-    def get_title(self, obj):
-        user = self.context['request'].user
-        # 블라인드글이고 관리자가 아닌 경우 제목을 마스킹 처리
-        if obj.is_blind and not (user.is_superuser or getattr(user, 'work_manager', False)):
-            return "[HIDDEN DOCUMENT]"
-        return obj.title
-
-    def get_description(self, obj):
-        if not self._is_visible_to_user(obj):
-            if obj.is_blind:
-                return "이 문서는 관리자에 의해 숨김처리 되었습니다."
-            return "비밀 문서입니다."
-        return obj.description
 
     def get_links(self, obj):
         if not self._is_visible_to_user(obj):
@@ -239,27 +236,22 @@ class DocumentSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         user = request.user
 
-        # title과 description은 SerializerMethodField라서 validated_data에서 제외되므로 직접 바인딩
-        if 'title' in self.initial_data:
-            validated_data['title'] = self.initial_data.get('title')
-        if 'description' in self.initial_data:
-            validated_data['description'] = self.initial_data.get('description')
         if 'issue_project' in self.initial_data:
             validated_data['issue_project_id'] = self.initial_data.get('issue_project')
 
         validated_data['ip'] = request.META.get('REMOTE_ADDR')
         validated_data['device'] = request.META.get('HTTP_USER_AGENT')
         if user and user.is_authenticated:
-            validated_data['creator'] = user  # creator 안전 바인딩
+            validated_data['creator'] = user
 
-        docs = super().create(validated_data)  # 기본 create 처리 (save 포함)
+        docs = super().create(validated_data)
 
-        new_links = self.initial_data.getlist('newLinks', [])  # Links 처리
-        if new_links:
+        # multipart/form-data 요청(QueryDict)인 경우에만 링크 처리
+        if hasattr(self.initial_data, 'getlist'):
+            new_links = self.initial_data.getlist('newLinks', [])
             for link in new_links:
                 Link.objects.create(docs=docs, link=validate_link(link))
 
-        # 파일 처리를 FileService로 위임
         FileService.manage_files(docs, request.data, user, File, related_name='docs')
         return docs
 
@@ -268,11 +260,6 @@ class DocumentSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         user = request.user
 
-        # title과 description은 SerializerMethodField라서 validated_data에서 제외되므로 직접 바인딩
-        if 'title' in self.initial_data:
-            validated_data['title'] = self.initial_data.get('title')
-        if 'description' in self.initial_data:
-            validated_data['description'] = self.initial_data.get('description')
         if 'issue_project' in self.initial_data:
             validated_data['issue_project_id'] = self.initial_data.get('issue_project')
 
@@ -282,13 +269,14 @@ class DocumentSerializer(serializers.ModelSerializer):
         if hasattr(request, 'user') and request.user:
             instance.updator = request.user
 
-        instance = super().update(instance, validated_data)  # 기본 필드 업데이트 수행
+        instance = super().update(instance, validated_data)
 
-        try:
+        # multipart/form-data 요청(QueryDict)인 경우에만 링크/파일 처리
+        if hasattr(self.initial_data, 'getlist'):
             # --- Links 처리 ---
             old_links = self.initial_data.getlist('links', [])
-            if old_links:
-                for json_link in old_links:
+            for json_link in old_links:
+                try:
                     link = json.loads(json_link)
                     link_object = Link.objects.get(pk=link.get('pk'))
                     if link.get('del'):
@@ -296,16 +284,14 @@ class DocumentSerializer(serializers.ModelSerializer):
                     else:
                         link_object.link = validate_link(link.get('link'))
                         link_object.save()
+                except (json.JSONDecodeError, Link.DoesNotExist):
+                    continue
 
             new_links = self.initial_data.getlist('newLinks', [])
-            if new_links:
-                for link in new_links:
-                    Link.objects.create(docs=instance, link=validate_link(link))
+            for link in new_links:
+                Link.objects.create(docs=instance, link=validate_link(link))
 
-            # 파일 처리를 FileService로 위임
             FileService.manage_files(instance, request.data, user, File, related_name='docs')
-        except AttributeError:
-            pass
 
         return instance
 
@@ -333,7 +319,7 @@ class ImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Image
         fields = ('pk', 'docs', 'image', 'image_name', 'image_type', 'image_size', 'created')
-        readonly_fields = ('image_name', 'image_type', 'image_size', 'created')
+        read_only_fields = ('image_name', 'image_type', 'image_size', 'created')
 
 
 class DocumentInTrashSerializer(serializers.ModelSerializer):

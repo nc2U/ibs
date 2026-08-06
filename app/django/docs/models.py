@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from django.conf import settings
 from django.db import models
@@ -39,8 +39,8 @@ class BaseModel(models.Model):
 
     def soft_delete(self):
         """Mark the instance as deleted."""
-        self.deleted = datetime.now()
-        self.save()
+        self.deleted = timezone.now()
+        self.save(update_fields=['deleted'])
 
     def restore(self):
         """Restore a soft-deleted instance."""
@@ -81,10 +81,9 @@ class Document(BaseModel):
     def __str__(self):
         return self.title
 
+    @property
     def is_new(self):
-        today = datetime.today().strftime('%Y-%m-%d %H:%M')
-        new_period = self.created + timedelta(days=3)
-        return today < new_period.strftime('%Y-%m-%d %H:%M')
+        return timezone.now() < self.created + timedelta(days=3)
 
     class Meta:
         ordering = ['-is_pinned', '-created']
