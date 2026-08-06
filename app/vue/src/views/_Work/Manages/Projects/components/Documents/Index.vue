@@ -7,7 +7,6 @@ import type { Docs } from '@/store/types/docs.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import { type DocsFilter, type SuitCaseFilter, useDocs } from '@/store/pinia/docs'
 import Loading from '@/components/Loading/Index.vue'
-import MultiSelect from '@/components/MultiSelect/index.vue'
 import DocsList from '@/views/_Work/Manages/Documents/components/DocsList.vue'
 import DocsDetail from '@/views/_Work/Manages/Documents/components/DocsDetail.vue'
 import DocsForm from '@/views/_Work/Manages/Documents/components/DocsForm.vue'
@@ -96,26 +95,40 @@ const docsHit = async (pk: number) => {
   }
 }
 
+const projId = computed(() => route.params.projId)
+
+watch(
+  () => projId.value,
+  async nVal => {
+    if (nVal) {
+      await dataSetup(nVal as string, docId.value)
+    }
+  },
+)
+
+const docId = computed(() => route.params.docId)
+
+watch(
+  () => docId.value,
+  nVal => {
+    if (nVal) dataSetup(projId.value as string, nVal)
+  },
+)
+
 const docsDelConfirm = async () => {
   RefDelDocs.value.close()
   const docId = docs.value?.pk
-  const projId = Number(route.params.projId)
-  if (docId) await deleteDocs(docId, projId)
+  if (docId && projId) await deleteDocs(docId, Number(projId.value))
 
   await router.replace({ name: '(문서)' })
 }
 
-const dataSetup = async (docId?: string | string[]) => {
-  if (route.params.projId) {
-    const projId = route.params.projId as string
-    await workStore.fetchIssueProject(projId)
-  }
+const dataSetup = async (projId: string, docId?: string | string[]) => {
+  if (projId) await workStore.fetchIssueProject(projId as string)
 
-  if (currentProject.value?.type === '3') {
-    typeNumber.value = 3
-  } else if (typeNumber.value === 3) {
-    typeNumber.value = 1
-  }
+  if (currentProject.value?.type === '3') typeNumber.value = 3
+  else if (typeNumber.value === 3) typeNumber.value = 1
+
   docsFilter.value.doc_type = typeNumber.value
 
   docsFilter.value.issue_project = (currentProject.value as IssueProject)?.pk
@@ -125,17 +138,10 @@ const dataSetup = async (docId?: string | string[]) => {
   if (docId) await fetchDocs(Number(docId))
 }
 
-watch(
-  () => route.params?.docId,
-  nVal => {
-    if (nVal) dataSetup(nVal)
-  },
-)
-
 const loading = ref<boolean>(true)
 onBeforeMount(async () => {
   if (route.query.viewForm) viewForm.value = true
-  await dataSetup(route.params?.docId)
+  await dataSetup(projId.value as string, docId.value)
   loading.value = false
 })
 </script>
@@ -202,6 +208,7 @@ onBeforeMount(async () => {
         </CRow>
 
         <DocsForm
+          ref="refDocsForm"
           v-if="viewForm"
           :project-pk="currentProject?.pk"
           :type-number="typeNumber"
