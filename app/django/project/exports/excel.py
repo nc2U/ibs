@@ -123,7 +123,7 @@ class ExportSites(ExcelExportMixin, AdvancedExcelMixin):
         rows = obj_list.values_list(*params)
 
         # Turn off some of the warnings:
-        worksheet.ignore_errors({'number_stored_as_text': 'C:D'})
+        worksheet.ignore_errors({'number_stored_as_text': 'C:C'})
 
         for row in rows:
             row_num += 1
@@ -176,7 +176,7 @@ class ExportSites(ExcelExportMixin, AdvancedExcelMixin):
                 sum_format.set_num_format(43)
 
             if col_num == 0:
-                worksheet.merge_range(row_num, 0, row_num, 1, '합계', sum_format)
+                worksheet.merge_range(row_num, 0, row_num, 1, '합계', formats['header'])
             elif col_num in (2, 3):
                 worksheet.write(row_num, col_num, '', sum_format)
             elif col_num == 4:
@@ -324,7 +324,7 @@ class ExportSitesByOwner(ExcelExportMixin, AdvancedExcelMixin):
                 rows.append(row)
 
         # Turn off some of the warnings:
-        worksheet.ignore_errors({'number_stored_as_text': 'D:E'})
+        worksheet.ignore_errors({'number_stored_as_text': 'E:E'})
 
         for row in rows:
             row_num += 1
@@ -431,7 +431,7 @@ class ExportSitesContracts(ExcelExportMixin, AdvancedExcelMixin):
         ) if search else obj_list
         # --------------------- get_queryset finish --------------------- #
 
-        rows_cnt = 18
+        rows_cnt = 19
 
         # 1. Title
         row_num = 0
@@ -454,16 +454,17 @@ class ExportSitesContracts(ExcelExportMixin, AdvancedExcelMixin):
                       ['총 계약면적', 'contract_area', 10],
                       ['', '', 10],
                       ['총 매매대금', 'total_price', 16],
-                      ['계약금1', 'down_pay1', 13],
+                      ['평당가격', '', 14],
+                      ['계약금1', 'down_pay1', 15],
                       ['지급일', 'down_pay1_date', 13],
                       ['지급여부', 'down_pay1_is_paid', 9],
-                      ['계약금2', 'down_pay2', 13],
+                      ['계약금2', 'down_pay2', 15],
                       ['지급일', 'down_pay2_date', 13],
-                      ['중도금1', 'inter_pay1', 13],
+                      ['중도금1', 'inter_pay1', 15],
                       ['지급일', 'inter_pay1_date', 13],
-                      ['중도금2', 'inter_pay2', 13],
+                      ['중도금2', 'inter_pay2', 15],
                       ['지급일', 'inter_pay2_date', 13],
-                      ['잔금', 'remain_pay', 15],
+                      ['잔금', 'remain_pay', 16],
                       ['지급일', 'remain_pay_date', 13],
                       ['지급여부', 'remain_pay_is_paid', 9],
                       ['비고', 'note', 30]]
@@ -478,7 +479,7 @@ class ExportSitesContracts(ExcelExportMixin, AdvancedExcelMixin):
             widths.append(src[2])  # 10
 
         # Adjust the column width.
-        for i, cw in enumerate(widths):  # 각 컬럼 넙이 세팅
+        for i, cw in enumerate(widths):  # 각 컬럼 넓이 세팅
             worksheet.set_column(i, i, cw)
 
         # Write header
@@ -523,7 +524,7 @@ class ExportSitesContracts(ExcelExportMixin, AdvancedExcelMixin):
                     body_format['align'] = 'left'
                 else:
                     body_format['align'] = 'center'
-                if col_num in (2, 7, 10, 12, 14, 16):
+                if col_num in (2, 8, 11, 13, 15, 17):
                     body_format['num_format'] = 'yyyy-mm-dd'
                 elif col_num in (3, 4):
                     body_format['num_format'] = 43
@@ -534,18 +535,23 @@ class ExportSitesContracts(ExcelExportMixin, AdvancedExcelMixin):
                 if col_num == 0:
                     worksheet.write(row_num, col_num, self.get_sort(row[col_num]), bf)
                 elif col_num == 4:
-                    worksheet.write(row_num, col_num, float(row[col_num - 1]) * 0.3025, bf)
+                    worksheet.write(row_num, col_num, float(row[col_num - 1] or 0) * 0.3025, bf)
+                elif col_num == 6:  # 평당가격 = total_price / (contract_area * 0.3025)
+                    cont_area = float(row[3] or 0)
+                    total_price = float(row[4] or 0)
+                    py_price = total_price / (cont_area * 0.3025) if cont_area else 0
+                    worksheet.write(row_num, col_num, py_price, bf)
                 else:
-                    if col_num < 5:
+                    if col_num < 6:
                         worksheet.write(row_num, col_num, self.get_row_content(row[col_num]), bf)
                     else:
-                        worksheet.write(row_num, col_num, self.get_row_content(row[col_num - 1]), bf)
+                        worksheet.write(row_num, col_num, self.get_row_content(row[col_num - 2]), bf)
 
         row_num += 1
         worksheet.set_row(row_num, 23)
 
-        sum_cont_area = sum([a[3] for a in rows])
-        sum_cont_price = sum([a[4] for a in rows])
+        sum_cont_area = sum([a[3] or 0 for a in rows])
+        sum_cont_price = sum([a[4] or 0 for a in rows])
         sum_cont_down1 = sum([a[5] or 0 for a in rows])
         sum_cont_down2 = sum([a[8] or 0 for a in rows])
         sum_cont_inter1 = sum([a[10] or 0 for a in rows])
@@ -561,7 +567,7 @@ class ExportSitesContracts(ExcelExportMixin, AdvancedExcelMixin):
             sum_format.set_bg_color('#eeeeee')
 
             if col_num == 0:
-                worksheet.merge_range(row_num, 0, row_num, 1, '합계', sum_format)
+                worksheet.merge_range(row_num, 0, row_num, 1, '합계', formats['header'])
             elif col_num == 3:
                 sum_format.set_num_format(43)
                 worksheet.write(row_num, col_num, sum_cont_area, sum_format)
@@ -571,18 +577,23 @@ class ExportSitesContracts(ExcelExportMixin, AdvancedExcelMixin):
             elif col_num == 5:
                 sum_format.set_num_format(41)
                 worksheet.write(row_num, col_num, sum_cont_price, sum_format)
-            elif col_num == 6:
+            elif col_num == 6:  # 평당 평균 단가 합계
+                py_avg_price = float(sum_cont_price) / (float(sum_cont_area) * 0.3025) if sum_cont_area else 0
+                sum_format.set_num_format(41)
+                worksheet.write(row_num, col_num, py_avg_price, sum_format)
+            elif col_num == 7:
                 worksheet.write(row_num, col_num, sum_cont_down1, sum_format)
-            elif col_num == 9:
+            elif col_num == 10:
                 worksheet.write(row_num, col_num, sum_cont_down2, sum_format)
-            elif col_num == 11:
+            elif col_num == 12:
                 worksheet.write(row_num, col_num, sum_cont_inter1, sum_format)
-            elif col_num == 13:
+            elif col_num == 14:
                 worksheet.write(row_num, col_num, sum_cont_inter2, sum_format)
-            elif col_num == 15:
+            elif col_num == 16:
                 worksheet.write(row_num, col_num, sum_cont_rmain, sum_format)
             else:
-                worksheet.write(row_num, col_num, None, sum_format)
+                if col_num != 1:
+                    worksheet.write(row_num, col_num, None, sum_format)
         #################################################################
 
         # data end ----------------------------------------------- #
