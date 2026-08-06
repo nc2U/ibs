@@ -22,9 +22,20 @@ const props = defineProps({
   project: { type: Number, default: null },
 })
 
+const fetchFormData = async (projId: number) => {
+  await proLedgerStore.fetchProBankAccList(projId)
+  await proLedgerStore.fetchAllProBankAccList(projId)
+  await proLedgerStore.fetchProjectAccounts()
+  await contractStore.fetchAllContracts(projId)
+  await contractStore.fetchAllContractors(projId)
+}
+
 watch(
   () => props.project,
-  val => {
+  async val => {
+    if (val) {
+      await fetchFormData(val)
+    }
     if (isCreateMode.value) initializeCreateForm()
     else router.push({ name: '운영비 내역 관리' })
   },
@@ -638,17 +649,6 @@ const accCallModal = () => {
   if (props.project) refBankAcc.value.callModal()
 }
 
-onBeforeMount(async () => {
-  if (isCreateMode.value) {
-    // 신규 모드: 기본 폼으로 초기화
-    initializeCreateForm()
-  } else if (transId.value) {
-    // 수정 모드: 기존 거래 데이터 로드 후 폼 초기화
-    await proLedgerStore.fetchProBankTrans(transId.value)
-    initializeEditForm()
-  }
-})
-
 // 단일 거래건의 균형 검사 헬퍼 함수
 const isTransactionBalanced = (
   bankAmount: number | null,
@@ -718,6 +718,21 @@ onBeforeRouteLeave((to, from, next) => {
     next(answer)
   } else {
     next()
+  }
+})
+
+onBeforeMount(async () => {
+  if (props.project) {
+    await fetchFormData(props.project)
+  }
+
+  if (isCreateMode.value) {
+    // 신규 모드: 기본 폼으로 초기화
+    initializeCreateForm()
+  } else if (transId.value) {
+    // 수정 모드: 기존 거래 데이터 로드 후 폼 초기화
+    await proLedgerStore.fetchProBankTrans(transId.value)
+    initializeEditForm()
   }
 })
 </script>

@@ -10,6 +10,7 @@ import { navMenu, pageTitle } from '@/views/proLedger/_menu/headermixin'
 import { useProject } from '@/store/pinia/project.ts'
 import { useContract } from '@/store/pinia/contract.ts'
 import { useProLedger } from '@/store/pinia/proLedger'
+import { message } from '@/utils/helper.ts'
 import { usePerms } from '@/composables/usePerms.ts'
 import { type DataFilter as Filter } from '@/store/types/proLedger'
 import Loading from '@/components/Loading/Index.vue'
@@ -205,7 +206,7 @@ onBeforeMount(async () => {
       await scrollToHighlight()
     }
   } catch (err) {
-    console.log('페이지 로딩 중 에러가 발생했습니다.', err)
+    message('warning', '알림!', '페이지 로딩 중 에러가 발생하였습니다.')
   } finally {
     loading.value = false
   }

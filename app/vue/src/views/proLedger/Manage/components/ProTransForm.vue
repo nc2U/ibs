@@ -22,9 +22,20 @@ const props = defineProps({
   project: { type: Number, default: null },
 })
 
+const fetchFormData = async (projId: number) => {
+  await proLedgerStore.fetchProBankAccList(projId)
+  await proLedgerStore.fetchAllProBankAccList(projId)
+  await proLedgerStore.fetchProjectAccounts()
+  await contractStore.fetchAllContracts(projId)
+  await contractStore.fetchAllContractors(projId)
+}
+
 watch(
   () => props.project,
-  val => {
+  async val => {
+    if (val) {
+      await fetchFormData(val)
+    }
     if (isCreateMode.value) initializeCreateForm()
     else router.push({ name: '거래 내역 관리' })
   },
@@ -487,29 +498,6 @@ const validateForm = () => {
   }
 }
 
-// 신규 거래 데이터 생성
-// const buildCreatePayload = () => {
-//   validateForm()
-//
-//   const validEntries = editableEntries.value
-//     .filter(e => (e.amount || 0) > 0)
-//     .map(entry => ({
-//       ...entry,
-//       evidence_type: entry.evidence_type === '' ? null : entry.evidence_type,
-//     }))
-//
-//   return {
-//     project: props.project!,
-//     deal_date: bankForm.deal_date,
-//     bank_account: bankForm.bank_account!,
-//     amount: bankForm.amount!,
-//     sort: bankForm.sort,
-//     content: bankForm.content,
-//     note: bankForm.note,
-//     accounting_entries: validEntries,
-//   } as any // API 요청 타입과 ProBankTrans 타입이 다르므로 any 처리
-// }
-
 // 수정 거래 데이터 생성
 const buildUpdatePayload = () => {
   if (!transaction.value) {
@@ -640,17 +628,6 @@ const accCallModal = () => {
   if (props.project) refBankAcc.value.callModal()
 }
 
-onBeforeMount(async () => {
-  if (isCreateMode.value) {
-    // 신규 모드: 기본 폼으로 초기화
-    initializeCreateForm()
-  } else if (transId.value) {
-    // 수정 모드: 기존 거래 데이터 로드 후 폼 초기화
-    await proLedgerStore.fetchProBankTrans(transId.value)
-    initializeEditForm()
-  }
-})
-
 // 단일 거래건의 균형 검사 헬퍼 함수
 const isTransactionBalanced = (
   bankAmount: number | null,
@@ -720,6 +697,21 @@ onBeforeRouteLeave((to, from, next) => {
     next(answer)
   } else {
     next()
+  }
+})
+
+onBeforeMount(async () => {
+  if (props.project) {
+    await fetchFormData(props.project)
+  }
+
+  if (isCreateMode.value) {
+    // 신규 모드: 기본 폼으로 초기화
+    initializeCreateForm()
+  } else if (transId.value) {
+    // 수정 모드: 기존 거래 데이터 로드 후 폼 초기화
+    await proLedgerStore.fetchProBankTrans(transId.value)
+    initializeEditForm()
   }
 })
 </script>

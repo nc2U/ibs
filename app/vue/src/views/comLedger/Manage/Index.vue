@@ -9,6 +9,7 @@ import {
 import { navMenu, pageTitle } from '@/views/comLedger/_menu/headermixin'
 import { useCompany } from '@/store/pinia/company'
 import { useAccount } from '@/store/pinia/account.ts'
+import { message } from '@/utils/helper.ts'
 import type { Company } from '@/store/types/settings.ts'
 import { type DataFilter as Filter, useComLedger } from '@/store/pinia/comLedger'
 import Loading from '@/components/Loading/Index.vue'
@@ -194,7 +195,7 @@ onBeforeMount(async () => {
     }
     await scrollToHighlight()
   } catch (err) {
-    console.log('페이지 로딩 중 에러가 발생했습니다.', err)
+    message('warning', '알림!', '페이지 로딩 중 에러가 발생하였습니다.')
   } finally {
     loading.value = false
   }
