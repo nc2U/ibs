@@ -93,7 +93,7 @@ class LawSuitCaseViewSet(viewsets.ModelViewSet):
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset
         # 사용자가 멤버로 속한 프로젝트의 소송 데이터만 반환
-        accessible_projects = IssueProject.objects.filter(members=user)
+        accessible_projects = IssueProject.objects.filter(members__user=user)
         return queryset.filter(issue_project__in=accessible_projects)
 
     def perform_create(self, serializer):
@@ -120,7 +120,7 @@ class AllLawSuitCaseViewSet(viewsets.ReadOnlyModelViewSet):
         queryset = super().get_queryset()
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset
-        accessible_projects = IssueProject.objects.filter(members=user)
+        accessible_projects = IssueProject.objects.filter(members__user=user)
         return queryset.filter(issue_project__in=accessible_projects)
 
 
@@ -172,7 +172,12 @@ class DocumentViewSet(viewsets.ModelViewSet):
         queryset = super().get_queryset()
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset
+
+        accessible_projects = IssueProject.objects.filter(members__user=user)
+
         return queryset.filter(
+            issue_project__in=accessible_projects
+        ).filter(
             Q(is_secret=False) | Q(creator=user)
         ).filter(is_blind=False)
 
@@ -266,7 +271,13 @@ class LinkViewSet(viewsets.ModelViewSet):
         queryset = super().get_queryset()
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset
+
+        from work.models import IssueProject
+        accessible_projects = IssueProject.objects.filter(members__user=user)
+
         return queryset.filter(
+            docs__issue_project__in=accessible_projects
+        ).filter(
             Q(docs__is_secret=False) | Q(docs__creator=user)
         ).filter(docs__is_blind=False)
 
@@ -301,7 +312,13 @@ class FileViewSet(viewsets.ModelViewSet):
         queryset = super().get_queryset()
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset
+
+        from work.models import IssueProject
+        accessible_projects = IssueProject.objects.filter(members__user=user)
+
         return queryset.filter(
+            docs__issue_project__in=accessible_projects
+        ).filter(
             Q(docs__is_secret=False) | Q(docs__creator=user)
         ).filter(docs__is_blind=False)
 
@@ -331,7 +348,13 @@ class ImageViewSet(viewsets.ModelViewSet):
         queryset = super().get_queryset()
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset
+
+        from work.models import IssueProject
+        accessible_projects = IssueProject.objects.filter(members__user=user)
+
         return queryset.filter(
+            docs__issue_project__in=accessible_projects
+        ).filter(
             Q(docs__is_secret=False) | Q(docs__creator=user)
         ).filter(docs__is_blind=False)
 
@@ -345,7 +368,13 @@ class DocsInTrashViewSet(DocumentViewSet):
         queryset = super().get_queryset()
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset
+
+        from work.models import IssueProject
+        accessible_projects = IssueProject.objects.filter(members__user=user)
+
         return queryset.filter(
+            issue_project__in=accessible_projects
+        ).filter(
             Q(is_secret=False) | Q(creator=user)
         )
 

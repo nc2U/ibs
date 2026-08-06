@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import { useAccount } from '@/store/pinia/account'
 import { useWork } from '@/store/pinia/work_project'
 import type { MyRole } from '@/store/types/work_project.ts'
-import { type PermissionCode } from '@/store/constants/permissions'
+import { PERM, type PermissionCode } from '@/store/constants/permissions'
 
 export const usePermission = defineStore('permission', () => {
   const workStore = useWork()
@@ -130,11 +130,21 @@ export const usePermission = defineStore('permission', () => {
     if (accountStore.workManager) return true
 
     const check = (c: PermissionCode) => {
+      // 대상 프로젝트 객체 찾기
+      const targetProj =
+        projectIdentifier !== undefined
+          ? workStore.allReadableProjectsFlat.find(
+              (p: any) => p.pk === projectIdentifier || p.slug === projectIdentifier,
+            )
+          : workStore.currentProject
+
+      // 공개 프로젝트(is_public=true)의 읽기 권한(*.read)은 비멤버도 기본 열람 허용 (work_core 영역)
+      if (targetProj?.is_public && (c.endsWith('.read') || c === PERM.NEWS_READ)) {
+        return true
+      }
+
       // 특정 프로젝트 ID나 Slug가 주어졌을 때는 해당 프로젝트의 권한을 체크
       if (projectIdentifier !== undefined) {
-        const targetProj = workStore.allReadableProjectsFlat.find(
-          (p: any) => p.pk === projectIdentifier || p.slug === projectIdentifier,
-        )
         return targetProj?.my_perms ? targetProj.my_perms.includes(c) : false
       }
 

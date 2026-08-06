@@ -59,6 +59,11 @@ class LedgerCompanyBankAccountViewSet(viewsets.ModelViewSet):
     search_fields = ('alias_name', 'number', 'holder')
 
 
+def get_accessible_project_ids(user):
+    from work.models import IssueProject
+    return IssueProject.objects.filter(members__user=user).values_list('project_id', flat=True)
+
+
 class LedgerProjectBankAccountViewSet(viewsets.ModelViewSet):
     """프로젝트 은행 계좌 ViewSet"""
     queryset = ProjectBankAccount.objects.select_related('bankcode', 'project').all()
@@ -67,6 +72,13 @@ class LedgerProjectBankAccountViewSet(viewsets.ModelViewSet):
     pagination_class = PageNumberPaginationFifty
     filterset_fields = ('project', 'bankcode', 'is_hide', 'inactive', 'directpay', 'is_imprest')
     search_fields = ('alias_name', 'number', 'holder', 'project__name')
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(project_id__in=get_accessible_project_ids(user))
 
 
 # ============================================

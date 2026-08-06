@@ -107,7 +107,7 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
             elif best_issue_visible == 'PRI':
                 member_pri_pids.append(m.project_id)
 
-        base_filter = Q(project__is_public=True) | Q(project_id__in=member_all_project_ids)
+        base_filter = Q(project_id__in=member_all_project_ids)
 
         # 업무 및 의견 로그에 대한 issue_visible 필터 적용
         issue_filter = Q()
@@ -134,34 +134,6 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
                                     Q(issue__creator=user)
                             )
 
-        try:
-            non_member_role = Role.objects.get(pk=2)
-            non_member_issue_visible = non_member_role.issue_visible
-        except Role.DoesNotExist:
-            non_member_issue_visible = 'PUB'
-
-        public_pids = IssueProject.objects.filter(is_public=True).exclude(pk__in=member_all_project_ids).values_list(
-            'pk', flat=True)
-        if public_pids:
-            if non_member_issue_visible == 'ALL':
-                issue_filter |= Q(project_id__in=public_pids)
-            elif non_member_issue_visible == 'PUB':
-                issue_filter |= Q(
-                    project_id__in=public_pids,
-                    issue__isnull=False
-                ) & (
-                                        Q(issue__is_private=False) |
-                                        Q(issue__assigned_to=user) |
-                                        Q(issue__creator=user)
-                                )
-            elif non_member_issue_visible == 'PRI':
-                issue_filter |= Q(
-                    project_id__in=public_pids,
-                    issue__isnull=False
-                ) & (
-                                        Q(issue__assigned_to=user) |
-                                        Q(issue__creator=user)
-                                )
 
         final_qs = queryset.filter(base_filter).filter(
             ~Q(sort__in=['1', '2']) | issue_filter
@@ -237,33 +209,6 @@ class IssueLogEntryViewSet(viewsets.ModelViewSet):
                                              Q(issue__assigned_to=user) |
                                              Q(issue__creator=user)
                                      )
-
-        try:
-            non_member_role = Role.objects.get(pk=2)
-            non_member_issue_visible = non_member_role.issue_visible
-        except Role.DoesNotExist:
-            non_member_issue_visible = 'PUB'
-
-        public_pids = IssueProject.objects.filter(is_public=True).exclude(pk__in=member_all_project_ids).values_list(
-            'pk', flat=True)
-        if public_pids:
-            if non_member_issue_visible == 'ALL':
-                allowed_issues_filter |= Q(issue__project_id__in=public_pids)
-            elif non_member_issue_visible == 'PUB':
-                allowed_issues_filter |= Q(
-                    issue__project_id__in=public_pids
-                ) & (
-                                                 Q(issue__is_private=False) |
-                                                 Q(issue__assigned_to=user) |
-                                                 Q(issue__creator=user)
-                                         )
-            elif non_member_issue_visible == 'PRI':
-                allowed_issues_filter |= Q(
-                    issue__project_id__in=public_pids
-                ) & (
-                                                 Q(issue__assigned_to=user) |
-                                                 Q(issue__creator=user)
-                                         )
 
         # 4. 비공개 댓글 열람 가드 조건 빌드 (Method D)
         comment_visibility_filter = (Q(comment__isnull=True)

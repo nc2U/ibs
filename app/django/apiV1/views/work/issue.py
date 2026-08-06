@@ -497,10 +497,6 @@ def build_issue_queryset(user, base_qs=None):
     q_expr = Q(creator=user) | Q(assigned_to=user)
     if member_all_pids:
         q_expr |= Q(project_id__in=member_all_pids)
-    if member_pub_pids:
-        q_expr |= Q(project_id__in=member_pub_pids, is_private=False)
-    if private_pids:
-        q_expr |= Q(project_id__in=private_pids)
     if non_member_visible == 'ALL':
         q_expr |= Q(project__is_public=True)
     elif non_member_visible == 'PUB':

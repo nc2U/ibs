@@ -225,9 +225,7 @@ class SearchViewSet(viewsets.ModelViewSet):
         ).select_related('issue__project', 'creator')
 
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
-            qs = qs.filter(
-                Q(issue__project__is_public=True) | Q(issue__project__members__user=user)
-            ).distinct()
+            qs = qs.filter(issue__project__members__user=user).distinct()
 
         if scope == 'project' and slug:
             qs = qs.filter(issue__project__slug=slug)
@@ -258,9 +256,7 @@ class SearchViewSet(viewsets.ModelViewSet):
 
         qs = Meeting.objects.filter(q_expr).select_related('project', 'creator')
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
-            qs = qs.filter(
-                Q(project__is_public=True) | Q(project__members__user=user)
-            ).distinct()
+            qs = qs.filter(project__members__user=user).distinct()
         if scope == 'project' and slug:
             qs = qs.filter(project__slug=slug)
         elif scope == 'my':
@@ -329,11 +325,13 @@ class SearchViewSet(viewsets.ModelViewSet):
         # 소프트 딜리트 필터: deleted=None (SoftDeleteManager가 적용되어 있으므로 기본 objects 사용 가능)
         qs = Document.objects.filter(q_expr, issue_project__status='1').select_related('issue_project', 'creator')
 
-        # 권한 제어: 사용자가 관리자가 아닌 경우 공개 프로젝트 혹은 멤버십 프로젝트 문서만 허용
+        # 권한 제어: 사용자가 관리자가 아닌 경우 멤버십 프로젝트 문서만 허용 (비밀글/블라인드글 제외)
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
             qs = qs.filter(
-                Q(issue_project__is_public=True) | Q(issue_project__members__user=user)
-            ).distinct()
+                issue_project__members__user=user
+            ).filter(
+                Q(is_secret=False) | Q(creator=user)
+            ).filter(is_blind=False).distinct()
 
         if scope == 'project' and slug:
             qs = qs.filter(issue_project__slug=slug)
@@ -365,11 +363,9 @@ class SearchViewSet(viewsets.ModelViewSet):
         qs = Post.objects.filter(q_expr, deleted__isnull=True,
                                  forum__project__status='1').select_related('forum__project', 'creator')
 
-        # 권한 제어: 공개 프로젝트 혹은 멤버십 프로젝트 내 게시판 게시글만 허용
+        # 권한 제어: 멤버십 프로젝트 내 게시판 게시글만 허용
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
-            qs = qs.filter(
-                Q(forum__project__is_public=True) | Q(forum__project__members__user=user)
-            ).distinct()
+            qs = qs.filter(forum__project__members__user=user).distinct()
 
         if scope == 'project' and slug:
             qs = qs.filter(forum__project__slug=slug)

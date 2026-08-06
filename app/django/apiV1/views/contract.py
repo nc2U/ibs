@@ -33,6 +33,11 @@ from ..serializers.contract import OrderGroupSerializer, DocumentTypeSerializer,
     SuccessionSerializer, ContractorReleaseSerializer, SimpleContractLogSerializer
 
 
+def get_accessible_project_ids(user):
+    from work.models import IssueProject
+    return IssueProject.objects.filter(members__user=user).values_list('project_id', flat=True)
+
+
 # Contract --------------------------------------------------------------------------
 class OrderGroupViewSet(viewsets.ModelViewSet):
     queryset = OrderGroup.objects.all()
@@ -40,6 +45,13 @@ class OrderGroupViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     filterset_fields = ('project', 'sort')
     search_fields = ('name',)
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(project_id__in=get_accessible_project_ids(user))
 
     @property
     def required_permission(self):
@@ -79,6 +91,13 @@ class RequiredDocumentViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
     pagination_class = PageNumberPaginationFifty
     filterset_class = RequiredDocumentFilter
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(project_id__in=get_accessible_project_ids(user))
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
@@ -122,6 +141,13 @@ class ContractViewSet(viewsets.ModelViewSet):
     serializer_class = ContractSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     pagination_class = PageNumberPaginationFifteen
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(project_id__in=get_accessible_project_ids(user))
 
     @property
     def required_permission(self):

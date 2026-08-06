@@ -22,6 +22,12 @@ from ..serializers.project import ProjectSerializer, ProjectIncBudgetSerializer,
 
 logger = logging.getLogger(__name__)
 
+
+def get_accessible_project_ids(user):
+    from work.models import IssueProject
+    return IssueProject.objects.filter(members__user=user).values_list('project_id', flat=True)
+
+
 # 사이트 액션별 권한 매핑 (SiteOwnerViewSet, SiteContractViewSet 공통)
 _SITE_ACTION_PERMISSION_MAP = {
     'list': 'site.read',
@@ -51,6 +57,13 @@ class ProjectViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
     filterset_class = ProjectFilterSet
 
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(pk__in=get_accessible_project_ids(user))
+
 
 class ProjectIncBudgetViewSet(viewsets.ModelViewSet):
     queryset = ProjectIncBudget.objects.all()
@@ -59,6 +72,13 @@ class ProjectIncBudgetViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
     filterset_fields = ('project', 'unit_type__sort')
 
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(project_id__in=get_accessible_project_ids(user))
+
 
 class ProjectOutBudgetViewSet(viewsets.ModelViewSet):
     queryset = ProjectOutBudget.objects.all()
@@ -66,6 +86,13 @@ class ProjectOutBudgetViewSet(viewsets.ModelViewSet):
     pagination_class = PageNumberPaginationFifty
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
     filterset_fields = ('project',)
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(project_id__in=get_accessible_project_ids(user))
 
 
 class StatusOutBudgetViewSet(ProjectOutBudgetViewSet):
@@ -166,7 +193,10 @@ class SiteViewSet(viewsets.ModelViewSet):
     search_fields = ('district', 'lot_number', 'site_purpose', 'owners__owner')
 
     def get_queryset(self):
+        user = self.request.user
         queryset = super().get_queryset()
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            queryset = queryset.filter(project_id__in=get_accessible_project_ids(user))
         # M2M(owners) 역방향 검색 시 중복 결과 방지
         if self.request.query_params.get('search'):
             return queryset.distinct()
@@ -189,6 +219,13 @@ class AllSiteViewSet(viewsets.ReadOnlyModelViewSet):
     pagination_class = PageNumberPaginationOneThousand
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
     filterset_fields = ('project',)
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(project_id__in=get_accessible_project_ids(user))
 
 
 class TotalOwnerAreaViewSet(viewsets.ReadOnlyModelViewSet):

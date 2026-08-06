@@ -521,6 +521,8 @@ class NewsPermission(ProjectPermission):
 
         # 2. 안전한 메서드(GET, HEAD, OPTIONS)는 읽기 권한 확인
         if request.method in permissions.SAFE_METHODS:
+            if project.is_public:
+                return True
             return 'news.read' in user_perms
 
         # 수정 및 삭제 로직
@@ -573,6 +575,8 @@ class ForumPermission(ProjectPermission):
         # 추천/신고(Like/Blame) 뷰셋들의 PATCH/PUT 액션 또한 'forum.read' 권한으로 판별
         is_like_blame_view = 'like' in view.__class__.__name__.lower() or 'blame' in view.__class__.__name__.lower()
         if request.method in permissions.SAFE_METHODS or is_like_blame_view:
+            if project.is_public:
+                return True
             required_perm = getattr(view, 'required_permission', 'forum.read') or 'forum.read'
             return required_perm in user_perms
 

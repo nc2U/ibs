@@ -15,6 +15,11 @@ from ..serializers.items import (UnitTypeSerializer, UnitFloorTypeSerializer, Ke
 TODAY = datetime.today().strftime('%Y-%m-%d')
 
 
+def get_accessible_project_ids(user):
+    from work.models import IssueProject
+    return IssueProject.objects.filter(members__user=user).values_list('project_id', flat=True)
+
+
 # Items --------------------------------------------------------------------------
 class UnitTypeViewSet(viewsets.ModelViewSet):
     queryset = UnitType.objects.all()
@@ -22,6 +27,13 @@ class UnitTypeViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
     filterset_fields = ('project', 'sort', 'main_or_sub')
     search_fields = ('name',)
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(project_id__in=get_accessible_project_ids(user))
 
 
 class UnitFloorTypeViewSet(viewsets.ModelViewSet):
@@ -31,6 +43,13 @@ class UnitFloorTypeViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
     filterset_fields = ('project', 'sort')
     search_fields = ('alias_name',)
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(project_id__in=get_accessible_project_ids(user))
 
 
 class KeyUnitListFilterSet(FilterSet):
@@ -49,6 +68,13 @@ class KeyUnitViewSet(viewsets.ModelViewSet):
     ordering_fields = ('pk', 'unit_code', 'unit_type')
     ordering = ('-pk',)
 
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(project_id__in=get_accessible_project_ids(user))
+
 
 class BuildingUnitViewSet(viewsets.ModelViewSet):
     queryset = BuildingUnit.objects.all()
@@ -56,6 +82,13 @@ class BuildingUnitViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
     filterset_fields = ('project',)
     search_fields = ('name',)
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(project_id__in=get_accessible_project_ids(user))
 
 
 class HouseUnitViewSet(viewsets.ModelViewSet):
@@ -66,12 +99,20 @@ class HouseUnitViewSet(viewsets.ModelViewSet):
                         'floor_type', 'building_unit', 'is_hold')
     search_fields = ('hold_reason',)
 
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(building_unit__project_id__in=get_accessible_project_ids(user))
+
 
 class AvailableHouseUnitViewSet(HouseUnitViewSet):
     pagination_class = PageNumberPaginationThreeHundred
 
     def get_queryset(self):
-        queryset = HouseUnit.objects.all()
+        user = self.request.user
+        queryset = super().get_queryset()
         project = self.request.query_params.get('project', None)
         unit_type = self.request.query_params.get('unit_type', None)
 
@@ -86,7 +127,10 @@ class AvailableHouseUnitViewSet(HouseUnitViewSet):
                 Q(building_unit__project=project, unit_type=unit_type, key_unit__isnull=True) |
                 Q(key_unit__contract=contract)
             )
-        return queryset
+
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return queryset
+        return queryset.filter(building_unit__project_id__in=get_accessible_project_ids(user))
 
 
 class AllHouseUnitViewSet(HouseUnitViewSet):
@@ -94,10 +138,14 @@ class AllHouseUnitViewSet(HouseUnitViewSet):
     pagination_class = PageNumberPaginationThreeThousand
 
     def get_queryset(self):
-        return HouseUnit.objects.select_related(
+        user = self.request.user
+        queryset = HouseUnit.objects.select_related(
             'unit_type',
             'key_unit__contract__contractor',
         ).all()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return queryset
+        return queryset.filter(building_unit__project_id__in=get_accessible_project_ids(user))
 
 
 class HouseUnitSummaryViewSet(viewsets.ModelViewSet):
@@ -107,6 +155,13 @@ class HouseUnitSummaryViewSet(viewsets.ModelViewSet):
     filterset_fields = ('building_unit__project', 'unit_type',
                         'floor_type', 'building_unit', 'is_hold')
 
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(building_unit__project_id__in=get_accessible_project_ids(user))
+
 
 class OptionItemViewSet(viewsets.ModelViewSet):
     queryset = OptionItem.objects.all()
@@ -114,3 +169,10 @@ class OptionItemViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
     filterset_fields = ('project', 'types')
     search_fields = ('opt_code', 'opt_name', 'opt_desc', 'opt_maker')
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(project_id__in=get_accessible_project_ids(user))

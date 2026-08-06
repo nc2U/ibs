@@ -32,6 +32,11 @@ logger = logging.getLogger(__name__)
 TODAY = datetime.today().strftime('%Y-%m-%d')
 
 
+def get_accessible_project_ids(user):
+    from work.models import IssueProject
+    return IssueProject.objects.filter(members__user=user).values_list('project_id', flat=True)
+
+
 # Payment --------------------------------------------------------------------------
 
 
@@ -64,6 +69,13 @@ class InstallmentOrderViewSet(viewsets.ModelViewSet):
     filterset_class = InstallmentOrderFilterSet
     search_fields = ('pay_name', 'alias_name')
 
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(project_id__in=get_accessible_project_ids(user))
+
 
 class SalesPriceViewSet(viewsets.ModelViewSet):
     queryset = SalesPriceByGT.objects.all()
@@ -71,6 +83,13 @@ class SalesPriceViewSet(viewsets.ModelViewSet):
     pagination_class = PageNumberPaginationFifty
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
     filterset_fields = ('project', 'order_group', 'unit_type')
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(project_id__in=get_accessible_project_ids(user))
 
 
 class PaymentPerInstallmentViewSet(viewsets.ModelViewSet):
@@ -81,6 +100,13 @@ class PaymentPerInstallmentViewSet(viewsets.ModelViewSet):
     filterset_fields = ('sales_price', 'sales_price__project', 'sales_price__order_group',
                         'sales_price__unit_type', 'pay_order')
 
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(sales_price__project_id__in=get_accessible_project_ids(user))
+
 
 class ContractPaymentViewSet(viewsets.ModelViewSet):
     queryset = ContractPayment.objects.all()
@@ -90,6 +116,13 @@ class ContractPaymentViewSet(viewsets.ModelViewSet):
     filterset_fields = ('contract__project', 'installment_order', 'contract', 'contract__contractor__status')
     search_fields = ('contract__serial_number', 'contract__contractor__name')
     ordering = ('-deal_date', '-id')
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(contract__project_id__in=get_accessible_project_ids(user))
 
     @property
     def required_permission(self):
@@ -103,11 +136,25 @@ class DownPaymentViewSet(viewsets.ModelViewSet):
     pagination_class = PageNumberPaginationTwenty
     filterset_fields = ('project', 'order_group', 'unit_type')
 
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(project_id__in=get_accessible_project_ids(user))
+
 
 class OverDueRuleViewSet(viewsets.ModelViewSet):
     queryset = OverDueRule.objects.all()
     serializer_class = OverDueRuleSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(project_id__in=get_accessible_project_ids(user))
 
 
 # Helper Functions for Unit Type Payment status calculations -----------------------
