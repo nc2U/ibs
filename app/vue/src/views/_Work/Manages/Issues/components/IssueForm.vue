@@ -17,6 +17,7 @@ import MdEditor from '@/components/MdEditor/Index.vue'
 import FormInIssueVersion from './FormInIssueVersion.vue'
 import FormInIssueCategory from './FormInIssueCategory.vue'
 import WatcherAdd from './aside/WatcherAdd.vue'
+import { CInputGroup } from '@coreui/vue'
 
 const props = defineProps({
   currentProject: { type: Object as PropType<IssueProject>, default: null },
@@ -525,15 +526,31 @@ defineExpose({ callComment, callReply })
                   상태
                 </CFormLabel>
                 <CCol sm="8">
-                  <CFormSelect v-model.number="form.status" id="status" required>
-                    <option
-                      v-for="status in newIssueStatusList"
-                      :value="Number(status.pk)"
-                      :key="status.pk"
+                  <CInputGroup>
+                    <CFormSelect v-model.number="form.status" id="status" required>
+                      <option
+                        v-for="status in newIssueStatusList"
+                        :value="Number(status.pk)"
+                        :key="status.pk"
+                      >
+                        {{ status.name }}
+                      </option>
+                    </CFormSelect>
+                    <CInputGroupText
+                      v-if="form.status === 1"
+                      class="pointer"
+                      @click="form.status = 2"
                     >
-                      {{ status.name }}
-                    </option>
-                  </CFormSelect>
+                      진행 &nbsp;&nbsp; »
+                    </CInputGroupText>
+                    <CInputGroupText
+                      v-if="form.status === 2"
+                      class="pointer"
+                      @click="form.status = 5"
+                    >
+                      완료 &nbsp;&nbsp; »
+                    </CInputGroupText>
+                  </CInputGroup>
                 </CCol>
               </CRow>
 

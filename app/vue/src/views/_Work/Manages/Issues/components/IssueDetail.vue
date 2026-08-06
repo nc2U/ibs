@@ -373,7 +373,7 @@ onBeforeMount(async () => {
             <CCol>
               <div>
                 <CProgress
-                  color="green-lighten-3"
+                  color="success"
                   :value="doneRatio ?? 0"
                   style="width: 110px; float: left; margin-top: 2px"
                   height="16"
