@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onBeforeMount } from 'vue'
-import api from '@/api'
+import { useDocs } from '@/store/pinia/docs'
+import type { Docs } from '@/store/types/docs'
 import { cutString, timeFormat } from '@/utils/baseMixins'
 import WidgetWrapper from '../WidgetWrapper.vue'
 
@@ -10,25 +11,28 @@ defineProps<{
   icon?: string
 }>()
 
-const activeTab = ref(1)
+const docsStore = useDocs()
+
+const activeTab = ref<1 | 2>(1)
 const loading = ref(true)
 
-const generalDocs = ref<any[]>([])
-const lawsuitDocs = ref<any[]>([])
+const generalDocs = ref<Docs[]>([])
+const lawsuitDocs = ref<Docs[]>([])
 
-const currentDocsList = computed(() => {
+const currentDocsList = computed<Docs[]>(() => {
   return activeTab.value === 1 ? generalDocs.value : lawsuitDocs.value
 })
 
 const fetchData = async () => {
   loading.value = true
   try {
-    const [res1, res2] = await Promise.all([
-      api.get('/docs/?limit=5&doc_type=1'),
-      api.get('/docs/?limit=5&doc_type=2'),
-    ])
-    generalDocs.value = res1.data.results || []
-    lawsuitDocs.value = res2.data.results || []
+    // 1. 일반문서 페치
+    await docsStore.fetchDocsList({ limit: 5, doc_type: 1 })
+    generalDocs.value = [...docsStore.docsList]
+
+    // 2. 소송기록 페치
+    await docsStore.fetchDocsList({ limit: 5, doc_type: 2 })
+    lawsuitDocs.value = [...docsStore.docsList]
   } catch (error) {
     console.error('Failed to fetch documents for widget:', error)
   } finally {
@@ -79,8 +83,8 @@ onBeforeMount(() => {
                 </span>
                 <router-link
                   :to="{
-                    name: activeTab === 1 ? '본사 일반 문서 - 보기' : '본사 소송 문서 - 보기',
-                    params: { docsId: item.pk },
+                    name: '(문서) - 보기',
+                    params: { projId: item.project?.slug, docId: item.pk },
                   }"
                   class="text-body-2"
                 >
