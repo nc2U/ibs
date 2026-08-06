@@ -30,9 +30,7 @@ export const useCompany = defineStore('company', () => {
     return defaultCom?.pk || 1
   })
 
-  const initComId = computed<number>(() =>
-    currentCompany.value ? currentCompany.value : defaultCompany.value,
-  )
+  const initComId = computed<number>(() => currentCompany.value || defaultCompany.value)
 
   const comSelect = computed<{ value: number; label: string }[]>(() => {
     return companyList.value.map((com: Company) => ({
