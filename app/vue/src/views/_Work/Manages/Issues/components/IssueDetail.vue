@@ -373,10 +373,10 @@ onBeforeMount(async () => {
             <CCol>
               <div>
                 <CProgress
-                  color="success"
+                  :color="doneRatio === 100 ? 'success' : 'warning'"
                   :value="doneRatio ?? 0"
                   style="width: 110px; float: left; margin-top: 2px"
-                  height="16"
+                  height="12"
                 />
                 <span class="ml-2 pt-0">{{ (doneRatio ?? 0).toFixed(2) }}%</span>
               </div>
