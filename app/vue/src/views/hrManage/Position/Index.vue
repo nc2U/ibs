@@ -9,7 +9,7 @@ import { type Position, type ComFilter } from '@/store/types/company'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
-import HrAuthGuard from '@/components/AuthGuard/HrAuthGuard.vue'
+import ComHrAuthGuard from '@/components/AuthGuard/ComHrAuthGuard.vue'
 import ListController from './components/ListController.vue'
 import AddPosition from './components/AddPosition.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
@@ -94,7 +94,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <HrAuthGuard>
+  <ComHrAuthGuard>
     <Loading v-model:active="loading" />
     <ContentHeader
       :page-title="pageTitle"
@@ -116,5 +116,5 @@ onMounted(async () => {
         <PositionList @multi-submit="multiSubmit" @on-delete="onDelete" @page-select="pageSelect" />
       </CCardBody>
     </ContentBody>
-  </HrAuthGuard>
+  </ComHrAuthGuard>
 </template>
