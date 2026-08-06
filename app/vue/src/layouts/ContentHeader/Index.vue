@@ -7,18 +7,10 @@ import CompanySelect from '@/layouts/ContentHeader/components/CompanySelect.vue'
 import ProjectSelect from '@/layouts/ContentHeader/components/ProjectSelect.vue'
 
 defineProps({
-  pageTitle: {
-    type: String,
-    default: 'Page Title',
-  },
-  navMenu: {
-    type: Array,
-    default: () => ['Base Menu'],
-  },
-  selector: {
-    type: String,
-    default: '',
-  },
+  pageTitle: { type: String, default: 'Page Title' },
+  navMenu: { type: Array, default: () => ['Base Menu'] },
+  selector: { type: String, default: '' },
+  selectable: { type: Boolean, default: true },
 })
 
 const emit = defineEmits(['com-select', 'proj-select'])
@@ -57,9 +49,17 @@ const projSelect = async (proj: number | null) => {
     <CCardBody>
       <HeaderNav :menus="navMenu" :query="route?.query" />
 
-      <CompanySelect v-if="selector === 'CompanySelect'" @com-select="comSelect" />
+      <CompanySelect
+        v-if="selector === 'CompanySelect'"
+        :selectable="selectable"
+        @com-select="comSelect"
+      />
 
-      <ProjectSelect v-if="selector === 'ProjectSelect'" @proj-select="projSelect" />
+      <ProjectSelect
+        v-if="selector === 'ProjectSelect'"
+        :selectable="selectable"
+        @proj-select="projSelect"
+      />
 
       <slot />
     </CCardBody>

@@ -6,6 +6,7 @@ import { useProject } from '@/store/pinia/project'
 import { useWork } from '@/store/pinia/work_project'
 import Multiselect from '@vueform/multiselect'
 
+defineProps({ selectable: { type: Boolean, default: true } })
 const emit = defineEmits(['proj-select'])
 
 const { can, PERM } = usePerms()
@@ -61,6 +62,7 @@ onBeforeMount(async () => {
         :classes="{ search: 'form-control multiselect-search' }"
         :add-option-on="['enter', 'tab']"
         searchable
+        :disabled="!selectable"
         @select="emit('proj-select', $event)"
         @clear="emit('proj-select', null)"
       />

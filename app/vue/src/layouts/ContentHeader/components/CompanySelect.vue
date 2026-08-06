@@ -6,6 +6,7 @@ import { useCompany } from '@/store/pinia/company'
 import type { Company } from '@/store/types/settings.ts'
 import Multiselect from '@vueform/multiselect'
 
+defineProps({ selectable: { type: Boolean, default: true } })
 const emit = defineEmits(['com-select'])
 
 const { can, PERM } = usePerms()
@@ -48,6 +49,7 @@ onBeforeMount(async () => {
         :classes="{ search: 'form-control multiselect-search' }"
         :add-option-on="['enter', 'tab']"
         searchable
+        :disabled="!selectable"
         @select="comSelect"
         @clear="comClear"
       />
