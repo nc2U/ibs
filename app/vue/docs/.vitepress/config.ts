@@ -123,7 +123,7 @@ export default defineConfig({
             ],
           },
           {
-            text: '계약 납부 관리',
+            text: '대금 수납 관리',
             collapsed: true,
             items: [
               { text: '납부 내역 관리', link: '/payment/' },
