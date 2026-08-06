@@ -87,6 +87,8 @@ const AppSidebarNav = defineComponent({
     const readPay = computed(() => canGlobal(PERM.PAYMENT_READ))
     const readNoti = computed(() => canGlobal(PERM.NOTICE_READ))
     const readLedger = computed(() => canGlobal(PERM.LEDGER_READ))
+    const manPjt = computed(() => canGlobal(PERM.PROJECT_CREATE) && canGlobal(PERM.PROJECT_UPDATE))
+    const manCompany = computed(() => isStaff.value && manPjt.value)
     const readAuth = computed(() => isStaff.value && canGlobal(PERM.PROJECT_MEMBER))
 
     const predicates = computed(() => {
@@ -103,8 +105,8 @@ const AppSidebarNav = defineComponent({
         isLedger: readLedger.value,
         isDocument: readDocs.value,
 
-        isSetMenu: isStaff.value || readAuth.value,
-        isCompany: isStaff.value,
+        isSetMenu: manCompany.value || readAuth.value,
+        isCompany: manCompany.value,
         isAuthor: readAuth.value,
       }
 

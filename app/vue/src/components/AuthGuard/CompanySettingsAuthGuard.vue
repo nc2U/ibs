@@ -9,7 +9,9 @@ const account = useAccount()
 const isLoading = computed(() => !account.userInfo)
 
 const { can, PERM } = usePerms()
-const canComSettingsRead = computed(() => account.isStaff && can(PERM.PROJECT_UPDATE))
+const canComSettingsRead = computed(
+  () => account.isStaff && can(PERM.PROJECT_CREATE) && can(PERM.PROJECT_UPDATE),
+)
 </script>
 
 <template>
