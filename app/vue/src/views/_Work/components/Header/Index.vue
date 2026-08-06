@@ -60,7 +60,16 @@ const chkModules = (slug: string) => {
 
 const cngProject = async (slug: any) => {
   const routeName = (route.name as string) ?? ''
-  const name = /^\(.*\)$/.test(routeName) ? routeName : `(${routeName})`
+  let name = routeName
+
+  // 상세 보기, 생성, 수정 등 ' - '가 포함된 서브 라우트일 경우 메인 카테고리 라우트(예: '(문서)')로 전환
+  if (routeName.includes(' - ')) {
+    const baseCategory = routeName.split(' - ')[0]
+    name = /^\(.*\)$/.test(baseCategory) ? baseCategory : `(${baseCategory})`
+  } else {
+    name = /^\(.*\)$/.test(routeName) ? routeName : `(${routeName})`
+  }
+
   if (slug) {
     if (!chkModules(slug)) await router.push({ name: '(개요)', params: { projId: slug } })
     else await router.push({ name, params: { projId: slug } })
