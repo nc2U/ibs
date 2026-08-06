@@ -252,6 +252,7 @@ onBeforeRouteLeave(() => {
       :page-title="pageTitle"
       :nav-menu="navMenu"
       selector="ProjectSelect"
+      :selectable="false"
       @proj-select="projSelect"
     />
 
