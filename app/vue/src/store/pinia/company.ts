@@ -22,13 +22,17 @@ export const useCompany = defineStore('company', () => {
   const companyList = ref<Company[]>([])
   const company = ref<Company | null>(null)
 
-  const currentCompany = Number(localStorage.getItem('curr-company'))
+  const currentCompany = computed(
+    () => company.value?.pk || Number(localStorage.getItem('curr-company')),
+  )
   const defaultCompany = computed(() => {
     const defaultCom = companyList.value.find(com => com.is_default) || companyList.value[0]
     return defaultCom?.pk || 1
   })
 
-  const initComId = computed<number>(() => (currentCompany ? currentCompany : defaultCompany.value))
+  const initComId = computed<number>(() =>
+    currentCompany.value ? currentCompany.value : defaultCompany.value,
+  )
 
   const comSelect = computed<{ value: number; label: string }[]>(() => {
     return companyList.value.map((com: Company) => ({
