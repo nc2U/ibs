@@ -658,7 +658,7 @@ class ContractorConsultationLogs(models.Model):
 
 class Succession(models.Model):
     contract = models.ForeignKey('Contract', on_delete=models.PROTECT, verbose_name='계약 정보')
-    seller = models.OneToOneField('Contractor', on_delete=models.CASCADE, verbose_name='양도계약자',
+    seller = models.OneToOneField('Contractor', on_delete=models.PROTECT, verbose_name='양도계약자',
                                   related_name='prev_contractor')
     buyer = models.OneToOneField('Contractor', on_delete=models.CASCADE, verbose_name='양수계약자',
                                  related_name='curr_contractor')
