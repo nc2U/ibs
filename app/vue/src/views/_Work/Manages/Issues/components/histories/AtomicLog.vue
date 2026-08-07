@@ -53,13 +53,13 @@ const { canViewUser } = usePerms()
         <ul class="ml-0 pl-0">
           <li v-for="(src, i) in getHistory(log.details)" :key="i" class="list-item">
             <div v-html="markdownRender(src)" />
-            <span v-if="log.diff && src.includes('**설명**')">
-              <router-link to="">
+            <span v-if="log.diff && src.includes('**설명**')" class="ml-5">
+              <a href="javascript:void(0);">
                 (변경 내용)
                 <v-tooltip activator="parent" location="start">
                   <span v-html="markdownRender(log.diff)" />
                 </v-tooltip>
-              </router-link>
+              </a>
             </span>
           </li>
         </ul>
