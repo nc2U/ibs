@@ -201,6 +201,9 @@ class ContractViewSet(viewsets.ModelViewSet):
 
         return instance
 
+    def perform_destroy(self, instance):
+        raise serializers.ValidationError({'detail': '계약 정보는 직접 삭제할 수 없습니다. 계약 해지 절차(ContractorRelease)를 이용하십시오.'})
+
     @action(detail=False, methods=['get'], url_path='recent-logs')
     def recent_logs(self, request):
         """대시보드 위젯용 최근 5개 계약 로그 조회 (가벼운 직렬화 적용)"""

@@ -372,3 +372,11 @@ class SuccessionAndReleaseAPITests(APITestCase):
         response = self.client.delete(url)
         self.assertEqual(response.status_code, http_status.HTTP_400_BAD_REQUEST)
         self.assertTrue(ContractorRelease.objects.filter(pk=release.pk).exists())
+
+    def test_contract_direct_destroy_fails(self):
+        """계약(Contract) direct 삭제 시도 시 400 ValidationError로 명시적 차단되는지 검증"""
+        url = f'/api/v1/contract/{self.contract.pk}/'
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, http_status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data['detail'], '계약 정보는 직접 삭제할 수 없습니다. 계약 해지 절차(ContractorRelease)를 이용하십시오.')
+        self.assertTrue(Contract.objects.filter(pk=self.contract.pk).exists())
