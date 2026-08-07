@@ -58,6 +58,14 @@ const createRelease = (payload: ContractRelease) => contStore.createRelease(payl
 const updateRelease = (payload: ContractRelease & { page: number }) =>
   contStore.updateRelease(payload)
 
+const deleteRelease = (pk: number) =>
+  contStore.deleteRelease(pk, project.value as number, page.value)
+
+const onDelete = (pk: number) => {
+  deleteRelease(pk)
+  releaseFormModal.value.close()
+}
+
 const route = useRoute()
 const router = useRouter()
 
@@ -245,6 +253,7 @@ watch(route, async newRoute => {
           :release="contRelease ?? undefined"
           :contractor="contractor as Contractor"
           @on-submit="onSubmit"
+          @on-delete="onDelete"
           @close="releaseFormModal.close()"
         />
       </template>

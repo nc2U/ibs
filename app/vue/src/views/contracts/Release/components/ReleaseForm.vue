@@ -12,10 +12,10 @@ const props = defineProps({
   contractor: { type: Object as PropType<Contractor>, default: () => null },
 })
 
-const emit = defineEmits(['on-submit', 'close'])
+const emit = defineEmits(['on-submit', 'on-delete', 'close'])
 
 const { can, PERM } = usePerms()
-const canContractUpdate = computed(() => can(PERM.CONTRACT_UPDATE))
+const canContractRelease = computed(() => can(PERM.CONTRACT_RELEASE))
 
 const refConfirmModal = ref()
 const refAlertModal = ref()
@@ -69,7 +69,7 @@ const statusOptions = computed(() => {
 const dateOfReceipt = computed(() => (form.release_type === '3' ? '해지통보일' : '해지신청일'))
 
 const onSubmit = (event: Event) => {
-  if (canContractUpdate.value) {
+  if (canContractRelease.value) {
     if (isValidate(event)) {
       validated.value = true
     } else emit('on-submit', { ...form })
@@ -77,11 +77,14 @@ const onSubmit = (event: Event) => {
 }
 
 const deleteConfirm = () => {
-  if (canContractUpdate.value) refConfirmModal.value.callModal()
+  if (canContractRelease.value) refConfirmModal.value.callModal()
   else refAlertModal.value.callModal()
 }
 
-const modalAction = () => alert('this is ready!')
+const modalAction = () => {
+  refConfirmModal.value.close()
+  if (form.pk) emit('on-delete', form.pk)
+}
 
 const formDataSet = () => {
   if (props.release) {
@@ -276,9 +279,20 @@ watch([() => props.release, () => props.contractor], () => formDataSet(), { deep
         >
           저장
         </v-btn>
-        <v-btn v-if="release" type="button" color="warning" size="small" @click="deleteConfirm">
-          삭제
-        </v-btn>
+        <span v-if="release" class="d-inline-block">
+          <v-btn
+            type="button"
+            color="warning"
+            size="small"
+            :disabled="release.status === '4'"
+            @click="deleteConfirm"
+          >
+            삭제
+          </v-btn>
+          <v-tooltip v-if="release.status === '4'" activator="parent" location="top">
+            해지 완료된 거래 건은 삭제할 수 없습니다.
+          </v-tooltip>
+        </span>
         <v-btn type="button" color="light" size="small" @click="emit('close')" flat> 닫기</v-btn>
       </slot>
     </CModalFooter>
@@ -287,7 +301,7 @@ watch([() => props.release, () => props.contractor], () => formDataSet(), { deep
   <ConfirmModal ref="refConfirmModal" @confirm-func="modalAction">
     <template #header> 계약 해지 정보 - [삭제]</template>
     <template #default>
-      삭제 후 복구할 수 없습니다. 해당 건별 수납 정보를 삭제 하시겠습니까?
+      삭제 후 복구할 수 없습니다. 해당 계약 해지 정보를 삭제하시겠습니까?
     </template>
   </ConfirmModal>
 

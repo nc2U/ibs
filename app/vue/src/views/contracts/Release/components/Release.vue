@@ -11,7 +11,7 @@ const props = defineProps({
 const emit = defineEmits(['call-form'])
 
 const { can, PERM } = usePerms()
-const canContractUpdate = computed(() => can(PERM.CONTRACT_UPDATE))
+const canContractRelease = computed(() => can(PERM.CONTRACT_RELEASE))
 
 const releaseTypeLabel = computed(() => {
   return props.release?.release_type === '2' ? '부적격' : '해지'
@@ -73,7 +73,7 @@ const callFormModal = () => emit('call-form', props.release?.contractor)
   <CTableDataCell class="fw-bold text-primary text-center">
     {{ release.completion_date }}
   </CTableDataCell>
-  <CTableDataCell v-if="canContractUpdate" class="text-center">
+  <CTableDataCell v-if="canContractRelease" class="text-center">
     <v-btn type="button" :color="buttonColor" size="x-small" @click="callFormModal">확인</v-btn>
   </CTableDataCell>
 </template>

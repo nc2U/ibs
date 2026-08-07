@@ -760,6 +760,17 @@ export const useContract = defineStore('contract', () => {
       })
       .catch(err => errorHandle(err.response.data))
 
+  const deleteRelease = (pk: number, project: number, page = 1) =>
+    api
+      .delete(`/contractor-release/${pk}/`)
+      .then(async () => {
+        contRelease.value = null
+        contractor.value = null
+        await fetchContReleaseList(project, page)
+        message('warning', '', '해당 해지 건이 삭제되었습니다.')
+      })
+      .catch(err => errorHandle(err.response.data))
+
   // 일괄 가격 업데이트 미리보기
   const previewContractPriceUpdate = async (project: number, uncontractedOrderGroup?: number) => {
     try {
@@ -968,6 +979,7 @@ export const useContract = defineStore('contract', () => {
     fetchContReleaseList,
     createRelease,
     updateRelease,
+    deleteRelease,
     findContractorReleasePage,
 
     subsSummaryList,
