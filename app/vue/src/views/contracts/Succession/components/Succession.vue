@@ -13,7 +13,7 @@ const props = defineProps({
 const emit = defineEmits(['call-form', 'done-alert'])
 
 const { can, PERM } = usePerms()
-const canContractUpdate = computed(() => can(PERM.CONTRACT_UPDATE))
+const canContractSuccession = computed(() => can(PERM.CONTRACT_SUCCESSION))
 
 const done = computed(() => props.succession?.status === '3')
 const buttonColor = computed(() => (!done.value ? 'success' : 'secondary'))
@@ -69,7 +69,7 @@ const callFormModal = () => {
   <CTableDataCell class="text-primary text-center fw-bold">
     {{ statusLabel }}
   </CTableDataCell>
-  <CTableDataCell v-if="canContractUpdate" class="text-center">
+  <CTableDataCell v-if="canContractSuccession" class="text-center">
     <v-btn type="button" :color="buttonColor" size="x-small" @click="callFormModal"> 확인</v-btn>
   </CTableDataCell>
 </template>

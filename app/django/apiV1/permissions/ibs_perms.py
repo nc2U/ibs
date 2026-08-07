@@ -271,6 +271,16 @@ class IbsModulePermission(ProjectPermission):
             if project_rel is not None:
                 project_pk = getattr(project_rel, 'pk', None)
 
+        # contract 관계를 경유하는 모델 (예: Succession 등) 역추적
+        if project_pk is None and hasattr(obj, 'contract'):
+            contract = getattr(obj, 'contract', None)
+            if contract is not None:
+                project_pk = getattr(contract, 'project_id', None)
+                if project_pk is None and hasattr(contract, 'project'):
+                    project_rel = getattr(contract, 'project', None)
+                    if project_rel is not None:
+                        project_pk = getattr(project_rel, 'pk', None)
+
         if project_pk is not None:
             project_pk = int(project_pk) if not isinstance(project_pk, int) else project_pk
 

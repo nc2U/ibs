@@ -71,8 +71,8 @@ export const PERM = {
   CONTRACT_CREATE: 'contract.create',
   CONTRACT_UPDATE: 'contract.update',
   CONTRACT_DELETE: 'contract.delete',
-  CONTRACT_RELEASE: 'contract.release',
   CONTRACT_SUCCESSION: 'contract.succession',
+  CONTRACT_RELEASE: 'contract.release',
 
   // Payment permissions
   PAYMENT_READ: 'payment.read',
