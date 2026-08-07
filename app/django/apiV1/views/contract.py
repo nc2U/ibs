@@ -904,8 +904,44 @@ class ContReleaseViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
 
+    @transaction.atomic
     def perform_update(self, serializer):
+        instance = self.get_object()
+        old_status = instance.status
+        new_status = serializer.validated_data.get('status', old_status)
+
+        # 1. 해지 확정건(status='4')을 신청취소(status='9')로 직접 변경 불가
+        if old_status == '4' and new_status == '9':
+            raise serializers.ValidationError({'detail': '이미 해지가 확정 완료된 건은 직접 취소할 수 없습니다.'})
+
+        # 2. 신청/진행 중('1', '2', '3')에서 신청취소('9')로 변경 시 계약자 원래 상태('1' 또는 '2')로 정밀 복구
+        if old_status in ('1', '2', '3') and new_status == '9':
+            contractor = instance.contractor
+            if contractor:
+                contractor.status = '2' if contractor.contract_date else '1'
+                contractor.change_type = None
+                contractor.is_active = True
+                contractor.save()
+
         serializer.save(updator=self.request.user)
+
+    @transaction.atomic
+    def perform_destroy(self, instance):
+        # 1. 해지 확정건(status='4') 삭제 직접 차단
+        if instance.status == '4':
+            raise serializers.ValidationError({'detail': '이미 해지가 확정 완료된 건은 직접 삭제할 수 없습니다.'})
+
+        contractor = instance.contractor
+
+        # 2. 해지 신청 중이던 계약자 원래 상태('1' 또는 '2')로 정밀 복구
+        if contractor:
+            contractor.status = '2' if contractor.contract_date else '1'
+            contractor.change_type = None
+            contractor.is_active = True
+            contractor.save()
+
+        # 3. ContractorRelease 레코드 삭제 (contractor, project는 PROTECT로 DB 안전 보존)
+        instance.delete()
 
     @action(detail=False, methods=['get'], url_path='find-page')
     def find_page(self, request):
