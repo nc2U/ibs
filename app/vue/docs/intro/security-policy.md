@@ -80,3 +80,4 @@ API 파라미터 변조까지 백엔드 DB QuerySet 레벨에서 차단합니다
 - `usePermission` 스토어의 `can(code, projectIdentifier)` 메서드:
     - 대상 프로젝트가 `is_public === true` 이고 요청된 권한 코드가 **`*.read` (읽기 권한)**인 경우 멤버가 아니더라도 **`true`**를 반환하여 UI 상의 경고창 없이 자연스러운
       Read-Only UX 제공.
+      [work-setting](../work-setting)
