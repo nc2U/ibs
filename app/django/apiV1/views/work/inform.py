@@ -220,12 +220,17 @@ class SearchViewSet(viewsets.ModelViewSet):
     def _search_comments(user, q, scope, slug):
         qs = IssueComment.objects.filter(
             content__icontains=q,
-            is_private=False,
             issue__project__status='1',
         ).select_related('issue__project', 'creator')
 
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
-            qs = qs.filter(issue__project__members__user=user).distinct()
+            qs = qs.filter(
+                Q(issue__project__is_public=True) | Q(issue__project__members__user=user)
+            ).filter(
+                Q(is_private=False) | Q(creator=user)
+            ).distinct()
+        else:
+            qs = qs.filter(Q(is_private=False) | Q(creator=user))
 
         if scope == 'project' and slug:
             qs = qs.filter(issue__project__slug=slug)
@@ -256,7 +261,9 @@ class SearchViewSet(viewsets.ModelViewSet):
 
         qs = Meeting.objects.filter(q_expr).select_related('project', 'creator')
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
-            qs = qs.filter(project__members__user=user).distinct()
+            qs = qs.filter(
+                Q(project__is_public=True) | Q(project__members__user=user)
+            ).distinct()
         if scope == 'project' and slug:
             qs = qs.filter(project__slug=slug)
         elif scope == 'my':
@@ -363,9 +370,15 @@ class SearchViewSet(viewsets.ModelViewSet):
         qs = Post.objects.filter(q_expr, deleted__isnull=True,
                                  forum__project__status='1').select_related('forum__project', 'creator')
 
-        # 권한 제어: 멤버십 프로젝트 내 게시판 게시글만 허용
+        # 권한 제어: 공개 프로젝트 OR 멤버십 프로젝트의 게시글 허용 (비밀글/블라인드글 보안 가드)
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
-            qs = qs.filter(forum__project__members__user=user).distinct()
+            qs = qs.filter(
+                Q(forum__project__is_public=True) | Q(forum__project__members__user=user)
+            ).filter(
+                Q(is_secret=False) | Q(creator=user)
+            ).filter(is_blind=False).distinct()
+        else:
+            qs = qs.filter(is_blind=False)
 
         if scope == 'project' and slug:
             qs = qs.filter(forum__project__slug=slug)

@@ -350,6 +350,10 @@ class IssuePermission(ProjectPermission):
                 if not can_read_private:
                     return False
 
+            # 공개 프로젝트의 일반 업무는 비멤버라도 읽기(GET) 허용 (목록과 상세 조회의 권한 정합성 보장)
+            if project.is_public:
+                return True
+
             # 일반 업무 가시성 체크
             if issue_visible == 'ALL':
                 pass  # 모두 허용
