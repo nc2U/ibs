@@ -20,7 +20,7 @@ const props = defineProps({
   isSuccession: { type: Boolean, default: false },
 })
 
-const emit = defineEmits(['on-submit', 'close'])
+const emit = defineEmits(['on-submit', 'on-delete', 'close'])
 
 const { can, PERM } = usePerms()
 const canContractUpdate = computed(() => can(PERM.CONTRACT_UPDATE))
@@ -141,7 +141,10 @@ const deleteConfirm = () => {
   else refAlertModal.value.callModal()
 }
 
-const modalAction = () => alert('this is ready!')
+const modalAction = () => {
+  refConfirmModal.value.close()
+  if (form.pk) emit('on-delete', form.pk)
+}
 
 const addressCallback = (data: AddressData) => {
   const { formNum, zipcode, address1, address3 } = callAddress(data)
@@ -550,15 +553,20 @@ watch([() => props.succession, contractor], () => formDataSet(), { deep: true })
         >
           저장
         </v-btn>
-        <v-btn
-          v-if="isSuccession"
-          type="button"
-          size="small"
-          color="warning"
-          @click="deleteConfirm"
-        >
-          삭제
-        </v-btn>
+        <span v-if="isSuccession" class="d-inline-block">
+          <v-btn
+            type="button"
+            size="small"
+            color="warning"
+            :disabled="succession.status === '3'"
+            @click="deleteConfirm"
+          >
+            삭제
+          </v-btn>
+          <v-tooltip v-if="succession.status === '3'" activator="parent" location="top">
+            승계완료된 거래 건은 삭제할 수 없습니다.
+          </v-tooltip>
+        </span>
         <v-btn type="button" size="small" color="light" @click="emit('close')" flat> 닫기</v-btn>
       </slot>
     </CModalFooter>

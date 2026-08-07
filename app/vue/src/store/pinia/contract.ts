@@ -677,6 +677,20 @@ export const useContract = defineStore('contract', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
+  const deleteSuccession = async (pk: number, project: number, page = 1) => {
+    return await api
+      .delete(`/succession/${pk}/`)
+      .then(() =>
+        fetchSuccessionList(project, page).then(() => {
+          contract.value = null
+          contractor.value = null
+          succession.value = null
+          message('warning', '', '해당 승계 건이 삭제되었습니다.')
+        }),
+      )
+      .catch(err => errorHandle(err.response.data))
+  }
+
   const findSuccessionPage = async (highlightId: number, projectId: number) => {
     let url = `/succession/find-page/?highlight_id=${highlightId}`
     url += `&project=${projectId}&limit=10`
@@ -943,6 +957,7 @@ export const useContract = defineStore('contract', () => {
     fetchSuccessionList,
     createSuccession,
     patchSuccession,
+    deleteSuccession,
     findSuccessionPage,
 
     contRelease,

@@ -68,6 +68,9 @@ const createSuccession = (payload: Succession & BuyerForm & { project: number; p
 const patchSuccession = (payload: Succession & BuyerForm & { project: number; page: number }) =>
   contStore.patchSuccession(payload)
 
+const deleteSuccession = (pk: number) =>
+  contStore.deleteSuccession(pk, project.value as number, page.value)
+
 const route = useRoute()
 watch(
   () => route.params.contractorId,
@@ -173,6 +176,11 @@ const onSubmit = (payload: { s_data: Succession; b_data: BuyerForm }) => {
       project: project.value as number,
       page: page.value,
     })
+  successionFormModal.value.close()
+}
+
+const onDelete = (pk: number) => {
+  deleteSuccession(pk)
   successionFormModal.value.close()
 }
 
@@ -330,6 +338,7 @@ onBeforeMount(async () => {
           :succession="succession ?? undefined"
           :is-succession="isSuccession"
           @on-submit="onSubmit"
+          @on-delete="onDelete"
           @close="successionFormModal.close()"
         />
       </template>
