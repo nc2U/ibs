@@ -64,6 +64,7 @@ export default defineConfig({
         items: [
           { text: 'IBS란?', link: '/' },
           { text: '시작하기', link: '/intro/getting-started' },
+          { text: '권한 및 공개 정책', link: '/intro/security-policy' },
           { text: '대시보드', link: '/intro/dashboard' },
         ],
       },
