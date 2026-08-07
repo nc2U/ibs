@@ -244,10 +244,10 @@ class IbsModulePermission(ProjectPermission):
         if not required_perm:
             return True
 
-        # 5. list 또는 안전 메서드 + project 미지정 → Row-Level Security 에서 필터링
+        # 5. list 또는 단일 객체 액션 / 안전 메서드 + project 미지정 → has_object_permission 또는 Row-Level Security 에서 필터링 및 검증
         action = getattr(view, 'action', None)
         if not project_pk:
-            if action == 'list' or request.method in permissions.SAFE_METHODS:
+            if action in ('list', 'retrieve', 'update', 'partial_update', 'destroy') or request.method in permissions.SAFE_METHODS:
                 return True
             return False
 

@@ -244,24 +244,6 @@ watch([() => props.succession, contractor], () => formDataSet(), { deep: true })
             </CCol>
           </CRow>
         </CCol>
-
-        <!--        <CCol xs="6">-->
-        <!--          <CRow>-->
-        <!--            <CFormLabel class="col-sm-4 col-form-label">계약건</CFormLabel>-->
-        <!--            <CCol sm="8" class="text-left">-->
-        <!--              <CFormSelect-->
-        <!--                v-if="contractor"-->
-        <!--                v-model="form.contract"-->
-        <!--                required-->
-        <!--                readonly-->
-        <!--              >-->
-        <!--                <option :value="contractor.contract">-->
-        <!--                  {{ contractor.__str__ }}-->
-        <!--                </option>-->
-        <!--              </CFormSelect>-->
-        <!--            </CCol>-->
-        <!--          </CRow>-->
-        <!--        </CCol>-->
       </CRow>
 
       <CRow class="mb-2">
