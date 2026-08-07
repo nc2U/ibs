@@ -13,6 +13,7 @@ from apiV1.permissions.ibs_perms import IbsModulePermission
 from ledger.models import ProjectAccountingEntry, ProjectBankTransaction
 from project.models import Project, ProjectIncBudget, ProjectOutBudget, Site, SiteOwner, \
     SiteOwnshipRelationship, SiteContract
+from work.models import IssueProject
 from ..pagination import PageNumberPaginationFifty, PageNumberPaginationOneHundred, \
     PageNumberPaginationOneThousand
 from ..serializers.project import ProjectSerializer, ProjectIncBudgetSerializer, ProjectOutBudgetSerializer, \
@@ -24,8 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_accessible_project_ids(user):
-    from work.models import IssueProject
-    return IssueProject.objects.filter(members__user=user).values_list('project_id', flat=True)
+    return IssueProject.objects.filter(members__user=user).values_list('project__id', flat=True)
 
 
 # 사이트 액션별 권한 매핑 (SiteOwnerViewSet, SiteContractViewSet 공통)

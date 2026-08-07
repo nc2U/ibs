@@ -5,9 +5,10 @@ from django_filters import BooleanFilter
 from django_filters.rest_framework import FilterSet
 from rest_framework import viewsets
 
-from items.models import UnitType, UnitFloorType, KeyUnit, BuildingUnit, HouseUnit, OptionItem
-from ..pagination import PageNumberPaginationFifty, PageNumberPaginationThreeHundred, PageNumberPaginationThreeThousand
 from apiV1.permissions.auth_perms import permissions, IsProjectStaffOrReadOnly
+from items.models import UnitType, UnitFloorType, KeyUnit, BuildingUnit, HouseUnit, OptionItem
+from work.models import IssueProject
+from ..pagination import PageNumberPaginationFifty, PageNumberPaginationThreeHundred, PageNumberPaginationThreeThousand
 from ..serializers.items import (UnitTypeSerializer, UnitFloorTypeSerializer, KeyUnitSerializer,
                                  BuildingUnitSerializer, HouseUnitSerializer, AllHouseUnitSerializer,
                                  HouseUnitSummarySerializer, OptionItemSerializer)
@@ -16,8 +17,7 @@ TODAY = datetime.today().strftime('%Y-%m-%d')
 
 
 def get_accessible_project_ids(user):
-    from work.models import IssueProject
-    return IssueProject.objects.filter(members__user=user).values_list('project_id', flat=True)
+    return IssueProject.objects.filter(members__user=user).values_list('project__id', flat=True)
 
 
 # Items --------------------------------------------------------------------------

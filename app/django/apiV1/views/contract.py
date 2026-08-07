@@ -1,3 +1,4 @@
+import django_filters
 from django.core.cache import cache
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Case, When, Value, IntegerField, Count, Sum, Q, Prefetch
@@ -10,7 +11,6 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-import django_filters
 
 from _utils.contract_price import get_project_payment_summary, get_multiple_projects_payment_summary, \
     get_contract_price, get_contract_payment_plan
@@ -23,6 +23,7 @@ from contract.services import ContractPriceBulkUpdateService
 from items.models import BuildingUnit, UnitType
 from payment.models import ContractPayment
 from project.models import Project
+from work.models import IssueProject
 from ..pagination import PageNumberPaginationThreeThousand, PageNumberPaginationFifteen, PageNumberPaginationFifty
 from ..serializers.contract import OrderGroupSerializer, DocumentTypeSerializer, RequiredDocumentSerializer, \
     ContractSerializer, PaymentSummarySerializer, ContractPriceWithPaymentPlanSerializer, \
@@ -34,8 +35,7 @@ from ..serializers.contract import OrderGroupSerializer, DocumentTypeSerializer,
 
 
 def get_accessible_project_ids(user):
-    from work.models import IssueProject
-    return IssueProject.objects.filter(members__user=user).values_list('project_id', flat=True)
+    return IssueProject.objects.filter(members__user=user).values_list('project__id', flat=True)
 
 
 # Contract --------------------------------------------------------------------------

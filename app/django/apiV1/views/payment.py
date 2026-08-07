@@ -1,6 +1,6 @@
+import logging
 from collections import defaultdict
 from datetime import datetime
-import logging
 
 from django.db import connection
 from django.db.models import Sum
@@ -10,6 +10,8 @@ from rest_framework import viewsets
 from rest_framework.response import Response
 
 from _utils.contract_price import get_contract_payment_plan
+from apiV1.permissions.auth_perms import permissions, IsProjectStaffOrReadOnly
+from apiV1.permissions.ibs_perms import IbsModulePermission
 from contract.models import ContractPrice, OrderGroup, Contract
 from items.models import KeyUnit
 from items.models import UnitType, HouseUnit
@@ -18,10 +20,9 @@ from payment.models import InstallmentPaymentOrder, SalesPriceByGT, PaymentPerIn
     ContractPayment
 from project.models import Project
 from project.models import ProjectIncBudget
+from work.models import IssueProject
 from ..pagination import PageNumberPaginationTwenty, PageNumberPaginationFifty, \
     PageNumberPaginationTen, PageNumberPaginationOneHundred
-from apiV1.permissions.auth_perms import permissions, IsProjectStaffOrReadOnly
-from apiV1.permissions.ibs_perms import IbsModulePermission
 from ..serializers.payment import InstallmentOrderSerializer, SalesPriceSerializer, \
     PaymentPerInstallmentSerializer, DownPaymentSerializer, OverDueRuleSerializer, \
     PaymentSummaryComponentSerializer, PaymentStatusByUnitTypeSerializer, OverallSummarySerializer, \
@@ -33,8 +34,7 @@ TODAY = datetime.today().strftime('%Y-%m-%d')
 
 
 def get_accessible_project_ids(user):
-    from work.models import IssueProject
-    return IssueProject.objects.filter(members__user=user).values_list('project_id', flat=True)
+    return IssueProject.objects.filter(members__user=user).values_list('project__id', flat=True)
 
 
 # Payment --------------------------------------------------------------------------
@@ -126,7 +126,9 @@ class ContractPaymentViewSet(viewsets.ModelViewSet):
 
     @property
     def required_permission(self):
-        return 'payment.read' if self.action in ('list', 'retrieve') else 'payment.create' if self.action == 'create' else 'payment.update' if self.action in ('update', 'partial_update') else 'payment.delete' if self.action == 'destroy' else 'payment.read'
+        return 'payment.read' if self.action in ('list',
+                                                 'retrieve') else 'payment.create' if self.action == 'create' else 'payment.update' if self.action in (
+            'update', 'partial_update') else 'payment.delete' if self.action == 'destroy' else 'payment.read'
 
 
 class DownPaymentViewSet(viewsets.ModelViewSet):

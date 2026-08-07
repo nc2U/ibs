@@ -20,6 +20,7 @@ from ledger.models import (
 )
 from ledger.services.company_transaction import get_company_transactions
 from ledger.services.project_transaction import get_project_transactions, prefetch_project_transactions
+from work.models import IssueProject
 from ..pagination import PageNumberPaginationFifteen, PageNumberPaginationFifty, PageNumberPaginationThreeHundred
 from ..permissions import IsProjectStaffOrReadOnly
 from ..serializers.ledger import (
@@ -60,8 +61,7 @@ class LedgerCompanyBankAccountViewSet(viewsets.ModelViewSet):
 
 
 def get_accessible_project_ids(user):
-    from work.models import IssueProject
-    return IssueProject.objects.filter(members__user=user).values_list('project_id', flat=True)
+    return IssueProject.objects.filter(members__user=user).values_list('project__id', flat=True)
 
 
 class LedgerProjectBankAccountViewSet(viewsets.ModelViewSet):
