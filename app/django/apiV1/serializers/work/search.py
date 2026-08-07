@@ -17,16 +17,20 @@ class IssueSearchSerializer(serializers.ModelSerializer):
         model = Issue
         fields = ('pk', 'project', 'tracker', 'status', 'subject', 'created', 'creator', 'is_private')
 
-    def get_project(self, obj):
+    @staticmethod
+    def get_project(obj):
         return {'slug': obj.project.slug, 'name': obj.project.name}
 
-    def get_tracker(self, obj):
+    @staticmethod
+    def get_tracker(obj):
         return {'pk': obj.tracker.pk, 'name': obj.tracker.name}
 
-    def get_status(self, obj):
+    @staticmethod
+    def get_status(obj):
         return {'name': obj.status.name, 'closed': obj.status.closed}
 
-    def get_creator(self, obj):
+    @staticmethod
+    def get_creator(obj):
         if obj.creator:
             return {'pk': obj.creator.pk, 'username': obj.creator.username}
         return None
@@ -40,14 +44,16 @@ class CommentSearchSerializer(serializers.ModelSerializer):
         model = IssueComment
         fields = ('pk', 'issue', 'content', 'created', 'creator')
 
-    def get_issue(self, obj):
+    @staticmethod
+    def get_issue(obj):
         return {
             'pk': obj.issue.pk,
             'subject': obj.issue.subject,
             'project': {'slug': obj.issue.project.slug, 'name': obj.issue.project.name},
         }
 
-    def get_creator(self, obj):
+    @staticmethod
+    def get_creator(obj):
         return {'pk': obj.creator.pk, 'username': obj.creator.username}
 
 
@@ -59,10 +65,12 @@ class MeetingSearchSerializer(serializers.ModelSerializer):
         model = Meeting
         fields = ('pk', 'project', 'title', 'meeting_date', 'status', 'creator')
 
-    def get_project(self, obj):
+    @staticmethod
+    def get_project(obj):
         return {'slug': obj.project.slug, 'name': obj.project.name}
 
-    def get_creator(self, obj):
+    @staticmethod
+    def get_creator(obj):
         return {'pk': obj.creator.pk, 'username': obj.creator.username}
 
 
@@ -74,10 +82,12 @@ class NewsSearchSerializer(serializers.ModelSerializer):
         model = News
         fields = ('pk', 'project', 'title', 'summary', 'created', 'author')
 
-    def get_project(self, obj):
+    @staticmethod
+    def get_project(obj):
         return {'slug': obj.project.slug, 'name': obj.project.name}
 
-    def get_author(self, obj):
+    @staticmethod
+    def get_author(obj):
         return {'pk': obj.author.pk, 'username': obj.author.username}
 
 
@@ -89,10 +99,12 @@ class DocumentSearchSerializer(serializers.ModelSerializer):
         model = Document
         fields = ('pk', 'project', 'title', 'description', 'created', 'creator')
 
-    def get_project(self, obj):
+    @staticmethod
+    def get_project(obj):
         return {'slug': obj.issue_project.slug, 'name': obj.issue_project.name}
 
-    def get_creator(self, obj):
+    @staticmethod
+    def get_creator(obj):
         return {'pk': obj.creator.pk, 'username': obj.creator.username} if obj.creator else None
 
 
@@ -105,12 +117,14 @@ class PostSearchSerializer(serializers.ModelSerializer):
         model = Post
         fields = ('pk', 'project', 'forum', 'title', 'created', 'creator')
 
-    def get_project(self, obj):
+    @staticmethod
+    def get_project(obj):
         return {'slug': obj.forum.project.slug, 'name': obj.forum.project.name}
 
-    def get_forum(self, obj):
+    @staticmethod
+    def get_forum(obj):
         return obj.forum.pk
 
-    def get_creator(self, obj):
+    @staticmethod
+    def get_creator(obj):
         return {'pk': obj.creator.pk, 'username': obj.creator.username} if obj.creator else None
-
