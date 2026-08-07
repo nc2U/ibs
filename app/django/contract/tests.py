@@ -258,6 +258,7 @@ class SuccessionAndReleaseAPITests(APITestCase):
             seller=self.seller,
             buyer=buyer,
             apply_date='2026-02-01',
+            trading_date='2026-02-01',
             status='1'
         )
         self.seller.status = '3'
@@ -292,6 +293,7 @@ class SuccessionAndReleaseAPITests(APITestCase):
             seller=self.seller,
             buyer=buyer,
             apply_date='2026-02-01',
+            trading_date='2026-02-01',
             status='3'  # 승계 완료
         )
 
@@ -304,11 +306,15 @@ class SuccessionAndReleaseAPITests(APITestCase):
     def test_update_succession_to_canceled_inactivates_buyer(self):
         """승계 취소(status='9')로 변경 시 seller 복구 및 buyer 비활성화(status='4', is_active=False) 검증"""
         buyer = Contractor.objects.create(name='양수인', status='3', is_active=False)
+        ContractorAddress.objects.create(contractor=buyer, id_zipcode='12345', id_address1='서울시 강남구', id_address2='101호', id_address3='')
+        ContractorContact.objects.create(contractor=buyer, cell_phone='010-1234-5678')
+
         succession = Succession.objects.create(
             contract=self.contract,
             seller=self.seller,
             buyer=buyer,
             apply_date='2026-02-01',
+            trading_date='2026-02-01',
             status='1'
         )
 
@@ -317,7 +323,15 @@ class SuccessionAndReleaseAPITests(APITestCase):
             'contract': self.contract.pk,
             'seller': self.seller.pk,
             'buyer': buyer.pk,
+            'name': '양수인',
+            'gender': 'M',
+            'id_zipcode': '12345',
+            'id_address1': '서울시 강남구',
+            'id_address2': '101호',
+            'id_address3': '',
+            'cell_phone': '010-1234-5678',
             'apply_date': '2026-02-01',
+            'trading_date': '2026-02-01',
             'status': '9'  # 승계취소
         }
         response = self.client.put(url, data, format='json')

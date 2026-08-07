@@ -815,6 +815,7 @@ class SuccessionViewSet(viewsets.ModelViewSet):
             raise serializers.ValidationError({'detail': '이미 변경인가(승계 완료)가 처리된 건은 직접 삭제할 수 없습니다. 먼저 승계 취소(9) 처리하십시오.'})
 
         seller = instance.seller
+        buyer = instance.buyer
 
         # 1. 양도인(seller) 계약 상태 완전 원상 복구
         if seller:
@@ -826,9 +827,11 @@ class SuccessionViewSet(viewsets.ModelViewSet):
             seller.save()
 
         # 2. Succession 레코드 삭제
-        # - seller, contract는 PROTECT 정책에 따라 DB에 100% 안전 보존됨
-        # - buyer는 CASCADE 정책에 따라 자동으로 개인정보 연쇄 파기됨
         instance.delete()
+
+        # 3. 양수인(buyer) 개인정보 완전 파기 (Contractor, Address, Contact 연쇄 삭제)
+        if buyer:
+            buyer.delete()
 
     @action(detail=False, methods=['get'], url_path='find-page')
     def find_page(self, request):
