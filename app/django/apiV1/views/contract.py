@@ -1,11 +1,12 @@
 import django_filters
 from django.core.cache import cache
 from django.core.exceptions import ObjectDoesNotExist
+from django.db import transaction, models
 from django.db.models import Case, When, Value, IntegerField, Count, Sum, Q, Prefetch
 from django.shortcuts import get_object_or_404
 from django_filters import ChoiceFilter, ModelChoiceFilter, DateFilter, BooleanFilter
 from django_filters.rest_framework import FilterSet
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, serializers
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
@@ -772,8 +773,59 @@ class SuccessionViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
 
+    @transaction.atomic
     def perform_update(self, serializer):
+        instance = self.get_object()
+        old_status = instance.status
+        new_status = serializer.validated_data.get('status', old_status)
+
+        # 1. 완료건(status='3')을 취소(status='9')로 직접 변경 불가 안내
+        if old_status == '3' and new_status == '9':
+            raise serializers.ValidationError({'detail': '이미 변경인가(승계 완료)가 처리된 건은 직접 취소할 수 없습니다.'})
+
+        # 2. 신청/심사 중('1', '2')에서 취소('9')로 변경 시 양도인 복구 및 양수인 비활성화(방안 A)
+        if old_status in ('1', '2') and new_status == '9':
+            seller = instance.seller
+            buyer = instance.buyer
+
+            # seller (양도인) 원상복구
+            if seller:
+                seller.contract = instance.contract
+                seller.prev_contract = None
+                seller.status = '2'  # 정상 계약자
+                seller.change_type = None
+                seller.is_active = True
+                seller.save()
+
+            # buyer (양수인) 비활성화 (이력 보관: status='4'[계약종결], is_active=False)
+            if buyer:
+                buyer.status = '4'  # 계약종결
+                buyer.change_type = None
+                buyer.is_active = False
+                buyer.save()
+
         serializer.save(updator=self.request.user)
+
+    @transaction.atomic
+    def perform_destroy(self, instance):
+        if instance.status == '3':
+            raise serializers.ValidationError({'detail': '이미 변경인가(승계 완료)가 처리된 건은 직접 삭제할 수 없습니다. 먼저 승계 취소(9) 처리하십시오.'})
+
+        seller = instance.seller
+
+        # 1. 양도인(seller) 계약 상태 완전 원상 복구
+        if seller:
+            seller.contract = instance.contract
+            seller.prev_contract = None
+            seller.status = '2'  # 정상 계약자
+            seller.change_type = None
+            seller.is_active = True
+            seller.save()
+
+        # 2. Succession 레코드 삭제
+        # - seller, contract는 PROTECT 정책에 따라 DB에 100% 안전 보존됨
+        # - buyer는 CASCADE 정책에 따라 자동으로 개인정보 연쇄 파기됨
+        instance.delete()
 
     @action(detail=False, methods=['get'], url_path='find-page')
     def find_page(self, request):
