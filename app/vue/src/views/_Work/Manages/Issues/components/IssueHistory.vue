@@ -91,6 +91,12 @@ onBeforeMount(() => {
 <style lang="scss" scoped>
 :deep(.history) {
   color: #7f7f7f;
+  li {
+    padding-left: 0;
+  }
+  li.list-item {
+    list-style: none;
+  }
 
   .vue-md-it-wrapper {
     float: left;
