@@ -1145,14 +1145,6 @@ onBeforeRouteLeave(() => formDataReset())
         <v-icon icon="mdi-check-circle-outline" class="mr-2" />
         저장
       </v-btn>
-      <!--            <v-btn-->
-      <!--              v-if="canContractDelete && contract"-->
-      <!--              type="button"-->
-      <!--              color="warning"-->
-      <!--              @click="deleteContract"-->
-      <!--            >-->
-      <!--              삭제-->
-      <!--            </v-btn>-->
       <v-btn type="button" color="light" @click="$emit('close')" flat>닫기</v-btn>
     </CCardFooter>
   </CForm>
