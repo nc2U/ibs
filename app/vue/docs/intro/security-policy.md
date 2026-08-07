@@ -10,21 +10,21 @@ IBS 시스템은 **시행/건설 프로젝트 (현장)**를 중심으로 권한�
 
 ```mermaid
 flowchart TD
-    A["사용자 API / 화면 요청"] --> B{"슈퍼유저 / Work Manager?"}
+    A["사용자 API / 화면 요청"] --> B{"슈퍼유저 / 업무관리자 ?"}
     B -- Yes --> C["전체 데이터 접근 승인"]
     B -- No --> D{"도메인 구분"}
-    D -- " ibs_global / docs / 소송 " --> E["Strict Member Security"]
+    D -- " 프로젝트 데이터 관리 (ibs_global / docs / 소송) " --> E["멤버 전용 (Strict Member Security)"]
     E --> E1{"해당 프로젝트의 멤버인가?"}
     E1 -- Yes --> E2["접근 승인"]
-    E1 -- No --> E3["403 Forbidden / 목록에서 제외"]
-    D -- " work_core 모듈 " --> F{"프로젝트 공개 여부?"}
-    F -- " 공개 프로젝트 (is_public = True) " --> G["Public Read-Only"]
+    E1 -- No --> E3["제한 (목록에서 제외) 403 Forbidden"]
+    D -- " 업무/협업 (work_core) 모듈 " --> F{"프로젝트 공개 여부?"}
+    F -- " 공개 프로젝트 " --> G["읽기 허용 (Public Read-Only)"]
     G --> G1{"요청 종류"}
-    G1 -- " 읽기 (GET / HEAD) " --> G2{"비공개 / 비밀 / 블라인드?"}
+    G1 -- " 읽기 (GET / HEAD) " --> G2{"비공개 / 비밀 / 블라인드 어부?"}
     G2 -- " 일반 항목 " --> G3["열람 승인"]
-    G2 -- " is_private / secret / blind " --> G4["은폐 / 403 Forbidden"]
-    G1 -- " CUD (쓰기 / 수정 / 삭제) " --> G5["멤버 전용 (403 Forbidden)"]
-    F -- " 비공개 프로젝트 (is_public = False) " --> H["Strict Member Security"]
+    G2 -- " 비공개 / 비밀 / 숨김 (is_private / secret / blind) " --> G4["제한 / 403 Forbidden"]
+    G1 -- " 쓰기 / 수정 / 삭제(CUD) " --> G5["멤버 허용 (비멤버 제한 403 Forbidden)"]
+    F -- " 비공개 프로젝트 " --> H["멤버 전용 (Strict Member Security)"]
     H --> E1
 ```
 
