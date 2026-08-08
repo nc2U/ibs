@@ -1,6 +1,7 @@
+from django.db import transaction
 from django.db.models import Q
 from django_filters.rest_framework import FilterSet, BooleanFilter, CharFilter, DateFilter
-from rest_framework import viewsets, serializers, permissions
+from rest_framework import viewsets, serializers, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -138,6 +139,35 @@ class IssueProjectViewSet(viewsets.ModelViewSet):
         members_data = project.all_members()
         serializer = ProjectMemberUserSerializer(members_data, many=True)
         return Response(serializer.data)
+
+    @transaction.atomic
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        # 1. 하위 프로젝트 parent = None 처리
+        instance.issueproject_set.update(parent=None)
+
+        # 2. PROTECT 5개 핵심 데이터 존재 여부 검사
+        has_project = hasattr(instance, 'project')
+        has_meetings = instance.meetings.exists() if hasattr(instance, 'meetings') else False
+        has_issues = instance.issues.exists() if hasattr(instance, 'issues') else False
+        has_docs = instance.docs.exists() if hasattr(instance, 'docs') else False
+        has_lawsuits = instance.lawsuit_cases.exists() if hasattr(instance, 'lawsuit_cases') else False
+
+        has_protected_data = has_project or has_meetings or has_issues or has_docs or has_lawsuits
+
+        # 3-A. PROTECT 데이터가 존재하는 경우: '잠금보관(status=9)' 처리
+        if has_protected_data:
+            instance.status = '9'  # 잠금보관
+            instance.save()
+            return Response({
+                'action': 'archived',
+                'message': "프로젝트 내에 업무/회의/문서 이력 등이 보존되어 있어 삭제되지 않고 '잠금보관(status=9)' 처리되었습니다."
+            }, status=status.HTTP_200_OK)
+
+        # 3-B. PROTECT 데이터가 없는 경우: DB 완전 삭제 (Hard Delete)
+        self.perform_destroy(instance)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True, methods=['post'])
     def toggle_status(self, request, slug=None):
