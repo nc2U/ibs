@@ -8,6 +8,7 @@ import Multiselect from '@vueform/multiselect'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import AllProjectsSelect from '@/views/_Work/components/atomics/AllProjectsSelect.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
+import ColumnSelector from '@/views/_Work/components/atomics/ColumnSelector.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
 
 const props = defineProps({
@@ -18,21 +19,53 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['filter-submit', 'change-view-mode'])
+const emit = defineEmits(['filter-submit', 'change-view-mode', 'change-columns'])
 
 const refQuerySaveModal = ref()
 
 const { can, PERM } = usePerms()
 const informStore = useInform()
 
-const viewMode = ref<'board' | 'list'>(
-  (localStorage.getItem('project-view-mode') as 'board' | 'list') || 'board',
-)
+export interface ColumnItem {
+  key: string
+  label: string
+  fixed?: boolean
+}
 
-watch(viewMode, nVal => {
-  localStorage.setItem('project-view-mode', nVal)
-  emit('change-view-mode', nVal)
-})
+const allColumnsPool: ColumnItem[] = [
+  { key: 'name', label: '이름', fixed: true },
+  { key: 'slug', label: '식별자' },
+  { key: 'description', label: '설명' },
+  { key: 'is_public', label: '공개여부' },
+  { key: 'created', label: '등록일' },
+  { key: 'updated', label: '수정일' },
+]
+
+const defaultColumnKeys = ['name', 'slug', 'description']
+
+const getSavedColumns = (): string[] => {
+  const saved = localStorage.getItem('project-table-columns')
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved)
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed
+    } catch {
+      // ignore
+    }
+  }
+  return defaultColumnKeys
+}
+
+const selectedColumnKeys = ref<string[]>(getSavedColumns())
+
+watch(
+  selectedColumnKeys,
+  nVal => {
+    localStorage.setItem('project-table-columns', JSON.stringify(nVal))
+    emit('change-columns', nVal)
+  },
+  { immediate: true, deep: true },
+)
 
 const condVisible = ref(true)
 const optVisible = ref(false)
@@ -557,29 +590,7 @@ defineExpose({ applyQuery, resetFilter })
     <v-divider class="mx-3 mt-2 mb-0" />
     <CCollapse :visible="optVisible">
       <slot name="option">
-        <CRow class="m-2" color="light">
-          <CCol>
-            <span class="mr-3">결과 표시 </span>
-            <CFormCheck
-              v-model="viewMode"
-              label="보드"
-              name="viewMode"
-              id="board-view-mode"
-              value="board"
-              inline
-              type="radio"
-            />
-            <CFormCheck
-              v-model="viewMode"
-              label="목록"
-              name="viewMode"
-              id="list-view-mode"
-              value="list"
-              inline
-              type="radio"
-            />
-          </CCol>
-        </CRow>
+        <ColumnSelector v-model="selectedColumnKeys" :all-columns="allColumnsPool" />
       </slot>
     </CCollapse>
   </CRow>

@@ -25,6 +25,11 @@ const workStore = useWork()
 const projectResultsFlat = computed<IssueProject[]>(() => workStore.projectResultsFlat)
 const allReadableProjects = computed(() => workStore.getAllReadableProjects)
 
+const selectedColumns = ref<string[]>(['name', 'slug', 'description'])
+const onChangeColumns = (cols: string[]) => {
+  selectedColumns.value = cols
+}
+
 // 검색양식 관련 계산 및 메서드
 const filterSubmit = (payload: ProjectFilter) => {
   workStore.fetchIssueProjectList(payload)
@@ -66,11 +71,16 @@ onBeforeMount(async () => {
         ref="querySectionRef"
         :all-readable-projects="allReadableProjects"
         @filter-submit="filterSubmit"
+        @change-columns="onChangeColumns"
       />
 
       <NoData v-if="!projectResultsFlat.length" />
 
-      <ProjectTable v-else :issue-projects-flat="projectResultsFlat" />
+      <ProjectTable
+        v-else
+        :issue-projects-flat="projectResultsFlat"
+        :columns="selectedColumns"
+      />
     </template>
 
     <template v-slot:aside></template>
