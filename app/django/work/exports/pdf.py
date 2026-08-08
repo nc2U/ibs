@@ -1,10 +1,8 @@
-from django.contrib.auth.mixins import LoginRequiredMixin
-
 from _pdf.mixins import PdfExportMixin, PdfUtilsMixin
 from work.models.meeting import Meeting
 
 
-class PdfExportMeeting(LoginRequiredMixin, PdfExportMixin, PdfUtilsMixin):
+class PdfExportMeeting(PdfExportMixin, PdfUtilsMixin):
     """회의록 PDF 내보내기 뷰"""
 
     def get(self, request, pk):
@@ -19,8 +17,8 @@ class PdfExportMeeting(LoginRequiredMixin, PdfExportMixin, PdfUtilsMixin):
             company=meeting.project.company
         )
 
-        # 파일명 생성
-        filename = self.create_filename('Meeting_Minutes', meeting.pk)
+        # 파일명 생성 (확장자 없이 베이스 파일명 전달)
+        filename = f"Meeting_Minutes_{meeting.pk}"
 
         # PDF 응답 생성
         return self.create_pdf_response('pdf/meeting.html', context, filename)

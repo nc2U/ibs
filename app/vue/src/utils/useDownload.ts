@@ -1,4 +1,5 @@
 import { reactive } from 'vue'
+import Cookies from 'js-cookie'
 
 // 파일 타입 정의
 export const FILE_TYPES = {
@@ -44,6 +45,7 @@ const downloadState = reactive<DownloadState>({
 export interface UseDownloadReturn {
   downloadState: DownloadState
   downloadFile: (url: string, fileName?: string) => Promise<void>
+  downloadViaWindowOpen: (url: string, fileName?: string) => void
   downloadPDF: (url: string, fileName?: string) => Promise<void>
   downloadExcel: (url: string, fileName?: string) => Promise<void>
   downloadWithProgress: (url: string, fileName?: string) => Promise<void>
@@ -93,14 +95,7 @@ export function useDownload(): UseDownloadReturn {
       downloadState.fileType = detectFileType(fileName)
       downloadState.progress = 0
 
-      // URL에 filename 파라미터 추가
-      let finalUrl = url
-      if (fileName && fileName !== 'document') {
-        const separator = url.includes('?') ? '&' : '?'
-        // 확장자 제거하여 서버에서 확장자를 추가하도록 함
-        const nameWithoutExt = fileName.replace(/\.(pdf|xlsx?|docx?|png|jpe?g|gif)$/i, '')
-        finalUrl = `${url}${separator}filename=${encodeURIComponent(nameWithoutExt)}`
-      }
+      const finalUrl = url
 
       // 진행률 시뮬레이션
       let progress = 0
@@ -110,9 +105,15 @@ export function useDownload(): UseDownloadReturn {
       }, 200)
 
       try {
-        // fetch API를 사용하여 서버의 Content-Disposition 헤더를 존중
+        const token = Cookies.get('token')
+        const headers: Record<string, string> = {}
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`
+        }
+
         const response = await fetch(finalUrl, {
           method: 'GET',
+          headers,
           credentials: 'include',
         })
 
@@ -188,7 +189,17 @@ export function useDownload(): UseDownloadReturn {
       downloadState.fileType = detectFileType(fileName)
       downloadState.progress = 0
 
-      const response = await fetch(url)
+      const token = Cookies.get('token')
+      const headers: Record<string, string> = {}
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers,
+        credentials: 'include',
+      })
 
       if (!response.body) {
         throw new Error('Response body is null')
@@ -255,9 +266,38 @@ export function useDownload(): UseDownloadReturn {
     return downloadFile(url, fileName)
   }
 
+  const downloadViaWindowOpen = (url: string, fileName: string = 'document.pdf') => {
+    downloadState.isDownloading = true
+    downloadState.downloadUrl = url
+    downloadState.fileName = fileName
+    downloadState.fileType = detectFileType(fileName)
+    downloadState.progress = 10
+
+    const progressInterval = setInterval(() => {
+      if (downloadState.progress < 90) {
+        downloadState.progress += 20
+      }
+    }, 150)
+
+    window.open(url, '_blank')
+
+    setTimeout(() => {
+      clearInterval(progressInterval)
+      downloadState.progress = 100
+      setTimeout(() => {
+        downloadState.isDownloading = false
+        downloadState.downloadUrl = null
+        downloadState.fileName = null
+        downloadState.fileType = null
+        downloadState.progress = 0
+      }, 600)
+    }, 800)
+  }
+
   return {
     downloadState,
     downloadFile,
+    downloadViaWindowOpen,
     downloadPDF,
     downloadExcel,
     downloadWithProgress,

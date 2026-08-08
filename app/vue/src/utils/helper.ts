@@ -118,7 +118,7 @@ export const setLocalStorage = (orderedList: Item[], key: string) => {
 }
 
 // 파일 다운로드
-export const { downloadFile } = useDownload()
+export const { downloadFile, downloadViaWindowOpen } = useDownload()
 
 export const cleanupParams = (params: Record<string, any>): Record<string, any> => {
   const cleanedParams: Record<string, any> = {}

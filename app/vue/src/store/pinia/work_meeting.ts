@@ -1,7 +1,7 @@
 import api from '@/api'
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import { errorHandle, message } from '@/utils/helper'
+import { downloadFile, errorHandle, message } from '@/utils/helper'
 import type { Meeting, MeetingCategory, MeetingFilter } from '@/store/types/work_meeting.ts'
 
 export const useMeeting = defineStore('meeting', () => {
@@ -96,7 +96,7 @@ export const useMeeting = defineStore('meeting', () => {
 
   const generatePdf = (pk: number) => {
     const url = `/pdf/work/meeting/${pk}/`
-    window.open(url, '_blank')
+    downloadFile(url, `Meeting_Minutes_${pk}.pdf`)
   }
 
   const confirmMeeting = async (pk: number) =>
