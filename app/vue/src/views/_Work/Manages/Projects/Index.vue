@@ -54,7 +54,6 @@ const canAccessSetting = computed(
 const projectNavMenus = computed(() => {
   const menus = [
     { no: 1, menu: '(개요)' },
-    { no: 2, menu: '(회의)' },
     { no: 3, menu: '(업무실행내역)' },
   ]
 
@@ -62,6 +61,7 @@ const projectNavMenus = computed(() => {
 
   if (project) {
     const modules = project.module
+    if (modules?.meeting) menus.push({ no: 2, menu: '(회의)' })
     if (project.versions?.length) menus.push({ no: 4, menu: '(로드맵)' })
     if (modules?.issue) menus.push({ no: 5, menu: '(업무)' })
     if (modules?.calendar) menus.push({ no: 7, menu: '(캘린더)' })
