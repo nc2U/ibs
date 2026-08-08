@@ -97,8 +97,6 @@ const onResetQuery = () => {
   }
 }
 
-// onDeleteQuery 제거됨
-
 onMounted(() => {
   updateBreakpoint()
   window.addEventListener('resize', updateBreakpoint)
