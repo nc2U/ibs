@@ -76,7 +76,7 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """ActivityLogEntry 필터링: 사용자 권한 및 issue_visible 격리 적용"""
         user = self.request.user
-        queryset = self.queryset
+        queryset = self.queryset.exclude(project__status='9')
 
         # 1. 슈퍼유저/work_manager는 전체 활동 조회
         if user.is_superuser or getattr(user, 'work_manager', False):

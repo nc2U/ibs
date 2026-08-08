@@ -463,9 +463,10 @@ def build_issue_queryset(user, base_qs=None):
     IssueViewSet.get_queryset() 및 SearchViewSet 검색에서 공통 사용.
     """
     if base_qs is None:
-        base_qs = Issue.all_objects.all().select_related(
-            'project', 'status', 'creator', 'assigned_to', 'tracker', 'fixed_version'
-        )
+        base_qs = Issue.objects.all()
+
+    # 잠금보관(status='9') 프로젝트의 이슈는 전역 목록에서 제외
+    base_qs = base_qs.exclude(project__status='9')
 
     if getattr(user, 'work_manager', False) or user.is_superuser:
         return base_qs
@@ -583,13 +584,13 @@ class IssueCountByMemberView(APIView):
         user = user_param if user_param else request.user
 
         # Count issues assigned to the user
-        issues_in_charge = Issue.objects.filter(assigned_to=user)
+        issues_in_charge = Issue.objects.filter(assigned_to=user).exclude(project__status='9')
         open_charged = issues_in_charge.filter(closed__isnull=True).count()
         closed_charged = issues_in_charge.filter(closed__isnull=False).count()
         all_charged = open_charged + closed_charged
 
         # Count issues created by the user
-        issues_in_created = Issue.objects.filter(creator=user)
+        issues_in_created = Issue.objects.filter(creator=user).exclude(project__status='9')
         open_created = issues_in_created.filter(closed__isnull=True).count()
         closed_created = issues_in_created.filter(closed__isnull=False).count()
         all_created = open_created + closed_created

@@ -169,7 +169,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = super().get_queryset()
+        queryset = super().get_queryset().exclude(issue_project__status='9')
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset
 

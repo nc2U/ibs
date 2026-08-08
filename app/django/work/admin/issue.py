@@ -34,7 +34,7 @@ class IssueAdmin(ImportExportMixin, admin.ModelAdmin):
     inlines = (IssueFileInline, IssueCommentInline, IssueRelationInline)
 
     def get_queryset(self, request):
-        return self.model.all_objects.get_queryset()
+        return super().get_queryset(request)
 
 
 @admin.register(Tracker)
