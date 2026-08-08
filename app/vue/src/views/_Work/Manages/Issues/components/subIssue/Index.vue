@@ -85,10 +85,10 @@ const detailRouteParams = (id: number) => (projId ? { projId, issueId: id } : { 
     <CCol class="col-sm-6 col-md-3 col-lg-4 text-right">
       <span class="mr-3">
         <CProgress
-          color="green-lighten-3"
+          :color="sub.done_ratio === 100 ? 'success' : 'warning'"
           :value="sub?.done_ratio ?? 0"
-          style="width: 100px; float: left; margin-top: 7px"
-          height="14"
+          style="width: 100px; float: left; margin-top: 10px"
+          height="10"
         />
       </span>
       <v-btn
