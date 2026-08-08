@@ -13,11 +13,15 @@ const props = defineProps({
 
 const emit = defineEmits(['delete-project'])
 
+const { can, PERM } = usePerms() // 사용자 권한 데이터
+const canSubProjectCreate = computed(() => can(PERM.PROJECT_CREATE_SUB))
+const canProjectClose = computed(() => can(PERM.PROJECT_CLOSE))
+const canProjectDelete = computed(() => can(PERM.PROJECT_DELETE))
+
 const RefProjectCloseConfirm = ref()
 const RefProjectDeleteConfirm = ref()
 const idForDelete = ref('')
 
-const { can, PERM } = usePerms() // 사용자 권한 데이터
 const router = useRouter()
 
 const workStore = useWork()
@@ -71,7 +75,7 @@ const isBookMarked = computed(() => props.project?.is_bookmarked)
           </CDropdownToggle>
           <CDropdownMenu>
             <CDropdownItem
-              v-if="project?.status === '1' && can(PERM.PROJECT_CREATE_SUB)"
+              v-if="project?.status === '1' && canSubProjectCreate"
               class="form-text"
               @click="router.push({ name: '프로젝트 - 추가', query: { parent: project?.pk } })"
             >
@@ -81,7 +85,7 @@ const isBookMarked = computed(() => props.project?.is_bookmarked)
               </span>
             </CDropdownItem>
             <CDropdownItem
-              v-if="can(PERM.PROJECT_CLOSE)"
+              v-if="canProjectClose"
               class="form-text"
               @click="RefProjectCloseConfirm.callModal()"
             >
@@ -96,7 +100,7 @@ const isBookMarked = computed(() => props.project?.is_bookmarked)
               </span>
             </CDropdownItem>
             <CDropdownItem
-              v-if="can(PERM.PROJECT_DELETE)"
+              v-if="canProjectDelete"
               class="form-text"
               @click="RefProjectDeleteConfirm.callModal()"
             >
@@ -153,10 +157,13 @@ const isBookMarked = computed(() => props.project?.is_bookmarked)
     <template #default>
       <div class="bg-amber-lighten-4 p-4 text-center">
         <h6>{{ project?.name }}</h6>
-        <p>이 프로젝트를 삭제하고 모든 데이터를 삭제하시겠습니까?</p>
+        <p class="mb-1">이 프로젝트를 삭제 처리하시겠습니까?</p>
+        <p class="text-caption text-medium-emphasis mb-3">
+          (단, 회의/업무/문서/소송 이력이 존재하는 프로젝트는 삭제되지 않고 '잠금보관' 처리됩니다.)
+        </p>
         <p>
-          삭제를 진행하려면, 이 프로젝트의 식별자 (<strong>{{ project?.slug }}</strong
-          >)를 입력하여 주십시요.
+          진행하려면 이 프로젝트의 식별자 (<strong class="text-danger">{{ project?.slug }}</strong
+          >)를 입력하여 주십시오.
         </p>
         <CRow>
           <CFormLabel for="identifier" class="col-sm-2 col-form-label">식별자</CFormLabel>

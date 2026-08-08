@@ -303,12 +303,22 @@ export const useWork = defineStore('work', () => {
       .catch(err => errorHandle(err.response.data))
   }
 
-  const deleteIssueProject = (pk: number) =>
+  const deleteIssueProject = (slug: string) =>
     api
-      .delete(`/issue-project/${pk}/`)
-      .then(async () => {
-        await fetchIssueProjectList({})
-        message('warning', '알림!', '해당 오브젝트가 삭제되었습니다.')
+      .delete(`/issue-project/${slug}/`)
+      .then(async res => {
+        if (res.data && res.data.action === 'archived') {
+          await fetchIssueProject(slug)
+          message(
+            'warning',
+            '잠금보관 안내',
+            res.data.message || "이력이 보존되어 '잠금보관' 처리되었습니다.",
+          )
+        } else {
+          await fetchIssueProjectList({})
+          message('danger', '삭제 완료', '해당 프로젝트가 성공적으로 삭제되었습니다.')
+        }
+        return res.data
       })
       .catch(err => errorHandle(err.response.data))
 

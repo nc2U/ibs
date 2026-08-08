@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
 import { useInform } from '@/store/pinia/work_inform.ts'
@@ -11,6 +12,8 @@ import NewsBox from './components/NewsBox.vue'
 import MemberBox from './components/MemberBox.vue'
 import SubProjects from './components/SubProjects.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
+
+const router = useRouter()
 
 const cBody = ref()
 const toggle = () => cBody.value.toggle()
@@ -73,8 +76,9 @@ const closeProject = (slug: string) => patchIssueProject({ slug, status: '9' })
 
 const reopenProject = (slug: string) => patchIssueProject({ slug, status: '1' })
 
-const deleteProject = (slug: string) => {
-  alert(`delete-project :: ${slug}`)
+const deleteProject = async (slug: string) => {
+  await workStore.deleteIssueProject(slug)
+  await router.push({ name: '프로젝트' })
 }
 
 const loading = ref(true)
