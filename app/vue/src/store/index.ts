@@ -6,10 +6,10 @@ type Type = 'default' | 'dark'
 export const useStore = defineStore('store', () => {
   const asideVisible = ref(false)
   const sidebarVisible = ref(
-    !localStorage.getItem('sidebarVisible') || localStorage.getItem('sidebarVisible') === 'true',
+    !localStorage?.getItem?.('sidebarVisible') || localStorage?.getItem?.('sidebarVisible') === 'true',
   )
-  const sidebarUnfoldable = ref(localStorage.getItem('sidebarUnfoldable') === 'true')
-  const theme = ref<Type>((localStorage.getItem('theme') as Type) || 'default')
+  const sidebarUnfoldable = ref(localStorage?.getItem?.('sidebarUnfoldable') === 'true')
+  const theme = ref<Type>((localStorage?.getItem?.('theme') as Type) || 'default')
   const LoadingStatus = ref(false)
   const registerCode = ref('dyibs-staff')
 

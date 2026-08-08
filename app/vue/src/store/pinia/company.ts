@@ -23,7 +23,7 @@ export const useCompany = defineStore('company', () => {
   const company = ref<Company | null>(null)
 
   const currentCompany = computed(
-    () => company.value?.pk || Number(localStorage.getItem('curr-company')),
+    () => company.value?.pk || Number(localStorage?.getItem?.('curr-company')),
   )
   const defaultCompany = computed(() => {
     const defaultCom = companyList.value.find(com => com.is_default) || companyList.value[0]

@@ -109,6 +109,7 @@ export interface ProjectFilter {
 export interface Module {
   pk?: number
   project: number
+  meeting: boolean
   issue: boolean
   news: boolean
   document: boolean

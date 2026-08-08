@@ -59,6 +59,7 @@ const form = reactive({
 })
 
 const module = reactive({
+  meeting: true,
   issue: true,
   news: true,
   document: true,
@@ -88,26 +89,27 @@ const formsCheck = computed(() => {
     const f = !canProjectPublic.value || form.is_public === props.project.is_public
 
     const g = Number(form.parent) === Number(props.project.parent)
-    const h = form.is_inherit_members === props.project.is_inherit_members
-    const i =
+
+    // 모듈 변경은 권한이 있을 때만 체크
+    const h = !canProjectModule.value || module.meeting === props.project.module?.meeting
+    const i = !canProjectModule.value || module.issue === props.project.module?.issue
+    const j = !canProjectModule.value || module.news === props.project.module?.news
+    const k = !canProjectModule.value || module.document === props.project.module?.document
+    const l = !canProjectModule.value || module.forum === props.project.module?.forum
+    const m = !canProjectModule.value || module.calendar === props.project.module?.calendar
+    const n = form.is_inherit_members === props.project.is_inherit_members
+    const o =
       // eslint-disable-next-line vue/no-side-effects-in-computed-properties
       JSON.stringify(form.allowed_roles.sort((a, b) => a - b)) ===
       JSON.stringify(props.project.allowed_roles?.map(r => r.pk).sort((a, b) => a - b))
-    const j =
+    const p =
       // eslint-disable-next-line vue/no-side-effects-in-computed-properties
       JSON.stringify(form.trackers.sort((a, b) => a - b)) ===
       JSON.stringify(props.project.trackers?.map(t => t.pk).sort((a, b) => a - b))
+    const q = form.slack_notifications_enabled === props.project.slack_notifications_enabled
 
-    // 모듈 변경 체크는 권한이 있을 때만
-    const l = !canProjectModule.value || module.issue === props.project.module?.issue
-    const n = !canProjectModule.value || module.news === props.project.module?.news
-    const o = !canProjectModule.value || module.document === props.project.module?.document
-    const r = !canProjectModule.value || module.forum === props.project.module?.forum
-    const s = !canProjectModule.value || module.calendar === props.project.module?.calendar
-    const t = form.slack_notifications_enabled === props.project.slack_notifications_enabled
-
-    const first = a && b && c && d && e && f && g && h && i && j
-    const second = l && n && o && r && s && t
+    const first = a && b && c && d && e && f && g && h && i
+    const second = j && k && l && m && n && o && p && q
 
     // 3. 권한은 있지만 변경 사항이 없으면 비활성화
     return first && second
@@ -191,6 +193,8 @@ const dataSetup = () => {
     form.trackers = props.project.trackers?.map(t => t.pk) ?? []
     form.slack_notifications_enabled = props.project.slack_notifications_enabled
 
+    module.meeting =
+      props.project.module?.meeting !== undefined ? !!props.project.module?.meeting : true
     module.issue = true
     module.news = !!props.project.module?.news
     module.document = !!props.project.module?.document
@@ -393,6 +397,14 @@ onBeforeMount(() => {
         <CRow>
           <CCol sm="6" md="4" lg="3" xl="2">
             <CFormCheck v-model="module.issue" id="issue" label="업무관리" :disabled="true" />
+          </CCol>
+          <CCol sm="6" md="4" lg="3" xl="2">
+            <CFormCheck
+              v-model="module.meeting"
+              id="meeting"
+              label="회의록"
+              :disabled="!canProjectModule"
+            />
           </CCol>
           <CCol sm="6" md="4" lg="3" xl="2">
             <CFormCheck

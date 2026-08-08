@@ -105,7 +105,7 @@ class MemberInIssueProjectSerializer(serializers.ModelSerializer):
 class ModuleInIssueProjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = Module
-        fields = ('pk', 'project', 'issue', 'news', 'document',
+        fields = ('pk', 'project', 'meeting', 'issue', 'news', 'document',
                   'forum', 'calendar')
 
 
@@ -194,18 +194,19 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
     my_role = serializers.SerializerMethodField(read_only=True)
 
     # 모듈 설정을 위한 필드 추가 (write_only)
-    issue = serializers.BooleanField(write_only=True, default=True)
-    news = serializers.BooleanField(write_only=True, default=True)
-    document = serializers.BooleanField(write_only=True, default=True)
-    forum = serializers.BooleanField(write_only=True, default=True)
-    calendar = serializers.BooleanField(write_only=True, default=True)
+    meeting = serializers.BooleanField(write_only=True, required=False)
+    issue = serializers.BooleanField(write_only=True, required=False)
+    news = serializers.BooleanField(write_only=True, required=False)
+    document = serializers.BooleanField(write_only=True, required=False)
+    forum = serializers.BooleanField(write_only=True, required=False)
+    calendar = serializers.BooleanField(write_only=True, required=False)
 
     class Meta:
         model = IssueProject
         fields = IssueProjectListSerializer.Meta.fields + ('homepage', 'is_inherit_members', 'default_version',
                                                            'trackers',
                                                            'ancestors', 'members', 'versions', 'categories', 'forums',
-                                                           'issue', 'news', 'document', 'forum', 'calendar')
+                                                           'meeting', 'issue', 'news', 'document', 'forum', 'calendar')
 
         read_only_fields = ('project', 'status', 'is_public', 'forums')
 
@@ -229,6 +230,7 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
     @transaction.atomic
     def create(self, validated_data):
         # validated_data에서 추가 필드 추출
+        meeting = validated_data.pop('meeting', True)
         issue = validated_data.pop('issue', True)
         news = validated_data.pop('news', True)
         document = validated_data.pop('document', True)
@@ -238,14 +240,14 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
         project = IssueProject.objects.create(**validated_data)
 
         # 권한 검증 서비스 호출 및 모듈 생성
-        module_fields = ['issue', 'news', 'document', 'forum', 'calendar']
+        module_fields = ['meeting', 'issue', 'news', 'document', 'forum', 'calendar']
         if any(field in self.initial_data for field in module_fields):
             request = self.context.get('request')
             if request:
                 PermissionService.check_module_permission(request.user, project)
 
             Module.objects.create(
-                project=project, issue=issue, news=news,
+                project=project, meeting=meeting, issue=issue, news=news,
                 document=document, forum=forum, calendar=calendar)
         else:
             # 기본값으로 모듈 생성
@@ -268,6 +270,7 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
     @transaction.atomic
     def update(self, instance, validated_data):
         # 1. validated_data에서 모듈 필드 추출
+        meeting = validated_data.pop('meeting', None)
         issue = validated_data.pop('issue', None)
         news = validated_data.pop('news', None)
         document = validated_data.pop('document', None)
@@ -275,7 +278,7 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
         calendar = validated_data.pop('calendar', None)
 
         # 2. 모듈 업데이트 (권한 검증 포함)
-        module_fields = ['issue', 'news', 'document', 'forum', 'calendar']
+        module_fields = ['meeting', 'issue', 'news', 'document', 'forum', 'calendar']
         if any(field in self.initial_data for field in module_fields):
             request = self.context.get('request')
             if request:
@@ -286,6 +289,7 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
             except Module.DoesNotExist:
                 module = Module.objects.create(project=instance)
 
+            if meeting is not None: module.meeting = meeting
             if issue is not None: module.issue = issue
             if news is not None: module.news = news
             if document is not None: module.document = document
@@ -314,7 +318,7 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
 class ModuleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Module
-        fields = ('pk', 'project', 'issue', 'news', 'document',
+        fields = ('pk', 'project', 'meeting', 'issue', 'news', 'document',
                   'forum', 'calendar')
 
 
