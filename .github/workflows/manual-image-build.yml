@@ -12,6 +12,11 @@ on:
           - dev
           - prod
 
+# 수동 빌드 동시 실행 방지
+concurrency:
+  group: manual-image-build-${{ inputs.target_env }}
+  cancel-in-progress: false
+
 jobs:
   build_and_deploy:
     name: Image Build & Deploy
@@ -67,12 +72,17 @@ jobs:
           username: ${{ secrets.CICD_USER }}
           password: ${{ secrets.CICD_PASS }}
           command: |
+            set -e
             export KUBECONFIG=$HOME/.kube/config
             cd ${{ secrets.CICD_PATH }}/${{ inputs.target_env }}/deploy/helm/scripts
             sh ${{ env.DEPLOY_SCRIPT }}
             kubectl rollout restart deployment/web -n ${{ env.ENV_NAMESPACE }}
             kubectl rollout restart deployment/web-celery -n ${{ env.ENV_NAMESPACE }}
             kubectl rollout restart deployment/nginx -n ${{ env.ENV_NAMESPACE }}
+            echo "⏳ Waiting for deployments to complete rollout status..."
+            kubectl rollout status deployment/web -n ${{ env.ENV_NAMESPACE }} --timeout=180s
+            kubectl rollout status deployment/web-celery -n ${{ env.ENV_NAMESPACE }} --timeout=180s
+            kubectl rollout status deployment/nginx -n ${{ env.ENV_NAMESPACE }} --timeout=180s
             echo "✅ Force Rebuild & Rollout Restart Completed Successfully!"
 
       - name: Send Slack Notification when failed
