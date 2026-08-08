@@ -452,6 +452,7 @@ defineExpose({ applyQuery, resetFilter })
                 <CFormSelect v-model="form.status" size="sm">
                   <option value="1">사용중</option>
                   <option value="2">닫힘</option>
+                  <option value="9">잠금보관</option>
                 </CFormSelect>
               </CCol>
             </CRow>
@@ -758,10 +759,7 @@ defineExpose({ applyQuery, resetFilter })
                 </template>
               </CCol>
 
-              <CCol
-                v-if="field.type === 'date' && cond[field.key] === 'between'"
-                class="col-3"
-              >
+              <CCol v-if="field.type === 'date' && cond[field.key] === 'between'" class="col-3">
                 <DatePicker v-model="form[`${field.key}_date2`]" size="sm" />
               </CCol>
             </CRow>
