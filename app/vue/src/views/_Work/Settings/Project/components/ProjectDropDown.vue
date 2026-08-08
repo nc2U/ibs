@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, type PropType } from 'vue'
+import { ref, type PropType, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
 import { useWork } from '@/store/pinia/work_project.ts'
@@ -11,6 +11,9 @@ const props = defineProps({
 })
 
 const { can, PERM } = usePerms()
+const canProjectCreate = computed(() => can(PERM.PROJECT_CREATE))
+const canProjectDelete = computed(() => can(PERM.PROJECT_DELETE))
+
 const router = useRouter()
 const workStore = useWork()
 
@@ -43,7 +46,7 @@ const projectDelete = async () => {
     <v-tooltip activator="parent" location="top">Actions</v-tooltip>
     <v-menu activator="parent" location="bottom start" transition="scale-transition">
       <v-list density="compact" class="py-1">
-        <v-list-item v-if="can(PERM.PROJECT_CLOSE)" @click="RefProjectArchiveConfirm.callModal()">
+        <v-list-item v-if="canProjectDelete" @click="RefProjectArchiveConfirm.callModal()">
           <template v-slot:prepend>
             <v-icon
               :icon="project.status === '9' ? 'mdi-lock-open-variant' : 'mdi-lock'"
@@ -57,14 +60,14 @@ const projectDelete = async () => {
           </template>
         </v-list-item>
 
-        <v-list-item v-if="can(PERM.PROJECT_CREATE)" @click="onCopyProject">
+        <v-list-item v-if="canProjectCreate" @click="onCopyProject">
           <template v-slot:prepend>
             <v-icon icon="mdi-content-copy" color="info" size="x-small" class="mr-2" />
             <v-list-item-title class="text-caption">복사</v-list-item-title>
           </template>
         </v-list-item>
 
-        <v-list-item v-if="can(PERM.PROJECT_DELETE)" @click="RefProjectDeleteConfirm.callModal()">
+        <v-list-item v-if="canProjectDelete" @click="RefProjectDeleteConfirm.callModal()">
           <template v-slot:prepend>
             <v-icon icon="mdi-trash-can-outline" color="danger" size="x-small" class="mr-2" />
             <v-list-item-title class="text-caption">삭제</v-list-item-title>
