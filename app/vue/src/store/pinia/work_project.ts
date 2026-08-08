@@ -322,21 +322,21 @@ export const useWork = defineStore('work', () => {
       })
       .catch(err => errorHandle(err.response.data))
 
-  const toggleProjectStatus = (slug: string) =>
+  const toggleProjectClose = (slug: string) =>
     api
-      .post(`/issue-project/${slug}/toggle_status/`)
+      .post(`/issue-project/${slug}/toggle_close/`)
       .then(async () => {
         await fetchIssueProject(slug)
         message()
       })
       .catch(err => errorHandle(err.response.data))
 
-  const setProjectStatus = (slug: string, status: '1' | '2' | '9') =>
+  const toggleProjectLock = (slug: string) =>
     api
-      .post(`/issue-project/${slug}/set_status/`, { status })
+      .post(`/issue-project/${slug}/toggle_lock/`)
       .then(async () => {
-        await fetchIssueProject(slug)
-        message('success', '성공!', '프로젝트 상태가 변경되었습니다.')
+        await fetchIssueProjectList({})
+        message('warning', '상태 변경 완료', '프로젝트 잠금보관 상태가 변경되었습니다.')
       })
       .catch(err => errorHandle(err.response.data))
 
@@ -668,8 +668,8 @@ export const useWork = defineStore('work', () => {
     patchIssueProject,
     updateMembers,
     deleteIssueProject,
-    toggleProjectStatus,
-    setProjectStatus,
+    toggleProjectClose,
+    toggleProjectLock,
     toggleProjectPublic,
 
     role,

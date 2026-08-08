@@ -22,8 +22,7 @@ const RefProjectDeleteConfirm = ref()
 const idForDelete = ref('')
 
 const toggleArchive = async () => {
-  const nextStatus = props.project.status === '9' ? '1' : '9'
-  await workStore.patchIssueProject({ slug: props.project.slug, status: nextStatus })
+  await workStore.toggleProjectLock(props.project.slug)
   RefProjectArchiveConfirm.value.close()
 }
 

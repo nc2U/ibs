@@ -80,9 +80,9 @@ class IssueProjectViewSet(viewsets.ModelViewSet):
             'create': 'project.create',
             'update': 'project.update',
             'partial_update': 'project.update',
-            'toggle_status': 'project.close',
-            'set_status': 'project.close',
             'toggle_public': 'project.public',
+            'toggle_close': 'project.close',
+            'toggle_lock': 'project.delete',
             'update_members': 'project.member',
             'destroy': 'project.delete'
         }
@@ -162,7 +162,7 @@ class IssueProjectViewSet(viewsets.ModelViewSet):
             instance.save()
             return Response({
                 'action': 'archived',
-                'message': "프로젝트 내에 업무/회의/문서 이력 등이 보존되어 있어 삭제되지 않고 '잠금보관(status=9)' 처리되었습니다."
+                'message': "프로젝트 내에 업무/회의/문서 이력 등이 보존되어 있어 삭제되지 않고 '잠금보관' 처리되었습니다."
             }, status=status.HTTP_200_OK)
 
         # 3-B. PROTECT 데이터가 없는 경우: DB 완전 삭제 (Hard Delete)
@@ -170,25 +170,21 @@ class IssueProjectViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True, methods=['post'])
-    def toggle_status(self, request, slug=None):
-        """일반 사용자용: 사용중(1) <-> 닫힘(2) 토글"""
+    def toggle_close(self, request, slug=None):
+        """프로젝트 닫기 권한자용: 사용중(1) <-> 닫힘(2) 토글"""
         project = self.get_object()
-        if project.status not in ['1', '2']:
-            return Response({'detail': '잠금보관된 프로젝트는 관리자만 변경 가능합니다.'}, status=403)
+        if project.status == '9':
+            return Response({'detail': '잠금보관된 프로젝트는 상태를 토글할 수 없습니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
         project.status = '2' if project.status == '1' else '1'
         project.save()
         return Response({'status': project.status})
 
     @action(detail=True, methods=['post'])
-    def set_status(self, request, slug=None):
-        """관리자 전용: 잠금보관(9) 포함 임의 상태 설정"""
-        new_status = request.data.get('status')
-        if new_status not in ['1', '2', '9']:
-            return Response({'detail': '유효하지 않은 상태값입니다.'}, status=400)
-
+    def toggle_lock(self, request, slug=None):
+        """프로젝트 삭제/잠금 권한자용: 잠금보관(9) <-> 사용중(1) 토글"""
         project = self.get_object()
-        project.status = new_status
+        project.status = '1' if project.status == '9' else '9'
         project.save()
         return Response({'status': project.status})
 

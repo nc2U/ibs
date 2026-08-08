@@ -26,7 +26,7 @@ const router = useRouter()
 
 const workStore = useWork()
 const toggleStatus = async () => {
-  await workStore.toggleProjectStatus(props.project.slug as string)
+  await workStore.toggleProjectClose(props.project.slug as string)
   RefProjectCloseConfirm.value.close()
 }
 
