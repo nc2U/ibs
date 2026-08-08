@@ -1,10 +1,15 @@
 const workSetting = {
   path: 'manage',
   name: '설 정 관 리',
-  redirect: '/manage/user',
+  redirect: '/manage/project',
   component: () => import('@/views/_Work/Settings/Layout.vue'),
   meta: { title: '설 정 관 리', auth: true },
   children: [
+    {
+      path: 'project',
+      name: '프로젝트 관리',
+      component: () => import('@/views/_Work/Settings/Project/Index.vue'),
+    },
     {
       path: 'user',
       name: '사용자',

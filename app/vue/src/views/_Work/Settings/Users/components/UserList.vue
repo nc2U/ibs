@@ -21,7 +21,10 @@ const workManager = computed(() => accStore.workManager)
 <template>
   <CRow class="py-2">
     <CCol>
-      <h5>{{ route.name }}</h5>
+      <h5>
+        <v-icon icon="mdi-office-building-cog" color="teal-lighten-1" size="small" class="mr-2" />
+        {{ route.name }}
+      </h5>
     </CCol>
 
     <CCol v-if="workManager" class="text-right">

@@ -16,8 +16,11 @@ const cBody = ref()
 const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
 
-const workStore = useWork()
 const { can, PERM } = usePerms() // 사용자 권한 데이터
+const canProjectCreate = computed(() => can(PERM.PROJECT_CREATE))
+const canProjectPubQuery = computed(() => can(PERM.PROJECT_PUB_QUERY))
+
+const workStore = useWork()
 const projectResultsTree = computed<IssueProject[]>(() => workStore.projectResultsTree)
 const projectResultsFlat = computed<IssueProject[]>(() => workStore.projectResultsFlat)
 const allReadableProjects = computed(() => workStore.getAllReadableProjects)
@@ -116,7 +119,7 @@ onBeforeMount(() => {
           <h5><v-icon icon="mdi-domain" color="primary" size="small" class="mr-2" />프로젝트</h5>
         </CCol>
 
-        <CCol v-if="can(PERM.PROJECT_CREATE)" class="text-right form-text">
+        <CCol v-if="canProjectCreate" class="text-right form-text">
           <span v-show="route.name !== '프로젝트 - 추가'" class="mr-2">
             <TextButton name="새 프로젝트" :to="{ name: '프로젝트 - 추가' }" />
           </span>
@@ -183,7 +186,7 @@ onBeforeMount(() => {
       <SavedQueryAside
         target-type="project"
         :active-query-id="activeQueryId ?? undefined"
-        :canProjectPubQuery="can(PERM.PROJECT_PUB_QUERY)"
+        :canProjectPubQuery="canProjectPubQuery"
         @on-query-click="onQueryClick"
         @on-reset-query="onResetQuery"
       />
