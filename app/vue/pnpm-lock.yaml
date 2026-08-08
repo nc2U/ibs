@@ -6,7 +6,7 @@ settings:
 
 overrides:
   serialize-javascript: ^7.0.3
-  dompurify: '>=3.4.13'
+  dompurify: 3.4.13
   qs: 6.15.2
   uuid: 14.0.0
   esbuild: 0.28.1
@@ -90,7 +90,7 @@ importers:
         specifier: ^3.4.56
         version: 3.4.56
       dompurify:
-        specifier: '>=3.4.13'
+        specifier: 3.4.13
         version: 3.4.13
       exceljs:
         specifier: ^4.4.0
