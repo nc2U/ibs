@@ -18,7 +18,7 @@ class PdfExportMeeting(PdfExportMixin, PdfUtilsMixin):
         )
 
         # 파일명 생성 (확장자 없이 베이스 파일명 전달)
-        filename = f"Meeting_Minutes_{meeting.pk}"
+        filename = f"{meeting.title}"
 
         # PDF 응답 생성
         return self.create_pdf_response('pdf/meeting.html', context, filename)

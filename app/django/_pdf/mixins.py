@@ -14,6 +14,8 @@ from weasyprint import HTML
 from contract.models import Contract
 from payment.models import InstallmentPaymentOrder
 
+from urllib.parse import quote
+
 TODAY = date.today()
 
 
@@ -27,10 +29,12 @@ class PdfExportMixin(View):
         html = HTML(string=html_string)
         html.write_pdf(target='/tmp/mypdf.pdf')
 
+        encoded_filename = quote(f"{filename}.pdf" if not filename.lower().endswith('.pdf') else filename)
+
         fs = FileSystemStorage('/tmp')
         with fs.open('mypdf.pdf') as pdf:
             response = HttpResponse(pdf, content_type='application/pdf')
-            response['Content-Disposition'] = f'attachment; filename="{filename}.pdf"'
+            response['Content-Disposition'] = f"attachment; filename*=UTF-8''{encoded_filename}"
             return response
 
     @staticmethod

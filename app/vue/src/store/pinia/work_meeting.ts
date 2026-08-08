@@ -96,7 +96,7 @@ export const useMeeting = defineStore('meeting', () => {
 
   const generatePdf = (pk: number) => {
     const url = `/pdf/work/meeting/${pk}/`
-    downloadFile(url, `Meeting_Minutes_${pk}.pdf`)
+    downloadFile(url)
   }
 
   const confirmMeeting = async (pk: number) =>
