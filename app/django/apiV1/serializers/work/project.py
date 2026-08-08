@@ -176,6 +176,7 @@ class IssueProjectListSerializer(ProjectPermissionMixin, serializers.ModelSerial
 
 
 class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer):
+    project = serializers.PrimaryKeyRelatedField(read_only=True)
     ancestors = SimpleIssueProjectSerializer(source='get_ancestors', many=True, read_only=True)
     module = ModuleInIssueProjectSerializer(read_only=True)
     all_members = MemberInIssueProjectSerializer(many=True, read_only=True)
@@ -206,7 +207,7 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
                                                            'ancestors', 'members', 'versions', 'categories', 'forums',
                                                            'issue', 'news', 'document', 'forum', 'calendar')
 
-        read_only_fields = ('status', 'is_public', 'forums')
+        read_only_fields = ('project', 'status', 'is_public', 'forums')
 
     # 메서드 복구
     @staticmethod
