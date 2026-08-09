@@ -345,18 +345,19 @@ const filterSubmit = () => {
   if (cond.status === 'open') {
     payload.status = '1' // 준비중
   } else if (cond.status === 'closed') {
-    payload.status = '2' // 완료됨
+    payload.status = '2' // 종료
   } else if (cond.status === 'is') {
-    payload.status = form.status
+    payload.status = form.status || '1'
   } else if (cond.status === 'exclude') {
-    payload.status__exclude = form.status
+    payload.status__exclude = form.status || '1'
   } else if (cond.status === 'any') {
     delete payload.status
   }
 
   // 확정 여부
-  if (searchCond.value.includes('is_confirmed') && form.is_confirmed) {
-    const isTrue = form.is_confirmed === 'true'
+  if (searchCond.value.includes('is_confirmed')) {
+    const val = form.is_confirmed || 'true'
+    const isTrue = val === 'true'
     if (cond.is_confirmed === 'is') {
       payload.is_confirmed = isTrue
     } else if (cond.is_confirmed === 'exclude') {
@@ -479,7 +480,7 @@ defineExpose({ applyQuery, resetFilter })
                   <option value="open">준비중</option>
                   <option value="is">이다</option>
                   <option value="exclude">아니다</option>
-                  <option value="closed">완료됨</option>
+                  <option value="closed">종료됨</option>
                   <option value="any">모두</option>
                 </CFormSelect>
               </CCol>
@@ -490,9 +491,9 @@ defineExpose({ applyQuery, resetFilter })
                   size="sm"
                   @change="filterSubmit"
                 >
-                  <option value="1">준비중</option>
-                  <option value="2">완료됨</option>
-                  <option value="3">취소됨</option>
+                  <option value="1">준비</option>
+                  <option value="2">종료</option>
+                  <option value="3">취소</option>
                 </CFormSelect>
               </CCol>
             </CRow>

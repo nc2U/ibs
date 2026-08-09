@@ -3,11 +3,12 @@ import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { usePerms } from '@/composables/usePerms.ts'
 import { useMeeting } from '@/store/pinia/work_meeting.ts'
+import { useWork } from '@/store/pinia/work_project.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import type { MeetingFilter } from '@/store/types/work_meeting.ts'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import MeetingList from '@/views/_Work/Manages/Meetings/components/MeetingList.vue'
-import MeetingAside from '@/views/_Work/Manages/Meetings/components/MeetingAside.vue'
+import SavedQueryAside from '@/views/_Work/components/asides/SavedQueryAside.vue'
 import MeetingDetail from '@/views/_Work/Manages/Meetings/components/MeetingDetail.vue'
 import MeetingForm from '@/views/_Work/Manages/Meetings/components/MeetingForm.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
@@ -22,11 +23,15 @@ defineExpose({ toggle })
 
 const route = useRoute()
 
+const workStore = useWork()
+const allReadableProjects = computed(() => workStore.getAllReadableProjects)
+
 const meetingStore = useMeeting()
 const meetingList = computed(() => meetingStore.meetingList)
 const categories = computed(() => meetingStore.categoryList)
 
 const { can, PERM } = usePerms()
+const canProjectPubQuery = computed(() => can(PERM.PROJECT_PUB_QUERY))
 
 const canMeetingCreate = computed(() => {
   const opened = props.currentProject?.status === '1'
@@ -41,24 +46,48 @@ const viewMode = computed(() => {
 })
 
 const page = ref(1)
+const meetingListRef = ref()
+const activeQueryId = ref<number | null>(null)
+const listFilter = ref<MeetingFilter>({})
 
 const onFilterSubmit = (filter: MeetingFilter) => {
   page.value = 1
-  meetingStore.fetchMeetingList({ ...filter, page: page.value })
+  listFilter.value = filter
+  meetingStore.fetchMeetingList({
+    ...filter,
+    project: route.params.projId as string,
+    page: page.value,
+  })
 }
 
 const onPageSelect = (p: number) => {
   page.value = p
   meetingStore.fetchMeetingList({
-    page: p,
+    ...listFilter.value,
     project: route.params.projId as string,
+    page: p,
   })
+}
+
+const onQueryClick = (query: any) => {
+  activeQueryId.value = query.pk
+  if (meetingListRef.value?.querySectionRef) {
+    meetingListRef.value.querySectionRef.applyQuery(query)
+  }
+}
+
+const onResetQuery = () => {
+  activeQueryId.value = null
+  if (meetingListRef.value?.querySectionRef) {
+    meetingListRef.value.querySectionRef.resetFilter()
+  }
 }
 
 const fetchMeetings = async () => {
   if (route.params.projId) {
     if (viewMode.value === 'list') {
       await meetingStore.fetchMeetingList({
+        ...listFilter.value,
         page: page.value,
         project: route.params.projId as string,
       })
@@ -71,7 +100,6 @@ watch(
   () => route.name,
   (newName, oldName) => {
     const isMeetingRoute = (name: any) => name && name.includes('(회의)')
-    // Only fetch if entering meeting list or coming from outside meeting module
     if (
       (newName === '(회의)' && oldName !== '(회의)') ||
       (isMeetingRoute(newName) && !isMeetingRoute(oldName))
@@ -107,11 +135,26 @@ onBeforeMount(fetchMeetings)
 
       <MeetingForm v-if="viewMode === 'form'" />
       <MeetingDetail v-else-if="viewMode === 'detail'" />
-      <MeetingList v-else :meeting-list="meetingList" :page="page" @page-select="onPageSelect" />
+      <MeetingList
+        v-else
+        ref="meetingListRef"
+        :meeting-list="meetingList"
+        :categories="categories"
+        :search-projects="allReadableProjects"
+        :page="page"
+        @filter-submit="onFilterSubmit"
+        @page-select="onPageSelect"
+      />
     </template>
 
     <template v-slot:aside>
-      <MeetingAside :categories="categories" @filter-submit="onFilterSubmit" />
+      <SavedQueryAside
+        target-type="meeting"
+        :active-query-id="activeQueryId ?? undefined"
+        :can-project-pub-query="canProjectPubQuery"
+        @on-query-click="onQueryClick"
+        @on-reset-query="onResetQuery"
+      />
     </template>
   </ContentBody>
 </template>
