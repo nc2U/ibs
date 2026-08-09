@@ -32,8 +32,10 @@ const canProjectPubQuery = computed(() => can(PERM.PROJECT_PUB_QUERY))
 
 const workStore = useWork()
 const allReadableProjectsFlat = computed(() => workStore.allReadableProjectsFlat)
-const allReadableProjects = computed(() => workStore.getAllReadableProjects)
-const myProjects = computed(() => workStore.getMyProjects)
+const allReadableProjects = computed(() =>
+  workStore.getAllReadableProjects.filter(pjt => pjt.module?.meeting),
+)
+const myProjects = computed(() => workStore.getMyProjects.filter(pjt => pjt.module?.meeting))
 
 const meetingStore = useMeeting()
 const meetingList = computed(() => meetingStore.meetingList)
@@ -45,14 +47,17 @@ const page = ref(1)
 const meetingListRef = ref()
 const activeQueryId = ref<number | null>(null)
 
+const listFilter = ref<MeetingFilter>({})
+
 const onFilterSubmit = (filter: MeetingFilter) => {
   page.value = 1
+  listFilter.value = filter
   meetingStore.fetchMeetingList({ ...filter, page: page.value })
 }
 
 const onPageSelect = (p: number) => {
   page.value = p
-  meetingStore.fetchMeetingList({ page: p })
+  meetingStore.fetchMeetingList({ ...listFilter.value, page: p })
 }
 
 const onQueryClick = (query: any) => {

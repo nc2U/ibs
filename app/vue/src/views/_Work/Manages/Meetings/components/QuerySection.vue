@@ -106,7 +106,7 @@ const resetFilter = () => {
   form.content = ''
   form.decisions = ''
 
-  cond.status = 'open'
+  cond.status = 'any'
   cond.is_confirmed = 'is'
   cond.category = 'is'
   cond.creator = 'is'
@@ -161,7 +161,7 @@ const searchOptions = reactive<SearchOptionGroup[]>([
 ])
 
 const cond = reactive<Record<string, string>>({
-  status: 'open',
+  status: 'any',
   project: 'is',
   is_confirmed: 'is',
   category: 'is',
@@ -175,7 +175,25 @@ const cond = reactive<Record<string, string>>({
   decisions: 'contains',
 })
 
-const form = reactive<any>({
+interface FilterForm {
+  project: string
+  status: string
+  is_confirmed: string
+  category: number | undefined
+  creator: number | null
+  attendees: number | null
+  meeting_date_after: string
+  meeting_date_before: string
+  created_after: string
+  created_before: string
+  title: string
+  agenda: string
+  content: string
+  decisions: string
+  [key: string]: any
+}
+
+const form = reactive<FilterForm>({
   project: (route.params.projId as string) ?? '',
   status: '1',
   is_confirmed: '',
@@ -330,30 +348,47 @@ const filterSubmit = () => {
     payload.status = '2' // 완료됨
   } else if (cond.status === 'is') {
     payload.status = form.status
+  } else if (cond.status === 'exclude') {
+    payload.status__exclude = form.status
   } else if (cond.status === 'any') {
     delete payload.status
   }
 
   // 확정 여부
-  if (searchCond.value.includes('is_confirmed')) {
+  if (searchCond.value.includes('is_confirmed') && form.is_confirmed) {
+    const isTrue = form.is_confirmed === 'true'
     if (cond.is_confirmed === 'is') {
-      payload.is_confirmed = form.is_confirmed === 'true'
+      payload.is_confirmed = isTrue
+    } else if (cond.is_confirmed === 'exclude') {
+      payload.is_confirmed = !isTrue
     }
   }
 
   // 카테고리
-  if (searchCond.value.includes('category') && form.category) {
-    payload.category = form.category
+  if (searchCond.value.includes('category') && form.category !== undefined) {
+    if (cond.category === 'is') {
+      payload.category = form.category
+    } else if (cond.category === 'exclude') {
+      payload.category__exclude = form.category
+    }
   }
 
   // 작성자
-  if (searchCond.value.includes('creator') && form.creator) {
-    payload.creator = form.creator
+  if (searchCond.value.includes('creator') && form.creator !== null) {
+    if (cond.creator === 'is') {
+      payload.creator = form.creator
+    } else if (cond.creator === 'exclude') {
+      payload.creator__exclude = form.creator
+    }
   }
 
   // 참석자
-  if (searchCond.value.includes('attendees') && form.attendees) {
-    payload.attendees = form.attendees
+  if (searchCond.value.includes('attendees') && form.attendees !== null) {
+    if (cond.attendees === 'is') {
+      payload.attendees = form.attendees
+    } else if (cond.attendees === 'exclude') {
+      payload.attendees__exclude = form.attendees
+    }
   }
 
   // 회의 일시 범위
@@ -397,6 +432,9 @@ const filterSubmit = () => {
 watch(
   () => searchCond.value,
   nVal => {
+    if (nVal.includes('is_confirmed') && !form.is_confirmed) {
+      form.is_confirmed = 'true'
+    }
     if (nVal.includes('category') && !form.category && props.categories.length) {
       form.category = props.categories[0].pk
     }
@@ -437,7 +475,7 @@ defineExpose({ applyQuery, resetFilter })
                 <CFormCheck label="상태" id="status" checked readonly />
               </CCol>
               <CCol class="d-none d-lg-block col-4 col-lg-3 col-xl-2">
-                <CFormSelect v-model="cond.status" size="sm">
+                <CFormSelect v-model="cond.status" size="sm" @change="filterSubmit">
                   <option value="open">준비중</option>
                   <option value="is">이다</option>
                   <option value="exclude">아니다</option>
@@ -450,6 +488,7 @@ defineExpose({ applyQuery, resetFilter })
                   v-if="cond.status === 'is' || cond.status === 'exclude'"
                   v-model="form.status"
                   size="sm"
+                  @change="filterSubmit"
                 >
                   <option value="1">준비중</option>
                   <option value="2">완료됨</option>
@@ -468,7 +507,7 @@ defineExpose({ applyQuery, resetFilter })
 
                 <!-- 연산자 조건 선택기 -->
                 <CCol class="col-4 col-lg-3 col-xl-2">
-                  <CFormSelect v-model="cond[field.key]" size="sm">
+                  <CFormSelect v-model="cond[field.key]" size="sm" @change="filterSubmit">
                     <option v-for="opt in field.condOptions" :key="opt.value" :value="opt.value">
                       {{ opt.label }}
                     </option>
@@ -494,6 +533,7 @@ defineExpose({ applyQuery, resetFilter })
                       v-if="cond[field.key] === 'is' || cond[field.key] === 'exclude'"
                       v-model="form[field.key]"
                       size="sm"
+                      @change="filterSubmit"
                     >
                       <option v-for="opt in field.options" :key="opt.value" :value="opt.value">
                         {{ opt.label }}
@@ -618,7 +658,6 @@ defineExpose({ applyQuery, resetFilter })
         />
 
         <TextButton
-          v-if="canSaveQuery"
           name="검색양식 저장"
           icon="mdi-content-save"
           icon-color="indigo"

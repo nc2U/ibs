@@ -15,12 +15,16 @@ export const useMeeting = defineStore('meeting', () => {
   const fetchMeetingList = async (payload: MeetingFilter) => {
     let url = `/meeting/?page=${payload.page ?? 1}`
     if (payload.project) url += `&project__slug=${payload.project}`
-    if (payload.category) url += `&category=${payload.category}`
     if (payload.status) url += `&status=${payload.status}`
+    if (payload.status__exclude) url += `&status__exclude=${payload.status__exclude}`
     if (payload.is_confirmed !== undefined && payload.is_confirmed !== '')
       url += `&is_confirmed=${payload.is_confirmed}`
+    if (payload.category) url += `&category=${payload.category}`
+    if (payload.category__exclude) url += `&category__exclude=${payload.category__exclude}`
     if (payload.creator) url += `&creator=${payload.creator}`
+    if (payload.creator__exclude) url += `&creator__exclude=${payload.creator__exclude}`
     if (payload.attendees) url += `&attendees=${payload.attendees}`
+    if (payload.attendees__exclude) url += `&attendees__exclude=${payload.attendees__exclude}`
     if (payload.meeting_date) url += `&meeting_date=${payload.meeting_date}`
     if (payload.meeting_date__range) url += `&meeting_date__range=${payload.meeting_date__range}`
     if (payload.meeting_date_after) url += `&meeting_date_after=${payload.meeting_date_after}`

@@ -513,13 +513,13 @@ onBeforeMount(async () => {
             </CRow>
 
             <CRow class="mb-3">
-              <CFormLabel for="category" class="col-sm-4 col-form-label text-right">
+              <CFormLabel for="category" class="col-sm-4 col-form-label text-right required">
                 카테고리
               </CFormLabel>
               <CCol sm="8">
                 <CInputGroup>
-                  <CFormSelect v-model="form.category" id="category">
-                    <option :value="null">---------</option>
+                  <CFormSelect v-model="form.category" id="category" required>
+                    <option value="">---------</option>
                     <option v-for="cat in categories" :key="cat.pk" :value="cat.pk">
                       {{ cat.name }}
                     </option>

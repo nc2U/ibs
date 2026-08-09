@@ -58,10 +58,14 @@ export interface MeetingFile {
 export interface MeetingFilter {
   project?: string
   category?: number
+  category__exclude?: number
   status?: string
+  status__exclude?: string
   is_confirmed?: boolean | ''
   creator?: number | null
+  creator__exclude?: number | null
   attendees?: number | null
+  attendees__exclude?: number | null
   meeting_date?: string
   meeting_date__range?: string
   meeting_date_after?: string
