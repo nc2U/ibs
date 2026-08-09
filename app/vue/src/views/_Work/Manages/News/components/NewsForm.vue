@@ -7,7 +7,7 @@ import type { News } from '@/store/types/work_inform.ts'
 import MdEditor from '@/components/MdEditor/Index.vue'
 import FileModify from '@/components/FileControl/FileModify.vue'
 import FileUpload from '@/components/FileControl/FileUpload.vue'
-import AllProjectsSelect from '@/views/_Work/components/atomics/AllProjectsSelect.vue'
+import IssueProjectSelector from '@/views/_Work/components/atomics/IssueProjectSelector.vue'
 
 const props = defineProps({ news: { type: Object as PropType<News | null>, default: () => null } })
 
@@ -80,9 +80,9 @@ onBeforeMount(() => {
           </CFormLabel>
 
           <CCol sm="8">
-            <AllProjectsSelect
+            <IssueProjectSelector
               v-model="form.project"
-              :all-projects="getNewsProjects"
+              :issue-project-list="getNewsProjects"
               :required="!$route.params.projId"
             />
           </CCol>

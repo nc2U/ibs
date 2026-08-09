@@ -14,7 +14,6 @@ import DocsList from './components/DocsList.vue'
 import Loading from '@/components/Loading/Index.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 import DocsForm from '@/views/_Work/Manages/Documents/components/DocsForm.vue'
-import AllProjectsSelect from '@/views/_Work/components/atomics/AllProjectsSelect.vue'
 import DocsListAside from '@/views/_Work/Manages/Documents/components/atomics/DocsListAside.vue'
 
 const cBody = ref()

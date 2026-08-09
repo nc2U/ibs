@@ -1,9 +1,9 @@
 <script lang="ts" setup>
-import AllProjectsSelect from '@/views/_Work/components/atomics/AllProjectsSelect.vue'
-import MultiSelect from '@/components/MultiSelect/index.vue'
 import type { PropType } from 'vue'
 import type { Category } from '@/store/types/docs.ts'
 import type { selectProject } from '@/store/types/work_project.ts'
+import MultiSelect from '@/components/MultiSelect/index.vue'
+import IssueProjectSelector from '@/views/_Work/components/atomics/IssueProjectSelector.vue'
 
 defineProps({
   myProjects: { type: Array as PropType<selectProject[]>, default: () => [] },
@@ -21,10 +21,10 @@ const emit = defineEmits(['select-cate', 'update:filter', 'search'])
     <CCol>
       <h6 class="text-subtitle-1 mb-2">프로젝트 선택</h6>
       <v-divider class="mt-0" />
-      <AllProjectsSelect
+      <IssueProjectSelector
         :model-value="filter.issue_project"
         @update:model-value="emit('update:filter', { ...filter, issue_project: $event })"
-        :all-projects="myProjects"
+        :issue-project-list="myProjects"
       />
     </CCol>
   </CRow>

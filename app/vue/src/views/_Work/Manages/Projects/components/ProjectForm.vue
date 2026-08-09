@@ -10,7 +10,7 @@ import { colorLight } from '@/utils/cssMixins'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import MdEditor from '@/components/MdEditor/Index.vue'
 import MultiSelect from '@/components/MultiSelect/index.vue'
-import AllProjectsSelect from '@/views/_Work/components/atomics/AllProjectsSelect.vue'
+import IssueProjectSelector from '@/views/_Work/components/atomics/IssueProjectSelector.vue'
 
 const props = defineProps({
   project: { type: Object as PropType<IssueProject | null>, default: null },
@@ -34,8 +34,8 @@ const comStore = useCompany()
 const comSelect = computed(() => comStore.comSelect)
 
 const workStore = useWork()
-const searchProjects = computed(() =>
-  workStore.getAllReadableProjects.filter(p => p.value !== props.project?.pk),
+const activeProjects = computed(() =>
+  workStore.getAllActiveProjects.filter(p => p.value !== props.project?.pk),
 )
 const allRoles = computed(() => workStore.getRoles)
 
@@ -326,9 +326,9 @@ onBeforeMount(() => {
         <CRow class="mb-3">
           <CFormLabel class="col-form-label text-right col-2">상위 프로젝트</CFormLabel>
           <CCol>
-            <AllProjectsSelect
+            <IssueProjectSelector
               v-model.number.lazy="form.parent"
-              :search-projects="searchProjects"
+              :issue-project-list="activeProjects"
               default-title="---------"
               :disabled="!can(PERM.PROJECT_CREATE_SUB)"
             />

@@ -14,7 +14,7 @@ import MdEditor from '@/components/MdEditor/Index.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
 import DateTimePicker from '@/components/DatePicker/DateTimePicker.vue'
 import IssueForm from '@/views/_Work/Manages/Issues/components/IssueForm.vue'
-import AllProjectsSelect from '@/views/_Work/components/atomics/AllProjectsSelect.vue'
+import IssueProjectSelector from '@/views/_Work/components/atomics/IssueProjectSelector.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -24,7 +24,8 @@ const meetingStore = useMeeting()
 const issueStore = useIssue()
 
 const meeting = computed<Meeting | null>(() => meetingStore.meeting)
-const allReadableProjects = computed(() => workStore.getAllReadableProjects)
+const myProjects = computed(() => workStore.getMyProjects)
+const meetingProjects = computed(() => workStore.getMyProjects.filter(pjt => pjt.module?.meeting))
 const users = computed(() => accStore.usersList)
 const categories = computed(() => meetingStore.categoryList)
 
@@ -193,7 +194,7 @@ watch(
   () => form.value.project,
   async newProjPk => {
     if (newProjPk) {
-      const proj = allReadableProjects.value.find(p => p.value === newProjPk)
+      const proj = meetingProjects.value.find(p => p.value === newProjPk)
       if (proj) await issueStore.fetchAllIssueList(proj.slug)
     }
   },
@@ -238,7 +239,7 @@ const onConfirmToggle = async () => {
 const projId = computed(() => route.params.projId as string | undefined)
 watch(projId, newVal => {
   if (newVal)
-    form.value.project = allReadableProjects.value.find(p => p.slug === newVal)?.value as number
+    form.value.project = meetingProjects.value.find(p => p.slug === newVal)?.value as number
 })
 onBeforeMount(async () => {
   await accStore.fetchUsersList()
@@ -247,7 +248,7 @@ onBeforeMount(async () => {
   await issueStore.fetchPriorityList()
   await issueStore.fetchTrackerList()
   if (projId.value) {
-    const proj = allReadableProjects.value.find(p => p.slug === projId.value)
+    const proj = meetingProjects.value.find(p => p.slug === projId.value)
     if (proj) {
       form.value.project = proj.value as number
       await issueStore.fetchAllIssueList(proj.slug)
@@ -487,9 +488,9 @@ onBeforeMount(async () => {
                 프로젝트
               </CFormLabel>
               <CCol sm="8">
-                <AllProjectsSelect
+                <IssueProjectSelector
                   v-model="form.project"
-                  :all-readable-projects="allReadableProjects"
+                  :issue-project-list="meetingProjects"
                   required
                   :disabled="!!projId"
                 />
@@ -615,7 +616,7 @@ onBeforeMount(async () => {
         :key="modalKey"
         :issue="selectedIssue"
         :current-project="workStore.allReadableProjectsFlat.find(p => p.pk === form.project)"
-        :all-readable-projects="allReadableProjects"
+        :my-projects="myProjects"
         :status-list="statusList"
         :priority-list="priorityList"
         :get-issues="getIssues"
@@ -638,9 +639,9 @@ onBeforeMount(async () => {
         <CRow class="mb-3">
           <CFormLabel for="cat-project" class="col-sm-3 col-form-label">프로젝트</CFormLabel>
           <CCol sm="9">
-            <AllProjectsSelect
+            <IssueProjectSelector
               v-model="categoryForm.project"
-              :all-readable-projects="allReadableProjects"
+              :issue-project-list="meetingProjects"
               id="cat-project"
               disabled
             />
