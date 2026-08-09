@@ -6,7 +6,7 @@ import { useWork } from '@/store/pinia/work_project.ts'
 import type { Version } from '@/store/types/work_project.ts'
 import IssueDropDown from '@/views/_Work/Manages/Issues/components/IssueDropDown.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
-import VersionSummary from './VersionSummary.vue'
+import VersionSummary from './automics/VersionSummary.vue'
 
 const props = defineProps({ version: { type: Object as PropType<Version>, required: true } })
 
@@ -173,7 +173,7 @@ onBeforeMount(() => {
       </CCol>
 
       <CCol md="4" class="mb-4">
-        <VersionSummary />
+        <VersionSummary :issues="version?.issues ?? []" />
       </CCol>
     </CRow>
   </template>

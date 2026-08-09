@@ -11,16 +11,17 @@ export interface SimpleIssue {
   pk: number
   project: SimpleProject
   subject: string
-  status: number
+  status: { pk: number; name: string; closed: boolean }
   tracker: {
     pk: number
     name: string
     description: string
   }
-  priority: number
+  priority: { pk: number; name: string }
   fixed_version: number | null
-  category: number | null
-  assigned_to: number | null
+  category: { pk: number; name: string } | null
+  assigned_to: SimpleUser | null
+  creator: SimpleUser | null
   watchers: SimpleUser[]
   expected_duration: string | null
   expected_duration_display: string

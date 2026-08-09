@@ -490,16 +490,41 @@ class VersionListSerializer(serializers.ModelSerializer):
             return round(closed_num / total_num * 100, 2)
 
 
+class SimpleIssueStatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        from work.models.issue import IssueStatus
+        model = IssueStatus
+        fields = ('pk', 'name', 'closed')
+
+
+class SimplePrioritySerializer(serializers.ModelSerializer):
+    class Meta:
+        from work.models.issue import CodeIssuePriority
+        model = CodeIssuePriority
+        fields = ('pk', 'name')
+
+
+class SimpleCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = IssueCategory
+        fields = ('pk', 'name')
+
+
 class SimpleIssueSerializer(serializers.ModelSerializer):
     project = SimpleIssueProjectSerializer(read_only=True)
     tracker = TrackerInIssueProjectSerializer(read_only=True)
+    status = SimpleIssueStatusSerializer(read_only=True)
+    priority = SimplePrioritySerializer(read_only=True)
+    category = SimpleCategorySerializer(read_only=True)
+    assigned_to = SimpleUserSerializer(read_only=True)
+    creator = SimpleUserSerializer(read_only=True)
     watchers = SimpleUserSerializer(many=True, read_only=True)
     expected_duration_display = serializers.CharField(source='get_expected_duration_display', read_only=True)
 
     class Meta:
         model = Issue
         fields = ('pk', 'project', 'subject', 'status', 'tracker', 'priority',
-                  'fixed_version', 'category', 'assigned_to', 'watchers',
+                  'fixed_version', 'category', 'assigned_to', 'creator', 'watchers',
                   'expected_duration', 'expected_duration_display', 'done_ratio', 'closed')
 
 
