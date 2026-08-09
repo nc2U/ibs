@@ -3,6 +3,7 @@ import { computed, type PropType } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms.ts'
 import type { Version } from '@/store/types/work_project.ts'
+import VersionIssuesTable from './automics/VersionIssuesTable.vue'
 
 const props = defineProps({ version: { type: Object as PropType<Version>, required: true } })
 
@@ -96,37 +97,6 @@ const done_ratio = computed(() => {
           </span>
         </CCol>
       </CRow>
-
-      <!--      <CRow>-->
-      <!--        <CCol class="mb-4">-->
-      <!--          <h6>연결된 업무</h6>-->
-      <!--          <v-divider class="mb-0" />-->
-      <!--          <CTable responsive hover small striped>-->
-      <!--            <colgroup>-->
-      <!--              <col style="width: 95%" />-->
-      <!--              <col style="width: 5%" />-->
-      <!--            </colgroup>-->
-      <!--            <CTableBody>-->
-      <!--              <CTableRow v-for="issue in version.issues" :key="issue.pk">-->
-      <!--                <CTableDataCell>-->
-      <!--                  <span>-->
-      <!--                    <router-link-->
-      <!--                      :to="{ name: '(업무) - 보기', params: { issueId: issue.pk } }"-->
-      <!--                      :class="{ closed: issue.closed }"-->
-      <!--                    >-->
-      <!--                      기능 #{{ issue.pk }}-->
-      <!--                    </router-link>-->
-      <!--                  </span>-->
-      <!--                  <span> : {{ issue.subject }}</span>-->
-      <!--                </CTableDataCell>-->
-      <!--                <CTableDataCell class="text-center p-0">-->
-      <!--                  <IssueDropDown :issue="issue" />-->
-      <!--                </CTableDataCell>-->
-      <!--              </CTableRow>-->
-      <!--            </CTableBody>-->
-      <!--          </CTable>-->
-      <!--        </CCol>-->
-      <!--      </CRow>-->
     </template>
   </CCol>
 </template>
