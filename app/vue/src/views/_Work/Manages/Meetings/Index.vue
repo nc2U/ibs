@@ -12,7 +12,7 @@ import Loading from '@/components/Loading/Index.vue'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import MeetingList from './components/MeetingList.vue'
-import MeetingAside from './components/MeetingAside.vue'
+import SavedQueryAside from '@/views/_Work/components/asides/SavedQueryAside.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 
 const cBody = ref()
@@ -28,9 +28,11 @@ const navMenu = computed(() => (!allReadableProjectsFlat.value.length ? navMenu1
 
 const { can, PERM } = usePerms()
 const canMeetingCreate = computed(() => can(PERM.MEETING_CREATE))
+const canProjectPubQuery = computed(() => can(PERM.PROJECT_PUB_QUERY))
 
 const workStore = useWork()
 const allReadableProjectsFlat = computed(() => workStore.allReadableProjectsFlat)
+const allReadableProjects = computed(() => workStore.getAllReadableProjects)
 const myProjects = computed(() => workStore.getMyProjects)
 
 const meetingStore = useMeeting()
@@ -40,6 +42,8 @@ const categories = computed(() => meetingStore.categoryList)
 provide('navMenu', navMenu)
 
 const page = ref(1)
+const meetingListRef = ref()
+const activeQueryId = ref<number | null>(null)
 
 const onFilterSubmit = (filter: MeetingFilter) => {
   page.value = 1
@@ -49,6 +53,20 @@ const onFilterSubmit = (filter: MeetingFilter) => {
 const onPageSelect = (p: number) => {
   page.value = p
   meetingStore.fetchMeetingList({ page: p })
+}
+
+const onQueryClick = (query: any) => {
+  activeQueryId.value = query.pk
+  if (meetingListRef.value?.querySectionRef) {
+    meetingListRef.value.querySectionRef.applyQuery(query)
+  }
+}
+
+const onResetQuery = () => {
+  activeQueryId.value = null
+  if (meetingListRef.value?.querySectionRef) {
+    meetingListRef.value.querySectionRef.resetFilter()
+  }
 }
 
 const loading = ref<boolean>(true)
@@ -65,7 +83,6 @@ onBeforeMount(initData)
 watch(
   () => route.name,
   (newName, oldName) => {
-    // Only re-initialize if moving between different feature sets or back to list
     const isMeetingRoute = (name: any) =>
       name && (name.includes('회의') || name.includes('Meeting'))
     if (isMeetingRoute(newName) && !isMeetingRoute(oldName)) {
@@ -98,12 +115,26 @@ watch(
         </CCol>
       </CRow>
 
-      <!-- 전역 회의 관리 목록은 항상 리스트만 표시 -->
-      <MeetingList :meeting-list="meetingList" :page="page" @page-select="onPageSelect" />
+      <!-- 전역 회의 관리 목록 -->
+      <MeetingList
+        ref="meetingListRef"
+        :meeting-list="meetingList"
+        :categories="categories"
+        :search-projects="allReadableProjects"
+        :page="page"
+        @filter-submit="onFilterSubmit"
+        @page-select="onPageSelect"
+      />
     </template>
 
     <template v-slot:aside>
-      <MeetingAside :categories="categories" @filter-submit="onFilterSubmit" />
+      <SavedQueryAside
+        target-type="meeting"
+        :active-query-id="activeQueryId ?? undefined"
+        :can-project-pub-query="canProjectPubQuery"
+        @on-query-click="onQueryClick"
+        @on-reset-query="onResetQuery"
+      />
     </template>
   </ContentBody>
 </template>

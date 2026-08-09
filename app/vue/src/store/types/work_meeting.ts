@@ -59,8 +59,16 @@ export interface MeetingFilter {
   project?: string
   category?: number
   status?: string
+  is_confirmed?: boolean | ''
+  creator?: number | null
+  attendees?: number | null
   meeting_date?: string
   meeting_date__range?: string
+  meeting_date_after?: string
+  meeting_date_before?: string
+  created__range?: string
+  created_after?: string
+  created_before?: string
   search?: string
   page?: number
 }

@@ -2,23 +2,29 @@
 import { type PropType, ref, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useMeeting } from '@/store/pinia/work_meeting.ts'
-import type { Meeting } from '@/store/types/work_meeting.ts'
+import type { Meeting, MeetingCategory, MeetingFilter } from '@/store/types/work_meeting.ts'
+import type { selectProject } from '@/store/types/work_project.ts'
 import NoData from '@/components/NoData/Index.vue'
-import Pagination from '@/components/Pagination'
+import QuerySection from './QuerySection.vue'
 import MeetingItem from './MeetingItem.vue'
+import Pagination from '@/components/Pagination'
 
-defineProps({
+const props = defineProps({
   meetingList: { type: Array as PropType<Meeting[]>, default: () => [] },
+  categories: { type: Array as PropType<MeetingCategory[]>, default: () => [] },
+  searchProjects: { type: Array as PropType<selectProject[]>, default: () => [] },
   page: { type: Number, default: 1 },
 })
 
-const emit = defineEmits(['page-select'])
+const emit = defineEmits(['filter-submit', 'page-select'])
 
 const route = useRoute()
 const router = useRouter()
 
 const meetingStore = useMeeting()
 const meetingPages = (limit: number) => meetingStore.meetingPages(limit)
+
+const querySectionRef = ref()
 
 const selectedRow = ref<number | null>(null)
 const handleClickOutside = (event: any) => {
@@ -37,10 +43,25 @@ const goDetail = (meeting: Meeting) => {
   }
 }
 
+const filterSubmit = (payload: MeetingFilter) => emit('filter-submit', payload)
 const pageSelect = (page: number) => emit('page-select', page)
+
+defineExpose({ querySectionRef })
 </script>
 
 <template>
+  <!-- 검색 조건 영역 -->
+  <CRow class="mb-1">
+    <CCol col="12">
+      <QuerySection
+        ref="querySectionRef"
+        :categories="categories"
+        :search-projects="searchProjects"
+        @filter-submit="filterSubmit"
+      />
+    </CCol>
+  </CRow>
+
   <NoData v-if="!meetingList.length" />
 
   <CCol v-else col="12">

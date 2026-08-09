@@ -17,8 +17,16 @@ export const useMeeting = defineStore('meeting', () => {
     if (payload.project) url += `&project__slug=${payload.project}`
     if (payload.category) url += `&category=${payload.category}`
     if (payload.status) url += `&status=${payload.status}`
+    if (payload.is_confirmed !== undefined && payload.is_confirmed !== '')
+      url += `&is_confirmed=${payload.is_confirmed}`
+    if (payload.creator) url += `&creator=${payload.creator}`
+    if (payload.attendees) url += `&attendees=${payload.attendees}`
     if (payload.meeting_date) url += `&meeting_date=${payload.meeting_date}`
     if (payload.meeting_date__range) url += `&meeting_date__range=${payload.meeting_date__range}`
+    if (payload.meeting_date_after) url += `&meeting_date_after=${payload.meeting_date_after}`
+    if (payload.meeting_date_before) url += `&meeting_date_before=${payload.meeting_date_before}`
+    if (payload.created_after) url += `&created_after=${payload.created_after}`
+    if (payload.created_before) url += `&created_before=${payload.created_before}`
     if (payload.search) url += `&search=${payload.search}`
 
     return await api

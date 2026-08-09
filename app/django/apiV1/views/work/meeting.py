@@ -1,5 +1,7 @@
 from django.db.models import Q
-from django_filters.rest_framework import FilterSet, CharFilter, DateTimeFromToRangeFilter
+from django_filters.rest_framework import (
+    FilterSet, CharFilter, BooleanFilter, NumberFilter, DateTimeFromToRangeFilter
+)
 from rest_framework import viewsets, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -46,15 +48,27 @@ class MeetingCategoryViewSet(viewsets.ModelViewSet):
 class MeetingFilter(FilterSet):
     project__slug = CharFilter(field_name='project__slug', label='프로젝트')
     meeting_date = DateTimeFromToRangeFilter(field_name='meeting_date', label='회의 일시 범위')
-    search = CharFilter(method='search_filter', label='검색어(제목/내용)')
+    created = DateTimeFromToRangeFilter(field_name='created', label='등록일 범위')
+    creator = NumberFilter(field_name='creator__pk', label='작성자')
+    attendees = NumberFilter(field_name='attendees__pk', label='참석자')
+    is_confirmed = BooleanFilter(field_name='is_confirmed', label='확정 여부')
+    search = CharFilter(method='search_filter', label='검색어(제목/의제/내용/결정사항)')
 
     class Meta:
         model = Meeting
-        fields = ('project', 'project__slug', 'category', 'status', 'meeting_date', 'search')
+        fields = (
+            'project', 'project__slug', 'category', 'status', 'is_confirmed',
+            'creator', 'attendees', 'meeting_date', 'created', 'search',
+        )
 
     @staticmethod
     def search_filter(queryset, name, value):
-        return queryset.filter(Q(title__icontains=value) | Q(content__icontains=value)).distinct()
+        return queryset.filter(
+            Q(title__icontains=value)
+            | Q(agenda__icontains=value)
+            | Q(content__icontains=value)
+            | Q(decisions__icontains=value)
+        ).distinct()
 
 
 class MeetingViewSet(viewsets.ModelViewSet):
