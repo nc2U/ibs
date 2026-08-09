@@ -6,7 +6,7 @@ import { useInform } from '@/store/pinia/work_inform.ts'
 import type { ProjectFilter, selectProject } from '@/store/types/work_project.ts'
 import Multiselect from '@vueform/multiselect'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
-import AllProjectsSelect from '@/views/_Work/components/atomics/AllProjectsSelect.vue'
+import IssueProjectSelector from '@/views/_Work/components/atomics/IssueProjectSelector.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 import ColumnSelector from '@/views/_Work/components/atomics/ColumnSelector.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
@@ -505,19 +505,19 @@ defineExpose({ applyQuery, resetFilter })
                 </CCol>
                 <CCol class="col-4 col-lg-3">
                   <template v-if="field.type === 'project'">
-                    <AllProjectsSelect
+                    <IssueProjectSelector
                       v-model="selectedProjectVal"
-                      :search-projects="allReadableProjects"
+                      :issue-project-list="allReadableProjects"
                       default-title="<< 내 프로젝트 >>"
                       size="sm"
                     />
                   </template>
 
                   <template v-else-if="field.type === 'parent'">
-                    <AllProjectsSelect
+                    <IssueProjectSelector
                       v-if="cond.parent === 'is' || cond.parent === 'exclude'"
                       v-model="selectedParentVal"
-                      :search-projects="allReadableProjects"
+                      :issue-project-list="allReadableProjects"
                       default-title="---------"
                       size="sm"
                     />
@@ -730,19 +730,19 @@ defineExpose({ applyQuery, resetFilter })
               </CCol>
               <CCol class="col-4">
                 <template v-if="field.type === 'project'">
-                  <AllProjectsSelect
+                  <IssueProjectSelector
                     v-model="selectedProjectVal"
-                    :search-projects="allReadableProjects"
+                    :issue-project-list="allReadableProjects"
                     default-title="<< 내 프로젝트 >>"
                     size="sm"
                   />
                 </template>
 
                 <template v-else-if="field.type === 'parent'">
-                  <AllProjectsSelect
+                  <IssueProjectSelector
                     v-if="cond.parent === 'is' || cond.parent === 'exclude'"
                     v-model="selectedParentVal"
-                    :search-projects="allReadableProjects"
+                    :issue-project-list="allReadableProjects"
                     default-title="---------"
                     size="sm"
                   />

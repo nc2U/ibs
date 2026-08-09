@@ -128,7 +128,7 @@ const pageSelect = (page: number) => emit('page-select', page)
   </CRow>
 
   <QuerySection
-    :all-readable-projects="allReadableProjects"
+    :search-projects="allReadableProjects"
     :status-list="statusList"
     :tracker-list="trackerList"
     :priority-list="priorityList"

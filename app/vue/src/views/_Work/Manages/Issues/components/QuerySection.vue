@@ -1,5 +1,14 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, onMounted, nextTick, type PropType, reactive, ref, watch } from 'vue'
+import {
+  computed,
+  onBeforeMount,
+  onMounted,
+  nextTick,
+  type PropType,
+  reactive,
+  ref,
+  watch,
+} from 'vue'
 import type { selectProject } from '@/store/types/work_project.ts'
 import type { IssueFilter, IssueStatus, Tracker } from '@/store/types/work_issue.ts'
 import Multiselect from '@vueform/multiselect'
@@ -7,7 +16,7 @@ import { useRoute } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
 import { useWork } from '@/store/pinia/work_project'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
-import AllProjectsSelect from '@/views/_Work/components/atomics/AllProjectsSelect.vue'
+import IssueProjectSelector from '@/views/_Work/components/atomics/IssueProjectSelector.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 
 const props = defineProps({
@@ -841,7 +850,7 @@ onBeforeMount(async () => {
   // 비공개 업무 권한 검사 (issue.private 권한) - 비동기 권한 로드에 대응하여 반응형 watch로 처리
   watch(
     () => can(PERM.ISSUE_PRIVATE),
-    (canPrivate) => {
+    canPrivate => {
       if (canPrivate) {
         const privateOpt = searchOptions[0].options.find(o => o.value === 'is_private')
         if (privateOpt) {
@@ -859,7 +868,7 @@ onBeforeMount(async () => {
         }
       }
     },
-    { immediate: true }
+    { immediate: true },
   )
 
   if (route.name === '업무')
@@ -960,9 +969,9 @@ onMounted(() => {
                 <CCol class="col-4 col-lg-3">
                   <!-- 프로젝트 전용 셀렉트 -->
                   <template v-if="field.type === 'project'">
-                    <AllProjectsSelect
+                    <IssueProjectSelector
                       v-model="form.project"
-                      :search-projects="searchProjects"
+                      :issue-project-list="searchProjects"
                       default-title="<< 내 프로젝트 >>"
                       value-type="slug"
                       size="sm"
