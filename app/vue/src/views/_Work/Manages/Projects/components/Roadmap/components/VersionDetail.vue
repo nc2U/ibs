@@ -4,9 +4,9 @@ import { useRoute, useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms.ts'
 import { useWork } from '@/store/pinia/work_project.ts'
 import type { Version } from '@/store/types/work_project.ts'
-import IssueDropDown from '@/views/_Work/Manages/Issues/components/IssueDropDown.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import VersionSummary from './automics/VersionSummary.vue'
+import VersionIssuesTable from './automics/VersionIssuesTable.vue'
 
 const props = defineProps({ version: { type: Object as PropType<Version>, required: true } })
 
@@ -18,15 +18,7 @@ const workStore = useWork()
 
 const boxClass = ['primary-box', 'danger-box', 'success-box']
 
-const selectedRow = ref<number | null>(null)
-const handleClickOutside = (event: any) => {
-  if (!event.target.closest('.table-row')) selectedRow.value = null
-}
 
-watchEffect(() => {
-  if (selectedRow.value) document.addEventListener('click', handleClickOutside)
-  else document.removeEventListener('click', handleClickOutside)
-})
 
 const closedNum = computed(() => props.version?.issues?.filter(i => i.closed).length ?? 0)
 const closedStr = computed(() => {
@@ -138,38 +130,7 @@ onBeforeMount(() => {
 
     <CRow class="flex-md-row flex-column-reverse">
       <CCol md="8" class="mb-4">
-        <h6>연결된 업무</h6>
-        <v-divider class="mb-0" />
-        <CTable responsive hover small striped>
-          <colgroup>
-            <col style="width: 95%" />
-            <col style="width: 5%" />
-          </colgroup>
-          <CTableBody>
-            <CTableRow
-              v-for="issue in version.issues"
-              :key="issue.pk"
-              class="table-row cursor-menu"
-              :color="selectedRow === issue.pk ? 'primary' : ''"
-              @click="selectedRow = issue.pk"
-            >
-              <CTableDataCell>
-                <span>
-                  <router-link
-                    :to="{ name: '(업무) - 보기', params: { issueId: issue.pk } }"
-                    :class="{ closed: issue.closed }"
-                  >
-                    기능 #{{ issue.pk }}
-                  </router-link>
-                </span>
-                <span> : {{ issue.subject }}</span>
-              </CTableDataCell>
-              <CTableDataCell class="text-center p-0">
-                <IssueDropDown :issue="issue" />
-              </CTableDataCell>
-            </CTableRow>
-          </CTableBody>
-        </CTable>
+        <VersionIssuesTable :issues="version?.issues ?? []" />
       </CCol>
 
       <CCol md="4" class="mb-4">
