@@ -453,12 +453,13 @@ class VersionListSerializer(serializers.ModelSerializer):
     closed_num = serializers.SerializerMethodField(read_only=True)
     total_num = serializers.SerializerMethodField(read_only=True)
     done_ratio = serializers.SerializerMethodField(read_only=True)
+    recent_issues = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Version
         fields = ('pk', 'project', 'name', 'status', 'status_desc', 'sharing',
                   'sharing_desc', 'effective_date', 'description', 'is_default',
-                  'open_num', 'closed_num', 'total_num', 'done_ratio')
+                  'open_num', 'closed_num', 'total_num', 'done_ratio', 'recent_issues')
 
     @staticmethod
     def get_is_default(obj):
@@ -488,6 +489,10 @@ class VersionListSerializer(serializers.ModelSerializer):
             return 0
         else:
             return round(closed_num / total_num * 100, 2)
+
+    @staticmethod
+    def get_recent_issues(obj):
+        return SimpleIssueSerializer(obj.issues.all().order_by('-id')[:5], many=True, read_only=True).data
 
 
 class SimpleIssueStatusSerializer(serializers.ModelSerializer):

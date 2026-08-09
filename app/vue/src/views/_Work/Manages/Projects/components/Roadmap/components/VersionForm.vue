@@ -166,6 +166,7 @@ onBeforeMount(async () => {
       <v-btn type="submit" :color="version ? 'success' : 'primary'" :disabled="formsCheck">
         저장
       </v-btn>
+      <v-btn color="light" @click="$router.replace({ name: '(로드맵)' })" flat> 목록으로 </v-btn>
     </CForm>
   </CRow>
 </template>

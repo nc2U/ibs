@@ -233,6 +233,7 @@ export interface Version {
   open_num: number
   total_num: number
   done_ratio: number
+  recent_issues?: SimpleIssue[]
   issues?: SimpleIssue[]
 }
 

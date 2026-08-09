@@ -97,6 +97,20 @@ const done_ratio = computed(() => {
           </span>
         </CCol>
       </CRow>
+
+      <CRow v-if="version.recent_issues?.length">
+        <CCol class="mb-3">
+          <VersionIssuesTable :issues="version.recent_issues" />
+          <div v-if="version.total_num > 5" class="text-right mt-1">
+            <router-link
+              :to="{ name: '(로드맵) - 보기', params: { projId, verId: version.pk } }"
+              class="small text-decoration-none font-weight-bold"
+            >
+              전체보기 (총 {{ version.total_num }}개) »
+            </router-link>
+          </div>
+        </CCol>
+      </CRow>
     </template>
   </CCol>
 </template>
