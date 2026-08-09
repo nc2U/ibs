@@ -658,6 +658,7 @@ defineExpose({ applyQuery, resetFilter })
         />
 
         <TextButton
+          v-if="canSaveQuery"
           name="검색양식 저장"
           icon="mdi-content-save"
           icon-color="indigo"
