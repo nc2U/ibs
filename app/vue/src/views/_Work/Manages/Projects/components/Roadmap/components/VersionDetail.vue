@@ -91,7 +91,9 @@ onBeforeMount(() => {
       </span>
       <span v-if="canManageVersions" class="mr-3">
         <v-icon icon="mdi-plus-circle" color="success" size="16" class="mr-1" />
-        <router-link :to="{ name: '(로드맵) - 추가' }">새 업무</router-link>
+        <router-link :to="{ name: '(업무) - 추가', query: { version: version?.pk } }">
+          새 업무
+        </router-link>
       </span>
     </CCol>
   </CRow>

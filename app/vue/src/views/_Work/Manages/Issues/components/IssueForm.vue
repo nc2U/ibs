@@ -257,9 +257,13 @@ watch(
   newVersions => {
     // 신규 생성 모드이면서 fixed_version이 설정되지 않았을 때만 자동 설정
     if (!props.issue && !route.query.copy && newVersions.length > 0 && !form.value.fixed_version) {
-      const defaultVersion = newVersions.find(v => v.is_default)
-      if (defaultVersion) {
-        form.value.fixed_version = defaultVersion.pk
+      if (route.query.version) {
+        form.value.fixed_version = Number(route.query.version)
+      } else {
+        const defaultVersion = newVersions.find(v => v.is_default)
+        if (defaultVersion) {
+          form.value.fixed_version = defaultVersion.pk
+        }
       }
     }
   },
