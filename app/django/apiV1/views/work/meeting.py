@@ -47,6 +47,10 @@ class MeetingCategoryViewSet(viewsets.ModelViewSet):
 
 class MeetingFilter(FilterSet):
     project__slug = CharFilter(field_name='project__slug', label='프로젝트')
+    status__exclude = CharFilter(field_name='status', exclude=True, label='상태-제외')
+    category__exclude = NumberFilter(field_name='category', exclude=True, label='카테고리-제외')
+    creator__exclude = NumberFilter(field_name='creator__pk', exclude=True, label='작성자-제외')
+    attendees__exclude = NumberFilter(field_name='attendees__pk', exclude=True, label='참석자-제외')
     meeting_date = DateTimeFromToRangeFilter(field_name='meeting_date', label='회의 일시 범위')
     created = DateTimeFromToRangeFilter(field_name='created', label='등록일 범위')
     creator = NumberFilter(field_name='creator__pk', label='작성자')
@@ -57,8 +61,9 @@ class MeetingFilter(FilterSet):
     class Meta:
         model = Meeting
         fields = (
-            'project', 'project__slug', 'category', 'status', 'is_confirmed',
-            'creator', 'attendees', 'meeting_date', 'created', 'search',
+            'project', 'project__slug', 'category', 'status', 'status__exclude', 'is_confirmed',
+            'creator', 'creator__exclude', 'attendees', 'attendees__exclude',
+            'meeting_date', 'created', 'search',
         )
 
     @staticmethod

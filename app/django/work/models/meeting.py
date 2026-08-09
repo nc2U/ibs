@@ -11,6 +11,7 @@ class MeetingCategory(models.Model):
     project = models.ForeignKey(IssueProject, on_delete=models.CASCADE, verbose_name='프로젝트',
                                 related_name='meeting_categories')
     name = models.CharField('카테고리명', max_length=100)
+    description = models.CharField('설명', max_length=255, blank=True, default='')
     color = models.CharField('색상', max_length=20, blank=True, default='')
     order = models.PositiveSmallIntegerField('정렬', default=1)
 
@@ -27,7 +28,7 @@ class Meeting(models.Model):
     project = models.ForeignKey(IssueProject, on_delete=models.PROTECT, verbose_name='프로젝트',
                                 related_name='meetings')
     title = models.CharField('회의 제목', max_length=255)
-    category = models.ForeignKey(MeetingCategory, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='카테고리',
+    category = models.ForeignKey(MeetingCategory, on_delete=models.PROTECT, verbose_name='카테고리',
                                  related_name='meetings')
     MEETING_STATUS_CHOICES = (('1', '준비'), ('2', '종료'), ('3', '취소'))
     status = models.CharField('회의 상태', max_length=1, choices=MEETING_STATUS_CHOICES, default='1')
