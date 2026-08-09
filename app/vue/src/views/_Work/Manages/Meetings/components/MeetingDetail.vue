@@ -1,7 +1,6 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { btnLight } from '@/utils/cssMixins.ts'
 import { useAccount } from '@/store/pinia/account'
 import { useMeeting } from '@/store/pinia/work_meeting.ts'
 import { useWork } from '@/store/pinia/work_project.ts'
@@ -526,7 +525,7 @@ const refConfirmModal = ref()
     <template #default>
       <IssueForm
         :current-project="workStore.currentProject ?? undefined"
-        :all-readable-projects="workStore.getAllReadableProjects"
+        :my-projects="workStore.getMyProjects"
         :status-list="statusList"
         :priority-list="priorityList"
         :get-issues="getIssues"

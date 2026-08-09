@@ -8,6 +8,7 @@ import { markdownRender } from '@/utils/helper.ts'
 import { diffDate, elapsedTime, timeFormat } from '@/utils/baseMixins'
 import { useIssue } from '@/store/pinia/work_issue.ts'
 import { useLogging } from '@/store/pinia/work_logging.ts'
+import { useWork } from '@/store/pinia/work_project.ts'
 import IssueControl from './IssueControl.vue'
 import IssueHistory from './IssueHistory.vue'
 import IssueForm from './IssueForm.vue'
@@ -22,7 +23,7 @@ import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 const props = defineProps({
   issue: { type: Object as PropType<Issue>, required: true },
   currentProject: { type: Object as PropType<IssueProject>, default: null },
-  allReadableProjects: { type: Array as PropType<selectProject[]>, default: () => [] },
+  myProjects: { type: Array as PropType<selectProject[]>, default: () => [] },
   issueCommentList: { type: Array as PropType<IssueComment[]>, default: () => [] },
   statusList: { type: Array as PropType<IssueStatus[]>, default: () => [] },
   priorityList: { type: Array as PropType<CodeValue[]>, default: () => [] },
@@ -39,6 +40,11 @@ const canCommentCreate = computed(
 )
 
 const isClosed = computed(() => props.issue?.closed)
+
+const workStore = useWork()
+const myProjects = computed(() =>
+  props.myProjects.length ? props.myProjects : workStore.getMyProjects,
+)
 
 const issueStore = useIssue()
 const issueNums = computed(() => issueStore.issueNums ?? [])
@@ -519,7 +525,7 @@ onBeforeMount(async () => {
       ref="issueFormRef"
       :current-project="currentProject"
       :issue="issue"
-      :all-readable-projects="allReadableProjects"
+      :my-projects="myProjects"
       :status-list="statusList"
       :priority-list="priorityList"
       :get-issues="getIssues"
