@@ -250,7 +250,20 @@ const newIssueStatusList = computed(() => {
 })
 
 const categories = computed(() => (props.currentProject?.categories as SimpleCategory[]) ?? [])
-const versions = computed(() => props.currentProject?.versions ?? [])
+const versions = computed(() => {
+  const allVers = props.currentProject?.versions ?? []
+  return allVers.filter(v => {
+    // status: '1' (열림/진행) 버전만 지정 가능
+    if (v.status === '1') return true
+    // 편집 모드에서 이미 이 버전에 지정되어 있던 경우(잠김 버전 등)는 예외 허용
+    const currentFixedVerPk =
+      typeof props.issue?.fixed_version === 'object'
+        ? props.issue?.fixed_version?.pk
+        : props.issue?.fixed_version
+    if (currentFixedVerPk && currentFixedVerPk === v.pk) return true
+    return false
+  })
+})
 
 watch(
   () => versions.value,
