@@ -7,9 +7,9 @@ from work.models.meeting import MeetingCategory, Meeting, MeetingFile
 
 @admin.register(MeetingCategory)
 class MeetingCategoryAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('pk', 'project', 'name', 'color', 'order')
-    list_display_links = ('name',)
-    list_editable = ('color', 'order')
+    list_display = ('pk', 'project', 'name', 'description', 'color', 'order')
+    list_display_links = ('project', 'name',)
+    list_editable = ('description', 'color', 'order')
     list_filter = ('project',)
 
 
