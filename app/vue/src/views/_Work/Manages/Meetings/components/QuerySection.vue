@@ -34,12 +34,10 @@ const accStore = useAccount()
 const getUsers = computed(() => accStore.getUsers)
 
 const informStore = useInform()
-const { can, PERM } = usePerms()
 
-// 개인 및 공용 검색양식 저장 권한 확인
+const { can, PERM } = usePerms()
 const canSaveQuery = computed(() => can(PERM.PROJECT_SAVE_QUERY))
 const canPubQuery = computed(() => can(PERM.PROJECT_PUB_QUERY))
-const canAnySaveQuery = computed(() => canSaveQuery.value || canPubQuery.value)
 
 const searchCond = ref<string[]>(['status'])
 
@@ -53,11 +51,11 @@ const queryForm = reactive({
 const openSaveQueryModal = () => {
   queryForm.name = ''
   queryForm.description = ''
-  // 공용 권한만 있는 경우 기본값을 true로 설정
-  queryForm.is_public = canPubQuery.value && !canSaveQuery.value
+  queryForm.is_public = false
   refQuerySaveModal.value.callModal()
 }
 
+const validated = ref(false)
 const saveQuery = async () => {
   if (!queryForm.name.trim()) return
 
@@ -620,7 +618,7 @@ defineExpose({ applyQuery, resetFilter })
         />
 
         <TextButton
-          v-if="canAnySaveQuery"
+          v-if="canSaveQuery"
           name="검색양식 저장"
           icon="mdi-content-save"
           icon-color="indigo"
@@ -632,78 +630,51 @@ defineExpose({ applyQuery, resetFilter })
   </CRow>
 
   <!-- 검색 양식 저장 모달 -->
-  <FormModal ref="refQuerySaveModal" title="검색 양식 저장" size="lg">
-    <template #default>
-      <CRow class="mb-3">
-        <CFormLabel for="query-name" class="col-sm-3 col-form-label">이름 *</CFormLabel>
-        <CCol class="col-sm-9">
-          <CFormInput
-            id="query-name"
-            v-model="queryForm.name"
-            placeholder="검색 양식 이름을 입력하세요"
-            required
-          />
-        </CCol>
-      </CRow>
+  <FormModal ref="refQuerySaveModal" size="lg">
+    <template #header>검색양식 저장</template>
+    <CForm class="needs-validation" novalidate :validated="validated" @submit.prevent="saveQuery">
+      <CModalBody>
+        <CRow class="mb-3">
+          <CFormLabel for="query-name" class="col-sm-3 col-form-label">이름 *</CFormLabel>
+          <CCol class="col-sm-9">
+            <CFormInput
+              id="query-name"
+              v-model="queryForm.name"
+              placeholder="검색 양식 이름을 입력하세요"
+              required
+            />
+          </CCol>
+        </CRow>
 
-      <CRow class="mb-3">
-        <CFormLabel for="query-desc" class="col-sm-3 col-form-label">설명</CFormLabel>
-        <CCol class="col-sm-9">
-          <CFormInput
-            id="query-desc"
-            v-model="queryForm.description"
-            placeholder="양식에 대한 간단한 설명을 입력하세요"
-          />
-        </CCol>
-      </CRow>
+        <CRow class="mb-3">
+          <CFormLabel for="query-desc" class="col-sm-3 col-form-label">설명</CFormLabel>
+          <CCol class="col-sm-9">
+            <CFormInput
+              id="query-desc"
+              v-model="queryForm.description"
+              placeholder="양식에 대한 간단한 설명을 입력하세요"
+            />
+          </CCol>
+        </CRow>
 
-      <!-- 저장 대상 권한 옵션 -->
-      <CRow class="mb-3">
-        <CFormLabel class="col-sm-3 col-form-label">공유 설정</CFormLabel>
-        <CCol class="col-sm-9 pt-1">
-          <!-- 개인 및 공용 모두 가능한 경우 -->
-          <template v-if="canSaveQuery && canPubQuery">
+        <!-- 공용 저장 권한이 있을 때만 노출 -->
+        <CRow v-if="canPubQuery" class="mb-3">
+          <CFormLabel class="col-sm-3 col-form-label"></CFormLabel>
+          <CCol class="col-sm-9 pt-1">
             <CFormCheck
               id="query-public"
               v-model="queryForm.is_public"
               label="공용 (모든 사용자와 공유)"
             />
-            <div class="form-text text-muted">
-              체크하지 않으면 내 개인 검색 양식으로만 저장됩니다.
-            </div>
-          </template>
+          </CCol>
+        </CRow>
+      </CModalBody>
 
-          <!-- 개인 저장 권한만 있는 경우 -->
-          <template v-else-if="canSaveQuery && !canPubQuery">
-            <CFormCheck
-              id="query-public-disabled"
-              :checked="false"
-              disabled
-              label="개인 전용 저장 (공용 저장 권한 없음)"
-            />
-            <div class="form-text text-muted">개인 검색 양식으로 저장됩니다.</div>
-          </template>
-
-          <!-- 공용 저장 권한만 있는 경우 -->
-          <template v-else-if="!canSaveQuery && canPubQuery">
-            <CFormCheck
-              id="query-public-forced"
-              :checked="true"
-              disabled
-              label="공용 (모든 사용자와 공유)"
-            />
-            <div class="form-text text-muted">공용 검색 양식으로 저장됩니다.</div>
-          </template>
-        </CCol>
-      </CRow>
-    </template>
-
-    <template #footer>
-      <v-btn color="primary" size="small" @click="saveQuery">저장</v-btn>
-      <v-btn color="light" size="small" variant="text" @click="refQuerySaveModal.close()" flat>
-        취소
-      </v-btn>
-    </template>
+      <CModalFooter>
+        <v-btn type="submit" color="primary" size="small">저장</v-btn>
+        <v-btn color="light" size="small" @click="refQuerySaveModal.close()" flat> 취소 </v-btn>
+      </CModalFooter>
+    </CForm>
   </FormModal>
 </template>
 
