@@ -82,7 +82,8 @@ export interface IssueFile {
 export interface IssueLink {
   pk: number
   link: string
-  description: string
+  name: string
+  description?: string
   hit: number
   created: string
   creator: {

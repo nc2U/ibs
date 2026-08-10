@@ -418,9 +418,8 @@ const refConfirmModal = ref()
           <ul class="pl-4 mb-0">
             <li v-for="link in meeting.links" :key="link.pk" class="mb-1">
               <a :href="link.link" target="_blank" rel="noopener noreferrer" class="text-primary font-weight-bold">
-                {{ link.link }}
+                {{ link.name ? link.name : (link.description ? link.description : link.link) }}
               </a>
-              <span v-if="link.description" class="text-muted small ml-2">({{ link.description }})</span>
             </li>
           </ul>
         </div>

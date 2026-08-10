@@ -46,12 +46,19 @@ const onSubmit = async (payload: any) => {
   const form = new FormData()
 
   for (const key in getData) {
-    if (key === 'watchers' || key === 'files')
-      getData[key]?.forEach((val: number | string) => form.append(key, JSON.stringify(val)))
+    if (key === 'watchers' || key === 'files' || key === 'links')
+      getData[key]?.forEach((val: any) => form.append(key, JSON.stringify(val)))
     else if (key === 'newFiles') {
       getData[key].forEach((val: any) => {
         form.append('new_files', val.file as string | Blob)
         form.append('descriptions', val.description ?? '')
+      })
+    } else if (key === 'newLinks') {
+      getData[key].forEach((val: any) => {
+        if (val.link && val.link.trim()) {
+          form.append('newLinks', val.link.trim())
+          form.append('newLinkDescs', val.description ?? '')
+        }
       })
     } else form.append(key, getData[key] === null ? '' : (getData[key] as string))
   }

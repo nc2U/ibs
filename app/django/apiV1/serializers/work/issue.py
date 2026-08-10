@@ -49,7 +49,7 @@ class IssueLinkInIssueSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = IssueLink
-        fields = ('pk', 'link', 'description', 'hit', 'created', 'creator')
+        fields = ('pk', 'link', 'name', 'hit', 'created', 'creator')
 
 
 class IssueInIssueSerializer(serializers.ModelSerializer):
@@ -349,11 +349,13 @@ class IssueSerializer(serializers.ModelSerializer):
         # Link 처리
         if hasattr(self.initial_data, 'getlist'):
             new_links = self.initial_data.getlist('newLinks', [])
-            new_link_descs = self.initial_data.getlist('newLinkDescs', [])
+            new_link_names = self.initial_data.getlist('newLinkNames', [])
+            if not new_link_names:
+                new_link_names = self.initial_data.getlist('newLinkDescs', [])
             for i, link in enumerate(new_links):
                 if link and str(link).strip():
-                    desc = new_link_descs[i] if i < len(new_link_descs) else ''
-                    IssueLink.objects.create(issue=issue, link=str(link).strip(), description=desc, creator=creator)
+                    name_val = new_link_names[i] if i < len(new_link_names) else ''
+                    IssueLink.objects.create(issue=issue, link=str(link).strip(), name=name_val, creator=creator)
 
         return issue
 
@@ -390,44 +392,7 @@ class IssueSerializer(serializers.ModelSerializer):
                 if auto_watch_assigned:
                     instance.watchers.add(assigned_to)
 
-        # 공유자 업데이트
-        if hasattr(self.initial_data, 'getlist'):
-            watchers = self.initial_data.getlist('watchers')
-        else:
-            watchers = self.initial_data.get('watchers', [])
-
-        if watchers:
-            watcher_ids = []
-            for w in watchers:
-                try:
-                    clean_w = str(w).strip('"\'')
-                    watcher_ids.append(int(clean_w))
-                except (ValueError, TypeError):
-                    pass
-            valid_watchers = User.objects.filter(pk__in=watcher_ids)
-            instance.watchers.add(*valid_watchers)
-
-        del_watcher = self.initial_data.get('del_watcher', None)
-        if del_watcher:
-            try:
-                clean_val = str(del_watcher).strip('"\'')
-                instance.watchers.remove(int(clean_val))
-            except (ValueError, TypeError):
-                pass
-
-        # sub_issue 관계 지우기
-        del_child = self.initial_data.get('del_child', None)
-        if del_child:
-            child = instance.issue_set.filter(pk=del_child).first()
-            if child:
-                child.parent = None
-                child.save()
-
-        # issue_comment logic
-        comment_content = self.initial_data.get('comment_content', None)
-        creator = self.context['request'].user
-        if comment_content:
-            IssueComment.objects.create(issue=instance, content=comment_content, creator=creator)
+        creator = self.context['request'].user if 'request' in self.context else None
 
         # File 처리
         FileService.manage_files(
@@ -438,15 +403,13 @@ class IssueSerializer(serializers.ModelSerializer):
             related_name='issue'
         )
 
-        # Link 처리
+        # Link 처리 (기존 수정/삭제 & 신규 추가)
         if hasattr(self.initial_data, 'getlist'):
-            old_links = self.initial_data.getlist('links', [])
-            for json_link in old_links:
-                if not json_link or not str(json_link).strip():
-                    continue
+            links_data = self.initial_data.getlist('links', [])
+            for link_str in links_data:
                 try:
                     import json
-                    link_data = json.loads(json_link) if isinstance(json_link, str) else json_link
+                    link_data = json.loads(link_str) if isinstance(link_str, str) else link_str
                     link_pk = link_data.get('pk')
                     if link_data.get('del'):
                         IssueLink.objects.filter(pk=link_pk, issue=instance).delete()
@@ -454,18 +417,22 @@ class IssueSerializer(serializers.ModelSerializer):
                         link_obj = IssueLink.objects.get(pk=link_pk, issue=instance)
                         if 'link' in link_data:
                             link_obj.link = link_data['link']
-                        if 'description' in link_data:
-                            link_obj.description = link_data['description']
+                        if 'name' in link_data:
+                            link_obj.name = link_data['name']
+                        elif 'description' in link_data:
+                            link_obj.name = link_data['description']
                         link_obj.save()
                 except Exception as e:
                     print(f"IssueLink 처리 중 오류: {e}")
 
             new_links = self.initial_data.getlist('newLinks', [])
-            new_link_descs = self.initial_data.getlist('newLinkDescs', [])
+            new_link_names = self.initial_data.getlist('newLinkNames', [])
+            if not new_link_names:
+                new_link_names = self.initial_data.getlist('newLinkDescs', [])
             for i, link in enumerate(new_links):
                 if link and str(link).strip():
-                    desc = new_link_descs[i] if i < len(new_link_descs) else ''
-                    IssueLink.objects.create(issue=instance, link=str(link).strip(), description=desc, creator=creator)
+                    name_val = new_link_names[i] if i < len(new_link_names) else ''
+                    IssueLink.objects.create(issue=instance, link=str(link).strip(), name=name_val, creator=creator)
 
         instance.save()
         return instance

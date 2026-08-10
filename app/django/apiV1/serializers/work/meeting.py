@@ -32,7 +32,7 @@ class MeetingLinkSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MeetingLink
-        fields = ('pk', 'meeting', 'link', 'description', 'hit', 'created', 'creator')
+        fields = ('pk', 'meeting', 'link', 'name', 'hit', 'created', 'creator')
 
 
 class IssueInMeetingSerializer(serializers.ModelSerializer):
@@ -92,11 +92,13 @@ class MeetingSerializer(serializers.ModelSerializer):
         # Link 처리
         if hasattr(self.initial_data, 'getlist'):
             new_links = self.initial_data.getlist('newLinks', [])
-            new_link_descs = self.initial_data.getlist('newLinkDescs', [])
+            new_link_names = self.initial_data.getlist('newLinkNames', [])
+            if not new_link_names:
+                new_link_names = self.initial_data.getlist('newLinkDescs', [])
             for i, link in enumerate(new_links):
                 if link and str(link).strip():
-                    desc = new_link_descs[i] if i < len(new_link_descs) else ''
-                    MeetingLink.objects.create(meeting=meeting, link=str(link).strip(), description=desc, creator=creator)
+                    name_val = new_link_names[i] if i < len(new_link_names) else ''
+                    MeetingLink.objects.create(meeting=meeting, link=str(link).strip(), name=name_val, creator=creator)
 
         return meeting
 
@@ -132,17 +134,21 @@ class MeetingSerializer(serializers.ModelSerializer):
                         link_obj = MeetingLink.objects.get(pk=link_pk, meeting=instance)
                         if 'link' in link_data:
                             link_obj.link = link_data['link']
-                        if 'description' in link_data:
-                            link_obj.description = link_data['description']
+                        if 'name' in link_data:
+                            link_obj.name = link_data['name']
+                        elif 'description' in link_data:
+                            link_obj.name = link_data['description']
                         link_obj.save()
                 except Exception as e:
                     print(f"MeetingLink 처리 중 오류: {e}")
 
             new_links = self.initial_data.getlist('newLinks', [])
-            new_link_descs = self.initial_data.getlist('newLinkDescs', [])
+            new_link_names = self.initial_data.getlist('newLinkNames', [])
+            if not new_link_names:
+                new_link_names = self.initial_data.getlist('newLinkDescs', [])
             for i, link in enumerate(new_links):
                 if link and str(link).strip():
-                    desc = new_link_descs[i] if i < len(new_link_descs) else ''
-                    MeetingLink.objects.create(meeting=instance, link=str(link).strip(), description=desc, creator=creator)
+                    name_val = new_link_names[i] if i < len(new_link_names) else ''
+                    MeetingLink.objects.create(meeting=instance, link=str(link).strip(), name=name_val, creator=creator)
 
         return instance

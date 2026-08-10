@@ -65,7 +65,7 @@ const MAX_TOTAL_SIZE = 100 * 1024 * 1024 // 전체 첨부파일 합계 최대 10
 const fileErrorMessage = ref('')
 const fileInput = ref<HTMLInputElement | null>(null)
 const newFiles = ref<{ file: File; description: string }[]>([])
-const newLinks = ref<{ link: string; description: string }[]>([])
+const newLinks = ref<{ link: string; name: string }[]>([])
 const files_del = ref<string[]>([])
 
 const totalFileSize = computed(() => {
@@ -122,7 +122,7 @@ const removeFile = (index: number) => {
 }
 
 const addLink = () => {
-  newLinks.value.push({ link: '', description: '' })
+  newLinks.value.push({ link: '', name: '' })
 }
 
 const removeLink = (index: number) => {
@@ -156,7 +156,7 @@ const onSubmit = async (event: Event) => {
     newLinks.value.forEach(l => {
       if (l.link && l.link.trim()) {
         formData.append('newLinks', l.link.trim())
-        formData.append('newLinkDescs', l.description)
+        formData.append('newLinkNames', l.name)
       }
     })
 
@@ -207,12 +207,19 @@ const createRelatedIssue = async (payload: any) => {
       ]
       if (fkFields.includes(key) && val === '') continue
 
-      if (key === 'watchers' || key === 'files')
-        val?.forEach((v: number | string) => formData.append(key, JSON.stringify(v)))
+      if (key === 'watchers' || key === 'files' || key === 'links')
+        val?.forEach((v: any) => formData.append(key, JSON.stringify(v)))
       else if (key === 'newFiles') {
         val.forEach((v: any) => {
           formData.append('new_files', v.file as string | Blob)
           formData.append('descriptions', v.description ?? '')
+        })
+      } else if (key === 'newLinks') {
+        val.forEach((v: any) => {
+          if (v.link && v.link.trim()) {
+            formData.append('newLinks', v.link.trim())
+            formData.append('newLinkDescs', v.description ?? '')
+          }
         })
       } else {
         if (key === 'project' && !val) {
@@ -496,9 +503,8 @@ onBeforeMount(async () => {
                     <li v-for="link in meeting.links" :key="link.pk" class="mb-1">
                       <a :href="link.link" target="_blank" rel="noopener noreferrer" class="text-primary font-weight-bold">
                         <v-icon icon="mdi-link-variant" size="14" class="mr-1" />
-                        {{ link.link }}
+                        {{ link.name ? link.name : (link.description ? link.description : link.link) }}
                       </a>
-                      <span v-if="link.description" class="text-muted ml-2">({{ link.description }})</span>
                     </li>
                   </ul>
                 </div>
@@ -514,15 +520,22 @@ onBeforeMount(async () => {
                   :id="`link-${i}`"
                   type="url"
                   placeholder="https://..."
+                  required
                 />
+                <CFormFeedback invalid>URL 링크를 입력하세요.</CFormFeedback>
               </CCol>
               <CCol sm="5">
                 <CInputGroup>
-                  <CFormInput v-model="newLinks[i].description" placeholder="링크 설명 (예: Google Drive 공유 파일)" />
+                  <CFormInput
+                    v-model="newLinks[i].name"
+                    placeholder="파일명 또는 링크 이름 (필수)"
+                    required
+                  />
                   <CInputGroupText @click="removeLink(i)" style="cursor: pointer">
                     <v-icon icon="mdi-trash-can-outline" size="16" />
                   </CInputGroupText>
                 </CInputGroup>
+                <CFormFeedback invalid>파일명 또는 링크 이름을 입력하세요.</CFormFeedback>
               </CCol>
             </CRow>
 

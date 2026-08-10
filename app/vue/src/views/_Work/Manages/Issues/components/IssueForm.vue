@@ -57,10 +57,10 @@ const form = ref({
   links: [] as any[],
 })
 
-const newLinks = ref<{ link: string; description: string }[]>([])
+const newLinks = ref<{ link: string; name: string }[]>([])
 
 const addLink = () => {
-  newLinks.value.push({ link: '', description: '' })
+  newLinks.value.push({ link: '', name: '' })
 }
 
 const removeLink = (index: number) => {
@@ -559,10 +559,15 @@ defineExpose({ callComment, callReply })
                     <CTableBody>
                       <CTableRow v-for="(linkItem, index) in form.links" :key="linkItem.pk">
                         <CTableDataCell>
-                          <a :href="linkItem.link" target="_blank" rel="noopener noreferrer" class="text-primary font-weight-bold">
-                            {{ linkItem.link }}
+                          <a
+                            :href="typeof linkItem === 'object' ? linkItem.link : linkItem"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="text-primary font-weight-bold"
+                          >
+                            <v-icon icon="mdi-link-variant" size="14" class="mr-1" />
+                            {{ typeof linkItem === 'object' ? (linkItem.name || linkItem.description || linkItem.link) : linkItem }}
                           </a>
-                          <span v-if="linkItem.description" class="text-muted small ml-2">({{ linkItem.description }})</span>
                           <CFormCheck
                             label="삭제"
                             v-model="linkItem.del"
@@ -630,15 +635,22 @@ defineExpose({ callComment, callReply })
                         :id="`link-${i}`"
                         type="url"
                         placeholder="https://..."
+                        required
                       />
+                      <CFormFeedback invalid>URL 링크를 입력하세요.</CFormFeedback>
                     </CCol>
                     <CCol sm="5">
                       <CInputGroup>
-                        <CFormInput v-model="newLinks[i].description" placeholder="링크 설명 (예: Google Drive 공유 파일)" />
+                        <CFormInput
+                          v-model="newLinks[i].name"
+                          placeholder="파일명 또는 링크 이름 (필수)"
+                          required
+                        />
                         <CInputGroupText @click="removeLink(i)" style="cursor: pointer">
                           <v-icon icon="mdi-trash-can-outline" size="16" />
                         </CInputGroupText>
                       </CInputGroup>
+                      <CFormFeedback invalid>파일명 또는 링크 이름을 입력하세요.</CFormFeedback>
                     </CCol>
                   </CRow>
                   <CRow class="mb-2">

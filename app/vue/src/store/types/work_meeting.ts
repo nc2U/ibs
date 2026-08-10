@@ -48,7 +48,8 @@ export interface MeetingLink {
   pk: number
   meeting: number
   link: string
-  description: string
+  name: string
+  description?: string
   hit: number
   created: string
   creator: SimpleUser | null
