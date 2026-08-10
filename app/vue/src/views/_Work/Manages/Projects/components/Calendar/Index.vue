@@ -6,15 +6,20 @@ import { useIssue } from '@/store/pinia/work_issue'
 import { useMeeting } from '@/store/pinia/work_meeting'
 import { useCalendar } from '@/store/pinia/work_calendar'
 import { useAccount } from '@/store/pinia/account'
+import { usePerms } from '@/composables/usePerms'
 import type { IssueFilter } from '@/store/types/work_issue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import QuerySection from '@/views/_Work/Manages/Calendar/components/QuerySection.vue'
 import SharedCalendar from '@/views/_Work/Manages/Calendar/components/SharedCalendar.vue'
+import SavedQueryAside from '@/views/_Work/components/asides/SavedQueryAside.vue'
 import Loading from '@/components/Loading/Index.vue'
 
 const cBody = ref()
 const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
+
+const { can, PERM } = usePerms()
+const canPubQuery = computed(() => can(PERM.PROJECT_PUB_QUERY))
 
 const route = useRoute()
 const issueStore = useIssue()
@@ -31,9 +36,21 @@ const priorityList = computed(() => issueStore.priorityList)
 const meetingCategories = computed(() => meetingStore.categoryList)
 
 const activeFilters = ref<Record<string, any>>({})
+const querySectionRef = ref()
+const activeQueryId = ref<number | undefined>(undefined)
 
 const filterSubmit = (payload: IssueFilter) => {
   activeFilters.value = { ...payload }
+}
+
+const onQueryClick = (query: any) => {
+  activeQueryId.value = query.pk
+  querySectionRef.value?.applyQuery(query)
+}
+
+const onResetQuery = () => {
+  activeQueryId.value = undefined
+  querySectionRef.value?.resetFilter()
 }
 
 const summary = computed(() => {
@@ -59,7 +76,7 @@ onBeforeMount(async () => {
 
 <template>
   <Loading :active="combinedLoading" />
-  <ContentBody ref="cBody">
+  <ContentBody ref="cBody" :aside="true">
     <template v-slot:default>
       <CRow class="py-2">
         <CCol>
@@ -75,6 +92,7 @@ onBeforeMount(async () => {
       </CRow>
 
       <QuerySection
+        ref="querySectionRef"
         :search-projects="allReadableProjects"
         :status-list="statusList"
         :tracker-list="trackerList"
@@ -136,7 +154,15 @@ onBeforeMount(async () => {
       </v-card>
     </template>
 
-    <template v-slot:aside></template>
+    <template v-slot:aside>
+      <SavedQueryAside
+        target-type="calendar"
+        :active-query-id="activeQueryId"
+        :can-project-pub-query="canPubQuery"
+        @on-query-click="onQueryClick"
+        @on-reset-query="onResetQuery"
+      />
+    </template>
   </ContentBody>
 </template>
 

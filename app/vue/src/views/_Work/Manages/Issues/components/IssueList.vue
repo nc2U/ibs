@@ -51,6 +51,12 @@ watchEffect(() => {
 
 const filterSubmit = (payload: IssueFilter) => emit('filter-submit', payload)
 
+const querySectionRef = ref()
+const applyQuery = (query: any) => querySectionRef.value?.applyQuery(query)
+const resetFilter = () => querySectionRef.value?.resetFilter()
+
+defineExpose({ applyQuery, resetFilter })
+
 const issueStore = useIssue()
 const issuePages = (pageNum: number) => issueStore.issuePages(pageNum)
 const pageSelect = (page: number) => emit('page-select', page)
@@ -128,6 +134,7 @@ const pageSelect = (page: number) => emit('page-select', page)
   </CRow>
 
   <QuerySection
+    ref="querySectionRef"
     :search-projects="searchProjects"
     :status-list="statusList"
     :tracker-list="trackerList"

@@ -12,12 +12,17 @@ import IssueDetail from '@/views/_Work/Manages/Issues/components/IssueDetail.vue
 import IssueForm from '@/views/_Work/Manages/Issues/components/IssueForm.vue'
 import IssueReport from '@/views/_Work/Manages/Issues/components/IssueReport.vue'
 import IssueItemAside from '@/views/_Work/Manages/Issues/components/aside/IssueItemAside.vue'
+import SavedQueryAside from '@/views/_Work/components/asides/SavedQueryAside.vue'
+import { usePerms } from '@/composables/usePerms'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import Loading from '@/components/Loading/Index.vue'
 
 const cBody = ref()
 const toggle = () => cBody.value.toggle()
 defineExpose({ toggle })
+
+const { can, PERM } = usePerms()
+const canPubQuery = computed(() => can(PERM.PROJECT_PUB_QUERY))
 
 const [route, router] = [useRoute(), useRouter()]
 
@@ -41,6 +46,19 @@ const priorityList = computed(() => issueStore.priorityList)
 const categoryList = computed(() => issueStore.categoryList)
 const getIssues = computed(() => issueStore.getIssues)
 
+const issueListRef = ref()
+const activeQueryId = ref<number | undefined>(undefined)
+
+const onQueryClick = (query: any) => {
+  activeQueryId.value = query.pk
+  issueListRef.value?.applyQuery(query)
+}
+
+const onResetQuery = () => {
+  activeQueryId.value = undefined
+  issueListRef.value?.resetFilter()
+}
+
 const onSubmit = async (payload: any) => {
   const { pk, ...getData } = payload
   const form = new FormData()
@@ -60,7 +78,9 @@ const onSubmit = async (payload: any) => {
           form.append('newLinkNames', val.name ?? '')
         }
       })
-    } else form.append(key, getData[key] === null ? '' : (getData[key] as string))
+    } else if (getData[key] !== null && getData[key] !== undefined) {
+      form.append(key, getData[key])
+    }
   }
 
   if (pk) await issueStore.updateIssue(pk, form)
@@ -165,6 +185,7 @@ onBeforeMount(async () => {
     <template v-slot:default>
       <IssueList
         v-if="route.name === '(업무)'"
+        ref="issueListRef"
         :proj-status="currentProject?.status"
         :issue-list="issueList as Issue[]"
         :all-readable-projects="allReadableProjects"
@@ -206,7 +227,18 @@ onBeforeMount(async () => {
     </template>
 
     <template v-slot:aside>
-      <IssueItemAside :watchers="issue?.watchers" :issue="issue as any" />
+      <SavedQueryAside
+        target-type="issue"
+        :active-query-id="activeQueryId"
+        :can-project-pub-query="canPubQuery"
+        @on-query-click="onQueryClick"
+        @on-reset-query="onResetQuery"
+      />
+      <IssueItemAside
+        v-if="route.name === '(업무) - 보기'"
+        :watchers="issue?.watchers"
+        :issue="issue as any"
+      />
     </template>
   </ContentBody>
 </template>
