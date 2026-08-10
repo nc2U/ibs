@@ -1,35 +1,64 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, ref } from 'vue'
+import { computed, onBeforeMount, ref, watch } from 'vue'
 import { pageTitle, navMenu } from '@/views/_Work/_menu/headermixin2'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useRoute } from 'vue-router'
 import { usePerms } from '@/composables/usePerms.ts'
 import type { IssueProject, ProjectFilter } from '@/store/types/work_project.ts'
+import ColumnSelector, {
+  type ColumnOption,
+} from '@/views/_Work/components/atomics/ColumnSelector.vue'
 import Loading from '@/components/Loading/Index.vue'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
-import QuerySection from './components/QuerySection.vue'
+import QuerySection from '@/views/_Work/Manages/Projects/components/QuerySection.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 import ProjectTable from './components/ProjectTable.vue'
 import NoData from '@/components/NoData/Index.vue'
-import { CRow } from '@coreui/vue'
 
 const cBody = ref()
 const sideNavCall = () => cBody.value.toggle()
 
-const { can, PERM } = usePerms() // 사용자 권한 데이터
+const { can, PERM } = usePerms()
 const canProjectCreate = computed(() => can(PERM.PROJECT_CREATE))
 
 const route = useRoute()
-
 const workStore = useWork()
+
 const projectResultsFlat = computed<IssueProject[]>(() => workStore.projectResultsFlat)
 const allReadableProjects = computed(() => workStore.getAllReadableProjects)
 
-const selectedColumns = ref<string[]>(['name', 'slug', 'description'])
-const onChangeColumns = (cols: string[]) => {
-  selectedColumns.value = cols
+const allColumnsPool: ColumnOption[] = [
+  { key: 'name', label: '이름', fixed: true },
+  { key: 'slug', label: '식별자' },
+  { key: 'description', label: '설명' },
+  { key: 'is_public', label: '공개여부' },
+  { key: 'created', label: '등록일' },
+  { key: 'updated', label: '수정일' },
+]
+
+const getSavedColumns = (): string[] => {
+  const saved = localStorage.getItem('project-table-columns')
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved)
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed
+    } catch {
+      // ignore
+    }
+  }
+  return ['name', 'slug', 'description']
 }
+
+const selectedColumns = ref<string[]>(getSavedColumns())
+
+watch(
+  selectedColumns,
+  nVal => {
+    localStorage.setItem('project-table-columns', JSON.stringify(nVal))
+  },
+  { deep: true },
+)
 
 // 검색양식 관련 계산 및 메서드
 const filterSubmit = (payload: ProjectFilter) => {
@@ -72,8 +101,11 @@ onBeforeMount(async () => {
         ref="querySectionRef"
         :all-readable-projects="allReadableProjects"
         @filter-submit="filterSubmit"
-        @change-columns="onChangeColumns"
-      />
+      >
+        <template #option>
+          <ColumnSelector v-model="selectedColumns" :all-columns="allColumnsPool" />
+        </template>
+      </QuerySection>
 
       <NoData v-if="!projectResultsFlat.length" />
 
