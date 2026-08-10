@@ -31,7 +31,16 @@ const bgColor = computed(() => (isDark.value ? '#24252F' : '#fefefe'))
 const emit = defineEmits(['side-nav-call'])
 const sideNavCall = () => emit('side-nav-call')
 
-// 프로젝트 선택 기능 시작
+const topLevelRouteTarget = computed(() => {
+  const currentName = String(route.name ?? '')
+  if (currentName.startsWith('(')) {
+    const rawName = currentName.replace(/^\((.*?)\).*/, '$1')
+    if (router.hasRoute(rawName)) {
+      return { name: rawName }
+    }
+  }
+  return { name: '프로젝트' }
+})
 const workStore = useWork()
 const allActiveProjects = computed(() =>
   workStore.getAllActiveProjectSlugs.filter(p => `${p.value}` !== route.params.projId),
@@ -59,11 +68,9 @@ const chkModules = (slug: string) => {
   }
 }
 
-const cngProject = async (slug: any) => {
+const getAncestorRouteTarget = (slug: string) => {
   const routeName = (route.name as string) ?? ''
   let name = routeName
-
-  // 상세 보기, 생성, 수정 등 ' - '가 포함된 서브 라우트일 경우 메인 카테고리 라우트(예: '(문서)')로 전환
   if (routeName.includes(' - ')) {
     const baseCategory = routeName.split(' - ')[0]
     name = /^\(.*\)$/.test(baseCategory) ? baseCategory : `(${baseCategory})`
@@ -71,9 +78,14 @@ const cngProject = async (slug: any) => {
     name = /^\(.*\)$/.test(routeName) ? routeName : `(${routeName})`
   }
 
+  if (!chkModules(slug)) return { name: '(개요)', params: { projId: slug } }
+  return { name, params: { projId: slug } }
+}
+
+const cngProject = async (slug: any) => {
   if (slug) {
-    if (!chkModules(slug)) await router.push({ name: '(개요)', params: { projId: slug } })
-    else await router.push({ name, params: { projId: slug } })
+    const target = getAncestorRouteTarget(slug)
+    await router.push(target)
   }
 }
 </script>
@@ -86,14 +98,14 @@ const cngProject = async (slug: any) => {
           <CRow class="ps-4 ps-lg-0">
             <CCol class="mb-1" style="font-size: 0.9em">
               <span v-if="route.params.projId && company" class="mr-1 text-blue-grey">
-                <router-link :to="{ name: '프로젝트' }">{{ company?.name }}</router-link>
+                <router-link :to="topLevelRouteTarget">{{ company?.name }}</router-link>
                 »
               </span>
 
               <span v-if="!!ancestors.length">
                 <span v-for="p in ancestors" :key="p.pk">
                   <span v-if="p.visible" class="mr-1 text-blue-grey">
-                    <router-link :to="{ name: route.name ?? '(개요)', params: { projId: p.slug } }">
+                    <router-link :to="getAncestorRouteTarget(p.slug)">
                       {{ p.name }}
                     </router-link>
                     »
