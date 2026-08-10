@@ -7,11 +7,12 @@ import { useCompany } from '@/store/pinia/company.ts'
 import { useCalendar } from '@/store/pinia/work_calendar'
 import { useAccount } from '@/store/pinia/account'
 import { useIssue } from '@/store/pinia/work_issue'
+import { useMeeting } from '@/store/pinia/work_meeting'
 import type { Company } from '@/store/types/settings'
 import type { IssueFilter } from '@/store/types/work_issue'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
-import QuerySection from '@/views/_Work/Manages/Issues/components/QuerySection.vue'
+import QuerySection from './components/QuerySection.vue'
 import SharedCalendar from './components/SharedCalendar.vue'
 import SummaryStatus from '@/views/_Work/Manages/Calendar/components/SummaryStatus.vue'
 import Loading from '@/components/Loading/Index.vue'
@@ -31,15 +32,14 @@ const workStore = useWork()
 const calendarStore = useCalendar()
 const accStore = useAccount()
 const issueStore = useIssue()
+const meetingStore = useMeeting()
 
 const allReadableProjects = computed(() => workStore.getAllReadableProjects)
 const getUsers = computed(() => accStore.getUsers)
-const getVersions = computed(() => workStore.getVersions)
 const statusList = computed(() => issueStore.statusList)
 const trackerList = computed(() => issueStore.trackerList)
 const priorityList = computed(() => issueStore.priorityList)
-const categoryList = computed(() => issueStore.categoryList)
-const getIssues = computed(() => issueStore.getIssues)
+const meetingCategories = computed(() => meetingStore.categoryList)
 
 const activeProject = ref<string | undefined>(route.query.project as string | undefined)
 const activeFilters = ref<Record<string, any>>({})
@@ -55,6 +55,7 @@ const filterSubmit = (payload: IssueFilter) => {
 const loading = ref(true)
 onBeforeMount(async () => {
   await workStore.fetchMemberList()
+  await meetingStore.fetchCategoryList()
   loading.value = false
 })
 
@@ -89,10 +90,8 @@ const summary = computed(() => {
         :status-list="statusList"
         :tracker-list="trackerList"
         :priority-list="priorityList"
-        :category-list="categoryList"
-        :get-issues="getIssues"
+        :meeting-categories="meetingCategories"
         :get-users="getUsers"
-        :get-versions="getVersions"
         @filter-submit="filterSubmit"
       />
 
