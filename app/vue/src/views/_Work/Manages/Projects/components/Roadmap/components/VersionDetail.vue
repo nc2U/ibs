@@ -18,8 +18,6 @@ const workStore = useWork()
 
 const boxClass = ['primary-box', 'danger-box', 'success-box']
 
-
-
 const closedNum = computed(() => props.version?.issues?.filter(i => i.closed).length ?? 0)
 const closedStr = computed(() => {
   if (closedNum.value === 0) return '모두 미완료'
@@ -81,7 +79,7 @@ onBeforeMount(() => {
           삭제
         </router-link>
       </span>
-      <span v-if="canManageVersions" class="mr-3">
+      <span v-if="canManageVersions && version.status === '1'" class="mr-3">
         <v-icon icon="mdi-plus-circle" color="success" size="16" class="mr-1" />
         <router-link :to="{ name: '(업무) - 추가', query: { version: version?.pk } }">
           새 업무
