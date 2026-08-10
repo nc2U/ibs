@@ -915,25 +915,34 @@ onBeforeMount(async () => {
   if (!!route.query.status)
     cond.value.status = route.query.status as 'open' | 'is' | 'exclude' | 'closed' | 'any'
   if (!!route.query.tracker) {
-    searchCond.value.push('tracker')
+    if (!searchCond.value.includes('tracker')) searchCond.value.push('tracker')
+    if (!enabledFields.value.includes('tracker')) enabledFields.value.push('tracker')
     form.value.tracker = Number(route.query.tracker)
     cond.value.tracker = 'is'
   }
   if (!!route.query.author) {
-    searchCond.value.push('author')
+    if (!searchCond.value.includes('author')) searchCond.value.push('author')
+    if (!enabledFields.value.includes('author')) enabledFields.value.push('author')
     form.value.author = Number(route.query.author)
+    cond.value.author = 'is'
   }
   if (!!route.query.assignee) {
-    searchCond.value.push('assignee')
+    if (!searchCond.value.includes('assignee')) searchCond.value.push('assignee')
+    if (!enabledFields.value.includes('assignee')) enabledFields.value.push('assignee')
     form.value.assignee = Number(route.query.assignee)
+    cond.value.assignee = 'is'
   }
   if (!!route.query.version) {
-    searchCond.value.push('version')
+    if (!searchCond.value.includes('version')) searchCond.value.push('version')
+    if (!enabledFields.value.includes('version')) enabledFields.value.push('version')
     form.value.version = Number(route.query.version)
+    cond.value.version = 'is'
   }
   if (!!route.query.parent) {
-    searchCond.value.push('parent')
+    if (!searchCond.value.includes('parent')) searchCond.value.push('parent')
+    if (!enabledFields.value.includes('parent')) enabledFields.value.push('parent')
     form.value.parent = Number(route.query.parent)
+    cond.value.parent = 'is'
   }
 })
 
