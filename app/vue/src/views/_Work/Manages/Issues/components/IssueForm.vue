@@ -567,11 +567,7 @@ defineExpose({ callComment, callReply })
                             rel="noopener noreferrer"
                           >
                             <v-icon icon="mdi-link-variant" size="14" class="mr-1" />
-                            {{
-                              typeof linkItem === 'object'
-                                ? linkItem.name || linkItem.description || linkItem.link
-                                : linkItem
-                            }}
+                            {{ typeof linkItem === 'object' ? (linkItem.name || linkItem.link) : linkItem }}
                           </a>
                           <CFormCheck
                             label="삭제"

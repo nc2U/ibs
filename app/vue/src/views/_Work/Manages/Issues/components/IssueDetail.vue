@@ -435,7 +435,7 @@ onBeforeMount(async () => {
                 rel="noopener noreferrer"
               >
                 <v-icon icon="mdi-link-variant" size="14" class="mr-1" />
-                {{ typeof link === 'object' ? link.name || link.description || link.link : link }}
+                {{ typeof link === 'object' ? (link.name || link.link) : link }}
               </a>
             </li>
           </ul>

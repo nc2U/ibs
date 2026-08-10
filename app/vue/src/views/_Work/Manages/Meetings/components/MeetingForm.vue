@@ -228,7 +228,7 @@ const createRelatedIssue = async (payload: any) => {
         val.forEach((v: any) => {
           if (v.link && v.link.trim()) {
             formData.append('newLinks', v.link.trim())
-            formData.append('newLinkDescs', v.description ?? '')
+            formData.append('newLinkNames', v.name ?? '')
           }
         })
       } else {
@@ -519,13 +519,7 @@ onBeforeMount(async () => {
                         <CTableDataCell>
                           <a :href="linkItem.link" target="_blank" rel="noopener noreferrer">
                             <v-icon icon="mdi-link-variant" size="14" class="mr-1" />
-                            {{
-                              linkItem.name
-                                ? linkItem.name
-                                : linkItem.description
-                                  ? linkItem.description
-                                  : linkItem.link
-                            }}
+                            {{ linkItem.name ? linkItem.name : linkItem.link }}
                           </a>
                           <CFormCheck
                             label="삭제"

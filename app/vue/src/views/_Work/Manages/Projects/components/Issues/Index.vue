@@ -57,7 +57,7 @@ const onSubmit = async (payload: any) => {
       getData[key].forEach((val: any) => {
         if (val.link && val.link.trim()) {
           form.append('newLinks', val.link.trim())
-          form.append('newLinkDescs', val.description ?? '')
+          form.append('newLinkNames', val.name ?? '')
         }
       })
     } else form.append(key, getData[key] === null ? '' : (getData[key] as string))
