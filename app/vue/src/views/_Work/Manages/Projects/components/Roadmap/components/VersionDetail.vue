@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, type PropType, ref, watchEffect } from 'vue'
+import { computed, onBeforeMount, type PropType, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms.ts'
 import { useWork } from '@/store/pinia/work_project.ts'
