@@ -265,6 +265,8 @@ const filterSubmit = () => {
         if (operator === 'is') filterData.my_project = true
         else if (operator === 'exclude') filterData.my_project = false
       } else {
+        delete filterData.status
+        delete filterData.status__exclude
         const selectedProj = props.allReadableProjects.find(
           p => p.value === Number(selectedProjectVal.value),
         )
