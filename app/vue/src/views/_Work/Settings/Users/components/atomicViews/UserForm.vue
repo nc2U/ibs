@@ -396,7 +396,7 @@ onBeforeRouteUpdate(async () => await formDataSetup())
     <template #header>사용자 정보 전송 확인</template>
     <template #default> 변경된 사용자 정보를 전송하시겠습니까? </template>
     <template #footer>
-      <v-btn color="success" size="small" @click="onSubmitConfirm">저장</v-btn>
+      <v-btn color="success" size="small" @click="onSubmitConfirm">보내기</v-btn>
     </template>
   </ConfirmModal>
   <AlertModal ref="refAlertModal" />
