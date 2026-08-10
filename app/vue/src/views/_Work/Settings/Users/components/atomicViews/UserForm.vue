@@ -390,7 +390,11 @@ onBeforeRouteUpdate(async () => await formDataSetup())
   </CForm>
 
   <ConfirmModal ref="refConfirmModal">
-    <template #default> 사용자 정보를 저장하시겠습니까? </template>
+    <template #icon>
+      <v-icon icon="mdi-mail" size="22" color="indigo" class="mr-2" />
+    </template>
+    <template #header>사용자 정보 전송 확인</template>
+    <template #default> 변경된 사용자 정보를 전송하시겠습니까? </template>
     <template #footer>
       <v-btn color="success" size="small" @click="onSubmitConfirm">저장</v-btn>
     </template>
