@@ -107,7 +107,7 @@ const formatBytes = (bytes: number, decimals = 1) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i]
 }
 
-const loadFile = (event: Event) => {
+const loadFile = (event: Event, index: number) => {
   const el = event.target as HTMLInputElement
   fileErrorMessage.value = ''
 
@@ -123,7 +123,10 @@ const loadFile = (event: Event) => {
     }
 
     // 2. 전체 총용량 체크
-    const currentTotal = totalFileSize.value
+    const currentTotal = newFiles.value.reduce(
+      (acc, item, idx) => acc + (idx === index ? 0 : item.file?.size || 0),
+      0,
+    )
     const addedTotal = selectedFiles.reduce((sum, f) => sum + f.size, 0)
     if (currentTotal + addedTotal > MAX_TOTAL_SIZE) {
       fileErrorMessage.value = `총 첨부파일 용량이 제한(${formatBytes(MAX_TOTAL_SIZE)})을 초과하여 추가할 수 없습니다.`
@@ -131,12 +134,17 @@ const loadFile = (event: Event) => {
       return
     }
 
-    newFiles.value.push(...selectedFiles.map(file => ({ file, description: '' })))
-    el.value = ''
+    if (newFiles.value[index]) {
+      newFiles.value[index].file = selectedFiles[0]
+    } else {
+      newFiles.value.push({ file: selectedFiles[0], description: '' })
+    }
   }
 }
 
 const removeFile = (index: number) => {
+  const input = document.getElementById(`file-${index}`) as HTMLInputElement
+  if (input) input.value = ''
   newFiles.value.splice(index, 1)
   fileErrorMessage.value = ''
 }
@@ -531,7 +539,7 @@ defineExpose({ callComment, callReply })
                       <span v-if="i === 0">파일</span>
                     </CFormLabel>
                     <CCol sm="5">
-                      <CFormInput :id="`file-${i + 1}`" type="file" @change="loadFile" multiple />
+                      <CFormInput :id="`file-${i}`" type="file" @change="loadFile($event, i)" />
                     </CCol>
                     <CCol v-if="newFiles[i]?.file" sm="5">
                       <CInputGroup>
