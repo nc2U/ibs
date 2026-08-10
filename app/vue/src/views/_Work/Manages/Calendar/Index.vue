@@ -10,15 +10,20 @@ import { useIssue } from '@/store/pinia/work_issue'
 import { useMeeting } from '@/store/pinia/work_meeting'
 import type { Company } from '@/store/types/settings'
 import type { IssueFilter } from '@/store/types/work_issue'
+import { usePerms } from '@/composables/usePerms'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import QuerySection from './components/QuerySection.vue'
 import SharedCalendar from './components/SharedCalendar.vue'
 import SummaryStatus from '@/views/_Work/Manages/Calendar/components/SummaryStatus.vue'
+import SavedQueryAside from '@/views/_Work/components/asides/SavedQueryAside.vue'
 import Loading from '@/components/Loading/Index.vue'
 
 const cBody = ref()
 const sideNavCAll = () => cBody.value.toggle()
+
+const { can, PERM } = usePerms()
+const canPubQuery = computed(() => can(PERM.PROJECT_PUB_QUERY))
 
 const route = useRoute()
 provide('navMenu', navMenu)
@@ -44,12 +49,24 @@ const meetingCategories = computed(() => meetingStore.categoryList)
 const activeProject = ref<string | undefined>(route.query.project as string | undefined)
 const activeFilters = ref<Record<string, any>>({})
 const calendarRef = ref()
+const querySectionRef = ref()
+const activeQueryId = ref<number | undefined>(undefined)
 
 const filterSubmit = (payload: IssueFilter) => {
   activeProject.value = payload.project
   activeFilters.value = { ...payload }
   const range = calendarRef.value?.currentRange || { start: '', end: '' }
   calendarStore.fetchCalendarEvents(payload, range.start, range.end)
+}
+
+const onQueryClick = (query: any) => {
+  activeQueryId.value = query.pk
+  querySectionRef.value?.applyQuery(query)
+}
+
+const onResetQuery = () => {
+  activeQueryId.value = undefined
+  querySectionRef.value?.resetFilter()
 }
 
 const loading = ref(true)
@@ -74,7 +91,7 @@ const summary = computed(() => {
   <Loading :active="loading || calendarStore.loading" />
   <Header :page-title="comName" :nav-menu="navMenu" @side-nav-call="sideNavCAll" />
 
-  <ContentBody ref="cBody" :nav-menu="navMenu" :query="route?.query">
+  <ContentBody ref="cBody" :nav-menu="navMenu" :query="route?.query" :aside="true">
     <template v-slot:default>
       <CRow class="py-2">
         <CCol>
@@ -86,6 +103,7 @@ const summary = computed(() => {
       </CRow>
 
       <QuerySection
+        ref="querySectionRef"
         :search-projects="allReadableProjects"
         :status-list="statusList"
         :tracker-list="trackerList"
@@ -112,7 +130,15 @@ const summary = computed(() => {
       </CRow>
     </template>
 
-    <template v-slot:aside></template>
+    <template v-slot:aside>
+      <SavedQueryAside
+        target-type="calendar"
+        :active-query-id="activeQueryId"
+        :can-project-pub-query="canPubQuery"
+        @on-query-click="onQueryClick"
+        @on-reset-query="onResetQuery"
+      />
+    </template>
   </ContentBody>
 </template>
 
