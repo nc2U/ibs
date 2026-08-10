@@ -1,6 +1,5 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, onMounted, type PropType, reactive, ref, watch } from 'vue'
-import { isValidate } from '@/utils/helper.ts'
 import { usePerms } from '@/composables/usePerms'
 import { useInform } from '@/store/pinia/work_inform.ts'
 import type { ProjectFilter, selectProject } from '@/store/types/work_project.ts'
@@ -8,7 +7,7 @@ import Multiselect from '@vueform/multiselect'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import IssueProjectSelector from '@/views/_Work/components/atomics/IssueProjectSelector.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
-import FormModal from '@/components/Modals/FormModal.vue'
+import SaveQueryModal from '@/views/_Work/components/SaveQueryModal.vue'
 
 const props = defineProps({
   allReadableProjects: { type: Array as PropType<selectProject[]>, default: () => [] },
@@ -333,10 +332,6 @@ onBeforeMount(() => {
 })
 
 // 검색양식 관련 기능 구현
-const queryName = ref('')
-const queryDescription = ref('')
-const isPublic = ref(false)
-
 const myQueries = computed(() =>
   informStore.queries.filter(q => !q.is_public && q.target_type === props.targetType),
 )
@@ -348,41 +343,13 @@ onMounted(() => {
   informStore.fetchQueries({ targetType: props.targetType })
 })
 
+const extraQueryData = computed(() => ({
+  project: selectedProjectVal.value,
+  parent: selectedParentVal.value,
+}))
+
 const openSaveModal = () => {
-  queryName.value = ''
-  queryDescription.value = ''
-  isPublic.value = false
   refQuerySaveModal.value.callModal()
-}
-
-const validated = ref(false)
-const saveQuery = async (event: Event) => {
-  if (isValidate(event)) {
-    validated.value = true
-    return
-  }
-  validated.value = false
-
-  const payload = {
-    name: queryName.value,
-    description: queryDescription.value,
-    target_type: props.targetType,
-    is_public: isPublic.value,
-    project: null,
-    filters: {
-      searchCond: searchCond.value,
-      cond: cond.value,
-      form: {
-        ...form.value,
-        project: selectedProjectVal.value,
-        parent: selectedParentVal.value,
-      },
-    },
-  }
-
-  await informStore.createQuery(payload)
-  await informStore.fetchQueries({ targetType: props.targetType })
-  refQuerySaveModal.value.close()
 }
 
 const applyQuery = (query: any) => {
@@ -669,141 +636,15 @@ defineExpose({ applyQuery, resetFilter })
     </CCol>
   </CRow>
 
-  <FormModal ref="refQuerySaveModal" size="lg">
-    <template #header>검색양식 저장</template>
-    <CForm class="needs-validation" novalidate :validated="validated" @submit.prevent="saveQuery">
-      <CModalBody class="text-body">
-        <CRow class="mb-3">
-          <CFormLabel for="query-name" class="col-3 col-form-label required text-right">
-            이름
-          </CFormLabel>
-          <CCol class="col-7">
-            <CFormInput id="query-name" v-model="queryName" placeholder="검색양식 이름" required />
-          </CCol>
-        </CRow>
-        <CRow class="mb-3">
-          <CFormLabel for="query-desc" class="col-3 col-form-label text-right"> 설명 </CFormLabel>
-          <CCol class="col-7">
-            <CFormInput id="query-desc" v-model="queryDescription" placeholder="검색양식 설명" />
-          </CCol>
-        </CRow>
-        <CRow class="mb-3" v-if="can(PERM.PROJECT_PUB_QUERY)">
-          <CCol class="offset-3 col-7">
-            <CFormCheck id="query-is-public" v-model="isPublic" label="공용 (프로젝트 내 공유)" />
-          </CCol>
-        </CRow>
-        <CRow class="mb-3">
-          <CFormLabel for="modalSearchOptions" class="col-3 col-form-label text-right">
-            검색 조건 추가
-          </CFormLabel>
-          <CCol class="col-7 pt-1">
-            <Multiselect
-              id="modalSearchOptions"
-              v-model="searchCond"
-              mode="tags"
-              placeholder="검색조건 추가"
-              :options="searchOptions"
-              :groups="true"
-              :close-on-select="false"
-              :searchable="false"
-              :create-option="false"
-              size="sm"
-            />
-          </CCol>
-        </CRow>
-
-        <v-divider class="my-4" />
-        <h6 class="mb-3 text-indigo">
-          <v-icon icon="mdi-filter-cog" class="mr-2" size="small" />
-          저장될 검색 조건 설정
-        </h6>
-
-        <div class="px-3 py-2 border rounded bg-light">
-          <!-- 상태 -->
-          <CRow class="mb-2 align-items-center">
-            <CCol class="col-3 pt-1 text-right">
-              <strong>상태</strong>
-            </CCol>
-            <CCol class="col-3">
-              <CFormSelect v-model="cond.status" size="sm">
-                <option value="is">이다</option>
-                <option value="exclude">아니다</option>
-              </CFormSelect>
-            </CCol>
-            <CCol class="col-4">
-              <CFormSelect v-model="form.status" size="sm">
-                <option value="1">사용중</option>
-                <option value="2">닫힘</option>
-              </CFormSelect>
-            </CCol>
-          </CRow>
-
-          <!-- 저장 조건 설정용 동적 검색조건 루프 -->
-          <template v-for="field in activeFields" :key="'modal-' + field.key">
-            <CRow class="mb-2 align-items-center">
-              <CCol class="col-3 pt-1 text-right">
-                <strong>{{ field.label }}</strong>
-              </CCol>
-              <CCol class="col-3">
-                <CFormSelect v-model="cond[field.key]" size="sm">
-                  <option v-for="opt in field.condOptions" :key="opt.value" :value="opt.value">
-                    {{ opt.label }}
-                  </option>
-                </CFormSelect>
-              </CCol>
-              <CCol class="col-4">
-                <template v-if="field.type === 'project'">
-                  <IssueProjectSelector
-                    v-model="selectedProjectVal"
-                    :issue-project-list="allReadableProjects"
-                    default-title="<< 내 프로젝트 >>"
-                    size="sm"
-                  />
-                </template>
-
-                <template v-else-if="field.type === 'parent'">
-                  <IssueProjectSelector
-                    v-if="cond.parent === 'is' || cond.parent === 'exclude'"
-                    v-model="selectedParentVal"
-                    :issue-project-list="allReadableProjects"
-                    default-title="---------"
-                    size="sm"
-                  />
-                </template>
-
-                <template v-else-if="field.type === 'select'">
-                  <CFormSelect v-model="form[field.key]" size="sm">
-                    <option v-for="opt in field.options" :key="opt.value" :value="opt.value">
-                      {{ opt.label }}
-                    </option>
-                  </CFormSelect>
-                </template>
-
-                <template v-else-if="field.type === 'text-match'">
-                  <CFormInput
-                    v-if="cond[field.key] !== 'none' && cond[field.key] !== 'any'"
-                    v-model="form[field.key]"
-                    :placeholder="field.placeholder"
-                    size="sm"
-                  />
-                </template>
-
-                <template v-else-if="field.type === 'date'">
-                  <DatePicker v-model="form[`${field.key}_date`]" size="sm" />
-                </template>
-              </CCol>
-
-              <CCol v-if="field.type === 'date' && cond[field.key] === 'between'" class="col-3">
-                <DatePicker v-model="form[`${field.key}_date2`]" size="sm" />
-              </CCol>
-            </CRow>
-          </template>
-        </div>
-      </CModalBody>
-      <CModalFooter>
-        <v-btn type="submit" size="small" color="indigo" class="text-white">저장</v-btn>
-        <v-btn color="light" size="small" @click="refQuerySaveModal.close()" flat>닫기</v-btn>
-      </CModalFooter>
-    </CForm>
-  </FormModal>
+  <SaveQueryModal
+    ref="refQuerySaveModal"
+    v-model:search-cond="searchCond"
+    :target-type="targetType"
+    :search-options="searchOptions"
+    :cond="cond"
+    :form="form"
+    :active-fields="activeFields"
+    :all-readable-projects="allReadableProjects"
+    :extra-data="extraQueryData"
+  />
 </template>
