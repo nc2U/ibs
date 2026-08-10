@@ -88,15 +88,57 @@ const comment = ref({
 
 const newFiles = ref<{ file: File; description: string }[]>([])
 
+// 파일 용량 제한 관련 설정 (Nginx / Backend 100MB)
+const MAX_FILE_SIZE = 100 * 1024 * 1024 // 단일 파일 최대 100MB
+const MAX_TOTAL_SIZE = 100 * 1024 * 1024 // 전체 첨부파일 합계 최대 100MB
+
+const fileErrorMessage = ref('')
+
+const totalFileSize = computed(() => {
+  return newFiles.value.reduce((acc, item) => acc + (item.file?.size || 0), 0)
+})
+
+const formatBytes = (bytes: number, decimals = 1) => {
+  if (bytes === 0) return '0 B'
+  const k = 1024
+  const dm = decimals < 0 ? 0 : decimals
+  const sizes = ['B', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i]
+}
+
 const loadFile = (event: Event) => {
   const el = event.target as HTMLInputElement
+  fileErrorMessage.value = ''
+
   if (el.files && el.files.length > 0) {
-    newFiles.value.push(...Array.from(el.files).map(file => ({ file, description: '' })))
+    const selectedFiles = Array.from(el.files)
+
+    // 1. 단일 파일 용량 체크
+    const overSizedFile = selectedFiles.find(file => file.size > MAX_FILE_SIZE)
+    if (overSizedFile) {
+      fileErrorMessage.value = `[${overSizedFile.name}] 파일 크기가 제한(${formatBytes(MAX_FILE_SIZE)})을 초과합니다.`
+      el.value = ''
+      return
+    }
+
+    // 2. 전체 총용량 체크
+    const currentTotal = totalFileSize.value
+    const addedTotal = selectedFiles.reduce((sum, f) => sum + f.size, 0)
+    if (currentTotal + addedTotal > MAX_TOTAL_SIZE) {
+      fileErrorMessage.value = `총 첨부파일 용량이 제한(${formatBytes(MAX_TOTAL_SIZE)})을 초과하여 추가할 수 없습니다.`
+      el.value = ''
+      return
+    }
+
+    newFiles.value.push(...selectedFiles.map(file => ({ file, description: '' })))
+    el.value = ''
   }
 }
 
 const removeFile = (index: number) => {
   newFiles.value.splice(index, 1)
+  fileErrorMessage.value = ''
 }
 
 const formsCheck = computed(() => {
@@ -466,7 +508,24 @@ defineExpose({ callComment, callReply })
               </CRow>
 
               <CRow v-if="!issue" class="mt-3">
-                <div v-for="(f, i) in newFiles.length + 1" :key="i">
+                <CCol sm="10" class="offset-sm-2 mb-2">
+                  <div class="d-flex align-items-center justify-content-between text-muted small">
+                    <span>
+                      <v-icon icon="mdi-paperclip" size="14" class="mr-1" />
+                      첨부파일 용량 (최대 {{ formatBytes(MAX_TOTAL_SIZE) }})
+                    </span>
+                    <span :class="{ 'text-danger font-weight-bold': totalFileSize > MAX_TOTAL_SIZE }">
+                      {{ formatBytes(totalFileSize) }} / {{ formatBytes(MAX_TOTAL_SIZE) }}
+                    </span>
+                  </div>
+
+                  <div v-if="fileErrorMessage" class="text-danger small mt-1">
+                    <v-icon icon="mdi-alert-circle" size="14" class="mr-1" />
+                    {{ fileErrorMessage }}
+                  </div>
+                </CCol>
+
+                <div v-for="(f, i) in newFiles.length + 1" :key="i" class="w-100">
                   <CRow :id="`row-fn-${i + 1}`" class="mb-2">
                     <CFormLabel :for="`file-${i + 1}`" class="col-sm-2 col-form-label text-right">
                       <span v-if="i === 0">파일</span>
@@ -481,6 +540,9 @@ defineExpose({ callComment, callReply })
                           <v-icon icon="mdi-trash-can-outline" size="16" />
                         </CInputGroupText>
                       </CInputGroup>
+                      <div class="text-muted extra-small mt-1">
+                        용량: {{ formatBytes(newFiles[i].file.size) }}
+                      </div>
                     </CCol>
                   </CRow>
                 </div>
