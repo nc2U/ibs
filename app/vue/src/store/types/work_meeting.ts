@@ -36,11 +36,23 @@ export interface Meeting {
   attendees_desc: SimpleUser[]
   other_attendees: string
   files: MeetingFile[]
+  links: MeetingLink[]
   issues: SimpleIssueInMeeting[]
   created: string
   updated: string
   creator: SimpleUser
   updater: SimpleUser | null
+}
+
+export interface MeetingLink {
+  pk: number
+  meeting: number
+  link: string
+  description: string
+  hit: number
+  created: string
+  creator: SimpleUser | null
+  del?: boolean
 }
 
 export interface MeetingFile {

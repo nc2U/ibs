@@ -59,19 +59,74 @@ const canMeetingCreate = computed(() => can(PERM.MEETING_CREATE))
 const canMeetingUpdate = computed(() => can(PERM.MEETING_UPDATE))
 const canMeetingConfirm = computed(() => can(PERM.MEETING_CONFIRM))
 
+const MAX_FILE_SIZE = 100 * 1024 * 1024 // 단일 파일 최대 100MB
+const MAX_TOTAL_SIZE = 100 * 1024 * 1024 // 전체 첨부파일 합계 최대 100MB
+
+const fileErrorMessage = ref('')
 const fileInput = ref<HTMLInputElement | null>(null)
 const newFiles = ref<{ file: File; description: string }[]>([])
+const newLinks = ref<{ link: string; description: string }[]>([])
 const files_del = ref<string[]>([])
 
-const loadFile = (event: Event) => {
+const totalFileSize = computed(() => {
+  return newFiles.value.reduce((acc, item) => acc + (item.file?.size || 0), 0)
+})
+
+const formatBytes = (bytes: number, decimals = 1) => {
+  if (bytes === 0) return '0 B'
+  const k = 1024
+  const dm = decimals < 0 ? 0 : decimals
+  const sizes = ['B', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i]
+}
+
+const loadFile = (event: Event, index?: number) => {
   const el = event.target as HTMLInputElement
+  fileErrorMessage.value = ''
+
   if (el.files && el.files.length > 0) {
-    newFiles.value.push(...Array.from(el.files).map(file => ({ file, description: '' })))
+    const selectedFiles = Array.from(el.files)
+
+    // 1. 단일 파일 용량 체크
+    const overSizedFile = selectedFiles.find(file => file.size > MAX_FILE_SIZE)
+    if (overSizedFile) {
+      fileErrorMessage.value = `[${overSizedFile.name}] 파일 크기가 제한(${formatBytes(MAX_FILE_SIZE)})을 초과합니다.`
+      el.value = ''
+      return
+    }
+
+    // 2. 전체 총용량 체크
+    const currentTotal = index !== undefined
+      ? newFiles.value.reduce((acc, item, idx) => acc + (idx === index ? 0 : item.file?.size || 0), 0)
+      : totalFileSize.value
+
+    const addedTotal = selectedFiles.reduce((sum, f) => sum + f.size, 0)
+    if (currentTotal + addedTotal > MAX_TOTAL_SIZE) {
+      fileErrorMessage.value = `총 첨부파일 용량이 제한(${formatBytes(MAX_TOTAL_SIZE)})을 초과하여 추가할 수 없습니다.`
+      el.value = ''
+      return
+    }
+
+    if (index !== undefined && newFiles.value[index]) {
+      newFiles.value[index].file = selectedFiles[0]
+    } else {
+      newFiles.value.push(...selectedFiles.map(file => ({ file, description: '' })))
+    }
   }
 }
 
 const removeFile = (index: number) => {
   newFiles.value.splice(index, 1)
+  fileErrorMessage.value = ''
+}
+
+const addLink = () => {
+  newLinks.value.push({ link: '', description: '' })
+}
+
+const removeLink = (index: number) => {
+  newLinks.value.splice(index, 1)
 }
 
 const onSubmit = async (event: Event) => {
@@ -96,6 +151,14 @@ const onSubmit = async (event: Event) => {
       formData.append('descriptions', f.description)
     })
     files_del.value?.forEach((dfn: string) => formData.append('files_del', dfn))
+
+    // Append new links
+    newLinks.value.forEach(l => {
+      if (l.link && l.link.trim()) {
+        formData.append('newLinks', l.link.trim())
+        formData.append('newLinkDescs', l.description)
+      }
+    })
 
     if (form.value.pk) {
       await meetingStore.updateMeeting(form.value.pk, formData as any)
@@ -338,16 +401,34 @@ onBeforeMount(async () => {
               </CCol>
             </CRow>
 
-            <!-- Existing Files Section -->
+            <!-- File Upload Section -->
             <CRow class="mb-0">
               <CFormLabel class="col-sm-2 col-form-label text-right">파일</CFormLabel>
               <CCol sm="10">
+                <div class="d-flex align-items-center justify-content-between text-muted small mb-2">
+                  <span>
+                    <v-icon icon="mdi-paperclip" size="14" class="mr-1" />
+                    첨부파일 용량 (최대 {{ formatBytes(MAX_TOTAL_SIZE) }})
+                  </span>
+                  <span :class="{ 'text-danger font-weight-bold': totalFileSize > MAX_TOTAL_SIZE }">
+                    {{ formatBytes(totalFileSize) }} / {{ formatBytes(MAX_TOTAL_SIZE) }}
+                  </span>
+                </div>
+
+                <div v-if="fileErrorMessage" class="text-danger small mb-2">
+                  <v-icon icon="mdi-alert-circle" size="14" class="mr-1" />
+                  {{ fileErrorMessage }}
+                  <span class="ml-2 font-weight-bold text-dark">
+                    💡 대용량 파일은 아래 [외부 클라우드 링크] 섹션에 공유 링크(OneDrive, Google Drive 등)를 직접 추가하여 공유할 수 있습니다.
+                  </span>
+                </div>
+
                 <div v-if="meeting?.files?.length" class="mb-2">
                   <CTable small striped hover>
                     <CTableBody>
                       <CTableRow v-for="(file, index) in meeting.files" :key="file.pk">
                         <CTableDataCell class="cursor-not-allowed">
-                          {{ file.file_name }} {{ file.pk }}
+                          {{ file.file_name }} ({{ formatBytes(file.file_size || 0) }})
                           <CFormCheck
                             label="삭제"
                             v-model="files_del"
@@ -362,7 +443,7 @@ onBeforeMount(async () => {
                   </CTable>
                 </div>
                 <div
-                  v-else
+                  v-else-if="!newFiles.length"
                   class="text-muted small p-2 text-center border rounded border-dashed mb-2"
                 >
                   등록된 파일이 없습니다.
@@ -370,13 +451,12 @@ onBeforeMount(async () => {
               </CCol>
             </CRow>
 
-            <!-- File Upload Section (matches IssueForm style) -->
             <CRow v-for="(f, i) in newFiles" :key="i" class="mb-2">
               <CFormLabel :for="`file-${i + 1}`" class="col-sm-2 col-form-label text-right">
               </CFormLabel>
               <CCol sm="5">
-                <CFormInput type="file" @change="(e: any) => loadFile(e)" disabled />
-                <span class="small text-muted">{{ f.file.name }}</span>
+                <CFormInput type="text" :value="f.file.name" disabled />
+                <div class="text-muted extra-small mt-1">용량: {{ formatBytes(f.file.size) }}</div>
               </CCol>
               <CCol sm="5">
                 <CInputGroup>
@@ -403,6 +483,54 @@ onBeforeMount(async () => {
                 >
                   <v-icon icon="mdi-paperclip" size="small" class="mr-1" />
                   첨부 파일 추가
+                </v-btn>
+              </CCol>
+            </CRow>
+
+            <!-- 외부 클라우드 링크 섹션 -->
+            <CRow class="mb-2">
+              <CFormLabel class="col-sm-2 col-form-label text-right">외부 링크</CFormLabel>
+              <CCol sm="10">
+                <div v-if="meeting?.links?.length" class="mb-2">
+                  <ul class="pl-3 mb-0 small">
+                    <li v-for="link in meeting.links" :key="link.pk" class="mb-1">
+                      <a :href="link.link" target="_blank" rel="noopener noreferrer" class="text-primary font-weight-bold">
+                        <v-icon icon="mdi-link-variant" size="14" class="mr-1" />
+                        {{ link.link }}
+                      </a>
+                      <span v-if="link.description" class="text-muted ml-2">({{ link.description }})</span>
+                    </li>
+                  </ul>
+                </div>
+              </CCol>
+            </CRow>
+
+            <CRow v-for="(l, i) in newLinks" :key="`link-${i}`" class="mb-2">
+              <CFormLabel :for="`link-${i}`" class="col-sm-2 col-form-label text-right">
+              </CFormLabel>
+              <CCol sm="5">
+                <CFormInput
+                  v-model="newLinks[i].link"
+                  :id="`link-${i}`"
+                  type="url"
+                  placeholder="https://..."
+                />
+              </CCol>
+              <CCol sm="5">
+                <CInputGroup>
+                  <CFormInput v-model="newLinks[i].description" placeholder="링크 설명 (예: Google Drive 공유 파일)" />
+                  <CInputGroupText @click="removeLink(i)" style="cursor: pointer">
+                    <v-icon icon="mdi-trash-can-outline" size="16" />
+                  </CInputGroupText>
+                </CInputGroup>
+              </CCol>
+            </CRow>
+
+            <CRow class="mb-3">
+              <CCol :sm="{ span: 10, offset: 2 }" class="text-right">
+                <v-btn color="primary" size="x-small" variant="outlined" @click="addLink">
+                  <v-icon icon="mdi-link-plus" size="small" class="mr-1" />
+                  외부 클라우드 링크 추가 (OneDrive, Google Drive 등)
                 </v-btn>
               </CCol>
             </CRow>

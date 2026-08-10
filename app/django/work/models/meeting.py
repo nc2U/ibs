@@ -88,3 +88,18 @@ class MeetingFile(models.Model):
 
 
 file_cleanup_signals(MeetingFile)  # 파일인스턴스 직접 삭제시
+
+
+class MeetingLink(models.Model):
+    meeting = models.ForeignKey(Meeting, on_delete=models.CASCADE, default=None, verbose_name='회의록',
+                                related_name='links')
+    link = models.URLField('링크 URL', max_length=500)
+    description = models.CharField('부가설명', max_length=255, blank=True, default='')
+    hit = models.PositiveIntegerField('클릭수', default=0)
+    created = models.DateTimeField('등록일', auto_now_add=True)
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                                verbose_name='작성자')
+
+    def __str__(self):
+        return self.link
+

@@ -99,7 +99,7 @@ class MeetingViewSet(viewsets.ModelViewSet):
         # 3. 성능 최적화
         return base_qs.select_related(
             'project', 'category', 'creator', 'updater'
-        ).prefetch_related('attendees', 'files')
+        ).prefetch_related('attendees', 'files', 'links')
 
     @property
     def required_permission(self):

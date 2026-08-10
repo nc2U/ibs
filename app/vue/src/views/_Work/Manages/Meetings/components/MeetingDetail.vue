@@ -410,6 +410,21 @@ const refConfirmModal = ref()
           </CRow>
         </div>
 
+        <div v-if="meeting.links?.length" class="my-4">
+          <h6 class="title mb-2">
+            <v-icon icon="mdi-link-variant" color="primary" size="small" class="mr-1" />
+            외부 클라우드 링크 ({{ meeting.links.length }}건)
+          </h6>
+          <ul class="pl-4 mb-0">
+            <li v-for="link in meeting.links" :key="link.pk" class="mb-1">
+              <a :href="link.link" target="_blank" rel="noopener noreferrer" class="text-primary font-weight-bold">
+                {{ link.link }}
+              </a>
+              <span v-if="link.description" class="text-muted small ml-2">({{ link.description }})</span>
+            </li>
+          </ul>
+        </div>
+
         <v-divider class="my-5" />
 
         <div class="my-4">

@@ -6,7 +6,7 @@ from rest_framework import serializers
 from apiV1.serializers.accounts import SimpleUserSerializer
 from apiV1.serializers.work.project import SimpleIssueProjectSerializer
 from work.models.issue import Issue
-from work.models.meeting import MeetingCategory, Meeting, MeetingFile
+from work.models.meeting import MeetingCategory, Meeting, MeetingFile, MeetingLink
 from _utils.file_service import FileService
 
 
@@ -27,6 +27,14 @@ class MeetingFileSerializer(serializers.ModelSerializer):
                   'file_size', 'description', 'created', 'creator')
 
 
+class MeetingLinkSerializer(serializers.ModelSerializer):
+    creator = SimpleUserSerializer(read_only=True)
+
+    class Meta:
+        model = MeetingLink
+        fields = ('pk', 'meeting', 'link', 'description', 'hit', 'created', 'creator')
+
+
 class IssueInMeetingSerializer(serializers.ModelSerializer):
     project = serializers.SlugRelatedField(read_only=True, slug_field='slug')
     status = serializers.SlugRelatedField(read_only=True, slug_field='name')
@@ -43,6 +51,7 @@ class MeetingSerializer(serializers.ModelSerializer):
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     attendees_desc = SimpleUserSerializer(source='attendees', many=True, read_only=True)
     files = MeetingFileSerializer(many=True, read_only=True)
+    links = MeetingLinkSerializer(many=True, read_only=True)
     issues = IssueInMeetingSerializer(many=True, read_only=True)
     creator = SimpleUserSerializer(read_only=True)
     updater = SimpleUserSerializer(read_only=True)
@@ -52,7 +61,7 @@ class MeetingSerializer(serializers.ModelSerializer):
         fields = ('pk', 'project', 'project_desc', 'title', 'category', 'category_desc',
                   'status', 'status_display', 'is_confirmed', 'agenda', 'content', 'decisions',
                   'action_items', 'meeting_date', 'attendees', 'attendees_desc', 'other_attendees',
-                  'files', 'issues', 'created', 'updated', 'creator', 'updater')
+                  'files', 'links', 'issues', 'created', 'updated', 'creator', 'updater')
 
     def validate(self, attrs):
         is_confirmed = attrs.get('is_confirmed', getattr(self.instance, 'is_confirmed', False) if self.instance else False)
@@ -69,15 +78,26 @@ class MeetingSerializer(serializers.ModelSerializer):
         attendees = validated_data.pop('attendees', [])
         meeting = Meeting.objects.create(**validated_data)
         meeting.attendees.set(attendees)
+        creator = self.context['request'].user
 
         # File 처리
         FileService.manage_files(
             instance=meeting,
             initial_data=self.initial_data,
-            creator=self.context['request'].user,
+            creator=creator,
             file_model=MeetingFile,
             related_name='meeting'
         )
+
+        # Link 처리
+        if hasattr(self.initial_data, 'getlist'):
+            new_links = self.initial_data.getlist('newLinks', [])
+            new_link_descs = self.initial_data.getlist('newLinkDescs', [])
+            for i, link in enumerate(new_links):
+                if link and str(link).strip():
+                    desc = new_link_descs[i] if i < len(new_link_descs) else ''
+                    MeetingLink.objects.create(meeting=meeting, link=str(link).strip(), description=desc, creator=creator)
+
         return meeting
 
     @transaction.atomic
@@ -86,14 +106,43 @@ class MeetingSerializer(serializers.ModelSerializer):
         instance = super().update(instance, validated_data)
         if attendees is not None:
             instance.attendees.set(attendees)
+        creator = self.context['request'].user
 
         # File 처리
         FileService.manage_files(
             instance=instance,
             initial_data=self.initial_data,
-            creator=self.context['request'].user,
+            creator=creator,
             file_model=MeetingFile,
             related_name='meeting'
         )
+
+        # Link 처리
+        if hasattr(self.initial_data, 'getlist'):
+            old_links = self.initial_data.getlist('links', [])
+            for json_link in old_links:
+                if not json_link or not str(json_link).strip():
+                    continue
+                try:
+                    link_data = json.loads(json_link) if isinstance(json_link, str) else json_link
+                    link_pk = link_data.get('pk')
+                    if link_data.get('del'):
+                        MeetingLink.objects.filter(pk=link_pk, meeting=instance).delete()
+                    else:
+                        link_obj = MeetingLink.objects.get(pk=link_pk, meeting=instance)
+                        if 'link' in link_data:
+                            link_obj.link = link_data['link']
+                        if 'description' in link_data:
+                            link_obj.description = link_data['description']
+                        link_obj.save()
+                except Exception as e:
+                    print(f"MeetingLink 처리 중 오류: {e}")
+
+            new_links = self.initial_data.getlist('newLinks', [])
+            new_link_descs = self.initial_data.getlist('newLinkDescs', [])
+            for i, link in enumerate(new_links):
+                if link and str(link).strip():
+                    desc = new_link_descs[i] if i < len(new_link_descs) else ''
+                    MeetingLink.objects.create(meeting=instance, link=str(link).strip(), description=desc, creator=creator)
 
         return instance

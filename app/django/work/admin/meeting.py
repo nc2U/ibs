@@ -2,7 +2,7 @@ from django.contrib import admin
 from import_export.admin import ImportExportMixin
 from rangefilter.filters import DateRangeFilter
 
-from work.models.meeting import MeetingCategory, Meeting, MeetingFile
+from work.models.meeting import MeetingCategory, Meeting, MeetingFile, MeetingLink
 
 
 @admin.register(MeetingCategory)
@@ -18,6 +18,11 @@ class MeetingFileInline(admin.TabularInline):
     extra = 1
 
 
+class MeetingLinkInline(admin.TabularInline):
+    model = MeetingLink
+    extra = 1
+
+
 @admin.register(Meeting)
 class MeetingAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('pk', 'project', 'title', 'category', 'status',
@@ -27,7 +32,7 @@ class MeetingAdmin(ImportExportMixin, admin.ModelAdmin):
     list_editable = ('category', 'status', 'is_confirmed')
     search_fields = ('title', 'agenda', 'content', 'decisions', 'action_items')
     filter_horizontal = ('attendees',)
-    inlines = (MeetingFileInline,)
+    inlines = (MeetingFileInline, MeetingLinkInline)
 
     fieldsets = (
         ('기본 정보', {
