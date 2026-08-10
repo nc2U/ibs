@@ -79,7 +79,7 @@ onBeforeMount(() => {
           삭제
         </router-link>
       </span>
-      <span v-if="canManageVersions && version.status === '1'" class="mr-3">
+      <span v-if="canManageVersions && version?.status === '1'" class="mr-3">
         <v-icon icon="mdi-plus-circle" color="success" size="16" class="mr-1" />
         <router-link :to="{ name: '(업무) - 추가', query: { version: version?.pk } }">
           새 업무
@@ -108,19 +108,30 @@ onBeforeMount(() => {
     <CRow class="mb-4">
       <CCol class="form-text">
         <span>
-          <router-link :to="{ name: '(업무)', query: { status: 'any' } }">
+          <router-link :to="{ name: '(업무)', query: { status: 'any', version: version?.pk } }">
             업무 {{ version?.issues?.length }} 건
           </router-link>
         </span>
         <span>
-          (<router-link :to="{ name: '(업무)', query: { status: 'closed' } }">
-            {{ closedStr }}
-          </router-link>
+          (<template v-if="closedNum > 0">
+            <router-link
+              :to="{ name: '(업무)', query: { status: 'closed', version: version?.pk } }"
+            >
+              {{ closedStr }}
+            </router-link>
+          </template>
+          <template v-else>{{ closedStr }}</template>
           -
         </span>
         <span>
-          <router-link :to="{ name: '(업무)', query: { status: 'open' } }">
-            {{ progressStr }} </router-link
+          <template v-if="progressNum > 0">
+            <router-link
+              :to="{ name: '(업무)', query: { status: 'open', version: version?.pk } }"
+            >
+              {{ progressStr }}
+            </router-link>
+          </template>
+          <template v-else>{{ progressStr }}</template
           >)
         </span>
       </CCol>
