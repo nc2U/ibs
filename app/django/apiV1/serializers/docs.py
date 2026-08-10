@@ -103,7 +103,7 @@ class SimpleLawSuitCaseSerializer(serializers.ModelSerializer):
 
 
 class LinksInDocumentSerializer(serializers.ModelSerializer):
-    creator = serializers.SlugField(slug_field='username', read_only=True)
+    creator = serializers.SlugRelatedField(slug_field='username', read_only=True)
 
     class Meta:
         model = Link
@@ -111,7 +111,7 @@ class LinksInDocumentSerializer(serializers.ModelSerializer):
 
 
 class FilesInDocumentSerializer(serializers.ModelSerializer):
-    creator = serializers.SlugField(slug_field='username', read_only=True)
+    creator = serializers.SlugRelatedField(slug_field='username', read_only=True)
 
     class Meta:
         model = File
