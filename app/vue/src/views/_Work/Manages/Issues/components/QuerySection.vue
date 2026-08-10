@@ -15,6 +15,7 @@ import Multiselect from '@vueform/multiselect'
 import { useRoute } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
 import { useWork } from '@/store/pinia/work_project'
+import { useAccount } from '@/store/pinia/account'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import IssueProjectSelector from '@/views/_Work/components/atomics/IssueProjectSelector.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
@@ -34,6 +35,9 @@ const props = defineProps({
     default: 'issue',
   },
 })
+
+const accStore = useAccount()
+const currentUserId = computed(() => accStore.userInfo?.pk)
 
 const { can, PERM } = usePerms()
 const route = useRoute()
@@ -947,7 +951,39 @@ const applyQuery = (query: any) => {
       enabledFields.value = [...f.searchCond]
     }
     if (f.cond) cond.value = { ...cond.value, ...f.cond }
-    if (f.form) form.value = { ...form.value, ...f.form }
+    if (f.form) {
+      form.value = { ...form.value, ...f.form }
+    } else {
+      // 기본 시드 데이터 및 이전 방식의 평면 필터(flat filters) 처리
+      const myId = currentUserId.value ?? props.getUsers[0]?.value
+
+      if (f.watcher !== undefined) {
+        if (!searchCond.value.includes('watcher')) searchCond.value.push('watcher')
+        if (!enabledFields.value.includes('watcher')) enabledFields.value.push('watcher')
+        cond.value.watcher = 'is'
+        form.value.watcher = f.watcher === 'me' ? myId : f.watcher
+      }
+      if (f.creator !== undefined || f.author !== undefined) {
+        const creatorVal = f.creator ?? f.author
+        if (!searchCond.value.includes('author')) searchCond.value.push('author')
+        if (!enabledFields.value.includes('author')) enabledFields.value.push('author')
+        cond.value.author = 'is'
+        form.value.author = creatorVal === 'me' ? myId : creatorVal
+      }
+      if (f.updater !== undefined) {
+        if (!searchCond.value.includes('updater')) searchCond.value.push('updater')
+        if (!enabledFields.value.includes('updater')) enabledFields.value.push('updater')
+        cond.value.updater = 'is'
+        form.value.updater = f.updater === 'me' ? myId : f.updater
+      }
+      if (f.assigned_to !== undefined || f.assignee !== undefined) {
+        const assigneeVal = f.assigned_to ?? f.assignee
+        if (!searchCond.value.includes('assignee')) searchCond.value.push('assignee')
+        if (!enabledFields.value.includes('assignee')) enabledFields.value.push('assignee')
+        cond.value.assignee = 'is'
+        form.value.assignee = assigneeVal === 'me' ? myId : assigneeVal
+      }
+    }
 
     filterSubmit()
   }

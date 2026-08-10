@@ -2,6 +2,7 @@
 import { computed, onBeforeMount, onMounted, type PropType, reactive, ref, watch } from 'vue'
 import { usePerms } from '@/composables/usePerms'
 import { useInform } from '@/store/pinia/work_inform.ts'
+import { useAccount } from '@/store/pinia/account'
 import type { ProjectFilter, selectProject } from '@/store/types/work_project.ts'
 import Multiselect from '@vueform/multiselect'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
@@ -23,6 +24,8 @@ const refQuerySaveModal = ref()
 
 const { can, PERM } = usePerms()
 const informStore = useInform()
+const accStore = useAccount()
+const currentUserId = computed(() => accStore.userInfo?.pk)
 
 const viewMode = ref<'board' | 'list'>(
   (localStorage.getItem('project-view-mode') as 'board' | 'list') || 'board',
@@ -123,6 +126,10 @@ const form = ref<ProjectFilter & Record<string, any>>({
 
 const selectedProjectVal = ref<number | string>('')
 const selectedParentVal = ref<number | string>('')
+
+const projectDefaultTitle = computed(() =>
+  form.value.bookmark ? '<< 내 북마크 >>' : '<< 내 프로젝트 >>',
+)
 
 const filterFieldsConfig = computed(() => [
   {
@@ -396,8 +403,24 @@ const applyQuery = (query: any) => {
       if (f.form.project !== undefined) selectedProjectVal.value = f.form.project
       if (f.form.parent !== undefined) selectedParentVal.value = f.form.parent
     } else {
-      if (f.bookmark !== undefined) form.value.bookmark = f.bookmark
-      if (f.my_project !== undefined) form.value.my_project = f.my_project
+      if (f.bookmark !== undefined) {
+        form.value.bookmark = f.bookmark
+        if (f.bookmark) {
+          if (!searchCond.value.includes('project')) searchCond.value.push('project')
+          if (!enabledFields.value.includes('project')) enabledFields.value.push('project')
+          cond.value.project = 'is'
+          selectedProjectVal.value = ''
+        }
+      }
+      if (f.my_project !== undefined) {
+        form.value.my_project = f.my_project
+        if (f.my_project) {
+          if (!searchCond.value.includes('project')) searchCond.value.push('project')
+          if (!enabledFields.value.includes('project')) enabledFields.value.push('project')
+          cond.value.project = 'is'
+          selectedProjectVal.value = ''
+        }
+      }
     }
 
     filterSubmit()
@@ -480,7 +503,7 @@ defineExpose({ applyQuery, resetFilter })
                     <IssueProjectSelector
                       v-model="selectedProjectVal"
                       :issue-project-list="allReadableProjects"
-                      default-title="<< 내 프로젝트 >>"
+                      :default-title="projectDefaultTitle"
                       size="sm"
                     />
                   </template>

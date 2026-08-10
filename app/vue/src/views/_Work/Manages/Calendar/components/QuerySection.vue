@@ -11,9 +11,12 @@ import SaveQueryModal from '@/views/_Work/components/SaveQueryModal.vue'
 import { usePerms } from '@/composables/usePerms'
 
 import { useRoute } from 'vue-router'
+import { useAccount } from '@/store/pinia/account'
 
 const route = useRoute()
 const { can, PERM } = usePerms()
+const accStore = useAccount()
+const currentUserId = computed(() => accStore.userInfo?.pk)
 
 // ----- Props -----
 const props = defineProps({
@@ -493,7 +496,38 @@ const applyQuery = (query: any) => {
       enabledFields.value = [...f.searchCond]
     }
     if (f.cond) cond.value = { ...cond.value, ...f.cond }
-    if (f.form) form.value = { ...form.value, ...f.form }
+    if (f.form) {
+      form.value = { ...form.value, ...f.form }
+    } else {
+      const myId = currentUserId.value ?? props.getUsers[0]?.value
+
+      if (f.assignee !== undefined || f.assigned_to !== undefined) {
+        const val = f.assignee ?? f.assigned_to
+        if (!searchCond.value.includes('assignee')) searchCond.value.push('assignee')
+        if (!enabledFields.value.includes('assignee')) enabledFields.value.push('assignee')
+        cond.value.assignee = 'is'
+        form.value.assignee = val === 'me' ? myId : val
+      }
+      if (f.author !== undefined || f.creator !== undefined) {
+        const val = f.author ?? f.creator
+        if (!searchCond.value.includes('author')) searchCond.value.push('author')
+        if (!enabledFields.value.includes('author')) enabledFields.value.push('author')
+        cond.value.author = 'is'
+        form.value.author = val === 'me' ? myId : val
+      }
+      if (f.meeting_attendees !== undefined) {
+        if (!searchCond.value.includes('meeting_attendees')) searchCond.value.push('meeting_attendees')
+        if (!enabledFields.value.includes('meeting_attendees')) enabledFields.value.push('meeting_attendees')
+        cond.value.meeting_attendees = 'is'
+        form.value.meeting_attendees = f.meeting_attendees === 'me' ? myId : f.meeting_attendees
+      }
+      if (f.meeting_creator !== undefined) {
+        if (!searchCond.value.includes('meeting_creator')) searchCond.value.push('meeting_creator')
+        if (!enabledFields.value.includes('meeting_creator')) enabledFields.value.push('meeting_creator')
+        cond.value.meeting_creator = 'is'
+        form.value.meeting_creator = f.meeting_creator === 'me' ? myId : f.meeting_creator
+      }
+    }
 
     filterSubmit()
   }

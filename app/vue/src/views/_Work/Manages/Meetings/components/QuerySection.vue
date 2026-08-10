@@ -53,6 +53,8 @@ const openSaveQueryModal = () => {
   refQuerySaveModal.value.callModal()
 }
 
+const currentUserId = computed(() => accStore.userInfo?.pk)
+
 const applyQuery = (query: any) => {
   if (query && query.filters) {
     const f = query.filters
@@ -61,7 +63,24 @@ const applyQuery = (query: any) => {
       enabledFields.value = [...f.searchCond]
     }
     if (f.cond) Object.assign(cond, f.cond)
-    if (f.form) Object.assign(form, f.form)
+    if (f.form) {
+      Object.assign(form, f.form)
+    } else {
+      const myId = currentUserId.value ?? getUsers.value[0]?.value
+      if (f.creator !== undefined || f.author !== undefined) {
+        const creatorVal = f.creator ?? f.author
+        if (!searchCond.value.includes('creator')) searchCond.value.push('creator')
+        if (!enabledFields.value.includes('creator')) enabledFields.value.push('creator')
+        cond.creator = 'is'
+        form.creator = creatorVal === 'me' ? myId : creatorVal
+      }
+      if (f.attendees !== undefined) {
+        if (!searchCond.value.includes('attendees')) searchCond.value.push('attendees')
+        if (!enabledFields.value.includes('attendees')) enabledFields.value.push('attendees')
+        cond.attendees = 'is'
+        form.attendees = f.attendees === 'me' ? myId : f.attendees
+      }
+    }
     filterSubmit()
   }
 }
@@ -440,10 +459,10 @@ watch(
       form.category = props.categories[0].pk
     }
     if (newVal.includes('creator') && !form.creator && getUsers.value.length) {
-      form.creator = getUsers.value[0].value
+      form.creator = currentUserId.value ?? getUsers.value[0].value
     }
     if (newVal.includes('attendees') && !form.attendees && getUsers.value.length) {
-      form.attendees = getUsers.value[0].value
+      form.attendees = currentUserId.value ?? getUsers.value[0].value
     }
   },
   { deep: true },

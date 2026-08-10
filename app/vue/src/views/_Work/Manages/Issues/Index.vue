@@ -50,15 +50,15 @@ const pageSelect = (page: number) => {
   issueStore.fetchIssueList(listFilter.value)
 }
 
-// 쿼리 관련 핸들러 추가
+const issueListRef = ref()
 const activeQueryId = ref<number | null>(null)
 const onQueryClick = (query: any) => {
   activeQueryId.value = query.pk
-  // 여기에 쿼리 적용 로직 필요 (필요시 구현)
+  issueListRef.value?.applyQuery(query)
 }
 const onResetQuery = () => {
   activeQueryId.value = null
-  // 여기에 쿼리 초기화 로직 필요 (필요시 구현)
+  issueListRef.value?.resetFilter()
 }
 
 const loading = ref<boolean>(true)
@@ -77,6 +77,7 @@ onBeforeMount(async () => {
     <template v-slot:default>
       <!-- 전역 업무 인덱스는 항상 리스트 뷰만 노출 -->
       <IssueList
+        ref="issueListRef"
         :issue-list="issueList as Issue[]"
         :search-projects="allReadableProjects"
         :status-list="statusList"
