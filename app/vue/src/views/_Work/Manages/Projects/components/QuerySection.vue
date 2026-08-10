@@ -72,7 +72,7 @@ const resetFilter = () => {
 const searchOptions = reactive([
   {
     options: [
-      { value: 'status', label: '상태', disabled: true },
+      { value: 'status', label: '상태' },
       { value: 'project', label: '프로젝트' },
       { value: 'parent', label: '상위 프로젝트' },
       { value: 'is_public', label: '공개여부' },
@@ -215,13 +215,37 @@ const activeFields = computed(() => {
   return filterFieldsConfig.value.filter(field => searchCond.value.includes(field.key))
 })
 
+// ----- 활성화된 필터 키 관리 (체크박스로 ON/OFF 가능) -----
+const enabledFields = ref<string[]>(['status'])
+
+watch(searchCond, newVal => {
+  newVal.forEach(key => {
+    if (!enabledFields.value.includes(key)) {
+      enabledFields.value.push(key)
+    }
+  })
+  enabledFields.value = enabledFields.value.filter(k => newVal.includes(k))
+})
+
+const toggleField = (key: string, e: Event) => {
+  const target = e.target as HTMLInputElement
+  if (target.checked) {
+    if (!enabledFields.value.includes(key)) enabledFields.value.push(key)
+  } else {
+    enabledFields.value = enabledFields.value.filter(k => k !== key)
+  }
+  filterSubmit()
+}
+
 const filterSubmit = () => {
   const filterData = {} as ProjectFilter & Record<string, any>
 
-  if (cond.value.status === 'is') filterData.status = form.value.status
-  else if (cond.value.status === 'exclude') filterData.status__exclude = form.value.status
+  if (enabledFields.value.includes('status')) {
+    if (cond.value.status === 'is') filterData.status = form.value.status
+    else if (cond.value.status === 'exclude') filterData.status__exclude = form.value.status
+  }
 
-  searchCond.value.forEach(key => {
+  enabledFields.value.forEach(key => {
     if (key === 'status') return
 
     const operator = cond.value[key]
@@ -300,10 +324,6 @@ const filterSubmit = () => {
 
   emit('filter-submit', filterData)
 }
-
-watch(searchCond, nVal => {
-  if (!nVal.includes('status')) searchCond.value = ['status']
-})
 
 onBeforeMount(() => {
   selectedProjectVal.value = ''
@@ -442,15 +462,23 @@ defineExpose({ applyQuery, resetFilter })
             <!-- 고정 필터: 상태 -->
             <CRow>
               <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck label="상태" id="status" checked="true" readonly />
+                <CFormCheck
+                  label="상태"
+                  id="status"
+                  :checked="enabledFields.includes('status')"
+                  @change="toggleField('status', $event)"
+                />
               </CCol>
-              <CCol class="d-none d-lg-block col-4 col-lg-3 col-xl-2">
+              <CCol
+                v-if="enabledFields.includes('status')"
+                class="d-none d-lg-block col-4 col-lg-3 col-xl-2"
+              >
                 <CFormSelect v-model="cond.status" size="sm">
                   <option value="is">이다</option>
                   <option value="exclude">아니다</option>
                 </CFormSelect>
               </CCol>
-              <CCol class="col-8 col-lg-3">
+              <CCol v-if="enabledFields.includes('status')" class="col-8 col-lg-3">
                 <CFormSelect v-model="form.status" size="sm">
                   <option value="1">사용중</option>
                   <option value="2">닫힘</option>
@@ -462,16 +490,21 @@ defineExpose({ applyQuery, resetFilter })
             <template v-for="field in activeFields" :key="field.key">
               <CRow>
                 <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                  <CFormCheck checked readonly :label="field.label" :id="field.key" />
+                  <CFormCheck
+                    :label="field.label"
+                    :id="field.key"
+                    :checked="enabledFields.includes(field.key)"
+                    @change="toggleField(field.key, $event)"
+                  />
                 </CCol>
-                <CCol class="col-4 col-lg-3 col-xl-2">
+                <CCol v-if="enabledFields.includes(field.key)" class="col-4 col-lg-3 col-xl-2">
                   <CFormSelect v-model="cond[field.key]" size="sm">
                     <option v-for="opt in field.condOptions" :key="opt.value" :value="opt.value">
                       {{ opt.label }}
                     </option>
                   </CFormSelect>
                 </CCol>
-                <CCol class="col-4 col-lg-3">
+                <CCol v-if="enabledFields.includes(field.key)" class="col-4 col-lg-3">
                   <template v-if="field.type === 'project'">
                     <IssueProjectSelector
                       v-model="selectedProjectVal"
