@@ -61,7 +61,7 @@ interface SearchOptionGroup {
 const searchOptions = reactive<SearchOptionGroup[]>([
   {
     options: [
-      { value: 'status', label: '상태', disabled: true },
+      { value: 'status', label: '상태' },
       { value: 'tracker', label: '유형' },
       { value: 'priority', label: '우선순위' },
       { value: 'author', label: '작성자' },
@@ -676,31 +676,36 @@ const filterSubmit = () => {
     filterData.project__slug = form.value.project
   }
 
-  // 1. 상태 필터링 처리
-  if (cond.value.status === 'open') {
-    filterData.status__closed = '0'
-    filterData.status = null
-    filterData.status__exclude = null
-  } else if (cond.value.status === 'is') {
-    filterData.status = form.value.status
+  // 1. 상태 필터링 처리 (enabledFields에 'status'가 포함되어 있을 때만 적용)
+  if (enabledFields.value.includes('status')) {
+    if (cond.value.status === 'open') {
+      filterData.status__closed = '0'
+      filterData.status = null
+      filterData.status__exclude = null
+    } else if (cond.value.status === 'is') {
+      filterData.status = form.value.status
+      filterData.status__closed = ''
+      filterData.status__exclude = null
+    } else if (cond.value.status === 'exclude') {
+      filterData.status__exclude = form.value.status
+      filterData.status = null
+      filterData.status__closed = ''
+    } else if (cond.value.status === 'closed') {
+      filterData.status__closed = '1'
+      filterData.status = null
+      filterData.status__exclude = null
+    } else if (cond.value.status === 'any') {
+      filterData.status__closed = ''
+      filterData.status = null
+      filterData.status__exclude = null
+    }
+  } else {
+    // status가 해제된 경우 백엔드 기본 status__closed=0 필터를 비활성화
     filterData.status__closed = ''
-    filterData.status__exclude = null
-  } else if (cond.value.status === 'exclude') {
-    filterData.status__exclude = form.value.status
-    filterData.status = null
-    filterData.status__closed = ''
-  } else if (cond.value.status === 'closed') {
-    filterData.status__closed = '1'
-    filterData.status = null
-    filterData.status__exclude = null
-  } else if (cond.value.status === 'any') {
-    filterData.status__closed = ''
-    filterData.status = null
-    filterData.status__exclude = null
   }
 
-  // 2. 검색 활성화 필드들에 대해 일반 규칙에 의거하여 dynamic payload 빌드
-  searchCond.value.forEach(key => {
+  // 2. 활성화된(enabledFields) 검색 필드들에 대해 dynamic payload 빌드
+  enabledFields.value.forEach(key => {
     // status는 특수 처리했으므로 제외
     if (key === 'status') return
 
@@ -792,19 +797,38 @@ watch(
   { immediate: true },
 )
 
-watch(searchCond, nVal => {
-  if (nVal.includes('project')) form.value.project = ''
-  if (nVal.includes('tracker') && !form.value.tracker) form.value.tracker = props.trackerList[0]?.pk
-  if (nVal.includes('priority') && !form.value.priority)
+// ----- 활성화된 필터 키 관리 (체크박스로 ON/OFF 가능) -----
+const enabledFields = ref<string[]>(['status'])
+
+watch(searchCond, newVal => {
+  newVal.forEach(key => {
+    if (!enabledFields.value.includes(key)) {
+      enabledFields.value.push(key)
+    }
+  })
+  enabledFields.value = enabledFields.value.filter(k => newVal.includes(k))
+
+  if (newVal.includes('project')) form.value.project = ''
+  if (newVal.includes('tracker') && !form.value.tracker) form.value.tracker = props.trackerList[0]?.pk
+  if (newVal.includes('priority') && !form.value.priority)
     form.value.priority = props.priorityList[0]?.pk
-  if (nVal.includes('category') && !form.value.category)
+  if (newVal.includes('category') && !form.value.category)
     form.value.category = props.categoryList[0]?.pk
-  if (nVal.includes('watcher') && !form.value.watcher) form.value.watcher = props.getUsers[0]?.value
-  if (nVal.includes('updater') && !form.value.updater) form.value.updater = props.getUsers[0]?.value
-  if (nVal.includes('last_updater') && !form.value.last_updater)
+  if (newVal.includes('watcher') && !form.value.watcher) form.value.watcher = props.getUsers[0]?.value
+  if (newVal.includes('updater') && !form.value.updater) form.value.updater = props.getUsers[0]?.value
+  if (newVal.includes('last_updater') && !form.value.last_updater)
     form.value.last_updater = props.getUsers[0]?.value
-  if (!nVal.includes('status')) searchCond.value = ['status']
 })
+
+const toggleField = (key: string, e: Event) => {
+  const target = e.target as HTMLInputElement
+  if (target.checked) {
+    if (!enabledFields.value.includes(key)) enabledFields.value.push(key)
+  } else {
+    enabledFields.value = enabledFields.value.filter(k => k !== key)
+  }
+  filterSubmit()
+}
 
 watch(
   hasSubProjects,
@@ -921,9 +945,17 @@ onMounted(() => {
             <!-- 1. 고정 필터: 상태 (Status) -->
             <CRow>
               <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck label="상태" id="status" checked="true" readonly />
+                <CFormCheck
+                  label="상태"
+                  id="status"
+                  :checked="enabledFields.includes('status')"
+                  @change="toggleField('status', $event)"
+                />
               </CCol>
-              <CCol class="d-none d-lg-block col-4 col-lg-3 col-xl-2">
+              <CCol
+                v-if="enabledFields.includes('status')"
+                class="d-none d-lg-block col-4 col-lg-3 col-xl-2"
+              >
                 <CFormSelect v-model="cond.status" size="sm">
                   <option value="open">진행중</option>
                   <option value="is">이다</option>
@@ -932,7 +964,7 @@ onMounted(() => {
                   <option value="any">모두</option>
                 </CFormSelect>
               </CCol>
-              <CCol class="col-8 col-lg-3">
+              <CCol v-if="enabledFields.includes('status')" class="col-8 col-lg-3">
                 <CFormSelect
                   v-if="cond.status === 'is' || cond.status === 'exclude'"
                   v-model="form.status"
@@ -948,13 +980,18 @@ onMounted(() => {
             <!-- 2. 동적 추가 필터 리스트 루프 렌더링 -->
             <template v-for="field in activeFields" :key="field.key">
               <CRow>
-                <!-- 라벨 & 체크박스 (Readonly) -->
+                <!-- 라벨 & 체크박스 -->
                 <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                  <CFormCheck checked readonly :label="field.label" :id="field.key" />
+                  <CFormCheck
+                    :label="field.label"
+                    :id="field.key"
+                    :checked="enabledFields.includes(field.key)"
+                    @change="toggleField(field.key, $event)"
+                  />
                 </CCol>
 
                 <!-- 연산자 조건 선택기 (is, exclude, gte, lte, between 등) -->
-                <CCol class="col-4 col-lg-3 col-xl-2">
+                <CCol v-if="enabledFields.includes(field.key)" class="col-4 col-lg-3 col-xl-2">
                   <CFormSelect
                     v-model="cond[field.key === 'sub_issue' ? 'parent' : field.key]"
                     size="sm"
@@ -966,7 +1003,7 @@ onMounted(() => {
                 </CCol>
 
                 <!-- 실제 입력 필드 렌더링부 -->
-                <CCol class="col-4 col-lg-3">
+                <CCol v-if="enabledFields.includes(field.key)" class="col-4 col-lg-3">
                   <!-- 프로젝트 전용 셀렉트 -->
                   <template v-if="field.type === 'project'">
                     <IssueProjectSelector
