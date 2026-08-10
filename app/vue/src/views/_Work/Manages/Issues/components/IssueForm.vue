@@ -530,7 +530,52 @@ defineExpose({ callComment, callReply })
                 </CCol>
               </CRow>
 
-              <CRow v-if="!issue" class="mt-3">
+              <CRow class="mt-3">
+                <!-- Existing Files (Edit Mode) -->
+                <CCol v-if="issue && form.files?.length" sm="10" class="offset-sm-2 mb-2">
+                  <div class="small font-weight-bold text-muted mb-1">등록된 첨부 파일</div>
+                  <CTable small striped hover>
+                    <CTableBody>
+                      <CTableRow v-for="(file, index) in form.files" :key="file.pk">
+                        <CTableDataCell>
+                          {{ file.file_name }} ({{ formatBytes(file.file_size || 0) }})
+                          <CFormCheck
+                            label="삭제"
+                            v-model="file.del"
+                            inline
+                            class="ml-2"
+                            :id="`issue-file-del-${index}`"
+                          />
+                        </CTableDataCell>
+                      </CTableRow>
+                    </CTableBody>
+                  </CTable>
+                </CCol>
+
+                <!-- Existing Links (Edit Mode) -->
+                <CCol v-if="issue && form.links?.length" sm="10" class="offset-sm-2 mb-2">
+                  <div class="small font-weight-bold text-muted mb-1">등록된 외부 클라우드 링크</div>
+                  <CTable small striped hover>
+                    <CTableBody>
+                      <CTableRow v-for="(linkItem, index) in form.links" :key="linkItem.pk">
+                        <CTableDataCell>
+                          <a :href="linkItem.link" target="_blank" rel="noopener noreferrer" class="text-primary font-weight-bold">
+                            {{ linkItem.link }}
+                          </a>
+                          <span v-if="linkItem.description" class="text-muted small ml-2">({{ linkItem.description }})</span>
+                          <CFormCheck
+                            label="삭제"
+                            v-model="linkItem.del"
+                            inline
+                            class="ml-2"
+                            :id="`issue-link-del-${index}`"
+                          />
+                        </CTableDataCell>
+                      </CTableRow>
+                    </CTableBody>
+                  </CTable>
+                </CCol>
+
                 <CCol sm="10" class="offset-sm-2 mb-2">
                   <div class="d-flex align-items-center justify-content-between text-muted small">
                     <span>
@@ -554,7 +599,7 @@ defineExpose({ callComment, callReply })
                 <div v-for="(f, i) in newFiles.length + 1" :key="i" class="w-100">
                   <CRow :id="`row-fn-${i + 1}`" class="mb-2">
                     <CFormLabel :for="`file-${i + 1}`" class="col-sm-2 col-form-label text-right">
-                      <span v-if="i === 0">파일</span>
+                      <span v-if="i === 0">파일 추가</span>
                     </CFormLabel>
                     <CCol sm="5">
                       <CFormInput :id="`file-${i}`" type="file" @change="loadFile($event, i)" />
