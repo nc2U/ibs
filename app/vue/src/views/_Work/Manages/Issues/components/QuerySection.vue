@@ -18,6 +18,7 @@ import { useWork } from '@/store/pinia/work_project'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import IssueProjectSelector from '@/views/_Work/components/atomics/IssueProjectSelector.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
+import SaveQueryModal from '@/views/_Work/components/SaveQueryModal.vue'
 
 const props = defineProps({
   searchProjects: { type: Array as PropType<selectProject[]>, default: () => [] },
@@ -28,11 +29,21 @@ const props = defineProps({
   getIssues: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },
   getUsers: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },
   getVersions: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },
+  targetType: {
+    type: String as PropType<'project' | 'calendar' | 'issue' | 'meeting'>,
+    default: 'issue',
+  },
 })
 
 const { can, PERM } = usePerms()
+const route = useRoute()
 const workStore = useWork()
 const roleList = computed(() => workStore.roleList.filter(r => ![1, 2].includes(r.pk)))
+
+const refQuerySaveModal = ref()
+const openSaveModal = () => {
+  refQuerySaveModal.value?.callModal()
+}
 
 const emit = defineEmits(['filter-submit'])
 
@@ -167,7 +178,6 @@ const cond = ref<Record<string, any>>({
   parent: 'is' as 'is' | 'exclude' | 'contains' | 'none' | 'any',
 })
 
-const route = useRoute()
 const form = ref<IssueFilter & Record<string, any>>({
   status__closed: '',
   status: null,
@@ -1336,12 +1346,22 @@ onMounted(() => {
         />
 
         <TextButton
+          v-if="can(PERM.PROJECT_SAVE_QUERY)"
           name="검색양식 저장"
           icon="mdi-content-save"
           icon-color="indigo"
           font-size="1"
+          @click="openSaveModal"
         />
       </slot>
     </CCol>
   </CRow>
+
+  <SaveQueryModal
+    ref="refQuerySaveModal"
+    :search-cond="searchCond"
+    :target-type="targetType"
+    :cond="cond"
+    :form="form"
+  />
 </template>
