@@ -5,9 +5,10 @@ import { useWork } from '@/store/pinia/work_project'
 import { useIssue } from '@/store/pinia/work_issue'
 import { useMeeting } from '@/store/pinia/work_meeting'
 import { useCalendar } from '@/store/pinia/work_calendar'
+import { useAccount } from '@/store/pinia/account'
 import type { IssueFilter } from '@/store/types/work_issue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
-import QuerySection from '@/views/_Work/Manages/Projects/components/QuerySection.vue'
+import QuerySection from '@/views/_Work/Manages/Calendar/components/QuerySection.vue'
 import SharedCalendar from '@/views/_Work/Manages/Calendar/components/SharedCalendar.vue'
 import Loading from '@/components/Loading/Index.vue'
 
@@ -20,23 +21,19 @@ const issueStore = useIssue()
 const workStore = useWork()
 const meetingStore = useMeeting()
 const calendarStore = useCalendar()
+const accStore = useAccount()
 
 const allReadableProjects = computed(() => workStore.getAllReadableProjects)
+const getUsers = computed(() => accStore.getUsers)
+const statusList = computed(() => issueStore.statusList)
+const trackerList = computed(() => issueStore.trackerList)
+const priorityList = computed(() => issueStore.priorityList)
+const meetingCategories = computed(() => meetingStore.categoryList)
 
-const fetchData = async (slug: string) => {
-  await issueStore.fetchIssueList({ project: slug })
-  await meetingStore.fetchMeetingList({ project: slug })
-}
-
-watch(
-  () => route.params?.projId,
-  nVal => {
-    if (nVal) fetchData(nVal as string)
-  },
-)
+const activeFilters = ref<Record<string, any>>({})
 
 const filterSubmit = (payload: IssueFilter) => {
-  issueStore.fetchIssueList({ ...payload, project: route.params.projId as string })
+  activeFilters.value = { ...payload }
 }
 
 const summary = computed(() => {
@@ -53,7 +50,8 @@ const combinedLoading = computed(() => loading.value || calendarStore.loading)
 
 onBeforeMount(async () => {
   if (route.params.projId) {
-    await fetchData(route.params.projId as string)
+    await issueStore.fetchIssueList({ project: route.params.projId as string })
+    await meetingStore.fetchCategoryList(route.params.projId as string)
   }
   loading.value = false
 })
@@ -76,11 +74,22 @@ onBeforeMount(async () => {
         </CCol>
       </CRow>
 
-      <QuerySection :all-readable-projects="allReadableProjects" @filter-submit="filterSubmit" />
+      <QuerySection
+        :search-projects="allReadableProjects"
+        :status-list="statusList"
+        :tracker-list="trackerList"
+        :priority-list="priorityList"
+        :meeting-categories="meetingCategories"
+        :get-users="getUsers"
+        @filter-submit="filterSubmit"
+      />
 
       <CRow class="mb-3">
         <CCol>
-          <SharedCalendar :project-slug="route.params.projId as string" />
+          <SharedCalendar
+            :project-slug="route.params.projId as string"
+            :issue-filters="activeFilters"
+          />
         </CCol>
       </CRow>
 

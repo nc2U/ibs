@@ -8,6 +8,10 @@ import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import IssueProjectSelector from '@/views/_Work/components/atomics/IssueProjectSelector.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 
+import { useRoute } from 'vue-router'
+
+const route = useRoute()
+
 // ----- Props -----
 const props = defineProps({
   searchProjects: { type: Array as PropType<selectProject[]>, default: () => [] },
@@ -32,12 +36,14 @@ const searchCond = ref<string[]>(['issue_status'])
 // searchOptions 에서 고정(disabled) 항목들은 언제나 표시됨
 // 'issue_status' 는 고정 조건 (is_status)
 const searchOptions = reactive([
-  {
-    label: '공통',
-    options: [
-      { value: 'project', label: '프로젝트' },
-    ],
-  },
+  ...(route.params.projId
+    ? []
+    : [
+        {
+          label: '공통',
+          options: [{ value: 'project', label: '프로젝트' }],
+        },
+      ]),
   {
     label: '업무 조건',
     options: [
@@ -157,15 +163,19 @@ const toggleField = (key: string, e: Event) => {
 
 // ----- 동적 추가 조건 필터 목록 (searchCond에 등록된 모든 필드) -----
 const filterFieldsConfig = computed(() => [
-  {
-    key: 'project',
-    label: '프로젝트',
-    type: 'project',
-    condOptions: [
-      { value: 'is', label: '이다' },
-      { value: 'exclude', label: '아니다' },
-    ],
-  },
+  ...(route.params.projId
+    ? []
+    : [
+        {
+          key: 'project',
+          label: '프로젝트',
+          type: 'project',
+          condOptions: [
+            { value: 'is', label: '이다' },
+            { value: 'exclude', label: '아니다' },
+          ],
+        },
+      ]),
   {
     key: 'tracker',
     label: '유형',
