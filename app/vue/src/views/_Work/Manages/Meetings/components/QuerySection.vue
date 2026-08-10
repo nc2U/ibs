@@ -56,7 +56,10 @@ const openSaveQueryModal = () => {
 const applyQuery = (query: any) => {
   if (query && query.filters) {
     const f = query.filters
-    if (f.searchCond) searchCond.value = f.searchCond
+    if (f.searchCond) {
+      searchCond.value = [...f.searchCond]
+      enabledFields.value = [...f.searchCond]
+    }
     if (f.cond) Object.assign(cond, f.cond)
     if (f.form) Object.assign(form, f.form)
     filterSubmit()

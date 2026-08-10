@@ -933,11 +933,33 @@ onBeforeMount(async () => {
   }
 })
 
+// ----- 저장된 검색양식 복원 (Apply Query) -----
+const applyQuery = (query: any) => {
+  if (query && query.filters) {
+    const f = query.filters
+
+    // 이전 상태 초기화
+    searchCond.value = ['status']
+    enabledFields.value = ['status']
+
+    if (f.searchCond) {
+      searchCond.value = [...f.searchCond]
+      enabledFields.value = [...f.searchCond]
+    }
+    if (f.cond) cond.value = { ...cond.value, ...f.cond }
+    if (f.form) form.value = { ...form.value, ...f.form }
+
+    filterSubmit()
+  }
+}
+
 onMounted(() => {
   nextTick(() => {
     filterSubmit()
   })
 })
+
+defineExpose({ applyQuery, resetFilter })
 </script>
 
 <template>

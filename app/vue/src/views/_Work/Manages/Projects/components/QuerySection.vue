@@ -358,6 +358,7 @@ const applyQuery = (query: any) => {
 
     // 이전 필터 상태 완전 초기화
     searchCond.value = ['status']
+    enabledFields.value = ['status']
     cond.value = {
       status: 'is',
       project: 'is',
@@ -385,7 +386,10 @@ const applyQuery = (query: any) => {
       selectedParentVal.value = props.allReadableProjects[0]?.value
     }
 
-    if (f.searchCond) searchCond.value = f.searchCond
+    if (f.searchCond) {
+      searchCond.value = [...f.searchCond]
+      enabledFields.value = [...f.searchCond]
+    }
     if (f.cond) cond.value = { ...cond.value, ...f.cond }
     if (f.form) {
       form.value = { ...form.value, ...f.form }
