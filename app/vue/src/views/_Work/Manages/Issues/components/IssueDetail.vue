@@ -424,15 +424,18 @@ onBeforeMount(async () => {
         <CCol class="col-12">
           <div class="title mb-1">외부 클라우드 링크</div>
           <ul class="pl-4 mb-0">
-            <li v-for="(link, i) in issue.links" :key="typeof link === 'object' && link.pk ? link.pk : i" class="mb-1">
+            <li
+              v-for="(link, i) in issue.links"
+              :key="typeof link === 'object' && link.pk ? link.pk : i"
+              class="mb-1"
+            >
               <a
                 :href="typeof link === 'object' ? link.link : link"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="text-primary font-weight-bold"
               >
                 <v-icon icon="mdi-link-variant" size="14" class="mr-1" />
-                {{ typeof link === 'object' ? (link.name || link.description || link.link) : link }}
+                {{ typeof link === 'object' ? link.name || link.description || link.link : link }}
               </a>
             </li>
           </ul>

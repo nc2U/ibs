@@ -417,8 +417,8 @@ const refConfirmModal = ref()
           </h6>
           <ul class="pl-4 mb-0">
             <li v-for="link in meeting.links" :key="link.pk" class="mb-1">
-              <a :href="link.link" target="_blank" rel="noopener noreferrer" class="text-primary font-weight-bold">
-                {{ link.name ? link.name : (link.description ? link.description : link.link) }}
+              <a :href="link.link" target="_blank" rel="noopener noreferrer">
+                {{ link.name ? link.name : link.description ? link.description : link.link }}
               </a>
             </li>
           </ul>
