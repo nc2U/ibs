@@ -422,7 +422,7 @@ onBeforeMount(async () => {
 
       <CRow v-if="issue.links?.length" class="mb-3">
         <CCol class="col-12">
-          <div class="title mb-1">외부 클라우드 링크</div>
+          <div class="title mb-1">외부 링크</div>
           <ul class="pl-4 mb-0">
             <li
               v-for="(link, i) in issue.links"

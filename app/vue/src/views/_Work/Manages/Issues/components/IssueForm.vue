@@ -554,7 +554,9 @@ defineExpose({ callComment, callReply })
 
                 <!-- Existing Links (Edit Mode) -->
                 <CCol v-if="issue && form.links?.length" sm="10" class="offset-sm-2 mb-2">
-                  <div class="small font-weight-bold text-muted mb-1">등록된 외부 클라우드 링크</div>
+                  <div class="small font-weight-bold text-muted mb-1">
+                    등록된 외부 클라우드 링크
+                  </div>
                   <CTable small striped hover>
                     <CTableBody>
                       <CTableRow v-for="(linkItem, index) in form.links" :key="linkItem.pk">
@@ -563,10 +565,13 @@ defineExpose({ callComment, callReply })
                             :href="typeof linkItem === 'object' ? linkItem.link : linkItem"
                             target="_blank"
                             rel="noopener noreferrer"
-                            class="text-primary font-weight-bold"
                           >
                             <v-icon icon="mdi-link-variant" size="14" class="mr-1" />
-                            {{ typeof linkItem === 'object' ? (linkItem.name || linkItem.description || linkItem.link) : linkItem }}
+                            {{
+                              typeof linkItem === 'object'
+                                ? linkItem.name || linkItem.description || linkItem.link
+                                : linkItem
+                            }}
                           </a>
                           <CFormCheck
                             label="삭제"
@@ -587,7 +592,9 @@ defineExpose({ callComment, callReply })
                       <v-icon icon="mdi-paperclip" size="14" class="mr-1" />
                       첨부파일 용량 (최대 {{ formatBytes(MAX_TOTAL_SIZE) }})
                     </span>
-                    <span :class="{ 'text-danger font-weight-bold': totalFileSize > MAX_TOTAL_SIZE }">
+                    <span
+                      :class="{ 'text-danger font-weight-bold': totalFileSize > MAX_TOTAL_SIZE }"
+                    >
                       {{ formatBytes(totalFileSize) }} / {{ formatBytes(MAX_TOTAL_SIZE) }}
                     </span>
                   </div>
@@ -596,7 +603,8 @@ defineExpose({ callComment, callReply })
                     <v-icon icon="mdi-alert-circle" size="14" class="mr-1" />
                     {{ fileErrorMessage }}
                     <span class="ml-2 font-weight-bold text-dark">
-                      💡 대용량 파일은 아래 [외부 클라우드 링크] 섹션에 공유 링크(OneDrive, Google Drive 등)를 직접 추가하여 공유할 수 있습니다.
+                      💡 대용량 파일은 아래 [외부 클라우드 링크] 섹션에 공유 링크(OneDrive, Google
+                      Drive 등)를 직접 추가하여 공유할 수 있습니다.
                     </span>
                   </div>
                 </CCol>
@@ -657,7 +665,10 @@ defineExpose({ callComment, callReply })
                     <CFormLabel v-if="!newLinks.length" class="col-sm-2 col-form-label text-right">
                       외부 링크
                     </CFormLabel>
-                    <CCol :class="newLinks.length ? 'offset-sm-2 col-sm-10' : 'col-sm-10'" class="form-text pt-2">
+                    <CCol
+                      :class="newLinks.length ? 'offset-sm-2 col-sm-10' : 'col-sm-10'"
+                      class="form-text pt-2"
+                    >
                       <v-icon icon="mdi-link-plus" color="primary" size="sm" class="mr-1" />
                       <router-link to="" @click="addLink">
                         외부 클라우드 링크 추가 (OneDrive, Google Drive 등)

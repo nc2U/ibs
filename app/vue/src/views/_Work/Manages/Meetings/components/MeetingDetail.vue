@@ -413,7 +413,7 @@ const refConfirmModal = ref()
         <div v-if="meeting.links?.length" class="my-4">
           <h6 class="title mb-2">
             <v-icon icon="mdi-link-variant" color="primary" size="small" class="mr-1" />
-            외부 클라우드 링크 ({{ meeting.links.length }}건)
+            외부 링크 ({{ meeting.links.length }}건)
           </h6>
           <ul class="pl-4 mb-0">
             <li v-for="link in meeting.links" :key="link.pk" class="mb-1">
@@ -443,7 +443,7 @@ const refConfirmModal = ref()
             <CCol class="text-right">
               <v-btn
                 v-if="canIssueCreate"
-                color="info"
+                color="success"
                 size="x-small"
                 @click="refIssueModal.callModal()"
               >

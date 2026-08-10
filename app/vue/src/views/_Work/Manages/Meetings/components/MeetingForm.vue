@@ -48,6 +48,7 @@ const form = ref({
   meeting_date: timeFormat(new Date(), 'min'),
   attendees: [] as number[],
   other_attendees: '',
+  links: [] as any[],
 })
 
 const { can, PERM } = usePerms()
@@ -97,9 +98,13 @@ const loadFile = (event: Event, index?: number) => {
     }
 
     // 2. 전체 총용량 체크
-    const currentTotal = index !== undefined
-      ? newFiles.value.reduce((acc, item, idx) => acc + (idx === index ? 0 : item.file?.size || 0), 0)
-      : totalFileSize.value
+    const currentTotal =
+      index !== undefined
+        ? newFiles.value.reduce(
+            (acc, item, idx) => acc + (idx === index ? 0 : item.file?.size || 0),
+            0,
+          )
+        : totalFileSize.value
 
     const addedTotal = selectedFiles.reduce((sum, f) => sum + f.size, 0)
     if (currentTotal + addedTotal > MAX_TOTAL_SIZE) {
@@ -151,6 +156,11 @@ const onSubmit = async (event: Event) => {
       formData.append('descriptions', f.description)
     })
     files_del.value?.forEach((dfn: string) => formData.append('files_del', dfn))
+
+    // Append existing links status (del / updates)
+    form.value.links?.forEach(l => {
+      formData.append('links', JSON.stringify(l))
+    })
 
     // Append new links
     newLinks.value.forEach(l => {
@@ -254,6 +264,7 @@ const fetchMeeting = async (pk: number) => {
       meeting_date: meeting.value.meeting_date ? timeFormat(meeting.value.meeting_date, 'min') : '',
       attendees: meeting.value.attendees,
       other_attendees: meeting.value.other_attendees,
+      links: meeting.value.links ? JSON.parse(JSON.stringify(meeting.value.links)) : [],
     }
     if (meeting.value.project_desc)
       await issueStore.fetchAllIssueList(meeting.value.project_desc.slug)
@@ -412,7 +423,9 @@ onBeforeMount(async () => {
             <CRow class="mb-0">
               <CFormLabel class="col-sm-2 col-form-label text-right">파일</CFormLabel>
               <CCol sm="10">
-                <div class="d-flex align-items-center justify-content-between text-muted small mb-2">
+                <div
+                  class="d-flex align-items-center justify-content-between text-muted small mb-2"
+                >
                   <span>
                     <v-icon icon="mdi-paperclip" size="14" class="mr-1" />
                     첨부파일 용량 (최대 {{ formatBytes(MAX_TOTAL_SIZE) }})
@@ -426,7 +439,8 @@ onBeforeMount(async () => {
                   <v-icon icon="mdi-alert-circle" size="14" class="mr-1" />
                   {{ fileErrorMessage }}
                   <span class="ml-2 font-weight-bold text-dark">
-                    💡 대용량 파일은 아래 [외부 클라우드 링크] 섹션에 공유 링크(OneDrive, Google Drive 등)를 직접 추가하여 공유할 수 있습니다.
+                    💡 대용량 파일은 아래 [외부 클라우드 링크] 섹션에 공유 링크(OneDrive, Google
+                    Drive 등)를 직접 추가하여 공유할 수 있습니다.
                   </span>
                 </div>
 
@@ -498,15 +512,32 @@ onBeforeMount(async () => {
             <CRow class="mb-2">
               <CFormLabel class="col-sm-2 col-form-label text-right">외부 링크</CFormLabel>
               <CCol sm="10">
-                <div v-if="meeting?.links?.length" class="mb-2">
-                  <ul class="pl-3 mb-0 small">
-                    <li v-for="link in meeting.links" :key="link.pk" class="mb-1">
-                      <a :href="link.link" target="_blank" rel="noopener noreferrer" class="text-primary font-weight-bold">
-                        <v-icon icon="mdi-link-variant" size="14" class="mr-1" />
-                        {{ link.name ? link.name : (link.description ? link.description : link.link) }}
-                      </a>
-                    </li>
-                  </ul>
+                <div v-if="form.links?.length" class="mb-2">
+                  <CTable small striped hover>
+                    <CTableBody>
+                      <CTableRow v-for="(linkItem, index) in form.links" :key="linkItem.pk">
+                        <CTableDataCell>
+                          <a :href="linkItem.link" target="_blank" rel="noopener noreferrer">
+                            <v-icon icon="mdi-link-variant" size="14" class="mr-1" />
+                            {{
+                              linkItem.name
+                                ? linkItem.name
+                                : linkItem.description
+                                  ? linkItem.description
+                                  : linkItem.link
+                            }}
+                          </a>
+                          <CFormCheck
+                            label="삭제"
+                            v-model="linkItem.del"
+                            inline
+                            class="ml-2"
+                            :id="`meeting-link-del-${index}`"
+                          />
+                        </CTableDataCell>
+                      </CTableRow>
+                    </CTableBody>
+                  </CTable>
                 </div>
               </CCol>
             </CRow>
@@ -541,9 +572,9 @@ onBeforeMount(async () => {
 
             <CRow class="mb-3">
               <CCol :sm="{ span: 10, offset: 2 }" class="text-right">
-                <v-btn color="primary" size="x-small" variant="outlined" @click="addLink">
+                <v-btn color="info" size="x-small" @click="addLink">
                   <v-icon icon="mdi-link-plus" size="small" class="mr-1" />
-                  외부 클라우드 링크 추가 (OneDrive, Google Drive 등)
+                  외부 링크 추가
                 </v-btn>
               </CCol>
             </CRow>
@@ -605,7 +636,7 @@ onBeforeMount(async () => {
                     연결된 업무가 없습니다.
                   </div>
                   <CCol v-if="canIssueCreate" class="text-right">
-                    <v-btn color="info" size="x-small" @click="callIssueModal()">
+                    <v-btn color="success" size="x-small" @click="callIssueModal()">
                       <v-icon icon="mdi-plus" size="small" class="mr-1" />
                       관련 업무 추가
                     </v-btn>
