@@ -552,7 +552,7 @@ class IssueViewSet(viewsets.ModelViewSet):
             self.request.user,
             Issue.objects.all().select_related(
                 'project', 'status', 'creator', 'assigned_to', 'tracker', 'fixed_version'
-            )
+            ).prefetch_related('files', 'links', 'watchers')
         )
 
     def filter_queryset(self, queryset):

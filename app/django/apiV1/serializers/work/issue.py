@@ -7,7 +7,7 @@ from accounts.models import User
 from apiV1.serializers.accounts import SimpleUserSerializer
 from apiV1.serializers.work.project import SimpleIssueProjectSerializer, TrackerInIssueProjectSerializer
 from work.models.issue import (IssueCategory, Tracker, IssueStatus, Workflow, CodeIssuePriority,
-                               Issue, IssueRelation, IssueFile, IssueComment)
+                               Issue, IssueRelation, IssueFile, IssueLink, IssueComment)
 from work.models.meeting import Meeting
 from work.models.project import IssueProject, Member, Version, ProjectSubscription
 
@@ -42,6 +42,14 @@ class IssueFileInIssueSerializer(serializers.ModelSerializer):
     class Meta:
         model = IssueFile
         fields = ('pk', 'file', 'file_name', 'file_type', 'file_size', 'description', 'created', 'creator')
+
+
+class IssueLinkInIssueSerializer(serializers.ModelSerializer):
+    creator = SimpleUserSerializer(read_only=True)
+
+    class Meta:
+        model = IssueLink
+        fields = ('pk', 'link', 'description', 'hit', 'created', 'creator')
 
 
 class IssueInIssueSerializer(serializers.ModelSerializer):
@@ -82,6 +90,7 @@ class IssueSerializer(serializers.ModelSerializer):
     assigned_to = SimpleUserSerializer(read_only=True)
     watchers = SimpleUserSerializer(many=True, read_only=True)
     files = IssueFileInIssueSerializer(many=True, read_only=True)
+    links = IssueLinkInIssueSerializer(many=True, read_only=True)
     meeting_desc = MeetingInIssueSerializer(source='meeting', read_only=True)
     sub_issues = serializers.SerializerMethodField()
     outgoing_relations = serializers.SerializerMethodField()
@@ -94,7 +103,7 @@ class IssueSerializer(serializers.ModelSerializer):
         fields = ('pk', 'project', 'tracker', 'status', 'priority', 'subject', 'description',
                   'category', 'fixed_version', 'assigned_to', 'parent', 'watchers', 'is_private',
                   'expected_duration', 'expected_duration_display', 'start_date', 'due_date',
-                  'done_ratio', 'closed', 'files', 'sub_issues', 'outgoing_relations', 'incoming_relation',
+                  'done_ratio', 'closed', 'files', 'links', 'sub_issues', 'outgoing_relations', 'incoming_relation',
                   'creator', 'updater', 'created', 'updated', 'meeting', 'meeting_desc')
 
     @staticmethod
@@ -336,6 +345,16 @@ class IssueSerializer(serializers.ModelSerializer):
             file_model=IssueFile,
             related_name='issue'
         )
+
+        # Link 처리
+        if hasattr(self.initial_data, 'getlist'):
+            new_links = self.initial_data.getlist('newLinks', [])
+            new_link_descs = self.initial_data.getlist('newLinkDescs', [])
+            for i, link in enumerate(new_links):
+                if link and str(link).strip():
+                    desc = new_link_descs[i] if i < len(new_link_descs) else ''
+                    IssueLink.objects.create(issue=issue, link=str(link).strip(), description=desc, creator=creator)
+
         return issue
 
     @transaction.atomic
@@ -418,6 +437,35 @@ class IssueSerializer(serializers.ModelSerializer):
             file_model=IssueFile,
             related_name='issue'
         )
+
+        # Link 처리
+        if hasattr(self.initial_data, 'getlist'):
+            old_links = self.initial_data.getlist('links', [])
+            for json_link in old_links:
+                if not json_link or not str(json_link).strip():
+                    continue
+                try:
+                    import json
+                    link_data = json.loads(json_link) if isinstance(json_link, str) else json_link
+                    link_pk = link_data.get('pk')
+                    if link_data.get('del'):
+                        IssueLink.objects.filter(pk=link_pk, issue=instance).delete()
+                    else:
+                        link_obj = IssueLink.objects.get(pk=link_pk, issue=instance)
+                        if 'link' in link_data:
+                            link_obj.link = link_data['link']
+                        if 'description' in link_data:
+                            link_obj.description = link_data['description']
+                        link_obj.save()
+                except Exception as e:
+                    print(f"IssueLink 처리 중 오류: {e}")
+
+            new_links = self.initial_data.getlist('newLinks', [])
+            new_link_descs = self.initial_data.getlist('newLinkDescs', [])
+            for i, link in enumerate(new_links):
+                if link and str(link).strip():
+                    desc = new_link_descs[i] if i < len(new_link_descs) else ''
+                    IssueLink.objects.create(issue=instance, link=str(link).strip(), description=desc, creator=creator)
 
         instance.save()
         return instance

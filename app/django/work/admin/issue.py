@@ -2,13 +2,18 @@ from django.contrib import admin
 from import_export.admin import ImportExportMixin
 from rangefilter.filters import DateRangeFilter
 
-from work.models import (Issue, IssueRelation, IssueFile, IssueComment,
+from work.models import (Issue, IssueRelation, IssueFile, IssueLink, IssueComment,
                          Tracker, IssueCategory, IssueStatus,
                          Workflow, CodeIssuePriority)
 
 
 class IssueFileInline(admin.TabularInline):
     model = IssueFile
+    extra = 1
+
+
+class IssueLinkInline(admin.TabularInline):
+    model = IssueLink
     extra = 1
 
 
@@ -31,7 +36,7 @@ class IssueAdmin(ImportExportMixin, admin.ModelAdmin):
     list_filter = ('project', 'project__status', 'tracker', 'status', 'priority',
                    ('start_date', DateRangeFilter), ('due_date', DateRangeFilter))
     search_fields = ('subject',)
-    inlines = (IssueFileInline, IssueCommentInline, IssueRelationInline)
+    inlines = (IssueFileInline, IssueLinkInline, IssueCommentInline, IssueRelationInline)
 
     def get_queryset(self, request):
         return super().get_queryset(request)

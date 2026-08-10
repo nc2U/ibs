@@ -420,6 +420,21 @@ onBeforeMount(async () => {
         :issue-files="issue.files"
       />
 
+      <CRow v-if="issue.links?.length" class="mb-3">
+        <CCol class="col-12">
+          <div class="title mb-1">외부 클라우드 링크</div>
+          <ul class="pl-4 mb-0">
+            <li v-for="link in issue.links" :key="link.pk" class="mb-1">
+              <a :href="link.link" target="_blank" rel="noopener noreferrer" class="text-primary font-weight-bold">
+                <v-icon icon="mdi-link-variant" size="14" class="mr-1" />
+                {{ link.link }}
+              </a>
+              <span v-if="link.description" class="text-muted small ml-2">({{ link.description }})</span>
+            </li>
+          </ul>
+        </CCol>
+      </CRow>
+
       <CRow v-if="currentProject?.status !== '9'" class="mb-2">
         <CCol class="col-10">
           <span class="title mr-2">하위 업무</span>

@@ -96,6 +96,19 @@ class IssueFile(models.Model):
 file_cleanup_signals(IssueFile)  # 파일인스턴스 직접 삭제시
 
 
+class IssueLink(models.Model):
+    issue = models.ForeignKey(Issue, on_delete=models.CASCADE, default=None, verbose_name='업무', related_name='links')
+    link = models.URLField('링크 URL', max_length=500)
+    description = models.CharField('부가설명', max_length=255, blank=True, default='')
+    hit = models.PositiveIntegerField('클릭수', default=0)
+    created = models.DateTimeField('등록일', auto_now_add=True)
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                                verbose_name='작성자')
+
+    def __str__(self):
+        return self.link
+
+
 class IssueComment(models.Model):
     issue = models.ForeignKey(Issue, on_delete=models.CASCADE, verbose_name='업무', related_name='comments')
     content = models.TextField('내용')

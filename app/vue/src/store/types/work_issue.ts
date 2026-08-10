@@ -79,6 +79,19 @@ export interface IssueFile {
   edit?: boolean
 }
 
+export interface IssueLink {
+  pk: number
+  link: string
+  description: string
+  hit: number
+  created: string
+  creator: {
+    pk: number
+    username: string
+  }
+  del?: boolean
+}
+
 export interface SubIssue {
   pk: number
   project: SimpleProject
@@ -127,6 +140,7 @@ export interface Issue {
   done_ratio: number
   closed: string | null
   files: Array<IssueFile>
+  links: Array<IssueLink>
   sub_issues: SubIssue[]
   outgoing_relations: IssueRelation[] // Outgoing
   incoming_relation: IssueRelation | null // Incoming

@@ -54,7 +54,18 @@ const form = ref({
   done_ratio: 0,
   watchers: [] as number[],
   files: [] as any[],
+  links: [] as any[],
 })
+
+const newLinks = ref<{ link: string; description: string }[]>([])
+
+const addLink = () => {
+  newLinks.value.push({ link: '', description: '' })
+}
+
+const removeLink = (index: number) => {
+  newLinks.value.splice(index, 1)
+}
 
 const { can, PERM } = usePerms()
 const canIssueCreate = computed(() => can(PERM.ISSUE_CREATE))
@@ -170,10 +181,12 @@ const formsCheck = computed(() => {
     const o = form.value.done_ratio === props.issue.done_ratio
     const p = !form.value.files?.map(f => f.del).some(f => f === true)
     const q = !newFiles.value.length
+    const r = !form.value.links?.map(l => l.del).some(l => l === true)
+    const s = !newLinks.value.length
     const u = !comment.value.content
 
     const first = a && b && c && d && e && f && g && h && i
-    const second = j && k && l && m && n && o && p && q && u
+    const second = j && k && l && m && n && o && p && q && r && s && u
     return first && second
   }
   return false
@@ -369,6 +382,7 @@ const onSubmit = (event: Event) => {
     emit('on-submit', {
       ...form.value,
       newFiles: newFiles.value,
+      newLinks: newLinks.value,
       comment_content: comment.value.content,
     })
     validated.value = false
@@ -424,6 +438,7 @@ onBeforeMount(async () => {
       }
     })
     form.value.files = props.issue.files
+    form.value.links = props.issue.links ?? []
   } else if (copyIssueObj) {
     form.value.project = copyIssueObj.project.slug
     form.value.tracker = copyIssueObj.tracker.pk
@@ -530,6 +545,9 @@ defineExpose({ callComment, callReply })
                   <div v-if="fileErrorMessage" class="text-danger small mt-1">
                     <v-icon icon="mdi-alert-circle" size="14" class="mr-1" />
                     {{ fileErrorMessage }}
+                    <span class="ml-2 font-weight-bold text-dark">
+                      💡 대용량 파일은 아래 [외부 클라우드 링크] 섹션에 공유 링크(OneDrive, Google Drive 등)를 직접 추가하여 공유할 수 있습니다.
+                    </span>
                   </div>
                 </CCol>
 
@@ -551,6 +569,42 @@ defineExpose({ callComment, callReply })
                       <div class="text-muted extra-small mt-1">
                         용량: {{ formatBytes(newFiles[i].file.size) }}
                       </div>
+                    </CCol>
+                  </CRow>
+                </div>
+
+                <!-- 외부 클라우드 링크 섹션 -->
+                <div class="w-100 mt-2">
+                  <CRow v-for="(l, i) in newLinks" :key="`link-${i}`" class="mb-2">
+                    <CFormLabel :for="`link-${i}`" class="col-sm-2 col-form-label text-right">
+                      <span v-if="i === 0">외부 링크</span>
+                    </CFormLabel>
+                    <CCol sm="5">
+                      <CFormInput
+                        v-model="newLinks[i].link"
+                        :id="`link-${i}`"
+                        type="url"
+                        placeholder="https://..."
+                      />
+                    </CCol>
+                    <CCol sm="5">
+                      <CInputGroup>
+                        <CFormInput v-model="newLinks[i].description" placeholder="링크 설명 (예: Google Drive 공유 파일)" />
+                        <CInputGroupText @click="removeLink(i)" style="cursor: pointer">
+                          <v-icon icon="mdi-trash-can-outline" size="16" />
+                        </CInputGroupText>
+                      </CInputGroup>
+                    </CCol>
+                  </CRow>
+                  <CRow class="mb-2">
+                    <CFormLabel v-if="!newLinks.length" class="col-sm-2 col-form-label text-right">
+                      외부 링크
+                    </CFormLabel>
+                    <CCol :class="newLinks.length ? 'offset-sm-2 col-sm-10' : 'col-sm-10'" class="form-text pt-2">
+                      <v-icon icon="mdi-link-plus" color="primary" size="sm" class="mr-1" />
+                      <router-link to="" @click="addLink">
+                        외부 클라우드 링크 추가 (OneDrive, Google Drive 등)
+                      </router-link>
                     </CCol>
                   </CRow>
                 </div>
