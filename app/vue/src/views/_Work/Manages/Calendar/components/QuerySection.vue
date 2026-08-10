@@ -7,10 +7,13 @@ import Multiselect from '@vueform/multiselect'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import IssueProjectSelector from '@/views/_Work/components/atomics/IssueProjectSelector.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
+import SaveQueryModal from '@/views/_Work/components/SaveQueryModal.vue'
+import { usePerms } from '@/composables/usePerms'
 
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
+const { can, PERM } = usePerms()
 
 // ----- Props -----
 const props = defineProps({
@@ -20,9 +23,18 @@ const props = defineProps({
   priorityList: { type: Array as PropType<any[]>, default: () => [] },
   meetingCategories: { type: Array as PropType<MeetingCategory[]>, default: () => [] },
   getUsers: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },
+  targetType: {
+    type: String as PropType<'project' | 'calendar' | 'issue' | 'meeting'>,
+    default: 'calendar',
+  },
 })
 
 const emit = defineEmits(['filter-submit'])
+
+const refQuerySaveModal = ref()
+const openSaveModal = () => {
+  refQuerySaveModal.value?.callModal()
+}
 
 // ----- 표시 상태 -----
 const condVisible = ref(true)
@@ -707,6 +719,22 @@ defineExpose({ resetFilter })
         font-size="1"
         @click="resetFilter"
       />
+      <TextButton
+        v-if="can(PERM.PROJECT_SAVE_QUERY)"
+        name="검색양식 저장"
+        icon="mdi-content-save"
+        icon-color="indigo"
+        font-size="1"
+        @click="openSaveModal"
+      />
     </CCol>
   </CRow>
+
+  <SaveQueryModal
+    ref="refQuerySaveModal"
+    :search-cond="searchCond"
+    :target-type="targetType"
+    :cond="cond"
+    :form="form"
+  />
 </template>
