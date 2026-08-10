@@ -567,7 +567,11 @@ defineExpose({ callComment, callReply })
                             rel="noopener noreferrer"
                           >
                             <v-icon icon="mdi-link-variant" size="14" class="mr-1" />
-                            {{ typeof linkItem === 'object' ? (linkItem.name || linkItem.link) : linkItem }}
+                            {{
+                              typeof linkItem === 'object'
+                                ? linkItem.name || linkItem.link
+                                : linkItem
+                            }}
                           </a>
                           <CFormCheck
                             label="삭제"
@@ -748,7 +752,7 @@ defineExpose({ callComment, callReply })
                       진행 &nbsp;&nbsp; »
                     </CInputGroupText>
                     <CInputGroupText
-                      v-if="form.status === 2"
+                      v-if="issue?.pk && form.status === 2"
                       class="pointer"
                       @click="form.status = 5"
                     >
