@@ -638,13 +638,10 @@ defineExpose({ applyQuery, resetFilter })
 
   <SaveQueryModal
     ref="refQuerySaveModal"
-    v-model:search-cond="searchCond"
+    :search-cond="searchCond"
     :target-type="targetType"
-    :search-options="searchOptions"
     :cond="cond"
     :form="form"
-    :active-fields="activeFields"
-    :all-readable-projects="allReadableProjects"
     :extra-data="extraQueryData"
   />
 </template>
