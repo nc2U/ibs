@@ -9,7 +9,7 @@ import type { MeetingCategory, MeetingFilter } from '@/store/types/work_meeting.
 import IssueProjectSelector from '@/views/_Work/components/atomics/IssueProjectSelector.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
-import FormModal from '@/components/Modals/FormModal.vue'
+import SaveQueryModal from '@/views/_Work/components/SaveQueryModal.vue'
 import Multiselect from '@vueform/multiselect'
 
 const props = defineProps({
@@ -42,42 +42,15 @@ const canPubQuery = computed(() => can(PERM.PROJECT_PUB_QUERY))
 const searchCond = ref<string[]>(['status'])
 
 const refQuerySaveModal = ref()
-const queryForm = reactive({
-  name: '',
-  description: '',
-  is_public: false,
+
+const extraQueryData = computed(() => {
+  const projId = (route.params.projId as string) || ''
+  const projectObj = props.searchProjects.find(p => p.slug === projId)
+  return { project: projectObj ? projectObj.value : null }
 })
 
 const openSaveQueryModal = () => {
-  queryForm.name = ''
-  queryForm.description = ''
-  queryForm.is_public = false
   refQuerySaveModal.value.callModal()
-}
-
-const validated = ref(false)
-const saveQuery = async () => {
-  if (!queryForm.name.trim()) return
-
-  const projId = (route.params.projId as string) || ''
-  const projectObj = props.searchProjects.find(p => p.slug === projId)
-
-  const payload = {
-    name: queryForm.name,
-    description: queryForm.description,
-    target_type: props.targetType,
-    project: projectObj ? projectObj.value : null,
-    is_public: queryForm.is_public,
-    filters: {
-      searchCond: searchCond.value,
-      cond: { ...cond },
-      form: { ...form },
-    },
-  }
-
-  await informStore.createQuery(payload)
-  await informStore.fetchQueries({ targetType: props.targetType })
-  refQuerySaveModal.value.close()
 }
 
 const applyQuery = (query: any) => {
@@ -708,52 +681,14 @@ defineExpose({ applyQuery, resetFilter })
   </CRow>
 
   <!-- 검색 양식 저장 모달 -->
-  <FormModal ref="refQuerySaveModal" size="lg">
-    <template #header>검색양식 저장</template>
-    <CForm class="needs-validation" novalidate :validated="validated" @submit.prevent="saveQuery">
-      <CModalBody>
-        <CRow class="mb-3">
-          <CFormLabel for="query-name" class="col-sm-3 col-form-label">이름 *</CFormLabel>
-          <CCol class="col-sm-9">
-            <CFormInput
-              id="query-name"
-              v-model="queryForm.name"
-              placeholder="검색 양식 이름을 입력하세요"
-              required
-            />
-          </CCol>
-        </CRow>
-
-        <CRow class="mb-3">
-          <CFormLabel for="query-desc" class="col-sm-3 col-form-label">설명</CFormLabel>
-          <CCol class="col-sm-9">
-            <CFormInput
-              id="query-desc"
-              v-model="queryForm.description"
-              placeholder="양식에 대한 간단한 설명을 입력하세요"
-            />
-          </CCol>
-        </CRow>
-
-        <!-- 공용 저장 권한이 있을 때만 노출 -->
-        <CRow v-if="canPubQuery" class="mb-3">
-          <CFormLabel class="col-sm-3 col-form-label"></CFormLabel>
-          <CCol class="col-sm-9 pt-1">
-            <CFormCheck
-              id="query-public"
-              v-model="queryForm.is_public"
-              label="공용 (모든 사용자와 공유)"
-            />
-          </CCol>
-        </CRow>
-      </CModalBody>
-
-      <CModalFooter>
-        <v-btn type="submit" color="primary" size="small">저장</v-btn>
-        <v-btn color="light" size="small" @click="refQuerySaveModal.close()" flat> 취소 </v-btn>
-      </CModalFooter>
-    </CForm>
-  </FormModal>
+  <SaveQueryModal
+    ref="refQuerySaveModal"
+    :search-cond="searchCond"
+    :target-type="targetType"
+    :cond="cond"
+    :form="form"
+    :extra-data="extraQueryData"
+  />
 </template>
 
 <style scoped>
