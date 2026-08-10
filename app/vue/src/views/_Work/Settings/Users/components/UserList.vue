@@ -22,7 +22,12 @@ const workManager = computed(() => accStore.workManager)
   <CRow class="py-2">
     <CCol>
       <h5>
-        <v-icon icon="mdi-office-building-cog" color="teal-lighten-1" size="small" class="mr-2" />
+        <v-icon
+          icon="mdi-account-multiple-outline"
+          color="blue-grey-lighten-1"
+          size="small"
+          class="mr-2"
+        />
         {{ route.name }}
       </h5>
     </CCol>

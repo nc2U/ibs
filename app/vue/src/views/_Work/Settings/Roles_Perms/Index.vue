@@ -13,6 +13,7 @@ import RoleList from './components/RoleList.vue'
 import PermissionReport from './components/PermissionReport.vue'
 import RoleFormModal from './components/RoleFormModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
+import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 
 const route = useRoute()
 
@@ -82,6 +83,26 @@ onBeforeMount(() => {
 
   <ContentBody ref="cBody" :nav-menu="navMenu" :query="route?.query">
     <template v-slot:default>
+      <CRow class="py-2">
+        <CCol>
+          <h5>
+            <v-icon
+              icon="mdi-cog-transfer-outline"
+              color="blue-grey-lighten-1"
+              size="small"
+              class="mr-2"
+            />
+            {{ $route.name }}
+          </h5>
+        </CCol>
+
+        <CCol class="text-right">
+          <span v-if="workManager" class="mr-2 form-text">
+            <TextButton name="새 역할" @click="showRoleModal" />
+          </span>
+        </CCol>
+      </CRow>
+
       <CRow class="py-2">
         <CCol>
           <CNav variant="tabs" class="mb-3">

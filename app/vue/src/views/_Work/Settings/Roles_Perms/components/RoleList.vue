@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { Role } from '@/store/types/work_project'
-import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 
 defineProps<{ roleList: Role[]; workManager: boolean }>()
 const emit = defineEmits(['show-modal', 'delete-role'])
@@ -12,17 +11,6 @@ const copyRole = (role: Role) => {
 </script>
 
 <template>
-  <div class="d-flex justify-content-between align-items-center pt-3 mb-3">
-    <CCol>
-      <h5>{{ $route.name }}</h5>
-    </CCol>
-    <CCol class="text-right">
-      <span v-if="workManager" class="mr-2 form-text">
-        <TextButton name="새 역할" @click="emit('show-modal')" />
-      </span>
-    </CCol>
-  </div>
-
   <CTable hover responsive align="middle" class="border-top">
     <CTableHead color="light">
       <CTableRow>
@@ -39,7 +27,11 @@ const copyRole = (role: Role) => {
         <CTableDataCell>
           <span :class="role.category === 'ibs_global' ? 'text-primary' : 'text-success'">
             <v-icon
-              :icon="role.category === 'ibs_global' ? 'mdi-database-outline' : 'mdi-account-group-outline'"
+              :icon="
+                role.category === 'ibs_global'
+                  ? 'mdi-database-outline'
+                  : 'mdi-account-group-outline'
+              "
               size="small"
               class="mr-1"
             />

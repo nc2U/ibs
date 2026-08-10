@@ -12,6 +12,7 @@ import QuerySection from './components/QuerySection.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 import ProjectTable from './components/ProjectTable.vue'
 import NoData from '@/components/NoData/Index.vue'
+import { CRow } from '@coreui/vue'
 
 const cBody = ref()
 const sideNavCall = () => cBody.value.toggle()
@@ -51,8 +52,8 @@ onBeforeMount(async () => {
         <CCol>
           <h5>
             <v-icon
-              icon="mdi-office-building-cog"
-              color="teal-lighten-1"
+              icon="mdi-office-building-cog-outline"
+              color="blue-grey-lighten-1"
               size="small"
               class="mr-2"
             />
@@ -76,11 +77,7 @@ onBeforeMount(async () => {
 
       <NoData v-if="!projectResultsFlat.length" />
 
-      <ProjectTable
-        v-else
-        :issue-projects-flat="projectResultsFlat"
-        :columns="selectedColumns"
-      />
+      <ProjectTable v-else :issue-projects-flat="projectResultsFlat" :columns="selectedColumns" />
     </template>
 
     <template v-slot:aside></template>
