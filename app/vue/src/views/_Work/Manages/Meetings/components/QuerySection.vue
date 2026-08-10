@@ -135,7 +135,7 @@ interface SearchOptionGroup {
 const searchOptions = reactive<SearchOptionGroup[]>([
   {
     options: [
-      { value: 'status', label: '상태', disabled: true },
+      { value: 'status', label: '상태' },
       { value: 'is_confirmed', label: '확정 여부' },
       { value: 'category', label: '카테고리' },
       { value: 'creator', label: '작성자' },
@@ -332,30 +332,47 @@ const activeFields = computed(() => {
   return fields
 })
 
+// ----- 활성화된 필터 키 관리 (체크박스로 ON/OFF 가능) -----
+const enabledFields = ref<string[]>(['status'])
+
+const toggleField = (key: string, e: Event) => {
+  const target = e.target as HTMLInputElement
+  if (target.checked) {
+    if (!enabledFields.value.includes(key)) enabledFields.value.push(key)
+  } else {
+    enabledFields.value = enabledFields.value.filter(k => k !== key)
+  }
+  filterSubmit()
+}
+
 const filterSubmit = () => {
   const payload: MeetingFilter = { page: 1 }
 
   if (route.params.projId) {
     payload.project = route.params.projId as string
-  } else if (searchCond.value.includes('project') && form.project) {
+  } else if (enabledFields.value.includes('project') && form.project) {
     payload.project = form.project
   }
 
-  // 상태 처리
-  if (cond.status === 'open') {
-    payload.status = '1' // 준비중
-  } else if (cond.status === 'closed') {
-    payload.status = '2' // 종료
-  } else if (cond.status === 'is') {
-    payload.status = form.status || '1'
-  } else if (cond.status === 'exclude') {
-    payload.status__exclude = form.status || '1'
-  } else if (cond.status === 'any') {
+  // 상태 처리 (enabledFields에 'status'가 포함되어 있을 때만 적용)
+  if (enabledFields.value.includes('status')) {
+    if (cond.status === 'open') {
+      payload.status = '1' // 준비중
+    } else if (cond.status === 'closed') {
+      payload.status = '2' // 종료
+    } else if (cond.status === 'is') {
+      payload.status = form.status || '1'
+    } else if (cond.status === 'exclude') {
+      payload.status__exclude = form.status || '1'
+    } else if (cond.status === 'any') {
+      delete payload.status
+    }
+  } else {
     delete payload.status
   }
 
   // 확정 여부
-  if (searchCond.value.includes('is_confirmed')) {
+  if (enabledFields.value.includes('is_confirmed')) {
     const val = form.is_confirmed || 'true'
     const isTrue = val === 'true'
     if (cond.is_confirmed === 'is') {
@@ -366,7 +383,7 @@ const filterSubmit = () => {
   }
 
   // 카테고리
-  if (searchCond.value.includes('category') && form.category !== undefined) {
+  if (enabledFields.value.includes('category') && form.category !== undefined) {
     if (cond.category === 'is') {
       payload.category = form.category
     } else if (cond.category === 'exclude') {
@@ -375,7 +392,7 @@ const filterSubmit = () => {
   }
 
   // 작성자
-  if (searchCond.value.includes('creator') && form.creator !== null) {
+  if (enabledFields.value.includes('creator') && form.creator !== null) {
     if (cond.creator === 'is') {
       payload.creator = form.creator
     } else if (cond.creator === 'exclude') {
@@ -384,7 +401,7 @@ const filterSubmit = () => {
   }
 
   // 참석자
-  if (searchCond.value.includes('attendees') && form.attendees !== null) {
+  if (enabledFields.value.includes('attendees') && form.attendees !== null) {
     if (cond.attendees === 'is') {
       payload.attendees = form.attendees
     } else if (cond.attendees === 'exclude') {
@@ -393,7 +410,7 @@ const filterSubmit = () => {
   }
 
   // 회의 일시 범위
-  if (searchCond.value.includes('meeting_date')) {
+  if (enabledFields.value.includes('meeting_date')) {
     if (cond.meeting_date === 'between') {
       if (form.meeting_date_after) payload.meeting_date_after = form.meeting_date_after
       if (form.meeting_date_before) payload.meeting_date_before = form.meeting_date_before
@@ -405,7 +422,7 @@ const filterSubmit = () => {
   }
 
   // 등록일 범위
-  if (searchCond.value.includes('created')) {
+  if (enabledFields.value.includes('created')) {
     if (cond.created === 'between') {
       if (form.created_after) payload.created_after = form.created_after
       if (form.created_before) payload.created_before = form.created_before
@@ -418,10 +435,10 @@ const filterSubmit = () => {
 
   // 문자열 검색
   const searchTerms: string[] = []
-  if (searchCond.value.includes('title') && form.title) searchTerms.push(form.title)
-  if (searchCond.value.includes('agenda') && form.agenda) searchTerms.push(form.agenda)
-  if (searchCond.value.includes('content') && form.content) searchTerms.push(form.content)
-  if (searchCond.value.includes('decisions') && form.decisions) searchTerms.push(form.decisions)
+  if (enabledFields.value.includes('title') && form.title) searchTerms.push(form.title)
+  if (enabledFields.value.includes('agenda') && form.agenda) searchTerms.push(form.agenda)
+  if (enabledFields.value.includes('content') && form.content) searchTerms.push(form.content)
+  if (enabledFields.value.includes('decisions') && form.decisions) searchTerms.push(form.decisions)
 
   if (searchTerms.length) {
     payload.search = searchTerms.join(' ')
@@ -432,17 +449,24 @@ const filterSubmit = () => {
 
 watch(
   () => searchCond.value,
-  nVal => {
-    if (nVal.includes('is_confirmed') && !form.is_confirmed) {
+  newVal => {
+    newVal.forEach(key => {
+      if (!enabledFields.value.includes(key)) {
+        enabledFields.value.push(key)
+      }
+    })
+    enabledFields.value = enabledFields.value.filter(k => newVal.includes(k))
+
+    if (newVal.includes('is_confirmed') && !form.is_confirmed) {
       form.is_confirmed = 'true'
     }
-    if (nVal.includes('category') && !form.category && props.categories.length) {
+    if (newVal.includes('category') && !form.category && props.categories.length) {
       form.category = props.categories[0].pk
     }
-    if (nVal.includes('creator') && !form.creator && getUsers.value.length) {
+    if (newVal.includes('creator') && !form.creator && getUsers.value.length) {
       form.creator = getUsers.value[0].value
     }
-    if (nVal.includes('attendees') && !form.attendees && getUsers.value.length) {
+    if (newVal.includes('attendees') && !form.attendees && getUsers.value.length) {
       form.attendees = getUsers.value[0].value
     }
   },
@@ -473,9 +497,17 @@ defineExpose({ applyQuery, resetFilter })
             <!-- 1. 고정 필터: 상태 -->
             <CRow>
               <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                <CFormCheck label="상태" id="status" checked readonly />
+                <CFormCheck
+                  label="상태"
+                  id="status"
+                  :checked="enabledFields.includes('status')"
+                  @change="toggleField('status', $event)"
+                />
               </CCol>
-              <CCol class="d-none d-lg-block col-4 col-lg-3 col-xl-2">
+              <CCol
+                v-if="enabledFields.includes('status')"
+                class="d-none d-lg-block col-4 col-lg-3 col-xl-2"
+              >
                 <CFormSelect v-model="cond.status" size="sm" @change="filterSubmit">
                   <option value="open">준비중</option>
                   <option value="is">이다</option>
@@ -484,7 +516,7 @@ defineExpose({ applyQuery, resetFilter })
                   <option value="any">모두</option>
                 </CFormSelect>
               </CCol>
-              <CCol class="col-8 col-lg-3">
+              <CCol v-if="enabledFields.includes('status')" class="col-8 col-lg-3">
                 <CFormSelect
                   v-if="cond.status === 'is' || cond.status === 'exclude'"
                   v-model="form.status"
@@ -503,11 +535,16 @@ defineExpose({ applyQuery, resetFilter })
               <CRow>
                 <!-- 라벨 & 체크박스 -->
                 <CCol class="col-4 col-lg-3 col-xl-2 pt-1 mb-3">
-                  <CFormCheck checked readonly :label="field.label" :id="field.key" />
+                  <CFormCheck
+                    :label="field.label"
+                    :id="field.key"
+                    :checked="enabledFields.includes(field.key)"
+                    @change="toggleField(field.key, $event)"
+                  />
                 </CCol>
 
                 <!-- 연산자 조건 선택기 -->
-                <CCol class="col-4 col-lg-3 col-xl-2">
+                <CCol v-if="enabledFields.includes(field.key)" class="col-4 col-lg-3 col-xl-2">
                   <CFormSelect v-model="cond[field.key]" size="sm" @change="filterSubmit">
                     <option v-for="opt in field.condOptions" :key="opt.value" :value="opt.value">
                       {{ opt.label }}
@@ -516,7 +553,7 @@ defineExpose({ applyQuery, resetFilter })
                 </CCol>
 
                 <!-- 실제 입력 필드 렌더링부 -->
-                <CCol class="col-4 col-lg-3">
+                <CCol v-if="enabledFields.includes(field.key)" class="col-4 col-lg-3">
                   <!-- 프로젝트 전용 셀렉트 -->
                   <template v-if="field.type === 'project'">
                     <IssueProjectSelector
