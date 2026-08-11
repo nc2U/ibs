@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed, type PropType } from 'vue'
 import { DEFAULT_ISSUE_COLUMNS } from '@/views/_Work/Manages/Issues/constants.ts'
-import { cutString, timeFormat } from '@/utils/baseMixins.ts'
+import { cutString, dateFormat, timeFormat } from '@/utils/baseMixins.ts'
 import { usePerms } from '@/composables/usePerms.ts'
 import type { Issue } from '@/store/types/work_issue.ts'
 import IssueDropDown from './IssueDropDown.vue'
@@ -13,6 +13,7 @@ const props = defineProps({
 
 const { can, canViewUser, PERM } = usePerms()
 const canIssueRead = computed(() => can(PERM.ISSUE_READ) && props.issue.project?.slug)
+const canMeetingRead = computed(() => can(PERM.MEETING_READ))
 
 const priorityColor = computed(() => {
   let color = 'blue-grey-lighten-2'
@@ -150,42 +151,147 @@ const statusColor = computed(() => {
     </CTableDataCell>
 
     <!-- 업무관람자 -->
-    <CTableDataCell v-else-if="colKey === 'watchers'"></CTableDataCell>
-
-    <!-- 공개여부 -->
-    <CTableDataCell v-else-if="colKey === 'is_private'"></CTableDataCell>
+    <CTableDataCell v-else-if="colKey === 'watchers'">
+      <template v-for="(w, i) in issue.watchers" :key="w.pk">
+        <router-link
+          v-if="canViewUser(w.pk)"
+          :to="{ name: '사용자 - 보기', params: { userId: w.pk } }"
+        >
+          {{ w.username }}
+        </router-link>
+        <span v-else>{{ w.username }}</span>
+        <template v-if="i < issue.watchers.length - 1">, </template>
+      </template>
+    </CTableDataCell>
 
     <!-- 예상 처리기간 -->
-    <CTableDataCell v-else-if="colKey === 'expected_duration'"></CTableDataCell>
+    <CTableDataCell v-else-if="colKey === 'expected_duration'">
+      {{ issue.expected_duration_display }}
+    </CTableDataCell>
 
     <!-- 시작일 -->
-    <CTableDataCell v-else-if="colKey === 'start_date'"></CTableDataCell>
+    <CTableDataCell v-else-if="colKey === 'start_date'">
+      {{ dateFormat(issue.start_date, '/') }}
+    </CTableDataCell>
 
     <!-- 완료기한 -->
-    <CTableDataCell v-else-if="colKey === 'due_date'"></CTableDataCell>
+    <CTableDataCell v-else-if="colKey === 'due_date'">
+      <span v-if="issue.due_date">{{ dateFormat(issue.due_date, '/') }}</span>
+    </CTableDataCell>
 
     <!-- 진척도 -->
-    <CTableDataCell v-else-if="colKey === 'done_ratio'"></CTableDataCell>
+    <CTableDataCell v-else-if="colKey === 'done_ratio'">
+      <CProgress
+        :color="issue.done_ratio === 100 ? 'success' : 'warning'"
+        :value="issue.done_ratio ?? 0"
+        style="width: 110px; float: left; margin-top: 8px"
+        height="8"
+      />
+    </CTableDataCell>
 
     <!-- 관련 회의 -->
-    <CTableDataCell v-else-if="colKey === 'meeting'"></CTableDataCell>
+    <CTableDataCell v-else-if="colKey === 'meeting'">
+      <template v-if="issue.meeting_desc">
+        <router-link
+          v-if="canMeetingRead"
+          :to="{ name: '(회의) - 보기', params: { meetingId: issue.meeting_desc.pk } }"
+        >
+          {{ issue.meeting_desc.title }}
+        </router-link>
+        <span v-else>{{ issue.meeting_desc.title }}</span>
+      </template>
+    </CTableDataCell>
 
     <!-- 하위업무 -->
-    <CTableDataCell v-else-if="colKey === 'sub_issues'"></CTableDataCell>
+    <CTableDataCell v-else-if="colKey === 'sub_issues'" class="text-left">
+      <template v-if="issue.sub_issues?.length">
+        <template v-for="(sub, i) in issue.sub_issues" :key="sub.pk">
+          <router-link
+            v-if="canIssueRead"
+            :to="{
+              name: '(업무) - 보기',
+              params: { projId: issue.project.slug, issueId: sub.pk },
+            }"
+          >
+            #{{ sub.pk }}
+          </router-link>
+          <span v-else>#{{ sub.pk }}</span>
+          <template v-if="i < issue.sub_issues.length - 1">, </template>
+        </template>
+      </template>
+    </CTableDataCell>
 
     <!-- 연결된 업무 -->
-    <CTableDataCell v-else-if="colKey === 'rel_issues'"></CTableDataCell>
+    <CTableDataCell v-else-if="colKey === 'rel_issues'" class="text-left">
+      <div v-if="issue.incoming_relation?.issue" class="d-flex align-center ga-1 text-truncate">
+        <v-chip size="x-small" color="info" variant="flat">선행</v-chip>
+        <router-link
+          v-if="canIssueRead"
+          :to="{
+            name: '(업무) - 보기',
+            params: { projId: issue.project.slug, issueId: issue.incoming_relation.issue.pk },
+          }"
+        >
+          #{{ issue.incoming_relation.issue.pk }} {{ issue.incoming_relation.issue.subject }}
+        </router-link>
+        <span v-else>
+          #{{ issue.incoming_relation.issue.pk }} {{ issue.incoming_relation.issue.subject }}
+        </span>
+      </div>
+
+      <template v-if="issue.outgoing_relations?.length">
+        <div
+          v-for="rel in issue.outgoing_relations"
+          :key="rel.pk"
+          class="d-flex align-center ga-1 text-truncate"
+        >
+          <v-chip size="x-small" color="secondary" variant="flat">후행</v-chip>
+          <router-link
+            v-if="rel.issue && canIssueRead"
+            :to="{
+              name: '(업무) - 보기',
+              params: { projId: issue.project.slug, issueId: rel.issue.pk },
+            }"
+          >
+            #{{ rel.issue.pk }} {{ rel.issue.subject }}
+          </router-link>
+          <span v-else-if="rel.issue"> #{{ rel.issue.pk }} {{ rel.issue.subject }} </span>
+        </div>
+      </template>
+    </CTableDataCell>
 
     <!-- 등록자 -->
-    <CTableDataCell v-else-if="colKey === 'creator'"></CTableDataCell>
+    <CTableDataCell v-else-if="colKey === 'creator'">
+      <template v-if="issue.creator">
+        <router-link
+          v-if="canViewUser(issue.creator.pk)"
+          :to="{ name: '사용자 - 보기', params: { userId: issue.creator.pk } }"
+        >
+          {{ issue.creator.username }}
+        </router-link>
+        <span v-else>{{ issue.creator.username }}</span>
+      </template>
+    </CTableDataCell>
 
-    <!-- 등록일 -->
-    <CTableDataCell v-else-if="colKey === 'created'"></CTableDataCell>
+    <!-- 등록 -->
+    <CTableDataCell v-else-if="colKey === 'created'">
+      {{ timeFormat(issue.created) }}
+    </CTableDataCell>
 
     <!-- 최근 수정자 -->
-    <CTableDataCell v-else-if="colKey === 'updater'"></CTableDataCell>
+    <CTableDataCell v-else-if="colKey === 'updater'">
+      <template v-if="issue.updater">
+        <router-link
+          v-if="canViewUser(issue.updater.pk)"
+          :to="{ name: '사용자 - 보기', params: { userId: issue.updater.pk } }"
+        >
+          {{ issue.updater.username }}
+        </router-link>
+        <span v-else>{{ issue.updater.username }}</span>
+      </template>
+    </CTableDataCell>
 
-    <!-- 변경일 -->
+    <!-- 변경 -->
     <CTableDataCell v-else-if="colKey === 'updated'" class="text-center">
       {{ timeFormat(issue.updated) }}
     </CTableDataCell>

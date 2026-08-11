@@ -12,7 +12,6 @@ export const ALL_ISSUE_COLUMNS: ColumnOption[] = [
   { key: 'fixed_version', label: '목표버전' },
   { key: 'assigned_to', label: '담당자' },
   { key: 'watchers', label: '업무관람자' },
-  { key: 'is_private', label: '공개여부' },
   { key: 'expected_duration', label: '예상 처리기간' },
   { key: 'start_date', label: '시작일' },
   { key: 'due_date', label: '완료기한' },
@@ -21,9 +20,9 @@ export const ALL_ISSUE_COLUMNS: ColumnOption[] = [
   { key: 'sub_issues', label: '하위업무' },
   { key: 'rel_issues', label: '연결된 업무' },
   { key: 'creator', label: '등록자' },
-  { key: 'created', label: '등록일' },
+  { key: 'created', label: '등록' },
   { key: 'updater', label: '최근 수정자' },
-  { key: 'updated', label: '변경일' },
+  { key: 'updated', label: '변경' },
 ]
 
 // 기본 선택 컬럼 키 목록
