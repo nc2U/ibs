@@ -1,7 +1,6 @@
 <script lang="ts" setup>
 import { type PropType, ref, watchEffect } from 'vue'
-import type { selectProject } from '@/store/types/work_project.ts'
-import type { Issue, IssueFilter, IssueStatus, Tracker } from '@/store/types/work_issue.ts'
+import type { Issue, IssueFilter } from '@/store/types/work_issue.ts'
 import { useRoute } from 'vue-router'
 import { useIssue } from '@/store/pinia/work_issue.ts'
 import Pagination from '@/components/Pagination'
@@ -10,16 +9,9 @@ import IssueItem from './IssueItem.vue'
 
 const props = defineProps({
   issueList: { type: Array as PropType<Issue[]>, default: () => [] },
-  searchProjects: { type: Array as PropType<selectProject[]>, default: () => [] },
-  statusList: { type: Array as PropType<IssueStatus[]>, default: () => [] },
-  trackerList: { type: Array as PropType<Tracker[]>, default: () => [] },
-  priorityList: { type: Array as PropType<any[]>, default: () => [] },
-  getIssues: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },
-  getUsers: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },
-  getVersions: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },
 })
 
-const emit = defineEmits(['filter-submit', 'page-select'])
+const emit = defineEmits(['page-select'])
 
 const route = useRoute()
 
@@ -32,8 +24,6 @@ watchEffect(() => {
   if (selectedRow.value) document.addEventListener('click', handleClickOutside)
   else document.removeEventListener('click', handleClickOutside)
 })
-
-const filterSubmit = (payload: IssueFilter) => emit('filter-submit', payload)
 
 const querySectionRef = ref()
 const applyQuery = (query: any) => querySectionRef.value?.applyQuery(query)

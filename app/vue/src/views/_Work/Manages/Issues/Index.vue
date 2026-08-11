@@ -98,7 +98,6 @@ onBeforeMount(async () => {
       <IssueHeader />
 
       <QuerySection
-        v-if="['업무', '(업무)'].includes(route.name as string)"
         ref="querySectionRef"
         :search-projects="allReadableProjects"
         :status-list="statusList"
@@ -111,19 +110,7 @@ onBeforeMount(async () => {
         @filter-submit="filterSubmit"
       />
 
-      <IssueTable
-        ref="issueListRef"
-        :issue-list="issueList as Issue[]"
-        :search-projects="allReadableProjects"
-        :status-list="statusList"
-        :tracker-list="trackerList"
-        :priority-list="priorityList"
-        :get-issues="getIssues"
-        :get-users="getUsers"
-        :get-versions="getVersions"
-        @filter-submit="filterSubmit"
-        @page-select="pageSelect"
-      />
+      <IssueTable ref="issueListRef" :issue-list="issueList as Issue[]" @page-select="pageSelect" />
     </template>
 
     <template v-slot:aside>

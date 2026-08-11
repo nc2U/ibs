@@ -10,16 +10,16 @@ import { useRoute, useRouter } from 'vue-router'
 import { useTableColumns } from '@/composables/useTableColumns.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import type { Issue, IssueFilter } from '@/store/types/work_issue.ts'
+import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import IssueHeader from '@/views/_Work/Manages/Issues/automics/IssueHeader.vue'
 import IssueTable from '@/views/_Work/Manages/Issues/components/IssueTable.vue'
 import IssueDetail from '@/views/_Work/Manages/Issues/components/IssueDetail.vue'
 import IssueForm from '@/views/_Work/Manages/Issues/components/IssueForm.vue'
 import IssueReport from '@/views/_Work/Manages/Issues/components/IssueReport.vue'
 import IssueItemAside from '@/views/_Work/Manages/Issues/components/aside/IssueItemAside.vue'
-import SavedQueryAside from '@/views/_Work/components/asides/SavedQueryAside.vue'
-import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
-import Loading from '@/components/Loading/Index.vue'
 import QuerySection from '@/views/_Work/Manages/Issues/components/QuerySection.vue'
+import SavedQueryAside from '@/views/_Work/components/asides/SavedQueryAside.vue'
+import Loading from '@/components/Loading/Index.vue'
 
 const cBody = ref()
 const toggle = () => cBody.value.toggle()
@@ -200,7 +200,7 @@ onBeforeMount(async () => {
       <IssueHeader :proj-status="currentProject?.status" />
 
       <QuerySection
-        v-if="['업무', '(업무)'].includes(route.name as string)"
+        v-if="route.name === '(업무)'"
         ref="querySectionRef"
         :search-projects="allReadableProjects"
         :status-list="statusList"
@@ -217,14 +217,6 @@ onBeforeMount(async () => {
         v-if="route.name === '(업무)'"
         ref="issueListRef"
         :issue-list="issueList as Issue[]"
-        :search-projects="allReadableProjects"
-        :status-list="statusList"
-        :tracker-list="trackerList"
-        :priority-list="priorityList"
-        :get-issues="getIssues"
-        :get-users="getUsers"
-        :get-versions="getVersions"
-        @filter-submit="filterSubmit"
         @page-select="pageSelect"
       />
 
