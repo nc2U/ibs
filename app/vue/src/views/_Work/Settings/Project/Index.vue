@@ -4,6 +4,7 @@ import { pageTitle, navMenu } from '@/views/_Work/_menu/headermixin2'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useRoute } from 'vue-router'
 import { usePerms } from '@/composables/usePerms.ts'
+import { useTableColumns } from '@/composables/useTableColumns'
 import type { IssueProject, ProjectFilter } from '@/store/types/work_project.ts'
 import ColumnSelector, {
   type ColumnOption,
@@ -28,6 +29,7 @@ const workStore = useWork()
 const projectResultsFlat = computed<IssueProject[]>(() => workStore.projectResultsFlat)
 const allReadableProjects = computed(() => workStore.getAllReadableProjects)
 
+// Columns Selector
 const allColumnsPool: ColumnOption[] = [
   { key: 'name', label: '이름', fixed: true },
   { key: 'slug', label: '식별자' },
@@ -37,28 +39,11 @@ const allColumnsPool: ColumnOption[] = [
   { key: 'updated', label: '수정일' },
 ]
 
-const getSavedColumns = (): string[] => {
-  const saved = localStorage.getItem('project-table-columns')
-  if (saved) {
-    try {
-      const parsed = JSON.parse(saved)
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed
-    } catch {
-      // ignore
-    }
-  }
-  return ['name', 'slug', 'description']
-}
-
-const selectedColumns = ref<string[]>(getSavedColumns())
-
-watch(
-  selectedColumns,
-  nVal => {
-    localStorage.setItem('project-table-columns', JSON.stringify(nVal))
-  },
-  { deep: true },
-)
+const { selectedColumns } = useTableColumns('project-table-columns', allColumnsPool, [
+  'name',
+  'slug',
+  'description',
+])
 
 // 검색양식 관련 계산 및 메서드
 const filterSubmit = (payload: ProjectFilter) => {
