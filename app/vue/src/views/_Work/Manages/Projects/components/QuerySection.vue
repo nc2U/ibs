@@ -524,6 +524,8 @@ defineExpose({ applyQuery, resetFilter })
                       v-model="selectedParentVal"
                       :issue-project-list="allReadableProjects"
                       default-title="---------"
+                      show-book-mark-option
+                      show-closed-option
                       size="sm"
                     />
                   </template>
