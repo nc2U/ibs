@@ -15,6 +15,13 @@ export const useMeeting = defineStore('meeting', () => {
   const fetchMeetingList = async (payload: MeetingFilter) => {
     let url = `/meeting/?page=${payload.page ?? 1}`
     if (payload.project) url += `&project__slug=${payload.project}`
+    if (payload.project__my_project !== undefined)
+      url += `&project__my_project=${payload.project__my_project}`
+    if (payload.project__bookmark !== undefined)
+      url += `&project__bookmark=${payload.project__bookmark}`
+    if (payload.project_status) url += `&project_status=${payload.project_status}`
+    if (payload.project_status__exclude)
+      url += `&project_status__exclude=${payload.project_status__exclude}`
     if (payload.status) url += `&status=${payload.status}`
     if (payload.status__exclude) url += `&status__exclude=${payload.status__exclude}`
     if (payload.is_confirmed !== undefined && payload.is_confirmed !== '')
