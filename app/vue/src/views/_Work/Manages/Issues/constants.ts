@@ -22,7 +22,6 @@ export const ALL_ISSUE_COLUMNS: ColumnOption[] = [
   { key: 'rel_issues', label: '연결된 업무' },
   { key: 'creator', label: '등록자' },
   { key: 'created', label: '등록일' },
-  { key: 'created', label: '등록일' },
   { key: 'updater', label: '최근 수정자' },
   { key: 'updated', label: '변경일' },
 ]

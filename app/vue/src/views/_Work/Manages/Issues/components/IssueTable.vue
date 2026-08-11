@@ -1,15 +1,32 @@
 <script lang="ts" setup>
-import { type PropType, ref, watchEffect } from 'vue'
-import type { Issue, IssueFilter } from '@/store/types/work_issue.ts'
+import { computed, type PropType, ref, watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
+import {
+  DEFAULT_ISSUE_COLUMNS,
+  ISSUE_COLUMN_LABEL_MAP,
+} from '@/views/_Work/Manages/Issues/constants.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
+import type { Issue } from '@/store/types/work_issue.ts'
 import Pagination from '@/components/Pagination'
 import NoData from '@/components/NoData/Index.vue'
 import IssueItem from './IssueItem.vue'
 
 const props = defineProps({
   issueList: { type: Array as PropType<Issue[]>, default: () => [] },
+  columns: {
+    type: Array as PropType<string[]>,
+    default: () => DEFAULT_ISSUE_COLUMNS,
+  },
 })
+
+// 활성화할 컬럼 목록 (프로젝트 내부에서는 'project' 컬럼 자동 제외) START
+const activeColumns = computed(() => {
+  if (route.params.projId) {
+    return props.columns.filter(c => c !== 'project')
+  }
+  return props.columns
+})
+// 활성화할 컬럼 목록 END
 
 const emit = defineEmits(['page-select'])
 
@@ -45,14 +62,24 @@ const pageSelect = (page: number) => emit('page-select', page)
       <CTableHead>
         <CTableRow class="text-center">
           <CTableHeaderCell scope="col">#</CTableHeaderCell>
-          <CTableHeaderCell v-if="!route.params.projId" scope="col">프로젝트</CTableHeaderCell>
-          <CTableHeaderCell scope="col">유형</CTableHeaderCell>
-          <CTableHeaderCell scope="col">상태</CTableHeaderCell>
-          <CTableHeaderCell scope="col">우선순위</CTableHeaderCell>
-          <CTableHeaderCell scope="col">단계</CTableHeaderCell>
-          <CTableHeaderCell scope="col">제목</CTableHeaderCell>
-          <CTableHeaderCell scope="col">담당자</CTableHeaderCell>
-          <CTableHeaderCell scope="col">변경</CTableHeaderCell>
+          <template v-for="colKey in activeColumns" :key="'head-' + colKey">
+            <CTableHeaderCell
+              scope="col"
+              :class="{
+                'text-left': colKey === 'status' || colKey === 'title',
+              }"
+            >
+              {{ ISSUE_COLUMN_LABEL_MAP[colKey] || colKey }}
+            </CTableHeaderCell>
+          </template>
+          <!--          <CTableHeaderCell v-if="!route.params.projId" scope="col">프로젝트</CTableHeaderCell>-->
+          <!--          <CTableHeaderCell scope="col">유형</CTableHeaderCell>-->
+          <!--          <CTableHeaderCell scope="col">상태</CTableHeaderCell>-->
+          <!--          <CTableHeaderCell scope="col">우선순위</CTableHeaderCell>-->
+          <!--          <CTableHeaderCell scope="col">단계</CTableHeaderCell>-->
+          <!--          <CTableHeaderCell scope="col">제목</CTableHeaderCell>-->
+          <!--          <CTableHeaderCell scope="col">담당자</CTableHeaderCell>-->
+          <!--          <CTableHeaderCell scope="col">변경</CTableHeaderCell>-->
           <CTableHeaderCell scope="col"></CTableHeaderCell>
         </CTableRow>
       </CTableHead>
@@ -65,7 +92,7 @@ const pageSelect = (page: number) => emit('page-select', page)
           class="text-center table-row cursor-menu"
           :key="issue.pk"
         >
-          <IssueItem :issue="issue" />
+          <IssueItem :issue="issue" :columns="activeColumns" />
         </CTableRow>
       </CTableBody>
     </CTable>

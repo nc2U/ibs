@@ -20,6 +20,7 @@ import IssueItemAside from '@/views/_Work/Manages/Issues/components/aside/IssueI
 import QuerySection from '@/views/_Work/Manages/Issues/components/QuerySection.vue'
 import SavedQueryAside from '@/views/_Work/components/asides/SavedQueryAside.vue'
 import Loading from '@/components/Loading/Index.vue'
+import ColumnSelector from '@/views/_Work/components/atomics/ColumnSelector.vue'
 
 const cBody = ref()
 const toggle = () => cBody.value.toggle()
@@ -165,7 +166,7 @@ watch(
 
 // Columns Selector Start
 const { selectedColumns } = useTableColumns(
-  'meeting-table-columns',
+  'issue-table-columns',
   ALL_ISSUE_COLUMNS,
   DEFAULT_ISSUE_COLUMNS,
 )
@@ -211,12 +212,17 @@ onBeforeMount(async () => {
         :get-users="getUsers"
         :get-versions="getVersions"
         @filter-submit="filterSubmit"
-      />
+      >
+        <template #option>
+          <ColumnSelector v-model="selectedColumns" :all-columns="ALL_ISSUE_COLUMNS" />
+        </template>
+      </QuerySection>
 
       <IssueTable
         v-if="route.name === '(업무)'"
         ref="issueListRef"
         :issue-list="issueList as Issue[]"
+        :columns="selectedColumns"
         @page-select="pageSelect"
       />
 
