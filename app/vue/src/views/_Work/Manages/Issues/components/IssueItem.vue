@@ -123,7 +123,7 @@ const statusColor = computed(() => {
     <CTableDataCell v-else-if="colKey === 'category'"> {{ issue.category }} </CTableDataCell>
 
     <!-- 목표버전 -->
-    <CTableDataCell v-else-if="colKey === 'fixed_version'" class="text-left">
+    <CTableDataCell v-else-if="colKey === 'fixed_version'">
       <router-link
         v-if="issue.fixed_version && issue.project?.slug"
         :to="{
