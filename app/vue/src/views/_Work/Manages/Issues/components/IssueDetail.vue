@@ -196,13 +196,6 @@ onBeforeMount(async () => {
 </script>
 
 <template>
-  <CRow class="py-2">
-    <CCol>
-      <h5>
-        <v-icon icon="mdi-clipboard-check" color="green-darken-1" size="small" class="mr-2" />업무
-      </h5>
-    </CCol>
-  </CRow>
   <CRow class="py-1">
     <CCol>
       <h5>
@@ -435,7 +428,7 @@ onBeforeMount(async () => {
                 rel="noopener noreferrer"
               >
                 <v-icon icon="mdi-link-variant" size="14" class="mr-1" />
-                {{ typeof link === 'object' ? (link.name || link.link) : link }}
+                {{ typeof link === 'object' ? link.name || link.link : link }}
               </a>
             </li>
           </ul>

@@ -1,21 +1,25 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { ALL_ISSUE_COLUMNS, DEFAULT_ISSUE_COLUMNS } from '@/views/_Work/Manages/Issues/constants.ts'
 import { useAccount } from '@/store/pinia/account.ts'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
 import { useLogging } from '@/store/pinia/work_logging.ts'
+import { usePerms } from '@/composables/usePerms'
+import { useRoute, useRouter } from 'vue-router'
+import { useTableColumns } from '@/composables/useTableColumns.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import type { Issue, IssueFilter } from '@/store/types/work_issue.ts'
-import IssueList from '@/views/_Work/Manages/Issues/components/IssueList.vue'
+import IssueHeader from '@/views/_Work/Manages/Issues/automics/IssueHeader.vue'
+import IssueTable from '@/views/_Work/Manages/Issues/components/IssueTable.vue'
 import IssueDetail from '@/views/_Work/Manages/Issues/components/IssueDetail.vue'
 import IssueForm from '@/views/_Work/Manages/Issues/components/IssueForm.vue'
 import IssueReport from '@/views/_Work/Manages/Issues/components/IssueReport.vue'
 import IssueItemAside from '@/views/_Work/Manages/Issues/components/aside/IssueItemAside.vue'
 import SavedQueryAside from '@/views/_Work/components/asides/SavedQueryAside.vue'
-import { usePerms } from '@/composables/usePerms'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import Loading from '@/components/Loading/Index.vue'
+import QuerySection from '@/views/_Work/Manages/Issues/components/QuerySection.vue'
 
 const cBody = ref()
 const toggle = () => cBody.value.toggle()
@@ -159,6 +163,14 @@ watch(
   { deep: true },
 )
 
+// Columns Selector Start
+const { selectedColumns } = useTableColumns(
+  'meeting-table-columns',
+  ALL_ISSUE_COLUMNS,
+  DEFAULT_ISSUE_COLUMNS,
+)
+// Columns Selector End!
+
 const loading = ref<boolean>(true)
 onBeforeMount(async () => {
   await workStore.fetchIssueProject(projId.value)
@@ -168,13 +180,15 @@ onBeforeMount(async () => {
     await logStore.fetchIssueLogList({ issue: Number(issueId.value) })
   }
 
-  await workStore.fetchMemberList()
-  await issueStore.fetchTrackerList()
-  await issueStore.fetchStatusList()
-  await issueStore.fetchPriorityList()
-  await issueStore.fetchCategoryList(projId.value) // 프로젝트 카테고리(범주) 목록 로드
-  await workStore.fetchVersionList({ project: projId.value })
-  await issueStore.fetchAllIssueList(projId.value)
+  await Promise.all([
+    workStore.fetchMemberList(),
+    issueStore.fetchTrackerList(),
+    issueStore.fetchStatusList(),
+    issueStore.fetchPriorityList(),
+    issueStore.fetchCategoryList(projId.value), // 프로젝트 카테고리(범주) 목록 로드
+    workStore.fetchVersionList({ project: projId.value }),
+    issueStore.fetchAllIssueList(projId.value),
+  ])
   loading.value = false
 })
 </script>
@@ -183,16 +197,30 @@ onBeforeMount(async () => {
   <Loading v-model:active="loading" />
   <ContentBody ref="cBody">
     <template v-slot:default>
-      <IssueList
-        v-if="route.name === '(업무)'"
-        ref="issueListRef"
-        :proj-status="currentProject?.status"
-        :issue-list="issueList as Issue[]"
-        :all-readable-projects="allReadableProjects"
+      <IssueHeader :proj-status="currentProject?.status" />
+
+      <QuerySection
+        v-if="['업무', '(업무)'].includes(route.name as string)"
+        ref="querySectionRef"
+        :search-projects="allReadableProjects"
         :status-list="statusList"
         :tracker-list="trackerList"
         :priority-list="priorityList"
         :category-list="categoryList"
+        :get-issues="getIssues"
+        :get-users="getUsers"
+        :get-versions="getVersions"
+        @filter-submit="filterSubmit"
+      />
+
+      <IssueTable
+        v-if="route.name === '(업무)'"
+        ref="issueListRef"
+        :issue-list="issueList as Issue[]"
+        :search-projects="allReadableProjects"
+        :status-list="statusList"
+        :tracker-list="trackerList"
+        :priority-list="priorityList"
         :get-issues="getIssues"
         :get-users="getUsers"
         :get-versions="getVersions"

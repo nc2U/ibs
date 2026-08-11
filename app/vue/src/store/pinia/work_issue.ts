@@ -370,11 +370,13 @@ export const useIssue = defineStore('issue', () => {
     }[]
   >([])
 
-  const fetchTrackerList = () =>
-    api
+  const fetchTrackerList = (force = false) => {
+    if (!force && trackerList.value.length > 0) return Promise.resolve()
+    return api
       .get(`/tracker/`)
       .then(res => (trackerList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
+  }
 
   const fetchTrackerSummary = async (projId?: number) => {
     const url = `/issue-by-tracker-summary/?projects=${projId ?? ''}`
@@ -387,6 +389,7 @@ export const useIssue = defineStore('issue', () => {
   // category states & getters
   const category = ref<IssueCategory | null>()
   const categoryList = ref<IssueCategory[]>([])
+  const categoryCacheMap = ref<Record<string, IssueCategory[]>>({})
 
   const removeCategory = () => (category.value = null)
   const fetchCategory = (pk: number) =>
@@ -395,18 +398,39 @@ export const useIssue = defineStore('issue', () => {
       .then(res => (category.value = res.data))
       .catch(err => errorHandle(err.response.data))
 
-  const fetchCategoryList = (project = '') =>
-    api
+  const fetchCategoryList = (project = '', force = false) => {
+    const cacheKey = project || 'global'
+
+    // 1. 만약 'global' 캐시가 이미 존재하고 특정 project 조회가 들어온 경우, 전역 캐시에서 해당 프로젝트 항목 바로 추출
+    if (!force && project && categoryCacheMap.value['global']) {
+      categoryList.value = categoryCacheMap.value['global'].filter(
+        c => c.project && (c.project as any).slug === project,
+      )
+      return Promise.resolve()
+    }
+
+    // 2. 해당 cacheKey('global' 또는 project slug)의 캐시가 이미 존재하면 즉시 반환
+    if (!force && categoryCacheMap.value[cacheKey]) {
+      categoryList.value = categoryCacheMap.value[cacheKey]
+      return Promise.resolve()
+    }
+
+    return api
       .get(`/issue-category/?project__slug=${project}`)
-      .then(async res => (categoryList.value = res.data.results))
+      .then(async res => {
+        categoryCacheMap.value[cacheKey] = res.data.results
+        categoryList.value = res.data.results
+      })
       .catch(err => errorHandle(err.response.data))
+  }
 
   const createCategory = (payload: IssueCategory) =>
     api
       .post(`/issue-category/`, payload)
       .then(async res => {
+        categoryCacheMap.value = {}
         await fetchCategory(res.data.pk)
-        await fetchCategoryList(res.data.project.slug)
+        await fetchCategoryList(res.data.project.slug, true)
         await workStore.fetchIssueProject(res.data.project.slug)
         message()
         return res.data.pk
@@ -417,6 +441,7 @@ export const useIssue = defineStore('issue', () => {
     api
       .put(`/issue-category/${payload.pk}/`, payload)
       .then(async res => {
+        categoryCacheMap.value = {}
         await fetchCategory(res.data.pk)
         message()
       })
@@ -426,6 +451,7 @@ export const useIssue = defineStore('issue', () => {
     api
       .delete(`/issue-category/${pk}/`)
       .then(async () => {
+        categoryCacheMap.value = {}
         await workStore.fetchVersionList({ project, status: '', exclude: '' })
         await workStore.fetchIssueProject(project)
         message('warning', '알림!', '해당 업무 범주가 삭제되었습니다!')
@@ -435,20 +461,24 @@ export const useIssue = defineStore('issue', () => {
   // status states & getters
   const statusList = ref<IssueStatus[]>([])
 
-  const fetchStatusList = () =>
-    api
+  const fetchStatusList = (force = false) => {
+    if (!force && statusList.value.length > 0) return Promise.resolve()
+    return api
       .get(`/issue-status/`)
       .then(res => (statusList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
+  }
 
   // code-priority states & getters
   const priorityList = ref<CodeValue[]>([])
 
-  const fetchPriorityList = () =>
-    api
+  const fetchPriorityList = (force = false) => {
+    if (!force && priorityList.value.length > 0) return Promise.resolve()
+    return api
       .get(`/code-priority/`)
       .then(res => (priorityList.value = res.data.results))
       .catch(err => errorHandle(err.response.data))
+  }
 
   return {
     issue,

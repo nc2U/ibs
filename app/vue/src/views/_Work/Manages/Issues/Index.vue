@@ -1,17 +1,21 @@
 <script setup lang="ts">
 import { computed, onBeforeMount, provide, ref } from 'vue'
 import { navMenu2 as navMenu } from '@/views/_Work/_menu/headermixin1'
-import { useRoute } from 'vue-router'
+import { ALL_ISSUE_COLUMNS, DEFAULT_ISSUE_COLUMNS } from './constants.ts'
 import { useAccount } from '@/store/pinia/account'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
 import { useCompany } from '@/store/pinia/company.ts'
+import { useRoute } from 'vue-router'
+import { useTableColumns } from '@/composables/useTableColumns.ts'
 import type { Company } from '@/store/types/settings'
 import type { Issue, IssueFilter } from '@/store/types/work_issue.ts'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
+import IssueHeader from './automics/IssueHeader.vue'
+import IssueTable from './components/IssueTable.vue'
+import QuerySection from './components/QuerySection.vue'
 import SavedQueryAside from '@/views/_Work/components/asides/SavedQueryAside.vue'
-import IssueList from './components/IssueList.vue'
 import Loading from '@/components/Loading/Index.vue'
 
 const cBody = ref()
@@ -33,6 +37,7 @@ const issueList = computed(() => issueStore.issueList)
 const statusList = computed(() => issueStore.statusList)
 const trackerList = computed(() => issueStore.trackerList)
 const priorityList = computed(() => issueStore.priorityList)
+const categoryList = computed(() => issueStore.categoryList)
 const getIssues = computed(() => issueStore.getIssues)
 
 const route = useRoute()
@@ -61,10 +66,25 @@ const onResetQuery = () => {
   issueListRef.value?.resetFilter()
 }
 
+// Columns Selector Start
+const { selectedColumns } = useTableColumns(
+  'meeting-table-columns',
+  ALL_ISSUE_COLUMNS,
+  DEFAULT_ISSUE_COLUMNS,
+)
+// Columns Selector End!
+
 const loading = ref<boolean>(true)
 onBeforeMount(async () => {
-  await workStore.fetchMemberList()
-  await issueStore.fetchAllIssueList()
+  await Promise.all([
+    workStore.fetchMemberList(),
+    workStore.fetchVersionList(),
+    issueStore.fetchTrackerList(),
+    issueStore.fetchStatusList(),
+    issueStore.fetchPriorityList(),
+    issueStore.fetchCategoryList(),
+    issueStore.fetchAllIssueList(),
+  ])
   loading.value = false
 })
 </script>
@@ -75,8 +95,23 @@ onBeforeMount(async () => {
 
   <ContentBody ref="cBody" :nav-menu="navMenu" :query="route?.query">
     <template v-slot:default>
-      <!-- 전역 업무 인덱스는 항상 리스트 뷰만 노출 -->
-      <IssueList
+      <IssueHeader />
+
+      <QuerySection
+        v-if="['업무', '(업무)'].includes(route.name as string)"
+        ref="querySectionRef"
+        :search-projects="allReadableProjects"
+        :status-list="statusList"
+        :tracker-list="trackerList"
+        :priority-list="priorityList"
+        :category-list="categoryList"
+        :get-issues="getIssues"
+        :get-users="getUsers"
+        :get-versions="getVersions"
+        @filter-submit="filterSubmit"
+      />
+
+      <IssueTable
         ref="issueListRef"
         :issue-list="issueList as Issue[]"
         :search-projects="allReadableProjects"
