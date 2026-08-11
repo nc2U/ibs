@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, type PropType, ref, watchEffect } from 'vue'
+import { type PropType, ref, watchEffect } from 'vue'
 import { DEFAULT_MEETING_COLUMNS, MEETING_COLUMN_LABEL_MAP } from '../constants'
 import { useMeeting } from '@/store/pinia/work_meeting.ts'
 import { useRoute, useRouter } from 'vue-router'
@@ -46,15 +46,6 @@ const goDetail = (meeting: Meeting) => {
 
 const pageSelect = (page: number) => emit('page-select', page)
 
-// 활성화할 컬럼 목록 (프로젝트 내부에서는 'project' 컬럼 자동 제외) START
-const activeColumns = computed(() => {
-  if (route.params.projId) {
-    return props.columns.filter(c => c !== 'project')
-  }
-  return props.columns
-})
-// 활성화할 컬럼 목록 END
-
 defineExpose({ querySectionRef })
 </script>
 
@@ -65,7 +56,7 @@ defineExpose({ querySectionRef })
       <CTableHead>
         <CTableRow class="text-center">
           <CTableHeaderCell scope="col">#</CTableHeaderCell>
-          <template v-for="colKey in activeColumns" :key="'head-' + colKey">
+          <template v-for="colKey in columns" :key="'head-' + colKey">
             <CTableHeaderCell
               scope="col"
               :class="{
@@ -86,7 +77,7 @@ defineExpose({ querySectionRef })
           class="text-center table-row pointer"
           :key="meeting.pk"
         >
-          <MeetingItem :meeting="meeting" :columns="activeColumns" />
+          <MeetingItem :meeting="meeting" :columns="columns" />
         </CTableRow>
       </CTableBody>
     </CTable>

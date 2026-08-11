@@ -18,8 +18,8 @@ const route = useRoute()
 const router = useRouter()
 const accountStore = useAccount()
 const meetingStore = useMeeting()
-const workStore = useWork()
 const issueStore = useIssue()
+const workStore = useWork()
 
 const meeting = computed(() => meetingStore.meeting)
 

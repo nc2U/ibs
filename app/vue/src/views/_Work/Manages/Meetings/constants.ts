@@ -4,8 +4,8 @@ import type { ColumnOption } from '@/views/_Work/components/atomics/ColumnSelect
 export const ALL_MEETING_COLUMNS: ColumnOption[] = [
   { key: 'title', label: '제목', fixed: true },
   { key: 'project', label: '프로젝트' },
-  { key: 'status', label: '상태' },
   { key: 'category', label: '카테고리' },
+  { key: 'status', label: '상태' },
   { key: 'meeting_date', label: '회의 일시' },
   { key: 'creator', label: '작성자' },
   { key: 'attendees', label: '참석' },
@@ -15,10 +15,10 @@ export const ALL_MEETING_COLUMNS: ColumnOption[] = [
 
 // 기본 선택 컬럼 키 목록
 export const DEFAULT_MEETING_COLUMNS: string[] = [
-  'title',
-  'project',
-  'status',
+  // 'project',
   'category',
+  'title',
+  'status',
   'meeting_date',
   'pdf',
 ]

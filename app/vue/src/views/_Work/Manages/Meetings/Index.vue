@@ -80,11 +80,10 @@ const onResetQuery = () => {
 }
 
 // Columns Selector Start
-const { selectedColumns } = useTableColumns(
-  'meeting-table-columns',
-  ALL_MEETING_COLUMNS,
-  DEFAULT_MEETING_COLUMNS,
-)
+const { selectedColumns } = useTableColumns('global-meeting-table-columns', ALL_MEETING_COLUMNS, [
+  'project',
+  ...DEFAULT_MEETING_COLUMNS,
+])
 // Columns Selector End!
 
 const loading = ref<boolean>(true)
