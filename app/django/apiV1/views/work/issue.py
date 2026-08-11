@@ -123,6 +123,7 @@ class IssueFilter(FilterSet):
     precedes_issue__isnull = BooleanFilter(field_name='outgoing_relations', lookup_expr='isnull', label='후속업무-유무')
 
     project__my_project = BooleanFilter(method='filter_my_project', label='내 프로젝트 업무 여부')
+    project__bookmark = BooleanFilter(method='filter_bookmark', label='북마크 프로젝트 업무 여부')
 
     def filter_my_project(self, queryset, name, value):
         if self.request and self.request.user.is_authenticated:
@@ -135,6 +136,15 @@ class IssueFilter(FilterSet):
                 return queryset.exclude(project__members__user=user)
         return queryset
 
+    def filter_bookmark(self, queryset, name, value):
+        if self.request and self.request.user.is_authenticated:
+            user = self.request.user
+            if value:
+                return queryset.filter(project__bookmarked_by__user=user)
+            else:
+                return queryset.exclude(project__bookmarked_by__user=user)
+        return queryset
+
     class Meta:
         model = Issue
         fields = ('project__slug', 'sub_project', 'sub_project__exclude', 'sub_project__isnull', 'status__closed',
@@ -144,7 +154,7 @@ class IssueFilter(FilterSet):
                   'parent', 'parent__exclude', 'parent__contains', 'parent__isnull',
                   'parent_issue', 'parent_issue__exclude', 'parent_issue__contains', 'parent_issue__isnull',
                   'precedes_issue', 'precedes_issue__exclude', 'precedes_issue__isnull', 'follows_issue',
-                  'follows_issue__exclude', 'follows_issue__isnull', 'project__my_project', 'is_private',
+                  'follows_issue__exclude', 'follows_issue__isnull', 'project__my_project', 'project__bookmark', 'is_private',
                   'watcher', 'watcher__exclude', 'updater', 'updater__exclude', 'last_updater', 'last_updater__exclude',
                   'subject', 'subject__exclude', 'description', 'description__exclude', 'comment', 'comment__exclude',
                   'any_searchable', 'any_searchable__exclude',

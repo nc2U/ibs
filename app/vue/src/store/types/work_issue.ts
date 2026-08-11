@@ -265,6 +265,7 @@ export interface IssueFilter {
   precedes_issue__exclude?: number | null
   precedes_issue__isnull?: string
   project__my_project?: boolean
+  project__bookmark?: boolean
   page?: number
 }
 

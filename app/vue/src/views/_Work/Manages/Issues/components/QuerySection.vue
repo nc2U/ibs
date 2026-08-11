@@ -251,6 +251,7 @@ const form = ref<IssueFilter & Record<string, any>>({
   precedes_issue__exclude: null,
   precedes_issue__isnull: '0',
   project__my_project: undefined,
+  project__bookmark: undefined,
   created: '',
   created__gte: '',
   created__lte: '',
@@ -734,6 +735,12 @@ const filterSubmit = () => {
         if (form.value.project === '') {
           filterData.project__my_project = true
           delete filterData.project__slug
+        } else if (form.value.project === 'bookmark') {
+          filterData.project__bookmark = true
+          delete filterData.project__slug
+        } else if (form.value.project === 'closed') {
+          filterData.project_status = '2'
+          delete filterData.project__slug
         } else {
           filterData.project__search = form.value.project
         }
@@ -746,6 +753,12 @@ const filterSubmit = () => {
       if (key === 'project') {
         if (form.value.project === '') {
           filterData.project__my_project = false
+          delete filterData.project__slug
+        } else if (form.value.project === 'bookmark') {
+          filterData.project__bookmark = false
+          delete filterData.project__slug
+        } else if (form.value.project === 'closed') {
+          filterData.project_status__exclude = '2'
           delete filterData.project__slug
         } else {
           filterData.project__exclude = form.value.project
@@ -783,9 +796,12 @@ const filterSubmit = () => {
     }
   })
 
-  // my project 강제 덮어쓰기가 있을 경우
+  // my project 또는 bookmark project 강제 덮어쓰기가 있을 경우
   if (form.value.project__my_project !== undefined) {
     filterData.project__my_project = form.value.project__my_project
+  }
+  if (form.value.project__bookmark !== undefined) {
+    filterData.project__bookmark = form.value.project__bookmark
   }
 
   console.log(filterData)
@@ -1087,6 +1103,8 @@ defineExpose({ applyQuery, resetFilter })
                       v-model="form.project"
                       :issue-project-list="searchProjects"
                       default-title="<< 내 프로젝트 >>"
+                      show-book-mark-option
+                      show-closed-option
                       value-type="slug"
                       size="sm"
                     />
