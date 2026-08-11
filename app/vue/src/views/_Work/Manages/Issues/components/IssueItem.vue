@@ -24,7 +24,7 @@ const priorityColor = computed(() => {
 })
 
 const statusColor = computed(() => {
-  let color = 'indigo-lighten-5'
+  let color = 'lime-accent-2'
   if (props.issue?.status.pk === 2) color = 'info'
   if (props.issue?.status.pk === 3) color = 'warning'
   if (props.issue?.status.pk === 4) color = 'grey'
@@ -120,7 +120,7 @@ const statusColor = computed(() => {
     </CTableDataCell>
 
     <!-- 범주 -->
-    <CTableDataCell v-else-if="colKey === 'category'"></CTableDataCell>
+    <CTableDataCell v-else-if="colKey === 'category'"> {{ issue.category }} </CTableDataCell>
 
     <!-- 목표버전 -->
     <CTableDataCell v-else-if="colKey === 'fixed_version'" class="text-left">
