@@ -9,9 +9,8 @@ import { usePerms } from '@/composables/usePerms.ts'
 import { useTableColumns } from '@/composables/useTableColumns'
 import type { Company } from '@/store/types/settings'
 import type { MeetingFilter } from '@/store/types/work_meeting.ts'
-import ColumnSelector, {
-  type ColumnOption,
-} from '@/views/_Work/components/atomics/ColumnSelector.vue'
+import ColumnSelector from '@/views/_Work/components/atomics/ColumnSelector.vue'
+import { ALL_MEETING_COLUMNS, DEFAULT_MEETING_COLUMNS } from './constants'
 import Loading from '@/components/Loading/Index.vue'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
@@ -80,22 +79,13 @@ const onResetQuery = () => {
   }
 }
 
-// Columns Selector
-
-const allColumnsPool: ColumnOption[] = [
-  { key: 'name', label: '이름', fixed: true },
-  { key: 'slug', label: '식별자' },
-  { key: 'description', label: '설명' },
-  { key: 'is_public', label: '공개여부' },
-  { key: 'created', label: '등록일' },
-  { key: 'updated', label: '수정일' },
-]
-
-const { selectedColumns } = useTableColumns('meeting-table-columns', allColumnsPool, [
-  'name',
-  'slug',
-  'description',
-])
+// Columns Selector Start
+const { selectedColumns } = useTableColumns(
+  'meeting-table-columns',
+  ALL_MEETING_COLUMNS,
+  DEFAULT_MEETING_COLUMNS,
+)
+// Columns Selector End!
 
 const loading = ref<boolean>(true)
 
@@ -153,7 +143,7 @@ watch(
             @filter-submit="onFilterSubmit"
           >
             <template #option>
-              <ColumnSelector v-model="selectedColumns" :all-columns="allColumnsPool" />
+              <ColumnSelector v-model="selectedColumns" :all-columns="ALL_MEETING_COLUMNS" />
             </template>
           </QuerySection>
         </CCol>

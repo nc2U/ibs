@@ -1,8 +1,9 @@
 <script lang="ts" setup>
-import { type PropType, ref, watchEffect } from 'vue'
+import { computed, type PropType, ref, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useMeeting } from '@/store/pinia/work_meeting.ts'
-import type { Meeting, MeetingCategory, MeetingFilter } from '@/store/types/work_meeting.ts'
+import type { Meeting, MeetingCategory } from '@/store/types/work_meeting.ts'
+import { DEFAULT_MEETING_COLUMNS, MEETING_COLUMN_LABEL_MAP } from '../constants'
 import Pagination from '@/components/Pagination'
 import MeetingItem from './MeetingItem.vue'
 
@@ -11,7 +12,7 @@ const props = defineProps({
   categories: { type: Array as PropType<MeetingCategory[]>, default: () => [] },
   columns: {
     type: Array as PropType<string[]>,
-    default: () => ['name', 'slug', 'description'],
+    default: () => DEFAULT_MEETING_COLUMNS,
   },
   page: { type: Number, default: 1 },
 })
@@ -43,8 +44,18 @@ const goDetail = (meeting: Meeting) => {
   }
 }
 
-const filterSubmit = (payload: MeetingFilter) => emit('filter-submit', payload)
 const pageSelect = (page: number) => emit('page-select', page)
+
+// 활성화할 컬럼 목록 (프로젝트 내부에서는 'project' 컬럼 자동 제외) START
+const activeColumns = computed(() => {
+  if (route.params.projId) {
+    return props.columns.filter(c => c !== 'project')
+  }
+  return props.columns
+})
+// 활성화할 컬럼 목록 END
+
+const columnLabelMap = MEETING_COLUMN_LABEL_MAP
 
 defineExpose({ querySectionRef })
 </script>
@@ -53,30 +64,19 @@ defineExpose({ querySectionRef })
   <CCol col="12">
     <v-divider class="mb-0" />
     <CTable striped hover small responsive align="middle">
-      <colgroup>
-        <col style="width: 5%" />
-        <col v-if="!route.params.projId" style="width: 15%" />
-        <col style="width: 10%" />
-        <col style="width: 10%" />
-        <col :style="{ width: route.params.projId ? '30%' : '20%' }" />
-        <col style="width: 10%" />
-        <col style="width: 10%" />
-        <col style="width: 5%" />
-        <col style="width: 10%" />
-        <col style="width: 5%" />
-      </colgroup>
       <CTableHead>
         <CTableRow class="text-center">
           <CTableHeaderCell scope="col">#</CTableHeaderCell>
-          <CTableHeaderCell v-if="!route.params.projId" scope="col">프로젝트</CTableHeaderCell>
-          <CTableHeaderCell scope="col" class="text-left">상태</CTableHeaderCell>
-          <CTableHeaderCell scope="col">카테고리</CTableHeaderCell>
-          <CTableHeaderCell scope="col">제목</CTableHeaderCell>
-          <CTableHeaderCell scope="col">회의 일시</CTableHeaderCell>
-          <CTableHeaderCell scope="col">작성자</CTableHeaderCell>
-          <CTableHeaderCell scope="col">참석</CTableHeaderCell>
-          <CTableHeaderCell scope="col">등록일</CTableHeaderCell>
-          <CTableHeaderCell scope="col">PDF</CTableHeaderCell>
+          <template v-for="colKey in activeColumns" :key="'head-' + colKey">
+            <CTableHeaderCell
+              scope="col"
+              :class="{
+                'text-left': colKey === 'status' || colKey === 'title',
+              }"
+            >
+              {{ columnLabelMap[colKey] || colKey }}
+            </CTableHeaderCell>
+          </template>
         </CTableRow>
       </CTableHead>
 
@@ -88,7 +88,7 @@ defineExpose({ querySectionRef })
           class="text-center table-row pointer"
           :key="meeting.pk"
         >
-          <MeetingItem :meeting="meeting" />
+          <MeetingItem :meeting="meeting" :columns="activeColumns" />
         </CTableRow>
       </CTableBody>
     </CTable>
