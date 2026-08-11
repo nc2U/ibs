@@ -3,16 +3,16 @@ import { type PropType, ref, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useMeeting } from '@/store/pinia/work_meeting.ts'
 import type { Meeting, MeetingCategory, MeetingFilter } from '@/store/types/work_meeting.ts'
-import type { selectProject } from '@/store/types/work_project.ts'
-import NoData from '@/components/NoData/Index.vue'
-import QuerySection from './QuerySection.vue'
-import MeetingItem from './MeetingItem.vue'
 import Pagination from '@/components/Pagination'
+import MeetingItem from './MeetingItem.vue'
 
 const props = defineProps({
   meetingList: { type: Array as PropType<Meeting[]>, default: () => [] },
   categories: { type: Array as PropType<MeetingCategory[]>, default: () => [] },
-  searchProjects: { type: Array as PropType<selectProject[]>, default: () => [] },
+  columns: {
+    type: Array as PropType<string[]>,
+    default: () => ['name', 'slug', 'description'],
+  },
   page: { type: Number, default: 1 },
 })
 
@@ -50,23 +50,9 @@ defineExpose({ querySectionRef })
 </script>
 
 <template>
-  <!-- 검색 조건 영역 -->
-  <CRow class="mb-1">
-    <CCol col="12">
-      <QuerySection
-        ref="querySectionRef"
-        :categories="categories"
-        :search-projects="searchProjects"
-        @filter-submit="filterSubmit"
-      />
-    </CCol>
-  </CRow>
-
-  <NoData v-if="!meetingList.length" />
-
-  <CCol v-else col="12">
+  <CCol col="12">
     <v-divider class="mb-0" />
-    <CTable striped hover small responsive>
+    <CTable striped hover small responsive align="middle">
       <colgroup>
         <col style="width: 5%" />
         <col v-if="!route.params.projId" style="width: 15%" />

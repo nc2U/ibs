@@ -7,7 +7,7 @@ import { useWork } from '@/store/pinia/work_project.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import type { MeetingFilter } from '@/store/types/work_meeting.ts'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
-import MeetingList from '@/views/_Work/Manages/Meetings/components/MeetingList.vue'
+import MeetingTable from '@/views/_Work/Manages/Meetings/components/MeetingTable.vue'
 import SavedQueryAside from '@/views/_Work/components/asides/SavedQueryAside.vue'
 import MeetingDetail from '@/views/_Work/Manages/Meetings/components/MeetingDetail.vue'
 import MeetingForm from '@/views/_Work/Manages/Meetings/components/MeetingForm.vue'
@@ -135,7 +135,7 @@ onBeforeMount(fetchMeetings)
 
       <MeetingForm v-if="viewMode === 'form'" />
       <MeetingDetail v-else-if="viewMode === 'detail'" />
-      <MeetingList
+      <MeetingTable
         v-else
         ref="meetingListRef"
         :meeting-list="meetingList"

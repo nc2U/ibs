@@ -6,14 +6,20 @@ import { useWork } from '@/store/pinia/work_project.ts'
 import { useMeeting } from '@/store/pinia/work_meeting.ts'
 import { useCompany } from '@/store/pinia/company.ts'
 import { usePerms } from '@/composables/usePerms.ts'
+import { useTableColumns } from '@/composables/useTableColumns'
 import type { Company } from '@/store/types/settings'
 import type { MeetingFilter } from '@/store/types/work_meeting.ts'
+import ColumnSelector, {
+  type ColumnOption,
+} from '@/views/_Work/components/atomics/ColumnSelector.vue'
 import Loading from '@/components/Loading/Index.vue'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
-import MeetingList from './components/MeetingList.vue'
+import MeetingTable from './components/MeetingTable.vue'
 import SavedQueryAside from '@/views/_Work/components/asides/SavedQueryAside.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
+import QuerySection from '@/views/_Work/Manages/Meetings/components/QuerySection.vue'
+import NoData from '@/components/NoData/Index.vue'
 
 const cBody = ref()
 const comStore = useCompany()
@@ -74,6 +80,23 @@ const onResetQuery = () => {
   }
 }
 
+// Columns Selector
+
+const allColumnsPool: ColumnOption[] = [
+  { key: 'name', label: '이름', fixed: true },
+  { key: 'slug', label: '식별자' },
+  { key: 'description', label: '설명' },
+  { key: 'is_public', label: '공개여부' },
+  { key: 'created', label: '등록일' },
+  { key: 'updated', label: '수정일' },
+]
+
+const { selectedColumns } = useTableColumns('meeting-table-columns', allColumnsPool, [
+  'name',
+  'slug',
+  'description',
+])
+
 const loading = ref<boolean>(true)
 
 const initData = async () => {
@@ -120,14 +143,32 @@ watch(
         </CCol>
       </CRow>
 
+      <!-- 검색 조건 영역 -->
+      <CRow class="mb-1">
+        <CCol col="12">
+          <QuerySection
+            ref="querySectionRef"
+            :categories="categories"
+            :search-projects="allReadableProjects"
+            @filter-submit="onFilterSubmit"
+          >
+            <template #option>
+              <ColumnSelector v-model="selectedColumns" :all-columns="allColumnsPool" />
+            </template>
+          </QuerySection>
+        </CCol>
+      </CRow>
+
+      <NoData v-if="!meetingList.length" />
+
       <!-- 전역 회의 관리 목록 -->
-      <MeetingList
+      <MeetingTable
+        v-else
         ref="meetingListRef"
         :meeting-list="meetingList"
         :categories="categories"
-        :search-projects="allReadableProjects"
+        :columns="selectedColumns"
         :page="page"
-        @filter-submit="onFilterSubmit"
         @page-select="onPageSelect"
       />
     </template>
