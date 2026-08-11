@@ -13,6 +13,25 @@ const props = defineProps({
 
 const { can, canViewUser, PERM } = usePerms()
 const canIssueRead = computed(() => can(PERM.ISSUE_READ) && props.issue.project?.slug)
+
+const priorityColor = computed(() => {
+  let color = 'blue-grey-lighten-2'
+  if (props.issue?.priority.pk === 2) color = 'cyan-accent-4'
+  if (props.issue?.priority.pk === 3) color = 'deep-orange-lighten-1'
+  if (props.issue?.priority.pk === 4) color = 'deep-orange-darken-4'
+  if (props.issue?.priority.pk === 5) color = 'pink-darken-4'
+  return color
+})
+
+const statusColor = computed(() => {
+  let color = 'indigo-lighten-5'
+  if (props.issue?.status.pk === 2) color = 'info'
+  if (props.issue?.status.pk === 3) color = 'warning'
+  if (props.issue?.status.pk === 4) color = 'grey'
+  if (props.issue?.status.pk === 5) color = 'success'
+  if (props.issue?.status.pk === 6) color = 'secondary'
+  return color
+})
 </script>
 
 <template>
@@ -86,29 +105,18 @@ const canIssueRead = computed(() => can(PERM.ISSUE_READ) && props.issue.project?
     <!-- 유형 -->
     <CTableDataCell v-else-if="colKey === 'tracker'">{{ issue.tracker.name }}</CTableDataCell>
 
-    <!-- 상태 -->
-    <CTableDataCell
-      v-else-if="colKey === 'status'"
-      :class="{
-        'text-danger': issue.status.pk === 1,
-        'text-success': issue.status.pk === 3,
-        'text-warning': issue.status.pk === 4,
-      }"
-    >
-      {{ issue.status.name }}
+    <!-- 우선순위 -->
+    <CTableDataCell v-else-if="colKey === 'priority'">
+      <v-chip size="x-small" :color="priorityColor" variant="flat" border>
+        {{ issue.priority.name }}
+      </v-chip>
     </CTableDataCell>
 
-    <!-- 우선순위 -->
-    <CTableDataCell
-      v-else-if="colKey === 'priority'"
-      :class="{
-        'text-grey': issue.priority.pk === 1,
-        'text-warning': issue.priority.pk === 3,
-        'text-danger': [4, 5].includes(issue.priority.pk),
-        bold: issue.priority.pk === 5,
-      }"
-    >
-      {{ issue.priority.name }}
+    <!-- 상태 -->
+    <CTableDataCell v-else-if="colKey === 'status'" class="text-start">
+      <v-chip size="x-small" :color="statusColor" variant="flat" border>
+        {{ issue.status.name }}
+      </v-chip>
     </CTableDataCell>
 
     <!-- 범주 -->

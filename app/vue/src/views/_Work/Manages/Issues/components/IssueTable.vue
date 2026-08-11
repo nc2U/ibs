@@ -63,14 +63,6 @@ const pageSelect = (page: number) => emit('page-select', page)
               {{ ISSUE_COLUMN_LABEL_MAP[colKey] || colKey }}
             </CTableHeaderCell>
           </template>
-          <!--          <CTableHeaderCell v-if="!route.params.projId" scope="col">프로젝트</CTableHeaderCell>-->
-          <!--          <CTableHeaderCell scope="col">유형</CTableHeaderCell>-->
-          <!--          <CTableHeaderCell scope="col">상태</CTableHeaderCell>-->
-          <!--          <CTableHeaderCell scope="col">우선순위</CTableHeaderCell>-->
-          <!--          <CTableHeaderCell scope="col">단계</CTableHeaderCell>-->
-          <!--          <CTableHeaderCell scope="col">제목</CTableHeaderCell>-->
-          <!--          <CTableHeaderCell scope="col">담당자</CTableHeaderCell>-->
-          <!--          <CTableHeaderCell scope="col">변경</CTableHeaderCell>-->
           <CTableHeaderCell scope="col"></CTableHeaderCell>
         </CTableRow>
       </CTableHead>
