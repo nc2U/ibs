@@ -52,6 +52,14 @@ class IssueLinkInIssueSerializer(serializers.ModelSerializer):
         fields = ('pk', 'link', 'name', 'hit', 'created', 'creator')
 
 
+class SimpleIssueInIssueSerializer(serializers.ModelSerializer):
+    tracker = serializers.SlugRelatedField(slug_field='name', read_only=True)
+
+    class Meta:
+        model = Issue
+        fields = ('pk', 'tracker', 'subject', 'is_private')
+
+
 class IssueInIssueSerializer(serializers.ModelSerializer):
     project = SimpleIssueProjectSerializer(read_only=True)
     tracker = TrackerInIssueProjectSerializer(read_only=True)
@@ -87,6 +95,7 @@ class IssueSerializer(serializers.ModelSerializer):
     status = IssueStatusInIssueSerializer(read_only=True)
     priority = CodePriorityInIssueSerializer(read_only=True)
     fixed_version = VersionInIssueSerializer(read_only=True)
+    parent = SimpleIssueInIssueSerializer(read_only=True)
     assigned_to = SimpleUserSerializer(read_only=True)
     watchers = SimpleUserSerializer(many=True, read_only=True)
     files = IssueFileInIssueSerializer(many=True, read_only=True)
@@ -302,6 +311,9 @@ class IssueSerializer(serializers.ModelSerializer):
         assigned_to = self.initial_data.get('assigned_to', None)
         assigned_to = User.objects.get(pk=assigned_to) if assigned_to else None
 
+        parent_id = self.initial_data.get('parent', None)
+        parent = Issue.objects.filter(pk=parent_id).first() if parent_id else None
+
         # Pop 'watchers' from validated_data to avoid KeyError
         issue = Issue.objects.create(project=project,
                                      tracker=tracker,
@@ -309,6 +321,7 @@ class IssueSerializer(serializers.ModelSerializer):
                                      priority=priority,
                                      fixed_version_id=fixed_version,
                                      assigned_to=assigned_to,
+                                     parent=parent,
                                      **validated_data)
         # Set the watchers of the instance to the list of watchers
         creator = self.context['request'].user
@@ -380,6 +393,12 @@ class IssueSerializer(serializers.ModelSerializer):
         if 'fixed_version' in self.initial_data:
             fixed_version = self.initial_data.get('fixed_version')
             instance.fixed_version = Version.objects.get(pk=fixed_version) if fixed_version else None
+
+        if 'parent' in self.initial_data:
+            parent_id = self.initial_data.get('parent', None)
+            if parent_id and str(parent_id) == str(instance.pk):
+                raise serializers.ValidationError({'parent': '자기 자신을 상위 업무로 지정할 수 없습니다.'})
+            instance.parent = Issue.objects.filter(pk=parent_id).first() if parent_id else None
 
         if 'assigned_to' in self.initial_data:
             assigned_to_id = self.initial_data.get('assigned_to', None)

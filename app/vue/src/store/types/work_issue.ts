@@ -129,7 +129,7 @@ export interface Issue {
   category: number | null
   fixed_version: { pk: number; name: string; description: string } | null
   assigned_to: SimpleUser | null
-  parent: number | null
+  parent: { pk: number; tracker: string; subject: string; is_private: boolean } | null
   watchers: SimpleUser[]
   is_private: boolean
   expected_duration: string | null

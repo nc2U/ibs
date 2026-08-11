@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed, type PropType } from 'vue'
 import { DEFAULT_ISSUE_COLUMNS } from '@/views/_Work/Manages/Issues/constants.ts'
-import { timeFormat } from '@/utils/baseMixins.ts'
+import { cutString, timeFormat } from '@/utils/baseMixins.ts'
 import { usePerms } from '@/composables/usePerms.ts'
 import type { Issue } from '@/store/types/work_issue.ts'
 import IssueDropDown from './IssueDropDown.vue'
@@ -59,7 +59,29 @@ const canIssueRead = computed(() => can(PERM.ISSUE_READ) && props.issue.project?
     </CTableDataCell>
 
     <!-- 상위업무 -->
-    <CTableDataCell v-else-if="colKey === 'parent'"></CTableDataCell>
+    <CTableDataCell v-else-if="colKey === 'parent'" class="text-left truncate">
+      <span v-if="issue?.parent?.pk">
+        <v-icon
+          v-if="issue?.parent?.is_private"
+          icon="mdi-lock"
+          size="x-small"
+          color="warning"
+          class="mr-2"
+        />
+        <router-link
+          v-if="canIssueRead"
+          :to="{
+            name: '(업무) - 보기',
+            params: { projId: issue.project.slug, issueId: issue?.parent?.pk },
+          }"
+        >
+          {{ cutString(issue?.parent?.subject, 16) }}
+        </router-link>
+        <span v-else>
+          {{ cutString(issue?.parent?.subject, 16) }}
+        </span>
+      </span>
+    </CTableDataCell>
 
     <!-- 유형 -->
     <CTableDataCell v-else-if="colKey === 'tracker'">{{ issue.tracker.name }}</CTableDataCell>
