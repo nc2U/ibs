@@ -14,7 +14,14 @@ export const ALL_MEETING_COLUMNS: ColumnOption[] = [
 ]
 
 // 기본 선택 컬럼 키 목록
-export const DEFAULT_MEETING_COLUMNS: string[] = ALL_MEETING_COLUMNS.map(col => col.key)
+export const DEFAULT_MEETING_COLUMNS: string[] = [
+  'title',
+  'project',
+  'status',
+  'category',
+  'meeting_date',
+  'pdf',
+]
 
 // 키-라벨 매핑 객체 (MeetingTable 헤더용)
 export const MEETING_COLUMN_LABEL_MAP: Record<string, string> = Object.fromEntries(

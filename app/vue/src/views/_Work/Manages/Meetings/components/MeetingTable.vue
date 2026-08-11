@@ -1,9 +1,9 @@
 <script lang="ts" setup>
 import { computed, type PropType, ref, watchEffect } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useMeeting } from '@/store/pinia/work_meeting.ts'
-import type { Meeting, MeetingCategory } from '@/store/types/work_meeting.ts'
 import { DEFAULT_MEETING_COLUMNS, MEETING_COLUMN_LABEL_MAP } from '../constants'
+import { useMeeting } from '@/store/pinia/work_meeting.ts'
+import { useRoute, useRouter } from 'vue-router'
+import type { Meeting, MeetingCategory } from '@/store/types/work_meeting.ts'
 import Pagination from '@/components/Pagination'
 import MeetingItem from './MeetingItem.vue'
 
@@ -55,8 +55,6 @@ const activeColumns = computed(() => {
 })
 // 활성화할 컬럼 목록 END
 
-const columnLabelMap = MEETING_COLUMN_LABEL_MAP
-
 defineExpose({ querySectionRef })
 </script>
 
@@ -74,7 +72,7 @@ defineExpose({ querySectionRef })
                 'text-left': colKey === 'status' || colKey === 'title',
               }"
             >
-              {{ columnLabelMap[colKey] || colKey }}
+              {{ MEETING_COLUMN_LABEL_MAP[colKey] || colKey }}
             </CTableHeaderCell>
           </template>
         </CTableRow>

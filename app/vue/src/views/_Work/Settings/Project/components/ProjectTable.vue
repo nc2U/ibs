@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { computed, type PropType } from 'vue'
+import { DEFAULT_PROJECT_COLUMNS, PROJECT_COLUMN_LABEL_MAP } from '../constants.ts'
 import { useAccount } from '@/store/pinia/account.ts'
 import { markdownRender } from '@/utils/helper.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
@@ -9,7 +10,7 @@ defineProps({
   issueProjectsFlat: { type: Array as PropType<IssueProject[]>, default: () => [] },
   columns: {
     type: Array as PropType<string[]>,
-    default: () => ['name', 'slug', 'description'],
+    default: () => DEFAULT_PROJECT_COLUMNS,
   },
 })
 
@@ -18,15 +19,6 @@ const userInfo = computed(() => accStore.userInfo)
 
 const isOwnProject = (project: IssueProject) =>
   project.all_members?.map(m => m.user.pk).includes(userInfo?.value?.pk as number)
-
-const columnLabelMap: Record<string, string> = {
-  name: '이름',
-  slug: '식별자',
-  description: '설명',
-  is_public: '공개여부',
-  created: '등록일',
-  updated: '수정일',
-}
 </script>
 
 <template>
@@ -42,7 +34,7 @@ const columnLabelMap: Record<string, string> = {
               'text-left': colKey === 'description',
             }"
           >
-            {{ columnLabelMap[colKey] || colKey }}
+            {{ PROJECT_COLUMN_LABEL_MAP[colKey] || colKey }}
           </CTableHeaderCell>
         </template>
         <CTableHeaderCell scope="col"></CTableHeaderCell>
@@ -119,12 +111,18 @@ const columnLabelMap: Record<string, string> = {
           </CTableDataCell>
 
           <!-- 등록일 -->
-          <CTableDataCell v-else-if="colKey === 'created'" class="text-center text-caption text-muted">
+          <CTableDataCell
+            v-else-if="colKey === 'created'"
+            class="text-center text-caption text-muted"
+          >
             {{ proj.created ? proj.created.substring(0, 10) : '-' }}
           </CTableDataCell>
 
           <!-- 수정일 -->
-          <CTableDataCell v-else-if="colKey === 'updated'" class="text-center text-caption text-muted">
+          <CTableDataCell
+            v-else-if="colKey === 'updated'"
+            class="text-center text-caption text-muted"
+          >
             {{ proj.updated ? proj.updated.substring(0, 10) : '-' }}
           </CTableDataCell>
         </template>

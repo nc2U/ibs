@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref, watch } from 'vue'
 import { pageTitle, navMenu } from '@/views/_Work/_menu/headermixin2'
+import { ALL_PROJECT_COLUMNS, DEFAULT_PROJECT_COLUMNS } from './constants'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useRoute } from 'vue-router'
 import { usePerms } from '@/composables/usePerms.ts'
@@ -16,6 +17,7 @@ import QuerySection from '@/views/_Work/Manages/Projects/components/QuerySection
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 import ProjectTable from './components/ProjectTable.vue'
 import NoData from '@/components/NoData/Index.vue'
+import { DEFAULT_MEETING_COLUMNS } from '@/views/_Work/Manages/Meetings/constants.ts'
 
 const cBody = ref()
 const sideNavCall = () => cBody.value.toggle()
@@ -29,21 +31,13 @@ const workStore = useWork()
 const projectResultsFlat = computed<IssueProject[]>(() => workStore.projectResultsFlat)
 const allReadableProjects = computed(() => workStore.getAllReadableProjects)
 
-// Columns Selector
-const allColumnsPool: ColumnOption[] = [
-  { key: 'name', label: '이름', fixed: true },
-  { key: 'slug', label: '식별자' },
-  { key: 'description', label: '설명' },
-  { key: 'is_public', label: '공개여부' },
-  { key: 'created', label: '등록일' },
-  { key: 'updated', label: '수정일' },
-]
-
-const { selectedColumns } = useTableColumns('project-table-columns', allColumnsPool, [
-  'name',
-  'slug',
-  'description',
-])
+// Columns Selector Start
+const { selectedColumns } = useTableColumns(
+  'project-table-columns',
+  ALL_PROJECT_COLUMNS,
+  DEFAULT_PROJECT_COLUMNS,
+)
+// Columns Selector End!
 
 // 검색양식 관련 계산 및 메서드
 const filterSubmit = (payload: ProjectFilter) => {
@@ -89,7 +83,7 @@ onBeforeMount(async () => {
         @filter-submit="filterSubmit"
       >
         <template #option>
-          <ColumnSelector v-model="selectedColumns" :all-columns="allColumnsPool" />
+          <ColumnSelector v-model="selectedColumns" :all-columns="ALL_PROJECT_COLUMNS" />
         </template>
       </QuerySection>
 
