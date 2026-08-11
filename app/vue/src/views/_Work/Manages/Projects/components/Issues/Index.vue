@@ -166,7 +166,7 @@ watch(
 
 // Columns Selector Start
 const { selectedColumns } = useTableColumns(
-  'issue-table-columns',
+  'project-issue-table-columns',
   ALL_ISSUE_COLUMNS,
   DEFAULT_ISSUE_COLUMNS,
 )

@@ -68,11 +68,10 @@ const onResetQuery = () => {
 }
 
 // Columns Selector Start
-const { selectedColumns } = useTableColumns(
-  'issue-table-columns',
-  ALL_ISSUE_COLUMNS,
-  DEFAULT_ISSUE_COLUMNS,
-)
+const { selectedColumns } = useTableColumns('global-issue-table-columns', ALL_ISSUE_COLUMNS, [
+  'project',
+  ...DEFAULT_ISSUE_COLUMNS,
+])
 // Columns Selector End!
 
 const loading = ref<boolean>(true)
