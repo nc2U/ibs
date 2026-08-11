@@ -87,5 +87,9 @@ export interface MeetingFilter {
   created_after?: string
   created_before?: string
   search?: string
+  project__my_project?: boolean
+  project__bookmark?: boolean
+  project_status?: string
+  project_status__exclude?: string
   page?: number
 }

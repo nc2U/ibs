@@ -58,12 +58,38 @@ class MeetingFilter(FilterSet):
     is_confirmed = BooleanFilter(field_name='is_confirmed', label='확정 여부')
     search = CharFilter(method='search_filter', label='검색어(제목/의제/내용/결정사항)')
 
+    project__my_project = BooleanFilter(method='filter_my_project', label='내 프로젝트 회의 여부')
+    project__bookmark = BooleanFilter(method='filter_bookmark', label='북마크 프로젝트 회의 여부')
+    project_status = CharFilter(field_name='project__status', lookup_expr='exact', label='프로젝트상태-일치')
+    project_status__exclude = CharFilter(field_name='project__status', exclude=True, label='프로젝트상태-제외')
+
+    def filter_my_project(self, queryset, name, value):
+        if self.request and self.request.user.is_authenticated:
+            user = self.request.user
+            if user.is_superuser or getattr(user, 'work_manager', False):
+                return queryset
+            if value:
+                return queryset.filter(project__members__user=user)
+            else:
+                return queryset.exclude(project__members__user=user)
+        return queryset
+
+    def filter_bookmark(self, queryset, name, value):
+        if self.request and self.request.user.is_authenticated:
+            user = self.request.user
+            if value:
+                return queryset.filter(project__bookmarked_by__user=user)
+            else:
+                return queryset.exclude(project__bookmarked_by__user=user)
+        return queryset
+
     class Meta:
         model = Meeting
         fields = (
             'project', 'project__slug', 'category', 'status', 'status__exclude', 'is_confirmed',
             'creator', 'creator__exclude', 'attendees', 'attendees__exclude',
-            'meeting_date', 'created', 'search',
+            'meeting_date', 'created', 'search', 'project__my_project', 'project__bookmark',
+            'project_status', 'project_status__exclude',
         )
 
     @staticmethod

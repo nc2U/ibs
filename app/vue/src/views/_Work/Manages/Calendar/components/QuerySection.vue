@@ -345,9 +345,20 @@ const filterSubmit = () => {
   }
 
   // 프로젝트 (체크 박스 활성화시에만 적용)
-  if (enabledFields.value.includes('project') && form.value.project) {
-    if (cond.value.project === 'is') payload.project = form.value.project
-    else if (cond.value.project === 'exclude') payload.project__exclude = form.value.project
+  if (enabledFields.value.includes('project')) {
+    if (form.value.project === '') {
+      if (cond.value.project === 'is') payload.project__my_project = true
+      else if (cond.value.project === 'exclude') payload.project__my_project = false
+    } else if (form.value.project === 'bookmark') {
+      if (cond.value.project === 'is') payload.project__bookmark = true
+      else if (cond.value.project === 'exclude') payload.project__bookmark = false
+    } else if (form.value.project === 'closed') {
+      if (cond.value.project === 'is') payload.project_status = '2'
+      else if (cond.value.project === 'exclude') payload.project_status__exclude = '2'
+    } else if (form.value.project) {
+      if (cond.value.project === 'is') payload.project = form.value.project
+      else if (cond.value.project === 'exclude') payload.project__exclude = form.value.project
+    }
   }
 
   // ===== 업무(Issue) 필터 =====
@@ -632,6 +643,8 @@ defineExpose({ applyQuery, resetFilter })
                     v-model="form.project"
                     :issue-project-list="searchProjects"
                     default-title="<< 내 프로젝트 >>"
+                    show-book-mark-option
+                    show-closed-option
                     value-type="slug"
                     size="sm"
                   />

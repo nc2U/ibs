@@ -345,8 +345,20 @@ const filterSubmit = () => {
 
   if (route.params.projId) {
     payload.project = route.params.projId as string
-  } else if (enabledFields.value.includes('project') && form.project) {
-    payload.project = form.project
+  } else if (enabledFields.value.includes('project')) {
+    if (form.project === '') {
+      if (cond.project === 'is') payload.project__my_project = true
+      else if (cond.project === 'exclude') payload.project__my_project = false
+    } else if (form.project === 'bookmark') {
+      if (cond.project === 'is') payload.project__bookmark = true
+      else if (cond.project === 'exclude') payload.project__bookmark = false
+    } else if (form.project === 'closed') {
+      if (cond.project === 'is') payload.project_status = '2'
+      else if (cond.project === 'exclude') payload.project_status__exclude = '2'
+    } else if (form.project) {
+      if (cond.project === 'is') payload.project = form.project
+      else if (cond.project === 'exclude') payload.project = form.project // backend serializer or filter
+    }
   }
 
   // 상태 처리 (enabledFields에 'status'가 포함되어 있을 때만 적용)
@@ -555,6 +567,8 @@ defineExpose({ applyQuery, resetFilter })
                       v-model="form.project"
                       :issue-project-list="searchProjects"
                       default-title="<< 내 프로젝트 >>"
+                      show-book-mark-option
+                      show-closed-option
                       value-type="slug"
                       size="sm"
                     />
