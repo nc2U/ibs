@@ -54,20 +54,20 @@ const canAccessSetting = computed(
 const projectNavMenus = computed(() => {
   const menus = [
     { no: 1, menu: '(개요)' },
-    { no: 3, menu: '(업무실행내역)' },
+    { no: 2, menu: '(업무실행내역)' },
   ]
 
   const project = currentProject.value
 
   if (project) {
     const modules = project.module
-    if (modules?.meeting) menus.push({ no: 2, menu: '(회의)' })
+    if (modules?.meeting) menus.push({ no: 3, menu: '(회의)' })
     if (project.versions?.length) menus.push({ no: 4, menu: '(로드맵)' })
     if (modules?.issue) menus.push({ no: 5, menu: '(업무)' })
-    if (modules?.calendar) menus.push({ no: 7, menu: '(캘린더)' })
-    if (modules?.news) menus.push({ no: 8, menu: '(공지)' })
-    if (modules?.document) menus.push({ no: 9, menu: '(문서)' })
-    if (modules?.forum && project.forums?.length) menus.push({ no: 10, menu: '(게시판)' })
+    if (modules?.calendar) menus.push({ no: 6, menu: '(캘린더)' })
+    if (modules?.news) menus.push({ no: 7, menu: '(공지)' })
+    if (modules?.document) menus.push({ no: 8, menu: '(문서)' })
+    if (modules?.forum && project.forums?.length) menus.push({ no: 9, menu: '(게시판)' })
 
     // 권한 검사: 프로젝트 설정에 접근 가능한 메뉴가 하나라도 있는지 확인
     if (project.status !== '9' && canAccessSetting.value) menus.push({ no: 99, menu: '(설정)' })
