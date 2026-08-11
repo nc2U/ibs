@@ -16,6 +16,7 @@ const props = defineProps({
     type: String as PropType<'project' | 'calendar' | 'issue' | 'meeting'>,
     default: 'project',
   },
+  showLockedOption: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['filter-submit', 'change-view-mode'])
@@ -126,10 +127,6 @@ const form = ref<ProjectFilter & Record<string, any>>({
 
 const selectedProjectVal = ref<number | string>('')
 const selectedParentVal = ref<number | string>('')
-
-const projectDefaultTitle = computed(() =>
-  form.value.bookmark ? '<< 내 북마크 >>' : '<< 내 프로젝트 >>',
-)
 
 const filterFieldsConfig = computed(() => [
   {
@@ -261,6 +258,16 @@ const filterSubmit = () => {
       if (selectedProjectVal.value === '') {
         if (operator === 'is') filterData.my_project = true
         else if (operator === 'exclude') filterData.my_project = false
+      } else if (selectedProjectVal.value === 'bookmark') {
+        delete filterData.status
+        delete filterData.status__exclude
+        if (operator === 'is') filterData.bookmark = true
+        else if (operator === 'exclude') filterData.bookmark = false
+      } else if (selectedProjectVal.value === 'closed') {
+        delete filterData.status
+        delete filterData.status__exclude
+        if (operator === 'is') filterData.status = '2'
+        else if (operator === 'exclude') filterData.status__exclude = '2'
       } else {
         delete filterData.status
         delete filterData.status__exclude
@@ -409,7 +416,7 @@ const applyQuery = (query: any) => {
           if (!searchCond.value.includes('project')) searchCond.value.push('project')
           if (!enabledFields.value.includes('project')) enabledFields.value.push('project')
           cond.value.project = 'is'
-          selectedProjectVal.value = ''
+          selectedProjectVal.value = 'bookmark'
         }
       }
       if (f.my_project !== undefined) {
@@ -476,6 +483,7 @@ defineExpose({ applyQuery, resetFilter })
                 <CFormSelect v-model="form.status" size="sm">
                   <option value="1">사용중</option>
                   <option value="2">닫힘</option>
+                  <option v-if="showLockedOption" value="9">잠금보관</option>
                 </CFormSelect>
               </CCol>
             </CRow>
@@ -503,7 +511,9 @@ defineExpose({ applyQuery, resetFilter })
                     <IssueProjectSelector
                       v-model="selectedProjectVal"
                       :issue-project-list="allReadableProjects"
-                      :default-title="projectDefaultTitle"
+                      default-title="<< 내 프로젝트 >>"
+                      show-book-mark-option
+                      show-closed-option
                       size="sm"
                     />
                   </template>

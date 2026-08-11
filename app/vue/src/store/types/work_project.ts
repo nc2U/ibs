@@ -77,8 +77,8 @@ export interface ProjectFilter {
   parent__isnull?: boolean
   parent?: string
   parent__exclude?: string
-  status?: '1' | '9'
-  status__exclude?: '1' | '9'
+  status?: '1' | '2' | '9'
+  status__exclude?: '1' | '2' | '9'
   project?: string
   project__exclude?: string
   is_public?: '1' | '0'

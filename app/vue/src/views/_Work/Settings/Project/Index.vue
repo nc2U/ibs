@@ -100,6 +100,7 @@ onBeforeMount(async () => {
       <QuerySection
         ref="querySectionRef"
         :all-readable-projects="allReadableProjects"
+        show-locked-option
         @filter-submit="filterSubmit"
       >
         <template #option>
