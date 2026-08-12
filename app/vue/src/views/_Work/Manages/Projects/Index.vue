@@ -23,7 +23,7 @@ const company = computed<Company | null>(() => comStore.company)
 const comName = computed(() => company?.value?.name)
 
 const headerTitle = computed(() =>
-  routeName.value.includes('프로젝트') ? comName.value : currentProject.value?.name,
+  routeName.value.includes('워크스페이스') ? comName.value : currentProject.value?.name,
 )
 
 const navMenus = computed(() => (!allReadableProjectsFlat.value.length ? navMenu1 : navMenu2))
@@ -69,7 +69,7 @@ const projectNavMenus = computed(() => {
     if (modules?.document) menus.push({ no: 8, menu: '(문서)' })
     if (modules?.forum && project.forums?.length) menus.push({ no: 9, menu: '(게시판)' })
 
-    // 권한 검사: 프로젝트 설정에 접근 가능한 메뉴가 하나라도 있는지 확인
+    // 권한 검사: 워크스페이스 설정에 접근 가능한 메뉴가 하나라도 있는지 확인
     if (project.status !== '9' && canAccessSetting.value) menus.push({ no: 99, menu: '(설정)' })
   }
 
