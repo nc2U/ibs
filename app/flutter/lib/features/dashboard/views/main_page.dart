@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../auth/services/auth_service.dart';
 import '../../auth/views/login_page.dart';
 
@@ -19,7 +20,7 @@ class _MainPageState extends State<MainPage> {
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('로그아웃', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: const Text('IBS워크스페이스에서 로그아웃 하시겠습니까?'),
+        content: const Text('IBS 워크스페이스에서 로그아웃 하시겠습니까?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -52,22 +53,22 @@ class _MainPageState extends State<MainPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A), // Deep Premium Dark Background
+      backgroundColor: const Color(0xFF202336), // 웹 사이드바 브랜드 컬러
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F172A),
+        backgroundColor: const Color(0xFF202336),
         foregroundColor: Colors.white,
         elevation: 0,
         titleSpacing: 20,
         title: Row(
           children: [
-            Image.asset(
-              'assets/images/logo.png',
-              width: 32,
-              height: 32,
+            SvgPicture.asset(
+              'assets/images/sygnet.svg',
+              width: 28,
+              height: 28,
             ),
             const SizedBox(width: 10),
             const Text(
-              'IBS워크스페이스',
+              'IBS 워크스페이스',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
@@ -100,11 +101,11 @@ class _MainPageState extends State<MainPage> {
           });
         },
         type: BottomNavigationBarType.fixed,
-        backgroundColor: const Color(0xFF1E293B),
+        backgroundColor: const Color(0xFF191B2B), // 약간 더 짙은 하단바
         selectedItemColor: const Color(0xFF38BDF8),
-        unselectedItemColor: const Color(0xFF64748B),
-        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-        unselectedLabelStyle: const TextStyle(fontSize: 12),
+        unselectedItemColor: const Color(0xFF787F9A),
+        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+        unselectedLabelStyle: const TextStyle(fontSize: 11),
         elevation: 12,
         items: const [
           BottomNavigationBarItem(
@@ -118,6 +119,10 @@ class _MainPageState extends State<MainPage> {
           BottomNavigationBarItem(
             icon: Icon(Icons.business_center_rounded),
             label: '프로젝트',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.draw_rounded),
+            label: '전자결재',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.folder_shared_rounded),
@@ -137,6 +142,8 @@ class _MainPageState extends State<MainPage> {
       case 2:
         return const Center(child: Text('프로젝트 관리 (Contract / Ledger)', style: TextStyle(color: Colors.white)));
       case 3:
+        return const Center(child: Text('전자 결재 (Approval Core)', style: TextStyle(color: Colors.white)));
+      case 4:
         return const Center(child: Text('공용 문서 섹션 (Docs)', style: TextStyle(color: Colors.white)));
       default:
         return _buildHomeTab();
@@ -161,7 +168,7 @@ class _MainPageState extends State<MainPage> {
                 accentColor: const Color(0xFF38BDF8), // Light Electric Blue
                 gradientColors: [
                   const Color(0xFF1E3A8A), // Deep Sapphire Blue
-                  const Color(0xFF1E293B),
+                  const Color(0xFF2A2E47), // #202336과 어우러지는 카드 베이스
                 ],
                 badgeText: '할당 업무 3건',
                 onTap: () => setState(() => _selectedIndex = 1),
@@ -177,7 +184,7 @@ class _MainPageState extends State<MainPage> {
                 accentColor: const Color(0xFF34D399), // Emerald Green
                 gradientColors: [
                   const Color(0xFF064E3B), // Deep Forest Emerald
-                  const Color(0xFF1E293B),
+                  const Color(0xFF2A2E47),
                 ],
                 badgeText: '계약 12건',
                 onTap: () => setState(() => _selectedIndex = 2),
@@ -193,23 +200,23 @@ class _MainPageState extends State<MainPage> {
                 accentColor: const Color(0xFFFBBF24), // Amber Gold
                 gradientColors: [
                   const Color(0xFF78350F), // Deep Warm Amber
-                  const Color(0xFF1E293B),
+                  const Color(0xFF2A2E47),
                 ],
                 badgeText: '미결 5건',
-                onTap: () {},
+                onTap: () => setState(() => _selectedIndex = 3),
               ),
               const SizedBox(height: 16),
 
               // 하단 공용 문서 (Docs) 퀵 바
               InkWell(
-                onTap: () => setState(() => _selectedIndex = 3),
-                borderRadius: BorderRadius.circular(16),
+                onTap: () => setState(() => _selectedIndex = 4),
+                borderRadius: BorderRadius.zero,
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1E293B),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFF334155), width: 1),
+                    color: const Color(0xFF2A2E47),
+                    borderRadius: BorderRadius.zero,
+                    border: Border.all(color: const Color(0xFF3B4061), width: 1),
                   ),
                   child: Row(
                     children: [
@@ -269,7 +276,7 @@ class _MainPageState extends State<MainPage> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.zero,
       child: Container(
         height: 140, // 큼직하고 시원한 높이
         padding: const EdgeInsets.all(20),
@@ -279,7 +286,7 @@ class _MainPageState extends State<MainPage> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.zero,
           border: Border.all(color: accentColor.withOpacity(0.3), width: 1.2),
           boxShadow: [
             BoxShadow(
@@ -320,7 +327,7 @@ class _MainPageState extends State<MainPage> {
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
                             color: accentColor.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.zero,
                             border: Border.all(color: accentColor.withOpacity(0.3)),
                           ),
                           child: Icon(icon, color: accentColor, size: 24),
@@ -356,7 +363,7 @@ class _MainPageState extends State<MainPage> {
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
                         color: accentColor.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.zero,
                         border: Border.all(color: accentColor.withOpacity(0.5)),
                       ),
                       child: Text(
