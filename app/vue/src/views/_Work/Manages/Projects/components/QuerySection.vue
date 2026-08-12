@@ -76,8 +76,8 @@ const searchOptions = reactive([
   {
     options: [
       { value: 'status', label: '상태' },
-      { value: 'project', label: '프로젝트' },
-      { value: 'parent', label: '상위 프로젝트' },
+      { value: 'project', label: '워크스페이스' },
+      { value: 'parent', label: '상위 워크스페이스' },
       { value: 'is_public', label: '공개여부' },
     ],
   },
@@ -131,7 +131,7 @@ const selectedParentVal = ref<number | string>('')
 const filterFieldsConfig = computed(() => [
   {
     key: 'project',
-    label: '프로젝트',
+    label: '워크스페이스',
     type: 'project',
     condOptions: [
       { value: 'is', label: '이다' },
@@ -140,7 +140,7 @@ const filterFieldsConfig = computed(() => [
   },
   {
     key: 'parent',
-    label: '상위 프로젝트',
+    label: '상위 워크스페이스',
     type: 'parent',
     condOptions: [
       { value: 'all', label: '모두' },
@@ -511,7 +511,7 @@ defineExpose({ applyQuery, resetFilter })
                     <IssueProjectSelector
                       v-model="selectedProjectVal"
                       :issue-project-list="allReadableProjects"
-                      default-title="<< 내 프로젝트 >>"
+                      default-title="<< 내 워크스페이스 >>"
                       show-book-mark-option
                       show-closed-option
                       size="sm"

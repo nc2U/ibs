@@ -77,7 +77,7 @@ const isBookMarked = computed(() => props.project?.is_bookmarked)
             <CDropdownItem
               v-if="project?.status === '1' && canSubProjectCreate"
               class="form-text"
-              @click="router.push({ name: '프로젝트 - 추가', query: { parent: project?.pk } })"
+              @click="router.push({ name: '워크스페이스 - 추가', query: { parent: project?.pk } })"
             >
               <span class="text-primary">
                 <v-icon icon="mdi-plus-circle" color="success" size="sm" class="mr-1" />

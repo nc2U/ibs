@@ -4,7 +4,7 @@ import type { selectProject } from '@/store/types/work_project.ts'
 
 defineProps({
   issueProjectList: { type: Array as PropType<selectProject[]>, default: () => [] },
-  defaultTitle: { type: String, default: '전체 프로젝트' },
+  defaultTitle: { type: String, default: '전체 워크스페이스' },
   defaultValue: { type: String, default: '' },
   valueType: { type: String as PropType<'pk' | 'slug'>, default: 'pk' },
   showBookMarkOption: { type: Boolean, default: false },

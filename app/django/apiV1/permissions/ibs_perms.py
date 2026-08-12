@@ -48,7 +48,7 @@ class HqFinancialOfficerPermission(permissions.BasePermission):
 
 class HqProjectModulePermission(permissions.BasePermission):
     """
-    본사 업무 프로젝트(IssueProject type='1') 전용 권한 클래스.
+    본사 업무 워크스페이스(IssueProject type='1') 전용 권한 클래스.
 
     자금/회계(ledger) 는 HqFinancialOfficerPermission이 담당하며, 이 클래스는
     본사 IssueProject에 연결된 문서(docs), 인사관리(hr_work) 등 일반 업무 권한을
@@ -79,13 +79,13 @@ class HqProjectModulePermission(permissions.BasePermission):
 
     @classmethod
     def _get_all_hq_user_permissions(cls, user):
-        """모든 type='1' 본사업무 프로젝트의 권한을 합집합으로 반환"""
+        """모든 type='1' 본사업무 워크스페이스의 권한을 합집합으로 반환"""
         from work.models.project import IssueProject
         all_hq_ips = IssueProject.objects.filter(type='1')
 
         all_perms = set()
         for hq_ip in all_hq_ips:
-            # 각 프로젝트의 권한을 수집
+            # 각 워크스페이스의 권한을 수집
             all_perms.update(set(hq_ip.get_user_permissions(user)))
         return all_perms
 
@@ -98,7 +98,7 @@ class HqProjectModulePermission(permissions.BasePermission):
         project_pk = get_project_pk_from_request(request, view)
         if project_pk:
             issue_project = resolve_issue_project(project_pk, request)
-            # 1-A. 잠금보관(9) 프로젝트는 슈퍼유저를 포함하여 비즈니스 데이터 접근 전면 차단
+            # 1-A. 잠금보관(9) 워크스페이스는 슈퍼유저를 포함하여 비즈니스 데이터 접근 전면 차단
             if is_project_locked(issue_project):
                 return False
 
@@ -120,7 +120,7 @@ class HqProjectModulePermission(permissions.BasePermission):
         if not issue_project:
             return False
 
-        # 6. 닫힘(2) 프로젝트 — 읽기만 허용
+        # 6. 닫힘(2) 워크스페이스 — 읽기만 허용
         if is_project_closed(issue_project) and request.method not in permissions.SAFE_METHODS:
             return False
 
@@ -136,7 +136,7 @@ class HqProjectModulePermission(permissions.BasePermission):
         project_pk = get_project_pk_from_request(request, view)
         issue_project = resolve_issue_project(project_pk, request) if project_pk else None
 
-        # 1-A. 잠금보관(9) 프로젝트는 슈퍼유저를 포함하여 비즈니스 데이터 접근 전면 차단
+        # 1-A. 잠금보관(9) 워크스페이스는 슈퍼유저를 포함하여 비즈니스 데이터 접근 전면 차단
         if is_project_locked(issue_project):
             return False
 
@@ -218,6 +218,7 @@ class IbsModulePermission(ProjectPermission):
         if request is not None:
             setattr(request, cache_key, issue_project)
         return issue_project
+
     def has_permission(self, request, view):
         # 1. 미인증 요청 차단
         if not request.user or not request.user.is_authenticated:
@@ -226,7 +227,7 @@ class IbsModulePermission(ProjectPermission):
         project_pk = get_project_pk_from_request(request, view)
         issue_project = self._resolve_project_issue_project(project_pk, request) if project_pk else None
 
-        # 1-A. 잠금보관(9) 프로젝트는 슈퍼유저를 포함하여 비즈니스 데이터 접근 전면 차단
+        # 1-A. 잠금보관(9) 워크스페이스는 슈퍼유저를 포함하여 비즈니스 데이터 접근 전면 차단
         if is_project_locked(issue_project):
             return False
 
@@ -247,7 +248,8 @@ class IbsModulePermission(ProjectPermission):
         # 5. list 또는 단일 객체 액션 / 안전 메서드 + project 미지정 → has_object_permission 또는 Row-Level Security 에서 필터링 및 검증
         action = getattr(view, 'action', None)
         if not project_pk:
-            if action in ('list', 'retrieve', 'update', 'partial_update', 'destroy') or request.method in permissions.SAFE_METHODS:
+            if action in ('list', 'retrieve', 'update', 'partial_update',
+                          'destroy') or request.method in permissions.SAFE_METHODS:
                 return True
             return False
 
@@ -255,7 +257,7 @@ class IbsModulePermission(ProjectPermission):
         if not issue_project:
             return False
 
-        # 7. 닫힘(2) 프로젝트 — 읽기만 허용
+        # 7. 닫힘(2) 워크스페이스 — 읽기만 허용
         if is_project_closed(issue_project) and request.method not in permissions.SAFE_METHODS:
             return False
 
@@ -286,7 +288,7 @@ class IbsModulePermission(ProjectPermission):
 
         issue_project = self._resolve_project_issue_project(project_pk, request)
 
-        # 1-A. 잠금보관(9) 프로젝트는 슈퍼유저를 포함하여 비즈니스 데이터 접근 전면 차단
+        # 1-A. 잠금보관(9) 워크스페이스는 슈퍼유저를 포함하여 비즈니스 데이터 접근 전면 차단
         if is_project_locked(issue_project):
             return False
 

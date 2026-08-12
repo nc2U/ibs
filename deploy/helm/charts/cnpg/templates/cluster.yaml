@@ -81,6 +81,10 @@ spec:
       {{- if .Values.bootstrap.initdb.postInitSQL }}
       postInitSQL:
         {{- toYaml .Values.bootstrap.initdb.postInitSQL | nindent 8 }}
+      {{- else }}
+      postInitSQL:
+        - "CREATE EXTENSION IF NOT EXISTS pg_trgm;"
+        - "CREATE EXTENSION IF NOT EXISTS btree_gin;"
       {{- end }}
       {{- if .Values.bootstrap.initdb.postInitApplicationSQL }}
       postInitApplicationSQL:
@@ -98,6 +102,7 @@ spec:
         - "ALTER DEFAULT PRIVILEGES IN SCHEMA {{ $dbName }} GRANT ALL ON SEQUENCES TO {{ $dbUser }};"
         - "ALTER DATABASE {{ $dbName }} SET search_path TO {{ $dbName }}, public;"
         - "CREATE EXTENSION IF NOT EXISTS pg_trgm;"
+        - "CREATE EXTENSION IF NOT EXISTS btree_gin;"
       {{- end }}
     {{- end }}
 

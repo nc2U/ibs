@@ -578,7 +578,7 @@ defineExpose({ applyQuery, resetFilter })
                     <IssueProjectSelector
                       v-model="form.project"
                       :issue-project-list="searchProjects"
-                      default-title="<< 내 프로젝트 >>"
+                      default-title="<< 내 워크스페이스 >>"
                       show-book-mark-option
                       show-closed-option
                       value-type="slug"

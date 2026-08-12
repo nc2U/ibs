@@ -152,14 +152,14 @@ const onSubmit = async (event: Event) => {
     event.stopPropagation()
     validated.value = true
   } else {
-    localStorage.setItem('workSettingMenu', '프로젝트')
+    localStorage.setItem('workSettingMenu', '워크스페이스')
 
     if (props.project?.pk) {
       // 0. 현재 설정된 공개 여부 값을 미리 캡처 (onUpdated/dataSetup에 의한 덮어쓰기 방지)
       const targetPublic = form.is_public
       const originPublic = props.project.is_public
 
-      // 1. 일반 프로젝트 정보 업데이트 (is_public은 제외하고 업데이트)
+      // 1. 일반 워크스페이스 정보 업데이트 (is_public은 제외하고 업데이트)
       const { is_public, ...projectData } = form
       await workStore.updateIssueProject({ ...projectData, ...module } as any)
 
@@ -206,7 +206,7 @@ const dataSetup = () => {
 const types = ref([
   { value: '1', label: '본사관리' },
   { value: '2', label: '부동산개발' },
-  { value: '3', label: '기타 프로젝트' },
+  { value: '3', label: '기타 워크스페이스' },
 ])
 
 onMounted(() => dataSetup())
@@ -223,7 +223,7 @@ onBeforeMount(() => {
 <template>
   <CRow v-if="!project" class="py-2">
     <CCol>
-      <h5>새 프로젝트</h5>
+      <h5>새 워크스페이스</h5>
     </CCol>
   </CRow>
 
@@ -280,7 +280,7 @@ onBeforeMount(() => {
               @keydown="getSlug"
               maxlength="100"
               required
-              placeholder="프로젝트 이름"
+              placeholder="워크스페이스 이름"
             />
           </CCol>
         </CRow>
@@ -288,7 +288,7 @@ onBeforeMount(() => {
         <CRow class="mb-3">
           <CFormLabel class="col-form-label text-right col-2">설명</CFormLabel>
           <CCol>
-            <MdEditor v-model="form.description" placeholder="프로젝트 설명" />
+            <MdEditor v-model="form.description" placeholder="워크스페이스 설명" />
           </CCol>
         </CRow>
 
@@ -298,7 +298,7 @@ onBeforeMount(() => {
             <CFormInput
               v-model="form.slug"
               maxlength="100"
-              placeholder="프로젝트 식별자 (영문, 숫자, - 문자만 사용)"
+              placeholder="워크스페이스 식별자 (영문, 숫자, - 문자만 사용)"
               :disabled="!!project?.slug"
               required
               text="1에서 100글자 소문자(a-z), 숫자, 대쉬(-)와 밑줄(_)만 가능합니다. 식별자 저장 후에는 수정할 수 없습니다."
@@ -316,15 +316,15 @@ onBeforeMount(() => {
         <CRow v-if="canProjectPublic" class="mb-3">
           <CFormLabel class="col-form-label text-right col-2">공개여부</CFormLabel>
           <CCol style="padding-top: 5px">
-            <CFormSwitch v-model="form.is_public" id="is_public" label="프로젝트 공개 여부" />
+            <CFormSwitch v-model="form.is_public" id="is_public" label="워크스페이스 공개 여부" />
             <div class="form-text">
-              공개 프로젝트는 네트워크의 모든 사용자가 접속할 수 있습니다.
+              공개 워크스페이스는 네트워크의 모든 사용자가 접속할 수 있습니다.
             </div>
           </CCol>
         </CRow>
 
         <CRow class="mb-3">
-          <CFormLabel class="col-form-label text-right col-2">상위 프로젝트</CFormLabel>
+          <CFormLabel class="col-form-label text-right col-2">상위 워크스페이스</CFormLabel>
           <CCol>
             <IssueProjectSelector
               v-model.number.lazy="form.parent"
@@ -336,12 +336,14 @@ onBeforeMount(() => {
         </CRow>
 
         <CRow class="mb-3">
-          <CFormLabel class="col-form-label text-right col-2">상위 프로젝트 구성원 상속</CFormLabel>
+          <CFormLabel class="col-form-label text-right col-2">
+            상위 워크스페이스 구성원 상속
+          </CFormLabel>
           <CCol class="pt-2">
             <CFormSwitch
               v-model="form.is_inherit_members"
               id="is_inherit_members"
-              label="상위 프로젝트 구성원 상속 여부"
+              label="상위 워크스페이스 구성원 상속 여부"
               :disabled="!form.parent"
             />
           </CCol>

@@ -77,7 +77,7 @@ const projectNavMenus = computed(() => {
 })
 
 const navMenu = computed(() =>
-  routeName.value.includes('프로젝트') ? navMenus.value : projectNavMenus.value,
+  routeName.value.includes('워크스페이스') ? navMenus.value : projectNavMenus.value,
 )
 
 provide('navMenu', navMenu)

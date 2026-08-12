@@ -27,7 +27,7 @@ const toggleArchive = async () => {
 }
 
 const onCopyProject = () => {
-  router.push({ name: '프로젝트 - 추가', query: { copy: props.project.pk } })
+  router.push({ name: '워크스페이스 - 추가', query: { copy: props.project.pk } })
 }
 
 const projectDelete = async () => {

@@ -114,12 +114,14 @@ onBeforeMount(() => {
     <template v-slot:default>
       <CRow class="py-2">
         <CCol>
-          <h5><v-icon icon="mdi-domain" color="primary" size="small" class="mr-2" />프로젝트</h5>
+          <h5>
+            <v-icon icon="mdi-domain" color="primary" size="small" class="mr-2" />워크스페이스
+          </h5>
         </CCol>
 
         <CCol v-if="canProjectCreate" class="text-right form-text">
-          <span v-show="route.name !== '프로젝트 - 추가'" class="mr-2">
-            <TextButton name="새 프로젝트" :to="{ name: '프로젝트 - 추가' }" />
+          <span v-show="route.name !== '워크스페이스 - 추가'" class="mr-2">
+            <TextButton name="새 워크스페이스" :to="{ name: '워크스페이스 - 추가' }" />
           </span>
         </CCol>
       </CRow>

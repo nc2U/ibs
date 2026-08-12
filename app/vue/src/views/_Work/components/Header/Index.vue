@@ -39,7 +39,7 @@ const topLevelRouteTarget = computed(() => {
       return { name: rawName }
     }
   }
-  return { name: '프로젝트' }
+  return { name: '워크스페이스' }
 })
 const workStore = useWork()
 const allActiveProjects = computed(() =>
@@ -48,7 +48,7 @@ const allActiveProjects = computed(() =>
 
 const chkModules = (slug: string) => {
   const routeName = (route.name as string) ?? ''
-  const excluded = ['프로젝트', '전체검색']
+  const excluded = ['워크스페이스', '전체검색']
   const project = workStore.allReadableProjectsFlat.filter(p => p.slug === slug)[0]
   if (
     (route.meta as any)?.title === '설 정 관 리' ||

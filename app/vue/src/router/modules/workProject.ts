@@ -7,18 +7,18 @@ const workProject = {
   children: [
     {
       path: 'project',
-      name: '프로젝트',
+      name: '워크스페이스',
       redirect: '/work/project/list',
       component: () => import('@/views/_Work/Manages/Projects/Index.vue'),
       children: [
         {
           path: 'list',
-          name: '프로젝트 - 리스트',
+          name: '워크스페이스 - 리스트',
           component: () => import('@/views/_Work/Manages/Projects/components/ProjectList.vue'),
         },
         {
           path: 'create',
-          name: '프로젝트 - 추가',
+          name: '워크스페이스 - 추가',
           component: () => import('@/views/_Work/Manages/Projects/components/ProjectCreate.vue'),
         },
         {

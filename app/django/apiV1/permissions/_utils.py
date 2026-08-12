@@ -39,10 +39,10 @@ def resolve_issue_project(project_pk, request=None):
 
 
 def is_project_locked(issue_project):
-    """프로젝트가 잠금보관(status='9') 상태인지 확인합니다."""
+    """워크스페이스가 잠금보관(status='9') 상태인지 확인합니다."""
     return issue_project and issue_project.status == '9'
 
 
 def is_project_closed(issue_project):
-    """프로젝트가 닫힘(status='2') 상태인지 확인합니다."""
+    """워크스페이스가 닫힘(status='2') 상태인지 확인합니다."""
     return issue_project and issue_project.status == '2'

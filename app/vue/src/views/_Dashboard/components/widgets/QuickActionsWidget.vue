@@ -56,9 +56,9 @@ const quickActions = [
   },
   {
     icon: 'mdi-plus',
-    label: '새 프로젝트',
+    label: '새 워크스페이스',
     color: 'indigo-lighten-2',
-    routeName: '프로젝트 - 추가',
+    routeName: '워크스페이스 - 추가',
   },
 ]
 

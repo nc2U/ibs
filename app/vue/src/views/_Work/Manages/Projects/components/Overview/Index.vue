@@ -78,7 +78,7 @@ const reopenProject = (slug: string) => patchIssueProject({ slug, status: '1' })
 
 const deleteProject = async (slug: string) => {
   await workStore.deleteIssueProject(slug)
-  await router.push({ name: '프로젝트' })
+  await router.push({ name: '워크스페이스' })
 }
 
 const loading = ref(true)

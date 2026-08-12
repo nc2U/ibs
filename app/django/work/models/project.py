@@ -228,8 +228,8 @@ class IssueProject(models.Model):
 
     class Meta:
         ordering = ('status', 'order', 'id')
-        verbose_name = '01. 프로젝트(업무)'
-        verbose_name_plural = '01. 프로젝트(업무)'
+        verbose_name = '01. 워크스페이스'
+        verbose_name_plural = '01. 워크스페이스'
 
 
 class Module(models.Model):
