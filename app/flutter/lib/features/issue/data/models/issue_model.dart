@@ -132,7 +132,7 @@ class IssueInRelationModel with _$IssueInRelationModel {
     required SimpleProjectModel project,
     required String subject,
     required IssueTrackerModel tracker,
-    required IssueStatusModel status,
+    required String status,
     SimpleUserModel? assignedTo,
     @Default([]) List<SimpleUserModel> watchers,
     int? priority,
@@ -205,7 +205,7 @@ class IssueModel with _$IssueModel {
     @Default([]) List<IssueRelationModel> outgoingRelations,
     IssueRelationModel? incomingRelation,
     SimpleUserModel? creator,
-    SimpleUserModel? updater,
+    int? updater,
     required String created,
     required String updated,
   }) = _IssueModel;

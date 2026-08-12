@@ -190,7 +190,7 @@ _$IssueInRelationModelImpl _$$IssueInRelationModelImplFromJson(
   project: SimpleProjectModel.fromJson(json['project'] as Map<String, dynamic>),
   subject: json['subject'] as String,
   tracker: IssueTrackerModel.fromJson(json['tracker'] as Map<String, dynamic>),
-  status: IssueStatusModel.fromJson(json['status'] as Map<String, dynamic>),
+  status: json['status'] as String,
   assignedTo: json['assignedTo'] == null
       ? null
       : SimpleUserModel.fromJson(json['assignedTo'] as Map<String, dynamic>),
@@ -333,9 +333,7 @@ _$IssueModelImpl _$$IssueModelImplFromJson(
   creator: json['creator'] == null
       ? null
       : SimpleUserModel.fromJson(json['creator'] as Map<String, dynamic>),
-  updater: json['updater'] == null
-      ? null
-      : SimpleUserModel.fromJson(json['updater'] as Map<String, dynamic>),
+  updater: (json['updater'] as num?)?.toInt(),
   created: json['created'] as String,
   updated: json['updated'] as String,
 );

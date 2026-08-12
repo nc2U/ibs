@@ -2257,7 +2257,7 @@ mixin _$IssueInRelationModel {
   SimpleProjectModel get project => throw _privateConstructorUsedError;
   String get subject => throw _privateConstructorUsedError;
   IssueTrackerModel get tracker => throw _privateConstructorUsedError;
-  IssueStatusModel get status => throw _privateConstructorUsedError;
+  String get status => throw _privateConstructorUsedError;
   SimpleUserModel? get assignedTo => throw _privateConstructorUsedError;
   List<SimpleUserModel> get watchers => throw _privateConstructorUsedError;
   int? get priority => throw _privateConstructorUsedError;
@@ -2288,7 +2288,7 @@ abstract class $IssueInRelationModelCopyWith<$Res> {
     SimpleProjectModel project,
     String subject,
     IssueTrackerModel tracker,
-    IssueStatusModel status,
+    String status,
     SimpleUserModel? assignedTo,
     List<SimpleUserModel> watchers,
     int? priority,
@@ -2300,7 +2300,6 @@ abstract class $IssueInRelationModelCopyWith<$Res> {
 
   $SimpleProjectModelCopyWith<$Res> get project;
   $IssueTrackerModelCopyWith<$Res> get tracker;
-  $IssueStatusModelCopyWith<$Res> get status;
   $SimpleUserModelCopyWith<$Res>? get assignedTo;
 }
 
@@ -2356,7 +2355,7 @@ class _$IssueInRelationModelCopyWithImpl<
             status: null == status
                 ? _value.status
                 : status // ignore: cast_nullable_to_non_nullable
-                      as IssueStatusModel,
+                      as String,
             assignedTo: freezed == assignedTo
                 ? _value.assignedTo
                 : assignedTo // ignore: cast_nullable_to_non_nullable
@@ -2414,16 +2413,6 @@ class _$IssueInRelationModelCopyWithImpl<
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
-  $IssueStatusModelCopyWith<$Res> get status {
-    return $IssueStatusModelCopyWith<$Res>(_value.status, (value) {
-      return _then(_value.copyWith(status: value) as $Val);
-    });
-  }
-
-  /// Create a copy of IssueInRelationModel
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @pragma('vm:prefer-inline')
   $SimpleUserModelCopyWith<$Res>? get assignedTo {
     if (_value.assignedTo == null) {
       return null;
@@ -2449,7 +2438,7 @@ abstract class _$$IssueInRelationModelImplCopyWith<$Res>
     SimpleProjectModel project,
     String subject,
     IssueTrackerModel tracker,
-    IssueStatusModel status,
+    String status,
     SimpleUserModel? assignedTo,
     List<SimpleUserModel> watchers,
     int? priority,
@@ -2463,8 +2452,6 @@ abstract class _$$IssueInRelationModelImplCopyWith<$Res>
   $SimpleProjectModelCopyWith<$Res> get project;
   @override
   $IssueTrackerModelCopyWith<$Res> get tracker;
-  @override
-  $IssueStatusModelCopyWith<$Res> get status;
   @override
   $SimpleUserModelCopyWith<$Res>? get assignedTo;
 }
@@ -2517,7 +2504,7 @@ class __$$IssueInRelationModelImplCopyWithImpl<$Res>
         status: null == status
             ? _value.status
             : status // ignore: cast_nullable_to_non_nullable
-                  as IssueStatusModel,
+                  as String,
         assignedTo: freezed == assignedTo
             ? _value.assignedTo
             : assignedTo // ignore: cast_nullable_to_non_nullable
@@ -2581,7 +2568,7 @@ class _$IssueInRelationModelImpl implements _IssueInRelationModel {
   @override
   final IssueTrackerModel tracker;
   @override
-  final IssueStatusModel status;
+  final String status;
   @override
   final SimpleUserModel? assignedTo;
   final List<SimpleUserModel> _watchers;
@@ -2675,7 +2662,7 @@ abstract class _IssueInRelationModel implements IssueInRelationModel {
     required final SimpleProjectModel project,
     required final String subject,
     required final IssueTrackerModel tracker,
-    required final IssueStatusModel status,
+    required final String status,
     final SimpleUserModel? assignedTo,
     final List<SimpleUserModel> watchers,
     final int? priority,
@@ -2697,7 +2684,7 @@ abstract class _IssueInRelationModel implements IssueInRelationModel {
   @override
   IssueTrackerModel get tracker;
   @override
-  IssueStatusModel get status;
+  String get status;
   @override
   SimpleUserModel? get assignedTo;
   @override
@@ -3283,7 +3270,7 @@ mixin _$IssueModel {
   IssueRelationModel? get incomingRelation =>
       throw _privateConstructorUsedError;
   SimpleUserModel? get creator => throw _privateConstructorUsedError;
-  SimpleUserModel? get updater => throw _privateConstructorUsedError;
+  int? get updater => throw _privateConstructorUsedError;
   String get created => throw _privateConstructorUsedError;
   String get updated => throw _privateConstructorUsedError;
 
@@ -3332,7 +3319,7 @@ abstract class $IssueModelCopyWith<$Res> {
     List<IssueRelationModel> outgoingRelations,
     IssueRelationModel? incomingRelation,
     SimpleUserModel? creator,
-    SimpleUserModel? updater,
+    int? updater,
     String created,
     String updated,
   });
@@ -3347,7 +3334,6 @@ abstract class $IssueModelCopyWith<$Res> {
   $MeetingDescModelCopyWith<$Res>? get meetingDesc;
   $IssueRelationModelCopyWith<$Res>? get incomingRelation;
   $SimpleUserModelCopyWith<$Res>? get creator;
-  $SimpleUserModelCopyWith<$Res>? get updater;
 }
 
 /// @nodoc
@@ -3509,7 +3495,7 @@ class _$IssueModelCopyWithImpl<$Res, $Val extends IssueModel>
             updater: freezed == updater
                 ? _value.updater
                 : updater // ignore: cast_nullable_to_non_nullable
-                      as SimpleUserModel?,
+                      as int?,
             created: null == created
                 ? _value.created
                 : created // ignore: cast_nullable_to_non_nullable
@@ -3646,20 +3632,6 @@ class _$IssueModelCopyWithImpl<$Res, $Val extends IssueModel>
       return _then(_value.copyWith(creator: value) as $Val);
     });
   }
-
-  /// Create a copy of IssueModel
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @pragma('vm:prefer-inline')
-  $SimpleUserModelCopyWith<$Res>? get updater {
-    if (_value.updater == null) {
-      return null;
-    }
-
-    return $SimpleUserModelCopyWith<$Res>(_value.updater!, (value) {
-      return _then(_value.copyWith(updater: value) as $Val);
-    });
-  }
 }
 
 /// @nodoc
@@ -3699,7 +3671,7 @@ abstract class _$$IssueModelImplCopyWith<$Res>
     List<IssueRelationModel> outgoingRelations,
     IssueRelationModel? incomingRelation,
     SimpleUserModel? creator,
-    SimpleUserModel? updater,
+    int? updater,
     String created,
     String updated,
   });
@@ -3724,8 +3696,6 @@ abstract class _$$IssueModelImplCopyWith<$Res>
   $IssueRelationModelCopyWith<$Res>? get incomingRelation;
   @override
   $SimpleUserModelCopyWith<$Res>? get creator;
-  @override
-  $SimpleUserModelCopyWith<$Res>? get updater;
 }
 
 /// @nodoc
@@ -3886,7 +3856,7 @@ class __$$IssueModelImplCopyWithImpl<$Res>
         updater: freezed == updater
             ? _value.updater
             : updater // ignore: cast_nullable_to_non_nullable
-                  as SimpleUserModel?,
+                  as int?,
         created: null == created
             ? _value.created
             : created // ignore: cast_nullable_to_non_nullable
@@ -4038,7 +4008,7 @@ class _$IssueModelImpl implements _IssueModel {
   @override
   final SimpleUserModel? creator;
   @override
-  final SimpleUserModel? updater;
+  final int? updater;
   @override
   final String created;
   @override
@@ -4186,7 +4156,7 @@ abstract class _IssueModel implements IssueModel {
     final List<IssueRelationModel> outgoingRelations,
     final IssueRelationModel? incomingRelation,
     final SimpleUserModel? creator,
-    final SimpleUserModel? updater,
+    final int? updater,
     required final String created,
     required final String updated,
   }) = _$IssueModelImpl;
@@ -4249,7 +4219,7 @@ abstract class _IssueModel implements IssueModel {
   @override
   SimpleUserModel? get creator;
   @override
-  SimpleUserModel? get updater;
+  int? get updater;
   @override
   String get created;
   @override
