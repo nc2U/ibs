@@ -82,7 +82,7 @@ _$ParentIssueModelImpl _$$ParentIssueModelImplFromJson(
   pk: (json['pk'] as num).toInt(),
   tracker: json['tracker'] as String,
   subject: json['subject'] as String,
-  isPrivate: json['isPrivate'] as bool? ?? false,
+  isPrivate: json['is_private'] as bool? ?? false,
 );
 
 Map<String, dynamic> _$$ParentIssueModelImplToJson(
@@ -91,16 +91,16 @@ Map<String, dynamic> _$$ParentIssueModelImplToJson(
   'pk': instance.pk,
   'tracker': instance.tracker,
   'subject': instance.subject,
-  'isPrivate': instance.isPrivate,
+  'is_private': instance.isPrivate,
 };
 
 _$IssueFileModelImpl _$$IssueFileModelImplFromJson(Map<String, dynamic> json) =>
     _$IssueFileModelImpl(
       pk: (json['pk'] as num).toInt(),
       file: json['file'] as String,
-      fileName: json['fileName'] as String,
-      fileType: json['fileType'] as String? ?? '',
-      fileSize: (json['fileSize'] as num?)?.toInt(),
+      fileName: json['file_name'] as String,
+      fileType: json['file_type'] as String? ?? '',
+      fileSize: (json['file_size'] as num?)?.toInt(),
       description: json['description'] as String? ?? '',
       created: json['created'] as String,
       creator: json['creator'] == null
@@ -113,9 +113,9 @@ Map<String, dynamic> _$$IssueFileModelImplToJson(
 ) => <String, dynamic>{
   'pk': instance.pk,
   'file': instance.file,
-  'fileName': instance.fileName,
-  'fileType': instance.fileType,
-  'fileSize': instance.fileSize,
+  'file_name': instance.fileName,
+  'file_type': instance.fileType,
+  'file_size': instance.fileSize,
   'description': instance.description,
   'created': instance.created,
   'creator': instance.creator,
@@ -152,18 +152,18 @@ _$SubIssueModelImpl _$$SubIssueModelImplFromJson(
   subject: json['subject'] as String,
   tracker: IssueTrackerModel.fromJson(json['tracker'] as Map<String, dynamic>),
   status: json['status'] as String,
-  assignedTo: json['assignedTo'] == null
+  assignedTo: json['assigned_to'] == null
       ? null
-      : SimpleUserModel.fromJson(json['assignedTo'] as Map<String, dynamic>),
+      : SimpleUserModel.fromJson(json['assigned_to'] as Map<String, dynamic>),
   watchers:
       (json['watchers'] as List<dynamic>?)
           ?.map((e) => SimpleUserModel.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const [],
   priority: (json['priority'] as num?)?.toInt(),
-  startDate: json['startDate'] as String?,
-  dueDate: json['dueDate'] as String?,
-  doneRatio: (json['doneRatio'] as num?)?.toInt() ?? 0,
+  startDate: json['start_date'] as String?,
+  dueDate: json['due_date'] as String?,
+  doneRatio: (json['done_ratio'] as num?)?.toInt() ?? 0,
   closed: json['closed'] as String?,
 );
 
@@ -174,12 +174,12 @@ Map<String, dynamic> _$$SubIssueModelImplToJson(_$SubIssueModelImpl instance) =>
       'subject': instance.subject,
       'tracker': instance.tracker,
       'status': instance.status,
-      'assignedTo': instance.assignedTo,
+      'assigned_to': instance.assignedTo,
       'watchers': instance.watchers,
       'priority': instance.priority,
-      'startDate': instance.startDate,
-      'dueDate': instance.dueDate,
-      'doneRatio': instance.doneRatio,
+      'start_date': instance.startDate,
+      'due_date': instance.dueDate,
+      'done_ratio': instance.doneRatio,
       'closed': instance.closed,
     };
 
@@ -191,18 +191,18 @@ _$IssueInRelationModelImpl _$$IssueInRelationModelImplFromJson(
   subject: json['subject'] as String,
   tracker: IssueTrackerModel.fromJson(json['tracker'] as Map<String, dynamic>),
   status: json['status'] as String,
-  assignedTo: json['assignedTo'] == null
+  assignedTo: json['assigned_to'] == null
       ? null
-      : SimpleUserModel.fromJson(json['assignedTo'] as Map<String, dynamic>),
+      : SimpleUserModel.fromJson(json['assigned_to'] as Map<String, dynamic>),
   watchers:
       (json['watchers'] as List<dynamic>?)
           ?.map((e) => SimpleUserModel.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const [],
   priority: (json['priority'] as num?)?.toInt(),
-  startDate: json['startDate'] as String?,
-  dueDate: json['dueDate'] as String?,
-  doneRatio: (json['doneRatio'] as num?)?.toInt() ?? 0,
+  startDate: json['start_date'] as String?,
+  dueDate: json['due_date'] as String?,
+  doneRatio: (json['done_ratio'] as num?)?.toInt() ?? 0,
   closed: json['closed'] as String?,
 );
 
@@ -214,12 +214,12 @@ Map<String, dynamic> _$$IssueInRelationModelImplToJson(
   'subject': instance.subject,
   'tracker': instance.tracker,
   'status': instance.status,
-  'assignedTo': instance.assignedTo,
+  'assigned_to': instance.assignedTo,
   'watchers': instance.watchers,
   'priority': instance.priority,
-  'startDate': instance.startDate,
-  'dueDate': instance.dueDate,
-  'doneRatio': instance.doneRatio,
+  'start_date': instance.startDate,
+  'due_date': instance.dueDate,
+  'done_ratio': instance.doneRatio,
   'closed': instance.closed,
 };
 
@@ -246,8 +246,8 @@ _$IssueCommentModelImpl _$$IssueCommentModelImplFromJson(
 ) => _$IssueCommentModelImpl(
   pk: (json['pk'] as num).toInt(),
   content: json['content'] as String,
-  isPrivate: json['isPrivate'] as bool? ?? false,
-  isBlocked: json['isBlocked'] as bool? ?? false,
+  isPrivate: json['is_private'] as bool? ?? false,
+  isBlocked: json['is_blocked'] as bool? ?? false,
   created: json['created'] as String,
   updated: json['updated'] as String,
   creator: SimpleUserModel.fromJson(json['creator'] as Map<String, dynamic>),
@@ -258,8 +258,8 @@ Map<String, dynamic> _$$IssueCommentModelImplToJson(
 ) => <String, dynamic>{
   'pk': instance.pk,
   'content': instance.content,
-  'isPrivate': instance.isPrivate,
-  'isBlocked': instance.isBlocked,
+  'is_private': instance.isPrivate,
+  'is_blocked': instance.isBlocked,
   'created': instance.created,
   'updated': instance.updated,
   'creator': instance.creator,
@@ -278,14 +278,14 @@ _$IssueModelImpl _$$IssueModelImplFromJson(
   subject: json['subject'] as String,
   description: json['description'] as String? ?? '',
   category: (json['category'] as num?)?.toInt(),
-  fixedVersion: json['fixedVersion'] == null
+  fixedVersion: json['fixed_version'] == null
       ? null
       : IssueVersionModel.fromJson(
-          json['fixedVersion'] as Map<String, dynamic>,
+          json['fixed_version'] as Map<String, dynamic>,
         ),
-  assignedTo: json['assignedTo'] == null
+  assignedTo: json['assigned_to'] == null
       ? null
-      : SimpleUserModel.fromJson(json['assignedTo'] as Map<String, dynamic>),
+      : SimpleUserModel.fromJson(json['assigned_to'] as Map<String, dynamic>),
   parent: json['parent'] == null
       ? null
       : ParentIssueModel.fromJson(json['parent'] as Map<String, dynamic>),
@@ -294,16 +294,16 @@ _$IssueModelImpl _$$IssueModelImplFromJson(
           ?.map((e) => SimpleUserModel.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const [],
-  isPrivate: json['isPrivate'] as bool? ?? false,
-  expectedDuration: json['expectedDuration'] as String?,
-  expectedDurationDisplay: json['expectedDurationDisplay'] as String? ?? '',
-  startDate: json['startDate'] as String,
-  dueDate: json['dueDate'] as String?,
+  isPrivate: json['is_private'] as bool? ?? false,
+  expectedDuration: json['expected_duration'] as String?,
+  expectedDurationDisplay: json['expected_duration_display'] as String? ?? '',
+  startDate: json['start_date'] as String,
+  dueDate: json['due_date'] as String?,
   meeting: (json['meeting'] as num?)?.toInt(),
-  meetingDesc: json['meetingDesc'] == null
+  meetingDesc: json['meeting_desc'] == null
       ? null
-      : MeetingDescModel.fromJson(json['meetingDesc'] as Map<String, dynamic>),
-  doneRatio: (json['doneRatio'] as num?)?.toInt() ?? 0,
+      : MeetingDescModel.fromJson(json['meeting_desc'] as Map<String, dynamic>),
+  doneRatio: (json['done_ratio'] as num?)?.toInt() ?? 0,
   closed: json['closed'] as String?,
   files:
       (json['files'] as List<dynamic>?)
@@ -316,19 +316,19 @@ _$IssueModelImpl _$$IssueModelImplFromJson(
           .toList() ??
       const [],
   subIssues:
-      (json['subIssues'] as List<dynamic>?)
+      (json['sub_issues'] as List<dynamic>?)
           ?.map((e) => SubIssueModel.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const [],
   outgoingRelations:
-      (json['outgoingRelations'] as List<dynamic>?)
+      (json['outgoing_relations'] as List<dynamic>?)
           ?.map((e) => IssueRelationModel.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const [],
-  incomingRelation: json['incomingRelation'] == null
+  incomingRelation: json['incoming_relation'] == null
       ? null
       : IssueRelationModel.fromJson(
-          json['incomingRelation'] as Map<String, dynamic>,
+          json['incoming_relation'] as Map<String, dynamic>,
         ),
   creator: json['creator'] == null
       ? null
@@ -348,24 +348,24 @@ Map<String, dynamic> _$$IssueModelImplToJson(_$IssueModelImpl instance) =>
       'subject': instance.subject,
       'description': instance.description,
       'category': instance.category,
-      'fixedVersion': instance.fixedVersion,
-      'assignedTo': instance.assignedTo,
+      'fixed_version': instance.fixedVersion,
+      'assigned_to': instance.assignedTo,
       'parent': instance.parent,
       'watchers': instance.watchers,
-      'isPrivate': instance.isPrivate,
-      'expectedDuration': instance.expectedDuration,
-      'expectedDurationDisplay': instance.expectedDurationDisplay,
-      'startDate': instance.startDate,
-      'dueDate': instance.dueDate,
+      'is_private': instance.isPrivate,
+      'expected_duration': instance.expectedDuration,
+      'expected_duration_display': instance.expectedDurationDisplay,
+      'start_date': instance.startDate,
+      'due_date': instance.dueDate,
       'meeting': instance.meeting,
-      'meetingDesc': instance.meetingDesc,
-      'doneRatio': instance.doneRatio,
+      'meeting_desc': instance.meetingDesc,
+      'done_ratio': instance.doneRatio,
       'closed': instance.closed,
       'files': instance.files,
       'links': instance.links,
-      'subIssues': instance.subIssues,
-      'outgoingRelations': instance.outgoingRelations,
-      'incomingRelation': instance.incomingRelation,
+      'sub_issues': instance.subIssues,
+      'outgoing_relations': instance.outgoingRelations,
+      'incoming_relation': instance.incomingRelation,
       'creator': instance.creator,
       'updater': instance.updater,
       'created': instance.created,

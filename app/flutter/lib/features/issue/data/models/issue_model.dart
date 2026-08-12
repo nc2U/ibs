@@ -8,6 +8,7 @@ part 'issue_model.g.dart';
 
 @freezed
 class IssueStatusModel with _$IssueStatusModel {
+  @JsonSerializable(fieldRename: FieldRename.snake)
   const factory IssueStatusModel({
     required int pk,
     required String name,
@@ -19,6 +20,7 @@ class IssueStatusModel with _$IssueStatusModel {
 
 @freezed
 class IssuePriorityModel with _$IssuePriorityModel {
+  @JsonSerializable(fieldRename: FieldRename.snake)
   const factory IssuePriorityModel({
     required int pk,
     required String name,
@@ -29,6 +31,7 @@ class IssuePriorityModel with _$IssuePriorityModel {
 
 @freezed
 class IssueTrackerModel with _$IssueTrackerModel {
+  @JsonSerializable(fieldRename: FieldRename.snake)
   const factory IssueTrackerModel({
     required int pk,
     required String name,
@@ -40,6 +43,7 @@ class IssueTrackerModel with _$IssueTrackerModel {
 
 @freezed
 class IssueVersionModel with _$IssueVersionModel {
+  @JsonSerializable(fieldRename: FieldRename.snake)
   const factory IssueVersionModel({
     required int pk,
     required String name,
@@ -51,6 +55,7 @@ class IssueVersionModel with _$IssueVersionModel {
 
 @freezed
 class MeetingDescModel with _$MeetingDescModel {
+  @JsonSerializable(fieldRename: FieldRename.snake)
   const factory MeetingDescModel({
     required int pk,
     required String title,
@@ -61,6 +66,7 @@ class MeetingDescModel with _$MeetingDescModel {
 
 @freezed
 class ParentIssueModel with _$ParentIssueModel {
+  @JsonSerializable(fieldRename: FieldRename.snake)
   const factory ParentIssueModel({
     required int pk,
     required String tracker,
@@ -75,6 +81,7 @@ class ParentIssueModel with _$ParentIssueModel {
 
 @freezed
 class IssueFileModel with _$IssueFileModel {
+  @JsonSerializable(fieldRename: FieldRename.snake)
   const factory IssueFileModel({
     required int pk,
     required String file,
@@ -91,6 +98,7 @@ class IssueFileModel with _$IssueFileModel {
 
 @freezed
 class IssueLinkModel with _$IssueLinkModel {
+  @JsonSerializable(fieldRename: FieldRename.snake)
   const factory IssueLinkModel({
     required int pk,
     required String link,
@@ -107,6 +115,7 @@ class IssueLinkModel with _$IssueLinkModel {
 
 @freezed
 class SubIssueModel with _$SubIssueModel {
+  @JsonSerializable(fieldRename: FieldRename.snake)
   const factory SubIssueModel({
     required int pk,
     required SimpleProjectModel project,
@@ -127,6 +136,7 @@ class SubIssueModel with _$SubIssueModel {
 
 @freezed
 class IssueInRelationModel with _$IssueInRelationModel {
+  @JsonSerializable(fieldRename: FieldRename.snake)
   const factory IssueInRelationModel({
     required int pk,
     required SimpleProjectModel project,
@@ -147,6 +157,7 @@ class IssueInRelationModel with _$IssueInRelationModel {
 
 @freezed
 class IssueRelationModel with _$IssueRelationModel {
+  @JsonSerializable(fieldRename: FieldRename.snake)
   const factory IssueRelationModel({
     int? pk,
     IssueInRelationModel? issue,
@@ -160,6 +171,7 @@ class IssueRelationModel with _$IssueRelationModel {
 
 @freezed
 class IssueCommentModel with _$IssueCommentModel {
+  @JsonSerializable(fieldRename: FieldRename.snake)
   const factory IssueCommentModel({
     required int pk,
     required String content,
@@ -177,6 +189,7 @@ class IssueCommentModel with _$IssueCommentModel {
 
 @freezed
 class IssueModel with _$IssueModel {
+  @JsonSerializable(fieldRename: FieldRename.snake)
   const factory IssueModel({
     required int pk,
     required SimpleProjectModel project,
@@ -217,6 +230,7 @@ class IssueModel with _$IssueModel {
 
 @freezed
 class IssueListResponse with _$IssueListResponse {
+  @JsonSerializable(fieldRename: FieldRename.snake)
   const factory IssueListResponse({
     required int count,
     String? next,

@@ -29,9 +29,9 @@ _$MeetingFileModelImpl _$$MeetingFileModelImplFromJson(
 ) => _$MeetingFileModelImpl(
   pk: (json['pk'] as num).toInt(),
   file: json['file'] as String,
-  fileName: json['fileName'] as String,
-  fileType: json['fileType'] as String? ?? '',
-  fileSize: (json['fileSize'] as num?)?.toInt(),
+  fileName: json['file_name'] as String,
+  fileType: json['file_type'] as String? ?? '',
+  fileSize: (json['file_size'] as num?)?.toInt(),
   description: json['description'] as String? ?? '',
   created: json['created'] as String,
   creator: json['creator'] == null
@@ -44,9 +44,9 @@ Map<String, dynamic> _$$MeetingFileModelImplToJson(
 ) => <String, dynamic>{
   'pk': instance.pk,
   'file': instance.file,
-  'fileName': instance.fileName,
-  'fileType': instance.fileType,
-  'fileSize': instance.fileSize,
+  'file_name': instance.fileName,
+  'file_type': instance.fileType,
+  'file_size': instance.fileSize,
   'description': instance.description,
   'created': instance.created,
   'creator': instance.creator,
@@ -83,9 +83,9 @@ _$IssueInMeetingModelImpl _$$IssueInMeetingModelImplFromJson(
   project: json['project'] as String,
   subject: json['subject'] as String,
   status: json['status'] as String,
-  assignedTo: json['assignedTo'] == null
+  assignedTo: json['assigned_to'] == null
       ? null
-      : SimpleUserModel.fromJson(json['assignedTo'] as Map<String, dynamic>),
+      : SimpleUserModel.fromJson(json['assigned_to'] as Map<String, dynamic>),
   closed: json['closed'] as String?,
 );
 
@@ -96,7 +96,7 @@ Map<String, dynamic> _$$IssueInMeetingModelImplToJson(
   'project': instance.project,
   'subject': instance.subject,
   'status': instance.status,
-  'assignedTo': instance.assignedTo,
+  'assigned_to': instance.assignedTo,
   'closed': instance.closed,
 };
 
@@ -105,34 +105,34 @@ _$MeetingModelImpl _$$MeetingModelImplFromJson(Map<String, dynamic> json) =>
       pk: (json['pk'] as num).toInt(),
       project: (json['project'] as num).toInt(),
       projectDesc: SimpleProjectModel.fromJson(
-        json['projectDesc'] as Map<String, dynamic>,
+        json['project_desc'] as Map<String, dynamic>,
       ),
       title: json['title'] as String,
       category: (json['category'] as num?)?.toInt(),
-      categoryDesc: json['categoryDesc'] == null
+      categoryDesc: json['category_desc'] == null
           ? null
           : MeetingCategoryModel.fromJson(
-              json['categoryDesc'] as Map<String, dynamic>,
+              json['category_desc'] as Map<String, dynamic>,
             ),
       status: json['status'] as String? ?? '1',
-      statusDisplay: json['statusDisplay'] as String? ?? '예정',
-      isConfirmed: json['isConfirmed'] as bool? ?? false,
+      statusDisplay: json['status_display'] as String? ?? '예정',
+      isConfirmed: json['is_confirmed'] as bool? ?? false,
       agenda: json['agenda'] as String? ?? '',
       content: json['content'] as String? ?? '',
       decisions: json['decisions'] as String? ?? '',
-      actionItems: json['actionItems'] as String? ?? '',
-      meetingDate: json['meetingDate'] as String,
+      actionItems: json['action_items'] as String? ?? '',
+      meetingDate: json['meeting_date'] as String,
       attendees:
           (json['attendees'] as List<dynamic>?)
               ?.map((e) => (e as num).toInt())
               .toList() ??
           const [],
       attendeesDesc:
-          (json['attendeesDesc'] as List<dynamic>?)
+          (json['attendees_desc'] as List<dynamic>?)
               ?.map((e) => SimpleUserModel.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
-      otherAttendees: json['otherAttendees'] as String? ?? '',
+      otherAttendees: json['other_attendees'] as String? ?? '',
       files:
           (json['files'] as List<dynamic>?)
               ?.map((e) => MeetingFileModel.fromJson(e as Map<String, dynamic>))
@@ -164,21 +164,21 @@ Map<String, dynamic> _$$MeetingModelImplToJson(_$MeetingModelImpl instance) =>
     <String, dynamic>{
       'pk': instance.pk,
       'project': instance.project,
-      'projectDesc': instance.projectDesc,
+      'project_desc': instance.projectDesc,
       'title': instance.title,
       'category': instance.category,
-      'categoryDesc': instance.categoryDesc,
+      'category_desc': instance.categoryDesc,
       'status': instance.status,
-      'statusDisplay': instance.statusDisplay,
-      'isConfirmed': instance.isConfirmed,
+      'status_display': instance.statusDisplay,
+      'is_confirmed': instance.isConfirmed,
       'agenda': instance.agenda,
       'content': instance.content,
       'decisions': instance.decisions,
-      'actionItems': instance.actionItems,
-      'meetingDate': instance.meetingDate,
+      'action_items': instance.actionItems,
+      'meeting_date': instance.meetingDate,
       'attendees': instance.attendees,
-      'attendeesDesc': instance.attendeesDesc,
-      'otherAttendees': instance.otherAttendees,
+      'attendees_desc': instance.attendeesDesc,
+      'other_attendees': instance.otherAttendees,
       'files': instance.files,
       'links': instance.links,
       'issues': instance.issues,

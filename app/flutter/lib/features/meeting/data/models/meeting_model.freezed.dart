@@ -148,7 +148,8 @@ class __$$MeetingCategoryModelImplCopyWithImpl<$Res>
 }
 
 /// @nodoc
-@JsonSerializable()
+
+@JsonSerializable(fieldRename: FieldRename.snake)
 class _$MeetingCategoryModelImpl implements _MeetingCategoryModel {
   const _$MeetingCategoryModelImpl({
     required this.pk,
@@ -448,7 +449,8 @@ class __$$MeetingFileModelImplCopyWithImpl<$Res>
 }
 
 /// @nodoc
-@JsonSerializable()
+
+@JsonSerializable(fieldRename: FieldRename.snake)
 class _$MeetingFileModelImpl implements _MeetingFileModel {
   const _$MeetingFileModelImpl({
     required this.pk,
@@ -763,7 +765,8 @@ class __$$MeetingLinkModelImplCopyWithImpl<$Res>
 }
 
 /// @nodoc
-@JsonSerializable()
+
+@JsonSerializable(fieldRename: FieldRename.snake)
 class _$MeetingLinkModelImpl implements _MeetingLinkModel {
   const _$MeetingLinkModelImpl({
     required this.pk,
@@ -1050,7 +1053,8 @@ class __$$IssueInMeetingModelImplCopyWithImpl<$Res>
 }
 
 /// @nodoc
-@JsonSerializable()
+
+@JsonSerializable(fieldRename: FieldRename.snake)
 class _$IssueInMeetingModelImpl implements _IssueInMeetingModel {
   const _$IssueInMeetingModelImpl({
     required this.pk,
@@ -1626,7 +1630,8 @@ class __$$MeetingModelImplCopyWithImpl<$Res>
 }
 
 /// @nodoc
-@JsonSerializable()
+
+@JsonSerializable(fieldRename: FieldRename.snake)
 class _$MeetingModelImpl implements _MeetingModel {
   const _$MeetingModelImpl({
     required this.pk,
@@ -2077,7 +2082,8 @@ class __$$MeetingListResponseImplCopyWithImpl<$Res>
 }
 
 /// @nodoc
-@JsonSerializable()
+
+@JsonSerializable(fieldRename: FieldRename.snake)
 class _$MeetingListResponseImpl implements _MeetingListResponse {
   const _$MeetingListResponseImpl({
     required this.count,

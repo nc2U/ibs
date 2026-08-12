@@ -126,7 +126,8 @@ class __$$IssueStatusModelImplCopyWithImpl<$Res>
 }
 
 /// @nodoc
-@JsonSerializable()
+
+@JsonSerializable(fieldRename: FieldRename.snake)
 class _$IssueStatusModelImpl implements _IssueStatusModel {
   const _$IssueStatusModelImpl({
     required this.pk,
@@ -307,7 +308,8 @@ class __$$IssuePriorityModelImplCopyWithImpl<$Res>
 }
 
 /// @nodoc
-@JsonSerializable()
+
+@JsonSerializable(fieldRename: FieldRename.snake)
 class _$IssuePriorityModelImpl implements _IssuePriorityModel {
   const _$IssuePriorityModelImpl({required this.pk, required this.name});
 
@@ -495,7 +497,8 @@ class __$$IssueTrackerModelImplCopyWithImpl<$Res>
 }
 
 /// @nodoc
-@JsonSerializable()
+
+@JsonSerializable(fieldRename: FieldRename.snake)
 class _$IssueTrackerModelImpl implements _IssueTrackerModel {
   const _$IssueTrackerModelImpl({
     required this.pk,
@@ -695,7 +698,8 @@ class __$$IssueVersionModelImplCopyWithImpl<$Res>
 }
 
 /// @nodoc
-@JsonSerializable()
+
+@JsonSerializable(fieldRename: FieldRename.snake)
 class _$IssueVersionModelImpl implements _IssueVersionModel {
   const _$IssueVersionModelImpl({
     required this.pk,
@@ -878,7 +882,8 @@ class __$$MeetingDescModelImplCopyWithImpl<$Res>
 }
 
 /// @nodoc
-@JsonSerializable()
+
+@JsonSerializable(fieldRename: FieldRename.snake)
 class _$MeetingDescModelImpl implements _MeetingDescModel {
   const _$MeetingDescModelImpl({required this.pk, required this.title});
 
@@ -1077,7 +1082,8 @@ class __$$ParentIssueModelImplCopyWithImpl<$Res>
 }
 
 /// @nodoc
-@JsonSerializable()
+
+@JsonSerializable(fieldRename: FieldRename.snake)
 class _$ParentIssueModelImpl implements _ParentIssueModel {
   const _$ParentIssueModelImpl({
     required this.pk,
@@ -1376,7 +1382,8 @@ class __$$IssueFileModelImplCopyWithImpl<$Res>
 }
 
 /// @nodoc
-@JsonSerializable()
+
+@JsonSerializable(fieldRename: FieldRename.snake)
 class _$IssueFileModelImpl implements _IssueFileModel {
   const _$IssueFileModelImpl({
     required this.pk,
@@ -1691,7 +1698,8 @@ class __$$IssueLinkModelImplCopyWithImpl<$Res>
 }
 
 /// @nodoc
-@JsonSerializable()
+
+@JsonSerializable(fieldRename: FieldRename.snake)
 class _$IssueLinkModelImpl implements _IssueLinkModel {
   const _$IssueLinkModelImpl({
     required this.pk,
@@ -2082,7 +2090,8 @@ class __$$SubIssueModelImplCopyWithImpl<$Res>
 }
 
 /// @nodoc
-@JsonSerializable()
+
+@JsonSerializable(fieldRename: FieldRename.snake)
 class _$SubIssueModelImpl implements _SubIssueModel {
   const _$SubIssueModelImpl({
     required this.pk,
@@ -2539,7 +2548,8 @@ class __$$IssueInRelationModelImplCopyWithImpl<$Res>
 }
 
 /// @nodoc
-@JsonSerializable()
+
+@JsonSerializable(fieldRename: FieldRename.snake)
 class _$IssueInRelationModelImpl implements _IssueInRelationModel {
   const _$IssueInRelationModelImpl({
     required this.pk,
@@ -2846,7 +2856,8 @@ class __$$IssueRelationModelImplCopyWithImpl<$Res>
 }
 
 /// @nodoc
-@JsonSerializable()
+
+@JsonSerializable(fieldRename: FieldRename.snake)
 class _$IssueRelationModelImpl implements _IssueRelationModel {
   const _$IssueRelationModelImpl({this.pk, this.issue, this.delay});
 
@@ -3115,7 +3126,8 @@ class __$$IssueCommentModelImplCopyWithImpl<$Res>
 }
 
 /// @nodoc
-@JsonSerializable()
+
+@JsonSerializable(fieldRename: FieldRename.snake)
 class _$IssueCommentModelImpl implements _IssueCommentModel {
   const _$IssueCommentModelImpl({
     required this.pk,
@@ -3871,7 +3883,8 @@ class __$$IssueModelImplCopyWithImpl<$Res>
 }
 
 /// @nodoc
-@JsonSerializable()
+
+@JsonSerializable(fieldRename: FieldRename.snake)
 class _$IssueModelImpl implements _IssueModel {
   const _$IssueModelImpl({
     required this.pk,
@@ -4373,7 +4386,8 @@ class __$$IssueListResponseImplCopyWithImpl<$Res>
 }
 
 /// @nodoc
-@JsonSerializable()
+
+@JsonSerializable(fieldRename: FieldRename.snake)
 class _$IssueListResponseImpl implements _IssueListResponse {
   const _$IssueListResponseImpl({
     required this.count,

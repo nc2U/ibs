@@ -8,6 +8,7 @@ part 'meeting_model.g.dart';
 
 @freezed
 class MeetingCategoryModel with _$MeetingCategoryModel {
+  @JsonSerializable(fieldRename: FieldRename.snake)
   const factory MeetingCategoryModel({
     required int pk,
     required String name,
@@ -22,6 +23,7 @@ class MeetingCategoryModel with _$MeetingCategoryModel {
 
 @freezed
 class MeetingFileModel with _$MeetingFileModel {
+  @JsonSerializable(fieldRename: FieldRename.snake)
   const factory MeetingFileModel({
     required int pk,
     required String file,
@@ -38,6 +40,7 @@ class MeetingFileModel with _$MeetingFileModel {
 
 @freezed
 class MeetingLinkModel with _$MeetingLinkModel {
+  @JsonSerializable(fieldRename: FieldRename.snake)
   const factory MeetingLinkModel({
     required int pk,
     required String link,
@@ -54,6 +57,7 @@ class MeetingLinkModel with _$MeetingLinkModel {
 
 @freezed
 class IssueInMeetingModel with _$IssueInMeetingModel {
+  @JsonSerializable(fieldRename: FieldRename.snake)
   const factory IssueInMeetingModel({
     required int pk,
     required String project, // slug
@@ -70,6 +74,7 @@ class IssueInMeetingModel with _$IssueInMeetingModel {
 
 @freezed
 class MeetingModel with _$MeetingModel {
+  @JsonSerializable(fieldRename: FieldRename.snake)
   const factory MeetingModel({
     required int pk,
     required int project,
@@ -104,6 +109,7 @@ class MeetingModel with _$MeetingModel {
 
 @freezed
 class MeetingListResponse with _$MeetingListResponse {
+  @JsonSerializable(fieldRename: FieldRename.snake)
   const factory MeetingListResponse({
     required int count,
     String? next,
