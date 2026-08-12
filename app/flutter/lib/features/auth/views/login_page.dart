@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../dashboard/views/main_page.dart';
 import '../services/auth_service.dart';
 
 class LoginPage extends StatefulWidget {
@@ -44,14 +45,11 @@ class _LoginPageState extends State<LoginPage> {
     if (!mounted) return;
 
     if (result['success'] == true) {
-      // 로그인 성공 시 스낵바 및 메인 화면 안내
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('로그인에 성공했습니다! 🎉'),
-          backgroundColor: Colors.green,
-        ),
+      // 로그인 성공 시 메인 대시보드 화면으로 이동
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const MainPage()),
       );
-      // 로그인 성공 후 메인 대시보드로 이동 (후속 구현)
     } else {
       setState(() {
         _errorMessage = result['message'] ?? '로그인 실패';
