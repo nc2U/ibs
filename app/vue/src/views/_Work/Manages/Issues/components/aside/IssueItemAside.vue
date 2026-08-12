@@ -65,7 +65,7 @@ const delWatcher = (pk: number) => {
 
 <template>
   <template v-if="workManager && route.name === '(업무) - 보기'">
-    <CRow class="mb-1">
+    <CRow class="mb-1 mr-3 pr-2">
       <CCol>
         <h6 class="asideTitle">업무 관람자 ({{ watchers.length }})</h6>
       </CCol>
