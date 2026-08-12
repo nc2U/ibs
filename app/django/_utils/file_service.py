@@ -17,9 +17,15 @@ class FileService:
         - new_files_key: QueryDict key for new file uploads (default: 'new_files')
         """
 
+        def get_list(data, key):
+            if hasattr(data, 'getlist'):
+                return data.getlist(key, [])
+            val = data.get(key, [])
+            return val if isinstance(val, list) else []
+
         # 1. Add new files (supports both descriptions and new_descs)
-        new_files = initial_data.getlist(new_files_key, [])
-        descriptions = initial_data.getlist('descriptions', []) or initial_data.getlist('new_descs', [])
+        new_files = get_list(initial_data, new_files_key)
+        descriptions = get_list(initial_data, 'descriptions') or get_list(initial_data, 'new_descs')
 
         for i, upload_file in enumerate(new_files):
             file_data = {
@@ -33,9 +39,9 @@ class FileService:
             file_model.objects.create(**file_data)
 
         # 2. Existing file modifications/deletions/replacements (via JSON)
-        old_files = initial_data.getlist('files', [])
-        cng_pks = initial_data.getlist('cngPks', [])
-        cng_files = initial_data.getlist('cngFiles', [])
+        old_files = get_list(initial_data, 'files')
+        cng_pks = get_list(initial_data, 'cngPks')
+        cng_files = get_list(initial_data, 'cngFiles')
         cng_maps = dict(zip([str(pk) for pk in cng_pks], cng_files))
 
         for json_file in old_files:
@@ -91,6 +97,6 @@ class FileService:
             file_model.objects.filter(pk=del_file, **{related_name: instance}).delete()
 
         # 5. Multi-file deletion (direct)
-        files_del = initial_data.getlist('files_del')
+        files_del = get_list(initial_data, 'files_del')
         if files_del:
             file_model.objects.filter(pk__in=files_del, **{related_name: instance}).delete()
