@@ -13,11 +13,11 @@ abstract class ApiEndpoints {
   static const String myProjects     = '/api/v1/work-projects/?my=true';
   static const String projectDetail  = '/api/v1/work-projects/{slug}/';
 
-  // ── Issue ────────────────────────────────────────
+  // ── Issue ────────────────────────────────────────────────────────────────
   static const String issues        = '/api/v1/issues/';
   static const String issueDetail   = '/api/v1/issues/{id}/';
-  static const String issueComments = '/api/v1/issues/{id}/comments/';
-  static const String issueFiles    = '/api/v1/issues/{id}/files/';
+  static const String issueComments = '/api/v1/issue-comments/';
+  static const String issueFiles    = '/api/v1/issue-files/';
 
   // ── Meeting ──────────────────────────────────────
   static const String meetings      = '/api/v1/meetings/';

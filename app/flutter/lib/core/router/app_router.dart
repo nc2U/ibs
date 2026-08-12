@@ -5,6 +5,8 @@ import '../providers/auth_provider.dart';
 import '../../features/auth/views/login_page.dart';
 import '../../features/dashboard/views/main_shell.dart';
 import '../../features/dashboard/views/home_tab.dart';
+import '../../features/issue/presentation/issue_list_screen.dart';
+import '../../features/issue/presentation/issue_detail_screen.dart';
 
 // ── Route 이름 상수 ─────────────────────────────────────────────────────────────
 abstract class AppRoutes {
@@ -56,17 +58,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           // 업무 관리 탭
           GoRoute(
             path: AppRoutes.work,
-            builder: (ctx, state) => const Center(child: Text('업무 관리')),
+            builder: (ctx, state) => const IssueListScreen(),
             routes: [
               GoRoute(
                 path: 'issues',
-                builder: (ctx, state) => const Center(child: Text('업무 목록')),
+                builder: (ctx, state) => const IssueListScreen(),
                 routes: [
                   GoRoute(
                     path: ':issueId',
                     builder: (ctx, state) {
-                      final id = int.tryParse(state.pathParameters['issueId'] ?? '');
-                      return Center(child: Text('업무 상세 #$id'));
+                      final id = int.tryParse(state.pathParameters['issueId'] ?? '') ?? 0;
+                      return IssueDetailScreen(issueId: id);
                     },
                   ),
                 ],
