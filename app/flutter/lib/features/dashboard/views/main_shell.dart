@@ -82,30 +82,7 @@ class MainShell extends ConsumerWidget {
           children: [
             SvgPicture.asset('assets/images/sygnet.svg', width: 26, height: 26),
             const SizedBox(width: 10),
-            InkWell(
-              onTap: () => showProjectSelectorBottomSheet(context),
-              borderRadius: BorderRadius.circular(4),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('IBS 워크스페이스', style: AppTextStyles.titleMd),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(projectName,
-                            style: AppTextStyles.caption
-                                .copyWith(color: AppColors.accentWork)),
-                        const SizedBox(width: 2),
-                        const Icon(Icons.arrow_drop_down_rounded,
-                            size: 16, color: AppColors.accentWork),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            Text('IBS 워크스페이스', style: AppTextStyles.titleMd),
           ],
         ),
         actions: [
