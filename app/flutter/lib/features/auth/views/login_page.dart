@@ -10,7 +10,7 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-  final _usernameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _authService = AuthService();
 
@@ -19,7 +19,7 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   void dispose() {
-    _usernameController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -33,7 +33,7 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     final result = await _authService.login(
-      username: _usernameController.text.trim(),
+      email: _emailController.text.trim(),
       password: _passwordController.text,
     );
 
@@ -130,17 +130,18 @@ class _LoginPageState extends State<LoginPage> {
                             const SizedBox(height: 16),
                           ],
 
-                          // 아이디 입력
+                          // 이메일 입력
                           TextFormField(
-                            controller: _usernameController,
+                            controller: _emailController,
+                            keyboardType: TextInputType.emailAddress,
                             decoration: const InputDecoration(
-                              labelText: '아이디 (사용자명)',
-                              prefixIcon: Icon(Icons.person_outline),
+                              labelText: '이메일 주소',
+                              prefixIcon: Icon(Icons.email_outlined),
                               border: OutlineInputBorder(),
                             ),
                             validator: (value) {
                               if (value == null || value.trim().isEmpty) {
-                                return '아이디를 입력해주세요';
+                                return '이메일 주소를 입력해주세요';
                               }
                               return null;
                             },

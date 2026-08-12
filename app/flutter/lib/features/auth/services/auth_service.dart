@@ -5,16 +5,16 @@ import '../../../core/constants/api_constants.dart';
 class AuthService {
   final ApiClient _apiClient = ApiClient();
 
-  // Django SimpleJWT 로그인 (/apiV1/jwt/create/)
+  // Django SimpleJWT 로그인 (/api/v1/token/)
   Future<Map<String, dynamic>> login({
-    required String username,
+    required String email,
     required String password,
   }) async {
     try {
       final response = await _apiClient.dio.post(
         ApiConstants.jwtCreate,
         data: {
-          'username': username,
+          'email': email,
           'password': password,
         },
       );
@@ -33,11 +33,19 @@ class AuthService {
         'refresh': refreshToken,
       };
     } on DioException catch (e) {
+      print('=== LOGIN DIO ERROR ===');
+      print('Status Code: ${e.response?.statusCode}');
+      print('Response Data: ${e.response?.data}');
+      
       String errorMessage = '로그인에 실패했습니다.';
       if (e.response != null && e.response?.data != null) {
         final data = e.response?.data;
-        if (data is Map && data.containsKey('detail')) {
-          errorMessage = data['detail'].toString();
+        if (data is Map) {
+          if (data.containsKey('detail')) {
+            errorMessage = data['detail'].toString();
+          } else {
+            errorMessage = data.toString();
+          }
         }
       }
       return {
