@@ -180,7 +180,7 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
             children: [
               // ── 프로젝트 선택 (신규 등록 시) ──────────────────────────────────
               if (!isEdit) ...[
-                Text('프로젝트 *', style: AppTextStyles.titleSm),
+                Text('워크스페이스 (프로젝트) *', style: AppTextStyles.titleSm),
                 const SizedBox(height: 6),
                 projectsAsync.when(
                   loading: () => const SizedBox(

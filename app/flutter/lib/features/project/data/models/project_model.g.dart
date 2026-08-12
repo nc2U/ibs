@@ -9,10 +9,13 @@ part of 'project_model.dart';
 _$ProjectModelImpl _$$ProjectModelImplFromJson(Map<String, dynamic> json) =>
     _$ProjectModelImpl(
       pk: (json['pk'] as num).toInt(),
-      name: json['name'] as String,
-      slug: json['slug'] as String,
-      description: json['description'] as String? ?? '',
-      status: json['status'] as String? ?? '1',
+      name: json['name'] == null ? '' : _parseString(json['name']),
+      slug: json['slug'] == null ? '' : _parseString(json['slug']),
+      description: json['description'] == null
+          ? ''
+          : _parseString(json['description']),
+      type: json['type'] == null ? '1' : _parseType(json['type']),
+      status: json['status'] == null ? '1' : _parseType(json['status']),
       visible: json['visible'] as bool? ?? true,
       isBookmarked: json['is_bookmarked'] as bool? ?? false,
     );
@@ -23,6 +26,7 @@ Map<String, dynamic> _$$ProjectModelImplToJson(_$ProjectModelImpl instance) =>
       'name': instance.name,
       'slug': instance.slug,
       'description': instance.description,
+      'type': instance.type,
       'status': instance.status,
       'visible': instance.visible,
       'is_bookmarked': instance.isBookmarked,

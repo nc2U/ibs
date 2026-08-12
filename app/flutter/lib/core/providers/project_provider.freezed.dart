@@ -21,6 +21,7 @@ mixin _$SelectedProject {
   String get name => throw _privateConstructorUsedError;
   String get slug => throw _privateConstructorUsedError;
   String? get description => throw _privateConstructorUsedError;
+  String get type => throw _privateConstructorUsedError;
   bool get isPublic => throw _privateConstructorUsedError;
 
   /// Create a copy of SelectedProject
@@ -42,6 +43,7 @@ abstract class $SelectedProjectCopyWith<$Res> {
     String name,
     String slug,
     String? description,
+    String type,
     bool isPublic,
   });
 }
@@ -65,6 +67,7 @@ class _$SelectedProjectCopyWithImpl<$Res, $Val extends SelectedProject>
     Object? name = null,
     Object? slug = null,
     Object? description = freezed,
+    Object? type = null,
     Object? isPublic = null,
   }) {
     return _then(
@@ -85,6 +88,10 @@ class _$SelectedProjectCopyWithImpl<$Res, $Val extends SelectedProject>
                 ? _value.description
                 : description // ignore: cast_nullable_to_non_nullable
                       as String?,
+            type: null == type
+                ? _value.type
+                : type // ignore: cast_nullable_to_non_nullable
+                      as String,
             isPublic: null == isPublic
                 ? _value.isPublic
                 : isPublic // ignore: cast_nullable_to_non_nullable
@@ -109,6 +116,7 @@ abstract class _$$SelectedProjectImplCopyWith<$Res>
     String name,
     String slug,
     String? description,
+    String type,
     bool isPublic,
   });
 }
@@ -131,6 +139,7 @@ class __$$SelectedProjectImplCopyWithImpl<$Res>
     Object? name = null,
     Object? slug = null,
     Object? description = freezed,
+    Object? type = null,
     Object? isPublic = null,
   }) {
     return _then(
@@ -151,6 +160,10 @@ class __$$SelectedProjectImplCopyWithImpl<$Res>
             ? _value.description
             : description // ignore: cast_nullable_to_non_nullable
                   as String?,
+        type: null == type
+            ? _value.type
+            : type // ignore: cast_nullable_to_non_nullable
+                  as String,
         isPublic: null == isPublic
             ? _value.isPublic
             : isPublic // ignore: cast_nullable_to_non_nullable
@@ -168,6 +181,7 @@ class _$SelectedProjectImpl implements _SelectedProject {
     required this.name,
     required this.slug,
     this.description,
+    this.type = '1',
     this.isPublic = false,
   });
 
@@ -181,11 +195,14 @@ class _$SelectedProjectImpl implements _SelectedProject {
   final String? description;
   @override
   @JsonKey()
+  final String type;
+  @override
+  @JsonKey()
   final bool isPublic;
 
   @override
   String toString() {
-    return 'SelectedProject(pk: $pk, name: $name, slug: $slug, description: $description, isPublic: $isPublic)';
+    return 'SelectedProject(pk: $pk, name: $name, slug: $slug, description: $description, type: $type, isPublic: $isPublic)';
   }
 
   @override
@@ -198,13 +215,14 @@ class _$SelectedProjectImpl implements _SelectedProject {
             (identical(other.slug, slug) || other.slug == slug) &&
             (identical(other.description, description) ||
                 other.description == description) &&
+            (identical(other.type, type) || other.type == type) &&
             (identical(other.isPublic, isPublic) ||
                 other.isPublic == isPublic));
   }
 
   @override
   int get hashCode =>
-      Object.hash(runtimeType, pk, name, slug, description, isPublic);
+      Object.hash(runtimeType, pk, name, slug, description, type, isPublic);
 
   /// Create a copy of SelectedProject
   /// with the given fields replaced by the non-null parameter values.
@@ -224,6 +242,7 @@ abstract class _SelectedProject implements SelectedProject {
     required final String name,
     required final String slug,
     final String? description,
+    final String type,
     final bool isPublic,
   }) = _$SelectedProjectImpl;
 
@@ -235,6 +254,8 @@ abstract class _SelectedProject implements SelectedProject {
   String get slug;
   @override
   String? get description;
+  @override
+  String get type;
   @override
   bool get isPublic;
 

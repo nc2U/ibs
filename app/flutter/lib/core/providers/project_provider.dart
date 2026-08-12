@@ -11,6 +11,7 @@ class SelectedProject with _$SelectedProject {
     required String name,
     required String slug,
     String? description,
+    @Default('1') String type,
     @Default(false) bool isPublic,
   }) = _SelectedProject;
 }

@@ -3,15 +3,19 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'project_model.freezed.dart';
 part 'project_model.g.dart';
 
+String _parseType(dynamic val) => val?.toString() ?? '1';
+String _parseString(dynamic val) => val?.toString() ?? '';
+
 @freezed
 class ProjectModel with _$ProjectModel {
   @JsonSerializable(fieldRename: FieldRename.snake)
   const factory ProjectModel({
     required int pk,
-    required String name,
-    required String slug,
-    @Default('') String description,
-    @Default('1') String status,
+    @JsonKey(fromJson: _parseString) @Default('') String name,
+    @JsonKey(fromJson: _parseString) @Default('') String slug,
+    @JsonKey(fromJson: _parseString) @Default('') String description,
+    @JsonKey(fromJson: _parseType) @Default('1') String type,
+    @JsonKey(fromJson: _parseType) @Default('1') String status,
     @Default(true) bool visible,
     @Default(false) bool isBookmarked,
   }) = _ProjectModel;

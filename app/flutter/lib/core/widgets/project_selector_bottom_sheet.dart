@@ -8,25 +8,30 @@ import '../../features/meeting/providers/meeting_provider.dart';
 import '../../features/project/data/models/project_model.dart';
 import '../../features/project/providers/project_provider.dart';
 
-/// 프로젝트 선택 바텀시트
-void showProjectSelectorBottomSheet(BuildContext context) {
+/// 선택 바텀시트
+/// - onlyRealEstate: false (Work Core) -> 워크스페이스 선택 (모든 타입)
+/// - onlyRealEstate: true (IBS Global) -> 프로젝트 선택 (type == '2' 부동산 개발만)
+void showProjectSelectorBottomSheet(BuildContext context,
+    {bool onlyRealEstate = false}) {
   showModalBottomSheet(
     context: context,
     backgroundColor: AppColors.bgCard,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
     ),
-    builder: (ctx) => const _ProjectSelectorContent(),
+    builder: (ctx) => _ProjectSelectorContent(onlyRealEstate: onlyRealEstate),
   );
 }
 
 class _ProjectSelectorContent extends ConsumerWidget {
-  const _ProjectSelectorContent();
+  final bool onlyRealEstate;
+  const _ProjectSelectorContent({required this.onlyRealEstate});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedProject = ref.watch(selectedProjectProvider);
-    final projectsAsync = ref.watch(projectListProvider);
+    final projectsAsync = ref.watch(
+        onlyRealEstate ? realEstateProjectsProvider : projectListProvider);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -48,7 +53,10 @@ class _ProjectSelectorContent extends ConsumerWidget {
         // ── 헤더 ────────────────────────────────────────────────────────────────
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-          child: Text('프로젝트 선택', style: AppTextStyles.titleMd),
+          child: Text(
+            onlyRealEstate ? '프로젝트 선택' : '워크스페이스 선택',
+            style: AppTextStyles.titleMd,
+          ),
         ),
         const Divider(color: AppColors.border, height: 16),
 
@@ -59,30 +67,39 @@ class _ProjectSelectorContent extends ConsumerWidget {
               child: CircularProgressIndicator(color: AppColors.accentWork),
             ),
             error: (e, _) => Center(
-              child: Text('프로젝트 목록을 불러올 수 없습니다.',
+              child: Text('목록을 불러올 수 없습니다: $e',
                   style: AppTextStyles.bodyMuted),
             ),
             data: (projects) {
+              if (projects.isEmpty) {
+                return Center(
+                  child: Text('등록된 프로젝트가 없습니다.',
+                      style: AppTextStyles.bodyMuted),
+                );
+              }
+
               return ListView(
                 padding: const EdgeInsets.symmetric(vertical: 4),
                 children: [
-                  // Option: 전사 공통
-                  _ProjectTile(
-                    title: '🏢 전사 공통 (전체 프로젝트)',
-                    isSelected: selectedProject == null,
-                    onTap: () {
-                      selectProject(ref, null);
-                      _refreshProviders(ref);
-                      Navigator.pop(context);
-                    },
-                  ),
-                  const Divider(color: AppColors.border, height: 1),
+                  // Option: 전사 공통 (워크스페이스 선택시에만 노출)
+                  if (!onlyRealEstate) ...[
+                    _ProjectTile(
+                      title: '🏢 전사 공통 (전체 워크스페이스)',
+                      isSelected: selectedProject == null,
+                      onTap: () {
+                        selectProject(ref, null);
+                        _refreshProviders(ref);
+                        Navigator.pop(context);
+                      },
+                    ),
+                    const Divider(color: AppColors.border, height: 1),
+                  ],
 
-                  // Option: 각 프로젝트들
+                  // Option: 항목들
                   ...projects.map(
                     (p) => _ProjectTile(
                       title: p.name,
-                      subtitle: p.slug,
+                      subtitle: p.type == '2' ? '프로젝트 · ${p.slug}' : p.slug,
                       isSelected: selectedProject?.pk == p.pk,
                       onTap: () {
                         selectProject(ref, p);
@@ -101,7 +118,6 @@ class _ProjectSelectorContent extends ConsumerWidget {
   }
 
   void _refreshProviders(WidgetRef ref) {
-    // 선택된 프로젝트에 맞춰 issueList 및 meetingList 필터 업데이트 & 새로고침
     final project = ref.read(selectedProjectProvider);
 
     final issueFilter = ref.read(issueFilterProvider);

@@ -22,9 +22,15 @@ ProjectModel _$ProjectModelFromJson(Map<String, dynamic> json) {
 /// @nodoc
 mixin _$ProjectModel {
   int get pk => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _parseString)
   String get name => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _parseString)
   String get slug => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _parseString)
   String get description => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _parseType)
+  String get type => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _parseType)
   String get status => throw _privateConstructorUsedError;
   bool get visible => throw _privateConstructorUsedError;
   bool get isBookmarked => throw _privateConstructorUsedError;
@@ -48,10 +54,11 @@ abstract class $ProjectModelCopyWith<$Res> {
   @useResult
   $Res call({
     int pk,
-    String name,
-    String slug,
-    String description,
-    String status,
+    @JsonKey(fromJson: _parseString) String name,
+    @JsonKey(fromJson: _parseString) String slug,
+    @JsonKey(fromJson: _parseString) String description,
+    @JsonKey(fromJson: _parseType) String type,
+    @JsonKey(fromJson: _parseType) String status,
     bool visible,
     bool isBookmarked,
   });
@@ -76,6 +83,7 @@ class _$ProjectModelCopyWithImpl<$Res, $Val extends ProjectModel>
     Object? name = null,
     Object? slug = null,
     Object? description = null,
+    Object? type = null,
     Object? status = null,
     Object? visible = null,
     Object? isBookmarked = null,
@@ -97,6 +105,10 @@ class _$ProjectModelCopyWithImpl<$Res, $Val extends ProjectModel>
             description: null == description
                 ? _value.description
                 : description // ignore: cast_nullable_to_non_nullable
+                      as String,
+            type: null == type
+                ? _value.type
+                : type // ignore: cast_nullable_to_non_nullable
                       as String,
             status: null == status
                 ? _value.status
@@ -127,10 +139,11 @@ abstract class _$$ProjectModelImplCopyWith<$Res>
   @useResult
   $Res call({
     int pk,
-    String name,
-    String slug,
-    String description,
-    String status,
+    @JsonKey(fromJson: _parseString) String name,
+    @JsonKey(fromJson: _parseString) String slug,
+    @JsonKey(fromJson: _parseString) String description,
+    @JsonKey(fromJson: _parseType) String type,
+    @JsonKey(fromJson: _parseType) String status,
     bool visible,
     bool isBookmarked,
   });
@@ -154,6 +167,7 @@ class __$$ProjectModelImplCopyWithImpl<$Res>
     Object? name = null,
     Object? slug = null,
     Object? description = null,
+    Object? type = null,
     Object? status = null,
     Object? visible = null,
     Object? isBookmarked = null,
@@ -175,6 +189,10 @@ class __$$ProjectModelImplCopyWithImpl<$Res>
         description: null == description
             ? _value.description
             : description // ignore: cast_nullable_to_non_nullable
+                  as String,
+        type: null == type
+            ? _value.type
+            : type // ignore: cast_nullable_to_non_nullable
                   as String,
         status: null == status
             ? _value.status
@@ -199,10 +217,11 @@ class __$$ProjectModelImplCopyWithImpl<$Res>
 class _$ProjectModelImpl implements _ProjectModel {
   const _$ProjectModelImpl({
     required this.pk,
-    required this.name,
-    required this.slug,
-    this.description = '',
-    this.status = '1',
+    @JsonKey(fromJson: _parseString) this.name = '',
+    @JsonKey(fromJson: _parseString) this.slug = '',
+    @JsonKey(fromJson: _parseString) this.description = '',
+    @JsonKey(fromJson: _parseType) this.type = '1',
+    @JsonKey(fromJson: _parseType) this.status = '1',
     this.visible = true,
     this.isBookmarked = false,
   });
@@ -213,14 +232,19 @@ class _$ProjectModelImpl implements _ProjectModel {
   @override
   final int pk;
   @override
+  @JsonKey(fromJson: _parseString)
   final String name;
   @override
+  @JsonKey(fromJson: _parseString)
   final String slug;
   @override
-  @JsonKey()
+  @JsonKey(fromJson: _parseString)
   final String description;
   @override
-  @JsonKey()
+  @JsonKey(fromJson: _parseType)
+  final String type;
+  @override
+  @JsonKey(fromJson: _parseType)
   final String status;
   @override
   @JsonKey()
@@ -231,7 +255,7 @@ class _$ProjectModelImpl implements _ProjectModel {
 
   @override
   String toString() {
-    return 'ProjectModel(pk: $pk, name: $name, slug: $slug, description: $description, status: $status, visible: $visible, isBookmarked: $isBookmarked)';
+    return 'ProjectModel(pk: $pk, name: $name, slug: $slug, description: $description, type: $type, status: $status, visible: $visible, isBookmarked: $isBookmarked)';
   }
 
   @override
@@ -244,6 +268,7 @@ class _$ProjectModelImpl implements _ProjectModel {
             (identical(other.slug, slug) || other.slug == slug) &&
             (identical(other.description, description) ||
                 other.description == description) &&
+            (identical(other.type, type) || other.type == type) &&
             (identical(other.status, status) || other.status == status) &&
             (identical(other.visible, visible) || other.visible == visible) &&
             (identical(other.isBookmarked, isBookmarked) ||
@@ -258,6 +283,7 @@ class _$ProjectModelImpl implements _ProjectModel {
     name,
     slug,
     description,
+    type,
     status,
     visible,
     isBookmarked,
@@ -280,10 +306,11 @@ class _$ProjectModelImpl implements _ProjectModel {
 abstract class _ProjectModel implements ProjectModel {
   const factory _ProjectModel({
     required final int pk,
-    required final String name,
-    required final String slug,
-    final String description,
-    final String status,
+    @JsonKey(fromJson: _parseString) final String name,
+    @JsonKey(fromJson: _parseString) final String slug,
+    @JsonKey(fromJson: _parseString) final String description,
+    @JsonKey(fromJson: _parseType) final String type,
+    @JsonKey(fromJson: _parseType) final String status,
     final bool visible,
     final bool isBookmarked,
   }) = _$ProjectModelImpl;
@@ -294,12 +321,19 @@ abstract class _ProjectModel implements ProjectModel {
   @override
   int get pk;
   @override
+  @JsonKey(fromJson: _parseString)
   String get name;
   @override
+  @JsonKey(fromJson: _parseString)
   String get slug;
   @override
+  @JsonKey(fromJson: _parseString)
   String get description;
   @override
+  @JsonKey(fromJson: _parseType)
+  String get type;
+  @override
+  @JsonKey(fromJson: _parseType)
   String get status;
   @override
   bool get visible;

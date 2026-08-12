@@ -180,7 +180,7 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
             children: [
               // ── 프로젝트 선택 ──────────────────────────────────────────────
               if (!isEdit) ...[
-                Text('프로젝트 *', style: AppTextStyles.titleSm),
+                Text('워크스페이스 (프로젝트) *', style: AppTextStyles.titleSm),
                 const SizedBox(height: 6),
                 projectsAsync.when(
                   loading: () => const SizedBox(

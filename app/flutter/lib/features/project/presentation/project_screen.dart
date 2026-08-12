@@ -8,13 +8,16 @@ import '../../../../core/widgets/project_selector_bottom_sheet.dart';
 import '../../issue/providers/issue_provider.dart';
 import '../../meeting/providers/meeting_provider.dart';
 
-/// 프로젝트 관리 탭 메인 화면
+/// 프로젝트 관리 탭 메인 화면 (IBS Global - type == '2' 부동산 개발 프로젝트 전용)
 class ProjectScreen extends ConsumerWidget {
   const ProjectScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedProject = ref.watch(selectedProjectProvider);
+    final isRealEstateProject =
+        selectedProject != null && selectedProject.type == '2';
+
     final issueListState = ref.watch(issueListProvider);
     final meetingListState = ref.watch(meetingListProvider);
 
@@ -44,18 +47,28 @@ class ProjectScreen extends ConsumerWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: AppColors.accentProject.withAlpha(30),
+                        color: isRealEstateProject
+                            ? AppColors.accentProject.withAlpha(30)
+                            : AppColors.warning.withAlpha(30),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
-                        selectedProject == null ? '전사 공통' : '선택된 프로젝트',
-                        style: AppTextStyles.label
-                            .copyWith(color: AppColors.accentProject),
+                        isRealEstateProject
+                            ? '프로젝트'
+                            : (selectedProject == null
+                                ? '프로젝트 미선택'
+                                : '일반 워크스페이스'),
+                        style: AppTextStyles.label.copyWith(
+                          color: isRealEstateProject
+                              ? AppColors.accentProject
+                              : AppColors.warning,
+                        ),
                       ),
                     ),
                     const Spacer(),
                     OutlinedButton.icon(
-                      onPressed: () => showProjectSelectorBottomSheet(context),
+                      onPressed: () => showProjectSelectorBottomSheet(context,
+                          onlyRealEstate: true),
                       icon: const Icon(Icons.swap_horiz_rounded, size: 16),
                       label: const Text('프로젝트 변경'),
                       style: OutlinedButton.styleFrom(
@@ -71,7 +84,7 @@ class ProjectScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  selectedProject?.name ?? '전사 공통 (전체 프로젝트)',
+                  selectedProject?.name ?? '프로젝트를 선택해 주세요',
                   style: AppTextStyles.titleLg,
                 ),
                 if (selectedProject?.description != null &&
@@ -84,6 +97,54 @@ class ProjectScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 16),
+
+          // ── 부동산 개발 프로젝트가 아닐 때 안내 경고 카드 ───────────────────────
+          if (!isRealEstateProject) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.warning.withAlpha(15),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                    color: AppColors.warning.withAlpha(80), width: 1),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.info_outline_rounded,
+                          color: AppColors.warning, size: 20),
+                      const SizedBox(width: 8),
+                      Text('프로젝트 전용 모듈',
+                          style: AppTextStyles.titleSm
+                              .copyWith(color: AppColors.warning)),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '계약, 수납, 재무(입출금), 공용문서 등 IBS 글로벌 모듈은 프로젝트(type=2)에서만 연동됩니다.\n아래 버튼을 눌러 프로젝트를 선택해 주세요.',
+                    style: AppTextStyles.bodyMd
+                        .copyWith(color: AppColors.textSecond, height: 1.4),
+                  ),
+                  const SizedBox(height: 14),
+                  ElevatedButton.icon(
+                    onPressed: () => showProjectSelectorBottomSheet(context,
+                        onlyRealEstate: true),
+                    icon: const Icon(Icons.business_center_rounded, size: 18),
+                    label: const Text('프로젝트 선택'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.warning,
+                      foregroundColor: Colors.black,
+                      minimumSize: const Size(double.infinity, 42),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
 
           // ── 통계 요약 ───────────────────────────────────────────────────
           Row(
@@ -140,11 +201,14 @@ class ProjectScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 12),
                 ElevatedButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('계약 상세 내역 모듈 준비 중입니다.')),
-                    );
-                  },
+                  onPressed: isRealEstateProject
+                      ? () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text('계약 상세 내역 모듈 준비 중입니다.')),
+                          );
+                        }
+                      : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.accentProject,
                     foregroundColor: Colors.white,
@@ -186,11 +250,14 @@ class ProjectScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 12),
                 ElevatedButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('재무/입출금 모듈 준비 중입니다.')),
-                    );
-                  },
+                  onPressed: isRealEstateProject
+                      ? () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text('재무/입출금 모듈 준비 중입니다.')),
+                          );
+                        }
+                      : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.accentCorp,
                     foregroundColor: Colors.white,

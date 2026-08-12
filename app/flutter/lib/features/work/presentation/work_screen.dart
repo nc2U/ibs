@@ -24,7 +24,7 @@ class WorkScreen extends ConsumerWidget {
         backgroundColor: AppColors.bgPrimary,
         body: Column(
           children: [
-            // ── 프로젝트 선택 바 ─────────────────────────────────────
+            // ── 워크스페이스 선택 바 ─────────────────────────────────────
             InkWell(
               onTap: () => showProjectSelectorBottomSheet(context),
               child: Container(
@@ -37,7 +37,7 @@ class WorkScreen extends ConsumerWidget {
                         size: 16, color: AppColors.accentProject),
                     const SizedBox(width: 8),
                     Text(
-                      '프로젝트:',
+                      '워크스페이스:',
                       style: AppTextStyles.caption
                           .copyWith(color: AppColors.textMuted),
                     ),
@@ -61,7 +61,7 @@ class WorkScreen extends ConsumerWidget {
                       ),
                       child: Row(
                         children: [
-                          Text('프로젝트 변경',
+                          Text('워크스페이스 변경',
                               style: AppTextStyles.label
                                   .copyWith(color: AppColors.accentProject)),
                           const Icon(Icons.keyboard_arrow_down_rounded,
