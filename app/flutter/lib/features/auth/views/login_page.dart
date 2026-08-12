@@ -72,14 +72,14 @@ class _LoginPageState extends State<LoginPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // 로고 및 앱 제목
-                const Icon(
-                  Icons.domain_rounded,
-                  size: 72,
-                  color: Colors.indigo,
+                Image.asset(
+                  'assets/images/logo.png',
+                  width: 72,
+                  height: 72,
                 ),
                 const SizedBox(height: 16),
                 const Text(
-                  'IBS 건설 종합 관리',
+                  'IBS워크스페이스',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 26,
