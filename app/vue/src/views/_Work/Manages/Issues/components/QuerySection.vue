@@ -977,7 +977,21 @@ const applyQuery = (query: any) => {
     }
     if (f.cond) cond.value = { ...cond.value, ...f.cond }
     if (f.form) {
-      form.value = { ...form.value, ...f.form }
+      const myId = currentUserId.value ?? props.getUsers[0]?.value
+      const formPayload = { ...f.form }
+      if (formPayload.watcher === 'me') formPayload.watcher = myId
+      if (formPayload.author === 'me' || formPayload.creator === 'me') formPayload.author = myId
+      if (formPayload.updater === 'me') formPayload.updater = myId
+      if (formPayload.assignee === 'me' || formPayload.assigned_to === 'me') formPayload.assignee = myId
+
+      form.value = { ...form.value, ...formPayload }
+
+      if (formPayload.project && !searchCond.value.includes('project')) {
+        searchCond.value.push('project')
+        if (!enabledFields.value.includes('project')) {
+          enabledFields.value.push('project')
+        }
+      }
     } else {
       // 기본 시드 데이터 및 이전 방식의 평면 필터(flat filters) 처리
       const myId = currentUserId.value ?? props.getUsers[0]?.value

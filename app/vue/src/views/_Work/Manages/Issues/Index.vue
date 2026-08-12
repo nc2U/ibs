@@ -56,15 +56,15 @@ const pageSelect = (page: number) => {
   issueStore.fetchIssueList(listFilter.value)
 }
 
-const issueListRef = ref()
+const querySectionRef = ref()
 const activeQueryId = ref<number | null>(null)
 const onQueryClick = (query: any) => {
   activeQueryId.value = query.pk
-  issueListRef.value?.applyQuery(query)
+  querySectionRef.value?.applyQuery(query)
 }
 const onResetQuery = () => {
   activeQueryId.value = null
-  issueListRef.value?.resetFilter()
+  querySectionRef.value?.resetFilter()
 }
 
 // Columns Selector Start

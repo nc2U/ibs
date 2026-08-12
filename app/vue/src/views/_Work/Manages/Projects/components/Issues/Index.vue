@@ -52,16 +52,17 @@ const categoryList = computed(() => issueStore.categoryList)
 const getIssues = computed(() => issueStore.getIssues)
 
 const issueListRef = ref()
+const querySectionRef = ref()
 const activeQueryId = ref<number | undefined>(undefined)
 
 const onQueryClick = (query: any) => {
   activeQueryId.value = query.pk
-  issueListRef.value?.applyQuery(query)
+  querySectionRef.value?.applyQuery(query)
 }
 
 const onResetQuery = () => {
   activeQueryId.value = undefined
-  issueListRef.value?.resetFilter()
+  querySectionRef.value?.resetFilter()
 }
 
 const onSubmit = async (payload: any) => {
