@@ -46,9 +46,15 @@ class AuthInterceptor extends QueuedInterceptorsWrapper {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    final token = await tokenStorage.getAccessToken();
-    if (token != null && token.isNotEmpty) {
-      options.headers['Authorization'] = 'Bearer $token';
+    // 로그인 및 토큰 갱신 요청에는 Authorization 헤더를 붙이지 않음
+    final isAuthEndpoint = options.path.contains(ApiEndpoints.jwtCreate) ||
+        options.path.contains(ApiEndpoints.jwtRefresh);
+
+    if (!isAuthEndpoint) {
+      final token = await tokenStorage.getAccessToken();
+      if (token != null && token.isNotEmpty) {
+        options.headers['Authorization'] = 'Bearer $token';
+      }
     }
     handler.next(options);
   }
@@ -58,7 +64,10 @@ class AuthInterceptor extends QueuedInterceptorsWrapper {
     DioException err,
     ErrorInterceptorHandler handler,
   ) async {
-    if (err.response?.statusCode == 401) {
+    final isAuthEndpoint = err.requestOptions.path.contains(ApiEndpoints.jwtCreate) ||
+        err.requestOptions.path.contains(ApiEndpoints.jwtRefresh);
+
+    if (!isAuthEndpoint && err.response?.statusCode == 401) {
       // access_token 만료 → refresh 시도
       final refreshed = await _tryRefresh();
       if (refreshed) {
@@ -70,7 +79,7 @@ class AuthInterceptor extends QueuedInterceptorsWrapper {
           final retryResponse = await dio.fetch(retryOptions);
           return handler.resolve(retryResponse);
         } catch (e) {
-          // 재시도도 실패 → 토큰 삭제, 에러 전파 (go_router 가드가 로그인으로 리다이렉트)
+          // 재시도도 실패 → 토큰 삭제
           await tokenStorage.clearTokens();
         }
       } else {
