@@ -32,6 +32,19 @@ class IssueRepository {
     await _dio.patch(url, data: {'done_ratio': ratio});
   }
 
+  /// 업무 생성 (POST)
+  Future<IssueModel> createIssue(Map<String, dynamic> data) async {
+    final response = await _dio.post(ApiEndpoints.issues, data: data);
+    return IssueModel.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  /// 업무 수정 (PATCH)
+  Future<IssueModel> updateIssue(int issueId, Map<String, dynamic> data) async {
+    final url = ApiEndpoints.resolve(ApiEndpoints.issueDetail, {'id': issueId});
+    final response = await _dio.patch(url, data: data);
+    return IssueModel.fromJson(response.data as Map<String, dynamic>);
+  }
+
   /// 댓글 목록 조회
   Future<List<IssueCommentModel>> fetchComments(int issueId) async {
     final response = await _dio.get(

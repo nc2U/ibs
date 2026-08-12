@@ -24,6 +24,19 @@ class MeetingRepository {
     final response = await _dio.get(url);
     return MeetingModel.fromJson(response.data as Map<String, dynamic>);
   }
+
+  /// 회의 생성 (POST)
+  Future<MeetingModel> createMeeting(Map<String, dynamic> data) async {
+    final response = await _dio.post(ApiEndpoints.meetings, data: data);
+    return MeetingModel.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  /// 회의 수정 (PATCH)
+  Future<MeetingModel> updateMeeting(int meetingId, Map<String, dynamic> data) async {
+    final url = ApiEndpoints.resolve(ApiEndpoints.meetingDetail, {'id': meetingId});
+    final response = await _dio.patch(url, data: data);
+    return MeetingModel.fromJson(response.data as Map<String, dynamic>);
+  }
 }
 
 /// Riverpod 프로바이더

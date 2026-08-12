@@ -10,6 +10,7 @@ import '../../../core/widgets/loading_shimmer.dart';
 import '../data/issue_repository.dart';
 import '../data/models/issue_model.dart';
 import '../providers/issue_provider.dart';
+import 'issue_form_screen.dart';
 import 'widgets/done_ratio_bottom_sheet.dart';
 import 'widgets/issue_comment_tile.dart';
 
@@ -122,6 +123,19 @@ class _IssueDetailScreenState extends ConsumerState<IssueDetailScreen> {
           orElse: () => Text('업무 상세', style: AppTextStyles.titleMd),
         ),
         actions: [
+          detailState.maybeWhen(
+            data: (issue) => IconButton(
+              icon: const Icon(Icons.edit_outlined, size: 22),
+              tooltip: '수정',
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => IssueFormScreen(initialIssue: issue),
+                ),
+              ),
+            ),
+            orElse: () => const SizedBox.shrink(),
+          ),
           IconButton(
             icon: const Icon(Icons.refresh_rounded, size: 22),
             tooltip: '새로고침',

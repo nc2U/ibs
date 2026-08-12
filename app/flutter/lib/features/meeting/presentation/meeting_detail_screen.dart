@@ -8,6 +8,7 @@ import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/loading_shimmer.dart';
 import '../data/models/meeting_model.dart';
 import '../providers/meeting_provider.dart';
+import 'meeting_form_screen.dart';
 
 /// 회의 상세 화면
 class MeetingDetailScreen extends ConsumerWidget {
@@ -33,6 +34,19 @@ class MeetingDetailScreen extends ConsumerWidget {
           orElse: () => Text('회의 상세', style: AppTextStyles.titleMd),
         ),
         actions: [
+          detailState.maybeWhen(
+            data: (meeting) => IconButton(
+              icon: const Icon(Icons.edit_outlined, size: 22),
+              tooltip: '수정',
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => MeetingFormScreen(initialMeeting: meeting),
+                ),
+              ),
+            ),
+            orElse: () => const SizedBox.shrink(),
+          ),
           IconButton(
             icon: const Icon(Icons.refresh_rounded, size: 22),
             tooltip: '새로고침',

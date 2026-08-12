@@ -10,8 +10,10 @@ import '../../features/issue/presentation/issue_detail_screen.dart';
 
 import '../../features/meeting/presentation/meeting_list_screen.dart';
 import '../../features/meeting/presentation/meeting_detail_screen.dart';
+import '../../features/meeting/presentation/meeting_form_screen.dart';
 
 import '../../features/work/presentation/work_screen.dart';
+import '../../features/issue/presentation/issue_form_screen.dart';
 
 // ── Route 이름 상수 ─────────────────────────────────────────────────────────────
 abstract class AppRoutes {
@@ -70,6 +72,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 builder: (ctx, state) => const WorkScreen(initialIndex: 1),
                 routes: [
                   GoRoute(
+                    path: 'new',
+                    builder: (ctx, state) => const IssueFormScreen(),
+                  ),
+                  GoRoute(
                     path: ':issueId',
                     builder: (ctx, state) {
                       final id = int.tryParse(state.pathParameters['issueId'] ?? '') ?? 0;
@@ -82,6 +88,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 path: 'meetings',
                 builder: (ctx, state) => const WorkScreen(initialIndex: 0),
                 routes: [
+                  GoRoute(
+                    path: 'new',
+                    builder: (ctx, state) => const MeetingFormScreen(),
+                  ),
                   GoRoute(
                     path: ':meetingId',
                     builder: (ctx, state) {
