@@ -67,7 +67,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: 'issues',
-                builder: (ctx, state) => const IssueListScreen(),
+                builder: (ctx, state) => const WorkScreen(initialIndex: 1),
                 routes: [
                   GoRoute(
                     path: ':issueId',
@@ -80,7 +80,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               ),
               GoRoute(
                 path: 'meetings',
-                builder: (ctx, state) => const MeetingListScreen(),
+                builder: (ctx, state) => const WorkScreen(initialIndex: 0),
                 routes: [
                   GoRoute(
                     path: ':meetingId',

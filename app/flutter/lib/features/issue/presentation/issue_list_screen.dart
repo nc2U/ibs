@@ -155,7 +155,7 @@ class _IssueListScreenState extends ConsumerState<IssueListScreen> {
                     final issue = state.items[index];
                     return IssueCard(
                       issue: issue,
-                      onTap: () => context.go(
+                      onTap: () => context.push(
                           '/work/issues/${issue.pk}'),
                       onDoneRatioTap: () =>
                           showDoneRatioBottomSheet(

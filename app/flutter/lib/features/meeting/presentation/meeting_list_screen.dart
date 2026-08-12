@@ -142,7 +142,7 @@ class _MeetingListScreenState extends ConsumerState<MeetingListScreen> {
                     final meeting = state.items[index];
                     return MeetingCard(
                       meeting: meeting,
-                      onTap: () => context.go('/work/meetings/${meeting.pk}'),
+                      onTap: () => context.push('/work/meetings/${meeting.pk}'),
                     );
                   },
                 ),

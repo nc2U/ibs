@@ -273,7 +273,7 @@ class _MeetingIssueTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: () => context.go('/work/issues/${issue.pk}'),
+      onTap: () => context.push('/work/issues/${issue.pk}'),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
