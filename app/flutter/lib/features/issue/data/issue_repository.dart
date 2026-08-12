@@ -35,7 +35,7 @@ class IssueRepository {
   /// 댓글 목록 조회
   Future<List<IssueCommentModel>> fetchComments(int issueId) async {
     final response = await _dio.get(
-      ApiEndpoints.issueComments.replaceAll('{id}', issueId.toString()),
+      ApiEndpoints.issueComments,
       queryParameters: {'issue': issueId, 'ordering': 'created'},
     );
     final data = response.data;
@@ -52,7 +52,7 @@ class IssueRepository {
   /// 댓글 작성
   Future<void> addComment(int issueId, String content) async {
     await _dio.post(
-      '/api/v1/issue-comments/',
+      ApiEndpoints.issueComments,
       data: {'issue': issueId, 'content': content},
     );
   }
@@ -67,7 +67,7 @@ class IssueRepository {
       ),
     });
     await _dio.post(
-      '/api/v1/issue-files/',
+      ApiEndpoints.issueFiles,
       data: formData,
       options: Options(contentType: 'multipart/form-data'),
     );

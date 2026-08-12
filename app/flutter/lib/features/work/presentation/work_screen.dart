@@ -26,16 +26,16 @@ class WorkScreen extends StatelessWidget {
               labelStyle: AppTextStyles.titleSm,
               unselectedLabelStyle: AppTextStyles.bodyMd,
               tabs: const [
-                Tab(text: '업무 목록'),
                 Tab(text: '회의 목록'),
+                Tab(text: '업무 목록'),
               ],
             ),
           ),
           const Expanded(
             child: TabBarView(
               children: [
-                IssueListScreen(),
                 MeetingListScreen(),
+                IssueListScreen(),
               ],
             ),
           ),
