@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
 /// IBS 워크스페이스 타이포그래피 시스템 (Noto Sans KR)
-/// 현장 근무자 가독성 최우선: 최소 14sp, 본문 16sp
+/// 모바일 가독성 최우선: 최소 14sp, 본문 16sp
 abstract class AppTextStyles {
   static TextStyle get _base => GoogleFonts.notoSansKr(color: AppColors.textPrimary);
 

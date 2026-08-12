@@ -8,6 +8,8 @@ import '../data/meeting_repository.dart';
 import '../data/models/meeting_model.dart';
 import '../providers/meeting_provider.dart';
 
+import '../../project/providers/project_provider.dart';
+
 /// 회의 생성 및 수정 폼 화면
 class MeetingFormScreen extends ConsumerStatefulWidget {
   final MeetingModel? initialMeeting;
@@ -30,6 +32,7 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
   String _status = '1'; // 1: 예정, 2: 종료
   bool _isConfirmed = false;
   bool _isSaving = false;
+  int? _selectedProjectPk;
 
   @override
   void initState() {
@@ -47,6 +50,11 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
     if (m != null) {
       _status = m.status;
       _isConfirmed = m.isConfirmed;
+    } else {
+      final selectedProj = ref.read(selectedProjectProvider);
+      if (selectedProj != null) {
+        _selectedProjectPk = selectedProj.pk;
+      }
     }
   }
 
@@ -76,8 +84,7 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final project = ref.read(selectedProjectProvider);
-    if (widget.initialMeeting == null && project == null) {
+    if (widget.initialMeeting == null && _selectedProjectPk == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('프로젝트를 먼저 선택해 주세요.')),
       );
@@ -96,8 +103,8 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
       'decisions': _decisionsController.text.trim(),
       'action_items': _actionItemsController.text.trim(),
     };
-    if (widget.initialMeeting == null && project != null) {
-      payload['project'] = project.pk;
+    if (widget.initialMeeting == null && _selectedProjectPk != null) {
+      payload['project'] = _selectedProjectPk;
     }
 
     try {
@@ -139,6 +146,7 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.initialMeeting != null;
+    final projectsAsync = ref.watch(projectListProvider);
 
     return Scaffold(
       backgroundColor: AppColors.bgPrimary,
@@ -170,6 +178,39 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // ── 프로젝트 선택 (신규 등록 시) ──────────────────────────────────
+              if (!isEdit) ...[
+                Text('프로젝트 *', style: AppTextStyles.titleSm),
+                const SizedBox(height: 6),
+                projectsAsync.when(
+                  loading: () => const SizedBox(
+                    height: 48,
+                    child: Center(
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: AppColors.accentWork)),
+                  ),
+                  error: (e, _) => Text('프로젝트 목록을 불러올 수 없습니다.',
+                      style: AppTextStyles.bodyMuted),
+                  data: (projects) => DropdownButtonFormField<int>(
+                    value: _selectedProjectPk ??
+                        (projects.isNotEmpty ? projects.first.pk : null),
+                    style: AppTextStyles.bodyMd,
+                    dropdownColor: AppColors.bgCard,
+                    decoration: _inputDecoration('프로젝트 선택'),
+                    items: projects
+                        .map((p) => DropdownMenuItem(
+                              value: p.pk,
+                              child:
+                                  Text(p.name, overflow: TextOverflow.ellipsis),
+                            ))
+                        .toList(),
+                    onChanged: (v) => setState(() => _selectedProjectPk = v),
+                    validator: (v) => v == null ? '프로젝트를 선택해 주세요.' : null,
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+
               // ── 회의 제목 ──────────────────────────────────────────────────
               Text('회의 제목 *', style: AppTextStyles.titleSm),
               const SizedBox(height: 6),

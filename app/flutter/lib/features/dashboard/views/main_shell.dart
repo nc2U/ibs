@@ -7,10 +7,11 @@ import '../../../core/constants/app_text_styles.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/project_provider.dart';
 import '../../../core/router/app_router.dart';
+import '../../../core/widgets/project_selector_bottom_sheet.dart';
 
 /// ShellRoute 메인 래퍼
 /// - 하단 탭바를 모든 탭에서 유지
-/// - AppBar에 현재 선택된 현장명 항상 노출
+/// - AppBar에 현재 선택된 프로젝트명 항상 노출
 class MainShell extends ConsumerWidget {
   final Widget child;
   const MainShell({super.key, required this.child});
@@ -81,13 +82,29 @@ class MainShell extends ConsumerWidget {
           children: [
             SvgPicture.asset('assets/images/sygnet.svg', width: 26, height: 26),
             const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('IBS 워크스페이스', style: AppTextStyles.titleMd),
-                // 항상 현재 선택된 현장명 노출 (없으면 '전사 공통')
-                Text(projectName, style: AppTextStyles.caption.copyWith(color: AppColors.accentWork)),
-              ],
+            InkWell(
+              onTap: () => showProjectSelectorBottomSheet(context),
+              borderRadius: BorderRadius.circular(4),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('IBS 워크스페이스', style: AppTextStyles.titleMd),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(projectName,
+                            style: AppTextStyles.caption
+                                .copyWith(color: AppColors.accentWork)),
+                        const SizedBox(width: 2),
+                        const Icon(Icons.arrow_drop_down_rounded,
+                            size: 16, color: AppColors.accentWork),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),

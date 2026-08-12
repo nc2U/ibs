@@ -7,6 +7,7 @@ import '../../../core/providers/project_provider.dart';
 import '../data/issue_repository.dart';
 import '../data/models/issue_model.dart';
 import '../providers/issue_provider.dart';
+import '../../project/providers/project_provider.dart';
 
 /// 업무 생성 및 수정 폼 화면
 class IssueFormScreen extends ConsumerStatefulWidget {
@@ -31,6 +32,8 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
   bool _isPrivate = false;
   bool _isSaving = false;
 
+  String? _selectedProjectSlug;
+
   @override
   void initState() {
     super.initState();
@@ -48,6 +51,11 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
       _statusId = issue.status.pk;
       _priorityId = issue.priority.pk;
       _isPrivate = issue.isPrivate;
+    } else {
+      final selectedProj = ref.read(selectedProjectProvider);
+      if (selectedProj != null) {
+        _selectedProjectSlug = selectedProj.slug;
+      }
     }
   }
 
@@ -75,8 +83,7 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final project = ref.read(selectedProjectProvider);
-    if (widget.initialIssue == null && project == null) {
+    if (widget.initialIssue == null && (_selectedProjectSlug == null || _selectedProjectSlug!.isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('프로젝트를 먼저 선택해 주세요.')),
       );
@@ -97,8 +104,8 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
     if (_dueDateController.text.trim().isNotEmpty) {
       payload['due_date'] = _dueDateController.text.trim();
     }
-    if (widget.initialIssue == null && project != null) {
-      payload['project'] = project.slug;
+    if (widget.initialIssue == null && _selectedProjectSlug != null) {
+      payload['project'] = _selectedProjectSlug;
     }
 
     try {
@@ -140,6 +147,7 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.initialIssue != null;
+    final projectsAsync = ref.watch(projectListProvider);
 
     return Scaffold(
       backgroundColor: AppColors.bgPrimary,
@@ -170,6 +178,40 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // ── 프로젝트 선택 ──────────────────────────────────────────────
+              if (!isEdit) ...[
+                Text('프로젝트 *', style: AppTextStyles.titleSm),
+                const SizedBox(height: 6),
+                projectsAsync.when(
+                  loading: () => const SizedBox(
+                    height: 48,
+                    child: Center(
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: AppColors.accentWork)),
+                  ),
+                  error: (e, _) => Text('프로젝트 목록을 불러올 수 없습니다.',
+                      style: AppTextStyles.bodyMuted),
+                  data: (projects) => DropdownButtonFormField<String>(
+                    value: _selectedProjectSlug ??
+                        (projects.isNotEmpty ? projects.first.slug : null),
+                    style: AppTextStyles.bodyMd,
+                    dropdownColor: AppColors.bgCard,
+                    decoration: _inputDecoration('프로젝트 선택'),
+                    items: projects
+                        .map((p) => DropdownMenuItem(
+                              value: p.slug,
+                              child:
+                                  Text(p.name, overflow: TextOverflow.ellipsis),
+                            ))
+                        .toList(),
+                    onChanged: (v) => setState(() => _selectedProjectSlug = v),
+                    validator: (v) =>
+                        (v == null || v.isEmpty) ? '프로젝트를 선택해 주세요.' : null,
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+
               // ── 제목 ────────────────────────────────────────────────────────
               Text('제목 *', style: AppTextStyles.titleSm),
               const SizedBox(height: 6),

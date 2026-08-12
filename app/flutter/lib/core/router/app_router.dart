@@ -14,6 +14,7 @@ import '../../features/meeting/presentation/meeting_form_screen.dart';
 
 import '../../features/work/presentation/work_screen.dart';
 import '../../features/issue/presentation/issue_form_screen.dart';
+import '../../features/project/presentation/project_screen.dart';
 
 // ── Route 이름 상수 ─────────────────────────────────────────────────────────────
 abstract class AppRoutes {
@@ -107,7 +108,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           // 프로젝트 관리 탭
           GoRoute(
             path: AppRoutes.project,
-            builder: (ctx, state) => const Center(child: Text('프로젝트 관리')),
+            builder: (ctx, state) => const ProjectScreen(),
           ),
 
           // 전자결재 탭 (Phase 3)

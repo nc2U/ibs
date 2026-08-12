@@ -47,6 +47,7 @@ class MeetingCategoryViewSet(viewsets.ModelViewSet):
 
 class MeetingFilter(FilterSet):
     project__slug = CharFilter(field_name='project__slug', label='프로젝트')
+    project__search = CharFilter(field_name='project__slug', label='프로젝트-검색')
     status__exclude = CharFilter(field_name='status', exclude=True, label='상태-제외')
     category__exclude = NumberFilter(field_name='category', exclude=True, label='카테고리-제외')
     creator__exclude = NumberFilter(field_name='creator__pk', exclude=True, label='작성자-제외')

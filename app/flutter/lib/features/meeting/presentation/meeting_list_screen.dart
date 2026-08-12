@@ -71,6 +71,10 @@ class _MeetingListScreenState extends ConsumerState<MeetingListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(selectedProjectProvider, (previous, next) {
+      _applyFilter();
+    });
+
     final meetingState = ref.watch(meetingListProvider);
 
     return Column(
@@ -114,7 +118,7 @@ class _MeetingListScreenState extends ConsumerState<MeetingListScreen> {
               if (state.items.isEmpty) {
                 return const ErrorView.empty(
                   message: '등록된 회의가 없습니다.',
-                  subMessage: '현장을 선택하거나 필터를 변경해 보세요.',
+                  subMessage: '프로젝트를 선택하거나 필터를 변경해 보세요.',
                 );
               }
 

@@ -13,7 +13,7 @@ import 'widgets/issue_card.dart';
 
 /// 업무 목록 화면
 /// - 상단 필터 칩: 내 업무 / 전체 / 완료 포함
-/// - 현장 선택 시 자동 project 필터 적용
+/// - 프로젝트 선택 시 자동 project 필터 적용
 /// - 무한 스크롤 페이지네이션
 class IssueListScreen extends ConsumerStatefulWidget {
   const IssueListScreen({super.key});
@@ -83,6 +83,10 @@ class _IssueListScreenState extends ConsumerState<IssueListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(selectedProjectProvider, (previous, next) {
+      _applyFilter();
+    });
+
     final issueState = ref.watch(issueListProvider);
 
     return Column(
@@ -126,7 +130,7 @@ class _IssueListScreenState extends ConsumerState<IssueListScreen> {
               if (state.items.isEmpty) {
                 return const ErrorView.empty(
                   message: '할당된 업무가 없습니다.',
-                  subMessage: '현장을 선택하거나 필터를 변경해 보세요.',
+                  subMessage: '프로젝트를 선택하거나 필터를 변경해 보세요.',
                 );
               }
 
