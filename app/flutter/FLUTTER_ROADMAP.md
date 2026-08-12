@@ -9,7 +9,15 @@
 * **위치**: `app/flutter`
 * **Package Name**: `mobile_ibs`
 * **App Display Name**: IBS워크스페이스
-* **주요 개발 환경**: Flutter 3.44.x, Dart 3.12.x, Android Studio / PyCharm
+* **주요 개발 환경**: Flutter 3.x, Dart 3.9.x+, Android Studio / PyCharm
+* **핵심 패키지**:
+    * 상태관리: `flutter_riverpod` + `riverpod_annotation` (코드 생성)
+    * 라우팅: `go_router` (ShellRoute 기반 하단탭 유지)
+    * 네트워킹: `dio` (AuthInterceptor 토큰 자동 갱신)
+    * 보안저장소: `flutter_secure_storage`
+    * 모델: `freezed` + `json_serializable` (코드 생성)
+    * UI: `google_fonts` (Noto Sans KR), `shimmer`, `cached_network_image`
+    * 기타: `image_picker`, `hive_flutter`, `flutter_svg`
 
 ---
 

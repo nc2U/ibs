@@ -1,73 +1,66 @@
 import 'package:dio/dio.dart';
-import '../../../core/api/api_client.dart';
-import '../../../core/constants/api_constants.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/providers/dio_provider.dart';
+import '../../../core/storage/token_storage.dart';
+import '../../../core/constants/api_endpoints.dart';
 
 class AuthService {
-  final ApiClient _apiClient = ApiClient();
+  final Dio _dio;
+  final TokenStorage _tokenStorage;
 
-  // Django SimpleJWT 로그인 (/api/v1/token/)
+  AuthService({required Dio dio, required TokenStorage tokenStorage})
+      : _dio = dio,
+        _tokenStorage = tokenStorage;
+
+  /// Django SimpleJWT 로그인 (/api/v1/token/)
   Future<Map<String, dynamic>> login({
     required String email,
     required String password,
   }) async {
     try {
-      final response = await _apiClient.dio.post(
-        ApiConstants.jwtCreate,
-        data: {
-          'email': email,
-          'password': password,
-        },
+      final response = await _dio.post(
+        ApiEndpoints.jwtCreate,
+        data: {'email': email, 'password': password},
       );
 
       final data = response.data as Map<String, dynamic>;
-      final accessToken = data['access'] as String;
+      final accessToken  = data['access']  as String;
       final refreshToken = data['refresh'] as String;
 
-      // 토큰 보안 저장소에 저장
-      await _apiClient.tokenStorage.saveAccessToken(accessToken);
-      await _apiClient.tokenStorage.saveRefreshToken(refreshToken);
+      await _tokenStorage.saveAccessToken(accessToken);
+      await _tokenStorage.saveRefreshToken(refreshToken);
 
-      return {
-        'success': true,
-        'access': accessToken,
-        'refresh': refreshToken,
-      };
+      return {'success': true, 'access': accessToken, 'refresh': refreshToken};
     } on DioException catch (e) {
-      print('=== LOGIN DIO ERROR ===');
-      print('Status Code: ${e.response?.statusCode}');
-      print('Response Data: ${e.response?.data}');
-      
       String errorMessage = '로그인에 실패했습니다.';
-      if (e.response != null && e.response?.data != null) {
-        final data = e.response?.data;
-        if (data is Map) {
-          if (data.containsKey('detail')) {
-            errorMessage = data['detail'].toString();
-          } else {
-            errorMessage = data.toString();
-          }
-        }
+      final responseData = e.response?.data;
+      if (responseData is Map && responseData.containsKey('detail')) {
+        errorMessage = responseData['detail'].toString();
+      } else if (responseData != null) {
+        errorMessage = responseData.toString();
       }
-      return {
-        'success': false,
-        'message': errorMessage,
-      };
+      return {'success': false, 'message': errorMessage};
     } catch (e) {
-      return {
-        'success': false,
-        'message': '서버와의 통신 중 오류가 발생했습니다: $e',
-      };
+      return {'success': false, 'message': '서버와의 통신 중 오류가 발생했습니다.'};
     }
   }
 
-  // 로그아웃
+  /// 로그아웃 (토큰 삭제)
   Future<void> logout() async {
-    await _apiClient.tokenStorage.clearTokens();
+    await _tokenStorage.clearTokens();
   }
 
-  // 로그인 상태 확인 (AccessToken 존재 여부)
+  /// 로그인 상태 확인
   Future<bool> isLoggedIn() async {
-    final token = await _apiClient.tokenStorage.getAccessToken();
+    final token = await _tokenStorage.getAccessToken();
     return token != null && token.isNotEmpty;
   }
 }
+
+/// AuthService Riverpod 프로바이더
+final authServiceProvider = Provider<AuthService>((ref) {
+  return AuthService(
+    dio: ref.watch(dioProvider),
+    tokenStorage: ref.watch(tokenStorageProvider),
+  );
+});

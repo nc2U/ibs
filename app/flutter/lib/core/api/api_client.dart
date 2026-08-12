@@ -1,39 +1,102 @@
 import 'package:dio/dio.dart';
-import '../constants/api_constants.dart';
+import 'dart:io';
 import '../storage/token_storage.dart';
+import '../constants/api_endpoints.dart';
 
-class ApiClient {
-  late final Dio dio;
-  final TokenStorage tokenStorage = TokenStorage();
+/// 개발/운영 환경별 Base URL
+String get _baseUrl {
+  if (Platform.isAndroid) return 'http://10.0.2.2'; // 에뮬레이터 → localhost
+  return 'http://localhost';
+}
 
-  ApiClient() {
-    dio = Dio(
-      BaseOptions(
-        baseUrl: ApiConstants.baseUrl,
-        connectTimeout: const Duration(seconds: 10),
-        receiveTimeout: const Duration(seconds: 10),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-      ),
-    );
+/// Dio 싱글톤 인스턴스 생성 함수
+/// Riverpod dioProvider에서 호출
+Dio createDio(TokenStorage tokenStorage) {
+  final dio = Dio(
+    BaseOptions(
+      baseUrl: _baseUrl,
+      connectTimeout: const Duration(seconds: 10),
+      receiveTimeout: const Duration(seconds: 15),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+    ),
+  );
 
-    // 요청 시 JWT Access Token을 헤더에 자동 추가하는 인터셉터
-    dio.interceptors.add(
-      InterceptorsWrapper(
-        onRequest: (options, handler) async {
-          final token = await tokenStorage.getAccessToken();
-          if (token != null && token.isNotEmpty) {
-            options.headers['Authorization'] = 'Bearer $token';
-          }
-          return handler.next(options);
-        },
-        onError: (DioException error, handler) async {
-          // 401 Unauthorized 발생 시 리프레시 토큰 처리 로직 (추후 확장)
-          return handler.next(error);
-        },
-      ),
-    );
+  dio.interceptors.add(
+    AuthInterceptor(dio: dio, tokenStorage: tokenStorage),
+  );
+
+  return dio;
+}
+
+/// JWT 토큰 자동 갱신 인터셉터
+/// - 모든 요청에 Authorization 헤더 자동 삽입
+/// - 401 응답 시 refresh_token으로 access_token 재발급 후 원요청 재시도
+/// - 갱신 실패 시 토큰 삭제 (로그인 화면으로 go_router가 리다이렉트 처리)
+class AuthInterceptor extends QueuedInterceptorsWrapper {
+  final Dio dio;
+  final TokenStorage tokenStorage;
+
+  AuthInterceptor({required this.dio, required this.tokenStorage});
+
+  @override
+  Future<void> onRequest(
+    RequestOptions options,
+    RequestInterceptorHandler handler,
+  ) async {
+    final token = await tokenStorage.getAccessToken();
+    if (token != null && token.isNotEmpty) {
+      options.headers['Authorization'] = 'Bearer $token';
+    }
+    handler.next(options);
+  }
+
+  @override
+  Future<void> onError(
+    DioException err,
+    ErrorInterceptorHandler handler,
+  ) async {
+    if (err.response?.statusCode == 401) {
+      // access_token 만료 → refresh 시도
+      final refreshed = await _tryRefresh();
+      if (refreshed) {
+        // 원 요청 재시도 (새 access_token으로)
+        final newToken = await tokenStorage.getAccessToken();
+        final retryOptions = err.requestOptions;
+        retryOptions.headers['Authorization'] = 'Bearer $newToken';
+        try {
+          final retryResponse = await dio.fetch(retryOptions);
+          return handler.resolve(retryResponse);
+        } catch (e) {
+          // 재시도도 실패 → 토큰 삭제, 에러 전파 (go_router 가드가 로그인으로 리다이렉트)
+          await tokenStorage.clearTokens();
+        }
+      } else {
+        await tokenStorage.clearTokens();
+      }
+    }
+    handler.next(err);
+  }
+
+  Future<bool> _tryRefresh() async {
+    final refreshToken = await tokenStorage.getRefreshToken();
+    if (refreshToken == null || refreshToken.isEmpty) return false;
+
+    try {
+      // 인터셉터 없는 별도 Dio 인스턴스로 refresh 요청 (무한루프 방지)
+      final refreshDio = Dio(BaseOptions(baseUrl: _baseUrl));
+      final response = await refreshDio.post(
+        ApiEndpoints.jwtRefresh,
+        data: {'refresh': refreshToken},
+      );
+      final newAccess = response.data['access'] as String?;
+      if (newAccess != null) {
+        await tokenStorage.saveAccessToken(newAccess);
+        return true;
+      }
+    } catch (_) {}
+    return false;
   }
 }
