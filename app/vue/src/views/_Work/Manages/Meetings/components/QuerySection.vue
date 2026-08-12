@@ -64,7 +64,19 @@ const applyQuery = (query: any) => {
     }
     if (f.cond) Object.assign(cond, f.cond)
     if (f.form) {
-      Object.assign(form, f.form)
+      const myId = currentUserId.value ?? getUsers.value[0]?.value
+      const formPayload = { ...f.form }
+      if (formPayload.creator === 'me') formPayload.creator = myId
+      if (formPayload.attendees === 'me') formPayload.attendees = myId
+
+      Object.assign(form, formPayload)
+
+      if (formPayload.project && !searchCond.value.includes('project')) {
+        searchCond.value.push('project')
+        if (!enabledFields.value.includes('project')) {
+          enabledFields.value.push('project')
+        }
+      }
     } else {
       const myId = currentUserId.value ?? getUsers.value[0]?.value
       if (f.creator !== undefined || f.author !== undefined) {

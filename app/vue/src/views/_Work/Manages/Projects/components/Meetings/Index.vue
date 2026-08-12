@@ -55,6 +55,7 @@ const viewMode = computed(() => {
 
 const page = ref(1)
 const meetingListRef = ref()
+const querySectionRef = ref()
 const activeQueryId = ref<number | null>(null)
 const listFilter = ref<MeetingFilter>({})
 
@@ -79,16 +80,12 @@ const onPageSelect = (p: number) => {
 
 const onQueryClick = (query: any) => {
   activeQueryId.value = query.pk
-  if (meetingListRef.value?.querySectionRef) {
-    meetingListRef.value.querySectionRef.applyQuery(query)
-  }
+  querySectionRef.value?.applyQuery(query)
 }
 
 const onResetQuery = () => {
   activeQueryId.value = null
-  if (meetingListRef.value?.querySectionRef) {
-    meetingListRef.value.querySectionRef.resetFilter()
-  }
+  querySectionRef.value?.resetFilter()
 }
 
 const fetchMeetings = async () => {

@@ -60,18 +60,20 @@ const saveQuery = async (event: Event) => {
   }
   validated.value = false
 
+  const { project: extraProject, ...otherExtraData } = props.extraData || {}
+
   const payload = {
     name: queryName.value,
     description: queryDescription.value,
     target_type: props.targetType,
     is_public: isPublic.value,
-    project: props.extraData.project || null,
+    project: extraProject || null,
     filters: {
       searchCond: props.searchCond,
       cond: props.cond,
       form: {
         ...props.form,
-        ...props.extraData,
+        ...otherExtraData,
       },
     },
   }
