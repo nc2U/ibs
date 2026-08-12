@@ -107,6 +107,7 @@ class _MeetingListScreenState extends ConsumerState<MeetingListScreen> {
           child: meetingState.when(
             loading: () => const LoadingShimmer(),
             error: (e, _) => ErrorView.network(
+              subMessage: e.toString(),
               onRetry: () => ref.invalidate(meetingListProvider),
             ),
             data: (state) {

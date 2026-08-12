@@ -119,6 +119,7 @@ class _IssueListScreenState extends ConsumerState<IssueListScreen> {
           child: issueState.when(
             loading: () => const LoadingShimmer(),
             error: (e, _) => ErrorView.network(
+              subMessage: e.toString(),
               onRetry: () => ref.invalidate(issueListProvider),
             ),
             data: (state) {
