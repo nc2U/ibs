@@ -1,0 +1,186 @@
+import 'package:flutter/material.dart';
+import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_text_styles.dart';
+import '../../data/models/meeting_model.dart';
+
+/// 회의 목록 카드 위젯
+class MeetingCard extends StatelessWidget {
+  final MeetingModel meeting;
+  final VoidCallback? onTap;
+
+  const MeetingCard({
+    super.key,
+    required this.meeting,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final statusColor = _statusColor(meeting.status);
+
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.bgCard,
+          border: Border.all(color: AppColors.border, width: 0.8),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── 상단 행: 카테고리 + 상태배지 + 확정 여부 ──────────────────────
+            Row(
+              children: [
+                if (meeting.categoryDesc != null) ...[
+                  _CategoryBadge(
+                    name: meeting.categoryDesc!.name,
+                    colorHex: meeting.categoryDesc!.color,
+                  ),
+                  const SizedBox(width: 6),
+                ],
+                _StatusBadge(
+                  label: meeting.statusDisplay,
+                  color: statusColor,
+                ),
+                if (meeting.isConfirmed) ...[
+                  const SizedBox(width: 6),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.accentProject.withAlpha(30),
+                      borderRadius: BorderRadius.circular(3),
+                      border: Border.all(
+                          color: AppColors.accentProject.withAlpha(80)),
+                    ),
+                    child: Text(
+                      '확정',
+                      style: AppTextStyles.label
+                          .copyWith(color: AppColors.accentProject),
+                    ),
+                  ),
+                ],
+                const Spacer(),
+                Icon(Icons.calendar_today_outlined,
+                    size: 13, color: AppColors.textMuted),
+                const SizedBox(width: 4),
+                Text(
+                  _formatDate(meeting.meetingDate),
+                  style: AppTextStyles.caption,
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            // ── 제목 ──────────────────────────────────────────────────────────
+            Text(
+              meeting.title,
+              style: AppTextStyles.titleSm,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 10),
+
+            // ── 하단 행: 참석자 수 + 액션아이템/이슈 수 ────────────────────────
+            Row(
+              children: [
+                Icon(Icons.people_outline_rounded,
+                    size: 14, color: AppColors.textMuted),
+                const SizedBox(width: 4),
+                Text(
+                  '${meeting.attendeesDesc.length}명 참석',
+                  style: AppTextStyles.caption,
+                ),
+                if (meeting.issues.isNotEmpty) ...[
+                  const SizedBox(width: 12),
+                  Icon(Icons.task_alt_rounded,
+                      size: 14, color: AppColors.accentWork),
+                  const SizedBox(width: 4),
+                  Text(
+                    '액션아이템 ${meeting.issues.length}건',
+                    style: AppTextStyles.caption
+                        .copyWith(color: AppColors.accentWork),
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _statusColor(String status) {
+    switch (status) {
+      case '2': // 종료
+        return AppColors.textDisabled;
+      case '1': // 예정/진행
+      default:
+        return AppColors.accentWork;
+    }
+  }
+
+  String _formatDate(String dateStr) {
+    try {
+      final dt = DateTime.parse(dateStr);
+      return '${dt.year}.${dt.month.toString().padLeft(2, '0')}.${dt.day.toString().padLeft(2, '0')}';
+    } catch (_) {
+      return dateStr;
+    }
+  }
+}
+
+class _CategoryBadge extends StatelessWidget {
+  final String name;
+  final String colorHex;
+  const _CategoryBadge({required this.name, required this.colorHex});
+
+  Color _parseColor(String hex) {
+    try {
+      final cleaned = hex.replaceAll('#', '');
+      return Color(int.parse('FF$cleaned', radix: 16));
+    } catch (_) {
+      return AppColors.accentWork;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _parseColor(colorHex);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withAlpha(30),
+        borderRadius: BorderRadius.circular(3),
+        border: Border.all(color: color.withAlpha(80)),
+      ),
+      child: Text(
+        name,
+        style: AppTextStyles.label.copyWith(color: color),
+      ),
+    );
+  }
+}
+
+class _StatusBadge extends StatelessWidget {
+  final String label;
+  final Color color;
+  const _StatusBadge({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withAlpha(30),
+        borderRadius: BorderRadius.circular(3),
+        border: Border.all(color: color.withAlpha(80)),
+      ),
+      child: Text(
+        label,
+        style: AppTextStyles.label.copyWith(color: color),
+      ),
+    );
+  }
+}

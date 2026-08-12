@@ -1,0 +1,209 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'meeting_model.dart';
+
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
+_$MeetingCategoryModelImpl _$$MeetingCategoryModelImplFromJson(
+  Map<String, dynamic> json,
+) => _$MeetingCategoryModelImpl(
+  pk: (json['pk'] as num).toInt(),
+  name: json['name'] as String,
+  color: json['color'] as String? ?? '#6366F1',
+  order: (json['order'] as num?)?.toInt() ?? 0,
+);
+
+Map<String, dynamic> _$$MeetingCategoryModelImplToJson(
+  _$MeetingCategoryModelImpl instance,
+) => <String, dynamic>{
+  'pk': instance.pk,
+  'name': instance.name,
+  'color': instance.color,
+  'order': instance.order,
+};
+
+_$MeetingFileModelImpl _$$MeetingFileModelImplFromJson(
+  Map<String, dynamic> json,
+) => _$MeetingFileModelImpl(
+  pk: (json['pk'] as num).toInt(),
+  file: json['file'] as String,
+  fileName: json['fileName'] as String,
+  fileType: json['fileType'] as String? ?? '',
+  fileSize: (json['fileSize'] as num?)?.toInt(),
+  description: json['description'] as String? ?? '',
+  created: json['created'] as String,
+  creator: json['creator'] == null
+      ? null
+      : SimpleUserModel.fromJson(json['creator'] as Map<String, dynamic>),
+);
+
+Map<String, dynamic> _$$MeetingFileModelImplToJson(
+  _$MeetingFileModelImpl instance,
+) => <String, dynamic>{
+  'pk': instance.pk,
+  'file': instance.file,
+  'fileName': instance.fileName,
+  'fileType': instance.fileType,
+  'fileSize': instance.fileSize,
+  'description': instance.description,
+  'created': instance.created,
+  'creator': instance.creator,
+};
+
+_$MeetingLinkModelImpl _$$MeetingLinkModelImplFromJson(
+  Map<String, dynamic> json,
+) => _$MeetingLinkModelImpl(
+  pk: (json['pk'] as num).toInt(),
+  link: json['link'] as String,
+  name: json['name'] as String,
+  hit: (json['hit'] as num?)?.toInt() ?? 0,
+  created: json['created'] as String,
+  creator: json['creator'] == null
+      ? null
+      : SimpleUserModel.fromJson(json['creator'] as Map<String, dynamic>),
+);
+
+Map<String, dynamic> _$$MeetingLinkModelImplToJson(
+  _$MeetingLinkModelImpl instance,
+) => <String, dynamic>{
+  'pk': instance.pk,
+  'link': instance.link,
+  'name': instance.name,
+  'hit': instance.hit,
+  'created': instance.created,
+  'creator': instance.creator,
+};
+
+_$IssueInMeetingModelImpl _$$IssueInMeetingModelImplFromJson(
+  Map<String, dynamic> json,
+) => _$IssueInMeetingModelImpl(
+  pk: (json['pk'] as num).toInt(),
+  project: json['project'] as String,
+  subject: json['subject'] as String,
+  status: json['status'] as String,
+  assignedTo: json['assignedTo'] == null
+      ? null
+      : SimpleUserModel.fromJson(json['assignedTo'] as Map<String, dynamic>),
+  closed: json['closed'] as String?,
+);
+
+Map<String, dynamic> _$$IssueInMeetingModelImplToJson(
+  _$IssueInMeetingModelImpl instance,
+) => <String, dynamic>{
+  'pk': instance.pk,
+  'project': instance.project,
+  'subject': instance.subject,
+  'status': instance.status,
+  'assignedTo': instance.assignedTo,
+  'closed': instance.closed,
+};
+
+_$MeetingModelImpl _$$MeetingModelImplFromJson(Map<String, dynamic> json) =>
+    _$MeetingModelImpl(
+      pk: (json['pk'] as num).toInt(),
+      project: (json['project'] as num).toInt(),
+      projectDesc: SimpleProjectModel.fromJson(
+        json['projectDesc'] as Map<String, dynamic>,
+      ),
+      title: json['title'] as String,
+      category: (json['category'] as num?)?.toInt(),
+      categoryDesc: json['categoryDesc'] == null
+          ? null
+          : MeetingCategoryModel.fromJson(
+              json['categoryDesc'] as Map<String, dynamic>,
+            ),
+      status: json['status'] as String? ?? '1',
+      statusDisplay: json['statusDisplay'] as String? ?? '예정',
+      isConfirmed: json['isConfirmed'] as bool? ?? false,
+      agenda: json['agenda'] as String? ?? '',
+      content: json['content'] as String? ?? '',
+      decisions: json['decisions'] as String? ?? '',
+      actionItems: json['actionItems'] as String? ?? '',
+      meetingDate: json['meetingDate'] as String,
+      attendees:
+          (json['attendees'] as List<dynamic>?)
+              ?.map((e) => (e as num).toInt())
+              .toList() ??
+          const [],
+      attendeesDesc:
+          (json['attendeesDesc'] as List<dynamic>?)
+              ?.map((e) => SimpleUserModel.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
+      otherAttendees: json['otherAttendees'] as String? ?? '',
+      files:
+          (json['files'] as List<dynamic>?)
+              ?.map((e) => MeetingFileModel.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
+      links:
+          (json['links'] as List<dynamic>?)
+              ?.map((e) => MeetingLinkModel.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
+      issues:
+          (json['issues'] as List<dynamic>?)
+              ?.map(
+                (e) => IssueInMeetingModel.fromJson(e as Map<String, dynamic>),
+              )
+              .toList() ??
+          const [],
+      creator: json['creator'] == null
+          ? null
+          : SimpleUserModel.fromJson(json['creator'] as Map<String, dynamic>),
+      updater: json['updater'] == null
+          ? null
+          : SimpleUserModel.fromJson(json['updater'] as Map<String, dynamic>),
+      created: json['created'] as String,
+      updated: json['updated'] as String,
+    );
+
+Map<String, dynamic> _$$MeetingModelImplToJson(_$MeetingModelImpl instance) =>
+    <String, dynamic>{
+      'pk': instance.pk,
+      'project': instance.project,
+      'projectDesc': instance.projectDesc,
+      'title': instance.title,
+      'category': instance.category,
+      'categoryDesc': instance.categoryDesc,
+      'status': instance.status,
+      'statusDisplay': instance.statusDisplay,
+      'isConfirmed': instance.isConfirmed,
+      'agenda': instance.agenda,
+      'content': instance.content,
+      'decisions': instance.decisions,
+      'actionItems': instance.actionItems,
+      'meetingDate': instance.meetingDate,
+      'attendees': instance.attendees,
+      'attendeesDesc': instance.attendeesDesc,
+      'otherAttendees': instance.otherAttendees,
+      'files': instance.files,
+      'links': instance.links,
+      'issues': instance.issues,
+      'creator': instance.creator,
+      'updater': instance.updater,
+      'created': instance.created,
+      'updated': instance.updated,
+    };
+
+_$MeetingListResponseImpl _$$MeetingListResponseImplFromJson(
+  Map<String, dynamic> json,
+) => _$MeetingListResponseImpl(
+  count: (json['count'] as num).toInt(),
+  next: json['next'] as String?,
+  previous: json['previous'] as String?,
+  results: (json['results'] as List<dynamic>)
+      .map((e) => MeetingModel.fromJson(e as Map<String, dynamic>))
+      .toList(),
+);
+
+Map<String, dynamic> _$$MeetingListResponseImplToJson(
+  _$MeetingListResponseImpl instance,
+) => <String, dynamic>{
+  'count': instance.count,
+  'next': instance.next,
+  'previous': instance.previous,
+  'results': instance.results,
+};

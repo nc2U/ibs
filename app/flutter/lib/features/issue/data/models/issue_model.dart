@@ -1,31 +1,10 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import '../../../../core/models/common_models.dart';
 
 part 'issue_model.freezed.dart';
 part 'issue_model.g.dart';
 
-// ── 공통 경량 모델 ─────────────────────────────────────────────────────────────
-
-@freezed
-class SimpleUserModel with _$SimpleUserModel {
-  const factory SimpleUserModel({
-    required int pk,
-    required String username,
-    String? email,
-  }) = _SimpleUserModel;
-  factory SimpleUserModel.fromJson(Map<String, dynamic> json) =>
-      _$SimpleUserModelFromJson(json);
-}
-
-@freezed
-class SimpleProjectModel with _$SimpleProjectModel {
-  const factory SimpleProjectModel({
-    required int pk,
-    required String name,
-    required String slug,
-  }) = _SimpleProjectModel;
-  factory SimpleProjectModel.fromJson(Map<String, dynamic> json) =>
-      _$SimpleProjectModelFromJson(json);
-}
+// ── 경량 모델 ─────────────────────────────────────────────────────────────
 
 @freezed
 class IssueStatusModel with _$IssueStatusModel {

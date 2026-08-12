@@ -8,6 +8,11 @@ import '../../features/dashboard/views/home_tab.dart';
 import '../../features/issue/presentation/issue_list_screen.dart';
 import '../../features/issue/presentation/issue_detail_screen.dart';
 
+import '../../features/meeting/presentation/meeting_list_screen.dart';
+import '../../features/meeting/presentation/meeting_detail_screen.dart';
+
+import '../../features/work/presentation/work_screen.dart';
+
 // ── Route 이름 상수 ─────────────────────────────────────────────────────────────
 abstract class AppRoutes {
   static const login     = '/login';
@@ -58,7 +63,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           // 업무 관리 탭
           GoRoute(
             path: AppRoutes.work,
-            builder: (ctx, state) => const IssueListScreen(),
+            builder: (ctx, state) => const WorkScreen(initialIndex: 0),
             routes: [
               GoRoute(
                 path: 'issues',
@@ -75,13 +80,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               ),
               GoRoute(
                 path: 'meetings',
-                builder: (ctx, state) => const Center(child: Text('회의 목록')),
+                builder: (ctx, state) => const MeetingListScreen(),
                 routes: [
                   GoRoute(
                     path: ':meetingId',
                     builder: (ctx, state) {
-                      final id = int.tryParse(state.pathParameters['meetingId'] ?? '');
-                      return Center(child: Text('회의 상세 #$id'));
+                      final id = int.tryParse(state.pathParameters['meetingId'] ?? '') ?? 0;
+                      return MeetingDetailScreen(meetingId: id);
                     },
                   ),
                 ],

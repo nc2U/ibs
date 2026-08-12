@@ -6,38 +6,6 @@ part of 'issue_model.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$SimpleUserModelImpl _$$SimpleUserModelImplFromJson(
-  Map<String, dynamic> json,
-) => _$SimpleUserModelImpl(
-  pk: (json['pk'] as num).toInt(),
-  username: json['username'] as String,
-  email: json['email'] as String?,
-);
-
-Map<String, dynamic> _$$SimpleUserModelImplToJson(
-  _$SimpleUserModelImpl instance,
-) => <String, dynamic>{
-  'pk': instance.pk,
-  'username': instance.username,
-  'email': instance.email,
-};
-
-_$SimpleProjectModelImpl _$$SimpleProjectModelImplFromJson(
-  Map<String, dynamic> json,
-) => _$SimpleProjectModelImpl(
-  pk: (json['pk'] as num).toInt(),
-  name: json['name'] as String,
-  slug: json['slug'] as String,
-);
-
-Map<String, dynamic> _$$SimpleProjectModelImplToJson(
-  _$SimpleProjectModelImpl instance,
-) => <String, dynamic>{
-  'pk': instance.pk,
-  'name': instance.name,
-  'slug': instance.slug,
-};
-
 _$IssueStatusModelImpl _$$IssueStatusModelImplFromJson(
   Map<String, dynamic> json,
 ) => _$IssueStatusModelImpl(
