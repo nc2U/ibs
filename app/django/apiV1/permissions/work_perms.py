@@ -234,6 +234,10 @@ class MeetingPermission(ProjectPermission):
         if not super().has_object_permission(request, view, obj):
             return False
 
+        user = request.user
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return True
+
         # 2. 안전한 메서드(GET, HEAD, OPTIONS)는 통과
         if request.method in permissions.SAFE_METHODS:
             return True
@@ -330,6 +334,8 @@ class IssuePermission(ProjectPermission):
             return False
 
         user = request.user
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return True
 
         # 2. issue_visible에 의한 개별 업무 읽기 권한(SAFE_METHODS) 검사
         if request.method in permissions.SAFE_METHODS:
@@ -456,6 +462,10 @@ class IssueCommentPermission(ProjectPermission):
         if not super().has_object_permission(request, view, obj):
             return False
 
+        user = request.user
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return True
+
         project = None
         if hasattr(obj, 'issue') and hasattr(obj.issue, 'project'):
             project = obj.issue.project
@@ -521,6 +531,10 @@ class NewsPermission(ProjectPermission):
         if not super().has_object_permission(request, view, obj):
             return False
 
+        user = request.user
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return True
+
         # 3. 액션 기반 권한 제어
         project = self.extract_project(obj)
         if not project:
@@ -571,6 +585,10 @@ class ForumPermission(ProjectPermission):
         # 1. 기본 프로젝트 레벨 권한 검증
         if not super().has_object_permission(request, view, obj):
             return False
+
+        user = request.user
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return True
 
         project = self.extract_project(obj)
         if not project:
