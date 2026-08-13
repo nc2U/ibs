@@ -155,7 +155,7 @@ onBeforeMount(() => {
         <CCol class="text-right form-text">
           <span class="mr-3">
             <v-icon icon="mdi-account-tag" color="success" size="small" class="mr-2" />
-            내 프로젝트
+            내 워크스페이스
           </span>
 
           <span class="mr-2">
@@ -168,7 +168,7 @@ onBeforeMount(() => {
         <div class="my-5"></div>
         <CCol class="mt-4 p-3 bg-more-light text-muted">
           <v-icon icon="mdi-information" color="light-blue-lighten-2" size="small" class="mr-2" />
-          프로젝트를 생성 하려면
+          워크스페이스를 생성 하려면
           <strong>
             {{
               rollList

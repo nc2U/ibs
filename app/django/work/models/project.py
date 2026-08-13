@@ -18,9 +18,9 @@ class IssueProject(models.Model):
                             help_text='1에서 100글자 소문자(a-z), 숫자, 대쉬(-)와 밑줄(_)만 가능합니다. 식별자는 저장 후에는 수정할 수 없습니다.')
     description = models.TextField('설명', blank=True, default='')
     homepage = models.URLField('홈페이지', max_length=255, null=True, blank=True)
-    is_public = models.BooleanField('공개', default=True, help_text='공개 프로젝트는 모든 로그인한 사용자가 접속할 수 있습니다.')
-    parent = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='상위 프로젝트')
-    is_inherit_members = models.BooleanField('상위 프로젝트 멤버 상속', default=False)
+    is_public = models.BooleanField('공개', default=True, help_text='공개 워크스페이스는 모든 로그인한 사용자가 접속할 수 있습니다.')
+    parent = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='상위 워크스페이스')
+    is_inherit_members = models.BooleanField('상위 워크스페이스 멤버 상속', default=False)
     default_version = models.ForeignKey('Version', on_delete=models.SET_NULL, null=True, blank=True,
                                         verbose_name='기본 단계', help_text='기존 공유 단계에서만 작동합니다.')
     allowed_roles = models.ManyToManyField('Role', blank=True, related_name='projects', verbose_name='허용 역할')
@@ -32,7 +32,7 @@ class IssueProject(models.Model):
     slack_notifications_enabled = models.BooleanField(
         'Slack 알림 활성화',
         default=False,
-        help_text='이 프로젝트의 데이터 변동을 Slack으로 실시간 알림받습니다.'
+        help_text='이 워크스페이스의 데이터 변동을 Slack으로 실시간 알림받습니다.'
     )
     slack_webhook_url = models.CharField(
         'Slack Webhook URL',
@@ -120,8 +120,8 @@ class IssueProject(models.Model):
 
     def get_user_permissions(self, user):
         """
-        사용자의 프로젝트 내 권한 코드 세트를 계산합니다.
-        프로젝트 멤버가 아니거나 로그인하지 않은 경우 빈 리스트를 반환합니다.
+        사용자의 워크스페이스 내 권한 코드 세트를 계산합니다.
+        워크스페이스 멤버가 아니거나 로그인하지 않은 경우 빈 리스트를 반환합니다.
         """
         if not user or not user.is_authenticated:
             return []
@@ -134,7 +134,7 @@ class IssueProject(models.Model):
 
         permission_codes = set()
 
-        # 1. 상속 가능한 상위 프로젝트 목록 계산
+        # 1. 상속 가능한 상위 워크스페이스 목록 계산
         project_ids = [self.pk]
         curr = self
         while curr.is_inherit_members and curr.parent:
@@ -163,7 +163,7 @@ class IssueProject(models.Model):
 
     def get_user_role_attributes(self, user):
         """
-        사용자의 프로젝트 내 종합 역할(Role) 속성을 계산합니다.
+        사용자의 워크스페이스 내 종합 역할(Role) 속성을 계산합니다.
         """
         default_attrs = {
             'assignable': False,
@@ -182,7 +182,7 @@ class IssueProject(models.Model):
                 'user_visible': 'ALL'
             }
 
-        # 2. 상속 가능한 상위 프로젝트 목록 계산
+        # 2. 상속 가능한 상위 워크스페이스 목록 계산
         projects_to_fetch = [self]
         curr = self
         while curr.is_inherit_members and curr.parent:
@@ -233,7 +233,7 @@ class IssueProject(models.Model):
 
 
 class Module(models.Model):
-    project = models.OneToOneField(IssueProject, on_delete=models.CASCADE, verbose_name='프로젝트')
+    project = models.OneToOneField(IssueProject, on_delete=models.CASCADE, verbose_name='워크스페이스')
     meeting = models.BooleanField('회의', default=True)
     issue = models.BooleanField('업무', default=True)
     news = models.BooleanField('공지', default=True)
@@ -256,7 +256,7 @@ class Role(models.Model):
     assignable = models.BooleanField('업무할당 가능 여부', default=True)
     ISSUE_VIEW_PERM = (('ALL', '모든 업무'), ('PUB', '비공개 업무 제외'), ('PRI', '직접 생성 또는 담당한 업무'), ('NOP', '없음'))
     issue_visible = models.CharField('업무 보기 권한', max_length=3, choices=ISSUE_VIEW_PERM, default='PUB')
-    USER_VIEW_PERM = (('ALL', '모든 활성 사용자'), ('PRJ', '보이는 프로젝트 사용자'), ('NOP', '없음'))
+    USER_VIEW_PERM = (('ALL', '모든 활성 사용자'), ('PRJ', '보이는 워크스페이스 사용자'), ('NOP', '없음'))
     user_visible = models.CharField('사용자 보기 권한', max_length=3, choices=USER_VIEW_PERM, default='ALL')
     permissions = models.ManyToManyField('work.Permission', related_name='roles')
     order = models.PositiveSmallIntegerField('정렬', default=1)
@@ -274,7 +274,7 @@ class Role(models.Model):
 
 
 class Permission(models.Model):
-    MODULE_CHOICES = (('project', '프로젝트'), ('meeting', '회의'), ('issue', '업무'),
+    MODULE_CHOICES = (('project', '워크스페이스'), ('meeting', '회의'), ('issue', '업무'),
                       ('news', '공지'), ('docs', '문서'), ('forum', '게시판'), ('calendar', '캘린더'),
                       ('contract', '계약 관리'), ('payment', '수납 관리'), ('notice', '고지 관리'),
                       ('ledger', '자금/원장 관리'), ('site', '사업 부지 관리'), ('hr_work', '인사 관리'))
@@ -297,7 +297,7 @@ class Permission(models.Model):
 
 class Member(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name='구성원')
-    project = models.ForeignKey(IssueProject, on_delete=models.CASCADE, verbose_name='프로젝트', related_name='members')
+    project = models.ForeignKey(IssueProject, on_delete=models.CASCADE, verbose_name='워크스페이스', related_name='members')
     roles = models.ManyToManyField(Role, verbose_name='역할')
     created = models.DateTimeField('등록일', auto_now_add=True)
 
@@ -307,33 +307,33 @@ class Member(models.Model):
     class Meta:
         verbose_name = '05. 구성원'
         verbose_name_plural = '05. 구성원'
-        unique_together = ('user', 'project')  # 한 프로젝트당 한 번만 속할 수 있음
+        unique_together = ('user', 'project')  # 한 워크스페이스당 한 번만 속할 수 있음
 
 
 class ProjectSubscription(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="사용자")
-    project = models.ForeignKey(IssueProject, on_delete=models.CASCADE, verbose_name="업무 프로젝트")
+    project = models.ForeignKey(IssueProject, on_delete=models.CASCADE, verbose_name="업무 워크스페이스")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         unique_together = ('user', 'project')
-        verbose_name = "프로젝트 알림 구독"
-        verbose_name_plural = "프로젝트 알림 구독"
+        verbose_name = "워크스페이스 알림 구독"
+        verbose_name_plural = "워크스페이스 알림 구독"
 
 
 class ProjectBookmark(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
                              verbose_name="사용자", related_name='bookmarked_projects')
     project = models.ForeignKey(IssueProject, on_delete=models.CASCADE,
-                                verbose_name="업무 프로젝트", related_name='bookmarked_by')
+                                verbose_name="워크스페이스", related_name='bookmarked_by')
     order = models.PositiveSmallIntegerField('정렬순서', default=0)
     created = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         unique_together = ('user', 'project')
         ordering = ('order', 'created')
-        verbose_name = "프로젝트 북마크"
-        verbose_name_plural = "프로젝트 북마크"
+        verbose_name = "워크스페이스 북마크"
+        verbose_name_plural = "워크스페이스 북마크"
 
     def __str__(self):
         return f'{self.user} - {self.project.name}'
@@ -348,36 +348,36 @@ class VersionManager(models.Manager):
         ancestor_ids = ancestors.values('id')
         descendant_ids = descendants.values('id')
 
-        # 프로젝트 트리의 루트를 찾습니다 (ancestors는 루트부터 정렬됨)
+        # 워크스페이스 트리의 루트를 찾습니다 (ancestors는 루트부터 정렬됨)
         root = ancestors.first() or project
         root_descendants = root.get_descendants(include_self=True).values('id')
 
         # sharing: 0:없음, 1:하위, 2:상위/하위, 3:최상위 및 모든 하위, 4:전체
         return self.filter(
             # 0. 공유 없음
-            # -> 내 프로젝트에 속한 버전만 보여줌
+            # -> 내 워크스페이스에 속한 버전만 보여줌
             Q(project=project) |
-            # 1. 하위 프로젝트
-            # -> 직계 하위 프로젝트의 버전이라면 [2, 3, 4] 인 버전을 보여줌
+            # 1. 하위 워크스페이스
+            # -> 직계 하위 워크스페이스의 버전이라면 [2, 3, 4] 인 버전을 보여줌
             Q(project_id__in=descendant_ids, sharing__in=['2', '3', '4']) |
-            # 2. 상위 및 하위 프로젝트
-            # -> 직계 상위 프로젝트의 버전이라면 [1, 2, 3, 4] 인 버전을 보여줌
+            # 2. 상위 및 하위 워크스페이스
+            # -> 직계 상위 워크스페이스의 버전이라면 [1, 2, 3, 4] 인 버전을 보여줌
             Q(project_id__in=ancestor_ids, sharing__in=['1', '2', '3', '4']) |
-            # 3. 최상위 및 모든 하위 프로젝트
-            # -> 내 프로젝트의 루트 프로젝트의 버전이라면 [3] 인 버전을 보여줌
+            # 3. 최상위 및 모든 하위 워크스페이스
+            # -> 내 워크스페이스의 루트 워크스페이스의 버전이라면 [3] 인 버전을 보여줌
             Q(project_id__in=root_descendants, sharing='3') |
-            # 4. 모든 프로젝트
+            # 4. 모든 워크스페이스
             # -> 내 위치와 상관없이 무조건 보여줌.
             Q(sharing='4')
         )
 
 
 class Version(models.Model):
-    project = models.ForeignKey(IssueProject, on_delete=models.CASCADE, verbose_name='프로젝트', related_name='versions')
+    project = models.ForeignKey(IssueProject, on_delete=models.CASCADE, verbose_name='워크스페이스', related_name='versions')
     name = models.CharField('이름', max_length=20, db_index=True)
     status = models.CharField('상태', max_length=1, choices=(('1', '진행'), ('2', '잠김'), ('3', '닫힘')), default='1')
-    SHARING_CHOICES = (('0', '공유 없음'), ('1', '하위 프로젝트'), ('2', '상위 및 하위 프로젝트'),
-                       ('3', '최상위 및 모든 하위 프로젝트'), ('4', '모든 프로젝트'))
+    SHARING_CHOICES = (('0', '공유 없음'), ('1', '하위 워크스페이스'), ('2', '상위 및 하위 워크스페이스'),
+                       ('3', '최상위 및 모든 하위 워크스페이스'), ('4', '모든 워크스페이스'))
     sharing = models.CharField('공유', max_length=1, choices=SHARING_CHOICES, default='1')
     effective_date = models.DateField(verbose_name='단계 완료 기한', blank=True, null=True)
     description = models.CharField('설명', max_length=255, blank=True, default='')

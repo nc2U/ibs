@@ -39,7 +39,7 @@ class ForumViewSet(viewsets.ModelViewSet):
         queryset = super().get_queryset()
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset.select_related('project')
-        # 행 보안: 사용자가 속한 프로젝트의 게시판이거나 공개 프로젝트의 게시판만 노출
+        # 행 보안: 사용자가 속한 워크스페이스의 게시판이거나 공개 워크스페이스의 게시판만 노출
         return queryset.filter(
             Q(project__is_public=True) | Q(project__members__user=user)
         ).distinct().select_related('project')
@@ -69,7 +69,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
         queryset = super().get_queryset()
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset.select_related('forum')
-        # 행 보안: 사용자가 속한 프로젝트의 게시판 카테고리 혹은 공개 프로젝트의 카테고리만 노출
+        # 행 보안: 사용자가 속한 워크스페이스의 게시판 카테고리 혹은 공개 워크스페이스의 카테고리만 노출
         return queryset.filter(
             Q(forum__project__is_public=True) | Q(forum__project__members__user=user)
         ).distinct().select_related('forum')
@@ -109,7 +109,7 @@ class PostViewSet(viewsets.ModelViewSet):
         queryset = super().get_queryset()
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset
-        # 행 보안: 사용자가 권한을 가진 프로젝트의 게시판 글만 조회
+        # 행 보안: 사용자가 권한을 가진 워크스페이스의 게시판 글만 조회
         return queryset.filter(
             Q(forum__project__is_public=True) | Q(forum__project__members__user=user)
         ).distinct()
@@ -192,9 +192,6 @@ class PostBlameViewSet(viewsets.ModelViewSet):
         return self.queryset.filter(
             Q(forum__project__is_public=True) | Q(forum__project__members__user=user)
         ).distinct()
-
-
-
 
 
 class PostFileViewSet(viewsets.ModelViewSet):
@@ -283,7 +280,7 @@ class CommentViewSet(viewsets.ModelViewSet):
         queryset = super().get_queryset()
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset
-        # 행 보안: 사용자가 권한을 가진 프로젝트의 게시판 댓글만 조회
+        # 행 보안: 사용자가 권한을 가진 워크스페이스의 게시판 댓글만 조회
         return queryset.filter(
             Q(post__forum__project__is_public=True) | Q(post__forum__project__members__user=user)
         ).distinct()

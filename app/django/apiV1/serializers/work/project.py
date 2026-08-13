@@ -403,7 +403,7 @@ class MemberSerializer(serializers.ModelSerializer):
 
 
 class ProjectMemberUserSerializer(serializers.Serializer):
-    """프로젝트 멤버 유저 정보 반환 (담당자 선택 드롭다운용)"""
+    """워크스페이스 멤버 유저 정보 반환 (담당자 선택 드롭다운용)"""
     pk = serializers.IntegerField()  # Member pk
     user_id = serializers.SerializerMethodField()
     username = serializers.SerializerMethodField()

@@ -92,7 +92,7 @@ class LawSuitCaseViewSet(viewsets.ModelViewSet):
         queryset = super().get_queryset()
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset
-        # 사용자가 멤버로 속한 프로젝트의 소송 데이터만 반환
+        # 사용자가 멤버로 속한 워크스페이스의 소송 데이터만 반환
         accessible_projects = IssueProject.objects.filter(members__user=user)
         return queryset.filter(issue_project__in=accessible_projects)
 

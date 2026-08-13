@@ -10,7 +10,7 @@ from work.models.project import IssueProject, Member
 
 
 class News(models.Model):
-    project = models.ForeignKey(IssueProject, on_delete=models.CASCADE, verbose_name='프로젝트')
+    project = models.ForeignKey(IssueProject, on_delete=models.CASCADE, verbose_name='워크스페이스')
     title = models.CharField('제목', max_length=255, db_index=True)
     summary = models.CharField('요약', max_length=255, blank=True, default='')
     content = models.TextField('내용', blank=True, default='')
@@ -80,14 +80,14 @@ class Search(models.Model):
     offset = models.BigIntegerField('오프셋', default=False)  # 응답에서 이 결과 수를 건너뜁니다.(선택사항)
     limit = models.PositiveIntegerField('응답결과 수', blank=True, null=True)  # 응답 결과 수 (선택사항)
     q = models.CharField('검색어', max_length=255, blank=True, default='', help_text='공백으로 구분된 여러 값을 지정할 수 있습니다.')
-    scope = models.CharField('검색 범위 조건', max_length=1, choices=(('0', '모두'), ('1', '프로젝트 내'), ('2', '하위 프로젝트 포함')))
+    scope = models.CharField('검색 범위 조건', max_length=1, choices=(('0', '모두'), ('1', '워크스페이스 내'), ('2', '하위 워크스페이스 포함')))
     all_words = models.BooleanField('모든 검색어가 일치하는지 여부', default=False)
     title_only = models.BooleanField('제목 검색', default=False)
     issue = models.BooleanField('업무 포함 여부', default=False)
     news = models.BooleanField('공지 포함 여부', default=False)
     document = models.BooleanField('문서 포함 여부', default=False)
     forum = models.BooleanField('게시판 포함 여부', default=False)
-    project = models.BooleanField('프로젝트 포함 여부', default=False)
+    project = models.BooleanField('워크스페이스 포함 여부', default=False)
     open_issue = models.BooleanField('미해결 업무 검색', default=False)
     attachment = models.CharField('설명 및 첨부파일 검색', max_length=1,
                                   choices=(('0', '설명 및 첨부파일 검색'), ('1', '설명에서만 검색'), ('2', '첨부파일에서만 검색')), default='0')
@@ -98,7 +98,7 @@ class Search(models.Model):
 
 class CustomQuery(models.Model):
     TARGET_TYPE_CHOICES = (
-        ('project', '프로젝트'),
+        ('project', '워크스페이스'),
         ('meeting', '회의록'),
         ('issue', '업무'),
         ('calendar', '캘린더'),
@@ -116,7 +116,7 @@ class CustomQuery(models.Model):
         on_delete=models.CASCADE,
         null=True,
         blank=True,
-        verbose_name='프로젝트 범위',
+        verbose_name='워크스페이스 범위',
         related_name='custom_queries'
     )
     user = models.ForeignKey(
@@ -128,7 +128,7 @@ class CustomQuery(models.Model):
     is_public = models.BooleanField(
         '공용 여부',
         default=False,
-        help_text='체크 시 프로젝트 멤버 전원이 사용할 수 있습니다.'
+        help_text='체크 시 워크스페이스 멤버 전원이 사용할 수 있습니다.'
     )
 
     # JSON 형식 필드들

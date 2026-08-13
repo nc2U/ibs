@@ -19,9 +19,9 @@ from work.models import IssueProject, Module, Role, Permission, Member, ProjectS
 # Work --------------------------------------------------------------------------
 class IssueProjectFilter(FilterSet):
     status__exclude = CharFilter(field_name='status', exclude=True, label='사용여부-제외')
-    parent__isnull = BooleanFilter(field_name='parent', lookup_expr='isnull', label='최상위 프로젝트')
-    project = CharFilter(field_name='slug', lookup_expr='exact', label='프로젝트')
-    project__exclude = CharFilter(field_name='slug', exclude=True, label='프로젝트-제외')
+    parent__isnull = BooleanFilter(field_name='parent', lookup_expr='isnull', label='최상위 워크스페이스')
+    project = CharFilter(field_name='slug', lookup_expr='exact', label='워크스페이스')
+    project__exclude = CharFilter(field_name='slug', exclude=True, label='워크스페이스-제외')
     is_public__exclude = BooleanFilter(field_name='is_public', exclude=True, label='공개여부-제외')
 
     name = CharFilter(field_name='name', lookup_expr='icontains', label='이름-포함')
@@ -42,7 +42,7 @@ class IssueProjectFilter(FilterSet):
     to_updated = DateFilter(field_name='updated', lookup_expr='lte', label='수정일자-기한')
 
     bookmark = BooleanFilter(method='filter_bookmark', label='북마크 여부')
-    my_project = BooleanFilter(method='filter_my_project', label='내 프로젝트 여부')
+    my_project = BooleanFilter(method='filter_my_project', label='내 워크스페이스 여부')
 
     def filter_bookmark(self, queryset, name, value):
         if value and self.request and self.request.user.is_authenticated:
@@ -93,10 +93,10 @@ class IssueProjectViewSet(viewsets.ModelViewSet):
         user = self.request.user
         queryset = super().get_queryset()
 
-        # 1. 슈퍼유저나 work_manager는 전체 프로젝트 조회 가능
+        # 1. 슈퍼유저나 work_manager는 전체 워크스페이스 조회 가능
         if user.is_superuser or getattr(user, 'work_manager', False):
             base_qs = queryset
-        else:  # 2. 비공개 프로젝트는 멤버인 경우만, 공개 프로젝트는 모두 조회 가능
+        else:  # 2. 비공개 워크스페이스는 멤버인 경우만, 공개 워크스페이스는 모두 조회 가능
             base_qs = queryset.filter(Q(is_public=True) | Q(members__user=user)).distinct()
 
         # 3. Prefetch 최적화 추가 (N+1 문제 해결)
@@ -144,7 +144,7 @@ class IssueProjectViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
 
-        # 1. 하위 프로젝트 parent = None 처리
+        # 1. 하위 워크스페이스 parent = None 처리
         instance.issueproject_set.update(parent=None)
 
         # 2. PROTECT 5개 핵심 데이터 존재 여부 검사
@@ -162,7 +162,7 @@ class IssueProjectViewSet(viewsets.ModelViewSet):
             instance.save()
             return Response({
                 'action': 'archived',
-                'message': "프로젝트 내에 업무/회의/문서 이력 등이 보존되어 있어 삭제되지 않고 '잠금보관' 처리되었습니다."
+                'message': "워크스페이스 내에 업무/회의/문서 이력 등이 보존되어 있어 삭제되지 않고 '잠금보관' 처리되었습니다."
             }, status=status.HTTP_200_OK)
 
         # 3-B. PROTECT 데이터가 없는 경우: DB 완전 삭제 (Hard Delete)
@@ -171,10 +171,10 @@ class IssueProjectViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def toggle_close(self, request, slug=None):
-        """프로젝트 닫기 권한자용: 사용중(1) <-> 닫힘(2) 토글"""
+        """워크스페이스 닫기 권한자용: 사용중(1) <-> 닫힘(2) 토글"""
         project = self.get_object()
         if project.status == '9':
-            return Response({'detail': '잠금보관된 프로젝트는 상태를 토글할 수 없습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': '잠금보관된 워크스페이스는 상태를 토글할 수 없습니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
         project.status = '2' if project.status == '1' else '1'
         project.save()
@@ -182,7 +182,7 @@ class IssueProjectViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def toggle_lock(self, request, slug=None):
-        """프로젝트 삭제/잠금 권한자용: 잠금보관(9) <-> 사용중(1) 토글"""
+        """워크스페이스 삭제/잠금 권한자용: 잠금보관(9) <-> 사용중(1) 토글"""
         project = self.get_object()
         project.status = '1' if project.status == '9' else '9'
         project.save()
@@ -218,17 +218,17 @@ class IssueProjectViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         parent_slug = self.request.data.get('parent_slug')
         if parent_slug:
-            # 하위 프로젝트 생성 권한 체크
+            # 하위 워크스페이스 생성 권한 체크
             try:
                 parent_project = IssueProject.objects.get(slug=parent_slug)
             except IssueProject.DoesNotExist:
-                raise serializers.ValidationError({"parent_slug": "부모 프로젝트를 찾을 수 없습니다."})
+                raise serializers.ValidationError({"parent_slug": "부모 워크스페이스를 찾을 수 없습니다."})
             user_perms = parent_project.get_user_permissions(self.request.user)
             if 'project.create_sub' not in user_perms:
-                raise serializers.PermissionDenied("하위 프로젝트를 생성할 권한이 없습니다.")
+                raise serializers.PermissionDenied("하위 워크스페이스를 생성할 권한이 없습니다.")
             serializer.save(creator=self.request.user, parent=parent_project)
         else:
-            # 일반 프로젝트 생성
+            # 일반 워크스페이스 생성
             serializer.save(creator=self.request.user)
 
 
@@ -256,8 +256,8 @@ class ModuleViewSet(viewsets.ModelViewSet):
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset
 
-        # 2. 접근 가능한 프로젝트의 모듈만 조회
-        # - 공개 프로젝트 OR 사용자가 멤버인 프로젝트
+        # 2. 접근 가능한 워크스페이스의 모듈만 조회
+        # - 공개 워크스페이스 OR 사용자가 멤버인 워크스페이스
         return queryset.filter(
             Q(project__is_public=True) | Q(project__members__user=user)
         ).distinct()
@@ -329,7 +329,7 @@ class MemberViewSet(viewsets.ModelViewSet):
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset.prefetch_related('roles')
 
-        # 2. 사용자의 프로젝트별 user_visible 권한 수준 판별
+        # 2. 사용자의 워크스페이스별 user_visible 권한 수준 판별
         from work.models.project import Member as ProjectMember
         user_members = ProjectMember.objects.filter(user=user).prefetch_related('roles')
 
@@ -452,14 +452,14 @@ class VersionViewSet(viewsets.ModelViewSet):
         # 기본 쿼리셋
         queryset = Version.objects.all()
 
-        # 1. 특정 프로젝트 기준 조회가 요청된 경우
+        # 1. 특정 워크스페이스 기준 조회가 요청된 경우
         if project_slug:
             try:
                 project = IssueProject.objects.get(slug=project_slug)
                 # 구현한 VersionManager 사용
                 base_qs = Version.objects.accessible_from(project)
 
-                # [보안 복원] 관리자가 아닌 경우, 접근 가능한 프로젝트의 버전만 필터링
+                # [보안 복원] 관리자가 아닌 경우, 접근 가능한 워크스페이스의 버전만 필터링
                 if not (user.is_superuser or getattr(user, 'work_manager', False)):
                     accessible_projects = IssueProject.objects.filter(
                         Q(is_public=True) | Q(members__user=user)
@@ -501,7 +501,7 @@ class ProjectBookmarkViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'], url_path='toggle')
     def toggle(self, request):
-        """단일 프로젝트 북마크 토글 (추가/제거)"""
+        """단일 워크스페이스 북마크 토글 (추가/제거)"""
         project_id = request.data.get('project')
         if not project_id:
             return Response({'detail': 'project 필드가 필요합니다.'}, status=400)
