@@ -163,4 +163,67 @@
 
 ---
 
-*마지막 업데이트: 2026-08-13 (도메인 용어 체계 정립, Vue-Flutter 용어 100% 동기화, ProjectScreen 5대 모듈 radius=0 리팩토링 반영)*
+## 📦 8. 파이어베이스 비공개 무선 배포 가이드 (Firebase App Distribution)
+
+사내 직원(10명 이내) 및 비공개 테스트용으로 구글/애플 스토어 등록 및 심사 없이 iOS(아이폰) 및 안드로이드 기기에 무선으로 앱을 바로 설치·배포하는 방법입니다.
+
+### 🤖 1) 안드로이드 (Android) 파이어베이스 배포
+
+1. **설치 파일(APK) 빌드**:
+   ```bash
+   cd app/flutter
+   flutter build apk --release
+   ```
+   *생성 파일 경로*: `build/app/outputs/flutter-apk/app-release.apk`
+
+2. **파이어베이스 업로드**:
+   - [Firebase Console](https://console.firebase.google.com) 접속 ➔ 프로젝트 선택
+   - 좌측 메뉴 `Release & Monitor` ➔ **`App Distribution`** 선택
+   - 생성된 `app-release.apk` 파일 드래그 & 드롭 업로드
+   - 사내 직원 이메일 주소 목록(예: `test@company.com`) 입력 후 **`발송`** 클릭
+
+3. **테스터 설치 방법**:
+   - 수신된 이메일에서 `[앱 다운로드]` 버튼 탭 ➔ 스마트폰에 즉시 설치 완료!
+
+---
+
+### 📱 2) 아이폰 (iOS / 아이폰 13 프로 등) 파이어베이스 배포
+
+아이폰의 경우 애플 보안 정책에 따라 테스터 기기의 UDID 등록 및 Ad-Hoc 프로비저닝 프로필이 연결된 IPA 빌드가 필요합니다.
+
+1. **테스트 아이폰 UDID 추출**:
+   - 아이폰 사파리(Safari) 브라우저로 **[udid.io](https://www.udid.io)** 접속
+   - `Tap to find UDID` 탭 ➔ 아이폰 고유 UDID 복사
+
+2. **애플 개발자 계정 (developer.apple.com) 등록**:
+   - `Certificates, Identifiers & Profiles` ➔ `Devices`에 복사한 UDID 추가
+   - Ad-Hoc 프로비저닝 프로필(Provisioning Profile) 생성/갱신
+
+3. **IPA 파일 빌드**:
+   ```bash
+   cd app/flutter
+   flutter build ipa --release --export-options-plist=ios/ExportOptions.plist
+   ```
+   *생성 파일 경로*: `build/ios/ipa/mobile_ibs.ipa`
+
+4. **파이어베이스 업로드 및 배포**:
+   - [Firebase Console](https://console.firebase.google.com) ➔ `App Distribution`
+   - `.ipa` 파일 드래그 & 드롭 업로드 ➔ 사내 직원 이메일로 발송
+
+---
+
+### ⚡ 3) 외부 연동용 서버 URL 주입 빌드 방식
+
+배포 시 백엔드 운영/개발 서버 URL을 동적으로 전달하려면 `--dart-define` 옵션을 추가하여 빌드합니다.
+
+```bash
+# 안드로이드 운영 서버 주소 주입 빌드
+flutter build apk --release --dart-define=BASE_URL=https://api.ibs.company.com
+
+# iOS 운영 서버 주소 주입 빌드
+flutter build ipa --release --dart-define=BASE_URL=https://api.ibs.company.com --export-options-plist=ios/ExportOptions.plist
+```
+
+---
+
+*마지막 업데이트: 2026-08-14 (파이어베이스 안드로이드/아이폰 비공개 배포 가이드 및 --dart-define 서버 주소 주입 연동 완료)*

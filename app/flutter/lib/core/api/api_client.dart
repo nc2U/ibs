@@ -4,7 +4,12 @@ import '../storage/token_storage.dart';
 import '../constants/api_endpoints.dart';
 
 /// 개발/운영 환경별 Base URL
+/// - 빌드 시 `--dart-define=BASE_URL=https://your-prod-api.com` 옵션으로 운영서버 주소 동적 주입 가능
+/// - 미지정 시 기본값: 로컬 개발 환경 (localhost / 10.0.2.2)
 String get _baseUrl {
+  const envUrl = String.fromEnvironment('BASE_URL');
+  if (envUrl.isNotEmpty) return envUrl;
+
   if (Platform.isAndroid) return 'http://10.0.2.2'; // 에뮬레이터 → localhost
   return 'http://localhost';
 }
