@@ -297,6 +297,10 @@ class IssuePermission(ProjectPermission):
             if not project:
                 return False
 
+            # (0) 슈퍼유저나 work_manager는 항상 업무 생성 허용
+            if request.user.is_superuser or getattr(request.user, 'work_manager', False):
+                return True
+
             user_perms = project.get_user_permissions(request.user)
 
             # (A) issue.create 혹은 issue.copy 권한 보유 여부 확인 (이전 캡슐화 완료)
