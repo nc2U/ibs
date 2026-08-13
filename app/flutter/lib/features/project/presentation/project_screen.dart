@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/providers/project_provider.dart';
 import '../../../../core/widgets/project_selector_bottom_sheet.dart';
-import '../../issue/providers/issue_provider.dart';
-import '../../meeting/providers/meeting_provider.dart';
 
 /// 프로젝트 관리 탭 메인 화면 (IBS Global - type == '2' 부동산 개발 프로젝트 전용)
+/// 계약(Contract) / 수납(Payment) / 자금(Ledger) / 문서(Docs) / 설정(Settings) 5대 모듈 접근 UI (radius = 0)
 class ProjectScreen extends ConsumerWidget {
   const ProjectScreen({super.key});
 
@@ -18,24 +16,18 @@ class ProjectScreen extends ConsumerWidget {
     final isRealEstateProject =
         selectedProject != null && selectedProject.type == '2';
 
-    final issueListState = ref.watch(issueListProvider);
-    final meetingListState = ref.watch(meetingListProvider);
-
-    final issueCount = issueListState.valueOrNull?.totalCount ?? 0;
-    final meetingCount = meetingListState.valueOrNull?.totalCount ?? 0;
-
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── 프로젝트 개요 카드 ────────────────────────────────────────────────
+          // ── 1. 현재 선택된 프로젝트 개요 카드 (radius = 0) ───────────────────
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: AppColors.bgCard,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.zero,
               border: Border.all(color: AppColors.border, width: 0.8),
             ),
             child: Column(
@@ -50,11 +42,11 @@ class ProjectScreen extends ConsumerWidget {
                         color: isRealEstateProject
                             ? AppColors.accentProject.withAlpha(30)
                             : AppColors.warning.withAlpha(30),
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.zero,
                       ),
                       child: Text(
                         isRealEstateProject
-                            ? '프로젝트'
+                            ? '프로젝트 (IBS Global)'
                             : (selectedProject == null
                                 ? '프로젝트 미선택'
                                 : '일반 워크스페이스'),
@@ -74,6 +66,8 @@ class ProjectScreen extends ConsumerWidget {
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.accentProject,
                         side: const BorderSide(color: AppColors.accentProject),
+                        shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.zero),
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 6),
                         minimumSize: Size.zero,
@@ -82,14 +76,14 @@ class ProjectScreen extends ConsumerWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
                 Text(
                   selectedProject?.name ?? '프로젝트를 선택해 주세요',
                   style: AppTextStyles.titleLg,
                 ),
                 if (selectedProject?.description != null &&
                     selectedProject!.description!.isNotEmpty) ...[
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   Text(selectedProject.description!,
                       style: AppTextStyles.bodySecond),
                 ],
@@ -98,14 +92,14 @@ class ProjectScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
 
-          // ── 부동산 개발 프로젝트가 아닐 때 안내 경고 카드 ───────────────────────
+          // ── 2. 미선택 시 안내 경고 바 (radius = 0) ─────────────────────────
           if (!isRealEstateProject) ...[
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: AppColors.warning.withAlpha(15),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.zero,
                 border: Border.all(
                     color: AppColors.warning.withAlpha(80), width: 1),
               ),
@@ -124,7 +118,7 @@ class ProjectScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '계약, 수납, 재무(입출금), 공용문서 등 IBS 글로벌 모듈은 프로젝트(type=2)에서만 연동됩니다.\n아래 버튼을 눌러 프로젝트를 선택해 주세요.',
+                    '계약, 수납, 자금(입출금), 공용문서 등 IBS 관리 모듈은 프로젝트(type=2)에서만 연동됩니다.\n아래 버튼을 눌러 관리 대상 프로젝트를 선택해 주세요.',
                     style: AppTextStyles.bodyMd
                         .copyWith(color: AppColors.textSecond, height: 1.4),
                   ),
@@ -137,6 +131,8 @@ class ProjectScreen extends ConsumerWidget {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.warning,
                       foregroundColor: Colors.black,
+                      shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.zero),
                       minimumSize: const Size(double.infinity, 42),
                     ),
                   ),
@@ -146,128 +142,91 @@ class ProjectScreen extends ConsumerWidget {
             const SizedBox(height: 16),
           ],
 
-          // ── 통계 요약 ───────────────────────────────────────────────────
-          Row(
-            children: [
-              Expanded(
-                child: _StatCard(
-                  title: '회의록',
-                  countText: '$meetingCount 건',
-                  icon: Icons.groups_outlined,
-                  accentColor: AppColors.accentWork,
-                  onTap: () => context.go('/work/meetings'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _StatCard(
-                  title: '업무',
-                  countText: '$issueCount 건',
-                  icon: Icons.task_alt_rounded,
-                  accentColor: AppColors.accentApproval,
-                  onTap: () => context.go('/work/issues'),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
+          // ── 3. 프로젝트 전용 5대 핵심 모듈 접근 섹션 (radius = 0) ───────────
+          Text('핵심 관리 모듈',
+              style: AppTextStyles.titleSm
+                  .copyWith(color: AppColors.textMuted)),
+          const SizedBox(height: 10),
 
-          // ── 사업 / 계약 관리 카드 ─────────────────────────────────────────
-          _SectionTitle(title: '계약 현황 (Contract)'),
-          const SizedBox(height: 8),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.bgCard,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.border, width: 0.8),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.description_outlined,
-                        size: 20, color: AppColors.accentProject),
-                    const SizedBox(width: 8),
-                    Text('프로젝트별 분양 & 계약 통계', style: AppTextStyles.titleSm),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  '선택된 프로젝트의 계약 내역 및 수납 청구 데이터를 실시간 조회합니다.',
-                  style: AppTextStyles.bodyMuted,
-                ),
-                const SizedBox(height: 12),
-                ElevatedButton(
-                  onPressed: isRealEstateProject
-                      ? () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('계약 상세 내역 모듈 준비 중입니다.')),
-                          );
-                        }
-                      : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.accentProject,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(double.infinity, 40),
-                  ),
-                  child: const Text('계약 현황 조회'),
-                ),
-              ],
-            ),
+          // 모듈 1: 계약 관리 (Contract)
+          _ModuleCard(
+            title: '계약 관리 (Contract)',
+            subtitle: '분양 계약 내역, 계약자 상세 정보, 권리의무 승계 및 계약 해지 관리',
+            icon: Icons.assignment_outlined,
+            accentColor: const Color(0xFF3565A6),
+            badgeText: 'Contract',
+            isEnabled: isRealEstateProject,
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('계약 관리 모듈 준비 중입니다.')),
+              );
+            },
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
 
-          // ── 입출금 / 재무 거래 카드 ─────────────────────────────────────
-          _SectionTitle(title: '재무 / 캐시플로우 (Ledger)'),
-          const SizedBox(height: 8),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.bgCard,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.border, width: 0.8),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.account_balance_wallet_outlined,
-                        size: 20, color: AppColors.accentCorp),
-                    const SizedBox(width: 8),
-                    Text('프로젝트 자금 흐름 & 입출금', style: AppTextStyles.titleSm),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  '프로젝트 계좌 입출금 거래 이력 및 계정별 집행 현황을 모니터링합니다.',
-                  style: AppTextStyles.bodyMuted,
-                ),
-                const SizedBox(height: 12),
-                ElevatedButton(
-                  onPressed: isRealEstateProject
-                      ? () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('재무/입출금 모듈 준비 중입니다.')),
-                          );
-                        }
-                      : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.accentCorp,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(double.infinity, 40),
-                  ),
-                  child: const Text('입출금 이력 조회'),
-                ),
-              ],
-            ),
+          // 모듈 2: 대금 수납 관리 (Payment)
+          _ModuleCard(
+            title: '대금 수납 관리 (Payment)',
+            subtitle: '차수별 납부 내역, 건별 수납 등록, 미납금 및 수납 현황 집계',
+            icon: Icons.payments_outlined,
+            accentColor: const Color(0xFF2E7D32),
+            badgeText: 'Payment',
+            isEnabled: isRealEstateProject,
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('대금 수납 관리 모듈 준비 중입니다.')),
+              );
+            },
           ),
+          const SizedBox(height: 12),
+
+          // 모듈 3: 자금 / 캐시플로우 관리 (Ledger)
+          _ModuleCard(
+            title: '자금 / 재무 관리 (Ledger)',
+            subtitle: '프로젝트 계좌 거래 내역, 운영비 정산 및 자금 집행 현황',
+            icon: Icons.account_balance_wallet_outlined,
+            accentColor: const Color(0xFF5E35B1),
+            badgeText: 'Ledger',
+            isEnabled: isRealEstateProject,
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('자금/재무 관리 모듈 준비 중입니다.')),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+
+          // 모듈 4: 문서 / 소송 관리 (Docs)
+          _ModuleCard(
+            title: '문서 / 소송 관리 (Docs)',
+            subtitle: '프로젝트 일반 문서, 소송 사건 이력 및 공용 서류 보관소',
+            icon: Icons.folder_shared_outlined,
+            accentColor: const Color(0xFFE65100),
+            badgeText: 'Docs',
+            isEnabled: isRealEstateProject,
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('문서/소송 관리 모듈 준비 중입니다.')),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+
+          // 모듈 5: 프로젝트 설정 (Settings)
+          _ModuleCard(
+            title: '프로젝트 설정 (Settings)',
+            subtitle: '프로젝트 기본 정보, 차수 정보, 동·호수 유닛 배치 현황 및 예산 설정',
+            icon: Icons.settings_outlined,
+            accentColor: const Color(0xFF00796B),
+            badgeText: 'Settings',
+            isEnabled: isRealEstateProject,
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('프로젝트 설정 모듈 준비 중입니다.')),
+              );
+            },
+          ),
+
           const SizedBox(height: 32),
         ],
       ),
@@ -275,53 +234,135 @@ class ProjectScreen extends ConsumerWidget {
   }
 }
 
-class _SectionTitle extends StatelessWidget {
+/// radius = 0 이 적용된 모듈 카드 위젯
+class _ModuleCard extends StatelessWidget {
   final String title;
-  const _SectionTitle({required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(title,
-        style: AppTextStyles.titleSm.copyWith(color: AppColors.textMuted));
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  final String title;
-  final String countText;
+  final String subtitle;
   final IconData icon;
   final Color accentColor;
+  final String badgeText;
+  final bool isEnabled;
   final VoidCallback onTap;
 
-  const _StatCard({
+  const _ModuleCard({
     required this.title,
-    required this.countText,
+    required this.subtitle,
     required this.icon,
     required this.accentColor,
+    required this.badgeText,
+    required this.isEnabled,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: AppColors.bgCard,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: AppColors.border, width: 0.8),
+    final effectiveColor = isEnabled ? accentColor : AppColors.textDisabled;
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: AppColors.bgCard,
+        borderRadius: BorderRadius.zero,
+        border: Border.all(
+          color: isEnabled
+              ? accentColor.withAlpha(60)
+              : AppColors.border,
+          width: 1,
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, size: 22, color: accentColor),
-            const SizedBox(height: 8),
-            Text(title, style: AppTextStyles.caption),
-            const SizedBox(height: 2),
-            Text(countText,
-                style: AppTextStyles.titleLg.copyWith(color: accentColor)),
-          ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.zero,
+        child: InkWell(
+          onTap: isEnabled ? onTap : null,
+          borderRadius: BorderRadius.zero,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ── 아이콘 뱃지 (radius = 0) ──────────────────────────────────
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: effectiveColor.withAlpha(20),
+                    borderRadius: BorderRadius.zero,
+                  ),
+                  child: Icon(icon, size: 24, color: effectiveColor),
+                ),
+                const SizedBox(width: 14),
+
+                // ── 타이틀 & 설명 ─────────────────────────────────────────────
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              title,
+                              style: AppTextStyles.titleSm.copyWith(
+                                color: isEnabled
+                                    ? AppColors.textPrimary
+                                    : AppColors.textDisabled,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: effectiveColor.withAlpha(20),
+                              borderRadius: BorderRadius.zero,
+                            ),
+                            child: Text(
+                              badgeText,
+                              style: AppTextStyles.label.copyWith(
+                                color: effectiveColor,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        subtitle,
+                        style: AppTextStyles.bodyMuted.copyWith(
+                          color: isEnabled
+                              ? AppColors.textSecond
+                              : AppColors.textDisabled,
+                          fontSize: 12.5,
+                          height: 1.35,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Text(
+                            isEnabled ? '모듈 진입' : '프로젝트 선택 필요',
+                            style: AppTextStyles.caption.copyWith(
+                              color: effectiveColor,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(
+                            Icons.arrow_forward_rounded,
+                            size: 14,
+                            color: effectiveColor,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

@@ -5,8 +5,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/router/app_router.dart';
 
-/// 홈 탭 — 3대 카테고리 히어로 카드 + 공용문서 퀵바
-/// 기존 main_page.dart의 _buildHomeTab()을 독립 위젯으로 분리
+/// 홈 탭 — 3대 카테고리 히어로 카드 + 공용문서 퀵바 (톤다운 그라데이션 적용)
 class HomeTab extends ConsumerWidget {
   const HomeTab({super.key});
 
@@ -17,18 +16,21 @@ class HomeTab extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // ── 01. 업무 관리 (Work Core) ──────────────────────────────────
           _HeroCard(
             categoryNum: '01',
             title: '업무 관리',
             englishTitle: 'WORK CORE',
-            description: '프로젝트 업무 이슈, 회의록, 액션아이템 및 진척률',
+            description: '워크스페이스 업무 이슈, 회의록, 액션아이템 및 진척률',
             icon: Icons.task_alt_rounded,
             accentColor: AppColors.accentWork,
-            gradientColors: [AppColors.accentWorkDeep, AppColors.bgCard],
+            gradientColors: const [Color(0xFF142642), Color(0xFF1A1D2E)],
             badgeText: '할당 업무',
             onTap: () => context.go(AppRoutes.work),
           ),
           const SizedBox(height: 12),
+
+          // ── 02. 프로젝트 관리 (Project Core) ───────────────────────────
           _HeroCard(
             categoryNum: '02',
             title: '프로젝트 관리',
@@ -36,11 +38,13 @@ class HomeTab extends ConsumerWidget {
             description: '프로젝트 선택, 계약 현황, 수납/입출금 및 상세 설정',
             icon: Icons.business_center_rounded,
             accentColor: AppColors.accentProject,
-            gradientColors: [AppColors.accentProjectDeep, AppColors.bgCard],
+            gradientColors: const [Color(0xFF0F2E23), Color(0xFF1A1D2E)],
             badgeText: '계약 현황',
             onTap: () => context.go(AppRoutes.project),
           ),
           const SizedBox(height: 12),
+
+          // ── 03. 전자 결재 (Approval Core) ──────────────────────────────
           _HeroCard(
             categoryNum: '03',
             title: '전자 결재',
@@ -48,11 +52,13 @@ class HomeTab extends ConsumerWidget {
             description: '미결함 결재 승인/반려, 기안함 및 모바일 서명',
             icon: Icons.draw_rounded,
             accentColor: AppColors.accentApproval,
-            gradientColors: [AppColors.accentApprovalDeep, AppColors.bgCard],
+            gradientColors: const [Color(0xFF332010), Color(0xFF1A1D2E)],
             badgeText: '준비 중',
             onTap: () => context.go(AppRoutes.approval),
           ),
           const SizedBox(height: 16),
+
+          // ── 공용 문서 퀵 바 ───────────────────────────────────────────
           _DocsQuickBar(onTap: () => context.go(AppRoutes.docs)),
           const SizedBox(height: 12),
         ],
@@ -61,7 +67,7 @@ class HomeTab extends ConsumerWidget {
   }
 }
 
-// ── 3대 카테고리 히어로 카드 ────────────────────────────────────────────────────
+// ── 3대 카테고리 히어로 카드 (radius = 0, 톤다운 그라데이션 적용) ──────────────────
 class _HeroCard extends StatelessWidget {
   final String categoryNum;
   final String title;
@@ -91,8 +97,8 @@ class _HeroCard extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.zero,
       child: Container(
-        height: 140,
-        padding: const EdgeInsets.all(20),
+        height: 136,
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: gradientColors,
@@ -100,26 +106,27 @@ class _HeroCard extends StatelessWidget {
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.zero,
-          border: Border.all(color: accentColor.withOpacity(0.3), width: 1.2),
+          border: Border.all(color: accentColor.withAlpha(45), width: 1.0),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+              color: Colors.black.withAlpha(40),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
         child: Stack(
           children: [
+            // 배경 수치 워터마크
             Positioned(
               right: -10,
-              bottom: -20,
+              bottom: -22,
               child: Text(
                 categoryNum,
                 style: TextStyle(
-                  fontSize: 90,
+                  fontSize: 88,
                   fontWeight: FontWeight.w900,
-                  color: Colors.white.withOpacity(0.04),
+                  color: Colors.white.withAlpha(10),
                   letterSpacing: -4,
                 ),
               ),
@@ -134,13 +141,13 @@ class _HeroCard extends StatelessWidget {
                     Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(10),
+                          padding: const EdgeInsets.all(9),
                           decoration: BoxDecoration(
-                            color: accentColor.withOpacity(0.15),
+                            color: accentColor.withAlpha(30),
                             borderRadius: BorderRadius.zero,
-                            border: Border.all(color: accentColor.withOpacity(0.3)),
+                            border: Border.all(color: accentColor.withAlpha(60)),
                           ),
-                          child: Icon(icon, color: accentColor, size: 24),
+                          child: Icon(icon, color: accentColor, size: 22),
                         ),
                         const SizedBox(width: 12),
                         Column(
@@ -151,41 +158,38 @@ class _HeroCard extends StatelessWidget {
                               style: AppTextStyles.label.copyWith(
                                 color: accentColor,
                                 letterSpacing: 1.2,
+                                fontSize: 10.5,
                               ),
                             ),
-                            Text(title, style: AppTextStyles.h3),
+                            Text(title, style: AppTextStyles.titleLg),
                           ],
                         ),
                       ],
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: accentColor.withOpacity(0.2),
+                        color: accentColor.withAlpha(25),
                         borderRadius: BorderRadius.zero,
-                        border: Border.all(color: accentColor.withOpacity(0.5)),
+                        border: Border.all(color: accentColor.withAlpha(60)),
                       ),
                       child: Text(
                         badgeText,
-                        style: AppTextStyles.label.copyWith(color: accentColor),
+                        style: AppTextStyles.caption.copyWith(
+                          color: accentColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                        ),
                       ),
                     ),
                   ],
                 ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        description,
-                        style: AppTextStyles.bodySecond.copyWith(fontSize: 13),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    Icon(Icons.arrow_forward_rounded, color: accentColor, size: 20),
-                  ],
+                Text(
+                  description,
+                  style: AppTextStyles.bodyMuted.copyWith(fontSize: 12.5),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -196,9 +200,10 @@ class _HeroCard extends StatelessWidget {
   }
 }
 
-// ── 공용 문서 퀵바 ──────────────────────────────────────────────────────────────
+// ── 공용 문서 퀵바 ─────────────────────────────────────────────────────────────
 class _DocsQuickBar extends StatelessWidget {
   final VoidCallback onTap;
+
   const _DocsQuickBar({required this.onTap});
 
   @override
@@ -207,35 +212,28 @@ class _DocsQuickBar extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.zero,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           color: AppColors.bgCard,
           borderRadius: BorderRadius.zero,
-          border: Border.all(color: AppColors.border, width: 1),
+          border: Border.all(color: AppColors.border, width: 0.8),
         ),
         child: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF334155),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(Icons.folder_shared_rounded, color: AppColors.textMuted, size: 22),
-            ),
-            const SizedBox(width: 14),
+            const Icon(Icons.folder_shared_outlined,
+                color: AppColors.accentCorp, size: 20),
+            const SizedBox(width: 10),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('공용 문서 섹션', style: AppTextStyles.titleSm),
-                  const SizedBox(height: 2),
-                  Text('전사 사규, 온보딩 가이드 및 공통 서식/도면 열람',
-                      style: AppTextStyles.caption),
-                ],
+              child: Text(
+                '공용 문서함 (사규/표준서식)',
+                style: AppTextStyles.bodyMd.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
-            const Icon(Icons.arrow_forward_ios_rounded, color: AppColors.textDisabled, size: 16),
+            const Icon(Icons.arrow_forward_ios_rounded,
+                size: 14, color: AppColors.textMuted),
           ],
         ),
       ),
