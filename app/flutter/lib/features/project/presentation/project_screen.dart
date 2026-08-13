@@ -8,7 +8,14 @@ import '../../../../core/providers/docs_context_provider.dart';
 import '../../../../core/providers/project_provider.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/widgets/project_selector_bottom_sheet.dart';
+import '../../contract/presentation/contract_list_screen.dart';
 import '../../docs/presentation/docs_screen.dart';
+import '../../ledger/presentation/ledger_screen.dart';
+import '../../payment/presentation/payment_list_screen.dart';
+import 'project_settings_screen.dart';
+
+/// 활성화된 서브 모듈 구분
+enum ProjectActiveModule { none, docs, contract, payment, ledger, settings }
 
 /// 프로젝트 관리 탭 메인 화면 (IBS Global - type == '2' 부동산 개발 프로젝트 전용)
 /// 계약(Contract) / 수납(Payment) / 자금(Ledger) / 설정(Settings) 4대 모듈 접근 UI (radius = 0)
@@ -20,25 +27,26 @@ class ProjectScreen extends ConsumerStatefulWidget {
 }
 
 class _ProjectScreenState extends ConsumerState<ProjectScreen> {
-  bool _isDocsView = false;
-  static const _docsColor = Color(0xFF5E35B1);
+  ProjectActiveModule _activeModule = ProjectActiveModule.none;
 
-  void _openDocsView(SelectedProject project) {
-    ref.read(docsContextProvider.notifier).state = DocsContext.project(
-      SimpleProjectModel(
-        pk: project.pk,
-        name: project.name,
-        slug: project.slug,
-      ),
-    );
+  void _openSubModule(ProjectActiveModule module, [SelectedProject? project]) {
+    if (module == ProjectActiveModule.docs && project != null) {
+      ref.read(docsContextProvider.notifier).state = DocsContext.project(
+        SimpleProjectModel(
+          pk: project.pk,
+          name: project.name,
+          slug: project.slug,
+        ),
+      );
+    }
     setState(() {
-      _isDocsView = true;
+      _activeModule = module;
     });
   }
 
-  void _closeDocsView() {
+  void _closeSubModule() {
     setState(() {
-      _isDocsView = false;
+      _activeModule = ProjectActiveModule.none;
     });
   }
 
@@ -48,8 +56,30 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
     final isRealEstateProject =
         selectedProject != null && selectedProject.type == '2';
 
-    // 서브 모듈(문서함 등) 내부 뷰 모드 (1줄 콤팩트 바 뷰)
-    if (_isDocsView && selectedProject != null) {
+    // ── 서브 모듈 내부 뷰 모드 (1줄 콤팩트 바 뷰) ──────────────────────
+    if (_activeModule != ProjectActiveModule.none && selectedProject != null) {
+      Widget contentWidget;
+      switch (_activeModule) {
+        case ProjectActiveModule.docs:
+          contentWidget = const DocsScreen();
+          break;
+        case ProjectActiveModule.contract:
+          contentWidget = ContractListScreen(onBackToMain: _closeSubModule);
+          break;
+        case ProjectActiveModule.payment:
+          contentWidget = PaymentListScreen(onBackToMain: _closeSubModule);
+          break;
+        case ProjectActiveModule.ledger:
+          contentWidget = LedgerScreen(onBackToMain: _closeSubModule);
+          break;
+        case ProjectActiveModule.settings:
+          contentWidget = ProjectSettingsScreen(onBackToMain: _closeSubModule);
+          break;
+        case ProjectActiveModule.none:
+          contentWidget = const SizedBox.shrink();
+          break;
+      }
+
       return Scaffold(
         backgroundColor: AppColors.bgPrimary,
         body: Column(
@@ -59,7 +89,8 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
               onTap: () {
                 showProjectSelectorBottomSheet(context, onlyRealEstate: true);
                 final updatedProj = ref.read(selectedProjectProvider);
-                if (updatedProj != null) {
+                if (updatedProj != null &&
+                    _activeModule == ProjectActiveModule.docs) {
                   ref.read(docsContextProvider.notifier).state =
                       DocsContext.project(
                     SimpleProjectModel(
@@ -114,7 +145,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
                     ),
                     const SizedBox(width: 8),
                     InkWell(
-                      onTap: _closeDocsView,
+                      onTap: _closeSubModule,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 3),
@@ -142,15 +173,17 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
             ),
             const Divider(color: AppColors.border, height: 1),
 
-            // ── 문서함 뷰 ──────────────────────────────────────────────
-            const Expanded(child: DocsScreen()),
+            // ── 활성화된 서브모듈 화면 ─────────────────────────────────────
+            Expanded(child: contentWidget),
           ],
         ),
       );
     }
 
     // 기본 프로젝트 관리 메인 뷰 모드
-    return SingleChildScrollView(
+    return Scaffold(
+      backgroundColor: AppColors.bgPrimary,
+      body: SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -258,27 +291,29 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       OutlinedButton.icon(
-                        onPressed: () => _openDocsView(selectedProject),
+                        onPressed: () => _openSubModule(
+                            ProjectActiveModule.docs, selectedProject),
                         icon: const Icon(Icons.folder_shared_outlined,
-                            size: 15, color: _docsColor),
+                            size: 15, color: Colors.white),
                         label: Row(
                           children: [
                             Text(
                               '프로젝트 문서함',
                               style: AppTextStyles.label.copyWith(
-                                color: _docsColor,
+                                color: Colors.white,
                                 fontSize: 12,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
                             const SizedBox(width: 4),
                             const Icon(Icons.arrow_forward_rounded,
-                                size: 14, color: _docsColor),
+                                size: 14, color: Colors.white),
                           ],
                         ),
                         style: OutlinedButton.styleFrom(
-                          backgroundColor: _docsColor.withAlpha(15),
-                          side: BorderSide(
-                              color: _docsColor.withAlpha(90), width: 1),
+                          backgroundColor: const Color(0xFF6A1B9A), // 솔리드 선명 보라색
+                          side: const BorderSide(
+                              color: Color(0xFFAB47BC), width: 1),
                           shape: const RoundedRectangleBorder(
                               borderRadius: BorderRadius.zero),
                           padding: const EdgeInsets.symmetric(
@@ -309,11 +344,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
             accentColor: const Color(0xFF3565A6),
             badgeText: 'Contract',
             isEnabled: isRealEstateProject,
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('계약 관리 모듈 준비 중입니다.')),
-              );
-            },
+            onTap: () => _openSubModule(ProjectActiveModule.contract),
           ),
           const SizedBox(height: 12),
 
@@ -325,11 +356,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
             accentColor: const Color(0xFF2E7D32),
             badgeText: 'Payment',
             isEnabled: isRealEstateProject,
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('대금 수납 관리 모듈 준비 중입니다.')),
-              );
-            },
+            onTap: () => _openSubModule(ProjectActiveModule.payment),
           ),
           const SizedBox(height: 12),
 
@@ -338,14 +365,10 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
             title: '자금 / 재무 관리 (Ledger)',
             subtitle: '프로젝트 계좌 거래 내역, 운영비 정산 및 자금 집행 현황',
             icon: Icons.account_balance_wallet_outlined,
-            accentColor: const Color(0xFF5E35B1),
+            accentColor: const Color(0xFFE65100),
             badgeText: 'Ledger',
             isEnabled: isRealEstateProject,
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('자금/재무 관리 모듈 준비 중입니다.')),
-              );
-            },
+            onTap: () => _openSubModule(ProjectActiveModule.ledger),
           ),
           const SizedBox(height: 12),
 
@@ -357,16 +380,13 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
             accentColor: const Color(0xFF00796B),
             badgeText: 'Settings',
             isEnabled: isRealEstateProject,
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('프로젝트 설정 모듈 준비 중입니다.')),
-              );
-            },
+            onTap: () => _openSubModule(ProjectActiveModule.settings),
           ),
 
           const SizedBox(height: 32),
         ],
       ),
+    ),
     );
   }
 }
