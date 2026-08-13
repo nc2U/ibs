@@ -1,21 +1,155 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/models/common_models.dart';
+import '../../../../core/providers/docs_context_provider.dart';
 import '../../../../core/providers/project_provider.dart';
+import '../../../../core/router/app_router.dart';
 import '../../../../core/widgets/project_selector_bottom_sheet.dart';
+import '../../docs/presentation/docs_screen.dart';
 
 /// 프로젝트 관리 탭 메인 화면 (IBS Global - type == '2' 부동산 개발 프로젝트 전용)
-/// 계약(Contract) / 수납(Payment) / 자금(Ledger) / 문서(Docs) / 설정(Settings) 5대 모듈 접근 UI (radius = 0)
-class ProjectScreen extends ConsumerWidget {
+/// 계약(Contract) / 수납(Payment) / 자금(Ledger) / 설정(Settings) 4대 모듈 접근 UI (radius = 0)
+class ProjectScreen extends ConsumerStatefulWidget {
   const ProjectScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProjectScreen> createState() => _ProjectScreenState();
+}
+
+class _ProjectScreenState extends ConsumerState<ProjectScreen> {
+  bool _isDocsView = false;
+  static const _docsColor = Color(0xFF5E35B1);
+
+  void _openDocsView(SelectedProject project) {
+    ref.read(docsContextProvider.notifier).state = DocsContext.project(
+      SimpleProjectModel(
+        pk: project.pk,
+        name: project.name,
+        slug: project.slug,
+      ),
+    );
+    setState(() {
+      _isDocsView = true;
+    });
+  }
+
+  void _closeDocsView() {
+    setState(() {
+      _isDocsView = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final selectedProject = ref.watch(selectedProjectProvider);
     final isRealEstateProject =
         selectedProject != null && selectedProject.type == '2';
 
+    // 서브 모듈(문서함 등) 내부 뷰 모드 (1줄 콤팩트 바 뷰)
+    if (_isDocsView && selectedProject != null) {
+      return Scaffold(
+        backgroundColor: AppColors.bgPrimary,
+        body: Column(
+          children: [
+            // ── 서브모듈 전용 1줄 고정 프로젝트 선택 바 ──────────────────────
+            InkWell(
+              onTap: () {
+                showProjectSelectorBottomSheet(context, onlyRealEstate: true);
+                final updatedProj = ref.read(selectedProjectProvider);
+                if (updatedProj != null) {
+                  ref.read(docsContextProvider.notifier).state =
+                      DocsContext.project(
+                    SimpleProjectModel(
+                      pk: updatedProj.pk,
+                      name: updatedProj.name,
+                      slug: updatedProj.slug,
+                    ),
+                  );
+                }
+              },
+              child: Container(
+                color: AppColors.bgSurface,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  children: [
+                    const Icon(Icons.business_center_rounded,
+                        size: 16, color: AppColors.accentProject),
+                    const SizedBox(width: 8),
+                    Text(
+                      '프로젝트:',
+                      style: AppTextStyles.caption
+                          .copyWith(color: AppColors.textMuted),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        selectedProject.name,
+                        style: AppTextStyles.titleSm
+                            .copyWith(color: AppColors.accentProject),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.accentProject.withAlpha(25),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(
+                            color: AppColors.accentProject.withAlpha(60)),
+                      ),
+                      child: Row(
+                        children: [
+                          Text('프로젝트 변경',
+                              style: AppTextStyles.label
+                                  .copyWith(color: AppColors.accentProject)),
+                          const Icon(Icons.keyboard_arrow_down_rounded,
+                              size: 16, color: AppColors.accentProject),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    InkWell(
+                      onTap: _closeDocsView,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: AppColors.accentProject.withAlpha(25),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                              color: AppColors.accentProject.withAlpha(80)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.arrow_back_rounded,
+                                size: 14, color: AppColors.accentProject),
+                            const SizedBox(width: 4),
+                            Text('메인으로',
+                                style: AppTextStyles.label.copyWith(
+                                    color: AppColors.accentProject)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const Divider(color: AppColors.border, height: 1),
+
+            // ── 문서함 뷰 ──────────────────────────────────────────────
+            const Expanded(child: DocsScreen()),
+          ],
+        ),
+      );
+    }
+
+    // 기본 프로젝트 관리 메인 뷰 모드
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -28,21 +162,33 @@ class ProjectScreen extends ConsumerWidget {
             decoration: BoxDecoration(
               color: AppColors.bgCard,
               borderRadius: BorderRadius.zero,
-              border: Border.all(color: AppColors.border, width: 0.8),
+              border: Border.all(
+                color: isRealEstateProject
+                    ? AppColors.border
+                    : AppColors.warning.withAlpha(100),
+                width: 1,
+              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // ── 상단 행: 상태 배지 + 프로젝트 변경/선택 버튼 ─────────────
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: isRealEstateProject
                             ? AppColors.accentProject.withAlpha(30)
                             : AppColors.warning.withAlpha(30),
                         borderRadius: BorderRadius.zero,
+                        border: Border.all(
+                          color: isRealEstateProject
+                              ? AppColors.accentProject.withAlpha(60)
+                              : AppColors.warning.withAlpha(60),
+                        ),
                       ),
                       child: Text(
                         isRealEstateProject
@@ -57,92 +203,99 @@ class ProjectScreen extends ConsumerWidget {
                         ),
                       ),
                     ),
-                    const Spacer(),
                     OutlinedButton.icon(
                       onPressed: () => showProjectSelectorBottomSheet(context,
                           onlyRealEstate: true),
-                      icon: const Icon(Icons.swap_horiz_rounded, size: 16),
-                      label: const Text('프로젝트 변경'),
+                      icon: const Icon(Icons.swap_horiz_rounded, size: 15),
+                      label: Text(isRealEstateProject ? '프로젝트 변경' : '프로젝트 선택'),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.accentProject,
-                        side: const BorderSide(color: AppColors.accentProject),
+                        foregroundColor: isRealEstateProject
+                            ? AppColors.accentProject
+                            : AppColors.warning,
+                        side: BorderSide(
+                          color: isRealEstateProject
+                              ? AppColors.accentProject
+                              : AppColors.warning,
+                        ),
                         shape: const RoundedRectangleBorder(
                             borderRadius: BorderRadius.zero),
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 6),
+                            horizontal: 10, vertical: 5),
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
+
+                // ── 프로젝트 이름 및 설명 ──────────────────────────────────
                 Text(
-                  selectedProject?.name ?? '프로젝트를 선택해 주세요',
-                  style: AppTextStyles.titleLg,
+                  isRealEstateProject
+                      ? selectedProject.name
+                      : '관리 대상 프로젝트를 선택해 주세요',
+                  style: AppTextStyles.titleLg.copyWith(fontSize: 17),
                 ),
-                if (selectedProject?.description != null &&
-                    selectedProject!.description!.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(selectedProject.description!,
-                      style: AppTextStyles.bodySecond),
+                const SizedBox(height: 4),
+                Text(
+                  isRealEstateProject
+                      ? (selectedProject.description ?? '등록된 프로젝트 설명이 없습니다.')
+                      : '계약, 수납, 자금, 문서 모듈은 부동산 개발 프로젝트(type=2) 전용 기능입니다.',
+                  style: AppTextStyles.bodySecond.copyWith(
+                    color: isRealEstateProject
+                        ? AppColors.textSecond
+                        : AppColors.textMuted,
+                    fontSize: 13,
+                  ),
+                ),
+
+                // ── 하단 행: 우측 하단 문서함 진입 버튼 ───────────────────────
+                if (isRealEstateProject) ...[
+                  const SizedBox(height: 14),
+                  const Divider(color: AppColors.border, height: 1),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: () => _openDocsView(selectedProject),
+                        icon: const Icon(Icons.folder_shared_outlined,
+                            size: 15, color: _docsColor),
+                        label: Row(
+                          children: [
+                            Text(
+                              '프로젝트 문서함',
+                              style: AppTextStyles.label.copyWith(
+                                color: _docsColor,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Icon(Icons.arrow_forward_rounded,
+                                size: 14, color: _docsColor),
+                          ],
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: _docsColor.withAlpha(15),
+                          side: BorderSide(
+                              color: _docsColor.withAlpha(90), width: 1),
+                          shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.zero),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 7),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
 
-          // ── 2. 미선택 시 안내 경고 바 (radius = 0) ─────────────────────────
-          if (!isRealEstateProject) ...[
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.warning.withAlpha(15),
-                borderRadius: BorderRadius.zero,
-                border: Border.all(
-                    color: AppColors.warning.withAlpha(80), width: 1),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.info_outline_rounded,
-                          color: AppColors.warning, size: 20),
-                      const SizedBox(width: 8),
-                      Text('프로젝트 전용 모듈',
-                          style: AppTextStyles.titleSm
-                              .copyWith(color: AppColors.warning)),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '계약, 수납, 자금(입출금), 공용문서 등 IBS 관리 모듈은 프로젝트(type=2)에서만 연동됩니다.\n아래 버튼을 눌러 관리 대상 프로젝트를 선택해 주세요.',
-                    style: AppTextStyles.bodyMd
-                        .copyWith(color: AppColors.textSecond, height: 1.4),
-                  ),
-                  const SizedBox(height: 14),
-                  ElevatedButton.icon(
-                    onPressed: () => showProjectSelectorBottomSheet(context,
-                        onlyRealEstate: true),
-                    icon: const Icon(Icons.business_center_rounded, size: 18),
-                    label: const Text('프로젝트 선택'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.warning,
-                      foregroundColor: Colors.black,
-                      shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.zero),
-                      minimumSize: const Size(double.infinity, 42),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
-
-          // ── 3. 프로젝트 전용 5대 핵심 모듈 접근 섹션 (radius = 0) ───────────
+          // ── 2. 프로젝트 전용 4대 핵심 모듈 접근 섹션 (radius = 0) ───────────
           Text('핵심 관리 모듈',
               style: AppTextStyles.titleSm
                   .copyWith(color: AppColors.textMuted)),
@@ -196,23 +349,7 @@ class ProjectScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
 
-          // 모듈 4: 문서 / 소송 관리 (Docs)
-          _ModuleCard(
-            title: '문서 / 소송 관리 (Docs)',
-            subtitle: '프로젝트 일반 문서, 소송 사건 이력 및 공용 서류 보관소',
-            icon: Icons.folder_shared_outlined,
-            accentColor: const Color(0xFFE65100),
-            badgeText: 'Docs',
-            isEnabled: isRealEstateProject,
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('문서/소송 관리 모듈 준비 중입니다.')),
-              );
-            },
-          ),
-          const SizedBox(height: 12),
-
-          // 모듈 5: 프로젝트 설정 (Settings)
+          // 모듈 4: 프로젝트 설정 (Settings)
           _ModuleCard(
             title: '프로젝트 설정 (Settings)',
             subtitle: '프로젝트 기본 정보, 차수 정보, 동·호수 유닛 배치 현황 및 예산 설정',
