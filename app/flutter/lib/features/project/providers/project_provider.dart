@@ -9,6 +9,29 @@ final projectListProvider = FutureProvider<List<ProjectModel>>((ref) async {
   return ref.watch(projectRepositoryProvider).fetchProjects();
 });
 
+// ── 내 워크스페이스 목록 프로바이더 (/api/v1/issue-project/my_projects/) ─────────────
+final myProjectsProvider = FutureProvider<List<ProjectModel>>((ref) async {
+  return ref.watch(projectRepositoryProvider).fetchMyProjects();
+});
+
+// ── 업무(Issue) 등록 폼 주입용 워크스페이스 목록 프로바이더 ────────────────────────────
+/// Vue의 `myProjects.filter(pjt => pjt.module?.issue)`와 100% 동일
+final issueFormProjectsProvider = FutureProvider<List<ProjectModel>>((ref) async {
+  final myProjects = await ref.watch(myProjectsProvider.future);
+  // 이슈 모듈이 활성화된(module?.issue != false) 프로젝트만 주입
+  final filtered = myProjects.where((p) => p.module?.issue ?? true).toList();
+  // myProjects가 비어있을 경우 전체 목록에서 폴백
+  if (filtered.isNotEmpty) return filtered;
+  final all = await ref.watch(projectListProvider.future);
+  return all.where((p) => p.module?.issue ?? true).toList();
+});
+
+// ── 프로젝트 상세 프로바이더 (members, versions, categories 포함) ─────────────────
+final projectDetailProvider =
+    FutureProvider.family<ProjectModel, String>((ref, slug) async {
+  return ref.watch(projectRepositoryProvider).fetchProjectDetail(slug);
+});
+
 // ── 부동산 개발 프로젝트 전용 프로바이더 (type == '2') ──────────────────────────────
 /// 계약/수납/재무/문서 모듈용 (부동산 개발 타입 프로젝트만 필터링)
 final realEstateProjectsProvider = FutureProvider<List<ProjectModel>>((ref) async {

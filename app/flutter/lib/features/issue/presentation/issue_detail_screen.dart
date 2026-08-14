@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -150,16 +151,81 @@ class _IssueDetailScreenState extends ConsumerState<IssueDetailScreen> {
         ),
         actions: [
           detailState.maybeWhen(
-            data: (issue) => IconButton(
-              icon: const Icon(Icons.edit_outlined, size: 22),
-              tooltip: '수정',
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => IssueFormScreen(initialIssue: issue),
-                ),
-              ),
-            ),
+            data: (issue) {
+              // 현재 로그인된 사용자의 ID를 확인할 수 없는 경우 watchers 목록이나 토글 상태를 통해 렌더링
+              // API toggle_watch 호출 시 서버가 현재 유저를 추가/제거하므로 상태가 즉시 업데이트됨
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: Badge(
+                      isLabelVisible: issue.watchers.isNotEmpty,
+                      label: Text('${issue.watchers.length}'),
+                      backgroundColor: AppColors.warning,
+                      textColor: AppColors.bgPrimary,
+                      textStyle: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      offset: const Offset(4, -4),
+                      child: Icon(
+                        issue.watchers.isNotEmpty
+                            ? Icons.star_rounded
+                            : Icons.star_outline_rounded,
+                        color: issue.watchers.isNotEmpty
+                            ? AppColors.warning
+                            : AppColors.textMuted,
+                        size: 24,
+                      ),
+                    ),
+                    tooltip: issue.watchers.isNotEmpty
+                        ? '관심끄기 (지켜보는 사람: ${issue.watchers.map((w) => w.username).join(", ")})'
+                        : '지켜보기',
+                    onPressed: () async {
+                      try {
+                        await ref
+                            .read(issueDetailProvider(widget.issueId).notifier)
+                            .toggleWatch();
+                        if (context.mounted) {
+                          final currentWatchers = ref
+                                  .read(issueDetailProvider(widget.issueId))
+                                  .valueOrNull
+                                  ?.watchers ??
+                              [];
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(currentWatchers.isNotEmpty
+                                  ? '이 업무를 지켜봅니다. (총 ${currentWatchers.length}명)'
+                                  : '관심을 껐습니다.'),
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        }
+                      } catch (_) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('지켜보기 설정 변경에 실패했습니다.'),
+                              backgroundColor: AppColors.error,
+                            ),
+                          );
+                        }
+                      }
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined, size: 22),
+                    tooltip: '수정',
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => IssueFormScreen(initialIssue: issue),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
             orElse: () => const SizedBox.shrink(),
           ),
           IconButton(
@@ -198,7 +264,32 @@ class _IssueDetailScreenState extends ConsumerState<IssueDetailScreen> {
                 if (issue.description.isNotEmpty) ...[
                   _SectionLabel(label: '설명'),
                   _Card(
-                    child: Text(issue.description, style: AppTextStyles.bodyMd),
+                    child: MarkdownBody(
+                      data: issue.description,
+                      selectable: true,
+                      styleSheet: MarkdownStyleSheet(
+                        p: AppTextStyles.bodyMd,
+                        strong: AppTextStyles.bodyMd.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                        blockquote: AppTextStyles.bodyMd.copyWith(
+                          color: AppColors.textMuted,
+                        ),
+                        blockquoteDecoration: BoxDecoration(
+                          color: AppColors.bgSurface,
+                          border: const Border(
+                            left: BorderSide(
+                                color: AppColors.accentWork, width: 3),
+                          ),
+                        ),
+                        code: const TextStyle(
+                          backgroundColor: AppColors.bgSurface,
+                          color: AppColors.accentWork,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 12),
                 ],

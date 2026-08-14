@@ -45,6 +45,13 @@ class IssueRepository {
     return IssueModel.fromJson(response.data as Map<String, dynamic>);
   }
 
+  /// 지켜보기 / 관람 끄기 토글 (POST /api/v1/issue/{id}/toggle_watch/)
+  Future<IssueModel> toggleWatch(int issueId) async {
+    final url = '${ApiEndpoints.issues}$issueId/toggle_watch/';
+    final response = await _dio.post(url);
+    return IssueModel.fromJson(response.data as Map<String, dynamic>);
+  }
+
   /// 댓글 목록 조회
   Future<List<IssueCommentModel>> fetchComments(int issueId) async {
     final response = await _dio.get(
@@ -105,6 +112,34 @@ class IssueRepository {
       data: formData,
       options: Options(contentType: 'multipart/form-data'),
     );
+  }
+
+  /// 상태 목록 조회 (전체 공용, GET /api/v1/issue-status/)
+  Future<List<IssueStatusModel>> fetchStatuses() async {
+    final response = await _dio.get(ApiEndpoints.issueStatuses);
+    final data = response.data;
+    if (data is Map && data.containsKey('results')) {
+      return (data['results'] as List)
+          .map((e) => IssueStatusModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+    }
+    return (data as List)
+        .map((e) => IssueStatusModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// 우선순위 목록 조회 (전체 공용 CodeIssuePriority, GET /api/v1/code-priority/)
+  Future<List<IssuePriorityModel>> fetchPriorities() async {
+    final response = await _dio.get(ApiEndpoints.codePriorities);
+    final data = response.data;
+    if (data is Map && data.containsKey('results')) {
+      return (data['results'] as List)
+          .map((e) => IssuePriorityModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+    }
+    return (data as List)
+        .map((e) => IssuePriorityModel.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 }
 

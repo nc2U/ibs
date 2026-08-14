@@ -137,6 +137,16 @@ class IssueDetailNotifier
     }
   }
 
+  /// 지켜보기 / 관심끄기 토글
+  Future<void> toggleWatch() async {
+    final current = state.valueOrNull;
+    if (current == null) return;
+
+    final updated =
+        await ref.read(issueRepositoryProvider).toggleWatch(current.pk);
+    state = AsyncData(updated);
+  }
+
   /// 상세 새로고침
   Future<void> refresh() async {
     state = const AsyncLoading();
@@ -193,3 +203,15 @@ final issueLogProvider =
     AsyncNotifierProviderFamily<IssueLogNotifier, List<IssueLogEntryModel>, int>(
   IssueLogNotifier.new,
 );
+
+// ── 전역 공용 상태 / 우선순위 목록 프로바이더 ───────────────────────────────────
+
+final issueStatusListProvider =
+    FutureProvider<List<IssueStatusModel>>((ref) async {
+  return ref.watch(issueRepositoryProvider).fetchStatuses();
+});
+
+final issuePriorityListProvider =
+    FutureProvider<List<IssuePriorityModel>>((ref) async {
+  return ref.watch(issueRepositoryProvider).fetchPriorities();
+});

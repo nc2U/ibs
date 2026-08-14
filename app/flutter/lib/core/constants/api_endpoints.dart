@@ -10,15 +10,18 @@ abstract class ApiEndpoints {
   static const String fcmToken   = '/api/v1/accounts/fcm-token/';
 
   // ── Project ──────────────────────────────────────
-  static const String projects       = '/api/v1/issue-project/';
-  static const String projectDetail  = '/api/v1/issue-project/{slug}/';
+  static const String projects           = '/api/v1/issue-project/';
+  static const String projectDetail      = '/api/v1/issue-project/{slug}/';
+  static const String projectMyProjects  = '/api/v1/issue-project/my_projects/';
 
   // ── Issue ────────────────────────────────────────────────────────────────
-  static const String issues        = '/api/v1/issue/';
-  static const String issueDetail   = '/api/v1/issue/{id}/';
-  static const String issueComments = '/api/v1/issue-comment/';
-  static const String issueFiles    = '/api/v1/issue-file/';
-  static const String issueLogs     = '/api/v1/log-entry/';
+  static const String issues         = '/api/v1/issue/';
+  static const String issueDetail    = '/api/v1/issue/{id}/';
+  static const String issueComments  = '/api/v1/issue-comment/';
+  static const String issueFiles     = '/api/v1/issue-file/';
+  static const String issueLogs      = '/api/v1/log-entry/';
+  static const String issueStatuses  = '/api/v1/issue-status/';
+  static const String codePriorities = '/api/v1/code-priority/';
 
   // ── Meeting ──────────────────────────────────────
   static const String meetings          = '/api/v1/meeting/';

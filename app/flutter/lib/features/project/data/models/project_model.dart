@@ -1,3 +1,115 @@
+import '../../../../core/models/common_models.dart';
+
+class ProjectMemberModel {
+  final int pk;
+  final SimpleUserModel user;
+
+  const ProjectMemberModel({required this.pk, required this.user});
+
+  factory ProjectMemberModel.fromJson(Map<String, dynamic> json) {
+    return ProjectMemberModel(
+      pk: json['pk'] as int? ?? 0,
+      user: SimpleUserModel.fromJson(
+          json['user'] as Map<String, dynamic>? ?? {}),
+    );
+  }
+}
+
+class ProjectVersionModel {
+  final int pk;
+  final String name;
+  final String status;
+  final bool isDefault;
+
+  const ProjectVersionModel({
+    required this.pk,
+    required this.name,
+    this.status = '1',
+    this.isDefault = false,
+  });
+
+  factory ProjectVersionModel.fromJson(Map<String, dynamic> json) {
+    return ProjectVersionModel(
+      pk: json['pk'] as int? ?? 0,
+      name: json['name']?.toString() ?? '',
+      status: json['status']?.toString() ?? '1',
+      isDefault: json['is_default'] as bool? ?? false,
+    );
+  }
+}
+
+class ProjectTrackerModel {
+  final int pk;
+  final String name;
+  final String description;
+
+  const ProjectTrackerModel({
+    required this.pk,
+    required this.name,
+    this.description = '',
+  });
+
+  factory ProjectTrackerModel.fromJson(Map<String, dynamic> json) {
+    return ProjectTrackerModel(
+      pk: json['pk'] as int? ?? 0,
+      name: json['name']?.toString() ?? '',
+      description: json['description']?.toString() ?? '',
+    );
+  }
+}
+
+class ProjectModuleModel {
+  final bool issue;
+  final bool meeting;
+  final bool news;
+  final bool document;
+  final bool forum;
+  final bool calendar;
+
+  const ProjectModuleModel({
+    this.issue = true,
+    this.meeting = true,
+    this.news = true,
+    this.document = true,
+    this.forum = true,
+    this.calendar = true,
+  });
+
+  factory ProjectModuleModel.fromJson(Map<String, dynamic> json) {
+    return ProjectModuleModel(
+      issue: json['issue'] as bool? ?? true,
+      meeting: json['meeting'] as bool? ?? true,
+      news: json['news'] as bool? ?? true,
+      document: json['document'] as bool? ?? true,
+      forum: json['forum'] as bool? ?? true,
+      calendar: json['calendar'] as bool? ?? true,
+    );
+  }
+}
+
+class ProjectCategoryModel {
+  final int pk;
+  final String name;
+  final SimpleUserModel? assignedTo;
+
+  const ProjectCategoryModel({
+    required this.pk,
+    required this.name,
+    this.assignedTo,
+  });
+
+  factory ProjectCategoryModel.fromJson(Map<String, dynamic> json) {
+    return ProjectCategoryModel(
+      pk: json['pk'] as int? ?? 0,
+      name: json['name']?.toString() ?? '',
+      assignedTo: json['assigned_to'] != null
+          ? SimpleUserModel.fromJson(
+              json['assigned_to'] as Map<String, dynamic>)
+          : null,
+    );
+  }
+}
+
 class ProjectModel {
   final int pk;
   final String name;
@@ -8,7 +120,14 @@ class ProjectModel {
   final bool visible;
   final bool isPublic;
   final bool isBookmarked;
+  final int depth;
+  final bool parentVisible;
+  final ProjectModuleModel? module;
   final List<String> myPerms;
+  final List<ProjectMemberModel> members;
+  final List<ProjectVersionModel> versions;
+  final List<ProjectCategoryModel> categories;
+  final List<ProjectTrackerModel> trackers;
 
   const ProjectModel({
     required this.pk,
@@ -20,10 +139,26 @@ class ProjectModel {
     this.visible = true,
     this.isPublic = false,
     this.isBookmarked = false,
+    this.depth = 0,
+    this.parentVisible = false,
+    this.module,
     this.myPerms = const [],
+    this.members = const [],
+    this.versions = const [],
+    this.categories = const [],
+    this.trackers = const [],
   });
 
+  /// 계층형 들여쓰기가 적용된 표시 라벨 (Vue와 100% 동일)
+  String get indentedLabel {
+    if (depth > 0 && parentVisible) {
+      return '${'  ' * depth}» $name';
+    }
+    return name;
+  }
+
   factory ProjectModel.fromJson(Map<String, dynamic> json) {
+    final memberList = (json['all_members'] ?? json['members']) as List<dynamic>?;
     return ProjectModel(
       pk: json['pk'] as int? ?? 0,
       name: json['name']?.toString() ?? '',
@@ -34,10 +169,39 @@ class ProjectModel {
       visible: json['visible'] as bool? ?? true,
       isPublic: json['is_public'] as bool? ?? false,
       isBookmarked: json['is_bookmarked'] as bool? ?? false,
+      depth: json['depth'] as int? ?? 0,
+      parentVisible: json['parent_visible'] as bool? ?? false,
+      module: json['module'] != null
+          ? ProjectModuleModel.fromJson(json['module'] as Map<String, dynamic>)
+          : null,
       myPerms: (json['my_perms'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           const [],
+      members: (memberList != null)
+          ? memberList
+              .whereType<Map<String, dynamic>>()
+              .map((e) => ProjectMemberModel.fromJson(e))
+              .toList()
+          : <ProjectMemberModel>[],
+      versions: (json['versions'] is List)
+          ? (json['versions'] as List)
+              .whereType<Map<String, dynamic>>()
+              .map((e) => ProjectVersionModel.fromJson(e))
+              .toList()
+          : <ProjectVersionModel>[],
+      categories: (json['categories'] is List)
+          ? (json['categories'] as List)
+              .whereType<Map<String, dynamic>>()
+              .map((e) => ProjectCategoryModel.fromJson(e))
+              .toList()
+          : <ProjectCategoryModel>[],
+      trackers: (json['trackers'] is List)
+          ? (json['trackers'] as List)
+              .whereType<Map<String, dynamic>>()
+              .map((e) => ProjectTrackerModel.fromJson(e))
+              .toList()
+          : <ProjectTrackerModel>[],
     );
   }
 

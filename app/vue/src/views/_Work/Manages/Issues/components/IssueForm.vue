@@ -886,12 +886,17 @@ defineExpose({ callComment, callReply })
               <CRow class="mb-3">
                 <CFormLabel
                   for="expected_duration"
-                  class="col-sm-4 col-form-label text-right required"
+                  class="col-sm-4 col-form-label text-right"
+                  :class="{ required: form.status !== 1 }"
                 >
                   예상 처리기간
                 </CFormLabel>
                 <CCol sm="8">
-                  <CFormSelect v-model="form.expected_duration" id="expected_duration" required>
+                  <CFormSelect
+                    v-model="form.expected_duration"
+                    id="expected_duration"
+                    :required="form.status !== 1"
+                  >
                     <option value="">---------</option>
                     <option v-for="dur in durationOptions" :value="dur.value" :key="dur.value">
                       {{ dur.label }}

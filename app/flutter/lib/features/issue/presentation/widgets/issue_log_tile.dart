@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../data/models/issue_model.dart';
 
-/// 업무 변경 이력 로그 타일 위젯
+/// 업무 변경 이력 로그 타일 위젯 (마크다운 렌더링 지원)
 class IssueLogTile extends StatelessWidget {
   final IssueLogEntryModel log;
 
@@ -29,7 +30,7 @@ class IssueLogTile extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── 헤더: 작성자 + 변경일시 + 로그 번호 ────────────────────────────
+          // ── 헤더: 작성자 + 변경일시 + 작업 구분 ────────────────────────────
           Row(
             children: [
               CircleAvatar(
@@ -80,23 +81,26 @@ class IssueLogTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: detailsList.map((detail) {
-                  // 마크다운 볼드(**)** 등 간단한 태그 제거 및 텍스트 정리
-                  final cleanText = detail.replaceAll('**', '');
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 2),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('• ',
-                            style: TextStyle(
-                                color: AppColors.textMuted, fontSize: 13)),
-                        Expanded(
-                          child: Text(
-                            cleanText,
-                            style: AppTextStyles.bodyMd.copyWith(fontSize: 13),
-                          ),
+                    child: MarkdownBody(
+                      data: detail.startsWith('- ') || detail.startsWith('* ')
+                          ? detail
+                          : '• $detail',
+                      styleSheet: MarkdownStyleSheet(
+                        p: AppTextStyles.bodyMd.copyWith(fontSize: 13),
+                        strong: AppTextStyles.bodyMd.copyWith(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
                         ),
-                      ],
+                        em: AppTextStyles.bodyMd.copyWith(
+                          fontSize: 13,
+                          fontStyle: FontStyle.italic,
+                          color: AppColors.textSecond,
+                        ),
+                        listBullet: AppTextStyles.caption,
+                      ),
                     ),
                   );
                 }).toList(),
@@ -104,12 +108,42 @@ class IssueLogTile extends StatelessWidget {
             ),
           ],
 
-          // ── 댓글 내용 (comment) ───────────────────────────────────────────
+          // ── 댓글 내용 (마크다운 렌더링) ───────────────────────────────────
           if (hasComment) ...[
             const SizedBox(height: 8),
-            Text(
-              log.comment!.content,
-              style: AppTextStyles.bodyMd,
+            MarkdownBody(
+              data: log.comment!.content,
+              selectable: true,
+              styleSheet: MarkdownStyleSheet(
+                p: AppTextStyles.bodyMd,
+                strong: AppTextStyles.bodyMd.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+                em: AppTextStyles.bodyMd.copyWith(
+                  fontStyle: FontStyle.italic,
+                  color: AppColors.textSecond,
+                ),
+                blockquote: AppTextStyles.bodyMd.copyWith(
+                  color: AppColors.textMuted,
+                  fontStyle: FontStyle.italic,
+                ),
+                blockquoteDecoration: BoxDecoration(
+                  color: AppColors.bgSurface,
+                  border: const Border(
+                    left: BorderSide(color: AppColors.accentWork, width: 3),
+                  ),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+                blockquotePadding: const EdgeInsets.symmetric(
+                    horizontal: 10, vertical: 6),
+                code: TextStyle(
+                  backgroundColor: AppColors.bgSurface,
+                  color: AppColors.accentWork,
+                  fontFamily: 'monospace',
+                  fontSize: 12.5,
+                ),
+              ),
             ),
           ],
         ],

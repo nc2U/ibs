@@ -23,6 +23,20 @@ class ProjectRepository {
         .toList();
   }
 
+  /// 내 워크스페이스(프로젝트) 목록 조회 (/api/v1/issue-project/my_projects/)
+  Future<List<ProjectModel>> fetchMyProjects() async {
+    final response = await _dio.get(ApiEndpoints.projectMyProjects);
+    final data = response.data;
+    if (data is Map && data.containsKey('results')) {
+      return (data['results'] as List)
+          .map((e) => ProjectModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+    }
+    return (data as List)
+        .map((e) => ProjectModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
   /// 프로젝트 상세 조회
   Future<ProjectModel> fetchProjectDetail(String slug) async {
     final url = ApiEndpoints.resolve(ApiEndpoints.projectDetail, {'slug': slug});
