@@ -1,12 +1,12 @@
 name: "[Dev] Flutter App Distribution"
 
 on:
-  push:
-    branches:
-      - develop
-    paths:
-      - 'app/flutter/**'
   workflow_dispatch:
+    inputs:
+      release_note:
+        description: '배포 릴리즈 노트 (선택 사항)'
+        required: false
+        default: 'Dev 수동 빌드 배포'
 
 concurrency:
   group: flutter-dev-deployment
@@ -52,7 +52,7 @@ jobs:
           appId: ${{ secrets.FIREBASE_ANDROID_APP_ID }}
           serviceCredentialsFileContent: ${{ secrets.FIREBASE_CREDENTIAL_JSON }}
           groups: testers
-          releaseNotes: "Dev Build #${{ github.run_number }} (${{ github.sha }})"
+          releaseNotes: "${{ inputs.release_note || format('Dev Build #{0} ({1})', github.run_number, github.sha) }}"
           file: app/flutter/build/app/outputs/flutter-apk/app-release.apk
 
   build-and-deploy-ios:
@@ -122,5 +122,5 @@ jobs:
           appId: ${{ secrets.FIREBASE_IOS_APP_ID }}
           serviceCredentialsFileContent: ${{ secrets.FIREBASE_CREDENTIAL_JSON }}
           groups: testers
-          releaseNotes: "Dev Build #${{ github.run_number }} (${{ github.sha }})"
+          releaseNotes: "${{ inputs.release_note || format('Dev Build #{0} ({1})', github.run_number, github.sha) }}"
           file: app/flutter/build/ios/ipa/mobile_ibs.ipa
