@@ -9,6 +9,13 @@ final projectListProvider = FutureProvider<List<ProjectModel>>((ref) async {
   return ref.watch(projectRepositoryProvider).fetchProjects();
 });
 
+// ── 전역 활성 워크스페이스 목록 프로바이더 (Vue Header의 allActiveProjects와 100% 동일) ──
+/// 상태가 활성(status == '1')이고 가시성(visible == true)이 있는 프로젝트 목록
+final activeWorkspaceListProvider = FutureProvider<List<ProjectModel>>((ref) async {
+  final all = await ref.watch(projectListProvider.future);
+  return all.where((p) => p.status == '1' && p.visible).toList();
+});
+
 // ── 내 워크스페이스 목록 프로바이더 (/api/v1/issue-project/my_projects/) ─────────────
 final myProjectsProvider = FutureProvider<List<ProjectModel>>((ref) async {
   return ref.watch(projectRepositoryProvider).fetchMyProjects();

@@ -31,7 +31,7 @@ class _ProjectSelectorContent extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedProject = ref.watch(selectedProjectProvider);
     final projectsAsync = ref.watch(
-        onlyRealEstate ? realEstateProjectsProvider : projectListProvider);
+        onlyRealEstate ? realEstateProjectsProvider : activeWorkspaceListProvider);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -95,11 +95,11 @@ class _ProjectSelectorContent extends ConsumerWidget {
                     const Divider(color: AppColors.border, height: 1),
                   ],
 
-                  // Option: 항목들
+                  // Option: 항목들 (계층 구조 indentedLabel 적용)
                   ...projects.map(
                     (p) => _ProjectTile(
-                      title: p.name,
-                      subtitle: p.type == '2' ? '프로젝트 · ${p.slug}' : p.slug,
+                      title: p.indentedLabel,
+                      subtitle: p.type == '2' ? '부동산개발 · ${p.slug}' : p.slug,
                       isSelected: selectedProject?.pk == p.pk,
                       onTap: () {
                         selectProject(ref, p);
