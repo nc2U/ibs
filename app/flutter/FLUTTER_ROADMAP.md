@@ -229,9 +229,29 @@ flutter build apk --release --dart-define=BASE_URL=https://api.ibs.company.com
 flutter build ipa --release --dart-define=BASE_URL=https://api.ibs.company.com --export-options-plist=ios/ExportOptions.plist
 ```
 
+
 ---
 
-*마지막 업데이트: 2026-08-14 (파이어베이스 안드로이드/아이폰 비공개 배포 가이드 및 --dart-define 서버 주소 주입 연동 완료)*
+### 🔑 4) 멀티 PC (집/사무실) 개발 환경 시크릿 동기화 가이드
+
+Django(`app/django/.env`) 방식과 동일하게 Flutter 앱도 `app/flutter/env` (템플릿)과 `app/flutter/.env` (실제 시크릿 - `.gitignore` 대상) 구조로 시크릿을 관리합니다.
+
+1. **최초/다른 PC에서 코드 받은 후 세팅**:
+   ```bash
+   cd app/flutter
+   # 1. 템플릿 복사
+   cp env .env
+   # 2. .env 파일 내 GOOGLE_SERVICES_JSON_BASE64 및 GOOGLE_SERVICE_INFO_PLIST_BASE64 채우기
+   
+   # 3. 자동 복원 스크립트 실행 (1초 완료)
+   python setup_env.py
+   ```
+   *`setup_env.py` 실행 시 `.env` 내용을 바탕으로 `android/app/google-services.json` 과 `ios/Runner/GoogleService-Info.plist` 파일이 자동 생성됩니다.*
+
+---
+
+*마지막 업데이트: 2026-08-14 (파이어베이스 안드로이드/아이폰 비공개 배포 가이드, 멀티 PC .env 시크릿 복원 스크립트 및 --dart-define 서버 주소 주입 연동 완료)*
+
 
 * 유료 개발자 계정 결제 없이, 본인의 무료 애플 계정으로 아이폰 13 프로에 앱을 설치하는 4단계 순서입니다:
 
