@@ -62,11 +62,32 @@ class IssueRepository {
         .toList();
   }
 
-  /// 댓글 작성
-  Future<void> addComment(int issueId, String content) async {
+  /// 변경 로그 및 히스토리 조회 (GET /api/v1/log-entry/?issue={issueId})
+  Future<List<IssueLogEntryModel>> fetchIssueLogs(int issueId) async {
+    final response = await _dio.get(
+      ApiEndpoints.issueLogs,
+      queryParameters: {'issue': issueId, 'ordering': 'timestamp'},
+    );
+    final data = response.data;
+    if (data is Map && data.containsKey('results')) {
+      return (data['results'] as List)
+          .map((e) => IssueLogEntryModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+    }
+    return (data as List)
+        .map((e) => IssueLogEntryModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// 댓글 작성 (POST /api/v1/issue-comment/)
+  Future<void> addComment(int issueId, String content, {bool isPrivate = false}) async {
     await _dio.post(
       ApiEndpoints.issueComments,
-      data: {'issue': issueId, 'content': content},
+      data: {
+        'issue': issueId,
+        'content': content,
+        if (isPrivate) 'is_private': true,
+      },
     );
   }
 

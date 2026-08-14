@@ -188,27 +188,26 @@ class IssueLogEntryViewSet(viewsets.ModelViewSet):
             if has_private_comment_read:
                 private_comment_read_pids.append(m.project_id)
 
-        allowed_issues_filter = Q()
+        try:
+            non_member_visible = Role.objects.get(pk=2).issue_visible
+        except Role.DoesNotExist:
+            non_member_visible = 'NOP'
+
+        allowed_issues_filter = Q(issue__creator=user) | Q(issue__assigned_to=user)
 
         if member_all_pids:
             allowed_issues_filter |= Q(issue__project_id__in=member_all_pids)
 
         if member_pub_pids:
             allowed_issues_filter |= Q(
-                issue__project_id__in=member_pub_pids
-            ) & (
-                                             Q(issue__is_private=False) |
-                                             Q(issue__assigned_to=user) |
-                                             Q(issue__creator=user)
-                                     )
+                issue__project_id__in=member_pub_pids,
+                issue__is_private=False,
+            )
 
-        if member_pri_pids:
-            allowed_issues_filter |= Q(
-                issue__project_id__in=member_pri_pids
-            ) & (
-                                             Q(issue__assigned_to=user) |
-                                             Q(issue__creator=user)
-                                     )
+        if non_member_visible == 'ALL':
+            allowed_issues_filter |= Q(issue__project__is_public=True)
+        elif non_member_visible == 'PUB':
+            allowed_issues_filter |= Q(issue__project__is_public=True, issue__is_private=False)
 
         # 4. 비공개 댓글 열람 가드 조건 빌드 (Method D)
         comment_visibility_filter = (Q(comment__isnull=True)
@@ -217,4 +216,4 @@ class IssueLogEntryViewSet(viewsets.ModelViewSet):
         if private_comment_read_pids:
             comment_visibility_filter |= Q(issue__project_id__in=private_comment_read_pids)
 
-        return queryset.filter(allowed_issues_filter).filter(comment_visibility_filter)
+        return queryset.filter(allowed_issues_filter).filter(comment_visibility_filter).distinct()

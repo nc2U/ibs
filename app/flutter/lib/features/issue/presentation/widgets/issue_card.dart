@@ -71,13 +71,9 @@ class IssueCard extends StatelessWidget {
                 // 기한
                 if (issue.dueDate != null) ...[
                   const SizedBox(width: 8),
-                  Icon(Icons.event_outlined,
-                      size: 13, color: _dueDateColor(issue.dueDate!)),
-                  const SizedBox(width: 3),
-                  Text(
-                    _formatDate(issue.dueDate!),
-                    style: AppTextStyles.caption
-                        .copyWith(color: _dueDateColor(issue.dueDate!)),
+                  _DueDateBadge(
+                    dueDate: issue.dueDate!,
+                    isClosed: issue.status.closed,
                   ),
                 ],
                 const SizedBox(width: 10),
@@ -110,15 +106,92 @@ class IssueCard extends StatelessWidget {
       ),
     );
   }
+}
 
-  Color _dueDateColor(String dueDate) {
-    try {
-      final due = DateTime.parse(dueDate);
-      final now = DateTime.now();
-      if (due.isBefore(now)) return AppColors.error;
-      if (due.difference(now).inDays <= 3) return AppColors.warning;
-    } catch (_) {}
-    return AppColors.textMuted;
+class _DueDateBadge extends StatelessWidget {
+  final String dueDate;
+  final bool isClosed;
+
+  const _DueDateBadge({
+    required this.dueDate,
+    required this.isClosed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    String badgeText = '';
+    Color statusColor = AppColors.textMuted;
+    Color? badgeBgColor;
+    bool isUrgent = false;
+
+    if (!isClosed) {
+      try {
+        final now = DateTime.now();
+        final today = DateTime(now.year, now.month, now.day);
+        final due = DateTime.parse(dueDate);
+        final dueDay = DateTime(due.year, due.month, due.day);
+        final diffDays = dueDay.difference(today).inDays;
+
+        if (diffDays < 0) {
+          statusColor = AppColors.error;
+          badgeText = ' (지연 ${-diffDays}일)';
+          badgeBgColor = AppColors.error.withAlpha(30);
+          isUrgent = true;
+        } else if (diffDays == 0) {
+          statusColor = AppColors.error;
+          badgeText = ' (오늘 마감)';
+          badgeBgColor = AppColors.error.withAlpha(30);
+          isUrgent = true;
+        } else if (diffDays <= 3) {
+          statusColor = AppColors.warning;
+          badgeText = ' (D-$diffDays)';
+          badgeBgColor = AppColors.warning.withAlpha(30);
+          isUrgent = true;
+        }
+      } catch (_) {}
+    }
+
+    final formatted = _formatDate(dueDate);
+
+    if (isUrgent && !isClosed) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+        decoration: BoxDecoration(
+          color: badgeBgColor,
+          borderRadius: BorderRadius.circular(3),
+          border: Border.all(color: statusColor, width: 0.6),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.event_outlined, size: 11, color: statusColor),
+            const SizedBox(width: 2),
+            Text(
+              '$formatted$badgeText',
+              style: AppTextStyles.caption.copyWith(
+                color: statusColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 10.5,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.event_outlined, size: 13, color: isClosed ? AppColors.textDisabled : statusColor),
+        const SizedBox(width: 3),
+        Text(
+          formatted,
+          style: AppTextStyles.caption.copyWith(
+            color: isClosed ? AppColors.textDisabled : statusColor,
+          ),
+        ),
+      ],
+    );
   }
 
   String _formatDate(String isoDate) {

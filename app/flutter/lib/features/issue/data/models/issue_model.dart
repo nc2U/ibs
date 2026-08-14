@@ -167,6 +167,95 @@ class IssueRelationModel with _$IssueRelationModel {
       _$IssueRelationModelFromJson(json);
 }
 
+// ── 변경 로그 (IssueLogEntry) ──────────────────────────────────────────────────
+
+class IssueLogCommentModel {
+  final int pk;
+  final String content;
+  final bool isPrivate;
+  final bool isBlocked;
+  final SimpleUserModel? creator;
+
+  const IssueLogCommentModel({
+    required this.pk,
+    required this.content,
+    this.isPrivate = false,
+    this.isBlocked = false,
+    this.creator,
+  });
+
+  factory IssueLogCommentModel.fromJson(Map<String, dynamic> json) {
+    return IssueLogCommentModel(
+      pk: json['pk'] as int? ?? 0,
+      content: json['content']?.toString() ?? '',
+      isPrivate: json['is_private'] as bool? ?? false,
+      isBlocked: json['is_blocked'] as bool? ?? false,
+      creator: json['creator'] != null
+          ? SimpleUserModel.fromJson(json['creator'] as Map<String, dynamic>)
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'pk': pk,
+        'content': content,
+        'is_private': isPrivate,
+        'is_blocked': isBlocked,
+        'creator': creator?.toJson(),
+      };
+}
+
+class IssueLogEntryModel {
+  final int pk;
+  final int logId;
+  final String action;
+  final IssueLogCommentModel? comment;
+  final String details;
+  final String diff;
+  final String timestamp;
+  final SimpleUserModel? creator;
+
+  const IssueLogEntryModel({
+    required this.pk,
+    required this.logId,
+    required this.action,
+    this.comment,
+    this.details = '',
+    this.diff = '',
+    required this.timestamp,
+    this.creator,
+  });
+
+  factory IssueLogEntryModel.fromJson(Map<String, dynamic> json) {
+    return IssueLogEntryModel(
+      pk: json['pk'] as int? ?? 0,
+      logId: json['log_id'] as int? ?? 0,
+      action: json['action']?.toString() ?? '',
+      comment: json['comment'] != null
+          ? IssueLogCommentModel.fromJson(
+              json['comment'] as Map<String, dynamic>)
+          : null,
+      details: json['details']?.toString() ?? '',
+      diff: json['diff']?.toString() ?? '',
+      timestamp: json['timestamp']?.toString() ?? '',
+      creator: json['creator'] != null
+          ? SimpleUserModel.fromJson(json['creator'] as Map<String, dynamic>)
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'pk': pk,
+        'log_id': logId,
+        'action': action,
+        'comment': comment?.toJson(),
+        'details': details,
+        'diff': diff,
+        'timestamp': timestamp,
+        'creator': creator?.toJson(),
+      };
+}
+
 // ── 댓글 ───────────────────────────────────────────────────────────────────────
 
 @freezed

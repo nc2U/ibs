@@ -1,10 +1,14 @@
 import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
+import '../../../core/constants/permissions.dart';
+import '../../../core/providers/permission_provider.dart';
 import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/loading_shimmer.dart';
 import '../data/issue_repository.dart';
@@ -13,6 +17,7 @@ import '../providers/issue_provider.dart';
 import 'issue_form_screen.dart';
 import 'widgets/done_ratio_bottom_sheet.dart';
 import 'widgets/issue_comment_tile.dart';
+import 'widgets/issue_log_tile.dart';
 
 
 /// 업무 상세 화면
@@ -29,6 +34,7 @@ class _IssueDetailScreenState extends ConsumerState<IssueDetailScreen> {
   final _commentController = TextEditingController();
   final _commentFocus = FocusNode();
   bool _isSendingComment = false;
+  bool _isPrivateComment = false;
 
   @override
   void dispose() {
@@ -45,15 +51,35 @@ class _IssueDetailScreenState extends ConsumerState<IssueDetailScreen> {
     try {
       await ref
           .read(issueCommentProvider(widget.issueId).notifier)
-          .addComment(content);
+          .addComment(content, isPrivate: _isPrivateComment);
+      ref.invalidate(issueLogProvider(widget.issueId));
+      ref.invalidate(issueDetailProvider(widget.issueId));
       _commentController.clear();
       _commentFocus.unfocus();
-    } catch (_) {
+      setState(() => _isPrivateComment = false);
+    } catch (e) {
       if (mounted) {
+        String msg = '댓글 등록에 실패했습니다.';
+        if (e is DioException) {
+          final res = e.response;
+          if (res != null) {
+            if (res.statusCode == 403) {
+              msg = '댓글 작성 권한이 없습니다 (403 Forbidden).';
+            } else if (res.data is Map) {
+              final entries = (res.data as Map).entries;
+              if (entries.isNotEmpty) {
+                msg = '${entries.first.key}: ${entries.first.value}';
+              }
+            } else if (res.data is String && (res.data as String).isNotEmpty) {
+              msg = res.data as String;
+            }
+          }
+        }
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('댓글 등록에 실패했습니다.'),
+          SnackBar(
+            content: Text(msg),
             backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 4),
           ),
         );
       }
@@ -211,9 +237,9 @@ class _IssueDetailScreenState extends ConsumerState<IssueDetailScreen> {
                   const SizedBox(height: 12),
                 ],
 
-                // ── 댓글 ────────────────────────────────────────────────────
-                _SectionLabel(label: '댓글'),
-                _CommentSection(issueId: issue.pk),
+                // ── 변경 이력 및 댓글 ───────────────────────────────────────
+                _SectionLabel(label: '이력 및 댓글'),
+                _HistoryAndCommentSection(issueId: issue.pk),
                 const SizedBox(height: 80), // 하단 입력창 여백
               ],
             ),
@@ -221,13 +247,19 @@ class _IssueDetailScreenState extends ConsumerState<IssueDetailScreen> {
         ),
 
         // ── 하단 댓글 입력창 (고정) ─────────────────────────────────────────
-        _CommentInputBar(
-          controller: _commentController,
-          focusNode: _commentFocus,
-          isSending: _isSendingComment,
-          onSend: _sendComment,
-          onAttachPhoto: _attachPhoto,
-        ),
+        if (ref.can(Perm.issueCommentCreate, projectSlug: issue.project.slug))
+          _CommentInputBar(
+            controller: _commentController,
+            focusNode: _commentFocus,
+            isSending: _isSendingComment,
+            isPrivate: _isPrivateComment,
+            canSetPrivate: ref.can(Perm.issuePrivateCommentSet,
+                projectSlug: issue.project.slug),
+            onTogglePrivate: () =>
+                setState(() => _isPrivateComment = !_isPrivateComment),
+            onSend: _sendComment,
+            onAttachPhoto: _attachPhoto,
+          ),
       ],
     );
   }
@@ -270,6 +302,12 @@ class _InfoSection extends StatelessWidget {
             value: issue.assignedTo?.username ?? '미배정',
             icon: Icons.person_outline_rounded,
           ),
+          if (issue.expectedDurationDisplay.isNotEmpty)
+            _InfoRow(
+              label: '예상 처리기간',
+              value: issue.expectedDurationDisplay,
+              icon: Icons.timer_outlined,
+            ),
           if (issue.startDate.isNotEmpty)
             _InfoRow(
               label: '시작일',
@@ -277,12 +315,7 @@ class _InfoSection extends StatelessWidget {
               icon: Icons.calendar_today_outlined,
             ),
           if (issue.dueDate != null)
-            _InfoRow(
-              label: '완료기한',
-              value: _fmt(issue.dueDate!),
-              icon: Icons.event_outlined,
-              valueColor: _dueDateColor(issue.dueDate!),
-            ),
+            _buildDueDateRow(issue.dueDate!, issue.status.closed),
           // 진척률 (탭 → 바텀시트)
           const Divider(height: 1, color: AppColors.border),
           const SizedBox(height: 10),
@@ -323,14 +356,87 @@ class _InfoSection extends StatelessWidget {
     );
   }
 
-  Color _dueDateColor(String dueDate) {
-    try {
-      final due = DateTime.parse(dueDate);
-      final now = DateTime.now();
-      if (due.isBefore(now)) return AppColors.error;
-      if (due.difference(now).inDays <= 3) return AppColors.warning;
-    } catch (_) {}
-    return AppColors.textSecond;
+  Widget _buildDueDateRow(String dueDateStr, bool isClosed) {
+    String formattedDate = _fmt(dueDateStr);
+    String badgeText = '';
+    Color statusColor = AppColors.textPrimary;
+    Color badgeBgColor = Colors.transparent;
+    Color badgeTextColor = Colors.transparent;
+    bool hasBadge = false;
+
+    if (!isClosed) {
+      try {
+        final now = DateTime.now();
+        final today = DateTime(now.year, now.month, now.day);
+        final due = DateTime.parse(dueDateStr);
+        final dueDay = DateTime(due.year, due.month, due.day);
+        final diffDays = dueDay.difference(today).inDays;
+
+        if (diffDays < 0) {
+          // 기한 초과 (Overdue) - Danger
+          statusColor = AppColors.error;
+          badgeText = '기한초과 (${-diffDays}일)';
+          badgeBgColor = AppColors.error.withAlpha(30);
+          badgeTextColor = AppColors.error;
+          hasBadge = true;
+        } else if (diffDays == 0) {
+          // 오늘 마감 (D-Day) - Danger
+          statusColor = AppColors.error;
+          badgeText = '오늘 마감 (D-Day)';
+          badgeBgColor = AppColors.error.withAlpha(30);
+          badgeTextColor = AppColors.error;
+          hasBadge = true;
+        } else if (diffDays <= 3) {
+          // 임박 (D-1 ~ D-3) - Warning
+          statusColor = AppColors.warning;
+          badgeText = 'D-$diffDays 임박';
+          badgeBgColor = AppColors.warning.withAlpha(30);
+          badgeTextColor = AppColors.warning;
+          hasBadge = true;
+        }
+      } catch (_) {}
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 7),
+      child: Row(
+        children: [
+          const Icon(Icons.event_outlined, size: 16, color: AppColors.textMuted),
+          const SizedBox(width: 10),
+          SizedBox(
+            width: 96,
+            child: Text('완료기한', style: AppTextStyles.bodyMuted),
+          ),
+          const Spacer(),
+          if (hasBadge) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: badgeBgColor,
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: badgeTextColor, width: 0.8),
+              ),
+              child: Text(
+                badgeText,
+                style: AppTextStyles.caption.copyWith(
+                  color: badgeTextColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 11,
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+          ],
+          Text(
+            formattedDate,
+            style: AppTextStyles.bodyMd.copyWith(
+              color: isClosed ? AppColors.textDisabled : statusColor,
+              fontWeight: hasBadge ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   String _fmt(String iso) {
@@ -409,15 +515,16 @@ class _InfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
+      padding: const EdgeInsets.symmetric(vertical: 7),
       child: Row(
         children: [
           Icon(icon, size: 16, color: AppColors.textMuted),
-          const SizedBox(width: 8),
+          const SizedBox(width: 10),
           SizedBox(
-            width: 72,
+            width: 96,
             child: Text(label, style: AppTextStyles.bodyMuted),
           ),
+          const SizedBox(width: 12),
           Expanded(
             child: Text(
               value,
@@ -438,35 +545,38 @@ class _SubIssueRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppColors.bgCard,
-        border: Border.all(color: AppColors.border, width: 0.8),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: AppColors.accentWork.withAlpha(30),
-              borderRadius: BorderRadius.circular(3),
+    return InkWell(
+      onTap: () => context.push('/work/issues/${sub.pk}'),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppColors.bgCard,
+          border: Border.all(color: AppColors.border, width: 0.8),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppColors.accentWork.withAlpha(30),
+                borderRadius: BorderRadius.circular(3),
+              ),
+              child: Text(sub.tracker.name,
+                  style: AppTextStyles.label
+                      .copyWith(color: AppColors.accentWork)),
             ),
-            child: Text(sub.tracker.name,
-                style: AppTextStyles.label
-                    .copyWith(color: AppColors.accentWork)),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text('#${sub.pk} ${sub.subject}',
-                style: AppTextStyles.bodyMd, overflow: TextOverflow.ellipsis),
-          ),
-          Text('${sub.doneRatio}%',
-              style: AppTextStyles.caption.copyWith(
-                  color: sub.doneRatio == 100
-                      ? AppColors.success
-                      : AppColors.textMuted)),
-        ],
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text('#${sub.pk} ${sub.subject}',
+                  style: AppTextStyles.bodyMd, overflow: TextOverflow.ellipsis),
+            ),
+            Text('${sub.doneRatio}%',
+                style: AppTextStyles.caption.copyWith(
+                    color: sub.doneRatio == 100
+                        ? AppColors.success
+                        : AppColors.textMuted)),
+          ],
+        ),
       ),
     );
   }
@@ -480,42 +590,45 @@ class _RelationRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final issue = relation.issue!;
+    final relIssue = relation.issue!;
     final isPrec = direction == '선행';
     final color = isPrec ? AppColors.accentApproval : AppColors.accentProject;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: AppColors.bgCard,
-          border: Border.all(color: color.withAlpha(80), width: 0.8),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: color.withAlpha(30),
-                borderRadius: BorderRadius.circular(3),
+      child: InkWell(
+        onTap: () => context.push('/work/issues/${relIssue.pk}'),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: AppColors.bgCard,
+            border: Border.all(color: color.withAlpha(80), width: 0.8),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: color.withAlpha(30),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+                child: Text(direction,
+                    style:
+                        AppTextStyles.label.copyWith(color: color)),
               ),
-              child: Text(direction,
-                  style:
-                      AppTextStyles.label.copyWith(color: color)),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                '#${issue.pk} ${issue.subject}',
-                style: AppTextStyles.bodyMd,
-                overflow: TextOverflow.ellipsis,
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '#${relIssue.pk} ${relIssue.subject}',
+                  style: AppTextStyles.bodyMd,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-            ),
-            if (relation.delay != null && relation.delay! > 0)
-              Text('+${relation.delay}일',
-                  style: AppTextStyles.caption),
-          ],
+              if (relation.delay != null && relation.delay! > 0)
+                Text('+${relation.delay}일',
+                    style: AppTextStyles.caption),
+            ],
+          ),
         ),
       ),
     );
@@ -575,32 +688,159 @@ class _FileRow extends StatelessWidget {
   }
 }
 
-// ── 댓글 섹션 ──────────────────────────────────────────────────────────────────
-class _CommentSection extends ConsumerWidget {
+// ── 변경 이력 & 댓글 통합 섹션 ──────────────────────────────────────────
+class _HistoryAndCommentSection extends StatefulWidget {
   final int issueId;
-  const _CommentSection({required this.issueId});
+  const _HistoryAndCommentSection({required this.issueId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final commentsState = ref.watch(issueCommentProvider(issueId));
-    return commentsState.when(
-      loading: () =>
-          const LoadingShimmer(itemCount: 2, itemHeight: 80),
-      error: (e, _) => const ErrorView.empty(message: '댓글을 불러오지 못했습니다.'),
-      data: (comments) {
-        if (comments.isEmpty) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Text('첫 번째 댓글을 작성해 보세요.',
-                style: AppTextStyles.bodyMuted),
-          );
-        }
-        return Column(
-          children: comments
-              .map((c) => IssueCommentTile(comment: c))
-              .toList(),
+  State<_HistoryAndCommentSection> createState() =>
+      _HistoryAndCommentSectionState();
+}
+
+class _HistoryAndCommentSectionState
+    extends State<_HistoryAndCommentSection> {
+  int _activeTab = 0; // 0: 전체 로그, 1: 댓글, 2: 항목 변경
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer(
+      builder: (context, ref, child) {
+        final logsState = ref.watch(issueLogProvider(widget.issueId));
+
+        return logsState.when(
+          loading: () => const LoadingShimmer(itemCount: 2, itemHeight: 80),
+          error: (e, _) => const ErrorView.empty(message: '이력을 불러오지 못했습니다.'),
+          data: (logs) {
+            final commentLogs = logs.where((l) => l.comment != null).toList();
+            final historyLogs = logs.where((l) => l.comment == null).toList();
+
+            if (logs.isEmpty) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Text('등록된 변경 이력 및 댓글이 없습니다.',
+                    style: AppTextStyles.bodyMuted),
+              );
+            }
+
+            List<IssueLogEntryModel> displayLogs;
+            if (_activeTab == 1) {
+              displayLogs = commentLogs;
+            } else if (_activeTab == 2) {
+              displayLogs = historyLogs;
+            } else {
+              displayLogs = logs;
+            }
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ── 탭 버튼 바 ───────────────────────────────────────────
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    children: [
+                      _HistoryTabChip(
+                        label: '전체 로그',
+                        count: logs.length,
+                        selected: _activeTab == 0,
+                        onTap: () => setState(() => _activeTab = 0),
+                      ),
+                      const SizedBox(width: 6),
+                      if (commentLogs.isNotEmpty) ...[
+                        _HistoryTabChip(
+                          label: '댓글',
+                          count: commentLogs.length,
+                          selected: _activeTab == 1,
+                          onTap: () => setState(() => _activeTab = 1),
+                        ),
+                        const SizedBox(width: 6),
+                      ],
+                      if (historyLogs.isNotEmpty) ...[
+                        _HistoryTabChip(
+                          label: '변경 이력',
+                          count: historyLogs.length,
+                          selected: _activeTab == 2,
+                          onTap: () => setState(() => _activeTab = 2),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // ── 로그 타일 목록 ─────────────────────────────────────────
+                if (displayLogs.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Center(
+                      child: Text('해당 탭의 내역이 없습니다.',
+                          style: AppTextStyles.caption),
+                    ),
+                  )
+                else
+                  ...displayLogs.map((log) => IssueLogTile(log: log)),
+              ],
+            );
+          },
         );
       },
+    );
+  }
+}
+
+class _HistoryTabChip extends StatelessWidget {
+  final String label;
+  final int count;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _HistoryTabChip({
+    required this.label,
+    required this.count,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: selected
+              ? AppColors.accentWork.withAlpha(35)
+              : AppColors.bgCard,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: selected ? AppColors.accentWork : AppColors.border,
+            width: selected ? 1.2 : 0.8,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: AppTextStyles.label.copyWith(
+                color: selected ? AppColors.accentWork : AppColors.textMuted,
+                fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              '$count',
+              style: AppTextStyles.caption.copyWith(
+                color: selected ? AppColors.accentWork : AppColors.textDisabled,
+                fontWeight: FontWeight.bold,
+                fontSize: 10.5,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -610,6 +850,9 @@ class _CommentInputBar extends StatelessWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
   final bool isSending;
+  final bool isPrivate;
+  final bool canSetPrivate;
+  final VoidCallback onTogglePrivate;
   final VoidCallback onSend;
   final VoidCallback onAttachPhoto;
 
@@ -617,6 +860,9 @@ class _CommentInputBar extends StatelessWidget {
     required this.controller,
     required this.focusNode,
     required this.isSending,
+    required this.isPrivate,
+    required this.canSetPrivate,
+    required this.onTogglePrivate,
     required this.onSend,
     required this.onAttachPhoto,
   });
@@ -625,77 +871,116 @@ class _CommentInputBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.only(
-        left: 12,
-        right: 12,
-        top: 8,
+        left: 8,
+        right: 10,
+        top: 6,
         bottom: MediaQuery.of(context).viewInsets.bottom + 8,
       ),
       decoration: const BoxDecoration(
         color: AppColors.bgSurface,
         border: Border(top: BorderSide(color: AppColors.border, width: 0.8)),
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // 카메라 버튼
-          IconButton(
-            icon: const Icon(Icons.camera_alt_outlined,
-                color: AppColors.textMuted, size: 22),
-            tooltip: '사진 첨부',
-            onPressed: onAttachPhoto,
-          ),
-          // 텍스트 입력
-          Expanded(
-            child: TextField(
-              controller: controller,
-              focusNode: focusNode,
-              style: AppTextStyles.bodyMd,
-              maxLines: 4,
-              minLines: 1,
-              decoration: InputDecoration(
-                hintText: '댓글을 입력하세요...',
-                hintStyle: AppTextStyles.bodyMuted,
-                filled: true,
-                fillColor: AppColors.bgCard,
-                contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 8),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide:
-                      const BorderSide(color: AppColors.border, width: 0.8),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide:
-                      const BorderSide(color: AppColors.border, width: 0.8),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide:
-                      const BorderSide(color: AppColors.accentWork, width: 1.5),
-                ),
+          if (isPrivate)
+            Padding(
+              padding: const EdgeInsets.only(left: 12, bottom: 4),
+              child: Row(
+                children: [
+                  const Icon(Icons.lock_rounded,
+                      size: 13, color: AppColors.warning),
+                  const SizedBox(width: 4),
+                  Text('비밀 댓글로 등록됩니다 (관리자 및 작성자만 조회 가능)',
+                      style: AppTextStyles.caption
+                          .copyWith(color: AppColors.warning)),
+                ],
               ),
             ),
-          ),
-          const SizedBox(width: 8),
-          // 전송 버튼
-          SizedBox(
-            width: 44,
-            height: 44,
-            child: isSending
-                ? const Center(
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: AppColors.accentWork),
-                    ),
-                  )
-                : IconButton(
-                    icon: const Icon(Icons.send_rounded,
-                        color: AppColors.accentWork, size: 22),
-                    tooltip: '전송',
-                    onPressed: onSend,
+          Row(
+            children: [
+              // 카메라/사진 첨부 버튼
+              IconButton(
+                icon: const Icon(Icons.camera_alt_outlined,
+                    color: AppColors.textMuted, size: 20),
+                tooltip: '사진 첨부',
+                onPressed: onAttachPhoto,
+                padding: const EdgeInsets.all(8),
+                constraints: const BoxConstraints(),
+              ),
+              // 비밀 댓글 토글 (권한이 있는 경우)
+              if (canSetPrivate)
+                IconButton(
+                  icon: Icon(
+                    isPrivate
+                        ? Icons.lock_rounded
+                        : Icons.lock_open_outlined,
+                    color:
+                        isPrivate ? AppColors.warning : AppColors.textMuted,
+                    size: 20,
                   ),
+                  tooltip: isPrivate ? '비밀 댓글 해제' : '비밀 댓글 설정',
+                  onPressed: onTogglePrivate,
+                  padding: const EdgeInsets.all(8),
+                  constraints: const BoxConstraints(),
+                ),
+              const SizedBox(width: 4),
+              // 텍스트 입력
+              Expanded(
+                child: TextField(
+                  controller: controller,
+                  focusNode: focusNode,
+                  style: AppTextStyles.bodyMd,
+                  maxLines: 4,
+                  minLines: 1,
+                  decoration: InputDecoration(
+                    hintText: isPrivate ? '비밀 댓글을 입력하세요...' : '댓글을 입력하세요...',
+                    hintStyle: AppTextStyles.bodyMuted,
+                    filled: true,
+                    fillColor: AppColors.bgCard,
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 8),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide:
+                          const BorderSide(color: AppColors.border, width: 0.8),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide:
+                          const BorderSide(color: AppColors.border, width: 0.8),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide:
+                          const BorderSide(color: AppColors.accentWork, width: 1.5),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              // 전송 버튼
+              SizedBox(
+                width: 40,
+                height: 40,
+                child: isSending
+                    ? const Center(
+                        child: SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: AppColors.accentWork),
+                        ),
+                      )
+                    : IconButton(
+                        icon: const Icon(Icons.send_rounded,
+                            color: AppColors.accentWork, size: 20),
+                        tooltip: '전송',
+                        padding: EdgeInsets.zero,
+                        onPressed: onSend,
+                      ),
+              ),
+            ],
           ),
         ],
       ),

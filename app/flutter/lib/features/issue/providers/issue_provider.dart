@@ -159,8 +159,10 @@ class IssueCommentNotifier
     return ref.read(issueRepositoryProvider).fetchComments(issueId);
   }
 
-  Future<void> addComment(String content) async {
-    await ref.read(issueRepositoryProvider).addComment(arg, content);
+  Future<void> addComment(String content, {bool isPrivate = false}) async {
+    await ref
+        .read(issueRepositoryProvider)
+        .addComment(arg, content, isPrivate: isPrivate);
     // 댓글 추가 후 다시 로드
     ref.invalidateSelf();
   }
@@ -169,4 +171,25 @@ class IssueCommentNotifier
 final issueCommentProvider =
     AsyncNotifierProviderFamily<IssueCommentNotifier, List<IssueCommentModel>, int>(
   IssueCommentNotifier.new,
+);
+
+// ── 변경 로그 (IssueLog) ───────────────────────────────────────────────────────
+
+class IssueLogNotifier
+    extends FamilyAsyncNotifier<List<IssueLogEntryModel>, int> {
+  @override
+  Future<List<IssueLogEntryModel>> build(int issueId) async {
+    return ref.read(issueRepositoryProvider).fetchIssueLogs(issueId);
+  }
+
+  Future<void> refresh() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(
+        () => ref.read(issueRepositoryProvider).fetchIssueLogs(arg));
+  }
+}
+
+final issueLogProvider =
+    AsyncNotifierProviderFamily<IssueLogNotifier, List<IssueLogEntryModel>, int>(
+  IssueLogNotifier.new,
 );
