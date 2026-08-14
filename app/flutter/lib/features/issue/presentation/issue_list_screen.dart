@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
+import '../../../core/constants/permissions.dart';
+import '../../../core/providers/permission_provider.dart';
 import '../../../core/providers/project_provider.dart';
 import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/loading_shimmer.dart';
@@ -53,20 +55,26 @@ class _IssueListScreenState extends ConsumerState<IssueListScreen> {
 
     switch (_filterMode) {
       case _FilterMode.mine:
-        // 내 업무 + 미완료 (closed 상태 제외)
+        // 내 업무 중 진행 중인 업무 (assigned_to=me, status__closed=false)
         filter = IssueFilterModel(
+          assignedTo: 'me',
+          statusClosed: false,
           projectSlug: project?.slug,
           ordering: '-updated',
         );
         break;
-      case _FilterMode.all:
+      case _FilterMode.inProgress:
+        // 전체 업무 중 진행 중인 업무 (status__closed=false)
         filter = IssueFilterModel(
+          statusClosed: false,
           projectSlug: project?.slug,
           ordering: '-updated',
         );
         break;
-      case _FilterMode.withClosed:
+      case _FilterMode.completed:
+        // 전체 업무 중 완료된 업무 (status__closed=true)
         filter = IssueFilterModel(
+          statusClosed: true,
           projectSlug: project?.slug,
           ordering: '-updated',
         );
@@ -87,6 +95,19 @@ class _IssueListScreenState extends ConsumerState<IssueListScreen> {
       _applyFilter();
     });
 
+    final canRead = ref.can(Perm.issueRead);
+    if (!canRead) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24.0),
+          child: ErrorView.empty(
+            message: '업무 목록을 조회할 권한이 없습니다.',
+            subMessage: '관리자에게 [업무 열람] 권한을 요청해 주세요.',
+          ),
+        ),
+      );
+    }
+
     final issueState = ref.watch(issueListProvider);
 
     return Column(
@@ -104,15 +125,15 @@ class _IssueListScreenState extends ConsumerState<IssueListScreen> {
               ),
               const SizedBox(width: 8),
               _FilterChip(
-                label: '전체 업무',
-                selected: _filterMode == _FilterMode.all,
-                onTap: () => _onFilterChanged(_FilterMode.all),
+                label: '진행 중',
+                selected: _filterMode == _FilterMode.inProgress,
+                onTap: () => _onFilterChanged(_FilterMode.inProgress),
               ),
               const SizedBox(width: 8),
               _FilterChip(
-                label: '완료 포함',
-                selected: _filterMode == _FilterMode.withClosed,
-                onTap: () => _onFilterChanged(_FilterMode.withClosed),
+                label: '완료됨',
+                selected: _filterMode == _FilterMode.completed,
+                onTap: () => _onFilterChanged(_FilterMode.completed),
               ),
             ],
           ),
@@ -128,8 +149,13 @@ class _IssueListScreenState extends ConsumerState<IssueListScreen> {
             ),
             data: (state) {
               if (state.items.isEmpty) {
-                return const ErrorView.empty(
-                  message: '할당된 업무가 없습니다.',
+                final emptyMsg = _filterMode == _FilterMode.mine
+                    ? '진행 중인 내 업무가 없습니다.'
+                    : (_filterMode == _FilterMode.inProgress
+                        ? '진행 중인 업무가 없습니다.'
+                        : '완료된 업무가 없습니다.');
+                return ErrorView.empty(
+                  message: emptyMsg,
                   subMessage: '프로젝트를 선택하거나 필터를 변경해 보세요.',
                 );
               }
@@ -181,7 +207,7 @@ class _IssueListScreenState extends ConsumerState<IssueListScreen> {
 }
 
 // ── 필터 모드 ──────────────────────────────────────────────────────────────────
-enum _FilterMode { mine, all, withClosed }
+enum _FilterMode { mine, inProgress, completed }
 
 // ── 필터 칩 위젯 ───────────────────────────────────────────────────────────────
 class _FilterChip extends StatelessWidget {
