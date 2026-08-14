@@ -314,7 +314,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
           title: '#${item.pk} ${item.subject}',
           project: item.project.name,
           subInfo: '${item.statusName} · ${item.creator?.username ?? "작성자 미상"} · ${item.created.split("T").first}',
-          onTap: () => context.push('/work/issues/${item.pk}'),
+          onTap: () => context.go('/work/issues/${item.pk}'),
         ));
       }
     }
@@ -334,7 +334,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
           title: item.title,
           project: item.project.name,
           subInfo: '${item.meetingDate} · ${item.creator?.username ?? "작성자 미상"}',
-          onTap: () => context.push('/work/meetings/${item.pk}'),
+          onTap: () => context.go('/work/meetings/${item.pk}'),
         ));
       }
     }
@@ -355,6 +355,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
           project: item.project.name,
           subInfo: '${item.description.isNotEmpty ? item.description : "설명 없음"} · ${item.created.split("T").first}',
           onTap: () async {
+            context.go(AppRoutes.docs);
             try {
               final doc = await ref
                   .read(docsRepositoryProvider)
@@ -367,9 +368,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                   builder: (ctx) => DocumentDetailSheet(doc: doc),
                 );
               }
-            } catch (_) {
-              if (context.mounted) context.push(AppRoutes.docs);
-            }
+            } catch (_) {}
           },
         ));
       }
@@ -389,7 +388,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
           title: item.title,
           project: item.project.name,
           subInfo: '${item.summary} · ${item.author?.username ?? ""} · ${item.created.split("T").first}',
-          onTap: () => context.push(AppRoutes.channel),
+          onTap: () => context.go(AppRoutes.channel),
         ));
       }
     }
@@ -409,7 +408,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
           title: item.title,
           project: item.project.name,
           subInfo: '${item.creator?.username ?? ""} · ${item.created.split("T").first}',
-          onTap: () => context.push(AppRoutes.channel),
+          onTap: () => context.go(AppRoutes.channel),
         ));
       }
     }
@@ -429,7 +428,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
           title: item.content,
           project: '${item.project.name} · #${item.issuePk} ${item.issueSubject}',
           subInfo: '${item.creator?.username ?? ""} · ${item.created.split("T").first}',
-          onTap: () => context.push('/work/issues/${item.issuePk}'),
+          onTap: () => context.go('/work/issues/${item.issuePk}'),
         ));
       }
     }
