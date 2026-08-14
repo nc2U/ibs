@@ -115,7 +115,7 @@ class MeetingDetailScreen extends ConsumerWidget {
             count: meeting.issues.isNotEmpty ? meeting.issues.length : null,
             action: InkWell(
               onTap: () async {
-                final created = await context.push(
+                await context.push(
                   '/work/issues/new?meeting_id=${meeting.pk}&project_slug=${meeting.projectDesc.slug}',
                 );
                 // 새 업무가 등록되었으면 회의 상세 화면 새로고침
