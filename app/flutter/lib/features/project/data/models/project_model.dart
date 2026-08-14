@@ -1,39 +1,82 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
+class ProjectModel {
+  final int pk;
+  final String name;
+  final String slug;
+  final String description;
+  final String type;
+  final String status;
+  final bool visible;
+  final bool isPublic;
+  final bool isBookmarked;
+  final List<String> myPerms;
 
-part 'project_model.freezed.dart';
-part 'project_model.g.dart';
+  const ProjectModel({
+    required this.pk,
+    this.name = '',
+    this.slug = '',
+    this.description = '',
+    this.type = '1',
+    this.status = '1',
+    this.visible = true,
+    this.isPublic = false,
+    this.isBookmarked = false,
+    this.myPerms = const [],
+  });
 
-String _parseType(dynamic val) => val?.toString() ?? '1';
-String _parseString(dynamic val) => val?.toString() ?? '';
+  factory ProjectModel.fromJson(Map<String, dynamic> json) {
+    return ProjectModel(
+      pk: json['pk'] as int? ?? 0,
+      name: json['name']?.toString() ?? '',
+      slug: json['slug']?.toString() ?? '',
+      description: json['description']?.toString() ?? '',
+      type: json['type']?.toString() ?? '1',
+      status: json['status']?.toString() ?? '1',
+      visible: json['visible'] as bool? ?? true,
+      isPublic: json['is_public'] as bool? ?? false,
+      isBookmarked: json['is_bookmarked'] as bool? ?? false,
+      myPerms: (json['my_perms'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
+    );
+  }
 
-@freezed
-class ProjectModel with _$ProjectModel {
-  @JsonSerializable(fieldRename: FieldRename.snake)
-  const factory ProjectModel({
-    required int pk,
-    @JsonKey(fromJson: _parseString) @Default('') String name,
-    @JsonKey(fromJson: _parseString) @Default('') String slug,
-    @JsonKey(fromJson: _parseString) @Default('') String description,
-    @JsonKey(fromJson: _parseType) @Default('1') String type,
-    @JsonKey(fromJson: _parseType) @Default('1') String status,
-    @Default(true) bool visible,
-    @Default(false) bool isBookmarked,
-  }) = _ProjectModel;
-
-  factory ProjectModel.fromJson(Map<String, dynamic> json) =>
-      _$ProjectModelFromJson(json);
+  Map<String, dynamic> toJson() => {
+        'pk': pk,
+        'name': name,
+        'slug': slug,
+        'description': description,
+        'type': type,
+        'status': status,
+        'visible': visible,
+        'is_public': isPublic,
+        'is_bookmarked': isBookmarked,
+        'my_perms': myPerms,
+      };
 }
 
-@freezed
-class ProjectListResponse with _$ProjectListResponse {
-  @JsonSerializable(fieldRename: FieldRename.snake)
-  const factory ProjectListResponse({
-    required int count,
-    String? next,
-    String? previous,
-    required List<ProjectModel> results,
-  }) = _ProjectListResponse;
+class ProjectListResponse {
+  final int count;
+  final String? next;
+  final String? previous;
+  final List<ProjectModel> results;
 
-  factory ProjectListResponse.fromJson(Map<String, dynamic> json) =>
-      _$ProjectListResponseFromJson(json);
+  const ProjectListResponse({
+    required this.count,
+    this.next,
+    this.previous,
+    required this.results,
+  });
+
+  factory ProjectListResponse.fromJson(Map<String, dynamic> json) {
+    return ProjectListResponse(
+      count: json['count'] as int? ?? 0,
+      next: json['next'] as String?,
+      previous: json['previous'] as String?,
+      results: (json['results'] as List<dynamic>?)
+              ?.map((e) => ProjectModel.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
+    );
+  }
 }

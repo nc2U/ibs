@@ -10,6 +10,7 @@ class SimpleUserModel with _$SimpleUserModel {
     required String username,
     String? email,
   }) = _SimpleUserModel;
+
   factory SimpleUserModel.fromJson(Map<String, dynamic> json) =>
       _$SimpleUserModelFromJson(json);
 }
@@ -21,6 +22,7 @@ class SimpleProjectModel with _$SimpleProjectModel {
     required String name,
     required String slug,
   }) = _SimpleProjectModel;
+
   factory SimpleProjectModel.fromJson(Map<String, dynamic> json) =>
       _$SimpleProjectModelFromJson(json);
 }

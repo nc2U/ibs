@@ -28,7 +28,8 @@ void selectProject(WidgetRef ref, ProjectModel? project) {
       slug: project.slug,
       description: project.description,
       type: project.type,
-      isPublic: project.visible,
+      isPublic: project.isPublic,
+      myPerms: project.myPerms,
     );
   }
 }

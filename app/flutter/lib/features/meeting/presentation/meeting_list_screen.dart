@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/constants/permissions.dart';
+import '../../../../core/providers/permission_provider.dart';
 import '../../../../core/providers/project_provider.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/loading_shimmer.dart';
@@ -74,6 +76,19 @@ class _MeetingListScreenState extends ConsumerState<MeetingListScreen> {
     ref.listen(selectedProjectProvider, (previous, next) {
       _applyFilter();
     });
+
+    final canRead = ref.can(Perm.meetingRead);
+    if (!canRead) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24.0),
+          child: ErrorView.empty(
+            message: '회의 목록을 조회할 권한이 없습니다.',
+            subMessage: '관리자에게 [회의 열람] 권한을 요청해 주세요.',
+          ),
+        ),
+      );
+    }
 
     final meetingState = ref.watch(meetingListProvider);
 

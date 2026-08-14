@@ -1,19 +1,24 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:freezed_annotation/freezed_annotation.dart';
-
-part 'project_provider.freezed.dart';
 
 // ── 선택된 프로젝트 모델 (경량) ────────────────────────────────────────────────────
-@freezed
-class SelectedProject with _$SelectedProject {
-  const factory SelectedProject({
-    required int pk,
-    required String name,
-    required String slug,
-    String? description,
-    @Default('1') String type,
-    @Default(false) bool isPublic,
-  }) = _SelectedProject;
+class SelectedProject {
+  final int pk;
+  final String name;
+  final String slug;
+  final String? description;
+  final String type;
+  final bool isPublic;
+  final List<String> myPerms;
+
+  const SelectedProject({
+    required this.pk,
+    required this.name,
+    required this.slug,
+    this.description,
+    this.type = '1',
+    this.isPublic = false,
+    this.myPerms = const [],
+  });
 }
 
 // ── 전역 프로젝트 선택 상태 ────────────────────────────────────────────────────────

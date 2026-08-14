@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/constants/permissions.dart';
+import '../../../../core/providers/permission_provider.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/loading_shimmer.dart';
 import '../data/models/meeting_model.dart';
@@ -82,7 +84,21 @@ class MeetingDetailScreen extends ConsumerWidget {
         error: (e, _) => ErrorView.network(
           onRetry: () => ref.invalidate(meetingDetailProvider(meetingId)),
         ),
-        data: (meeting) => _buildBody(context, ref, meeting),
+        data: (meeting) {
+          final canRead = ref.can(Perm.meetingRead, projectSlug: meeting.projectDesc.slug);
+          if (!canRead) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(24.0),
+                child: ErrorView.empty(
+                  message: '회의 상세 내용을 조회할 권한이 없습니다.',
+                  subMessage: '관리자에게 [회의 열람] 권한을 요청해 주세요.',
+                ),
+              ),
+            );
+          }
+          return _buildBody(context, ref, meeting);
+        },
       ),
     );
   }
