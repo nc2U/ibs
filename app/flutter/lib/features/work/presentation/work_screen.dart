@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/constants/permissions.dart';
 import '../../../../core/models/common_models.dart';
 import '../../../../core/providers/docs_context_provider.dart';
+import '../../../../core/providers/permission_provider.dart';
 import '../../../../core/providers/project_provider.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/widgets/project_selector_bottom_sheet.dart';
@@ -217,46 +219,48 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
             ? null
             : Builder(
                 builder: (ctx) {
-                  return SizedBox(
-                    height: 40,
-                    child: FloatingActionButton.extended(
-                      elevation: 3,
-                      highlightElevation: 6,
-                      backgroundColor: const Color(0xFF3565A6),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      extendedPadding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 0),
-                      icon: const Icon(Icons.add_rounded,
-                          size: 18, color: Colors.white),
-                      label: Builder(
-                        builder: (tabCtx) {
-                          final controller = DefaultTabController.of(tabCtx);
-                          return ListenableBuilder(
-                            listenable: controller,
-                            builder: (context, child) {
-                              return Text(
-                                controller.index == 0 ? '회의 등록' : '업무 등록',
-                                style: AppTextStyles.bodyMd.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
-                                ),
-                              );
-                            },
-                          );
-                        },
-                      ),
-                      onPressed: () {
-                        final controller = DefaultTabController.of(ctx);
-                        if (controller.index == 0) {
-                          context.go('/work/meetings/new');
-                        } else {
-                          context.go('/work/issues/new');
-                        }
-                      },
-                    ),
+                  final controller = DefaultTabController.of(ctx);
+                  return ListenableBuilder(
+                    listenable: controller,
+                    builder: (context, child) {
+                      final isMeetingTab = controller.index == 0;
+                      final canCreate = isMeetingTab
+                          ? ref.can(Perm.meetingCreate)
+                          : ref.can(Perm.issueCreate);
+
+                      if (!canCreate) return const SizedBox.shrink();
+
+                      return SizedBox(
+                        height: 40,
+                        child: FloatingActionButton.extended(
+                          elevation: 3,
+                          highlightElevation: 6,
+                          backgroundColor: const Color(0xFF3565A6),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          extendedPadding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 0),
+                          icon: const Icon(Icons.add_rounded,
+                              size: 18, color: Colors.white),
+                          label: Text(
+                            isMeetingTab ? '회의 등록' : '업무 등록',
+                            style: AppTextStyles.bodyMd.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                          onPressed: () {
+                            if (isMeetingTab) {
+                              context.go('/work/meetings/new');
+                            } else {
+                              context.go('/work/issues/new');
+                            }
+                          },
+                        ),
+                      );
+                    },
                   );
                 },
               ),

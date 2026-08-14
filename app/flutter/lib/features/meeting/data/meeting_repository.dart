@@ -74,6 +74,12 @@ class MeetingRepository {
     return uniqueUsers.values.toList();
   }
 
+  /// 회의 삭제 (DELETE)
+  Future<void> deleteMeeting(int meetingId) async {
+    final url = ApiEndpoints.resolve(ApiEndpoints.meetingDetail, {'id': meetingId});
+    await _dio.delete(url);
+  }
+
   /// 회의 확정/확정취소 토글 (POST /api/v1/meeting/{id}/confirm/)
   Future<bool> toggleConfirm(int meetingId) async {
     final url = '${ApiEndpoints.meetings}$meetingId/confirm/';

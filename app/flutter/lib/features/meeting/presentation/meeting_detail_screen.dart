@@ -9,6 +9,7 @@ import '../../../../core/providers/permission_provider.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/loading_shimmer.dart';
 import '../data/models/meeting_model.dart';
+import '../data/meeting_repository.dart';
 import '../providers/meeting_provider.dart';
 import 'meeting_form_screen.dart';
 
@@ -37,38 +38,55 @@ class MeetingDetailScreen extends ConsumerWidget {
         ),
         actions: [
           detailState.maybeWhen(
-            data: (meeting) => Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // ── 회의 확정 / 확정 취소 버튼 ──────────────────────────────
-                IconButton(
-                  icon: Icon(
-                    meeting.isConfirmed
-                        ? Icons.check_circle_rounded
-                        : Icons.check_circle_outline_rounded,
-                    size: 22,
-                    color: meeting.isConfirmed
-                        ? AppColors.accentProject
-                        : (meeting.status == '2'
-                            ? AppColors.textPrimary
-                            : AppColors.textDisabled),
-                  ),
-                  tooltip: meeting.isConfirmed ? '확정 취소' : '회의 확정',
-                  onPressed: () => _handleConfirmToggle(context, ref, meeting),
-                ),
-                // ── 회의 수정 버튼 ──────────────────────────────────────────
-                IconButton(
-                  icon: const Icon(Icons.edit_outlined, size: 22),
-                  tooltip: '수정',
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => MeetingFormScreen(initialMeeting: meeting),
+            data: (meeting) {
+              final projectSlug = meeting.projectDesc.slug;
+              final canConfirm = ref.can(Perm.meetingConfirm, projectSlug: projectSlug);
+              final canUpdate = ref.can(Perm.meetingUpdate, projectSlug: projectSlug) ||
+                  ref.can(Perm.meetingOwnUpdate, projectSlug: projectSlug);
+              final canDelete = ref.can(Perm.meetingDelete, projectSlug: projectSlug);
+
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // ── 회의 확정 / 확정 취소 버튼 (meeting.confirm 권한) ────────────
+                  if (canConfirm)
+                    IconButton(
+                      icon: Icon(
+                        meeting.isConfirmed
+                            ? Icons.check_circle_rounded
+                            : Icons.check_circle_outline_rounded,
+                        size: 22,
+                        color: meeting.isConfirmed
+                            ? AppColors.accentProject
+                            : (meeting.status == '2'
+                                ? AppColors.textPrimary
+                                : AppColors.textDisabled),
+                      ),
+                      tooltip: meeting.isConfirmed ? '확정 취소' : '회의 확정',
+                      onPressed: () => _handleConfirmToggle(context, ref, meeting),
                     ),
-                  ),
-                ),
-              ],
-            ),
+                  // ── 회의 수정 버튼 (meeting.update 권한) ──────────────────────────
+                  if (canUpdate)
+                    IconButton(
+                      icon: const Icon(Icons.edit_outlined, size: 22),
+                      tooltip: '수정',
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => MeetingFormScreen(initialMeeting: meeting),
+                        ),
+                      ),
+                    ),
+                  // ── 회의 삭제 버튼 (meeting.delete 권한) ──────────────────────────
+                  if (canDelete)
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline_rounded, size: 22),
+                      tooltip: '삭제',
+                      onPressed: () => _handleDelete(context, ref, meeting),
+                    ),
+                ],
+              );
+            },
             orElse: () => const SizedBox.shrink(),
           ),
           IconButton(
@@ -170,6 +188,64 @@ class MeetingDetailScreen extends ConsumerWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('처리 중 오류가 발생했습니다: $e'),
+              backgroundColor: AppColors.accentApproval,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _handleDelete(
+      BuildContext context, WidgetRef ref, MeetingModel meeting) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.bgCard,
+        shape: const RoundedRectangleBorder(),
+        title: Text('회의 삭제', style: AppTextStyles.titleMd),
+        content: Text(
+          '정말로 이 회의록을 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.',
+          style: AppTextStyles.bodyMd,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('취소', style: AppTextStyles.bodyMuted),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.accentApproval,
+              shape: const RoundedRectangleBorder(),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('삭제', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      try {
+        await ref
+            .read(meetingRepositoryProvider)
+            .deleteMeeting(meeting.pk);
+        ref.invalidate(meetingListProvider);
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('회의록이 삭제되었습니다.'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+          context.pop();
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('삭제 실패: $e'),
               backgroundColor: AppColors.accentApproval,
             ),
           );
