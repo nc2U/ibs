@@ -1,4 +1,4 @@
-package com.example.mobile_ibs
+package com.dyibs.mobileibs
 
 import io.flutter.embedding.android.FlutterActivity
 
