@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../data/docs_repository.dart';
@@ -55,6 +56,106 @@ class DocumentDetailSheet extends ConsumerWidget {
             SnackBar(content: Text('삭제 실패: $e')),
           );
         }
+      }
+    }
+  }
+
+  String _formatFileSize(int? bytes) {
+    if (bytes == null || bytes <= 0) return '';
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+
+  IconData _getFileIcon(String? fileName, String? fileType) {
+    final name = (fileName ?? '').toLowerCase();
+    final type = (fileType ?? '').toLowerCase();
+    if (name.endsWith('.pdf') || type.contains('pdf')) {
+      return Icons.picture_as_pdf_outlined;
+    }
+    if (name.endsWith('.png') ||
+        name.endsWith('.jpg') ||
+        name.endsWith('.jpeg') ||
+        name.endsWith('.gif') ||
+        name.endsWith('.webp') ||
+        type.contains('image')) {
+      return Icons.image_outlined;
+    }
+    if (name.endsWith('.zip') || name.endsWith('.tar') || name.endsWith('.gz')) {
+      return Icons.folder_zip_outlined;
+    }
+    if (name.endsWith('.doc') ||
+        name.endsWith('.docx') ||
+        name.endsWith('.hwp') ||
+        name.endsWith('.hwpx') ||
+        name.endsWith('.txt')) {
+      return Icons.description_outlined;
+    }
+    if (name.endsWith('.xls') ||
+        name.endsWith('.xlsx') ||
+        name.endsWith('.csv')) {
+      return Icons.table_chart_outlined;
+    }
+    return Icons.attach_file_rounded;
+  }
+
+  Future<void> _launchFileUrl(BuildContext context, String? rawUrl) async {
+    if (rawUrl == null || rawUrl.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('파일 다운로드 링크가 유효하지 않습니다.')),
+      );
+      return;
+    }
+    var fullUrl = rawUrl.trim();
+    if (!fullUrl.startsWith('http://') && !fullUrl.startsWith('https://')) {
+      const envUrl = String.fromEnvironment('BASE_URL');
+      final baseUrl = envUrl.isNotEmpty
+          ? (envUrl.startsWith('http') ? envUrl : 'https://$envUrl')
+          : 'https://dev.dyibs.com';
+      final normalizedBase = baseUrl.endsWith('/')
+          ? baseUrl.substring(0, baseUrl.length - 1)
+          : baseUrl;
+      final normalizedPath = fullUrl.startsWith('/') ? fullUrl : '/$fullUrl';
+      fullUrl = '$normalizedBase$normalizedPath';
+    }
+    try {
+      final uri = Uri.parse(fullUrl);
+      final launched =
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!launched && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('파일을 열 수 없습니다.')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('오류 발생: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _launchWebLink(BuildContext context, String? rawUrl) async {
+    if (rawUrl == null || rawUrl.trim().isEmpty) return;
+    var fullUrl = rawUrl.trim();
+    if (!fullUrl.startsWith('http://') && !fullUrl.startsWith('https://')) {
+      fullUrl = 'https://$fullUrl';
+    }
+    try {
+      final uri = Uri.parse(fullUrl);
+      final launched =
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!launched && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('링크를 열 수 없습니다.')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('링크 열기 실패: $e')),
+        );
       }
     }
   }
@@ -208,30 +309,107 @@ class DocumentDetailSheet extends ConsumerWidget {
             Text('첨부파일 (${doc.files.length})', style: AppTextStyles.titleSm),
             const SizedBox(height: 8),
             ...doc.files.map(
-              (f) => Container(
-                margin: const EdgeInsets.only(bottom: 6),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                decoration: BoxDecoration(
-                  color: AppColors.bgSurface,
-                  borderRadius: BorderRadius.zero,
-                  border: Border.all(color: AppColors.border, width: 0.8),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.attach_file_rounded,
-                        size: 16, color: AppColors.accentWork),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        f.fileName ?? '첨부파일',
-                        style: AppTextStyles.bodySm,
-                        overflow: TextOverflow.ellipsis,
+              (f) {
+                final sizeStr = _formatFileSize(f.fileSize);
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: InkWell(
+                    onTap: () => _launchFileUrl(context, f.file),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: AppColors.bgSurface,
+                        borderRadius: BorderRadius.zero,
+                        border: Border.all(color: AppColors.border, width: 0.8),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(_getFileIcon(f.fileName, f.fileType),
+                              size: 18, color: AppColors.accentWork),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  f.fileName ?? '첨부파일',
+                                  style: AppTextStyles.bodySm.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                if (sizeStr.isNotEmpty ||
+                                    (f.description != null &&
+                                        f.description!.isNotEmpty))
+                                  Text(
+                                    [
+                                      if (sizeStr.isNotEmpty) sizeStr,
+                                      if (f.description != null &&
+                                          f.description!.isNotEmpty)
+                                        f.description!,
+                                    ].join(' • '),
+                                    style: AppTextStyles.caption.copyWith(
+                                      color: AppColors.textMuted,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Icon(Icons.download_rounded,
+                              size: 18, color: AppColors.accentWork),
+                        ],
                       ),
                     ),
-                    const Icon(Icons.download_rounded,
-                        size: 18, color: AppColors.textSecond),
-                  ],
+                  ),
+                );
+              },
+            ),
+          ],
+
+          // ── 관련 링크 목록 ────────────────────────────────────────────────
+          if (doc.links.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Text('관련 링크 (${doc.links.length})', style: AppTextStyles.titleSm),
+            const SizedBox(height: 8),
+            ...doc.links.map(
+              (l) => Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: InkWell(
+                  onTap: () => _launchWebLink(context, l.link),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: AppColors.bgSurface,
+                      borderRadius: BorderRadius.zero,
+                      border: Border.all(color: AppColors.border, width: 0.8),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.link_rounded,
+                            size: 18, color: AppColors.accentWork),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            l.description != null && l.description!.isNotEmpty
+                                ? '${l.description} (${l.link})'
+                                : l.link,
+                            style: AppTextStyles.bodySm.copyWith(
+                              color: AppColors.accentWork,
+                              decoration: TextDecoration.underline,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Icon(Icons.open_in_new_rounded,
+                            size: 16, color: AppColors.textMuted),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
