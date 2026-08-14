@@ -45,6 +45,18 @@ final meetingFormProjectsProvider = FutureProvider<List<ProjectModel>>((ref) asy
   return all.where((p) => p.module?.meeting ?? true).toList();
 });
 
+// ── 문서(Document) 등록 폼 주입용 워크스페이스 목록 프로바이더 ───────────────────────
+/// Vue의 `myProjects.filter(pjt => pjt.module?.document)`와 100% 동일
+final docFormProjectsProvider = FutureProvider<List<ProjectModel>>((ref) async {
+  final myProjects = await ref.watch(myProjectsProvider.future);
+  // 문서 모듈이 활성화된(module?.document != false) 프로젝트만 주입
+  final filtered = myProjects.where((p) => p.module?.document ?? true).toList();
+  // myProjects가 비어있을 경우 전체 목록에서 폴백
+  if (filtered.isNotEmpty) return filtered;
+  final all = await ref.watch(projectListProvider.future);
+  return all.where((p) => p.module?.document ?? true).toList();
+});
+
 // ── 프로젝트 상세 프로바이더 (members, versions, categories 포함) ─────────────────
 final projectDetailProvider =
     FutureProvider.family<ProjectModel, String>((ref, slug) async {

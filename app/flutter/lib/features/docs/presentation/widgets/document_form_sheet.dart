@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/providers/docs_context_provider.dart';
+import '../../../project/providers/project_provider.dart';
 
 import '../../data/docs_repository.dart';
 import '../../data/models/docs_model.dart';
@@ -23,6 +24,7 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
   late TextEditingController _titleController;
   late TextEditingController _descController;
   late TextEditingController _dateController;
+  int? _selectedProjectPk;
   int? _selectedCategory;
   bool _isSecret = false;
   bool _isSubmitting = false;
@@ -35,6 +37,8 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
         TextEditingController(text: widget.doc?.description ?? '');
     _dateController =
         TextEditingController(text: widget.doc?.executionDate ?? '');
+    _selectedProjectPk =
+        widget.doc?.project?.pk ?? ref.read(docsContextProvider).project?.pk;
     _selectedCategory = widget.doc?.category;
     _isSecret = widget.doc?.isSecret ?? false;
   }
@@ -54,7 +58,8 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
     final ctx = ref.read(docsContextProvider);
 
     // 신규 작성 시 issueProject 필요
-    final issueProjectId = ctx.project?.pk ?? widget.doc?.project?.pk;
+    final issueProjectId =
+        _selectedProjectPk ?? ctx.project?.pk ?? widget.doc?.project?.pk;
     if (widget.doc == null && issueProjectId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -111,11 +116,7 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
   @override
   Widget build(BuildContext context) {
     final categoriesAsync = ref.watch(docCategoriesProvider);
-    final ctx = ref.watch(docsContextProvider);
-
-    final targetName = widget.doc?.project?.name ??
-        ctx.project?.name ??
-        '전체 공용 범위';
+    final isEdit = widget.doc != null;
 
     return Container(
       color: AppColors.bgCard,
@@ -137,7 +138,7 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    widget.doc == null ? '신규 문서 등록' : '문서 수정',
+                    isEdit ? '문서 수정' : '신규 문서 등록',
                     style: AppTextStyles.titleLg,
                   ),
                   IconButton(
@@ -146,35 +147,72 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
 
-              // ── 대상 정보 표시 ────────────────────────────────────────────────
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: AppColors.bgSurface,
-                  borderRadius: BorderRadius.zero,
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.folder_open_rounded,
-                        size: 16, color: AppColors.accentWork),
-                    const SizedBox(width: 8),
-                    Text('등록 대상: ', style: AppTextStyles.caption),
-                    Expanded(
-                      child: Text(
-                        targetName,
-                        style: AppTextStyles.titleSm
-                            .copyWith(color: AppColors.accentWork),
-                        overflow: TextOverflow.ellipsis,
-                      ),
+              // ── 워크스페이스 선택 ───────────────────────────────────────────
+              if (!isEdit) ...[
+                ref.watch(docFormProjectsProvider).when(
+                      loading: () => const LinearProgressIndicator(),
+                      error: (_, __) => Text('프로젝트 목록 로드 실패',
+                          style: AppTextStyles.caption
+                              .copyWith(color: AppColors.error)),
+                      data: (projects) {
+                        final validPk = (_selectedProjectPk != null &&
+                                projects.any((p) => p.pk == _selectedProjectPk))
+                            ? _selectedProjectPk
+                            : (projects.isNotEmpty ? projects.first.pk : null);
+
+                        return DropdownButtonFormField<int>(
+                          value: validPk,
+                          isExpanded: true,
+                          style: AppTextStyles.bodyMd,
+                          dropdownColor: AppColors.bgCard,
+                          decoration: const InputDecoration(
+                            labelText: '워크스페이스 (프로젝트) *',
+                          ),
+                          items: projects
+                              .map((p) => DropdownMenuItem<int>(
+                                    value: p.pk,
+                                    child: Text(p.indentedLabel,
+                                        overflow: TextOverflow.ellipsis),
+                                  ))
+                              .toList(),
+                          onChanged: (v) =>
+                              setState(() => _selectedProjectPk = v),
+                          validator: (v) =>
+                              v == null ? '워크스페이스를 선택해 주세요.' : null,
+                        );
+                      },
                     ),
-                  ],
+                const SizedBox(height: 14),
+              ] else if (widget.doc?.project != null) ...[
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.bgSurface,
+                    borderRadius: BorderRadius.zero,
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.folder_open_rounded,
+                          size: 16, color: AppColors.accentWork),
+                      const SizedBox(width: 8),
+                      Text('소속: ', style: AppTextStyles.caption),
+                      Expanded(
+                        child: Text(
+                          widget.doc!.project!.name,
+                          style: AppTextStyles.titleSm
+                              .copyWith(color: AppColors.accentWork),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 14),
+              ],
 
               // ── 제목 입력 ──────────────────────────────────────────────────
               TextFormField(
@@ -191,17 +229,31 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
 
               // ── 카테고리 드롭다운 ─────────────────────────────────────────────
               categoriesAsync.when(
-                data: (categories) => DropdownButtonFormField<int>(
-                  value: _selectedCategory,
-                  decoration: const InputDecoration(labelText: '카테고리'),
-                  items: categories
-                      .map((c) => DropdownMenuItem<int>(
+                data: (categories) {
+                  final validCate = (_selectedCategory != null &&
+                          categories.any((c) => c.pk == _selectedCategory))
+                      ? _selectedCategory
+                      : null;
+
+                  return DropdownButtonFormField<int?>(
+                    value: validCate,
+                    isExpanded: true,
+                    style: AppTextStyles.bodyMd,
+                    dropdownColor: AppColors.bgCard,
+                    decoration: const InputDecoration(labelText: '카테고리'),
+                    items: [
+                      const DropdownMenuItem<int?>(
+                        value: null,
+                        child: Text('선택 안 함'),
+                      ),
+                      ...categories.map((c) => DropdownMenuItem<int?>(
                             value: c.pk,
                             child: Text(c.name),
-                          ))
-                      .toList(),
-                  onChanged: (v) => setState(() => _selectedCategory = v),
-                ),
+                          )),
+                    ],
+                    onChanged: (v) => setState(() => _selectedCategory = v),
+                  );
+                },
                 loading: () => const LinearProgressIndicator(),
                 error: (e, s) => Text('카테고리 로드 실패',
                     style: AppTextStyles.caption

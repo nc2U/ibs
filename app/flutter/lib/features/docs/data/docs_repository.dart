@@ -23,6 +23,7 @@ class DocsRepository {
     try {
       final queryParams = <String, dynamic>{
         'page': page,
+        'ordering': '-is_pinned,-created',
       };
       if (issueProject != null) {
         queryParams['issue_project'] = issueProject;
