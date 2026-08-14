@@ -75,9 +75,9 @@ class MeetingDetailScreen extends ConsumerWidget {
           _InfoCard(meeting: meeting),
           const SizedBox(height: 12),
 
-          // ── 의제 (Agenda) ──────────────────────────────────────────────
+          // ── 회의 의제 ──────────────────────────────────────────────
           if (meeting.agenda.isNotEmpty) ...[
-            const _SectionLabel(label: '의제 (Agenda)'),
+            const _SectionLabel(label: '회의 의제'),
             _TextCard(content: meeting.agenda),
             const SizedBox(height: 12),
           ],
@@ -89,9 +89,9 @@ class MeetingDetailScreen extends ConsumerWidget {
             const SizedBox(height: 12),
           ],
 
-          // ── 결정 사항 (Decisions) ────────────────────────────────────────
+          // ── 주요 결정 사항 ────────────────────────────────────────
           if (meeting.decisions.isNotEmpty) ...[
-            const _SectionLabel(label: '결정 사항'),
+            const _SectionLabel(label: '주요 결정 사항'),
             _TextCard(
               content: meeting.decisions,
               borderColor: AppColors.accentProject,
@@ -99,9 +99,9 @@ class MeetingDetailScreen extends ConsumerWidget {
             const SizedBox(height: 12),
           ],
 
-          // ── 후속 조치 (Action Items) ────────────────────────────────────
+          // ── 후속 조치 사항 ────────────────────────────────────
           if (meeting.actionItems.isNotEmpty) ...[
-            const _SectionLabel(label: '후속 조치 (Action Items)'),
+            const _SectionLabel(label: '후속 조치 사항'),
             _TextCard(
               content: meeting.actionItems,
               borderColor: AppColors.accentApproval,

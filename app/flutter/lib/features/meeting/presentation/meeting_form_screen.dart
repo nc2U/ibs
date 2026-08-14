@@ -271,8 +271,8 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
               ),
               const SizedBox(height: 16),
 
-              // ── 의제 (Agenda) ──────────────────────────────────────────────
-              Text('의제 (Agenda)', style: AppTextStyles.titleSm),
+              // ── 회의 의제 ──────────────────────────────────────────────
+              Text('회의 의제', style: AppTextStyles.titleSm),
               const SizedBox(height: 6),
               TextFormField(
                 controller: _agendaController,
@@ -293,8 +293,8 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
               ),
               const SizedBox(height: 16),
 
-              // ── 결정 사항 ──────────────────────────────────────────────────
-              Text('결정 사항 (Decisions)', style: AppTextStyles.titleSm),
+              // ── 주요 결정 사항 ──────────────────────────────────────────────────
+              Text('주요 결정 사항', style: AppTextStyles.titleSm),
               const SizedBox(height: 6),
               TextFormField(
                 controller: _decisionsController,
@@ -304,8 +304,8 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
               ),
               const SizedBox(height: 16),
 
-              // ── 후속 조치 (Action Items) ──────────────────────────────────
-              Text('후속 조치 (Action Items)', style: AppTextStyles.titleSm),
+              // ── 후속 조치 사항 ──────────────────────────────────
+              Text('후속 조치 사항', style: AppTextStyles.titleSm),
               const SizedBox(height: 6),
               TextFormField(
                 controller: _actionItemsController,
