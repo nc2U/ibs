@@ -270,30 +270,68 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
               ),
               const SizedBox(height: 16),
 
-              // ── 회의 일시 & 상태 & 카테고리 ────────────────────────────────────
+              // ── 회의 일시 (단독 1줄) ─────────────────────────────────────────
+              Text('회의 일시', style: AppTextStyles.titleSm),
+              const SizedBox(height: 6),
+              TextField(
+                controller: _meetingDateController,
+                readOnly: true,
+                style: AppTextStyles.bodyMd,
+                decoration: _inputDecoration('YYYY-MM-DD HH:mm').copyWith(
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.access_time_rounded, size: 18),
+                    onPressed: _selectDateTime,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // ── 카테고리 & 상태 (함께 1줄) ──────────────────────────────────
               Row(
                 children: [
+                  // 카테고리 (좌측)
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('회의 일시', style: AppTextStyles.titleSm),
+                        Text('카테고리', style: AppTextStyles.titleSm),
                         const SizedBox(height: 6),
-                        TextField(
-                          controller: _meetingDateController,
-                          readOnly: true,
-                          style: AppTextStyles.bodyMd,
-                          decoration: _inputDecoration('YYYY-MM-DD HH:mm').copyWith(
-                            suffixIcon: IconButton(
-                              icon: const Icon(Icons.access_time_rounded, size: 18),
-                              onPressed: _selectDateTime,
+                        ref.watch(meetingCategoriesProvider(_selectedProjectPk)).when(
+                              data: (categories) => DropdownButtonFormField<int?>(
+                                value: _selectedCategoryPk,
+                                isExpanded: true,
+                                style: AppTextStyles.bodyMd,
+                                dropdownColor: AppColors.bgCard,
+                                decoration: _inputDecoration('선택사항'),
+                                items: [
+                                  const DropdownMenuItem<int?>(
+                                    value: null,
+                                    child: Text('선택 안 함'),
+                                  ),
+                                  ...categories.map((c) => DropdownMenuItem<int?>(
+                                        value: c.pk,
+                                        child: Text(c.name, overflow: TextOverflow.ellipsis),
+                                      )),
+                                ],
+                                onChanged: (v) =>
+                                    setState(() => _selectedCategoryPk = v),
+                              ),
+                              loading: () => DropdownButtonFormField<int?>(
+                                items: const [],
+                                onChanged: null,
+                                decoration: _inputDecoration('로딩 중...'),
+                              ),
+                              error: (_, __) => DropdownButtonFormField<int?>(
+                                items: const [],
+                                onChanged: null,
+                                decoration: _inputDecoration('선택 안 함'),
+                              ),
                             ),
-                          ),
-                        ),
                       ],
                     ),
                   ),
                   const SizedBox(width: 12),
+                  // 상태 (우측)
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -317,51 +355,6 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                 ],
               ),
               const SizedBox(height: 16),
-
-              // ── 카테고리 선택 ──────────────────────────────────────────────
-              ref.watch(meetingCategoriesProvider(_selectedProjectPk)).when(
-                    data: (categories) => Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('카테고리', style: AppTextStyles.titleSm),
-                        const SizedBox(height: 6),
-                        DropdownButtonFormField<int?>(
-                          value: _selectedCategoryPk,
-                          style: AppTextStyles.bodyMd,
-                          dropdownColor: AppColors.bgCard,
-                          decoration: _inputDecoration('카테고리 선택 (선택사항)'),
-                          items: [
-                            const DropdownMenuItem<int?>(
-                              value: null,
-                              child: Text('선택 안 함'),
-                            ),
-                            ...categories.map((c) => DropdownMenuItem<int?>(
-                                  value: c.pk,
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        width: 8,
-                                        height: 8,
-                                        decoration: BoxDecoration(
-                                          color: AppColors.accentWork,
-                                          shape: BoxShape.circle,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(c.name),
-                                    ],
-                                  ),
-                                )),
-                          ],
-                          onChanged: (v) =>
-                              setState(() => _selectedCategoryPk = v),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                    ),
-                    loading: () => const SizedBox.shrink(),
-                    error: (_, __) => const SizedBox.shrink(),
-                  ),
 
               // ── 참석자 선택 (사내 멤버) ────────────────────────────────────────
               ref.watch(meetingMembersProvider(_selectedProjectPk)).when(
