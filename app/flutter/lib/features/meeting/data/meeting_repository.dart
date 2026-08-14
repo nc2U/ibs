@@ -31,6 +31,13 @@ class MeetingRepository {
     return MeetingModel.fromJson(response.data as Map<String, dynamic>);
   }
 
+  /// 회의 수정 (PATCH)
+  Future<MeetingModel> updateMeeting(int meetingId, Map<String, dynamic> data) async {
+    final url = ApiEndpoints.resolve(ApiEndpoints.meetingDetail, {'id': meetingId});
+    final response = await _dio.patch(url, data: data);
+    return MeetingModel.fromJson(response.data as Map<String, dynamic>);
+  }
+
   /// 회의 확정/확정취소 토글 (POST /api/v1/meeting/{id}/confirm/)
   Future<bool> toggleConfirm(int meetingId) async {
     final url = '${ApiEndpoints.meetings}$meetingId/confirm/';
