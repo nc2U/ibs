@@ -114,7 +114,10 @@ jobs:
           flutter build ipa --release --no-codesign --build-number=${{ github.run_number }} --dart-define=BASE_URL=https://ibs.dyibs.com || flutter build ios --release --no-codesign --build-number=${{ github.run_number }} --dart-define=BASE_URL=https://ibs.dyibs.com
 
       - name: Deploy to Firebase App Distribution (iOS)
-        if: ${{ secrets.FIREBASE_IOS_APP_ID != '' && secrets.APPLE_CERTIFICATE_BASE64 != '' }}
+        if: ${{ env.FIREBASE_IOS_APP_ID != '' && env.APPLE_CERTIFICATE_BASE64 != '' }}
+        env:
+          FIREBASE_IOS_APP_ID: ${{ secrets.FIREBASE_IOS_APP_ID }}
+          APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
         uses: wzieba/Firebase-Distribution-Github-Action@v1
         with:
           appId: ${{ secrets.FIREBASE_IOS_APP_ID }}
