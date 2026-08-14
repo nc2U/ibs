@@ -186,14 +186,30 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
                       children: [
                         // ── 상단 탭바 (회의 목록 | 업무 목록) ───────────────
                         Container(
-                          color: AppColors.bgSurface,
+                          decoration: const BoxDecoration(
+                            color: AppColors.bgSurface,
+                            border: Border(
+                              bottom: BorderSide(
+                                  color: AppColors.border, width: 0.8),
+                            ),
+                          ),
                           child: TabBar(
-                            indicatorColor: AppColors.accentWork,
-                            indicatorWeight: 3,
+                            indicatorSize: TabBarIndicatorSize.tab,
+                            indicator: const BoxDecoration(
+                              color: AppColors.bgCard,
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: AppColors.accentWork,
+                                  width: 3.5,
+                                ),
+                              ),
+                            ),
                             labelColor: AppColors.accentWork,
                             unselectedLabelColor: AppColors.textMuted,
-                            labelStyle: AppTextStyles.titleSm,
+                            labelStyle: AppTextStyles.titleSm
+                                .copyWith(fontWeight: FontWeight.w700),
                             unselectedLabelStyle: AppTextStyles.bodyMd,
+                            dividerColor: Colors.transparent,
                             tabs: const [
                               Tab(text: '회의 목록'),
                               Tab(text: '업무 목록'),
