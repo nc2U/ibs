@@ -35,15 +35,37 @@ class MeetingDetailScreen extends ConsumerWidget {
         ),
         actions: [
           detailState.maybeWhen(
-            data: (meeting) => IconButton(
-              icon: const Icon(Icons.edit_outlined, size: 22),
-              tooltip: '수정',
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => MeetingFormScreen(initialMeeting: meeting),
+            data: (meeting) => Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // ── 회의 확정 / 확정 취소 버튼 ──────────────────────────────
+                IconButton(
+                  icon: Icon(
+                    meeting.isConfirmed
+                        ? Icons.check_circle_rounded
+                        : Icons.check_circle_outline_rounded,
+                    size: 22,
+                    color: meeting.isConfirmed
+                        ? AppColors.accentProject
+                        : (meeting.status == '2'
+                            ? AppColors.textPrimary
+                            : AppColors.textDisabled),
+                  ),
+                  tooltip: meeting.isConfirmed ? '확정 취소' : '회의 확정',
+                  onPressed: () => _handleConfirmToggle(context, ref, meeting),
                 ),
-              ),
+                // ── 회의 수정 버튼 ──────────────────────────────────────────
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined, size: 22),
+                  tooltip: '수정',
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => MeetingFormScreen(initialMeeting: meeting),
+                    ),
+                  ),
+                ),
+              ],
             ),
             orElse: () => const SizedBox.shrink(),
           ),
@@ -63,6 +85,81 @@ class MeetingDetailScreen extends ConsumerWidget {
         data: (meeting) => _buildBody(context, ref, meeting),
       ),
     );
+  }
+
+  Future<void> _handleConfirmToggle(
+      BuildContext context, WidgetRef ref, MeetingModel meeting) async {
+    if (meeting.status != '2' && !meeting.isConfirmed) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('회의 상태가 [종료] 상태인 경우에만 확정할 수 있습니다.'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    final willConfirm = !meeting.isConfirmed;
+    final actionText = willConfirm ? '확정' : '확정 취소';
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.bgCard,
+        shape: const RoundedRectangleBorder(),
+        title: Text('회의 $actionText', style: AppTextStyles.titleMd),
+        content: Text(
+          willConfirm
+              ? '이 회의를 확정하시겠습니까?\n확정 시 참석자들에게 확정 알림이 전송됩니다.'
+              : '이 회의의 확정을 취소하시겠습니까?',
+          style: AppTextStyles.bodyMd,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('취소', style: AppTextStyles.bodyMuted),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: willConfirm
+                  ? AppColors.accentProject
+                  : AppColors.accentApproval,
+              shape: const RoundedRectangleBorder(),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(actionText,
+                style: const TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      try {
+        final result = await ref
+            .read(meetingDetailProvider(meeting.pk).notifier)
+            .toggleConfirm();
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result
+                  ? '회의가 확정되었습니다.'
+                  : '회의 확정이 취소되었습니다.'),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('처리 중 오류가 발생했습니다: $e'),
+              backgroundColor: AppColors.accentApproval,
+            ),
+          );
+        }
+      }
+    }
   }
 
   Widget _buildBody(BuildContext context, WidgetRef ref, MeetingModel meeting) {
@@ -223,10 +320,38 @@ class _InfoCard extends StatelessWidget {
               label: '회의 일시',
               value: _formatDateTime(meeting.meetingDate),
               icon: Icons.calendar_today_outlined),
-          _Row(
-              label: '상태',
-              value: meeting.statusDisplay,
-              icon: Icons.flag_outlined),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 5),
+            child: Row(
+              children: [
+                const Icon(Icons.flag_outlined, size: 16, color: AppColors.textMuted),
+                const SizedBox(width: 8),
+                SizedBox(
+                  width: 72,
+                  child: Text('상태', style: AppTextStyles.bodyMuted),
+                ),
+                Text(
+                  meeting.statusDisplay,
+                  style: AppTextStyles.bodyMd,
+                ),
+                if (meeting.isConfirmed) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                    decoration: BoxDecoration(
+                      color: AppColors.accentProject.withAlpha(30),
+                      border: Border.all(color: AppColors.accentProject.withAlpha(80)),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                    child: Text(
+                      '확정됨',
+                      style: AppTextStyles.label.copyWith(color: AppColors.accentProject),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
           if (meeting.categoryDesc != null)
             _Row(
                 label: '카테고리',

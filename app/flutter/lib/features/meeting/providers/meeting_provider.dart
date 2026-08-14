@@ -118,6 +118,18 @@ class MeetingDetailNotifier
     state = await AsyncValue.guard(
         () => ref.read(meetingRepositoryProvider).fetchMeetingDetail(arg));
   }
+
+  /// 회의 확정/확정취소 토글
+  Future<bool> toggleConfirm() async {
+    final isConfirmed = await ref.read(meetingRepositoryProvider).toggleConfirm(arg);
+    final current = state.valueOrNull;
+    if (current != null) {
+      state = AsyncData(current.copyWith(isConfirmed: isConfirmed));
+    }
+    // 회의 목록도 갱신
+    ref.read(meetingListProvider.notifier).refresh();
+    return isConfirmed;
+  }
 }
 
 final meetingDetailProvider =
