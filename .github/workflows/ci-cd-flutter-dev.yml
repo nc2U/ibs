@@ -78,8 +78,9 @@ jobs:
         working-directory: app/flutter
         run: |
           flutter pub get
+          flutter build ios --config-only --no-codesign
           cd ios
-          pod install
+          pod install --repo-update
           cd ..
 
       - name: Setup iOS Provisioning Profile & Certificate
