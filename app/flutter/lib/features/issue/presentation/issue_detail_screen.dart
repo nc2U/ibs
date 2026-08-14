@@ -165,48 +165,40 @@ class _IssueDetailScreenState extends ConsumerState<IssueDetailScreen> {
                           projectSlug: issue.project.slug) &&
                       (isCreator || isAssignee));
 
+              final isMyWatching = currentUser != null &&
+                  issue.watchers.any((w) => w.pk == currentUser.pk);
+
               return Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   IconButton(
-                    icon: Badge(
-                      isLabelVisible: issue.watchers.isNotEmpty,
-                      label: Text('${issue.watchers.length}'),
-                      backgroundColor: AppColors.warning,
-                      textColor: AppColors.bgPrimary,
-                      textStyle: const TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      offset: const Offset(4, -4),
-                      child: Icon(
-                        issue.watchers.isNotEmpty
-                            ? Icons.star_rounded
-                            : Icons.star_outline_rounded,
-                        color: issue.watchers.isNotEmpty
-                            ? AppColors.warning
-                            : AppColors.textMuted,
-                        size: 24,
-                      ),
+                    icon: Icon(
+                      isMyWatching
+                          ? Icons.star_rounded
+                          : Icons.star_outline_rounded,
+                      color: isMyWatching
+                          ? AppColors.warning
+                          : AppColors.textMuted,
+                      size: 24,
                     ),
-                    tooltip: issue.watchers.isNotEmpty
-                        ? '관심끄기 (지켜보는 사람: ${issue.watchers.map((w) => w.username).join(", ")})'
-                        : '지켜보기',
+                    tooltip: isMyWatching ? '관심끄기' : '지켜보기',
                     onPressed: () async {
                       try {
                         await ref
                             .read(issueDetailProvider(widget.issueId).notifier)
                             .toggleWatch();
                         if (context.mounted) {
-                          final currentWatchers = ref
-                                  .read(issueDetailProvider(widget.issueId))
-                                  .valueOrNull
-                                  ?.watchers ??
-                              [];
+                          final currentIssue = ref
+                              .read(issueDetailProvider(widget.issueId))
+                              .valueOrNull;
+                          final nowWatching = currentUser != null &&
+                              (currentIssue?.watchers
+                                      .any((w) => w.pk == currentUser.pk) ??
+                                  false);
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text(currentWatchers.isNotEmpty
-                                  ? '이 업무를 지켜봅니다. (총 ${currentWatchers.length}명)'
+                              content: Text(nowWatching
+                                  ? '이 업무를 지켜봅니다.'
                                   : '관심을 껐습니다.'),
                               duration: const Duration(seconds: 2),
                             ),
@@ -429,6 +421,13 @@ class _InfoSection extends StatelessWidget {
             ),
           if (issue.dueDate != null)
             _buildDueDateRow(issue.dueDate!, issue.status.closed),
+          _InfoRow(
+            label: '업무 관람자',
+            value: issue.watchers.isNotEmpty
+                ? '${issue.watchers.map((w) => w.username).join(', ')} (${issue.watchers.length}명)'
+                : '없음',
+            icon: Icons.visibility_outlined,
+          ),
           // 진척률 (탭 → 바텀시트)
           const Divider(height: 1, color: AppColors.border),
           const SizedBox(height: 10),
