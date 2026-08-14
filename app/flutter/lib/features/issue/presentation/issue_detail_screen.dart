@@ -521,7 +521,7 @@ class _InfoSection extends StatelessWidget {
           const Icon(Icons.event_outlined, size: 16, color: AppColors.textMuted),
           const SizedBox(width: 10),
           SizedBox(
-            width: 96,
+            width: 115,
             child: Text('완료기한', style: AppTextStyles.bodyMuted),
           ),
           const Spacer(),
@@ -638,10 +638,10 @@ class _InfoRow extends StatelessWidget {
           Icon(icon, size: 16, color: AppColors.textMuted),
           const SizedBox(width: 10),
           SizedBox(
-            width: 96,
+            width: 115,
             child: Text(label, style: AppTextStyles.bodyMuted),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
               value,
