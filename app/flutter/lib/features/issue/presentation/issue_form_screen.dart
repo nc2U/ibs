@@ -112,14 +112,21 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
   }
 
   Future<void> _selectDate(TextEditingController controller) async {
+    DateTime initial = DateTime.now();
+    if (controller.text.isNotEmpty) {
+      final parsed = DateTime.tryParse(controller.text);
+      if (parsed != null) initial = parsed;
+    }
     final picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
+      initialDate: initial,
       firstDate: DateTime(2020),
       lastDate: DateTime(2030),
     );
     if (picked != null) {
-      controller.text = picked.toIso8601String().substring(0, 10);
+      setState(() {
+        controller.text = picked.toIso8601String().substring(0, 10);
+      });
     }
   }
 
@@ -299,6 +306,7 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                   data: (projects) => DropdownButtonFormField<String>(
                     value: _selectedProjectSlug ??
                         (projects.isNotEmpty ? projects.first.slug : null),
+                    isExpanded: true,
                     style: AppTextStyles.bodyMd,
                     dropdownColor: AppColors.bgCard,
                     decoration: _inputDecoration('프로젝트 선택'),
@@ -412,6 +420,7 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
 
                                       return DropdownButtonFormField<int>(
                                         value: currentTrackerId,
+                                        isExpanded: true,
                                         style: AppTextStyles.bodyMd,
                                         dropdownColor: AppColors.bgCard,
                                         decoration: _inputDecoration(''),
@@ -443,6 +452,7 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                   ) ??
                                   DropdownButtonFormField<int>(
                                     value: _trackerId,
+                                    isExpanded: true,
                                     style: AppTextStyles.bodyMd,
                                     dropdownColor: AppColors.bgCard,
                                     decoration: _inputDecoration(''),
@@ -473,6 +483,7 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                 loading: () => const SizedBox(height: 48),
                                 error: (_, __) => DropdownButtonFormField<int>(
                                   value: _priorityId,
+                                  isExpanded: true,
                                   style: AppTextStyles.bodyMd,
                                   dropdownColor: AppColors.bgCard,
                                   decoration: _inputDecoration(''),
@@ -502,6 +513,7 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
 
                                   return DropdownButtonFormField<int>(
                                     value: currentPriorityId,
+                                    isExpanded: true,
                                     style: AppTextStyles.bodyMd,
                                     dropdownColor: AppColors.bgCard,
                                     decoration: _inputDecoration(''),
@@ -583,6 +595,7 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                     error: (_, __) =>
                                         DropdownButtonFormField<int?>(
                                       value: null,
+                                      isExpanded: true,
                                       style: AppTextStyles.bodyMd,
                                       dropdownColor: AppColors.bgCard,
                                       decoration: _inputDecoration('미배정'),
@@ -608,6 +621,7 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
 
                                       return DropdownButtonFormField<int?>(
                                         value: currentAssignedId,
+                                        isExpanded: true,
                                         style: AppTextStyles.bodyMd,
                                         dropdownColor: AppColors.bgCard,
                                         decoration:
@@ -627,6 +641,7 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                   ) ??
                                   DropdownButtonFormField<int?>(
                                     value: null,
+                                    isExpanded: true,
                                     style: AppTextStyles.bodyMd,
                                     dropdownColor: AppColors.bgCard,
                                     decoration: _inputDecoration('미배정'),
@@ -692,6 +707,7 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                 loading: () => const SizedBox(height: 48),
                                 error: (_, __) => DropdownButtonFormField<int>(
                                   value: _statusId,
+                                  isExpanded: true,
                                   style: AppTextStyles.bodyMd,
                                   dropdownColor: AppColors.bgCard,
                                   decoration: _inputDecoration(''),
@@ -725,6 +741,7 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
 
                                   return DropdownButtonFormField<int>(
                                     value: currentStatusId,
+                                    isExpanded: true,
                                     style: AppTextStyles.bodyMd,
                                     dropdownColor: AppColors.bgCard,
                                     decoration: _inputDecoration(''),
@@ -794,26 +811,30 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                               const SizedBox(height: 6),
                               DropdownButtonFormField<String?>(
                                 value: _expectedDuration,
+                                isExpanded: true,
                                 style: AppTextStyles.bodyMd,
                                 dropdownColor: AppColors.bgCard,
                                 decoration: _inputDecoration(
                                   (_statusId == 1)
-                                      ? '선택사항 (진행 시 필수)'
+                                      ? '선택 안함'
                                       : '처리기간 선택',
                                 ),
                                 items: [
                                   const DropdownMenuItem(
-                                      value: null, child: Text('선택 안함')),
+                                      value: null,
+                                      child: Text('선택 안함',
+                                          overflow: TextOverflow.ellipsis)),
                                   ..._kDurationOptions
                                       .map((opt) => DropdownMenuItem(
                                             value: opt['value'],
-                                            child: Text(opt['label']!),
+                                            child: Text(opt['label']!,
+                                                overflow: TextOverflow.ellipsis),
                                           )),
                                 ],
                                 validator: (v) {
                                   // 준비(초기 단계, pk=1)를 벗어났을 때만 필수 유효성 검사 수행
                                   if (_statusId != 1 && (v == null || v.isEmpty)) {
-                                    return '업무를 진행하려면 예상 처리기간을 선택해 주세요.';
+                                    return '예상 처리기간을 선택해 주세요.';
                                   }
                                   return null;
                                 },
@@ -868,65 +889,44 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                     children: [
                       const Divider(height: 16, color: AppColors.border),
 
-                      // ── 완료기한 ───────────────────────────────────────
-                      Text('완료기한', style: AppTextStyles.titleSm),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: _dueDateController,
-                        readOnly: true,
-                        style: AppTextStyles.bodyMd,
-                        decoration: _inputDecoration('YYYY-MM-DD').copyWith(
-                          suffixIcon: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (_dueDateController.text.isNotEmpty)
-                                IconButton(
-                                  icon: const Icon(Icons.clear_rounded,
-                                      size: 18, color: AppColors.textMuted),
-                                  onPressed: () =>
-                                      setState(() => _dueDateController.clear()),
-                                ),
-                              IconButton(
-                                icon: const Icon(Icons.calendar_today,
-                                    size: 18),
-                                onPressed: () =>
-                                    _selectDate(_dueDateController),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-
-                      // ── 상위업무 (검색 및 선택 바텀시트) ──────────────────
-                      Text('상위업무', style: AppTextStyles.titleSm),
-                      const SizedBox(height: 6),
-                      projectIssuesAsync?.when(
-                            loading: () => const SizedBox(
-                              height: 48,
-                              child: Center(
-                                  child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: AppColors.accentWork)),
-                            ),
-                            error: (_, __) =>
-                                _buildParentIssueSelector(const []),
-                            data: (state) {
-                              final candidateIssues = state.items
-                                  .where((i) =>
-                                      widget.initialIssue == null ||
-                                      i.pk != widget.initialIssue!.pk)
-                                  .toList();
-
-                              return _buildParentIssueSelector(candidateIssues);
-                            },
-                          ) ??
-                          _buildParentIssueSelector(const []),
-                      const SizedBox(height: 14),
-
-                      // ── 목표단계 & 범주 ─────────────────────────────────
+                      // ── Row 1: 완료기한 (50%) & 목표단계 (50%) ───────────
                       Row(
                         children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('완료기한', style: AppTextStyles.titleSm),
+                                const SizedBox(height: 6),
+                                TextField(
+                                  controller: _dueDateController,
+                                  readOnly: true,
+                                  onTap: () => _selectDate(_dueDateController),
+                                  style: AppTextStyles.bodyMd,
+                                  decoration:
+                                      _inputDecoration('YYYY-MM-DD').copyWith(
+                                    suffixIcon: _dueDateController.text.isNotEmpty
+                                        ? IconButton(
+                                            icon: const Icon(Icons.clear_rounded,
+                                                size: 18,
+                                                color: AppColors.textMuted),
+                                            tooltip: '기한 삭제',
+                                            onPressed: () => setState(
+                                                () => _dueDateController.clear()),
+                                          )
+                                        : IconButton(
+                                            icon: const Icon(
+                                                Icons.calendar_today,
+                                                size: 18),
+                                            onPressed: () =>
+                                                _selectDate(_dueDateController),
+                                          ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 12),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -940,6 +940,7 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                       error: (_, __) =>
                                           DropdownButtonFormField<int?>(
                                         value: null,
+                                        isExpanded: true,
                                         style: AppTextStyles.bodyMd,
                                         dropdownColor: AppColors.bgCard,
                                         decoration: _inputDecoration('없음'),
@@ -957,13 +958,11 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                         }
                                         final versionList = uniqueVersions.values.toList();
 
-                                        // 신규 생성 모드에서 아직 버전이 선택되지 않은 경우, 프로젝트의 기본 버전(isDefault == true)으로 자동 지정
                                         var selectedVerId = _fixedVersionId;
                                         if (!isEdit && selectedVerId == null && versionList.isNotEmpty) {
                                           final defaultVer = versionList.where((v) => v.isDefault).firstOrNull;
                                           if (defaultVer != null) {
                                             selectedVerId = defaultVer.pk;
-                                            // 다음 프레임에 상태값 동기화
                                             WidgetsBinding.instance.addPostFrameCallback((_) {
                                               if (mounted && _fixedVersionId == null) {
                                                 setState(() => _fixedVersionId = defaultVer.pk);
@@ -972,13 +971,13 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                           }
                                         }
 
-                                        // 현재 선택된 버전이 버전 목록에 없으면 null로 안전 보정
                                         if (selectedVerId != null && !versionList.any((v) => v.pk == selectedVerId)) {
                                           selectedVerId = null;
                                         }
 
                                         return DropdownButtonFormField<int?>(
                                           value: selectedVerId,
+                                          isExpanded: true,
                                           style: AppTextStyles.bodyMd,
                                           dropdownColor: AppColors.bgCard,
                                           decoration:
@@ -990,7 +989,8 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                                 .map((ver) => DropdownMenuItem(
                                                       value: ver.pk,
                                                       child: Text(
-                                                          '${ver.name}${ver.isDefault ? ' (기본)' : ''}'),
+                                                          '${ver.name}${ver.isDefault ? ' (기본)' : ''}',
+                                                          overflow: TextOverflow.ellipsis),
                                                     )),
                                           ],
                                           onChanged: (v) =>
@@ -1000,6 +1000,7 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                     ) ??
                                     DropdownButtonFormField<int?>(
                                       value: null,
+                                      isExpanded: true,
                                       style: AppTextStyles.bodyMd,
                                       dropdownColor: AppColors.bgCard,
                                       decoration: _inputDecoration('없음'),
@@ -1010,6 +1011,43 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                       onChanged: (v) =>
                                           setState(() => _fixedVersionId = v),
                                     ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+
+                      // ── Row 2: 상위업무 (50%) & 범주 (50%) ─────────────────
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('상위업무', style: AppTextStyles.titleSm),
+                                const SizedBox(height: 6),
+                                projectIssuesAsync?.when(
+                                      loading: () => const SizedBox(
+                                        height: 48,
+                                        child: Center(
+                                            child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color: AppColors.accentWork)),
+                                      ),
+                                      error: (_, __) =>
+                                          _buildParentIssueSelector(const []),
+                                      data: (state) {
+                                        final candidateIssues = state.items
+                                            .where((i) =>
+                                                widget.initialIssue == null ||
+                                                i.pk != widget.initialIssue!.pk)
+                                            .toList();
+
+                                        return _buildParentIssueSelector(candidateIssues);
+                                      },
+                                    ) ??
+                                    _buildParentIssueSelector(const []),
                               ],
                             ),
                           ),
@@ -1026,6 +1064,7 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                       error: (_, __) =>
                                           DropdownButtonFormField<int?>(
                                         value: null,
+                                        isExpanded: true,
                                         style: AppTextStyles.bodyMd,
                                         dropdownColor: AppColors.bgCard,
                                         decoration: _inputDecoration('없음'),
@@ -1043,7 +1082,6 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                         }
                                         final categoryList = uniqueCategories.values.toList();
 
-                                        // 현재 선택된 범주가 목록에 없으면 null로 안전 보정
                                         final currentCategoryId = (_categoryId != null &&
                                                 !categoryList.any((c) => c.pk == _categoryId))
                                             ? null
@@ -1051,6 +1089,7 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
 
                                         return DropdownButtonFormField<int?>(
                                           value: currentCategoryId,
+                                          isExpanded: true,
                                           style: AppTextStyles.bodyMd,
                                           dropdownColor: AppColors.bgCard,
                                           decoration: _inputDecoration('범주 선택'),
