@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/constants/permissions.dart';
+import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/permission_provider.dart';
 import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/loading_shimmer.dart';
@@ -152,8 +153,18 @@ class _IssueDetailScreenState extends ConsumerState<IssueDetailScreen> {
         actions: [
           detailState.maybeWhen(
             data: (issue) {
-              // 현재 로그인된 사용자의 ID를 확인할 수 없는 경우 watchers 목록이나 토글 상태를 통해 렌더링
-              // API toggle_watch 호출 시 서버가 현재 유저를 추가/제거하므로 상태가 즉시 업데이트됨
+              final currentUser = ref.watch(currentUserProvider).valueOrNull;
+              final isCreator =
+                  currentUser != null && currentUser.pk == issue.creator?.pk;
+              final isAssignee = currentUser != null &&
+                  currentUser.pk == issue.assignedTo?.pk;
+
+              final canUpdate = ref.can(Perm.issueUpdate,
+                      projectSlug: issue.project.slug) ||
+                  (ref.can(Perm.issueOwnUpdate,
+                          projectSlug: issue.project.slug) &&
+                      (isCreator || isAssignee));
+
               return Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -213,16 +224,17 @@ class _IssueDetailScreenState extends ConsumerState<IssueDetailScreen> {
                       }
                     },
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.edit_outlined, size: 22),
-                    tooltip: '수정',
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => IssueFormScreen(initialIssue: issue),
+                  if (canUpdate)
+                    IconButton(
+                      icon: const Icon(Icons.edit_outlined, size: 22),
+                      tooltip: '수정',
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => IssueFormScreen(initialIssue: issue),
+                        ),
                       ),
                     ),
-                  ),
                 ],
               );
             },
@@ -364,6 +376,16 @@ class _InfoSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final currentUser = ref.watch(currentUserProvider).valueOrNull;
+    final isCreator =
+        currentUser != null && currentUser.pk == issue.creator?.pk;
+    final isAssignee =
+        currentUser != null && currentUser.pk == issue.assignedTo?.pk;
+    final canUpdate = ref.can(Perm.issueUpdate,
+            projectSlug: issue.project.slug) ||
+        (ref.can(Perm.issueOwnUpdate, projectSlug: issue.project.slug) &&
+            (isCreator || isAssignee));
+
     final doneColor =
         issue.doneRatio == 100 ? AppColors.success : AppColors.accentWork;
 
@@ -411,12 +433,14 @@ class _InfoSection extends StatelessWidget {
           const Divider(height: 1, color: AppColors.border),
           const SizedBox(height: 10),
           GestureDetector(
-            onTap: () => showDoneRatioBottomSheet(
-              context: context,
-              ref: ref,
-              issueId: issue.pk,
-              currentRatio: issue.doneRatio,
-            ),
+            onTap: canUpdate
+                ? () => showDoneRatioBottomSheet(
+                      context: context,
+                      ref: ref,
+                      issueId: issue.pk,
+                      currentRatio: issue.doneRatio,
+                    )
+                : null,
             child: Row(
               children: [
                 Icon(Icons.percent_rounded, size: 16, color: doneColor),
@@ -427,8 +451,10 @@ class _InfoSection extends StatelessWidget {
                   '${issue.doneRatio}%',
                   style: AppTextStyles.titleSm.copyWith(color: doneColor),
                 ),
-                const SizedBox(width: 8),
-                Icon(Icons.edit_outlined, size: 14, color: doneColor),
+                if (canUpdate) ...[
+                  const SizedBox(width: 8),
+                  Icon(Icons.edit_outlined, size: 14, color: doneColor),
+                ],
               ],
             ),
           ),

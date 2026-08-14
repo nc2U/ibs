@@ -889,44 +889,9 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                     children: [
                       const Divider(height: 16, color: AppColors.border),
 
-                      // ── Row 1: 완료기한 (50%) & 목표단계 (50%) ───────────
+                      // ── Row 1: 목표단계 (50%) & 범주 (50%) ───────────────
                       Row(
                         children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('완료기한', style: AppTextStyles.titleSm),
-                                const SizedBox(height: 6),
-                                TextField(
-                                  controller: _dueDateController,
-                                  readOnly: true,
-                                  onTap: () => _selectDate(_dueDateController),
-                                  style: AppTextStyles.bodyMd,
-                                  decoration:
-                                      _inputDecoration('YYYY-MM-DD').copyWith(
-                                    suffixIcon: _dueDateController.text.isNotEmpty
-                                        ? IconButton(
-                                            icon: const Icon(Icons.clear_rounded,
-                                                size: 18,
-                                                color: AppColors.textMuted),
-                                            tooltip: '기한 삭제',
-                                            onPressed: () => setState(
-                                                () => _dueDateController.clear()),
-                                          )
-                                        : IconButton(
-                                            icon: const Icon(
-                                                Icons.calendar_today,
-                                                size: 18),
-                                            onPressed: () =>
-                                                _selectDate(_dueDateController),
-                                          ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 12),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -952,26 +917,38 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                             setState(() => _fixedVersionId = v),
                                       ),
                                       data: (proj) {
-                                        final uniqueVersions = <int, ProjectVersionModel>{};
+                                        final uniqueVersions =
+                                            <int, ProjectVersionModel>{};
                                         for (final ver in proj.versions) {
                                           uniqueVersions[ver.pk] = ver;
                                         }
-                                        final versionList = uniqueVersions.values.toList();
+                                        final versionList =
+                                            uniqueVersions.values.toList();
 
                                         var selectedVerId = _fixedVersionId;
-                                        if (!isEdit && selectedVerId == null && versionList.isNotEmpty) {
-                                          final defaultVer = versionList.where((v) => v.isDefault).firstOrNull;
+                                        if (!isEdit &&
+                                            selectedVerId == null &&
+                                            versionList.isNotEmpty) {
+                                          final defaultVer = versionList
+                                              .where((v) => v.isDefault)
+                                              .firstOrNull;
                                           if (defaultVer != null) {
                                             selectedVerId = defaultVer.pk;
-                                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                                              if (mounted && _fixedVersionId == null) {
-                                                setState(() => _fixedVersionId = defaultVer.pk);
+                                            WidgetsBinding.instance
+                                                .addPostFrameCallback((_) {
+                                              if (mounted &&
+                                                  _fixedVersionId == null) {
+                                                setState(() =>
+                                                    _fixedVersionId =
+                                                        defaultVer.pk);
                                               }
                                             });
                                           }
                                         }
 
-                                        if (selectedVerId != null && !versionList.any((v) => v.pk == selectedVerId)) {
+                                        if (selectedVerId != null &&
+                                            !versionList.any(
+                                                (v) => v.pk == selectedVerId)) {
                                           selectedVerId = null;
                                         }
 
@@ -990,11 +967,13 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                                       value: ver.pk,
                                                       child: Text(
                                                           '${ver.name}${ver.isDefault ? ' (기본)' : ''}',
-                                                          overflow: TextOverflow.ellipsis),
+                                                          overflow:
+                                                              TextOverflow
+                                                                  .ellipsis),
                                                     )),
                                           ],
-                                          onChanged: (v) =>
-                                              setState(() => _fixedVersionId = v),
+                                          onChanged: (v) => setState(
+                                              () => _fixedVersionId = v),
                                         );
                                       },
                                     ) ??
@@ -1014,13 +993,7 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                               ],
                             ),
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-
-                      // ── Row 2: 범주 (50%) & 공개 설정 (50%) ───────────────
-                      Row(
-                        children: [
+                          const SizedBox(width: 12),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1045,16 +1018,20 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                             setState(() => _categoryId = v),
                                       ),
                                       data: (proj) {
-                                        final uniqueCategories = <int, ProjectCategoryModel>{};
+                                        final uniqueCategories =
+                                            <int, ProjectCategoryModel>{};
                                         for (final cate in proj.categories) {
                                           uniqueCategories[cate.pk] = cate;
                                         }
-                                        final categoryList = uniqueCategories.values.toList();
+                                        final categoryList =
+                                            uniqueCategories.values.toList();
 
-                                        final currentCategoryId = (_categoryId != null &&
-                                                !categoryList.any((c) => c.pk == _categoryId))
-                                            ? null
-                                            : _categoryId;
+                                        final currentCategoryId =
+                                            (_categoryId != null &&
+                                                    !categoryList.any((c) =>
+                                                        c.pk == _categoryId))
+                                                ? null
+                                                : _categoryId;
 
                                         return DropdownButtonFormField<int?>(
                                           value: currentCategoryId,
@@ -1065,19 +1042,23 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                           items: [
                                             const DropdownMenuItem(
                                                 value: null, child: Text('없음')),
-                                            ...categoryList.map((cate) => DropdownMenuItem(
+                                            ...categoryList.map((cate) =>
+                                                DropdownMenuItem(
                                                   value: cate.pk,
                                                   child: Text(cate.name,
-                                                      overflow: TextOverflow.ellipsis),
+                                                      overflow:
+                                                          TextOverflow
+                                                              .ellipsis),
                                                 )),
                                           ],
                                           onChanged: (v) {
                                             setState(() {
                                               _categoryId = v;
                                               if (v != null) {
-                                                final selectedCate = categoryList
-                                                    .where((c) => c.pk == v)
-                                                    .firstOrNull;
+                                                final selectedCate =
+                                                    categoryList
+                                                        .where((c) => c.pk == v)
+                                                        .firstOrNull;
                                                 if (selectedCate?.assignedTo !=
                                                         null &&
                                                     _assignedToId == null) {
@@ -1106,77 +1087,34 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                               ],
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('공개 설정', style: AppTextStyles.titleSm),
-                                const SizedBox(height: 6),
-                                InkWell(
-                                  onTap: () =>
-                                      setState(() => _isPrivate = !_isPrivate),
-                                  borderRadius: BorderRadius.circular(6),
-                                  child: Container(
-                                    height: 48,
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 10),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.bgCard,
-                                      borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(
-                                        color: _isPrivate
-                                            ? AppColors.accentApproval
-                                            : AppColors.border,
-                                        width: 0.8,
-                                      ),
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            Icon(
-                                              _isPrivate
-                                                  ? Icons.lock_rounded
-                                                  : Icons.lock_open_rounded,
-                                              size: 18,
-                                              color: _isPrivate
-                                                  ? AppColors.accentApproval
-                                                  : AppColors.textMuted,
-                                            ),
-                                            const SizedBox(width: 6),
-                                            Text(
-                                              _isPrivate ? '비공개' : '공개',
-                                              style: AppTextStyles.bodyMd
-                                                  .copyWith(
-                                                color: _isPrivate
-                                                    ? AppColors.accentApproval
-                                                    : AppColors.textPrimary,
-                                                fontWeight: _isPrivate
-                                                    ? FontWeight.w600
-                                                    : FontWeight.normal,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        Switch(
-                                          value: _isPrivate,
-                                          activeColor: AppColors.accentApproval,
-                                          materialTapTargetSize:
-                                              MaterialTapTargetSize.shrinkWrap,
-                                          onChanged: (v) =>
-                                              setState(() => _isPrivate = v),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
                         ],
+                      ),
+                      const SizedBox(height: 14),
+
+                      // ── Row 2: 완료기한 (100% 전체 폭) ─────────────────────
+                      Text('완료기한', style: AppTextStyles.titleSm),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: _dueDateController,
+                        readOnly: true,
+                        onTap: () => _selectDate(_dueDateController),
+                        style: AppTextStyles.bodyMd,
+                        decoration: _inputDecoration('YYYY-MM-DD').copyWith(
+                          suffixIcon: _dueDateController.text.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear_rounded,
+                                      size: 18, color: AppColors.textMuted),
+                                  tooltip: '기한 삭제',
+                                  onPressed: () => setState(
+                                      () => _dueDateController.clear()),
+                                )
+                              : IconButton(
+                                  icon: const Icon(Icons.calendar_today,
+                                      size: 18),
+                                  onPressed: () =>
+                                      _selectDate(_dueDateController),
+                                ),
+                        ),
                       ),
                       const SizedBox(height: 14),
 
@@ -1204,6 +1142,20 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                             },
                           ) ??
                           _buildParentIssueSelector(const []),
+                      const SizedBox(height: 14),
+
+                      // ── Row 4: 비공개 업무 토글 (100% 전체 폭 및 상세 설명) ──
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text('비공개 업무', style: AppTextStyles.titleSm),
+                        subtitle: Text(
+                          '본인 및 담당자, 권한 있는 관리자에게만 공개됩니다.',
+                          style: AppTextStyles.caption,
+                        ),
+                        value: _isPrivate,
+                        activeColor: AppColors.accentWork,
+                        onChanged: (v) => setState(() => _isPrivate = v),
+                      ),
                     ],
                   ),
                 ),
