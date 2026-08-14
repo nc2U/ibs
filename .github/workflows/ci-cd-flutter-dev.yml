@@ -45,7 +45,7 @@ jobs:
 
       - name: Build Android APK
         working-directory: app/flutter
-        run: flutter build apk --release --dart-define=BASE_URL=https://dev.dyibs.com
+        run: flutter build apk --release --build-number=${{ github.run_number }} --dart-define=BASE_URL=https://dev.dyibs.com
 
       - name: Deploy to Firebase App Distribution (Android)
         uses: wzieba/Firebase-Distribution-Github-Action@v1
@@ -53,6 +53,7 @@ jobs:
           appId: ${{ secrets.FIREBASE_ANDROID_APP_ID }}
           serviceCredentialsFileContent: ${{ secrets.FIREBASE_CREDENTIAL_JSON }}
           groups: testers
+          releaseNotes: "Dev Build #${{ github.run_number }} (${{ github.sha }})"
           file: app/flutter/build/app/outputs/flutter-apk/app-release.apk
 
   build-and-deploy-ios:
@@ -110,7 +111,7 @@ jobs:
       - name: Build iOS IPA
         working-directory: app/flutter
         run: |
-          flutter build ipa --release --no-codesign --dart-define=BASE_URL=https://dev.dyibs.com || flutter build ios --release --no-codesign --dart-define=BASE_URL=https://dev.dyibs.com
+          flutter build ipa --release --no-codesign --build-number=${{ github.run_number }} --dart-define=BASE_URL=https://dev.dyibs.com || flutter build ios --release --no-codesign --build-number=${{ github.run_number }} --dart-define=BASE_URL=https://dev.dyibs.com
 
       - name: Deploy to Firebase App Distribution (iOS)
         if: ${{ secrets.FIREBASE_IOS_APP_ID != '' && secrets.APPLE_CERTIFICATE_BASE64 != '' }}
@@ -119,4 +120,5 @@ jobs:
           appId: ${{ secrets.FIREBASE_IOS_APP_ID }}
           serviceCredentialsFileContent: ${{ secrets.FIREBASE_CREDENTIAL_JSON }}
           groups: testers
+          releaseNotes: "Dev Build #${{ github.run_number }} (${{ github.sha }})"
           file: app/flutter/build/ios/ipa/mobile_ibs.ipa
