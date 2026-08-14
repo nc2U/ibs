@@ -43,8 +43,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     initialLocation: AppRoutes.home,
     debugLogDiagnostics: false,
 
-    // ── 인증 가드 ────────────────────────────────────────────────────────────
+    // ── 인증 가드 및 외부 파일 공유 딥링크 안전 처리 ─────────────────────────────
     redirect: (context, state) {
+      final uri = state.uri;
+      final path = uri.path;
+
+      // 외부 앱(시놀로지 드라이브, 카카오톡 등)에서 파일 공유 시 들어오는 file:/// 또는 /private/... 딥링크 가로채기
+      if (path.startsWith('/private') ||
+          path.startsWith('/var') ||
+          uri.scheme == 'file' ||
+          uri.scheme.startsWith('sharemedia')) {
+        return isAuthenticated ? AppRoutes.home : AppRoutes.login;
+      }
+
       final onLogin = state.matchedLocation == AppRoutes.login;
       if (!isAuthenticated && !onLogin) return AppRoutes.login;
       if (isAuthenticated && onLogin) return AppRoutes.home;
@@ -163,15 +174,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
     ],
 
-    errorBuilder: (ctx, state) => Scaffold(
-      backgroundColor: const Color(0xFF202336),
-      body: Center(
-        child: Text(
-          '페이지를 찾을 수 없습니다.\n${state.error}',
-          style: const TextStyle(color: Colors.white70),
-          textAlign: TextAlign.center,
-        ),
-      ),
-    ),
+    errorBuilder: (ctx, state) => const MainShell(child: HomeTab()),
   );
 });

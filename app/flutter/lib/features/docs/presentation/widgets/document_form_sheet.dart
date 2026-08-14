@@ -1,5 +1,6 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
@@ -144,42 +145,173 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
     _linkInputController.clear();
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.bgCard,
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-        title: Text('관련 링크 추가', style: AppTextStyles.titleMd),
-        content: TextField(
-          controller: _linkInputController,
-          autofocus: true,
-          style: AppTextStyles.bodyMd,
-          decoration: const InputDecoration(
-            hintText: 'https://...',
-            prefixIcon: Icon(Icons.link_rounded, size: 18),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => Dialog(
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          backgroundColor: AppColors.bgCard,
+          shape:
+              const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.link_rounded,
+                            size: 22, color: Color(0xFF1565C0)),
+                        const SizedBox(width: 8),
+                        Text('관련 웹 링크 추가', style: AppTextStyles.titleLg),
+                      ],
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, size: 20),
+                      color: AppColors.textMuted,
+                      onPressed: () => Navigator.pop(ctx),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Google Drive, Notion, 클라우드, 웹 페이지 등의 URL을 입력하세요.',
+                  style: AppTextStyles.caption
+                      .copyWith(color: AppColors.textMuted),
+                ),
+                const SizedBox(height: 14),
+                // 입력창
+                TextField(
+                  controller: _linkInputController,
+                  autofocus: true,
+                  maxLines: 4,
+                  minLines: 2,
+                  keyboardType: TextInputType.url,
+                  style:
+                      AppTextStyles.bodyMd.copyWith(fontFamily: 'monospace'),
+                  decoration: const InputDecoration(
+                    hintText: 'https://drive.google.com/... 또는 https://...',
+                    alignLabelWithHint: true,
+                    contentPadding: EdgeInsets.all(12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.zero,
+                      borderSide: BorderSide(color: AppColors.border),
+                    ),
+                  ),
+                  onChanged: (_) => setDialogState(() {}),
+                ),
+                const SizedBox(height: 10),
+                // 퀵 액션 (붙여넣기 / 지우기)
+                Row(
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        final data =
+                            await Clipboard.getData(Clipboard.kTextPlain);
+                        if (data?.text != null &&
+                            data!.text!.trim().isNotEmpty) {
+                          _linkInputController.text = data.text!.trim();
+                          setDialogState(() {});
+                        }
+                      },
+                      icon: const Icon(Icons.content_paste_rounded, size: 15),
+                      label: const Text('클립보드 붙여넣기'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.textPrimary,
+                        side: const BorderSide(color: AppColors.border),
+                        shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.zero),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    ),
+                    if (_linkInputController.text.isNotEmpty) ...[
+                      const SizedBox(width: 8),
+                      TextButton.icon(
+                        onPressed: () {
+                          _linkInputController.clear();
+                          setDialogState(() {});
+                        },
+                        icon: const Icon(Icons.clear_rounded, size: 15),
+                        label: const Text('지우기'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppColors.textMuted,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 6),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 20),
+                // 액션 버튼
+                Row(
+                  children: [
+                    Expanded(
+                      flex: 1,
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.textSecond,
+                          side: const BorderSide(color: AppColors.border),
+                          shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.zero),
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                        ),
+                        child: const Text('취소'),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF1565C0),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                          shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.zero),
+                        ),
+                        onPressed: _linkInputController.text.trim().isEmpty
+                            ? null
+                            : () {
+                                var text = _linkInputController.text.trim();
+                                if (text.isNotEmpty) {
+                                  if (!text.startsWith('http://') &&
+                                      !text.startsWith('https://')) {
+                                    text = 'https://$text';
+                                  }
+                                  setState(() {
+                                    _newLinks.add(text);
+                                  });
+                                }
+                                Navigator.pop(ctx);
+                              },
+                        child: Text(
+                          '링크 등록',
+                          style: AppTextStyles.titleSm.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('취소'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.accentWork,
-              foregroundColor: Colors.white,
-              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-            ),
-            onPressed: () {
-              final text = _linkInputController.text.trim();
-              if (text.isNotEmpty) {
-                setState(() {
-                  _newLinks.add(text);
-                });
-              }
-              Navigator.pop(ctx);
-            },
-            child: const Text('추가'),
-          ),
-        ],
       ),
     );
   }

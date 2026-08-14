@@ -51,22 +51,27 @@ class _ShareIntentListenerState extends ConsumerState<ShareIntentListener> {
     String? defaultTitle;
 
     for (final item in sharedList) {
-      final path = item.path;
+      var rawPath = item.path;
 
       // 텍스트/URL 공유인 경우
-      if (path.startsWith('http://') || path.startsWith('https://')) {
-        links.add(path);
+      if (rawPath.startsWith('http://') || rawPath.startsWith('https://')) {
+        links.add(rawPath);
         defaultTitle ??= '웹 링크 공유 문서';
       } else {
-        // 실제 파일인 경우
+        // 실제 파일인 경우 (file:// 접두사 및 URI 인코딩 해제)
+        if (rawPath.startsWith('file://')) {
+          rawPath = rawPath.substring(7);
+        }
+        final cleanPath = Uri.decodeFull(rawPath);
+
         try {
-          final file = File(path);
-          final fileName = path.split(Platform.pathSeparator).last;
+          final file = File(cleanPath);
+          final fileName = cleanPath.split(Platform.pathSeparator).last;
           final fileSize = file.existsSync() ? file.lengthSync() : 0;
 
           platformFiles.add(PlatformFile(
             name: fileName,
-            path: path,
+            path: cleanPath,
             size: fileSize,
           ));
 
@@ -77,12 +82,13 @@ class _ShareIntentListenerState extends ConsumerState<ShareIntentListener> {
 
     if (platformFiles.isEmpty && links.isEmpty) return;
 
-    // UI가 완전히 마운트된 후 바텀시트 표출
+    // UI가 완전히 마운트된 후 루트 네비게이터를 통해 바텀시트 표출
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       showModalBottomSheet(
         context: context,
         isScrollControlled: true,
+        useRootNavigator: true,
         backgroundColor: Colors.transparent,
         builder: (ctx) => DocumentFormSheet(
           initialFiles: platformFiles,
