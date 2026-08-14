@@ -206,6 +206,20 @@ class MeetingDetailScreen extends ConsumerWidget {
             const SizedBox(height: 12),
           ],
 
+          // ── 첨부 파일 ──────────────────────────────────────────────────
+          if (meeting.files.isNotEmpty) ...[
+            _SectionLabel(label: '첨부 파일', count: meeting.files.length),
+            ...meeting.files.map((f) => _MeetingFileTile(file: f)),
+            const SizedBox(height: 12),
+          ],
+
+          // ── 관련 링크 ──────────────────────────────────────────────────
+          if (meeting.links.isNotEmpty) ...[
+            _SectionLabel(label: '관련 링크', count: meeting.links.length),
+            ...meeting.links.map((l) => _MeetingLinkTile(link: l)),
+            const SizedBox(height: 12),
+          ],
+
           // ── 관련 업무 (Issues) ──────────────────────────────────────────
           _SectionLabel(
             label: '관련 업무',
@@ -257,22 +271,6 @@ class MeetingDetailScreen extends ConsumerWidget {
                 style: AppTextStyles.caption.copyWith(color: AppColors.textDisabled),
               ),
             ),
-          const SizedBox(height: 12),
-
-          // ── 첨부 파일 ──────────────────────────────────────────────────
-          if (meeting.files.isNotEmpty) ...[
-            _SectionLabel(label: '첨부 파일', count: meeting.files.length),
-            ...meeting.files.map((f) => _MeetingFileTile(file: f)),
-            const SizedBox(height: 12),
-          ],
-
-          // ── 관련 링크 ──────────────────────────────────────────────────
-          if (meeting.links.isNotEmpty) ...[
-            _SectionLabel(label: '관련 링크', count: meeting.links.length),
-            ...meeting.links.map((l) => _MeetingLinkTile(link: l)),
-            const SizedBox(height: 12),
-          ],
-
           const SizedBox(height: 30),
         ],
       ),
