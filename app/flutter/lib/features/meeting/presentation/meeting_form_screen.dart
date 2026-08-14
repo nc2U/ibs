@@ -42,9 +42,22 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
     super.initState();
     final m = widget.initialMeeting;
     _titleController = TextEditingController(text: m?.title ?? '');
-    _meetingDateController = TextEditingController(
-        text: m?.meetingDate ??
-            DateTime.now().toIso8601String().substring(0, 10));
+
+    String initialDateStr = '';
+    if (m?.meetingDate != null && m!.meetingDate.isNotEmpty) {
+      final clean = m.meetingDate.replaceAll('T', ' ');
+      initialDateStr = clean.length >= 16 ? clean.substring(0, 16) : clean;
+    } else {
+      final now = DateTime.now();
+      final y = now.year.toString().padLeft(4, '0');
+      final mo = now.month.toString().padLeft(2, '0');
+      final d = now.day.toString().padLeft(2, '0');
+      final h = now.hour.toString().padLeft(2, '0');
+      final mi = now.minute.toString().padLeft(2, '0');
+      initialDateStr = '$y-$mo-$d $h:$mi';
+    }
+    _meetingDateController = TextEditingController(text: initialDateStr);
+
     _otherAttendeesController =
         TextEditingController(text: m?.otherAttendees ?? '');
     _agendaController = TextEditingController(text: m?.agenda ?? '');
@@ -78,16 +91,37 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
     super.dispose();
   }
 
-  Future<void> _selectDate() async {
-    final picked = await showDatePicker(
+  Future<void> _selectDateTime() async {
+    DateTime initialDateTime = DateTime.now();
+    try {
+      final text = _meetingDateController.text.trim();
+      if (text.isNotEmpty) {
+        final parsed = DateTime.tryParse(text.replaceAll(' ', 'T'));
+        if (parsed != null) initialDateTime = parsed;
+      }
+    } catch (_) {}
+
+    final pickedDate = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
+      initialDate: initialDateTime,
       firstDate: DateTime(2020),
       lastDate: DateTime(2030),
     );
-    if (picked != null) {
-      _meetingDateController.text = picked.toIso8601String().substring(0, 10);
-    }
+    if (pickedDate == null || !mounted) return;
+
+    final pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(initialDateTime),
+    );
+    if (pickedTime == null || !mounted) return;
+
+    final y = pickedDate.year.toString().padLeft(4, '0');
+    final mo = pickedDate.month.toString().padLeft(2, '0');
+    final d = pickedDate.day.toString().padLeft(2, '0');
+    final h = pickedTime.hour.toString().padLeft(2, '0');
+    final mi = pickedTime.minute.toString().padLeft(2, '0');
+
+    _meetingDateController.text = '$y-$mo-$d $h:$mi';
   }
 
   Future<void> _submit() async {
@@ -248,10 +282,10 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                           controller: _meetingDateController,
                           readOnly: true,
                           style: AppTextStyles.bodyMd,
-                          decoration: _inputDecoration('YYYY-MM-DD').copyWith(
+                          decoration: _inputDecoration('YYYY-MM-DD HH:mm').copyWith(
                             suffixIcon: IconButton(
-                              icon: const Icon(Icons.calendar_today, size: 18),
-                              onPressed: _selectDate,
+                              icon: const Icon(Icons.access_time_rounded, size: 18),
+                              onPressed: _selectDateTime,
                             ),
                           ),
                         ),
