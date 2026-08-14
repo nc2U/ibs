@@ -109,17 +109,58 @@ class MeetingDetailScreen extends ConsumerWidget {
             const SizedBox(height: 12),
           ],
 
-          // ── 연동 업무 (Issues) ──────────────────────────────────────────
-          if (meeting.issues.isNotEmpty) ...[
-            _SectionLabel(label: '연동 업무', count: meeting.issues.length),
+          // ── 관련 업무 (Issues) ──────────────────────────────────────────
+          _SectionLabel(
+            label: '관련 업무',
+            count: meeting.issues.isNotEmpty ? meeting.issues.length : null,
+            action: InkWell(
+              onTap: () async {
+                final created = await context.push(
+                  '/work/issues/new?meeting_id=${meeting.pk}&project_slug=${meeting.projectDesc.slug}',
+                );
+                // 새 업무가 등록되었으면 회의 상세 화면 새로고침
+                if (context.mounted) {
+                  ref.invalidate(meetingDetailProvider(meeting.pk));
+                }
+              },
+              borderRadius: BorderRadius.circular(4),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.add, size: 14, color: AppColors.accentWork),
+                    const SizedBox(width: 2),
+                    Text(
+                      '관련 업무 추가',
+                      style: AppTextStyles.label.copyWith(color: AppColors.accentWork),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          if (meeting.issues.isNotEmpty)
             ...meeting.issues.map(
               (issue) => Padding(
                 padding: const EdgeInsets.only(bottom: 6),
                 child: _MeetingIssueTile(issue: issue),
               ),
+            )
+          else
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+              decoration: BoxDecoration(
+                color: AppColors.bgCard.withAlpha(50),
+                border: Border.all(color: AppColors.border.withAlpha(50), width: 0.8),
+              ),
+              child: Text(
+                '연결된 관련 업무가 없습니다.',
+                style: AppTextStyles.caption.copyWith(color: AppColors.textDisabled),
+              ),
             ),
-            const SizedBox(height: 12),
-          ],
+          const SizedBox(height: 12),
 
           // ── 첨부 파일 ──────────────────────────────────────────────────
           if (meeting.files.isNotEmpty) ...[
@@ -260,7 +301,8 @@ class _TextCard extends StatelessWidget {
 class _SectionLabel extends StatelessWidget {
   final String label;
   final int? count;
-  const _SectionLabel({required this.label, this.count});
+  final Widget? action;
+  const _SectionLabel({required this.label, this.count, this.action});
 
   @override
   Widget build(BuildContext context) {
@@ -283,6 +325,10 @@ class _SectionLabel extends StatelessWidget {
                   style: AppTextStyles.label
                       .copyWith(color: AppColors.accentWork)),
             ),
+          ],
+          if (action != null) ...[
+            const Spacer(),
+            action!,
           ],
         ],
       ),

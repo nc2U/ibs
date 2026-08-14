@@ -83,7 +83,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 routes: [
                   GoRoute(
                     path: 'new',
-                    builder: (ctx, state) => const IssueFormScreen(),
+                    builder: (ctx, state) {
+                      final meetingIdStr = state.uri.queryParameters['meeting_id'];
+                      final meetingId = meetingIdStr != null ? int.tryParse(meetingIdStr) : null;
+                      final projectSlug = state.uri.queryParameters['project_slug'];
+
+                      return IssueFormScreen(
+                        initialMeetingId: meetingId,
+                        initialProjectSlug: projectSlug,
+                      );
+                    },
                   ),
                   GoRoute(
                     path: ':issueId',

@@ -12,8 +12,15 @@ import '../../project/providers/project_provider.dart';
 /// 업무 생성 및 수정 폼 화면
 class IssueFormScreen extends ConsumerStatefulWidget {
   final IssueModel? initialIssue;
+  final int? initialMeetingId;
+  final String? initialProjectSlug;
 
-  const IssueFormScreen({super.key, this.initialIssue});
+  const IssueFormScreen({
+    super.key,
+    this.initialIssue,
+    this.initialMeetingId,
+    this.initialProjectSlug,
+  });
 
   @override
   ConsumerState<IssueFormScreen> createState() => _IssueFormScreenState();
@@ -33,6 +40,7 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
   bool _isSaving = false;
 
   String? _selectedProjectSlug;
+  int? _meetingId;
 
   @override
   void initState() {
@@ -51,10 +59,16 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
       _statusId = issue.status.pk;
       _priorityId = issue.priority.pk;
       _isPrivate = issue.isPrivate;
+      _meetingId = issue.meeting;
     } else {
-      final selectedProj = ref.read(selectedProjectProvider);
-      if (selectedProj != null) {
-        _selectedProjectSlug = selectedProj.slug;
+      _meetingId = widget.initialMeetingId;
+      _selectedProjectSlug = widget.initialProjectSlug;
+
+      if (_selectedProjectSlug == null) {
+        final selectedProj = ref.read(selectedProjectProvider);
+        if (selectedProj != null) {
+          _selectedProjectSlug = selectedProj.slug;
+        }
       }
     }
   }
@@ -103,6 +117,9 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
     };
     if (_dueDateController.text.trim().isNotEmpty) {
       payload['due_date'] = _dueDateController.text.trim();
+    }
+    if (_meetingId != null) {
+      payload['meeting'] = _meetingId;
     }
     if (widget.initialIssue == null && _selectedProjectSlug != null) {
       payload['project'] = _selectedProjectSlug;
