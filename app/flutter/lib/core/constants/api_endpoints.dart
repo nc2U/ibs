@@ -1,11 +1,12 @@
 /// IBS 워크스페이스 API 엔드포인트 상수
 /// Django _config/urls.py 기준
 abstract class ApiEndpoints {
-  // ── Auth ──────────────────────────────────────────
+  // ── Auth & Users ──────────────────────────────────
   static const String jwtCreate  = '/api/v1/token/';
   static const String jwtRefresh = '/api/v1/token/refresh/';
   static const String jwtVerify  = '/api/v1/token/verify/';
   static const String me         = '/api/v1/accounts/users/me/';
+  static const String users      = '/api/v1/user/';
   static const String fcmToken   = '/api/v1/accounts/fcm-token/';
 
   // ── Project ──────────────────────────────────────

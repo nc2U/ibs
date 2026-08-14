@@ -56,21 +56,22 @@ class MeetingRepository {
         .toList();
   }
 
-  /// 프로젝트 멤버 목록 조회
+  /// 시스템 전체 사용자 목록 조회 (중복 제거)
   Future<List<SimpleUserModel>> fetchMembers({int? projectPk}) async {
-    final response = await _dio.get(
-      ApiEndpoints.members,
-    );
+    final response = await _dio.get(ApiEndpoints.users);
     final data = response.data;
     final list = data is List
         ? data
         : (data['results'] as List? ?? []);
-    return list
-        .map((json) {
-          final userJson = json['user'] as Map<String, dynamic>? ?? json;
-          return SimpleUserModel.fromJson(userJson);
-        })
-        .toList();
+
+    final Map<int, SimpleUserModel> uniqueUsers = {};
+    for (final json in list) {
+      if (json is Map<String, dynamic>) {
+        final user = SimpleUserModel.fromJson(json);
+        uniqueUsers[user.pk] = user;
+      }
+    }
+    return uniqueUsers.values.toList();
   }
 
   /// 회의 확정/확정취소 토글 (POST /api/v1/meeting/{id}/confirm/)

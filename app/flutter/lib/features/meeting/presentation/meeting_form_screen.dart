@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
+import '../../../core/models/common_models.dart';
 import '../../../core/providers/project_provider.dart';
 import '../data/meeting_repository.dart';
 import '../data/models/meeting_model.dart';
@@ -364,63 +365,88 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
 
               // ── 참석자 선택 (사내 멤버) ────────────────────────────────────────
               ref.watch(meetingMembersProvider(_selectedProjectPk)).when(
-                    data: (members) => Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Text('참석자 (사내 멤버)', style: AppTextStyles.titleSm),
-                            if (_selectedAttendeePks.isNotEmpty) ...[
-                              const SizedBox(width: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                                decoration: BoxDecoration(
-                                  color: AppColors.accentWork.withAlpha(40),
-                                  borderRadius: BorderRadius.circular(10),
+                    data: (members) {
+                      final selectedUsers = members
+                          .where((u) => _selectedAttendeePks.contains(u.pk))
+                          .toList();
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text('참석자 (사내 멤버)', style: AppTextStyles.titleSm),
+                              if (_selectedAttendeePks.isNotEmpty) ...[
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.accentWork.withAlpha(40),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Text('${_selectedAttendeePks.length}',
+                                      style: AppTextStyles.label.copyWith(color: AppColors.accentWork)),
                                 ),
-                                child: Text('${_selectedAttendeePks.length}',
-                                    style: AppTextStyles.label.copyWith(color: AppColors.accentWork)),
-                              ),
+                              ],
                             ],
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 6,
-                          children: members.map((u) {
-                            final isSelected = _selectedAttendeePks.contains(u.pk);
-                            return FilterChip(
-                              label: Text(u.username),
-                              selected: isSelected,
-                              selectedColor: AppColors.accentWork.withAlpha(50),
-                              checkmarkColor: AppColors.accentWork,
-                              labelStyle: AppTextStyles.bodyMd.copyWith(
-                                color: isSelected ? AppColors.accentWork : AppColors.textPrimary,
-                                fontSize: 13,
+                          ),
+                          const SizedBox(height: 6),
+                          InkWell(
+                            onTap: () => _openAttendeePicker(members),
+                            borderRadius: BorderRadius.circular(6),
+                            child: Container(
+                              width: double.infinity,
+                              constraints: const BoxConstraints(minHeight: 48),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              decoration: BoxDecoration(
+                                color: AppColors.bgCard,
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: AppColors.border, width: 0.8),
                               ),
-                              backgroundColor: AppColors.bgCard,
-                              shape: RoundedRectangleBorder(
-                                side: BorderSide(
-                                  color: isSelected ? AppColors.accentWork : AppColors.border,
-                                  width: 0.8,
-                                ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: selectedUsers.isEmpty
+                                        ? Text('참석자를 선택하세요 (검색 가능)',
+                                            style: AppTextStyles.bodyMuted)
+                                        : Wrap(
+                                            spacing: 6,
+                                            runSpacing: 4,
+                                            children: selectedUsers
+                                                .map(
+                                                  (u) => Container(
+                                                    padding: const EdgeInsets.symmetric(
+                                                        horizontal: 8, vertical: 3),
+                                                    decoration: BoxDecoration(
+                                                      color: AppColors.accentWork.withAlpha(30),
+                                                      border: Border.all(
+                                                        color: AppColors.accentWork.withAlpha(100),
+                                                        width: 0.8,
+                                                      ),
+                                                      borderRadius: BorderRadius.circular(4),
+                                                    ),
+                                                    child: Text(
+                                                      u.username,
+                                                      style: AppTextStyles.label.copyWith(
+                                                        color: AppColors.accentWork,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                )
+                                                .toList(),
+                                          ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Icon(Icons.people_alt_outlined,
+                                      size: 20, color: AppColors.textMuted),
+                                ],
                               ),
-                              onSelected: (selected) {
-                                setState(() {
-                                  if (selected) {
-                                    _selectedAttendeePks.add(u.pk);
-                                  } else {
-                                    _selectedAttendeePks.remove(u.pk);
-                                  }
-                                });
-                              },
-                            );
-                          }).toList(),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                    ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                      );
+                    },
                     loading: () => const SizedBox.shrink(),
                     error: (_, __) => const SizedBox.shrink(),
                   ),
@@ -483,6 +509,182 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _openAttendeePicker(List<SimpleUserModel> allMembers) async {
+    final tempSelected = List<int>.from(_selectedAttendeePks);
+    String searchQuery = '';
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.bgCard,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final filteredMembers = allMembers.where((u) {
+              if (searchQuery.trim().isEmpty) return true;
+              final query = searchQuery.toLowerCase();
+              final username = u.username.toLowerCase();
+              final email = (u.email ?? '').toLowerCase();
+              return username.contains(query) || email.contains(query);
+            }).toList();
+
+            return DraggableScrollableSheet(
+              expand: false,
+              initialChildSize: 0.7,
+              minChildSize: 0.4,
+              maxChildSize: 0.9,
+              builder: (context, scrollController) {
+                return Column(
+                  children: [
+                    // 드래그 핸들바
+                    Center(
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(vertical: 8),
+                        width: 36,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: AppColors.textDisabled.withAlpha(80),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    // 상단 헤더
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      child: Row(
+                        children: [
+                          Text('참석자 선택', style: AppTextStyles.titleMd),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: AppColors.accentWork.withAlpha(40),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text('${tempSelected.length}명',
+                                style: AppTextStyles.label.copyWith(color: AppColors.accentWork)),
+                          ),
+                          const Spacer(),
+                          if (tempSelected.isNotEmpty)
+                            TextButton(
+                              onPressed: () {
+                                setModalState(() => tempSelected.clear());
+                              },
+                              child: Text('전체 해제', style: AppTextStyles.caption.copyWith(color: AppColors.accentApproval)),
+                            ),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.accentWork,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            ),
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('완료', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // 검색창
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: TextField(
+                        style: AppTextStyles.bodyMd,
+                        decoration: InputDecoration(
+                          hintText: '이름 또는 이메일 검색',
+                          hintStyle: AppTextStyles.bodyMuted,
+                          prefixIcon: const Icon(Icons.search, size: 20, color: AppColors.textMuted),
+                          filled: true,
+                          fillColor: AppColors.bgPrimary,
+                          contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: AppColors.border, width: 0.8),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: AppColors.border, width: 0.8),
+                          ),
+                        ),
+                        onChanged: (v) {
+                          setModalState(() => searchQuery = v);
+                        },
+                      ),
+                    ),
+                    const Divider(height: 1, color: AppColors.border),
+                    // 멤버 목록
+                    Expanded(
+                      child: filteredMembers.isEmpty
+                          ? Center(
+                              child: Text(
+                                '검색 결과가 없습니다.',
+                                style: AppTextStyles.bodyMuted,
+                              ),
+                            )
+                          : ListView.separated(
+                              controller: scrollController,
+                              padding: const EdgeInsets.symmetric(vertical: 6),
+                              itemCount: filteredMembers.length,
+                              separatorBuilder: (_, __) => const Divider(
+                                height: 1,
+                                color: Color(0xFF2E334D),
+                                indent: 56,
+                              ),
+                              itemBuilder: (context, idx) {
+                                final user = filteredMembers[idx];
+                                final isSelected = tempSelected.contains(user.pk);
+
+                                return CheckboxListTile(
+                                  value: isSelected,
+                                  activeColor: AppColors.accentWork,
+                                  checkColor: Colors.white,
+                                  title: Text(user.username, style: AppTextStyles.bodyMd),
+                                  subtitle: user.email != null && user.email!.isNotEmpty
+                                      ? Text(user.email!, style: AppTextStyles.caption.copyWith(color: AppColors.textMuted))
+                                      : null,
+                                  secondary: CircleAvatar(
+                                    radius: 16,
+                                    backgroundColor: isSelected
+                                        ? AppColors.accentWork.withAlpha(40)
+                                        : AppColors.bgPrimary,
+                                    child: Text(
+                                      user.username.isNotEmpty ? user.username.substring(0, 1) : '?',
+                                      style: TextStyle(
+                                        color: isSelected ? AppColors.accentWork : AppColors.textMuted,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                  onChanged: (val) {
+                                    setModalState(() {
+                                      if (val == true) {
+                                        tempSelected.add(user.pk);
+                                      } else {
+                                        tempSelected.remove(user.pk);
+                                      }
+                                    });
+                                  },
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+
+    setState(() {
+      _selectedAttendeePks = tempSelected;
+    });
   }
 
   InputDecoration _inputDecoration(String hint) {
