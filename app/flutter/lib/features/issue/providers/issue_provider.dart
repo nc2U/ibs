@@ -54,6 +54,18 @@ class IssueListNotifier extends AsyncNotifier<IssueListState> {
     }
   }
 
+  /// 개별 업무 상태 즉시 갱신 (Optimistic / Local Update)
+  void updateSingleIssue(IssueModel updated) {
+    final current = state.valueOrNull;
+    if (current == null) return;
+
+    final updatedItems = current.items.map((i) {
+      return i.pk == updated.pk ? updated : i;
+    }).toList();
+
+    state = AsyncData(current.copyWith(items: updatedItems));
+  }
+
   /// 새로고침 (pull-to-refresh)
   Future<void> refresh() async {
     state = const AsyncLoading();
@@ -125,14 +137,18 @@ class IssueDetailNotifier
     final current = state.valueOrNull;
     if (current == null) return;
 
-    // 즉시 UI 업데이트
-    state = AsyncData(current.copyWith(doneRatio: ratio));
+    final updatedIssue = current.copyWith(doneRatio: ratio);
+
+    // 상세 화면 및 목록 화면 모두 즉시 Optimistic 반영
+    state = AsyncData(updatedIssue);
+    ref.read(issueListProvider.notifier).updateSingleIssue(updatedIssue);
 
     try {
       await ref.read(issueRepositoryProvider).updateDoneRatio(current.pk, ratio);
     } catch (_) {
       // 실패 시 원래 값으로 롤백
       state = AsyncData(current);
+      ref.read(issueListProvider.notifier).updateSingleIssue(current);
       rethrow;
     }
   }

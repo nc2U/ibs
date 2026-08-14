@@ -397,12 +397,17 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                     ),
                                     data: (proj) {
                                       final trackers = proj.trackers;
-                                      final hasTrackers = trackers.isNotEmpty;
-                                      // 현재 선택된 _trackerId가 목록에 없으면 첫 번째 항목으로 보정
+                                      final uniqueTrackers = <int, ProjectTrackerModel>{};
+                                      for (final t in trackers) {
+                                        uniqueTrackers[t.pk] = t;
+                                      }
+                                      final trackerList = uniqueTrackers.values.toList();
+                                      final hasTrackers = trackerList.isNotEmpty;
+
                                       final currentTrackerId = (hasTrackers &&
-                                              !trackers
+                                              !trackerList
                                                   .any((t) => t.pk == _trackerId))
-                                          ? trackers.first.pk
+                                          ? trackerList.first.pk
                                           : _trackerId;
 
                                       return DropdownButtonFormField<int>(
@@ -411,7 +416,7 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                         dropdownColor: AppColors.bgCard,
                                         decoration: _inputDecoration(''),
                                         items: hasTrackers
-                                            ? trackers
+                                            ? trackerList
                                                 .map((t) => DropdownMenuItem(
                                                       value: t.pk,
                                                       child: Text(t.name),
@@ -482,11 +487,17 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                       setState(() => _priorityId = v ?? 2),
                                 ),
                                 data: (priorities) {
-                                  final hasPriorities = priorities.isNotEmpty;
+                                  final uniquePriorities = <int, IssuePriorityModel>{};
+                                  for (final p in priorities) {
+                                    uniquePriorities[p.pk] = p;
+                                  }
+                                  final priorityList = uniquePriorities.values.toList();
+                                  final hasPriorities = priorityList.isNotEmpty;
+
                                   final currentPriorityId = (hasPriorities &&
-                                          !priorities
+                                          !priorityList
                                               .any((p) => p.pk == _priorityId))
-                                      ? priorities.first.pk
+                                      ? priorityList.first.pk
                                       : _priorityId;
 
                                   return DropdownButtonFormField<int>(
@@ -495,7 +506,7 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                     dropdownColor: AppColors.bgCard,
                                     decoration: _inputDecoration(''),
                                     items: hasPriorities
-                                        ? priorities
+                                        ? priorityList
                                             .map((p) => DropdownMenuItem(
                                                   value: p.pk,
                                                   child: Text(p.name),
@@ -571,7 +582,7 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                     ),
                                     error: (_, __) =>
                                         DropdownButtonFormField<int?>(
-                                      value: _assignedToId,
+                                      value: null,
                                       style: AppTextStyles.bodyMd,
                                       dropdownColor: AppColors.bgCard,
                                       decoration: _inputDecoration('미배정'),
@@ -583,9 +594,20 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                           setState(() => _assignedToId = v),
                                     ),
                                     data: (proj) {
-                                      final members = proj.members;
+                                      final uniqueMembers = <int, ProjectMemberModel>{};
+                                      for (final m in proj.members) {
+                                        uniqueMembers[m.user.pk] = m;
+                                      }
+                                      final memberList = uniqueMembers.values.toList();
+
+                                      // 현재 선택된 담당자가 멤버 목록에 없으면(예: 퇴사자, 임의 유저 등) 보정
+                                      final currentAssignedId = (_assignedToId != null &&
+                                              !memberList.any((m) => m.user.pk == _assignedToId))
+                                          ? null
+                                          : _assignedToId;
+
                                       return DropdownButtonFormField<int?>(
-                                        value: _assignedToId,
+                                        value: currentAssignedId,
                                         style: AppTextStyles.bodyMd,
                                         dropdownColor: AppColors.bgCard,
                                         decoration:
@@ -593,7 +615,7 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                         items: [
                                           const DropdownMenuItem(
                                               value: null, child: Text('미배정')),
-                                          ...members.map((m) => DropdownMenuItem(
+                                          ...memberList.map((m) => DropdownMenuItem(
                                                 value: m.user.pk,
                                                 child: Text(m.user.username),
                                               )),
@@ -604,7 +626,7 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                     },
                                   ) ??
                                   DropdownButtonFormField<int?>(
-                                    value: _assignedToId,
+                                    value: null,
                                     style: AppTextStyles.bodyMd,
                                     dropdownColor: AppColors.bgCard,
                                     decoration: _inputDecoration('미배정'),
@@ -684,10 +706,15 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                       setState(() => _statusId = v ?? 2),
                                 ),
                                 data: (statuses) {
-                                  // 신규 생성 모드(isEdit == false)일 때는 준비/진행(pk <= 2)만 허용
-                                  final availableStatuses = isEdit
+                                  final filtered = isEdit
                                       ? statuses
                                       : statuses.where((s) => s.pk <= 2).toList();
+
+                                  final uniqueStatuses = <int, IssueStatusModel>{};
+                                  for (final s in filtered) {
+                                    uniqueStatuses[s.pk] = s;
+                                  }
+                                  final availableStatuses = uniqueStatuses.values.toList();
 
                                   final hasStatuses = availableStatuses.isNotEmpty;
                                   final currentStatusId = (hasStatuses &&
@@ -912,7 +939,7 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                           const SizedBox(height: 48),
                                       error: (_, __) =>
                                           DropdownButtonFormField<int?>(
-                                        value: _fixedVersionId,
+                                        value: null,
                                         style: AppTextStyles.bodyMd,
                                         dropdownColor: AppColors.bgCard,
                                         decoration: _inputDecoration('없음'),
@@ -924,10 +951,16 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                             setState(() => _fixedVersionId = v),
                                       ),
                                       data: (proj) {
+                                        final uniqueVersions = <int, ProjectVersionModel>{};
+                                        for (final ver in proj.versions) {
+                                          uniqueVersions[ver.pk] = ver;
+                                        }
+                                        final versionList = uniqueVersions.values.toList();
+
                                         // 신규 생성 모드에서 아직 버전이 선택되지 않은 경우, 프로젝트의 기본 버전(isDefault == true)으로 자동 지정
                                         var selectedVerId = _fixedVersionId;
-                                        if (!isEdit && selectedVerId == null && proj.versions.isNotEmpty) {
-                                          final defaultVer = proj.versions.where((v) => v.isDefault).firstOrNull;
+                                        if (!isEdit && selectedVerId == null && versionList.isNotEmpty) {
+                                          final defaultVer = versionList.where((v) => v.isDefault).firstOrNull;
                                           if (defaultVer != null) {
                                             selectedVerId = defaultVer.pk;
                                             // 다음 프레임에 상태값 동기화
@@ -939,6 +972,11 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                           }
                                         }
 
+                                        // 현재 선택된 버전이 버전 목록에 없으면 null로 안전 보정
+                                        if (selectedVerId != null && !versionList.any((v) => v.pk == selectedVerId)) {
+                                          selectedVerId = null;
+                                        }
+
                                         return DropdownButtonFormField<int?>(
                                           value: selectedVerId,
                                           style: AppTextStyles.bodyMd,
@@ -948,7 +986,7 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                           items: [
                                             const DropdownMenuItem(
                                                 value: null, child: Text('없음')),
-                                            ...proj.versions
+                                            ...versionList
                                                 .map((ver) => DropdownMenuItem(
                                                       value: ver.pk,
                                                       child: Text(
@@ -961,7 +999,7 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                       },
                                     ) ??
                                     DropdownButtonFormField<int?>(
-                                      value: _fixedVersionId,
+                                      value: null,
                                       style: AppTextStyles.bodyMd,
                                       dropdownColor: AppColors.bgCard,
                                       decoration: _inputDecoration('없음'),
@@ -987,7 +1025,7 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                           const SizedBox(height: 48),
                                       error: (_, __) =>
                                           DropdownButtonFormField<int?>(
-                                        value: _categoryId,
+                                        value: null,
                                         style: AppTextStyles.bodyMd,
                                         dropdownColor: AppColors.bgCard,
                                         decoration: _inputDecoration('없음'),
@@ -998,42 +1036,53 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                         onChanged: (v) =>
                                             setState(() => _categoryId = v),
                                       ),
-                                      data: (proj) =>
-                                          DropdownButtonFormField<int?>(
-                                        value: _categoryId,
-                                        style: AppTextStyles.bodyMd,
-                                        dropdownColor: AppColors.bgCard,
-                                        decoration: _inputDecoration('범주 선택'),
-                                        items: [
-                                          const DropdownMenuItem(
-                                              value: null, child: Text('없음')),
-                                          ...proj.categories
-                                              .map((cate) => DropdownMenuItem(
-                                                    value: cate.pk,
-                                                    child: Text(cate.name),
-                                                  )),
-                                        ],
-                                        onChanged: (v) {
-                                          setState(() {
-                                            _categoryId = v;
-                                            if (v != null) {
-                                              final selectedCate = proj
-                                                  .categories
-                                                  .where((c) => c.pk == v)
-                                                  .firstOrNull;
-                                              if (selectedCate?.assignedTo !=
-                                                      null &&
-                                                  _assignedToId == null) {
-                                                _assignedToId = selectedCate!
-                                                    .assignedTo!.pk;
+                                      data: (proj) {
+                                        final uniqueCategories = <int, ProjectCategoryModel>{};
+                                        for (final cate in proj.categories) {
+                                          uniqueCategories[cate.pk] = cate;
+                                        }
+                                        final categoryList = uniqueCategories.values.toList();
+
+                                        // 현재 선택된 범주가 목록에 없으면 null로 안전 보정
+                                        final currentCategoryId = (_categoryId != null &&
+                                                !categoryList.any((c) => c.pk == _categoryId))
+                                            ? null
+                                            : _categoryId;
+
+                                        return DropdownButtonFormField<int?>(
+                                          value: currentCategoryId,
+                                          style: AppTextStyles.bodyMd,
+                                          dropdownColor: AppColors.bgCard,
+                                          decoration: _inputDecoration('범주 선택'),
+                                          items: [
+                                            const DropdownMenuItem(
+                                                value: null, child: Text('없음')),
+                                            ...categoryList.map((cate) => DropdownMenuItem(
+                                                  value: cate.pk,
+                                                  child: Text(cate.name),
+                                                )),
+                                          ],
+                                          onChanged: (v) {
+                                            setState(() {
+                                              _categoryId = v;
+                                              if (v != null) {
+                                                final selectedCate = categoryList
+                                                    .where((c) => c.pk == v)
+                                                    .firstOrNull;
+                                                if (selectedCate?.assignedTo !=
+                                                        null &&
+                                                    _assignedToId == null) {
+                                                  _assignedToId = selectedCate!
+                                                      .assignedTo!.pk;
+                                                }
                                               }
-                                            }
-                                          });
-                                        },
-                                      ),
+                                            });
+                                          },
+                                        );
+                                      },
                                     ) ??
                                     DropdownButtonFormField<int?>(
-                                      value: _categoryId,
+                                      value: null,
                                       style: AppTextStyles.bodyMd,
                                       dropdownColor: AppColors.bgCard,
                                       decoration: _inputDecoration('없음'),
