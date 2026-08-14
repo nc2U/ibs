@@ -60,12 +60,12 @@ class MeetingDetailScreen extends ConsumerWidget {
         error: (e, _) => ErrorView.network(
           onRetry: () => ref.invalidate(meetingDetailProvider(meetingId)),
         ),
-        data: (meeting) => _buildBody(context, meeting),
+        data: (meeting) => _buildBody(context, ref, meeting),
       ),
     );
   }
 
-  Widget _buildBody(BuildContext context, MeetingModel meeting) {
+  Widget _buildBody(BuildContext context, WidgetRef ref, MeetingModel meeting) {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Column(
