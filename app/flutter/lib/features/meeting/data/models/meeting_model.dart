@@ -124,12 +124,14 @@ class MeetingListResponse with _$MeetingListResponse {
 
 class MeetingFilterModel {
   final String? projectSlug;
+  final String? projectStatus; // '1': 활성 프로젝트만 (닫힌 프로젝트 제외)
   final String? status;
   final String ordering;
   final int page;
 
   const MeetingFilterModel({
     this.projectSlug,
+    this.projectStatus = '1',
     this.status,
     this.ordering = '-meeting_date',
     this.page = 1,
@@ -141,20 +143,24 @@ class MeetingFilterModel {
       'page': page,
     };
     if (projectSlug != null) params['project__search'] = projectSlug;
+    if (projectStatus != null) params['project_status'] = projectStatus;
     if (status != null) params['status'] = status;
     return params;
   }
 
   MeetingFilterModel copyWith({
     String? projectSlug,
+    String? projectStatus,
     String? status,
     String? ordering,
     int? page,
     bool clearProjectSlug = false,
+    bool clearProjectStatus = false,
     bool clearStatus = false,
   }) {
     return MeetingFilterModel(
       projectSlug: clearProjectSlug ? null : projectSlug ?? this.projectSlug,
+      projectStatus: clearProjectStatus ? null : projectStatus ?? this.projectStatus,
       status: clearStatus ? null : status ?? this.status,
       ordering: ordering ?? this.ordering,
       page: page ?? this.page,

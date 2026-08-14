@@ -853,7 +853,7 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                     childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 16),
                     leading: const Icon(Icons.tune_rounded,
                         size: 20, color: AppColors.accentWork),
-                    title: Text('추가 상세 항목 (완료기한, 상위업무, 버전 등)',
+                    title: Text('추가 상세 항목',
                         style: AppTextStyles.titleSm),
                     subtitle: Text(
                       _dueDateController.text.isNotEmpty ||

@@ -5,6 +5,7 @@ import 'core/constants/app_colors.dart';
 import 'core/router/app_router.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(
     const ProviderScope(
       child: IBSApp(),

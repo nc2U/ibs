@@ -8,7 +8,13 @@ import '../constants/api_endpoints.dart';
 /// - 미지정 시 기본값: 로컬 개발 환경 (localhost / 10.0.2.2)
 String get _baseUrl {
   const envUrl = String.fromEnvironment('BASE_URL');
-  if (envUrl.isNotEmpty) return envUrl;
+  if (envUrl.isNotEmpty) {
+    var url = envUrl.trim();
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = 'https://$url';
+    }
+    return url.endsWith('/') ? url.substring(0, url.length - 1) : url;
+  }
 
   if (Platform.isAndroid) return 'http://10.0.2.2'; // 에뮬레이터 → localhost
   return 'http://localhost';

@@ -37,8 +37,10 @@ class HomeTab extends ConsumerWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      '통합 검색 (업무, 회의, 문서, 공지, 게시판)...',
+                      '통합 검색 (업무, 회의, 문서 등)...',
                       style: AppTextStyles.bodyMuted,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   Container(
