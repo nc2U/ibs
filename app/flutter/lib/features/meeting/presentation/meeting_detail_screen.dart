@@ -65,8 +65,8 @@ class MeetingDetailScreen extends ConsumerWidget {
                       tooltip: meeting.isConfirmed ? '확정 취소' : '회의 확정',
                       onPressed: () => _handleConfirmToggle(context, ref, meeting),
                     ),
-                  // ── 회의 수정 버튼 (meeting.update 권한) ──────────────────────────
-                  if (canUpdate)
+                  // ── 회의 수정 버튼 (meeting.update 권한 및 미확정 상태일 때만 노출) ──
+                  if (canUpdate && !meeting.isConfirmed)
                     IconButton(
                       icon: const Icon(Icons.edit_outlined, size: 22),
                       tooltip: '수정',

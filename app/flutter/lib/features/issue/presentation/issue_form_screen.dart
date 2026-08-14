@@ -1018,40 +1018,9 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                       ),
                       const SizedBox(height: 14),
 
-                      // ── Row 2: 상위업무 (50%) & 범주 (50%) ─────────────────
+                      // ── Row 2: 범주 (50%) & 공개 설정 (50%) ───────────────
                       Row(
                         children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('상위업무', style: AppTextStyles.titleSm),
-                                const SizedBox(height: 6),
-                                projectIssuesAsync?.when(
-                                      loading: () => const SizedBox(
-                                        height: 48,
-                                        child: Center(
-                                            child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                                color: AppColors.accentWork)),
-                                      ),
-                                      error: (_, __) =>
-                                          _buildParentIssueSelector(const []),
-                                      data: (state) {
-                                        final candidateIssues = state.items
-                                            .where((i) =>
-                                                widget.initialIssue == null ||
-                                                i.pk != widget.initialIssue!.pk)
-                                            .toList();
-
-                                        return _buildParentIssueSelector(candidateIssues);
-                                      },
-                                    ) ??
-                                    _buildParentIssueSelector(const []),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 12),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1098,7 +1067,8 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                                 value: null, child: Text('없음')),
                                             ...categoryList.map((cate) => DropdownMenuItem(
                                                   value: cate.pk,
-                                                  child: Text(cate.name),
+                                                  child: Text(cate.name,
+                                                      overflow: TextOverflow.ellipsis),
                                                 )),
                                           ],
                                           onChanged: (v) {
@@ -1122,6 +1092,7 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                     ) ??
                                     DropdownButtonFormField<int?>(
                                       value: null,
+                                      isExpanded: true,
                                       style: AppTextStyles.bodyMd,
                                       dropdownColor: AppColors.bgCard,
                                       decoration: _inputDecoration('없음'),
@@ -1135,22 +1106,104 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                               ],
                             ),
                           ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('공개 설정', style: AppTextStyles.titleSm),
+                                const SizedBox(height: 6),
+                                InkWell(
+                                  onTap: () =>
+                                      setState(() => _isPrivate = !_isPrivate),
+                                  borderRadius: BorderRadius.circular(6),
+                                  child: Container(
+                                    height: 48,
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 10),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.bgCard,
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(
+                                        color: _isPrivate
+                                            ? AppColors.accentApproval
+                                            : AppColors.border,
+                                        width: 0.8,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Icon(
+                                              _isPrivate
+                                                  ? Icons.lock_rounded
+                                                  : Icons.lock_open_rounded,
+                                              size: 18,
+                                              color: _isPrivate
+                                                  ? AppColors.accentApproval
+                                                  : AppColors.textMuted,
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              _isPrivate ? '비공개' : '공개',
+                                              style: AppTextStyles.bodyMd
+                                                  .copyWith(
+                                                color: _isPrivate
+                                                    ? AppColors.accentApproval
+                                                    : AppColors.textPrimary,
+                                                fontWeight: _isPrivate
+                                                    ? FontWeight.w600
+                                                    : FontWeight.normal,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        Switch(
+                                          value: _isPrivate,
+                                          activeColor: AppColors.accentApproval,
+                                          materialTapTargetSize:
+                                              MaterialTapTargetSize.shrinkWrap,
+                                          onChanged: (v) =>
+                                              setState(() => _isPrivate = v),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 14),
 
-                      // ── 비공개 토글 ─────────────────────────────────────
-                      SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title:
-                            Text('비공개 업무', style: AppTextStyles.titleSm),
-                        subtitle: Text(
-                            '본인 및 담당자, 권한 있는 관리자에게만 공개됩니다.',
-                            style: AppTextStyles.caption),
-                        value: _isPrivate,
-                        activeColor: AppColors.accentWork,
-                        onChanged: (v) => setState(() => _isPrivate = v),
-                      ),
+                      // ── Row 3: 상위업무 (100% 전체 폭) ───────────────────
+                      Text('상위업무', style: AppTextStyles.titleSm),
+                      const SizedBox(height: 6),
+                      projectIssuesAsync?.when(
+                            loading: () => const SizedBox(
+                              height: 48,
+                              child: Center(
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: AppColors.accentWork)),
+                            ),
+                            error: (_, __) =>
+                                _buildParentIssueSelector(const []),
+                            data: (state) {
+                              final candidateIssues = state.items
+                                  .where((i) =>
+                                      widget.initialIssue == null ||
+                                      i.pk != widget.initialIssue!.pk)
+                                  .toList();
+
+                              return _buildParentIssueSelector(candidateIssues);
+                            },
+                          ) ??
+                          _buildParentIssueSelector(const []),
                     ],
                   ),
                 ),
