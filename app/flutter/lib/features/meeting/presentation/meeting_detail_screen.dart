@@ -147,6 +147,17 @@ class _InfoCard extends StatelessWidget {
   final MeetingModel meeting;
   const _InfoCard({required this.meeting});
 
+  String _formatDateTime(String dateStr) {
+    if (dateStr.isEmpty) return '';
+    // 예: "2026-08-10 10:00+09:00" -> "2026-08-10 10:00"
+    // 예: "2026-08-10T10:00:00+09:00" -> "2026-08-10 10:00"
+    var formatted = dateStr.replaceAll('T', ' ');
+    if (formatted.length >= 16) {
+      return formatted.substring(0, 16);
+    }
+    return formatted;
+  }
+
   @override
   Widget build(BuildContext context) {
     final attendeesText = [
@@ -168,8 +179,8 @@ class _InfoCard extends StatelessWidget {
               value: meeting.projectDesc.name,
               icon: Icons.business_center_outlined),
           _Row(
-              label: '회의 일자',
-              value: meeting.meetingDate,
+              label: '회의 일시',
+              value: _formatDateTime(meeting.meetingDate),
               icon: Icons.calendar_today_outlined),
           _Row(
               label: '상태',

@@ -122,12 +122,14 @@ class MeetingCard extends StatelessWidget {
   }
 
   String _formatDate(String dateStr) {
-    try {
-      final dt = DateTime.parse(dateStr);
-      return '${dt.year}.${dt.month.toString().padLeft(2, '0')}.${dt.day.toString().padLeft(2, '0')}';
-    } catch (_) {
-      return dateStr;
+    if (dateStr.isEmpty) return '';
+    var formatted = dateStr.replaceAll('T', ' ');
+    if (formatted.length >= 16) {
+      final datePart = formatted.substring(0, 10).replaceAll('-', '.');
+      final timePart = formatted.substring(11, 16);
+      return '$datePart $timePart';
     }
+    return dateStr;
   }
 }
 
