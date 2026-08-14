@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/api_endpoints.dart';
+import '../../../core/models/common_models.dart';
 import '../../../core/providers/dio_provider.dart';
 import 'models/meeting_model.dart';
 

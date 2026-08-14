@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/models/common_models.dart';
 import '../data/meeting_repository.dart';
 import '../data/models/meeting_model.dart';
 
