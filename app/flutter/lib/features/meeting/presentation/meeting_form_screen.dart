@@ -193,7 +193,7 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.initialMeeting != null;
-    final projectsAsync = ref.watch(projectListProvider);
+    final projectsAsync = ref.watch(meetingFormProjectsProvider);
 
     return Scaffold(
       backgroundColor: AppColors.bgPrimary,
@@ -225,7 +225,10 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── 프로젝트 선택 (신규 등록 시) ──────────────────────────────────
+              // ── 섹션 1: 회의 개요 ─────────────────────────────────────────
+              _buildSectionHeader('회의 개요', Icons.info_outline_rounded),
+
+              // 프로젝트 선택 (신규 등록 시)
               if (!isEdit) ...[
                 Text('워크스페이스 (프로젝트) *', style: AppTextStyles.titleSm),
                 const SizedBox(height: 6),
@@ -238,27 +241,40 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                   ),
                   error: (e, _) => Text('프로젝트 목록을 불러올 수 없습니다.',
                       style: AppTextStyles.bodyMuted),
-                  data: (projects) => DropdownButtonFormField<int>(
-                    value: _selectedProjectPk ??
-                        (projects.isNotEmpty ? projects.first.pk : null),
-                    style: AppTextStyles.bodyMd,
-                    dropdownColor: AppColors.bgCard,
-                    decoration: _inputDecoration('프로젝트 선택'),
-                    items: projects
-                        .map((p) => DropdownMenuItem(
-                              value: p.pk,
-                              child:
-                                  Text(p.name, overflow: TextOverflow.ellipsis),
-                            ))
-                        .toList(),
-                    onChanged: (v) => setState(() => _selectedProjectPk = v),
-                    validator: (v) => v == null ? '프로젝트를 선택해 주세요.' : null,
-                  ),
+                  data: (projects) {
+                    final validProjectPk = (_selectedProjectPk != null &&
+                            projects.any((p) => p.pk == _selectedProjectPk))
+                        ? _selectedProjectPk
+                        : (projects.isNotEmpty ? projects.first.pk : null);
+
+                    return DropdownButtonFormField<int>(
+                      value: validProjectPk,
+                      isExpanded: true,
+                      style: AppTextStyles.bodyMd,
+                      dropdownColor: AppColors.bgCard,
+                      decoration: _inputDecoration('프로젝트 선택'),
+                      items: projects
+                          .map((p) => DropdownMenuItem(
+                                value: p.pk,
+                                child: Text(p.indentedLabel,
+                                    overflow: TextOverflow.ellipsis),
+                              ))
+                          .toList(),
+                      onChanged: (v) {
+                        setState(() {
+                          _selectedProjectPk = v;
+                          _selectedCategoryPk = null;
+                          _selectedAttendeePks = [];
+                        });
+                      },
+                      validator: (v) => v == null ? '프로젝트를 선택해 주세요.' : null,
+                    );
+                  },
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
               ],
 
-              // ── 회의 제목 ──────────────────────────────────────────────────
+              // 회의 제목
               Text('회의 제목 *', style: AppTextStyles.titleSm),
               const SizedBox(height: 6),
               TextFormField(
@@ -268,78 +284,43 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                     (v == null || v.trim().isEmpty) ? '제목을 입력해 주세요.' : null,
                 decoration: _inputDecoration('회의 제목을 입력하세요'),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
 
-              // ── 회의 일시 (단독 1줄) ─────────────────────────────────────────
-              Text('회의 일시', style: AppTextStyles.titleSm),
-              const SizedBox(height: 6),
-              TextField(
-                controller: _meetingDateController,
-                readOnly: true,
-                style: AppTextStyles.bodyMd,
-                decoration: _inputDecoration('YYYY-MM-DD HH:mm').copyWith(
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.access_time_rounded, size: 18),
-                    onPressed: _selectDateTime,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // ── 카테고리 & 상태 (함께 1줄) ──────────────────────────────────
+              // Row: 회의 일시 (50%) & 진행 상태 (50%)
               Row(
                 children: [
-                  // 카테고리 (좌측)
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('카테고리', style: AppTextStyles.titleSm),
+                        Text('회의 일시', style: AppTextStyles.titleSm),
                         const SizedBox(height: 6),
-                        ref.watch(meetingCategoriesProvider(_selectedProjectPk)).when(
-                              data: (categories) => DropdownButtonFormField<int?>(
-                                value: _selectedCategoryPk,
-                                isExpanded: true,
-                                style: AppTextStyles.bodyMd,
-                                dropdownColor: AppColors.bgCard,
-                                decoration: _inputDecoration('선택사항'),
-                                items: [
-                                  const DropdownMenuItem<int?>(
-                                    value: null,
-                                    child: Text('선택 안 함'),
-                                  ),
-                                  ...categories.map((c) => DropdownMenuItem<int?>(
-                                        value: c.pk,
-                                        child: Text(c.name, overflow: TextOverflow.ellipsis),
-                                      )),
-                                ],
-                                onChanged: (v) =>
-                                    setState(() => _selectedCategoryPk = v),
-                              ),
-                              loading: () => DropdownButtonFormField<int?>(
-                                items: const [],
-                                onChanged: null,
-                                decoration: _inputDecoration('로딩 중...'),
-                              ),
-                              error: (_, __) => DropdownButtonFormField<int?>(
-                                items: const [],
-                                onChanged: null,
-                                decoration: _inputDecoration('선택 안 함'),
-                              ),
+                        TextField(
+                          controller: _meetingDateController,
+                          readOnly: true,
+                          style: AppTextStyles.bodyMd,
+                          decoration:
+                              _inputDecoration('YYYY-MM-DD HH:mm').copyWith(
+                            suffixIcon: IconButton(
+                              icon: const Icon(Icons.access_time_rounded,
+                                  size: 18),
+                              onPressed: _selectDateTime,
                             ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
                   const SizedBox(width: 12),
-                  // 상태 (우측)
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('상태', style: AppTextStyles.titleSm),
+                        Text('진행 상태', style: AppTextStyles.titleSm),
                         const SizedBox(height: 6),
                         DropdownButtonFormField<String>(
                           value: _status,
+                          isExpanded: true,
                           style: AppTextStyles.bodyMd,
                           dropdownColor: AppColors.bgCard,
                           decoration: _inputDecoration(''),
@@ -354,9 +335,56 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
 
-              // ── 참석자 선택 (사내 멤버) ────────────────────────────────────────
+              // 카테고리 (100% 전체 폭)
+              Text('카테고리', style: AppTextStyles.titleSm),
+              const SizedBox(height: 6),
+              ref.watch(meetingCategoriesProvider(_selectedProjectPk)).when(
+                    data: (categories) {
+                      final validCategoryPk = (_selectedCategoryPk != null &&
+                              categories.any((c) => c.pk == _selectedCategoryPk))
+                          ? _selectedCategoryPk
+                          : null;
+
+                      return DropdownButtonFormField<int?>(
+                        value: validCategoryPk,
+                        isExpanded: true,
+                        style: AppTextStyles.bodyMd,
+                        dropdownColor: AppColors.bgCard,
+                        decoration: _inputDecoration('카테고리 선택'),
+                        items: [
+                          const DropdownMenuItem<int?>(
+                            value: null,
+                            child: Text('선택 안 함'),
+                          ),
+                          ...categories.map((c) => DropdownMenuItem<int?>(
+                                value: c.pk,
+                                child: Text(c.name,
+                                    overflow: TextOverflow.ellipsis),
+                              )),
+                        ],
+                        onChanged: (v) =>
+                            setState(() => _selectedCategoryPk = v),
+                      );
+                    },
+                    loading: () => DropdownButtonFormField<int?>(
+                      items: const [],
+                      onChanged: null,
+                      decoration: _inputDecoration('로딩 중...'),
+                    ),
+                    error: (_, __) => DropdownButtonFormField<int?>(
+                      items: const [],
+                      onChanged: null,
+                      decoration: _inputDecoration('선택 안 함'),
+                    ),
+                  ),
+              const SizedBox(height: 24),
+
+              // ── 섹션 2: 참석자 ───────────────────────────────────────────
+              _buildSectionHeader('참석자', Icons.people_outline_rounded),
+
+              // 사내 멤버 참석자
               ref.watch(meetingMembersProvider(_selectedProjectPk)).when(
                     data: (members) {
                       final selectedUsers = members
@@ -372,13 +400,15 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                               if (_selectedAttendeePks.isNotEmpty) ...[
                                 const SizedBox(width: 6),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 1),
                                   decoration: BoxDecoration(
                                     color: AppColors.accentWork.withAlpha(40),
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: Text('${_selectedAttendeePks.length}',
-                                      style: AppTextStyles.label.copyWith(color: AppColors.accentWork)),
+                                      style: AppTextStyles.label.copyWith(
+                                          color: AppColors.accentWork)),
                                 ),
                               ],
                             ],
@@ -390,11 +420,13 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                             child: Container(
                               width: double.infinity,
                               constraints: const BoxConstraints(minHeight: 48),
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 10),
                               decoration: BoxDecoration(
                                 color: AppColors.bgCard,
                                 borderRadius: BorderRadius.circular(6),
-                                border: Border.all(color: AppColors.border, width: 0.8),
+                                border: Border.all(
+                                    color: AppColors.border, width: 0.8),
                               ),
                               child: Row(
                                 children: [
@@ -408,20 +440,30 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                                             children: selectedUsers
                                                 .map(
                                                   (u) => Container(
-                                                    padding: const EdgeInsets.symmetric(
-                                                        horizontal: 8, vertical: 3),
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                            horizontal: 8,
+                                                            vertical: 3),
                                                     decoration: BoxDecoration(
-                                                      color: AppColors.accentWork.withAlpha(30),
+                                                      color: AppColors
+                                                          .accentWork
+                                                          .withAlpha(30),
                                                       border: Border.all(
-                                                        color: AppColors.accentWork.withAlpha(100),
+                                                        color: AppColors
+                                                            .accentWork
+                                                            .withAlpha(100),
                                                         width: 0.8,
                                                       ),
-                                                      borderRadius: BorderRadius.circular(4),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              4),
                                                     ),
                                                     child: Text(
                                                       u.username,
-                                                      style: AppTextStyles.label.copyWith(
-                                                        color: AppColors.accentWork,
+                                                      style: AppTextStyles.label
+                                                          .copyWith(
+                                                        color:
+                                                            AppColors.accentWork,
                                                       ),
                                                     ),
                                                   ),
@@ -436,7 +478,7 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 14),
                         ],
                       );
                     },
@@ -444,18 +486,22 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                     error: (_, __) => const SizedBox.shrink(),
                   ),
 
-              // ── 기타 참석자 (외부인) ─────────────────────────────────────────
+              // 기타 참석자 (외부인)
               Text('기타 참석자 (외부인/기관)', style: AppTextStyles.titleSm),
               const SizedBox(height: 6),
               TextFormField(
                 controller: _otherAttendeesController,
                 style: AppTextStyles.bodyMd,
-                decoration: _inputDecoration('예: 시공사 김소장, 감리단 박팀장 (쉼표 구분)'),
+                decoration: _inputDecoration(
+                    '예: 시공사 김소장, 감리단 박팀장 (쉼표 구분)'),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
 
-              // ── 회의 의제 ──────────────────────────────────────────────
-              Text('회의 의제', style: AppTextStyles.titleSm),
+              // ── 섹션 3: 회의 기록 ─────────────────────────────────────────
+              _buildSectionHeader('회의 기록', Icons.edit_note_rounded),
+
+              // 회의 의제
+              Text('회의 의제 (Agenda)', style: AppTextStyles.titleSm),
               const SizedBox(height: 6),
               TextFormField(
                 controller: _agendaController,
@@ -463,10 +509,10 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                 style: AppTextStyles.bodyMd,
                 decoration: _inputDecoration('회의 안건 및 의제를 입력하세요'),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
 
-              // ── 회의 내용 ──────────────────────────────────────────────────
-              Text('회의 내용', style: AppTextStyles.titleSm),
+              // 회의 내용
+              Text('회의 내용 (Content)', style: AppTextStyles.titleSm),
               const SizedBox(height: 6),
               TextFormField(
                 controller: _contentController,
@@ -474,10 +520,10 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                 style: AppTextStyles.bodyMd,
                 decoration: _inputDecoration('논의된 회의 상세 내용을 입력하세요'),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
 
-              // ── 주요 결정 사항 ──────────────────────────────────────────────────
-              Text('주요 결정 사항', style: AppTextStyles.titleSm),
+              // 주요 결정 사항
+              Text('주요 결정 사항 (Decisions)', style: AppTextStyles.titleSm),
               const SizedBox(height: 6),
               TextFormField(
                 controller: _decisionsController,
@@ -485,10 +531,10 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                 style: AppTextStyles.bodyMd,
                 decoration: _inputDecoration('회의에서 결정된 최종 사항을 입력하세요'),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
 
-              // ── 후속 조치 사항 ──────────────────────────────────
-              Text('후속 조치 사항', style: AppTextStyles.titleSm),
+              // 후속 조치 사항
+              Text('후속 조치 사항 (Action Items)', style: AppTextStyles.titleSm),
               const SizedBox(height: 6),
               TextFormField(
                 controller: _actionItemsController,
@@ -500,6 +546,29 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 6, bottom: 14),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: AppColors.accentWork),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: AppTextStyles.titleSm.copyWith(
+              fontWeight: FontWeight.bold,
+              color: AppColors.accentWork,
+            ),
+          ),
+          const SizedBox(width: 10),
+          const Expanded(
+            child: Divider(height: 1, color: AppColors.border),
+          ),
+        ],
       ),
     );
   }
