@@ -8,6 +8,7 @@ import '../../../../core/providers/permission_provider.dart';
 import '../../../../core/providers/project_provider.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/loading_shimmer.dart';
+import '../../project/providers/project_provider.dart';
 import '../data/models/meeting_model.dart';
 import '../providers/meeting_provider.dart';
 import 'widgets/meeting_card.dart';
@@ -76,6 +77,28 @@ class _MeetingListScreenState extends ConsumerState<MeetingListScreen> {
     ref.listen(selectedProjectProvider, (previous, next) {
       _applyFilter();
     });
+
+    final selectedProject = ref.watch(selectedProjectProvider);
+    if (selectedProject != null) {
+      final allProjects = ref.watch(projectListProvider).valueOrNull ?? [];
+      final currentProj = allProjects
+          .where((p) => p.slug == selectedProject.slug)
+          .firstOrNull;
+      final isMeetingModuleEnabled = currentProj?.module?.meeting ?? true;
+
+      if (!isMeetingModuleEnabled) {
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: ErrorView.empty(
+              message: '회의록 모듈이 비활성화되어 있습니다.',
+              subMessage:
+                  '${selectedProject.name} 워크스페이스는 회의록 기능을 사용하지 않습니다.',
+            ),
+          ),
+        );
+      }
+    }
 
     final canRead = ref.can(Perm.meetingRead);
     if (!canRead) {

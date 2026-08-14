@@ -13,6 +13,7 @@ import '../../../../core/widgets/project_selector_bottom_sheet.dart';
 import '../../docs/presentation/docs_screen.dart';
 import '../../issue/presentation/issue_list_screen.dart';
 import '../../meeting/presentation/meeting_list_screen.dart';
+import '../../project/providers/project_provider.dart';
 
 /// 업무 관리 탭 메인 화면 (프로젝트 셀렉터 + 회의 목록 / 업무 목록 탭 전환 + 인라인 문서함 뷰 토글 + 생성 FAB)
 class WorkScreen extends ConsumerStatefulWidget {
@@ -239,9 +240,22 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
                   return ListenableBuilder(
                     listenable: controller,
                     builder: (context, child) {
+                      final selectedProject =
+                          ref.watch(selectedProjectProvider);
+                      final allProjects =
+                          ref.watch(projectListProvider).valueOrNull ?? [];
+                      final currentProj = selectedProject != null
+                          ? allProjects
+                              .where((p) => p.slug == selectedProject.slug)
+                              .firstOrNull
+                          : null;
+                      final isMeetingModuleEnabled =
+                          currentProj?.module?.meeting ?? true;
+
                       final isMeetingTab = controller.index == 0;
                       final canCreate = isMeetingTab
-                          ? ref.can(Perm.meetingCreate)
+                          ? (ref.can(Perm.meetingCreate) &&
+                              isMeetingModuleEnabled)
                           : ref.can(Perm.issueCreate);
 
                       if (!canCreate) return const SizedBox.shrink();
