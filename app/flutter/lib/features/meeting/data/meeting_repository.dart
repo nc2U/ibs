@@ -38,6 +38,40 @@ class MeetingRepository {
     return MeetingModel.fromJson(response.data as Map<String, dynamic>);
   }
 
+  /// 회의 카테고리 목록 조회
+  Future<List<MeetingCategoryModel>> fetchCategories({int? projectPk}) async {
+    final params = <String, dynamic>{};
+    if (projectPk != null) params['project'] = projectPk;
+    final response = await _dio.get(
+      ApiEndpoints.meetingCategories,
+      queryParameters: params,
+    );
+    final data = response.data;
+    final list = data is List
+        ? data
+        : (data['results'] as List? ?? []);
+    return list
+        .map((json) => MeetingCategoryModel.fromJson(json as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// 프로젝트 멤버 목록 조회
+  Future<List<SimpleUserModel>> fetchMembers({int? projectPk}) async {
+    final response = await _dio.get(
+      ApiEndpoints.members,
+    );
+    final data = response.data;
+    final list = data is List
+        ? data
+        : (data['results'] as List? ?? []);
+    return list
+        .map((json) {
+          final userJson = json['user'] as Map<String, dynamic>? ?? json;
+          return SimpleUserModel.fromJson(userJson);
+        })
+        .toList();
+  }
+
   /// 회의 확정/확정취소 토글 (POST /api/v1/meeting/{id}/confirm/)
   Future<bool> toggleConfirm(int meetingId) async {
     final url = '${ApiEndpoints.meetings}$meetingId/confirm/';

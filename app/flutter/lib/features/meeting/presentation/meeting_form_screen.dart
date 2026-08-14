@@ -24,6 +24,7 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _titleController;
   late TextEditingController _meetingDateController;
+  late TextEditingController _otherAttendeesController;
   late TextEditingController _agendaController;
   late TextEditingController _contentController;
   late TextEditingController _decisionsController;
@@ -33,6 +34,8 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
   bool _isConfirmed = false;
   bool _isSaving = false;
   int? _selectedProjectPk;
+  int? _selectedCategoryPk;
+  List<int> _selectedAttendeePks = [];
 
   @override
   void initState() {
@@ -42,6 +45,8 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
     _meetingDateController = TextEditingController(
         text: m?.meetingDate ??
             DateTime.now().toIso8601String().substring(0, 10));
+    _otherAttendeesController =
+        TextEditingController(text: m?.otherAttendees ?? '');
     _agendaController = TextEditingController(text: m?.agenda ?? '');
     _contentController = TextEditingController(text: m?.content ?? '');
     _decisionsController = TextEditingController(text: m?.decisions ?? '');
@@ -50,6 +55,9 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
     if (m != null) {
       _status = m.status;
       _isConfirmed = m.isConfirmed;
+      _selectedCategoryPk = m.category;
+      _selectedAttendeePks = List.from(m.attendees);
+      _selectedProjectPk = m.project;
     } else {
       final selectedProj = ref.read(selectedProjectProvider);
       if (selectedProj != null) {
@@ -62,6 +70,7 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
   void dispose() {
     _titleController.dispose();
     _meetingDateController.dispose();
+    _otherAttendeesController.dispose();
     _agendaController.dispose();
     _contentController.dispose();
     _decisionsController.dispose();
@@ -98,6 +107,9 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
       'meeting_date': _meetingDateController.text.trim(),
       'status': _status,
       'is_confirmed': _isConfirmed,
+      'category': _selectedCategoryPk,
+      'attendees': _selectedAttendeePks,
+      'other_attendees': _otherAttendeesController.text.trim(),
       'agenda': _agendaController.text.trim(),
       'content': _contentController.text.trim(),
       'decisions': _decisionsController.text.trim(),
@@ -223,14 +235,14 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
               ),
               const SizedBox(height: 16),
 
-              // ── 회의 일자 & 상태 ──────────────────────────────────────────────
+              // ── 회의 일시 & 상태 & 카테고리 ────────────────────────────────────
               Row(
                 children: [
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('회의 일자', style: AppTextStyles.titleSm),
+                        Text('회의 일시', style: AppTextStyles.titleSm),
                         const SizedBox(height: 6),
                         TextField(
                           controller: _meetingDateController,
@@ -268,6 +280,124 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 16),
+
+              // ── 카테고리 선택 ──────────────────────────────────────────────
+              ref.watch(meetingCategoriesProvider(_selectedProjectPk)).when(
+                    data: (categories) => Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('카테고리', style: AppTextStyles.titleSm),
+                        const SizedBox(height: 6),
+                        DropdownButtonFormField<int?>(
+                          value: _selectedCategoryPk,
+                          style: AppTextStyles.bodyMd,
+                          dropdownColor: AppColors.bgCard,
+                          decoration: _inputDecoration('카테고리 선택 (선택사항)'),
+                          items: [
+                            const DropdownMenuItem<int?>(
+                              value: null,
+                              child: Text('선택 안 함'),
+                            ),
+                            ...categories.map((c) => DropdownMenuItem<int?>(
+                                  value: c.pk,
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 8,
+                                        height: 8,
+                                        decoration: BoxDecoration(
+                                          color: AppColors.accentWork,
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(c.name),
+                                    ],
+                                  ),
+                                )),
+                          ],
+                          onChanged: (v) =>
+                              setState(() => _selectedCategoryPk = v),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                    ),
+                    loading: () => const SizedBox.shrink(),
+                    error: (_, __) => const SizedBox.shrink(),
+                  ),
+
+              // ── 참석자 선택 (사내 멤버) ────────────────────────────────────────
+              ref.watch(meetingMembersProvider(_selectedProjectPk)).when(
+                    data: (members) => Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text('참석자 (사내 멤버)', style: AppTextStyles.titleSm),
+                            if (_selectedAttendeePks.isNotEmpty) ...[
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                decoration: BoxDecoration(
+                                  color: AppColors.accentWork.withAlpha(40),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text('${_selectedAttendeePks.length}',
+                                    style: AppTextStyles.label.copyWith(color: AppColors.accentWork)),
+                              ),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 6,
+                          children: members.map((u) {
+                            final isSelected = _selectedAttendeePks.contains(u.pk);
+                            return FilterChip(
+                              label: Text(u.username),
+                              selected: isSelected,
+                              selectedColor: AppColors.accentWork.withAlpha(50),
+                              checkmarkColor: AppColors.accentWork,
+                              labelStyle: AppTextStyles.bodyMd.copyWith(
+                                color: isSelected ? AppColors.accentWork : AppColors.textPrimary,
+                                fontSize: 13,
+                              ),
+                              backgroundColor: AppColors.bgCard,
+                              shape: RoundedRectangleBorder(
+                                side: BorderSide(
+                                  color: isSelected ? AppColors.accentWork : AppColors.border,
+                                  width: 0.8,
+                                ),
+                              ),
+                              onSelected: (selected) {
+                                setState(() {
+                                  if (selected) {
+                                    _selectedAttendeePks.add(u.pk);
+                                  } else {
+                                    _selectedAttendeePks.remove(u.pk);
+                                  }
+                                });
+                              },
+                            );
+                          }).toList(),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                    ),
+                    loading: () => const SizedBox.shrink(),
+                    error: (_, __) => const SizedBox.shrink(),
+                  ),
+
+              // ── 기타 참석자 (외부인) ─────────────────────────────────────────
+              Text('기타 참석자 (외부인/기관)', style: AppTextStyles.titleSm),
+              const SizedBox(height: 6),
+              TextFormField(
+                controller: _otherAttendeesController,
+                style: AppTextStyles.bodyMd,
+                decoration: _inputDecoration('예: 시공사 김소장, 감리단 박팀장 (쉼표 구분)'),
               ),
               const SizedBox(height: 16),
 

@@ -19,8 +19,10 @@ abstract class ApiEndpoints {
   static const String issueFiles    = '/api/v1/issue-file/';
 
   // ── Meeting ──────────────────────────────────────
-  static const String meetings      = '/api/v1/meeting/';
-  static const String meetingDetail = '/api/v1/meeting/{id}/';
+  static const String meetings          = '/api/v1/meeting/';
+  static const String meetingDetail     = '/api/v1/meeting/{id}/';
+  static const String meetingCategories = '/api/v1/meeting-category/';
+  static const String members           = '/api/v1/member/';
 
   // ── Contract ─────────────────────────────────────
   static const String contracts     = '/api/v1/contract/';

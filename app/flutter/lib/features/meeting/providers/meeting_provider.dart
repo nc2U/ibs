@@ -136,3 +136,15 @@ final meetingDetailProvider =
     AsyncNotifierProviderFamily<MeetingDetailNotifier, MeetingModel, int>(
   MeetingDetailNotifier.new,
 );
+
+// ── 카테고리 & 멤버 프로바이더 ──────────────────────────────────────────────────
+
+final meetingCategoriesProvider =
+    FutureProvider.autoDispose.family<List<MeetingCategoryModel>, int?>((ref, projectPk) async {
+  return ref.read(meetingRepositoryProvider).fetchCategories(projectPk: projectPk);
+});
+
+final meetingMembersProvider =
+    FutureProvider.autoDispose.family<List<SimpleUserModel>, int?>((ref, projectPk) async {
+  return ref.read(meetingRepositoryProvider).fetchMembers(projectPk: projectPk);
+});
