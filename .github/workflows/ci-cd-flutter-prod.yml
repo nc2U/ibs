@@ -1,0 +1,122 @@
+name: "[Prod] Flutter App Distribution"
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'app/flutter/**'
+  workflow_dispatch:
+
+concurrency:
+  group: flutter-prod-deployment
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy-android:
+    name: Build & Deploy Android (Prod)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.29.x'
+          channel: 'stable'
+          cache: true
+
+      - name: Setup Flutter Environment & Secrets
+        working-directory: app/flutter
+        run: |
+          echo "${{ secrets.FLUTTER_ENV_PROD }}" > .env
+          python3 setup_env.py
+
+      - name: Install Dependencies
+        working-directory: app/flutter
+        run: flutter pub get
+
+      - name: Build Android APK
+        working-directory: app/flutter
+        run: flutter build apk --release --dart-define=BASE_URL=https://ibs.dyibs.com
+
+      - name: Deploy to Firebase App Distribution (Android)
+        uses: wzieba/Firebase-Distribution-Github-Action@v1
+        with:
+          appId: ${{ secrets.FIREBASE_ANDROID_APP_ID }}
+          serviceCredentialsFileContent: ${{ secrets.FIREBASE_CREDENTIAL_JSON }}
+          groups: testers
+          file: app/flutter/build/app/outputs/flutter-apk/app-release.apk
+
+  build-and-deploy-ios:
+    name: Build & Deploy iOS (Prod)
+    runs-on: macos-14
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.29.x'
+          channel: 'stable'
+          cache: true
+
+      - name: Setup Flutter Environment & Secrets
+        working-directory: app/flutter
+        run: |
+          echo "${{ secrets.FLUTTER_ENV_PROD }}" > .env
+          python3 setup_env.py
+
+      - name: Install Dependencies & Pods
+        working-directory: app/flutter
+        run: |
+          flutter pub get
+          cd ios
+          pod install
+          cd ..
+
+      - name: Setup iOS Provisioning Profile & Certificate
+        if: ${{ env.BUILD_CERTIFICATE_BASE64 != '' }}
+        env:
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          P12_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          PROVISION_PROFILE_BASE64: ${{ secrets.APPLE_PROVISION_PROFILE_BASE64 }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          # 1. 임시 키체인 생성
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          # 2. 인증서(.p12) 등록
+          CERT_PATH=$RUNNER_TEMP/build_cert.p12
+          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERT_PATH
+          security import $CERT_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+
+          # 3. 프로비저닝 프로필 등록
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          echo -n "$PROVISION_PROFILE_BASE64" | base64 --decode -o ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision
+
+      - name: Build iOS IPA
+        working-directory: app/flutter
+        run: |
+          flutter build ipa --release --no-codesign --dart-define=BASE_URL=https://ibs.dyibs.com || flutter build ios --release --no-codesign --dart-define=BASE_URL=https://ibs.dyibs.com
+
+      - name: Deploy to Firebase App Distribution (iOS)
+        if: ${{ secrets.FIREBASE_IOS_APP_ID != '' && secrets.APPLE_CERTIFICATE_BASE64 != '' }}
+        uses: wzieba/Firebase-Distribution-Github-Action@v1
+        with:
+          appId: ${{ secrets.FIREBASE_IOS_APP_ID }}
+          serviceCredentialsFileContent: ${{ secrets.FIREBASE_CREDENTIAL_JSON }}
+          groups: testers
+          file: app/flutter/build/ios/ipa/mobile_ibs.ipa
