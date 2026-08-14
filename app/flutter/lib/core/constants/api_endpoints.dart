@@ -29,6 +29,9 @@ abstract class ApiEndpoints {
   static const String meetingCategories = '/api/v1/meeting-category/';
   static const String members           = '/api/v1/member/';
 
+  // ── Search ───────────────────────────────────────
+  static const String issueSearchRun = '/api/v1/issue-search/run/';
+
   // ── Contract ─────────────────────────────────────
   static const String contracts     = '/api/v1/contract/';
 

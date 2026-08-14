@@ -16,6 +16,7 @@ import '../../features/project/presentation/project_screen.dart';
 import '../../features/channel/presentation/channel_tab.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/docs/presentation/docs_screen.dart';
+import '../../features/search/presentation/search_results_screen.dart';
 
 // ── Route 이름 상수 ─────────────────────────────────────────────────────────────
 abstract class AppRoutes {
@@ -29,6 +30,7 @@ abstract class AppRoutes {
   static const project      = '/project';
   static const approval     = '/approval';
   static const docs         = '/docs';
+  static const search       = '/search';
   static const channel      = '/channel';
   static const profile      = '/profile';
 }
@@ -150,6 +152,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.docs,
             builder: (ctx, state) => const DocsScreen(),
+          ),
+
+          // 통합 검색 화면 (하단 탭바 유지)
+          GoRoute(
+            path: AppRoutes.search,
+            builder: (ctx, state) => const SearchResultsScreen(),
           ),
         ],
       ),

@@ -20,6 +20,49 @@ class HomeTab extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // ── 통합 검색 바 (모던 직사각형 스타일) ─────────────────────────
+          InkWell(
+            onTap: () => context.go(AppRoutes.search),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: AppColors.bgCard,
+                borderRadius: BorderRadius.zero,
+                border: Border.all(color: AppColors.border, width: 0.8),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.search_rounded,
+                      size: 20, color: AppColors.accentWork),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      '통합 검색 (업무, 회의, 문서, 공지, 게시판)...',
+                      style: AppTextStyles.bodyMuted,
+                    ),
+                  ),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.accentWork.withAlpha(30),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                    child: Text(
+                      'Search',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.accentWork,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+
           // ── 01. 업무 관리 (Work Core) ──────────────────────────────────
           _HeroCard(
             categoryNum: '01',

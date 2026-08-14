@@ -332,7 +332,7 @@ class _DocsScreenState extends ConsumerState<DocsScreen> {
         ],
       ),
 
-      // ── 문서 생성 FAB (radius = 0) ───────────────────────────────────────
+      // ── 문서 생성 FAB (radius = 0, 바이올렛/퍼플 테마) ───────────────────────
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           showModalBottomSheet(
@@ -342,12 +342,19 @@ class _DocsScreenState extends ConsumerState<DocsScreen> {
             builder: (ctx) => const DocumentFormSheet(),
           );
         },
-        backgroundColor: AppColors.accentWork,
+        elevation: 4,
+        highlightElevation: 8,
+        backgroundColor: const Color(0xFF7C3AED),
         foregroundColor: Colors.white,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         icon: const Icon(Icons.add_rounded, size: 20),
-        label: const Text('문서 등록',
-            style: TextStyle(fontWeight: FontWeight.bold)),
+        label: const Text(
+          '문서 등록',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.2,
+          ),
+        ),
       ),
     );
   }

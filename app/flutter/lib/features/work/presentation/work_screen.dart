@@ -230,35 +230,36 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
 
                       if (!canCreate) return const SizedBox.shrink();
 
-                      return SizedBox(
-                        height: 40,
-                        child: FloatingActionButton.extended(
-                          elevation: 3,
-                          highlightElevation: 6,
-                          backgroundColor: const Color(0xFF3565A6),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          extendedPadding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 0),
-                          icon: const Icon(Icons.add_rounded,
-                              size: 18, color: Colors.white),
-                          label: Text(
-                            isMeetingTab ? '회의 등록' : '업무 등록',
-                            style: AppTextStyles.bodyMd.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
-                          ),
-                          onPressed: () {
-                            if (isMeetingTab) {
-                              context.go('/work/meetings/new');
-                            } else {
-                              context.go('/work/issues/new');
-                            }
-                          },
+                      // 회의: 틸/청록 에메랄드 (#0D9488), 업무: 선명한 로열 블루 (#2563EB)
+                      final fabColor = isMeetingTab
+                          ? const Color(0xFF0D9488)
+                          : const Color(0xFF2563EB);
+
+                      return FloatingActionButton.extended(
+                        elevation: 4,
+                        highlightElevation: 8,
+                        backgroundColor: fabColor,
+                        foregroundColor: Colors.white,
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.zero,
                         ),
+                        icon: const Icon(Icons.add_rounded,
+                            size: 20, color: Colors.white),
+                        label: Text(
+                          isMeetingTab ? '회의 등록' : '업무 등록',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                        onPressed: () {
+                          if (isMeetingTab) {
+                            context.go('/work/meetings/new');
+                          } else {
+                            context.go('/work/issues/new');
+                          }
+                        },
                       );
                     },
                   );
