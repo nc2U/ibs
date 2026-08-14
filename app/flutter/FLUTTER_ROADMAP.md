@@ -23,14 +23,15 @@
 
 ## 🏛️ 2. 도메인 용어 체계 (Domain Terminology Architecture)
 
-| 구분 | 백엔드 모델 | 비즈니스 도메인 범위 | 웹(Vue) & 모바일(Flutter) 용어 |
-| :--- | :--- | :--- | :--- |
-| **Work Core** | `work.IssueProject` | 본사관리(1) / 부동산개발(2) / 기타(3) 통합 협업 공간 | **`워크스페이스` (Workspace)** |
-| **IBS Global** | `project.IssueProject` (`type='2'`) | 분양, 수납, 입출금, 소송문서 등 부동산 개발 전용 사업지 | **`프로젝트` (Project)** |
+| 구분           | 백엔드 모델                         | 비즈니스 도메인 범위                                    | 웹(Vue) & 모바일(Flutter) 용어 |
+|:---------------|:------------------------------------|:--------------------------------------------------------|:-------------------------------|
+| **Work Core**  | `work.IssueProject`                 | 본사관리(1) / 부동산개발(2) / 기타(3) 통합 협업 공간    | **`워크스페이스` (Workspace)** |
+| **IBS Global** | `project.IssueProject` (`type='2'`) | 분양, 수납, 입출금, 소송문서 등 부동산 개발 전용 사업지 | **`프로젝트` (Project)**       |
 
 * **'현장' 용어 사용 엄금**: 코드베이스 및 UI에서 '현장'이라는 용어 대신 '워크스페이스' 또는 '프로젝트'를 명확히 구분하여 사용합니다.
-* **워크스페이스 (`work_core`)**: 업무(Issue), 회의록(Meeting), 로드맵, 공지사항 등 본사/프로젝트 전반의 협업 공간.
-* **프로젝트 (`ibs_global`)**: 부동산 개발(`type='2'`)에 한정되어 계약(Contract), 수납(Payment), 재무(Ledger), 소송/공용문서(Docs), 설정(Settings)을 관리하는 사업지.
+* **워크스페이스 (`work_core`)**: 업무 (Issue), 회의록 (Meeting), 로드맵, 공지사항 등 본사/프로젝트 전반의 협업 공간.
+* **프로젝트 (`ibs_global`)**: 부동산 개발 (`type='2'`)에 한정되어 계약 (Contract), 수납 (Payment), 재무 (Ledger), 소송/공용문서 (Docs), 설정
+  (Settings)을 관리하는 사업지.
 
 ---
 
@@ -71,10 +72,10 @@
 - [x] **Step 0-1**: 핵심 패키지 설치 완료 (`dio`, `flutter_riverpod`, `flutter_secure_storage`, `go_router`)
 - [x] **Step 1**: Android Studio SDK 37 설정 & 에뮬레이터 세팅 및 첫 스마트폰 빌드 성공
 - [x] **Step 2**: Feature-First 기반 폴더 구조 생성 (`core/`, `features/`)
-- [x] **Step 3**: Dio API Client 및 보안 토큰 저장소(`flutter_secure_storage`) 작성
+- [x] **Step 3**: Dio API Client 및 보안 토큰 저장소 (`flutter_secure_storage`) 작성
 - [x] **Step 4**: 웹 자원 브랜드 동기화 (`IBS워크스페이스` 타이틀 및 `assets/images/logo.png` 적용)
 - [x] **Step 5**: Django SimpleJWT (`/api/v1/token/`, Email 기반) 인증 연동 완료
-- [x] **Step 6**: 모바일 로그인 화면(UI) 작성 및 실제 서버 계정 인증 성공
+- [x] **Step 6**: 모바일 로그인 화면 (UI) 작성 및 실제 서버 계정 인증 성공
 - [x] **Step 7**: 로그인 성공 시 메인 대시보드 리다이렉트 & 상단 로그아웃 폼 구축
 - [x] **Step 8**: 모바일 메인 대시보드 레이아웃 (워크스페이스 셀렉터, 퀵 메뉴, 하단 탭 바) 구현
 - [x] **Step 9**: Phase 1 - 업무/회의 모듈 (Issue / Meeting) API 연동, CRUD 폼, 실시간 필터 동기화 구현 완료
@@ -95,81 +96,85 @@
    ```
 
 2. **Android Studio에서 프로젝트 열기**
-   - Android Studio 실행 -> `Open` 클릭
-   - `C:\Users\<사용자계정>\Git\ibs\app\flutter` 경로 선택
+    - Android Studio 실행 -> `Open` 클릭
+    - `C:\Users\<사용자계정>\Git\ibs\app\flutter` 경로 선택
 
 3. **패키지 동기화 (의존성 로드)**
-   - Android Studio 터미널 (또는 VS Code / PowerShell)에서 실행:
-     ```bash
-     cd app/flutter
-     flutter pub get
-     ```
+    - Android Studio 터미널 (또는 VS Code / PowerShell)에서 실행:
+      ```bash
+      cd app/flutter
+      flutter pub get
+      ```
 
 4. **앱 실행 테스트**
-   - 안드로이드 에뮬레이터 또는 실기기 연결 후 `flutter run` (또는 Android Studio 상단 재생 버튼 ▶️) 실행
+    - 안드로이드 에뮬레이터 또는 실기기 연결 후 `flutter run` (또는 Android Studio 상단 재생 버튼 ▶️) 실행
 
 ---
 
 ## 🗺️ 6. 단계별 개발 로드맵 (Detailed Roadmap)
 
 ### Phase 1: 업무관리 핵심 모듈 (입출력 및 진행 현황) [완료]
+
 * **1-1. 회의록 (`meeting`) 모듈**:
-  - 회의 목록 및 회의록 상세 조회, 의제/결정사항/액션아이템 확인
-  - 회의 생성 및 수정 폼 (`MeetingFormScreen`)
+    - 회의 목록 및 회의록 상세 조회, 의제/결정사항/액션아이템 확인
+    - 회의 생성 및 수정 폼 (`MeetingFormScreen`)
 * **1-2. 업무 (`work`) 모듈**:
-  - 내 업무/전체 업무 목록 조회 및 실시간 워크스페이스 필터 반응
-  - 업무 상세 보기 및 진척률(`done_ratio`) 수정, 댓글/파일 확인
-  - 업무 생성 및 수정 폼 (`IssueFormScreen`)
+    - 내 업무/전체 업무 목록 조회 및 실시간 워크스페이스 필터 반응
+    - 업무 상세 보기 및 진척률 (`done_ratio`) 수정, 댓글/파일 확인
+    - 업무 생성 및 수정 폼 (`IssueFormScreen`)
 * **1-3. 전역 상태 & 필터 동기화**:
-  - `selectedProjectProvider` 변경 시 회의 및 업무 목록 즉시 재조회 연동 완료
+    - `selectedProjectProvider` 변경 시 회의 및 업무 목록 즉시 재조회 연동 완료
 
 ### Phase 2: 프로젝트별 핵심 사업 모듈 (IBS Global) [다음 진행 대상]
+
 * **2-1. 프로젝트 선택 (Project Selector) 동기화**:
-  - `type == '2'` (부동산 개발 / 시행) 프로젝트만 선별하여 프로젝트 탭 연동
+    - `type == '2'` (부동산 개발 / 시행) 프로젝트만 선별하여 프로젝트 탭 연동
 * **2-2. 5대 핵심 사업 모듈 카드 접근 UI (radius = 0)**:
-  - 📄 **계약 관리 (`Contract`)**: 분양 계약 내역, 계약자 상세 정보, 승계/해지
-  - 💳 **대금 수납 관리 (`Payment`)**: 차수별 납부 내역, 수납 등록 및 미납금 현황
-  - 💰 **자금 / 재무 관리 (`Ledger`)**: 프로젝트 계좌 거래 이력 및 캐시플로우
-  - 📂 **문서 / 소송 관리 (`Docs`)**: 프로젝트 일반 문서, 소송 사건 이력
-  - ⚙️ **프로젝트 설정 (`Settings`)**: 프로젝트 기본 정보, 차수/유닛 배치 현황, 예산
+    - 📄 **계약 관리 (`Contract`)**: 분양 계약 내역, 계약자 상세 정보, 승계/해지
+    - 💳 **대금 수납 관리 (`Payment`)**: 차수별 납부 내역, 수납 등록 및 미납금 현황
+    - 💰 **자금 / 재무 관리 (`Ledger`)**: 프로젝트 계좌 거래 이력 및 캐시플로우
+    - 📂 **문서 / 소송 관리 (`Docs`)**: 프로젝트 일반 문서, 소송 사건 이력
+    - ⚙️ **프로젝트 설정 (`Settings`)**: 프로젝트 기본 정보, 차수/유닛 배치 현황, 예산
 * **2-3. 계약 관리 (`Contract`) 모듈 구현 [다음 작업]**:
-  - 프로젝트별 분양/계약 목록 조회 API 연동
-  - 계약 상세 보기 화면 및 동호수 배치 현황 연결
+    - 프로젝트별 분양/계약 목록 조회 API 연동
+    - 계약 상세 보기 화면 및 동호수 배치 현황 연결
 
 ### Phase 3: 전자결재 & 전사 정보 확장 모듈
+
 > ⚠️ **원칙**: 아래 기능들은 Django 백엔드 및 Vue 웹 애플리케이션에 먼저 모델/기능을 완성 및 검증한 후 모바일 앱으로 확충합니다.
+
 * **3-1. 고객 (Customer) 정보 관리**:
-  - 고객별 계약/납입/미납금 현황 조회
-  - 고객 상담 기록 작성 및 고지 알림 기능
+    - 고객별 계약/납입/미납금 현황 조회
+    - 고객 상담 기록 작성 및 고지 알림 기능
 * **3-2. 전사 비전 & 온보딩 시스템**:
-  - 회사 비전/미션/OKR 및 경영진 메시지 공유
-  - 신입사원 온보딩 가이드, 체크리스트, 사내 FAQ, 디렉토리
+    - 회사 비전/미션/OKR 및 경영진 메시지 공유
+    - 신입사원 온보딩 가이드, 체크리스트, 사내 FAQ, 디렉토리
 * **3-3. 모바일 전자 결재 & 알림**:
-  - 결재 문서 작성, 결재 라인 지정, 원클릭 결재/반려
-  - Firebase Cloud Messaging (FCM) 기반 실시간 모바일 푸시 알림
+    - 결재 문서 작성, 결재 라인 지정, 원클릭 결재/반려
+    - Firebase Cloud Messaging (FCM) 기반 실시간 모바일 푸시 알림
 
 ---
 
 ## 💡 7. Vue 3 vs Flutter 개념 비교 (참고용)
 
-| 개념 | Vue 3 (현재 `app/vue`) | Flutter (신규 `app/flutter`) |
-| :--- | :--- | :--- |
-| **언어** | TypeScript | Dart |
-| **라우팅** | Vue Router (`router/index.ts`) | `go_router` (`core/router/app_router.dart`) / `Navigator` |
-| **상태 관리** | Pinia (`stores/...`) | `Riverpod` (`providers/...`) |
-| **HTTP 클라이언트** | `axios` | `dio` |
-| **보안 저장소** | `localStorage` / `sessionStorage` | `flutter_secure_storage` |
-| **UI 태그/위젯** | `<v-card>`, `<v-btn>` (Vuetify) | `Card()`, `ElevatedButton()` (Material) |
+| 개념                | Vue 3 (현재 `app/vue`)            | Flutter (신규 `app/flutter`)                              |
+|:--------------------|:----------------------------------|:----------------------------------------------------------|
+| **언어**            | TypeScript                        | Dart                                                      |
+| **라우팅**          | Vue Router (`router/index.ts`)    | `go_router` (`core/router/app_router.dart`) / `Navigator` |
+| **상태 관리**       | Pinia (`stores/...`)              | `Riverpod` (`providers/...`)                              |
+| **HTTP 클라이언트** | `axios`                           | `dio`                                                     |
+| **보안 저장소**     | `localStorage` / `sessionStorage` | `flutter_secure_storage`                                  |
+| **UI 태그/위젯**    | `<v-card>`, `<v-btn>` (Vuetify)   | `Card()`, `ElevatedButton()` (Material)                   |
 
 ---
 
 ## 📦 8. 파이어베이스 비공개 무선 배포 가이드 (Firebase App Distribution)
 
-사내 직원(10명 이내) 및 비공개 테스트용으로 구글/애플 스토어 등록 및 심사 없이 iOS(아이폰) 및 안드로이드 기기에 무선으로 앱을 바로 설치·배포하는 방법입니다.
+사내 직원 (10명 이내) 및 비공개 테스트용으로 구글/애플 스토어 등록 및 심사 없이 iOS (아이폰) 및 안드로이드 기기에 무선으로 앱을 바로 설치·배포하는 방법입니다.
 
 ### 🤖 1) 안드로이드 (Android) 파이어베이스 배포
 
-1. **설치 파일(APK) 빌드**:
+1. **설치 파일 (APK) 빌드**:
    ```bash
    cd app/flutter
    flutter build apk --release
@@ -177,13 +182,13 @@
    *생성 파일 경로*: `build/app/outputs/flutter-apk/app-release.apk`
 
 2. **파이어베이스 업로드**:
-   - [Firebase Console](https://console.firebase.google.com) 접속 ➔ 프로젝트 선택
-   - 좌측 메뉴 `Release & Monitor` ➔ **`App Distribution`** 선택
-   - 생성된 `app-release.apk` 파일 드래그 & 드롭 업로드
-   - 사내 직원 이메일 주소 목록(예: `test@company.com`) 입력 후 **`발송`** 클릭
+    - [Firebase Console](https://console.firebase.google.com) 접속 ➔ 프로젝트 선택
+    - 좌측 메뉴 `Release & Monitor` ➔ **`App Distribution`** 선택
+    - 생성된 `app-release.apk` 파일 드래그 & 드롭 업로드
+    - 사내 직원 이메일 주소 목록 (예: `test@company.com`) 입력 후 **`발송`** 클릭
 
 3. **테스터 설치 방법**:
-   - 수신된 이메일에서 `[앱 다운로드]` 버튼 탭 ➔ 스마트폰에 즉시 설치 완료!
+    - 수신된 이메일에서 `[앱 다운로드]` 버튼 탭 ➔ 스마트폰에 즉시 설치 완료!
 
 ---
 
@@ -192,12 +197,12 @@
 아이폰의 경우 애플 보안 정책에 따라 테스터 기기의 UDID 등록 및 Ad-Hoc 프로비저닝 프로필이 연결된 IPA 빌드가 필요합니다.
 
 1. **테스트 아이폰 UDID 추출**:
-   - 아이폰 사파리(Safari) 브라우저로 **[udid.io](https://www.udid.io)** 접속
-   - `Tap to find UDID` 탭 ➔ 아이폰 고유 UDID 복사
+    - 아이폰 사파리 (Safari) 브라우저로 **[udid.io](https://www.udid.io)** 접속
+    - `Tap to find UDID` 탭 ➔ 아이폰 고유 UDID 복사
 
 2. **애플 개발자 계정 (developer.apple.com) 등록**:
-   - `Certificates, Identifiers & Profiles` ➔ `Devices`에 복사한 UDID 추가
-   - Ad-Hoc 프로비저닝 프로필(Provisioning Profile) 생성/갱신
+    - `Certificates, Identifiers & Profiles` ➔ `Devices`에 복사한 UDID 추가
+    - Ad-Hoc 프로비저닝 프로필 (Provisioning Profile) 생성/갱신
 
 3. **IPA 파일 빌드**:
    ```bash
@@ -207,8 +212,8 @@
    *생성 파일 경로*: `build/ios/ipa/mobile_ibs.ipa`
 
 4. **파이어베이스 업로드 및 배포**:
-   - [Firebase Console](https://console.firebase.google.com) ➔ `App Distribution`
-   - `.ipa` 파일 드래그 & 드롭 업로드 ➔ 사내 직원 이메일로 발송
+    - [Firebase Console](https://console.firebase.google.com) ➔ `App Distribution`
+    - `.ipa` 파일 드래그 & 드롭 업로드 ➔ 사내 직원 이메일로 발송
 
 ---
 
@@ -227,3 +232,32 @@ flutter build ipa --release --dart-define=BASE_URL=https://api.ibs.company.com -
 ---
 
 *마지막 업데이트: 2026-08-14 (파이어베이스 안드로이드/아이폰 비공개 배포 가이드 및 --dart-define 서버 주소 주입 연동 완료)*
+
+* 유료 개발자 계정 결제 없이, 본인의 무료 애플 계정으로 아이폰 13 프로에 앱을 설치하는 4단계 순서입니다:
+
+#### 1단계: Xcode에 무료 애플 계정 등록
+
+1. 맥북에서 Xcode 앱 실행
+2. 상단 메뉴 Xcode ➔ Settings (또는 Preferences) ➔ Accounts 탭 클릭
+3. 좌측 하단 + 버튼 ➔ Apple ID 선택 후 본인 애플 계정 로그인
+
+#### 2단계: 자동 서명 (Signing) 설정
+
+1. 맥북 터미널에서 Xcode 프로젝트 열기:
+   cd app/flutter/ios open Runner.xcworkspace
+
+2. Xcode 좌측 상단 Runner 파일 클릭 ➔ 중앙 Signing & Capabilities 탭 클릭
+3. Automatically manage signing 체크박스 켜기
+4. Team 드롭다운에서 방금 추가한 개인 팀 (Personal Team) 선택!
+
+#### 3단계: 아이폰 13 프로에 네이티브 앱 설치
+
+1. 아이폰 13 프로를 맥북과 같은 와이파이 (또는 케이블) 연결
+2. Xcode 상단 기기 선택란에서 [Austin의 iPhone 13 Pro] 선택
+3. Xcode 좌측 상단 ▶️ 재생 (Run) 버튼 클릭!
+
+#### 4단계: 아이폰에서 신뢰 승인 (최초 1회)
+
+• 아이폰 13 프로에 앱이 설치된 후 실행할 때 "신뢰할 수 없는 개발자" 팝업이 뜨면:
+• 아이폰 설정 ➔ 일반 ➔ VPN 및 기기 관리 ➔ 본인 이메일 터치 ➔ [신뢰] 클릭!
+────── 이 과정을 한번 해두시면 유료 결제 없이도 아이폰 13 프로에 순수 네이티브 모바일 앱이 100% 무료로 설치되어 마음껏 테스트하실 수 있습니다! 🚀
