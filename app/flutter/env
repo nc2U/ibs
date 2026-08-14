@@ -1,0 +1,9 @@
+### FOR FLUTTER APP ---------------------------------------------------------------------
+BASE_URL=http://10.0.2.2:8000
+
+### FOR FIREBASE CONFIGURATIONS (BASE64 ENCODED STRINGS) --------------------------------
+# android/app/google-services.json base64 string
+GOOGLE_SERVICES_JSON_BASE64=
+
+# ios/Runner/GoogleService-Info.plist base64 string
+GOOGLE_SERVICE_INFO_PLIST_BASE64=

@@ -82,3 +82,8 @@ chromedriver.log
 # ai agent 로컬 설정 파일 무시
 .claude/
 .junie/
+
+# flutter local secrets
+app/flutter/.env
+app/flutter/android/app/google-services.json
+app/flutter/ios/Runner/GoogleService-Info.plist
