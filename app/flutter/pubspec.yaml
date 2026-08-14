@@ -49,6 +49,7 @@ dependencies:
 
   # Image / file picker
   image_picker: ^1.1.2
+  file_picker: ^8.1.6
 
   # URL launcher (파일/링크 열기)
   url_launcher: ^6.3.1
@@ -62,6 +63,7 @@ dependencies:
   # Code generation (freezed)
   freezed_annotation: ^2.4.4
   json_annotation: ^4.9.0
+  receive_sharing_intent: ^1.9.0
 
 dev_dependencies:
   flutter_test:

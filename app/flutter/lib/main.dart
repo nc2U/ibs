@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'core/constants/app_colors.dart';
 import 'core/router/app_router.dart';
+import 'core/widgets/share_intent_listener.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,9 +22,10 @@ class IBSApp extends ConsumerWidget {
     final router = ref.watch(appRouterProvider);
 
     return MaterialApp.router(
-      title: 'IBS 워크스페이스',
+      title: 'IBS 웍스',
       debugShowCheckedModeBanner: false,
       routerConfig: router,
+      builder: (context, child) => ShareIntentListener(child: child!),
 
       // 전역 다크 테마 (브랜드 컬러 시스템 적용)
       theme: ThemeData(
