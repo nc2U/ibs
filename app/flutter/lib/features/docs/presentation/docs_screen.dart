@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/constants/permissions.dart';
 import '../../../../core/providers/docs_context_provider.dart';
+import '../../../../core/providers/permission_provider.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/loading_shimmer.dart';
 import '../../../../core/widgets/project_selector_bottom_sheet.dart';
@@ -36,6 +38,22 @@ class _DocsScreenState extends ConsumerState<DocsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final canRead = ref.can(Perm.docsRead);
+    if (!canRead) {
+      return const Scaffold(
+        backgroundColor: AppColors.bgPrimary,
+        body: Center(
+          child: Padding(
+            padding: EdgeInsets.all(24.0),
+            child: ErrorView.empty(
+              message: '공용문서함을 조회할 권한이 없습니다.',
+              subMessage: '관리자에게 [공용문서 열람] 권한(docs.read)을 요청해 주세요.',
+            ),
+          ),
+        ),
+      );
+    }
+
     final docsContext = ref.watch(docsContextProvider);
     final docsListAsync = ref.watch(docsListProvider);
 
@@ -332,30 +350,33 @@ class _DocsScreenState extends ConsumerState<DocsScreen> {
         ],
       ),
 
-      // ── 문서 생성 FAB (radius = 0, 바이올렛/퍼플 테마) ───────────────────────
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            backgroundColor: Colors.transparent,
-            builder: (ctx) => const DocumentFormSheet(),
-          );
-        },
-        elevation: 4,
-        highlightElevation: 8,
-        backgroundColor: const Color(0xFF7C3AED),
-        foregroundColor: Colors.white,
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-        icon: const Icon(Icons.add_rounded, size: 20),
-        label: const Text(
-          '문서 등록',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            letterSpacing: 0.2,
-          ),
-        ),
-      ),
+      // ── 문서 생성 FAB (radius = 0, 바이올렛/퍼플 테마, docs.create 권한 체크) ───────────
+      floatingActionButton: ref.can(Perm.docsCreate)
+          ? FloatingActionButton.extended(
+              onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (ctx) => const DocumentFormSheet(),
+                );
+              },
+              elevation: 4,
+              highlightElevation: 8,
+              backgroundColor: const Color(0xFF7C3AED),
+              foregroundColor: Colors.white,
+              shape:
+                  const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+              icon: const Icon(Icons.add_rounded, size: 20),
+              label: const Text(
+                '문서 등록',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.2,
+                ),
+              ),
+            )
+          : null,
     );
   }
 }

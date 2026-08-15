@@ -4,7 +4,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/constants/permissions.dart';
 import '../../../../core/providers/docs_context_provider.dart';
+import '../../../../core/providers/permission_provider.dart';
 import '../../../project/providers/project_provider.dart';
 
 import '../../data/docs_repository.dart';
@@ -318,6 +320,21 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+
+    final isEdit = widget.doc != null;
+    final canPerform =
+        isEdit ? ref.can(Perm.docsUpdate) : ref.can(Perm.docsCreate);
+    if (!canPerform) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(isEdit
+              ? '문서 수정 권한(docs.update)이 없습니다.'
+              : '문서 등록 권한(docs.create)이 없습니다.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
 
     final repo = ref.read(docsRepositoryProvider);
     final ctx = ref.read(docsContextProvider);

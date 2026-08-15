@@ -123,51 +123,53 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(width: 8),
 
-                    // ── 문서함 ↔ 업무목록 스위칭 버튼 (고대비 시인성 개선) ──────
-                    InkWell(
-                      onTap: _isDocsView ? _closeDocsView : _openDocsView,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: _isDocsView
-                              ? AppColors.accentWork.withAlpha(40)
-                              : const Color(0xFF6A1B9A), // 선명한 솔리드 보라색
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(
+                    // ── 문서함 ↔ 업무목록 스위칭 버튼 (docs.read 권한 보유 시에만 노출) ──────
+                    if (ref.can(Perm.docsRead)) ...[
+                      const SizedBox(width: 8),
+                      InkWell(
+                        onTap: _isDocsView ? _closeDocsView : _openDocsView,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
                             color: _isDocsView
-                                ? AppColors.accentWork
-                                : const Color(0xFFAB47BC),
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              _isDocsView
-                                  ? Icons.arrow_back_rounded
-                                  : Icons.folder_shared_outlined,
-                              size: 14,
+                                ? AppColors.accentWork.withAlpha(40)
+                                : const Color(0xFF6A1B9A), // 선명한 솔리드 보라색
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(
                               color: _isDocsView
                                   ? AppColors.accentWork
-                                  : Colors.white,
+                                  : const Color(0xFFAB47BC),
+                              width: 1,
                             ),
-                            const SizedBox(width: 4),
-                            Text(
-                              _isDocsView ? '업무 목록' : '문서함',
-                              style: AppTextStyles.label.copyWith(
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                _isDocsView
+                                    ? Icons.arrow_back_rounded
+                                    : Icons.folder_shared_outlined,
+                                size: 14,
                                 color: _isDocsView
                                     ? AppColors.accentWork
                                     : Colors.white,
-                                fontWeight: FontWeight.bold,
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 4),
+                              Text(
+                                _isDocsView ? '업무 목록' : '문서함',
+                                style: AppTextStyles.label.copyWith(
+                                  color: _isDocsView
+                                      ? AppColors.accentWork
+                                      : Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),

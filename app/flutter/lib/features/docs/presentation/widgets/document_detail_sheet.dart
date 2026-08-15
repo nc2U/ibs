@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/constants/permissions.dart';
+import '../../../../core/providers/permission_provider.dart';
 import '../../data/docs_repository.dart';
 import '../../data/models/docs_model.dart';
 import '../../providers/docs_provider.dart';
@@ -238,24 +240,26 @@ class DocumentDetailSheet extends ConsumerWidget {
                 ),
               ],
               const Spacer(),
-              IconButton(
-                icon: const Icon(Icons.edit_outlined, size: 20),
-                color: AppColors.textSecond,
-                onPressed: () {
-                  Navigator.pop(context);
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (ctx) => DocumentFormSheet(doc: doc),
-                  );
-                },
-              ),
-              IconButton(
-                icon: const Icon(Icons.delete_outline_rounded, size: 20),
-                color: AppColors.error,
-                onPressed: () => _handleDelete(context, ref),
-              ),
+              if (ref.can(Perm.docsUpdate))
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined, size: 20),
+                  color: AppColors.textSecond,
+                  onPressed: () {
+                    Navigator.pop(context);
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (ctx) => DocumentFormSheet(doc: doc),
+                    );
+                  },
+                ),
+              if (ref.can(Perm.docsDelete))
+                IconButton(
+                  icon: const Icon(Icons.delete_outline_rounded, size: 20),
+                  color: AppColors.error,
+                  onPressed: () => _handleDelete(context, ref),
+                ),
             ],
           ),
           const SizedBox(height: 12),

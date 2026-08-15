@@ -4,6 +4,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
+import '../../../core/constants/permissions.dart';
+import '../../../core/providers/permission_provider.dart';
 import '../../../core/providers/share_payload_provider.dart';
 import '../../../core/router/app_router.dart';
 import '../../docs/presentation/widgets/document_form_sheet.dart';
@@ -39,11 +41,22 @@ class MainShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final currentIdx = _currentIndex(context);
 
-    // 외부 앱에서 공유된 파일/링크가 있을 때 문서 등록 모달 자동 팝업
+    // 외부 앱에서 공유된 파일/링크가 있을 때 문서 등록 모달 자동 팝업 (docs.create 권한 검증)
     ref.listen<SharePayload?>(pendingSharePayloadProvider, (prev, next) {
       if (next != null && next.isNotEmpty) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!context.mounted) return;
+          if (!ref.can(Perm.docsCreate)) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content:
+                    Text('문서 등록 권한(docs.create)이 없어 공유된 문서를 등록할 수 없습니다.'),
+                backgroundColor: AppColors.error,
+              ),
+            );
+            ref.read(pendingSharePayloadProvider.notifier).clear();
+            return;
+          }
           showModalBottomSheet(
             context: context,
             isScrollControlled: true,
