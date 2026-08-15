@@ -107,26 +107,40 @@ class MeetingCard extends StatelessWidget {
                 ],
                 const Spacer(),
                 if (onExportPdf != null)
-                  InkWell(
-                    onTap: onExportPdf,
-                    borderRadius: BorderRadius.circular(3),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.picture_as_pdf_outlined,
-                              size: 14, color: Color(0xFFEF5350)),
-                          const SizedBox(width: 3),
-                          Text(
-                            'PDF',
-                            style: AppTextStyles.caption.copyWith(
-                              color: const Color(0xFFEF5350),
-                              fontWeight: FontWeight.bold,
+                  Material(
+                    color: AppColors.accentWork.withAlpha(20),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.zero,
+                      side: BorderSide(
+                        color: AppColors.accentWork.withAlpha(70),
+                        width: 0.8,
+                      ),
+                    ),
+                    child: InkWell(
+                      onTap: onExportPdf,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.picture_as_pdf_outlined,
+                              size: 13,
+                              color: Color(0xFFEF5350),
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 4),
+                            Text(
+                              'PDF',
+                              style: AppTextStyles.caption.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 11,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
