@@ -32,6 +32,7 @@ const comName = computed(() => company?.value?.name)
 const route = useRoute()
 
 const { can, PERM } = usePerms()
+const canDocsRead = computed(() => can(PERM.DOCS_READ))
 const canDocsCreate = computed(() => can(PERM.DOCS_CREATE))
 
 const viewForm = ref(false)
@@ -131,7 +132,7 @@ watch(
         </CCol>
       </CRow>
 
-      <template v-if="can(PERM.DOCS_READ)">
+      <template v-if="canDocsRead">
         <CRow class="mb-3 header">
           <CCol>
             <v-tabs v-model="typeNumber" density="compact" @update:model-value="getDocsList">
