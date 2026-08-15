@@ -7,6 +7,7 @@ import { elapsedTime, humanizeFileSize } from '@/utils/baseMixins'
 import { usePerms } from '@/composables/usePerms.ts'
 import PostContent from '@/components/OtherParts/PostContent.vue'
 import Comment from '@/components/Comments/Index.vue'
+import { CRow } from '@coreui/vue'
 
 const props = defineProps({
   post: { type: Object as PropType<Post>, required: true },
@@ -37,12 +38,20 @@ const userInfo = computed(() => accStore.userInfo)
 
 <template>
   <template v-if="post">
-    <CRow class="py-2">
-      <CCol>
-        <h4 class="font-weight-bold">
-          <v-chip v-if="post.is_notice" color="warning" size="small" class="mr-2">공지</v-chip>
+    <CRow class="py-2 mx-1 bg-more-light border mb-2">
+      <CCol class="pt-2">
+        <h5 class="font-weight-bold">
+          <v-chip
+            v-if="post.is_notice"
+            variant="elevated"
+            color="primary"
+            size="x-small"
+            class="mr-2"
+          >
+            공지
+          </v-chip>
           {{ post.title }}
-        </h4>
+        </h5>
       </CCol>
     </CRow>
 

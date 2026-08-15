@@ -15,12 +15,6 @@ const { can, PERM } = usePerms()
 </script>
 
 <template>
-  <CRow class="py-2">
-    <CCol>
-      <h5><v-icon icon="mdi-forum" color="green-darken-1" class="mr-2" />게시판</h5>
-    </CCol>
-  </CRow>
-
   <CTable hover responsive align="middle">
     <colgroup>
       <col style="width: 35%" />
@@ -29,7 +23,7 @@ const { can, PERM } = usePerms()
       <col style="width: 45%" />
     </colgroup>
     <CTableHead>
-      <CTableRow color="light" class="text-center">
+      <CTableRow color="light" class="text-center border-top">
         <CTableHeaderCell scope="col">게시판</CTableHeaderCell>
         <CTableHeaderCell scope="col">주제</CTableHeaderCell>
         <CTableHeaderCell scope="col">글</CTableHeaderCell>
@@ -53,6 +47,15 @@ const { can, PERM } = usePerms()
         <CTableDataCell class="text-center">{{ frm.all_post_count }}</CTableDataCell>
         <CTableDataCell class="form-text pl-4">
           <template v-if="frm.last_post">
+            <v-chip
+              v-if="frm.last_post.is_notice"
+              variant="elevated"
+              color="primary"
+              size="x-small"
+              class="mr-2"
+            >
+              공지
+            </v-chip>
             <router-link
               v-if="can(PERM.FORUM_READ)"
               :to="{

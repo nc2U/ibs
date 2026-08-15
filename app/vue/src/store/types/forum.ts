@@ -12,6 +12,7 @@ export interface Forum {
   last_post?: {
     pk: number
     title: string
+    is_notice: boolean
     creator: string
     created: string
   } | null
@@ -33,15 +34,7 @@ interface SimpleUser {
 
 export type Post = {
   [key: string]:
-    | undefined
-    | number
-    | number[]
-    | null
-    | string
-    | boolean
-    | SimpleUser
-    | PostFile[]
-    | Comment[]
+    undefined | number | number[] | null | string | boolean | SimpleUser | PostFile[] | Comment[]
   pk?: number
   forum: number | null
   forum_name?: string

@@ -18,7 +18,9 @@ const canForumRead = computed(() => can(PERM.FORUM_READ))
 <template>
   <CTableDataCell class="text-center">{{ post.pk }}</CTableDataCell>
   <CTableDataCell class="text-left">
-    <CBadge v-if="post.is_notice" color="primary" class="mr-2">공지</CBadge>
+    <v-chip v-if="post.is_notice" variant="elevated" color="primary" size="x-small" class="mr-2">
+      공지
+    </v-chip>
     <router-link
       v-if="canForumRead"
       :to="{

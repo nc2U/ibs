@@ -11,6 +11,7 @@ import PostList from './components/PostList.vue'
 import PostDetail from './components/PostDetail.vue'
 import PostForm from './components/PostForm.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
+import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 
 const cBody = ref()
 const toggle = () => cBody.value.toggle()
@@ -18,6 +19,7 @@ defineExpose({ toggle })
 
 const { can, PERM } = usePerms()
 const canForumRead = computed(() => can(PERM.FORUM_READ))
+const canForumCreate = computed(() => can(PERM.FORUM_CREATE))
 const canForumManage = computed(() => can(PERM.FORUM_MANAGE))
 
 const forumStore = useForum()
@@ -130,9 +132,28 @@ onBeforeMount(async () => {
 </script>
 
 <template>
+  <Loading v-model:active="loading" />
   <ContentBody ref="cBody">
     <template v-slot:default>
-      <Loading v-model:active="loading" />
+      <CRow class="py-2">
+        <CCol>
+          <h5>
+            <v-icon icon="mdi-forum" color="green-darken-1" class="mr-2" />
+            게시판 <span v-if="route.name !== '(게시판)' && !!forum?.name">- {{ forum.name }}</span>
+          </h5>
+        </CCol>
+
+        <CCol v-if="route.name === '(게시판) - 보기' && canForumCreate" class="text-right">
+          <TextButton
+            name="새 게시물"
+            icon="mdi-pencil-plus"
+            :to="{
+              name: '(게시판) - 게시물 작성',
+              params: { projId: $route.params.projId, forumId: forum?.pk },
+            }"
+          />
+        </CCol>
+      </CRow>
 
       <!-- 게시판 메인 인덱스 -->
       <ForumIndex v-if="route.name === '(게시판)'" :forum-list="forumList" />

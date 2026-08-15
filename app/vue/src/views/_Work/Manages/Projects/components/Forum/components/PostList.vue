@@ -1,12 +1,11 @@
 <script lang="ts" setup>
-import { computed, type PropType } from 'vue'
+import { type PropType } from 'vue'
 import type { Forum, Post } from '@/store/types/forum'
-import { usePerms } from '@/composables/usePerms.ts'
 import { useForum } from '@/store/pinia/forum'
 import Pagination from '@/components/Pagination'
 import NoData from '@/components/NoData/Index.vue'
 import PostItem from './PostItem.vue'
-import TextButton from '../../../../../components/atomics/TextButton.vue'
+import { CCol } from '@coreui/vue'
 
 defineProps({
   forum: { type: Object as PropType<Forum | null>, default: null },
@@ -16,34 +15,12 @@ defineProps({
 
 const emit = defineEmits(['page-select'])
 
-const { can, PERM } = usePerms()
-const canForumCreate = computed(() => can(PERM.FORUM_CREATE))
-
 const frmStore = useForum()
 const postPages = (limit: number) => frmStore.postPages(limit)
 const pageSelect = (page: number) => emit('page-select', page)
 </script>
 
 <template>
-  <CRow class="py-2">
-    <CCol>
-      <h5>
-        <v-icon icon="mdi-forum-outline" color="green-darken-1" class="mr-2" />
-        {{ forum?.name }}
-      </h5>
-    </CCol>
-    <CCol v-if="canForumCreate" class="text-right">
-      <TextButton
-        name="새 게시물"
-        icon="mdi-pencil-plus"
-        :to="{
-          name: '(게시판) - 게시물 작성',
-          params: { projId: $route.params.projId, forumId: forum?.pk },
-        }"
-      />
-    </CCol>
-  </CRow>
-
   <p class="text-body-2 text-muted mb-4">{{ forum?.description }}</p>
 
   <NoData v-if="!postList.length" />
@@ -58,7 +35,7 @@ const pageSelect = (page: number) => emit('page-select', page)
         <col style="width: 10%" />
       </colgroup>
       <CTableHead>
-        <CTableRow color="light" class="text-center">
+        <CTableRow color="light" class="text-center border-top">
           <CTableHeaderCell scope="col">#</CTableHeaderCell>
           <CTableHeaderCell scope="col">제목</CTableHeaderCell>
           <CTableHeaderCell scope="col">작성자</CTableHeaderCell>

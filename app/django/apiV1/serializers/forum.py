@@ -38,6 +38,7 @@ class ForumSerializer(serializers.ModelSerializer):
         if last_post:
             return {
                 'pk': last_post.pk,
+                'is_notice': last_post.is_notice,
                 'title': last_post.title,
                 'creator': last_post.creator.username if last_post.creator else None,
                 'created': last_post.created,
@@ -49,9 +50,6 @@ class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = PostCategory
         fields = ('pk', 'forum', 'color', 'name', 'parent', 'order')
-
-
-
 
 
 class FilesInPostSerializer(serializers.ModelSerializer):
@@ -246,9 +244,6 @@ class PostBlameSerializer(serializers.ModelSerializer):
 
         instance.refresh_from_db()
         return instance
-
-
-
 
 
 class FileSerializer(serializers.ModelSerializer):
