@@ -29,5 +29,5 @@ final selectedProjectProvider = StateProvider<SelectedProject?>((ref) => null);
 /// 프로젝트 이름 (AppBar 표시용)
 final selectedProjectNameProvider = Provider<String>((ref) {
   final project = ref.watch(selectedProjectProvider);
-  return project?.name ?? '전사 공통';
+  return project?.name ?? '전체 워크스페이스';
 });

@@ -1,6 +1,6 @@
 from django.conf import settings
-from django.db import models
 from django.contrib.postgres.indexes import GinIndex
+from django.db import models
 
 from _utils.file_cleanup import file_cleanup_signals
 from _utils.file_upload import get_meeting_file_path, populate_file_meta
@@ -102,4 +102,3 @@ class MeetingLink(models.Model):
 
     def __str__(self):
         return self.name
-

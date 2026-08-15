@@ -81,10 +81,10 @@ class _ProjectSelectorContent extends ConsumerWidget {
               return ListView(
                 padding: const EdgeInsets.symmetric(vertical: 4),
                 children: [
-                  // Option: 전사 공통 (워크스페이스 선택시에만 노출)
+                  // Option: 전체 워크스페이스 (워크스페이스 선택시에만 노출)
                   if (!onlyRealEstate) ...[
                     _ProjectTile(
-                      title: '🏢 전사 공통 (전체 워크스페이스)',
+                      title: '🏢 전체 워크스페이스',
                       isSelected: selectedProject == null,
                       onTap: () {
                         selectProject(ref, null);

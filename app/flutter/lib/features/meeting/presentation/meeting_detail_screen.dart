@@ -78,8 +78,8 @@ class MeetingDetailScreen extends ConsumerWidget {
                         ),
                       ),
                     ),
-                  // ── 회의 삭제 버튼 (meeting.delete 권한) ──────────────────────────
-                  if (canDelete)
+                  // ── 회의 삭제 버튼 (meeting.delete 권한 및 미확정 상태일 때만 노출) ──
+                  if (canDelete && !meeting.isConfirmed)
                     IconButton(
                       icon: const Icon(Icons.delete_outline_rounded, size: 22),
                       tooltip: '삭제',

@@ -37,15 +37,19 @@ Future<void> exportMeetingPdf(
     final repo = ref.read(meetingRepositoryProvider);
     final filePath = await repo.downloadMeetingPdf(meeting.pk, meeting.title);
 
-    if (!context.mounted) return;
-
-    // 1. PDF 파일을 시스템 네이티브 뷰어(iOS QuickLook 등)로 즉시 열어 내용 확인
+    // 1. PDF 파일을 시스템 네이티브 뷰어(iOS QuickLook, Android PDF 앱 등)로 즉시 열어 내용 확인
     // (iOS QuickLook 뷰어 상단에 네이티브 공유 및 AirPrint 인쇄 버튼이 기본 포함되어 있음)
-    final openResult = await OpenFilex.open(filePath);
+    ResultType? openType;
+    try {
+      final openResult = await OpenFilex.open(filePath);
+      openType = openResult.type;
+    } catch (_) {
+      openType = ResultType.error;
+    }
 
-    if (openResult.type != ResultType.done) {
+    // 2. 안드로이드 가상머신처럼 PDF 뷰어 앱이 설치되어 있지 않은 경우 시스템 공유 시트(Share)로 자동 폴백
+    if (openType != ResultType.done) {
       if (!context.mounted) return;
-      // 뷰어가 열리지 않는 예외 상황 시 공유 시트로 대체
       final box = context.findRenderObject() as RenderBox?;
       final origin =
           box != null ? box.localToGlobal(Offset.zero) & box.size : null;
@@ -60,7 +64,7 @@ Future<void> exportMeetingPdf(
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('PDF 열기 실패: $e'),
+          content: Text('PDF 처리 실패: $e'),
           backgroundColor: AppColors.error,
         ),
       );
