@@ -34,7 +34,7 @@ class ForumRepository {
   /// 카테고리 목록 조회
   Future<List<PostCategoryModel>> fetchCategories(int forumId) async {
     try {
-      final response = await _dio.get('/api/v1/category/', queryParameters: {'forum': forumId});
+      final response = await _dio.get('/api/v1/post-category/', queryParameters: {'forum': forumId});
       final list = (response.data['results'] ?? response.data) as List<dynamic>;
       return list.map((e) => PostCategoryModel.fromJson(e as Map<String, dynamic>)).toList();
     } on DioException catch (e) {

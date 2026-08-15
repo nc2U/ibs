@@ -63,8 +63,12 @@ class _ChannelTabState extends ConsumerState<ChannelTab>
     final isForumDisabled =
         selectedProject != null && (selectedProject.module?.forum == false);
 
+    final forumsAsync = ref.watch(forumListProvider);
+    final hasForums = (forumsAsync.valueOrNull?.isNotEmpty ?? false);
+
     final canManageNews = !isNewsDisabled && ref.can(Perm.newsManage);
     final canCreatePost = !isForumDisabled &&
+        hasForums &&
         (ref.can(Perm.forumCreate) || ref.can(Perm.forumManage));
 
     return Scaffold(

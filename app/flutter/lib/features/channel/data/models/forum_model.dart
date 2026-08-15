@@ -8,7 +8,7 @@ class ForumModel {
   final String description;
   final int? parent;
   final bool searchAble;
-  final int? manager;
+  final List<int> manager;
   final int postCount;
   final int allPostCount;
   final Map<String, dynamic>? lastPost;
@@ -20,13 +20,23 @@ class ForumModel {
     this.description = '',
     this.parent,
     this.searchAble = true,
-    this.manager,
+    this.manager = const [],
     this.postCount = 0,
     this.allPostCount = 0,
     this.lastPost,
   });
 
   factory ForumModel.fromJson(Map<String, dynamic> json) {
+    List<int> managers = const [];
+    if (json['manager'] is List) {
+      managers = (json['manager'] as List)
+          .map((e) => e is int ? e : int.tryParse(e.toString()))
+          .whereType<int>()
+          .toList();
+    } else if (json['manager'] is int) {
+      managers = [json['manager'] as int];
+    }
+
     return ForumModel(
       pk: json['pk'] as int,
       project: json['project'] as int?,
@@ -34,7 +44,7 @@ class ForumModel {
       description: json['description'] as String? ?? '',
       parent: json['parent'] as int?,
       searchAble: json['search_able'] as bool? ?? true,
-      manager: json['manager'] as int?,
+      manager: managers,
       postCount: json['post_count'] as int? ?? 0,
       allPostCount: json['all_post_count'] as int? ?? 0,
       lastPost: json['last_post'] as Map<String, dynamic>?,
@@ -136,7 +146,8 @@ class PostCommentModel {
   factory PostCommentModel.fromJson(Map<String, dynamic> json) {
     var rawReplies = json['replies'] as List<dynamic>? ?? [];
     List<PostCommentModel> repliesList = rawReplies
-        .map((r) => PostCommentModel.fromJson(r as Map<String, dynamic>))
+        .whereType<Map<String, dynamic>>()
+        .map((r) => PostCommentModel.fromJson(r))
         .toList();
 
     return PostCommentModel(
@@ -218,12 +229,14 @@ class PostModel {
   factory PostModel.fromJson(Map<String, dynamic> json) {
     var rawFiles = json['files'] as List<dynamic>? ?? [];
     List<PostFileModel> filesList = rawFiles
-        .map((f) => PostFileModel.fromJson(f as Map<String, dynamic>))
+        .whereType<Map<String, dynamic>>()
+        .map((f) => PostFileModel.fromJson(f))
         .toList();
 
     var rawComments = json['comments'] as List<dynamic>? ?? [];
     List<PostCommentModel> commentsList = rawComments
-        .map((c) => PostCommentModel.fromJson(c as Map<String, dynamic>))
+        .whereType<Map<String, dynamic>>()
+        .map((c) => PostCommentModel.fromJson(c))
         .toList();
 
     return PostModel(

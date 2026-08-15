@@ -33,6 +33,7 @@ class _PostFormSheetState extends ConsumerState<PostFormSheet> {
   int? _selectedCategoryPk;
   bool _isNotice = false;
   bool _isSubmitting = false;
+  bool _isLoadingCategories = false;
 
   List<PostCategoryModel> _availableCategories = [];
 
@@ -62,15 +63,40 @@ class _PostFormSheetState extends ConsumerState<PostFormSheet> {
   }
 
   Future<void> _loadCategories(int forumId) async {
+    setState(() {
+      _isLoadingCategories = true;
+      _availableCategories = [];
+    });
     try {
       final repo = ref.read(forumRepositoryProvider);
       final list = await repo.fetchCategories(forumId);
       if (mounted) {
         setState(() {
           _availableCategories = list;
+          // 기존에 선택된 카테고리가 새 게시판의 카테고리 목록에 없으면 리셋
+          if (_selectedCategoryPk != null &&
+              !list.any((c) => c.pk == _selectedCategoryPk)) {
+            _selectedCategoryPk = null;
+          }
         });
       }
+    } catch (_) {
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingCategories = false);
+      }
+    }
+  }
+
+  Color _parseCategoryColor(String? colorStr) {
+    if (colorStr == null || colorStr.isEmpty) return AppColors.accentWork;
+    try {
+      final hex = colorStr.replaceAll('#', '');
+      if (hex.length == 6) {
+        return Color(int.parse('FF$hex', radix: 16));
+      }
     } catch (_) {}
+    return AppColors.accentWork;
   }
 
   Future<void> _pickFiles() async {
@@ -279,34 +305,73 @@ class _PostFormSheetState extends ConsumerState<PostFormSheet> {
                     ),
                     const SizedBox(height: 16),
 
-                    // 2. 카테고리 선택 (있을 경우)
-                    if (_availableCategories.isNotEmpty) ...[
+                    // 2. 카테고리 선택 (Forum의 PostCategory 목록)
+                    if (_isLoadingCategories) ...[
                       Text('카테고리', style: AppTextStyles.label),
                       const SizedBox(height: 6),
-                      DropdownButtonFormField<int>(
+                      const SizedBox(
+                        height: 36,
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ] else if (_availableCategories.isNotEmpty) ...[
+                      Text('카테고리', style: AppTextStyles.label),
+                      const SizedBox(height: 6),
+                      DropdownButtonFormField<int?>(
                         value: _selectedCategoryPk,
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           filled: true,
                           fillColor: AppColors.bgSurface,
                           isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(
+                          contentPadding: EdgeInsets.symmetric(
                               horizontal: 12, vertical: 10),
-                          border: const OutlineInputBorder(
+                          border: OutlineInputBorder(
                             borderRadius: BorderRadius.zero,
                             borderSide: BorderSide(color: AppColors.border),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.zero,
+                            borderSide: BorderSide(color: AppColors.border),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.zero,
+                            borderSide: BorderSide(color: AppColors.accentWork),
                           ),
                         ),
                         hint: const Text('카테고리 선택 (선택 사항)'),
                         items: [
-                          const DropdownMenuItem<int>(
+                          const DropdownMenuItem<int?>(
                             value: null,
-                            child: Text('카테고리 없음',
+                            child: Text('카테고리 없음 (전체)',
                                 style: TextStyle(color: AppColors.textMuted)),
                           ),
                           ..._availableCategories.map((c) {
-                            return DropdownMenuItem<int>(
+                            return DropdownMenuItem<int?>(
                               value: c.pk,
-                              child: Text(c.name, style: AppTextStyles.bodySm),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (c.color != null && c.color!.isNotEmpty) ...[
+                                    Container(
+                                      width: 8,
+                                      height: 8,
+                                      margin: const EdgeInsets.only(right: 6),
+                                      decoration: BoxDecoration(
+                                        color: _parseCategoryColor(c.color),
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                  ],
+                                  Text(c.name, style: AppTextStyles.bodySm),
+                                ],
+                              ),
                             );
                           }),
                         ],
