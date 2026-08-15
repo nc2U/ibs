@@ -4,7 +4,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
+import '../../../core/providers/share_payload_provider.dart';
 import '../../../core/router/app_router.dart';
+import '../../docs/presentation/widgets/document_form_sheet.dart';
 
 /// ShellRoute 메인 래퍼
 /// - 하단 탭바를 모든 탭에서 유지 (홈 / 업무 / 프로젝트 / 채널)
@@ -37,6 +39,27 @@ class MainShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final currentIdx = _currentIndex(context);
 
+    // 외부 앱에서 공유된 파일/링크가 있을 때 문서 등록 모달 자동 팝업
+    ref.listen<SharePayload?>(pendingSharePayloadProvider, (prev, next) {
+      if (next != null && next.isNotEmpty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!context.mounted) return;
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            useRootNavigator: true,
+            backgroundColor: Colors.transparent,
+            builder: (ctx) => DocumentFormSheet(
+              initialFiles: next.files,
+              initialLinks: next.links,
+              initialTitle: next.defaultTitle,
+            ),
+          );
+          ref.read(pendingSharePayloadProvider.notifier).clear();
+        });
+      }
+    });
+
     return Scaffold(
       backgroundColor: AppColors.bgPrimary,
       appBar: AppBar(
@@ -48,7 +71,7 @@ class MainShell extends ConsumerWidget {
           children: [
             SvgPicture.asset('assets/images/sygnet.svg', width: 26, height: 26),
             const SizedBox(width: 10),
-            Text('IBS 워크스페이스', style: AppTextStyles.titleMd),
+            Text('IBS 웍스', style: AppTextStyles.titleMd),
           ],
         ),
         actions: [

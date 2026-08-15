@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
+import '../providers/share_payload_provider.dart';
 import '../../features/auth/views/login_page.dart';
 import '../../features/dashboard/views/main_shell.dart';
 import '../../features/dashboard/views/home_tab.dart';
@@ -53,6 +54,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           path.startsWith('/var') ||
           uri.scheme == 'file' ||
           uri.scheme.startsWith('sharemedia')) {
+        String filePath = '';
+        try {
+          filePath = uri.toFilePath(windows: false);
+        } catch (_) {
+          filePath = path;
+        }
+        ref.read(pendingSharePayloadProvider.notifier).setFromPath(filePath.isNotEmpty ? filePath : path);
         return isAuthenticated ? AppRoutes.home : AppRoutes.login;
       }
 

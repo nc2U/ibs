@@ -4,11 +4,11 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
-import '../../features/docs/presentation/widgets/document_form_sheet.dart';
+import '../providers/share_payload_provider.dart';
 
 /// 외부 앱(카카오톡, 메일, 시놀로지/구글 드라이브 등)에서
 /// [공유] 또는 [다음으로 열기]로 유입된 파일/링크를 감지하여
-/// 즉시 IBS 문서 등록 바텀시트를 열어주는 래퍼 위젯
+/// pendingSharePayloadProvider에 등록하는 전역 리스너 위젯
 class ShareIntentListener extends ConsumerStatefulWidget {
   final Widget child;
   const ShareIntentListener({super.key, required this.child});
@@ -44,8 +44,6 @@ class _ShareIntentListenerState extends ConsumerState<ShareIntentListener> {
   }
 
   void _handleSharedMedia(List<SharedMediaFile> sharedList) {
-    if (!mounted) return;
-
     final List<PlatformFile> platformFiles = [];
     final List<String> links = [];
     String? defaultTitle;
@@ -80,23 +78,15 @@ class _ShareIntentListenerState extends ConsumerState<ShareIntentListener> {
       }
     }
 
-    if (platformFiles.isEmpty && links.isEmpty) return;
-
-    // UI가 완전히 마운트된 후 루트 네비게이터를 통해 바텀시트 표출
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        useRootNavigator: true,
-        backgroundColor: Colors.transparent,
-        builder: (ctx) => DocumentFormSheet(
-          initialFiles: platformFiles,
-          initialLinks: links,
-          initialTitle: defaultTitle,
+    if (platformFiles.isNotEmpty || links.isNotEmpty) {
+      ref.read(pendingSharePayloadProvider.notifier).setPayload(
+        SharePayload(
+          files: platformFiles,
+          links: links,
+          defaultTitle: defaultTitle,
         ),
       );
-    });
+    }
   }
 
   @override
