@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/constants/permissions.dart';
@@ -304,7 +305,7 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
                     const SizedBox(height: 16),
                   ],
 
-                  // 4. 공지 본문
+                  // 4. 공지 본문 (HTML 파싱 렌더링)
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(14),
@@ -313,15 +314,42 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
                       borderRadius: BorderRadius.zero,
                       border: Border.all(color: AppColors.border, width: 0.8),
                     ),
-                    child: Text(
-                      notice.content.isNotEmpty
-                          ? notice.content
-                          : '본문 내용이 없습니다.',
-                      style: AppTextStyles.bodyMd.copyWith(
-                        color: AppColors.textPrimary,
-                        height: 1.5,
-                      ),
-                    ),
+                    child: notice.content.isNotEmpty
+                        ? HtmlWidget(
+                            notice.content,
+                            textStyle: AppTextStyles.bodyMd.copyWith(
+                              color: AppColors.textPrimary,
+                              height: 1.5,
+                            ),
+                            customStylesBuilder: (element) {
+                              if (element.localName == 'table') {
+                                return {
+                                  'border-collapse': 'collapse',
+                                  'width': '100%',
+                                };
+                              }
+                              if (element.localName == 'th' ||
+                                  element.localName == 'td') {
+                                return {
+                                  'border': '1px solid #444',
+                                  'padding': '6px 8px',
+                                };
+                              }
+                              if (element.localName == 'img') {
+                                return {
+                                  'max-width': '100%',
+                                  'height': 'auto',
+                                };
+                              }
+                              return null;
+                            },
+                          )
+                        : Text(
+                            '본문 내용이 없습니다.',
+                            style: AppTextStyles.bodyMd.copyWith(
+                              color: AppColors.textMuted,
+                            ),
+                          ),
                   ),
                   const SizedBox(height: 16),
 

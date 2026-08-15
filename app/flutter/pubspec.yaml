@@ -54,8 +54,9 @@ dependencies:
   # URL launcher (파일/링크 열기)
   url_launcher: ^6.3.1
 
-  # Markdown 렌더링
+  # Markdown / HTML 렌더링
   flutter_markdown: ^0.7.6+1
+  flutter_widget_from_html: ^0.16.0
 
   # Local cache
   hive_flutter: ^1.1.0
