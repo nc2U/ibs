@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import '../models/user_model.dart';
 import 'dio_provider.dart';
-import 'project_provider.dart';
 
 part 'auth_provider.freezed.dart';
 
@@ -30,14 +29,10 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   Future<void> logout() async {
     final tokenStorage = ref.read(tokenStorageProvider);
     await tokenStorage.clearTokens();
-    ref.read(selectedProjectProvider.notifier).state = null;
-    ref.invalidate(currentUserProvider);
     state = const AsyncData(AuthState.unauthenticated());
   }
 
   void setAuthenticated(String accessToken) {
-    ref.read(selectedProjectProvider.notifier).state = null;
-    ref.invalidate(currentUserProvider);
     state = AsyncData(AuthState.authenticated(accessToken: accessToken));
   }
 }
