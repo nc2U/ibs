@@ -38,26 +38,23 @@ const userInfo = computed(() => accStore.userInfo)
 
 <template>
   <template v-if="post">
-    <CRow class="py-2 mx-1 bg-more-light border mb-2">
-      <CCol class="pt-2">
-        <h5 class="font-weight-bold">
-          <v-chip
-            v-if="post.is_notice"
-            variant="elevated"
-            color="primary"
-            size="x-small"
-            class="mr-2"
-          >
-            공지
-          </v-chip>
-          {{ post.title }}
-        </h5>
-      </CCol>
-    </CRow>
-
     <v-card class="mb-6 card-white" flat border>
-      <!-- v-card로 변경, mb-6으로 하단 간격, flat border 추가 -->
       <v-card-text class="py-3 bg-more-light border-bottom">
+        <v-row class="py-2">
+          <h5 class="font-weight-bold">
+            <v-chip
+              v-if="post.is_notice"
+              variant="elevated"
+              color="primary"
+              size="x-small"
+              class="mr-2"
+            >
+              공지
+            </v-chip>
+            {{ post.title }}
+          </h5>
+        </v-row>
+
         <!-- CCardHeader 대신 v-card-text 사용 -->
         <v-row no-gutters align="center" class="text-muted text-grey">
           <v-col cols="auto" class="mr-3 strong">
