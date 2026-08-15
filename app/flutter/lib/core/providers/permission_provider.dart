@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../features/project/providers/project_provider.dart';
+import 'auth_provider.dart';
 import 'project_provider.dart';
 
 // ── 전역 권한 집합 (사용자가 속한 모든 프로젝트 권한 병합) ─────────────────────────
@@ -23,6 +24,12 @@ extension WidgetRefPermissionX on WidgetRef {
   /// 특정 권한 코드(`code`)를 보유하고 있는지 확인
   /// - `projectSlug`: 특정 프로젝트 기준 권한 검사 (지정하지 않으면 현재 선택된 프로젝트 또는 전역 권한 기준)
   bool can(String code, {String? projectSlug}) {
+    // 0. 최고관리자 (is_superuser) 또는 업무관리자 (work_manager)는 무조건 모든 권한 허용 (Vue work_permission.ts can()과 100% 동일)
+    final currentUser = watch(currentUserProvider).valueOrNull;
+    if (currentUser != null && (currentUser.isSuperuser || currentUser.workManager)) {
+      return true;
+    }
+
     if (projectSlug != null) {
       final projects = watch(projectListProvider).valueOrNull ?? [];
       final target = projects.cast<dynamic>().firstWhere(
@@ -59,6 +66,12 @@ extension WidgetRefPermissionX on WidgetRef {
 extension RefPermissionX on Ref {
   /// Ref (Provider 내부)용 can 헬퍼
   bool can(String code, {String? projectSlug}) {
+    // 0. 최고관리자 (is_superuser) 또는 업무관리자 (work_manager)는 무조건 모든 권한 허용
+    final currentUser = watch(currentUserProvider).valueOrNull;
+    if (currentUser != null && (currentUser.isSuperuser || currentUser.workManager)) {
+      return true;
+    }
+
     if (projectSlug != null) {
       final projects = watch(projectListProvider).valueOrNull ?? [];
       final target = projects.cast<dynamic>().firstWhere(

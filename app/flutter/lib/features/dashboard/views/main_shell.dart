@@ -5,9 +5,11 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/constants/permissions.dart';
+import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/permission_provider.dart';
 import '../../../core/providers/share_payload_provider.dart';
 import '../../../core/router/app_router.dart';
+import '../../../core/widgets/user_avatar.dart';
 import '../../docs/presentation/widgets/document_form_sheet.dart';
 
 /// ShellRoute 메인 래퍼
@@ -94,23 +96,20 @@ class MainShell extends ConsumerWidget {
             tooltip: '알림',
             onPressed: () {},
           ),
-          GestureDetector(
-            onTap: () => context.push(AppRoutes.profile),
-            child: Padding(
-              padding: const EdgeInsets.only(left: 4, right: 16),
-              child: CircleAvatar(
-                radius: 15,
-                backgroundColor: AppColors.accentWork.withAlpha(45),
-                child: Text(
-                  'A',
-                  style: TextStyle(
-                    color: AppColors.accentWork,
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
+          Consumer(
+            builder: (ctx, ref, _) {
+              final currentUser = ref.watch(currentUserProvider).valueOrNull;
+              return GestureDetector(
+                onTap: () => context.push(AppRoutes.profile),
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 4, right: 16),
+                  child: UserAvatar(
+                    user: currentUser,
+                    radius: 15,
                   ),
                 ),
-              ),
-            ),
+              );
+            },
           ),
         ],
       ),

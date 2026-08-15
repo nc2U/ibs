@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import '../models/common_models.dart';
+import '../models/user_model.dart';
 import 'dio_provider.dart';
 
 part 'auth_provider.freezed.dart';
@@ -54,7 +54,7 @@ final isAuthenticatedProvider = Provider<bool>((ref) {
 });
 
 /// 현재 로그인 사용자 정보 프로바이더 (JWT payload의 user_id 파싱 후 /api/v1/user/{id}/ 조회)
-final currentUserProvider = FutureProvider<SimpleUserModel?>((ref) async {
+final currentUserProvider = FutureProvider<UserModel?>((ref) async {
   final authState = ref.watch(authProvider).valueOrNull;
   if (authState == null) return null;
 
@@ -76,7 +76,7 @@ final currentUserProvider = FutureProvider<SimpleUserModel?>((ref) async {
       if (userId != null) {
         final dio = ref.watch(dioProvider);
         final res = await dio.get('/api/v1/user/$userId/');
-        return SimpleUserModel.fromJson(res.data as Map<String, dynamic>);
+        return UserModel.fromJson(res.data as Map<String, dynamic>);
       }
     }
   } catch (_) {}

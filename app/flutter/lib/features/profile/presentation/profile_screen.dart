@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/widgets/user_avatar.dart';
 
 /// 내 설정 화면 — 프로필 / 알림 / 계정 관리
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -52,10 +53,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 추후 실제 user 정보 연동 시 authProvider에서 가져옴
-    const username = '관리자';
-    const email = '';
-    const initial = 'A';
+    final currentUserAsync = ref.watch(currentUserProvider);
+    final user = currentUserAsync.valueOrNull;
+
+    final displayName = user?.nameOrUsername ?? '사용자';
+    final username = user?.username ?? '';
+    final email = user?.email ?? '';
+    final hasRealName = user?.profile?.name != null && user!.profile!.name!.trim().isNotEmpty;
+    final cellPhone = user?.profile?.cellPhone;
+    final isSuperuser = user?.isSuperuser ?? false;
+    final isWorkManager = user?.workManager ?? false;
 
     return Scaffold(
       backgroundColor: AppColors.bgPrimary,
@@ -76,32 +83,72 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
               child: Column(
                 children: [
-                  CircleAvatar(
-                    radius: 36,
-                    backgroundColor: AppColors.accentWork.withAlpha(40),
-                    child: Text(
-                      initial,
-                      style: AppTextStyles.h2.copyWith(
-                          color: AppColors.accentWork),
-                    ),
+                  UserAvatar(
+                    user: user,
+                    radius: 38,
                   ),
                   const SizedBox(height: 14),
-                  Text(username, style: AppTextStyles.titleLg),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(displayName, style: AppTextStyles.titleLg),
+                      if (isSuperuser) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.accentWork.withAlpha(30),
+                            border: Border.all(
+                                color: AppColors.accentWork, width: 0.8),
+                          ),
+                          child: Text(
+                            '최고관리자',
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.accentWork,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ),
+                      ] else if (isWorkManager) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.accentProject.withAlpha(30),
+                            border: Border.all(
+                                color: AppColors.accentProject, width: 0.8),
+                          ),
+                          child: Text(
+                            '업무관리자',
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.accentProject,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  if (hasRealName) ...[
+                    const SizedBox(height: 3),
+                    Text('@$username',
+                        style: AppTextStyles.caption
+                            .copyWith(color: AppColors.textMuted)),
+                  ],
                   if (email.isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Text(email, style: AppTextStyles.bodySecond),
                   ],
-                  const SizedBox(height: 16),
-                  OutlinedButton(
-                    onPressed: null, // 준비 중
-                    style: OutlinedButton.styleFrom(
-                      shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.zero),
-                      side: const BorderSide(color: AppColors.border),
-                      disabledForegroundColor: AppColors.textDisabled,
-                    ),
-                    child: const Text('프로필 수정 (준비 중)'),
-                  ),
+                  if (cellPhone != null && cellPhone.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(cellPhone,
+                        style: AppTextStyles.caption
+                            .copyWith(color: AppColors.textMuted)),
+                  ],
                 ],
               ),
             ),
@@ -117,6 +164,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 value: _emailNotif,
                 onChanged: (v) => setState(() => _emailNotif = v),
                 activeColor: AppColors.accentWork,
+                activeThumbColor: Colors.white,
               ),
             ),
             const _Divider(),
@@ -129,6 +177,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 value: _pushNotif,
                 onChanged: (v) => setState(() => _pushNotif = v),
                 activeColor: AppColors.accentWork,
+                activeThumbColor: Colors.white,
               ),
             ),
 

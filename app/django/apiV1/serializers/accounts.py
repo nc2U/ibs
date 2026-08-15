@@ -17,9 +17,11 @@ class SimpleUserSerializer(serializers.ModelSerializer):
 
 
 class ProfileInUserSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField(use_url=True, allow_empty_file=False, required=False)
+
     class Meta:
         model = Profile
-        fields = ('pk', 'name', 'birth_date', 'cell_phone')
+        fields = ('pk', 'name', 'birth_date', 'cell_phone', 'image')
 
 
 class IssueProjectInUserSerializer(serializers.ModelSerializer):

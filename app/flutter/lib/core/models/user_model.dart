@@ -1,0 +1,92 @@
+/// 프로필 모델 (실명, 연락처, 아바타 이미지 등)
+class ProfileModel {
+  final int? pk;
+  final String? name;
+  final String? birthDate;
+  final String? cellPhone;
+  final String? image;
+
+  const ProfileModel({
+    this.pk,
+    this.name,
+    this.birthDate,
+    this.cellPhone,
+    this.image,
+  });
+
+  factory ProfileModel.fromJson(Map<String, dynamic> json) {
+    return ProfileModel(
+      pk: json['pk'] as int?,
+      name: json['name'] as String?,
+      birthDate: json['birth_date'] as String?,
+      cellPhone: json['cell_phone'] as String?,
+      image: json['image'] as String?,
+    );
+  }
+}
+
+/// 사용자 상세 모델 (로그인 사용자 정보 및 권한)
+class UserModel {
+  final int pk;
+  final String username;
+  final String? email;
+  final bool isSuperuser;
+  final bool isStaff;
+  final bool workManager;
+  final ProfileModel? profile;
+
+  const UserModel({
+    required this.pk,
+    required this.username,
+    this.email,
+    this.isSuperuser = false,
+    this.isStaff = false,
+    this.workManager = false,
+    this.profile,
+  });
+
+  /// 표출용 명칭 (실명이 등록되어 있으면 '실명 (아이디)' 또는 '실명')
+  String get displayName {
+    if (profile?.name != null && profile!.name!.trim().isNotEmpty) {
+      return '${profile!.name!.trim()} ($username)';
+    }
+    return username;
+  }
+
+  /// 실명 또는 아이디
+  String get nameOrUsername {
+    if (profile?.name != null && profile!.name!.trim().isNotEmpty) {
+      return profile!.name!.trim();
+    }
+    return username;
+  }
+
+  /// 아바타 이미지 URL
+  String? get avatarUrl => profile?.image;
+
+  /// 아바타 fallback 이니셜
+  String get initial {
+    final target = nameOrUsername;
+    if (target.isNotEmpty) {
+      return target.substring(0, 1).toUpperCase();
+    }
+    return 'U';
+  }
+
+  factory UserModel.fromJson(Map<String, dynamic> json) {
+    ProfileModel? profileObj;
+    if (json['profile'] != null && json['profile'] is Map<String, dynamic>) {
+      profileObj = ProfileModel.fromJson(json['profile'] as Map<String, dynamic>);
+    }
+
+    return UserModel(
+      pk: json['pk'] as int,
+      username: json['username'] as String? ?? '',
+      email: json['email'] as String?,
+      isSuperuser: json['is_superuser'] as bool? ?? false,
+      isStaff: json['is_staff'] as bool? ?? false,
+      workManager: json['work_manager'] as bool? ?? false,
+      profile: profileObj,
+    );
+  }
+}
