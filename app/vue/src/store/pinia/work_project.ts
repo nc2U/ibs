@@ -170,7 +170,7 @@ export const useWork = defineStore('work', () => {
   )
 
   const getDevProjects = computed(() =>
-    myProjects.value
+    myProjectsFlat.value
       .filter(i => i.type === '2')
       .map(i => ({
         value: i.project as number,
