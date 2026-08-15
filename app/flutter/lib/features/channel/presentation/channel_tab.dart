@@ -1,115 +1,180 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
+import '../../../core/constants/permissions.dart';
+import '../../../core/providers/permission_provider.dart';
+import '../../../core/providers/project_provider.dart';
+import '../../../core/widgets/project_selector_bottom_sheet.dart';
+import 'widgets/forum_tab_view.dart';
+import 'widgets/notice_form_sheet.dart';
+import 'widgets/notice_list_view.dart';
 
-/// 채널 탭 — 공지사항 / 게시판
-class ChannelTab extends StatelessWidget {
+/// 채널 메인 화면 (/channel)
+/// - 최상단: 워크스페이스 셀렉터 바
+/// - 탭: 공지사항 | 게시판
+/// - FAB: 공지 등록 (news.manage 권한 보유 시 노출)
+class ChannelTab extends ConsumerStatefulWidget {
   const ChannelTab({super.key});
 
-  static const _noticeColor = Color(0xFF1565C0);
-  static const _forumColor  = Color(0xFF00695C);
-
   @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // ── 공지사항 ──────────────────────────────────────────────────────
-          const _SectionHeader(
-            title: '공지사항',
-            icon: Icons.campaign_rounded,
-            accentColor: _noticeColor,
-          ),
-          const SizedBox(height: 10),
-          Text(
-            '워크스페이스 공지사항 및 안내 사항이 연동됩니다.',
-            style: AppTextStyles.bodyMuted,
-          ),
-          const SizedBox(height: 10),
-          const _PlaceholderCard(text: '공지사항 API 연동 준비 중'),
-          const SizedBox(height: 24),
-
-          // ── 게시판 ────────────────────────────────────────────────────────
-          const _SectionHeader(
-            title: '게시판',
-            icon: Icons.forum_outlined,
-            accentColor: _forumColor,
-          ),
-          const SizedBox(height: 10),
-          Text(
-            '팀 게시판 및 자유 토론 채널입니다.',
-            style: AppTextStyles.bodyMuted,
-          ),
-          const SizedBox(height: 10),
-          const _PlaceholderCard(text: '게시판 API 연동 준비 중'),
-          const SizedBox(height: 24),
-        ],
-      ),
-    );
-  }
+  ConsumerState<ChannelTab> createState() => _ChannelTabState();
 }
 
-// ── 섹션 헤더 (왼쪽 컬러 보더 바) ─────────────────────────────────────────────
-class _SectionHeader extends StatelessWidget {
-  final String title;
-  final IconData icon;
-  final Color accentColor;
+class _ChannelTabState extends ConsumerState<ChannelTab>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
 
-  const _SectionHeader({
-    required this.title,
-    required this.icon,
-    required this.accentColor,
-  });
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppColors.bgCard,
-        borderRadius: BorderRadius.zero,
-        border: Border(left: BorderSide(color: accentColor, width: 4.0)),
-      ),
-      child: Row(
+    final projectName = ref.watch(selectedProjectNameProvider);
+    final canManageNews = ref.can(Perm.newsManage);
+
+    return Scaffold(
+      backgroundColor: AppColors.bgPrimary,
+      body: Column(
         children: [
-          Icon(icon, color: accentColor, size: 20),
-          const SizedBox(width: 8),
-          Text(
-            title,
-            style: AppTextStyles.titleMd.copyWith(color: AppColors.textPrimary),
+          // ── 1. 워크스페이스 선택 바 ─────────────────────────────────────
+          InkWell(
+            onTap: () => showProjectSelectorBottomSheet(context),
+            child: Container(
+              color: AppColors.bgSurface,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              child: Row(
+                children: [
+                  const Icon(Icons.corporate_fare_rounded,
+                      size: 18, color: AppColors.accentWork),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      projectName,
+                      style: AppTextStyles.titleSm
+                          .copyWith(color: AppColors.textPrimary),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: AppColors.accentProject.withAlpha(25),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                          color: AppColors.accentProject.withAlpha(60)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('워크스페이스 변경',
+                            style: AppTextStyles.label
+                                .copyWith(color: AppColors.accentProject)),
+                        const Icon(Icons.keyboard_arrow_down_rounded,
+                            size: 16, color: AppColors.accentProject),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const Divider(color: AppColors.border, height: 1),
+
+          // ── 2. 메인 탭바 (공지사항 | 게시판) ───────────────────────────
+          Container(
+            color: AppColors.bgCard,
+            child: TabBar(
+              controller: _tabController,
+              indicatorColor: AppColors.accentWork,
+              indicatorWeight: 2.5,
+              indicatorSize: TabBarIndicatorSize.tab,
+              labelColor: AppColors.accentWork,
+              unselectedLabelColor: AppColors.textSecond,
+              labelStyle: AppTextStyles.titleSm
+                  .copyWith(fontWeight: FontWeight.bold),
+              unselectedLabelStyle: AppTextStyles.bodySm,
+              tabs: const [
+                Tab(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.campaign_rounded, size: 18),
+                      SizedBox(width: 6),
+                      Text('공지사항'),
+                    ],
+                  ),
+                ),
+                Tab(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.forum_outlined, size: 18),
+                      SizedBox(width: 6),
+                      Text('게시판'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(color: AppColors.border, height: 1),
+
+          // ── 3. 탭 뷰 본문 ─────────────────────────────────────────────
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: const [
+                NoticeListView(),
+                ForumTabView(),
+              ],
+            ),
           ),
         ],
       ),
-    );
-  }
-}
 
-// ── 준비 중 Placeholder 카드 ──────────────────────────────────────────────────
-class _PlaceholderCard extends StatelessWidget {
-  final String text;
-
-  const _PlaceholderCard({required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.bgCard,
-        borderRadius: BorderRadius.zero,
-        border: Border.all(color: AppColors.border, width: 0.8),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.construction_rounded,
-              color: AppColors.textDisabled, size: 18),
-          const SizedBox(width: 10),
-          Text(text, style: AppTextStyles.bodyMuted),
-        ],
-      ),
+      // ── 4. 플로팅 액션 버튼 (공지사항 탭 & news.manage 권한 보유 시 노출) ──
+      floatingActionButton: (_tabController.index == 0 && canManageNews)
+          ? FloatingActionButton.extended(
+              onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (ctx) => const NoticeFormSheet(),
+                );
+              },
+              elevation: 4,
+              highlightElevation: 8,
+              backgroundColor: AppColors.accentWork,
+              foregroundColor: Colors.white,
+              shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.zero),
+              icon: const Icon(Icons.add_rounded, size: 20),
+              label: const Text(
+                '공지 등록',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.2,
+                ),
+              ),
+            )
+          : null,
     );
   }
 }

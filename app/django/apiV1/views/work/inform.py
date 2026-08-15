@@ -21,7 +21,9 @@ class NewsViewSet(viewsets.ModelViewSet):
     serializer_class = NewsSerializer
     permission_classes = (permissions.IsAuthenticated, NewsPermission)
     pagination_class = PageNumberPaginationTen
-    filterset_fields = ('project__slug', 'author')
+    filter_backends = (DjangoFilterBackend, SearchFilter)
+    filterset_fields = ('project', 'project__slug', 'author', 'is_important')
+    search_fields = ('title', 'summary', 'content')
 
     @property
     def required_permission(self):
