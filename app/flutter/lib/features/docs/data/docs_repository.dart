@@ -62,6 +62,33 @@ class DocsRepository {
     }
   }
 
+  /// 소송 사건 목록 조회 (옵션 드롭다운용)
+  Future<List<SuitCaseOptionModel>> fetchSuitCases({int? issueProject, String? projectSlug}) async {
+    try {
+      final queryParams = <String, dynamic>{};
+      if (issueProject != null) {
+        queryParams['issue_project'] = issueProject;
+      }
+      if (projectSlug != null && projectSlug.isNotEmpty) {
+        queryParams['project'] = projectSlug;
+      }
+      final response = await _dio.get('/api/v1/all-suitcase/', queryParameters: queryParams);
+      final list = (response.data is List) ? (response.data as List) : (response.data['results'] as List? ?? []);
+      return list.map((e) => SuitCaseOptionModel.fromJson(e as Map<String, dynamic>)).toList();
+    } on DioException {
+      try {
+        final queryParams = <String, dynamic>{};
+        if (issueProject != null) queryParams['issue_project'] = issueProject;
+        if (projectSlug != null && projectSlug.isNotEmpty) queryParams['project'] = projectSlug;
+        final response = await _dio.get('/api/v1/suitcase/', queryParameters: queryParams);
+        final list = (response.data is List) ? (response.data as List) : (response.data['results'] as List? ?? []);
+        return list.map((e) => SuitCaseOptionModel.fromJson(e as Map<String, dynamic>)).toList();
+      } catch (_) {
+        return [];
+      }
+    }
+  }
+
   /// 문서 상세 조회
   Future<DocumentModel> fetchDocumentDetail(int id) async {
     try {
@@ -77,6 +104,7 @@ class DocsRepository {
     required int issueProjectId,
     required String title,
     int? categoryId,
+    int? lawsuitId,
     String? executionDate,
     String? description,
     bool isSecret = false,
@@ -90,6 +118,9 @@ class DocsRepository {
       formData.fields.add(MapEntry('is_secret', isSecret.toString()));
       if (categoryId != null) {
         formData.fields.add(MapEntry('category', categoryId.toString()));
+      }
+      if (lawsuitId != null) {
+        formData.fields.add(MapEntry('lawsuit', lawsuitId.toString()));
       }
       if (executionDate != null && executionDate.isNotEmpty) {
         formData.fields.add(MapEntry('execution_date', executionDate));
@@ -140,6 +171,7 @@ class DocsRepository {
     required int id,
     required String title,
     int? categoryId,
+    int? lawsuitId,
     String? executionDate,
     String? description,
     bool? isSecret,
@@ -153,6 +185,9 @@ class DocsRepository {
       formData.fields.add(MapEntry('title', title));
       if (categoryId != null) {
         formData.fields.add(MapEntry('category', categoryId.toString()));
+      }
+      if (lawsuitId != null) {
+        formData.fields.add(MapEntry('lawsuit', lawsuitId.toString()));
       }
       if (executionDate != null) {
         formData.fields.add(MapEntry('execution_date', executionDate));

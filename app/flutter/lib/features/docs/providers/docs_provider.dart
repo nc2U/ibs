@@ -10,6 +10,12 @@ final docCategoriesProvider = FutureProvider<List<DocCategoryModel>>((ref) async
   return repo.fetchCategories(docType: docType);
 });
 
+/// 소송 사건 목록 옵션 프로바이더 (프로젝트 ID별)
+final suitCaseOptionsProvider = FutureProvider.family<List<SuitCaseOptionModel>, int?>((ref, issueProject) async {
+  final repo = ref.watch(docsRepositoryProvider);
+  return repo.fetchSuitCases(issueProject: issueProject);
+});
+
 /// 문서 검색어 StateProvider
 final docsSearchProvider = StateProvider<String>((ref) => '');
 

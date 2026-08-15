@@ -101,3 +101,34 @@ class DocumentListResponseModel with _$DocumentListResponseModel {
   factory DocumentListResponseModel.fromJson(Map<String, dynamic> json) =>
       _$DocumentListResponseModelFromJson(json);
 }
+
+/// 소송 사건 옵션 모델 (드롭다운 바인딩용)
+class SuitCaseOptionModel {
+  final int pk;
+  final String label;
+  final String? caseNumber;
+  final String? caseName;
+
+  const SuitCaseOptionModel({
+    required this.pk,
+    required this.label,
+    this.caseNumber,
+    this.caseName,
+  });
+
+  factory SuitCaseOptionModel.fromJson(Map<String, dynamic> json) {
+    final str = json['__str__']?.toString();
+    final caseNum = json['case_number']?.toString();
+    final caseName = json['case_name']?.toString();
+    final fallbackLabel = (caseNum != null && caseName != null)
+        ? '$caseNum $caseName'
+        : '사건 #${json['pk'] ?? json['id']}';
+
+    return SuitCaseOptionModel(
+      pk: json['pk'] as int? ?? json['id'] as int? ?? 0,
+      label: (str != null && str.isNotEmpty) ? str : fallbackLabel,
+      caseNumber: caseNum,
+      caseName: caseName,
+    );
+  }
+}

@@ -7,6 +7,7 @@ import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/constants/permissions.dart';
 import '../../../../core/providers/docs_context_provider.dart';
 import '../../../../core/providers/permission_provider.dart';
+import '../../../../core/providers/project_provider.dart';
 import '../../../project/providers/project_provider.dart';
 
 import '../../data/docs_repository.dart';
@@ -41,6 +42,8 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
 
   int? _selectedProjectPk;
   int? _selectedCategory;
+  int? _selectedLawsuit;
+  late String _selectedDocType;
   bool _isSecret = false;
   bool _isSubmitting = false;
 
@@ -64,6 +67,8 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
     _selectedProjectPk =
         widget.doc?.project?.pk ?? ref.read(docsContextProvider).project?.pk;
     _selectedCategory = widget.doc?.category;
+    _selectedLawsuit = widget.doc?.lawsuit;
+    _selectedDocType = widget.doc?.docType ?? ref.read(docTypeFilterProvider) ?? '1';
     _isSecret = widget.doc?.isSecret ?? false;
 
     if (widget.initialFiles != null) {
@@ -318,8 +323,36 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
     );
   }
 
-  Future<void> _submit() async {
+  Future<void> _showSuitCasePickerModal(
+      BuildContext context, List<SuitCaseOptionModel> cases) async {
+    final selected = await showModalBottomSheet<SuitCaseOptionModel>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _SuitCaseSearchSheet(
+        cases: cases,
+        initialSelectedPk: _selectedLawsuit,
+      ),
+    );
+    if (selected != null) {
+      setState(() {
+        _selectedLawsuit = selected.pk;
+      });
+    }
+  }
+
+  Future<void> _submit(int? issueProjectId) async {
     if (!_formKey.currentState!.validate()) return;
+
+    if (_selectedDocType == '2' && _selectedLawsuit == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('소송 문서는 소송 사건을 반드시 선택해야 합니다.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
 
     final isEdit = widget.doc != null;
     final canPerform =
@@ -336,11 +369,6 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
       return;
     }
 
-    final repo = ref.read(docsRepositoryProvider);
-    final ctx = ref.read(docsContextProvider);
-
-    final issueProjectId =
-        _selectedProjectPk ?? ctx.project?.pk ?? widget.doc?.project?.pk;
     if (widget.doc == null && issueProjectId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -349,6 +377,7 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
       return;
     }
 
+    final repo = ref.read(docsRepositoryProvider);
     setState(() => _isSubmitting = true);
 
     try {
@@ -357,6 +386,7 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
           issueProjectId: issueProjectId!,
           title: _titleController.text.trim(),
           categoryId: _selectedCategory,
+          lawsuitId: _selectedDocType == '2' ? _selectedLawsuit : null,
           executionDate: _dateController.text.trim(),
           description: _descController.text.trim(),
           isSecret: _isSecret,
@@ -368,6 +398,7 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
           id: widget.doc!.pk,
           title: _titleController.text.trim(),
           categoryId: _selectedCategory,
+          lawsuitId: _selectedDocType == '2' ? _selectedLawsuit : null,
           executionDate: _dateController.text.trim(),
           description: _descController.text.trim(),
           isSecret: _isSecret,
@@ -402,8 +433,39 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final categoriesAsync = ref.watch(docCategoriesProvider);
     final isEdit = widget.doc != null;
+    final docsContext = ref.watch(docsContextProvider);
+    final currentSelectedProj = ref.watch(selectedProjectProvider);
+
+    // 상단 프로젝트 변경 실시간 리스너 (소송 사건 자동 초기화)
+    ref.listen<SelectedProject?>(selectedProjectProvider, (prev, next) {
+      if (next != null && !isEdit && docsContext.scopeType == DocsScopeType.project) {
+        setState(() {
+          _selectedProjectPk = next.pk;
+          _selectedLawsuit = null;
+        });
+      }
+    });
+
+    final isProjectScope = docsContext.scopeType == DocsScopeType.project;
+    final isWorkspaceScope = docsContext.scopeType == DocsScopeType.workspace && docsContext.project != null;
+    final isFixedContext = isEdit || isProjectScope || isWorkspaceScope;
+
+    final effectiveProjectPk = isEdit
+        ? (widget.doc?.project?.pk ?? _selectedProjectPk)
+        : (isProjectScope
+            ? (currentSelectedProj?.pk ?? docsContext.project?.pk ?? _selectedProjectPk)
+            : (isWorkspaceScope
+                ? (docsContext.project?.pk ?? _selectedProjectPk)
+                : _selectedProjectPk));
+
+    final fixedProjectName = isEdit
+        ? widget.doc?.project?.name
+        : (isProjectScope
+            ? (currentSelectedProj?.name ?? docsContext.project?.name)
+            : (isWorkspaceScope ? docsContext.project?.name : null));
+
+    final categoriesAsync = ref.watch(docCategoriesProvider);
 
     // 기존 파일 및 링크 중 아직 삭제 표시되지 않은 항목들
     final existingFiles = widget.doc?.files
@@ -477,30 +539,185 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
               const Divider(color: AppColors.border, height: 1),
               const SizedBox(height: 16),
 
-              // ── 1. 워크스페이스 선택 ───────────────────────────────────────
-              if (!isEdit) ...[
-                Text('워크스페이스 *', style: AppTextStyles.caption.copyWith(color: AppColors.textMuted)),
+              // ── 0. 문서 구분 선택 (일반 문서 vs 소송 기록) ───────────────────
+              Row(
+                children: [
+                  Expanded(
+                    child: InkWell(
+                      onTap: isEdit ? null : () => setState(() => _selectedDocType = '1'),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 9),
+                        decoration: BoxDecoration(
+                          color: _selectedDocType == '1'
+                              ? AppColors.accentWork.withAlpha(25)
+                              : AppColors.bgSurface,
+                          border: Border.all(
+                            color: _selectedDocType == '1'
+                                ? AppColors.accentWork
+                                : AppColors.border,
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.description_outlined,
+                              size: 15,
+                              color: _selectedDocType == '1'
+                                  ? AppColors.accentWork
+                                  : AppColors.textMuted,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              '일반 문서',
+                              style: AppTextStyles.label.copyWith(
+                                color: _selectedDocType == '1'
+                                    ? AppColors.accentWork
+                                    : AppColors.textMuted,
+                                fontWeight: _selectedDocType == '1'
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: InkWell(
+                      onTap: isEdit ? null : () => setState(() => _selectedDocType = '2'),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 9),
+                        decoration: BoxDecoration(
+                          color: _selectedDocType == '2'
+                              ? const Color(0xFFBA68C8).withAlpha(25)
+                              : AppColors.bgSurface,
+                          border: Border.all(
+                            color: _selectedDocType == '2'
+                                ? const Color(0xFFBA68C8)
+                                : AppColors.border,
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.gavel_rounded,
+                              size: 15,
+                              color: _selectedDocType == '2'
+                                  ? const Color(0xFFCE93D8)
+                                  : AppColors.textMuted,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              '소송 기록 / 문서',
+                              style: AppTextStyles.label.copyWith(
+                                color: _selectedDocType == '2'
+                                    ? const Color(0xFFCE93D8)
+                                    : AppColors.textMuted,
+                                fontWeight: _selectedDocType == '2'
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+
+              // ── 1. 워크스페이스 / 프로젝트 소속 (컨텍스트 기반 자동 바인딩) ─────────
+              if (isFixedContext && fixedProjectName != null) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: AppColors.bgSurface,
+                    border: Border.all(
+                      color: isProjectScope
+                          ? AppColors.accentProject.withAlpha(60)
+                          : AppColors.border,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        isProjectScope
+                            ? Icons.business_rounded
+                            : Icons.folder_open_rounded,
+                        size: 18,
+                        color: isProjectScope
+                            ? AppColors.accentProject
+                            : AppColors.accentWork,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        isProjectScope
+                            ? '소속 프로젝트: '
+                            : '소속 워크스페이스: ',
+                        style: AppTextStyles.caption
+                            .copyWith(color: AppColors.textMuted),
+                      ),
+                      Expanded(
+                        child: Text(
+                          fixedProjectName,
+                          style: AppTextStyles.titleSm.copyWith(
+                            color: isProjectScope
+                                ? AppColors.accentProject
+                                : AppColors.accentWork,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+              ] else ...[
+                // 전체 문서함(DocsScopeType.all)에서 신규 등록 시에만 워크스페이스 선택 노출
+                Text('워크스페이스 *',
+                    style: AppTextStyles.caption
+                        .copyWith(color: AppColors.textMuted)),
                 const SizedBox(height: 6),
                 ref.watch(docFormProjectsProvider).when(
                       loading: () => const LinearProgressIndicator(),
                       error: (_, __) => Text('프로젝트 목록 로드 실패',
-                          style: AppTextStyles.caption.copyWith(color: AppColors.error)),
+                          style: AppTextStyles.caption
+                              .copyWith(color: AppColors.error)),
                       data: (projects) {
                         final validPk = (_selectedProjectPk != null &&
                                 projects.any((p) => p.pk == _selectedProjectPk))
                             ? _selectedProjectPk
                             : (projects.isNotEmpty ? projects.first.pk : null);
 
+                        if (_selectedProjectPk == null && validPk != null) {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            if (mounted && _selectedProjectPk == null) {
+                              setState(() => _selectedProjectPk = validPk);
+                            }
+                          });
+                        }
+
                         return DropdownButtonFormField<int>(
                           value: validPk,
                           isExpanded: true,
                           style: AppTextStyles.bodyMd,
                           dropdownColor: AppColors.bgCard,
-                          decoration: InputDecoration(
+                          decoration: const InputDecoration(
                             hintText: '워크스페이스 선택',
-                            prefixIcon: const Icon(Icons.folder_outlined, size: 18, color: AppColors.accentWork),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                            border: const OutlineInputBorder(
+                            prefixIcon: Icon(Icons.folder_outlined,
+                                size: 18, color: AppColors.accentWork),
+                            contentPadding: EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 10),
+                            border: OutlineInputBorder(
                               borderRadius: BorderRadius.zero,
                               borderSide: BorderSide(color: AppColors.border),
                             ),
@@ -508,37 +725,231 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                           items: projects
                               .map((p) => DropdownMenuItem<int>(
                                     value: p.pk,
-                                    child: Text(p.indentedLabel, overflow: TextOverflow.ellipsis),
+                                    child: Text(p.indentedLabel,
+                                        overflow: TextOverflow.ellipsis),
                                   ))
                               .toList(),
-                          onChanged: (v) => setState(() => _selectedProjectPk = v),
-                          validator: (v) => v == null ? '워크스페이스를 선택해 주세요.' : null,
+                          onChanged: (v) {
+                            setState(() {
+                              _selectedProjectPk = v;
+                              _selectedLawsuit =
+                                  null; // 워크스페이스 변경 시 기존 선택된 소송 사건 초기화
+                            });
+                          },
+                          validator: (v) =>
+                              v == null ? '워크스페이스를 선택해 주세요.' : null,
                         );
                       },
                     ),
                 const SizedBox(height: 14),
-              ] else if (widget.doc?.project != null) ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: AppColors.bgSurface,
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.folder_open_rounded, size: 18, color: AppColors.accentWork),
-                      const SizedBox(width: 8),
-                      Text('소속 워크스페이스: ', style: AppTextStyles.caption.copyWith(color: AppColors.textMuted)),
-                      Expanded(
-                        child: Text(
-                          widget.doc!.project!.name,
-                          style: AppTextStyles.titleSm.copyWith(color: AppColors.accentWork),
-                          overflow: TextOverflow.ellipsis,
+              ],
+
+              // ── 1-1. 소송 사건 선택 (소송 문서일 때 필수, 검색 가능한 모달 연동) ──────
+              if (_selectedDocType == '2') ...[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('소송 사건 *',
+                        style: AppTextStyles.caption
+                            .copyWith(color: AppColors.textMuted)),
+                    if (_selectedLawsuit != null)
+                      Text(
+                        '사건 지정 완료',
+                        style: AppTextStyles.caption.copyWith(
+                          color: const Color(0xFFBA68C8),
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ],
-                  ),
+                  ],
                 ),
+                const SizedBox(height: 6),
+                ref.watch(suitCaseOptionsProvider(effectiveProjectPk)).when(
+                      loading: () => const LinearProgressIndicator(),
+                      error: (e, _) => Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.bgSurface,
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: Text(
+                          '소송 사건 목록을 불러오지 못했습니다.',
+                          style: AppTextStyles.caption
+                              .copyWith(color: AppColors.error),
+                        ),
+                      ),
+                      data: (cases) {
+                        if (cases.isEmpty) {
+                          return Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppColors.bgSurface,
+                              border: Border.all(
+                                color: AppColors.warning.withAlpha(80),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.info_outline_rounded,
+                                  size: 16,
+                                  color: AppColors.warning,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    '등록된 소송 사건이 없습니다. 신규 소송 사건은 PC 웹에서 등록해 주세요.',
+                                    style: AppTextStyles.caption.copyWith(
+                                      color: AppColors.warning,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+
+                        // 선택된 사건 객체 탐색
+                        final selectedCase = cases
+                            .where((c) => c.pk == _selectedLawsuit)
+                            .firstOrNull;
+
+                        if (selectedCase == null) {
+                          // 사건 미선택 상태 -> 검색 선택 트리거 바
+                          return Container(
+                            decoration: BoxDecoration(
+                              color: AppColors.bgSurface,
+                              borderRadius: BorderRadius.zero,
+                              border: Border.all(
+                                color: const Color(0xFFBA68C8).withAlpha(80),
+                                width: 1,
+                              ),
+                            ),
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: () => _showSuitCasePickerModal(
+                                    context, cases),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 12),
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.search_rounded,
+                                        size: 18,
+                                        color: Color(0xFFBA68C8),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          '소송 사건 검색 및 선택 (총 ${cases.length}건)',
+                                          style: AppTextStyles.bodyMd.copyWith(
+                                            color: AppColors.textMuted,
+                                          ),
+                                        ),
+                                      ),
+                                      const Icon(
+                                        Icons.arrow_drop_down_rounded,
+                                        size: 20,
+                                        color: AppColors.textMuted,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }
+
+                        // 사건 선택 완료 카드 (변경 / 삭제 가능)
+                        return Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFBA68C8).withAlpha(15),
+                            borderRadius: BorderRadius.zero,
+                            border: Border.all(
+                              color: const Color(0xFFBA68C8),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFBA68C8).withAlpha(30),
+                                  borderRadius: BorderRadius.zero,
+                                ),
+                                child: const Icon(
+                                  Icons.gavel_rounded,
+                                  size: 18,
+                                  color: Color(0xFFCE93D8),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      selectedCase.label,
+                                      style: AppTextStyles.label.copyWith(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    if (selectedCase.caseNumber != null)
+                                      Text(
+                                        '사건번호: ${selectedCase.caseNumber}',
+                                        style: AppTextStyles.caption.copyWith(
+                                          color: const Color(0xFFCE93D8),
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              // 변경 버튼
+                              TextButton(
+                                onPressed: () => _showSuitCasePickerModal(
+                                    context, cases),
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                child: Text(
+                                  '변경',
+                                  style: AppTextStyles.label.copyWith(
+                                    color: const Color(0xFFCE93D8),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                              // 취소 버튼
+                              IconButton(
+                                icon: const Icon(Icons.close_rounded,
+                                    size: 16, color: AppColors.textMuted),
+                                onPressed: () =>
+                                    setState(() => _selectedLawsuit = null),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                tooltip: '선택 해제',
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
                 const SizedBox(height: 14),
               ],
 
@@ -953,7 +1364,9 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                   Expanded(
                     flex: 2,
                     child: ElevatedButton(
-                      onPressed: _isSubmitting ? null : _submit,
+                      onPressed: _isSubmitting
+                          ? null
+                          : () => _submit(effectiveProjectPk),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.accentWork,
                         foregroundColor: Colors.white,
@@ -983,6 +1396,263 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// 소송 사건 실시간 검색 및 선택 바텀시트 위젯 (radius = 0)
+class _SuitCaseSearchSheet extends StatefulWidget {
+  final List<SuitCaseOptionModel> cases;
+  final int? initialSelectedPk;
+
+  const _SuitCaseSearchSheet({
+    required this.cases,
+    this.initialSelectedPk,
+  });
+
+  @override
+  State<_SuitCaseSearchSheet> createState() => _SuitCaseSearchSheetState();
+}
+
+class _SuitCaseSearchSheetState extends State<_SuitCaseSearchSheet> {
+  final TextEditingController _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final filteredCases = widget.cases.where((c) {
+      if (_query.isEmpty) return true;
+      final q = _query.toLowerCase();
+      final labelMatch = c.label.toLowerCase().contains(q);
+      final numMatch = (c.caseNumber ?? '').toLowerCase().contains(q);
+      final nameMatch = (c.caseName ?? '').toLowerCase().contains(q);
+      return labelMatch || numMatch || nameMatch;
+    }).toList();
+
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.75,
+      decoration: const BoxDecoration(
+        color: AppColors.bgCard,
+        borderRadius: BorderRadius.zero,
+      ),
+      child: Column(
+        children: [
+          // ── 드래그 핸들 ──────────────────────────────────────────
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              margin: const EdgeInsets.only(top: 12, bottom: 8),
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+
+          // ── 헤더 (타이틀 & 닫기) ───────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.gavel_rounded,
+                      size: 20,
+                      color: Color(0xFFBA68C8),
+                    ),
+                    const SizedBox(width: 8),
+                    Text('소송 사건 선택', style: AppTextStyles.titleLg),
+                    const SizedBox(width: 6),
+                    Text(
+                      '(${widget.cases.length}건)',
+                      style: AppTextStyles.caption.copyWith(
+                        color: const Color(0xFFBA68C8),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded, size: 20),
+                  color: AppColors.textMuted,
+                  onPressed: () => Navigator.pop(context),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
+            ),
+          ),
+          const Divider(color: AppColors.border, height: 1),
+
+          // ── 실시간 검색창 ─────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: TextField(
+              controller: _searchController,
+              autofocus: true,
+              style: AppTextStyles.bodyMd,
+              decoration: InputDecoration(
+                hintText: '사건번호, 사건명, 법원명으로 검색...',
+                prefixIcon: const Icon(Icons.search_rounded,
+                    size: 18, color: Color(0xFFBA68C8)),
+                suffixIcon: _query.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear_rounded, size: 16),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _query = '');
+                        },
+                      )
+                    : null,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                filled: true,
+                fillColor: AppColors.bgSurface,
+                border: const OutlineInputBorder(
+                  borderRadius: BorderRadius.zero,
+                  borderSide: BorderSide(color: AppColors.border),
+                ),
+                enabledBorder: const OutlineInputBorder(
+                  borderRadius: BorderRadius.zero,
+                  borderSide: BorderSide(color: AppColors.border),
+                ),
+                focusedBorder: const OutlineInputBorder(
+                  borderRadius: BorderRadius.zero,
+                  borderSide: BorderSide(color: Color(0xFFBA68C8), width: 1.2),
+                ),
+              ),
+              onChanged: (v) => setState(() => _query = v.trim()),
+            ),
+          ),
+
+          // ── 사건 목록 리스트 ───────────────────────────────────────
+          Expanded(
+            child: filteredCases.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.search_off_rounded,
+                            size: 36, color: AppColors.textMuted),
+                        const SizedBox(height: 8),
+                        Text(
+                          '일치하는 소송 사건이 없습니다.',
+                          style: AppTextStyles.bodySm
+                              .copyWith(color: AppColors.textMuted),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 6),
+                    itemCount: filteredCases.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 6),
+                    itemBuilder: (context, idx) {
+                      final item = filteredCases[idx];
+                      final isSelected =
+                          item.pk == widget.initialSelectedPk;
+
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? const Color(0xFFBA68C8).withAlpha(20)
+                              : AppColors.bgSurface,
+                          borderRadius: BorderRadius.zero,
+                          border: Border.all(
+                            color: isSelected
+                                ? const Color(0xFFBA68C8)
+                                : AppColors.border,
+                            width: isSelected ? 1.2 : 0.8,
+                          ),
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () => Navigator.pop(context, item),
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 32,
+                                    height: 32,
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? const Color(0xFFBA68C8)
+                                              .withAlpha(40)
+                                          : const Color(0xFFBA68C8)
+                                              .withAlpha(20),
+                                      borderRadius: BorderRadius.zero,
+                                    ),
+                                    child: Icon(
+                                      Icons.gavel_rounded,
+                                      size: 16,
+                                      color: isSelected
+                                          ? Colors.white
+                                          : const Color(0xFFCE93D8),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          item.label,
+                                          style: AppTextStyles.label.copyWith(
+                                            fontWeight: isSelected
+                                                ? FontWeight.bold
+                                                : FontWeight.w600,
+                                            color: isSelected
+                                                ? Colors.white
+                                                : AppColors.textPrimary,
+                                            fontSize: 13,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        if (item.caseNumber != null) ...[
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            '사건번호: ${item.caseNumber}',
+                                            style: AppTextStyles.caption
+                                                .copyWith(
+                                              color: const Color(0xFFCE93D8),
+                                              fontSize: 11,
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                  if (isSelected)
+                                    const Icon(
+                                      Icons.check_circle_rounded,
+                                      size: 18,
+                                      color: Color(0xFFBA68C8),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
       ),
     );
   }

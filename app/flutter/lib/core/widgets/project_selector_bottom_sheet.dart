@@ -72,8 +72,16 @@ class _ProjectSelectorContent extends ConsumerWidget {
             data: (projects) {
               if (projects.isEmpty) {
                 return Center(
-                  child: Text('등록된 프로젝트가 없습니다.',
-                      style: AppTextStyles.bodyMuted),
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Text(
+                      onlyRealEstate
+                          ? '소속된 부동산 개발 프로젝트가 없습니다.\n(관리자에게 프로젝트 멤버 등록을 요청해 주세요)'
+                          : '등록된 워크스페이스가 없습니다.',
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.bodyMuted.copyWith(height: 1.4),
+                    ),
+                  ),
                 );
               }
 
