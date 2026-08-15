@@ -3,10 +3,10 @@ import '../../features/project/providers/project_provider.dart';
 import 'auth_provider.dart';
 import 'project_provider.dart';
 
-// ── 전역 권한 집합 (사용자가 속한 모든 프로젝트 권한 병합) ─────────────────────────
+// ── 전역 권한 집합 (사용자가 멤버로 속한 모든 프로젝트 권한 병합 — Vue의 globalPermSet과 100% 동일) ──
 
 final globalPermSetProvider = Provider<Set<String>>((ref) {
-  final projectsAsync = ref.watch(projectListProvider);
+  final projectsAsync = ref.watch(myProjectsProvider);
   final permSet = <String>{};
 
   projectsAsync.whenData((projects) {
@@ -22,32 +22,31 @@ final globalPermSetProvider = Provider<Set<String>>((ref) {
 
 extension WidgetRefPermissionX on WidgetRef {
   /// 특정 권한 코드(`code`)를 보유하고 있는지 확인
-  /// - `projectSlug`: 특정 프로젝트 기준 권한 검사 (지정하지 않으면 현재 선택된 프로젝트 또는 전역 권한 기준)
+  /// - `projectSlug`: 특정 프로젝트 기준 권한 검사 (지정 시 해당 프로젝트 멤버 권한만 엄격히 검사)
   bool can(String code, {String? projectSlug}) {
-    // 0. 최고관리자 (is_superuser) 또는 업무관리자 (work_manager)는 무조건 모든 권한 허용 (Vue work_permission.ts can()과 100% 동일)
+    // 0. 최고관리자 (is_superuser) 또는 업무관리자 (work_manager)는 무조건 모든 권한 허용 (Vue work_permission.ts 100% 일치)
     final currentUser = watch(currentUserProvider).valueOrNull;
     if (currentUser != null && (currentUser.isSuperuser || currentUser.workManager)) {
       return true;
     }
 
+    // 1. 특정 프로젝트(projectSlug)가 명시된 경우 -> 해당 프로젝트 내 권한만 엄격히 검사 (다른 프로젝트 권한으로 우회 불가)
     if (projectSlug != null) {
-      final projects = watch(projectListProvider).valueOrNull ?? [];
-      final target = projects.cast<dynamic>().firstWhere(
-            (p) => p.slug == projectSlug,
-            orElse: () => null,
-          );
-      if (target != null && target.myPerms != null) {
-        return (target.myPerms as List<String>).contains(code);
+      final myProjects = watch(myProjectsProvider).valueOrNull ?? [];
+      final target = myProjects.where((p) => p.slug == projectSlug).firstOrNull;
+      if (target != null) {
+        return target.myPerms.contains(code);
       }
+      return false; // 해당 프로젝트의 멤버가 아니면 권한 없음
     }
 
-    // 1. 현재 선택된 활성 프로젝트가 있으면 해당 프로젝트 권한 확인
+    // 2. 현재 선택된 활성 프로젝트가 있는 경우 -> 해당 프로젝트 권한만 엄격히 검사
     final selectedProj = watch(selectedProjectProvider);
-    if (selectedProj != null && selectedProj.myPerms.isNotEmpty) {
+    if (selectedProj != null) {
       return selectedProj.myPerms.contains(code);
     }
 
-    // 2. 전체(전역) 권한 집합에서 확인
+    // 3. 활성 프로젝트가 없는 전역 구간 ('전체 워크스페이스') -> 내가 멤버인 프로젝트들의 권한 합집합(globalPermSet)에서 확인
     final globalSet = watch(globalPermSetProvider);
     return globalSet.contains(code);
   }
@@ -72,22 +71,23 @@ extension RefPermissionX on Ref {
       return true;
     }
 
+    // 1. 특정 프로젝트(projectSlug)가 명시된 경우
     if (projectSlug != null) {
-      final projects = watch(projectListProvider).valueOrNull ?? [];
-      final target = projects.cast<dynamic>().firstWhere(
-            (p) => p.slug == projectSlug,
-            orElse: () => null,
-          );
-      if (target != null && target.myPerms != null) {
-        return (target.myPerms as List<String>).contains(code);
+      final myProjects = watch(myProjectsProvider).valueOrNull ?? [];
+      final target = myProjects.where((p) => p.slug == projectSlug).firstOrNull;
+      if (target != null) {
+        return target.myPerms.contains(code);
       }
+      return false;
     }
 
+    // 2. 현재 선택된 활성 프로젝트가 있는 경우
     final selectedProj = watch(selectedProjectProvider);
-    if (selectedProj != null && selectedProj.myPerms.isNotEmpty) {
+    if (selectedProj != null) {
       return selectedProj.myPerms.contains(code);
     }
 
+    // 3. 활성 프로젝트가 없는 전역 구간
     final globalSet = watch(globalPermSetProvider);
     return globalSet.contains(code);
   }

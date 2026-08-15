@@ -160,8 +160,10 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
     final detailAsync = ref.watch(noticeDetailProvider(widget.notice.pk));
     final notice = detailAsync.value ?? widget.notice;
 
-    final canManage = ref.can(Perm.newsManage);
-    final canComment = ref.can(Perm.newsComment);
+    final canManage =
+        ref.can(Perm.newsManage, projectSlug: notice.project?.slug);
+    final canComment =
+        ref.can(Perm.newsComment, projectSlug: notice.project?.slug);
     final currentUser = ref.watch(currentUserProvider).valueOrNull;
 
     return Container(

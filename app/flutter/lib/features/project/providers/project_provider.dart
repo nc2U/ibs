@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/project_provider.dart';
 import '../data/models/project_model.dart';
 import '../data/project_repository.dart';
@@ -6,6 +7,9 @@ import '../data/project_repository.dart';
 // ── 프로젝트 전체 목록 프로바이더 ───────────────────────────────────────────────────
 
 final projectListProvider = FutureProvider<List<ProjectModel>>((ref) async {
+  final authState = ref.watch(authProvider).valueOrNull;
+  final isAuth = authState?.maybeWhen(authenticated: (_) => true, orElse: () => false) ?? false;
+  if (!isAuth) return [];
   return ref.watch(projectRepositoryProvider).fetchProjects();
 });
 
@@ -18,6 +22,9 @@ final activeWorkspaceListProvider = FutureProvider<List<ProjectModel>>((ref) asy
 
 // ── 내 워크스페이스 목록 프로바이더 (/api/v1/issue-project/my_projects/) ─────────────
 final myProjectsProvider = FutureProvider<List<ProjectModel>>((ref) async {
+  final authState = ref.watch(authProvider).valueOrNull;
+  final isAuth = authState?.maybeWhen(authenticated: (_) => true, orElse: () => false) ?? false;
+  if (!isAuth) return [];
   return ref.watch(projectRepositoryProvider).fetchMyProjects();
 });
 
