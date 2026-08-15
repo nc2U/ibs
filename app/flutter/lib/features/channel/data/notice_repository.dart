@@ -28,6 +28,9 @@ class NoticeRepository {
         queryParams['project'] = project;
       } else if (projectSlug != null && projectSlug.isNotEmpty) {
         queryParams['project__slug'] = projectSlug;
+      } else {
+        // 전체 워크스페이스 선택 시: 진행중(status == '1') 프로젝트 공지만 기본 조회
+        queryParams['project__status'] = '1';
       }
       if (search != null && search.trim().isNotEmpty) {
         queryParams['search'] = search.trim();

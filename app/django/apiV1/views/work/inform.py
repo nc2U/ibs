@@ -22,7 +22,7 @@ class NewsViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated, NewsPermission)
     pagination_class = PageNumberPaginationTen
     filter_backends = (DjangoFilterBackend, SearchFilter)
-    filterset_fields = ('project', 'project__slug', 'author', 'is_important')
+    filterset_fields = ('project', 'project__slug', 'project__status', 'author', 'is_important')
     search_fields = ('title', 'summary', 'content')
 
     @property
