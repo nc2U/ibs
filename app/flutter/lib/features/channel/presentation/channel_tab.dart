@@ -17,7 +17,8 @@ import 'widgets/post_form_sheet.dart';
 /// - 탭: 공지사항 | 게시판
 /// - FAB: 공지 등록 (news.manage) / 글쓰기 (forum.create)
 class ChannelTab extends ConsumerStatefulWidget {
-  const ChannelTab({super.key});
+  final int initialIndex;
+  const ChannelTab({super.key, this.initialIndex = 0});
 
   @override
   ConsumerState<ChannelTab> createState() => _ChannelTabState();
@@ -30,10 +31,22 @@ class _ChannelTabState extends ConsumerState<ChannelTab>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(
+      length: 2,
+      vsync: this,
+      initialIndex: widget.initialIndex.clamp(0, 1),
+    );
     _tabController.addListener(() {
       if (mounted) setState(() {});
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant ChannelTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialIndex != widget.initialIndex) {
+      _tabController.animateTo(widget.initialIndex.clamp(0, 1));
+    }
   }
 
   @override

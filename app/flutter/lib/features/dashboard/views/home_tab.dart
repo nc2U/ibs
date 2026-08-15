@@ -132,7 +132,7 @@ class HomeTab extends ConsumerWidget {
             subtitle: '워크스페이스 최신 공지 및 안내 사항',
             icon: Icons.notifications_active_outlined,
             accentColor: _noticeColor,
-            onTap: () => context.go(AppRoutes.channel),
+            onTap: () => context.go('${AppRoutes.channel}?tab=0'),
           ),
           const SizedBox(height: 8),
 
@@ -142,7 +142,7 @@ class HomeTab extends ConsumerWidget {
             subtitle: '팀 게시글 및 자유 토론 채널',
             icon: Icons.forum_outlined,
             accentColor: _forumColor,
-            onTap: () => context.go(AppRoutes.channel),
+            onTap: () => context.go('${AppRoutes.channel}?tab=1'),
           ),
           const SizedBox(height: 12),
 

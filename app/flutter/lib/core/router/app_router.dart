@@ -154,10 +154,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (ctx, state) => const ProjectScreen(),
           ),
 
-          // 채널 탭 (공지 + 게시판 + 공용문서)
+          // 채널 탭 (공지 + 게시판)
           GoRoute(
             path: AppRoutes.channel,
-            builder: (ctx, state) => const ChannelTab(),
+            builder: (ctx, state) {
+              final tabParam = state.uri.queryParameters['tab'];
+              final initialIndex = tabParam != null
+                  ? (int.tryParse(tabParam) ?? 0)
+                  : (state.extra as int? ?? 0);
+              return ChannelTab(initialIndex: initialIndex);
+            },
           ),
 
           // 전자결재 (탭바 미표시, 홈 히어로카드에서 진입)
