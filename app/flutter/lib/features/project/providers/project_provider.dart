@@ -3,10 +3,60 @@ import '../../../../core/providers/project_provider.dart';
 import '../data/models/project_model.dart';
 import '../data/project_repository.dart';
 
-// ── 프로젝트 전체 목록 프로바이더 ───────────────────────────────────────────────────
+// ── 트리 재구성 헬퍼 (Vue buildProjectTree와 100% 동일) ──────────────────────────
+List<ProjectModel> buildProjectTree(List<ProjectModel> projects) {
+  final map = <int, ProjectModel>{};
+  for (final p in projects) {
+    map[p.pk] = p.copyWith(subProjects: []);
+  }
 
+  final roots = <ProjectModel>[];
+  for (final p in projects) {
+    final current = map[p.pk]!;
+    if (p.parent != null) {
+      final parentNode = map[p.parent!];
+      if (parentNode != null) {
+        parentNode.subProjects.add(current);
+      } else {
+        roots.add(current);
+      }
+    } else {
+      roots.add(current);
+    }
+  }
+  return roots;
+}
+
+// ── 재귀적 평탄화 헬퍼 (DFS 순회, Vue flattenTree와 100% 동일) ─────────────────────
+List<ProjectModel> flattenProjectTree(List<ProjectModel> tree) {
+  final visited = <int>{};
+  final result = <ProjectModel>[];
+
+  void flatten(ProjectModel proj) {
+    if (!visited.contains(proj.pk) && proj.visible) {
+      visited.add(proj.pk);
+      result.add(proj);
+    }
+    for (final sub in proj.subProjects) {
+      flatten(sub);
+    }
+  }
+
+  for (final root in tree) {
+    flatten(root);
+  }
+  return result;
+}
+
+List<ProjectModel> toFlattenedTree(List<ProjectModel> projects) {
+  final tree = buildProjectTree(projects);
+  return flattenProjectTree(tree);
+}
+
+// ── 프로젝트 전체 목록 프로바이더 (트리 평탄화 정렬 적용) ─────────────────────────
 final projectListProvider = FutureProvider<List<ProjectModel>>((ref) async {
-  return ref.watch(projectRepositoryProvider).fetchProjects();
+  final raw = await ref.watch(projectRepositoryProvider).fetchProjects();
+  return toFlattenedTree(raw);
 });
 
 // ── 전역 활성 워크스페이스 목록 프로바이더 (Vue Header의 allActiveProjects와 100% 동일) ──
@@ -18,7 +68,8 @@ final activeWorkspaceListProvider = FutureProvider<List<ProjectModel>>((ref) asy
 
 // ── 내 워크스페이스 목록 프로바이더 (/api/v1/issue-project/my_projects/) ─────────────
 final myProjectsProvider = FutureProvider<List<ProjectModel>>((ref) async {
-  return ref.watch(projectRepositoryProvider).fetchMyProjects();
+  final raw = await ref.watch(projectRepositoryProvider).fetchMyProjects();
+  return toFlattenedTree(raw);
 });
 
 // ── 업무(Issue) 등록 폼 주입용 워크스페이스 목록 프로바이더 ────────────────────────────
@@ -94,6 +145,7 @@ void selectProject(WidgetRef ref, ProjectModel? project) {
       type: project.type,
       isPublic: project.isPublic,
       myPerms: project.myPerms,
+      module: project.module,
     );
   }
 }

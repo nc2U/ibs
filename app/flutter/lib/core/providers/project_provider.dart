@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../features/project/data/models/project_model.dart';
 
 // ── 선택된 프로젝트 모델 (경량) ────────────────────────────────────────────────────
 class SelectedProject {
@@ -9,6 +10,7 @@ class SelectedProject {
   final String type;
   final bool isPublic;
   final List<String> myPerms;
+  final ProjectModuleModel? module;
 
   const SelectedProject({
     required this.pk,
@@ -18,6 +20,7 @@ class SelectedProject {
     this.type = '1',
     this.isPublic = false,
     this.myPerms = const [],
+    this.module,
   });
 }
 

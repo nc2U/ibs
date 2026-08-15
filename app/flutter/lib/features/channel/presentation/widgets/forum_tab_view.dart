@@ -69,6 +69,22 @@ class _ForumTabViewState extends ConsumerState<ForumTabView> {
     final postListAsync = ref.watch(postListProvider);
     final selectedProject = ref.watch(selectedProjectProvider);
 
+    final isForumDisabled =
+        selectedProject != null && (selectedProject.module?.forum == false);
+
+    if (isForumDisabled) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: ErrorView.empty(
+            message: '게시판 모듈이 없는 워크스페이스입니다.',
+            subMessage: '[${selectedProject.name}] 워크스페이스는 게시판 기능을 사용하지 않습니다.',
+            icon: Icons.speaker_notes_off_outlined,
+          ),
+        ),
+      );
+    }
+
     return Column(
       children: [
         // ── 1. 게시판 선택 칩 바 (가로 스크롤) ────────────────────────
@@ -310,8 +326,20 @@ class _ForumTabViewState extends ConsumerState<ForumTabView> {
           child: postListAsync.when(
             data: (data) {
               if (data.results.isEmpty) {
-                return const ErrorView(
-                  message: '등록된 게시글이 없습니다.',
+                final hasSearch = _searchController.text.trim().isNotEmpty;
+                final isForumFiltered = selectedForumId != null;
+
+                return ErrorView.empty(
+                  message: hasSearch
+                      ? '검색 결과와 일치하는 게시글이 없습니다.'
+                      : (isForumFiltered
+                          ? '선택한 게시판에 등록된 게시글이 없습니다.'
+                          : '등록된 게시글이 없습니다.'),
+                  subMessage: hasSearch
+                      ? '다른 검색어로 다시 시도해 보세요.'
+                      : (selectedProject != null
+                          ? '[${selectedProject.name}] 워크스페이스의 첫 게시글을 작성해 보세요.'
+                          : null),
                   icon: Icons.forum_outlined,
                 );
               }

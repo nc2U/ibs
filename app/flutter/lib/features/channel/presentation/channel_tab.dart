@@ -5,6 +5,7 @@ import '../../../core/constants/app_text_styles.dart';
 import '../../../core/constants/permissions.dart';
 import '../../../core/providers/permission_provider.dart';
 import '../../../core/widgets/workspace_selector_bar.dart';
+import '../../../core/providers/project_provider.dart';
 import '../providers/forum_provider.dart';
 import 'widgets/forum_tab_view.dart';
 import 'widgets/notice_form_sheet.dart';
@@ -56,8 +57,15 @@ class _ChannelTabState extends ConsumerState<ChannelTab>
 
   @override
   Widget build(BuildContext context) {
-    final canManageNews = ref.can(Perm.newsManage);
-    final canCreatePost = ref.can(Perm.forumCreate) || ref.can(Perm.forumManage);
+    final selectedProject = ref.watch(selectedProjectProvider);
+    final isNewsDisabled =
+        selectedProject != null && (selectedProject.module?.news == false);
+    final isForumDisabled =
+        selectedProject != null && (selectedProject.module?.forum == false);
+
+    final canManageNews = !isNewsDisabled && ref.can(Perm.newsManage);
+    final canCreatePost = !isForumDisabled &&
+        (ref.can(Perm.forumCreate) || ref.can(Perm.forumManage));
 
     return Scaffold(
       backgroundColor: AppColors.bgCard,

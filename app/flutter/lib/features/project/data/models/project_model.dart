@@ -122,6 +122,8 @@ class ProjectModel {
   final bool isBookmarked;
   final int depth;
   final bool parentVisible;
+  final int? parent;
+  final List<ProjectModel> subProjects;
   final ProjectModuleModel? module;
   final List<String> myPerms;
   final List<ProjectMemberModel> members;
@@ -141,6 +143,8 @@ class ProjectModel {
     this.isBookmarked = false,
     this.depth = 0,
     this.parentVisible = false,
+    this.parent,
+    this.subProjects = const [],
     this.module,
     this.myPerms = const [],
     this.members = const [],
@@ -157,6 +161,50 @@ class ProjectModel {
     return name;
   }
 
+  ProjectModel copyWith({
+    int? pk,
+    String? name,
+    String? slug,
+    String? description,
+    String? type,
+    String? status,
+    bool? visible,
+    bool? isPublic,
+    bool? isBookmarked,
+    int? depth,
+    bool? parentVisible,
+    int? parent,
+    List<ProjectModel>? subProjects,
+    ProjectModuleModel? module,
+    List<String>? myPerms,
+    List<ProjectMemberModel>? members,
+    List<ProjectVersionModel>? versions,
+    List<ProjectCategoryModel>? categories,
+    List<ProjectTrackerModel>? trackers,
+  }) {
+    return ProjectModel(
+      pk: pk ?? this.pk,
+      name: name ?? this.name,
+      slug: slug ?? this.slug,
+      description: description ?? this.description,
+      type: type ?? this.type,
+      status: status ?? this.status,
+      visible: visible ?? this.visible,
+      isPublic: isPublic ?? this.isPublic,
+      isBookmarked: isBookmarked ?? this.isBookmarked,
+      depth: depth ?? this.depth,
+      parentVisible: parentVisible ?? this.parentVisible,
+      parent: parent ?? this.parent,
+      subProjects: subProjects ?? List.from(this.subProjects),
+      module: module ?? this.module,
+      myPerms: myPerms ?? this.myPerms,
+      members: members ?? this.members,
+      versions: versions ?? this.versions,
+      categories: categories ?? this.categories,
+      trackers: trackers ?? this.trackers,
+    );
+  }
+
   factory ProjectModel.fromJson(Map<String, dynamic> json) {
     final memberList = (json['all_members'] ?? json['members']) as List<dynamic>?;
     return ProjectModel(
@@ -171,6 +219,8 @@ class ProjectModel {
       isBookmarked: json['is_bookmarked'] as bool? ?? false,
       depth: json['depth'] as int? ?? 0,
       parentVisible: json['parent_visible'] as bool? ?? false,
+      parent: json['parent'] as int?,
+      subProjects: const [],
       module: json['module'] != null
           ? ProjectModuleModel.fromJson(json['module'] as Map<String, dynamic>)
           : null,
@@ -215,6 +265,7 @@ class ProjectModel {
         'visible': visible,
         'is_public': isPublic,
         'is_bookmarked': isBookmarked,
+        'parent': parent,
         'my_perms': myPerms,
       };
 }
