@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../../core/constants/api_endpoints.dart';
 import '../../../core/models/common_models.dart';
 import '../../../core/providers/dio_provider.dart';
@@ -9,6 +11,24 @@ class MeetingRepository {
   final Dio _dio;
 
   MeetingRepository(this._dio);
+
+  /// 회의록 PDF 다운로드 (임시 파일 경로 반환)
+  Future<String> downloadMeetingPdf(int meetingId, String title) async {
+    final response = await _dio.get(
+      '/pdf/work/meeting/$meetingId/',
+      options: Options(
+        responseType: ResponseType.bytes,
+        headers: {'Accept': 'application/pdf, */*'},
+      ),
+    );
+
+    final tempDir = await getTemporaryDirectory();
+    final sanitizedTitle = title.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
+    final filePath = '${tempDir.path}/회의록_${sanitizedTitle}_#$meetingId.pdf';
+    final file = File(filePath);
+    await file.writeAsBytes(response.data as List<int>);
+    return filePath;
+  }
 
   /// 회의 목록 조회
   Future<MeetingListResponse> fetchMeetings(MeetingFilterModel filter) async {

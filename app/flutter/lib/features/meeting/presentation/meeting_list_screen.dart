@@ -12,6 +12,7 @@ import '../../project/providers/project_provider.dart';
 import '../data/models/meeting_model.dart';
 import '../providers/meeting_provider.dart';
 import 'widgets/meeting_card.dart';
+import 'widgets/meeting_pdf_helper.dart';
 
 /// 회의 목록 화면
 class MeetingListScreen extends ConsumerStatefulWidget {
@@ -194,6 +195,7 @@ class _MeetingListScreenState extends ConsumerState<MeetingListScreen> {
                     return MeetingCard(
                       meeting: meeting,
                       onTap: () => context.push('/work/meetings/${meeting.pk}'),
+                      onExportPdf: () => exportMeetingPdf(context, ref, meeting),
                     );
                   },
                 ),

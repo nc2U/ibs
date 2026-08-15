@@ -1,3 +1,4 @@
+{% load markdown_filters %}
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -170,7 +171,6 @@
     <div class="section">
         <div class="section-title">회의 내용</div>
         <div class="markdown-content">
-            {% load markdown_filters %}
             {{ meeting.content|markdown|safe }}
         </div>
     </div>

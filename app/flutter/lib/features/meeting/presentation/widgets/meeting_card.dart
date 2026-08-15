@@ -7,11 +7,13 @@ import '../../data/models/meeting_model.dart';
 class MeetingCard extends StatelessWidget {
   final MeetingModel meeting;
   final VoidCallback? onTap;
+  final VoidCallback? onExportPdf;
 
   const MeetingCard({
     super.key,
     required this.meeting,
     this.onTap,
+    this.onExportPdf,
   });
 
   @override
@@ -82,7 +84,7 @@ class MeetingCard extends StatelessWidget {
             ),
             const SizedBox(height: 10),
 
-            // ── 하단 행: 참석자 수 + 액션아이템/이슈 수 ────────────────────────
+            // ── 하단 행: 참석자 수 + 액션아이템/이슈 수 + PDF 출력 ─────────────
             Row(
               children: [
                 Icon(Icons.people_outline_rounded,
@@ -103,6 +105,31 @@ class MeetingCard extends StatelessWidget {
                         .copyWith(color: AppColors.accentWork),
                   ),
                 ],
+                const Spacer(),
+                if (onExportPdf != null)
+                  InkWell(
+                    onTap: onExportPdf,
+                    borderRadius: BorderRadius.circular(3),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.picture_as_pdf_outlined,
+                              size: 14, color: Color(0xFFEF5350)),
+                          const SizedBox(width: 3),
+                          Text(
+                            'PDF',
+                            style: AppTextStyles.caption.copyWith(
+                              color: const Color(0xFFEF5350),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
               ],
             ),
           ],

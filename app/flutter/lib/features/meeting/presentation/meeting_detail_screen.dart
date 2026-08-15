@@ -12,6 +12,7 @@ import '../data/models/meeting_model.dart';
 import '../data/meeting_repository.dart';
 import '../providers/meeting_provider.dart';
 import 'meeting_form_screen.dart';
+import 'widgets/meeting_pdf_helper.dart';
 
 /// 회의 상세 화면
 class MeetingDetailScreen extends ConsumerWidget {
@@ -261,7 +262,10 @@ class MeetingDetailScreen extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ── 기본 정보 섹션 ──────────────────────────────────────────────
-          _InfoCard(meeting: meeting),
+          _InfoCard(
+            meeting: meeting,
+            onExportPdf: () => exportMeetingPdf(context, ref, meeting),
+          ),
           const SizedBox(height: 12),
 
           // ── 회의 의제 ──────────────────────────────────────────────
@@ -373,12 +377,11 @@ class MeetingDetailScreen extends ConsumerWidget {
 // ── 기본 정보 카드 ─────────────────────────────────────────────────────────────
 class _InfoCard extends StatelessWidget {
   final MeetingModel meeting;
-  const _InfoCard({required this.meeting});
+  final VoidCallback onExportPdf;
+  const _InfoCard({required this.meeting, required this.onExportPdf});
 
   String _formatDateTime(String dateStr) {
     if (dateStr.isEmpty) return '';
-    // 예: "2026-08-10 10:00+09:00" -> "2026-08-10 10:00"
-    // 예: "2026-08-10T10:00:00+09:00" -> "2026-08-10 10:00"
     var formatted = dateStr.replaceAll('T', ' ');
     if (formatted.length >= 16) {
       return formatted.substring(0, 16);
@@ -452,6 +455,25 @@ class _InfoCard extends StatelessWidget {
                 label: '참석자',
                 value: attendeesText,
                 icon: Icons.people_outline_rounded),
+          const SizedBox(height: 10),
+          const Divider(height: 1, color: AppColors.border),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: onExportPdf,
+              icon: const Icon(Icons.picture_as_pdf_outlined,
+                  size: 16, color: Color(0xFFEF5350)),
+              label: const Text('회의록 PDF 보기 / 출력'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.textPrimary,
+                side: const BorderSide(color: AppColors.border),
+                shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.zero),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+              ),
+            ),
+          ),
         ],
       ),
     );
