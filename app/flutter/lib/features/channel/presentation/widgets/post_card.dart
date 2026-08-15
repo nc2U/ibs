@@ -16,6 +16,9 @@ class PostCard extends StatelessWidget {
     required this.onTap,
   });
 
+  static const _noticeAccent = Color(0xFFE5A93C); // 품위 있는 웜 앰버-골드
+  static const _noticeBg = Color(0xFF222538);     // 은은한 웜 딥네이비
+
   @override
   Widget build(BuildContext context) {
     final plainContent = _stripHtml(post.content);
@@ -25,14 +28,16 @@ class PostCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: AppColors.bgCard,
+        color: post.isNotice ? _noticeBg : AppColors.bgCard,
         borderRadius: BorderRadius.zero,
-        border: Border.all(
-          color: post.isNotice
-              ? AppColors.error.withAlpha(120)
-              : AppColors.border,
-          width: post.isNotice ? 1.2 : 0.8,
-        ),
+        border: post.isNotice
+            ? const Border(
+                left: BorderSide(color: _noticeAccent, width: 3.5),
+                top: BorderSide(color: Color(0x60E5A93C), width: 0.8),
+                right: BorderSide(color: Color(0x60E5A93C), width: 0.8),
+                bottom: BorderSide(color: Color(0x60E5A93C), width: 0.8),
+              )
+            : Border.all(color: AppColors.border, width: 0.8),
       ),
       child: Material(
         color: Colors.transparent,
@@ -51,20 +56,28 @@ class PostCard extends StatelessWidget {
                     if (post.isNotice) ...[
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
+                            horizontal: 7, vertical: 2.5),
                         decoration: BoxDecoration(
-                          color: AppColors.error.withAlpha(25),
+                          color: _noticeAccent.withAlpha(28),
                           borderRadius: BorderRadius.zero,
-                          border:
-                              Border.all(color: AppColors.error, width: 0.8),
+                          border: Border.all(
+                              color: _noticeAccent.withAlpha(120), width: 0.8),
                         ),
-                        child: Text(
-                          '공지',
-                          style: AppTextStyles.caption.copyWith(
-                            color: AppColors.error,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 11,
-                          ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.campaign_rounded,
+                                size: 13, color: _noticeAccent),
+                            const SizedBox(width: 4),
+                            Text(
+                              '공지',
+                              style: AppTextStyles.caption.copyWith(
+                                color: _noticeAccent,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(width: 6),

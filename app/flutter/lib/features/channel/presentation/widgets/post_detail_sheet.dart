@@ -274,18 +274,28 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
                 if (post.isNotice) ...[
                   Container(
                     padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
                     decoration: BoxDecoration(
-                      color: AppColors.error.withAlpha(25),
+                      color: const Color(0xFFE5A93C).withAlpha(28),
                       borderRadius: BorderRadius.zero,
-                      border: Border.all(color: AppColors.error, width: 0.8),
+                      border: Border.all(
+                          color: const Color(0xFFE5A93C).withAlpha(120), width: 0.8),
                     ),
-                    child: Text(
-                      '공지',
-                      style: AppTextStyles.caption.copyWith(
-                        color: AppColors.error,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.campaign_rounded,
+                            size: 13, color: Color(0xFFE5A93C)),
+                        const SizedBox(width: 4),
+                        Text(
+                          '공지',
+                          style: AppTextStyles.caption.copyWith(
+                            color: const Color(0xFFE5A93C),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(width: 8),

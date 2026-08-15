@@ -9,6 +9,9 @@ class NoticeCard extends StatelessWidget {
   final VoidCallback onTap;
   final bool showWorkspaceBadge;
 
+  static const _importantAccent = Color(0xFFE5A93C); // 품위 있는 웜 앰버-골드
+  static const _importantBg = Color(0xFF222538);     // 은은한 웜 딥네이비
+
   const NoticeCard({
     super.key,
     required this.notice,
@@ -26,14 +29,16 @@ class NoticeCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: AppColors.bgCard,
+          color: notice.isImportant ? _importantBg : AppColors.bgCard,
           borderRadius: BorderRadius.zero,
-          border: Border.all(
-            color: notice.isImportant
-                ? AppColors.error.withAlpha(120)
-                : AppColors.border,
-            width: notice.isImportant ? 1.2 : 0.8,
-          ),
+          border: notice.isImportant
+              ? const Border(
+                  left: BorderSide(color: _importantAccent, width: 3.5),
+                  top: BorderSide(color: Color(0x60E5A93C), width: 0.8),
+                  right: BorderSide(color: Color(0x60E5A93C), width: 0.8),
+                  bottom: BorderSide(color: Color(0x60E5A93C), width: 0.8),
+                )
+              : Border.all(color: AppColors.border, width: 0.8),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -44,22 +49,23 @@ class NoticeCard extends StatelessWidget {
                 if (notice.isImportant) ...[
                   Container(
                     padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
                     decoration: BoxDecoration(
-                      color: AppColors.error.withAlpha(25),
+                      color: _importantAccent.withAlpha(28),
                       borderRadius: BorderRadius.zero,
-                      border: Border.all(color: AppColors.error, width: 0.8),
+                      border: Border.all(
+                          color: _importantAccent.withAlpha(120), width: 0.8),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         const Icon(Icons.campaign_rounded,
-                            size: 13, color: AppColors.error),
-                        const SizedBox(width: 3),
+                            size: 13, color: _importantAccent),
+                        const SizedBox(width: 4),
                         Text(
                           '중요 공지',
                           style: AppTextStyles.caption.copyWith(
-                            color: AppColors.error,
+                            color: _importantAccent,
                             fontWeight: FontWeight.bold,
                             fontSize: 11,
                           ),
@@ -95,13 +101,15 @@ class NoticeCard extends StatelessWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE53935),
+                      color: AppColors.warning.withAlpha(30),
                       borderRadius: BorderRadius.zero,
+                      border: Border.all(
+                          color: AppColors.warning.withAlpha(80), width: 0.8),
                     ),
                     child: const Text(
                       'N',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: AppColors.warning,
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
                       ),
