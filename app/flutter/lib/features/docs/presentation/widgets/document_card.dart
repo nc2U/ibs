@@ -104,10 +104,10 @@ class DocumentCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                if (doc.description.isNotEmpty) ...[
+                if (_stripHtml(doc.description).isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Text(
-                    doc.description,
+                    _stripHtml(doc.description),
                     style: AppTextStyles.bodySm
                         .copyWith(color: AppColors.textMuted),
                     maxLines: 1,
@@ -159,5 +159,19 @@ class DocumentCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _stripHtml(String html) {
+    if (html.isEmpty) return '';
+    return html
+        .replaceAll(RegExp(r'<[^>]*>'), ' ')
+        .replaceAll('&nbsp;', ' ')
+        .replaceAll('&amp;', '&')
+        .replaceAll('&lt;', '<')
+        .replaceAll('&gt;', '>')
+        .replaceAll('&quot;', '"')
+        .replaceAll('&#39;', "'")
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
   }
 }

@@ -134,10 +134,10 @@ class NoticeCard extends StatelessWidget {
             ),
 
             // ── 요약문 (있을 경우) ──────────────────────────────────────────
-            if (notice.summary.isNotEmpty) ...[
+            if (_stripHtml(notice.summary).isNotEmpty) ...[
               const SizedBox(height: 4),
               Text(
-                notice.summary,
+                _stripHtml(notice.summary),
                 style: AppTextStyles.bodySm
                     .copyWith(color: AppColors.textSecond, height: 1.3),
                 maxLines: 2,
@@ -204,5 +204,19 @@ class NoticeCard extends StatelessWidget {
       return raw.substring(0, 10);
     }
     return raw;
+  }
+
+  String _stripHtml(String html) {
+    if (html.isEmpty) return '';
+    return html
+        .replaceAll(RegExp(r'<[^>]*>'), ' ')
+        .replaceAll('&nbsp;', ' ')
+        .replaceAll('&amp;', '&')
+        .replaceAll('&lt;', '<')
+        .replaceAll('&gt;', '>')
+        .replaceAll('&quot;', '"')
+        .replaceAll('&#39;', "'")
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
   }
 }

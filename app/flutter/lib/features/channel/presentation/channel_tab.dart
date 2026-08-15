@@ -98,17 +98,30 @@ class _ChannelTabState extends ConsumerState<ChannelTab>
 
           // ── 2. 메인 탭바 (공지사항 | 게시판) ───────────────────────────
           Container(
-            color: AppColors.bgCard,
+            decoration: const BoxDecoration(
+              color: AppColors.bgSurface,
+              border: Border(
+                bottom: BorderSide(color: AppColors.border, width: 0.8),
+              ),
+            ),
             child: TabBar(
               controller: _tabController,
-              indicatorColor: AppColors.accentWork,
-              indicatorWeight: 2.5,
               indicatorSize: TabBarIndicatorSize.tab,
+              indicator: const BoxDecoration(
+                color: AppColors.bgCard,
+                border: Border(
+                  bottom: BorderSide(
+                    color: AppColors.accentWork,
+                    width: 3.5,
+                  ),
+                ),
+              ),
               labelColor: AppColors.accentWork,
-              unselectedLabelColor: AppColors.textSecond,
+              unselectedLabelColor: AppColors.textMuted,
               labelStyle: AppTextStyles.titleSm
-                  .copyWith(fontWeight: FontWeight.bold),
-              unselectedLabelStyle: AppTextStyles.bodySm,
+                  .copyWith(fontWeight: FontWeight.w700),
+              unselectedLabelStyle: AppTextStyles.bodyMd,
+              dividerColor: Colors.transparent,
               tabs: const [
                 Tab(
                   child: Row(
@@ -133,7 +146,6 @@ class _ChannelTabState extends ConsumerState<ChannelTab>
               ],
             ),
           ),
-          const Divider(color: AppColors.border, height: 1),
 
           // ── 3. 탭 뷰 본문 ─────────────────────────────────────────────
           Expanded(

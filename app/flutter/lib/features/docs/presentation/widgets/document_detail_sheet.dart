@@ -300,12 +300,51 @@ class DocumentDetailSheet extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
 
-          // ── 상세 설명 ────────────────────────────────────────────────────
+          // ── 상세 설명 (HTML 파싱 렌더링) ─────────────────────────────────
           Text('설명 / 비고', style: AppTextStyles.titleSm),
           const SizedBox(height: 6),
-          Text(
-            doc.description.isNotEmpty ? doc.description : '등록된 상세 설명이 없습니다.',
-            style: AppTextStyles.bodySecond,
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.bgSurface,
+              borderRadius: BorderRadius.zero,
+              border: Border.all(color: AppColors.border, width: 0.8),
+            ),
+            child: doc.description.isNotEmpty
+                ? HtmlWidget(
+                    doc.description,
+                    textStyle: AppTextStyles.bodyMd.copyWith(
+                      color: AppColors.textPrimary,
+                      height: 1.5,
+                    ),
+                    customStylesBuilder: (element) {
+                      if (element.localName == 'table') {
+                        return {
+                          'border-collapse': 'collapse',
+                          'width': '100%',
+                        };
+                      }
+                      if (element.localName == 'th' ||
+                          element.localName == 'td') {
+                        return {
+                          'border': '1px solid #444',
+                          'padding': '6px 8px',
+                        };
+                      }
+                      if (element.localName == 'img') {
+                        return {
+                          'max-width': '100%',
+                          'height': 'auto',
+                        };
+                      }
+                      return null;
+                    },
+                  )
+                : Text(
+                    '등록된 상세 설명이 없습니다.',
+                    style: AppTextStyles.bodyMuted,
+                  ),
           ),
           const SizedBox(height: 20),
 
