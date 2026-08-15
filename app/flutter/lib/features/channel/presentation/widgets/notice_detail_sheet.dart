@@ -7,6 +7,7 @@ import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/constants/permissions.dart';
+import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/dio_provider.dart';
 import '../../../../core/providers/permission_provider.dart';
 import '../../data/models/notice_model.dart';
@@ -162,6 +163,7 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
 
     final canManage = ref.can(Perm.newsManage);
     final canComment = ref.can(Perm.newsComment);
+    final currentUser = ref.watch(currentUserProvider).valueOrNull;
 
     return Container(
       constraints: BoxConstraints(
@@ -423,52 +425,61 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
                     )
                   else
                     ...notice.comments.map(
-                      (c) => Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AppColors.bgSurface,
-                          borderRadius: BorderRadius.zero,
-                          border:
-                              Border.all(color: AppColors.border, width: 0.8),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Text(
-                                  c.creator?.username ?? '사용자',
-                                  style: AppTextStyles.label.copyWith(
-                                    fontWeight: FontWeight.bold,
+                      (c) {
+                        final isAuthor = currentUser != null &&
+                            c.creator != null &&
+                            (currentUser.pk == c.creator!.pk ||
+                                currentUser.username == c.creator!.username);
+                        final canDeleteComment = canManage || (canComment && isAuthor);
+
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppColors.bgSurface,
+                            borderRadius: BorderRadius.zero,
+                            border:
+                                Border.all(color: AppColors.border, width: 0.8),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    c.creator?.username ?? '사용자',
+                                    style: AppTextStyles.label.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  c.created?.substring(0, 16).replaceAll('T', ' ') ??
-                                      '',
-                                  style: AppTextStyles.caption
-                                      .copyWith(color: AppColors.textMuted),
-                                ),
-                                const Spacer(),
-                                IconButton(
-                                  icon: const Icon(Icons.close_rounded,
-                                      size: 14, color: AppColors.textMuted),
-                                  onPressed: () => _handleDeleteComment(c.pk),
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              c.content,
-                              style: AppTextStyles.bodySm
-                                  .copyWith(color: AppColors.textPrimary),
-                            ),
-                          ],
-                        ),
-                      ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    c.created?.substring(0, 16).replaceAll('T', ' ') ??
+                                        '',
+                                    style: AppTextStyles.caption
+                                        .copyWith(color: AppColors.textMuted),
+                                  ),
+                                  const Spacer(),
+                                  if (canDeleteComment)
+                                    IconButton(
+                                      icon: const Icon(Icons.close_rounded,
+                                          size: 14, color: AppColors.textMuted),
+                                      onPressed: () => _handleDeleteComment(c.pk),
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(),
+                                    ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                c.content,
+                                style: AppTextStyles.bodySm
+                                    .copyWith(color: AppColors.textPrimary),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                     ),
                 ],
               ),
