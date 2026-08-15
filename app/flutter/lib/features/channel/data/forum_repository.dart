@@ -241,19 +241,55 @@ class ForumRepository {
     }
   }
 
+  /// 댓글 목록 조회
+  Future<List<PostCommentModel>> fetchComments({
+    required int postId,
+    int page = 1,
+  }) async {
+    try {
+      final response = await _dio.get(
+        '/api/v1/comment/',
+        queryParameters: {
+          'post': postId,
+          'is_comment': 'true',
+          'page': page,
+        },
+      );
+      final list = (response.data['results'] ?? response.data) as List<dynamic>;
+      return list
+          .whereType<Map<String, dynamic>>()
+          .map((e) => PostCommentModel.fromJson(e))
+          .toList();
+    } on DioException catch (e) {
+      throw Exception(e.response?.data?['detail'] ?? '댓글 목록을 불러오지 못했습니다.');
+    }
+  }
+
   /// 댓글 등록
   Future<PostCommentModel> createComment({
     required int postId,
     required String content,
     int? parent,
+    String? projectSlug,
+    int? projectId,
   }) async {
     try {
+      final queryParams = <String, dynamic>{};
+      if (projectSlug != null && projectSlug.isNotEmpty) {
+        queryParams['project'] = projectSlug;
+      } else if (projectId != null) {
+        queryParams['project'] = projectId;
+      }
       final data = {
         'post': postId,
         'content': content,
         if (parent != null) 'parent': parent,
       };
-      final response = await _dio.post('/api/v1/comment/', data: data);
+      final response = await _dio.post(
+        '/api/v1/comment/',
+        data: data,
+        queryParameters: queryParams.isNotEmpty ? queryParams : null,
+      );
       return PostCommentModel.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
       throw Exception(e.response?.data?['detail'] ?? '댓글 등록에 실패했습니다.');

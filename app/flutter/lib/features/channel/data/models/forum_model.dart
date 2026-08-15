@@ -152,7 +152,9 @@ class PostCommentModel {
 
     return PostCommentModel(
       pk: json['pk'] as int,
-      post: json['post'] is int ? json['post'] as int : null,
+      post: json['post'] is int
+          ? json['post'] as int
+          : (json['post'] is Map ? (json['post']['pk'] as int?) : null),
       content: json['content'] as String? ?? '',
       parent: json['parent'] as int?,
       replies: repliesList,

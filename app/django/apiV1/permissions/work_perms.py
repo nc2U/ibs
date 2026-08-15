@@ -33,6 +33,47 @@ class ProjectPermission(permissions.BasePermission):
                         return project.slug
                     except (Issue.DoesNotExist, ValueError, TypeError):
                         pass
+
+                # 게시글/게시판 ID를 기반으로 프로젝트 역추적
+                post_id = source.get('post')
+                if post_id:
+                    from forum.models import Post
+                    try:
+                        post = Post.objects.select_related('forum__project').get(pk=post_id)
+                        project = post.forum.project
+                        request = getattr(view, 'request', None)
+                        if request and project:
+                            request._cached_project = project
+                        return project.slug
+                    except (Post.DoesNotExist, ValueError, TypeError):
+                        pass
+
+                forum_id = source.get('forum')
+                if forum_id:
+                    from forum.models import Forum
+                    try:
+                        forum = Forum.objects.select_related('project').get(pk=forum_id)
+                        project = forum.project
+                        request = getattr(view, 'request', None)
+                        if request and project:
+                            request._cached_project = project
+                        return project.slug
+                    except (Forum.DoesNotExist, ValueError, TypeError):
+                        pass
+
+                # 공지/소식 ID를 기반으로 프로젝트 역추적
+                news_id = source.get('news')
+                if news_id:
+                    from work.models.inform import News
+                    try:
+                        news = News.objects.select_related('project').get(pk=news_id)
+                        project = news.project
+                        request = getattr(view, 'request', None)
+                        if request and project:
+                            request._cached_project = project
+                        return project.slug
+                    except (News.DoesNotExist, ValueError, TypeError):
+                        pass
         return None
 
     @staticmethod

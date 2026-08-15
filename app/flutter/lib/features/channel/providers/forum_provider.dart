@@ -105,3 +105,10 @@ final postDetailProvider =
   final repo = ref.watch(forumRepositoryProvider);
   return repo.fetchPostDetail(postId);
 });
+
+/// 특정 게시글의 댓글 목록 프로바이더
+final postCommentsProvider =
+    FutureProvider.family<List<PostCommentModel>, int>((ref, postId) async {
+  final repo = ref.watch(forumRepositoryProvider);
+  return repo.fetchComments(postId: postId);
+});

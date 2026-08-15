@@ -9,6 +9,7 @@ import '../../../../core/constants/permissions.dart';
 import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/dio_provider.dart';
 import '../../../../core/providers/permission_provider.dart';
+import '../../../../core/providers/project_provider.dart';
 import '../../data/models/forum_model.dart';
 import '../../data/forum_repository.dart';
 import '../../providers/forum_provider.dart';
@@ -132,6 +133,8 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
     final text = _commentController.text.trim();
     if (text.isEmpty) return;
 
+    final selectedProject = ref.read(selectedProjectProvider);
+
     setState(() => _isSubmittingComment = true);
     try {
       final repo = ref.read(forumRepositoryProvider);
@@ -139,9 +142,12 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
         postId: widget.post.pk,
         content: text,
         parent: _replyParentId,
+        projectSlug: selectedProject?.slug,
+        projectId: selectedProject?.pk,
       );
       _commentController.clear();
-      _replyParentId = null;
+      setState(() => _replyParentId = null);
+      ref.invalidate(postCommentsProvider(widget.post.pk));
       ref.invalidate(postDetailProvider(widget.post.pk));
       ref.read(postListProvider.notifier).refresh();
     } catch (e) {
@@ -189,6 +195,7 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
     try {
       final repo = ref.read(forumRepositoryProvider);
       await repo.deleteComment(commentId);
+      ref.invalidate(postCommentsProvider(widget.post.pk));
       ref.invalidate(postDetailProvider(widget.post.pk));
       ref.read(postListProvider.notifier).refresh();
     } catch (e) {
@@ -236,6 +243,7 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
   Widget build(BuildContext context) {
     final detailAsync = ref.watch(postDetailProvider(widget.post.pk));
     final post = detailAsync.value ?? widget.post;
+    final commentsAsync = ref.watch(postCommentsProvider(widget.post.pk));
 
     final currentUser = ref.watch(currentUserProvider).valueOrNull;
     final isAuthor = currentUser != null &&
@@ -250,8 +258,6 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
     final canDelete = isAuthor
         ? ref.can(Perm.forumOwnDelete) || ref.can(Perm.forumDelete) || ref.can(Perm.forumManage)
         : ref.can(Perm.forumDelete) || ref.can(Perm.forumManage);
-
-    final canManage = ref.can(Perm.forumManage);
 
     return Container(
       constraints: BoxConstraints(
@@ -570,95 +576,63 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
                   ],
 
                   // 댓글 섹션
-                  Row(
-                    children: [
-                      const Icon(Icons.chat_bubble_outline_rounded,
-                          size: 16, color: AppColors.accentWork),
-                      const SizedBox(width: 6),
-                      Text(
-                        '댓글 (${post.comments.length})',
-                        style: AppTextStyles.titleSm
-                            .copyWith(color: AppColors.textPrimary),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  if (post.comments.isEmpty)
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 20),
-                      alignment: Alignment.center,
-                      child: Text(
-                        '등록된 댓글이 없습니다. 첫 번째 댓글을 남겨보세요!',
-                        style: AppTextStyles.caption
-                            .copyWith(color: AppColors.textMuted),
-                      ),
-                    )
-                  else
-                    ...post.comments.map(
-                      (c) {
-                        final isCommentAuthor = currentUser != null &&
-                            c.creator != null &&
-                            (currentUser.pk == c.creator!.pk ||
-                                currentUser.username == c.creator!.username);
-                        final canDeleteThisComment =
-                            ref.can(Perm.forumDelete) ||
-                            ref.can(Perm.forumManage) ||
-                            (ref.can(Perm.forumOwnDelete) && isCommentAuthor);
-
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: AppColors.bgSurface,
-                            borderRadius: BorderRadius.zero,
-                            border:
-                                Border.all(color: AppColors.border, width: 0.8),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                  commentsAsync.when(
+                    data: (comments) {
+                      final totalCount = comments.fold<int>(
+                        comments.length,
+                        (sum, c) => sum + c.replies.length,
+                      );
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
                             children: [
-                              Row(
-                                children: [
-                                  Text(
-                                    c.creator?.username ?? '사용자',
-                                    style: AppTextStyles.label.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    c.created
-                                            ?.substring(0, 16)
-                                            .replaceAll('T', ' ') ??
-                                        '',
-                                    style: AppTextStyles.caption
-                                        .copyWith(color: AppColors.textMuted),
-                                  ),
-                                  const Spacer(),
-                                  if (canDeleteThisComment)
-                                    IconButton(
-                                      icon: const Icon(Icons.close_rounded,
-                                          size: 14,
-                                          color: AppColors.textMuted),
-                                      onPressed: () =>
-                                          _handleDeleteComment(c.pk),
-                                      padding: EdgeInsets.zero,
-                                      constraints: const BoxConstraints(),
-                                    ),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
+                              const Icon(Icons.chat_bubble_outline_rounded,
+                                  size: 16, color: AppColors.accentWork),
+                              const SizedBox(width: 6),
                               Text(
-                                c.content,
-                                style: AppTextStyles.bodySm
+                                '댓글 ($totalCount)',
+                                style: AppTextStyles.titleSm
                                     .copyWith(color: AppColors.textPrimary),
                               ),
                             ],
                           ),
-                        );
-                      },
+                          const SizedBox(height: 10),
+                          if (comments.isEmpty)
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(vertical: 20),
+                              alignment: Alignment.center,
+                              child: Text(
+                                '등록된 댓글이 없습니다. 첫 번째 댓글을 남겨보세요!',
+                                style: AppTextStyles.caption
+                                    .copyWith(color: AppColors.textMuted),
+                              ),
+                            )
+                          else
+                            ...comments.map(
+                              (c) => _buildCommentTile(c, currentUser),
+                            ),
+                        ],
+                      );
+                    },
+                    loading: () => const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ),
                     ),
+                    error: (e, _) => Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Text('댓글 로드 실패: $e',
+                          style: AppTextStyles.caption
+                              .copyWith(color: AppColors.error)),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -666,61 +640,101 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
 
           // ── 3. 하단 댓글 입력 바 ─────────────────────────────────────
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: const BoxDecoration(
               color: AppColors.bgSurface,
               border: Border(top: BorderSide(color: AppColors.border, width: 0.8)),
             ),
             child: SafeArea(
               top: false,
-              child: Row(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _commentController,
-                      decoration: InputDecoration(
-                        hintText: '댓글을 입력해 주세요...',
-                        hintStyle: AppTextStyles.bodyMuted,
-                        filled: true,
-                        fillColor: AppColors.bgCard,
-                        isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 10),
-                        border: const OutlineInputBorder(
-                          borderRadius: BorderRadius.zero,
-                          borderSide: BorderSide(color: AppColors.border),
-                        ),
-                        enabledBorder: const OutlineInputBorder(
-                          borderRadius: BorderRadius.zero,
-                          borderSide: BorderSide(color: AppColors.border),
-                        ),
-                        focusedBorder: const OutlineInputBorder(
-                          borderRadius: BorderRadius.zero,
-                          borderSide: BorderSide(color: AppColors.accentWork),
-                        ),
+                  if (_replyParentId != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 6),
+                      color: AppColors.accentWork.withAlpha(25),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.reply_rounded,
+                              size: 14, color: AppColors.accentWork),
+                          const SizedBox(width: 6),
+                          Text(
+                            '답글 작성 중...',
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.accentWork,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const Spacer(),
+                          GestureDetector(
+                            onTap: () =>
+                                setState(() => _replyParentId = null),
+                            child: const Icon(Icons.close_rounded,
+                                size: 14, color: AppColors.textMuted),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  FilledButton(
-                    onPressed: _isSubmittingComment ? null : _handleAddComment,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.accentWork,
-                      shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.zero),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 12),
-                    ),
-                    child: _isSubmittingComment
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _commentController,
+                            decoration: InputDecoration(
+                              hintText: _replyParentId != null
+                                  ? '답글을 입력해 주세요...'
+                                  : '댓글을 입력해 주세요...',
+                              hintStyle: AppTextStyles.bodyMuted,
+                              filled: true,
+                              fillColor: AppColors.bgCard,
+                              isDense: true,
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 10),
+                              border: const OutlineInputBorder(
+                                borderRadius: BorderRadius.zero,
+                                borderSide: BorderSide(color: AppColors.border),
+                              ),
+                              enabledBorder: const OutlineInputBorder(
+                                borderRadius: BorderRadius.zero,
+                                borderSide: BorderSide(color: AppColors.border),
+                              ),
+                              focusedBorder: const OutlineInputBorder(
+                                borderRadius: BorderRadius.zero,
+                                borderSide:
+                                    BorderSide(color: AppColors.accentWork),
+                              ),
                             ),
-                          )
-                        : const Text('등록'),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        FilledButton(
+                          onPressed: _isSubmittingComment
+                              ? null
+                              : _handleAddComment,
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.accentWork,
+                            shape: const RoundedRectangleBorder(
+                                borderRadius: BorderRadius.zero),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
+                          ),
+                          child: _isSubmittingComment
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text('등록'),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -728,6 +742,102 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildCommentTile(PostCommentModel c, dynamic currentUser,
+      {bool isReply = false}) {
+    final isCommentAuthor = currentUser != null &&
+        c.creator != null &&
+        (currentUser.pk == c.creator!.pk ||
+            currentUser.username == c.creator!.username);
+    final canDeleteThisComment = ref.can(Perm.forumDelete) ||
+        ref.can(Perm.forumManage) ||
+        (ref.can(Perm.forumOwnDelete) && isCommentAuthor);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          margin: EdgeInsets.only(
+            bottom: 8,
+            left: isReply ? 20 : 0,
+          ),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: isReply
+                ? AppColors.bgSurface.withAlpha(160)
+                : AppColors.bgSurface,
+            borderRadius: BorderRadius.zero,
+            border: Border.all(color: AppColors.border, width: 0.8),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  if (isReply) ...[
+                    const Icon(Icons.subdirectory_arrow_right_rounded,
+                        size: 14, color: AppColors.textMuted),
+                    const SizedBox(width: 4),
+                  ],
+                  Text(
+                    c.creator?.username ?? '사용자',
+                    style: AppTextStyles.label.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    c.created?.substring(0, 16).replaceAll('T', ' ') ?? '',
+                    style: AppTextStyles.caption
+                        .copyWith(color: AppColors.textMuted),
+                  ),
+                  const Spacer(),
+                  if (!isReply)
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _replyParentId =
+                              (_replyParentId == c.pk) ? null : c.pk;
+                        });
+                      },
+                      child: Text(
+                        _replyParentId == c.pk ? '답글취소' : '답글',
+                        style: AppTextStyles.caption.copyWith(
+                          color: _replyParentId == c.pk
+                              ? AppColors.error
+                              : AppColors.accentWork,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  if (canDeleteThisComment) ...[
+                    const SizedBox(width: 10),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded,
+                          size: 14, color: AppColors.textMuted),
+                      onPressed: () => _handleDeleteComment(c.pk),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                c.content,
+                style: AppTextStyles.bodySm
+                    .copyWith(color: AppColors.textPrimary),
+              ),
+            ],
+          ),
+        ),
+        if (c.replies.isNotEmpty)
+          ...c.replies.map(
+            (r) => _buildCommentTile(r, currentUser, isReply: true),
+          ),
+      ],
     );
   }
 }
