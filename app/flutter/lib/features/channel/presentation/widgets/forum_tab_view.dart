@@ -2,75 +2,353 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/constants/permissions.dart';
+import '../../../../core/providers/permission_provider.dart';
+import '../../../../core/providers/project_provider.dart';
+import '../../../../core/widgets/error_view.dart';
+import '../../../../core/widgets/loading_shimmer.dart';
+import '../../providers/forum_provider.dart';
+import 'post_card.dart';
+import 'post_detail_sheet.dart';
 
-/// 게시판 탭 뷰 (추후 게시판 목록 / 카테고리 / 포스트 연동 기반 뷰)
-class ForumTabView extends ConsumerWidget {
+/// 사내 게시판 탭 뷰 (게시판 칩바 + 카테고리 칩바 + 검색 + 게시글 피드)
+class ForumTabView extends ConsumerStatefulWidget {
   const ForumTabView({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // 안내 헤더 카드
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.bgCard,
-              borderRadius: BorderRadius.zero,
-              border: Border.all(color: AppColors.border, width: 0.8),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+  ConsumerState<ForumTabView> createState() => _ForumTabViewState();
+}
+
+class _ForumTabViewState extends ConsumerState<ForumTabView> {
+  final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      ref.read(postListProvider.notifier).loadMore();
+    }
+  }
+
+  void _onSearch(String query) {
+    ref.read(postSearchProvider.notifier).state = query.trim();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final canRead = ref.can(Perm.forumRead);
+    if (!canRead) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24.0),
+          child: ErrorView.empty(
+            message: '게시판을 조회할 권한이 없습니다.',
+            subMessage: '관리자에게 [게시판 열람] 권한(forum.read)을 요청해 주세요.',
+          ),
+        ),
+      );
+    }
+
+    final forumsAsync = ref.watch(forumListProvider);
+    final selectedForumId = ref.watch(selectedForumIdProvider);
+    final categoriesAsync = ref.watch(categoryListProvider);
+    final selectedCategoryId = ref.watch(selectedCategoryIdProvider);
+    final postListAsync = ref.watch(postListProvider);
+    final selectedProject = ref.watch(selectedProjectProvider);
+
+    return Column(
+      children: [
+        // ── 1. 게시판 선택 칩 바 (가로 스크롤) ────────────────────────
+        Container(
+          color: AppColors.bgSurface,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: forumsAsync.when(
+            data: (forums) {
+              return SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF00695C).withAlpha(25),
-                        borderRadius: BorderRadius.zero,
-                      ),
-                      child: const Icon(
-                        Icons.forum_rounded,
-                        color: Color(0xFF00695C),
-                        size: 22,
+                    // '전체글' 칩
+                    Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: FilterChip(
+                        label: const Text('전체글'),
+                        selected: selectedForumId == null,
+                        showCheckmark: false,
+                        shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.zero),
+                        backgroundColor: AppColors.bgCard,
+                        selectedColor: AppColors.accentWork.withAlpha(30),
+                        labelStyle: TextStyle(
+                          color: selectedForumId == null
+                              ? AppColors.accentWork
+                              : AppColors.textSecond,
+                          fontWeight: selectedForumId == null
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                          fontSize: 12,
+                        ),
+                        side: BorderSide(
+                          color: selectedForumId == null
+                              ? AppColors.accentWork
+                              : AppColors.border,
+                        ),
+                        onSelected: (_) {
+                          ref.read(selectedForumIdProvider.notifier).state =
+                              null;
+                          ref.read(selectedCategoryIdProvider.notifier).state =
+                              null;
+                        },
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('워크스페이스 사내 게시판',
-                              style: AppTextStyles.titleSm),
-                          const SizedBox(height: 2),
-                          Text(
-                            '팀별 자유 토론 및 소통 채널입니다.',
-                            style: AppTextStyles.bodyMuted,
+                    // 개별 게시판 칩들
+                    ...forums.map((forum) {
+                      final isSelected = selectedForumId == forum.pk;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 6),
+                        child: FilterChip(
+                          label: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(forum.name),
+                              if (forum.postCount > 0) ...[
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${forum.postCount}',
+                                  style: TextStyle(
+                                    color: isSelected
+                                        ? AppColors.accentWork
+                                        : AppColors.textMuted,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
+                          selected: isSelected,
+                          showCheckmark: false,
+                          shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.zero),
+                          backgroundColor: AppColors.bgCard,
+                          selectedColor: AppColors.accentWork.withAlpha(30),
+                          labelStyle: TextStyle(
+                            color: isSelected
+                                ? AppColors.accentWork
+                                : AppColors.textSecond,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                            fontSize: 12,
+                          ),
+                          side: BorderSide(
+                            color: isSelected
+                                ? AppColors.accentWork
+                                : AppColors.border,
+                          ),
+                          onSelected: (_) {
+                            ref.read(selectedForumIdProvider.notifier).state =
+                                forum.pk;
+                            ref.read(selectedCategoryIdProvider.notifier).state =
+                                null;
+                          },
+                        ),
+                      );
+                    }),
                   ],
                 ),
-                const SizedBox(height: 14),
-                const Divider(color: AppColors.border, height: 1),
-                const SizedBox(height: 14),
-                Text(
-                  '💡 안내: 게시판 목록 및 카테고리별 게시글 작성/조회 기능이 곧 연결될 예정입니다.',
-                  style: AppTextStyles.caption.copyWith(
-                    color: AppColors.textSecond,
-                    height: 1.4,
+              );
+            },
+            loading: () => const SizedBox(height: 36),
+            error: (_, __) => const SizedBox.shrink(),
+          ),
+        ),
+
+        // ── 2. 서브 카테고리 칩 바 (게시판 선택 시 노출) ───────────────
+        if (selectedForumId != null)
+          categoriesAsync.maybeWhen(
+            data: (categories) {
+              if (categories.isEmpty) return const SizedBox.shrink();
+              return Container(
+                color: AppColors.bgSurface,
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(right: 6),
+                        child: ChoiceChip(
+                          label: const Text('카테고리 전체'),
+                          selected: selectedCategoryId == null,
+                          shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.zero),
+                          backgroundColor: AppColors.bgCard,
+                          selectedColor: AppColors.accentProject.withAlpha(30),
+                          labelStyle: TextStyle(
+                            color: selectedCategoryId == null
+                                ? AppColors.accentProject
+                                : AppColors.textSecond,
+                            fontSize: 11,
+                            fontWeight: selectedCategoryId == null
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                          ),
+                          side: BorderSide(
+                            color: selectedCategoryId == null
+                                ? AppColors.accentProject
+                                : AppColors.border,
+                          ),
+                          onSelected: (_) {
+                            ref
+                                .read(selectedCategoryIdProvider.notifier)
+                                .state = null;
+                          },
+                        ),
+                      ),
+                      ...categories.map((cat) {
+                        final isCatSelected = selectedCategoryId == cat.pk;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 6),
+                          child: ChoiceChip(
+                            label: Text(cat.name),
+                            selected: isCatSelected,
+                            shape: const RoundedRectangleBorder(
+                                borderRadius: BorderRadius.zero),
+                            backgroundColor: AppColors.bgCard,
+                            selectedColor: AppColors.accentProject.withAlpha(30),
+                            labelStyle: TextStyle(
+                              color: isCatSelected
+                                  ? AppColors.accentProject
+                                  : AppColors.textSecond,
+                              fontSize: 11,
+                              fontWeight: isCatSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                            ),
+                            side: BorderSide(
+                              color: isCatSelected
+                                  ? AppColors.accentProject
+                                  : AppColors.border,
+                            ),
+                            onSelected: (_) {
+                              ref
+                                  .read(selectedCategoryIdProvider.notifier)
+                                  .state = cat.pk;
+                            },
+                          ),
+                        );
+                      }),
+                    ],
                   ),
                 ),
-              ],
+              );
+            },
+            orElse: () => const SizedBox.shrink(),
+          ),
+
+        // ── 3. 검색 바 ───────────────────────────────────────────────
+        Container(
+          color: AppColors.bgSurface,
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+          child: TextField(
+            controller: _searchController,
+            onSubmitted: _onSearch,
+            textInputAction: TextInputAction.search,
+            style: AppTextStyles.bodySm,
+            decoration: InputDecoration(
+              hintText: '게시글 제목, 내용, 작성자 검색',
+              hintStyle: AppTextStyles.bodyMuted,
+              prefixIcon: const Icon(Icons.search_rounded,
+                  size: 18, color: AppColors.textMuted),
+              suffixIcon: _searchController.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear_rounded,
+                          size: 16, color: AppColors.textMuted),
+                      onPressed: () {
+                        _searchController.clear();
+                        _onSearch('');
+                      },
+                    )
+                  : null,
+              filled: true,
+              fillColor: AppColors.bgCard,
+              isDense: true,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              border: const OutlineInputBorder(
+                borderRadius: BorderRadius.zero,
+                borderSide: BorderSide(color: AppColors.border),
+              ),
+              enabledBorder: const OutlineInputBorder(
+                borderRadius: BorderRadius.zero,
+                borderSide: BorderSide(color: AppColors.border),
+              ),
+              focusedBorder: const OutlineInputBorder(
+                borderRadius: BorderRadius.zero,
+                borderSide: BorderSide(color: AppColors.accentWork),
+              ),
             ),
           ),
-        ],
-      ),
+        ),
+        const Divider(color: AppColors.border, height: 1),
+
+        // ── 4. 게시글 피드 목록 ───────────────────────────────────────
+        Expanded(
+          child: postListAsync.when(
+            data: (data) {
+              if (data.results.isEmpty) {
+                return const ErrorView(
+                  message: '등록된 게시글이 없습니다.',
+                  icon: Icons.forum_outlined,
+                );
+              }
+
+              return RefreshIndicator(
+                onRefresh: () => ref.read(postListProvider.notifier).refresh(),
+                child: ListView.separated(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.all(16),
+                  itemCount: data.results.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  itemBuilder: (ctx, index) {
+                    final post = data.results[index];
+                    return PostCard(
+                      post: post,
+                      showWorkspaceBadge: selectedProject == null,
+                      onTap: () {
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (bCtx) => PostDetailSheet(post: post),
+                        );
+                      },
+                    );
+                  },
+                ),
+              );
+            },
+            loading: () => const LoadingShimmer(),
+            error: (err, stack) => ErrorView(
+              message: '$err',
+              onRetry: () => ref.read(postListProvider.notifier).refresh(),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

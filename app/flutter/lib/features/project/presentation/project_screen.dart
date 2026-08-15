@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/models/common_models.dart';
 import '../../../../core/providers/docs_context_provider.dart';
 import '../../../../core/providers/project_provider.dart';
-import '../../../../core/router/app_router.dart';
 import '../../../../core/widgets/project_selector_bottom_sheet.dart';
 import '../../contract/presentation/contract_list_screen.dart';
 import '../../docs/presentation/docs_screen.dart';

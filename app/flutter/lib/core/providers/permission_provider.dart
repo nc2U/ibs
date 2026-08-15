@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../features/project/providers/project_provider.dart';
-import '../constants/permissions.dart';
 import 'project_provider.dart';
 
 // ── 전역 권한 집합 (사용자가 속한 모든 프로젝트 권한 병합) ─────────────────────────

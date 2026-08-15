@@ -6,14 +6,16 @@ import '../../../core/constants/permissions.dart';
 import '../../../core/providers/permission_provider.dart';
 import '../../../core/providers/project_provider.dart';
 import '../../../core/widgets/project_selector_bottom_sheet.dart';
+import '../providers/forum_provider.dart';
 import 'widgets/forum_tab_view.dart';
 import 'widgets/notice_form_sheet.dart';
 import 'widgets/notice_list_view.dart';
+import 'widgets/post_form_sheet.dart';
 
 /// 채널 메인 화면 (/channel)
 /// - 최상단: 워크스페이스 셀렉터 바
 /// - 탭: 공지사항 | 게시판
-/// - FAB: 공지 등록 (news.manage 권한 보유 시 노출)
+/// - FAB: 공지 등록 (news.manage) / 글쓰기 (forum.create)
 class ChannelTab extends ConsumerStatefulWidget {
   const ChannelTab({super.key});
 
@@ -42,47 +44,59 @@ class _ChannelTabState extends ConsumerState<ChannelTab>
 
   @override
   Widget build(BuildContext context) {
-    final projectName = ref.watch(selectedProjectNameProvider);
+    final selectedProject = ref.watch(selectedProjectProvider);
     final canManageNews = ref.can(Perm.newsManage);
+    final canCreatePost = ref.can(Perm.forumCreate) || ref.can(Perm.forumManage);
 
     return Scaffold(
-      backgroundColor: AppColors.bgPrimary,
+      backgroundColor: AppColors.bgCard,
       body: Column(
         children: [
-          // ── 1. 워크스페이스 선택 바 ─────────────────────────────────────
+          // ── 1. 최상단 워크스페이스 셀렉터 바 ───────────────────────────
           InkWell(
             onTap: () => showProjectSelectorBottomSheet(context),
             child: Container(
               color: AppColors.bgSurface,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 children: [
-                  const Icon(Icons.corporate_fare_rounded,
-                      size: 18, color: AppColors.accentWork),
+                  const Icon(Icons.business_rounded,
+                      size: 18, color: AppColors.accentProject),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(
-                      projectName,
-                      style: AppTextStyles.titleSm
-                          .copyWith(color: AppColors.textPrimary),
-                      overflow: TextOverflow.ellipsis,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '선택된 워크스페이스',
+                          style: AppTextStyles.caption
+                              .copyWith(color: AppColors.textMuted),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          selectedProject?.name ?? '🏢 전체 워크스페이스',
+                          style: AppTextStyles.titleSm.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 6),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 3),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.accentProject.withAlpha(25),
-                      borderRadius: BorderRadius.circular(4),
+                      color: AppColors.accentProject.withAlpha(20),
+                      borderRadius: BorderRadius.zero,
                       border: Border.all(
                           color: AppColors.accentProject.withAlpha(60)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text('워크스페이스 변경',
+                        Text('변경',
                             style: AppTextStyles.label
                                 .copyWith(color: AppColors.accentProject)),
                         const Icon(Icons.keyboard_arrow_down_rounded,
@@ -160,33 +174,62 @@ class _ChannelTabState extends ConsumerState<ChannelTab>
         ],
       ),
 
-      // ── 4. 플로팅 액션 버튼 (공지사항 탭 & news.manage 권한 보유 시 노출) ──
-      floatingActionButton: (_tabController.index == 0 && canManageNews)
-          ? FloatingActionButton.extended(
-              onPressed: () {
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
-                  builder: (ctx) => const NoticeFormSheet(),
-                );
-              },
-              elevation: 4,
-              highlightElevation: 8,
-              backgroundColor: AppColors.accentWork,
-              foregroundColor: Colors.white,
-              shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.zero),
-              icon: const Icon(Icons.add_rounded, size: 20),
-              label: const Text(
-                '공지 등록',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.2,
-                ),
+      // ── 4. 플로팅 액션 버튼 (탭별 권한에 따른 분기) ──────────────────
+      floatingActionButton: () {
+        if (_tabController.index == 0 && canManageNews) {
+          return FloatingActionButton.extended(
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (ctx) => const NoticeFormSheet(),
+              );
+            },
+            elevation: 4,
+            highlightElevation: 8,
+            backgroundColor: AppColors.accentWork,
+            foregroundColor: Colors.white,
+            shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.zero),
+            icon: const Icon(Icons.add_rounded, size: 20),
+            label: const Text(
+              '공지 등록',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.2,
               ),
-            )
-          : null,
+            ),
+          );
+        } else if (_tabController.index == 1 && canCreatePost) {
+          return FloatingActionButton.extended(
+            onPressed: () {
+              final activeForumId = ref.read(selectedForumIdProvider);
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (ctx) => PostFormSheet(initialForumId: activeForumId),
+              );
+            },
+            elevation: 4,
+            highlightElevation: 8,
+            backgroundColor: AppColors.accentWork,
+            foregroundColor: Colors.white,
+            shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.zero),
+            icon: const Icon(Icons.edit_rounded, size: 20),
+            label: const Text(
+              '글쓰기',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.2,
+              ),
+            ),
+          );
+        }
+        return null;
+      }(),
     );
   }
 }

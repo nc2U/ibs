@@ -78,7 +78,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
 class PostFilterSet(FilterSet):
     class Meta:
         model = Post
-        fields = ('forum', 'forum__project', 'category', 'is_notice', 'is_blind', 'creator')
+        fields = ('forum', 'forum__project', 'forum__project__slug', 'category', 'is_notice', 'is_blind', 'creator')
 
 
 class PostViewSet(viewsets.ModelViewSet):

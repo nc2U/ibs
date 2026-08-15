@@ -5,7 +5,6 @@ import '../constants/app_text_styles.dart';
 import '../providers/project_provider.dart';
 import '../../features/issue/providers/issue_provider.dart';
 import '../../features/meeting/providers/meeting_provider.dart';
-import '../../features/project/data/models/project_model.dart';
 import '../../features/project/providers/project_provider.dart';
 
 /// 선택 바텀시트

@@ -8,7 +8,6 @@ import '../../../../core/models/common_models.dart';
 import '../../../../core/providers/docs_context_provider.dart';
 import '../../../../core/providers/permission_provider.dart';
 import '../../../../core/providers/project_provider.dart';
-import '../../../../core/router/app_router.dart';
 import '../../../../core/widgets/project_selector_bottom_sheet.dart';
 import '../../docs/presentation/docs_screen.dart';
 import '../../issue/presentation/issue_list_screen.dart';
@@ -26,7 +25,6 @@ class WorkScreen extends ConsumerStatefulWidget {
 
 class _WorkScreenState extends ConsumerState<WorkScreen> {
   bool _isDocsView = false;
-  static const _docsColor = Color(0xFF5E35B1);
 
   void _openDocsView() {
     final currentWs = ref.read(selectedProjectProvider);

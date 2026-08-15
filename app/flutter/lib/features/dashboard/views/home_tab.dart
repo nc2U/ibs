@@ -11,7 +11,6 @@ class HomeTab extends ConsumerWidget {
 
   static const _noticeColor = Color(0xFF1565C0);
   static const _forumColor  = Color(0xFF00695C);
-  static const _docsColor   = Color(0xFF5E35B1);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -286,78 +285,6 @@ class _HeroCard extends StatelessWidget {
   }
 }
 
-// ── 공용 문서함 전용 카드 (히어로와 채널카드 사이 중간 계층) ───────────────────────
-class _DocsCard extends StatelessWidget {
-  final VoidCallback onTap;
-  static const _docsColor = Color(0xFF5E35B1);
-
-  const _DocsCard({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.zero,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        decoration: BoxDecoration(
-          color: AppColors.bgCard,
-          borderRadius: BorderRadius.zero,
-          border: Border.all(color: _docsColor.withAlpha(80), width: 1),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: _docsColor.withAlpha(22),
-                borderRadius: BorderRadius.zero,
-                border: Border.all(color: _docsColor.withAlpha(60)),
-              ),
-              child: const Icon(Icons.folder_shared_outlined,
-                  color: _docsColor, size: 22),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text('공용 문서함',
-                          style: AppTextStyles.titleMd
-                              .copyWith(fontWeight: FontWeight.bold)),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: _docsColor.withAlpha(22),
-                          borderRadius: BorderRadius.zero,
-                        ),
-                        child: Text('Docs',
-                            style: AppTextStyles.label
-                                .copyWith(color: _docsColor, fontSize: 10)),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    '사규 / 표준 서식 / 공용 서류 보관소',
-                    style: AppTextStyles.bodySm
-                        .copyWith(color: AppColors.textMuted),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(Icons.arrow_forward_ios_rounded,
-                size: 14, color: AppColors.textMuted),
-          ],
-        ),
-      ),
-    );
-  }
-}
 // ── 채널 Quick Card (공지 / 게시판 진입 행 카드) ────────────────────────────────
 class _ChannelQuickCard extends StatelessWidget {
   final String title;
