@@ -84,7 +84,7 @@ class MainShell extends ConsumerWidget {
           children: [
             SvgPicture.asset('assets/images/sygnet.svg', width: 26, height: 26),
             const SizedBox(width: 10),
-            Text('IBS 웍스', style: AppTextStyles.titleMd),
+            Text('IBS 워크스페이스', style: AppTextStyles.titleMd),
           ],
         ),
         actions: [
