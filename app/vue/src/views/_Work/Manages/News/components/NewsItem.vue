@@ -2,18 +2,38 @@
 import { computed, type PropType } from 'vue'
 import { useRoute } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
-import { markdownRender } from '@/utils/helper.ts'
 import { cutString, elapsedTime } from '@/utils/baseMixins.ts'
 import type { News } from '@/store/types/work_inform.ts'
 import { CRow } from '@coreui/vue'
 
-defineProps({ news: { type: Object as PropType<News>, required: true } })
+const props = defineProps({ news: { type: Object as PropType<News>, required: true } })
 
 const route = useRoute()
 
 const isProj = computed(() => !!route.params.projId)
 
 const { can, canViewUser, PERM } = usePerms()
+
+const stripHtml = (html?: string) => {
+  if (!html) return ''
+  return html
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+const previewContent = computed(() => {
+  if (props.news.summary) {
+    return props.news.summary
+  }
+  return cutString(stripHtml(props.news.content), 120)
+})
 </script>
 
 <template>
@@ -78,14 +98,14 @@ const { can, canViewUser, PERM } = usePerms()
       </CCol>
     </CRow>
 
-    <CRow v-if="news.summary">
-      <CCol class="blockquote fst-italic" style="font-size: 1.1em">
-        {{ news.summary }}
+    <CRow v-if="previewContent" class="mb-0">
+      <CCol
+        class="news-content"
+        :class="news.summary ? 'blockquote fst-italic' : 'text-secondary small'"
+        :style="news.summary ? 'font-size: 1.05em' : ''"
+      >
+        {{ previewContent }}
       </CCol>
-    </CRow>
-
-    <CRow class="mb-0">
-      <CCol class="news-content">{{ cutString(news.content, 68) }}</CCol>
     </CRow>
   </v-card>
 </template>
