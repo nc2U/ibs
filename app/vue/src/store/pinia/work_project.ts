@@ -27,8 +27,8 @@ export const useWork = defineStore('work', () => {
   // 1. 원시 플랫 상태 (Refs)
   const allReadableProjects = ref<IssueProject[]>([]) // 프로젝트 검색 선택 목록용(상태: 사용중 + 닫힘 - 권한 기본 적용)
   const allActiveProjects = computed(() => allReadableProjects.value.filter(p => p.status === '1'))
-  const projectResults = ref<IssueProject[]>([]) // 검색 결과 - 표시 목록용(필터 기본 값은 상태: 사용중 - 권한 기본 적용, 모든 필터 사용)
   const myProjects = ref<IssueProject[]>([]) // 내가 멤버인 프로젝트(권한 기본 적용)
+  const projectResults = ref<IssueProject[]>([]) // 검색 결과 - 표시 목록용(필터 기본 값은 상태: 사용중 - 권한 기본 적용, 모든 필터 사용)
 
   const activeFilters = ref<ProjectFilter>({})
 
@@ -62,6 +62,8 @@ export const useWork = defineStore('work', () => {
 
   // 최상위 루트 노드 바인딩 (parent === null)
   const allReadableProjectsTree = computed(() => buildProjectTree(allReadableProjects.value))
+  const allActiveProjectsTree = computed(() => buildProjectTree(allActiveProjects.value))
+  const myProjectsTree = computed(() => buildProjectTree(myProjects.value))
   const projectResultsTree = computed(() => {
     let list = projectResults.value
 
@@ -93,7 +95,6 @@ export const useWork = defineStore('work', () => {
 
     return buildProjectTree(list)
   })
-  const myProjectsTree = computed(() => buildProjectTree(myProjects.value))
 
   // 3. 재귀적 평탄화 가공 상태 (Computed)
   const flattenTree = (projects: IssueProject[]) => {
@@ -113,12 +114,13 @@ export const useWork = defineStore('work', () => {
 
   // 재귀적 평탄화 가공 상태 (Computed)
   const allReadableProjectsFlat = computed(() => flattenTree(allReadableProjectsTree.value))
-  const projectResultsFlat = computed(() => flattenTree(projectResultsTree.value))
+  const allActiveProjectsFlat = computed(() => flattenTree(allActiveProjectsTree.value))
   const myProjectsFlat = computed(() => flattenTree(myProjectsTree.value))
+  const projectResultsFlat = computed(() => flattenTree(projectResultsTree.value))
 
   // 4. 셀렉박스 UI 옵션 가공 상태 - PK + SLUG 형태 (Computed)
   const getAllReadableProjects = computed(() =>
-    allReadableProjects.value.map(i => ({
+    allReadableProjectsFlat.value.map(i => ({
       value: i.pk as number,
       label:
         (i.depth && i.parent_visible ? '\u00A0'.repeat(i.depth * 2) + '» \u00A0' : '') + i.name,
@@ -128,7 +130,7 @@ export const useWork = defineStore('work', () => {
     })),
   )
   const getAllActiveProjects = computed(() =>
-    allActiveProjects.value.map(i => ({
+    allActiveProjectsFlat.value.map(i => ({
       value: i.pk as number,
       label:
         (i.depth && i.parent_visible ? '\u00A0'.repeat(i.depth * 2) + '» \u00A0' : '') + i.name,
@@ -138,7 +140,7 @@ export const useWork = defineStore('work', () => {
     })),
   )
   const getMyProjects = computed(() =>
-    myProjects.value.map(i => ({
+    myProjectsFlat.value.map(i => ({
       value: i.pk as number,
       label:
         (i.depth && i.parent_visible ? '\u00A0'.repeat(i.depth * 2) + '» \u00A0' : '') + i.name,
