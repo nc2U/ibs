@@ -334,6 +334,7 @@ class IssueListResponse with _$IssueListResponse {
 
 class IssueFilterModel {
   final dynamic assignedTo; // int PK 또는 'me'
+  final bool? myIssue; // true: 내 업무 (담당자=나 OR (작성자=나 AND 담당자 미지정))
   final String? projectSlug;
   final String? projectStatus; // '1': 활성 프로젝트만 (닫힌 프로젝트 제외)
   final String? statusExclude;
@@ -343,6 +344,7 @@ class IssueFilterModel {
 
   const IssueFilterModel({
     this.assignedTo,
+    this.myIssue,
     this.projectSlug,
     this.projectStatus = '1',
     this.statusExclude,
@@ -357,6 +359,7 @@ class IssueFilterModel {
       'page': page,
     };
     if (assignedTo != null) params['assigned_to'] = assignedTo;
+    if (myIssue != null) params['my_issue'] = myIssue! ? 'true' : 'false';
     if (projectSlug != null) params['project__search'] = projectSlug;
     if (projectStatus != null) params['project_status'] = projectStatus;
     if (statusExclude != null) params['status__exclude'] = statusExclude;
@@ -366,6 +369,7 @@ class IssueFilterModel {
 
   IssueFilterModel copyWith({
     dynamic assignedTo,
+    bool? myIssue,
     String? projectSlug,
     String? projectStatus,
     String? statusExclude,
@@ -373,6 +377,7 @@ class IssueFilterModel {
     String? ordering,
     int? page,
     bool clearAssignedTo = false,
+    bool clearMyIssue = false,
     bool clearProjectSlug = false,
     bool clearProjectStatus = false,
     bool clearStatusExclude = false,
@@ -380,6 +385,7 @@ class IssueFilterModel {
   }) {
     return IssueFilterModel(
       assignedTo: clearAssignedTo ? null : assignedTo ?? this.assignedTo,
+      myIssue: clearMyIssue ? null : myIssue ?? this.myIssue,
       projectSlug: clearProjectSlug ? null : projectSlug ?? this.projectSlug,
       projectStatus: clearProjectStatus ? null : projectStatus ?? this.projectStatus,
       statusExclude: clearStatusExclude ? null : statusExclude ?? this.statusExclude,

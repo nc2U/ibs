@@ -110,12 +110,6 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
                     const Icon(Icons.business_center_rounded,
                         size: 16, color: AppColors.accentProject),
                     const SizedBox(width: 8),
-                    Text(
-                      '프로젝트:',
-                      style: AppTextStyles.caption
-                          .copyWith(color: AppColors.textMuted),
-                    ),
-                    const SizedBox(width: 6),
                     Expanded(
                       child: Text(
                         selectedProject.name,
@@ -124,6 +118,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    const SizedBox(width: 6),
                     Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 6, vertical: 2),

@@ -325,8 +325,9 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                           dropdownColor: AppColors.bgCard,
                           decoration: _inputDecoration(''),
                           items: const [
-                            DropdownMenuItem(value: '1', child: Text('예정/진행')),
+                            DropdownMenuItem(value: '1', child: Text('준비')),
                             DropdownMenuItem(value: '2', child: Text('종료')),
+                            DropdownMenuItem(value: '3', child: Text('취소')),
                           ],
                           onChanged: (v) => setState(() => _status = v ?? '1'),
                         ),

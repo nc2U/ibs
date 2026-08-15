@@ -9,7 +9,7 @@ class SharePayload {
 
   const SharePayload({
     this.files = const [],
-    this.links = const [];
+    this.links = const [],
     this.defaultTitle,
   });
 

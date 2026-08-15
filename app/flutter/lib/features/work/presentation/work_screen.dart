@@ -95,12 +95,6 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
                     const Icon(Icons.business_center_rounded,
                         size: 16, color: AppColors.accentProject),
                     const SizedBox(width: 8),
-                    Text(
-                      '워크스페이스:',
-                      style: AppTextStyles.caption
-                          .copyWith(color: AppColors.textMuted),
-                    ),
-                    const SizedBox(width: 6),
                     Expanded(
                       child: Text(
                         projectName,
@@ -109,6 +103,7 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    const SizedBox(width: 6),
                     Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 6, vertical: 2),

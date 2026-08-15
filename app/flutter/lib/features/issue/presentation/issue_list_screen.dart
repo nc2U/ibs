@@ -55,9 +55,9 @@ class _IssueListScreenState extends ConsumerState<IssueListScreen> {
 
     switch (_filterMode) {
       case _FilterMode.mine:
-        // 내 업무 중 진행 중인 업무 (assigned_to=me, status__closed=false)
+        // 내 업무 중 진행 중인 업무 (my_issue=true: 담당자=나 OR (작성자=나 AND 담당자 미지정))
         filter = IssueFilterModel(
-          assignedTo: 'me',
+          myIssue: true,
           statusClosed: false,
           projectSlug: project?.slug,
           ordering: '-updated',
@@ -125,13 +125,13 @@ class _IssueListScreenState extends ConsumerState<IssueListScreen> {
               ),
               const SizedBox(width: 8),
               _FilterChip(
-                label: '진행 중',
+                label: '전체 진행',
                 selected: _filterMode == _FilterMode.inProgress,
                 onTap: () => _onFilterChanged(_FilterMode.inProgress),
               ),
               const SizedBox(width: 8),
               _FilterChip(
-                label: '완료됨',
+                label: '전체 완료',
                 selected: _filterMode == _FilterMode.completed,
                 onTap: () => _onFilterChanged(_FilterMode.completed),
               ),
@@ -152,8 +152,8 @@ class _IssueListScreenState extends ConsumerState<IssueListScreen> {
                 final emptyMsg = _filterMode == _FilterMode.mine
                     ? '진행 중인 내 업무가 없습니다.'
                     : (_filterMode == _FilterMode.inProgress
-                        ? '진행 중인 업무가 없습니다.'
-                        : '완료된 업무가 없습니다.');
+                        ? '진행 중인 전체 업무가 없습니다.'
+                        : '완료된 전체 업무가 없습니다.');
                 return ErrorView.empty(
                   message: emptyMsg,
                   subMessage: '프로젝트를 선택하거나 필터를 변경해 보세요.',

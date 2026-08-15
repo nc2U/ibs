@@ -124,6 +124,16 @@ class IssueFilter(FilterSet):
 
     project__my_project = BooleanFilter(method='filter_my_project', label='내 프로젝트 업무 여부')
     project__bookmark = BooleanFilter(method='filter_bookmark', label='북마크 프로젝트 업무 여부')
+    my_issue = BooleanFilter(method='filter_my_issue', label='내 업무 여부')
+
+    def filter_my_issue(self, queryset, name, value):
+        if self.request and self.request.user.is_authenticated:
+            user = self.request.user
+            if value:
+                return queryset.filter(Q(assigned_to=user) | Q(creator=user, assigned_to__isnull=True))
+            else:
+                return queryset.exclude(Q(assigned_to=user) | Q(creator=user, assigned_to__isnull=True))
+        return queryset
 
     def filter_my_project(self, queryset, name, value):
         if self.request and self.request.user.is_authenticated:
@@ -154,7 +164,7 @@ class IssueFilter(FilterSet):
                   'parent', 'parent__exclude', 'parent__contains', 'parent__isnull',
                   'parent_issue', 'parent_issue__exclude', 'parent_issue__contains', 'parent_issue__isnull',
                   'precedes_issue', 'precedes_issue__exclude', 'precedes_issue__isnull', 'follows_issue',
-                  'follows_issue__exclude', 'follows_issue__isnull', 'project__my_project', 'project__bookmark', 'is_private',
+                  'follows_issue__exclude', 'follows_issue__isnull', 'project__my_project', 'project__bookmark', 'my_issue', 'is_private',
                   'watcher', 'watcher__exclude', 'updater', 'updater__exclude', 'last_updater', 'last_updater__exclude',
                   'subject', 'subject__exclude', 'description', 'description__exclude', 'comment', 'comment__exclude',
                   'any_searchable', 'any_searchable__exclude',

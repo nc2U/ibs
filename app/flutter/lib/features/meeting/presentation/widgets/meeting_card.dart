@@ -113,9 +113,12 @@ class MeetingCard extends StatelessWidget {
 
   Color _statusColor(String status) {
     switch (status) {
+      case '1': // 준비
+        return AppColors.accentWork;
       case '2': // 종료
         return AppColors.textDisabled;
-      case '1': // 예정/진행
+      case '3': // 취소
+        return AppColors.error;
       default:
         return AppColors.accentWork;
     }

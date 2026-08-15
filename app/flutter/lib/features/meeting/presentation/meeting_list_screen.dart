@@ -23,7 +23,7 @@ class MeetingListScreen extends ConsumerStatefulWidget {
 
 class _MeetingListScreenState extends ConsumerState<MeetingListScreen> {
   final ScrollController _scrollController = ScrollController();
-  _FilterMode _filterMode = _FilterMode.all;
+  _MeetingFilterMode _filterMode = _MeetingFilterMode.all;
 
   @override
   void initState() {
@@ -49,13 +49,16 @@ class _MeetingListScreenState extends ConsumerState<MeetingListScreen> {
     final project = ref.read(selectedProjectProvider);
     String? statusParam;
     switch (_filterMode) {
-      case _FilterMode.active:
+      case _MeetingFilterMode.prepared:
         statusParam = '1';
         break;
-      case _FilterMode.closed:
+      case _MeetingFilterMode.closed:
         statusParam = '2';
         break;
-      case _FilterMode.all:
+      case _MeetingFilterMode.cancelled:
+        statusParam = '3';
+        break;
+      case _MeetingFilterMode.all:
         statusParam = null;
         break;
     }
@@ -67,7 +70,7 @@ class _MeetingListScreenState extends ConsumerState<MeetingListScreen> {
     );
   }
 
-  void _onFilterChanged(_FilterMode mode) {
+  void _onFilterChanged(_MeetingFilterMode mode) {
     setState(() => _filterMode = mode);
     _applyFilter();
   }
@@ -117,28 +120,34 @@ class _MeetingListScreenState extends ConsumerState<MeetingListScreen> {
 
     return Column(
       children: [
-        // ── 필터 칩 바 ──────────────────────────────────────────────────────────
+        // ── 필터 칩 바 (1: 준비, 2: 종료, 3: 취소) ──────────────────────────────
         Container(
           color: AppColors.bgSurface,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           child: Row(
             children: [
               _FilterChip(
-                label: '전체 회의',
-                selected: _filterMode == _FilterMode.all,
-                onTap: () => _onFilterChanged(_FilterMode.all),
+                label: '전체',
+                selected: _filterMode == _MeetingFilterMode.all,
+                onTap: () => _onFilterChanged(_MeetingFilterMode.all),
               ),
               const SizedBox(width: 8),
               _FilterChip(
-                label: '진행/예정',
-                selected: _filterMode == _FilterMode.active,
-                onTap: () => _onFilterChanged(_FilterMode.active),
+                label: '준비',
+                selected: _filterMode == _MeetingFilterMode.prepared,
+                onTap: () => _onFilterChanged(_MeetingFilterMode.prepared),
               ),
               const SizedBox(width: 8),
               _FilterChip(
                 label: '종료',
-                selected: _filterMode == _FilterMode.closed,
-                onTap: () => _onFilterChanged(_FilterMode.closed),
+                selected: _filterMode == _MeetingFilterMode.closed,
+                onTap: () => _onFilterChanged(_MeetingFilterMode.closed),
+              ),
+              const SizedBox(width: 8),
+              _FilterChip(
+                label: '취소',
+                selected: _filterMode == _MeetingFilterMode.cancelled,
+                onTap: () => _onFilterChanged(_MeetingFilterMode.cancelled),
               ),
             ],
           ),
@@ -197,7 +206,7 @@ class _MeetingListScreenState extends ConsumerState<MeetingListScreen> {
   }
 }
 
-enum _FilterMode { all, active, closed }
+enum _MeetingFilterMode { all, prepared, closed, cancelled }
 
 class _FilterChip extends StatelessWidget {
   final String label;
