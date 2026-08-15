@@ -6,6 +6,7 @@ import '../../../../core/models/common_models.dart';
 import '../../../../core/providers/docs_context_provider.dart';
 import '../../../../core/providers/project_provider.dart';
 import '../../../../core/widgets/project_selector_bottom_sheet.dart';
+import '../../../../core/widgets/workspace_selector_bar.dart';
 import '../../contract/presentation/contract_list_screen.dart';
 import '../../docs/presentation/docs_screen.dart';
 import '../../ledger/presentation/ledger_screen.dart';
@@ -82,10 +83,10 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
         backgroundColor: AppColors.bgPrimary,
         body: Column(
           children: [
-            // ── 서브모듈 전용 1줄 고정 프로젝트 선택 바 ──────────────────────
-            InkWell(
-              onTap: () {
-                showProjectSelectorBottomSheet(context, onlyRealEstate: true);
+            // ── 서브모듈 전용 1줄 고정 프로젝트 선택 바 (공용 컴포넌트) ─────────
+            WorkspaceSelectorBar(
+              onlyRealEstate: true,
+              onProjectChanged: () {
                 final updatedProj = ref.read(selectedProjectProvider);
                 if (updatedProj != null &&
                     _activeModule == ProjectActiveModule.docs) {
@@ -99,68 +100,31 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
                   );
                 }
               },
-              child: Container(
-                color: AppColors.bgSurface,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Row(
-                  children: [
-                    const Icon(Icons.business_center_rounded,
-                        size: 16, color: AppColors.accentProject),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        selectedProject.name,
-                        style: AppTextStyles.titleSm
-                            .copyWith(color: AppColors.accentProject),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: AppColors.accentProject.withAlpha(25),
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(
-                            color: AppColors.accentProject.withAlpha(60)),
-                      ),
-                      child: Row(
-                        children: [
-                          Text('프로젝트 변경',
-                              style: AppTextStyles.label
-                                  .copyWith(color: AppColors.accentProject)),
-                          const Icon(Icons.keyboard_arrow_down_rounded,
-                              size: 16, color: AppColors.accentProject),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    InkWell(
-                      onTap: _closeSubModule,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: AppColors.accentProject.withAlpha(25),
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(
-                              color: AppColors.accentProject.withAlpha(80)),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.arrow_back_rounded,
-                                size: 14, color: AppColors.accentProject),
-                            const SizedBox(width: 4),
-                            Text('메인으로',
-                                style: AppTextStyles.label.copyWith(
-                                    color: AppColors.accentProject)),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
+              trailing: InkWell(
+                onTap: _closeSubModule,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.accentProject.withAlpha(20),
+                    borderRadius: BorderRadius.zero,
+                    border: Border.all(
+                        color: AppColors.accentProject.withAlpha(60),
+                        width: 0.8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.arrow_back_rounded,
+                          size: 13, color: AppColors.accentProject),
+                      const SizedBox(width: 4),
+                      Text('메인으로',
+                          style: AppTextStyles.label.copyWith(
+                            color: AppColors.accentProject,
+                            fontSize: 11,
+                          )),
+                    ],
+                  ),
                 ),
               ),
             ),

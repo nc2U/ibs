@@ -8,7 +8,7 @@ import '../../../../core/models/common_models.dart';
 import '../../../../core/providers/docs_context_provider.dart';
 import '../../../../core/providers/permission_provider.dart';
 import '../../../../core/providers/project_provider.dart';
-import '../../../../core/widgets/project_selector_bottom_sheet.dart';
+import '../../../../core/widgets/workspace_selector_bar.dart';
 import '../../docs/presentation/docs_screen.dart';
 import '../../issue/presentation/issue_list_screen.dart';
 import '../../meeting/presentation/meeting_list_screen.dart';
@@ -69,8 +69,6 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final projectName = ref.watch(selectedProjectNameProvider);
-
     return DefaultTabController(
       length: 2,
       initialIndex: widget.initialIndex,
@@ -78,99 +76,54 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
         backgroundColor: AppColors.bgPrimary,
         body: Column(
           children: [
-            // ── 워크스페이스 고정 선택 바 (문서함 뷰에서도 동일 유지) ─────────
-            InkWell(
-              onTap: () {
-                showProjectSelectorBottomSheet(context);
-                _syncDocsContextIfNeeded();
-              },
-              child: Container(
-                color: AppColors.bgSurface,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Row(
-                  children: [
-                    const Icon(Icons.business_center_rounded,
-                        size: 16, color: AppColors.accentProject),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        projectName,
-                        style: AppTextStyles.titleSm
-                            .copyWith(color: AppColors.accentProject),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: AppColors.accentProject.withAlpha(25),
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(
-                            color: AppColors.accentProject.withAlpha(60)),
-                      ),
-                      child: Row(
-                        children: [
-                          Text('워크스페이스 변경',
-                              style: AppTextStyles.label
-                                  .copyWith(color: AppColors.accentProject)),
-                          const Icon(Icons.keyboard_arrow_down_rounded,
-                              size: 16, color: AppColors.accentProject),
-                        ],
-                      ),
-                    ),
-
-                    // ── 문서함 ↔ 업무목록 스위칭 버튼 (docs.read 권한 보유 시에만 노출) ──────
-                    if (ref.can(Perm.docsRead)) ...[
-                      const SizedBox(width: 8),
-                      InkWell(
-                        onTap: _isDocsView ? _closeDocsView : _openDocsView,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
+            // ── 워크스페이스 고정 선택 바 (공용 컴포넌트) ─────────────────────
+            WorkspaceSelectorBar(
+              onProjectChanged: _syncDocsContextIfNeeded,
+              trailing: ref.can(Perm.docsRead)
+                  ? InkWell(
+                      onTap: _isDocsView ? _closeDocsView : _openDocsView,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: _isDocsView
+                              ? AppColors.accentWork.withAlpha(30)
+                              : const Color(0xFF6A1B9A),
+                          borderRadius: BorderRadius.zero,
+                          border: Border.all(
                             color: _isDocsView
-                                ? AppColors.accentWork.withAlpha(40)
-                                : const Color(0xFF6A1B9A), // 선명한 솔리드 보라색
-                            borderRadius: BorderRadius.circular(4),
-                            border: Border.all(
+                                ? AppColors.accentWork
+                                : const Color(0xFFAB47BC),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _isDocsView
+                                  ? Icons.arrow_back_rounded
+                                  : Icons.folder_shared_outlined,
+                              size: 13,
                               color: _isDocsView
                                   ? AppColors.accentWork
-                                  : const Color(0xFFAB47BC),
-                              width: 1,
+                                  : Colors.white,
                             ),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                _isDocsView
-                                    ? Icons.arrow_back_rounded
-                                    : Icons.folder_shared_outlined,
-                                size: 14,
+                            const SizedBox(width: 4),
+                            Text(
+                              _isDocsView ? '업무 목록' : '문서함',
+                              style: AppTextStyles.label.copyWith(
                                 color: _isDocsView
                                     ? AppColors.accentWork
                                     : Colors.white,
+                                fontSize: 11,
                               ),
-                              const SizedBox(width: 4),
-                              Text(
-                                _isDocsView ? '업무 목록' : '문서함',
-                                style: AppTextStyles.label.copyWith(
-                                  color: _isDocsView
-                                      ? AppColors.accentWork
-                                      : Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ],
-                ),
-              ),
+                    )
+                  : null,
             ),
             const Divider(color: AppColors.border, height: 1),
 

@@ -4,8 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/constants/permissions.dart';
 import '../../../core/providers/permission_provider.dart';
-import '../../../core/providers/project_provider.dart';
-import '../../../core/widgets/project_selector_bottom_sheet.dart';
+import '../../../core/widgets/workspace_selector_bar.dart';
 import '../providers/forum_provider.dart';
 import 'widgets/forum_tab_view.dart';
 import 'widgets/notice_form_sheet.dart';
@@ -57,7 +56,6 @@ class _ChannelTabState extends ConsumerState<ChannelTab>
 
   @override
   Widget build(BuildContext context) {
-    final selectedProject = ref.watch(selectedProjectProvider);
     final canManageNews = ref.can(Perm.newsManage);
     final canCreatePost = ref.can(Perm.forumCreate) || ref.can(Perm.forumManage);
 
@@ -65,62 +63,8 @@ class _ChannelTabState extends ConsumerState<ChannelTab>
       backgroundColor: AppColors.bgCard,
       body: Column(
         children: [
-          // ── 1. 최상단 워크스페이스 셀렉터 바 ───────────────────────────
-          InkWell(
-            onTap: () => showProjectSelectorBottomSheet(context),
-            child: Container(
-              color: AppColors.bgSurface,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                children: [
-                  const Icon(Icons.business_rounded,
-                      size: 18, color: AppColors.accentProject),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '선택된 워크스페이스',
-                          style: AppTextStyles.caption
-                              .copyWith(color: AppColors.textMuted),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          selectedProject?.name ?? '🏢 전체 워크스페이스',
-                          style: AppTextStyles.titleSm.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.accentProject.withAlpha(20),
-                      borderRadius: BorderRadius.zero,
-                      border: Border.all(
-                          color: AppColors.accentProject.withAlpha(60)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text('변경',
-                            style: AppTextStyles.label
-                                .copyWith(color: AppColors.accentProject)),
-                        const Icon(Icons.keyboard_arrow_down_rounded,
-                            size: 16, color: AppColors.accentProject),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          // ── 1. 최상단 워크스페이스 셀렉터 바 (공용 컴포넌트) ────────────
+          const WorkspaceSelectorBar(),
           const Divider(color: AppColors.border, height: 1),
 
           // ── 2. 메인 탭바 (공지사항 | 게시판) ───────────────────────────
