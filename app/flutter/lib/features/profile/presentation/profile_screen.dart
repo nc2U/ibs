@@ -38,7 +38,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.error,
+              backgroundColor: AppColors.accentWork,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8)),
@@ -200,11 +200,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             const _Divider(),
             _SettingTile(
               leading: const Icon(Icons.logout_rounded,
-                  color: AppColors.error, size: 22),
+                  color: AppColors.textSecond, size: 22),
               title: '로그아웃',
-              titleColor: AppColors.error,
               trailing: const Icon(Icons.chevron_right_rounded,
-                  color: AppColors.error),
+                  color: AppColors.textDisabled),
               onTap: _handleLogout,
             ),
             const _Divider(),
@@ -236,7 +235,6 @@ class _SettingTile extends StatelessWidget {
   final Widget leading;
   final String title;
   final String? subtitle;
-  final Color? titleColor;
   final Widget? trailing;
   final VoidCallback? onTap;
 
@@ -244,7 +242,6 @@ class _SettingTile extends StatelessWidget {
     required this.leading,
     required this.title,
     this.subtitle,
-    this.titleColor,
     this.trailing,
     this.onTap,
   });
@@ -268,7 +265,7 @@ class _SettingTile extends StatelessWidget {
                     Text(
                       title,
                       style: AppTextStyles.bodyMd.copyWith(
-                        color: titleColor ?? AppColors.textPrimary,
+                        color: AppColors.textPrimary,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
