@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, onBeforeUpdate, type PropType, ref } from 'vue'
+import { computed, type PropType, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms.ts'
 import { isValidate } from '@/utils/helper.ts'
@@ -152,8 +152,11 @@ const dataSetup = () => {
   }
 }
 
-onBeforeMount(() => dataSetup())
-onBeforeUpdate(() => dataSetup())
+watch(
+  () => props.post,
+  () => dataSetup(),
+  { immediate: true },
+)
 </script>
 
 <template>
