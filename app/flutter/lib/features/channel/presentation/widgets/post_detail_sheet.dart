@@ -602,7 +602,9 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
                             (currentUser.pk == c.creator!.pk ||
                                 currentUser.username == c.creator!.username);
                         final canDeleteThisComment =
-                            canManage || isCommentAuthor;
+                            ref.can(Perm.forumDelete) ||
+                            ref.can(Perm.forumManage) ||
+                            (ref.can(Perm.forumOwnDelete) && isCommentAuthor);
 
                         return Container(
                           margin: const EdgeInsets.only(bottom: 8),

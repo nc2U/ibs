@@ -206,6 +206,7 @@ class _PostFormSheetState extends ConsumerState<PostFormSheet> {
   Widget build(BuildContext context) {
     final isEdit = widget.post != null;
     final forumsAsync = ref.watch(forumListProvider);
+    final canManageForum = ref.can(Perm.forumManage);
 
     return Container(
       constraints: BoxConstraints(
@@ -408,33 +409,35 @@ class _PostFormSheetState extends ConsumerState<PostFormSheet> {
                     ),
                     const SizedBox(height: 16),
 
-                    // 4. 공지 여부 스위치
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: AppColors.bgSurface,
-                        borderRadius: BorderRadius.zero,
-                        border: Border.all(color: AppColors.border, width: 0.8),
+                    // 4. 공지 여부 스위치 (forum.manage 권한자 전용)
+                    if (canManageForum) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: AppColors.bgSurface,
+                          borderRadius: BorderRadius.zero,
+                          border: Border.all(color: AppColors.border, width: 0.8),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.campaign_outlined,
+                                size: 18, color: AppColors.error),
+                            const SizedBox(width: 8),
+                            Text('게시판 상단 공지로 등록',
+                                style: AppTextStyles.bodySm.copyWith(
+                                    fontWeight: FontWeight.w600)),
+                            const Spacer(),
+                            Switch(
+                              value: _isNotice,
+                              activeThumbColor: AppColors.error,
+                              onChanged: (v) => setState(() => _isNotice = v),
+                            ),
+                          ],
+                        ),
                       ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.campaign_outlined,
-                              size: 18, color: AppColors.error),
-                          const SizedBox(width: 8),
-                          Text('게시판 상단 공지로 등록',
-                              style: AppTextStyles.bodySm.copyWith(
-                                  fontWeight: FontWeight.w600)),
-                          const Spacer(),
-                          Switch(
-                            value: _isNotice,
-                            activeColor: AppColors.error,
-                            onChanged: (v) => setState(() => _isNotice = v),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
+                      const SizedBox(height: 16),
+                    ],
 
                     // 5. 본문
                     Text('본문 내용', style: AppTextStyles.label),

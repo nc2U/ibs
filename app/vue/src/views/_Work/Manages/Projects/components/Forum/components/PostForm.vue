@@ -212,7 +212,7 @@ watch(
           </CCol>
           <CCol sm="12" lg="6" class="pt-2">
             <CFormCheck
-              v-if="can(PERM.FORUM_MANAGE)"
+              v-if="canForumManage"
               v-model="form.is_notice"
               label="공지사항"
               id="is_notice"
