@@ -1,23 +1,20 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, ref, watch } from 'vue'
-import { pageTitle, navMenu } from '@/views/_Work/_menu/headermixin2'
+import { computed, onBeforeMount, ref } from 'vue'
+import { navMenu, pageTitle } from '@/views/_Work/_menu/headermixin2'
 import { ALL_PROJECT_COLUMNS, DEFAULT_PROJECT_COLUMNS } from './constants'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useRoute } from 'vue-router'
 import { usePerms } from '@/composables/usePerms.ts'
 import { useTableColumns } from '@/composables/useTableColumns'
 import type { IssueProject, ProjectFilter } from '@/store/types/work_project.ts'
-import ColumnSelector, {
-  type ColumnOption,
-} from '@/views/_Work/components/atomics/ColumnSelector.vue'
-import Loading from '@/components/Loading/Index.vue'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
+import ColumnSelector from '@/components/ColumnSelector/Index.vue'
 import QuerySection from '@/views/_Work/Manages/Projects/components/QuerySection.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 import ProjectTable from './components/ProjectTable.vue'
+import Loading from '@/components/Loading/Index.vue'
 import NoData from '@/components/NoData/Index.vue'
-import { DEFAULT_MEETING_COLUMNS } from '@/views/_Work/Manages/Meetings/constants.ts'
 
 const cBody = ref()
 const sideNavCall = () => cBody.value.toggle()

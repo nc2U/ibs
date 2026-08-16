@@ -15,9 +15,9 @@ import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import IssueHeader from './automics/IssueHeader.vue'
 import IssueTable from './components/IssueTable.vue'
 import QuerySection from './components/QuerySection.vue'
+import ColumnSelector from '@/components/ColumnSelector/Index.vue'
 import SavedQueryAside from '@/views/_Work/components/asides/SavedQueryAside.vue'
 import Loading from '@/components/Loading/Index.vue'
-import ColumnSelector from '@/views/_Work/components/atomics/ColumnSelector.vue'
 
 const cBody = ref()
 const comStore = useCompany()

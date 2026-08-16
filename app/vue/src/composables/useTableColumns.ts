@@ -1,5 +1,5 @@
 import { ref, watch } from 'vue'
-import type { ColumnOption } from '@/views/_Work/components/atomics/ColumnSelector.vue'
+import type { ColumnOption } from '@/components/ColumnSelector/Index.vue'
 
 export function useTableColumns(
   storageKey: string,

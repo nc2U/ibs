@@ -19,8 +19,8 @@ import IssueReport from '@/views/_Work/Manages/Issues/components/IssueReport.vue
 import IssueItemAside from '@/views/_Work/Manages/Issues/components/aside/IssueItemAside.vue'
 import QuerySection from '@/views/_Work/Manages/Issues/components/QuerySection.vue'
 import SavedQueryAside from '@/views/_Work/components/asides/SavedQueryAside.vue'
+import ColumnSelector from '@/components/ColumnSelector/Index.vue'
 import Loading from '@/components/Loading/Index.vue'
-import ColumnSelector from '@/views/_Work/components/atomics/ColumnSelector.vue'
 
 const cBody = ref()
 const toggle = () => cBody.value.toggle()

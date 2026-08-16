@@ -1,4 +1,4 @@
-import type { ColumnOption } from '@/views/_Work/components/atomics/ColumnSelector.vue'
+import type { ColumnOption } from '@/components/ColumnSelector/Index.vue'
 
 // 전체 컬럼 풀 (ColumnSelector용)
 export const ALL_ISSUE_COLUMNS: ColumnOption[] = [
