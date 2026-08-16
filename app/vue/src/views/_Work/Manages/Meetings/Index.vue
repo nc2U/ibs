@@ -139,7 +139,11 @@ watch(
             @filter-submit="onFilterSubmit"
           >
             <template #option>
-              <ColumnSelector v-model="selectedColumns" :all-columns="ALL_MEETING_COLUMNS" />
+              <CRow class="p-2">
+                <CCol>
+                  <ColumnSelector v-model="selectedColumns" :all-columns="ALL_MEETING_COLUMNS" />
+                </CCol>
+              </CRow>
             </template>
           </QuerySection>
         </CCol>

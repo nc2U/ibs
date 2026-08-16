@@ -170,7 +170,7 @@ onBeforeMount(() => {
               />
             </CCol>
           </CRow>
-          <CRow v-if="viewMode === 'list'" class="m-2">
+          <CRow v-if="viewMode === 'list'" class="p-2">
             <CCol>
               <ColumnSelector v-model="selectedColumns" :all-columns="ALL_PROJECT_COLUMNS" />
             </CCol>

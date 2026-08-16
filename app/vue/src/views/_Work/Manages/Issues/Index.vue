@@ -110,7 +110,11 @@ onBeforeMount(async () => {
         @filter-submit="filterSubmit"
       >
         <template #option>
-          <ColumnSelector v-model="selectedColumns" :all-columns="ALL_ISSUE_COLUMNS" />
+          <CRow class="p-2">
+            <CCol>
+              <ColumnSelector v-model="selectedColumns" :all-columns="ALL_ISSUE_COLUMNS" />
+            </CCol>
+          </CRow>
         </template>
       </QuerySection>
 
