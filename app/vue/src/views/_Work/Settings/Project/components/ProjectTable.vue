@@ -127,7 +127,7 @@ const isOwnProject = (project: IssueProject) =>
           </CTableDataCell>
         </template>
 
-        <CTableDataCell class="text-right">
+        <CTableDataCell class="text-right py-0">
           <ProjectDropDown :project="proj" />
         </CTableDataCell>
       </CTableRow>
