@@ -37,7 +37,7 @@ class ContractListScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('계약 관리 (Contract)',
+                    Text('계약 정보 관리 (Contract)',
                         style: AppTextStyles.titleSm
                             .copyWith(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 2),

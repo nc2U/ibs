@@ -42,14 +42,14 @@ class SiteScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '사업 부지 관리 (Site)',
+                      '부지 정보 관리 (Site)',
                       style: AppTextStyles.titleSm.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '사업 대상지 필지·지번 현황, 토지 소유자 정보 및 매매계약 관리',
+                      '지번 목록 현황, 토지 소유자 정보 및 매입 계약 관리',
                       style: AppTextStyles.caption.copyWith(
                         color: AppColors.textMuted,
                       ),

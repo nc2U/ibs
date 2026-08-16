@@ -37,7 +37,7 @@ class LedgerScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('자금 / 재무 관리 (Ledger)',
+                    Text('회계 자금 관리 (Ledger)',
                         style: AppTextStyles.titleSm
                             .copyWith(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 2),

@@ -258,8 +258,8 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
                         ? (selectedProject.description != null &&
                                 selectedProject.description!.isNotEmpty
                             ? selectedProject.description!
-                            : '분양 계약, 대금 수납, 자금(캐시플로우), 부지 및 문서 통합 관리 사업지입니다.')
-                        : '계약, 대금 수납, 자금 회계, 사업 부지 모듈은 부동산 개발 사업 프로젝트 전용 기능입니다.',
+                            : '계약 정보, 대금 수납, 회계 자금(캐시플로우), 부지 정보 및 문서 통합 관리 사업지입니다.')
+                        : '계약 정보, 대금 수납, 회계 자금, 부지 정보 모듈은 부동산 개발 사업 프로젝트 전용 기능입니다.',
                     style: AppTextStyles.bodySecond.copyWith(
                       color: isRealEstateProject
                           ? AppColors.textSecond
@@ -400,9 +400,9 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
             ),
             const SizedBox(height: 12),
 
-            // 모듈 1: 계약 관리 (Contract)
+            // 모듈 1: 계약 정보 관리 (Contract)
             _ModuleCard(
-              title: '계약 관리',
+              title: '계약 정보 관리',
               badgeText: 'CONTRACT',
               subtitle: '동·호수별 분양 계약 내역, 계약자 상세 정보, 권리의무 승계 및 계약 해지 이력 관리',
               tags: const ['분양 계약', '계약자 정보', '권리의무 승계', '계약 해지'],
@@ -426,9 +426,9 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
             ),
             const SizedBox(height: 12),
 
-            // 모듈 3: 자금 / 캐시플로우 관리 (Ledger)
+            // 모듈 3: 회계 자금 관리 (Ledger)
             _ModuleCard(
-              title: '자금 / 재무 관리',
+              title: '회계 자금 관리',
               badgeText: 'LEDGER',
               subtitle: '프로젝트 전용 계좌 거래 내역, 사업비/운영비 지출 정산 및 캐시플로우 흐름 집행',
               tags: const ['계좌 거래', '사업비 정산', '캐시플로우', '자금 집행'],
@@ -439,12 +439,12 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
             ),
             const SizedBox(height: 12),
 
-            // 모듈 4: 사업 부지 관리 (Site)
+            // 모듈 4: 부지 정보 관리 (Site)
             _ModuleCard(
-              title: '사업 부지 관리',
+              title: '부지 정보 관리',
               badgeText: 'SITE',
               subtitle: '사업 대상지 필지·지번 현황, 토지 소유자 정보, 부지 매매계약 및 권리관계/협의 일지 관리',
-              tags: const ['필지·지번 목록', '토지 소유자', '부지 매매계약', '협의 일지'],
+              tags: const ['지번 목록 관리', '소유자 별 관리', '매입 계약 관리', '협의 일지'],
               icon: Icons.map_outlined,
               accentColor: const Color(0xFF0D9488), // Teal Green
               isEnabled: isRealEstateProject,
