@@ -3,13 +3,12 @@ import { computed, onBeforeMount, type PropType, reactive, ref, watch } from 'vu
 import { useRoute } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
 import { useAccount } from '@/store/pinia/account'
-import { useInform } from '@/store/pinia/work_inform'
 import type { selectProject } from '@/store/types/work_project.ts'
 import type { MeetingCategory, MeetingFilter } from '@/store/types/work_meeting.ts'
 import IssueProjectSelector from '@/views/_Work/components/atomics/IssueProjectSelector.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
-import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import SaveQueryModal from '@/views/_Work/components/SaveQueryModal.vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import Multiselect from '@vueform/multiselect'
 
 const props = defineProps({
@@ -25,7 +24,6 @@ const emit = defineEmits<{
   (e: 'filter-submit', payload: MeetingFilter): void
 }>()
 
-const viewMode = ref<'board' | 'list'>('board')
 const condVisible = ref(true)
 const optVisible = ref(false)
 
@@ -33,11 +31,8 @@ const route = useRoute()
 const accStore = useAccount()
 const getUsers = computed(() => accStore.getUsers)
 
-const informStore = useInform()
-
 const { can, PERM } = usePerms()
 const canSaveQuery = computed(() => can(PERM.PROJECT_SAVE_QUERY))
-const canPubQuery = computed(() => can(PERM.PROJECT_PUB_QUERY))
 
 const searchCond = ref<string[]>(['status'])
 
@@ -675,30 +670,7 @@ defineExpose({ applyQuery, resetFilter })
     </CCol>
     <v-divider class="mx-3 mt-2 mb-0" />
     <CCollapse :visible="optVisible">
-      <slot name="option">
-        <CRow class="m-2" color="light">
-          <CCol>
-            <span class="mr-3">결과 표시 </span>
-            <CFormCheck
-              v-model="viewMode"
-              label="보드"
-              name="viewMode"
-              value="board"
-              inline
-              type="radio"
-            />
-            <CFormCheck
-              v-model="viewMode"
-              label="목록"
-              name="viewMode"
-              value="list"
-              inline
-              type="radio"
-              disabled
-            />
-          </CCol>
-        </CRow>
-      </slot>
+      <slot name="option"> </slot>
     </CCollapse>
   </CRow>
 

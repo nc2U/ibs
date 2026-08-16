@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { computed, onMounted, type PropType, reactive, ref, watch } from 'vue'
+import { usePerms } from '@/composables/usePerms'
 import type { selectProject } from '@/store/types/work_project.ts'
 import type { IssueStatus, Tracker } from '@/store/types/work_issue.ts'
 import type { MeetingCategory } from '@/store/types/work_meeting.ts'
@@ -8,7 +9,6 @@ import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import IssueProjectSelector from '@/views/_Work/components/atomics/IssueProjectSelector.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 import SaveQueryModal from '@/views/_Work/components/SaveQueryModal.vue'
-import { usePerms } from '@/composables/usePerms'
 
 import { useRoute } from 'vue-router'
 import { useAccount } from '@/store/pinia/account'
@@ -156,7 +156,7 @@ const form = ref<Record<string, any>>({
 const enabledFields = ref<string[]>(['issue_status'])
 
 // searchCond 에 새 항목 추가 시 enabledFields 에도 자동 추가
-watch(searchCond, (newVal) => {
+watch(searchCond, newVal => {
   newVal.forEach(key => {
     if (!enabledFields.value.includes(key)) {
       enabledFields.value.push(key)
@@ -341,7 +341,7 @@ const activeFields = computed(() =>
 // ----- filterSubmit: 통합 필터 객체 emit -----
 const filterSubmit = () => {
   const payload: Record<string, any> = {
-    event_type: eventTypes.value.length === 2 ? 'all' : eventTypes.value[0] ?? 'all',
+    event_type: eventTypes.value.length === 2 ? 'all' : (eventTypes.value[0] ?? 'all'),
   }
 
   // 프로젝트 (체크 박스 활성화시에만 적용)
@@ -391,37 +391,50 @@ const filterSubmit = () => {
       else if (op === 'exclude' && form.value.tracker) payload.tracker__exclude = form.value.tracker
     } else if (key === 'priority') {
       if (op === 'is' && form.value.priority) payload.priority = form.value.priority
-      else if (op === 'exclude' && form.value.priority) payload.priority__exclude = form.value.priority
+      else if (op === 'exclude' && form.value.priority)
+        payload.priority__exclude = form.value.priority
     } else if (key === 'assignee') {
       if (op === 'is' && form.value.assignee) payload.assigned_to = form.value.assignee
-      else if (op === 'exclude' && form.value.assignee) payload.assigned_to__exclude = form.value.assignee
+      else if (op === 'exclude' && form.value.assignee)
+        payload.assigned_to__exclude = form.value.assignee
     } else if (key === 'author') {
       if (op === 'is' && form.value.author) payload.creator = form.value.author
       else if (op === 'exclude' && form.value.author) payload.creator__exclude = form.value.author
     } else if (key === 'issue_subject') {
       if (op === 'contains' && form.value.issue_subject) payload.subject = form.value.issue_subject
-      else if (op === 'exclude' && form.value.issue_subject__exclude) payload.subject__exclude = form.value.issue_subject__exclude
+      else if (op === 'exclude' && form.value.issue_subject__exclude)
+        payload.subject__exclude = form.value.issue_subject__exclude
     } else if (key === 'start_date') {
       _applyDateFilter(payload, 'start_date', op)
     } else if (key === 'due_date') {
       _applyDateFilter(payload, 'due_date', op)
 
-    // ===== 회의(Meeting) 필터 =====
+      // ===== 회의(Meeting) 필터 =====
     } else if (key === 'meeting_status') {
-      if (op === 'is' && form.value.meeting_status) payload.meeting_status = form.value.meeting_status
-      else if (op === 'exclude' && form.value.meeting_status) payload.meeting_status__exclude = form.value.meeting_status
+      if (op === 'is' && form.value.meeting_status)
+        payload.meeting_status = form.value.meeting_status
+      else if (op === 'exclude' && form.value.meeting_status)
+        payload.meeting_status__exclude = form.value.meeting_status
     } else if (key === 'meeting_category') {
-      if (op === 'is' && form.value.meeting_category) payload.meeting_category = form.value.meeting_category
-      else if (op === 'exclude' && form.value.meeting_category) payload.meeting_category__exclude = form.value.meeting_category
+      if (op === 'is' && form.value.meeting_category)
+        payload.meeting_category = form.value.meeting_category
+      else if (op === 'exclude' && form.value.meeting_category)
+        payload.meeting_category__exclude = form.value.meeting_category
     } else if (key === 'meeting_attendees') {
-      if (op === 'is' && form.value.meeting_attendees) payload.meeting_attendees = form.value.meeting_attendees
-      else if (op === 'exclude' && form.value.meeting_attendees) payload.meeting_attendees__exclude = form.value.meeting_attendees
+      if (op === 'is' && form.value.meeting_attendees)
+        payload.meeting_attendees = form.value.meeting_attendees
+      else if (op === 'exclude' && form.value.meeting_attendees)
+        payload.meeting_attendees__exclude = form.value.meeting_attendees
     } else if (key === 'meeting_creator') {
-      if (op === 'is' && form.value.meeting_creator) payload.meeting_creator = form.value.meeting_creator
-      else if (op === 'exclude' && form.value.meeting_creator) payload.meeting_creator__exclude = form.value.meeting_creator
+      if (op === 'is' && form.value.meeting_creator)
+        payload.meeting_creator = form.value.meeting_creator
+      else if (op === 'exclude' && form.value.meeting_creator)
+        payload.meeting_creator__exclude = form.value.meeting_creator
     } else if (key === 'meeting_title') {
-      if (op === 'contains' && form.value.meeting_title) payload.meeting_search = form.value.meeting_title
-      else if (op === 'exclude' && form.value.meeting_title__exclude) payload.meeting_search__exclude = form.value.meeting_title__exclude
+      if (op === 'contains' && form.value.meeting_title)
+        payload.meeting_search = form.value.meeting_title
+      else if (op === 'exclude' && form.value.meeting_title__exclude)
+        payload.meeting_search__exclude = form.value.meeting_title__exclude
     } else if (key === 'meeting_date') {
       _applyDateFilter(payload, 'meeting_date', op)
     }
@@ -439,8 +452,10 @@ const _applyDateFilter = (payload: Record<string, any>, key: string, op: string)
   } else if (op === 'lte' && form.value[`${key}__lte`]) {
     payload[`${key}__lte`] = form.value[`${key}__lte`]
   } else if (op === 'between') {
-    if (form.value[`${key}__between_min`]) payload[`${key}__gte`] = form.value[`${key}__between_min`]
-    if (form.value[`${key}__between_max`]) payload[`${key}__lte`] = form.value[`${key}__between_max`]
+    if (form.value[`${key}__between_min`])
+      payload[`${key}__gte`] = form.value[`${key}__between_min`]
+    if (form.value[`${key}__between_max`])
+      payload[`${key}__lte`] = form.value[`${key}__between_max`]
   }
 }
 
@@ -527,14 +542,17 @@ const applyQuery = (query: any) => {
         form.value.author = val === 'me' ? myId : val
       }
       if (f.meeting_attendees !== undefined) {
-        if (!searchCond.value.includes('meeting_attendees')) searchCond.value.push('meeting_attendees')
-        if (!enabledFields.value.includes('meeting_attendees')) enabledFields.value.push('meeting_attendees')
+        if (!searchCond.value.includes('meeting_attendees'))
+          searchCond.value.push('meeting_attendees')
+        if (!enabledFields.value.includes('meeting_attendees'))
+          enabledFields.value.push('meeting_attendees')
         cond.value.meeting_attendees = 'is'
         form.value.meeting_attendees = f.meeting_attendees === 'me' ? myId : f.meeting_attendees
       }
       if (f.meeting_creator !== undefined) {
         if (!searchCond.value.includes('meeting_creator')) searchCond.value.push('meeting_creator')
-        if (!enabledFields.value.includes('meeting_creator')) enabledFields.value.push('meeting_creator')
+        if (!enabledFields.value.includes('meeting_creator'))
+          enabledFields.value.push('meeting_creator')
         cond.value.meeting_creator = 'is'
         form.value.meeting_creator = f.meeting_creator === 'me' ? myId : f.meeting_creator
       }
@@ -560,20 +578,13 @@ defineExpose({ applyQuery, resetFilter })
     <CCollapse :visible="condVisible">
       <CRow class="m-2" color="light">
         <CCol class="col-12 col-md-8">
-
           <!-- 고정 1: 이벤트 종류 선택 -->
           <CRow class="mb-3">
             <CCol class="col-4 col-lg-3 col-xl-2 pt-1">
               <span class="form-check-label text-muted small fw-semibold">표시</span>
             </CCol>
             <CCol class="col-8 col-lg-6 d-flex align-items-center gap-3">
-              <CFormCheck
-                id="evt-issue"
-                v-model="eventTypes"
-                value="issue"
-                label="업무"
-                inline
-              />
+              <CFormCheck id="evt-issue" v-model="eventTypes" value="issue" label="업무" inline />
               <CFormCheck
                 id="evt-meeting"
                 v-model="eventTypes"
@@ -636,7 +647,6 @@ defineExpose({ applyQuery, resetFilter })
                 </CFormSelect>
               </CCol>
               <CCol v-if="enabledFields.includes(field.key)" class="col-4 col-lg-3">
-
                 <!-- 프로젝트 -->
                 <template v-if="field.type === 'project'">
                   <IssueProjectSelector
@@ -657,7 +667,11 @@ defineExpose({ applyQuery, resetFilter })
                     v-model="form[field.key]"
                     size="sm"
                   >
-                    <option v-for="opt in (field as any).options" :key="opt.value" :value="opt.value">
+                    <option
+                      v-for="opt in (field as any).options"
+                      :key="opt.value"
+                      :value="opt.value"
+                    >
                       {{ opt.label }}
                     </option>
                   </CFormSelect>
@@ -735,11 +749,9 @@ defineExpose({ applyQuery, resetFilter })
                     />
                   </div>
                 </template>
-
               </CCol>
             </CRow>
           </template>
-
         </CCol>
 
         <!-- 검색조건 추가 멀티셀렉트 -->

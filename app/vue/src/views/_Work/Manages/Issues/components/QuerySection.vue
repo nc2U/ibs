@@ -1,9 +1,9 @@
 <script lang="ts" setup>
 import {
   computed,
+  nextTick,
   onBeforeMount,
   onMounted,
-  nextTick,
   type PropType,
   reactive,
   ref,
@@ -51,7 +51,6 @@ const openSaveModal = () => {
 
 const emit = defineEmits(['filter-submit'])
 
-const viewMode = ref<'board' | 'list'>('board')
 const condVisible = ref(true)
 const optVisible = ref(false)
 
@@ -839,13 +838,16 @@ watch(searchCond, newVal => {
   enabledFields.value = enabledFields.value.filter(k => newVal.includes(k))
 
   if (newVal.includes('project')) form.value.project = ''
-  if (newVal.includes('tracker') && !form.value.tracker) form.value.tracker = props.trackerList[0]?.pk
+  if (newVal.includes('tracker') && !form.value.tracker)
+    form.value.tracker = props.trackerList[0]?.pk
   if (newVal.includes('priority') && !form.value.priority)
     form.value.priority = props.priorityList[0]?.pk
   if (newVal.includes('category') && !form.value.category)
     form.value.category = props.categoryList[0]?.pk
-  if (newVal.includes('watcher') && !form.value.watcher) form.value.watcher = props.getUsers[0]?.value
-  if (newVal.includes('updater') && !form.value.updater) form.value.updater = props.getUsers[0]?.value
+  if (newVal.includes('watcher') && !form.value.watcher)
+    form.value.watcher = props.getUsers[0]?.value
+  if (newVal.includes('updater') && !form.value.updater)
+    form.value.updater = props.getUsers[0]?.value
   if (newVal.includes('last_updater') && !form.value.last_updater)
     form.value.last_updater = props.getUsers[0]?.value
 })
@@ -982,7 +984,8 @@ const applyQuery = (query: any) => {
       if (formPayload.watcher === 'me') formPayload.watcher = myId
       if (formPayload.author === 'me' || formPayload.creator === 'me') formPayload.author = myId
       if (formPayload.updater === 'me') formPayload.updater = myId
-      if (formPayload.assignee === 'me' || formPayload.assigned_to === 'me') formPayload.assignee = myId
+      if (formPayload.assignee === 'me' || formPayload.assigned_to === 'me')
+        formPayload.assignee = myId
 
       form.value = { ...form.value, ...formPayload }
 
@@ -1398,30 +1401,7 @@ defineExpose({ applyQuery, resetFilter })
     </CCol>
     <v-divider class="mx-3 mt-2 mb-0" />
     <CCollapse :visible="optVisible">
-      <slot name="option">
-        <CRow class="m-2" color="light">
-          <CCol>
-            <span class="mr-3">결과 표시 </span>
-            <CFormCheck
-              v-model="viewMode"
-              label="보드"
-              name="viewMode"
-              value="board"
-              inline
-              type="radio"
-            />
-            <CFormCheck
-              v-model="viewMode"
-              label="목록"
-              name="viewMode"
-              value="list"
-              inline
-              type="radio"
-              disabled
-            />
-          </CCol>
-        </CRow>
-      </slot>
+      <slot name="option"> </slot>
     </CCollapse>
   </CRow>
 

@@ -2,7 +2,6 @@
 import { computed, onBeforeMount, onMounted, type PropType, reactive, ref, watch } from 'vue'
 import { usePerms } from '@/composables/usePerms'
 import { useInform } from '@/store/pinia/work_inform.ts'
-import { useAccount } from '@/store/pinia/account'
 import type { ProjectFilter, selectProject } from '@/store/types/work_project.ts'
 import Multiselect from '@vueform/multiselect'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
@@ -25,17 +24,6 @@ const refQuerySaveModal = ref()
 
 const { can, PERM } = usePerms()
 const informStore = useInform()
-const accStore = useAccount()
-const currentUserId = computed(() => accStore.userInfo?.pk)
-
-const viewMode = ref<'board' | 'list'>(
-  (localStorage.getItem('project-view-mode') as 'board' | 'list') || 'board',
-)
-
-watch(viewMode, nVal => {
-  localStorage.setItem('project-view-mode', nVal)
-  emit('change-view-mode', nVal)
-})
 
 const condVisible = ref(true)
 const optVisible = ref(false)
@@ -596,31 +584,7 @@ defineExpose({ applyQuery, resetFilter })
     </CCol>
     <v-divider class="mx-3 mt-2 mb-0" />
     <CCollapse :visible="optVisible">
-      <slot name="option">
-        <CRow class="m-2" color="light">
-          <CCol>
-            <span class="mr-3">결과 표시 </span>
-            <CFormCheck
-              v-model="viewMode"
-              label="보드"
-              name="viewMode"
-              id="board-view-mode"
-              value="board"
-              inline
-              type="radio"
-            />
-            <CFormCheck
-              v-model="viewMode"
-              label="목록"
-              name="viewMode"
-              id="list-view-mode"
-              value="list"
-              inline
-              type="radio"
-            />
-          </CCol>
-        </CRow>
-      </slot>
+      <slot name="option"> </slot>
     </CCollapse>
   </CRow>
 
