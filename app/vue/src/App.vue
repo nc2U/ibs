@@ -9,20 +9,20 @@ const comStore = useCompany()
 const company = computed(() => comStore.company)
 
 const workStore = useWork()
-
 const store = useStore()
-const isDark = computed(() => store.theme === 'dark')
+const isDark = computed(() => store.isDark)
 
-watch(isDark, () => {
+const applyTheme = () => {
   isDark.value
     ? document.body.classList.add('dark-theme')
     : document.body.classList.remove('dark-theme')
-})
+}
+
+watch(isDark, applyTheme)
 
 onMounted(async () => {
-  isDark.value
-    ? document.body.classList.add('dark-theme')
-    : document.body.classList.remove('dark-theme')
+  store.initThemeListener()
+  applyTheme()
 })
 
 onBeforeMount(async () => {

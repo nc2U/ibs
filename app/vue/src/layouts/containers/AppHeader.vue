@@ -33,7 +33,7 @@ const isVisible = computed(() => store.sidebarVisible)
 const theme = computed(() => store.theme)
 
 const toggleSidebar = () => store.toggleSidebar()
-const toggleTheme = (theme: 'default' | 'dark') => store.toggleTheme(theme)
+const toggleTheme = (theme: 'default' | 'dark' | 'auto') => store.toggleTheme(theme)
 const toggleAside = () => store.toggleAside()
 </script>
 
@@ -73,6 +73,21 @@ const toggleAside = () => store.toggleAside()
           >
             <template #label>
               <CIcon icon="cil-sun" size="sm" style="margin-top: 5px" />
+              <v-tooltip activator="parent" location="bottom">라이트 모드</v-tooltip>
+            </template>
+          </CFormCheck>
+          <CFormCheck
+            id="btn-auto-theme"
+            type="radio"
+            :button="{ color: 'primary' }"
+            name="theme-switch"
+            auto-complete="off"
+            :checked="theme === 'auto'"
+            @change="toggleTheme('auto')"
+          >
+            <template #label>
+              <CIcon icon="cil-screen-desktop" size="sm" style="margin-top: 5px" />
+              <v-tooltip activator="parent" location="bottom">기기 설정</v-tooltip>
             </template>
           </CFormCheck>
           <CFormCheck
@@ -86,6 +101,7 @@ const toggleAside = () => store.toggleAside()
           >
             <template #label>
               <CIcon icon="cil-moon" size="sm" style="margin-top: 5px" />
+              <v-tooltip activator="parent" location="bottom">다크 모드</v-tooltip>
             </template>
           </CFormCheck>
         </CButtonGroup>
