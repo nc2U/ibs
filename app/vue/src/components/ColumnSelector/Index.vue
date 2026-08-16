@@ -37,6 +37,13 @@ const addColumns = () => {
   availableSelected.value = []
 }
 
+const addSingleColumn = (key: string) => {
+  if (!props.modelValue.includes(key)) {
+    emit('update:modelValue', [...props.modelValue, key])
+    availableSelected.value = availableSelected.value.filter(k => k !== key)
+  }
+}
+
 const removeColumns = () => {
   if (!selectedSelected.value.length) return
   const toRemove = selectedSelected.value.filter(
@@ -45,6 +52,45 @@ const removeColumns = () => {
   const updated = props.modelValue.filter(k => !toRemove.includes(k))
   emit('update:modelValue', updated)
   selectedSelected.value = []
+}
+
+const removeSingleColumn = (key: string) => {
+  const col = props.allColumns.find(c => c.key === key)
+  if (col?.fixed) return
+  emit(
+    'update:modelValue',
+    props.modelValue.filter(k => k !== key),
+  )
+  selectedSelected.value = selectedSelected.value.filter(k => k !== key)
+}
+
+const onAvailableDblClick = (event: MouseEvent) => {
+  const target = event.target as HTMLOptionElement | null
+  if (target && target.tagName === 'OPTION' && target.value) {
+    addSingleColumn(target.value)
+  } else if (availableSelected.value.length === 1) {
+    addSingleColumn(availableSelected.value[0])
+  }
+}
+
+const onSelectedDblClick = (event: MouseEvent) => {
+  const target = event.target as HTMLOptionElement | null
+  if (target && target.tagName === 'OPTION' && target.value) {
+    removeSingleColumn(target.value)
+  } else if (selectedSelected.value.length === 1) {
+    removeSingleColumn(selectedSelected.value[0])
+  }
+}
+
+const moveTop = () => {
+  if (selectedSelected.value.length !== 1) return
+  const targetKey = selectedSelected.value[0]
+  const idx = props.modelValue.indexOf(targetKey)
+  if (idx > 0) {
+    const updated = props.modelValue.filter(k => k !== targetKey)
+    updated.unshift(targetKey)
+    emit('update:modelValue', updated)
+  }
 }
 
 const moveUp = () => {
@@ -72,6 +118,17 @@ const moveDown = () => {
     emit('update:modelValue', updated)
   }
 }
+
+const moveBottom = () => {
+  if (selectedSelected.value.length !== 1) return
+  const targetKey = selectedSelected.value[0]
+  const idx = props.modelValue.indexOf(targetKey)
+  if (idx >= 0 && idx < props.modelValue.length - 1) {
+    const updated = props.modelValue.filter(k => k !== targetKey)
+    updated.push(targetKey)
+    emit('update:modelValue', updated)
+  }
+}
 </script>
 
 <template>
@@ -81,8 +138,19 @@ const moveDown = () => {
       <label class="form-label text-caption font-weight-bold text-muted mb-1">
         {{ availableLabel }}
       </label>
-      <select v-model="availableSelected" multiple class="form-select text-caption" :size="size">
-        <option v-for="item in availableItems" :key="item.key" :value="item.key">
+      <select
+        v-model="availableSelected"
+        multiple
+        class="form-select text-caption"
+        :size="size"
+        @dblclick="onAvailableDblClick"
+      >
+        <option
+          v-for="item in availableItems"
+          :key="item.key"
+          :value="item.key"
+          @dblclick.stop="addSingleColumn(item.key)"
+        >
           {{ item.label }}
         </option>
       </select>
@@ -121,18 +189,34 @@ const moveDown = () => {
         <label class="form-label text-caption font-weight-bold text-indigo mb-1">
           {{ selectedLabel }}
         </label>
-        <select v-model="selectedSelected" multiple class="form-select text-caption" :size="size">
+        <select
+          v-model="selectedSelected"
+          multiple
+          class="form-select text-caption"
+          :size="size"
+          @dblclick="onSelectedDblClick"
+        >
           <option
             v-for="item in selectedItems"
             :key="item.key"
             :value="item.key"
             :disabled="item.fixed"
+            @dblclick.stop="removeSingleColumn(item.key)"
           >
             {{ item.label }} {{ item.fixed ? '(필수)' : '' }}
           </option>
         </select>
       </div>
-      <div class="d-flex flex-column gap-1 ml-2 pt-4">
+      <div class="d-flex flex-column gap-1 ml-2 pt-2">
+        <v-btn
+          size="x-small"
+          color="indigo"
+          variant="outlined"
+          icon="mdi-chevron-double-up"
+          title="맨 위로 이동"
+          :disabled="selectedSelected.length !== 1"
+          @click="moveTop"
+        />
         <v-btn
           size="x-small"
           color="indigo"
@@ -150,6 +234,15 @@ const moveDown = () => {
           title="아래로 이동"
           :disabled="selectedSelected.length !== 1"
           @click="moveDown"
+        />
+        <v-btn
+          size="x-small"
+          color="indigo"
+          variant="outlined"
+          icon="mdi-chevron-double-down"
+          title="맨 아래로 이동"
+          :disabled="selectedSelected.length !== 1"
+          @click="moveBottom"
         />
       </div>
     </CCol>
