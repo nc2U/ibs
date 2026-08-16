@@ -46,8 +46,10 @@ export interface IssueProject {
   description: string
   is_public: boolean
   parent: number | null
+  parent_name: string | null
   allowed_roles: { pk: number; name: string; inherited: boolean }[]
   status: '1' | '2' | '9'
+  status_display: '사용중' | '닫힘' | '잠금보관(모든 접근이 차단됨)'
   slack_notifications_enabled: boolean
   created?: string
   updated?: string

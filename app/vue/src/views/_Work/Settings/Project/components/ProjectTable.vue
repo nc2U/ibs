@@ -103,6 +103,21 @@ const isOwnProject = (project: IssueProject) =>
             <span v-html="markdownRender(proj.description)" class="text-muted" />
           </CTableDataCell>
 
+          <!-- 상태 -->
+          <CTableDataCell v-else-if="colKey === 'status'" class="text-center">
+            {{ proj.status_display }}
+          </CTableDataCell>
+
+          <!-- 홈페이지 -->
+          <CTableDataCell v-else-if="colKey === 'homepage'" class="text-center">
+            {{ proj.homepage }}
+          </CTableDataCell>
+
+          <!-- 상위 워크스페이스 -->
+          <CTableDataCell v-else-if="colKey === 'parent'" class="text-center">
+            {{ proj.parent_name }}
+          </CTableDataCell>
+
           <!-- 공개여부 -->
           <CTableDataCell v-else-if="colKey === 'is_public'" class="text-center">
             <v-chip size="x-small" :color="proj.is_public ? 'primary' : 'grey'" variant="tonal">

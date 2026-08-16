@@ -149,23 +149,33 @@ class IssueCategoryInIssueProjectSerializer(serializers.ModelSerializer):
 class IssueProjectListSerializer(ProjectPermissionMixin, serializers.ModelSerializer):
     company = serializers.SlugRelatedField('name', read_only=True)
     project = serializers.PrimaryKeyRelatedField(read_only=True)
-    module = ModuleInIssueProjectSerializer(read_only=True)
-    creator = serializers.SlugRelatedField('username', read_only=True)
-    visible = serializers.SerializerMethodField(read_only=True)
-    my_perms = serializers.SerializerMethodField(read_only=True)
-    my_role = serializers.SerializerMethodField(read_only=True)
-    sub_projects = serializers.SerializerMethodField()
-    all_members = MemberInIssueProjectSerializer(many=True, read_only=True)
+    parent_name = serializers.SerializerMethodField(read_only=True)
     allowed_roles = RoleInIssueProjectSerializer(many=True, read_only=True)
+    status_display = serializers.SerializerMethodField(read_only=True)
+    sub_projects = serializers.SerializerMethodField()
+    module = ModuleInIssueProjectSerializer(read_only=True)
+    my_role = serializers.SerializerMethodField(read_only=True)
+    my_perms = serializers.SerializerMethodField(read_only=True)
+    creator = serializers.SlugRelatedField('username', read_only=True)
+    all_members = MemberInIssueProjectSerializer(many=True, read_only=True)
+    visible = serializers.SerializerMethodField(read_only=True)
     parent_visible = serializers.SerializerMethodField(read_only=True)
     is_bookmarked = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = IssueProject
         fields = ('pk', 'company', 'project', 'type', 'name', 'slug', 'description', 'is_public',
-                  'parent', 'allowed_roles', 'status', 'slack_notifications_enabled', 'created',
-                  'updated', 'creator', 'sub_projects', 'depth', 'module', 'my_role', 'my_perms',
-                  'all_members', 'visible', 'parent_visible', 'is_bookmarked')
+                  'parent', 'parent_name', 'allowed_roles', 'status', 'status_display', 'sub_projects',
+                  'slack_notifications_enabled', 'created', 'updated', 'creator', 'depth', 'module',
+                  'my_role', 'my_perms', 'all_members', 'visible', 'parent_visible', 'is_bookmarked')
+
+    @staticmethod
+    def get_parent_name(obj):
+        return obj.parent.name if obj.parent else None
+
+    @staticmethod
+    def get_status_display(obj):
+        return obj.get_status_display()
 
     def get_sub_projects(self, obj):
         sub_projects = obj.issueproject_set.exclude(status='9')
