@@ -81,12 +81,52 @@
 - [x] **Step 9**: Phase 1 - 업무/회의 모듈 (Issue / Meeting) API 연동, CRUD 폼, 실시간 필터 동기화 구현 완료
 - [x] **Step 9-1**: 도메인 용어 체계 정립 (`work_core: 워크스페이스` vs `ibs_global: 프로젝트`) 및 Vue 3 웹 & Flutter 모바일 100% 동기화
 - [x] **Step 9-2**: `ProjectScreen` (프로젝트 탭) 5대 핵심 모듈 카드 리팩토링 (계약/수납/자금/문서/설정, `radius = 0` 직각 스타일 적용)
+- [x] **Step 9-3**: 메인 통합 검색 결과 (`search_results_screen.dart`) 공지사항/게시판 바텀시트 연동 및 전체 채널 상세 연결
+- [x] **Step 9-4**: 닫힌 워크스페이스 (`status='2'`) 읽기 전용 보안 방어 (백엔드 권한 필터링 + `can()` 판정 엔진 + UI 수정/삭제 버튼 원천 비노출)
+- [x] **Step 9-5**: 3-Way 테마 시스템 구축 (`ThemeMode.light` / `ThemeMode.dark` / `ThemeMode.system`) 및 `AppColorsExtension`, `themeModeProvider`, 프로필 설정 연동
 - [ ] **Step 10**: Phase 2 - 프로젝트별 계약 관리 (`Contract`) 및 수납/입출금 상세 조회 모듈 연동 (다음 진행 예정)
 - [ ] **Step 11**: Phase 3 - 전자결재 / 전사 정보 확장 모듈 (진행 예정)
 
 ---
 
-## 💻 5. 다른 PC (집/사무실)에서 이어 개발할 때 가이드
+## 🎨 5. 테마 시스템(Theme) 아키텍처 & 개발 시 유의사항
+
+IBS 모바일 앱은 Vue 웹의 테마 체계와 100% 호환되는 **3-Way 테마(라이트 | 다크 | 기기 설정)** 인프라가 구축되어 있습니다.
+
+### 1) 테마 아키텍처 구성요소
+- **[`AppColorsExtension`](file:///Users/austinkho/Git/Pro/ibs/app/flutter/lib/core/theme/app_colors_extension.dart)**: `ThemeExtension` 기반의 테마별 색상 토큰 정의 (`AppColorsExtension.light` & `AppColorsExtension.dark`).
+- **[`AppTheme`](file:///Users/austinkho/Git/Pro/ibs/app/flutter/lib/core/theme/app_theme.dart)**: Material 3 기반 라이트/다크 `ThemeData` 정의.
+- **[`themeModeProvider`](file:///Users/austinkho/Git/Pro/ibs/app/flutter/lib/core/providers/theme_provider.dart)**: `FlutterSecureStorage`(`APP_THEME_MODE`)를 사용한 테마 설정 영구 보관.
+- **[`BuildContextThemeX`](file:///Users/austinkho/Git/Pro/ibs/app/flutter/lib/core/theme/app_colors_extension.dart)**: `context.colors` 확장 게터를 통해 위젯에서 현재 활성 테마 색상 즉시 접근.
+
+### 2) UI 개발 시 색상 사용 규칙 (중요 ⚠️)
+앞으로 신규 화면 및 컴포넌트를 작성할 때는 **다크모드 고정 색상 하드코딩을 피하고 `context.colors` 토큰을 사용**합니다.
+
+```dart
+// ❌ 피해야 할 방식: 다크모드 고정 색상 직접 참조
+color: AppColors.bgCard
+color: AppColors.bgPrimary
+color: Colors.white
+color: Colors.black
+
+// ✅ 권장 방식: BuildContext의 테마 확장 토큰 사용
+color: context.colors.bgPrimary      // 배경색 (Dark: #202336 / Light: #F1F5F9)
+color: context.colors.bgCard         // 카드/모달 (Dark: #2A2E47 / Light: #FFFFFF)
+color: context.colors.textPrimary    // 메인 텍스트 (Dark: #FFFFFF / Light: #0F172A)
+color: context.colors.textSecond     // 보조 텍스트 (Dark: #CBD5E1 / Light: #475569)
+color: context.colors.textMuted      // 설명/메타 (Dark: #94A3B8 / Light: #64748B)
+color: context.colors.border         // 테두리선 (Dark: #3B4061 / Light: #E2E8F0)
+color: context.colors.accentWork     // 업무관리 액센트 (Dark: #38BDF8 / Light: #0284C7)
+color: context.colors.accentProject  // 프로젝트 액센트 (Dark: #34D399 / Light: #059669)
+```
+
+### 3) 추천 개발 워크플로우
+1. **기능 & UI 완성 우선**: 비즈니스 로직과 화면 기능 구현을 먼저 완료합니다. (`context.colors` 토큰을 사용해 구현 시 라이트모드의 80~90%가 개발과 동시에 자동 완성됨)
+2. **최종 비주얼 폴리싱**: 전체 모듈 구축 완료 후 라이트 모드로 전환하여 시각적 대비(Contrast), 뱃지 가독성 등을 일괄 튜닝합니다.
+
+---
+
+## 💻 6. 다른 PC (집/사무실)에서 이어 개발할 때 가이드
 
 집이나 다른 PC에서 레포지토리를 받아 작업을 재개할 때 다음 순서로 실행하세요.
 
@@ -111,7 +151,7 @@
 
 ---
 
-## 🗺️ 6. 단계별 개발 로드맵 (Detailed Roadmap)
+## 🗺️ 7. 단계별 개발 로드맵 (Detailed Roadmap)
 
 ### Phase 1: 업무관리 핵심 모듈 (입출력 및 진행 현황) [완료]
 
@@ -155,7 +195,7 @@
 
 ---
 
-## 💡 7. Vue 3 vs Flutter 개념 비교 (참고용)
+## 💡 8. Vue 3 vs Flutter 개념 비교 (참고용)
 
 | 개념                | Vue 3 (현재 `app/vue`)            | Flutter (신규 `app/flutter`)                              |
 |:--------------------|:----------------------------------|:----------------------------------------------------------|
@@ -168,7 +208,7 @@
 
 ---
 
-## 📦 8. 파이어베이스 비공개 무선 배포 가이드 (Firebase App Distribution)
+## 📦 9. 파이어베이스 비공개 무선 배포 가이드 (Firebase App Distribution)
 
 사내 직원 (10명 이내) 및 비공개 테스트용으로 구글/애플 스토어 등록 및 심사 없이 iOS (아이폰) 및 안드로이드 기기에 무선으로 앱을 바로 설치·배포하는 방법입니다.
 
@@ -250,7 +290,7 @@ Django(`app/django/.env`) 방식과 동일하게 Flutter 앱도 `app/flutter/env
 
 ---
 
-*마지막 업데이트: 2026-08-14 (파이어베이스 안드로이드/아이폰 비공개 배포 가이드, 멀티 PC .env 시크릿 복원 스크립트 및 --dart-define 서버 주소 주입 연동 완료)*
+*마지막 업데이트: 2026-08-16 (3-Way 테마 시스템 구축, 테마 아키텍처 및 UI 개발 규칙 추가, 검색/보안 닫힘 워크스페이스 방어 완료)*
 
 
 * 유료 개발자 계정 결제 없이, 본인의 무료 애플 계정으로 아이폰 13 프로에 앱을 설치하는 4단계 순서입니다:
