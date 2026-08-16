@@ -31,22 +31,27 @@ class SalesBillInProjectSerializer(serializers.ModelSerializer):
 
 class ProjectSerializer(serializers.ModelSerializer):
     company = serializers.SerializerMethodField(read_only=True)
-    issue_project = serializers.PrimaryKeyRelatedField(read_only=True)
+    issue_project = serializers.PrimaryKeyRelatedField(
+        queryset=IssueProject.objects.all(),
+        required=False,
+        allow_null=True
+    )
     issue_project_slug = serializers.CharField(source='issue_project.slug', read_only=True)
     kind = serializers.ChoiceField(choices=PROJECT_KIND_CHOICES)
     kind_desc = serializers.CharField(source='get_kind_display', read_only=True)
     salesbillissue = SalesBillInProjectSerializer(read_only=True)
 
     # Write-only fields for unified IssueProject creation
-    sub_name = serializers.CharField(write_only=True, required=False)
-    slug = serializers.CharField(write_only=True, required=False)
+    sub_name = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    slug = serializers.CharField(write_only=True, required=False, allow_blank=True)
     desc = serializers.CharField(write_only=True, required=False, allow_blank=True)
     slack_notifications_enabled = serializers.BooleanField(write_only=True, required=False, default=False)
     company_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
 
     class Meta:
         model = Project
-        fields = ('pk', 'company', 'issue_project', 'issue_project_slug', 'name', 'order', 'kind', 'kind_desc', 'start_year',
+        fields = ('pk', 'company', 'issue_project', 'issue_project_slug', 'name', 'order', 'kind', 'kind_desc',
+                  'start_year',
                   'is_direct_manage', 'is_returned_area', 'is_unit_set', 'monthly_aggr_start_date',
                   'construction_start_date', 'construction_period_months', 'location', 'area_usage', 'build_size',
                   'num_unit', 'buy_land_extent', 'scheme_land_extent', 'donation_land_extent', 'on_floor_area',
@@ -160,48 +165,58 @@ class ProjectSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def create(self, validated_data):
-        """프로젝트 생성 시 연동되는 IssueProject 함께 생성 및 기본 필요 서류 자동 등록"""
-
+        """프로젝트 생성 시 기존 IssueProject 매칭 또는 신규 IssueProject 생성 및 기본 필요 서류 자동 등록"""
+        issue_project = validated_data.pop('issue_project', None)
         sub_name = validated_data.pop('sub_name', None)
         slug = validated_data.pop('slug', None)
         desc = validated_data.pop('desc', '')
         slack_notifications_enabled = validated_data.pop('slack_notifications_enabled', False)
         company_id = validated_data.pop('company_id', None)
 
-        # 1. 회사 결정 (전달되었거나 기본 회사 조회)
-        if company_id:
-            try:
-                company = Company.objects.get(pk=company_id)
-            except Company.DoesNotExist:
-                company = Company.objects.filter(is_default=True).first()
+        if issue_project:
+            # 기존 워크스페이스와 매칭
+            if hasattr(issue_project, 'project') and issue_project.project:
+                raise serializers.ValidationError({"issue_project": "이미 다른 프로젝트와 연결된 워크스페이스입니다."})
+            if issue_project.type != '2':
+                issue_project.type = '2'
+                issue_project.save(update_fields=['type'])
+            # 기본 모듈(Module) 객체 연계 확인 및 생성
+            Module.objects.get_or_create(project=issue_project)
         else:
-            company = Company.objects.filter(is_default=True).first()
+            # 1. 회사 결정 (전달되었거나 기본 회사 조회)
+            if company_id:
+                try:
+                    company = Company.objects.get(pk=company_id)
+                except Company.DoesNotExist:
+                    company = Company.objects.filter(is_default=True).first() or Company.objects.order_by('id').first()
+            else:
+                company = Company.objects.filter(is_default=True).first() or Company.objects.order_by('id').first()
 
-        if not company:
-            raise serializers.ValidationError({"company_id": "설정된 메인 회사가 없으며 회사 ID가 누락되었습니다."})
+            if not company:
+                raise serializers.ValidationError({"company_id": "설정된 메인 회사가 없으며 회사 ID가 누락되었습니다."})
 
-        # 2. IssueProject 생성 및 기본값 세팅
-        creator = self.context.get('request').user if self.context.get('request') else None
+            # 2. IssueProject 생성 및 기본값 세팅
+            creator = self.context.get('request').user if self.context.get('request') else None
 
-        if slug and IssueProject.objects.filter(slug=slug).exists():
-            raise serializers.ValidationError({"slug": "이미 존재하는 식별자(Slug)입니다."})
+            if slug and IssueProject.objects.filter(slug=slug).exists():
+                raise serializers.ValidationError({"slug": "이미 존재하는 식별자(Slug)입니다."})
 
-        issue_project = IssueProject.objects.create(
-            company=company,
-            type='2',  # 부동산개발
-            name=sub_name or validated_data.get('name'),
-            slug=slug or validated_data.get('name'),
-            description=desc,
-            is_public=True,
-            slack_notifications_enabled=slack_notifications_enabled,
-            creator=creator
-        )
-        # role & tracker model - is_dev_project 플래그 설치 후 해당 데이터로 가져올 것.
-        issue_project.allowed_roles.set([4, 5, 6, 7, 8, 9, 10, 11, 12])
-        issue_project.trackers.set([4, 5, 6, 7, 8])
+            issue_project = IssueProject.objects.create(
+                company=company,
+                type='2',  # 부동산개발
+                name=sub_name or validated_data.get('name'),
+                slug=slug or validated_data.get('name'),
+                description=desc,
+                is_public=True,
+                slack_notifications_enabled=slack_notifications_enabled,
+                creator=creator
+            )
+            # role & tracker model - is_dev_project 플래그 설치 후 해당 데이터로 가져올 것.
+            issue_project.allowed_roles.set([4, 5, 6, 7, 8, 9, 10, 11, 12])
+            issue_project.trackers.set([4, 5, 6, 7, 8])
 
-        # 기본 모듈(Module) 객체 연계 생성
-        Module.objects.create(project=issue_project)
+            # 기본 모듈(Module) 객체 연계 생성
+            Module.objects.create(project=issue_project)
 
         # 3. Project 인스턴스 생성 및 필요서류 등록
         validated_data['issue_project'] = issue_project

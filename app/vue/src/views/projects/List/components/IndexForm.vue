@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeMount, type PropType, reactive, ref, watch } from 'vue'
 import { useStore } from '@/store'
+import { useWork } from '@/store/pinia/work_project.ts'
 import { usePerms } from '@/composables/usePerms.ts'
 import { type Project } from '@/store/types/project'
 import Datepicker from '@vuepic/vue-datepicker'
@@ -18,6 +19,30 @@ const { can, PERM } = usePerms()
 const canProjectCreate = computed(() => can(PERM.PROJECT_CREATE))
 const canProjectUpdate = computed(() => can(PERM.PROJECT_UPDATE))
 const canProjectDelete = computed(() => can(PERM.PROJECT_DELETE))
+
+const workStore = useWork()
+const workspaceMode = ref<'create' | 'match'>('create')
+
+// 미연결 워크스페이스 목록
+const availableWorkspaces = computed(() =>
+  workStore.allReadableProjectsFlat.filter(p => !p.project),
+)
+
+const selectedWorkspace = computed(() => {
+  if (!form.issue_project) return null
+  return workStore.allReadableProjectsFlat.find(p => p.pk === form.issue_project) || null
+})
+
+watch(workspaceMode, mode => {
+  if (mode === 'create') {
+    form.issue_project = null
+  } else {
+    form.sub_name = ''
+    form.slug = ''
+    form.desc = ''
+    form.slack_notifications_enabled = false
+  }
+})
 
 const form = reactive<Project>({
   pk: undefined,
@@ -119,6 +144,12 @@ const validated = ref(false)
 const onSubmit = (event: Event) => {
   if (canProjectCreate.value || canProjectUpdate.value) {
     const e = event.currentTarget as HTMLSelectElement
+    if (!props.project && workspaceMode.value === 'match' && !form.issue_project) {
+      event.preventDefault()
+      event.stopPropagation()
+      validated.value = true
+      return
+    }
     if (!e.checkValidity()) {
       event.preventDefault()
       event.stopPropagation()
@@ -138,6 +169,16 @@ const modalAction = () => {
     delete submitData.desc
     delete submitData.slack_notifications_enabled
     delete submitData.company_id
+  } else {
+    if (workspaceMode.value === 'match') {
+      submitData.issue_project = form.issue_project ? Number(form.issue_project) : null
+      delete submitData.sub_name
+      delete submitData.slug
+      delete submitData.desc
+      delete submitData.slack_notifications_enabled
+    } else {
+      submitData.issue_project = null
+    }
   }
   emit('to-submit', submitData)
   validated.value = false
@@ -211,10 +252,16 @@ const formDataSetup = () => {
     form.slug = ''
     form.desc = ''
     form.slack_notifications_enabled = false
+    workspaceMode.value = 'create'
   }
 }
 
-onBeforeMount(() => formDataSetup())
+onBeforeMount(async () => {
+  formDataSetup()
+  if (!props.project) {
+    await workStore.fetchAllProjectList()
+  }
+})
 watch(
   () => props.project,
   () => formDataSetup(),
@@ -265,6 +312,7 @@ watch(
                 year-picker
                 auto-apply
                 :dark="store.theme === 'dark'"
+                :year-range="[2015, 2100]"
                 required
               />
               <CFormFeedback invalid> 사업개시년도를 입력하세요</CFormFeedback>
@@ -282,7 +330,67 @@ watch(
             </CCol>
           </CRow>
 
-          <CRow v-if="!project">
+          <CRow v-if="!project" class="mb-2">
+            <CFormLabel class="col-md-2 col-lg-1 col-form-label required">
+              워크스페이스
+            </CFormLabel>
+            <CCol md="10" lg="11" class="d-flex align-items-center flex-wrap">
+              <CFormCheck
+                type="radio"
+                name="workspaceMode"
+                id="ws-mode-create"
+                value="create"
+                v-model="workspaceMode"
+                label="신규 워크스페이스 생성"
+                inline
+              />
+              <CFormCheck
+                type="radio"
+                name="workspaceMode"
+                id="ws-mode-match"
+                value="match"
+                v-model="workspaceMode"
+                label="기존 워크스페이스 매칭"
+                inline
+                class="ms-3"
+              />
+              <span class="text-secondary small ms-3 mt-1 mt-md-0">
+                (사전에 개설되어 작업 중이던 워크스페이스가 있다면 매칭하여 고아 상태를 방지할 수
+                있습니다.)
+              </span>
+            </CCol>
+          </CRow>
+
+          <!-- 기존 워크스페이스 매칭 모드 -->
+          <CRow v-if="!project && workspaceMode === 'match'">
+            <CFormLabel class="col-md-2 col-lg-1 col-form-label required">
+              워크스페이스 선택
+            </CFormLabel>
+            <CCol md="10" lg="4" class="mb-md-3">
+              <CFormSelect
+                v-model.number="form.issue_project"
+                :required="workspaceMode === 'match'"
+              >
+                <option value="">연결할 기존 워크스페이스를 선택하세요</option>
+                <option v-for="ws in availableWorkspaces" :key="ws.pk" :value="ws.pk">
+                  {{ ws.name }} (식별자: {{ ws.slug }})
+                </option>
+              </CFormSelect>
+              <CFormFeedback invalid>연결할 워크스페이스를 선택하세요.</CFormFeedback>
+            </CCol>
+            <CCol md="12" lg="7" class="mb-md-3" v-if="selectedWorkspace">
+              <CAlert color="info" class="py-2 px-3 mb-0 small">
+                <strong>매칭된 워크스페이스 정보</strong> : 약칭:
+                <strong>{{ selectedWorkspace.name }}</strong> | 식별자:
+                <code>{{ selectedWorkspace.slug }}</code> | 설명:
+                {{ selectedWorkspace.description || '없음' }} | Slack 알림:
+                {{ selectedWorkspace.slack_notifications_enabled ? '사용' : '미사용' }}
+              </CAlert>
+            </CCol>
+          </CRow>
+
+          <!-- 신규 워크스페이스 동시 생성 모드 -->
+          <CRow v-if="!project && workspaceMode === 'create'">
             <CFormLabel class="col-md-2 col-lg-1 col-form-label required">
               프로젝트 약칭
             </CFormLabel>
@@ -292,7 +400,7 @@ watch(
                 type="text"
                 maxlength="100"
                 placeholder="예: [인천]동춘조합"
-                required
+                :required="workspaceMode === 'create'"
               />
               <CFormFeedback invalid>프로젝트 약칭을 입력하세요.</CFormFeedback>
             </CCol>
@@ -306,7 +414,7 @@ watch(
                 type="text"
                 maxlength="100"
                 placeholder="예: dongchun"
-                required
+                :required="workspaceMode === 'create'"
               />
               <CFormFeedback invalid>식별자(Slug)를 입력하세요.</CFormFeedback>
             </CCol>
