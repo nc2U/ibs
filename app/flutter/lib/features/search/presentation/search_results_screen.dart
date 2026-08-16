@@ -4,9 +4,12 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/providers/project_provider.dart';
-import '../../../core/router/app_router.dart';
 import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/loading_shimmer.dart';
+import '../../channel/data/forum_repository.dart';
+import '../../channel/data/notice_repository.dart';
+import '../../channel/presentation/widgets/notice_detail_sheet.dart';
+import '../../channel/presentation/widgets/post_detail_sheet.dart';
 import '../../docs/data/docs_repository.dart';
 import '../../docs/presentation/widgets/document_detail_sheet.dart';
 import '../data/models/search_model.dart';
@@ -393,7 +396,27 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
           title: item.title,
           project: item.project.name,
           subInfo: '${item.summary} · ${item.author?.username ?? ""} · ${item.created.split("T").first}',
-          onTap: () => context.go(AppRoutes.channel),
+          onTap: () async {
+            try {
+              final notice = await ref
+                  .read(noticeRepositoryProvider)
+                  .fetchNoticeDetail(item.pk);
+              if (context.mounted) {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (ctx) => NoticeDetailSheet(notice: notice),
+                );
+              }
+            } catch (e) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('공지사항 정보를 불러오지 못했습니다: $e')),
+                );
+              }
+            }
+          },
         ));
       }
     }
@@ -413,7 +436,27 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
           title: item.title,
           project: item.project.name,
           subInfo: '${item.creator?.username ?? ""} · ${item.created.split("T").first}',
-          onTap: () => context.go(AppRoutes.channel),
+          onTap: () async {
+            try {
+              final post = await ref
+                  .read(forumRepositoryProvider)
+                  .fetchPostDetail(item.pk);
+              if (context.mounted) {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (ctx) => PostDetailSheet(post: post),
+                );
+              }
+            } catch (e) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('게시글 정보를 불러오지 못했습니다: $e')),
+                );
+              }
+            }
+          },
         ));
       }
     }
