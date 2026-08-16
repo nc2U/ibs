@@ -187,6 +187,8 @@ class IssueProjectListSerializer(ProjectPermissionMixin, serializers.ModelSerial
 
 class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer):
     project = serializers.PrimaryKeyRelatedField(read_only=True)
+    parent_name = serializers.SerializerMethodField(read_only=True)
+    status_display = serializers.SerializerMethodField(read_only=True)
     ancestors = SimpleIssueProjectSerializer(source='get_ancestors', many=True, read_only=True)
     module = ModuleInIssueProjectSerializer(read_only=True)
     all_members = MemberInIssueProjectSerializer(many=True, read_only=True)
@@ -221,6 +223,14 @@ class IssueProjectSerializer(ProjectPermissionMixin, serializers.ModelSerializer
         read_only_fields = ('project', 'status', 'is_public', 'forums')
 
     # 메서드 복구
+    @staticmethod
+    def get_parent_name(obj):
+        return obj.parent.name if obj.parent else None
+
+    @staticmethod
+    def get_status_display(obj):
+        return obj.get_status_display()
+
     @staticmethod
     def get_versions(obj):
         # 모든 상태의 버전을 포함.
