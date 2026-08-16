@@ -8,6 +8,7 @@ class SelectedProject {
   final String slug;
   final String? description;
   final String type;
+  final String status;
   final bool isPublic;
   final List<String> myPerms;
   final ProjectModuleModel? module;
@@ -18,6 +19,7 @@ class SelectedProject {
     required this.slug,
     this.description,
     this.type = '1',
+    this.status = '1',
     this.isPublic = false,
     this.myPerms = const [],
     this.module,

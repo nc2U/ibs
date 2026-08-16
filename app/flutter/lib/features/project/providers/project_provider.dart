@@ -155,6 +155,7 @@ void selectProject(WidgetRef ref, ProjectModel? project) {
       slug: project.slug,
       description: project.description,
       type: project.type,
+      status: project.status,
       isPublic: project.isPublic,
       myPerms: project.myPerms,
       module: project.module,
