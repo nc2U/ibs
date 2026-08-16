@@ -161,7 +161,7 @@ const moveBottom = () => {
       col="12"
       md="2"
       lg="1"
-      class="text-center d-flex flex-row flex-md-column justify-content-center align-items-center gap-1 my-2 my-md-0"
+      class="text-center d-flex flex-row flex-md-column justify-content-center align-items-center gap-1 my-2 my-md-0 pt-4"
     >
       <v-btn
         size="x-small"
@@ -207,7 +207,7 @@ const moveBottom = () => {
           </option>
         </select>
       </div>
-      <div class="d-flex flex-column gap-1 ml-2 pt-2">
+      <div class="d-flex flex-column gap-1 ml-2 pt-4">
         <v-btn
           size="x-small"
           color="indigo"
@@ -248,3 +248,9 @@ const moveBottom = () => {
     </CCol>
   </CRow>
 </template>
+
+<style scoped lang="scss">
+select {
+  height: 9rem;
+}
+</style>
