@@ -32,9 +32,9 @@ abstract class AppColors {
   static const Color accentApproval     = Color(0xFFFBBF24);
   static const Color accentApprovalDeep = Color(0xFF78350F);
 
-  /// 전사정보 — Purple
-  static const Color accentCorp     = Color(0xFFA78BFA);
-  static const Color accentCorpDeep = Color(0xFF4C1D95);
+  /// 전사정보 — Corporate Blue
+  static const Color accentCorp     = Color(0xFF60A5FA);
+  static const Color accentCorpDeep = Color(0xFF1E3A8A);
 
   // ── Status / Semantic ────────────────────────────
   static const Color success = Color(0xFF22C55E);
