@@ -69,7 +69,7 @@ class HomeTab extends ConsumerWidget {
             categoryNum: '01',
             title: '업무 관리',
             englishTitle: 'WORK CORE',
-            description: '워크스페이스 업무 이슈, 회의록, 액션아이템 및 진척률',
+            description: '워크스페이스 회의, 업무, 액션아이템 등 관리',
             icon: Icons.task_alt_rounded,
             accentColor: AppColors.accentWork,
             gradientColors: const [Color(0xFF142642), Color(0xFF1A1D2E)],
@@ -83,7 +83,7 @@ class HomeTab extends ConsumerWidget {
             categoryNum: '02',
             title: '프로젝트 관리',
             englishTitle: 'PROJECT CORE',
-            description: '프로젝트 선택, 계약 현황, 수납/입출금 및 상세 설정',
+            description: '프로젝트 계약, 수납, 입출금, 부지 및 설정 관리',
             icon: Icons.business_center_rounded,
             accentColor: AppColors.accentProject,
             gradientColors: const [Color(0xFF0F2E23), Color(0xFF1A1D2E)],
@@ -95,9 +95,9 @@ class HomeTab extends ConsumerWidget {
           // ── 03. 전자 결재 (Approval Core) ──────────────────────────────
           _HeroCard(
             categoryNum: '03',
-            title: '전자 결재',
+            title: '전자결재',
             englishTitle: 'APPROVAL CORE',
-            description: '미결함 결재 승인/반려, 기안함 및 모바일 서명',
+            description: '기안/미결함, 승인/반려/위임, 전자서명 및 알림',
             icon: Icons.draw_rounded,
             accentColor: AppColors.accentApproval,
             gradientColors: const [Color(0xFF332010), Color(0xFF1A1D2E)],
@@ -139,7 +139,7 @@ class HomeTab extends ConsumerWidget {
           // ── 채널 Quick Card: 게시판 ────────────────────────────────────
           _ChannelQuickCard(
             title: '게시판',
-            subtitle: '팀 게시글 및 자유 토론 채널',
+            subtitle: '팀/현장별 게시글 및 자유 토론 채널',
             icon: Icons.forum_outlined,
             accentColor: _forumColor,
             onTap: () => context.go('${AppRoutes.channel}?tab=1'),
