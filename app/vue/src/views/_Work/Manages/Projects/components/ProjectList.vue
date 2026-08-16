@@ -1,16 +1,22 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref } from 'vue'
+import { useWork } from '@/store/pinia/work_project.ts'
+import {
+  ALL_PROJECT_COLUMNS,
+  DEFAULT_PROJECT_COLUMNS,
+} from '@/views/_Work/Settings/Project/constants.ts'
 import { useRoute } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
-import { useWork } from '@/store/pinia/work_project.ts'
+import { useTableColumns } from '@/composables/useTableColumns.ts'
 import type { IssueProject, ProjectFilter } from '@/store/types/work_project.ts'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
+import ColumnSelector from '@/components/ColumnSelector/Index.vue'
+import SavedQueryAside from '@/views/_Work/components/asides/SavedQueryAside.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 import QuerySection from './QuerySection.vue'
 import ProjectCard from './ProjectCard.vue'
 import ProjectTable from './ProjectTable.vue'
 import NoData from '@/components/NoData/Index.vue'
-import SavedQueryAside from '@/views/_Work/components/asides/SavedQueryAside.vue'
 
 const cBody = ref()
 const toggle = () => cBody.value.toggle()
@@ -33,6 +39,14 @@ const onChangeViewMode = (mode: 'board' | 'list') => {
   viewMode.value = mode
   localStorage.setItem('project-view-mode', mode)
 }
+
+// Columns Selector Start
+const { selectedColumns } = useTableColumns(
+  'workspace-table-columns',
+  ALL_PROJECT_COLUMNS,
+  DEFAULT_PROJECT_COLUMNS,
+)
+// Columns Selector End!
 
 const filterSubmit = (payload: ProjectFilter) => {
   if (activeQueryId.value) {
@@ -131,12 +145,43 @@ onBeforeMount(() => {
         :all-readable-projects="allReadableProjects"
         @filter-submit="filterSubmit"
         @change-view-mode="onChangeViewMode"
-      />
+      >
+        <template #option>
+          <CRow class="m-2" color="light">
+            <CCol>
+              <span class="mr-3">결과 표시 </span>
+              <CFormCheck
+                v-model="viewMode"
+                label="보드"
+                name="viewMode"
+                id="board-view-mode"
+                value="board"
+                inline
+                type="radio"
+              />
+              <CFormCheck
+                v-model="viewMode"
+                label="목록"
+                name="viewMode"
+                id="list-view-mode"
+                value="list"
+                inline
+                type="radio"
+              />
+            </CCol>
+          </CRow>
+          <CRow v-if="viewMode === 'list'" class="m-2">
+            <CCol>
+              <ColumnSelector v-model="selectedColumns" :all-columns="ALL_PROJECT_COLUMNS" />
+            </CCol>
+          </CRow>
+        </template>
+      </QuerySection>
 
       <NoData v-if="!projectResultsFlat.length" />
 
       <div v-else-if="viewMode === 'list'" class="mb-4">
-        <ProjectTable :issue-projects-flat="projectResultsFlat" />
+        <ProjectTable :issue-projects-flat="projectResultsFlat" :columns="selectedColumns" />
       </div>
 
       <CRow v-else>

@@ -72,7 +72,7 @@ const isOwnProject = (project: IssueProject) =>
                 size="15"
                 color="blue-grey-lighten-2"
                 class="ml-2"
-                title="비공개 프로젝트"
+                title="비공개 워크스페이스"
               />
               <v-icon
                 v-if="isOwnProject(proj)"
@@ -80,7 +80,7 @@ const isOwnProject = (project: IssueProject) =>
                 color="success"
                 size="15"
                 class="ml-2"
-                title="내 프로젝트"
+                title="내 워크스페이스"
               />
               <v-icon
                 v-if="proj?.is_bookmarked"

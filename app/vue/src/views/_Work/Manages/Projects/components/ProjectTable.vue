@@ -1,11 +1,19 @@
 <script lang="ts" setup>
 import { computed, type PropType } from 'vue'
 import { useAccount } from '@/store/pinia/account.ts'
+import {
+  DEFAULT_PROJECT_COLUMNS,
+  PROJECT_COLUMN_LABEL_MAP,
+} from '@/views/_Work/Settings/Project/constants.ts'
 import type { IssueProject } from '@/store/types/work_project.ts'
 import { markdownRender } from '@/utils/helper.ts'
 
 defineProps({
   issueProjectsFlat: { type: Array as PropType<IssueProject[]>, default: () => [] },
+  columns: {
+    type: Array as PropType<string[]>,
+    default: () => DEFAULT_PROJECT_COLUMNS,
+  },
 })
 
 const accStore = useAccount()
@@ -18,66 +26,120 @@ const isOwnProject = (project: IssueProject) =>
 <template>
   <v-divider class="mb-0" />
   <CTable striped hover responsive align="middle">
-    <colgroup>
-      <col style="width: 40%" />
-      <col style="width: 15%" />
-      <col style="width: 45%" />
-    </colgroup>
     <CTableHead>
       <CTableRow color="light" class="text-center">
-        <CTableHeaderCell scope="col">이름</CTableHeaderCell>
-        <CTableHeaderCell scope="col">식별자</CTableHeaderCell>
-        <CTableHeaderCell scope="col">설명</CTableHeaderCell>
+        <template v-for="colKey in columns" :key="'head-' + colKey">
+          <CTableHeaderCell
+            scope="col"
+            :class="{
+              'text-left pl-4': colKey === 'name',
+              'text-left': colKey === 'description',
+            }"
+          >
+            {{ PROJECT_COLUMN_LABEL_MAP[colKey] || colKey }}
+          </CTableHeaderCell>
+        </template>
       </CTableRow>
     </CTableHead>
     <CTableBody>
-      <CTableRow v-for="proj in issueProjectsFlat" :key="proj.pk">
-        <CTableDataCell class="pl-4">
-          <span :style="{ paddingLeft: `${proj.depth * 10}px` }">
-            <v-icon
-              v-if="proj.depth > 0"
-              icon="mdi-chevron-right"
-              size="small"
-              color="grey"
-              class="mr-1"
-            />
-            <router-link
-              :to="{ name: '(개요)', params: { projId: proj.slug } }"
-              class="bold"
-              :class="{ 'text-grey': proj.status !== '1' }"
-            >
-              {{ proj.name }}
-            </router-link>
-            <v-icon
-              v-if="!proj.is_public"
-              icon="mdi-lock"
-              size="15"
-              color="blue-grey-lighten-2"
-              class="ml-2"
-              title="비공개 프로젝트"
-            />
-            <v-icon
-              v-if="isOwnProject(proj)"
-              icon="mdi-account-tag"
-              color="success"
-              size="15"
-              class="ml-2"
-              title="내 프로젝트"
-            />
-            <v-icon
-              v-if="proj?.is_bookmarked"
-              icon="mdi-bookmark"
-              color="info"
-              size="15"
-              class="ml-2"
-              title="북마크됨"
-            />
-          </span>
-        </CTableDataCell>
-        <CTableDataCell class="text-center">{{ proj.slug }}</CTableDataCell>
-        <CTableDataCell>
-          <span v-html="markdownRender(proj.description)" class="text-muted" />
-        </CTableDataCell>
+      <CTableRow
+        v-for="proj in issueProjectsFlat"
+        :key="proj.pk"
+        :class="{ 'text-grey': proj.status !== '1' }"
+      >
+        <template v-for="colKey in columns" :key="'body-' + proj.pk + '-' + colKey">
+          <!-- 이름 컬럼 -->
+          <CTableDataCell v-if="colKey === 'name'" class="pl-4">
+            <span :style="{ paddingLeft: `${proj.depth * 10}px` }">
+              <v-icon
+                v-if="proj.depth > 0"
+                icon="mdi-chevron-right"
+                size="small"
+                color="grey"
+                class="mr-1"
+              />
+              <router-link
+                :to="{ name: '(개요)', params: { projId: proj.slug } }"
+                class="bold"
+                :class="{ 'text-grey': proj.status !== '1' }"
+              >
+                {{ proj.name }}
+              </router-link>
+              <v-icon
+                v-if="!proj.is_public"
+                icon="mdi-lock"
+                size="15"
+                color="blue-grey-lighten-2"
+                class="ml-2"
+                title="비공개 워크스페이스"
+              />
+              <v-icon
+                v-if="isOwnProject(proj)"
+                icon="mdi-account-tag"
+                color="success"
+                size="15"
+                class="ml-2"
+                title="내 워크스페이스"
+              />
+              <v-icon
+                v-if="proj?.is_bookmarked"
+                icon="mdi-bookmark"
+                color="info"
+                size="15"
+                class="ml-2"
+                title="북마크됨"
+              />
+            </span>
+          </CTableDataCell>
+
+          <!-- 식별자 -->
+          <CTableDataCell v-else-if="colKey === 'slug'" class="text-center">
+            {{ proj.slug }}
+          </CTableDataCell>
+
+          <!-- 설명 -->
+          <CTableDataCell v-else-if="colKey === 'description'">
+            <span v-html="markdownRender(proj.description)" class="text-muted" />
+          </CTableDataCell>
+
+          <!-- 상태 -->
+          <CTableDataCell v-else-if="colKey === 'status'" class="text-center">
+            {{ proj.status_display }}
+          </CTableDataCell>
+
+          <!-- 홈페이지 -->
+          <CTableDataCell v-else-if="colKey === 'homepage'" class="text-center">
+            {{ proj.homepage }}
+          </CTableDataCell>
+
+          <!-- 상위 워크스페이스 -->
+          <CTableDataCell v-else-if="colKey === 'parent'" class="text-center">
+            {{ proj.parent_name }}
+          </CTableDataCell>
+
+          <!-- 공개여부 -->
+          <CTableDataCell v-else-if="colKey === 'is_public'" class="text-center">
+            <v-chip size="x-small" :color="proj.is_public ? 'primary' : 'grey'" variant="tonal">
+              {{ proj.is_public ? '공개' : '비공개' }}
+            </v-chip>
+          </CTableDataCell>
+
+          <!-- 등록일 -->
+          <CTableDataCell
+            v-else-if="colKey === 'created'"
+            class="text-center text-caption text-muted"
+          >
+            {{ proj.created ? proj.created.substring(0, 10) : '-' }}
+          </CTableDataCell>
+
+          <!-- 수정일 -->
+          <CTableDataCell
+            v-else-if="colKey === 'updated'"
+            class="text-center text-caption text-muted"
+          >
+            {{ proj.updated ? proj.updated.substring(0, 10) : '-' }}
+          </CTableDataCell>
+        </template>
       </CTableRow>
     </CTableBody>
   </CTable>

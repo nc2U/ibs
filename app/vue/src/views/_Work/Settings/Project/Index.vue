@@ -30,7 +30,7 @@ const allReadableProjects = computed(() => workStore.getAllReadableProjects)
 
 // Columns Selector Start
 const { selectedColumns } = useTableColumns(
-  'project-table-columns',
+  'settings-project-table-columns',
   ALL_PROJECT_COLUMNS,
   DEFAULT_PROJECT_COLUMNS,
 )
