@@ -187,7 +187,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
                               child: Text(
                                 isRealEstateProject
                                     ? selectedProject.name
-                                    : '프로젝트를 선택해 주세요',
+                                    : '관리 대상 프로젝트를 선택해 주세요',
                                 style: AppTextStyles.titleLg.copyWith(
                                   fontSize: 17,
                                   fontWeight: FontWeight.bold,

@@ -384,7 +384,7 @@ class _InfoSection extends StatelessWidget {
       child: Column(
         children: [
           _InfoRow(
-            label: '프로젝트',
+            label: '워크스페이스',
             value: issue.project.name,
             icon: Icons.business_center_outlined,
           ),
@@ -408,7 +408,7 @@ class _InfoSection extends StatelessWidget {
           ),
           if (issue.expectedDurationDisplay.isNotEmpty)
             _InfoRow(
-              label: '예상 처리기간',
+              label: '예상처리기간',
               value: issue.expectedDurationDisplay,
               icon: Icons.timer_outlined,
             ),
@@ -519,7 +519,7 @@ class _InfoSection extends StatelessWidget {
           const Icon(Icons.event_outlined, size: 16, color: AppColors.textMuted),
           const SizedBox(width: 10),
           SizedBox(
-            width: 115,
+            width: 110,
             child: Text('완료기한', style: AppTextStyles.bodyMuted),
           ),
           const Spacer(),
@@ -636,8 +636,12 @@ class _InfoRow extends StatelessWidget {
           Icon(icon, size: 16, color: AppColors.textMuted),
           const SizedBox(width: 10),
           SizedBox(
-            width: 115,
-            child: Text(label, style: AppTextStyles.bodyMuted),
+            width: 110,
+            child: Text(
+              label,
+              style: AppTextStyles.bodyMuted,
+              maxLines: 1,
+            ),
           ),
           const SizedBox(width: 10),
           Expanded(

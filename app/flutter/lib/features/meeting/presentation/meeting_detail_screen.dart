@@ -406,7 +406,7 @@ class _InfoCard extends StatelessWidget {
       child: Column(
         children: [
           _Row(
-              label: '프로젝트',
+              label: '워크스페이스',
               value: meeting.projectDesc.name,
               icon: Icons.business_center_outlined),
           _Row(
@@ -420,7 +420,7 @@ class _InfoCard extends StatelessWidget {
                 const Icon(Icons.flag_outlined, size: 16, color: AppColors.textMuted),
                 const SizedBox(width: 8),
                 SizedBox(
-                  width: 72,
+                  width: 110,
                   child: Text('상태', style: AppTextStyles.bodyMuted),
                 ),
                 Text(
@@ -495,8 +495,12 @@ class _Row extends StatelessWidget {
           Icon(icon, size: 16, color: AppColors.textMuted),
           const SizedBox(width: 8),
           SizedBox(
-            width: 72,
-            child: Text(label, style: AppTextStyles.bodyMuted),
+            width: 110,
+            child: Text(
+              label,
+              style: AppTextStyles.bodyMuted,
+              maxLines: 1,
+            ),
           ),
           Expanded(
             child: Text(

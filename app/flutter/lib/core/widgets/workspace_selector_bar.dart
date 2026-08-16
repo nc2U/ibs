@@ -33,8 +33,6 @@ class WorkspaceSelectorBar extends ConsumerWidget {
         ? (selectedProject?.name ?? '프로젝트를 선택하세요')
         : projectName;
 
-    final badgeLabel = onlyRealEstate ? '프로젝트 변경' : '워크스페이스 변경';
-
     return InkWell(
       onTap: () {
         showProjectSelectorBottomSheet(
@@ -79,7 +77,7 @@ class WorkspaceSelectorBar extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    badgeLabel,
+                    '변경',
                     style: AppTextStyles.label.copyWith(
                       color: AppColors.accentProject,
                       fontSize: 11,

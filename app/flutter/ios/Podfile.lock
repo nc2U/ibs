@@ -4,11 +4,14 @@ PODS:
     - Flutter
   - open_filex (0.0.2):
     - Flutter
+  - receive_sharing_intent (1.8.1):
+    - Flutter
 
 DEPENDENCIES:
   - Flutter (from `Flutter`)
   - flutter_secure_storage (from `.symlinks/plugins/flutter_secure_storage/ios`)
   - open_filex (from `.symlinks/plugins/open_filex/ios`)
+  - receive_sharing_intent (from `.symlinks/plugins/receive_sharing_intent/ios`)
 
 EXTERNAL SOURCES:
   Flutter:
@@ -17,11 +20,14 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/flutter_secure_storage/ios"
   open_filex:
     :path: ".symlinks/plugins/open_filex/ios"
+  receive_sharing_intent:
+    :path: ".symlinks/plugins/receive_sharing_intent/ios"
 
 SPEC CHECKSUMS:
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   flutter_secure_storage: 1ed9476fba7e7a782b22888f956cce43e2c62f13
   open_filex: 432f3cd11432da3e39f47fcc0df2b1603854eff1
+  receive_sharing_intent: 222384f00ffe7e952bbfabaa9e3967cb87e5fe00
 
 PODFILE CHECKSUM: 6c01055ff966e40e8862373e66668a0fbf0b7ba8
 
