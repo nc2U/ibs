@@ -15,18 +15,14 @@ const props = defineProps({
   hasSubs: { type: Boolean, default: false },
 })
 
-watch(
-  () => props.toDate,
-  nVal => {
-    if (nVal) actFilter.to_act_date = dateFormat(nVal)
-  },
-)
+const emit = defineEmits(['loading-start', 'loading-end', 'update:toDate'])
 
 watch(
-  () => props.fromDate,
-  nVal => {
-    if (nVal) {
-      actFilter.from_act_date = dateFormat(nVal)
+  [() => props.toDate, () => props.fromDate],
+  ([newTo, newFrom]) => {
+    if (newTo && newFrom) {
+      actFilter.to_act_date = dateFormat(newTo)
+      actFilter.from_act_date = dateFormat(newFrom)
       filterActivity()
     }
   },
@@ -41,6 +37,16 @@ const actFilter = reactive<ActLogEntryFilter & { subProjects: boolean }>({
   sort: ['1', '2', '3', '4', '5', '6'],
   subProjects: true,
 })
+
+const onDateChange = (val: string) => {
+  if (val) {
+    const [year, month, day] = val.split('-').map(Number)
+    const to = new Date(year, month - 1, day)
+    if (!isNaN(to.getTime())) {
+      emit('update:toDate', to)
+    }
+  }
+}
 
 watch(
   () => actFilter.sort,
@@ -78,8 +84,6 @@ const pickSort = (sort: '1' | '2' | '3' | '4' | '5' | '6') => {
     actFilter.sort.splice(0, actFilter.sort.length, ...nextSort)
   }
 }
-
-const emit = defineEmits(['loading-start', 'loading-end'])
 
 const route = useRoute()
 const logStore = useLogging()
@@ -149,7 +153,11 @@ onBeforeMount(async () => {
   <CRow class="mb-2">
     <CFormLabel for="log-date" class="col-sm-4 col-form-label">10일 기록</CFormLabel>
     <CCol class="col-xxl-6">
-      <DatePicker v-model="actFilter.to_act_date" id="log-date" />
+      <DatePicker
+        v-model="actFilter.to_act_date"
+        id="log-date"
+        @update:model-value="onDateChange"
+      />
     </CCol>
   </CRow>
 

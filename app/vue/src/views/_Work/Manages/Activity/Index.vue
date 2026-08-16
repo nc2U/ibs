@@ -38,8 +38,6 @@ const groupedActivities = computed<{ [key: string]: ActLogEntry[] }>(
   () => logStore.groupedActivities,
 )
 
-const RefActCont = ref()
-
 const toMove = async (date: Date) => (toDate.value = date)
 
 const loading = ref<boolean>(true)
@@ -72,6 +70,7 @@ const loading = ref<boolean>(true)
         ref="RefActCont"
         :to-date="toDate"
         :from-date="fromDate"
+        @update:to-date="toDate = $event"
         @loading-start="loading = true"
         @loading-end="loading = false"
       />

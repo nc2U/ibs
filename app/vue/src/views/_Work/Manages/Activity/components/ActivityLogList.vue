@@ -17,13 +17,20 @@ const props = defineProps({
 const emit = defineEmits(['to-move'])
 
 const toBack = () => {
-  if (props.toDate)
-    emit('to-move', new Date(new Date(props.toDate).setDate(new Date(props.toDate).getDate() - 10)))
+  if (props.toDate) {
+    const d = new Date(props.toDate)
+    d.setDate(d.getDate() - 10)
+    emit('to-move', d)
+  }
 }
 
 const toNext = () => {
-  if (props.toDate)
-    emit('to-move', new Date(new Date(props.toDate).setDate(new Date(props.toDate).getDate() + 10)))
+  if (props.toDate) {
+    const d = new Date(props.toDate)
+    d.setDate(d.getDate() + 10)
+    const today = new Date()
+    emit('to-move', d > today ? today : d)
+  }
 }
 </script>
 

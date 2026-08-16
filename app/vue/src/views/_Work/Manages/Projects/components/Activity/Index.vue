@@ -28,10 +28,7 @@ const groupedActivities = computed<{ [key: string]: ActLogEntry[] }>(
 
 const RefActCont = ref()
 
-const toMove = (date: Date) => {
-  toDate.value = date
-  RefActCont.value.filterActivity()
-}
+const toMove = (date: Date) => (toDate.value = date)
 
 const loading = ref<boolean>(true)
 </script>
@@ -67,6 +64,7 @@ const loading = ref<boolean>(true)
         :to-date="toDate"
         :from-date="fromDate"
         :has-subs="hasSubs"
+        @update:to-date="toDate = $event"
         @loading-start="loading = true"
         @loading-end="loading = false"
       />
