@@ -8,6 +8,7 @@ import '../../../../core/constants/permissions.dart';
 import '../../../../core/providers/permission_provider.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/loading_shimmer.dart';
+import '../../project/providers/project_provider.dart';
 import '../data/models/meeting_model.dart';
 import '../data/meeting_repository.dart';
 import '../providers/meeting_provider.dart';
@@ -256,11 +257,43 @@ class MeetingDetailScreen extends ConsumerWidget {
   }
 
   Widget _buildBody(BuildContext context, WidgetRef ref, MeetingModel meeting) {
+    final myProjects = ref.watch(myProjectsProvider).valueOrNull ?? [];
+    final project = myProjects
+        .where((p) => p.slug == meeting.projectDesc.slug)
+        .firstOrNull;
+    final isClosed = project?.status == '2';
+
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (isClosed)
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.warning.withAlpha(25),
+                border: Border.all(
+                    color: AppColors.warning.withAlpha(80), width: 0.8),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.lock_clock_outlined,
+                      size: 16, color: AppColors.warning),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '닫힌 워크스페이스입니다. 모든 데이터는 읽기 전용으로 제공됩니다.',
+                      style: AppTextStyles.caption.copyWith(color: AppColors.warning),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
           // ── 기본 정보 섹션 ──────────────────────────────────────────────
           _InfoCard(
             meeting: meeting,
@@ -320,32 +353,39 @@ class MeetingDetailScreen extends ConsumerWidget {
           _SectionLabel(
             label: '관련 업무',
             count: meeting.issues.isNotEmpty ? meeting.issues.length : null,
-            action: InkWell(
-              onTap: () async {
-                await context.push(
-                  '/work/issues/new?meeting_id=${meeting.pk}&project_slug=${meeting.projectDesc.slug}',
-                );
-                // 새 업무가 등록되었으면 회의 상세 화면 새로고침
-                if (context.mounted) {
-                  ref.invalidate(meetingDetailProvider(meeting.pk));
-                }
-              },
-              borderRadius: BorderRadius.circular(4),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.add, size: 14, color: AppColors.accentWork),
-                    const SizedBox(width: 2),
-                    Text(
-                      '관련 업무 추가',
-                      style: AppTextStyles.label.copyWith(color: AppColors.accentWork),
+            action: (!isClosed &&
+                    ref.can(Perm.issueCreate,
+                        projectSlug: meeting.projectDesc.slug))
+                ? InkWell(
+                    onTap: () async {
+                      await context.push(
+                        '/work/issues/new?meeting_id=${meeting.pk}&project_slug=${meeting.projectDesc.slug}',
+                      );
+                      // 새 업무가 등록되었으면 회의 상세 화면 새로고침
+                      if (context.mounted) {
+                        ref.invalidate(meetingDetailProvider(meeting.pk));
+                      }
+                    },
+                    borderRadius: BorderRadius.circular(4),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.add,
+                              size: 14, color: AppColors.accentWork),
+                          const SizedBox(width: 2),
+                          Text(
+                            '관련 업무 추가',
+                            style: AppTextStyles.label
+                                .copyWith(color: AppColors.accentWork),
+                          ),
+                        ],
+                      ),
                     ),
-                  ],
-                ),
-              ),
-            ),
+                  )
+                : null,
           ),
           if (meeting.issues.isNotEmpty)
             ...meeting.issues.map(

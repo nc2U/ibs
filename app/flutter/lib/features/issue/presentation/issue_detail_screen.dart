@@ -13,6 +13,7 @@ import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/permission_provider.dart';
 import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/loading_shimmer.dart';
+import '../../project/providers/project_provider.dart';
 import '../data/issue_repository.dart';
 import '../data/models/issue_model.dart';
 import '../providers/issue_provider.dart';
@@ -251,6 +252,12 @@ class _IssueDetailScreenState extends ConsumerState<IssueDetailScreen> {
   }
 
   Widget _buildBody(IssueModel issue) {
+    final myProjects = ref.watch(myProjectsProvider).valueOrNull ?? [];
+    final project = myProjects
+        .where((p) => p.slug == issue.project.slug)
+        .firstOrNull;
+    final isClosed = project?.status == '2';
+
     return Column(
       children: [
         Expanded(
@@ -259,6 +266,34 @@ class _IssueDetailScreenState extends ConsumerState<IssueDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (isClosed)
+                  Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.warning.withAlpha(25),
+                      border: Border.all(
+                          color: AppColors.warning.withAlpha(80), width: 0.8),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.lock_clock_outlined,
+                            size: 16, color: AppColors.warning),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '닫힌 워크스페이스입니다. 모든 데이터는 읽기 전용으로 제공됩니다.',
+                            style: AppTextStyles.caption
+                                .copyWith(color: AppColors.warning),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
                 // ── 핵심 정보 카드 ──────────────────────────────────────────
                 _InfoSection(issue: issue, ref: ref),
                 const SizedBox(height: 12),

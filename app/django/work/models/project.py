@@ -157,6 +157,15 @@ class IssueProject(models.Model):
                     for perm in role.permissions.all():
                         permission_codes.add(perm.code)
 
+        # 4. 닫힘('2') 또는 잠금보관('9') 상태 필터링 (읽기 전용 모드)
+        if self.status == '2':
+            permission_codes = {
+                code for code in permission_codes
+                if code.endswith('.read') or '.view' in code or '.download' in code or code.startswith('project.')
+            }
+        elif self.status == '9':
+            permission_codes = set()
+
         result = list(permission_codes)
         self._user_permission_cache[user_key] = result
         return result

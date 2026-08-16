@@ -48,6 +48,17 @@ class ProjectPermissionMixin:
             user = request.user
             if not user.is_authenticated:
                 return []
+            if obj.status == '2':
+                # 닫힌 워크스페이스는 읽기 전용 (단, 프로젝트 자체 관리 project.* 권한은 허용)
+                all_perms = list(Permission.objects.values_list('code', flat=True)) if (
+                        user.is_superuser or getattr(user, 'work_manager', False)) else obj.get_user_permissions(user)
+                return [p for p in all_perms if
+                        p.endswith('.read') or '.view' in p or '.download' in p or p.startswith('project.')]
+            elif obj.status == '9':
+                if user.is_superuser or getattr(user, 'work_manager', False):
+                    return [p for p in Permission.objects.values_list('code', flat=True) if p.startswith('project.')]
+                return []
+
             if user.is_superuser or getattr(user, 'work_manager', False):
                 return list(Permission.objects.values_list('code', flat=True))
             return obj.get_user_permissions(user)

@@ -124,11 +124,17 @@ export const usePermission = defineStore('permission', () => {
     return true
   }
 
+  const isReadOnlyPerm = (c: PermissionCode) => {
+    return (
+      c.endsWith('.read') ||
+      c.includes('.view') ||
+      c.includes('.download') ||
+      c.startsWith('project.')
+    )
+  }
+
   // 권한 체크 로직
   const can = (code: PermissionCode | PermissionCode[], projectIdentifier?: number | string) => {
-    // 1. 업무 관리자(workManager)인 경우 무조건 모든 권한 허용
-    if (accountStore.workManager) return true
-
     const check = (c: PermissionCode) => {
       // 대상 프로젝트 객체 찾기
       const targetProj =
@@ -137,6 +143,18 @@ export const usePermission = defineStore('permission', () => {
               (p: any) => p.pk === projectIdentifier || p.slug === projectIdentifier,
             )
           : workStore.currentProject
+
+      // [닫힘('2')] 워크스페이스: 읽기 전용 권한 이외의 쓰기 권한 차단
+      if (targetProj?.status === '2' && !isReadOnlyPerm(c)) {
+        return false
+      }
+      // [잠금보관('9')] 워크스페이스: 프로젝트 관리 외 권한 차단
+      if (targetProj?.status === '9' && !c.startsWith('project.')) {
+        return false
+      }
+
+      // 1. 업무 관리자(workManager)인 경우 허용 (단, 닫힘/잠금보관 프로젝트의 쓰기 제한은 상단에서 적용)
+      if (accountStore.workManager) return true
 
       // 공개 프로젝트(is_public=true)의 읽기 권한(*.read)은 비멤버도 기본 열람 허용 (work_core 영역)
       if (targetProj?.is_public && (c.endsWith('.read') || c === PERM.NEWS_READ)) {
