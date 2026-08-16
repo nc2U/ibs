@@ -80,6 +80,9 @@ dev_dependencies:
   json_serializable: ^6.9.0
   flutter_launcher_icons: ^0.14.3
 
+dependency_overrides:
+  receive_sharing_intent: 1.8.1
+
 flutter_launcher_icons:
   android: true
   ios: true
