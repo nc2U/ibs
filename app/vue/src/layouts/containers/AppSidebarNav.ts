@@ -98,6 +98,7 @@ const AppSidebarNav = defineComponent({
         isFinancial: isFinancial.value,
         isComDocs: isStaff.value && docsRead.value,
         isComHrWork: isStaff.value && hrWorkRead.value,
+        isTest: account.userInfo?.pk === 1,
 
         isContract: contractRead.value,
         isPayment: paymentRead.value,

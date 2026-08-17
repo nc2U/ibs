@@ -119,6 +119,7 @@ const approval = {
   component: 'CNavGroup',
   name: '전자 결재 관리',
   to: '/approval',
+  auth: 'isTest',
   icon: 'cil-check-circle',
   items: [
     {
