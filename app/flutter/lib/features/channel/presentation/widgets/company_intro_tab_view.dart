@@ -65,8 +65,18 @@ class _CompanyIntroTabViewState extends ConsumerState<CompanyIntroTabView> {
               style: TextStyle(
                 fontSize: 10.5,
                 fontWeight: FontWeight.w800,
-                letterSpacing: 2.8,
+                letterSpacing: 2.6,
                 color: context.colors.accentCorp,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '·  기업 목적',
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w500,
+                letterSpacing: -0.2,
+                color: context.colors.textMuted,
               ),
             ),
           ],
@@ -122,6 +132,16 @@ class _CompanyIntroTabViewState extends ConsumerState<CompanyIntroTabView> {
                   fontWeight: FontWeight.w800,
                   letterSpacing: 2.4,
                   color: context.colors.accentCorp,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '·  사명 (BHAG)',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: -0.2,
+                  color: context.colors.textMuted,
                 ),
               ),
               const Spacer(),
@@ -223,8 +243,18 @@ class _CompanyIntroTabViewState extends ConsumerState<CompanyIntroTabView> {
               style: TextStyle(
                 fontSize: 10.5,
                 fontWeight: FontWeight.w800,
-                letterSpacing: 2.8,
+                letterSpacing: 2.6,
                 color: context.colors.accentCorp,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '·  5대 핵심 가치관',
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w500,
+                letterSpacing: -0.2,
+                color: context.colors.textMuted,
               ),
             ),
           ],
@@ -365,8 +395,18 @@ class _CompanyIntroTabViewState extends ConsumerState<CompanyIntroTabView> {
               style: TextStyle(
                 fontSize: 10.5,
                 fontWeight: FontWeight.w800,
-                letterSpacing: 2.8,
+                letterSpacing: 2.6,
                 color: context.colors.accentCorp,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '·  조직도 및 부서',
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w500,
+                letterSpacing: -0.2,
+                color: context.colors.textMuted,
               ),
             ),
           ],
@@ -478,8 +518,18 @@ class _CompanyIntroTabViewState extends ConsumerState<CompanyIntroTabView> {
               style: TextStyle(
                 fontSize: 10.5,
                 fontWeight: FontWeight.w800,
-                letterSpacing: 2.8,
+                letterSpacing: 2.6,
                 color: context.colors.accentCorp,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '·  사내 공식 규정집',
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w500,
+                letterSpacing: -0.2,
+                color: context.colors.textMuted,
               ),
             ),
           ],
