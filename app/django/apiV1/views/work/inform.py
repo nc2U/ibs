@@ -368,9 +368,13 @@ class SearchViewSet(viewsets.ModelViewSet):
             elif attach_mode == '3':
                 q_expr = Q(files__file_name__icontains=q) | Q(images__image_name__icontains=q)
 
-        # 소프트 딜리트 필터: deleted=None 및 프로젝트 활성 상태(status='1')
-        qs = Post.objects.filter(q_expr, deleted__isnull=True,
-                                 forum__project__status='1').select_related('forum__project', 'creator')
+        # 소프트 딜리트 필터, 검색 가능 게시판(forum__search_able=True), 프로젝트 활성 상태(status='1')
+        qs = Post.objects.filter(
+            q_expr,
+            deleted__isnull=True,
+            forum__search_able=True,
+            forum__project__status='1'
+        ).select_related('forum__project', 'creator')
 
         # 권한 제어: 공개 프로젝트 OR 멤버십 프로젝트의 게시글 허용 (비밀글/블라인드글 보안 가드)
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
