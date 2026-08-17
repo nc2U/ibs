@@ -15,6 +15,7 @@ class Forum(models.Model):
     description = models.CharField('설명', max_length=255, blank=True, default='')
     parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
     search_able = models.BooleanField('검색 사용', default=True)
+    manager_only = models.BooleanField('관리자 전용 게시판', default=False, help_text='체크 시 해당 포럼의 manager 또는 최고관리자만 글 작성/수정 가능')
     manager = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, verbose_name='관리자')
 
     def __str__(self):

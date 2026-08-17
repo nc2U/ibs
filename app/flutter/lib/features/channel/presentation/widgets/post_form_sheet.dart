@@ -274,14 +274,27 @@ class _PostFormSheetState extends ConsumerState<PostFormSheet> {
                     const SizedBox(height: 6),
                     forumsAsync.when(
                       data: (forums) {
-                        if (forums.isEmpty) {
+                        final currentUser =
+                            ref.watch(currentUserProvider).valueOrNull;
+                        final isSuper = currentUser?.isSuperuser ?? false;
+                        final userPk = currentUser?.pk ?? -1;
+
+                        final availableForums = forums.where((f) {
+                          if (!f.managerOnly) return true;
+                          return isSuper || f.manager.contains(userPk);
+                        }).toList();
+
+                        if (availableForums.isEmpty) {
                           return const Text(
-                            '개설된 게시판이 없습니다.',
+                            '작성 가능한 게시판이 없습니다.',
                             style: TextStyle(color: AppColors.textMuted),
                           );
                         }
                         return DropdownButtonFormField<int>(
-                          value: _selectedForumPk,
+                          value: availableForums
+                                  .any((f) => f.pk == _selectedForumPk)
+                              ? _selectedForumPk
+                              : null,
                           decoration: InputDecoration(
                             filled: true,
                             fillColor: AppColors.bgSurface,
@@ -294,7 +307,7 @@ class _PostFormSheetState extends ConsumerState<PostFormSheet> {
                             ),
                           ),
                           hint: const Text('게시판을 선택해 주세요'),
-                          items: forums.map((f) {
+                          items: availableForums.map((f) {
                             return DropdownMenuItem<int>(
                               value: f.pk,
                               child: Text(f.name, style: AppTextStyles.bodySm),

@@ -622,6 +622,28 @@ class DocumentPermission(ProjectPermission):
 
 
 class ForumPermission(ProjectPermission):
+    def has_permission(self, request, view):
+        if not super().has_permission(request, view):
+            return False
+
+        user = request.user
+        if not user or not user.is_authenticated:
+            return False
+
+        if user.is_superuser:
+            return True
+
+        # 게시물/댓글 생성(create) 시 manager_only 포럼 검증
+        if view.action == 'create':
+            forum_id = request.data.get('forum')
+            if forum_id:
+                from forum.models import Forum
+                forum = Forum.objects.filter(pk=forum_id).first()
+                if forum and getattr(forum, 'manager_only', False):
+                    if not forum.manager.filter(pk=user.pk).exists():
+                        return False
+        return True
+
     def has_object_permission(self, request, view, obj):
         # 1. 기본 프로젝트 레벨 권한 검증
         if not super().has_object_permission(request, view, obj):
@@ -630,6 +652,15 @@ class ForumPermission(ProjectPermission):
         user = request.user
         if user.is_superuser or getattr(user, 'work_manager', False):
             return True
+
+        # manager_only 포럼인 경우 포럼 매니저 또는 superuser만 수정/삭제 가능
+        from forum.models import Forum
+        forum = getattr(obj, 'forum', None)
+        if isinstance(obj, Forum):
+            forum = obj
+        if forum and getattr(forum, 'manager_only', False):
+            if not forum.manager.filter(pk=user.pk).exists():
+                return False
 
         project = self.extract_project(obj)
         if not project:

@@ -5,6 +5,7 @@ export interface Forum {
   description: string
   parent?: number | null
   search_able?: boolean
+  manager_only?: boolean
   manager?: number[]
   order?: number
   post_count?: number

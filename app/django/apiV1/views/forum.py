@@ -20,7 +20,7 @@ class ForumViewSet(viewsets.ModelViewSet):
     queryset = Forum.objects.all()
     serializer_class = ForumSerializer
     permission_classes = (permissions.IsAuthenticated, ForumPermission)
-    filterset_fields = ('project__slug', 'search_able', 'manager')
+    filterset_fields = ('project__slug', 'search_able', 'manager_only', 'manager')
 
     @property
     def required_permission(self):

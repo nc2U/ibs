@@ -2,6 +2,7 @@
 import { computed, onBeforeMount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms.ts'
+import { useAccount } from '@/store/pinia/account.ts'
 import { useForum } from '@/store/pinia/forum.ts'
 import type { Post } from '@/store/types/forum.ts'
 import Loading from '@/components/Loading/Index.vue'
@@ -19,11 +20,23 @@ defineExpose({ toggle })
 
 const { can, PERM } = usePerms()
 const canForumRead = computed(() => can(PERM.FORUM_READ))
-const canForumCreate = computed(() => can(PERM.FORUM_CREATE))
 const canForumManage = computed(() => can(PERM.FORUM_MANAGE))
 
+const accStore = useAccount()
 const forumStore = useForum()
 const forum = computed(() => forumStore.forum)
+
+const isForumManager = computed(() => {
+  if (accStore.userInfo?.is_superuser) return true
+  if (!forum.value || !forum.value.manager) return false
+  return (forum.value.manager as number[]).includes(accStore.userInfo?.pk ?? 0)
+})
+
+const canForumCreate = computed(() => {
+  if (!can(PERM.FORUM_CREATE)) return false
+  if (forum.value?.manager_only && !isForumManager.value) return false
+  return true
+})
 const forumList = computed(() => forumStore.forumList)
 const categoryList = computed(() => forumStore.categoryList)
 const postList = computed(() => forumStore.postList)

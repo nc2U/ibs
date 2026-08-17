@@ -8,6 +8,7 @@ class ForumModel {
   final String description;
   final int? parent;
   final bool searchAble;
+  final bool managerOnly;
   final List<int> manager;
   final int postCount;
   final int allPostCount;
@@ -20,6 +21,7 @@ class ForumModel {
     this.description = '',
     this.parent,
     this.searchAble = true,
+    this.managerOnly = false,
     this.manager = const [],
     this.postCount = 0,
     this.allPostCount = 0,
@@ -44,6 +46,7 @@ class ForumModel {
       description: json['description'] as String? ?? '',
       parent: json['parent'] as int?,
       searchAble: json['search_able'] as bool? ?? true,
+      managerOnly: json['manager_only'] as bool? ?? false,
       manager: managers,
       postCount: json['post_count'] as int? ?? 0,
       allPostCount: json['all_post_count'] as int? ?? 0,

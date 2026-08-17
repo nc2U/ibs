@@ -21,7 +21,7 @@ class ForumSerializer(serializers.ModelSerializer):
     class Meta:
         model = Forum
         fields = ('pk', 'project', 'name', 'description', 'parent',
-                  'search_able', 'manager', 'post_count', 'all_post_count', 'last_post')
+                  'search_able', 'manager_only', 'manager', 'post_count', 'all_post_count', 'last_post')
 
     @staticmethod
     def get_post_count(obj):
@@ -171,7 +171,17 @@ class PostSerializer(serializers.ModelSerializer):
         category = attrs.get('category') or (self.instance.category if self.instance else None)
         forum = attrs.get('forum') or (self.instance.forum if self.instance else None)
 
-        if category and category.is_manager_only:
+        # 1. 포럼 단위 관리자 전용 검사
+        if forum and getattr(forum, 'manager_only', False):
+            if user and not user.is_superuser:
+                is_manager = forum.manager.filter(pk=user.pk).exists()
+                if not is_manager:
+                    raise serializers.ValidationError({
+                        'forum': '해당 게시판은 게시판 담당 관리자만 작성할 수 있습니다.'
+                    })
+
+        # 2. 카테고리 단위 관리자 전용 검사
+        if category and getattr(category, 'is_manager_only', False):
             # superuser는 manager 체크 통과
             if user and not user.is_superuser:
                 is_manager = forum and forum.manager.filter(pk=user.pk).exists()

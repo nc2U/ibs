@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/constants/permissions.dart';
+import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/permission_provider.dart';
 import '../../../core/providers/project_provider.dart';
 import '../../../core/theme/app_colors_extension.dart';
@@ -88,12 +89,22 @@ class _ChannelTabState extends ConsumerState<ChannelTab>
         selectedProject != null && (selectedProject.module?.forum == false);
 
     final forumsAsync = ref.watch(forumListProvider);
-    final hasForums = (forumsAsync.valueOrNull?.isNotEmpty ?? false);
+    final forums = forumsAsync.valueOrNull ?? [];
+    final hasForums = forums.isNotEmpty;
+
+    final activeForumId = ref.watch(selectedForumIdProvider);
+    final activeForum = forums.where((f) => f.pk == activeForumId).firstOrNull ??
+        forums.firstOrNull;
+    final currentUser = ref.watch(currentUserProvider).valueOrNull;
+    final isSuper = currentUser?.isSuperuser ?? false;
+    final isForumMgr = isSuper ||
+        (activeForum?.manager.contains(currentUser?.pk ?? -1) ?? false);
 
     final canManageNews = !isNewsDisabled && ref.can(Perm.newsManage);
     final canCreatePost = !isForumDisabled &&
         hasForums &&
-        (ref.can(Perm.forumCreate) || ref.can(Perm.forumManage));
+        (ref.can(Perm.forumCreate) || ref.can(Perm.forumManage)) &&
+        ((activeForum?.managerOnly ?? false) ? isForumMgr : true);
 
     return Scaffold(
       backgroundColor: context.colors.bgPrimary,
