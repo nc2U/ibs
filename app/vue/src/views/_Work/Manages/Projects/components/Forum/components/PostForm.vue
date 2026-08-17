@@ -3,6 +3,7 @@ import { computed, type PropType, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms.ts'
 import { isValidate } from '@/utils/helper.ts'
+import { useAccount } from '@/store/pinia/account'
 import { useForum } from '@/store/pinia/forum'
 import { colorLight } from '@/utils/cssMixins'
 import type { Post, PostCategory } from '@/store/types/forum'
@@ -27,7 +28,19 @@ const canForumCreate = computed(() => can(PERM.FORUM_CREATE))
 const canForumUpdate = computed(() => can(PERM.FORUM_UPDATE))
 const canForumManage = computed(() => can(PERM.FORUM_MANAGE))
 
+const accStore = useAccount()
 const frmStore = useForum()
+
+const isForumManager = computed(() => {
+  if (accStore.userInfo?.is_superuser) return true
+  const forum = frmStore.forumList.find(f => f.pk === props.forumId) || frmStore.forum
+  if (!forum || !forum.manager) return false
+  return (forum.manager as number[]).includes(accStore.userInfo?.pk ?? 0)
+})
+
+const availableCategories = computed(() => {
+  return props.categories.filter(cate => !cate.is_manager_only || isForumManager.value)
+})
 
 // 카테고리 간편 추가용 다이얼로그 상태 및 폼 객체
 const categoryValidated = ref(false)
@@ -36,6 +49,7 @@ const newCategory = ref({
   name: '',
   color: '#6c757d',
   order: 1,
+  is_manager_only: false,
 })
 const isSubmittingCategory = ref(false)
 
@@ -45,6 +59,7 @@ const openCategoryDialog = () => {
     name: '',
     color: '#6c757d',
     order: props.categories.length + 1,
+    is_manager_only: false,
   }
   categoryForm.value.callModal()
 }
@@ -183,9 +198,9 @@ watch(
             <CRow>
               <CFormLabel class="col-form-label text-right col-2 col-lg-4">카테고리</CFormLabel>
               <CCol class="col-sm-10 col-md-6 col-lg-8 col-xl-6 d-flex align-center">
-                <CFormSelect v-if="categories.length" v-model.number="form.category">
+                <CFormSelect v-if="availableCategories.length" v-model.number="form.category">
                   <option value="">---------</option>
-                  <option v-for="cate in categories" :value="cate.pk" :key="cate.pk as number">
+                  <option v-for="cate in availableCategories" :value="cate.pk" :key="cate.pk as number">
                     {{ cate.name }}
                   </option>
                 </CFormSelect>
@@ -305,7 +320,7 @@ watch(
             </CCol>
           </CRow>
           <CRow class="mb-3">
-            <CFormLabel for="cat-name" class="col-sm-3 col-form-label">순서</CFormLabel>
+            <CFormLabel for="cat-order" class="col-sm-3 col-form-label">순서</CFormLabel>
             <CCol sm="9">
               <CFormInput
                 v-model.number="newCategory.order"
@@ -313,6 +328,16 @@ watch(
                 id="cat-order"
                 placeholder="출력 순서"
                 maxlength="255"
+              />
+            </CCol>
+          </CRow>
+          <CRow class="mb-3">
+            <CFormLabel for="cat-manager-only" class="col-sm-3 col-form-label">관리자 전용</CFormLabel>
+            <CCol sm="9" class="pt-2">
+              <CFormCheck
+                v-model="newCategory.is_manager_only"
+                id="cat-manager-only"
+                label="해당 게시판 관리자만 작성 가능"
               />
             </CCol>
           </CRow>

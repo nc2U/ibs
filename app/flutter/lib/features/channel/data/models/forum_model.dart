@@ -60,6 +60,7 @@ class PostCategoryModel {
   final String name;
   final int? parent;
   final int order;
+  final bool isManagerOnly;
 
   const PostCategoryModel({
     required this.pk,
@@ -68,6 +69,7 @@ class PostCategoryModel {
     required this.name,
     this.parent,
     this.order = 0,
+    this.isManagerOnly = false,
   });
 
   factory PostCategoryModel.fromJson(Map<String, dynamic> json) {
@@ -78,6 +80,7 @@ class PostCategoryModel {
       name: json['name'] as String? ?? '',
       parent: json['parent'] as int?,
       order: json['order'] as int? ?? 0,
+      isManagerOnly: json['is_manager_only'] as bool? ?? false,
     );
   }
 }

@@ -49,7 +49,7 @@ class ForumSerializer(serializers.ModelSerializer):
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = PostCategory
-        fields = ('pk', 'forum', 'color', 'name', 'parent', 'order')
+        fields = ('pk', 'forum', 'color', 'name', 'parent', 'order', 'is_manager_only')
 
 
 class FilesInPostSerializer(serializers.ModelSerializer):
@@ -164,6 +164,22 @@ class PostSerializer(serializers.ModelSerializer):
                 url_fields = split_url(urlunsplit(url_fields))
             url = urlunsplit(url_fields)
         return url
+
+    def validate(self, attrs):
+        request = self.context.get('request')
+        user = request.user if request else None
+        category = attrs.get('category') or (self.instance.category if self.instance else None)
+        forum = attrs.get('forum') or (self.instance.forum if self.instance else None)
+
+        if category and category.is_manager_only:
+            # superuser는 manager 체크 통과
+            if user and not user.is_superuser:
+                is_manager = forum and forum.manager.filter(pk=user.pk).exists()
+                if not is_manager:
+                    raise serializers.ValidationError({
+                        'category': '해당 카테고리는 게시판 담당 관리자만 작성할 수 있습니다.'
+                    })
+        return attrs
 
     @transaction.atomic
     def create(self, validated_data):

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/constants/permissions.dart';
+import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/permission_provider.dart';
 import '../../data/models/forum_model.dart';
 import '../../data/forum_repository.dart';
@@ -70,12 +71,23 @@ class _PostFormSheetState extends ConsumerState<PostFormSheet> {
     try {
       final repo = ref.read(forumRepositoryProvider);
       final list = await repo.fetchCategories(forumId);
+
+      final forums = ref.read(forumListProvider).valueOrNull ?? [];
+      final currentForum =
+          forums.where((f) => f.pk == forumId).firstOrNull;
+      final currentUser = ref.read(currentUserProvider).valueOrNull;
+      final isManager = (currentUser?.isSuperuser ?? false) ||
+          (currentForum?.manager.contains(currentUser?.pk ?? -1) ?? false);
+
+      final filteredList =
+          list.where((c) => !c.isManagerOnly || isManager).toList();
+
       if (mounted) {
         setState(() {
-          _availableCategories = list;
+          _availableCategories = filteredList;
           // 기존에 선택된 카테고리가 새 게시판의 카테고리 목록에 없으면 리셋
           if (_selectedCategoryPk != null &&
-              !list.any((c) => c.pk == _selectedCategoryPk)) {
+              !filteredList.any((c) => c.pk == _selectedCategoryPk)) {
             _selectedCategoryPk = null;
           }
         });

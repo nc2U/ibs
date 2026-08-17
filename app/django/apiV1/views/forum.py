@@ -49,7 +49,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
     queryset = PostCategory.objects.all()
     serializer_class = CategorySerializer
     permission_classes = (permissions.IsAuthenticated, ForumPermission)
-    filterset_fields = ('forum', 'parent')
+    filterset_fields = ('forum', 'parent', 'is_manager_only')
 
     @property
     def required_permission(self):

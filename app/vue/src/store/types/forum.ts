@@ -25,6 +25,7 @@ export interface PostCategory {
   name: string
   parent?: number | null
   order: number | null
+  is_manager_only?: boolean
 }
 
 interface SimpleUser {

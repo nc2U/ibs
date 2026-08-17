@@ -32,6 +32,7 @@ class PostCategory(models.Model):
     name = models.CharField('이름', max_length=100, db_index=True)
     parent = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='상위 카테고리')
     order = models.PositiveSmallIntegerField('정렬 순서', default=0)
+    is_manager_only = models.BooleanField('게시판 관리자 전용', default=False, help_text='체크 시 해당 포럼의 manager 또는 최고관리자만 작성 가능')
 
     def __str__(self):
         return self.name
