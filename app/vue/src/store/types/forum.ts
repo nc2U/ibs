@@ -57,6 +57,7 @@ export type Post = {
   password: string
   is_hide_comment: boolean
   is_notice: boolean
+  is_faq: boolean
   is_blind: boolean
   deleted?: string | null
   files?: PostFile[]

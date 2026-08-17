@@ -58,6 +58,7 @@ class Post(models.Model):
     password = models.CharField('패스워드', max_length=255, blank=True, default='')
     is_hide_comment = models.BooleanField('댓글숨기기', default=False)
     is_notice = models.BooleanField('공지', default=False)
+    is_faq = models.BooleanField('FAQ 지정', default=False, help_text='체크 시 FAQ 아카이브/아코디언에 노출')
     is_blind = models.BooleanField('숨김', default=False)
     deleted = models.DateTimeField('휴지통', null=True, blank=True, default=None)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자')

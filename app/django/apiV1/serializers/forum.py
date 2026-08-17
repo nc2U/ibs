@@ -75,7 +75,7 @@ class PostSerializer(serializers.ModelSerializer):
         fields = ('pk', 'forum', 'forum_name', 'category', 'cate_name', 'title',
                   'content', 'hit', 'like', 'my_like', 'scrape', 'my_scrape', 'blame',
                   'my_blame', 'ip', 'device', 'is_secret', 'password', 'is_hide_comment',
-                  'is_notice', 'is_blind', 'deleted', 'files', 'comments', 'creator',
+                  'is_notice', 'is_faq', 'is_blind', 'deleted', 'files', 'comments', 'creator',
                   'created', 'updated', 'is_new', 'prev_pk', 'next_pk')
         read_only_fields = ('ip', 'comments')
 
@@ -85,6 +85,7 @@ class PostSerializer(serializers.ModelSerializer):
         query = self.context['request'].query_params
         forum = query.get('forum')
         is_notice_param = query.get('is_notice')
+        is_faq_param = query.get('is_faq')
         category = query.get('category')
         search = query.get('search')
 
@@ -94,6 +95,10 @@ class PostSerializer(serializers.ModelSerializer):
             queryset = queryset.filter(is_notice=True)
         elif is_notice_param == 'false':
             queryset = queryset.filter(is_notice=False)
+        if is_faq_param == 'true':
+            queryset = queryset.filter(is_faq=True)
+        elif is_faq_param == 'false':
+            queryset = queryset.filter(is_faq=False)
         if category:
             queryset = queryset.filter(category_id=category)
         if search:
@@ -189,6 +194,15 @@ class PostSerializer(serializers.ModelSerializer):
                     raise serializers.ValidationError({
                         'category': '해당 카테고리는 게시판 담당 관리자만 작성할 수 있습니다.'
                     })
+
+        # 3. FAQ 지정 권한 검사
+        is_faq = attrs.get('is_faq')
+        if is_faq and user and not user.is_superuser:
+            is_manager = forum and forum.manager.filter(pk=user.pk).exists()
+            if not is_manager:
+                raise serializers.ValidationError({
+                    'is_faq': 'FAQ 지정은 게시판 담당 관리자만 설정할 수 있습니다.'
+                })
         return attrs
 
     @transaction.atomic

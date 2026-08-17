@@ -195,6 +195,7 @@ class PostModel {
   final bool isSecret;
   final bool isHideComment;
   final bool isNotice;
+  final bool isFaq;
   final bool isBlind;
   final List<PostFileModel> files;
   final List<PostCommentModel> comments;
@@ -223,6 +224,7 @@ class PostModel {
     this.isSecret = false,
     this.isHideComment = false,
     this.isNotice = false,
+    this.isFaq = false,
     this.isBlind = false,
     this.files = const [],
     this.comments = const [],
@@ -265,6 +267,7 @@ class PostModel {
       isSecret: json['is_secret'] as bool? ?? false,
       isHideComment: json['is_hide_comment'] as bool? ?? false,
       isNotice: json['is_notice'] as bool? ?? false,
+      isFaq: json['is_faq'] as bool? ?? false,
       isBlind: json['is_blind'] as bool? ?? false,
       files: filesList,
       comments: commentsList,

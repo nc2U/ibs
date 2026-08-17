@@ -33,6 +33,7 @@ class _PostFormSheetState extends ConsumerState<PostFormSheet> {
   int? _selectedForumPk;
   int? _selectedCategoryPk;
   bool _isNotice = false;
+  bool _isFaq = false;
   bool _isSubmitting = false;
   bool _isLoadingCategories = false;
 
@@ -48,6 +49,7 @@ class _PostFormSheetState extends ConsumerState<PostFormSheet> {
     _titleController = TextEditingController(text: p?.title ?? '');
     _contentController = TextEditingController(text: p?.content ?? '');
     _isNotice = p?.isNotice ?? false;
+    _isFaq = p?.isFaq ?? false;
     _selectedForumPk = p?.forum ?? widget.initialForumId;
     _selectedCategoryPk = p?.category;
 
@@ -173,6 +175,7 @@ class _PostFormSheetState extends ConsumerState<PostFormSheet> {
           title: _titleController.text.trim(),
           content: _contentController.text.trim(),
           isNotice: _isNotice,
+          isFaq: _isFaq,
           newFiles: _newFiles,
           deleteFilePks: _deleteFilePks,
         );
@@ -184,6 +187,7 @@ class _PostFormSheetState extends ConsumerState<PostFormSheet> {
           title: _titleController.text.trim(),
           content: _contentController.text.trim(),
           isNotice: _isNotice,
+          isFaq: _isFaq,
           newFiles: _newFiles,
         );
       }
@@ -434,7 +438,7 @@ class _PostFormSheetState extends ConsumerState<PostFormSheet> {
                     ),
                     const SizedBox(height: 16),
 
-                    // 4. 공지 여부 스위치 (forum.manage 권한자 전용)
+                    // 4. 공지 및 FAQ 여부 스위치 (게시판 관리자 전용)
                     if (canManageForum) ...[
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -457,6 +461,32 @@ class _PostFormSheetState extends ConsumerState<PostFormSheet> {
                               value: _isNotice,
                               activeThumbColor: AppColors.error,
                               onChanged: (v) => setState(() => _isNotice = v),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: AppColors.bgSurface,
+                          borderRadius: BorderRadius.zero,
+                          border: Border.all(color: AppColors.border, width: 0.8),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.help_outline_rounded,
+                                size: 18, color: AppColors.accentApproval),
+                            const SizedBox(width: 8),
+                            Text('FAQ (자주 묻는 질문)으로 등록',
+                                style: AppTextStyles.bodySm.copyWith(
+                                    fontWeight: FontWeight.w600)),
+                            const Spacer(),
+                            Switch(
+                              value: _isFaq,
+                              activeThumbColor: AppColors.accentApproval,
+                              onChanged: (v) => setState(() => _isFaq = v),
                             ),
                           ],
                         ),

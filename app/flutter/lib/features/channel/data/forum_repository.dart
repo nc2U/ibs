@@ -119,6 +119,7 @@ class ForumRepository {
     required String title,
     String content = '',
     bool isNotice = false,
+    bool isFaq = false,
     List<PlatformFile>? newFiles,
   }) async {
     try {
@@ -129,6 +130,7 @@ class ForumRepository {
           'title': title,
           'content': content,
           'is_notice': isNotice,
+          'is_faq': isFaq,
         };
         final response = await _dio.post('/api/v1/post/', data: data);
         return PostModel.fromJson(response.data as Map<String, dynamic>);
@@ -142,6 +144,7 @@ class ForumRepository {
       formData.fields.add(MapEntry('title', title));
       formData.fields.add(MapEntry('content', content));
       formData.fields.add(MapEntry('is_notice', isNotice ? 'true' : 'false'));
+      formData.fields.add(MapEntry('is_faq', isFaq ? 'true' : 'false'));
 
       for (var pf in newFiles) {
         if (pf.bytes != null) {
@@ -180,6 +183,7 @@ class ForumRepository {
     required String title,
     String content = '',
     bool isNotice = false,
+    bool isFaq = false,
     List<PlatformFile>? newFiles,
     List<int>? deleteFilePks,
   }) async {
@@ -194,6 +198,7 @@ class ForumRepository {
       formData.fields.add(MapEntry('title', title));
       formData.fields.add(MapEntry('content', content));
       formData.fields.add(MapEntry('is_notice', isNotice ? 'true' : 'false'));
+      formData.fields.add(MapEntry('is_faq', isFaq ? 'true' : 'false'));
 
       if (deleteFilePks != null && deleteFilePks.isNotEmpty) {
         for (var pk in deleteFilePks) {

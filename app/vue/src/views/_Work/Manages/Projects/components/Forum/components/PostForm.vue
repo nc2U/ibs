@@ -94,6 +94,7 @@ const form = ref<Post>({
   password: '',
   is_hide_comment: false,
   is_notice: false,
+  is_faq: false,
   is_blind: false,
   ip: null,
   device: '',
@@ -163,6 +164,7 @@ const dataSetup = () => {
     form.value.password = props.post.password
     form.value.is_hide_comment = props.post.is_hide_comment
     form.value.is_notice = props.post.is_notice
+    form.value.is_faq = props.post.is_faq ?? false
     form.value.is_blind = props.post.is_blind
   }
 }
@@ -227,10 +229,18 @@ watch(
           </CCol>
           <CCol sm="12" lg="6" class="pt-2">
             <CFormCheck
-              v-if="canForumManage"
+              v-if="canForumManage || isForumManager"
               v-model="form.is_notice"
               label="공지사항"
               id="is_notice"
+              inline
+              class="mr-3"
+            />
+            <CFormCheck
+              v-if="canForumManage || isForumManager"
+              v-model="form.is_faq"
+              label="FAQ 등록"
+              id="is_faq"
               inline
               class="mr-3"
             />
