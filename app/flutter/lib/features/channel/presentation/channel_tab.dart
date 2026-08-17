@@ -23,8 +23,13 @@ import 'widgets/post_form_sheet.dart';
 ///   - [소통]: 워크스페이스 셀렉터 바 + (공지사항 | 게시판)
 ///   - [라운지]: 워크스페이스 무관(전사 공통) + (회사소개 | 온보딩·가이드 | FAQ·기술지원)
 class ChannelTab extends ConsumerStatefulWidget {
-  final int initialIndex;
-  const ChannelTab({super.key, this.initialIndex = 0});
+  final int initialSection; // 0: 소통 피드, 1: 전사 라운지 & 온보딩
+  final int initialIndex;   // 서브 탭 인덱스
+  const ChannelTab({
+    super.key,
+    this.initialSection = 0,
+    this.initialIndex = 0,
+  });
 
   @override
   ConsumerState<ChannelTab> createState() => _ChannelTabState();
@@ -32,7 +37,7 @@ class ChannelTab extends ConsumerStatefulWidget {
 
 class _ChannelTabState extends ConsumerState<ChannelTab>
     with TickerProviderStateMixin {
-  int _mainSection = 0; // 0: 워크스페이스 소통, 1: 전사 라운지 & 온보딩
+  late int _mainSection; // 0: 워크스페이스 소통, 1: 전사 라운지 & 온보딩
 
   late final TabController _commTabController;
   late final TabController _loungeTabController;
@@ -40,12 +45,28 @@ class _ChannelTabState extends ConsumerState<ChannelTab>
   @override
   void initState() {
     super.initState();
-    _commTabController = TabController(length: 2, vsync: this);
+    _mainSection = widget.initialSection;
+    final commInitIndex = (_mainSection == 0 && widget.initialIndex < 2)
+        ? widget.initialIndex
+        : 0;
+    final loungeInitIndex = (_mainSection == 1 && widget.initialIndex < 3)
+        ? widget.initialIndex
+        : 0;
+
+    _commTabController = TabController(
+      length: 2,
+      vsync: this,
+      initialIndex: commInitIndex,
+    );
     _commTabController.addListener(() {
       if (mounted) setState(() {});
     });
 
-    _loungeTabController = TabController(length: 3, vsync: this);
+    _loungeTabController = TabController(
+      length: 3,
+      vsync: this,
+      initialIndex: loungeInitIndex,
+    );
     _loungeTabController.addListener(() {
       if (mounted) setState(() {});
     });

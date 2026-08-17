@@ -152,23 +152,25 @@ class HomeTab extends ConsumerWidget {
             ),
           ),
 
-          // ── 채널 Quick Card: 공지사항 ──────────────────────────────────
+          // ── 채널 Quick Card 1: 소통 피드 ───────────────────────────────
           _ChannelQuickCard(
-            title: '공지사항',
-            subtitle: '워크스페이스 최신 공지 및 안내 사항',
-            icon: Icons.notifications_active_outlined,
-            accentColor: context.colors.accentCorp,
-            onTap: () => context.go('${AppRoutes.channel}?tab=0'),
-          ),
-          const SizedBox(height: 8),
-
-          // ── 채널 Quick Card: 게시판 ────────────────────────────────────
-          _ChannelQuickCard(
-            title: '게시판',
-            subtitle: '팀/현장별 게시글 및 자유 토론 채널',
+            title: '소통 피드',
+            subtitle: '워크스페이스 공지사항 및 게시판 소통',
             icon: Icons.forum_outlined,
-            accentColor: context.colors.accentProject,
-            onTap: () => context.go('${AppRoutes.channel}?tab=1'),
+            accentColor: context.colors.accentWork,
+            badgeText: '공지·게시판',
+            onTap: () => context.go('${AppRoutes.channel}?section=0&tab=0'),
+          ),
+          const SizedBox(height: 10),
+
+          // ── 채널 Quick Card 2: 전사 라운지 & 온보딩 ──────────────────
+          _ChannelQuickCard(
+            title: '전사 라운지 & 온보딩',
+            subtitle: '기업 철학·사명, 온보딩 로드맵, FAQ·기술지원',
+            icon: Icons.domain_rounded,
+            accentColor: context.colors.accentCorp,
+            badgeText: '회사소개·가이드',
+            onTap: () => context.go('${AppRoutes.channel}?section=1&tab=0'),
           ),
           const SizedBox(height: 16),
         ],
@@ -356,12 +358,13 @@ class _HeroCard extends StatelessWidget {
   }
 }
 
-// ── 채널 Quick Card (공지 / 게시판 진입 행 카드) ────────────────────────────────
+// ── 채널 Quick Card (소통 피드 / 전사 라운지 진입 행 카드) ──────────────────────
 class _ChannelQuickCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final IconData icon;
   final Color accentColor;
+  final String? badgeText;
   final VoidCallback onTap;
 
   const _ChannelQuickCard({
@@ -369,6 +372,7 @@ class _ChannelQuickCard extends StatelessWidget {
     required this.subtitle,
     required this.icon,
     required this.accentColor,
+    this.badgeText,
     required this.onTap,
   });
 
@@ -403,11 +407,39 @@ class _ChannelQuickCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: AppTextStyles.titleSm.copyWith(
-                      color: context.colors.textPrimary,
-                    ),
+                  Row(
+                    children: [
+                      Text(
+                        title,
+                        style: AppTextStyles.titleSm.copyWith(
+                          color: context.colors.textPrimary,
+                        ),
+                      ),
+                      if (badgeText != null) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: accentColor.withAlpha(20),
+                            borderRadius: BorderRadius.circular(2),
+                            border: Border.all(
+                              color: accentColor.withAlpha(50),
+                              width: 0.6,
+                            ),
+                          ),
+                          child: Text(
+                            badgeText!,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: accentColor,
+                              letterSpacing: -0.2,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 2),
                   Text(

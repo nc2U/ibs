@@ -154,15 +154,23 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (ctx, state) => const ProjectScreen(),
           ),
 
-          // 채널 탭 (공지 + 게시판)
+          // 채널 탭 (소통 피드 + 전사 라운지 & 온보딩)
           GoRoute(
             path: AppRoutes.channel,
             builder: (ctx, state) {
+              final sectionParam = state.uri.queryParameters['section'];
               final tabParam = state.uri.queryParameters['tab'];
+              final initialSection = sectionParam != null
+                  ? (int.tryParse(sectionParam) ?? 0)
+                  : 0;
               final initialIndex = tabParam != null
                   ? (int.tryParse(tabParam) ?? 0)
                   : (state.extra as int? ?? 0);
-              return ChannelTab(initialIndex: initialIndex);
+              return ChannelTab(
+                key: ValueKey('channel_${initialSection}_$initialIndex'),
+                initialSection: initialSection,
+                initialIndex: initialIndex,
+              );
             },
           ),
 
