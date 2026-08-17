@@ -4,7 +4,7 @@ import json
 from django.conf import settings
 from django.db import models
 
-from approval.models.document_type import DocumentType, RouteTemplate
+from .document_type import DocumentType, RouteTemplate
 
 
 class ApprovalDocument(models.Model):
