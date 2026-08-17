@@ -40,7 +40,7 @@ class PostCategory(models.Model):
         return self.name
 
     class Meta:
-        ordering = ['-is_manager_only', 'id']
+        ordering = ['-is_manager_only', 'order', 'id']
         verbose_name = '02. 카테고리 관리'
         verbose_name_plural = '02. 카테고리 관리'
 
