@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/constants/permissions.dart';
 import '../../../../core/models/common_models.dart';
 import '../../../../core/providers/docs_context_provider.dart';
 import '../../../../core/providers/permission_provider.dart';
 import '../../../../core/providers/project_provider.dart';
+import '../../../../core/theme/app_colors_extension.dart';
 import '../../../../core/widgets/workspace_selector_bar.dart';
 import '../../docs/presentation/docs_screen.dart';
 import '../../issue/presentation/issue_list_screen.dart';
@@ -73,7 +73,7 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
       length: 2,
       initialIndex: widget.initialIndex,
       child: Scaffold(
-        backgroundColor: AppColors.bgPrimary,
+        backgroundColor: context.colors.bgPrimary,
         body: Column(
           children: [
             // ── 워크스페이스 고정 선택 바 (공용 컴포넌트) ─────────────────────
@@ -87,12 +87,12 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
                             horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: _isDocsView
-                              ? AppColors.accentWork.withAlpha(30)
+                              ? context.colors.accentWork.withAlpha(30)
                               : const Color(0xFF6A1B9A),
                           borderRadius: BorderRadius.zero,
                           border: Border.all(
                             color: _isDocsView
-                                ? AppColors.accentWork
+                                ? context.colors.accentWork
                                 : const Color(0xFFAB47BC),
                             width: 0.8,
                           ),
@@ -106,7 +106,7 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
                                   : Icons.folder_shared_outlined,
                               size: 13,
                               color: _isDocsView
-                                  ? AppColors.accentWork
+                                  ? context.colors.accentWork
                                   : Colors.white,
                             ),
                             const SizedBox(width: 4),
@@ -114,7 +114,7 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
                               _isDocsView ? '업무 목록' : '문서함',
                               style: AppTextStyles.label.copyWith(
                                 color: _isDocsView
-                                    ? AppColors.accentWork
+                                    ? context.colors.accentWork
                                     : Colors.white,
                                 fontSize: 11,
                               ),
@@ -125,7 +125,7 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
                     )
                   : null,
             ),
-            const Divider(color: AppColors.border, height: 1),
+            Divider(color: context.colors.border, height: 1),
 
             // ── 바디 영역 (문서함 뷰 VS 기본 업무/회의 탭 뷰) ────────────────────
             Expanded(
@@ -135,26 +135,26 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
                       children: [
                         // ── 상단 탭바 (회의 목록 | 업무 목록) ───────────────
                         Container(
-                          decoration: const BoxDecoration(
-                            color: AppColors.bgSurface,
+                          decoration: BoxDecoration(
+                            color: context.colors.bgSurface,
                             border: Border(
                               bottom: BorderSide(
-                                  color: AppColors.border, width: 0.8),
+                                  color: context.colors.border, width: 0.8),
                             ),
                           ),
                           child: TabBar(
                             indicatorSize: TabBarIndicatorSize.tab,
-                            indicator: const BoxDecoration(
-                              color: AppColors.bgCard,
+                            indicator: BoxDecoration(
+                              color: context.colors.bgCard,
                               border: Border(
                                 bottom: BorderSide(
-                                  color: AppColors.accentWork,
-                                  width: 3.5,
+                                  color: context.colors.accentWork,
+                                  width: 3.0,
                                 ),
                               ),
                             ),
-                            labelColor: AppColors.accentWork,
-                            unselectedLabelColor: AppColors.textMuted,
+                            labelColor: context.colors.textPrimary,
+                            unselectedLabelColor: context.colors.textMuted,
                             labelStyle: AppTextStyles.titleSm
                                 .copyWith(fontWeight: FontWeight.w700),
                             unselectedLabelStyle: AppTextStyles.bodyMd,

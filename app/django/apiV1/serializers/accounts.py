@@ -222,3 +222,20 @@ class AdminCreateUserSerializer(serializers.Serializer):
     mail_sending = serializers.BooleanField()
     send_option = serializers.CharField()
     expired = serializers.IntegerField()
+
+
+class FCMDeviceSerializer(serializers.ModelSerializer):
+    class Meta:
+        from accounts.models import FCMDevice
+        model = FCMDevice
+        fields = ('pk', 'registration_id', 'device_id', 'platform', 'is_active', 'created_at', 'updated_at')
+        read_only_fields = ('created_at', 'updated_at')
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        from accounts.models import Notification
+        model = Notification
+        fields = ('pk', 'user', 'title', 'body', 'category', 'target_type', 'target_id', 'data', 'is_read', 'created_at')
+        read_only_fields = ('pk', 'user', 'title', 'body', 'category', 'target_type', 'target_id', 'data', 'created_at')
+

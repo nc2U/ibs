@@ -165,3 +165,57 @@ class PasswordResetToken(models.Model):
         # Check if 10 minutes have passed since creation
         time_diff = timezone.localtime() - self.created
         return time_diff.total_seconds() >= self.expired
+
+
+class FCMDevice(models.Model):
+    """모바일 기기 푸시 알림용 FCM 토큰"""
+    PLATFORM_CHOICES = (
+        ('ios', 'iOS'),
+        ('android', 'Android'),
+    )
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='fcm_devices', verbose_name='사용자')
+    registration_id = models.TextField('FCM 등록 토큰', unique=True)
+    device_id = models.CharField('기기 고유 식별자', max_length=255, blank=True, null=True)
+    platform = models.CharField('플랫폼', max_length=10, choices=PLATFORM_CHOICES, default='android')
+    is_active = models.BooleanField('활성화 여부', default=True)
+    created_at = models.DateTimeField('등록일시', auto_now_add=True)
+    updated_at = models.DateTimeField('수정일시', auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.username} ({self.platform})"
+
+    class Meta:
+        ordering = ('-updated_at',)
+        verbose_name = 'FCM 기기 토큰'
+        verbose_name_plural = 'FCM 기기 토큰 목록'
+
+
+class Notification(models.Model):
+    """사용자 인앱 알림함 & 푸시 이력"""
+    CATEGORY_CHOICES = (
+        ('work', '업무'),
+        ('meeting', '회의'),
+        ('notice', '공지'),
+        ('approval', '전자결재'),
+        ('chat', '채팅'),
+    )
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications', verbose_name='수신자')
+    title = models.CharField('알림 제목', max_length=255)
+    body = models.TextField('알림 내용')
+    category = models.CharField('카테고리', max_length=20, choices=CATEGORY_CHOICES, default='work')
+    target_type = models.CharField('대상 유형', max_length=50, blank=True, help_text='issue, meeting, notice 등')
+    target_id = models.CharField('대상 식별자', max_length=50, blank=True)
+    data = models.JSONField('추가 페이로드', default=dict, blank=True)
+    is_read = models.BooleanField('읽음 여부', default=False)
+    created_at = models.DateTimeField('발생일시', auto_now_add=True)
+
+    def __str__(self):
+        return f"[{self.get_category_display()}] {self.title} -> {self.user.username}"
+
+    class Meta:
+        ordering = ('-created_at',)
+        verbose_name = '사용자 알림'
+        verbose_name_plural = '사용자 알림 목록'
+

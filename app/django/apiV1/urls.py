@@ -25,6 +25,8 @@ router.register(r'doc-scrape', accounts.DocScrapeViewSet)
 router.register(r'post-scrape', accounts.PostScrapeViewSet)
 router.register(r'todo', accounts.TodoViewSet)
 router.register(r'pass-reset-token', accounts.PasswordResetTokenViewSet)
+router.register(r'fcm-device', accounts.FCMDeviceViewSet, basename='fcm-device')
+router.register(r'notification', accounts.NotificationViewSet, basename='notification')
 
 # company
 router.register(r'company', company.CompanyViewSet)

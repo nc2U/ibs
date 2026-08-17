@@ -6,9 +6,12 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/constants/permissions.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/providers/notification_provider.dart';
 import '../../../core/providers/permission_provider.dart';
 import '../../../core/providers/share_payload_provider.dart';
 import '../../../core/router/app_router.dart';
+import '../../../core/theme/app_colors_extension.dart';
+import '../../../core/widgets/notification_sheet.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../../docs/presentation/widgets/document_form_sheet.dart';
 
@@ -78,23 +81,67 @@ class MainShell extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.bgPrimary,
       appBar: AppBar(
-        backgroundColor: AppColors.bgPrimary,
-        foregroundColor: AppColors.textPrimary,
+        backgroundColor: context.colors.bgPrimary,
+        foregroundColor: context.colors.textPrimary,
         elevation: 0,
         titleSpacing: 16,
         title: Row(
           children: [
             SvgPicture.asset('assets/images/sygnet.svg', width: 26, height: 26),
             const SizedBox(width: 10),
-            Text('IBS 워크스페이스', style: AppTextStyles.titleMd),
+            Text(
+              'IBS 워크스페이스',
+              style: AppTextStyles.titleMd.copyWith(
+                color: context.colors.textPrimary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none_rounded,
-                size: 24, color: AppColors.textMuted),
-            tooltip: '알림',
-            onPressed: () {},
+          Consumer(
+            builder: (ctx, ref, _) {
+              final unreadCount = ref.watch(unreadNotificationCountProvider);
+              return Stack(
+                alignment: Alignment.center,
+                children: [
+                  IconButton(
+                    icon: Icon(
+                      unreadCount > 0
+                          ? Icons.notifications_active_rounded
+                          : Icons.notifications_none_rounded,
+                      size: 23,
+                      color: unreadCount > 0
+                          ? context.colors.accentWork
+                          : context.colors.textMuted,
+                    ),
+                    tooltip: '알림 센터',
+                    onPressed: () => NotificationSheet.show(context),
+                  ),
+                  if (unreadCount > 0)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(3.5),
+                        decoration: BoxDecoration(
+                          color: context.colors.accentWork,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Text(
+                          unreadCount > 99 ? '99+' : '$unreadCount',
+                          style: const TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            height: 1,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
           ),
           Consumer(
             builder: (ctx, ref, _) {

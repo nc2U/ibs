@@ -480,3 +480,75 @@ IBS 워크스페이스'''
             return Response({'detail': f'처리 중 오류가 발생했습니다.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return Response({'detail': '사용자 정보 변경 처리가 완료되었습니다.'}, status=status.HTTP_200_OK)
+
+
+class FCMDeviceViewSet(viewsets.ModelViewSet):
+    """모바일 FCM 기기 등록 및 토큰 관리"""
+    permission_classes = (IsAuthenticated,)
+    pagination_class = None
+
+    def get_serializer_class(self):
+        from ..serializers.accounts import FCMDeviceSerializer
+        return FCMDeviceSerializer
+
+    def get_queryset(self):
+        from accounts.models import FCMDevice
+        return FCMDevice.objects.filter(user=self.request.user)
+
+    def create(self, request, *args, **kwargs):
+        from accounts.models import FCMDevice
+        registration_id = request.data.get('registration_id')
+        if not registration_id:
+            return Response({'detail': 'registration_id is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        device_id = request.data.get('device_id', '')
+        platform = request.data.get('platform', 'android')
+
+        # 기존 다른 사용자에게 등록된 동일 토큰이 있다면 현재 사용자로 소유권 업데이트
+        device, created = FCMDevice.objects.update_or_create(
+            registration_id=registration_id,
+            defaults={
+                'user': request.user,
+                'device_id': device_id,
+                'platform': platform,
+                'is_active': True,
+            }
+        )
+        serializer = self.get_serializer(device)
+        return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+
+class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
+    """사용자 인앱 알림 목록 및 읽음 처리"""
+    permission_classes = (IsAuthenticated,)
+    pagination_class = PageNumberPaginationFifty
+
+    def get_serializer_class(self):
+        from ..serializers.accounts import NotificationSerializer
+        return NotificationSerializer
+
+    def get_queryset(self):
+        from accounts.models import Notification
+        return Notification.objects.filter(user=self.request.user)
+
+    from rest_framework.decorators import action
+
+    @action(detail=True, methods=['post'], url_path='read')
+    def mark_as_read(self, request, pk=None):
+        notification = self.get_object()
+        notification.is_read = True
+        notification.save(update_fields=['is_read'])
+        return Response({'status': 'read', 'id': notification.pk})
+
+    @action(detail=False, methods=['post'], url_path='read-all')
+    def mark_all_as_read(self, request):
+        from accounts.models import Notification
+        updated_count = Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+        return Response({'status': 'all_read', 'updated_count': updated_count})
+
+    @action(detail=False, methods=['get'], url_path='unread-count')
+    def unread_count(self, request):
+        from accounts.models import Notification
+        count = Notification.objects.filter(user=request.user, is_read=False).count()
+        return Response({'unread_count': count})
+
