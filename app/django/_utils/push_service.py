@@ -1,3 +1,6 @@
+import base64
+import json
+import os
 import logging
 from django.conf import settings
 from accounts.models import Notification, FCMDevice
@@ -17,8 +20,18 @@ def _get_firebase_app():
         import firebase_admin
         from firebase_admin import credentials
 
+        # 1. Base64 인코딩 문자열 지원 (서버 .env에 직접 설정 가능)
+        b64_cred = getattr(settings, 'FIREBASE_CREDENTIALS_BASE64', None)
+        if b64_cred:
+            cred_dict = json.loads(base64.b64decode(b64_cred).decode('utf-8'))
+            cred = credentials.Certificate(cred_dict)
+            firebase_admin.initialize_app(cred)
+            _firebase_initialized = True
+            return True
+
+        # 2. 로컬 파일 경로 지원
         cred_path = getattr(settings, 'FIREBASE_CREDENTIALS_PATH', None)
-        if cred_path:
+        if cred_path and os.path.exists(cred_path):
             cred = credentials.Certificate(cred_path)
             firebase_admin.initialize_app(cred)
             _firebase_initialized = True

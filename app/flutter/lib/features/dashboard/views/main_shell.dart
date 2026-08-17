@@ -11,6 +11,8 @@ import '../../../core/providers/permission_provider.dart';
 import '../../../core/providers/share_payload_provider.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors_extension.dart';
+import '../../../core/providers/dio_provider.dart';
+import '../../../core/services/fcm_service.dart';
 import '../../../core/widgets/notification_sheet.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../../docs/presentation/widgets/document_form_sheet.dart';
@@ -45,6 +47,12 @@ class MainShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentIdx = _currentIndex(context);
+
+    // FCM 푸시 알림 서비스 초기화 (로그인된 세션)
+    final dio = ref.watch(dioProvider);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      FcmService.initialize(dio);
+    });
 
     // 외부 앱에서 공유된 파일/링크가 있을 때 문서 등록 모달 자동 팝업 (docs.create 권한 검증)
     ref.listen<SharePayload?>(pendingSharePayloadProvider, (prev, next) {

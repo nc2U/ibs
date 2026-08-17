@@ -1,53 +1,59 @@
 ### FOR DJANGO APP ----------------------------------------------------------------------------------
-SECRET_KEY=                   # required, Set random characters of at least 50 characters.
-DEBUG=                        # default=False
-ALLOWED_HOSTS=                # default=*, set like this -> host1,host2,host3...
-CSRF_TRUSTED_ORIGINS=         # default='https://***.*****.com'
+SECRET_KEY=                   # 필수: Django 보안 키 (최소 50자 이상의 무작위 문자열)
+DEBUG=                        # 디버그 모드 (운영: False, 개발: True, 기본값: False)
+ALLOWED_HOSTS=                # 허용 호스트 (콤마로 구분, 예: localhost,127.0.0.1,ibs.dyibs.com)
+CSRF_TRUSTED_ORIGINS=         # CSRF 신뢰 도메인 (콤마 구분, 예: https://ibs.dyibs.com,https://dev.dyibs.com)
 
-DATABASE_USER=                # default=db-user
-DATABASE_PASS=                # default=db-secret
+DATABASE_TYPE=                # 데이터베이스 종류 (postgresql | sqlite3)
+DATABASE_USER=                # DB 사용자 (기본값: db-user)
+DATABASE_PASS=                # DB 비밀번호 (기본값: db-secret)
 
-DOMAIN_HOST=                  # default=https://***.*****.com/
-DOMAIN_NAME=                  # default=ibs.dyibs.com
-SESSION_COOKIE_DOMAIN=        # ".*****.com" // 서브도메인 간 이동 시 세션 유지
-CSRF_COOKIE_DOMAIN=           # ".*****.com" // 서브도메인 간 이동 시 CSRF 유지
+DOMAIN_HOST=                  # 서비스 URL (기본값: https://ibs.dyibs.com/)
+DOMAIN_NAME=                  # 메인 도메인 명 (기본값: ibs.dyibs.com)
+SESSION_COOKIE_DOMAIN=        # ".dyibs.com" // 서브도메인 간 세션 공유 유지
+CSRF_COOKIE_DOMAIN=           # ".dyibs.com" // 서브도메인 간 CSRF 쿠키 유지
 
-EMAIL_HOST=                   # required, ex: mail.*****.com
-EMAIL_PORT=                   # default=587
-EMAIL_HOST_USER=              # required, ex: 'my-account'
-EMAIL_HOST_PASSWORD=          # required, ex: 'my-password'
-DEFAULT_FROM_EMAIL=           # required, ex: '관리자 <info@*****.com>'
-SLACK_NOTIFICATIONS_ENABLED=  # default=True, IBS work notifications
+EMAIL_HOST=                   # SMTP 호스트 (예: mail.dyibs.com 또는 smtp.gmail.com)
+EMAIL_PORT=                   # SMTP 포트 (기본값: 587)
+EMAIL_HOST_USER=              # SMTP 계정 ID (예: info@dyibs.com)
+EMAIL_HOST_PASSWORD=          # SMTP 비밀번호
+DEFAULT_FROM_EMAIL=           # 발신자 표시 (예: 'IBS 관리자 <info@dyibs.com>')
+SLACK_NOTIFICATIONS_ENABLED=  # Slack 알림 활성화 여부 (기본값: True)
 
 ### FOR OBJECT STORAGE (MinIO / S3) ----------------------------------------------------
-AWS_STORAGE_BUCKET_NAME=      # ibs-media (prod) | ibs-media-dev (dev)
-AWS_S3_ACCESS_KEY_ID=         # 'my-account'
-AWS_S3_SECRET_ACCESS_KEY=     # 'my-password'
-AWS_S3_ENDPOINT_URL=          # https://s3.*****.com
-AWS_REGION=                   # ap-northeast-2
-AWS_QUERYSTRING_EXPIRE=       # 3600
+AWS_STORAGE_BUCKET_NAME=      # 미디어 저장용 버킷명 (운영: ibs-media | 개발: ibs-media-dev)
+AWS_S3_ACCESS_KEY_ID=         # S3 / MinIO Access Key
+AWS_S3_SECRET_ACCESS_KEY=     # S3 / MinIO Secret Key
+AWS_S3_ENDPOINT_URL=          # S3 엔드포인트 URL (예: https://s3.iwinv.kr)
+AWS_REGION=                   # AWS / 스토리지 리전 (예: ap-northeast-2)
+AWS_QUERYSTRING_EXPIRE=       # 서명 URL 만료 시간(초) (기본값: 3600)
+
+### FOR FIREBASE ADMIN SDK (FCM 모바일 푸시 알림) ---------------------------------------
+# Firebase 콘솔 > 프로젝트 설정 > 서비스 계정 > 새 비공개 키 생성 후 발급받은 JSON을 Base64로 인코딩한 문자열
+# (서버 배포 시 별도 파일 업로드 없이 .env 1줄로 푸시 알림 구동)
+FIREBASE_CREDENTIALS_BASE64=
 
 ### FOR DEPLOYMENT ------------------------------------------------------------------------------------
-CICD_HOST=                    # 49.***.206.** (Master NVMe SSD Server)
-CICD_USER=                    # host-user
-CICD_PASS=                    # host-password
-CICD_PATH=                    # /nfs/***/ibs
+CICD_HOST=                    # 배포 대상 마스터 서버 IP (예: 49.xxx.206.xx)
+CICD_USER=                    # 마스터 서버 SSH 사용자 계정
+CICD_PASS=                    # 마스터 서버 SSH 접속 비밀번호
+CICD_PATH=                    # 마스터 서버 배포 베이스 경로 (예: /nfs/app/ibs)
 
-NFS_HOST=                     # 14.**.233.** (Synology NAS Server)
-NFS_USER=                     # 'my-account'
-NFS_PASS=                     # 'my-password'
-NFS_PATH=                     # /*****/mnt/ibs
+NFS_HOST=                     # 시놀로지 NAS 스토리지 IP
+NFS_USER=                     # NAS 사용자 계정
+NFS_PASS=                     # NAS 접속 비밀번호
+NFS_PATH=                     # NAS 영구 스토리지 마운트 경로
 
 ### FOR GITHUB API DISPATCH --------------------------------------------------
-GITHUB_TOKEN=                 # ghp_xxx... (Personal Access Token for db_sync trigger)
+GITHUB_TOKEN=                 # GitHub Personal Access Token (DB 백업/동기화 워크플로우 트리거용)
 
 ### FOR SMS SERVICE ------------------------------------------------------------------------------------
-IWINV_API_KEY=
-IWINV_AUTH_KEY=
+IWINV_API_KEY=                # iwinv SMS 발송 API 키
+IWINV_AUTH_KEY=               # iwinv SMS 발송 AUTH 키
+IWINV_REGISTERED_SENDER_NUMBERS= # SMS 사전 등록 발신번호 (예: 010-XXXX-XXXX)
 
-### FOR DEVELOPMENT - OPTIONAL -------------------------------------------------------------------------
-DOCKERHUB_USER=
-DOCKERHUB_TOKEN=
-
-SLACK_INCOMING_URL=           # 배표 결과 알림 웹훅
-SLACK_COMPANY_URL=            # 본사 알림 및 프로젝트 채널 미개설 또는 url 미등록 시 기본 값
+### FOR DEVELOPMENT & ALERTS (OPTIONAL) ------------------------------------------------
+DOCKERHUB_USER=               # Docker Hub 사용자 계정
+DOCKERHUB_TOKEN=              # Docker Hub Access Token
+SLACK_INCOMING_URL=           # CI/CD 빌드 및 배포 결과 알림 Slack 웹훅 URL
+SLACK_COMPANY_URL=            # 전사 본사 공통 알림 Slack 웹훅 URL

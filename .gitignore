@@ -83,7 +83,9 @@ chromedriver.log
 .claude/
 .junie/
 
-# flutter local secrets
+# flutter & firebase local secrets
 app/flutter/.env
 app/flutter/android/app/google-services.json
-app/flutter/ios/Runner/GoogleService-Info.plist
+app/flutter/ios/Runner/GoogleService-Info.plist
+*firebase-adminsdk*.json
+*serviceAccountKey*.json
