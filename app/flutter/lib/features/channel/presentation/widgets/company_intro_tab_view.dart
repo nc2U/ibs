@@ -270,7 +270,7 @@ class _CompanyIntroTabViewState extends ConsumerState<CompanyIntroTabView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 1. 넘버링 & 영문 태그 (초극세사 하이엔드 라벨)
+                // 1. 넘버링 & 영문 태그 & 한글 핵심 가치 키워드 (D6EBFF 아이스 청백 강조)
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
@@ -285,12 +285,24 @@ class _CompanyIntroTabViewState extends ConsumerState<CompanyIntroTabView> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      '·  ${v['en']!}  ·  ${v['title']!}',
+                      '·  ${v['en']!}  ·',
                       style: TextStyle(
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
                         letterSpacing: 1.2,
                         color: context.colors.textMuted,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      v['title']!,
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.3,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? const Color(0xFFBFE0FF)
+                            : const Color(0xFF0284C7),
                       ),
                     ),
                   ],
