@@ -5,17 +5,18 @@ import { type RouteRecordRaw } from 'vue-router'
 /* Router Modules */
 import workProject from '@/router/modules/workProject'
 import workSetting from '@/router/modules/workSetting'
+import comLedger from '@/router/modules/comLedger.ts'
+import comDocs from '@/router/modules/comDocs'
+import hrManage from '@/router/modules/hrManage'
+import approval from '@/router/modules/approval'
 import contracts from '@/router/modules/contracts'
 import payment from '@/router/modules/payment'
 import notices from '@/router/modules/notices'
 import proLedger from '@/router/modules/proLedger.ts'
 import proDocs from '@/router/modules/proDocs'
 import projects from '@/router/modules/projects'
-import comLedger from '@/router/modules/comLedger.ts'
-import comDocs from '@/router/modules/comDocs'
-import hrManage from '@/router/modules/hrManage'
 import settings from '@/router/modules/settings'
-import myPage from '@/router/modules/mypage'
+// import myPage from '@/router/modules/mypage'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -37,17 +38,18 @@ const routes: Array<RouteRecordRaw> = [
       },
       workProject as RouteRecordRaw,
       workSetting as RouteRecordRaw,
+      comLedger as unknown as RouteRecordRaw,
+      comDocs as unknown as RouteRecordRaw,
+      hrManage,
+      approval,
       contracts,
       payment,
       notices,
       proLedger as unknown as RouteRecordRaw,
       proDocs as unknown as RouteRecordRaw,
       projects,
-      comLedger as unknown as RouteRecordRaw,
-      comDocs as unknown as RouteRecordRaw,
-      hrManage,
       settings,
-      myPage,
+      // myPage,
       {
         path: '/:pathMatch(.*)*',
         name: 'NotFound',

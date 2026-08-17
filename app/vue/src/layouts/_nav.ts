@@ -115,6 +115,25 @@ const humanResource = {
   ],
 }
 
+const approval = {
+  component: 'CNavGroup',
+  name: '전자 결재 관리',
+  to: '/approval',
+  icon: 'cil-check-circle',
+  items: [
+    {
+      component: 'CNavItem',
+      name: '결재 대기함',
+      to: '/approval/pending',
+    },
+    {
+      component: 'CNavItem',
+      name: '기 안 함',
+      to: '/approval/drafted',
+    },
+  ],
+}
+
 const contract = {
   component: 'CNavGroup',
   name: '계약 정보 관리',
@@ -430,6 +449,7 @@ const nav = [
   companyLedger,
   companyDocs,
   humanResource,
+  approval,
   {
     component: 'CNavTitle',
     name: '프로젝트 관리',
