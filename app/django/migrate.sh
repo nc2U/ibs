@@ -8,7 +8,7 @@
 #   sh migrate.sh -mf / -fm            # makemigrations + migrate --fake
 #   sh migrate.sh -mr / -rm            # makemigrations + TRUNCATE django_migrations (RESTART IDENTITY) + migrate --fake
 
-APPS="accounts book company contract docs forum ibs items ledger notice payment project work"
+APPS="accounts approval book company contract docs forum ibs items ledger notice payment project work"
 
 DO_MAKEMIGRATIONS=false
 DO_FAKE=false

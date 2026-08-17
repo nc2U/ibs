@@ -2,6 +2,7 @@ from django.urls import path
 from rest_framework.routers import DefaultRouter
 
 from .views import accounts
+from .views import approval
 from .views import company
 from .views import contract
 from .views import docs
@@ -36,6 +37,10 @@ router.register(r'grade', company.JobGradeViewSet)
 router.register(r'position', company.PositionViewSet)
 router.register(r'duty-title', company.DutyTitleViewSet)
 router.register(r'staff', company.StaffViewSet)
+
+# approval (전자결재)
+router.register(r'approval-doc-type', approval.DocumentTypeViewSet, basename='approval-doc-type')
+router.register(r'approval-document', approval.ApprovalDocumentViewSet, basename='approval-document')
 
 # ibs
 router.register(r'schedule', ibs.CalendarScheduleViewSet)

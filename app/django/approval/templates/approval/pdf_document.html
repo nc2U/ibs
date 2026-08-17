@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>{{ document.doc_type.name }} - {{ document.title }}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans KR', sans-serif; font-size: 11pt; color: #222; padding: 30mm 20mm; }
+  h1.doc-title { text-align: center; font-size: 20pt; font-weight: 700; margin-bottom: 8mm; letter-spacing: -0.5px; }
+  .doc-meta { width: 100%; border-collapse: collapse; margin-bottom: 8mm; font-size: 9pt; }
+  .doc-meta td { border: 1px solid #ccc; padding: 4px 8px; }
+  .doc-meta .label { background: #f5f5f5; font-weight: 500; width: 80px; }
+  .section-title { font-size: 11pt; font-weight: 700; border-bottom: 2px solid #333; padding-bottom: 3px; margin: 6mm 0 4mm; }
+  .content-box { border: 1px solid #ddd; padding: 5mm; min-height: 40mm; white-space: pre-wrap; font-size: 10pt; line-height: 1.8; }
+  .approval-table { width: 100%; border-collapse: collapse; margin-top: 6mm; font-size: 9pt; }
+  .approval-table th { background: #333; color: #fff; padding: 5px 8px; text-align: center; }
+  .approval-table td { border: 1px solid #ccc; padding: 5px 8px; text-align: center; vertical-align: middle; }
+  .approved { color: #1565C0; font-weight: 700; }
+  .rejected { color: #c62828; font-weight: 700; }
+  .pending  { color: #888; }
+  .doc-number { text-align: right; font-size: 8.5pt; color: #888; margin-bottom: 3mm; }
+  .hash-footer { margin-top: 10mm; font-size: 7.5pt; color: #aaa; word-break: break-all; }
+  .stamp-box { display: inline-block; width: 18mm; height: 18mm; border: 2px solid #1565C0; border-radius: 50%;
+               text-align: center; line-height: 18mm; font-size: 8.5pt; font-weight: 700; color: #1565C0; margin-top: 3mm; }
+</style>
+</head>
+<body>
+{% if document.doc_number %}
+<div class="doc-number">문서번호: {{ document.doc_number }}</div>
+{% endif %}
+
+<h1 class="doc-title">{{ document.doc_type.name }}</h1>
+
+<table class="doc-meta">
+  <tr>
+    <td class="label">제 목</td>
+    <td colspan="3">{{ document.title }}</td>
+  </tr>
+  <tr>
+    <td class="label">기안자</td>
+    <td>{{ document.drafter.get_full_name|default:document.drafter.username }}</td>
+    <td class="label">기안일시</td>
+    <td>{{ document.submitted_at|date:"Y년 m월 d일 H:i" }}</td>
+  </tr>
+  <tr>
+    <td class="label">완료일시</td>
+    <td>{{ document.completed_at|date:"Y년 m월 d일 H:i"|default:"-" }}</td>
+    <td class="label">문서 유형</td>
+    <td>{{ document.doc_type.name }}</td>
+  </tr>
+  {% if document.workspace %}
+  <tr>
+    <td class="label">워크스페이스</td>
+    <td colspan="3">{{ document.workspace }}</td>
+  </tr>
+  {% endif %}
+</table>
+
+<div class="section-title">결재 내용</div>
+<div class="content-box">
+{% for key, value in document.content.items %}
+  <strong>{{ key }}</strong>: {{ value }}
+{% endfor %}
+</div>
+
+<div class="section-title">결재 이력</div>
+<table class="approval-table">
+  <thead>
+    <tr>
+      <th>순서</th><th>단계명</th><th>결재자</th><th>결재 조건</th><th>결재 행동</th><th>의견</th><th>결재일시</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for step in steps %}
+    {% for approver in step.approvers.all %}
+      {% with action=step.actions.all|dictsort:"approver_id" %}
+      <tr>
+        <td>{{ step.step_order }}</td>
+        <td>{{ step.role_label }}</td>
+        <td>{{ approver.get_full_name|default:approver.username }}</td>
+        <td>{{ step.get_condition_display }}</td>
+        {% for act in step.actions.all %}
+          {% if act.approver == approver %}
+          <td class="{{ act.action }}">{{ act.get_action_display }}</td>
+          <td>{{ act.comment|default:"-" }}</td>
+          <td>{{ act.acted_at|date:"Y-m-d H:i" }}</td>
+          {% endif %}
+        {% empty %}
+          <td class="pending">대기</td><td>-</td><td>-</td>
+        {% endfor %}
+      </tr>
+      {% endwith %}
+    {% endfor %}
+  {% endfor %}
+  </tbody>
+</table>
+
+<div class="hash-footer">
+  문서 무결성 검증 해시 (SHA-256): {{ document.content_hash }}
+</div>
+</body>
+</html>

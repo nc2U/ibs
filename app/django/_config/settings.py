@@ -90,6 +90,7 @@ INSTALLED_APPS += [  # app
     'accounts.apps.AccountsConfig',
     'book.apps.BookConfig',
     # 'board.apps.BoardConfig',
+    'approval.apps.ApprovalConfig',
     'forum.apps.ForumConfig',
     'company.apps.CompanyConfig',
     'contract.apps.ContractConfig',
