@@ -411,6 +411,7 @@ CELERY_WORKER_MAX_TASKS_PER_CHILD = 1000
 
 APP_ORDER = [
     'company',
+    'approval',
     'work',
     'project',
     'items',
