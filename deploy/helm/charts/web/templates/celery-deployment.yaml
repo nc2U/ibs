@@ -69,8 +69,8 @@ spec:
       volumes:
         - name: env-config
           nfs:
-            server: {{ .Values.global.nfsServerHost }}
-            path: {{ .Values.global.nfsPath }}/{{ .Values.global.appMode }}/app/django
+            server: {{ .Values.global.cicdServerHost }}
+            path: {{ .Values.global.cicdPath }}/{{ .Values.global.appMode }}/app/django
         - name: vue-frontend-nfs
           nfs:
             server: {{ .Values.global.cicdServerHost }}
