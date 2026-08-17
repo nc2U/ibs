@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import '../constants/app_text_styles.dart';
 import '../models/notification_model.dart';
 import '../providers/notification_provider.dart';
@@ -33,7 +32,7 @@ class _NotificationSheetState extends ConsumerState<NotificationSheet> {
     if (diff.inMinutes < 60) return '${diff.inMinutes}분 전';
     if (diff.inHours < 24) return '${diff.inHours}시간 전';
     if (diff.inDays < 7) return '${diff.inDays}일 전';
-    return DateFormat('yyyy.MM.dd').format(dt);
+    return '${dt.year}.${dt.month.toString().padLeft(2, '0')}.${dt.day.toString().padLeft(2, '0')}';
   }
 
   void _handleNotificationTap(NotificationModel n) {

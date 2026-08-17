@@ -1,20 +1,21 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/notification_model.dart';
-import '../services/api_service.dart';
+import 'dio_provider.dart';
 
 /// 사용자 알림 목록 노티파이어
 class NotificationListNotifier
     extends StateNotifier<AsyncValue<List<NotificationModel>>> {
-  final ApiService _api;
+  final Dio _dio;
 
-  NotificationListNotifier(this._api) : super(const AsyncValue.loading()) {
+  NotificationListNotifier(this._dio) : super(const AsyncValue.loading()) {
     fetchNotifications();
   }
 
   Future<void> fetchNotifications() async {
     try {
       state = const AsyncValue.loading();
-      final response = await _api.get('/api/v1/notification/');
+      final response = await _dio.get('/api/v1/notification/');
       final data = response.data;
       List<dynamic> rawList = [];
       if (data is List) {
@@ -33,7 +34,7 @@ class NotificationListNotifier
 
   Future<void> markAsRead(int notificationId) async {
     try {
-      await _api.post('/api/v1/notification/$notificationId/read/');
+      await _dio.post('/api/v1/notification/$notificationId/read/');
       state.whenData((list) {
         state = AsyncValue.data(
           list.map((n) {
@@ -49,7 +50,7 @@ class NotificationListNotifier
 
   Future<void> markAllAsRead() async {
     try {
-      await _api.post('/api/v1/notification/read-all/');
+      await _dio.post('/api/v1/notification/read-all/');
       state.whenData((list) {
         state = AsyncValue.data(
           list.map((n) => n.copyWith(isRead: true)).toList(),
@@ -61,8 +62,8 @@ class NotificationListNotifier
 
 final notificationListProvider = StateNotifierProvider.autoDispose<
     NotificationListNotifier, AsyncValue<List<NotificationModel>>>((ref) {
-  final api = ref.watch(apiServiceProvider);
-  return NotificationListNotifier(api);
+  final dio = ref.watch(dioProvider);
+  return NotificationListNotifier(dio);
 });
 
 /// 미확인 알림 수 Provider
