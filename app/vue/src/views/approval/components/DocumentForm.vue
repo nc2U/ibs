@@ -37,7 +37,7 @@ const onSubmit = async () => {
     await updateDocument(Number(route.params.docId), buildPayload())
   } else {
     const created = await createDocument(buildPayload())
-    if (created) await router.push({ name: '기안 문서 - 수정', params: { docId: created.id } })
+    if (created) await router.push({ name: '기안 문서함 - 수정', params: { docId: created.id } })
   }
   saving.value = ''
 }
@@ -54,7 +54,7 @@ const onSubmitAndSend = async () => {
   }
   if (docId) {
     await submitDocument(docId)
-    await router.push({ name: '기안 문서' })
+    await router.push({ name: '기안 문서함' })
   }
   saving.value = ''
 }
@@ -193,16 +193,16 @@ onMounted(async () => {
 
             <!-- 하단 버튼 -->
             <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
-              <CButton
+              <v-btn
                 type="submit"
-                color="secondary"
-                variant="outline"
+                color="blue-grey-lighten-2"
                 :disabled="!!saving || !form.doc_type"
+                flat
               >
                 <CSpinner v-if="saving === 'draft'" size="sm" class="me-1" />
                 임시저장
-              </CButton>
-              <CButton
+              </v-btn>
+              <v-btn
                 type="button"
                 color="primary"
                 :disabled="!!saving || !form.doc_type || !form.title"
@@ -210,7 +210,10 @@ onMounted(async () => {
               >
                 <CSpinner v-if="saving === 'submit'" size="sm" class="me-1" />
                 저장 후 상신
-              </CButton>
+              </v-btn>
+              <v-btn color="light" @click="router.push({ name: '기안 문서함' })" flat>
+                목록으로
+              </v-btn>
             </div>
           </CForm>
         </CCardBody>

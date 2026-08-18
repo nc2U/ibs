@@ -124,17 +124,17 @@ const approval = {
   items: [
     {
       component: 'CNavItem',
-      name: '결재 대기',
+      name: '결재 대기함',
       to: '/approval/pending',
     },
     {
       component: 'CNavItem',
-      name: '기안 문서',
+      name: '기안 문서함',
       to: '/approval/drafted',
     },
     {
       component: 'CNavItem',
-      name: '결재 문서',
+      name: '결재 문서함',
       to: '/approval/approved',
     },
   ],

@@ -11,6 +11,7 @@ import type {
   StepStatus,
   ApprovalActionType,
 } from '@/store/types/approval.ts'
+import { CCard } from '@coreui/vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -53,7 +54,7 @@ const STATUS_LABEL: Record<DocumentStatus, string> = {
   cancelled: '취소',
 }
 const STATUS_COLOR: Record<DocumentStatus, string> = {
-  draft: 'secondary',
+  draft: 'blue-grey-lighten-2',
   pending: 'warning',
   approved: 'success',
   rejected: 'danger',
@@ -70,6 +71,12 @@ const STEP_STATUS_COLOR: Record<StepStatus, string> = {
   approved: 'success',
   rejected: 'danger',
   skipped: 'secondary',
+}
+
+const toList = () => {
+  const name = route.name as string
+  const go_route = name.replace(/\s*-\s*보기$/, '')
+  router.replace({ name: go_route })
 }
 
 const getAction = (step: ApprovalStep, userId: number): ApprovalActionRecord | undefined =>
@@ -129,44 +136,47 @@ onMounted(() => fetchDocument(docId.value))
     <CCard class="mb-3">
       <CCardHeader class="d-flex align-items-start justify-content-between flex-wrap gap-2">
         <div>
-          <CBadge :color="STATUS_COLOR[document.status]" class="me-2">
+          <v-chip
+            variant="elevated"
+            size="x-small"
+            :color="STATUS_COLOR[document.status]"
+            class="me-2"
+          >
             {{ STATUS_LABEL[document.status] }}
-          </CBadge>
+          </v-chip>
           <span class="fw-semibold fs-5">{{ document.title }}</span>
         </div>
         <div class="d-flex gap-2 flex-wrap">
-          <CButton
+          <v-btn
             v-if="document.pdf_url"
             color="secondary"
-            variant="outline"
+            variant="outlined"
             size="sm"
             :href="document.pdf_url"
             target="_blank"
           >
             <CIcon name="cilCloudDownload" class="me-1" />PDF
-          </CButton>
-          <CButton
+          </v-btn>
+          <v-btn
             v-if="canSubmit"
-            color="secondary"
-            variant="outline"
-            size="sm"
-            @click="router.push({ name: '기안 문서 - 수정', params: { docId: document.id } })"
+            color="success"
+            variant="outlined"
+            size="small"
+            @click="router.push({ name: '기안 문서함 - 수정', params: { docId: document.id } })"
           >
             수정
-          </CButton>
-          <CButton
+          </v-btn>
+          <v-btn
             v-if="canSubmit"
             color="primary"
-            size="sm"
+            size="small"
             :disabled="submitting"
             @click="confirmSubmit"
           >
             <CSpinner v-if="submitting" size="sm" class="me-1" />
             상신
-          </CButton>
-          <CButton color="secondary" variant="ghost" size="sm" @click="router.back()">
-            목록
-          </CButton>
+          </v-btn>
+          <v-btn color="dark" variant="outlined" size="small" @click="toList"> 목록 </v-btn>
         </div>
       </CCardHeader>
 
@@ -175,24 +185,28 @@ onMounted(() => fetchDocument(docId.value))
         <CTable small bordered responsive class="mb-0">
           <CTableBody>
             <CTableRow>
-              <CTableHeaderCell class="bg-light" style="width: 100px">문서 번호</CTableHeaderCell>
-              <CTableDataCell class="fw-semibold text-primary">{{
-                document.doc_number || '(상신 후 채번)'
-              }}</CTableDataCell>
-              <CTableHeaderCell class="bg-light" style="width: 100px">문서 유형</CTableHeaderCell>
-              <CTableDataCell>{{ document.doc_type_detail?.name }}</CTableDataCell>
+              <CTableHeaderCell class="text-center bg-more-light" style="width: 100px">
+                문서 번호
+              </CTableHeaderCell>
+              <CTableDataCell class="fw-semibold text-primary pl-3">
+                {{ document.doc_number || '(상신 후 채번)' }}
+              </CTableDataCell>
+              <CTableHeaderCell class="text-center bg-more-light" style="width: 100px">
+                문서 유형
+              </CTableHeaderCell>
+              <CTableDataCell class="pl-3">{{ document.doc_type_detail?.name }}</CTableDataCell>
             </CTableRow>
             <CTableRow>
-              <CTableHeaderCell class="bg-light">기안자</CTableHeaderCell>
-              <CTableDataCell>{{ document.drafter?.full_name }}</CTableDataCell>
-              <CTableHeaderCell class="bg-light">기안일시</CTableHeaderCell>
-              <CTableDataCell>{{ fmtDatetime(document.created_at) }}</CTableDataCell>
+              <CTableHeaderCell class="text-center bg-more-light">기안자</CTableHeaderCell>
+              <CTableDataCell class="pl-3">{{ document.drafter?.full_name }}</CTableDataCell>
+              <CTableHeaderCell class="text-center bg-more-light">기안일시</CTableHeaderCell>
+              <CTableDataCell class="pl-3">{{ fmtDatetime(document.created_at) }}</CTableDataCell>
             </CTableRow>
             <CTableRow>
-              <CTableHeaderCell class="bg-light">상신일시</CTableHeaderCell>
-              <CTableDataCell>{{ fmtDatetime(document.submitted_at) }}</CTableDataCell>
-              <CTableHeaderCell class="bg-light">완료일시</CTableHeaderCell>
-              <CTableDataCell>{{ fmtDatetime(document.completed_at) }}</CTableDataCell>
+              <CTableHeaderCell class="text-center bg-more-light">상신일시</CTableHeaderCell>
+              <CTableDataCell class="pl-3">{{ fmtDatetime(document.submitted_at) }}</CTableDataCell>
+              <CTableHeaderCell class="text-center bg-more-light">완료일시</CTableHeaderCell>
+              <CTableDataCell class="pl-3">{{ fmtDatetime(document.completed_at) }}</CTableDataCell>
             </CTableRow>
           </CTableBody>
         </CTable>
@@ -209,19 +223,19 @@ onMounted(() => fetchDocument(docId.value))
           <CTable small bordered responsive class="mb-0">
             <CTableBody>
               <CTableRow v-for="field in document.doc_type_detail.form_schema" :key="field.key">
-                <CTableHeaderCell class="bg-light" style="width: 130px">
+                <CTableHeaderCell class="text-center bg-more-light" style="width: 130px">
                   {{ field.label }}
                 </CTableHeaderCell>
-                <CTableDataCell style="white-space: pre-wrap">
+                <CTableDataCell class="pl-3" style="white-space: pre-wrap">
                   {{ document.content[field.key] || '-' }}
                 </CTableDataCell>
               </CTableRow>
             </CTableBody>
           </CTable>
         </template>
-        <pre v-else class="mb-0 text-muted small">{{
-          JSON.stringify(document.content, null, 2)
-        }}</pre>
+        <pre v-else class="mb-0 text-muted small">
+          {{ JSON.stringify(document.content, null, 2) }}
+        </pre>
       </CCardBody>
     </CCard>
 
@@ -233,7 +247,7 @@ onMounted(() => fetchDocument(docId.value))
           <span class="small text-muted">진행률</span>
           <CProgress
             :value="progressPercent"
-            :color="progressPercent === 100 ? 'success' : 'primary'"
+            :color="progressPercent === 100 ? 'success' : 'warning'"
             style="width: 120px; height: 8px"
           />
           <span class="small fw-semibold">{{ progressPercent }}%</span>
@@ -315,23 +329,23 @@ onMounted(() => fetchDocument(docId.value))
 
                 <!-- 내가 결재할 수 있는 경우 -->
                 <div v-if="canAct(step, approver.id)" class="d-flex gap-1 mt-2">
-                  <CButton
-                    size="sm"
+                  <v-btn
+                    size="small"
                     color="success"
                     class="flex-fill"
                     @click="openActModal('approved')"
                   >
                     승인
-                  </CButton>
-                  <CButton
-                    size="sm"
-                    color="danger"
-                    variant="outline"
+                  </v-btn>
+                  <v-btn
+                    size="small"
+                    color="error"
+                    variant="outlined"
                     class="flex-fill"
                     @click="openActModal('rejected')"
                   >
                     반려
-                  </CButton>
+                  </v-btn>
                 </div>
               </div>
             </div>
@@ -364,15 +378,15 @@ onMounted(() => fetchDocument(docId.value))
       />
     </CModalBody>
     <CModalFooter class="d-flex justify-content-between">
-      <CButton color="secondary" variant="outline" @click="showModal = false">닫기</CButton>
-      <CButton
-        :color="pendingAction === 'approved' ? 'success' : 'danger'"
+      <v-btn color="light" @click="showModal = false" flat>닫기</v-btn>
+      <v-btn
+        :color="pendingAction === 'approved' ? 'success' : 'error'"
         :disabled="acting"
         @click="doAct"
       >
         <CSpinner v-if="acting" size="sm" class="me-1" />
         {{ pendingAction === 'approved' ? '승인 확인' : '반려 확인' }}
-      </CButton>
+      </v-btn>
     </CModalFooter>
   </CModal>
 </template>

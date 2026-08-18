@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useApproval } from '@/store/pinia/approval.ts'
 import type { DocumentStatus } from '@/store/types/approval.ts'
-import { CTable } from '@coreui/vue'
+import { CTable, CTableBody, CTableDataCell, CTableRow } from '@coreui/vue'
 
 const router = useRouter()
 const store = useApproval()
@@ -40,10 +40,10 @@ const statusLabel = (s: DocumentStatus) => {
 
 const statusColor = (s: DocumentStatus) => {
   const m: Record<DocumentStatus, string> = {
-    draft: 'secondary',
+    draft: 'blue-grey-lighten-2',
     pending: 'warning',
     approved: 'success',
-    rejected: 'danger',
+    rejected: 'error',
     cancelled: 'dark',
   }
   return m[s] ?? 'secondary'
@@ -104,9 +104,9 @@ onMounted(fetchMyDrafted)
     <CCol md="4">
       <CInputGroup>
         <CFormInput v-model="searchText" placeholder="제목 검색..." />
-        <CButton color="secondary" variant="outline" @click="resetFilter">
+        <v-btn color="light" variant="outlined" @click="resetFilter">
           <CIcon name="cilReload" />
-        </CButton>
+        </v-btn>
       </CInputGroup>
     </CCol>
     <CCol class="d-flex align-items-center justify-content-between">
@@ -114,23 +114,23 @@ onMounted(fetchMyDrafted)
         총 <strong>{{ filteredList.length }}</strong>
         건
       </span>
-      <CButton color="primary" size="sm" @click="router.push({ name: '기안 문서 - 작성' })">
-        <CIcon name="cilPlus" class="me-1" />새 기안
-      </CButton>
+      <v-btn color="primary" size="small" @click="router.push({ name: '기안 문서함 - 작성' })">
+        <v-icon icon="mdi-plus" class="me-1" />새 기안
+      </v-btn>
     </CCol>
   </CRow>
 
   <!-- 목록 테이블 -->
-  <CTable hover bordered>
+  <CTable hover bordered align="middle">
     <CTableHead color="light">
       <CTableRow>
-        <CTableHeaderCell style="width: 130px">문서 유형</CTableHeaderCell>
+        <CTableHeaderCell class="text-center" style="width: 130px">문서 유형</CTableHeaderCell>
         <CTableHeaderCell>제목</CTableHeaderCell>
-        <CTableHeaderCell class="text-center" style="width: 85px">상태</CTableHeaderCell>
-        <CTableHeaderCell class="text-center" style="width: 60px">단계</CTableHeaderCell>
-        <CTableHeaderCell class="text-center" style="width: 100px">기안일</CTableHeaderCell>
-        <CTableHeaderCell class="text-center" style="width: 100px">완료일</CTableHeaderCell>
-        <CTableHeaderCell class="text-center" style="width: 90px">관리</CTableHeaderCell>
+        <CTableHeaderCell class="text-center" style="width: 100px">상태</CTableHeaderCell>
+        <CTableHeaderCell class="text-center" style="width: 100px">단계</CTableHeaderCell>
+        <CTableHeaderCell class="text-center" style="width: 130px">기안일</CTableHeaderCell>
+        <CTableHeaderCell class="text-center" style="width: 130px">완료일</CTableHeaderCell>
+        <CTableHeaderCell class="text-center" style="width: 100px">관리</CTableHeaderCell>
       </CTableRow>
     </CTableHead>
     <CTableBody>
@@ -138,51 +138,61 @@ onMounted(fetchMyDrafted)
         <CTableDataCell colspan="7" class="text-center text-medium-emphasis py-5">
           <div class="mb-2" style="font-size: 2rem">📄</div>
           <div>기안한 문서가 없습니다.</div>
-          <CButton
+          <v-btn
             color="primary"
-            size="sm"
+            size="small"
             class="mt-3"
-            @click="router.push({ name: '기안 문서 - 작성' })"
+            @click="router.push({ name: '기안 문서함 - 작성' })"
           >
-            <CIcon name="cilPlus" class="me-1" />새 기안 작성
-          </CButton>
+            <v-icon icon="mdi-plus" class="me-1" />새 기안 작성
+          </v-btn>
         </CTableDataCell>
       </CTableRow>
       <CTableRow
         v-for="doc in filteredList"
         :key="doc.id"
         style="cursor: pointer"
-        @click="router.push({ name: '기안 문서 - 보기', params: { docId: doc.id } })"
+        @click="router.push({ name: '기안 문서함 - 보기', params: { docId: doc.id } })"
       >
-        <CTableDataCell>
-          <CBadge color="primary" shape="rounded-pill">{{ doc.doc_type_name }}</CBadge>
+        <CTableDataCell class="text-center">
+          <v-chip color="primary" variant="elevated" size="x-small">{{ doc.doc_type_name }}</v-chip>
         </CTableDataCell>
         <CTableDataCell class="fw-semibold">{{ doc.title }}</CTableDataCell>
         <CTableDataCell class="text-center">
-          <CBadge :color="statusColor(doc.status)">{{ statusLabel(doc.status) }}</CBadge>
+          <v-chip size="x-small" variant="elevated" :color="statusColor(doc.status)">{{
+            statusLabel(doc.status)
+          }}</v-chip>
         </CTableDataCell>
         <CTableDataCell class="text-center">
           <span v-if="doc.status === 'pending'">{{ doc.current_step }}단계</span>
           <span v-else class="text-medium-emphasis">-</span>
         </CTableDataCell>
-        <CTableDataCell class="text-center text-medium-emphasis small">
+        <CTableDataCell class="text-center text-medium-emphasis">
           {{ fmtDate(doc.created_at) }}
         </CTableDataCell>
-        <CTableDataCell class="text-center text-medium-emphasis small">
+        <CTableDataCell class="text-center text-medium-emphasis">
           {{ fmtDate(doc.completed_at) }}
         </CTableDataCell>
-        <CTableDataCell class="text-center" @click.stop>
-          <CDropdown variant="btn-group" popper="true">
-            <CDropdownToggle color="secondary" variant="outline" size="sm">···</CDropdownToggle>
+        <CTableDataCell class="text-center py-0" @click.stop>
+          <CDropdown color="secondary" variant="input-group" placement="bottom-end">
+            <CDropdownToggle
+              :caret="true"
+              color="secondary"
+              variant="ghost"
+              shape="rounded-pill"
+              size="sm"
+            >
+              관리
+            </CDropdownToggle>
             <CDropdownMenu>
               <CDropdownItem
-                @click="router.push({ name: '기안 문서 - 보기', params: { docId: doc.id } })"
+                @click="router.push({ name: '기안 문서함 - 보기', params: { docId: doc.id } })"
               >
                 상세 보기
               </CDropdownItem>
               <CDropdownItem
                 v-if="doc.status === 'draft' || doc.status === 'rejected'"
-                @click="router.push({ name: '기안 문서 - 수정', params: { docId: doc.id } })"
+                @click="router.push({ name: '기안 문서함 - 수정', params: { docId: doc.id } })"
               >
                 수정
               </CDropdownItem>
@@ -220,10 +230,10 @@ onMounted(fetchMyDrafted)
       </CAlert>
     </CModalBody>
     <CModalFooter>
-      <CButton color="secondary" variant="outline" @click="showSubmitModal = false">취소</CButton>
-      <CButton color="primary" :disabled="processing" @click="doSubmit">
+      <v-btn color="secondary" variant="outlined" @click="showSubmitModal = false">취소</v-btn>
+      <v-btn color="primary" :disabled="processing" @click="doSubmit">
         <CSpinner v-if="processing" size="sm" class="me-1" />상신 확인
-      </CButton>
+      </v-btn>
     </CModalFooter>
   </CModal>
 
@@ -239,10 +249,10 @@ onMounted(fetchMyDrafted)
       </CAlert>
     </CModalBody>
     <CModalFooter>
-      <CButton color="secondary" variant="outline" @click="showCancelModal = false">닫기</CButton>
-      <CButton color="danger" :disabled="processing" @click="doCancel">
+      <v-btn color="secondary" variant="outlined" @click="showCancelModal = false">닫기</v-btn>
+      <v-btn color="danger" :disabled="processing" @click="doCancel">
         <CSpinner v-if="processing" size="sm" class="me-1" />취소 확인
-      </CButton>
+      </v-btn>
     </CModalFooter>
   </CModal>
 </template>

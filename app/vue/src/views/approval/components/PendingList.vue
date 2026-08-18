@@ -35,8 +35,7 @@ const fmtDate = (d: string | null) => {
   })
 }
 
-const goDetail = (id: number) =>
-  router.push({ name: '결재 대기 문서 - 보기', params: { docId: id } })
+const goDetail = (id: number) => router.push({ name: '결재 대기함 - 보기', params: { docId: id } })
 
 const openActModal = (doc: ApprovalDocument) => {
   selectedDoc.value = doc
@@ -80,15 +79,15 @@ onMounted(fetchMyPending)
   </CRow>
 
   <!-- 목록 테이블 -->
-  <CTable hover responsive bordered>
+  <CTable hover responsive bordered align="middle">
     <CTableHead color="light">
       <CTableRow>
         <CTableHeaderCell class="text-center" style="width: 130px">문서 유형</CTableHeaderCell>
         <CTableHeaderCell class="pl-3">제목</CTableHeaderCell>
-        <CTableHeaderCell class="text-center" style="width: 90px">기안자</CTableHeaderCell>
-        <CTableHeaderCell class="text-center" style="width: 140px">상신일시</CTableHeaderCell>
-        <CTableHeaderCell class="text-center" style="width: 70px">단계</CTableHeaderCell>
-        <CTableHeaderCell class="text-center" style="width: 130px">처리</CTableHeaderCell>
+        <CTableHeaderCell class="text-center" style="width: 150px">기안자</CTableHeaderCell>
+        <CTableHeaderCell class="text-center" style="width: 200px">상신일시</CTableHeaderCell>
+        <CTableHeaderCell class="text-center" style="width: 90px">단계</CTableHeaderCell>
+        <CTableHeaderCell class="text-center" style="width: 150px">처리</CTableHeaderCell>
       </CTableRow>
     </CTableHead>
     <CTableBody>
@@ -105,7 +104,7 @@ onMounted(fetchMyPending)
         @click="goDetail(doc.id)"
       >
         <CTableDataCell class="text-center">
-          <CBadge color="primary" shape="rounded-pill">{{ doc.doc_type_name }}</CBadge>
+          <v-chip color="primary" variant="elevated" size="x-small">{{ doc.doc_type_name }}</v-chip>
         </CTableDataCell>
         <CTableDataCell class="pl-3 fw-semibold">{{ doc.title }}</CTableDataCell>
         <CTableDataCell class="text-center">{{ doc.drafter.full_name }}</CTableDataCell>
@@ -113,19 +112,13 @@ onMounted(fetchMyPending)
           {{ fmtDate(doc.submitted_at) }}
         </CTableDataCell>
         <CTableDataCell class="text-center">
-          <CBadge color="warning">{{ doc.current_step }}단계</CBadge>
+          <v-chip color="warning" variant="elevated" size="x-small">
+            {{ doc.current_step }}단계
+          </v-chip>
         </CTableDataCell>
         <CTableDataCell class="text-center" @click.stop>
-          <CButton
-            size="sm"
-            color="secondary"
-            variant="outline"
-            class="me-1"
-            @click="goDetail(doc.id)"
-          >
-            보기
-          </CButton>
-          <CButton size="sm" color="success" @click="openActModal(doc)"> 결재 </CButton>
+          <v-btn size="x-small" color="info" class="me-1" @click="goDetail(doc.id)"> 보기 </v-btn>
+          <v-btn size="x-small" color="success" @click="openActModal(doc)"> 결재 </v-btn>
         </CTableDataCell>
       </CTableRow>
     </CTableBody>
@@ -144,15 +137,15 @@ onMounted(fetchMyPending)
       <CTable small bordered class="mb-3">
         <CTableBody>
           <CTableRow>
-            <CTableHeaderCell class="bg-light" style="width: 80px">유형</CTableHeaderCell>
+            <CTableHeaderCell class="light" style="width: 80px">유형</CTableHeaderCell>
             <CTableDataCell>
               <CBadge color="primary">{{ selectedDoc.doc_type_name }}</CBadge>
             </CTableDataCell>
-            <CTableHeaderCell class="bg-light" style="width: 80px">기안자</CTableHeaderCell>
+            <CTableHeaderCell class="light" style="width: 80px">기안자</CTableHeaderCell>
             <CTableDataCell>{{ selectedDoc.drafter.full_name }}</CTableDataCell>
           </CTableRow>
           <CTableRow>
-            <CTableHeaderCell class="bg-light">제목</CTableHeaderCell>
+            <CTableHeaderCell class="light">제목</CTableHeaderCell>
             <CTableDataCell colspan="3" class="fw-semibold">{{ selectedDoc.title }}</CTableDataCell>
           </CTableRow>
         </CTableBody>
@@ -169,18 +162,18 @@ onMounted(fetchMyPending)
       />
     </CModalBody>
     <CModalFooter class="d-flex justify-content-between">
-      <CButton color="secondary" variant="outline" @click="showModal = false">닫기</CButton>
+      <v-btn color="secondary" variant="outlined" @click="showModal = false">닫기</v-btn>
       <div class="d-flex gap-2">
-        <CButton color="danger" variant="outline" :disabled="!!acting" @click="doAct('rejected')">
-          <CSpinner v-if="acting === 'rejected'" size="sm" class="me-1" />
-          <span v-else>✗</span>
-          반려
-        </CButton>
-        <CButton color="success" :disabled="!!acting" @click="doAct('approved')">
+        <v-btn color="success" :disabled="!!acting" @click="doAct('approved')">
           <CSpinner v-if="acting === 'approved'" size="sm" class="me-1" />
-          <span v-else>✓</span>
+          <span v-else class="mr-2">✓</span>
           승인
-        </CButton>
+        </v-btn>
+        <v-btn color="error" variant="outlined" :disabled="!!acting" @click="doAct('rejected')">
+          <CSpinner v-if="acting === 'rejected'" size="sm" class="me-1" />
+          <span v-else class="mr-2">✗</span>
+          반려
+        </v-btn>
       </div>
     </CModalFooter>
   </CModal>

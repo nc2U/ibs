@@ -35,17 +35,19 @@ onBeforeMount(async () => {
 
     <ContentBody>
       <CCardBody class="pb-5">
-        <PendingList v-if="route.name === '결재 대기'" />
+        <PendingList v-if="route.name === '결재 대기함'" />
 
-        <DraftedList v-else-if="route.name === '기안 문서'" />
+        <DraftedList v-else-if="route.name === '기안 문서함'" />
 
         <DocumentDetail
           v-else-if="
-            /결재 대기 문서 - 보기|기안 문서 - 보기|결재 문서 - 보기/.test(route.name as string)
+            /결재 대기함 - 보기|기안 문서함 - 보기|결재 문서함 - 보기/.test(route.name as string)
           "
         />
 
-        <DocumentForm v-else-if="/기안 문서 - 작성|기안 문서 - 수정/.test(route.name as string)" />
+        <DocumentForm
+          v-else-if="/기안 문서함 - 작성|기안 문서함 - 수정/.test(route.name as string)"
+        />
       </CCardBody>
     </ContentBody>
   </ComAuthGuard>
