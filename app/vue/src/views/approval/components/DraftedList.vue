@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useApproval } from '@/store/pinia/approval.ts'
 import type { DocumentStatus } from '@/store/types/approval.ts'
+import { CTable } from '@coreui/vue'
 
 const router = useRouter()
 const store = useApproval()
@@ -120,7 +121,7 @@ onMounted(fetchMyDrafted)
   </CRow>
 
   <!-- 목록 테이블 -->
-  <CTable hover responsive bordered>
+  <CTable hover bordered>
     <CTableHead color="light">
       <CTableRow>
         <CTableHeaderCell style="width: 130px">문서 유형</CTableHeaderCell>
@@ -171,10 +172,14 @@ onMounted(fetchMyDrafted)
           {{ fmtDate(doc.completed_at) }}
         </CTableDataCell>
         <CTableDataCell class="text-center" @click.stop>
-          <CDropdown variant="btn-group">
+          <CDropdown variant="btn-group" popper="true">
             <CDropdownToggle color="secondary" variant="outline" size="sm">···</CDropdownToggle>
             <CDropdownMenu>
-              <CDropdownItem @click="router.push(`/approval/${doc.id}`)"> 상세 보기 </CDropdownItem>
+              <CDropdownItem
+                @click="router.push({ name: '기안 문서 - 보기', params: { docId: doc.id } })"
+              >
+                상세 보기
+              </CDropdownItem>
               <CDropdownItem
                 v-if="doc.status === 'draft' || doc.status === 'rejected'"
                 @click="router.push({ name: '기안 문서 - 수정', params: { docId: doc.id } })"
