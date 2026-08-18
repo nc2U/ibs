@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useApproval } from '@/store/pinia/approval.ts'
 import type { DocumentStatus } from '@/store/types/approval.ts'
-import { CTable, CTableBody, CTableDataCell, CTableRow } from '@coreui/vue'
+import { CButton, CTable, CTableBody, CTableDataCell, CTableRow } from '@coreui/vue'
 
 const router = useRouter()
 const store = useApproval()
@@ -104,9 +104,7 @@ onMounted(fetchMyDrafted)
     <CCol md="4">
       <CInputGroup>
         <CFormInput v-model="searchText" placeholder="제목 검색..." />
-        <v-btn color="light" variant="outlined" @click="resetFilter">
-          <CIcon name="cilReload" />
-        </v-btn>
+        <CButton color="light" @click="resetFilter"> <v-icon icon="mdi-magnify" /> 검색 </CButton>
       </CInputGroup>
     </CCol>
     <CCol class="d-flex align-items-center justify-content-between">

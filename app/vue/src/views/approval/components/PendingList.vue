@@ -64,8 +64,8 @@ onMounted(fetchMyPending)
     <CCol md="5">
       <CInputGroup>
         <CFormInput v-model="searchText" placeholder="제목 또는 문서 유형 검색..." />
-        <CButton color="secondary" variant="outline" @click="searchText = ''">
-          <CIcon name="cilReload" />
+        <CButton color="light" @click="searchText = ''">
+          <v-icon icon="mdi-magnify" /> 검색
         </CButton>
       </CInputGroup>
     </CCol>

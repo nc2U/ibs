@@ -147,15 +147,16 @@ onMounted(() => fetchDocument(docId.value))
           <span class="fw-semibold fs-5">{{ document.title }}</span>
         </div>
         <div class="d-flex gap-2 flex-wrap">
+          <v-btn color="light" size="small" @click="toList" flat> 목록 </v-btn>
           <v-btn
             v-if="document.pdf_url"
-            color="secondary"
-            variant="outlined"
-            size="sm"
+            color="light"
+            size="small"
             :href="document.pdf_url"
             target="_blank"
+            class="no-underline text-muted"
           >
-            <CIcon name="cilCloudDownload" class="me-1" />PDF
+            <v-icon icon="mdi-download" color="error" class="me-1" />PDF
           </v-btn>
           <v-btn
             v-if="canSubmit"
@@ -176,7 +177,6 @@ onMounted(() => fetchDocument(docId.value))
             <CSpinner v-if="submitting" size="sm" class="me-1" />
             상신
           </v-btn>
-          <v-btn color="dark" variant="outlined" size="small" @click="toList"> 목록 </v-btn>
         </div>
       </CCardHeader>
 
