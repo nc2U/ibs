@@ -54,6 +54,8 @@ class Department(models.Model):
                                              help_text='부서 간 상하 소속 관계에 의한 단계, 최상위 부서인 경우 1단계 이후 각 뎁스 마다 1씩 증가')
     name = models.CharField('부서', max_length=30, db_index=True)
     task = models.CharField('주요 업무', max_length=255, null=True, blank=True)
+    manager = models.ForeignKey('Staff', on_delete=models.SET_NULL, null=True, blank=True,
+                                related_name='managed_departs', verbose_name='책임자')
 
     def __str__(self):
         return self.name
