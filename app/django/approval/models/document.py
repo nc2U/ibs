@@ -28,7 +28,7 @@ class ApprovalDocument(models.Model):
         related_name='documents', verbose_name='문서 유형'
     )
     doc_number = models.CharField(
-        '문서 번호', max_length=30, unique=True, blank=True,
+        '문서 번호', max_length=30, unique=True, blank=True, null=True, default=None,
         help_text='승인 후 자동 채번 (예: BIZ-2026-0001)'
     )
     title = models.CharField('제목', max_length=255)

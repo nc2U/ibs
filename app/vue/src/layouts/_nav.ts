@@ -129,7 +129,7 @@ const approval = {
     },
     {
       component: 'CNavItem',
-      name: '기 안 함',
+      name: '기안함',
       to: '/approval/drafted',
     },
   ],

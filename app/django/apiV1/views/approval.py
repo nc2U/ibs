@@ -38,9 +38,9 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         qs = ApprovalDocument.objects.select_related(
-            'doc_type', 'drafter', 'workspace'
+            'doc_type', 'drafter', 'drafter__profile', 'workspace'
         ).prefetch_related(
-            'steps__approvers', 'steps__actions__approver'
+            'steps__approvers__profile', 'steps__actions__approver__profile'
         )
         if user.is_superuser:
             return qs
@@ -194,7 +194,7 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
             steps__status=ApprovalStep.STATUS_PENDING,
             steps__step_order=F('current_step'),
             steps__approvers=request.user,
-        ).select_related('doc_type', 'drafter').distinct()
+        ).select_related('doc_type', 'drafter', 'drafter__profile').distinct()
 
         serializer = ApprovalDocumentListSerializer(qs, many=True, context={'request': request})
         return Response(serializer.data)
@@ -205,7 +205,7 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
         """내가 기안한 문서 목록"""
         qs = ApprovalDocument.objects.filter(
             drafter=request.user
-        ).select_related('doc_type', 'drafter').order_by('-created_at')
+        ).select_related('doc_type', 'drafter', 'drafter__profile').order_by('-created_at')
 
         serializer = ApprovalDocumentListSerializer(qs, many=True, context={'request': request})
         return Response(serializer.data)

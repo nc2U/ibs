@@ -11,7 +11,11 @@ class SimpleUserSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
 
     def get_full_name(self, obj):
-        return obj.get_full_name() or obj.username
+        # Profile.name 우선, 없으면 username 반환
+        try:
+            return obj.profile.name or obj.username
+        except Exception:
+            return obj.username
 
     class Meta:
         model = User
