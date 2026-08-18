@@ -94,11 +94,10 @@ const AppSidebarNav = defineComponent({
     const predicates = computed(() => {
       // 권한 키별 접근 제어 매핑
       const authMap: Record<string, boolean> = {
-        isComMenu: isStaff.value && (isFinancial.value || docsRead.value || hrWorkRead.value),
+        isStaff: isStaff.value,
         isFinancial: isFinancial.value,
         isComDocs: isStaff.value && docsRead.value,
         isComHrWork: isStaff.value && hrWorkRead.value,
-        isTest: account.userInfo?.pk === 1,
 
         isContract: contractRead.value,
         isPayment: paymentRead.value,

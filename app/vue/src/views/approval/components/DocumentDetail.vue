@@ -25,8 +25,7 @@ const docId = computed(() => Number(route.params.docId))
 const isMyDoc = computed(() => document.value?.drafter?.id === myUser.value?.pk)
 const canSubmit = computed(
   () =>
-    isMyDoc.value &&
-    (document.value?.status === 'draft' || document.value?.status === 'rejected'),
+    isMyDoc.value && (document.value?.status === 'draft' || document.value?.status === 'rejected'),
 )
 
 const showModal = ref(false)
@@ -151,7 +150,7 @@ onMounted(() => fetchDocument(docId.value))
             color="secondary"
             variant="outline"
             size="sm"
-            @click="router.push(`/approval/${document.id}/edit`)"
+            @click="router.push({ name: '기안 문서 - 수정', params: { docId: document.id } })"
           >
             수정
           </CButton>
@@ -209,10 +208,7 @@ onMounted(() => fetchDocument(docId.value))
         <template v-if="document.doc_type_detail?.form_schema?.length">
           <CTable small bordered responsive class="mb-0">
             <CTableBody>
-              <CTableRow
-                v-for="field in document.doc_type_detail.form_schema"
-                :key="field.key"
-              >
+              <CTableRow v-for="field in document.doc_type_detail.form_schema" :key="field.key">
                 <CTableHeaderCell class="bg-light" style="width: 130px">
                   {{ field.label }}
                 </CTableHeaderCell>
@@ -223,7 +219,9 @@ onMounted(() => fetchDocument(docId.value))
             </CTableBody>
           </CTable>
         </template>
-        <pre v-else class="mb-0 text-muted small">{{ JSON.stringify(document.content, null, 2) }}</pre>
+        <pre v-else class="mb-0 text-muted small">{{
+          JSON.stringify(document.content, null, 2)
+        }}</pre>
       </CCardBody>
     </CCard>
 
@@ -255,8 +253,7 @@ onMounted(() => fetchDocument(docId.value))
             :class="{
               'step-approved': step.status === 'approved',
               'step-rejected': step.status === 'rejected',
-              'step-active':
-                step.status === 'pending' && document.current_step === step.step_order,
+              'step-active': step.status === 'pending' && document.current_step === step.step_order,
               'step-pending':
                 step.status === 'pending' && document.current_step !== step.step_order,
             }"

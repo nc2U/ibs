@@ -110,9 +110,10 @@ onMounted(fetchMyDrafted)
     </CCol>
     <CCol class="d-flex align-items-center justify-content-between">
       <span class="text-muted small">
-        총 <strong>{{ filteredList.length }}</strong>건
+        총 <strong>{{ filteredList.length }}</strong>
+        건
       </span>
-      <CButton color="primary" size="sm" @click="router.push('/approval/create')">
+      <CButton color="primary" size="sm" @click="router.push({ name: '기안 문서 - 작성' })">
         <CIcon name="cilPlus" class="me-1" />새 기안
       </CButton>
     </CCol>
@@ -140,7 +141,7 @@ onMounted(fetchMyDrafted)
             color="primary"
             size="sm"
             class="mt-3"
-            @click="router.push('/approval/create')"
+            @click="router.push({ name: '기안 문서 - 작성' })"
           >
             <CIcon name="cilPlus" class="me-1" />새 기안 작성
           </CButton>
@@ -150,7 +151,7 @@ onMounted(fetchMyDrafted)
         v-for="doc in filteredList"
         :key="doc.id"
         style="cursor: pointer"
-        @click="router.push(`/approval/${doc.id}`)"
+        @click="router.push({ name: '기안 문서 - 보기', params: { docId: doc.id } })"
       >
         <CTableDataCell>
           <CBadge color="primary" shape="rounded-pill">{{ doc.doc_type_name }}</CBadge>
@@ -163,22 +164,20 @@ onMounted(fetchMyDrafted)
           <span v-if="doc.status === 'pending'">{{ doc.current_step }}단계</span>
           <span v-else class="text-medium-emphasis">-</span>
         </CTableDataCell>
-        <CTableDataCell class="text-center text-medium-emphasis small">{{
-          fmtDate(doc.created_at)
-        }}</CTableDataCell>
-        <CTableDataCell class="text-center text-medium-emphasis small">{{
-          fmtDate(doc.completed_at)
-        }}</CTableDataCell>
+        <CTableDataCell class="text-center text-medium-emphasis small">
+          {{ fmtDate(doc.created_at) }}
+        </CTableDataCell>
+        <CTableDataCell class="text-center text-medium-emphasis small">
+          {{ fmtDate(doc.completed_at) }}
+        </CTableDataCell>
         <CTableDataCell class="text-center" @click.stop>
           <CDropdown variant="btn-group">
             <CDropdownToggle color="secondary" variant="outline" size="sm">···</CDropdownToggle>
             <CDropdownMenu>
-              <CDropdownItem @click="router.push(`/approval/${doc.id}`)">
-                상세 보기
-              </CDropdownItem>
+              <CDropdownItem @click="router.push(`/approval/${doc.id}`)"> 상세 보기 </CDropdownItem>
               <CDropdownItem
                 v-if="doc.status === 'draft' || doc.status === 'rejected'"
-                @click="router.push(`/approval/${doc.id}/edit`)"
+                @click="router.push({ name: '기안 문서 - 수정', params: { docId: doc.id } })"
               >
                 수정
               </CDropdownItem>

@@ -12,33 +12,52 @@ const approval = {
   children: [
     {
       path: 'pending',
-      name: '결재 대기함',
+      name: '결재 대기',
       component: () => import('@/views/approval/Index.vue'),
-      meta: { title: '결재 대기함', auth: true },
-    },
-    {
-      path: ':docId(\\d+)',
-      name: '결재문서 상세',
-      component: () => import('@/views/approval/Index.vue'),
-      meta: { title: '결재 대기함', auth: true },
+      meta: { title: '결재 대기', auth: true },
+      children: [
+        {
+          path: ':docId(\\d+)',
+          name: '결재 대기 문서 - 보기',
+          component: () => import('@/views/approval/Index.vue'),
+        },
+      ],
     },
     {
       path: 'drafted',
-      name: '기안함',
+      name: '기안 문서',
       component: () => import('@/views/approval/Index.vue'),
-      meta: { title: '기안함', auth: true },
+      meta: { title: '기안 문서', auth: true },
+      children: [
+        {
+          path: ':docId(\\d+)',
+          name: '기안 문서 - 보기',
+          component: () => import('@/views/approval/Index.vue'),
+        },
+        {
+          path: 'create',
+          name: '기안 문서 - 작성',
+          component: () => import('@/views/approval/Index.vue'),
+        },
+        {
+          path: ':docId(\\d+)/edit',
+          name: '기안 문서 - 수정',
+          component: () => import('@/views/approval/Index.vue'),
+        },
+      ],
     },
     {
-      path: 'create',
-      name: '결재문서 작성',
+      path: 'approved',
+      name: '결재 문서',
       component: () => import('@/views/approval/Index.vue'),
-      meta: { title: '기안함', auth: true },
-    },
-    {
-      path: ':docId(\\d+)/edit',
-      name: '결재문서 수정',
-      component: () => import('@/views/approval/Index.vue'),
-      meta: { title: '기안함', auth: true },
+      meta: { title: '결재 문서', auth: true },
+      children: [
+        {
+          path: ':docId(\\d+)',
+          name: '결재 문서 - 보기',
+          component: () => import('@/views/approval/Index.vue'),
+        },
+      ],
     },
   ],
 }

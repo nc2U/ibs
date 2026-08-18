@@ -119,18 +119,23 @@ const approval = {
   component: 'CNavGroup',
   name: '전자 결재 관리',
   to: '/approval',
-  auth: 'isTest',
+  auth: 'isStaff',
   icon: 'cil-check-circle',
   items: [
     {
       component: 'CNavItem',
-      name: '결재 대기함',
+      name: '결재 대기',
       to: '/approval/pending',
     },
     {
       component: 'CNavItem',
-      name: '기안함',
+      name: '기안 문서',
       to: '/approval/drafted',
+    },
+    {
+      component: 'CNavItem',
+      name: '결재 문서',
+      to: '/approval/approved',
     },
   ],
 }
@@ -445,7 +450,7 @@ const nav = [
   {
     component: 'CNavTitle',
     name: '본사 관리',
-    auth: 'isComMenu',
+    auth: 'isStaff',
   },
   companyLedger,
   companyDocs,

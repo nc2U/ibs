@@ -37,7 +37,7 @@ const onSubmit = async () => {
     await updateDocument(Number(route.params.docId), buildPayload())
   } else {
     const created = await createDocument(buildPayload())
-    if (created) router.push(`/approval/${created.id}/edit`)
+    if (created) await router.push({ name: '기안 문서 - 수정', params: { docId: created.id } })
   }
   saving.value = ''
 }
@@ -54,7 +54,7 @@ const onSubmitAndSend = async () => {
   }
   if (docId) {
     await submitDocument(docId)
-    router.push('/approval/drafted')
+    await router.push({ name: '기안 문서' })
   }
   saving.value = ''
 }
@@ -129,11 +129,7 @@ onMounted(async () => {
 
             <!-- 동적 양식 필드 (form_schema) -->
             <template v-if="selectedDocType">
-              <CRow
-                v-for="field in selectedDocType.form_schema"
-                :key="field.key"
-                class="mb-3"
-              >
+              <CRow v-for="field in selectedDocType.form_schema" :key="field.key" class="mb-3">
                 <CFormLabel class="col-sm-3 col-form-label">
                   {{ field.label }}
                   <span v-if="field.required" class="text-danger">*</span>
@@ -171,10 +167,7 @@ onMounted(async () => {
                 <CIcon name="cilPeople" class="me-1" />결재선 미리보기
               </p>
               <div class="d-flex align-items-start flex-wrap gap-0">
-                <template
-                  v-for="(step, idx) in selectedDocType.route_templates"
-                  :key="step.id"
-                >
+                <template v-for="(step, idx) in selectedDocType.route_templates" :key="step.id">
                   <div class="route-step-card text-center">
                     <div class="text-muted mb-1" style="font-size: 0.72rem">
                       {{ step.step_order }}단계
@@ -191,10 +184,7 @@ onMounted(async () => {
                     </CBadge>
                   </div>
                   <!-- 화살표 연결 (마지막 제외) -->
-                  <div
-                    v-if="idx < selectedDocType!.route_templates.length - 1"
-                    class="route-arrow"
-                  >
+                  <div v-if="idx < selectedDocType!.route_templates.length - 1" class="route-arrow">
                     →
                   </div>
                 </template>

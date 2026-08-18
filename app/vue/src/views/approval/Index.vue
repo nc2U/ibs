@@ -8,6 +8,7 @@ import PendingList from '@/views/approval/components/PendingList.vue'
 import DraftedList from '@/views/approval/components/DraftedList.vue'
 import DocumentForm from '@/views/approval/components/DocumentForm.vue'
 import DocumentDetail from '@/views/approval/components/DocumentDetail.vue'
+import ComAuthGuard from '@/components/AuthGuard/ComAuthGuard.vue'
 
 const route = useRoute()
 
@@ -23,7 +24,7 @@ onBeforeMount(async () => {
 </script>
 
 <template>
-  <ComDocsAuthGuard>
+  <ComAuthGuard>
     <Loading v-model:active="loading" />
     <ContentHeader
       :page-title="pageTitle"
@@ -34,16 +35,18 @@ onBeforeMount(async () => {
 
     <ContentBody>
       <CCardBody class="pb-5">
-        <PendingList v-if="route.name === '결재 대기함'" />
+        <PendingList v-if="route.name === '결재 대기'" />
 
-        <DraftedList v-else-if="route.name === '기안함'" />
+        <DraftedList v-else-if="route.name === '기안 문서'" />
 
-        <DocumentForm v-else-if="route.name === '결재문서 작성'" />
+        <DocumentDetail
+          v-else-if="
+            /결재 대기 문서 - 보기|기안 문서 - 보기|결재 문서 - 보기/.test(route.name as string)
+          "
+        />
 
-        <DocumentDetail v-else-if="route.name === '결재문서 상세'" />
-
-        <DocumentForm v-else-if="route.name === '결재문서 수정'" />
+        <DocumentForm v-else-if="/기안 문서 - 작성|기안 문서 - 수정/.test(route.name as string)" />
       </CCardBody>
     </ContentBody>
-  </ComDocsAuthGuard>
+  </ComAuthGuard>
 </template>

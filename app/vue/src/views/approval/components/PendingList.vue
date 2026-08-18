@@ -20,8 +20,7 @@ const filteredList = computed(() => {
   if (!searchText.value) return pendingList.value
   const q = searchText.value.toLowerCase()
   return pendingList.value.filter(
-    d =>
-      d.title.toLowerCase().includes(q) || (d.doc_type_name ?? '').toLowerCase().includes(q),
+    d => d.title.toLowerCase().includes(q) || (d.doc_type_name ?? '').toLowerCase().includes(q),
   )
 })
 
@@ -73,7 +72,8 @@ onMounted(fetchMyPending)
     <CCol class="d-flex align-items-center">
       <span class="text-muted small">
         대기 중
-        <strong class="text-danger ms-1">{{ filteredList.length }}</strong>건
+        <strong class="text-danger ms-1">{{ filteredList.length }}</strong>
+        건
       </span>
     </CCol>
   </CRow>
@@ -82,8 +82,8 @@ onMounted(fetchMyPending)
   <CTable hover responsive bordered>
     <CTableHead color="light">
       <CTableRow>
-        <CTableHeaderCell style="width: 130px">문서 유형</CTableHeaderCell>
-        <CTableHeaderCell>제목</CTableHeaderCell>
+        <CTableHeaderCell class="text-center" style="width: 130px">문서 유형</CTableHeaderCell>
+        <CTableHeaderCell class="pl-3">제목</CTableHeaderCell>
         <CTableHeaderCell class="text-center" style="width: 90px">기안자</CTableHeaderCell>
         <CTableHeaderCell class="text-center" style="width: 140px">상신일시</CTableHeaderCell>
         <CTableHeaderCell class="text-center" style="width: 70px">단계</CTableHeaderCell>
@@ -103,10 +103,10 @@ onMounted(fetchMyPending)
         style="cursor: pointer"
         @click="goDetail(doc.id)"
       >
-        <CTableDataCell>
+        <CTableDataCell class="text-center">
           <CBadge color="primary" shape="rounded-pill">{{ doc.doc_type_name }}</CBadge>
         </CTableDataCell>
-        <CTableDataCell class="fw-semibold">{{ doc.title }}</CTableDataCell>
+        <CTableDataCell class="pl-3 fw-semibold">{{ doc.title }}</CTableDataCell>
         <CTableDataCell class="text-center">{{ doc.drafter.full_name }}</CTableDataCell>
         <CTableDataCell class="text-center text-medium-emphasis small">
           {{ fmtDate(doc.submitted_at) }}
