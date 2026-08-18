@@ -35,7 +35,8 @@ const fmtDate = (d: string | null) => {
   })
 }
 
-const goDetail = (id: number) => router.push(`/approval/${id}`)
+const goDetail = (id: number) =>
+  router.push({ name: '결재 대기 문서 - 보기', params: { docId: id } })
 
 const openActModal = (doc: ApprovalDocument) => {
   selectedDoc.value = doc
