@@ -46,12 +46,29 @@ def build_dynamic_approval_route(doc_type: DocumentType, drafter_user, drafter_a
                 staff__user=drafter_user
             ).select_related('company', 'department', 'position', 'duty').first()
 
+        if not assignment:
+            # StaffAssignment가 아직 없는 경우 Staff 정보로부터 fallback
+            staff = Staff.objects.filter(user=drafter_user).select_related('company', 'department', 'position', 'duty').first()
+            if staff and staff.department:
+                assignment, _ = StaffAssignment.objects.get_or_create(
+                    staff=staff,
+                    department=staff.department,
+                    defaults={
+                        'company': staff.company,
+                        'position': staff.position,
+                        'duty': staff.duty,
+                        'is_primary': True,
+                        'assigned_tasks': '기본 보직',
+                    }
+                )
+
     steps = []
     step_order = 1
     reached_final = False
     added_user_ids = {drafter_user.id} if drafter_user else set()
 
-    company = assignment.company if assignment else None
+    from company.models import Company
+    company = assignment.company if assignment else Company.objects.filter(is_default=True).first()
 
     # (1) 부서 트리 상향 순회 (직속 부서장 → 상위 부서장 → ...)
     if assignment and assignment.department:

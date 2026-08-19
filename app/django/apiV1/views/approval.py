@@ -143,16 +143,30 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
         route_steps = build_dynamic_approval_route(document.doc_type, document.drafter, assignment)
 
         if not route_steps:
-            # 결재선이 없는 경우 (예: 대표이사 본인 기안 등) -> 즉시 최종 승인 처리
-            document.status = ApprovalDocument.STATUS_APPROVED
-            document.completed_at = timezone.now()
-            document.doc_number = document.generate_doc_number()
-            document.content_hash = document.compute_hash()
-            document.submitted_at = timezone.now()
-            document.save()
-            generate_approval_pdf_task.delay(document.pk)
-            serializer = ApprovalDocumentSerializer(document, context={'request': request})
-            return Response(serializer.data)
+            # 기안자가 대표이사 본인인지 확인
+            is_ceo = False
+            if assignment and assignment.duty and assignment.duty.name == '대표이사':
+                is_ceo = True
+            elif Staff.objects.filter(user=request.user, duty__name='대표이사').exists():
+                is_ceo = True
+
+            if is_ceo:
+                # 대표이사 본인 기안인 경우 -> 즉시 최종 승인 처리
+                document.status = ApprovalDocument.STATUS_APPROVED
+                document.completed_at = timezone.now()
+                document.doc_number = document.generate_doc_number()
+                document.content_hash = document.compute_hash()
+                document.submitted_at = timezone.now()
+                document.save()
+                generate_approval_pdf_task.delay(document.pk)
+                serializer = ApprovalDocumentSerializer(document, context={'request': request})
+                return Response(serializer.data)
+            else:
+                # 일반 직원의 결재선이 0단계로 나온 경우 (조직도/부서장/대표이사 계정 미연동) -> 상신 차단
+                return Response(
+                    {'detail': '지정된 결재선이 없습니다. 소속 부서의 책임자(부서장) 또는 대표이사 계정 연동 상태를 확인해 주세요.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
         # 재상신 시 기존 단계 초기화
         document.steps.all().delete()
