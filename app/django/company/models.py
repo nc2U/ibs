@@ -129,11 +129,10 @@ class Staff(models.Model):
     STATUS_CHOICES = (('1', '근무 중'), ('2', '휴직 중'), ('3', '퇴직신청'), ('4', '퇴사처리'))
     status = models.CharField('상태', max_length=1, choices=STATUS_CHOICES, default='1')
     date_leave = models.DateField('퇴사일', null=True, blank=True)
-    is_hq_financial_officer = models.BooleanField(
-        '본사 금융 관리 권한',
-        default=False,
-        help_text='본사 프로젝트의 상세 자금 흐름을 열람할 수 있는 권한입니다. Django Admin 에서만 제어 합니다.'
-    )
+    is_hq_financial_officer = models.BooleanField('본사 금융 관리 권한', default=False,
+                                                  help_text='본사 프로젝트의 상세 자금 흐름을 열람할 수 있는 권한입니다. Django Admin 에서만 제어 합니다.')
+    is_hq_hr_officer = models.BooleanField('본사 인사 관리 권한', default=False,
+                                           help_text='본사 프로젝트의 인사 관리 흐름을 열람할 수 있는 권한입니다. Django Admin 에서만 제어 합니다.')
 
     def __str__(self):
         return self.name
