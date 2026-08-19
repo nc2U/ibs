@@ -75,40 +75,88 @@ const companyDocs = {
 
 const humanResource = {
   component: 'CNavGroup',
-  name: '본사 인사 관리',
+  name: '인사 조직 관리',
   to: '/hr-manage',
   auth: 'isComHrWork',
   icon: 'cilPeople',
   items: [
     {
-      component: 'CNavItem',
-      name: '직원 정보 관리',
-      to: '/hr-manage/staff',
-    },
-    {
-      component: 'CNavItem',
-      name: '부서 정보 관리',
-      to: '/hr-manage/department',
-    },
-    {
       component: 'CNavGroup',
-      name: '기타 설정 관리',
-      icon: 'cil-user-follow',
+      name: '조직 관리',
       items: [
         {
           component: 'CNavItem',
-          name: '직급 정보 관리',
+          name: '조직도',
+          to: '/hr-manage/department',
+          badge: {
+            color: 'info',
+            text: '준비중',
+          },
+        },
+        {
+          component: 'CNavItem',
+          name: '부서 관리',
+          to: '/hr-manage/department',
+        },
+        {
+          component: 'CNavItem',
+          name: '직급 관리',
           to: '/hr-manage/grade',
         },
         {
           component: 'CNavItem',
-          name: '직위 정보 관리',
+          name: '직위 관리',
           to: '/hr-manage/position',
         },
         {
           component: 'CNavItem',
-          name: '직책 정보 관리',
+          name: '직책 관리',
           to: '/hr-manage/duty',
+        },
+      ],
+    },
+    {
+      component: 'CNavGroup',
+      name: '인사 관리',
+      items: [
+        {
+          component: 'CNavItem',
+          name: '직원 정보',
+          to: '/hr-manage/staff',
+        },
+        {
+          component: 'CNavItem',
+          name: '인사 발령',
+          to: '/hr-manage/staff',
+          badge: {
+            color: 'info',
+            text: '준비중',
+          },
+        },
+        {
+          component: 'CNavItem',
+          name: '인사 기록',
+          to: '/hr-manage/staff',
+          badge: {
+            color: 'info',
+            text: '준비중',
+          },
+        },
+      ],
+    },
+    {
+      component: 'CNavGroup',
+      name: '설정 관리',
+      icon: 'cil-user-follow',
+      items: [
+        {
+          component: 'CNavItem',
+          name: '기타 설정',
+          to: '/hr-manage/staff',
+          badge: {
+            color: 'info',
+            text: '준비중',
+          },
         },
       ],
     },
