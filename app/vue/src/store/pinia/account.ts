@@ -212,7 +212,7 @@ export const useAccount = defineStore('account', () => {
   const workManager = computed(() => userInfo.value?.work_manager || superAuth.value)
   const isStaff = computed(() => !!superAuth.value || !!userInfo.value?.is_hq_staff) // 본사 관리 권한
   const isFinancial = computed(() => !!userInfo.value?.is_hq_financial_officer)
-  const isComLedger = computed(() => !!superAuth.value || !!userInfo.value?.is_hq_financial_officer)
+  const isHrManager = computed(() => userInfo.value?.is_hq_hr_officer)
 
   const profile = ref<Profile | null>(null)
 
@@ -429,7 +429,7 @@ export const useAccount = defineStore('account', () => {
     workManager,
     isStaff,
     isFinancial,
-    isComLedger,
+    isHrManager,
 
     profile,
 

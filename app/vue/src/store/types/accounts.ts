@@ -18,10 +18,10 @@ export declare interface User {
     meeting_confirmed_notification?: boolean
   }
   last_login: string | null
-  is_hq_financial_officer?: boolean
   is_hq_staff?: boolean
+  is_hq_financial_officer?: boolean
+  is_hq_hr_officer?: boolean
 }
-
 
 export type Profile = {
   [key: string]: undefined | number | number[] | null | string | boolean | File
