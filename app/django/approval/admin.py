@@ -7,7 +7,7 @@ from approval.models import (
 
 @admin.register(DocCategory)
 class DocCategoryAdmin(admin.ModelAdmin):
-    list_display = ('order', 'code', 'name', 'is_active')
+    list_display = ('order', 'code', 'name', 'description', 'is_active')
     list_display_links = ('code', 'name')
     list_editable = ('order', 'is_active')
     search_fields = ('code', 'name')
@@ -26,7 +26,8 @@ class RouteTemplateInline(admin.TabularInline):
 
 @admin.register(DocumentType)
 class DocumentTypeAdmin(admin.ModelAdmin):
-    list_display = ('category', 'code', 'name', 'form_type', 'form_template_key', 'route_type', 'final_approval_duty', 'is_active', 'created_at')
+    list_display = ('category', 'code', 'name', 'form_type', 'form_template_key', 'route_type', 'final_approval_duty',
+                    'is_active', 'created_at')
     list_filter = ('category', 'form_type', 'route_type', 'is_active')
     search_fields = ('code', 'name')
     filter_horizontal = ('allowed_departments', 'allowed_duties', 'allowed_positions')
