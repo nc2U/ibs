@@ -131,16 +131,6 @@ const humanResource = {
         },
         {
           component: 'CNavItem',
-          name: '인사 발령',
-          to: '/hr-manage/appointments',
-          auth: 'isHrManager',
-          badge: {
-            color: 'info',
-            text: '준비중',
-          },
-        },
-        {
-          component: 'CNavItem',
           name: '근태 현황',
           to: '/hr-manage/attendance',
           badge: {
@@ -152,6 +142,16 @@ const humanResource = {
           component: 'CNavItem',
           name: '휴가 연차',
           to: '/hr-manage/leave',
+          badge: {
+            color: 'info',
+            text: '준비중',
+          },
+        },
+        {
+          component: 'CNavItem',
+          name: '인사 발령',
+          to: '/hr-manage/appointments',
+          auth: 'isHrManager',
           badge: {
             color: 'info',
             text: '준비중',

@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { ref, onMounted, computed } from 'vue'
-import { pageTitle, navMenu } from '@/views/hrManage/_menu/headermixin2'
+import { pageTitle, navMenu1, navMenu2 } from '@/views/hrManage/_menu/headermixin2'
 import { useAccount } from '@/store/pinia/account'
 import { useCompany } from '@/store/pinia/company'
 import type { Company } from '@/store/types/settings.ts'
@@ -14,6 +14,8 @@ import ListController from './components/ListController.vue'
 import AddStaff from './components/AddStaff.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import StaffList from './components/StaffList.vue'
+
+const navMenu = computed(() => (!isHrManager.value ? navMenu1 : navMenu2))
 
 const { can, PERM } = usePerms()
 const canHrWorkCreate = computed(() => accStore.isStaff && can(PERM.HR_WORK_CREATE))
@@ -49,6 +51,7 @@ const excelUrl = computed(() => {
 })
 
 const accStore = useAccount()
+const isHrManager = computed(() => accStore.isHrManager)
 const fetchUsersList = () => accStore.fetchUsersList()
 
 const listFiltering = (payload: StaffFilter) => {
