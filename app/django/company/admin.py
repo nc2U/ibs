@@ -30,8 +30,9 @@ class CompanyAdmin(ImportExportMixin, admin.ModelAdmin):
 
 
 class DepartmentAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'company', 'upper_depart', 'name', 'level', 'task')
-    list_display_links = ('name',)
+    list_display = ('id', 'company', 'upper_depart', 'name', 'level', 'task', 'manager')
+    list_display_links = ('company', 'name')
+    list_editable = ('task', 'manager')
     list_filter = ('company',)
 
 
@@ -61,7 +62,8 @@ class StaffAdmin(ImportExportMixin, admin.ModelAdmin):
 
 
 class StaffAssignmentAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'company', 'staff', 'department', 'position', 'duty', 'is_primary', 'represent_type', 'assigned_tasks')
+    list_display = ('id', 'company', 'staff', 'department', 'position', 'duty', 'is_primary', 'represent_type',
+                    'assigned_tasks')
     list_display_links = ('staff',)
     list_filter = ('company', 'department', 'is_primary', 'duty', 'represent_type')
     search_fields = ('staff__name', 'department__name', 'assigned_tasks')
