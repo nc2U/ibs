@@ -77,26 +77,19 @@ const humanResource = {
   component: 'CNavGroup',
   name: '인사 조직 관리',
   to: '/hr-manage',
-  auth: 'isComHrWork',
+  auth: 'isStaff',
   icon: 'cilPeople',
   items: [
     {
       component: 'CNavGroup',
       name: '조직 관리',
       icon: 'cilPeople',
+      auth: 'isStaff',
       items: [
         {
           component: 'CNavItem',
-          name: '조직도',
-          to: '/hr-manage/org-chart',
-          badge: {
-            color: 'info',
-            text: '준비중',
-          },
-        },
-        {
-          component: 'CNavItem',
           name: '부서 관리',
+          auth: 'isStaff',
           to: '/hr-manage/department',
         },
         {
@@ -114,12 +107,22 @@ const humanResource = {
           name: '직책 관리',
           to: '/hr-manage/duty',
         },
+        {
+          component: 'CNavItem',
+          name: '조 직 도',
+          to: '/hr-manage/org-chart',
+          badge: {
+            color: 'info',
+            text: '준비중',
+          },
+        },
       ],
     },
     {
       component: 'CNavGroup',
       name: '인사 관리',
       icon: 'cilPeople',
+      auth: 'isStaff',
       items: [
         {
           component: 'CNavItem',
@@ -130,6 +133,7 @@ const humanResource = {
           component: 'CNavItem',
           name: '인사 발령',
           to: '/hr-manage/appointments',
+          auth: 'isHrManager',
           badge: {
             color: 'info',
             text: '준비중',
@@ -137,7 +141,16 @@ const humanResource = {
         },
         {
           component: 'CNavItem',
-          name: '근태 휴가',
+          name: '근태 현황',
+          to: '/hr-manage/attendance',
+          badge: {
+            color: 'info',
+            text: '준비중',
+          },
+        },
+        {
+          component: 'CNavItem',
+          name: '휴가 연차',
           to: '/hr-manage/leave',
           badge: {
             color: 'info',
@@ -148,6 +161,7 @@ const humanResource = {
           component: 'CNavItem',
           name: '인사 기록',
           to: '/hr-manage/records',
+          auth: 'isHrManager',
           badge: {
             color: 'info',
             text: '준비중',
@@ -159,6 +173,7 @@ const humanResource = {
       component: 'CNavGroup',
       name: '설정 관리',
       icon: 'cil-user-follow',
+      auth: 'isHrManager',
       items: [
         {
           component: 'CNavItem',

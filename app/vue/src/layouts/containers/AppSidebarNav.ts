@@ -79,6 +79,7 @@ const AppSidebarNav = defineComponent({
     const account = useAccount()
     const isStaff = computed(() => account.isStaff)
     const isFinancial = computed(() => account.isFinancial)
+    const isHrManager = computed(() => account.isHrManager)
 
     const { canGlobal, PERM } = usePerms()
     const docsRead = computed(() => canGlobal(PERM.DOCS_READ))
@@ -96,6 +97,7 @@ const AppSidebarNav = defineComponent({
       const authMap: Record<string, boolean> = {
         isStaff: isStaff.value,
         isFinancial: isFinancial.value,
+        isHrManager: isHrManager.value,
         isComDocs: isStaff.value && docsRead.value,
         isComHrWork: isStaff.value && hrWorkRead.value,
 

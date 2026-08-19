@@ -11,15 +11,6 @@ const hrManage = {
   },
   children: [
     {
-      path: 'org-chart',
-      name: '조직도',
-      component: () => import('@/views/hrManage/OrgChart/Index.vue'),
-      meta: {
-        title: '조직도',
-        auth: true,
-      },
-    },
-    {
       path: 'department',
       name: '부서 관리',
       component: () => import('@/views/hrManage/Department/Index.vue'),
@@ -56,6 +47,15 @@ const hrManage = {
       },
     },
     {
+      path: 'org-chart',
+      name: '조 직 도',
+      component: () => import('@/views/hrManage/OrgChart/Index.vue'),
+      meta: {
+        title: '조 직 도',
+        auth: true,
+      },
+    },
+    {
       path: 'staff',
       name: '직원 정보',
       component: () => import('@/views/hrManage/Staff/Index.vue'),
@@ -75,10 +75,19 @@ const hrManage = {
     },
     {
       path: 'leave',
-      name: '근태 휴가',
+      name: '근태 현황',
+      component: () => import('@/views/hrManage/Attendance/Index.vue'),
+      meta: {
+        title: '근태 현황',
+        auth: true,
+      },
+    },
+    {
+      path: 'leave',
+      name: '휴가 연차',
       component: () => import('@/views/hrManage/Leave/Index.vue'),
       meta: {
-        title: '근태 휴가',
+        title: '휴가 연차',
         auth: true,
       },
     },
