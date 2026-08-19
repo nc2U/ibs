@@ -456,11 +456,20 @@ export const useCompany = defineStore('company', () => {
       .catch(err => errorHandle(err.response.data))
 
   const staffList = ref<Staff[]>([])
+  const allStaffList = ref<Staff[]>([])
   const staff = ref<Staff | null>(null)
   const staffsCount = ref<number>(0)
 
   // actions
   const staffPages = (itemsPerPage: number) => Math.ceil(staffsCount.value / itemsPerPage)
+
+  const fetchAllStaffList = (com = 1) =>
+    api
+      .get(`/staff/?company=${com}&limit=500&status=1`)
+      .then(res => {
+        allStaffList.value = res.data.results ?? res.data
+      })
+      .catch(err => errorHandle(err.response.data))
 
   const fetchStaffList = async (payload: StaffFilter) => {
     const {
@@ -593,10 +602,12 @@ export const useCompany = defineStore('company', () => {
     deleteDuty,
 
     staffList,
+    allStaffList,
     staff,
     staffsCount,
     staffPages,
     fetchStaffList,
+    fetchAllStaffList,
     fetchStaff,
     createStaff,
     updateStaff,

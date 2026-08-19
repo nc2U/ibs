@@ -111,10 +111,6 @@ const humanResource = {
           component: 'CNavItem',
           name: '조 직 도',
           to: '/hr-manage/org-chart',
-          badge: {
-            color: 'info',
-            text: '준비중',
-          },
         },
       ],
     },

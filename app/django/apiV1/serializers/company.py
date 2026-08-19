@@ -49,11 +49,11 @@ class StaffsInDepartmentSerializer(serializers.ModelSerializer):
 
 class DepartmentSerializer(serializers.ModelSerializer):
     company = serializers.SlugRelatedField(queryset=Company.objects.all(), slug_field='name')
-    staffs = StaffsInDepartmentSerializer(many=True, read_only=True)
+    manager_name = serializers.CharField(source='manager.name', read_only=True, allow_null=True)
 
     class Meta:
         model = Department
-        fields = ('pk', 'company', 'upper_depart', 'level', 'name', 'task', 'staffs')
+        fields = ('pk', 'company', 'upper_depart', 'level', 'name', 'task', 'manager', 'manager_name')
         read_only_fields = ('level',)
 
 
