@@ -65,6 +65,20 @@ class Department(models.Model):
         verbose_name = '02. 부서 정보'
         verbose_name_plural = '02. 부서 정보'
 
+    def save(self, *args, **kwargs):
+        # 1. 상위 부서 유무에 따른 level 자동 계산
+        if not self.upper_depart:
+            self.level = 1
+        else:
+            self.level = self.upper_depart.level + 1
+
+        super().save(*args, **kwargs)
+
+        # 2. 부서의 레벨이 변경된 경우 하위 부서들도 연쇄 재계산 (재귀 호출)
+        for sub in self.sub_departs.all():
+            if sub.level != self.level + 1:
+                sub.save()
+
 
 class JobGrade(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='ranks', verbose_name='회사')

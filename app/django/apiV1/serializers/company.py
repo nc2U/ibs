@@ -54,6 +54,7 @@ class DepartmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Department
         fields = ('pk', 'company', 'upper_depart', 'level', 'name', 'task', 'staffs')
+        read_only_fields = ('level',)
 
 
 class PositionsInGradeSerializer(serializers.ModelSerializer):
