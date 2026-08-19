@@ -3,7 +3,6 @@ import {
   cibBuddy,
   cibDelicious,
   cibDiscover,
-  cilExposure,
   cibFacebook,
   cibTwitter,
   cibLinkedin,
@@ -33,6 +32,7 @@ import {
 } from '@coreui/icons'
 import { cifUs, cifBr, cifIn, cifFr, cifEs, cifPl } from '@coreui/icons'
 import {
+  cilAddressBook,
   cilAlignCenter,
   cilAlignLeft,
   cilAlignRight,
@@ -75,10 +75,12 @@ import {
   cilEnvelopeLetter,
   cilEnvelopeOpen,
   cilEuro,
+  cilExposure,
   cilFile,
   cilFolderOpen,
   cilGlobeAlt,
   cilGrid,
+  cilGraph,
   cilInbox,
   cilIndentDecrease,
   cilIndentIncrease,
@@ -141,6 +143,7 @@ import {
 export const iconsSet = Object.assign(
   {},
   {
+    cilAddressBook,
     cilAlignCenter,
     cilAlignLeft,
     cilAlignRight,
@@ -188,6 +191,7 @@ export const iconsSet = Object.assign(
     cilFolderOpen,
     cilGlobeAlt,
     cilGrid,
+    cilGraph,
     cilInbox,
     cilIndentDecrease,
     cilIndentIncrease,
