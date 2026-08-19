@@ -1,2 +1,2 @@
-export const pageTitle = '기타 설정'
-export const navMenu = ['직급 관리', '직위 관리', '직책 관리']
+export const pageTitle = '인사 관리'
+export const navMenu = ['직원 정보', '인사 발령', '근태 휴가', '인사 기록']

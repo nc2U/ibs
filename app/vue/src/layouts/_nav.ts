@@ -83,11 +83,12 @@ const humanResource = {
     {
       component: 'CNavGroup',
       name: '조직 관리',
+      icon: 'cilPeople',
       items: [
         {
           component: 'CNavItem',
           name: '조직도',
-          to: '/hr-manage/department',
+          to: '/hr-manage/org-chart',
           badge: {
             color: 'info',
             text: '준비중',
@@ -118,11 +119,21 @@ const humanResource = {
     {
       component: 'CNavGroup',
       name: '인사 관리',
+      icon: 'cilPeople',
       items: [
         {
           component: 'CNavItem',
           name: '직원 정보',
           to: '/hr-manage/staff',
+        },
+        {
+          component: 'CNavItem',
+          name: '근태 휴가',
+          to: '/hr-manage/staff',
+          badge: {
+            color: 'info',
+            text: '준비중',
+          },
         },
         {
           component: 'CNavItem',

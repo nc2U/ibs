@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { ref, computed, onMounted } from 'vue'
-import { pageTitle, navMenu } from '@/views/hrManage/_menu/headermixin2'
+import { pageTitle, navMenu } from '@/views/hrManage/_menu/headermixin1'
 import { useCompany } from '@/store/pinia/company'
 import { useAccount } from '@/store/pinia/account.ts'
 import { usePerms } from '@/composables/usePerms.ts'
