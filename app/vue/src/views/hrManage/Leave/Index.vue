@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { onBeforeMount, ref } from 'vue'
-import { pageTitle, navMenu } from '@/views/hrManage/_menu/headermixin1'
+import { pageTitle, navMenu } from '@/views/hrManage/_menu/headermixin2'
 import { useCompany } from '@/store/pinia/company.ts'
 import ComHrAuthGuard from '@/components/AuthGuard/ComHrAuthGuard.vue'
 import Loading from '@/components/Loading/Index.vue'
@@ -32,7 +32,7 @@ onBeforeMount(() => {
 
     <ContentBody>
       <CCardBody>
-        <h3>조직도</h3>
+        <h3>근태 / 휴가 / 연차</h3>
 
         <h6>준비중...</h6>
       </CCardBody>

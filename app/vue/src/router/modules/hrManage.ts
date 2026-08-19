@@ -64,29 +64,28 @@ const hrManage = {
         auth: true,
       },
     },
-
-    {
-      path: 'leave',
-      name: '근태 휴가',
-      component: () => import('@/views/hrManage/OrgChart/Index.vue'),
-      meta: {
-        title: '근태 휴가',
-        auth: true,
-      },
-    },
     {
       path: 'appointments',
       name: '인사 발령',
-      component: () => import('@/views/hrManage/OrgChart/Index.vue'),
+      component: () => import('@/views/hrManage/Appointment/Index.vue'),
       meta: {
         title: '인사 발령',
         auth: true,
       },
     },
     {
+      path: 'leave',
+      name: '근태 휴가',
+      component: () => import('@/views/hrManage/Leave/Index.vue'),
+      meta: {
+        title: '근태 휴가',
+        auth: true,
+      },
+    },
+    {
       path: 'records',
       name: '인사 기록',
-      component: () => import('@/views/hrManage/OrgChart/Index.vue'),
+      component: () => import('@/views/hrManage/Record/Index.vue'),
       meta: {
         title: '인사 기록',
         auth: true,
@@ -95,7 +94,7 @@ const hrManage = {
     {
       path: 'other-settings',
       name: '기타 설정',
-      component: () => import('@/views/hrManage/OrgChart/Index.vue'),
+      component: () => import('@/views/hrManage/Settings/Index.vue'),
       meta: {
         title: '기타 설정',
         auth: true,
