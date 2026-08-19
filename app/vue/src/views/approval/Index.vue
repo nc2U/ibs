@@ -6,6 +6,7 @@ import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import PendingList from '@/views/approval/components/PendingList.vue'
 import DraftedList from '@/views/approval/components/DraftedList.vue'
+import ApprovedList from '@/views/approval/components/ApprovedList.vue'
 import DocumentForm from '@/views/approval/components/DocumentForm.vue'
 import DocumentDetail from '@/views/approval/components/DocumentDetail.vue'
 import ComAuthGuard from '@/components/AuthGuard/ComAuthGuard.vue'
@@ -38,6 +39,8 @@ onBeforeMount(async () => {
         <PendingList v-if="route.name === '결재 대기함'" />
 
         <DraftedList v-else-if="route.name === '기안 문서함'" />
+
+        <ApprovedList v-else-if="route.name === '결재 문서함'" />
 
         <DocumentDetail
           v-else-if="

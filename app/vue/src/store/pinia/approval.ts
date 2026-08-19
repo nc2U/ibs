@@ -147,6 +147,15 @@ export const useApproval = defineStore('approval', () => {
       .then(res => (draftedList.value = res.data))
       .catch(err => errorHandle(err.response.data))
 
+  // ── 결재 완료(승인) 문서 목록 ─────────────────────────
+  const approvedList = ref<ApprovalDocument[]>([])
+
+  const fetchMyApproved = () =>
+    api
+      .get('/approval-document/my_approved/')
+      .then(res => (approvedList.value = res.data))
+      .catch(err => errorHandle(err.response.data))
+
   // ── 결재 액션 ─────────────────────────────────────────
   const submitDocument = async (pk: number) => {
     try {
@@ -194,6 +203,7 @@ export const useApproval = defineStore('approval', () => {
     documentCount,
     pendingList,
     draftedList,
+    approvedList,
     // actions
     fetchDocCategoryList,
     fetchDocTypeList,
@@ -207,6 +217,7 @@ export const useApproval = defineStore('approval', () => {
     deleteDocument,
     fetchMyPending,
     fetchMyDrafted,
+    fetchMyApproved,
     submitDocument,
     actDocument,
     cancelDocument,

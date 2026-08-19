@@ -371,3 +371,17 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
 
         serializer = ApprovalDocumentListSerializer(qs, many=True, context={'request': request})
         return Response(serializer.data)
+
+    # ── GET /approval-document/my_approved/ ──────────────────
+    @action(detail=False, methods=['get'])
+    def my_approved(self, request):
+        """내가 결재에 참여하여 최종 승인된 문서 목록"""
+        qs = ApprovalDocument.objects.filter(
+            status=ApprovalDocument.STATUS_APPROVED,
+            steps__approvers=request.user,
+        ).select_related(
+            'doc_type', 'drafter', 'drafter__profile', 'drafter_assignment__department'
+        ).distinct().order_by('-completed_at', '-id')
+
+        serializer = ApprovalDocumentListSerializer(qs, many=True, context={'request': request})
+        return Response(serializer.data)

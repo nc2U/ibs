@@ -44,6 +44,7 @@
 | `POST` | `/api/v1/approval-document/{id}/cancel/` | 기안 취소 |
 | `GET` | `/api/v1/approval-document/my_pending/` | 내 결재 대기함 |
 | `GET` | `/api/v1/approval-document/my_drafted/` | 내 기안함 |
+| `GET` | `/api/v1/approval-document/my_approved/` | **내 결재 문서함 (내가 결재에 참여하여 승인 완료된 문서 목록)** |
 
 ### 1-3. 프론트엔드 (`app/vue/src/`)
 
@@ -57,6 +58,10 @@
 | `views/approval/forms/DynamicSchemaForm.vue` | ✅ 완료 | **관리자 정의 JSON Schema 기반 동적 폼** |
 | `views/approval/components/DocumentForm.vue` | ✅ 완료 | **하이브리드 폼 분기 + 카테고리 optgroup + 금액별 실시간 전결 연동** |
 | `views/approval/components/DocumentDetail.vue` | ✅ 완료 | **STATIC / DYNAMIC 양식별 맞춤 상세 뷰** |
+| `views/approval/components/PendingList.vue` | ✅ 완료 | 결재 대기함 |
+| `views/approval/components/DraftedList.vue` | ✅ 완료 | 기안함 |
+| `views/approval/components/ApprovedList.vue` | ✅ 완료 | **결재 문서함 (승인 완료된 결재 참여 문서 목록 + PDF 다운로드)** |
+| `views/approval/Index.vue` | ✅ 완료 | 결재 대기함 / 기안함 / 결재 문서함 라우트 매핑 및 전환 |
 
 ---
 
