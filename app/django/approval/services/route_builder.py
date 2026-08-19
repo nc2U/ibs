@@ -57,26 +57,9 @@ def build_dynamic_approval_route(doc_type: DocumentType, drafter_user, drafter_a
         ).select_related('company', 'department', 'position', 'duty').first()
 
         if not assignment:
-            # 주보직이 없는 경우 아무 보직이나 1개 조회
             assignment = StaffAssignment.objects.filter(
                 staff__user=drafter_user
             ).select_related('company', 'department', 'position', 'duty').first()
-
-        if not assignment:
-            # StaffAssignment가 아직 없는 경우 Staff 정보로부터 fallback
-            staff = Staff.objects.filter(user=drafter_user).select_related('company', 'department', 'position', 'duty').first()
-            if staff and staff.department:
-                assignment, _ = StaffAssignment.objects.get_or_create(
-                    staff=staff,
-                    department=staff.department,
-                    defaults={
-                        'company': staff.company,
-                        'position': staff.position,
-                        'duty': staff.duty,
-                        'is_primary': True,
-                        'assigned_tasks': '기본 보직',
-                    }
-                )
 
     steps = []
     step_order = 1
@@ -112,7 +95,8 @@ def build_dynamic_approval_route(doc_type: DocumentType, drafter_user, drafter_a
                 manager_user = manager_staff.user
                 added_user_ids.add(manager_user.id)
 
-                duty_str = manager_staff.duty.name if manager_staff.duty else '책임자'
+                manager_duty = manager_staff.duty
+                duty_str = manager_duty.name if manager_duty else '책임자'
                 role_label = f'{current_dept.name} {duty_str}'
 
                 steps.append({
@@ -125,7 +109,7 @@ def build_dynamic_approval_route(doc_type: DocumentType, drafter_user, drafter_a
                 step_order += 1
 
                 # 전결 규정 체크: 직책 전결 (예: 팀장 전결, 본부장 전결)
-                if effective_final_duty and manager_staff.duty_id == effective_final_duty.id:
+                if effective_final_duty and manager_duty and manager_duty.id == effective_final_duty.id:
                     reached_final = True
                     break
 
@@ -149,18 +133,6 @@ def build_dynamic_approval_route(doc_type: DocumentType, drafter_user, drafter_a
             a.staff.user for a in ceo_assignments
             if a.staff.user and a.staff.user.id not in added_user_ids
         ]
-
-        # fallback: Staff 모델에서 직접 duty__name='대표이사' 조회
-        if not ceo_users:
-            ceo_staffs = Staff.objects.filter(
-                company=company,
-                duty__name='대표이사',
-                status='1',
-            ).select_related('user')
-            ceo_users = [
-                s.user for s in ceo_staffs
-                if s.user and s.user.id not in added_user_ids
-            ]
 
         if ceo_users:
             is_joint = any(a.represent_type == 'joint' for a in ceo_assignments)

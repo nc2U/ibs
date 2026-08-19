@@ -1,3 +1,4 @@
+from django_filters.rest_framework import FilterSet, CharFilter
 from rest_framework import viewsets
 
 from company.models import Company, Logo, Department, JobGrade, Position, DutyTitle, Staff, StaffAssignment
@@ -76,6 +77,16 @@ class DutyTitleViewSet(viewsets.ModelViewSet):
         return 'hr_work.read' if self.action in ('list', 'retrieve') else 'hr_work.create' if self.action == 'create' else 'hr_work.update' if self.action in ('update', 'partial_update') else 'hr_work.delete' if self.action == 'destroy' else 'hr_work.read'
 
 
+class StaffFilter(FilterSet):
+    department = CharFilter(field_name='assignments__department', lookup_expr='exact')
+    position = CharFilter(field_name='assignments__position', lookup_expr='exact')
+    duty = CharFilter(field_name='assignments__duty', lookup_expr='exact')
+
+    class Meta:
+        model = Staff
+        fields = ('company', 'sort', 'department', 'position', 'duty', 'user', 'status')
+
+
 class StaffViewSet(viewsets.ModelViewSet):
     queryset = Staff.objects.all().prefetch_related(
         'assignments__department', 'assignments__position', 'assignments__duty'
@@ -83,7 +94,7 @@ class StaffViewSet(viewsets.ModelViewSet):
     serializer_class = StaffSerializer
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly, IbsModulePermission)
     pagination_class = PageNumberPaginationOneThousand
-    filterset_fields = ('company', 'sort', 'department', 'user', 'status')
+    filterset_class = StaffFilter
     search_fields = ('name', 'id_number', 'personal_phone', 'email')
 
     @property

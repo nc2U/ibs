@@ -54,11 +54,23 @@ class DutyTitleAdmin(ImportExportMixin, admin.ModelAdmin):
 
 
 class StaffAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'company', 'sort', 'grade', 'position', 'duty',
-                    'name', 'email', 'department', 'status', 'date_join', 'date_leave')
+    list_display = ('id', 'company', 'name', 'sort', 'grade', 'get_position', 'get_duty',
+                    'get_department', 'email', 'status', 'date_join', 'date_leave')
     list_display_links = ('name', 'email')
-    list_filter = ('company', 'sort', 'grade', 'position', 'duty')
+    list_filter = ('company', 'sort', 'grade', 'status')
     inlines = (StaffAssignmentInline,)
+
+    @admin.display(description='부서')
+    def get_department(self, obj):
+        return obj.department.name if obj.department else '-'
+
+    @admin.display(description='직위')
+    def get_position(self, obj):
+        return obj.position.name if obj.position else '-'
+
+    @admin.display(description='직책')
+    def get_duty(self, obj):
+        return obj.duty.name if obj.duty else '-'
 
 
 class StaffAssignmentAdmin(ImportExportMixin, admin.ModelAdmin):

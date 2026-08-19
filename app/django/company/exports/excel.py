@@ -80,7 +80,9 @@ class ExportStaffs(ExcelExportMixin):
 
         # 4. Body
         # Get some data to write to the spreadsheet.
-        obj_list = Staff.objects.filter(company=company)
+        obj_list = Staff.objects.filter(company=company).prefetch_related(
+            'assignments__department', 'assignments__position', 'assignments__duty'
+        )
 
         # get query list
         sort = request.GET.get('sort')
@@ -92,18 +94,16 @@ class ExportStaffs(ExcelExportMixin):
         search = request.GET.get('search')
 
         obj_list = obj_list.filter(sort=sort) if sort else obj_list
-        obj_list = obj_list.filter(department_id=department) if department else obj_list
+        obj_list = obj_list.filter(assignments__department_id=department) if department else obj_list
         obj_list = obj_list.filter(grade_id=grade) if grade else obj_list
-        obj_list = obj_list.filter(position_id=position) if position else obj_list
-        obj_list = obj_list.filter(duty_id=duty) if duty else obj_list
+        obj_list = obj_list.filter(assignments__position_id=position) if position else obj_list
+        obj_list = obj_list.filter(assignments__duty_id=duty) if duty else obj_list
         obj_list = obj_list.filter(status=status) if status else obj_list
         obj_list = obj_list.filter(
             Q(name__icontains=search) |
             Q(id_number__icontains=search) |
             Q(personal_phone__icontains=search) |
-            Q(email__icontains=search)) if search else obj_list
-
-        data = obj_list.values_list(*params)
+            Q(email__icontains=search)).distinct() if search else obj_list
 
         body_format = {
             'border': True,
@@ -116,29 +116,30 @@ class ExportStaffs(ExcelExportMixin):
         worksheet.ignore_errors({'number_stored_as_text': 'B:L'})
 
         # Write body
-        sort = dict(Staff.SORT_CHOICES)
-        status = dict(Staff.STATUS_CHOICES)
-        for i, row in enumerate(data):
-            row = list(row)
+        sort_map = dict(Staff.SORT_CHOICES)
+        status_map = dict(Staff.STATUS_CHOICES)
+        for i, s in enumerate(obj_list):
             row_num += 1
-            row.insert(0, i + 1)
-            for col_num, cell_data in enumerate(row):
-                if col_num == 1:
-                    cell_data = sort[cell_data]
-                if col_num == 6:
-                    cell_data = Department.objects.get(pk=cell_data).name if cell_data else None
-                if col_num == 7:
-                    cell_data = JobGrade.objects.get(pk=cell_data).name if cell_data else None
-                if col_num == 8:
-                    cell_data = Position.objects.get(pk=cell_data).name if cell_data else None
-                if col_num == 9:
-                    cell_data = DutyTitle.objects.get(pk=cell_data).name if cell_data else None
-                if col_num == 11:
-                    cell_data = status[cell_data]
+            row_data = [
+                i + 1,
+                sort_map.get(s.sort, s.sort),
+                s.name,
+                s.id_number,
+                s.personal_phone,
+                s.email or '',
+                s.department.name if s.department else '',
+                s.grade.name if s.grade else '',
+                s.position.name if s.position else '',
+                s.duty.name if s.duty else '',
+                s.date_join,
+                status_map.get(s.status, s.status),
+                s.date_leave or '',
+            ]
+            for col_num, cell_data in enumerate(row_data):
                 if col_num in (10, 12):
                     body_format['num_format'] = 'yyyy-mm-dd'
                 else:
-                    body_format['num_format'] = '#,##0'
+                    body_format['num_format'] = '@'
                 bformat = workbook.add_format(body_format)
                 worksheet.write(row_num, col_num, cell_data, bformat)
 

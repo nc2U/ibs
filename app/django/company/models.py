@@ -134,11 +134,7 @@ class Staff(models.Model):
     id_number = models.CharField('주민등록번호', max_length=14)
     personal_phone = models.CharField('휴대전화', max_length=13)
     email = models.EmailField('이메일', null=True, blank=True)
-    department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='부서 정보',
-                                   related_name='staffs')
     grade = models.ForeignKey(JobGrade, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='직급 정보')
-    position = models.ForeignKey(Position, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='직위 정보')
-    duty = models.ForeignKey(DutyTitle, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='직책 정보')
     date_join = models.DateField('입사일')
     STATUS_CHOICES = (('1', '근무 중'), ('2', '휴직 중'), ('3', '퇴직신청'), ('4', '퇴사처리'))
     status = models.CharField('상태', max_length=1, choices=STATUS_CHOICES, default='1')
@@ -147,6 +143,26 @@ class Staff(models.Model):
                                                   help_text='본사 프로젝트의 상세 자금 흐름을 열람할 수 있는 권한입니다. Django Admin 에서만 제어 합니다.')
     is_hq_hr_officer = models.BooleanField('본사 인사 관리 권한', default=False,
                                            help_text='본사 프로젝트의 인사 관리 흐름을 열람할 수 있는 권한입니다. Django Admin 에서만 제어 합니다.')
+
+    @property
+    def primary_assignment(self):
+        """주보직 (없으면 첫 번째 보직)"""
+        return self.assignments.filter(is_primary=True).first() or self.assignments.first()
+
+    @property
+    def department(self):
+        """주보직의 소속 부서"""
+        return self.primary_assignment.department if self.primary_assignment else None
+
+    @property
+    def position(self):
+        """주보직의 직위"""
+        return self.primary_assignment.position if self.primary_assignment else None
+
+    @property
+    def duty(self):
+        """주보직의 직책"""
+        return self.primary_assignment.duty if self.primary_assignment else None
 
     def __str__(self):
         return self.name

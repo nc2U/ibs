@@ -218,7 +218,7 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
             is_ceo = False
             if assignment and assignment.duty and assignment.duty.name == '대표이사':
                 is_ceo = True
-            elif Staff.objects.filter(user=request.user, duty__name='대표이사').exists():
+            elif StaffAssignment.objects.filter(staff__user=request.user, duty__name='대표이사').exists():
                 is_ceo = True
 
             if is_ceo:
