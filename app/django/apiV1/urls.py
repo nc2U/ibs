@@ -40,6 +40,7 @@ router.register(r'staff', company.StaffViewSet)
 router.register(r'staff-assignment', company.StaffAssignmentViewSet)
 
 # approval (전자결재)
+router.register(r'approval-doc-category', approval.DocCategoryViewSet, basename='approval-doc-category')
 router.register(r'approval-doc-type', approval.DocumentTypeViewSet, basename='approval-doc-type')
 router.register(r'approval-document', approval.ApprovalDocumentViewSet, basename='approval-document')
 

@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { message, errorHandle } from '@/utils/helper'
 import type {
+  DocCategory,
   DocumentType,
   ApprovalDocument,
   PatchApprovalDocument,
@@ -19,14 +20,36 @@ export type DocFilter = {
 }
 
 export const useApproval = defineStore('approval', () => {
+  // ── 문서 카테고리 ─────────────────────────────────────
+  const docCategoryList = ref<DocCategory[]>([])
+
+  const fetchDocCategoryList = () =>
+    api
+      .get('/approval-doc-category/')
+      .then(res => (docCategoryList.value = res.data.results ?? res.data))
+      .catch(err => errorHandle(err.response.data))
+
   // ── 문서 유형 ─────────────────────────────────────────
   const docTypeList = ref<DocumentType[]>([])
+  const forDraftDocTypeList = ref<DocumentType[]>([])
 
-  const fetchDocTypeList = () =>
-    api
-      .get('/approval-doc-type/')
+  const fetchDocTypeList = (categoryId?: number | null) => {
+    const params = new URLSearchParams()
+    if (categoryId) params.append('category_id', String(categoryId))
+    return api
+      .get(`/approval-doc-type/?${params}`)
       .then(res => (docTypeList.value = res.data.results ?? res.data))
       .catch(err => errorHandle(err.response.data))
+  }
+
+  const fetchForDraftDocTypeList = (assignmentId?: number | null) => {
+    const params = new URLSearchParams()
+    if (assignmentId) params.append('assignment', String(assignmentId))
+    return api
+      .get(`/approval-doc-type/for_draft/?${params}`)
+      .then(res => (forDraftDocTypeList.value = res.data.results ?? res.data))
+      .catch(err => errorHandle(err.response.data))
+  }
 
   // ── 기안자의 보직 목록 ─────────────────────────────────
   const myAssignments = ref<StaffAssignmentItem[]>([])
@@ -40,9 +63,10 @@ export const useApproval = defineStore('approval', () => {
   // ── 동적 결재선 미리보기 ───────────────────────────────
   const routePreview = ref<RoutePreviewStep[]>([])
 
-  const fetchRoutePreview = (docTypeId: number, assignmentId?: number | null) => {
+  const fetchRoutePreview = (docTypeId: number, assignmentId?: number | null, amount?: number | string | null) => {
     const params = new URLSearchParams({ doc_type: String(docTypeId) })
     if (assignmentId) params.append('assignment', String(assignmentId))
+    if (amount !== undefined && amount !== null && amount !== '') params.append('amount', String(amount))
     return api
       .get(`/approval-document/preview_route/?${params}`)
       .then(res => (routePreview.value = res.data))
@@ -160,7 +184,9 @@ export const useApproval = defineStore('approval', () => {
 
   return {
     // state
+    docCategoryList,
     docTypeList,
+    forDraftDocTypeList,
     myAssignments,
     routePreview,
     document,
@@ -169,7 +195,9 @@ export const useApproval = defineStore('approval', () => {
     pendingList,
     draftedList,
     // actions
+    fetchDocCategoryList,
     fetchDocTypeList,
+    fetchForDraftDocTypeList,
     fetchMyAssignments,
     fetchRoutePreview,
     fetchDocumentList,

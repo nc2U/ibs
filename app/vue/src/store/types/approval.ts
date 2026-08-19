@@ -35,8 +35,30 @@ export interface RouteTemplate {
   condition: 'AND' | 'OR'
 }
 
+export interface DocCategory {
+  id: number
+  name: string
+  code: string
+  description: string
+  order: number
+  is_active: boolean
+}
+
+export interface ApprovalPolicyRule {
+  id: number
+  name: string
+  min_amount: number | null
+  max_amount: number | null
+  final_approval_duty: number | null
+  final_approval_duty_name: string | null
+  final_dept_level: number | null
+  priority: number
+}
+
 export interface DocumentType {
   id: number
+  category?: number | null
+  category_name?: string | null
   name: string
   code: string
   description: string
@@ -45,6 +67,10 @@ export interface DocumentType {
   final_approval_duty?: number | null
   final_approval_duty_name?: string | null
   final_dept_level?: number | null
+  policy_rules?: ApprovalPolicyRule[]
+  allowed_departments?: number[]
+  allowed_duties?: number[]
+  allowed_positions?: number[]
   form_schema: FormField[]
   is_active: boolean
   route_templates: RouteTemplate[]

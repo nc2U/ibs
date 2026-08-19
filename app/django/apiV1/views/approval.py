@@ -6,24 +6,89 @@ from rest_framework.response import Response
 
 from apiV1.permissions.auth_perms import permissions
 from apiV1.serializers.approval import (
-    DocumentTypeSerializer, ApprovalDocumentSerializer,
+    DocCategorySerializer, DocumentTypeSerializer, ApprovalDocumentSerializer,
     ApprovalDocumentListSerializer, ApprovalActionCreateSerializer,
     RoutePreviewStepSerializer,
 )
 from apiV1.serializers.company import StaffAssignmentSerializer
-from approval.models import DocumentType, ApprovalDocument, ApprovalStep, ApprovalAction
+from approval.models import (
+    DocCategory, DocumentType, ApprovalDocument, ApprovalStep, ApprovalAction
+)
 from approval.services import build_dynamic_approval_route
 from approval.tasks import notify_approvers_task, notify_drafter_task, generate_approval_pdf_task
-from company.models import StaffAssignment
+from company.models import Staff, StaffAssignment
+
+
+class DocCategoryViewSet(viewsets.ReadOnlyModelViewSet):
+    """결재 문서 카테고리 조회"""
+    queryset = DocCategory.objects.filter(is_active=True).order_by('order', 'id')
+    serializer_class = DocCategorySerializer
+    permission_classes = (permissions.IsAuthenticated,)
+
+
+class DocumentTypeFilter(FilterSet):
+    category = CharFilter(field_name='category__code', lookup_expr='exact')
+    category_id = CharFilter(field_name='category__id', lookup_expr='exact')
+
+    class Meta:
+        model = DocumentType
+        fields = ('category', 'category_id', 'is_active')
 
 
 class DocumentTypeViewSet(viewsets.ReadOnlyModelViewSet):
     """결재 문서 유형 조회 (관리자 등록, 일반 사용자 읽기 전용)"""
     queryset = DocumentType.objects.filter(is_active=True).select_related(
-        'final_approval_duty'
-    ).prefetch_related('route_templates__approvers')
+        'category', 'final_approval_duty'
+    ).prefetch_related(
+        'policy_rules__final_approval_duty',
+        'route_templates__approvers',
+        'allowed_departments', 'allowed_duties', 'allowed_positions'
+    )
     serializer_class = DocumentTypeSerializer
     permission_classes = (permissions.IsAuthenticated,)
+    filterset_class = DocumentTypeFilter
+
+    @action(detail=False, methods=['get'])
+    def for_draft(self, request):
+        """현재 사용자의 보직(소속 부서/직책)에 따라 기안 가능한 문서 유형만 필터링하여 반환"""
+        assignment_id = request.query_params.get('assignment')
+        user = request.user
+
+        assignment = None
+        if assignment_id:
+            assignment = StaffAssignment.objects.filter(pk=assignment_id, staff__user=user).first()
+        if not assignment:
+            assignment = StaffAssignment.objects.filter(staff__user=user, is_primary=True).first() or \
+                         StaffAssignment.objects.filter(staff__user=user).first()
+
+        qs = self.get_queryset()
+
+        if assignment:
+            dept = assignment.department
+            duty = assignment.duty
+            pos = assignment.position
+
+            # 부서 제한 필터: allowed_departments가 비어있거나, 해당 부서가 포함된 경우
+            # (Q 객체 조합 또는 Python 리스트 필터링)
+            available_types = []
+            for dt in qs:
+                # 1. 부서 검사
+                dept_allowed = not dt.allowed_departments.exists() or (dept and dt.allowed_departments.filter(pk=dept.pk).exists())
+                # 2. 직책 검사
+                duty_allowed = not dt.allowed_duties.exists() or (duty and dt.allowed_duties.filter(pk=duty.pk).exists())
+                # 3. 직위 검사
+                pos_allowed = not dt.allowed_positions.exists() or (pos and dt.allowed_positions.filter(pk=pos.pk).exists())
+
+                if dept_allowed and duty_allowed and pos_allowed:
+                    available_types.append(dt)
+
+            serializer = self.get_serializer(available_types, many=True)
+            return Response(serializer.data)
+
+        # 보직이 없는 경우 전사 공통(제한 없는) 문서만 반환
+        common_types = [dt for dt in qs if not dt.allowed_departments.exists() and not dt.allowed_duties.exists() and not dt.allowed_positions.exists()]
+        serializer = self.get_serializer(common_types, many=True)
+        return Response(serializer.data)
 
 
 class ApprovalDocumentFilter(FilterSet):
@@ -92,15 +157,18 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
     # ── GET /approval-document/preview_route/ ────────────────
     @action(detail=False, methods=['get'])
     def preview_route(self, request):
-        """문서 유형과 기안 보직에 따른 결재선 실시간 미리보기"""
+        """문서 유형과 기안 보직 및 금액(amount)에 따른 결재선 실시간 미리보기"""
         doc_type_id = request.query_params.get('doc_type')
         assignment_id = request.query_params.get('assignment')
+        amount = request.query_params.get('amount')
 
         if not doc_type_id:
             return Response({'detail': 'doc_type 파라미터가 필요합니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            doc_type = DocumentType.objects.prefetch_related('route_templates__approvers').get(pk=doc_type_id)
+            doc_type = DocumentType.objects.prefetch_related(
+                'policy_rules__final_approval_duty', 'route_templates__approvers'
+            ).get(pk=doc_type_id)
         except DocumentType.DoesNotExist:
             return Response({'detail': '문서 유형을 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -110,7 +178,8 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
                 'company', 'department', 'position', 'duty'
             ).first()
 
-        steps_data = build_dynamic_approval_route(doc_type, request.user, assignment)
+        content = {'amount': amount} if amount else None
+        steps_data = build_dynamic_approval_route(doc_type, request.user, assignment, content)
         serializer = RoutePreviewStepSerializer(steps_data, many=True)
         return Response(serializer.data)
 
@@ -139,8 +208,10 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
                 document.drafter_assignment = assignment
                 document.save(update_fields=['drafter_assignment'])
 
-        # 동적 결재선 단계 목록 산출
-        route_steps = build_dynamic_approval_route(document.doc_type, document.drafter, assignment)
+        # 동적 결재선 단계 목록 산출 (금액/내용 포함)
+        route_steps = build_dynamic_approval_route(
+            document.doc_type, document.drafter, assignment, document.content
+        )
 
         if not route_steps:
             # 기안자가 대표이사 본인인지 확인

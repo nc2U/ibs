@@ -1,5 +1,21 @@
 from django.contrib import admin
-from approval.models import DocumentType, RouteTemplate, ApprovalDocument, ApprovalStep, ApprovalAction
+from approval.models import (
+    DocCategory, DocumentType, ApprovalPolicyRule,
+    RouteTemplate, ApprovalDocument, ApprovalStep, ApprovalAction
+)
+
+
+@admin.register(DocCategory)
+class DocCategoryAdmin(admin.ModelAdmin):
+    list_display = ('order', 'code', 'name', 'is_active')
+    list_display_links = ('code', 'name')
+    list_editable = ('order', 'is_active')
+    search_fields = ('code', 'name')
+
+
+class ApprovalPolicyRuleInline(admin.TabularInline):
+    model = ApprovalPolicyRule
+    extra = 1
 
 
 class RouteTemplateInline(admin.TabularInline):
@@ -10,10 +26,11 @@ class RouteTemplateInline(admin.TabularInline):
 
 @admin.register(DocumentType)
 class DocumentTypeAdmin(admin.ModelAdmin):
-    list_display = ('code', 'name', 'is_active', 'created_at')
-    list_filter = ('is_active',)
+    list_display = ('category', 'code', 'name', 'route_type', 'final_approval_duty', 'is_active', 'created_at')
+    list_filter = ('category', 'route_type', 'is_active')
     search_fields = ('code', 'name')
-    inlines = [RouteTemplateInline]
+    filter_horizontal = ('allowed_departments', 'allowed_duties', 'allowed_positions')
+    inlines = [ApprovalPolicyRuleInline, RouteTemplateInline]
 
 
 class ApprovalStepInline(admin.TabularInline):

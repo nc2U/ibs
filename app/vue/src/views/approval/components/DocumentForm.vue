@@ -8,9 +8,10 @@ import type { DocumentType } from '@/store/types/approval.ts'
 const route = useRoute()
 const router = useRouter()
 const store = useApproval()
-const { docTypeList, document, myAssignments, routePreview } = storeToRefs(store)
+const { docCategoryList, forDraftDocTypeList, document, myAssignments, routePreview } = storeToRefs(store)
 const {
-  fetchDocTypeList,
+  fetchDocCategoryList,
+  fetchForDraftDocTypeList,
   fetchDocument,
   fetchMyAssignments,
   fetchRoutePreview,
@@ -30,23 +31,57 @@ const form = ref({
 const dynamicContent = ref<Record<string, string>>({})
 
 const selectedDocType = computed<DocumentType | null>(
-  () => docTypeList.value.find(d => d.id === Number(form.value.doc_type)) ?? null,
+  () => forDraftDocTypeList.value.find(d => d.id === Number(form.value.doc_type)) ?? null,
 )
+
+// 카테고리별로 그룹화된 문서 유형 목록
+const groupedDocTypes = computed(() => {
+  const groups: Record<string, DocumentType[]> = {}
+  forDraftDocTypeList.value.forEach(dt => {
+    const catName = dt.category_name || '기타/일반'
+    if (!groups[catName]) groups[catName] = []
+    groups[catName].push(dt)
+  })
+  return groups
+})
 
 const onDocTypeChange = () => {
   dynamicContent.value = {}
   updateRoutePreview()
 }
 
-const onAssignmentChange = () => {
+const onAssignmentChange = async () => {
+  await fetchForDraftDocTypeList(form.value.drafter_assignment ? Number(form.value.drafter_assignment) : undefined)
   updateRoutePreview()
 }
+
+// dynamicContent에서 금액 값 추출
+const currentAmount = computed(() => {
+  for (const key of ['amount', 'estimated_amount', 'total_amount', 'price', 'cost', 'expense_amount', 'payment_amount']) {
+    const val = dynamicContent.value[key]
+    if (val !== undefined && val !== '') {
+      const clean = String(val).replace(/,/g, '').replace(/ /g, '').replace(/원/g, '')
+      const parsed = parseFloat(clean)
+      if (!isNaN(parsed)) return parsed
+    }
+  }
+  return null
+})
+
+// 금액 또는 양식 데이터 변경 시 실시간 결재선 미리보기 갱신
+watch(
+  () => currentAmount.value,
+  () => {
+    updateRoutePreview()
+  },
+)
 
 const updateRoutePreview = async () => {
   if (form.value.doc_type) {
     await fetchRoutePreview(
       Number(form.value.doc_type),
       form.value.drafter_assignment ? Number(form.value.drafter_assignment) : undefined,
+      currentAmount.value,
     )
   }
 }
@@ -87,7 +122,19 @@ const onSubmitAndSend = async () => {
 }
 
 onMounted(async () => {
-  await Promise.all([fetchDocTypeList(), fetchMyAssignments()])
+  await Promise.all([
+    fetchDocCategoryList(),
+    fetchMyAssignments(),
+  ])
+
+  // 기본 주보직 선택
+  const primary = myAssignments.value.find(a => a.is_primary) ?? myAssignments.value[0]
+  if (primary) {
+    form.value.drafter_assignment = primary.pk
+  }
+
+  // 보직에 따른 기안 가능 문서 유형 조회
+  await fetchForDraftDocTypeList(form.value.drafter_assignment ? Number(form.value.drafter_assignment) : undefined)
 
   if (isEdit.value) {
     await fetchDocument(Number(route.params.docId))
@@ -97,12 +144,6 @@ onMounted(async () => {
       form.value.title = document.value.title
       dynamicContent.value = { ...(document.value.content as Record<string, string>) }
       updateRoutePreview()
-    }
-  } else {
-    // 기본 주보직 선택
-    const primary = myAssignments.value.find(a => a.is_primary) ?? myAssignments.value[0]
-    if (primary) {
-      form.value.drafter_assignment = primary.pk
     }
   }
 })
@@ -149,7 +190,7 @@ onMounted(async () => {
             </CCol>
           </CRow>
 
-          <!-- 문서 유형 선택 -->
+          <!-- 문서 유형 선택 (카테고리별 optgroup) -->
           <CRow class="mb-3">
             <CFormLabel class="col-sm-3 col-form-label">
               문서 유형 <span class="text-danger">*</span>
@@ -162,10 +203,17 @@ onMounted(async () => {
                 @change="onDocTypeChange"
               >
                 <option value="">-- 유형을 선택하세요 --</option>
-                <option v-for="dt in docTypeList" :key="dt.id" :value="dt.id">
-                  {{ dt.name }}
-                  <template v-if="dt.final_approval_duty_name"> [{{ dt.final_approval_duty_name }} 전결]</template>
-                </option>
+                <optgroup
+                  v-for="(types, catName) in groupedDocTypes"
+                  :key="catName"
+                  :label="catName"
+                >
+                  <option v-for="dt in types" :key="dt.id" :value="dt.id">
+                    {{ dt.name }}
+                    <template v-if="dt.policy_rules?.length"> [금액별 전결]</template>
+                    <template v-else-if="dt.final_approval_duty_name"> [{{ dt.final_approval_duty_name }} 전결]</template>
+                  </option>
+                </optgroup>
               </CFormSelect>
               <div v-if="selectedDocType?.description" class="form-text text-muted">
                 {{ selectedDocType.description }}
@@ -230,9 +278,14 @@ onMounted(async () => {
                 <CIcon name="cilPeople" class="me-1" />
                 결재선 미리보기
               </p>
-              <CBadge v-if="selectedDocType?.route_type === 'organization'" color="info" size="sm">
-                조직도 기반 자동 생성
-              </CBadge>
+              <div class="d-flex gap-1">
+                <CBadge v-if="selectedDocType?.policy_rules?.length && currentAmount !== null" color="warning" size="sm">
+                  금액 조건 반영 ({{ currentAmount.toLocaleString() }}원)
+                </CBadge>
+                <CBadge v-if="selectedDocType?.route_type === 'organization'" color="info" size="sm">
+                  조직도 기반 자동 생성
+                </CBadge>
+              </div>
             </div>
             <div class="d-flex align-items-start flex-wrap gap-0">
               <template v-for="(step, idx) in routePreview" :key="step.step_order">

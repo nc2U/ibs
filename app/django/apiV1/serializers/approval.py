@@ -1,7 +1,8 @@
-from django.utils import timezone
 from rest_framework import serializers
-
-from approval.models import DocumentType, RouteTemplate, ApprovalDocument, ApprovalStep, ApprovalAction
+from approval.models import (
+    DocCategory, DocumentType, ApprovalPolicyRule,
+    RouteTemplate, ApprovalDocument, ApprovalStep, ApprovalAction
+)
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -22,6 +23,21 @@ class SimpleUserSerializer(serializers.ModelSerializer):
         fields = ('id', 'username', 'full_name')
 
 
+class DocCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DocCategory
+        fields = ('id', 'name', 'code', 'description', 'order', 'is_active')
+
+
+class ApprovalPolicyRuleSerializer(serializers.ModelSerializer):
+    final_approval_duty_name = serializers.CharField(source='final_approval_duty.name', read_only=True)
+
+    class Meta:
+        model = ApprovalPolicyRule
+        fields = ('id', 'name', 'min_amount', 'max_amount',
+                  'final_approval_duty', 'final_approval_duty_name', 'final_dept_level', 'priority')
+
+
 class RouteTemplateSerializer(serializers.ModelSerializer):
     approvers = SimpleUserSerializer(many=True, read_only=True)
     approver_ids = serializers.PrimaryKeyRelatedField(
@@ -35,14 +51,18 @@ class RouteTemplateSerializer(serializers.ModelSerializer):
 
 
 class DocumentTypeSerializer(serializers.ModelSerializer):
+    category_name = serializers.CharField(source='category.name', read_only=True)
     route_templates = RouteTemplateSerializer(many=True, read_only=True)
+    policy_rules = ApprovalPolicyRuleSerializer(many=True, read_only=True)
     route_type_desc = serializers.CharField(source='get_route_type_display', read_only=True)
     final_approval_duty_name = serializers.CharField(source='final_approval_duty.name', read_only=True)
 
     class Meta:
         model = DocumentType
-        fields = ('id', 'name', 'code', 'description', 'route_type', 'route_type_desc',
+        fields = ('id', 'category', 'category_name', 'name', 'code', 'description',
+                  'route_type', 'route_type_desc',
                   'final_approval_duty', 'final_approval_duty_name', 'final_dept_level',
+                  'policy_rules', 'allowed_departments', 'allowed_duties', 'allowed_positions',
                   'form_schema', 'is_active', 'route_templates')
 
 

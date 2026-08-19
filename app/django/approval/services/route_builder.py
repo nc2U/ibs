@@ -2,9 +2,25 @@ from company.models import StaffAssignment, Staff, Department
 from ..models import DocumentType
 
 
-def build_dynamic_approval_route(doc_type: DocumentType, drafter_user, drafter_assignment: StaffAssignment = None):
+def extract_amount_from_content(content: dict | None) -> float | None:
+    """기안 문서 내용에서 금액 성격의 필드 값을 자동 추출"""
+    if not content or not isinstance(content, dict):
+        return None
+    for key in ('amount', 'estimated_amount', 'total_amount', 'price', 'cost', 'expense_amount', 'payment_amount'):
+        val = content.get(key)
+        if val is not None and val != '':
+            try:
+                clean_val = str(val).replace(',', '').replace(' ', '').replace('원', '')
+                return float(clean_val)
+            except (ValueError, TypeError):
+                continue
+    return None
+
+
+def build_dynamic_approval_route(doc_type: DocumentType, drafter_user, drafter_assignment: StaffAssignment = None, content: dict = None):
     """
-    기안자의 보직(소속 부서)과 문서 유형의 전결 규정에 따라 결재 단계 목록을 동적으로 생성합니다.
+    기안자의 보직(소속 부서), 문서 유형의 전결 규정 및 금액별 조건부 정책(ApprovalPolicyRule)에 따라
+    결재 단계 목록을 동적으로 생성합니다.
 
     반환 형식:
     [
@@ -70,6 +86,21 @@ def build_dynamic_approval_route(doc_type: DocumentType, drafter_user, drafter_a
     from company.models import Company
     company = assignment.company if assignment else Company.objects.filter(is_default=True).first()
 
+    # 조건부 전결 정책(ApprovalPolicyRule) 적용 검사
+    amount = extract_amount_from_content(content)
+    effective_final_duty = doc_type.final_approval_duty
+    effective_final_level = doc_type.final_dept_level
+
+    policy_rules = doc_type.policy_rules.all()
+    if policy_rules.exists() and amount is not None:
+        for rule in policy_rules:
+            if rule.is_matched(amount):
+                if rule.final_approval_duty:
+                    effective_final_duty = rule.final_approval_duty
+                if rule.final_dept_level:
+                    effective_final_level = rule.final_dept_level
+                break
+
     # (1) 부서 트리 상향 순회 (직속 부서장 → 상위 부서장 → ...)
     if assignment and assignment.department:
         current_dept = assignment.department
@@ -94,12 +125,12 @@ def build_dynamic_approval_route(doc_type: DocumentType, drafter_user, drafter_a
                 step_order += 1
 
                 # 전결 규정 체크: 직책 전결 (예: 팀장 전결, 본부장 전결)
-                if doc_type.final_approval_duty and manager_staff.duty_id == doc_type.final_approval_duty_id:
+                if effective_final_duty and manager_staff.duty_id == effective_final_duty.id:
                     reached_final = True
                     break
 
                 # 전결 규정 체크: 부서 레벨 전결 (예: 1레벨(본부) 부서장까지만 승인)
-                if doc_type.final_dept_level and current_dept.level <= doc_type.final_dept_level:
+                if effective_final_level and current_dept.level <= effective_final_level:
                     reached_final = True
                     break
 
