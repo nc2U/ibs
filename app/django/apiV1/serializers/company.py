@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from company.models import Company, Logo, Department, JobGrade, Position, DutyTitle, Staff
+from company.models import Company, Logo, Department, JobGrade, Position, DutyTitle, Staff, StaffAssignment
 from work.models.project import IssueProject
 
 
@@ -92,6 +92,20 @@ class DutyTitleSerializer(serializers.ModelSerializer):
         fields = ('pk', 'company', 'name', 'desc')
 
 
+class StaffAssignmentSerializer(serializers.ModelSerializer):
+    company = serializers.SlugRelatedField(queryset=Company.objects.all(), slug_field='name')
+    department_name = serializers.CharField(source='department.name', read_only=True)
+    position_name = serializers.CharField(source='position.name', read_only=True)
+    duty_name = serializers.CharField(source='duty.name', read_only=True)
+    represent_type_desc = serializers.CharField(source='get_represent_type_display', read_only=True)
+
+    class Meta:
+        model = StaffAssignment
+        fields = ('pk', 'company', 'staff', 'department', 'department_name',
+                  'position', 'position_name', 'duty', 'duty_name',
+                  'is_primary', 'assigned_tasks', 'represent_type', 'represent_type_desc')
+
+
 class StaffSerializer(serializers.ModelSerializer):
     company = serializers.SlugRelatedField(queryset=Company.objects.all(), slug_field='name')
     sort = serializers.ChoiceField(choices=Staff.SORT_CHOICES)
@@ -102,9 +116,11 @@ class StaffSerializer(serializers.ModelSerializer):
     duty = serializers.SlugRelatedField(queryset=DutyTitle.objects.all(), slug_field='name', allow_null=True)
     status = serializers.ChoiceField(choices=Staff.STATUS_CHOICES)
     status_desc = serializers.CharField(source='get_status_display', read_only=True)
+    assignments = StaffAssignmentSerializer(many=True, read_only=True)
 
     class Meta:
         model = Staff
         fields = ('pk', 'company', 'sort', 'sort_desc', 'name', 'id_number', 'personal_phone',
                   'email', 'department', 'grade', 'position', 'duty', 'date_join', 'status',
-                  'status_desc', 'date_leave', 'user', 'is_hq_financial_officer')
+                  'status_desc', 'date_leave', 'user', 'is_hq_financial_officer', 'is_hq_hr_officer',
+                  'assignments')

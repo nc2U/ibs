@@ -37,6 +37,7 @@ router.register(r'grade', company.JobGradeViewSet)
 router.register(r'position', company.PositionViewSet)
 router.register(r'duty-title', company.DutyTitleViewSet)
 router.register(r'staff', company.StaffViewSet)
+router.register(r'staff-assignment', company.StaffAssignmentViewSet)
 
 # approval (전자결재)
 router.register(r'approval-doc-type', approval.DocumentTypeViewSet, basename='approval-doc-type')

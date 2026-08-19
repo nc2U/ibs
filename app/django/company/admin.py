@@ -1,7 +1,12 @@
 from django.contrib import admin
 from import_export.admin import ImportExportMixin
 
-from .models import Company, Logo, Department, JobGrade, Position, DutyTitle, Staff
+from .models import Company, Logo, Department, JobGrade, Position, DutyTitle, Staff, StaffAssignment
+
+
+class StaffAssignmentInline(admin.TabularInline):
+    model = StaffAssignment
+    extra = 1
 
 
 class DepartmentInline(admin.StackedInline):
@@ -52,6 +57,14 @@ class StaffAdmin(ImportExportMixin, admin.ModelAdmin):
                     'name', 'email', 'department', 'status', 'date_join', 'date_leave')
     list_display_links = ('name', 'email')
     list_filter = ('company', 'sort', 'grade', 'position', 'duty')
+    inlines = (StaffAssignmentInline,)
+
+
+class StaffAssignmentAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_display = ('id', 'company', 'staff', 'department', 'position', 'duty', 'is_primary', 'represent_type', 'assigned_tasks')
+    list_display_links = ('staff',)
+    list_filter = ('company', 'department', 'is_primary', 'duty', 'represent_type')
+    search_fields = ('staff__name', 'department__name', 'assigned_tasks')
 
 
 admin.site.register(Company, CompanyAdmin)
@@ -60,3 +73,4 @@ admin.site.register(JobGrade, JobGradeAdmin)
 admin.site.register(Position, PositionAdmin)
 admin.site.register(DutyTitle, DutyTitleAdmin)
 admin.site.register(Staff, StaffAdmin)
+admin.site.register(StaffAssignment, StaffAssignmentAdmin)

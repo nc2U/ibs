@@ -141,3 +141,39 @@ class Staff(models.Model):
         ordering = ['-date_join']
         verbose_name = '06. 직원 정보'
         verbose_name_plural = '06. 직원 정보'
+
+
+class StaffAssignment(models.Model):
+    """직원 보직/발령 정보 (주 보직 및 겸직 지원)"""
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='assignments', verbose_name='회사')
+    staff = models.ForeignKey(Staff, on_delete=models.CASCADE, related_name='assignments', verbose_name='직원')
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='assignments', verbose_name='소속 부서')
+    position = models.ForeignKey(Position, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='직위')
+    duty = models.ForeignKey(DutyTitle, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='직책')
+    is_primary = models.BooleanField('주 부서/보직 여부', default=True, help_text='기본 소속 여부 (직원당 1개만 True)')
+    assigned_tasks = models.CharField('담당 업무 요약', max_length=255, blank=True, help_text='예: 재무회계/인사/총무 총괄, 개발사업성 검토 등')
+
+    REPRESENT_CHOICES = (
+        ('sole', '단독대표'),
+        ('joint', '공동대표'),
+        ('each', '각자대표'),
+    )
+    represent_type = models.CharField('대표권 구분', max_length=10, choices=REPRESENT_CHOICES, null=True, blank=True,
+                                      help_text='대표이사 직책인 경우 대표권 형태')
+
+    class Meta:
+        ordering = ['-is_primary', 'id']
+        verbose_name = '07. 직원 보직/겸직 정보'
+        verbose_name_plural = '07. 직원 보직/겸직 목록'
+        unique_together = ('staff', 'department', 'duty')
+
+    def __str__(self):
+        role = self.duty.name if self.duty else (self.position.name if self.position else '팀원')
+        primary_str = '[주]' if self.is_primary else '[겸]'
+        return f'{primary_str} {self.staff.name} - {self.department.name} ({role})'
+
+    def save(self, *args, **kwargs):
+        # 주 보직(is_primary=True)으로 저장 시 동일 직원의 다른 보직은 is_primary=False로 변경
+        if self.is_primary and self.staff_id:
+            StaffAssignment.objects.filter(staff_id=self.staff_id, is_primary=True).exclude(pk=self.pk).update(is_primary=False)
+        super().save(*args, **kwargs)

@@ -1,11 +1,14 @@
 from rest_framework import viewsets
 
-from company.models import Company, Logo, Department, JobGrade, Position, DutyTitle, Staff
+from company.models import Company, Logo, Department, JobGrade, Position, DutyTitle, Staff, StaffAssignment
 from ..pagination import PageNumberPaginationOneThousand
 from apiV1.permissions.auth_perms import permissions, IsSuperUserOrReadOnly, IsStaffOrReadOnly
 from apiV1.permissions.ibs_perms import IbsModulePermission
-from ..serializers.company import CompanySerializer, LogoSerializer, DepartmentSerializer, \
-    JobGradeSerializer, PositionSerializer, DutyTitleSerializer, StaffSerializer
+from ..serializers.company import (
+    CompanySerializer, LogoSerializer, DepartmentSerializer,
+    JobGradeSerializer, PositionSerializer, DutyTitleSerializer,
+    StaffSerializer, StaffAssignmentSerializer,
+)
 
 
 # Company --------------------------------------------------------------------------
@@ -74,12 +77,29 @@ class DutyTitleViewSet(viewsets.ModelViewSet):
 
 
 class StaffViewSet(viewsets.ModelViewSet):
-    queryset = Staff.objects.all()
+    queryset = Staff.objects.all().prefetch_related(
+        'assignments__department', 'assignments__position', 'assignments__duty'
+    )
     serializer_class = StaffSerializer
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly, IbsModulePermission)
     pagination_class = PageNumberPaginationOneThousand
     filterset_fields = ('company', 'sort', 'department', 'user', 'status')
-    search_fields = ('name', 'id_number', 'personal_email', 'company_email')
+    search_fields = ('name', 'id_number', 'personal_phone', 'email')
+
+    @property
+    def required_permission(self):
+        return 'hr_work.read' if self.action in ('list', 'retrieve') else 'hr_work.create' if self.action == 'create' else 'hr_work.update' if self.action in ('update', 'partial_update') else 'hr_work.delete' if self.action == 'destroy' else 'hr_work.read'
+
+
+class StaffAssignmentViewSet(viewsets.ModelViewSet):
+    queryset = StaffAssignment.objects.all().select_related(
+        'company', 'staff', 'department', 'position', 'duty'
+    )
+    serializer_class = StaffAssignmentSerializer
+    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly, IbsModulePermission)
+    pagination_class = PageNumberPaginationOneThousand
+    filterset_fields = ('company', 'staff', 'department', 'duty', 'is_primary', 'represent_type')
+    search_fields = ('staff__name', 'department__name', 'assigned_tasks')
 
     @property
     def required_permission(self):
