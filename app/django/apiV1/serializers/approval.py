@@ -108,6 +108,7 @@ class ApprovalDocumentListSerializer(serializers.ModelSerializer):
     doc_type_name = serializers.CharField(source='doc_type.name', read_only=True)
     drafter_assignment_desc = serializers.SerializerMethodField()
     attachment_count = serializers.IntegerField(source='attachments.count', read_only=True)
+    observer_count = serializers.IntegerField(source='observers.count', read_only=True)
 
     def get_drafter_assignment_desc(self, obj):
         if obj.drafter_assignment:
@@ -121,7 +122,7 @@ class ApprovalDocumentListSerializer(serializers.ModelSerializer):
     class Meta:
         model = ApprovalDocument
         fields = ('id', 'doc_number', 'title', 'doc_type', 'doc_type_name', 'drafter',
-                  'drafter_assignment', 'drafter_assignment_desc', 'attachment_count',
+                  'drafter_assignment', 'drafter_assignment_desc', 'attachment_count', 'observer_count',
                   'status', 'current_step', 'created_at', 'submitted_at', 'completed_at')
 
 
@@ -130,6 +131,10 @@ class ApprovalDocumentSerializer(serializers.ModelSerializer):
     doc_type_detail = DocumentTypeSerializer(source='doc_type', read_only=True)
     steps = ApprovalStepSerializer(many=True, read_only=True)
     attachments = ApprovalAttachmentSerializer(many=True, read_only=True)
+    observers = SimpleUserSerializer(many=True, read_only=True)
+    observer_ids = serializers.PrimaryKeyRelatedField(
+        many=True, queryset=User.objects.all(), source='observers', required=False, write_only=True
+    )
     drafter_assignment_desc = serializers.SerializerMethodField()
     pdf_url = serializers.SerializerMethodField()
 
@@ -149,7 +154,6 @@ class ApprovalDocumentSerializer(serializers.ModelSerializer):
         return None
 
     def to_internal_value(self, data):
-        # multipart/form-data로 전송 시 content가 JSON 문자열인 경우 dict로 파싱
         mutable_data = data.copy() if hasattr(data, 'copy') else dict(data)
         content_val = mutable_data.get('content')
         if isinstance(content_val, str):
@@ -157,11 +161,26 @@ class ApprovalDocumentSerializer(serializers.ModelSerializer):
                 mutable_data['content'] = json.loads(content_val)
             except Exception:
                 pass
+
+        # observer_ids가 문자열/JSON으로 넘어온 경우 처리
+        observer_val = mutable_data.get('observer_ids')
+        if isinstance(observer_val, str):
+            try:
+                parsed = json.loads(observer_val)
+                if isinstance(parsed, list):
+                    mutable_data.setlist('observer_ids', parsed) if hasattr(mutable_data, 'setlist') else mutable_data.update({'observer_ids': parsed})
+            except Exception:
+                pass
+
         return super().to_internal_value(mutable_data)
 
     def create(self, validated_data):
         request = self.context.get('request')
+        observers_data = validated_data.pop('observers', None)
         document = super().create(validated_data)
+
+        if observers_data is not None:
+            document.observers.set(observers_data)
 
         # 다중 첨부파일 업로드 처리
         if request and request.FILES:
@@ -176,7 +195,11 @@ class ApprovalDocumentSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         request = self.context.get('request')
+        observers_data = validated_data.pop('observers', None)
         document = super().update(instance, validated_data)
+
+        if observers_data is not None:
+            document.observers.set(observers_data)
 
         # 다중 첨부파일 추가 업로드 처리
         if request and request.FILES:
@@ -192,7 +215,8 @@ class ApprovalDocumentSerializer(serializers.ModelSerializer):
     class Meta:
         model = ApprovalDocument
         fields = ('id', 'doc_number', 'title', 'doc_type', 'doc_type_detail',
-                  'content', 'attachment', 'attachments', 'drafter', 'drafter_assignment', 'drafter_assignment_desc',
+                  'content', 'attachment', 'attachments', 'observers', 'observer_ids',
+                  'drafter', 'drafter_assignment', 'drafter_assignment_desc',
                   'workspace', 'status', 'current_step', 'content_hash',
                   'pdf_url', 'created_at', 'submitted_at', 'completed_at',
                   'steps')

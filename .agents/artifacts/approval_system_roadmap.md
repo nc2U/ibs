@@ -113,15 +113,17 @@
 - `ApprovalAttachment` 모델 신설 및 `get_approval_file_path` S3 안전 경로(`approval/attachments/%Y/%m/`) 연동.
 - `DocumentForm.vue` 다중 파일 드래그/선택 및 삭제, `DocumentDetail.vue` 첨부파일 다운로드 카드 뷰 완성.
 
+### ✨ Feat #9 — 참조자(공람) 지정 및 권한/알림 연동 (해결)
+- `ApprovalDocument.observers` ManyToManyField 및 `GET /api/v1/approval-document/my_observed/` 엔드포인트 신설.
+- `DocumentForm.vue` 사내 사용자 Autocomplete 다중 선택 Chips UI, `DocumentDetail.vue` 참조자 태그 표출.
+- 최종 승인 시 참조자 대상 Celery 푸시/인앱 알림 자동 발송 (`notify_drafter_task`).
+
 ---
 
 ## 4. 향후 확장 권장 항목 (P2)
 
 #### 4-1. 결재 알림 배지 (Notification Badge)
 - `_nav.ts`의 `결재 대기함` 메뉴에 `pendingList.length` 실시간 배지 연결
-
-#### 4-2. 결재선 합의(참조/공람) 기능
-- 결재선 외 참조자(Observer) 지정 및 문서 열람 권한 부여
 
 ---
 

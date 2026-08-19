@@ -32,10 +32,10 @@ def notify_approvers_task(document_pk, step_pk):
 
 @shared_task
 def notify_drafter_task(document_pk, action, comment=''):
-    """결재 완료/반려 알림: 기안자에게 결과 푸시 + 인앱 알림 발송"""
+    """결재 완료/반려 알림: 기안자 및 참조자에게 결과 푸시 + 인앱 알림 발송"""
     from approval.models import ApprovalDocument
     try:
-        document = ApprovalDocument.objects.select_related('doc_type', 'drafter').get(pk=document_pk)
+        document = ApprovalDocument.objects.select_related('doc_type', 'drafter').prefetch_related('observers').get(pk=document_pk)
 
         if action == 'approved':
             push_title = f'[결재 완료] {document.doc_type.name}'
@@ -46,6 +46,7 @@ def notify_drafter_task(document_pk, action, comment=''):
         else:
             return
 
+        # 기안자 알림
         send_push_notification(
             user_ids=[document.drafter_id],
             title=push_title,
@@ -54,6 +55,21 @@ def notify_drafter_task(document_pk, action, comment=''):
             target_type='approval_document',
             target_id=str(document_pk),
         )
+
+        # 최종 승인 시 참조자들에게 공람 알림 발송
+        if action == 'approved':
+            observer_ids = list(document.observers.exclude(id=document.drafter_id).values_list('id', flat=True))
+            if observer_ids:
+                obs_title = f'[결재 공람] {document.doc_type.name}'
+                obs_body = f'"{document.title}" 결재가 최종 승인되어 공람되었습니다.'
+                send_push_notification(
+                    user_ids=observer_ids,
+                    title=obs_title,
+                    body=obs_body,
+                    category='approval',
+                    target_type='approval_document',
+                    target_id=str(document_pk),
+                )
     except Exception as e:
         print(f'❌ notify_drafter_task failed: {e}')
 

@@ -116,13 +116,14 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
             'workspace'
         ).prefetch_related(
             'attachments__creator__profile',
+            'observers__profile',
             'steps__approvers__profile', 'steps__actions__approver__profile'
         )
         if user.is_superuser:
             return qs
-        # 기안자이거나 결재자 중 한 명인 문서만 조회
+        # 기안자, 결재자, 또는 참조자인 문서만 조회 가능
         return (
-            qs.filter(drafter=user) | qs.filter(steps__approvers=user)
+            qs.filter(drafter=user) | qs.filter(steps__approvers=user) | qs.filter(observers=user)
         ).distinct()
 
     def get_serializer_class(self):
@@ -385,6 +386,19 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
         ).select_related(
             'doc_type', 'drafter', 'drafter__profile', 'drafter_assignment__department'
         ).distinct().order_by('-completed_at', '-id')
+
+        serializer = ApprovalDocumentListSerializer(qs, many=True, context={'request': request})
+        return Response(serializer.data)
+
+    # ── GET /approval-document/my_observed/ ──────────────────
+    @action(detail=False, methods=['get'])
+    def my_observed(self, request):
+        """내가 참조자로 지정된 문서 목록"""
+        qs = ApprovalDocument.objects.filter(
+            observers=request.user
+        ).select_related(
+            'doc_type', 'drafter', 'drafter__profile', 'drafter_assignment__department'
+        ).distinct().order_by('-created_at', '-id')
 
         serializer = ApprovalDocumentListSerializer(qs, many=True, context={'request': request})
         return Response(serializer.data)

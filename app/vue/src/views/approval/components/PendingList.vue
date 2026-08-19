@@ -2,8 +2,8 @@
 import { onMounted, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
-import { useApproval } from '@/store/pinia/approval.ts'
-import type { ApprovalDocument } from '@/store/types/approval.ts'
+import { useApproval } from '@/store/pinia/approval'
+import type { ApprovalDocument } from '@/store/types/approval'
 
 const router = useRouter()
 const store = useApproval()

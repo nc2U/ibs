@@ -2,15 +2,15 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
-import { useApproval } from '@/store/pinia/approval.ts'
-import { useAccount } from '@/store/pinia/account.ts'
+import { useApproval } from '@/store/pinia/approval'
+import { useAccount } from '@/store/pinia/account'
 import type {
   ApprovalStep,
   ApprovalActionRecord,
   DocumentStatus,
   StepStatus,
   ApprovalActionType,
-} from '@/store/types/approval.ts'
+} from '@/store/types/approval'
 import { CCard } from '@coreui/vue'
 
 const route = useRoute()
@@ -223,6 +223,23 @@ onMounted(() => fetchDocument(docId.value))
               <CTableDataCell class="pl-3">{{ fmtDatetime(document.submitted_at) }}</CTableDataCell>
               <CTableHeaderCell class="text-center bg-more-light">완료일시</CTableHeaderCell>
               <CTableDataCell class="pl-3">{{ fmtDatetime(document.completed_at) }}</CTableDataCell>
+            </CTableRow>
+            <CTableRow v-if="document.observers?.length">
+              <CTableHeaderCell class="text-center bg-more-light">참조자 (공람)</CTableHeaderCell>
+              <CTableDataCell colspan="3" class="pl-3">
+                <div class="d-flex flex-wrap gap-1 align-items-center">
+                  <CBadge
+                    v-for="obs in document.observers"
+                    :key="obs.id"
+                    color="info"
+                    variant="outline"
+                    class="py-1 px-2"
+                  >
+                    <CIcon name="cilUser" size="sm" class="me-1" />
+                    {{ obs.full_name }}
+                  </CBadge>
+                </div>
+              </CTableDataCell>
             </CTableRow>
           </CTableBody>
         </CTable>

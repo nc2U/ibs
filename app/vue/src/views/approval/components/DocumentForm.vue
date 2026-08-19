@@ -2,14 +2,17 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
-import { useApproval } from '@/store/pinia/approval.ts'
-import type { DocumentType } from '@/store/types/approval.ts'
+import { useApproval } from '@/store/pinia/approval'
+import { useAccount } from '@/store/pinia/account'
+import type { DocumentType } from '@/store/types/approval'
 import { STATIC_FORM_REGISTRY, DynamicSchemaForm } from '@/views/approval/forms'
 
 const route = useRoute()
 const router = useRouter()
 const store = useApproval()
+const accStore = useAccount()
 const { docCategoryList, forDraftDocTypeList, document, myAssignments, routePreview } = storeToRefs(store)
+const { usersList } = storeToRefs(accStore)
 const {
   fetchDocCategoryList,
   fetchForDraftDocTypeList,
@@ -21,6 +24,7 @@ const {
   deleteAttachment,
   submitDocument,
 } = store
+const { fetchUsersList } = accStore
 
 const isEdit = computed(() => !!route.params.docId)
 const saving = ref<'draft' | 'submit' | ''>('')
@@ -31,8 +35,16 @@ const form = ref({
   title: '',
 })
 const dynamicContent = ref<Record<string, string>>({})
+const selectedObservers = ref<number[]>([])
 const selectedFiles = ref<File[]>([])
 const fileInputRef = ref<HTMLInputElement | null>(null)
+
+const availableUsers = computed(() =>
+  usersList.value.map(u => ({
+    value: u.pk,
+    title: u.profile?.name ? `${u.profile.name} (${u.username})` : u.username,
+  })),
+)
 
 const existingAttachments = computed(() => document.value?.attachments || [])
 
@@ -132,6 +144,11 @@ const buildFormData = () => {
   fd.append('title', form.value.title)
   fd.append('content', JSON.stringify(dynamicContent.value))
 
+  // 참조자 추가
+  for (const obsId of selectedObservers.value) {
+    fd.append('observer_ids', String(obsId))
+  }
+
   // 첨부파일 추가
   for (const file of selectedFiles.value) {
     fd.append('files', file)
@@ -174,6 +191,7 @@ onMounted(async () => {
   await Promise.all([
     fetchDocCategoryList(),
     fetchMyAssignments(),
+    fetchUsersList(),
   ])
 
   // 기본 주보직 선택
@@ -192,6 +210,7 @@ onMounted(async () => {
       form.value.drafter_assignment = document.value.drafter_assignment ?? ''
       form.value.title = document.value.title
       dynamicContent.value = { ...(document.value.content as Record<string, string>) }
+      selectedObservers.value = (document.value.observers || []).map(o => o.id)
       updateRoutePreview()
     }
   }
@@ -281,6 +300,32 @@ onMounted(async () => {
                 placeholder="결재 문서 제목을 입력하세요."
                 required
               />
+            </CCol>
+          </CRow>
+
+          <!-- 참조자 (공람) -->
+          <CRow class="mb-3">
+            <CFormLabel class="col-sm-3 col-form-label">
+              참조자 <span class="text-muted small">(공람)</span>
+            </CFormLabel>
+            <CCol sm="9">
+              <v-autocomplete
+                v-model="selectedObservers"
+                :items="availableUsers"
+                item-value="value"
+                item-title="title"
+                multiple
+                chips
+                closable-chips
+                clearable
+                density="compact"
+                variant="outlined"
+                placeholder="결재 완료 시 공람할 참조자를 검색/선택하세요."
+                hide-details
+              />
+              <div class="form-text text-muted">
+                지정된 참조자는 결재가 최종 승인되었을 때 공람 알림을 받고 문서를 열람할 수 있습니다.
+              </div>
             </CCol>
           </CRow>
 

@@ -59,6 +59,13 @@ class ApprovalDocument(models.Model):
         null=True, blank=True, related_name='approval_documents',
         verbose_name='워크스페이스'
     )
+    # 참조자 (공람자) 목록
+    observers = models.ManyToManyField(
+        settings.AUTH_USER_MODEL, blank=True,
+        related_name='observed_approval_documents',
+        verbose_name='참조자 목록',
+        help_text='결재 진행 및 완료 시 열람 권한 및 알림을 수신하는 참조자'
+    )
     status = models.CharField(
         '결재 상태', max_length=15,
         choices=STATUS_CHOICES, default=STATUS_DRAFT

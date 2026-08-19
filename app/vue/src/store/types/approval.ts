@@ -135,6 +135,8 @@ export interface ApprovalDocument {
   attachment?: string | null
   attachments?: ApprovalAttachment[]
   attachment_count?: number
+  observers?: SimpleUser[]
+  observer_count?: number
   drafter: SimpleUser
   workspace?: number | null
   status: DocumentStatus
@@ -153,6 +155,7 @@ export interface PatchApprovalDocument {
   drafter_assignment?: number | null
   content?: Record<string, unknown>
   workspace?: number | null
+  observer_ids?: number[]
 }
 
 export interface ApprovalActPayload {

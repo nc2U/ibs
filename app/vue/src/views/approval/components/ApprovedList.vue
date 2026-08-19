@@ -1,17 +1,16 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { storeToRefs } from 'pinia'
-import { useApproval } from '@/store/pinia/approval.ts'
+import { useApproval } from '@/store/pinia/approval'
+import type { ApprovalDocument } from '@/store/types/approval'
 
 const router = useRouter()
 const store = useApproval()
-const { approvedList } = storeToRefs(store)
-const { fetchMyApproved } = store
+const approvedList = computed<ApprovalDocument[]>(() => store.approvedList)
 
 const searchText = ref('')
 
-const filteredList = computed(() => {
+const filteredList = computed<ApprovalDocument[]>(() => {
   if (!searchText.value) return approvedList.value
   const q = searchText.value.toLowerCase()
   return approvedList.value.filter(
@@ -43,7 +42,9 @@ const goDetail = (id: number) => {
   router.push({ name: '결재 문서함 - 보기', params: { docId: id } })
 }
 
-onMounted(fetchMyApproved)
+onMounted(() => {
+  store.fetchMyApproved()
+})
 </script>
 
 <template>

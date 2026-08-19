@@ -60,6 +60,7 @@ class ApprovalDocumentAdmin(admin.ModelAdmin):
     list_filter = ('status', 'doc_type')
     search_fields = ('title', 'drafter__username', 'doc_number')
     readonly_fields = ('doc_number', 'content_hash', 'created_at', 'updated_at', 'submitted_at', 'completed_at')
+    filter_horizontal = ('observers',)
     inlines = [ApprovalAttachmentInline, ApprovalStepInline]
 
 

@@ -170,6 +170,15 @@ export const useApproval = defineStore('approval', () => {
       .then(res => (approvedList.value = res.data))
       .catch(err => errorHandle(err.response.data))
 
+  // ── 내가 참조된 문서 목록 ─────────────────────────────
+  const observedList = ref<ApprovalDocument[]>([])
+
+  const fetchMyObserved = () =>
+    api
+      .get('/approval-document/my_observed/')
+      .then(res => (observedList.value = res.data))
+      .catch(err => errorHandle(err.response.data))
+
   // ── 결재 액션 ─────────────────────────────────────────
   const submitDocument = async (pk: number) => {
     try {
@@ -218,6 +227,7 @@ export const useApproval = defineStore('approval', () => {
     pendingList,
     draftedList,
     approvedList,
+    observedList,
     // actions
     fetchDocCategoryList,
     fetchDocTypeList,
@@ -233,6 +243,7 @@ export const useApproval = defineStore('approval', () => {
     fetchMyPending,
     fetchMyDrafted,
     fetchMyApproved,
+    fetchMyObserved,
     submitDocument,
     actDocument,
     cancelDocument,
