@@ -39,15 +39,22 @@ class UserSerializer(serializers.ModelSerializer):
         style={'input_type': 'password', 'placeholder': '비밀번호'}
     )
     profile = ProfileInUserSerializer(read_only=True)
-    is_hq_financial_officer = serializers.SerializerMethodField(read_only=True)
     is_hq_staff = serializers.SerializerMethodField(read_only=True)
+    is_hq_financial_officer = serializers.SerializerMethodField(read_only=True)
+    is_hq_hr_officer = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = User
-        fields = ('pk', 'email', 'username', 'is_active', 'is_superuser',
-                  'is_staff', 'work_manager', 'date_joined', 'password',
-                  'profile', 'last_login', 'is_hq_financial_officer', 'is_hq_staff')
+        fields = ('pk', 'email', 'username', 'is_active', 'is_superuser', 'is_staff',
+                  'work_manager', 'date_joined', 'password', 'profile', 'last_login',
+                  'is_hq_staff', 'is_hq_financial_officer', 'is_hq_hr_officer')
         read_only_fields = ('date_joined', 'last_login')
+
+    @staticmethod
+    def get_is_hq_staff(obj):
+        if obj.is_superuser:
+            return True
+        return obj.member_set.filter(project__type='1').exists()
 
     @staticmethod
     def get_is_hq_financial_officer(obj):
@@ -59,10 +66,13 @@ class UserSerializer(serializers.ModelSerializer):
             return False
 
     @staticmethod
-    def get_is_hq_staff(obj):
+    def get_is_hq_hr_officer(obj):
         if obj.is_superuser:
             return True
-        return obj.member_set.filter(project__type='1').exists()
+        try:
+            return getattr(obj.staff, 'is_hq_hr_officer', False)
+        except AttributeError:
+            return False
 
     def create(self, validated_data):
         user = User(email=validated_data['email'],
@@ -236,6 +246,6 @@ class NotificationSerializer(serializers.ModelSerializer):
     class Meta:
         from accounts.models import Notification
         model = Notification
-        fields = ('pk', 'user', 'title', 'body', 'category', 'target_type', 'target_id', 'data', 'is_read', 'created_at')
+        fields = ('pk', 'user', 'title', 'body', 'category', 'target_type', 'target_id', 'data', 'is_read',
+                  'created_at')
         read_only_fields = ('pk', 'user', 'title', 'body', 'category', 'target_type', 'target_id', 'data', 'created_at')
-
