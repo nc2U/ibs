@@ -60,6 +60,7 @@ class DocumentTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = DocumentType
         fields = ('id', 'category', 'category_name', 'name', 'code', 'description',
+                  'form_type', 'form_template_key',
                   'route_type', 'route_type_desc',
                   'final_approval_duty', 'final_approval_duty_name', 'final_dept_level',
                   'policy_rules', 'allowed_departments', 'allowed_duties', 'allowed_positions',

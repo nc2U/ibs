@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useApproval } from '@/store/pinia/approval.ts'
 import type { DocumentType } from '@/store/types/approval.ts'
+import { STATIC_FORM_REGISTRY, DynamicSchemaForm } from '@/views/approval/forms'
 
 const route = useRoute()
 const router = useRouter()
@@ -237,35 +238,30 @@ onMounted(async () => {
 
           <hr class="my-3" />
 
-          <!-- 동적 양식 필드 (form_schema) -->
+          <!-- 양식 필드 (STATIC 전용 폼 or DYNAMIC 스키마 폼) -->
           <template v-if="selectedDocType">
-            <CRow v-for="field in selectedDocType.form_schema" :key="field.key" class="mb-3">
-              <CFormLabel class="col-sm-3 col-form-label">
-                {{ field.label }}
-                <span v-if="field.required" class="text-danger">*</span>
-              </CFormLabel>
-              <CCol sm="9">
-                <CFormTextarea
-                  v-if="field.type === 'textarea'"
-                  v-model="dynamicContent[field.key]"
-                  :required="field.required"
-                  rows="4"
-                  :placeholder="`${field.label}을(를) 입력하세요.`"
-                />
-                <CFormInput
-                  v-else
-                  v-model="dynamicContent[field.key]"
-                  :type="field.type"
-                  :required="field.required"
-                  :placeholder="`${field.label}을(를) 입력하세요.`"
-                />
-              </CCol>
-            </CRow>
+            <!-- 1. STATIC 폼 컴포넌트 -->
+            <component
+              :is="STATIC_FORM_REGISTRY[selectedDocType.form_template_key ?? '']"
+              v-if="selectedDocType.form_type === 'STATIC' && selectedDocType.form_template_key && STATIC_FORM_REGISTRY[selectedDocType.form_template_key]"
+              v-model="dynamicContent"
+            />
+
+            <!-- 2. DYNAMIC 스키마 폼 -->
+            <DynamicSchemaForm
+              v-else-if="selectedDocType.form_schema && selectedDocType.form_schema.length"
+              v-model="dynamicContent"
+              :schema="selectedDocType.form_schema"
+            />
+
+            <div v-else class="text-center text-muted py-3 border rounded bg-light mb-3">
+              별도의 추가 양식 필드가 없는 일반 기안 문서입니다.
+            </div>
           </template>
 
           <div
             v-else-if="!form.doc_type"
-            class="text-center text-muted py-4 border rounded bg-light"
+            class="text-center text-muted py-4 border rounded bg-light mb-3"
           >
             문서 유형을 선택하면 작성 양식이 표시됩니다.
           </div>

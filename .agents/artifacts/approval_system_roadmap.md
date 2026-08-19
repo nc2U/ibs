@@ -1,7 +1,7 @@
 # 전자결재 시스템 (Electronic Approval System) — 구현 현황 및 개선 로드맵
 
 > 최초 작성: 2026-08-18
-> **최종 업데이트: 2026-08-20 (결재 카테고리, 금액별 조건부 전결 정책, 기안 권한 제어 연동)**
+> **최종 업데이트: 2026-08-20 (DYNAMIC / STATIC 하이브리드 전용 폼 시스템 연동)**
 > 작성자: Antigravity AI
 
 ---
@@ -12,33 +12,33 @@
 
 | 파일 | 상태 | 비고 |
 |------|------|------|
-| `approval/models/document_type.py` | ✅ 완료 | `DocCategory` (카테고리), `ApprovalPolicyRule` (금액별 전결), 기안 권한 필드 추가 |
+| `approval/models/document_type.py` | ✅ 완료 | `DocCategory`, `ApprovalPolicyRule`, `form_type`(`DYNAMIC`/`STATIC`), `form_template_key` 추가 |
 | `company/models.py` | ✅ 완료 | `StaffAssignment` (보직/겸직/대표권), `Department.save()` 자동 레벨 계산 |
 | `approval/models/document.py` | ✅ 완료 | `drafter_assignment` (기안 보직 연결), `doc_number` null 허용 |
 | `approval/services/route_builder.py` | ✅ 완료 | **조직도 기반 동적 결재선 + 금액별 조건부 전결 규칙 평가 엔진** |
-| `approval/admin.py` | ✅ 완료 | `DocCategoryAdmin`, `ApprovalPolicyRuleInline`, M2M 필터 등록 |
+| `approval/admin.py` | ✅ 완료 | `DocCategoryAdmin`, `ApprovalPolicyRuleInline`, `form_type` 관리 |
 | `approval/tasks.py` | ✅ 완료 | Celery: FCM 푸시 알림, WeasyPrint PDF 생성 |
 | `approval/templates/approval/pdf_document.html` | ✅ 완료 | PDF 출력용 HTML 양식 |
-| `approval/migrations/0004_...` | ✅ 완료 | 카테고리 및 조건부 전결 정책 DB 반영 완료 |
+| `approval/migrations/0005_...` | ✅ 완료 | `form_type`, `form_template_key` DB 반영 완료 |
 
 ### 1-2. API (`app/django/apiV1/`)
 
 | 파일 | 상태 | 비고 |
 |------|------|------|
-| `serializers/approval.py` | ✅ 완료 | `DocCategorySerializer`, `ApprovalPolicyRuleSerializer`, `DocumentTypeSerializer` 확장 |
-| `views/approval.py` | ✅ 완료 | `DocCategoryViewSet` (`/api/v1/approval-doc-category/`), `for_draft` 기안 권한 필터링 액션, `preview_route` 금액(amount) 파라미터 지원 |
+| `serializers/approval.py` | ✅ 완료 | `DocCategorySerializer`, `ApprovalPolicyRuleSerializer`, `form_type`/`form_template_key` 직렬화 |
+| `views/approval.py` | ✅ 완료 | `DocCategoryViewSet`, `for_draft` 권한 필터링, `preview_route` 실시간 금액 연동 |
 
 #### API 엔드포인트
 
 | Method | Endpoint | 기능 |
 |--------|----------|------|
-| `GET` | `/api/v1/approval-doc-category/` | **결재 카테고리 목록 (인사/근태, 회계/자금 등)** |
+| `GET` | `/api/v1/approval-doc-category/` | 결재 카테고리 목록 (인사/근태, 회계/자금 등) |
 | `GET` | `/api/v1/approval-doc-type/` | 활성 문서 유형 목록 |
-| `GET` | `/api/v1/approval-doc-type/for_draft/` | **기안자의 소속 부서/직책에 따라 기안 가능한 문서 유형만 필터링** |
+| `GET` | `/api/v1/approval-doc-type/for_draft/` | 기안자의 소속 부서/직책에 따라 기안 가능한 문서 유형만 필터링 |
 | `GET/POST` | `/api/v1/approval-document/` | 문서 목록 / 임시저장 기안 생성 |
 | `GET/PATCH/DELETE` | `/api/v1/approval-document/{id}/` | 문서 상세/수정/삭제 |
 | `GET` | `/api/v1/approval-document/my_assignments/` | 기안자의 주보직/겸직 목록 조회 |
-| `GET` | `/api/v1/approval-document/preview_route/` | **문서유형/보직/금액(amount) 기준 실시간 결재선 미리보기** |
+| `GET` | `/api/v1/approval-document/preview_route/` | 문서유형/보직/금액(amount) 기준 실시간 결재선 미리보기 |
 | `POST` | `/api/v1/approval-document/{id}/submit/` | 상신 (동적 결재선 자동 생성 + 결재 알림) |
 | `POST` | `/api/v1/approval-document/{id}/act/` | 승인 / 반려 / 의견 |
 | `POST` | `/api/v1/approval-document/{id}/cancel/` | 기안 취소 |
@@ -49,61 +49,55 @@
 
 | 파일 | 상태 | 비고 |
 |------|------|------|
-| `store/types/approval.ts` | ✅ 완료 | `DocCategory`, `ApprovalPolicyRule`, `DocumentType` 타입 확장 |
-| `store/pinia/approval.ts` | ✅ 완료 | `fetchDocCategoryList`, `fetchForDraftDocTypeList`, `previewRoute(amount)` 액션 |
-| `views/approval/components/DocumentForm.vue` | ✅ 완료 | **카테고리별 optgroup 그룹화 + 기안 권한 필터링 + 금액 입력 시 실시간 전결 결재선 변경** |
-| `views/approval/components/DocumentDetail.vue` | ✅ 완료 | 기안자 소속 보직 표출 + 결재선 타임라인 |
-| `views/approval/components/PendingList.vue` | ✅ 완료 | 결재 대기함 |
-| `views/approval/components/DraftedList.vue` | ✅ 완료 | 기안함 |
+| `store/types/approval.ts` | ✅ 완료 | `form_type`, `form_template_key` 인터페이스 확장 |
+| `views/approval/forms/index.ts` | ✅ 완료 | **`STATIC_FORM_REGISTRY` 컴포넌트 레지스트리** |
+| `views/approval/forms/LeaveApplicationForm.vue` | ✅ 완료 | **휴가/연차 전용 폼 (일수 자동계산, 대행자, 비상연락처)** |
+| `views/approval/forms/ExpenseReportForm.vue` | ✅ 완료 | **지출결의서 전용 폼 (지출내역 그리드, 금액 자동합산, 계좌정보)** |
+| `views/approval/forms/PurchaseOrderForm.vue` | ✅ 완료 | **구매품의서 전용 폼 (품목/수량/단가/공급가액/부가세 계산)** |
+| `views/approval/forms/DynamicSchemaForm.vue` | ✅ 완료 | **관리자 정의 JSON Schema 기반 동적 폼** |
+| `views/approval/components/DocumentForm.vue` | ✅ 완료 | **하이브리드 폼 분기 + 카테고리 optgroup + 금액별 실시간 전결 연동** |
+| `views/approval/components/DocumentDetail.vue` | ✅ 완료 | **STATIC / DYNAMIC 양식별 맞춤 상세 뷰** |
 
 ---
 
-## 2. 동적 결재선 및 조건부 전결 정책 (Approval Policy Rules) 아키텍처
-
-### 2-1. 핵심 평가 흐름
+## 2. DYNAMIC / STATIC 하이브리드 폼 아키텍처
 
 ```
-[1. 기안 작성]
-   - 기안 보직 선택 (주보직/겸직)
-   - 기안 가능한 문서 유형 선택 (카테고리별 그룹화)
-   - 양식 필드에 금액(amount) 입력
-   ↓
-[2. 조건부 전결 정책 (ApprovalPolicyRule) 평가]
-   - 입력된 금액이 속하는 정책 규칙 매칭
-   - 예: 500만원 이하 -> 팀장 전결
-   - 예: 500만원 초과 ~ 5,000만원 이하 -> 본부장 전결
-   - 예: 5,000만원 초과 -> 대표이사 최종 승인
-   ↓
-[3. 조직도 트리 상향 탐색 (Department Traversal)]
-   - 직속 부서 책임자 -> 상위 부서 책임자 -> ...
-   - 매칭된 전결 직책/부서 레벨 도달 시 결재선 즉시 종료
-   - 전결에 미도달한 경우 대표이사(공동대표 AND / 단독대표 OR) 최종 결재 추가
-   ↓
-[4. 실시간 UI 반영]
-   - 사용자가 금액을 수정할 때마다 결재선 미리보기가 즉시 반응형으로 단축/확장
+[문서 유형 (DocumentType)]
+   │
+   ├── form_type = 'STATIC' ────► STATIC_FORM_REGISTRY 매칭
+   │                               ├─ LEAVE_APPLICATION (휴가/연차 신청 폼)
+   │                               ├─ EXPENSE_REPORT    (지출결의 품목 그리드 폼)
+   │                               └─ PURCHASE_ORDER    (구매품의 공급가/세액 폼)
+   │
+   └── form_type = 'DYNAMIC' ───► DynamicSchemaForm.vue
+                                   └─ form_schema JSON 기반 일반 폼 렌더링
 ```
 
-### 2-2. 기안 권한 통제 (RBAC on DocumentType)
-* `allowed_departments`: 특정 부서만 기안 가능한 문서 제한 (비어있으면 전사 공통)
-* `allowed_duties`: 특정 직책(팀장 이상 등)만 기안 가능한 문서 제한
-* `allowed_positions`: 특정 직위만 기안 가능한 문서 제한
-* 프론트엔드에서는 `for_draft` API를 호출하여 현재 선택한 보직에서 기안할 수 있는 문서만 셀렉트박스에 노출.
+* **데이터 일원화**: 양식 종류와 관계없이 백엔드에는 JSON 딕셔너리(`content`)로 저장되어 호환성 100% 유지.
+* **실시간 결재선 연동**: 지출결의서나 구매품의서에서 테이블 행을 추가하고 금액을 입력하면, `amount` 합계가 자동 산출되어 **금액별 조건부 전결 결재선(`ApprovalPolicyRule`)에 즉각 반영**됨.
 
 ---
 
-## 3. 해결된 버그 이력
+## 3. 해결된 버그 및 개선 이력
 
-### 🐛 Bug #1 — `doc_number` UNIQUE constraint 위반 (2026-08-18 해결)
-- `doc_number` 필드가 `unique=True, blank=True`이나 `null=True`가 없어 임시저장 빈 문자열 중복 에러 발생.
-- `null=True, default=None` 수정 및 0002 마이그레이션 적용.
+### 🐛 Bug #1 — `doc_number` UNIQUE constraint 위반 (해결)
+- `doc_number` 필드 `null=True, default=None` 수정.
 
-### 🐛 Bug #2 — `get_full_name()` AttributeError (2026-08-18 해결)
-- 커스텀 `User` 모델에 `get_full_name()`이 없어 직렬화 에러 발생.
+### 🐛 Bug #2 — `get_full_name()` AttributeError (해결)
 - `Profile.name` 우선 조회 및 `select_related('drafter__profile')` 적용.
 
-### 🐛 Bug #3 — 신입/일반 직원 기안 시 자동 승인되는 문제 (2026-08-19 해결)
-- 결재자가 0명일 때 무조건 자동 승인 처리하던 로직으로 인해, 부서장/대표이사 계정 미연동 시 일반 직원 기안이 즉시 최종 승인되는 결함 발생.
-- **오직 대표이사 본인 기안인 경우에만 자동 승인**하도록 검증 조건을 강화하고, 일반 직원은 400 에러로 상신을 차단하도록 수정.
+### 🐛 Bug #3 — 신입/일반 직원 기안 시 자동 승인되는 문제 (해결)
+- 대표이사 본인 기안 시에만 자동 승인, 일반 직원은 400 에러로 차단.
+
+### ✨ Feat #4 — `Department.level` 자동 계산 (해결)
+- 프론트 수동 계산 제거 및 백엔드 `Department.save()`에서 상위 부서 기반 자동 산출 + 연쇄 갱신.
+
+### ✨ Feat #5 — 결재 카테고리 및 금액별 조건부 전결 정책 (해결)
+- `DocCategory`, `ApprovalPolicyRule` 신설 및 `route_builder.py` 실시간 금액 연동.
+
+### ✨ Feat #6 — DYNAMIC / STATIC 하이브리드 폼 시스템 (해결)
+- Vue 컴포넌트 레지스트리 및 전용 폼 3종(`LeaveApplication`, `ExpenseReport`, `PurchaseOrder`) 구축.
 
 ---
 
@@ -112,117 +106,48 @@
 ### 🔴 P1 — 필수 (기능 완성도)
 
 #### 4-1. 완료 문서함 (CompletedList)
-- `views/approval/components/CompletedList.vue` 신규 생성
-- `_nav.ts`에 `완료 문서함` 서브메뉴 추가
-- `/approval/completed` 라우트 추가 및 PDF 다운로드 강조
+- `views/approval/components/CompletedList.vue` 신규 생성 및 PDF 다운로드 강조
 
 #### 4-2. 첨부파일 처리
-- `DocumentForm.vue`에 파일 업로드 UI 추가 (`<input type="file">`)
-- API 호출 시 `multipart/form-data` 헤더 설정
-- `approval/attachments/%Y/%m/` 경로에 MinIO/S3 업로드 및 상세 페이지 다운로드 링크 제공
+- `DocumentForm.vue` 파일 업로드 UI 및 MinIO/S3 업로드 연동
 
-#### 4-3. 재상신(Resubmit) 사용자 안내
-- 반려 후 재상신 시 "이전 결재 이력이 초기화됩니다" 확인 모달 추가
-- 기존 단계 삭제 전 로그 보존 정책 결정
-
-#### 4-4. 결재 알림 배지 (Notification Badge)
+#### 4-3. 결재 알림 배지 (Notification Badge)
 - `_nav.ts`의 `결재 대기함` 메뉴에 `pendingList.length` 실시간 배지 연결
 
 ---
 
-### 🟡 P2 — 중요 (품질/보안)
-
-#### 4-5. 권한 통제 강화
-- `ApprovalPermission` 클래스 구현 (`approval.read`, `approval.create`, `approval.manage`)
-- `DocumentType` 관리: `is_superuser` 또는 `work_manager`만 허용
-
-#### 4-6. 최종 승인 문서 잠금(Lock)
-- `status=approved` 문서에 대한 `PATCH`/`DELETE` API 호출 차단 (`perform_update`, `destroy` 오버라이드)
-
-#### 4-7. Pagination 적용
-- `my_drafted()`, `my_pending()` 목록 조회 시 `PageNumberPaginationTwenty` 및 페이지네이션 UI 연동
-
-#### 4-8. PDF 생성 실패 재시도
-- `generate_approval_pdf_task` Celery `max_retries=3` 자동 재시도 및 Slack 알림 연동
-
-#### 4-9. PDF 한글 폰트 로컬 처리
-- `Dockerfile`에 `fonts-noto-cjk` 설치 및 WeasyPrint 로컬 폰트 참조 설정
-
----
-
-### 🟢 P3 — 개선 (UX / 고도화)
-
-#### 4-10. 결재 의견(Comment) 전용 기능
-- `ACTION_COMMENTED` 전용 "의견만 남기기" 버튼 및 타임라인 표시
-
-#### 4-11. 결재 요청 메일 발송
-- `notify_approvers_task`에 이메일 발송 (`send_mail`) 추가
-
-#### 4-12. 대시보드 위젯 연동
-- 메인 대시보드에 "내 결재 대기" 건수 카드 위젯 추가
-
-#### 4-13. 관리자용 전체 문서 조회 뷰
-- `/approval/all` 라우트 (관리자 전용 전체 결재 문서 현황 및 엑셀 다운로드)
-
-#### 4-14. 문서 유형 관리 Vue UI
-- 관리자가 Vue 화면에서 문서 유형 양식(`form_schema`), 결재 방식(`route_type`), 전결 직책, 조건부 정책 규칙을 직접 등록/수정하는 UI
-
----
-
-## 5. 남은 리팩토링 포인트
-
-### 5-1. `generate_doc_number()` — Race Condition 방지
-```python
-with transaction.atomic():
-    count = ApprovalDocument.objects.select_for_update().filter(
-        doc_type=self.doc_type,
-        status=self.STATUS_APPROVED,
-        completed_at__year=self.completed_at.year,
-    ).count()
-    return f'{self.doc_type.code}-{self.completed_at.year}-{str(count).zfill(4)}'
-```
-
----
-
-## 6. 관련 파일 위치 참조
+## 5. 관련 파일 위치 참조
 
 ```
 app/django/
-├── company/
-│   ├── models.py                 # Staff, StaffAssignment, Department(save 레벨 자동계산)
-│   └── admin.py                  # StaffAssignmentInline
 ├── approval/
 │   ├── models/
-│   │   ├── document_type.py      # DocCategory, DocumentType(기안권한/카테고리), ApprovalPolicyRule
+│   │   ├── document_type.py      # DocCategory, DocumentType(form_type, form_template_key), ApprovalPolicyRule
 │   │   └── document.py           # ApprovalDocument (drafter_assignment 연결)
 │   ├── services/
-│   │   └── route_builder.py      # ⭐ 동적 결재선 및 조건부 전결 정책 평가 엔진
+│   │   └── route_builder.py      # 동적 결재선 및 조건부 전결 정책 평가 엔진
 │   ├── admin.py
-│   ├── tasks.py                  # Celery: FCM 알림, WeasyPrint PDF 생성
 │   └── migrations/
-│       ├── 0001_initial.py
-│       ├── 0002_alter_approvaldocument_doc_number.py
-│       ├── 0003_approvaldocument_drafter_assignment_and_more.py
-│       └── 0004_doccategory_alter_documenttype_options_and_more.py
+│       ├── 0004_doccategory_alter_documenttype_options_and_more.py
+│       └── 0005_documenttype_form_template_key_and_more.py
 ├── apiV1/
-│   ├── serializers/
-│   │   ├── company.py            # StaffAssignmentSerializer
-│   │   └── approval.py           # DocCategorySerializer, ApprovalPolicyRuleSerializer
-│   └── views/
-│       ├── company.py            # StaffAssignmentViewSet
-│       └── approval.py           # DocCategoryViewSet, for_draft, preview_route(amount), submit
+│   ├── serializers/approval.py
+│   └── views/approval.py
 
 app/vue/src/
 ├── store/
-│   ├── types/approval.ts         # DocCategory, ApprovalPolicyRule, DocumentType
-│   └── pinia/approval.ts         # fetchDocCategoryList, fetchForDraftDocTypeList, previewRoute(amount)
-├── router/modules/approval.ts
-├── layouts/_nav.ts
+│   ├── types/approval.ts
+│   └── pinia/approval.ts
 └── views/approval/
-    ├── Index.vue
+    ├── forms/                    # ⭐ 하이브리드 폼 모듈
+    │   ├── index.ts              # STATIC_FORM_REGISTRY
+    │   ├── DynamicSchemaForm.vue # JSON Schema 동적 폼
+    │   ├── LeaveApplicationForm.vue # 휴가/연차 전용 폼
+    │   ├── ExpenseReportForm.vue    # 지출결의 전용 폼
+    │   └── PurchaseOrderForm.vue    # 구매품의 전용 폼
     └── components/
-        ├── DocumentForm.vue      # ⭐ 카테고리 optgroup + 기안 권한 필터 + 실시간 금액별 전결 결재선 미리보기
-        ├── DocumentDetail.vue    # 기안 보직 표출 + 결재 타임라인
+        ├── DocumentForm.vue      # 하이브리드 폼 기안 작성
+        ├── DocumentDetail.vue    # 하이브리드 폼 맞춤 상세 뷰
         ├── PendingList.vue       # 결재 대기함
         └── DraftedList.vue       # 기안함
 ```

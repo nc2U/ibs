@@ -121,6 +121,10 @@ const progressPercent = computed(() => {
   return Math.round((done / steps.length) * 100)
 })
 
+const docContent = computed<Record<string, any>>(() => {
+  return (document.value?.content || {}) as Record<string, any>
+})
+
 onMounted(() => fetchDocument(docId.value))
 </script>
 
@@ -220,11 +224,145 @@ onMounted(() => fetchDocument(docId.value))
 
     <!-- ② 결재 내용 -->
     <CCard class="mb-3">
-      <CCardHeader>
+      <CCardHeader class="d-flex align-items-center justify-content-between">
         <strong>결재 내용</strong>
+        <CBadge v-if="document.doc_type_detail?.category_name" color="light" class="text-dark">
+          {{ document.doc_type_detail.category_name }}
+        </CBadge>
       </CCardHeader>
       <CCardBody>
-        <template v-if="document.doc_type_detail?.form_schema?.length">
+        <!-- 1. 휴가/연차 신청서 (LEAVE_APPLICATION) -->
+        <template v-if="document.doc_type_detail?.form_template_key === 'LEAVE_APPLICATION'">
+          <CTable small bordered responsive class="mb-0">
+            <CTableBody>
+              <CTableRow>
+                <CTableHeaderCell class="text-center bg-more-light" style="width: 130px">휴가 구분</CTableHeaderCell>
+                <CTableDataCell class="pl-3">
+                  <CBadge color="primary">{{ docContent.leave_type || '연차' }}</CBadge>
+                </CTableDataCell>
+                <CTableHeaderCell class="text-center bg-more-light" style="width: 130px">신청 일수</CTableHeaderCell>
+                <CTableDataCell class="pl-3 fw-bold text-primary">{{ docContent.days_count ?? 1 }} 일</CTableDataCell>
+              </CTableRow>
+              <CTableRow>
+                <CTableHeaderCell class="text-center bg-more-light">휴가 기간</CTableHeaderCell>
+                <CTableDataCell colspan="3" class="pl-3">
+                  {{ docContent.start_date }} ~ {{ docContent.end_date || docContent.start_date }}
+                </CTableDataCell>
+              </CTableRow>
+              <CTableRow>
+                <CTableHeaderCell class="text-center bg-more-light">휴가 사유</CTableHeaderCell>
+                <CTableDataCell colspan="3" class="pl-3" style="white-space: pre-wrap">{{ docContent.reason || '-' }}</CTableDataCell>
+              </CTableRow>
+              <CTableRow>
+                <CTableHeaderCell class="text-center bg-more-light">업무 대행자</CTableHeaderCell>
+                <CTableDataCell class="pl-3">{{ docContent.substitute_worker || '-' }}</CTableDataCell>
+                <CTableHeaderCell class="text-center bg-more-light">비상 연락처</CTableHeaderCell>
+                <CTableDataCell class="pl-3">{{ docContent.emergency_contact || '-' }}</CTableDataCell>
+              </CTableRow>
+            </CTableBody>
+          </CTable>
+        </template>
+
+        <!-- 2. 지출결의서 (EXPENSE_REPORT) -->
+        <template v-else-if="document.doc_type_detail?.form_template_key === 'EXPENSE_REPORT'">
+          <CTable small bordered responsive class="mb-3">
+            <CTableBody>
+              <CTableRow>
+                <CTableHeaderCell class="text-center bg-more-light" style="width: 130px">지출 구분</CTableHeaderCell>
+                <CTableDataCell class="pl-3"><CBadge color="success">{{ docContent.expense_type || '법인카드' }}</CBadge></CTableDataCell>
+                <CTableHeaderCell class="text-center bg-more-light" style="width: 130px">지급 요청일</CTableHeaderCell>
+                <CTableDataCell class="pl-3">{{ docContent.payment_due_date || '-' }}</CTableDataCell>
+              </CTableRow>
+              <CTableRow v-if="docContent.bank_name || docContent.account_number">
+                <CTableHeaderCell class="text-center bg-more-light">입금 계좌</CTableHeaderCell>
+                <CTableDataCell colspan="3" class="pl-3">
+                  {{ docContent.bank_name }} {{ docContent.account_number }} (예금주: {{ docContent.account_holder }})
+                </CTableDataCell>
+              </CTableRow>
+            </CTableBody>
+          </CTable>
+
+          <!-- 품목 내역 그리드 -->
+          <div v-if="docContent.items?.length" class="mb-2">
+            <div class="small fw-semibold mb-1">지출 내역 목록</div>
+            <CTable small bordered responsive class="mb-0 text-center">
+              <CTableHead color="light">
+                <CTableRow>
+                  <CTableHeaderCell style="width: 120px">일자</CTableHeaderCell>
+                  <CTableHeaderCell>사용 내역 / 항목명</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 140px">금액 (원)</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 150px">비고</CTableHeaderCell>
+                </CTableRow>
+              </CTableHead>
+              <CTableBody>
+                <CTableRow v-for="(item, idx) in docContent.items" :key="idx">
+                  <CTableDataCell>{{ item.date }}</CTableDataCell>
+                  <CTableDataCell class="text-start">{{ item.description }}</CTableDataCell>
+                  <CTableDataCell class="text-end fw-semibold">{{ (Number(item.amount) || 0).toLocaleString() }}</CTableDataCell>
+                  <CTableDataCell class="text-start text-muted">{{ item.note || '-' }}</CTableDataCell>
+                </CTableRow>
+              </CTableBody>
+            </CTable>
+          </div>
+
+          <div class="d-flex justify-content-end align-items-center p-2 bg-light border rounded">
+            <span class="me-2 fw-semibold">총 지출 결의 금액:</span>
+            <span class="fs-5 fw-bold text-danger">{{ (Number(docContent.amount) || 0).toLocaleString() }} 원</span>
+          </div>
+        </template>
+
+        <!-- 3. 구매품의서 (PURCHASE_ORDER) -->
+        <template v-else-if="document.doc_type_detail?.form_template_key === 'PURCHASE_ORDER'">
+          <CTable small bordered responsive class="mb-3">
+            <CTableBody>
+              <CTableRow>
+                <CTableHeaderCell class="text-center bg-more-light" style="width: 130px">구매 목적</CTableHeaderCell>
+                <CTableDataCell colspan="3" class="pl-3">{{ docContent.purpose || '-' }}</CTableDataCell>
+              </CTableRow>
+              <CTableRow>
+                <CTableHeaderCell class="text-center bg-more-light">납품 희망일</CTableHeaderCell>
+                <CTableDataCell class="pl-3">{{ docContent.delivery_due_date || '-' }}</CTableDataCell>
+                <CTableHeaderCell class="text-center bg-more-light" style="width: 130px">납품 장소</CTableHeaderCell>
+                <CTableDataCell class="pl-3">{{ docContent.delivery_location || '-' }}</CTableDataCell>
+              </CTableRow>
+            </CTableBody>
+          </CTable>
+
+          <!-- 품목 내역 그리드 -->
+          <div v-if="docContent.items?.length" class="mb-2">
+            <div class="small fw-semibold mb-1">구매 품목 내역</div>
+            <CTable small bordered responsive class="mb-0 text-center">
+              <CTableHead color="light">
+                <CTableRow>
+                  <CTableHeaderCell>품명</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 120px">규격</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 70px">수량</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 110px">단가</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 120px">공급가액</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 100px">부가세</CTableHeaderCell>
+                </CTableRow>
+              </CTableHead>
+              <CTableBody>
+                <CTableRow v-for="(item, idx) in docContent.items" :key="idx">
+                  <CTableDataCell class="text-start">{{ item.name }}</CTableDataCell>
+                  <CTableDataCell>{{ item.spec || '-' }}</CTableDataCell>
+                  <CTableDataCell>{{ item.quantity }}</CTableDataCell>
+                  <CTableDataCell class="text-end">{{ (Number(item.unit_price) || 0).toLocaleString() }}</CTableDataCell>
+                  <CTableDataCell class="text-end fw-semibold">{{ (Number(item.supply_price) || 0).toLocaleString() }}</CTableDataCell>
+                  <CTableDataCell class="text-end text-muted">{{ (Number(item.vat) || 0).toLocaleString() }}</CTableDataCell>
+                </CTableRow>
+              </CTableBody>
+            </CTable>
+          </div>
+
+          <div class="d-flex justify-content-end align-items-center p-2 bg-light border rounded">
+            <span class="me-2 fw-semibold">총 구매 품의 금액:</span>
+            <span class="fs-5 fw-bold text-danger">{{ (Number(docContent.amount) || 0).toLocaleString() }} 원</span>
+          </div>
+        </template>
+
+        <!-- 4. 일반 동적 폼 (DYNAMIC Schema) -->
+        <template v-else-if="document.doc_type_detail?.form_schema?.length">
           <CTable small bordered responsive class="mb-0">
             <CTableBody>
               <CTableRow v-for="field in document.doc_type_detail.form_schema" :key="field.key">
@@ -232,14 +370,16 @@ onMounted(() => fetchDocument(docId.value))
                   {{ field.label }}
                 </CTableHeaderCell>
                 <CTableDataCell class="pl-3" style="white-space: pre-wrap">
-                  {{ document.content[field.key] || '-' }}
+                  {{ docContent[field.key] || '-' }}
                 </CTableDataCell>
               </CTableRow>
             </CTableBody>
           </CTable>
         </template>
+
+        <!-- 5. 기본 JSON fallback -->
         <pre v-else class="mb-0 text-muted small">
-          {{ JSON.stringify(document.content, null, 2) }}
+          {{ JSON.stringify(docContent, null, 2) }}
         </pre>
       </CCardBody>
     </CCard>

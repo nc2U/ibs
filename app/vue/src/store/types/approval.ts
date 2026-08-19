@@ -62,6 +62,8 @@ export interface DocumentType {
   name: string
   code: string
   description: string
+  form_type: 'DYNAMIC' | 'STATIC'
+  form_template_key?: string
   route_type: 'organization' | 'template'
   route_type_desc?: string
   final_approval_duty?: number | null

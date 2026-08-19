@@ -51,6 +51,22 @@ class DocumentType(models.Model):
         '기본 전결 부서 레벨', null=True, blank=True,
         help_text='예: 1로 설정 시 본부(1레벨) 부서장까지만 승인 후 완료 (대표이사 생략)'
     )
+    FORM_TYPE_DYNAMIC = 'DYNAMIC'
+    FORM_TYPE_STATIC = 'STATIC'
+    FORM_TYPE_CHOICES = (
+        (FORM_TYPE_DYNAMIC, '동적 양식 (JSON Schema)'),
+        (FORM_TYPE_STATIC, '전용 정적 양식 (Vue 컴포넌트 매칭)'),
+    )
+
+    form_type = models.CharField(
+        '양식 유형', max_length=10,
+        choices=FORM_TYPE_CHOICES, default=FORM_TYPE_DYNAMIC,
+        help_text='DYNAMIC: 관리자 정의 JSON Schema 기반 / STATIC: 전용 Vue 폼 컴포넌트 매칭'
+    )
+    form_template_key = models.CharField(
+        '전용 폼 컴포넌트 키', max_length=50, blank=True,
+        help_text='STATIC 양식일 때 매칭할 Vue 컴포넌트 식별자 (예: LEAVE_APPLICATION, EXPENSE_REPORT, PURCHASE_ORDER 등)'
+    )
     form_schema = models.JSONField(
         '양식 스키마',
         default=list,
