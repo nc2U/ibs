@@ -7,6 +7,8 @@ import type {
   ApprovalDocument,
   PatchApprovalDocument,
   ApprovalActPayload,
+  StaffAssignmentItem,
+  RoutePreviewStep,
 } from '@/store/types/approval'
 
 export type DocFilter = {
@@ -25,6 +27,27 @@ export const useApproval = defineStore('approval', () => {
       .get('/approval-doc-type/')
       .then(res => (docTypeList.value = res.data.results ?? res.data))
       .catch(err => errorHandle(err.response.data))
+
+  // ── 기안자의 보직 목록 ─────────────────────────────────
+  const myAssignments = ref<StaffAssignmentItem[]>([])
+
+  const fetchMyAssignments = () =>
+    api
+      .get('/approval-document/my_assignments/')
+      .then(res => (myAssignments.value = res.data.results ?? res.data))
+      .catch(err => errorHandle(err.response.data))
+
+  // ── 동적 결재선 미리보기 ───────────────────────────────
+  const routePreview = ref<RoutePreviewStep[]>([])
+
+  const fetchRoutePreview = (docTypeId: number, assignmentId?: number | null) => {
+    const params = new URLSearchParams({ doc_type: String(docTypeId) })
+    if (assignmentId) params.append('assignment', String(assignmentId))
+    return api
+      .get(`/approval-document/preview_route/?${params}`)
+      .then(res => (routePreview.value = res.data))
+      .catch(err => errorHandle(err.response.data))
+  }
 
   // ── 결재 문서 ─────────────────────────────────────────
   const document = ref<ApprovalDocument | null>(null)
@@ -138,6 +161,8 @@ export const useApproval = defineStore('approval', () => {
   return {
     // state
     docTypeList,
+    myAssignments,
+    routePreview,
     document,
     documentList,
     documentCount,
@@ -145,6 +170,8 @@ export const useApproval = defineStore('approval', () => {
     draftedList,
     // actions
     fetchDocTypeList,
+    fetchMyAssignments,
+    fetchRoutePreview,
     fetchDocumentList,
     fetchDocument,
     createDocument,

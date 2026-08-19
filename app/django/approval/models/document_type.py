@@ -4,10 +4,32 @@ from django.db import models
 
 class DocumentType(models.Model):
     """결재 문서 유형 (관리자가 사전 정의)"""
+
+    ROUTE_ORGANIZATION = 'organization'
+    ROUTE_TEMPLATE = 'template'
+    ROUTE_TYPE_CHOICES = (
+        (ROUTE_ORGANIZATION, '조직도 기반 자동 결재선 (직속 부서장 → 상위 부서장 → 전결/대표이사)'),
+        (ROUTE_TEMPLATE, '수동 고정 템플릿 결재선'),
+    )
+
     name = models.CharField('문서 유형명', max_length=100, unique=True)
     code = models.CharField('유형 코드', max_length=30, unique=True,
                             help_text='영문 대문자/언더스코어 (예: BIZ_APPROVAL)')
     description = models.TextField('설명', blank=True)
+    route_type = models.CharField(
+        '결재선 생성 방식', max_length=15,
+        choices=ROUTE_TYPE_CHOICES, default=ROUTE_ORGANIZATION,
+        help_text='조직도 기반: 기안자의 부서 조직도를 탐색하여 자동 결재선 구성 / 템플릿: 지정된 결재선 템플릿 사용'
+    )
+    final_approval_duty = models.ForeignKey(
+        'company.DutyTitle', on_delete=models.SET_NULL, null=True, blank=True,
+        verbose_name='전결 직책',
+        help_text='해당 직책자 승인 시 최종 완료 처리 (예: 팀장 전결, 본부장 전결). 미지정 시 대표이사까지 상신.'
+    )
+    final_dept_level = models.PositiveSmallIntegerField(
+        '전결 부서 레벨', null=True, blank=True,
+        help_text='예: 1로 설정 시 본부(1레벨) 부서장까지만 승인 후 완료 (대표이사 생략)'
+    )
     form_schema = models.JSONField(
         '양식 스키마',
         default=list,

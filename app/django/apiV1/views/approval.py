@@ -8,14 +8,20 @@ from apiV1.permissions.auth_perms import permissions
 from apiV1.serializers.approval import (
     DocumentTypeSerializer, ApprovalDocumentSerializer,
     ApprovalDocumentListSerializer, ApprovalActionCreateSerializer,
+    RoutePreviewStepSerializer,
 )
+from apiV1.serializers.company import StaffAssignmentSerializer
 from approval.models import DocumentType, ApprovalDocument, ApprovalStep, ApprovalAction
+from approval.services import build_dynamic_approval_route
 from approval.tasks import notify_approvers_task, notify_drafter_task, generate_approval_pdf_task
+from company.models import StaffAssignment
 
 
 class DocumentTypeViewSet(viewsets.ReadOnlyModelViewSet):
     """결재 문서 유형 조회 (관리자 등록, 일반 사용자 읽기 전용)"""
-    queryset = DocumentType.objects.filter(is_active=True).prefetch_related('route_templates__approvers')
+    queryset = DocumentType.objects.filter(is_active=True).select_related(
+        'final_approval_duty'
+    ).prefetch_related('route_templates__approvers')
     serializer_class = DocumentTypeSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
@@ -38,7 +44,9 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         qs = ApprovalDocument.objects.select_related(
-            'doc_type', 'drafter', 'drafter__profile', 'workspace'
+            'doc_type', 'drafter', 'drafter__profile',
+            'drafter_assignment__department', 'drafter_assignment__duty', 'drafter_assignment__position',
+            'workspace'
         ).prefetch_related(
             'steps__approvers__profile', 'steps__actions__approver__profile'
         )
@@ -55,12 +63,61 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
         return ApprovalDocumentSerializer
 
     def perform_create(self, serializer):
-        serializer.save(drafter=self.request.user, status=ApprovalDocument.STATUS_DRAFT)
+        user = self.request.user
+        assignment = serializer.validated_data.get('drafter_assignment')
+        if not assignment:
+            # 주보직 자동 탐색
+            assignment = StaffAssignment.objects.filter(
+                staff__user=user, is_primary=True
+            ).first() or StaffAssignment.objects.filter(
+                staff__user=user
+            ).first()
+
+        serializer.save(
+            drafter=user,
+            drafter_assignment=assignment,
+            status=ApprovalDocument.STATUS_DRAFT
+        )
+
+    # ── GET /approval-document/my_assignments/ ───────────────
+    @action(detail=False, methods=['get'])
+    def my_assignments(self, request):
+        """현재 로그인 사용자의 보직/겸직 목록 조회 (기안 폼 선택용)"""
+        assignments = StaffAssignment.objects.filter(
+            staff__user=request.user, staff__status='1'
+        ).select_related('company', 'department', 'position', 'duty')
+        serializer = StaffAssignmentSerializer(assignments, many=True)
+        return Response(serializer.data)
+
+    # ── GET /approval-document/preview_route/ ────────────────
+    @action(detail=False, methods=['get'])
+    def preview_route(self, request):
+        """문서 유형과 기안 보직에 따른 결재선 실시간 미리보기"""
+        doc_type_id = request.query_params.get('doc_type')
+        assignment_id = request.query_params.get('assignment')
+
+        if not doc_type_id:
+            return Response({'detail': 'doc_type 파라미터가 필요합니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            doc_type = DocumentType.objects.prefetch_related('route_templates__approvers').get(pk=doc_type_id)
+        except DocumentType.DoesNotExist:
+            return Response({'detail': '문서 유형을 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+
+        assignment = None
+        if assignment_id:
+            assignment = StaffAssignment.objects.filter(pk=assignment_id).select_related(
+                'company', 'department', 'position', 'duty'
+            ).first()
+
+        steps_data = build_dynamic_approval_route(doc_type, request.user, assignment)
+        serializer = RoutePreviewStepSerializer(steps_data, many=True)
+        return Response(serializer.data)
 
     # ── POST /approval-document/{id}/submit/ ──────────────────
     @action(detail=True, methods=['post'])
     def submit(self, request, pk=None):
-        """임시저장 → 상신. 결재선 템플릿 → 단계 인스턴스 생성 후 1단계 결재자 알림"""
+        """임시저장 → 상신. 조직도 또는 템플릿 기반으로 동적 결재선 생성 후 1단계 알림"""
         document = self.get_object()
         if document.drafter != request.user:
             return Response({'detail': '기안자만 상신할 수 있습니다.'}, status=status.HTTP_403_FORBIDDEN)
@@ -70,26 +127,46 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        templates = document.doc_type.route_templates.order_by('step_order').prefetch_related('approvers')
-        if not templates.exists():
-            return Response(
-                {'detail': '이 문서 유형에 결재선이 설정되지 않았습니다.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        # 기안 보직 확인
+        assignment = document.drafter_assignment
+        if not assignment:
+            assignment = StaffAssignment.objects.filter(
+                staff__user=request.user, is_primary=True
+            ).first() or StaffAssignment.objects.filter(
+                staff__user=request.user
+            ).first()
+            if assignment:
+                document.drafter_assignment = assignment
+                document.save(update_fields=['drafter_assignment'])
+
+        # 동적 결재선 단계 목록 산출
+        route_steps = build_dynamic_approval_route(document.doc_type, document.drafter, assignment)
+
+        if not route_steps:
+            # 결재선이 없는 경우 (예: 대표이사 본인 기안 등) -> 즉시 최종 승인 처리
+            document.status = ApprovalDocument.STATUS_APPROVED
+            document.completed_at = timezone.now()
+            document.doc_number = document.generate_doc_number()
+            document.content_hash = document.compute_hash()
+            document.submitted_at = timezone.now()
+            document.save()
+            generate_approval_pdf_task.delay(document.pk)
+            serializer = ApprovalDocumentSerializer(document, context={'request': request})
+            return Response(serializer.data)
 
         # 재상신 시 기존 단계 초기화
         document.steps.all().delete()
 
-        # 결재선 템플릿 → 단계 인스턴스 복사 생성
-        for tmpl in templates:
+        # 결재선 단계 인스턴스 복사 생성
+        for step_data in route_steps:
             step = ApprovalStep.objects.create(
                 document=document,
-                step_order=tmpl.step_order,
-                role_label=tmpl.role_label,
-                condition=tmpl.condition,
+                step_order=step_data['step_order'],
+                role_label=step_data['role_label'],
+                condition=step_data['condition'],
                 status=ApprovalStep.STATUS_PENDING,
             )
-            step.approvers.set(tmpl.approvers.all())
+            step.approvers.set(step_data['approvers'])
 
         # 문서 해시 + 상태 갱신
         document.content_hash = document.compute_hash()

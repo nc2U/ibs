@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useApproval } from '@/store/pinia/approval.ts'
@@ -8,13 +8,25 @@ import type { DocumentType } from '@/store/types/approval.ts'
 const route = useRoute()
 const router = useRouter()
 const store = useApproval()
-const { docTypeList, document } = storeToRefs(store)
-const { fetchDocTypeList, fetchDocument, createDocument, updateDocument, submitDocument } = store
+const { docTypeList, document, myAssignments, routePreview } = storeToRefs(store)
+const {
+  fetchDocTypeList,
+  fetchDocument,
+  fetchMyAssignments,
+  fetchRoutePreview,
+  createDocument,
+  updateDocument,
+  submitDocument,
+} = store
 
 const isEdit = computed(() => !!route.params.docId)
 const saving = ref<'draft' | 'submit' | ''>('')
 
-const form = ref({ doc_type: '' as number | '', title: '' })
+const form = ref({
+  doc_type: '' as number | '',
+  drafter_assignment: '' as number | '',
+  title: '',
+})
 const dynamicContent = ref<Record<string, string>>({})
 
 const selectedDocType = computed<DocumentType | null>(
@@ -23,10 +35,25 @@ const selectedDocType = computed<DocumentType | null>(
 
 const onDocTypeChange = () => {
   dynamicContent.value = {}
+  updateRoutePreview()
+}
+
+const onAssignmentChange = () => {
+  updateRoutePreview()
+}
+
+const updateRoutePreview = async () => {
+  if (form.value.doc_type) {
+    await fetchRoutePreview(
+      Number(form.value.doc_type),
+      form.value.drafter_assignment ? Number(form.value.drafter_assignment) : undefined,
+    )
+  }
 }
 
 const buildPayload = () => ({
   doc_type: Number(form.value.doc_type),
+  drafter_assignment: form.value.drafter_assignment ? Number(form.value.drafter_assignment) : undefined,
   title: form.value.title,
   content: { ...dynamicContent.value },
 })
@@ -60,13 +87,22 @@ const onSubmitAndSend = async () => {
 }
 
 onMounted(async () => {
-  await fetchDocTypeList()
+  await Promise.all([fetchDocTypeList(), fetchMyAssignments()])
+
   if (isEdit.value) {
     await fetchDocument(Number(route.params.docId))
     if (document.value) {
       form.value.doc_type = document.value.doc_type
+      form.value.drafter_assignment = document.value.drafter_assignment ?? ''
       form.value.title = document.value.title
       dynamicContent.value = { ...(document.value.content as Record<string, string>) }
+      updateRoutePreview()
+    }
+  } else {
+    // 기본 주보직 선택
+    const primary = myAssignments.value.find(a => a.is_primary) ?? myAssignments.value[0]
+    if (primary) {
+      form.value.drafter_assignment = primary.pk
     }
   }
 })
@@ -85,6 +121,34 @@ onMounted(async () => {
 
       <CCardBody>
         <CForm @submit.prevent="onSubmit">
+          <!-- 기안 부서 / 보직 선택 (보직이 있는 경우) -->
+          <CRow v-if="myAssignments.length > 0" class="mb-3">
+            <CFormLabel class="col-sm-3 col-form-label">
+              기안 부서/직책
+            </CFormLabel>
+            <CCol sm="9">
+              <CFormSelect
+                v-model="form.drafter_assignment"
+                :disabled="isEdit"
+                @change="onAssignmentChange"
+              >
+                <option
+                  v-for="asgn in myAssignments"
+                  :key="asgn.pk"
+                  :value="asgn.pk"
+                >
+                  [{{ asgn.is_primary ? '주보직' : '겸직' }}] {{ asgn.department_name }}
+                  <template v-if="asgn.duty_name">({{ asgn.duty_name }})</template>
+                  <template v-else-if="asgn.position_name">({{ asgn.position_name }})</template>
+                  <template v-if="asgn.assigned_tasks"> - {{ asgn.assigned_tasks }}</template>
+                </option>
+              </CFormSelect>
+              <div class="form-text text-muted">
+                선택한 부서 및 직책의 상급 결재선으로 자동 결재선이 구성됩니다.
+              </div>
+            </CCol>
+          </CRow>
+
           <!-- 문서 유형 선택 -->
           <CRow class="mb-3">
             <CFormLabel class="col-sm-3 col-form-label">
@@ -100,6 +164,7 @@ onMounted(async () => {
                 <option value="">-- 유형을 선택하세요 --</option>
                 <option v-for="dt in docTypeList" :key="dt.id" :value="dt.id">
                   {{ dt.name }}
+                  <template v-if="dt.final_approval_duty_name"> [{{ dt.final_approval_duty_name }} 전결]</template>
                 </option>
               </CFormSelect>
               <div v-if="selectedDocType?.description" class="form-text text-muted">
@@ -157,14 +222,20 @@ onMounted(async () => {
             문서 유형을 선택하면 작성 양식이 표시됩니다.
           </div>
 
-          <!-- 결재선 미리보기 -->
-          <template v-if="selectedDocType?.route_templates?.length">
+          <!-- 동적 결재선 미리보기 (routePreview) -->
+          <template v-if="routePreview.length">
             <hr class="my-3" />
-            <p class="text-medium-emphasis small fw-semibold mb-3">
-              <CIcon name="cilPeople" class="me-1" />결재선 미리보기
-            </p>
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <p class="text-medium-emphasis small fw-semibold mb-0">
+                <CIcon name="cilPeople" class="me-1" />
+                결재선 미리보기
+              </p>
+              <CBadge v-if="selectedDocType?.route_type === 'organization'" color="info" size="sm">
+                조직도 기반 자동 생성
+              </CBadge>
+            </div>
             <div class="d-flex align-items-start flex-wrap gap-0">
-              <template v-for="(step, idx) in selectedDocType.route_templates" :key="step.id">
+              <template v-for="(step, idx) in routePreview" :key="step.step_order">
                 <div class="route-step-card text-center">
                   <div class="text-muted mb-1" style="font-size: 0.72rem">
                     {{ step.step_order }}단계
@@ -181,7 +252,7 @@ onMounted(async () => {
                   </CBadge>
                 </div>
                 <!-- 화살표 연결 (마지막 제외) -->
-                <div v-if="idx < selectedDocType!.route_templates.length - 1" class="route-arrow">
+                <div v-if="idx < routePreview.length - 1" class="route-arrow">
                   →
                 </div>
               </template>

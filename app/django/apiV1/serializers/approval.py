@@ -36,10 +36,14 @@ class RouteTemplateSerializer(serializers.ModelSerializer):
 
 class DocumentTypeSerializer(serializers.ModelSerializer):
     route_templates = RouteTemplateSerializer(many=True, read_only=True)
+    route_type_desc = serializers.CharField(source='get_route_type_display', read_only=True)
+    final_approval_duty_name = serializers.CharField(source='final_approval_duty.name', read_only=True)
 
     class Meta:
         model = DocumentType
-        fields = ('id', 'name', 'code', 'description', 'form_schema', 'is_active', 'route_templates')
+        fields = ('id', 'name', 'code', 'description', 'route_type', 'route_type_desc',
+                  'final_approval_duty', 'final_approval_duty_name', 'final_dept_level',
+                  'form_schema', 'is_active', 'route_templates')
 
 
 class ApprovalActionSerializer(serializers.ModelSerializer):
@@ -63,10 +67,21 @@ class ApprovalStepSerializer(serializers.ModelSerializer):
 class ApprovalDocumentListSerializer(serializers.ModelSerializer):
     drafter = SimpleUserSerializer(read_only=True)
     doc_type_name = serializers.CharField(source='doc_type.name', read_only=True)
+    drafter_assignment_desc = serializers.SerializerMethodField()
+
+    def get_drafter_assignment_desc(self, obj):
+        if obj.drafter_assignment:
+            dept = obj.drafter_assignment.department.name if obj.drafter_assignment.department else ''
+            duty = obj.drafter_assignment.duty.name if obj.drafter_assignment.duty else (
+                obj.drafter_assignment.position.name if obj.drafter_assignment.position else ''
+            )
+            return f'{dept} {duty}'.strip()
+        return ''
 
     class Meta:
         model = ApprovalDocument
         fields = ('id', 'doc_number', 'title', 'doc_type', 'doc_type_name', 'drafter',
+                  'drafter_assignment', 'drafter_assignment_desc',
                   'status', 'current_step', 'created_at', 'submitted_at', 'completed_at')
 
 
@@ -74,7 +89,17 @@ class ApprovalDocumentSerializer(serializers.ModelSerializer):
     drafter = SimpleUserSerializer(read_only=True)
     doc_type_detail = DocumentTypeSerializer(source='doc_type', read_only=True)
     steps = ApprovalStepSerializer(many=True, read_only=True)
+    drafter_assignment_desc = serializers.SerializerMethodField()
     pdf_url = serializers.SerializerMethodField()
+
+    def get_drafter_assignment_desc(self, obj):
+        if obj.drafter_assignment:
+            dept = obj.drafter_assignment.department.name if obj.drafter_assignment.department else ''
+            duty = obj.drafter_assignment.duty.name if obj.drafter_assignment.duty else (
+                obj.drafter_assignment.position.name if obj.drafter_assignment.position else ''
+            )
+            return f'{dept} {duty}'.strip()
+        return ''
 
     def get_pdf_url(self, obj):
         if obj.pdf_file:
@@ -85,12 +110,19 @@ class ApprovalDocumentSerializer(serializers.ModelSerializer):
     class Meta:
         model = ApprovalDocument
         fields = ('id', 'doc_number', 'title', 'doc_type', 'doc_type_detail',
-                  'content', 'attachment', 'drafter', 'workspace',
-                  'status', 'current_step', 'content_hash',
+                  'content', 'attachment', 'drafter', 'drafter_assignment', 'drafter_assignment_desc',
+                  'workspace', 'status', 'current_step', 'content_hash',
                   'pdf_url', 'created_at', 'submitted_at', 'completed_at',
                   'steps')
         read_only_fields = ('doc_number', 'drafter', 'status', 'current_step',
                             'content_hash', 'pdf_url', 'submitted_at', 'completed_at', 'steps')
+
+
+class RoutePreviewStepSerializer(serializers.Serializer):
+    step_order = serializers.IntegerField()
+    role_label = serializers.CharField()
+    approvers = SimpleUserSerializer(many=True)
+    condition = serializers.CharField()
 
 
 class ApprovalActionCreateSerializer(serializers.Serializer):

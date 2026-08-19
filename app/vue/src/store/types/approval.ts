@@ -4,6 +4,29 @@ export interface SimpleUser {
   full_name: string
 }
 
+export interface StaffAssignmentItem {
+  pk: number
+  company: string
+  staff: number
+  department: number
+  department_name: string
+  position: number | null
+  position_name: string | null
+  duty: number | null
+  duty_name: string | null
+  is_primary: boolean
+  assigned_tasks: string
+  represent_type: 'sole' | 'joint' | 'each' | null
+  represent_type_desc?: string
+}
+
+export interface RoutePreviewStep {
+  step_order: number
+  role_label: string
+  approvers: SimpleUser[]
+  condition: 'AND' | 'OR'
+}
+
 export interface RouteTemplate {
   id: number
   step_order: number
@@ -17,6 +40,11 @@ export interface DocumentType {
   name: string
   code: string
   description: string
+  route_type: 'organization' | 'template'
+  route_type_desc?: string
+  final_approval_duty?: number | null
+  final_approval_duty_name?: string | null
+  final_dept_level?: number | null
   form_schema: FormField[]
   is_active: boolean
   route_templates: RouteTemplate[]
@@ -60,6 +88,8 @@ export interface ApprovalDocument {
   doc_type: number
   doc_type_detail?: DocumentType
   doc_type_name?: string
+  drafter_assignment?: number | null
+  drafter_assignment_desc?: string
   content: Record<string, unknown>
   attachment?: string | null
   drafter: SimpleUser
@@ -77,6 +107,7 @@ export interface ApprovalDocument {
 export interface PatchApprovalDocument {
   title?: string
   doc_type?: number
+  drafter_assignment?: number | null
   content?: Record<string, unknown>
   workspace?: number | null
 }

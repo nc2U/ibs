@@ -44,6 +44,12 @@ class ApprovalDocument(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
         related_name='drafted_documents', verbose_name='기안자'
     )
+    drafter_assignment = models.ForeignKey(
+        'company.StaffAssignment', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='drafted_documents',
+        verbose_name='기안 보직',
+        help_text='기안 당시 선택한 소속 부서 및 직책'
+    )
     # 워크스페이스 / 프로젝트 연결 (선택)
     workspace = models.ForeignKey(
         'work.IssueProject', on_delete=models.SET_NULL,

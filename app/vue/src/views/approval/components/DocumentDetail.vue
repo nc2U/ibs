@@ -198,7 +198,12 @@ onMounted(() => fetchDocument(docId.value))
             </CTableRow>
             <CTableRow>
               <CTableHeaderCell class="text-center bg-more-light">기안자</CTableHeaderCell>
-              <CTableDataCell class="pl-3">{{ document.drafter?.full_name }}</CTableDataCell>
+              <CTableDataCell class="pl-3">
+                <span class="fw-semibold">{{ document.drafter?.full_name }}</span>
+                <CBadge v-if="document.drafter_assignment_desc" color="secondary" size="sm" class="ms-2">
+                  {{ document.drafter_assignment_desc }}
+                </CBadge>
+              </CTableDataCell>
               <CTableHeaderCell class="text-center bg-more-light">기안일시</CTableHeaderCell>
               <CTableDataCell class="pl-3">{{ fmtDatetime(document.created_at) }}</CTableDataCell>
             </CTableRow>
