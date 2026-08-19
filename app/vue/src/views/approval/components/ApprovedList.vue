@@ -51,18 +51,16 @@ onMounted(fetchMyApproved)
   <CRow class="mb-3">
     <CCol md="5">
       <CInputGroup>
-        <CFormInput
-          v-model="searchText"
-          placeholder="제목, 문서유형, 기안자, 문서번호 검색..."
-        />
-        <CButton color="secondary" @click="searchText = ''">
-          <CIcon name="cilReload" />
+        <CFormInput v-model="searchText" placeholder="제목, 문서유형, 기안자, 문서번호 검색..." />
+        <CButton color="light" @click="searchText = ''">
+          <v-icon icon="mdi-magnify" /> 검색
         </CButton>
       </CInputGroup>
     </CCol>
     <CCol class="d-flex align-items-center justify-content-end">
       <span class="text-muted small">
-        결재 완료 문서 총 <strong class="text-success">{{ filteredList.length }}</strong>건
+        결재 완료 문서 총 <strong class="text-success">{{ filteredList.length }}</strong>
+        건
       </span>
     </CCol>
   </CRow>
@@ -111,7 +109,11 @@ onMounted(fetchMyApproved)
         <!-- 기안자 -->
         <CTableDataCell class="text-center">
           <div>{{ doc.drafter?.full_name }}</div>
-          <small v-if="doc.drafter_assignment_desc" class="text-muted d-block" style="font-size: 0.75rem">
+          <small
+            v-if="doc.drafter_assignment_desc"
+            class="text-muted d-block"
+            style="font-size: 0.75rem"
+          >
             {{ doc.drafter_assignment_desc.split('] ')[1] || '' }}
           </small>
         </CTableDataCell>

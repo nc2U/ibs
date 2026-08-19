@@ -43,6 +43,7 @@ router.register(r'staff-assignment', company.StaffAssignmentViewSet)
 router.register(r'approval-doc-category', approval.DocCategoryViewSet, basename='approval-doc-category')
 router.register(r'approval-doc-type', approval.DocumentTypeViewSet, basename='approval-doc-type')
 router.register(r'approval-document', approval.ApprovalDocumentViewSet, basename='approval-document')
+router.register(r'approval-attachment', approval.ApprovalAttachmentViewSet, basename='approval-attachment')
 
 # ibs
 router.register(r'schedule', ibs.CalendarScheduleViewSet)

@@ -2,17 +2,18 @@ from django.utils import timezone
 from django_filters.rest_framework import FilterSet, CharFilter
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
 
 from apiV1.permissions.auth_perms import permissions
 from apiV1.serializers.approval import (
     DocCategorySerializer, DocumentTypeSerializer, ApprovalDocumentSerializer,
     ApprovalDocumentListSerializer, ApprovalActionCreateSerializer,
-    RoutePreviewStepSerializer,
+    ApprovalAttachmentSerializer, RoutePreviewStepSerializer,
 )
 from apiV1.serializers.company import StaffAssignmentSerializer
 from approval.models import (
-    DocCategory, DocumentType, ApprovalDocument, ApprovalStep, ApprovalAction
+    DocCategory, DocumentType, ApprovalDocument, ApprovalStep, ApprovalAction, ApprovalAttachment
 )
 from approval.services import build_dynamic_approval_route
 from approval.tasks import notify_approvers_task, notify_drafter_task, generate_approval_pdf_task
@@ -104,6 +105,7 @@ class ApprovalDocumentFilter(FilterSet):
 class ApprovalDocumentViewSet(viewsets.ModelViewSet):
     """결재 문서 CRUD + 상신/결재 액션"""
     permission_classes = (permissions.IsAuthenticated,)
+    parser_classes = (MultiPartParser, FormParser, JSONParser)
     filterset_class = ApprovalDocumentFilter
 
     def get_queryset(self):
@@ -113,6 +115,7 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
             'drafter_assignment__department', 'drafter_assignment__duty', 'drafter_assignment__position',
             'workspace'
         ).prefetch_related(
+            'attachments__creator__profile',
             'steps__approvers__profile', 'steps__actions__approver__profile'
         )
         if user.is_superuser:
@@ -385,3 +388,27 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
 
         serializer = ApprovalDocumentListSerializer(qs, many=True, context={'request': request})
         return Response(serializer.data)
+
+
+class ApprovalAttachmentViewSet(viewsets.ModelViewSet):
+    """결재 문서 첨부파일 개별 관리 (업로드 / 삭제)"""
+    queryset = ApprovalAttachment.objects.all().select_related('document', 'creator')
+    serializer_class = ApprovalAttachmentSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+    parser_classes = (MultiPartParser, FormParser, JSONParser)
+    filterset_fields = ('document',)
+
+    def perform_create(self, serializer):
+        serializer.save(creator=self.request.user)
+
+    def perform_destroy(self, instance):
+        # 기안자 또는 슈퍼유저만 삭제 가능 (결재 완료 전)
+        doc = instance.document
+        user = self.request.user
+        if not user.is_superuser and doc.drafter != user:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied('기안자만 첨부파일을 삭제할 수 있습니다.')
+        if doc.status == ApprovalDocument.STATUS_APPROVED:
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError('최종 승인된 문서의 첨부파일은 삭제할 수 없습니다.')
+        instance.delete()

@@ -106,18 +106,22 @@
 
 ---
 
-## 4. 미구현 / 개선 필요 항목
+### ✨ Feat #7 — 완료 문서함 (ApprovedList) (해결)
+- `views/approval/components/ApprovedList.vue` 생성 및 `GET /api/v1/approval-document/my_approved/` 연동 완료.
 
-### 🔴 P1 — 필수 (기능 완성도)
+### ✨ Feat #8 — 다중 파일 첨부 및 S3 저장 연동 (해결)
+- `ApprovalAttachment` 모델 신설 및 `get_approval_file_path` S3 안전 경로(`approval/attachments/%Y/%m/`) 연동.
+- `DocumentForm.vue` 다중 파일 드래그/선택 및 삭제, `DocumentDetail.vue` 첨부파일 다운로드 카드 뷰 완성.
 
-#### 4-1. 완료 문서함 (CompletedList)
-- `views/approval/components/CompletedList.vue` 신규 생성 및 PDF 다운로드 강조
+---
 
-#### 4-2. 첨부파일 처리
-- `DocumentForm.vue` 파일 업로드 UI 및 MinIO/S3 업로드 연동
+## 4. 향후 확장 권장 항목 (P2)
 
-#### 4-3. 결재 알림 배지 (Notification Badge)
+#### 4-1. 결재 알림 배지 (Notification Badge)
 - `_nav.ts`의 `결재 대기함` 메뉴에 `pendingList.length` 실시간 배지 연결
+
+#### 4-2. 결재선 합의(참조/공람) 기능
+- 결재선 외 참조자(Observer) 지정 및 문서 열람 권한 부여
 
 ---
 

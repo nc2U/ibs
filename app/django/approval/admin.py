@@ -1,7 +1,7 @@
 from django.contrib import admin
 from approval.models import (
     DocCategory, DocumentType, ApprovalPolicyRule,
-    RouteTemplate, ApprovalDocument, ApprovalStep, ApprovalAction
+    RouteTemplate, ApprovalDocument, ApprovalStep, ApprovalAction, ApprovalAttachment
 )
 
 
@@ -48,10 +48,23 @@ class ApprovalActionInline(admin.TabularInline):
     fk_name = 'step'
 
 
+class ApprovalAttachmentInline(admin.TabularInline):
+    model = ApprovalAttachment
+    extra = 0
+    readonly_fields = ('file_name', 'file_type', 'file_size', 'created_at', 'creator')
+
+
 @admin.register(ApprovalDocument)
 class ApprovalDocumentAdmin(admin.ModelAdmin):
     list_display = ('doc_number', 'title', 'doc_type', 'drafter', 'status', 'created_at')
     list_filter = ('status', 'doc_type')
     search_fields = ('title', 'drafter__username', 'doc_number')
     readonly_fields = ('doc_number', 'content_hash', 'created_at', 'updated_at', 'submitted_at', 'completed_at')
-    inlines = [ApprovalStepInline]
+    inlines = [ApprovalAttachmentInline, ApprovalStepInline]
+
+
+@admin.register(ApprovalAttachment)
+class ApprovalAttachmentAdmin(admin.ModelAdmin):
+    list_display = ('id', 'document', 'file_name', 'file_type', 'file_size', 'creator', 'created_at')
+    list_filter = ('created_at',)
+    search_fields = ('file_name', 'document__title', 'document__doc_number')

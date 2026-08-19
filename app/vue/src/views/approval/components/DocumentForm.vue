@@ -18,6 +18,7 @@ const {
   fetchRoutePreview,
   createDocument,
   updateDocument,
+  deleteAttachment,
   submitDocument,
 } = store
 
@@ -30,6 +31,41 @@ const form = ref({
   title: '',
 })
 const dynamicContent = ref<Record<string, string>>({})
+const selectedFiles = ref<File[]>([])
+const fileInputRef = ref<HTMLInputElement | null>(null)
+
+const existingAttachments = computed(() => document.value?.attachments || [])
+
+const formatFileSize = (bytes: number | null | undefined) => {
+  if (!bytes) return '-'
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+const onFileSelected = (e: Event) => {
+  const target = e.target as HTMLInputElement
+  if (target.files) {
+    for (let i = 0; i < target.files.length; i++) {
+      const file = target.files[i]
+      // 중복 체크
+      if (!selectedFiles.value.some(f => f.name === file.name && f.size === file.size)) {
+        selectedFiles.value.push(file)
+      }
+    }
+    target.value = ''
+  }
+}
+
+const removeSelectedFile = (idx: number) => {
+  selectedFiles.value.splice(idx, 1)
+}
+
+const removeExistingAttachment = async (attachmentId: number) => {
+  if (confirm('첨부파일을 삭제하시겠습니까?')) {
+    await deleteAttachment(attachmentId, Number(route.params.docId))
+  }
+}
 
 const selectedDocType = computed<DocumentType | null>(
   () => forDraftDocTypeList.value.find(d => d.id === Number(form.value.doc_type)) ?? null,
@@ -87,19 +123,30 @@ const updateRoutePreview = async () => {
   }
 }
 
-const buildPayload = () => ({
-  doc_type: Number(form.value.doc_type),
-  drafter_assignment: form.value.drafter_assignment ? Number(form.value.drafter_assignment) : undefined,
-  title: form.value.title,
-  content: { ...dynamicContent.value },
-})
+const buildFormData = () => {
+  const fd = new FormData()
+  fd.append('doc_type', String(form.value.doc_type))
+  if (form.value.drafter_assignment) {
+    fd.append('drafter_assignment', String(form.value.drafter_assignment))
+  }
+  fd.append('title', form.value.title)
+  fd.append('content', JSON.stringify(dynamicContent.value))
+
+  // 첨부파일 추가
+  for (const file of selectedFiles.value) {
+    fd.append('files', file)
+  }
+  return fd
+}
 
 const onSubmit = async () => {
   saving.value = 'draft'
+  const formData = buildFormData()
   if (isEdit.value) {
-    await updateDocument(Number(route.params.docId), buildPayload())
+    await updateDocument(Number(route.params.docId), formData)
+    selectedFiles.value = []
   } else {
-    const created = await createDocument(buildPayload())
+    const created = await createDocument(formData)
     if (created) await router.push({ name: '기안 문서함 - 수정', params: { docId: created.id } })
   }
   saving.value = ''
@@ -107,12 +154,13 @@ const onSubmit = async () => {
 
 const onSubmitAndSend = async () => {
   saving.value = 'submit'
+  const formData = buildFormData()
   let docId: number | undefined
   if (isEdit.value) {
-    await updateDocument(Number(route.params.docId), buildPayload())
+    await updateDocument(Number(route.params.docId), formData)
     docId = Number(route.params.docId)
   } else {
-    const created = await createDocument(buildPayload())
+    const created = await createDocument(formData)
     docId = created?.id
   }
   if (docId) {
@@ -264,6 +312,105 @@ onMounted(async () => {
             class="text-center text-muted py-4 border rounded bg-light mb-3"
           >
             문서 유형을 선택하면 작성 양식이 표시됩니다.
+          </div>
+
+          <!-- 첨부파일 섹션 -->
+          <hr class="my-3" />
+          <div class="mb-3">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <CFormLabel class="fw-semibold mb-0">
+                <CIcon name="cilPaperclip" class="me-1" />
+                첨부파일
+              </CFormLabel>
+              <CButton
+                color="secondary"
+                variant="outline"
+                size="sm"
+                @click="fileInputRef?.click()"
+              >
+                <CIcon name="cilPlus" class="me-1" />파일 추가
+              </CButton>
+              <input
+                ref="fileInputRef"
+                type="file"
+                multiple
+                class="d-none"
+                @change="onFileSelected"
+              />
+            </div>
+
+            <!-- 1. 기존 업로드된 첨부파일 목록 (수정 모드) -->
+            <div v-if="existingAttachments.length" class="mb-2">
+              <div class="small text-muted mb-1">등록된 첨부파일</div>
+              <ul class="list-group list-group-flush border rounded">
+                <li
+                  v-for="att in existingAttachments"
+                  :key="att.id"
+                  class="list-group-item d-flex justify-content-between align-items-center py-2 px-3"
+                >
+                  <div class="d-flex align-items-center">
+                    <CIcon name="cilFile" class="me-2 text-primary" />
+                    <a
+                      :href="att.file_url"
+                      target="_blank"
+                      class="text-decoration-none text-body fw-medium me-2"
+                    >
+                      {{ att.file_name }}
+                    </a>
+                    <span class="badge bg-light text-muted border">
+                      {{ formatFileSize(att.file_size) }}
+                    </span>
+                  </div>
+                  <CButton
+                    color="danger"
+                    variant="ghost"
+                    size="sm"
+                    @click="removeExistingAttachment(att.id)"
+                  >
+                    <CIcon name="cilTrash" size="sm" />
+                  </CButton>
+                </li>
+              </ul>
+            </div>
+
+            <!-- 2. 신규 추가할 파일 목록 -->
+            <div v-if="selectedFiles.length" class="mb-2">
+              <div class="small text-muted mb-1">신규 업로드 예정 파일</div>
+              <ul class="list-group list-group-flush border rounded">
+                <li
+                  v-for="(file, idx) in selectedFiles"
+                  :key="idx"
+                  class="list-group-item d-flex justify-content-between align-items-center py-2 px-3 bg-light"
+                >
+                  <div class="d-flex align-items-center">
+                    <CIcon name="cilCloudUpload" class="me-2 text-success" />
+                    <span class="fw-medium me-2">{{ file.name }}</span>
+                    <span class="badge bg-white text-muted border">
+                      {{ formatFileSize(file.size) }}
+                    </span>
+                  </div>
+                  <CButton
+                    color="danger"
+                    variant="ghost"
+                    size="sm"
+                    @click="removeSelectedFile(idx)"
+                  >
+                    <CIcon name="cilX" size="sm" />
+                  </CButton>
+                </li>
+              </ul>
+            </div>
+
+            <!-- 빈 상태 안내 -->
+            <div
+              v-if="!existingAttachments.length && !selectedFiles.length"
+              class="text-center text-muted py-3 border border-dashed rounded bg-light"
+              style="cursor: pointer"
+              @click="fileInputRef?.click()"
+            >
+              <CIcon name="cilCloudUpload" size="lg" class="mb-1 text-muted" />
+              <div class="small">클릭하여 관련 증빙 서류나 첨부파일을 추가하세요. (여러 개 선택 가능)</div>
+            </div>
           </div>
 
           <!-- 동적 결재선 미리보기 (routePreview) -->

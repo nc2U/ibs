@@ -99,6 +99,19 @@ export interface ApprovalActionRecord {
   acted_at: string
 }
 
+export interface ApprovalAttachment {
+  id: number
+  document: number
+  file: string
+  file_url: string
+  file_name: string
+  file_type: string
+  file_size: number | null
+  creator?: number | null
+  creator_name?: string
+  created_at: string
+}
+
 export interface ApprovalStep {
   id: number
   step_order: number
@@ -120,6 +133,8 @@ export interface ApprovalDocument {
   drafter_assignment_desc?: string
   content: Record<string, unknown>
   attachment?: string | null
+  attachments?: ApprovalAttachment[]
+  attachment_count?: number
   drafter: SimpleUser
   workspace?: number | null
   status: DocumentStatus

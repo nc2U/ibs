@@ -220,6 +220,11 @@ def get_project_file_path(instance, filename):
     return get_upload_path(instance, filename, 'project', 'files')
 
 
+def get_approval_file_path(instance, filename):
+    """approval 앱 첨부파일 업로드 경로"""
+    return get_upload_path(instance, filename, 'approval', 'attachments')
+
+
 def populate_file_meta(instance, file_field='file', name_field='file_name', type_field='file_type',
                        size_field='file_size') -> None:
     """

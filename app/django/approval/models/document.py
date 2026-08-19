@@ -2,8 +2,11 @@ import hashlib
 import json
 
 from django.conf import settings
+from django.core.files.storage import default_storage
 from django.db import models
 
+from _utils.file_cleanup import file_cleanup_signals
+from _utils.file_upload import get_approval_file_path, populate_file_meta
 from .document_type import DocumentType, RouteTemplate
 
 
@@ -38,7 +41,7 @@ class ApprovalDocument(models.Model):
         help_text='문서 유형의 form_schema에 따른 동적 양식 데이터'
     )
     attachment = models.FileField(
-        '첨부파일', upload_to='approval/attachments/%Y/%m/', blank=True, null=True
+        '대표 첨부파일', upload_to=get_approval_file_path, storage=default_storage, blank=True, null=True
     )
     drafter = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
@@ -211,3 +214,40 @@ class ApprovalAction(models.Model):
         ordering = ['acted_at']
         verbose_name = '05. 결재 행동 이력'
         verbose_name_plural = '05. 결재 행동 이력 목록'
+
+
+class ApprovalAttachment(models.Model):
+    """결재 문서 첨부파일 (복수 파일 지원)"""
+
+    document = models.ForeignKey(
+        ApprovalDocument, on_delete=models.CASCADE,
+        related_name='attachments', verbose_name='결재 문서'
+    )
+    file = models.FileField(
+        '첨부파일', upload_to=get_approval_file_path, storage=default_storage
+    )
+    file_name = models.CharField('파일명', max_length=255, blank=True, db_index=True)
+    file_type = models.CharField('파일 타입', max_length=80, blank=True)
+    file_size = models.PositiveBigIntegerField('파일 크기', blank=True, null=True)
+    created_at = models.DateTimeField('등록일시', auto_now_add=True)
+    creator = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, verbose_name='등록자'
+    )
+
+    def __str__(self):
+        return self.file_name or (self.file.name if self.file else '첨부파일')
+
+    def save(self, *args, **kwargs):
+        if self.file and not self.file_name:
+            populate_file_meta(self)
+        super().save(*args, **kwargs)
+
+    class Meta:
+        ordering = ['id']
+        verbose_name = '06. 결재 첨부파일'
+        verbose_name_plural = '06. 결재 첨부파일 목록'
+
+
+file_cleanup_signals(ApprovalDocument, 'attachment')
+file_cleanup_signals(ApprovalAttachment, 'file')

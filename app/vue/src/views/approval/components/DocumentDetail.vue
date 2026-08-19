@@ -121,6 +121,13 @@ const progressPercent = computed(() => {
   return Math.round((done / steps.length) * 100)
 })
 
+const formatFileSize = (bytes: number | null | undefined) => {
+  if (!bytes) return '-'
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
 const docContent = computed<Record<string, any>>(() => {
   return (document.value?.content || {}) as Record<string, any>
 })
@@ -381,6 +388,88 @@ onMounted(() => fetchDocument(docId.value))
         <pre v-else class="mb-0 text-muted small">
           {{ JSON.stringify(docContent, null, 2) }}
         </pre>
+      </CCardBody>
+    </CCard>
+
+    <!-- 첨부파일 목록 카드 -->
+    <CCard v-if="document.attachments?.length || document.attachment" class="mb-3">
+      <CCardHeader class="d-flex align-items-center justify-content-between">
+        <div class="fw-semibold">
+          <CIcon name="cilPaperclip" class="me-1 text-primary" />
+          첨부파일
+          <CBadge color="secondary" size="sm" class="ms-1">
+            {{ (document.attachments?.length || 0) + (document.attachment && !document.attachments?.length ? 1 : 0) }}개
+          </CBadge>
+        </div>
+      </CCardHeader>
+      <CCardBody class="p-0">
+        <CTable small hover class="mb-0">
+          <CTableBody>
+            <!-- 1. 다중 첨부파일 목록 -->
+            <CTableRow
+              v-for="att in document.attachments"
+              :key="att.id"
+              class="align-middle"
+            >
+              <CTableDataCell class="ps-3" style="width: 35px">
+                <CIcon name="cilFile" class="text-primary" />
+              </CTableDataCell>
+              <CTableDataCell>
+                <a
+                  :href="att.file_url || att.file"
+                  target="_blank"
+                  class="text-decoration-none fw-medium text-body"
+                >
+                  {{ att.file_name || '첨부파일' }}
+                </a>
+                <span class="text-muted small ms-2">
+                  ({{ formatFileSize(att.file_size) }})
+                </span>
+              </CTableDataCell>
+              <CTableDataCell class="text-end pe-3" style="width: 120px">
+                <CButton
+                  size="sm"
+                  color="primary"
+                  variant="outline"
+                  :href="att.file_url || att.file"
+                  target="_blank"
+                >
+                  <CIcon name="cilCloudDownload" class="me-1" />다운로드
+                </CButton>
+              </CTableDataCell>
+            </CTableRow>
+
+            <!-- 2. 레거시 단일 첨부파일 fallback -->
+            <CTableRow
+              v-if="document.attachment && !document.attachments?.length"
+              class="align-middle"
+            >
+              <CTableDataCell class="ps-3" style="width: 35px">
+                <CIcon name="cilFile" class="text-primary" />
+              </CTableDataCell>
+              <CTableDataCell>
+                <a
+                  :href="document.attachment"
+                  target="_blank"
+                  class="text-decoration-none fw-medium text-body"
+                >
+                  {{ document.attachment.split('/').pop() || '첨부파일' }}
+                </a>
+              </CTableDataCell>
+              <CTableDataCell class="text-end pe-3" style="width: 120px">
+                <CButton
+                  size="sm"
+                  color="primary"
+                  variant="outline"
+                  :href="document.attachment"
+                  target="_blank"
+                >
+                  <CIcon name="cilCloudDownload" class="me-1" />다운로드
+                </CButton>
+              </CTableDataCell>
+            </CTableRow>
+          </CTableBody>
+        </CTable>
       </CCardBody>
     </CCard>
 

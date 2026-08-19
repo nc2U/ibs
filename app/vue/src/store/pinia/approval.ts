@@ -98,9 +98,10 @@ export const useApproval = defineStore('approval', () => {
       .then(res => (document.value = res.data))
       .catch(err => errorHandle(err.response.data))
 
-  const createDocument = async (payload: PatchApprovalDocument) => {
+  const createDocument = async (payload: PatchApprovalDocument | FormData) => {
     try {
-      const res = await api.post('/approval-document/', payload)
+      const headers = payload instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : undefined
+      const res = await api.post('/approval-document/', payload, { headers })
       document.value = res.data
       await fetchMyDrafted()
       message()
@@ -110,9 +111,10 @@ export const useApproval = defineStore('approval', () => {
     }
   }
 
-  const updateDocument = async (pk: number, payload: PatchApprovalDocument) => {
+  const updateDocument = async (pk: number, payload: PatchApprovalDocument | FormData) => {
     try {
-      const res = await api.patch(`/approval-document/${pk}/`, payload)
+      const headers = payload instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : undefined
+      const res = await api.patch(`/approval-document/${pk}/`, payload, { headers })
       document.value = res.data
       message()
       return res.data as ApprovalDocument
@@ -125,6 +127,18 @@ export const useApproval = defineStore('approval', () => {
     try {
       await api.delete(`/approval-document/${pk}/`)
       await fetchMyDrafted()
+      message()
+    } catch (err: any) {
+      errorHandle(err.response.data)
+    }
+  }
+
+  const deleteAttachment = async (attachmentId: number, docId?: number) => {
+    try {
+      await api.delete(`/approval-attachment/${attachmentId}/`)
+      if (docId) {
+        await fetchDocument(docId)
+      }
       message()
     } catch (err: any) {
       errorHandle(err.response.data)
@@ -215,6 +229,7 @@ export const useApproval = defineStore('approval', () => {
     createDocument,
     updateDocument,
     deleteDocument,
+    deleteAttachment,
     fetchMyPending,
     fetchMyDrafted,
     fetchMyApproved,
