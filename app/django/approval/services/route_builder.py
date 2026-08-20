@@ -1,3 +1,4 @@
+from django.db.models import Q
 from company.models import StaffAssignment, Staff, Department
 from ..models import DocumentType
 
@@ -124,8 +125,8 @@ def build_dynamic_approval_route(doc_type: DocumentType, drafter_user, drafter_a
     if not reached_final and company:
         # 대표이사 보직을 가진 재직 직원 조회
         ceo_assignments = StaffAssignment.objects.filter(
+            Q(duty__code='CEO') | Q(duty__name='대표이사'),
             company=company,
-            duty__name='대표이사',
             staff__status='1',
         ).select_related('staff__user', 'staff__executive')
 

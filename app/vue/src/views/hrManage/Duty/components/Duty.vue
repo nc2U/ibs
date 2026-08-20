@@ -26,6 +26,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
 <template>
   <CTableRow v-if="duty" class="text-center">
     <CTableDataCell>{{ duty.pk }}</CTableDataCell>
+    <CTableDataCell>{{ duty.code }}</CTableDataCell>
     <CTableDataCell>{{ duty.name }}</CTableDataCell>
     <CTableDataCell class="text-left">{{ duty.desc }}</CTableDataCell>
     <CTableDataCell v-if="canHrWorkManage">
@@ -34,7 +35,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
   </CTableRow>
 
   <FormModal ref="updateFormModal" size="lg">
-    <template #header>직급 정보 등록</template>
+    <template #header>직책 정보 등록</template>
     <template #default>
       <StaffForm
         :duty="duty"

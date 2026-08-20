@@ -76,7 +76,7 @@ class DutyTitleViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly, IbsModulePermission)
     pagination_class = PageNumberPaginationOneThousand
     filterset_fields = ('company',)
-    search_fields = ('name',)
+    search_fields = ('code', 'name', 'desc')
 
     @property
     def required_permission(self):

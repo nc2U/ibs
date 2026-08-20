@@ -94,7 +94,7 @@ class DutyTitleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = DutyTitle
-        fields = ('pk', 'company', 'name', 'desc')
+        fields = ('pk', 'company', 'code', 'name', 'desc')
 
 
 class ExecutiveRankSerializer(serializers.ModelSerializer):

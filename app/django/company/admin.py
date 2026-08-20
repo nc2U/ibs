@@ -58,9 +58,10 @@ class PositionAdmin(ImportExportMixin, admin.ModelAdmin):
 
 
 class DutyTitleAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'company', 'name', 'desc')
-    list_display_links = ('name',)
+    list_display = ('id', 'company', 'code', 'name', 'desc')
+    list_display_links = ('code', 'name')
     list_filter = ('company',)
+    search_fields = ('code', 'name', 'desc')
 
 
 class ExecutiveRankAdmin(ImportExportMixin, admin.ModelAdmin):

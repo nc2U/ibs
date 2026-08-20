@@ -122,7 +122,8 @@ class Position(models.Model):
 
 class DutyTitle(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='titles', verbose_name='회사')
-    name = models.CharField('직책', max_length=5, db_index=True)
+    code = models.CharField('직책 코드', max_length=20, blank=True, help_text='예: CEO, DIV_HEAD, HQ_HEAD, TEAM_LEADER 등')
+    name = models.CharField('직책', max_length=30, db_index=True)
     desc = models.CharField('설명', max_length=255, null=True, blank=True)
 
     def __str__(self):

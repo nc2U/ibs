@@ -30,14 +30,16 @@ const onDelete = (pk: number) => emit('on-delete', pk)
   <CTable hover responsive bordered align="middle">
     <colgroup>
       <col style="width: 7%" />
-      <col style="width: 13%" />
-      <col style="width: 73%" />
+      <col style="width: 15%" />
+      <col style="width: 20%" />
+      <col style="width: 51%" />
       <col v-if="canHrWorkManage" style="width: 7%" />
     </colgroup>
 
     <CTableHead :color="TableSecondary">
       <CTableRow class="text-center" align="middle">
         <CTableHeaderCell scope="col">No</CTableHeaderCell>
+        <CTableHeaderCell scope="col">코드</CTableHeaderCell>
         <CTableHeaderCell scope="col">직책명</CTableHeaderCell>
         <CTableHeaderCell scope="col">설명</CTableHeaderCell>
         <CTableHeaderCell v-if="canHrWorkManage" scope="col">비고</CTableHeaderCell>

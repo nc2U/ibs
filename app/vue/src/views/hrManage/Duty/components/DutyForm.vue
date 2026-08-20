@@ -36,16 +36,18 @@ const validated = ref(false)
 const form = ref<Duty>({
   pk: undefined,
   company: undefined,
+  code: '',
   name: '',
   desc: '',
 })
 
 const formsCheck = computed(() => {
   if (props.duty) {
-    const a = form.value.name === props.duty.name
-    const b = form.value.desc === props.duty.desc
+    const a = form.value.code === props.duty.code
+    const b = form.value.name === props.duty.name
+    const c = form.value.desc === props.duty.desc
 
-    return a && b
+    return a && b && c
   } else return false
 })
 
@@ -78,6 +80,7 @@ const formDataSetup = () => {
   if (props.duty) {
     form.value.pk = props.duty.pk
     form.value.company = props.duty.company
+    form.value.code = props.duty.code || ''
     form.value.name = props.duty.name
     form.value.desc = props.duty.desc
   } else form.value.company = props.company
@@ -91,6 +94,17 @@ onBeforeMount(() => formDataSetup())
     <CModalBody class="p-4">
       <div>
         <CRow class="mb-3"></CRow>
+
+        <CRow class="mb-3">
+          <CCol sm="12">
+            <CRow>
+              <CFormLabel class="col-sm-2 col-form-label required">직책 코드</CFormLabel>
+              <CCol sm="10">
+                <CFormInput v-model="form.code" placeholder="예: CEO, HQ_HEAD, TEAM_LEADER 등" />
+              </CCol>
+            </CRow>
+          </CCol>
+        </CRow>
 
         <CRow class="mb-3">
           <CCol sm="12">

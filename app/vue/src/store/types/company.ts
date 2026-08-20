@@ -85,6 +85,7 @@ export interface Position {
 export interface Duty {
   pk?: number
   company?: string
+  code: string
   name: string
   desc: string
 }

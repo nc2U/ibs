@@ -370,8 +370,9 @@ class ExportDuties(ExcelExportMixin):
 
         # title_list
         header_src = [[],
+                      ['코드', 'code', 15],
                       ['직책명', 'name', 20],
-                      ['설명', 'desc', 60]]
+                      ['설명', 'desc', 50]]
         titles = ['No']  # header titles
         params = []  # ORM 추출 field
         widths = [7]  # No. 컬럼 넓이
@@ -408,7 +409,9 @@ class ExportDuties(ExcelExportMixin):
         # Get some data to write to the spreadsheet.
         search = request.GET.get('search')
         obj_list = DutyTitle.objects.filter(company=company)
-        obj_list = obj_list.filter(name__icontains=search) if search else obj_list
+        obj_list = obj_list.filter(
+            Q(code__icontains=search) | Q(name__icontains=search) | Q(desc__icontains=search)
+        ) if search else obj_list
 
         data = obj_list.values_list(*params)
 
@@ -427,7 +430,7 @@ class ExportDuties(ExcelExportMixin):
             row_num += 1
             row.insert(0, i + 1)
             for col_num, cell_data in enumerate(row):
-                if col_num == 3:
+                if col_num in (2, 3):
                     body_format['align'] = 'left'
                 else:
                     body_format['align'] = 'center'
