@@ -149,6 +149,7 @@ class ApprovalDocumentSerializer(serializers.ModelSerializer):
         many=True, queryset=User.objects.all(), source='observers', required=False, write_only=True
     )
     drafter_assignment_desc = serializers.SerializerMethodField()
+    content = serializers.JSONField(required=False, default=dict)
     pdf_url = serializers.SerializerMethodField()
 
     def get_drafter_assignment_desc(self, obj):
@@ -169,13 +170,22 @@ class ApprovalDocumentSerializer(serializers.ModelSerializer):
     def to_internal_value(self, data):
         mutable_data = data.copy() if hasattr(data, 'copy') else dict(data)
         content_val = mutable_data.get('content')
-        if isinstance(content_val, str):
-            try:
-                mutable_data['content'] = json.loads(content_val)
-            except Exception:
-                pass
+        if content_val is not None:
+            if isinstance(content_val, (list, tuple)):
+                content_val = content_val[0] if content_val else '{}'
+            if isinstance(content_val, str):
+                content_val = content_val.strip()
+                if not content_val:
+                    mutable_data['content'] = {}
+                else:
+                    try:
+                        mutable_data['content'] = json.loads(content_val)
+                    except Exception:
+                        mutable_data['content'] = {}
+        else:
+            mutable_data['content'] = {}
 
-        # observer_ids가 문자열/JSON으로 넘어온 경우 처리
+        # observer_ids가 문자열/JSON 또는 multipart-formdata로 넘어온 경우 처리
         observer_val = mutable_data.get('observer_ids')
         if isinstance(observer_val, str):
             try:
