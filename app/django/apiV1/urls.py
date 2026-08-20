@@ -13,6 +13,7 @@ from .views import ledger
 from .views import notice
 from .views import payment
 from .views import project
+from .views import sse
 from .views import work
 
 app_name = 'api'
@@ -235,3 +236,5 @@ urlpatterns += [
     path('post/<int:pk>/copy/', forum.PostViewSet.as_view({'post': 'copy_and_create'}), name='post-copy')]
 urlpatterns += [path('docs/<int:pk>/copy/', docs.DocumentViewSet.as_view({'docs': 'copy_and_create'}),
                      name='docs-copy')]
+urlpatterns += [path('notifications/stream/', sse.sse_notification_stream, name='notifications-stream')]
+

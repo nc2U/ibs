@@ -1,9 +1,21 @@
 <script lang="ts" setup>
+import { onMounted, onUnmounted } from 'vue'
 import AppSidebar from '@/layouts/containers/AppSidebar.vue'
 import AppHeader from '@/layouts/containers/AppHeader.vue'
 import AppFooter from '@/layouts/containers/AppFooter.vue'
 import AppAside from '@/layouts/containers/AppAside.vue'
 import BackToTop from '@/components/BackToTop/index.vue'
+import { useSSE } from '@/composables/useSSE'
+
+const { connect, disconnect } = useSSE()
+
+onMounted(() => {
+  connect()
+})
+
+onUnmounted(() => {
+  disconnect()
+})
 </script>
 
 <template>

@@ -125,11 +125,17 @@
 - `useApproval.pendingList.length` 실시간 감지 및 사이드바 `결재 대기함` / `전자 결재 관리`에 danger 배지 실시간 표출.
 - 60초 주기 자동 갱신 및 승인/반려(`actDocument`) 시 즉시 실시간 동기화.
 
+### ✨ Feat #11 — 웹 SSE 실시간 스트림 알림 엔진 (해결)
+- `_utils/push_service.py` Redis Pub/Sub 채널(`user_notify_{id}`) 실시간 이벤트 브로드캐스팅 추가.
+- `GET /api/v1/notifications/stream/` SSE 엔드포인트 구현 (JWT 인증, 20초 Heartbeat, graceful cleanup).
+- Nginx Ingress (`configmap.yaml`) 및 Docker (`public.conf`) `proxy_buffering off` 전용 스트림 라우팅 구축.
+- Vue 3 `useSSE.ts` Composable + `DefaultLayout.vue` 연동 ➔ 결재/업무 이벤트 수신 시 사이드바 배지 즉시 갱신 및 인앱 토스트 알림.
+
 ---
 
 ## 4. 향후 확장 권장 항목 (P2)
 
-- 추가 성능 튜닝 및 웹소켓(SSE) 실시간 알림 연동 확장 고려
+- 사용자별 수신 채널(웹/모바일/이메일) On/Off 개인 설정 UI 및 Celery HTML 이메일 알림 연동
 
 ---
 

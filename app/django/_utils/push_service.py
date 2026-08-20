@@ -147,4 +147,22 @@ def send_push_notification(
     else:
         logger.debug(f"FCM simulation: Push would be sent to {len(tokens)} tokens -> {title}: {body}")
 
+    # 4. Redis Pub/Sub을 통한 웹 브라우저 실시간 스트림(SSE) 브로드캐스팅
+    try:
+        import redis
+        redis_url = getattr(settings, 'REDIS_URL', 'redis://localhost:6379/1')
+        r = redis.Redis.from_url(redis_url)
+        sse_payload = json.dumps({
+            'category': str(category),
+            'title': str(title),
+            'body': str(body),
+            'target_type': str(target_type),
+            'target_id': str(target_id),
+            'extra': extra_data,
+        })
+        for uid in user_ids:
+            r.publish(f'user_notify_{uid}', sse_payload)
+    except Exception as e:
+        logger.warning(f"Redis SSE Publish error: {e}")
+
     return len(notifications_to_create)
