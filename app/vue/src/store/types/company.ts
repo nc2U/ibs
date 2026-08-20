@@ -3,8 +3,6 @@ export interface StaffAssignment {
   pk?: number
   department: number
   department_name?: string
-  position?: number | null
-  position_name?: string | null
   duty?: number | null
   duty_name?: string | null
   is_primary: boolean
@@ -30,6 +28,7 @@ export interface Staff {
   status_desc?: '근무 중' | '휴직 중' | '퇴직신청' | '퇴사처리'
   user: number | null
   assignments?: StaffAssignment[]
+  executive?: Executive | null
   is_hq_financial_officer?: boolean
   is_hq_hr_officer?: boolean
 }
@@ -88,6 +87,44 @@ export interface Duty {
   company?: string
   name: string
   desc: string
+}
+
+export interface ExecutiveRank {
+  pk?: number
+  company?: string
+  code: string
+  name: string
+  rank_order: number
+  role_desc: string
+}
+
+export type DirectorType =
+  | 'inside'
+  | 'outside'
+  | 'non_standing_director'
+  | 'auditor'
+  | 'unregistered'
+  | 'advisor'
+
+export type RepresentType = 'none' | 'sole' | 'joint' | 'each'
+
+export interface Executive {
+  pk?: number
+  company?: string
+  staff: number
+  staff_name?: string
+  rank?: number | null
+  rank_name?: string | null
+  director_type: DirectorType
+  director_type_desc?: string
+  is_registered: boolean
+  is_standing: boolean
+  represent_type: RepresentType
+  represent_type_desc?: string
+  term_start?: string | null
+  term_end?: string | null
+  appointed_date?: string | null
+  note?: string
 }
 
 export type ComFilter = {

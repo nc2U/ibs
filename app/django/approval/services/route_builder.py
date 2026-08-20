@@ -54,12 +54,12 @@ def build_dynamic_approval_route(doc_type: DocumentType, drafter_user, drafter_a
     if not assignment and drafter_user:
         assignment = StaffAssignment.objects.filter(
             staff__user=drafter_user, is_primary=True
-        ).select_related('company', 'department', 'position', 'duty').first()
+        ).select_related('company', 'department', 'staff__position', 'duty').first()
 
         if not assignment:
             assignment = StaffAssignment.objects.filter(
                 staff__user=drafter_user
-            ).select_related('company', 'department', 'position', 'duty').first()
+            ).select_related('company', 'department', 'staff__position', 'duty').first()
 
     steps = []
     step_order = 1
@@ -127,7 +127,7 @@ def build_dynamic_approval_route(doc_type: DocumentType, drafter_user, drafter_a
             company=company,
             duty__name='대표이사',
             staff__status='1',
-        ).select_related('staff__user')
+        ).select_related('staff__user', 'staff__executive')
 
         ceo_users = [
             a.staff.user for a in ceo_assignments
@@ -135,7 +135,10 @@ def build_dynamic_approval_route(doc_type: DocumentType, drafter_user, drafter_a
         ]
 
         if ceo_users:
-            is_joint = any(a.represent_type == 'joint' for a in ceo_assignments)
+            is_joint = any(
+                hasattr(a.staff, 'executive') and a.staff.executive and a.staff.executive.represent_type == 'joint'
+                for a in ceo_assignments
+            )
             # 공동대표인 경우 AND(전원 승인), 단독/각자대표인 경우 OR(1인 승인)
             condition = 'AND' if (is_joint and len(ceo_users) > 1) else 'OR'
             label = '공동대표 최종 승인' if is_joint and len(ceo_users) > 1 else '대표이사 최종 승인'

@@ -1,12 +1,20 @@
 from django.contrib import admin
 from import_export.admin import ImportExportMixin
 
-from .models import Company, Logo, Department, JobGrade, Position, DutyTitle, Staff, StaffAssignment
+from .models import (
+    Company, Logo, Department, JobGrade, Position, DutyTitle,
+    ExecutiveRank, Executive, Staff, StaffAssignment
+)
 
 
 class StaffAssignmentInline(admin.TabularInline):
     model = StaffAssignment
     extra = 1
+
+
+class ExecutiveInline(admin.StackedInline):
+    model = Executive
+    extra = 0
 
 
 class DepartmentInline(admin.StackedInline):
@@ -54,20 +62,36 @@ class DutyTitleAdmin(ImportExportMixin, admin.ModelAdmin):
     list_filter = ('company',)
 
 
+class ExecutiveRankAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_display = ('id', 'company', 'rank_order', 'code', 'name', 'role_desc')
+    list_display_links = ('name',)
+    list_editable = ('rank_order',)
+    list_filter = ('company',)
+    search_fields = ('code', 'name', 'role_desc')
+
+
+class ExecutiveAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_display = ('id', 'company', 'staff', 'rank', 'director_type', 'is_registered',
+                    'is_standing', 'represent_type', 'term_start', 'term_end')
+    list_display_links = ('staff',)
+    list_filter = ('company', 'rank', 'director_type', 'is_registered', 'is_standing', 'represent_type')
+    search_fields = ('staff__name', 'rank__name', 'note')
+
+
 class StaffAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'company', 'name', 'sort', 'grade', 'get_position', 'get_duty',
+    list_display = ('id', 'company', 'name', 'sort', 'grade', 'position', 'get_executive_rank', 'get_duty',
                     'get_department', 'email', 'status', 'date_join', 'date_leave')
     list_display_links = ('name', 'email')
-    list_filter = ('company', 'sort', 'grade', 'status')
-    inlines = (StaffAssignmentInline,)
+    list_filter = ('company', 'sort', 'grade', 'position', 'status')
+    inlines = (StaffAssignmentInline, ExecutiveInline)
+
+    @admin.display(description='임원 직위')
+    def get_executive_rank(self, obj):
+        return obj.executive_rank or '-'
 
     @admin.display(description='부서')
     def get_department(self, obj):
         return obj.department.name if obj.department else '-'
-
-    @admin.display(description='직위')
-    def get_position(self, obj):
-        return obj.position.name if obj.position else '-'
 
     @admin.display(description='직책')
     def get_duty(self, obj):
@@ -75,10 +99,10 @@ class StaffAdmin(ImportExportMixin, admin.ModelAdmin):
 
 
 class StaffAssignmentAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'company', 'staff', 'department', 'position', 'duty', 'is_primary', 'represent_type',
+    list_display = ('id', 'company', 'staff', 'department', 'duty', 'is_primary',
                     'assigned_tasks')
     list_display_links = ('staff',)
-    list_filter = ('company', 'department', 'is_primary', 'duty', 'represent_type')
+    list_filter = ('company', 'department', 'is_primary', 'duty')
     search_fields = ('staff__name', 'department__name', 'assigned_tasks')
 
 
@@ -87,5 +111,7 @@ admin.site.register(Department, DepartmentAdmin)
 admin.site.register(JobGrade, JobGradeAdmin)
 admin.site.register(Position, PositionAdmin)
 admin.site.register(DutyTitle, DutyTitleAdmin)
+admin.site.register(ExecutiveRank, ExecutiveRankAdmin)
+admin.site.register(Executive, ExecutiveAdmin)
 admin.site.register(Staff, StaffAdmin)
 admin.site.register(StaffAssignment, StaffAssignmentAdmin)

@@ -12,6 +12,8 @@ import {
   type Grade,
   type Position,
   type Duty,
+  type ExecutiveRank,
+  type Executive,
   type ComFilter,
 } from '@/store/types/company'
 
@@ -455,6 +457,154 @@ export const useCompany = defineStore('company', () => {
       })
       .catch(err => errorHandle(err.response.data))
 
+  // ExecutiveRank ----------------------------------------------------
+  const executiveRankList = ref<ExecutiveRank[]>([])
+  const allExecutiveRankList = ref<ExecutiveRank[]>([])
+  const executiveRank = ref<ExecutiveRank | null>(null)
+  const executiveRanksCount = ref<number>(0)
+
+  const getExecutiveRanks = computed(() =>
+    allExecutiveRankList.value.map(r => ({
+      value: r.name,
+      label: r.name,
+    })),
+  )
+
+  const getPkExecutiveRanks = computed(() =>
+    allExecutiveRankList.value.map(r => ({
+      value: r.pk,
+      label: r.name,
+    })),
+  )
+
+  const executiveRankPages = (itemsPerPage: number) =>
+    Math.ceil(executiveRanksCount.value / itemsPerPage)
+
+  const fetchExecutiveRankList = async (payload: ComFilter) => {
+    const { page = 1, com = 1, q = '' } = payload
+    const queryStr = `?limit=10&page=${page}&company=${com}&search=${q}`
+    return await api
+      .get(`/executive-rank/${queryStr}`)
+      .then(res => {
+        executiveRankList.value = res.data.results
+        executiveRanksCount.value = res.data.count
+      })
+      .catch(err => errorHandle(err.response.data))
+  }
+
+  const fetchAllExecutiveRankList = (com = 1) =>
+    api
+      .get(`/executive-rank/?company=${com}&limit=500`)
+      .then(res => {
+        allExecutiveRankList.value = res.data.results ?? res.data
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const fetchExecutiveRank = (pk: number) =>
+    api
+      .get(`/executive-rank/${pk}/`)
+      .then(res => (executiveRank.value = res.data))
+      .catch(err => errorHandle(err.response.data))
+
+  const createExecutiveRank = (payload: ExecutiveRank, page = 1, com = 1) =>
+    api
+      .post(`/executive-rank/`, payload)
+      .then(async res => {
+        await fetchAllExecutiveRankList(com)
+        await fetchExecutiveRankList({ page, com })
+        await fetchExecutiveRank(res.data.pk)
+        message()
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const updateExecutiveRank = (payload: ExecutiveRank, page = 1, com = 1) =>
+    api
+      .put(`/executive-rank/${payload.pk}/`, payload)
+      .then(async res => {
+        await fetchAllExecutiveRankList(com)
+        await fetchExecutiveRankList({ page, com })
+        await fetchExecutiveRank(res.data.pk)
+        message()
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const deleteExecutiveRank = (pk: number, com = 1) =>
+    api
+      .delete(`/executive-rank/${pk}/`)
+      .then(async () => {
+        await fetchAllExecutiveRankList(com)
+        await fetchExecutiveRankList({ com })
+        message('warning', '', '해당 오브젝트가 삭제되었습니다.')
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  // Executive --------------------------------------------------------
+  const executiveList = ref<Executive[]>([])
+  const allExecutiveList = ref<Executive[]>([])
+  const executive = ref<Executive | null>(null)
+  const executivesCount = ref<number>(0)
+
+  const executivePages = (itemsPerPage: number) =>
+    Math.ceil(executivesCount.value / itemsPerPage)
+
+  const fetchExecutiveList = async (payload: ComFilter) => {
+    const { page = 1, com = 1, q = '' } = payload
+    const queryStr = `?limit=10&page=${page}&company=${com}&search=${q}`
+    return await api
+      .get(`/executive/${queryStr}`)
+      .then(res => {
+        executiveList.value = res.data.results
+        executivesCount.value = res.data.count
+      })
+      .catch(err => errorHandle(err.response.data))
+  }
+
+  const fetchAllExecutiveList = (com = 1) =>
+    api
+      .get(`/executive/?company=${com}&limit=500`)
+      .then(res => {
+        allExecutiveList.value = res.data.results ?? res.data
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const fetchExecutive = (pk: number) =>
+    api
+      .get(`/executive/${pk}/`)
+      .then(res => (executive.value = res.data))
+      .catch(err => errorHandle(err.response.data))
+
+  const createExecutive = (payload: Executive, page = 1, com = 1) =>
+    api
+      .post(`/executive/`, payload)
+      .then(async res => {
+        await fetchAllExecutiveList(com)
+        await fetchExecutiveList({ page, com })
+        await fetchExecutive(res.data.pk)
+        message()
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const updateExecutive = (payload: Executive, page = 1, com = 1) =>
+    api
+      .put(`/executive/${payload.pk}/`, payload)
+      .then(async res => {
+        await fetchAllExecutiveList(com)
+        await fetchExecutiveList({ page, com })
+        await fetchExecutive(res.data.pk)
+        message()
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const deleteExecutive = (pk: number, com = 1) =>
+    api
+      .delete(`/executive/${pk}/`)
+      .then(async () => {
+        await fetchAllExecutiveList(com)
+        await fetchExecutiveList({ com })
+        message('warning', '', '해당 오브젝트가 삭제되었습니다.')
+      })
+      .catch(err => errorHandle(err.response.data))
+
   const staffList = ref<Staff[]>([])
   const allStaffList = ref<Staff[]>([])
   const staff = ref<Staff | null>(null)
@@ -600,6 +750,32 @@ export const useCompany = defineStore('company', () => {
     createDuty,
     updateDuty,
     deleteDuty,
+
+    executiveRankList,
+    allExecutiveRankList,
+    executiveRank,
+    executiveRanksCount,
+    getExecutiveRanks,
+    getPkExecutiveRanks,
+    executiveRankPages,
+    fetchExecutiveRankList,
+    fetchAllExecutiveRankList,
+    fetchExecutiveRank,
+    createExecutiveRank,
+    updateExecutiveRank,
+    deleteExecutiveRank,
+
+    executiveList,
+    allExecutiveList,
+    executive,
+    executivesCount,
+    executivePages,
+    fetchExecutiveList,
+    fetchAllExecutiveList,
+    fetchExecutive,
+    createExecutive,
+    updateExecutive,
+    deleteExecutive,
 
     staffList,
     allStaffList,

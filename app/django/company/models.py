@@ -134,6 +134,24 @@ class DutyTitle(models.Model):
         verbose_name_plural = "05. 직책 정보"
 
 
+class ExecutiveRank(models.Model):
+    """임원 직위 정보 (이사, 상무, 전무, 부사장, 사장, 부회장, 회장 등)"""
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='executive_ranks', verbose_name='회사')
+    code = models.CharField('직위 코드', max_length=10, blank=True, help_text='예: E1, E2, E3 등')
+    name = models.CharField('임원 직위명', max_length=20, db_index=True, help_text='예: 이사, 상무, 전무, 부사장, 사장, 부회장, 회장')
+    rank_order = models.PositiveSmallIntegerField('서열 순서', default=1, help_text='낮을수록 상위 서열 또는 정렬 순서')
+    role_desc = models.CharField('역할/관장 설명', max_length=255, blank=True, help_text='주요 역할 및 관장 부문 요약')
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['rank_order', 'id']
+        verbose_name = "06. 임원 직위 정보"
+        verbose_name_plural = "06. 임원 직위 정보"
+        unique_together = ('company', 'name')
+
+
 class Staff(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='staffs', verbose_name='회사')
     SORT_CHOICES = (('1', '임원'), ('2', '직원'))
@@ -145,6 +163,7 @@ class Staff(models.Model):
     personal_phone = models.CharField('휴대전화', max_length=13)
     email = models.EmailField('이메일', null=True, blank=True)
     grade = models.ForeignKey(JobGrade, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='직급 정보')
+    position = models.ForeignKey(Position, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='직위 정보')
     date_join = models.DateField('입사일')
     STATUS_CHOICES = (('1', '근무 중'), ('2', '휴직 중'), ('3', '퇴직신청'), ('4', '퇴사처리'))
     status = models.CharField('상태', max_length=1, choices=STATUS_CHOICES, default='1')
@@ -165,22 +184,61 @@ class Staff(models.Model):
         return self.primary_assignment.department if self.primary_assignment else None
 
     @property
-    def position(self):
-        """주보직의 직위"""
-        return self.primary_assignment.position if self.primary_assignment else None
-
-    @property
     def duty(self):
         """주보직의 직책"""
         return self.primary_assignment.duty if self.primary_assignment else None
+
+    @property
+    def executive_rank(self):
+        """임원 직위 (임원인 경우)"""
+        return self.executive.rank.name if hasattr(self, 'executive') and self.executive and self.executive.rank else None
 
     def __str__(self):
         return self.name
 
     class Meta:
         ordering = ['-date_join']
-        verbose_name = '06. 직원 정보'
-        verbose_name_plural = '06. 직원 정보'
+        verbose_name = '07. 직원 정보'
+        verbose_name_plural = '07. 직원 정보'
+
+
+class Executive(models.Model):
+    """임원 법적/등기/임기 상세 정보"""
+    DIRECTOR_CHOICES = (
+        ('inside', '사내이사'),
+        ('outside', '사외이사'),
+        ('non_standing_director', '기타비상무이사'),
+        ('auditor', '감사'),
+        ('unregistered', '미등기임원'),
+        ('advisor', '고문/자문'),
+    )
+    REPRESENT_CHOICES = (
+        ('none', '해당없음'),
+        ('sole', '단독대표'),
+        ('joint', '공동대표'),
+        ('each', '각자대표'),
+    )
+
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='executives', verbose_name='회사')
+    staff = models.OneToOneField(Staff, on_delete=models.CASCADE, related_name='executive', verbose_name='임원')
+    rank = models.ForeignKey(ExecutiveRank, on_delete=models.SET_NULL, null=True, blank=True, related_name='executives', verbose_name='임원 직위')
+    director_type = models.CharField('상법상 지위', max_length=25, choices=DIRECTOR_CHOICES, default='unregistered')
+    is_registered = models.BooleanField('등기 여부', default=False, help_text='법인 등기부등본 등기 여부')
+    is_standing = models.BooleanField('상근 여부', default=True, help_text='상근 또는 비상근')
+    represent_type = models.CharField('대표권 구분', max_length=10, choices=REPRESENT_CHOICES, default='none', help_text='대표권 보유 형태')
+    term_start = models.DateField('임기 시작일(취임일)', null=True, blank=True)
+    term_end = models.DateField('임기 만료일', null=True, blank=True)
+    appointed_date = models.DateField('최초 선임일', null=True, blank=True)
+    note = models.CharField('비고', max_length=255, blank=True)
+
+    def __str__(self):
+        rank_str = f" {self.rank.name}" if self.rank else ""
+        return f"{self.staff.name}{rank_str} ({self.get_director_type_display()})"
+
+    class Meta:
+        ordering = ['rank__rank_order', 'staff__date_join', 'id']
+        verbose_name = '08. 임원 등기/재임 정보'
+        verbose_name_plural = '08. 임원 등기/재임 정보'
 
 
 class StaffAssignment(models.Model):
@@ -189,27 +247,18 @@ class StaffAssignment(models.Model):
     staff = models.ForeignKey(Staff, on_delete=models.CASCADE, related_name='assignments', verbose_name='직원')
     department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='assignments',
                                    verbose_name='소속 부서')
-    position = models.ForeignKey(Position, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='직위')
     duty = models.ForeignKey(DutyTitle, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='직책')
     is_primary = models.BooleanField('주 부서/보직 여부', default=True, help_text='기본 소속 여부 (직원당 1개만 True)')
     assigned_tasks = models.CharField('담당 업무 요약', max_length=255, blank=True, help_text='예: 재무회계/인사/총무 총괄, 개발사업성 검토 등')
 
-    REPRESENT_CHOICES = (
-        ('sole', '단독대표'),
-        ('joint', '공동대표'),
-        ('each', '각자대표'),
-    )
-    represent_type = models.CharField('대표권 구분', max_length=10, choices=REPRESENT_CHOICES, null=True, blank=True,
-                                      help_text='대표이사 직책인 경우 대표권 형태')
-
     class Meta:
         ordering = ['-is_primary', 'id']
-        verbose_name = '07. 직원 보직/겸직 정보'
-        verbose_name_plural = '07. 직원 보직/겸직 목록'
+        verbose_name = '09. 직원 보직/겸직 정보'
+        verbose_name_plural = '09. 직원 보직/겸직 목록'
         unique_together = ('staff', 'department', 'duty')
 
     def __str__(self):
-        role = self.duty.name if self.duty else (self.position.name if self.position else '팀원')
+        role = self.duty.name if self.duty else '팀원'
         primary_str = '[주]' if self.is_primary else '[겸]'
         return f'{primary_str} {self.staff.name} - {self.department.name} ({role})'
 

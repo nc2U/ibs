@@ -1,13 +1,17 @@
 from django_filters.rest_framework import FilterSet, CharFilter
 from rest_framework import viewsets
 
-from company.models import Company, Logo, Department, JobGrade, Position, DutyTitle, Staff, StaffAssignment
+from company.models import (
+    Company, Logo, Department, JobGrade, Position, DutyTitle,
+    ExecutiveRank, Executive, Staff, StaffAssignment
+)
 from ..pagination import PageNumberPaginationOneThousand
 from apiV1.permissions.auth_perms import permissions, IsSuperUserOrReadOnly, IsStaffOrReadOnly
 from apiV1.permissions.ibs_perms import IbsModulePermission
 from ..serializers.company import (
     CompanySerializer, LogoSerializer, DepartmentSerializer,
     JobGradeSerializer, PositionSerializer, DutyTitleSerializer,
+    ExecutiveRankSerializer, ExecutiveSerializer,
     StaffSerializer, StaffAssignmentSerializer,
 )
 
@@ -77,9 +81,35 @@ class DutyTitleViewSet(viewsets.ModelViewSet):
         return 'hr_work.read' if self.action in ('list', 'retrieve') else 'hr_work.create' if self.action == 'create' else 'hr_work.update' if self.action in ('update', 'partial_update') else 'hr_work.delete' if self.action == 'destroy' else 'hr_work.read'
 
 
+class ExecutiveRankViewSet(viewsets.ModelViewSet):
+    queryset = ExecutiveRank.objects.all()
+    serializer_class = ExecutiveRankSerializer
+    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly, IbsModulePermission)
+    pagination_class = PageNumberPaginationOneThousand
+    filterset_fields = ('company',)
+    search_fields = ('code', 'name', 'role_desc')
+
+    @property
+    def required_permission(self):
+        return 'hr_work.read' if self.action in ('list', 'retrieve') else 'hr_work.create' if self.action == 'create' else 'hr_work.update' if self.action in ('update', 'partial_update') else 'hr_work.delete' if self.action == 'destroy' else 'hr_work.read'
+
+
+class ExecutiveViewSet(viewsets.ModelViewSet):
+    queryset = Executive.objects.all()
+    serializer_class = ExecutiveSerializer
+    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly, IbsModulePermission)
+    pagination_class = PageNumberPaginationOneThousand
+    filterset_fields = ('company', 'rank', 'director_type', 'is_registered', 'is_standing', 'represent_type')
+    search_fields = ('staff__name', 'rank__name', 'note')
+
+    @property
+    def required_permission(self):
+        return 'hr_work.read' if self.action in ('list', 'retrieve') else 'hr_work.create' if self.action == 'create' else 'hr_work.update' if self.action in ('update', 'partial_update') else 'hr_work.delete' if self.action == 'destroy' else 'hr_work.read'
+
+
 class StaffFilter(FilterSet):
     department = CharFilter(field_name='assignments__department', lookup_expr='exact')
-    position = CharFilter(field_name='assignments__position', lookup_expr='exact')
+    position = CharFilter(field_name='position', lookup_expr='exact')
     duty = CharFilter(field_name='assignments__duty', lookup_expr='exact')
 
     class Meta:
@@ -88,8 +118,10 @@ class StaffFilter(FilterSet):
 
 
 class StaffViewSet(viewsets.ModelViewSet):
-    queryset = Staff.objects.all().prefetch_related(
-        'assignments__department', 'assignments__position', 'assignments__duty'
+    queryset = Staff.objects.all().select_related(
+        'position', 'grade', 'company', 'user', 'executive__rank'
+    ).prefetch_related(
+        'assignments__department', 'assignments__duty'
     )
     serializer_class = StaffSerializer
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly, IbsModulePermission)
@@ -104,12 +136,12 @@ class StaffViewSet(viewsets.ModelViewSet):
 
 class StaffAssignmentViewSet(viewsets.ModelViewSet):
     queryset = StaffAssignment.objects.all().select_related(
-        'company', 'staff', 'department', 'position', 'duty'
+        'company', 'staff', 'department', 'duty'
     )
     serializer_class = StaffAssignmentSerializer
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly, IbsModulePermission)
     pagination_class = PageNumberPaginationOneThousand
-    filterset_fields = ('company', 'staff', 'department', 'duty', 'is_primary', 'represent_type')
+    filterset_fields = ('company', 'staff', 'department', 'duty', 'is_primary')
     search_fields = ('staff__name', 'department__name', 'assigned_tasks')
 
     @property

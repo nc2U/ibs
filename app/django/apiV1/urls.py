@@ -37,6 +37,8 @@ router.register(r'department', company.DepartmentViewSet)
 router.register(r'grade', company.JobGradeViewSet)
 router.register(r'position', company.PositionViewSet)
 router.register(r'duty-title', company.DutyTitleViewSet)
+router.register(r'executive-rank', company.ExecutiveRankViewSet)
+router.register(r'executive', company.ExecutiveViewSet)
 router.register(r'staff', company.StaffViewSet)
 router.register(r'staff-assignment', company.StaffAssignmentViewSet)
 
