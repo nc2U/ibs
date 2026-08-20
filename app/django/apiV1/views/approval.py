@@ -1,3 +1,4 @@
+from django.db.models import Q
 from django.utils import timezone
 from django_filters.rest_framework import FilterSet, CharFilter
 from rest_framework import viewsets, status
@@ -57,17 +58,23 @@ class DocumentTypeViewSet(viewsets.ReadOnlyModelViewSet):
 
         assignment = None
         if assignment_id:
-            assignment = StaffAssignment.objects.filter(pk=assignment_id, staff__user=user).first()
+            assignment = StaffAssignment.objects.filter(
+                pk=assignment_id, staff__user=user
+            ).select_related('staff__position', 'department', 'duty').first()
         if not assignment:
-            assignment = StaffAssignment.objects.filter(staff__user=user, is_primary=True).first() or \
-                         StaffAssignment.objects.filter(staff__user=user).first()
+            assignment = StaffAssignment.objects.filter(
+                staff__user=user, is_primary=True
+            ).select_related('staff__position', 'department', 'duty').first() or \
+                         StaffAssignment.objects.filter(
+                             staff__user=user
+                         ).select_related('staff__position', 'department', 'duty').first()
 
         qs = self.get_queryset()
 
         if assignment:
             dept = assignment.department
             duty = assignment.duty
-            pos = assignment.position
+            pos = assignment.staff.position if assignment.staff else None
 
             # 부서 제한 필터: allowed_departments가 비어있거나, 해당 부서가 포함된 경우
             # (Q 객체 조합 또는 Python 리스트 필터링)
@@ -154,7 +161,7 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
         """현재 로그인 사용자의 보직/겸직 목록 조회 (기안 폼 선택용)"""
         assignments = StaffAssignment.objects.filter(
             staff__user=request.user, staff__status='1'
-        ).select_related('company', 'department', 'position', 'duty')
+        ).select_related('company', 'department', 'staff__position', 'duty')
         serializer = StaffAssignmentSerializer(assignments, many=True)
         return Response(serializer.data)
 
@@ -179,7 +186,7 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
         assignment = None
         if assignment_id:
             assignment = StaffAssignment.objects.filter(pk=assignment_id).select_related(
-                'company', 'department', 'position', 'duty'
+                'company', 'department', 'staff__position', 'duty'
             ).first()
 
         content = {'amount': amount} if amount else None
@@ -220,9 +227,12 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
         if not route_steps:
             # 기안자가 대표이사 본인인지 확인
             is_ceo = False
-            if assignment and assignment.duty and assignment.duty.name == '대표이사':
+            if assignment and assignment.duty and (assignment.duty.code == 'CEO' or assignment.duty.name == '대표이사'):
                 is_ceo = True
-            elif StaffAssignment.objects.filter(staff__user=request.user, duty__name='대표이사').exists():
+            elif StaffAssignment.objects.filter(
+                Q(duty__code='CEO') | Q(duty__name='대표이사'),
+                staff__user=request.user
+            ).exists():
                 is_ceo = True
 
             if is_ceo:

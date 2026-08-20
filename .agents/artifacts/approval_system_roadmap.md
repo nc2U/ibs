@@ -84,7 +84,67 @@
 
 ---
 
-## 3. 해결된 버그 및 개선 이력
+## 3. 자동 결재선(Dynamic Route Builder) 생성 엔진 및 전결 로직
+
+`app/django/approval/services/route_builder.py`의 `build_dynamic_approval_route` 함수는 기안자의 보직(소속 부서/직책), 문서 내용(금액), 문서 유형의 전결 정책 및 회사 임원 정보를 종합하여 **실시간으로 최적의 결재 단계(`ApprovalStep`)를 자동 생성**합니다.
+
+```mermaid
+flowchart TD
+    Start([기안 상신 / 결재선 미리보기]) --> A[1. 기안 보직 및 회사 확정]
+    A --> B[2. 기안 금액 추출 및 조건부 전결 규칙 평가 ApprovalPolicyRule]
+    B --> C[3. 기안 부서 직속 부서장 Department.manager 확인]
+    
+    C --> D{부서장 존재 & 기안자 제외 & 미등록?}
+    D -- Yes --> E[결재 단계 추가 Role Label & Approver]
+    D -- No --> G[상위 부서 Department.upper_depart 로 이동]
+    
+    E --> F{전결 조건 도달 검사}
+    F -- "직책 전결 (DutyTitle) 일치<br/>또는 부서 레벨 (level) 도달" --> FinalReached[전결 완료 reached_final=True]
+    F -- "전결 미도달" --> G
+    
+    G --> H{상위 부서 존재?}
+    H -- Yes --> C
+    H -- No --> I{전결 완료 여부?}
+    
+    FinalReached --> Output([결재선 steps 반환])
+    
+    I -- "미완료" --> J[4. 대표이사 CEO 보직 조회]
+    J --> K{Executive.represent_type 판별}
+    K -- "공동대표 (joint) & 2인 이상" --> L[공동대표 최종 승인 AND 단계 추가]
+    K -- "단독/각자대표 (sole/each)" --> M[대표이사 최종 승인 OR 단계 추가]
+    L --> Output
+    M --> Output
+    I -- "완료" --> Output
+```
+
+### 3-1. 결재선 빌드 4단계 메커니즘
+
+#### ① 1단계: 기안 보직 및 회사 확정
+* 기안자가 폼에서 명시적으로 선택한 보직(`drafter_assignment`) 또는 기본 주보직(`is_primary=True`)을 가져옵니다.
+* 보직에 연결된 `Staff`의 `position`(직위), `duty`(직책), `department`(소속 부서)를 단일 쿼리로 최적화 로딩(`select_related('staff__position', 'duty', 'department')`)합니다.
+
+#### ② 2단계: 기안 금액 자동 추출 및 전결 정책 평가
+* 기안 문서의 JSON 딕셔너리(`content`)에서 `amount`, `total_amount`, `cost`, `price` 등의 필드를 정규화하여 금액을 자동 추출합니다.
+* `ApprovalPolicyRule` 목록 중 해당 금액 구간(`min_amount` ~ `max_amount`)에 매칭되는 가장 우선순위(`priority`)가 높은 정책을 탐색합니다.
+* 매칭된 정책에 따라 **유효 전결 직책(`effective_final_duty`)** 및 **유효 전결 부서 레벨(`effective_final_level`)**을 동적으로 결정합니다.
+
+#### ③ 3단계: 부서 계층 트리 상향 순회 (직속 부서장 ➔ 상위 본부장)
+* 기안 부서부터 시작하여 `current_dept.upper_depart`를 타고 최상위 부서까지 순회합니다.
+* 각 부서의 책임자(`current_dept.manager`)를 조회하여, 기안자 본인이 아니고 중복되지 않은 경우 결재 단계(`role_label: '개발1팀 팀장'`)를 추가합니다.
+* **전결 검사**:
+  * 부서장의 직책이 유효 전결 직책과 일치하거나(`manager_duty.id == effective_final_duty.id`),
+  * 부서의 계층 레벨이 유효 전결 레벨 이하(`current_dept.level <= effective_final_level`, 예: 1레벨 본부)에 도달하면 즉시 순회를 멈추고 전결 처리(`reached_final = True`)합니다.
+
+#### ④ 4단계: 대표이사 최종 결재 단계 편성 (임원 거버넌스 연동)
+* 전결 규정에 도달하지 못한 경우, 회사의 대표이사 보직자(`Q(duty__code='CEO') | Q(duty__name='대표이사')`)를 조회합니다.
+* `Executive.represent_type`(대표권 형태)을 검사하여 결재 조건을 분기합니다:
+  * **공동대표 (`joint`)**: `condition='AND'` (공동대표 전원의 승인이 있어야 문서 완료)
+  * **단독대표 / 각자대표 (`sole` / `each`)**: `condition='OR'` (대표이사 중 1인 승인 시 즉시 완료)
+* *예외 처리*: 기안자 본인이 대표이사인 경우 결재선 없이 즉시 승인(`STATUS_APPROVED`) 처리됩니다.
+
+---
+
+## 4. 해결된 버그 및 개선 이력
 
 ### 🐛 Bug #1 — `doc_number` UNIQUE constraint 위반 (해결)
 - `doc_number` 필드 `null=True, default=None` 수정.
@@ -133,13 +193,13 @@
 
 ---
 
-## 4. 향후 확장 권장 항목 (P2)
+## 5. 향후 확장 권장 항목 (P2)
 
 - 사용자별 수신 채널(웹/모바일/이메일) On/Off 개인 설정 UI 및 Celery HTML 이메일 알림 연동
 
 ---
 
-## 5. 관련 파일 위치 참조
+## 6. 관련 파일 위치 참조
 
 ```
 app/django/

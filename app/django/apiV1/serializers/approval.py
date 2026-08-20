@@ -114,7 +114,7 @@ class ApprovalDocumentListSerializer(serializers.ModelSerializer):
         if obj.drafter_assignment:
             dept = obj.drafter_assignment.department.name if obj.drafter_assignment.department else ''
             duty = obj.drafter_assignment.duty.name if obj.drafter_assignment.duty else (
-                obj.drafter_assignment.position.name if obj.drafter_assignment.position else ''
+                obj.drafter_assignment.staff.position.name if obj.drafter_assignment.staff and obj.drafter_assignment.staff.position else ''
             )
             return f'{dept} {duty}'.strip()
         return ''
@@ -142,7 +142,7 @@ class ApprovalDocumentSerializer(serializers.ModelSerializer):
         if obj.drafter_assignment:
             dept = obj.drafter_assignment.department.name if obj.drafter_assignment.department else ''
             duty = obj.drafter_assignment.duty.name if obj.drafter_assignment.duty else (
-                obj.drafter_assignment.position.name if obj.drafter_assignment.position else ''
+                obj.drafter_assignment.staff.position.name if obj.drafter_assignment.staff and obj.drafter_assignment.staff.position else ''
             )
             return f'{dept} {duty}'.strip()
         return ''
