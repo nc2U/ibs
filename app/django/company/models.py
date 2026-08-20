@@ -166,7 +166,7 @@ class Staff(models.Model):
     grade = models.ForeignKey(JobGrade, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='직급 정보')
     position = models.ForeignKey(Position, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='직위 정보')
     date_join = models.DateField('입사일')
-    STATUS_CHOICES = (('1', '근무 중'), ('2', '휴직 중'), ('3', '퇴직신청'), ('4', '퇴사처리'))
+    STATUS_CHOICES = (('1', '재직'), ('2', '휴직'), ('3', '퇴직신청'), ('4', '퇴직'))
     status = models.CharField('상태', max_length=1, choices=STATUS_CHOICES, default='1')
     date_leave = models.DateField('퇴사일', null=True, blank=True)
     is_hq_financial_officer = models.BooleanField('본사 금융 관리 권한', default=False,
