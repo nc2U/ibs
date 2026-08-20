@@ -120,10 +120,16 @@
 
 ---
 
+### ✨ Feat #10 — 결재 알림 배지 (Notification Badge) (해결)
+- `_nav.ts` 및 `AppSidebarNav.ts` 동적 함수형 배지(`DynamicBadge`) 연동.
+- `useApproval.pendingList.length` 실시간 감지 및 사이드바 `결재 대기함` / `전자 결재 관리`에 danger 배지 실시간 표출.
+- 60초 주기 자동 갱신 및 승인/반려(`actDocument`) 시 즉시 실시간 동기화.
+
+---
+
 ## 4. 향후 확장 권장 항목 (P2)
 
-#### 4-1. 결재 알림 배지 (Notification Badge)
-- `_nav.ts`의 `결재 대기함` 메뉴에 `pendingList.length` 실시간 배지 연결
+- 추가 성능 튜닝 및 웹소켓(SSE) 실시간 알림 연동 확장 고려
 
 ---
 

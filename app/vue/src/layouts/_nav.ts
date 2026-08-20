@@ -1,3 +1,5 @@
+import { useApproval } from '@/store/pinia/approval'
+
 const dashboard = {
   component: 'CNavItem',
   name: '대 시 보 드',
@@ -185,17 +187,25 @@ const humanResource = {
   ],
 }
 
+const approvalBadge = () => {
+  const approvalStore = useApproval()
+  const count = approvalStore.pendingList.length
+  return count > 0 ? { color: 'danger', text: String(count) } : undefined
+}
+
 const approval = {
   component: 'CNavGroup',
   name: '전자 결재 관리',
   to: '/approval',
   auth: 'isStaff',
   icon: 'cil-check-circle',
+  badge: approvalBadge,
   items: [
     {
       component: 'CNavItem',
       name: '결재 대기함',
       to: '/approval/pending',
+      badge: approvalBadge,
     },
     {
       component: 'CNavItem',

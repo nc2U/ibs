@@ -4,12 +4,15 @@ import {
   defineComponent,
   h,
   nextTick,
+  onMounted,
+  onUnmounted,
   reactive,
   ref,
   resolveComponent,
   watch,
 } from 'vue'
 import { useAccount } from '@/store/pinia/account'
+import { useApproval } from '@/store/pinia/approval'
 import { usePerms } from '@/composables/usePerms.ts'
 import { type RouteLocationNormalized, RouterLink, useRoute } from 'vue-router'
 import { CBadge, CNavGroup, CSidebarNav } from '@coreui/vue'
@@ -17,9 +20,10 @@ import { CIcon } from '@coreui/icons-vue'
 import nav from '@/layouts/_nav'
 
 type Badge = { color?: string; text?: string }
+type DynamicBadge = Badge | (() => Badge | undefined)
 type Item = {
   auth?: string
-  badge?: Badge
+  badge?: DynamicBadge
   component: string | Component
   icon?: string
   items?: Item[]
@@ -77,9 +81,33 @@ const AppSidebarNav = defineComponent({
 
     // Pinia store
     const account = useAccount()
+    const approvalStore = useApproval()
     const isStaff = computed(() => account.isStaff)
     const isFinancial = computed(() => account.isFinancial)
     const isHrManager = computed(() => account.isHrManager)
+
+    // 결재 대기 문서 목록 로드 및 60초 주기 갱신
+    watch(
+      isStaff,
+      val => {
+        if (val) {
+          approvalStore.fetchMyPending()
+        }
+      },
+      { immediate: true },
+    )
+
+    let pollingTimer: ReturnType<typeof setInterval> | null = null
+    onMounted(() => {
+      pollingTimer = setInterval(() => {
+        if (isStaff.value) {
+          approvalStore.fetchMyPending()
+        }
+      }, 60000)
+    })
+    onUnmounted(() => {
+      if (pollingTimer) clearInterval(pollingTimer)
+    })
 
     const { canGlobal, PERM } = usePerms()
     const docsRead = computed(() => canGlobal(PERM.DOCS_READ))
@@ -146,9 +174,10 @@ const AppSidebarNav = defineComponent({
       const children: any[] = []
       if (item.icon) children.push(h(CIcon, { customClassName: 'nav-icon', name: item.icon }))
       if (item.name) children.push(item.name)
-      if (item.badge)
+      const badge = typeof item.badge === 'function' ? item.badge() : item.badge
+      if (badge && badge.text)
         children.push(
-          h(CBadge, { class: 'ms-auto', color: item.badge.color }, () => item.badge?.text),
+          h(CBadge, { class: 'ms-auto', color: badge.color || 'primary' }, () => badge.text),
         )
       return children
     }
