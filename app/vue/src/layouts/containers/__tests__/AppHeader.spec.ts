@@ -23,7 +23,7 @@ describe('AppHeader Component Test', () => {
     expect(wrapper.find('nav[aria-label=breadcrumb]').exists()).toBeTruthy()
     expect(wrapper.find('nav>ol').classes()).toContain('breadcrumb')
     expect(buttons[1].find('.mdi-fullscreen').exists()).toBeTruthy()
-    expect(wrapper.findAll('input[name=theme-switch]')).toHaveLength(3)
+    expect(wrapper.find('button.dropdown-toggle').exists() || wrapper.find('.dropdown').exists()).toBeTruthy()
     expect(wrapper.find('app-header-dropdown-accnt-stub').exists()).toBeFalsy()
     expect(wrapper.find('router-link-stub').exists()).toBeTruthy()
     expect(buttons[2].find('.mdi-apps').exists()).toBeTruthy()

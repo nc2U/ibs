@@ -33,6 +33,18 @@ const isAuthorized = computed(() => accountStore.isAuthorized)
 const isVisible = computed(() => store.sidebarVisible)
 const theme = computed(() => store.theme)
 
+const currentThemeIcon = computed(() => {
+  if (theme.value === 'dark') return 'cil-moon'
+  if (theme.value === 'auto') return 'cil-screen-desktop'
+  return 'cil-sun'
+})
+
+const currentThemeLabel = computed(() => {
+  if (theme.value === 'dark') return '다크 모드'
+  if (theme.value === 'auto') return '기기 설정'
+  return '라이트 모드'
+})
+
 const toggleSidebar = () => store.toggleSidebar()
 const toggleTheme = (theme: 'default' | 'dark' | 'auto') => store.toggleTheme(theme)
 const toggleAside = () => store.toggleAside()
@@ -54,58 +66,49 @@ const toggleAside = () => store.toggleAside()
         <AppBreadcrumb />
       </CHeaderNav>
 
-      <CHeaderNav class="ms-auto me-sm-0 me-md-4">
-        <CHeaderToggler v-fullscreen.teleport="options" class="d-none d-lg-block mr-3">
+      <CHeaderNav class="ms-auto me-sm-0 me-md-2 align-items-center">
+        <CHeaderToggler v-fullscreen.teleport="options" class="d-none d-lg-block mr-2">
           <v-icon large :icon="screenIcon" class="text-50" />
           <v-tooltip activator="parent" location="bottom">
             {{ screenGuide }}
           </v-tooltip>
         </CHeaderToggler>
 
-        <CButtonGroup size="sm" aria-label="Theme switch">
-          <CFormCheck
-            id="btn-light-theme"
-            type="radio"
-            :button="{ color: 'primary' }"
-            name="theme-switch"
-            auto-complete="off"
-            :checked="theme === 'default'"
-            @change="toggleTheme('default')"
-          >
-            <template #label>
-              <CIcon icon="cil-sun" size="sm" style="margin-top: 5px" />
-              <v-tooltip activator="parent" location="bottom">라이트 모드</v-tooltip>
-            </template>
-          </CFormCheck>
-          <CFormCheck
-            id="btn-auto-theme"
-            type="radio"
-            :button="{ color: 'primary' }"
-            name="theme-switch"
-            auto-complete="off"
-            :checked="theme === 'auto'"
-            @change="toggleTheme('auto')"
-          >
-            <template #label>
-              <CIcon icon="cil-screen-desktop" size="sm" style="margin-top: 5px" />
-              <v-tooltip activator="parent" location="bottom">기기 설정</v-tooltip>
-            </template>
-          </CFormCheck>
-          <CFormCheck
-            id="btn-dark-theme"
-            type="radio"
-            :button="{ color: 'primary' }"
-            name="theme-switch"
-            auto-complete="off"
-            :checked="theme === 'dark'"
-            @change="toggleTheme('dark')"
-          >
-            <template #label>
-              <CIcon icon="cil-moon" size="sm" style="margin-top: 5px" />
-              <v-tooltip activator="parent" location="bottom">다크 모드</v-tooltip>
-            </template>
-          </CFormCheck>
-        </CButtonGroup>
+        <!-- 테마 전환 단일 동적 아이콘 드롭다운 -->
+        <CDropdown variant="nav-item" placement="bottom-end" class="mr-1">
+          <CDropdownToggle :caret="false" class="py-1 px-2 border-0 bg-transparent cursor-pointer">
+            <CIcon :icon="currentThemeIcon" size="lg" class="text-50 mt-1" />
+            <v-tooltip activator="parent" location="bottom">
+              테마: {{ currentThemeLabel }}
+            </v-tooltip>
+          </CDropdownToggle>
+          <CDropdownMenu>
+            <CDropdownItem
+              :active="theme === 'default'"
+              class="d-flex align-items-center cursor-pointer"
+              @click="toggleTheme('default')"
+            >
+              <CIcon icon="cil-sun" class="me-2" />
+              라이트 모드
+            </CDropdownItem>
+            <CDropdownItem
+              :active="theme === 'dark'"
+              class="d-flex align-items-center cursor-pointer"
+              @click="toggleTheme('dark')"
+            >
+              <CIcon icon="cil-moon" class="me-2" />
+              다크 모드
+            </CDropdownItem>
+            <CDropdownItem
+              :active="theme === 'auto'"
+              class="d-flex align-items-center cursor-pointer"
+              @click="toggleTheme('auto')"
+            >
+              <CIcon icon="cil-screen-desktop" class="me-2" />
+              기기 설정 (자동)
+            </CDropdownItem>
+          </CDropdownMenu>
+        </CDropdown>
       </CHeaderNav>
 
       <!-- 상단 헤더 실시간 알림 섹션 (결재 대기 / 담당 업무 / 할일) -->
