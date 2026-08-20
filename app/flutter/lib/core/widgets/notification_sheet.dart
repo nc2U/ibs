@@ -52,7 +52,11 @@ class _NotificationSheetState extends ConsumerState<NotificationSheet> {
     } else if (n.category == 'notice') {
       context.go('/channel?section=0&tab=0');
     } else if (n.category == 'approval') {
-      context.go('/approval');
+      if (n.targetId.isNotEmpty) {
+        context.go('/approval/${n.targetId}');
+      } else {
+        context.go('/approval');
+      }
     }
   }
 
