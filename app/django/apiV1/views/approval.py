@@ -1,6 +1,6 @@
 from django.db.models import Q
 from django.utils import timezone
-from django_filters.rest_framework import FilterSet, CharFilter
+from django_filters.rest_framework import FilterSet, CharFilter, NumberFilter, DateFilter
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
@@ -100,13 +100,31 @@ class DocumentTypeViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class ApprovalDocumentFilter(FilterSet):
+    category = NumberFilter(field_name='doc_type__category')
+    doc_type = NumberFilter(field_name='doc_type')
+    doc_type_code = CharFilter(field_name='doc_type__code', lookup_expr='exact')
     status = CharFilter(field_name='status', lookup_expr='exact')
-    doc_type = CharFilter(field_name='doc_type__code', lookup_expr='exact')
+    department = NumberFilter(field_name='drafter_assignment__department')
     drafter = CharFilter(field_name='drafter__username', lookup_expr='exact')
+    drafter_name = CharFilter(field_name='drafter__profile__name', lookup_expr='icontains')
+    start_date = DateFilter(field_name='created_at__date', lookup_expr='gte')
+    end_date = DateFilter(field_name='created_at__date', lookup_expr='lte')
+    search = CharFilter(method='filter_search')
 
     class Meta:
         model = ApprovalDocument
-        fields = ('status', 'doc_type', 'drafter')
+        fields = ('category', 'doc_type', 'doc_type_code', 'status', 'department',
+                  'drafter', 'drafter_name', 'start_date', 'end_date', 'search')
+
+    def filter_search(self, queryset, name, value):
+        if not value:
+            return queryset
+        return queryset.filter(
+            Q(title__icontains=value) |
+            Q(doc_number__icontains=value) |
+            Q(drafter__profile__name__icontains=value) |
+            Q(drafter__username__icontains=value)
+        )
 
 
 class ApprovalDocumentViewSet(viewsets.ModelViewSet):
@@ -118,8 +136,8 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         qs = ApprovalDocument.objects.select_related(
-            'doc_type', 'drafter', 'drafter__profile',
-            'drafter_assignment__department', 'drafter_assignment__duty', 'drafter_assignment__position',
+            'doc_type', 'doc_type__category', 'drafter', 'drafter__profile',
+            'drafter_assignment__department', 'drafter_assignment__duty', 'drafter_assignment__staff__position',
             'workspace'
         ).prefetch_related(
             'attachments__creator__profile',
@@ -409,6 +427,22 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
         ).select_related(
             'doc_type', 'drafter', 'drafter__profile', 'drafter_assignment__department'
         ).distinct().order_by('-created_at', '-id')
+
+        serializer = ApprovalDocumentListSerializer(qs, many=True, context={'request': request})
+        return Response(serializer.data)
+
+    # ── GET /approval-document/all_documents/ ────────────────
+    @action(detail=False, methods=['get'])
+    def all_documents(self, request):
+        """전사 결재 문서 목록 조회 (현재 슈퍼유저 전용, 페이지네이션 및 필터 지원)"""
+        if not request.user.is_superuser:
+            return Response({'detail': '전사 결재 문서를 조회할 권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+
+        qs = self.filter_queryset(self.get_queryset()).order_by('-created_at', '-id')
+        page = self.paginate_queryset(qs)
+        if page is not None:
+            serializer = ApprovalDocumentListSerializer(page, many=True, context={'request': request})
+            return self.get_paginated_response(serializer.data)
 
         serializer = ApprovalDocumentListSerializer(qs, many=True, context={'request': request})
         return Response(serializer.data)

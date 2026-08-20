@@ -162,3 +162,36 @@ export interface ApprovalActPayload {
   action: ApprovalActionType
   comment?: string
 }
+
+export interface AllDocFilter {
+  page?: number
+  category?: number | null
+  doc_type?: number | null
+  status?: string
+  department?: number | null
+  search?: string
+  start_date?: string
+  end_date?: string
+}
+
+export interface ApprovalDocumentListItem {
+  id: number
+  doc_number: string
+  title: string
+  doc_type: number
+  doc_type_name?: string
+  category_name?: string | null
+  drafter: SimpleUser
+  drafter_name?: string
+  drafter_assignment?: number | null
+  department_name?: string | null
+  drafter_assignment_desc?: string
+  attachment_count?: number
+  observer_count?: number
+  status: DocumentStatus
+  status_desc?: string
+  current_step: number
+  created_at: string
+  submitted_at: string | null
+  completed_at: string | null
+}

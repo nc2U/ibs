@@ -105,10 +105,22 @@ class ApprovalStepSerializer(serializers.ModelSerializer):
 
 class ApprovalDocumentListSerializer(serializers.ModelSerializer):
     drafter = SimpleUserSerializer(read_only=True)
+    drafter_name = serializers.SerializerMethodField()
+    category_name = serializers.CharField(source='doc_type.category.name', read_only=True, allow_null=True)
     doc_type_name = serializers.CharField(source='doc_type.name', read_only=True)
+    department_name = serializers.CharField(source='drafter_assignment.department.name', read_only=True, allow_null=True)
     drafter_assignment_desc = serializers.SerializerMethodField()
+    status_desc = serializers.CharField(source='get_status_display', read_only=True)
     attachment_count = serializers.IntegerField(source='attachments.count', read_only=True)
     observer_count = serializers.IntegerField(source='observers.count', read_only=True)
+
+    def get_drafter_name(self, obj):
+        if obj.drafter:
+            profile = getattr(obj.drafter, 'profile', None)
+            if profile and profile.name:
+                return profile.name
+            return obj.drafter.username
+        return ''
 
     def get_drafter_assignment_desc(self, obj):
         if obj.drafter_assignment:
@@ -121,9 +133,10 @@ class ApprovalDocumentListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ApprovalDocument
-        fields = ('id', 'doc_number', 'title', 'doc_type', 'doc_type_name', 'drafter',
-                  'drafter_assignment', 'drafter_assignment_desc', 'attachment_count', 'observer_count',
-                  'status', 'current_step', 'created_at', 'submitted_at', 'completed_at')
+        fields = ('id', 'doc_number', 'title', 'doc_type', 'doc_type_name', 'category_name', 'drafter',
+                  'drafter_name', 'drafter_assignment', 'department_name', 'drafter_assignment_desc',
+                  'attachment_count', 'observer_count', 'status', 'status_desc', 'current_step',
+                  'created_at', 'submitted_at', 'completed_at')
 
 
 class ApprovalDocumentSerializer(serializers.ModelSerializer):

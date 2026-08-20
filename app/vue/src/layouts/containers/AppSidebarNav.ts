@@ -82,6 +82,7 @@ const AppSidebarNav = defineComponent({
     // Pinia store
     const account = useAccount()
     const approvalStore = useApproval()
+    const superAuth = computed(() => !!account.superAuth)
     const isStaff = computed(() => account.isStaff)
     const isFinancial = computed(() => account.isFinancial)
     const isHrManager = computed(() => account.isHrManager)
@@ -123,6 +124,7 @@ const AppSidebarNav = defineComponent({
     const predicates = computed(() => {
       // 권한 키별 접근 제어 매핑
       const authMap: Record<string, boolean> = {
+        isSuperuser: superAuth.value,
         isStaff: isStaff.value,
         isFinancial: isFinancial.value,
         isHrManager: isHrManager.value,

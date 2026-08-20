@@ -10,6 +10,8 @@ import type {
   ApprovalActPayload,
   StaffAssignmentItem,
   RoutePreviewStep,
+  AllDocFilter,
+  ApprovalDocumentListItem,
 } from '@/store/types/approval'
 
 export type DocFilter = {
@@ -179,6 +181,27 @@ export const useApproval = defineStore('approval', () => {
       .then(res => (observedList.value = res.data))
       .catch(err => errorHandle(err.response.data))
 
+  // ── 전사 결재 문서 (관리자 전용) ─────────────────────
+  const allDocumentList = ref<ApprovalDocumentListItem[]>([])
+  const allDocumentsCount = ref(0)
+
+  const allDocumentPages = (itemsPerPage: number) =>
+    Math.ceil(allDocumentsCount.value / itemsPerPage)
+
+  const fetchAllDocuments = async (payload: AllDocFilter = {}) => {
+    const params = new URLSearchParams()
+    Object.entries(payload).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== '') params.append(k, String(v))
+    })
+    return await api
+      .get(`/approval-document/all_documents/?${params}`)
+      .then(res => {
+        allDocumentList.value = res.data.results ?? res.data
+        allDocumentsCount.value = res.data.count ?? allDocumentList.value.length
+      })
+      .catch(err => errorHandle(err.response.data))
+  }
+
   // ── 결재 액션 ─────────────────────────────────────────
   const submitDocument = async (pk: number) => {
     try {
@@ -228,6 +251,9 @@ export const useApproval = defineStore('approval', () => {
     draftedList,
     approvedList,
     observedList,
+    allDocumentList,
+    allDocumentsCount,
+    allDocumentPages,
     // actions
     fetchDocCategoryList,
     fetchDocTypeList,
@@ -244,6 +270,7 @@ export const useApproval = defineStore('approval', () => {
     fetchMyDrafted,
     fetchMyApproved,
     fetchMyObserved,
+    fetchAllDocuments,
     submitDocument,
     actDocument,
     cancelDocument,

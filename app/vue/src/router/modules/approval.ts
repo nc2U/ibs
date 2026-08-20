@@ -59,6 +59,19 @@ const approval = {
         },
       ],
     },
+    {
+      path: 'all',
+      name: '전체 문서함',
+      component: () => import('@/views/approval/Index.vue'),
+      meta: { title: '전체 문서함', auth: true },
+      children: [
+        {
+          path: ':docId(\\d+)',
+          name: '전체 문서함 - 보기',
+          component: () => import('@/views/approval/Index.vue'),
+        },
+      ],
+    },
   ],
 }
 
