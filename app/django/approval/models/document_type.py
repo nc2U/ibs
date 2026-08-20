@@ -51,27 +51,33 @@ class DocumentType(models.Model):
         '기본 전결 부서 레벨', null=True, blank=True,
         help_text='예: 1로 설정 시 본부(1레벨) 부서장까지만 승인 후 완료 (대표이사 생략)'
     )
-    FORM_TYPE_DYNAMIC = 'DYNAMIC'
-    FORM_TYPE_STATIC = 'STATIC'
-    FORM_TYPE_CHOICES = (
-        (FORM_TYPE_DYNAMIC, '동적 양식 (JSON Schema)'),
-        (FORM_TYPE_STATIC, '전용 정적 양식 (Vue 컴포넌트 매칭)'),
+    FORM_TEMPLATE_CHOICES = (
+        ('GENERAL', '일반 업무 품의서 (GENERAL)'),
+        ('OFFICIAL_LETTER', '공문 발신 / 대외 발송 (OFFICIAL_LETTER)'),
+        ('LEAVE', '휴가 / 연차 신청서 (LEAVE)'),
+        ('LEAVE_APPLICATION', '휴가 / 연차 신청서 (LEAVE_APPLICATION)'),
+        ('BUSINESS_TRIP', '출장 신청서 (BUSINESS_TRIP)'),
+        ('OVERTIME', '연장 / 휴일근무 신청서 (OVERTIME)'),
+        ('HR_APPOINTMENT', '인사발령 품의서 (HR_APPOINTMENT)'),
+        ('HR_REQUEST', '인사 제반 신청서 (HR_REQUEST)'),
+        ('PURCHASE', '구매 / 자재 품의서 (PURCHASE)'),
+        ('PURCHASE_ORDER', '구매 / 자재 품의서 (PURCHASE_ORDER)'),
+        ('EXPENSE', '지출 결의서 (EXPENSE)'),
+        ('EXPENSE_REPORT', '지출 결의서 (EXPENSE_REPORT)'),
+        ('EXPENSE_SETTLEMENT', '경비 정산서 (EXPENSE_SETTLEMENT)'),
+        ('ADVANCE', '선급금 / 가지급금 신청서 (ADVANCE)'),
+        ('CONTRACT', '계약 체결 품의서 (CONTRACT)'),
+        ('CONTRACT_CHANGE', '계약 변경 / 해지 품의서 (CONTRACT_CHANGE)'),
+        ('LEGAL_REVIEW', '법무 검토서 (LEGAL_REVIEW)'),
+        ('BUSINESS_REVIEW', '사업 검토서 (BUSINESS_REVIEW)'),
+        ('BUSINESS_APPROVAL', '사업추진 승인서 (BUSINESS_APPROVAL)'),
+        ('PROJECT_DECISION', '프로젝트 주요 의사결정서 (PROJECT_DECISION)'),
     )
 
-    form_type = models.CharField(
-        '양식 유형', max_length=10,
-        choices=FORM_TYPE_CHOICES, default=FORM_TYPE_DYNAMIC,
-        help_text='DYNAMIC: 관리자 정의 JSON Schema 기반 / STATIC: 전용 Vue 폼 컴포넌트 매칭'
-    )
     form_template_key = models.CharField(
-        '전용 폼 컴포넌트 키', max_length=50, blank=True,
-        help_text='STATIC 양식일 때 매칭할 Vue 컴포넌트 식별자 (예: LEAVE_APPLICATION, EXPENSE_REPORT, PURCHASE_ORDER 등)'
-    )
-    form_schema = models.JSONField(
-        '양식 스키마',
-        default=list,
-        blank=True,
-        help_text='동적 양식 필드 정의 (JSON Schema). 예: [{"key":"purpose","label":"목적","type":"text","required":true}]'
+        '결재 양식 템플릿', max_length=50,
+        choices=FORM_TEMPLATE_CHOICES, default='GENERAL',
+        help_text='매칭할 전자결재 양식 템플릿 (웹/모바일 공통 적용)'
     )
 
     # 기안 가능 권한 제어 (비어있으면 전체 허용)

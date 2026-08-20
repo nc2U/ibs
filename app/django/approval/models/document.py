@@ -38,7 +38,7 @@ class ApprovalDocument(models.Model):
     content = models.JSONField(
         '결재 내용',
         default=dict,
-        help_text='문서 유형의 form_schema에 따른 동적 양식 데이터'
+        help_text='문서 유형의 form_template_key에 따른 결재 양식 데이터'
     )
     attachment = models.FileField(
         '대표 첨부파일', upload_to=get_approval_file_path, storage=default_storage, blank=True, null=True

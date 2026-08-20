@@ -33,12 +33,169 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
   DateTime? _endDate;
   final _leaveDaysController = TextEditingController(text: '1.0');
   final _leaveReasonController = TextEditingController();
+  final _substituteWorkerController = TextEditingController();
+  final _emergencyContactController = TextEditingController();
 
   // 지출결의서 / 구매품의서
   final _amountController = TextEditingController();
   final _purposeController = TextEditingController();
   final _vendorController = TextEditingController();
   final _generalContentController = TextEditingController();
+
+  // 공문 발신 (OFFICIAL_LETTER)
+  final _receiverController = TextEditingController();
+  final _referToController = TextEditingController();
+  final _senderNameController = TextEditingController();
+  final _docNumberExtController = TextEditingController();
+  final _letterSubjectController = TextEditingController();
+  final _letterBodyController = TextEditingController();
+  final _enclosedFilesController = TextEditingController();
+  String _sendMethod = 'EMAIL';
+  DateTime? _sendDueDate = DateTime.now();
+  String _sealType = 'CORP_SEAL';
+  final _sealCountController = TextEditingController(text: '1');
+
+  // 일반품의 (GENERAL / BIZ_APPROVAL)
+  final _scheduleController = TextEditingController();
+  String _budgetAccount = 'GENERAL_EXPENSE';
+  final _expectedEffectController = TextEditingController();
+  final _noteController = TextEditingController();
+
+  // 출장신청서 (BUSINESS_TRIP / TRIP)
+  String _tripType = 'DOMESTIC';
+  final _destinationController = TextEditingController();
+  final _companionController = TextEditingController();
+  String _transportation = 'CORP_CAR';
+  final _transportCostController = TextEditingController();
+  final _lodgingCostController = TextEditingController();
+  final _dailyAllowanceController = TextEditingController();
+  final _otherCostController = TextEditingController();
+  final _itineraryController = TextEditingController();
+
+  // 연장/휴일근무 (OVERTIME / OVERTIME_WORK)
+  String _workType = 'OVERTIME';
+  DateTime? _workDate = DateTime.now();
+  final _startTimeController = TextEditingController(text: '18:30');
+  final _endTimeController = TextEditingController(text: '21:30');
+  final _breakHoursController = TextEditingController(text: '0');
+  final _totalHoursController = TextEditingController(text: '3.0');
+  String _compensationType = 'ALLOWANCE';
+  final _coWorkersController = TextEditingController();
+
+  // 인사발령 (HR_APPOINTMENT / APPOINTMENT)
+  String _appointmentType = 'PROMOTION';
+  DateTime? _effectiveDate = DateTime.now();
+  final _targetNameController = TextEditingController();
+  final _currentDeptController = TextEditingController();
+  final _currentPositionController = TextEditingController();
+  final _newDeptController = TextEditingController();
+  final _newPositionController = TextEditingController();
+  final _typeDescController = TextEditingController(text: '승진/전보');
+
+  // 인사 관련 신청 (HR_REQUEST / CERT_REQUEST)
+  String _hrRequestType = 'CERTIFICATE';
+  String _certType = 'EMPLOYMENT';
+  String _certLanguage = 'KOREAN';
+  final _certCountController = TextEditingController(text: '1');
+  final _submitToController = TextEditingController();
+  final _usagePurposeController = TextEditingController();
+  String _receiveMethod = 'PDF_EMAIL';
+  bool _includeResidentNum = false;
+  String _eventType = 'MARRIAGE_SELF';
+  DateTime? _eventDate = DateTime.now();
+  final _eventPlaceController = TextEditingController();
+  final _supportItemsController = TextEditingController();
+
+  // 구매품의서 (PURCHASE_ORDER / PURCHASE)
+  final _deliveryLocationController = TextEditingController();
+  DateTime? _deliveryDueDate = DateTime.now().add(const Duration(days: 7));
+
+  // 지출결의서 (EXPENSE_REPORT / EXPENSE)
+  String _expenseType = 'CARD';
+  DateTime? _paymentDueDate = DateTime.now();
+  final _bankNameController = TextEditingController();
+  final _accountNumberController = TextEditingController();
+  final _accountHolderController = TextEditingController();
+
+  // 경비정산서 (EXPENSE_SETTLEMENT / SETTLEMENT)
+  String _settlementType = 'CORP_CARD';
+  final _targetMonthController = TextEditingController(text: '${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}');
+  final _cardNumberController = TextEditingController();
+
+  // 선급금 / 가지급금 (ADVANCE / ADVANCE_PAY / ADVANCE_REQUEST)
+  String _advanceType = 'ADVANCE_PAY';
+  String _receiverType = 'EMPLOYEE';
+  DateTime? _settlementDueDate = DateTime.now().add(const Duration(days: 14));
+  bool _settlementPromise = true;
+
+  // 계약 체결 품의서 (CONTRACT / CONTRACT_APPROVAL / CONTRACT_PROPOSAL)
+  String _contractType = 'SERVICE';
+  String _contractKind = 'NEW';
+  String _vatType = 'EXCLUDED';
+  final _contractNameController = TextEditingController();
+  final _contractorCeoController = TextEditingController();
+  final _contractorRegNumberController = TextEditingController();
+  final _contractorContactController = TextEditingController();
+  final _paymentTermsController = TextEditingController();
+  final _warrantyTermsController = TextEditingController();
+  final _specialTermsController = TextEditingController();
+
+  // 계약 변경 / 해지 (CONTRACT_CHANGE / CONTRACT_TERMINATION / CONTRACT_AMENDMENT)
+  String _contractChangeType = 'COMPREHENSIVE';
+  final _origContractNameController = TextEditingController();
+  final _origContractNoController = TextEditingController();
+  DateTime? _origContractDate = DateTime.now();
+  DateTime? _origEndDate = DateTime.now().add(const Duration(days: 180));
+  final _origAmountController = TextEditingController(text: '0');
+  final _changeAmountController = TextEditingController(text: '0');
+  final _periodChangeDescController = TextEditingController();
+  DateTime? _terminationDate = DateTime.now();
+  final _settlementAmountController = TextEditingController(text: '0');
+  final _penaltyTermsController = TextEditingController();
+  final _subsequentPlanController = TextEditingController();
+
+  // 법무 검토 (LEGAL_REVIEW / LEGAL_CONSULTATION / LEGAL_ADVICE)
+  String _legalReviewType = 'CONTRACT_REVIEW';
+  String _legalUrgency = 'NORMAL';
+  DateTime? _reviewDueDate = DateTime.now().add(const Duration(days: 5));
+  final _keyIssuesController = TextEditingController();
+
+  // 사업검토 (BUSINESS_REVIEW / PROJECT_FEASIBILITY / BIZ_FEASIBILITY / PROJECT_REVIEW / INVESTMENT_REVIEW)
+  String _bizType = 'DEV_SELF';
+  final _locationController = TextEditingController();
+  final _buildingScaleController = TextEditingController();
+  final _landAreaController = TextEditingController();
+  final _grossFloorAreaController = TextEditingController();
+  final _totalRevenueController = TextEditingController(text: '0');
+  final _totalCostController = TextEditingController(text: '0');
+  final _requiredEquityController = TextEditingController(text: '0');
+  final _pfLoanAmountController = TextEditingController(text: '0');
+  DateTime? _landSecureDate;
+  DateTime? _approvalTargetDate;
+  DateTime? _completionDate;
+  final _marketAnalysisController = TextEditingController();
+  final _riskFactorsController = TextEditingController();
+
+  // 사업추진 승인 (BUSINESS_APPROVAL / PROJECT_APPROVAL / DEV_APPROVAL / INVESTMENT_APPROVAL)
+  String _bizApprovalType = 'NEW_LAUNCH';
+  final _bizScaleSummaryController = TextEditingController();
+  final _requestedAmountController = TextEditingController(text: '0');
+  final _totalProjectCostController = TextEditingController(text: '0');
+  final _totalExpectedRevenueController = TextEditingController(text: '0');
+  final _budgetUsagePlanController = TextEditingController();
+  final _resolutionMattersController = TextEditingController();
+  final _pmLeadController = TextEditingController();
+  final _targetScheduleController = TextEditingController();
+  final _expectedEffectsController = TextEditingController();
+
+  // 프로젝트 주요 의사결정 (PROJECT_DECISION / PROJECT_KEY_DECISION / DECISION_PROPOSAL / KEY_DECISION)
+  String _projectDecisionType = 'DESIGN_SPEC';
+  String _decisionUrgency = 'NORMAL';
+  DateTime? _decisionDueDate = DateTime.now().add(const Duration(days: 7));
+  final _option1Controller = TextEditingController();
+  final _option2Controller = TextEditingController();
+  final _option3Controller = TextEditingController();
+  final _actionPlanController = TextEditingController();
 
   // 실시간 결재선 미리보기 상태
   List<RoutePreviewStepModel> _previewSteps = [];
@@ -49,10 +206,91 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
     _titleController.dispose();
     _leaveDaysController.dispose();
     _leaveReasonController.dispose();
+    _substituteWorkerController.dispose();
+    _emergencyContactController.dispose();
     _amountController.dispose();
     _purposeController.dispose();
     _vendorController.dispose();
     _generalContentController.dispose();
+    _receiverController.dispose();
+    _referToController.dispose();
+    _senderNameController.dispose();
+    _docNumberExtController.dispose();
+    _letterSubjectController.dispose();
+    _letterBodyController.dispose();
+    _enclosedFilesController.dispose();
+    _sealCountController.dispose();
+    _scheduleController.dispose();
+    _expectedEffectController.dispose();
+    _noteController.dispose();
+    _destinationController.dispose();
+    _companionController.dispose();
+    _transportCostController.dispose();
+    _lodgingCostController.dispose();
+    _dailyAllowanceController.dispose();
+    _otherCostController.dispose();
+    _itineraryController.dispose();
+    _startTimeController.dispose();
+    _endTimeController.dispose();
+    _breakHoursController.dispose();
+    _totalHoursController.dispose();
+    _coWorkersController.dispose();
+    _targetNameController.dispose();
+    _currentDeptController.dispose();
+    _currentPositionController.dispose();
+    _newDeptController.dispose();
+    _newPositionController.dispose();
+    _typeDescController.dispose();
+    _certCountController.dispose();
+    _submitToController.dispose();
+    _usagePurposeController.dispose();
+    _eventPlaceController.dispose();
+    _supportItemsController.dispose();
+    _deliveryLocationController.dispose();
+    _bankNameController.dispose();
+    _accountNumberController.dispose();
+    _accountHolderController.dispose();
+    _targetMonthController.dispose();
+    _cardNumberController.dispose();
+    _contractNameController.dispose();
+    _contractorCeoController.dispose();
+    _contractorRegNumberController.dispose();
+    _contractorContactController.dispose();
+    _paymentTermsController.dispose();
+    _warrantyTermsController.dispose();
+    _specialTermsController.dispose();
+    _origContractNameController.dispose();
+    _origContractNoController.dispose();
+    _origAmountController.dispose();
+    _changeAmountController.dispose();
+    _periodChangeDescController.dispose();
+    _settlementAmountController.dispose();
+    _penaltyTermsController.dispose();
+    _subsequentPlanController.dispose();
+    _keyIssuesController.dispose();
+    _locationController.dispose();
+    _buildingScaleController.dispose();
+    _landAreaController.dispose();
+    _grossFloorAreaController.dispose();
+    _totalRevenueController.dispose();
+    _totalCostController.dispose();
+    _requiredEquityController.dispose();
+    _pfLoanAmountController.dispose();
+    _marketAnalysisController.dispose();
+    _riskFactorsController.dispose();
+    _bizScaleSummaryController.dispose();
+    _requestedAmountController.dispose();
+    _totalProjectCostController.dispose();
+    _totalExpectedRevenueController.dispose();
+    _budgetUsagePlanController.dispose();
+    _resolutionMattersController.dispose();
+    _pmLeadController.dispose();
+    _targetScheduleController.dispose();
+    _expectedEffectsController.dispose();
+    _option1Controller.dispose();
+    _option2Controller.dispose();
+    _option3Controller.dispose();
+    _actionPlanController.dispose();
     super.dispose();
   }
 
@@ -100,24 +338,351 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
   }
 
   Map<String, dynamic> _buildContentMap() {
-    final key = _selectedDocType?.formTemplateKey;
+    final normKey = _selectedDocType?.formTemplateKey?.toUpperCase();
     final map = <String, dynamic>{};
 
-    if (key == 'leave_application') {
+    if (normKey == 'LEAVE_APPLICATION' || normKey == 'LEAVE') {
       map['leave_type'] = _leaveType;
       map['start_date'] = _startDate?.toIso8601String().split('T').first;
       map['end_date'] = _endDate?.toIso8601String().split('T').first;
       map['days'] = double.tryParse(_leaveDaysController.text) ?? 1.0;
+      map['days_count'] = map['days'];
       map['reason'] = _leaveReasonController.text.trim();
-    } else if (key == 'expense_report') {
-      map['total_amount'] = num.tryParse(_amountController.text.replaceAll(',', '').trim()) ?? 0;
-      map['amount'] = map['total_amount'];
+      map['substitute_worker'] = _substituteWorkerController.text.trim();
+      map['emergency_contact'] = _emergencyContactController.text.trim();
+    } else if (normKey == 'EXPENSE_REPORT' || normKey == 'EXPENSE') {
+      final amt = num.tryParse(_amountController.text.replaceAll(',', '').trim()) ?? 0;
+      map['expense_type'] = _expenseType;
+      map['payment_due_date'] = _paymentDueDate?.toIso8601String().split('T').first;
+      map['bank_name'] = _bankNameController.text.trim();
+      map['account_number'] = _accountNumberController.text.trim();
+      map['account_holder'] = _accountHolderController.text.trim();
+      map['total_amount'] = amt;
+      map['amount'] = amt;
       map['purpose'] = _purposeController.text.trim();
-    } else if (key == 'purchase_order') {
-      map['total_amount'] = num.tryParse(_amountController.text.replaceAll(',', '').trim()) ?? 0;
-      map['amount'] = map['total_amount'];
+      map['items'] = [
+        {
+          'date': DateTime.now().toIso8601String().split('T').first,
+          'description': _purposeController.text.trim().isNotEmpty ? _purposeController.text.trim() : '지출 내역',
+          'amount': amt,
+          'note': _noteController.text.trim(),
+        }
+      ];
+    } else if (normKey == 'PURCHASE_ORDER' || normKey == 'PURCHASE') {
+      final amt = num.tryParse(_amountController.text.replaceAll(',', '').trim()) ?? 0;
+      map['total_amount'] = amt;
+      map['amount'] = amt;
       map['vendor'] = _vendorController.text.trim();
       map['purpose'] = _purposeController.text.trim();
+      map['delivery_due_date'] = _deliveryDueDate?.toIso8601String().split('T').first;
+      map['delivery_location'] = _deliveryLocationController.text.trim();
+      map['items'] = [
+        {
+          'name': _purposeController.text.trim().isNotEmpty ? _purposeController.text.trim() : '구매 품목',
+          'quantity': 1,
+          'unit_price': amt,
+          'supply_price': amt,
+          'vat': 0,
+        }
+      ];
+    } else if (normKey == 'OFFICIAL_LETTER') {
+      map['receiver'] = _receiverController.text.trim();
+      map['refer_to'] = _referToController.text.trim();
+      map['sender_name'] = _senderNameController.text.trim();
+      map['doc_number_external'] = _docNumberExtController.text.trim();
+      map['letter_subject'] = _letterSubjectController.text.trim();
+      map['letter_body'] = _letterBodyController.text.trim();
+      map['enclosed_files_desc'] = _enclosedFilesController.text.trim();
+      map['send_method'] = _sendMethod;
+      map['send_due_date'] = _sendDueDate?.toIso8601String().split('T').first;
+      map['seal_type'] = _sealType;
+      map['seal_count'] = int.tryParse(_sealCountController.text) ?? 1;
+    } else if (normKey == 'GENERAL' || normKey == 'BIZ_APPROVAL') {
+      final amt = num.tryParse(_amountController.text.replaceAll(',', '').trim()) ?? 0;
+      map['purpose'] = _purposeController.text.trim();
+      map['schedule'] = _scheduleController.text.trim();
+      map['budget_account'] = _budgetAccount;
+      map['budget'] = amt;
+      map['amount'] = amt;
+      map['content'] = _generalContentController.text.trim();
+      map['expected_effect'] = _expectedEffectController.text.trim();
+      map['note'] = _noteController.text.trim();
+    } else if (normKey == 'BUSINESS_TRIP' || normKey == 'TRIP') {
+      final tCost = num.tryParse(_transportCostController.text.replaceAll(',', '').trim()) ?? 0;
+      final lCost = num.tryParse(_lodgingCostController.text.replaceAll(',', '').trim()) ?? 0;
+      final dCost = num.tryParse(_dailyAllowanceController.text.replaceAll(',', '').trim()) ?? 0;
+      final oCost = num.tryParse(_otherCostController.text.replaceAll(',', '').trim()) ?? 0;
+      final total = tCost + lCost + dCost + oCost;
+
+      map['trip_type'] = _tripType;
+      map['destination'] = _destinationController.text.trim();
+      map['start_date'] = _startDate?.toIso8601String().split('T').first;
+      map['end_date'] = _endDate?.toIso8601String().split('T').first;
+      map['days'] = double.tryParse(_leaveDaysController.text) ?? 1.0;
+      map['days_count'] = map['days'];
+      map['purpose'] = _purposeController.text.trim();
+      map['companion'] = _companionController.text.trim();
+      map['substitute_worker'] = _substituteWorkerController.text.trim();
+      map['transportation'] = _transportation;
+      map['emergency_contact'] = _emergencyContactController.text.trim();
+      map['transport_cost'] = tCost;
+      map['lodging_cost'] = lCost;
+      map['daily_allowance'] = dCost;
+      map['other_cost'] = oCost;
+      map['total_cost'] = total;
+      map['amount'] = total;
+      map['itinerary'] = _itineraryController.text.trim();
+    } else if (normKey == 'OVERTIME' || normKey == 'OVERTIME_WORK') {
+      map['work_type'] = _workType;
+      map['work_date'] = _workDate?.toIso8601String().split('T').first;
+      map['start_time'] = _startTimeController.text.trim();
+      map['end_time'] = _endTimeController.text.trim();
+      map['break_hours'] = double.tryParse(_breakHoursController.text) ?? 0.0;
+      map['total_hours'] = double.tryParse(_totalHoursController.text) ?? 3.0;
+      map['compensation_type'] = _compensationType;
+      map['reason'] = _leaveReasonController.text.trim().isNotEmpty
+          ? _leaveReasonController.text.trim()
+          : _generalContentController.text.trim();
+      map['co_workers'] = _coWorkersController.text.trim();
+      map['note'] = _noteController.text.trim();
+    } else if (normKey == 'HR_APPOINTMENT' || normKey == 'APPOINTMENT') {
+      map['appointment_type'] = _appointmentType;
+      map['effective_date'] = _effectiveDate?.toIso8601String().split('T').first;
+      map['reason'] = _generalContentController.text.trim().isNotEmpty
+          ? _generalContentController.text.trim()
+          : _leaveReasonController.text.trim();
+      map['note'] = _noteController.text.trim();
+      map['targets'] = [
+        {
+          'name': _targetNameController.text.trim(),
+          'current_dept': _currentDeptController.text.trim(),
+          'current_position': _currentPositionController.text.trim(),
+          'new_dept': _newDeptController.text.trim(),
+          'new_position': _newPositionController.text.trim(),
+          'type_desc': _typeDescController.text.trim(),
+          'note': _noteController.text.trim(),
+        }
+      ];
+    } else if (normKey == 'HR_REQUEST' || normKey == 'CERT_REQUEST') {
+      map['request_type'] = _hrRequestType;
+      map['receive_method'] = _receiveMethod;
+      map['reason'] = _generalContentController.text.trim().isNotEmpty
+          ? _generalContentController.text.trim()
+          : _leaveReasonController.text.trim();
+      map['note'] = _noteController.text.trim();
+
+      if (_hrRequestType == 'CERTIFICATE') {
+        map['cert_type'] = _certType;
+        map['cert_language'] = _certLanguage;
+        map['cert_count'] = int.tryParse(_certCountController.text) ?? 1;
+        map['submit_to'] = _submitToController.text.trim();
+        map['usage_purpose'] = _usagePurposeController.text.trim();
+        map['include_resident_num'] = _includeResidentNum;
+      } else if (_hrRequestType == 'CONGRATULATION_CONDOLENCE') {
+        final amt = num.tryParse(_amountController.text.replaceAll(',', '').trim()) ?? 0;
+        map['event_type'] = _eventType;
+        map['event_date'] = _eventDate?.toIso8601String().split('T').first;
+        map['event_place'] = _eventPlaceController.text.trim();
+        map['support_items'] = _supportItemsController.text.trim();
+        map['congratulation_amount'] = amt;
+        map['amount'] = amt;
+      } else if (_hrRequestType == 'LEAVE_OF_ABSENCE') {
+        map['leave_start_date'] = _startDate?.toIso8601String().split('T').first;
+        map['leave_end_date'] = _endDate?.toIso8601String().split('T').first;
+      } else if (_hrRequestType == 'REINSTATEMENT') {
+        map['reinstatement_date'] = _startDate?.toIso8601String().split('T').first;
+      }
+    } else if (normKey == 'EXPENSE_SETTLEMENT' || normKey == 'SETTLEMENT') {
+      final amt = num.tryParse(_amountController.text.replaceAll(',', '').trim()) ?? 0;
+      map['settlement_type'] = _settlementType;
+      map['target_month'] = _targetMonthController.text.trim();
+      map['card_number'] = _cardNumberController.text.trim();
+      map['bank_name'] = _bankNameController.text.trim();
+      map['account_number'] = _accountNumberController.text.trim();
+      map['account_holder'] = _accountHolderController.text.trim();
+      map['total_amount'] = amt;
+      map['amount'] = amt;
+      map['reason'] = _purposeController.text.trim().isNotEmpty
+          ? _purposeController.text.trim()
+          : _generalContentController.text.trim();
+      map['note'] = _noteController.text.trim();
+      map['items'] = [
+        {
+          'date': DateTime.now().toIso8601String().split('T').first,
+          'merchant': _vendorController.text.trim().isNotEmpty ? _vendorController.text.trim() : '경비 사용처',
+          'category': '복리후생비(식대/음료)',
+          'amount': amt,
+          'purpose': map['reason'],
+        }
+      ];
+    } else if (normKey == 'ADVANCE' || normKey == 'ADVANCE_PAY' || normKey == 'ADVANCE_REQUEST') {
+      final amt = num.tryParse(_amountController.text.replaceAll(',', '').trim()) ?? 0;
+      map['advance_type'] = _advanceType;
+      map['receiver_type'] = _receiverType;
+      map['payment_due_date'] = _paymentDueDate?.toIso8601String().split('T').first;
+      map['settlement_due_date'] = _settlementDueDate?.toIso8601String().split('T').first;
+      map['advance_amount'] = amt;
+      map['amount'] = amt;
+      map['bank_name'] = _bankNameController.text.trim();
+      map['account_number'] = _accountNumberController.text.trim();
+      map['account_holder'] = _accountHolderController.text.trim();
+      map['purpose'] = _purposeController.text.trim().isNotEmpty
+          ? _purposeController.text.trim()
+          : _generalContentController.text.trim();
+      map['settlement_promise'] = _settlementPromise;
+      map['note'] = _noteController.text.trim();
+    } else if (normKey == 'CONTRACT' || normKey == 'CONTRACT_APPROVAL' || normKey == 'CONTRACT_PROPOSAL') {
+      final amt = num.tryParse(_amountController.text.replaceAll(',', '').trim()) ?? 0;
+      map['contract_type'] = _contractType;
+      map['contract_kind'] = _contractKind;
+      map['contract_name'] = _contractNameController.text.trim().isNotEmpty
+          ? _contractNameController.text.trim()
+          : _titleController.text.trim();
+      map['contractor_name'] = _vendorController.text.trim();
+      map['contractor_ceo'] = _contractorCeoController.text.trim();
+      map['contractor_reg_number'] = _contractorRegNumberController.text.trim();
+      map['contractor_contact'] = _contractorContactController.text.trim();
+      map['contract_amount'] = amt;
+      map['amount'] = amt;
+      map['vat_type'] = _vatType;
+      map['contract_start_date'] = _startDate?.toIso8601String().split('T').first;
+      map['contract_end_date'] = _endDate?.toIso8601String().split('T').first;
+      map['payment_terms'] = _paymentTermsController.text.trim();
+      map['warranty_terms'] = _warrantyTermsController.text.trim();
+      map['purpose_reason'] = _purposeController.text.trim().isNotEmpty
+          ? _purposeController.text.trim()
+          : _generalContentController.text.trim();
+      map['special_terms'] = _specialTermsController.text.trim();
+      map['note'] = _noteController.text.trim();
+    } else if (normKey == 'CONTRACT_CHANGE' || normKey == 'CONTRACT_TERMINATION' || normKey == 'CONTRACT_AMENDMENT') {
+      final origAmt = num.tryParse(_origAmountController.text.replaceAll(',', '').trim()) ?? 0;
+      final chgAmt = num.tryParse(_changeAmountController.text.replaceAll(',', '').trim()) ?? 0;
+      final stlAmt = num.tryParse(_settlementAmountController.text.replaceAll(',', '').trim()) ?? 0;
+      final finAmt = _contractChangeType == 'TERMINATION' ? stlAmt : (origAmt + chgAmt);
+
+      map['change_type'] = _contractChangeType;
+      map['original_contract_name'] = _origContractNameController.text.trim().isNotEmpty
+          ? _origContractNameController.text.trim()
+          : _titleController.text.trim();
+      map['contractor_name'] = _vendorController.text.trim();
+      map['original_contract_no'] = _origContractNoController.text.trim();
+      map['original_contract_date'] = _origContractDate?.toIso8601String().split('T').first;
+      map['original_end_date'] = _origEndDate?.toIso8601String().split('T').first;
+      map['original_amount'] = origAmt;
+      map['change_amount'] = chgAmt;
+      map['final_amount'] = finAmt;
+      map['final_end_date'] = _endDate?.toIso8601String().split('T').first;
+      map['period_change_desc'] = _periodChangeDescController.text.trim();
+      map['termination_date'] = _terminationDate?.toIso8601String().split('T').first;
+      map['settlement_amount'] = stlAmt;
+      map['penalty_terms'] = _penaltyTermsController.text.trim();
+      map['amount'] = chgAmt.abs() > 0 ? chgAmt.abs() : finAmt;
+      map['change_reason'] = _purposeController.text.trim().isNotEmpty
+          ? _purposeController.text.trim()
+          : _generalContentController.text.trim();
+      map['subsequent_plan'] = _subsequentPlanController.text.trim();
+      map['note'] = _noteController.text.trim();
+    } else if (normKey == 'LEGAL_REVIEW' || normKey == 'LEGAL_CONSULTATION' || normKey == 'LEGAL_ADVICE') {
+      final amt = num.tryParse(_amountController.text.replaceAll(',', '').trim()) ?? 0;
+      map['review_type'] = _legalReviewType;
+      map['urgency'] = _legalUrgency;
+      map['case_title'] = _contractNameController.text.trim().isNotEmpty
+          ? _contractNameController.text.trim()
+          : _titleController.text.trim();
+      map['review_due_date'] = _reviewDueDate?.toIso8601String().split('T').first;
+      map['counterparty'] = _vendorController.text.trim();
+      map['dispute_amount'] = amt;
+      if (amt > 0) map['amount'] = amt;
+      map['background'] = _generalContentController.text.trim().isNotEmpty
+          ? _generalContentController.text.trim()
+          : _purposeController.text.trim();
+      map['key_issues'] = _keyIssuesController.text.trim();
+      map['note'] = _noteController.text.trim();
+    } else if (normKey == 'BUSINESS_REVIEW' || normKey == 'PROJECT_FEASIBILITY' || normKey == 'BIZ_FEASIBILITY' || normKey == 'PROJECT_REVIEW' || normKey == 'INVESTMENT_REVIEW') {
+      final rev = num.tryParse(_totalRevenueController.text.replaceAll(',', '').trim()) ?? 0;
+      final cst = num.tryParse(_totalCostController.text.replaceAll(',', '').trim()) ?? 0;
+      final eqt = num.tryParse(_requiredEquityController.text.replaceAll(',', '').trim()) ?? 0;
+      final pf = num.tryParse(_pfLoanAmountController.text.replaceAll(',', '').trim()) ?? 0;
+      final np = rev - cst;
+      final pr = cst > 0 ? ((np / cst) * 100).toStringAsFixed(2) : '0';
+
+      map['biz_type'] = _bizType;
+      map['project_name'] = _contractNameController.text.trim().isNotEmpty
+          ? _contractNameController.text.trim()
+          : _titleController.text.trim();
+      map['location'] = _locationController.text.trim();
+      map['building_scale'] = _buildingScaleController.text.trim();
+      map['land_area'] = _landAreaController.text.trim();
+      map['gross_floor_area'] = _grossFloorAreaController.text.trim();
+      map['total_revenue'] = rev;
+      map['total_cost'] = cst;
+      map['net_profit'] = np;
+      map['profit_rate'] = pr;
+      map['required_equity'] = eqt;
+      map['pf_loan_amount'] = pf;
+      map['amount'] = cst; // 총사업비 기준 결재선 연동
+      map['land_secure_date'] = _landSecureDate?.toIso8601String().split('T').first;
+      map['approval_target_date'] = _approvalTargetDate?.toIso8601String().split('T').first;
+      map['start_date'] = _startDate?.toIso8601String().split('T').first;
+      map['completion_date'] = _completionDate?.toIso8601String().split('T').first;
+      map['market_analysis'] = _marketAnalysisController.text.trim();
+      map['risk_factors'] = _riskFactorsController.text.trim();
+      map['recommendation'] = _purposeController.text.trim().isNotEmpty
+          ? _purposeController.text.trim()
+          : _generalContentController.text.trim();
+      map['enclosed_docs'] = _noteController.text.trim();
+      map['note'] = _noteController.text.trim();
+    } else if (normKey == 'BUSINESS_APPROVAL' || normKey == 'PROJECT_APPROVAL' || normKey == 'DEV_APPROVAL' || normKey == 'INVESTMENT_APPROVAL') {
+      final reqAmt = num.tryParse(_requestedAmountController.text.replaceAll(',', '').trim()) ?? 0;
+      final cst = num.tryParse(_totalProjectCostController.text.replaceAll(',', '').trim()) ?? 0;
+      final rev = num.tryParse(_totalExpectedRevenueController.text.replaceAll(',', '').trim()) ?? 0;
+      final np = rev - cst;
+
+      map['approval_type'] = _bizApprovalType;
+      map['project_name'] = _contractNameController.text.trim().isNotEmpty
+          ? _contractNameController.text.trim()
+          : _titleController.text.trim();
+      map['location'] = _locationController.text.trim();
+      map['biz_scale_summary'] = _bizScaleSummaryController.text.trim();
+      map['requested_amount'] = reqAmt;
+      map['approval_budget'] = reqAmt;
+      map['total_project_cost'] = cst;
+      map['total_expected_revenue'] = rev;
+      map['expected_profit'] = np;
+      map['budget_usage_plan'] = _budgetUsagePlanController.text.trim();
+      map['amount'] = reqAmt > 0 ? reqAmt : cst;
+      map['resolution_matters'] = _resolutionMattersController.text.trim().isNotEmpty
+          ? _resolutionMattersController.text.trim()
+          : _purposeController.text.trim();
+      map['pm_lead'] = _pmLeadController.text.trim();
+      map['target_schedule'] = _targetScheduleController.text.trim();
+      map['expected_effects'] = _expectedEffectsController.text.trim();
+      map['enclosed_docs'] = _noteController.text.trim();
+      map['note'] = _noteController.text.trim();
+    } else if (normKey == 'PROJECT_DECISION' || normKey == 'PROJECT_KEY_DECISION' || normKey == 'DECISION_PROPOSAL' || normKey == 'KEY_DECISION') {
+      final finImpact = num.tryParse(_amountController.text.replaceAll(',', '').trim()) ?? 0;
+
+      map['decision_type'] = _projectDecisionType;
+      map['urgency'] = _decisionUrgency;
+      map['project_name'] = _contractNameController.text.trim().isNotEmpty
+          ? _contractNameController.text.trim()
+          : _titleController.text.trim();
+      map['decision_subject'] = _docNumberExtController.text.trim().isNotEmpty
+          ? _docNumberExtController.text.trim()
+          : _titleController.text.trim();
+      map['decision_due_date'] = _decisionDueDate?.toIso8601String().split('T').first;
+      map['financial_impact'] = finImpact;
+      if (finImpact > 0) map['amount'] = finImpact;
+      map['background_issue'] = _generalContentController.text.trim().isNotEmpty
+          ? _generalContentController.text.trim()
+          : _purposeController.text.trim();
+      map['option_1'] = _option1Controller.text.trim();
+      map['option_2'] = _option2Controller.text.trim();
+      map['option_3'] = _option3Controller.text.trim();
+      map['recommendation'] = _purposeController.text.trim();
+      map['action_plan'] = _actionPlanController.text.trim();
+      map['enclosed_docs'] = _noteController.text.trim();
+      map['note'] = _noteController.text.trim();
     } else {
       map['body'] = _generalContentController.text.trim();
       final amt = num.tryParse(_amountController.text.replaceAll(',', '').trim());
@@ -263,6 +828,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
     }
 
     final docTypesAsync = ref.watch(forDraftDocTypesProvider(_selectedAssignment?.id));
+    final normKey = _selectedDocType?.formTemplateKey?.toUpperCase();
 
     return Form(
       key: _formKey,
@@ -343,12 +909,38 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
                   const SizedBox(height: 12),
 
                   // 템플릿별 필드 렌더링
-                  if (_selectedDocType?.formTemplateKey == 'leave_application')
+                  if (normKey == 'LEAVE_APPLICATION' || normKey == 'LEAVE')
                     _buildLeaveFormFields(context)
-                  else if (_selectedDocType?.formTemplateKey == 'expense_report')
+                  else if (normKey == 'EXPENSE_REPORT' || normKey == 'EXPENSE')
                     _buildExpenseFormFields(context)
-                  else if (_selectedDocType?.formTemplateKey == 'purchase_order')
+                  else if (normKey == 'PURCHASE_ORDER' || normKey == 'PURCHASE')
                     _buildPurchaseFormFields(context)
+                  else if (normKey == 'OFFICIAL_LETTER')
+                    _buildOfficialLetterFormFields(context)
+                  else if (normKey == 'BUSINESS_TRIP' || normKey == 'TRIP')
+                    _buildBusinessTripFormFields(context)
+                  else if (normKey == 'OVERTIME' || normKey == 'OVERTIME_WORK')
+                    _buildOvertimeFormFields(context)
+                  else if (normKey == 'HR_APPOINTMENT' || normKey == 'APPOINTMENT')
+                    _buildHrAppointmentFormFields(context)
+                  else if (normKey == 'HR_REQUEST' || normKey == 'CERT_REQUEST')
+                    _buildHrRequestFormFields(context)
+                  else if (normKey == 'EXPENSE_SETTLEMENT' || normKey == 'SETTLEMENT')
+                    _buildExpenseSettlementFormFields(context)
+                  else if (normKey == 'ADVANCE' || normKey == 'ADVANCE_PAY' || normKey == 'ADVANCE_REQUEST')
+                    _buildAdvancePaymentFormFields(context)
+                  else if (normKey == 'CONTRACT' || normKey == 'CONTRACT_APPROVAL' || normKey == 'CONTRACT_PROPOSAL')
+                    _buildContractFormFields(context)
+                  else if (normKey == 'CONTRACT_CHANGE' || normKey == 'CONTRACT_TERMINATION' || normKey == 'CONTRACT_AMENDMENT')
+                    _buildContractChangeFormFields(context)
+                  else if (normKey == 'LEGAL_REVIEW' || normKey == 'LEGAL_CONSULTATION' || normKey == 'LEGAL_ADVICE')
+                    _buildLegalReviewFormFields(context)
+                  else if (normKey == 'BUSINESS_REVIEW' || normKey == 'PROJECT_FEASIBILITY' || normKey == 'BIZ_FEASIBILITY' || normKey == 'PROJECT_REVIEW' || normKey == 'INVESTMENT_REVIEW')
+                    _buildBusinessReviewFormFields(context)
+                  else if (normKey == 'BUSINESS_APPROVAL' || normKey == 'PROJECT_APPROVAL' || normKey == 'DEV_APPROVAL' || normKey == 'INVESTMENT_APPROVAL')
+                    _buildBusinessApprovalFormFields(context)
+                  else if (normKey == 'PROJECT_DECISION' || normKey == 'PROJECT_KEY_DECISION' || normKey == 'DECISION_PROPOSAL' || normKey == 'KEY_DECISION')
+                    _buildProjectDecisionFormFields(context)
                   else
                     _buildGeneralFormFields(context),
                 ],
@@ -491,7 +1083,26 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
         TextFormField(
           controller: _leaveReasonController,
           maxLines: 3,
-          decoration: _inputDecoration(context, '휴가 사유'),
+          decoration: _inputDecoration(context, '휴가 사유 (필수)'),
+          validator: (v) => (v == null || v.trim().isEmpty) ? '휴가 사유를 입력하세요' : null,
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _substituteWorkerController,
+                decoration: _inputDecoration(context, '업무 대행자 (인수인계자)'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                controller: _emergencyContactController,
+                decoration: _inputDecoration(context, '비상 연락처'),
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -500,17 +1111,90 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
   Widget _buildExpenseFormFields(BuildContext context) {
     return Column(
       children: [
+        Row(
+          children: [
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                value: _expenseType,
+                decoration: _inputDecoration(context, '지출 구분'),
+                items: const [
+                  DropdownMenuItem(value: 'CARD', child: Text('법인카드')),
+                  DropdownMenuItem(value: 'TAX_INVOICE', child: Text('세금계산서')),
+                  DropdownMenuItem(value: 'RECEIPT', child: Text('현금/간이영수증')),
+                  DropdownMenuItem(value: 'TRANSFER', child: Text('일반 계좌이체')),
+                ],
+                onChanged: (v) => setState(() => _expenseType = v ?? 'CARD'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () async {
+                  final d = await showDatePicker(
+                    context: context,
+                    initialDate: _paymentDueDate ?? DateTime.now(),
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2035),
+                  );
+                  if (d != null) setState(() => _paymentDueDate = d);
+                },
+                style: OutlinedButton.styleFrom(
+                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                  side: BorderSide(color: context.colors.border),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                child: Text(
+                  _paymentDueDate != null ? '지급요청: ${_paymentDueDate!.toIso8601String().split('T').first}' : '지급요청일 선택',
+                  style: TextStyle(fontSize: 12, color: context.colors.textPrimary),
+                ),
+              ),
+            ),
+          ],
+        ),
+        if (_expenseType != 'CARD') ...[
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                flex: 3,
+                child: TextFormField(
+                  controller: _bankNameController,
+                  decoration: _inputDecoration(context, '은행명'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 4,
+                child: TextFormField(
+                  controller: _accountNumberController,
+                  decoration: _inputDecoration(context, '계좌번호'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 3,
+                child: TextFormField(
+                  controller: _accountHolderController,
+                  decoration: _inputDecoration(context, '예금주명'),
+                ),
+              ),
+            ],
+          ),
+        ],
+        const SizedBox(height: 10),
         TextFormField(
           controller: _amountController,
           keyboardType: TextInputType.number,
-          decoration: _inputDecoration(context, '총 지출 금액 (원)'),
+          decoration: _inputDecoration(context, '총 지출 결의 금액 (원)'),
           onChanged: (_) => _updateRoutePreview(),
+          validator: (v) => (v == null || v.trim().isEmpty) ? '지출 금액을 입력하세요' : null,
         ),
         const SizedBox(height: 10),
         TextFormField(
           controller: _purposeController,
-          maxLines: 3,
-          decoration: _inputDecoration(context, '지출 목적 및 상세 내역'),
+          maxLines: 4,
+          decoration: _inputDecoration(context, '지출 목적 및 상세 내역 (필수)'),
+          validator: (v) => (v == null || v.trim().isEmpty) ? '지출 목적을 입력하세요' : null,
         ),
       ],
     );
@@ -519,22 +1203,2016 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
   Widget _buildPurchaseFormFields(BuildContext context) {
     return Column(
       children: [
-        TextFormField(
-          controller: _amountController,
-          keyboardType: TextInputType.number,
-          decoration: _inputDecoration(context, '품의 금액 (원)'),
-          onChanged: (_) => _updateRoutePreview(),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _amountController,
+                keyboardType: TextInputType.number,
+                decoration: _inputDecoration(context, '총 품의 금액 (원)'),
+                onChanged: (_) => _updateRoutePreview(),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                controller: _vendorController,
+                decoration: _inputDecoration(context, '거래처 / 공급업체'),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 10),
-        TextFormField(
-          controller: _vendorController,
-          decoration: _inputDecoration(context, '거래처 / 공급업체'),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () async {
+                  final d = await showDatePicker(
+                    context: context,
+                    initialDate: _deliveryDueDate ?? DateTime.now().add(const Duration(days: 7)),
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2035),
+                  );
+                  if (d != null) setState(() => _deliveryDueDate = d);
+                },
+                style: OutlinedButton.styleFrom(
+                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                  side: BorderSide(color: context.colors.border),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                child: Text(
+                  _deliveryDueDate != null ? '납품희망: ${_deliveryDueDate!.toIso8601String().split('T').first}' : '납품희망일 선택',
+                  style: TextStyle(fontSize: 12, color: context.colors.textPrimary),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                controller: _deliveryLocationController,
+                decoration: _inputDecoration(context, '납품 장소 (예: 본사 4층)'),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 10),
         TextFormField(
           controller: _purposeController,
+          maxLines: 4,
+          decoration: _inputDecoration(context, '구매 목적 및 품목 내역 (필수)'),
+          validator: (v) => (v == null || v.trim().isEmpty) ? '구매 목적을 입력하세요' : null,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOfficialLetterFormFields(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _receiverController,
+                decoration: _inputDecoration(context, '수신처 (필수)'),
+                validator: (v) => (v == null || v.trim().isEmpty) ? '수신처를 입력하세요' : null,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                controller: _referToController,
+                decoration: _inputDecoration(context, '참조처 (경유)'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _senderNameController,
+                decoration: _inputDecoration(context, '발신 명의 (미입력시 대표이사)'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                controller: _docNumberExtController,
+                decoration: _inputDecoration(context, '대외 문서번호 (선택)'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: _letterSubjectController,
+          decoration: _inputDecoration(context, '공문 제목 (필수)'),
+          validator: (v) => (v == null || v.trim().isEmpty) ? '공문 제목을 입력하세요' : null,
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: _letterBodyController,
+          maxLines: 5,
+          decoration: _inputDecoration(context, '공문 본문 / 요지 (필수)'),
+          validator: (v) => (v == null || v.trim().isEmpty) ? '공문 본문을 입력하세요' : null,
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: _enclosedFilesController,
+          maxLines: 2,
+          decoration: _inputDecoration(context, '붙임 서류 내역 (선택)'),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                value: _sendMethod,
+                decoration: _inputDecoration(context, '발송 방법'),
+                items: const [
+                  DropdownMenuItem(value: 'EMAIL', child: Text('이메일')),
+                  DropdownMenuItem(value: 'POST', child: Text('등기우편')),
+                  DropdownMenuItem(value: 'DIRECT', child: Text('인편(직접전달)')),
+                  DropdownMenuItem(value: 'FAX', child: Text('팩스(FAX)')),
+                  DropdownMenuItem(value: 'OTHER', child: Text('기타')),
+                ],
+                onChanged: (v) => setState(() => _sendMethod = v ?? 'EMAIL'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () async {
+                  final d = await showDatePicker(
+                    context: context,
+                    initialDate: _sendDueDate ?? DateTime.now(),
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2035),
+                  );
+                  if (d != null) setState(() => _sendDueDate = d);
+                },
+                style: OutlinedButton.styleFrom(
+                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                  side: BorderSide(color: context.colors.border),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                child: Text(
+                  _sendDueDate != null ? '발송: ${_sendDueDate!.toIso8601String().split('T').first}' : '발송예정일 선택',
+                  style: TextStyle(fontSize: 12, color: context.colors.textPrimary),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                value: _sealType,
+                decoration: _inputDecoration(context, '날인 인감'),
+                items: const [
+                  DropdownMenuItem(value: 'CORP_SEAL', child: Text('법인인감')),
+                  DropdownMenuItem(value: 'USAGE_SEAL_1', child: Text('사용인감 1호')),
+                  DropdownMenuItem(value: 'USAGE_SEAL_2', child: Text('사용인감 2호')),
+                  DropdownMenuItem(value: 'SIGN', child: Text('서명')),
+                  DropdownMenuItem(value: 'OMIT', child: Text('직인생략')),
+                ],
+                onChanged: (v) => setState(() => _sealType = v ?? 'CORP_SEAL'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                controller: _sealCountController,
+                keyboardType: TextInputType.number,
+                decoration: _inputDecoration(context, '날인 부수'),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBusinessTripFormFields(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                value: _tripType,
+                decoration: _inputDecoration(context, '출장 구분'),
+                items: const [
+                  DropdownMenuItem(value: 'DOMESTIC', child: Text('국내 출장')),
+                  DropdownMenuItem(value: 'OVERSEAS', child: Text('해외 출장')),
+                ],
+                onChanged: (v) => setState(() => _tripType = v ?? 'DOMESTIC'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                controller: _destinationController,
+                decoration: _inputDecoration(context, '출장지 (필수)'),
+                validator: (v) => (v == null || v.trim().isEmpty) ? '출장지를 입력하세요' : null,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () async {
+                  final d = await showDatePicker(
+                    context: context,
+                    initialDate: _startDate ?? DateTime.now(),
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2035),
+                  );
+                  if (d != null) setState(() => _startDate = d);
+                },
+                style: OutlinedButton.styleFrom(
+                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                  side: BorderSide(color: context.colors.border),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                child: Text(
+                  _startDate != null ? '시작: ${_startDate!.toIso8601String().split('T').first}' : '시작일 선택',
+                  style: TextStyle(fontSize: 12, color: context.colors.textPrimary),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () async {
+                  final d = await showDatePicker(
+                    context: context,
+                    initialDate: _endDate ?? (_startDate ?? DateTime.now()),
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2035),
+                  );
+                  if (d != null) setState(() => _endDate = d);
+                },
+                style: OutlinedButton.styleFrom(
+                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                  side: BorderSide(color: context.colors.border),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                child: Text(
+                  _endDate != null ? '종료: ${_endDate!.toIso8601String().split('T').first}' : '종료일 선택',
+                  style: TextStyle(fontSize: 12, color: context.colors.textPrimary),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: _purposeController,
+          decoration: _inputDecoration(context, '출장 목적 (필수)'),
+          validator: (v) => (v == null || v.trim().isEmpty) ? '출장 목적을 입력하세요' : null,
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _companionController,
+                decoration: _inputDecoration(context, '동행자 명단'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                controller: _substituteWorkerController,
+                decoration: _inputDecoration(context, '업무 대행자'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                value: _transportation,
+                decoration: _inputDecoration(context, '주요 교통편'),
+                items: const [
+                  DropdownMenuItem(value: 'CORP_CAR', child: Text('법인차량')),
+                  DropdownMenuItem(value: 'PRIVATE_CAR', child: Text('개인차량')),
+                  DropdownMenuItem(value: 'TRAIN', child: Text('KTX/열차')),
+                  DropdownMenuItem(value: 'AIRPLANE', child: Text('항공편')),
+                  DropdownMenuItem(value: 'BUS', child: Text('고속버스')),
+                  DropdownMenuItem(value: 'PUBLIC', child: Text('대중교통')),
+                  DropdownMenuItem(value: 'OTHER', child: Text('기타')),
+                ],
+                onChanged: (v) => setState(() => _transportation = v ?? 'CORP_CAR'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                controller: _emergencyContactController,
+                decoration: _inputDecoration(context, '비상 연락처'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _transportCostController,
+                keyboardType: TextInputType.number,
+                decoration: _inputDecoration(context, '교통비 (원)'),
+                onChanged: (_) => _updateRoutePreview(),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                controller: _lodgingCostController,
+                keyboardType: TextInputType.number,
+                decoration: _inputDecoration(context, '숙박비 (원)'),
+                onChanged: (_) => _updateRoutePreview(),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _dailyAllowanceController,
+                keyboardType: TextInputType.number,
+                decoration: _inputDecoration(context, '일비/식비 (원)'),
+                onChanged: (_) => _updateRoutePreview(),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                controller: _otherCostController,
+                keyboardType: TextInputType.number,
+                decoration: _inputDecoration(context, '기타경비 (원)'),
+                onChanged: (_) => _updateRoutePreview(),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: _itineraryController,
+          maxLines: 4,
+          decoration: _inputDecoration(context, '세부 일정 계획 (선택)'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOvertimeFormFields(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                value: _workType,
+                decoration: _inputDecoration(context, '근무 구분'),
+                items: const [
+                  DropdownMenuItem(value: 'OVERTIME', child: Text('평일 연장근무')),
+                  DropdownMenuItem(value: 'NIGHT', child: Text('야간근무 (22시 이후)')),
+                  DropdownMenuItem(value: 'HOLIDAY', child: Text('휴일 근무')),
+                ],
+                onChanged: (v) => setState(() => _workType = v ?? 'OVERTIME'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () async {
+                  final d = await showDatePicker(
+                    context: context,
+                    initialDate: _workDate ?? DateTime.now(),
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2035),
+                  );
+                  if (d != null) setState(() => _workDate = d);
+                },
+                style: OutlinedButton.styleFrom(
+                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                  side: BorderSide(color: context.colors.border),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                child: Text(
+                  _workDate != null ? '일자: ${_workDate!.toIso8601String().split('T').first}' : '근무일자 선택',
+                  style: TextStyle(fontSize: 12, color: context.colors.textPrimary),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _startTimeController,
+                decoration: _inputDecoration(context, '시작 시각 (예: 18:30)'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                controller: _endTimeController,
+                decoration: _inputDecoration(context, '종료 시각 (예: 21:30)'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _breakHoursController,
+                keyboardType: TextInputType.number,
+                decoration: _inputDecoration(context, '휴게시간(시간)'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                controller: _totalHoursController,
+                keyboardType: TextInputType.number,
+                decoration: _inputDecoration(context, '인정 시간(시간)'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        DropdownButtonFormField<String>(
+          value: _compensationType,
+          decoration: _inputDecoration(context, '보상 방식'),
+          items: const [
+            DropdownMenuItem(value: 'ALLOWANCE', child: Text('연장/휴일 수당 지급')),
+            DropdownMenuItem(value: 'COMP_LEAVE', child: Text('대체휴무 (보상휴가) 적립')),
+          ],
+          onChanged: (v) => setState(() => _compensationType = v ?? 'ALLOWANCE'),
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: _generalContentController,
+          maxLines: 4,
+          decoration: _inputDecoration(context, '구체적 근무 사유 및 업무 내용 (필수)'),
+          validator: (v) => (v == null || v.trim().isEmpty) ? '근무 사유를 입력하세요' : null,
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _coWorkersController,
+                decoration: _inputDecoration(context, '동반 근무자'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                controller: _noteController,
+                decoration: _inputDecoration(context, '비고 / 특이사항'),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHrAppointmentFormFields(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                value: _appointmentType,
+                decoration: _inputDecoration(context, '발령 구분'),
+                items: const [
+                  DropdownMenuItem(value: 'PROMOTION', child: Text('승진 / 승격')),
+                  DropdownMenuItem(value: 'TRANSFER', child: Text('부서이동 / 전보')),
+                  DropdownMenuItem(value: 'APPOINT', child: Text('보직 임명/해임')),
+                  DropdownMenuItem(value: 'HIRE', child: Text('신규 채용/입사')),
+                  DropdownMenuItem(value: 'LEAVE_RETURN', child: Text('휴직 / 복직')),
+                  DropdownMenuItem(value: 'RETIRE', child: Text('퇴직 / 면직')),
+                  DropdownMenuItem(value: 'DISPATCH', child: Text('현장 파견/복귀')),
+                  DropdownMenuItem(value: 'OTHER', child: Text('기타 발령')),
+                ],
+                onChanged: (v) => setState(() => _appointmentType = v ?? 'PROMOTION'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () async {
+                  final d = await showDatePicker(
+                    context: context,
+                    initialDate: _effectiveDate ?? DateTime.now(),
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2035),
+                  );
+                  if (d != null) setState(() => _effectiveDate = d);
+                },
+                style: OutlinedButton.styleFrom(
+                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                  side: BorderSide(color: context.colors.border),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                child: Text(
+                  _effectiveDate != null ? '시행: ${_effectiveDate!.toIso8601String().split('T').first}' : '시행일 선택',
+                  style: TextStyle(fontSize: 12, color: context.colors.textPrimary),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _targetNameController,
+                decoration: _inputDecoration(context, '대상자 성명 (필수)'),
+                validator: (v) => (v == null || v.trim().isEmpty) ? '대상자 성명을 입력하세요' : null,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                controller: _typeDescController,
+                decoration: _inputDecoration(context, '발령 세부 구분 (예: 승진/전보)'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _currentDeptController,
+                decoration: _inputDecoration(context, '현 소속 부서'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                controller: _currentPositionController,
+                decoration: _inputDecoration(context, '현 직급 / 직책'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _newDeptController,
+                decoration: _inputDecoration(context, '발령 부서 (신규)'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                controller: _newPositionController,
+                decoration: _inputDecoration(context, '발령 직급 / 직책 (신규)'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: _generalContentController,
+          maxLines: 4,
+          decoration: _inputDecoration(context, '발령 사유 및 인사 배경 (필수)'),
+          validator: (v) => (v == null || v.trim().isEmpty) ? '발령 사유를 입력하세요' : null,
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: _noteController,
+          decoration: _inputDecoration(context, '비고 / 특이사항'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHrRequestFormFields(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                value: _hrRequestType,
+                decoration: _inputDecoration(context, '신청 구분'),
+                items: const [
+                  DropdownMenuItem(value: 'CERTIFICATE', child: Text('제증명서 발급')),
+                  DropdownMenuItem(value: 'CONGRATULATION_CONDOLENCE', child: Text('경조사 지원/경조금')),
+                  DropdownMenuItem(value: 'LEAVE_OF_ABSENCE', child: Text('휴직 신청')),
+                  DropdownMenuItem(value: 'REINSTATEMENT', child: Text('복직원 제출')),
+                  DropdownMenuItem(value: 'ACCOUNT_CHANGE', child: Text('계좌/정보 변경')),
+                  DropdownMenuItem(value: 'OTHER', child: Text('기타 인사 신청')),
+                ],
+                onChanged: (v) => setState(() => _hrRequestType = v ?? 'CERTIFICATE'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                value: _receiveMethod,
+                decoration: _inputDecoration(context, '수령 방법'),
+                items: const [
+                  DropdownMenuItem(value: 'PDF_EMAIL', child: Text('PDF 이메일 수령')),
+                  DropdownMenuItem(value: 'PRINT_DIRECT', child: Text('원본 직접 수령')),
+                  DropdownMenuItem(value: 'POST', child: Text('우편(등기) 수령')),
+                ],
+                onChanged: (v) => setState(() => _receiveMethod = v ?? 'PDF_EMAIL'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        // 증명서 전용 필드
+        if (_hrRequestType == 'CERTIFICATE') ...[
+          Row(
+            children: [
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  value: _certType,
+                  decoration: _inputDecoration(context, '증명서 종류'),
+                  items: const [
+                    DropdownMenuItem(value: 'EMPLOYMENT', child: Text('재직증명서')),
+                    DropdownMenuItem(value: 'CAREER', child: Text('경력증명서')),
+                    DropdownMenuItem(value: 'RETIREMENT', child: Text('퇴직증명서')),
+                    DropdownMenuItem(value: 'WITHHOLDING_TAX', child: Text('원천징수영수증')),
+                    DropdownMenuItem(value: 'PAY_SLIP', child: Text('급여명세확인서')),
+                    DropdownMenuItem(value: 'OTHER', child: Text('기타 증명서')),
+                  ],
+                  onChanged: (v) => setState(() => _certType = v ?? 'EMPLOYMENT'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  value: _certLanguage,
+                  decoration: _inputDecoration(context, '발급 언어'),
+                  items: const [
+                    DropdownMenuItem(value: 'KOREAN', child: Text('국문')),
+                    DropdownMenuItem(value: 'ENGLISH', child: Text('영문')),
+                  ],
+                  onChanged: (v) => setState(() => _certLanguage = v ?? 'KOREAN'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: _submitToController,
+                  decoration: _inputDecoration(context, '제출처 (예: 국민은행)'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextFormField(
+                  controller: _usagePurposeController,
+                  decoration: _inputDecoration(context, '용도 (예: 대출용)'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          CheckboxListTile(
+            title: const Text('주민등록번호 뒷자리 전체 표기', style: TextStyle(fontSize: 12.5)),
+            value: _includeResidentNum,
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            controlAffinity: ListTileControlAffinity.leading,
+            onChanged: (v) => setState(() => _includeResidentNum = v ?? false),
+          ),
+          const SizedBox(height: 10),
+        ] else if (_hrRequestType == 'CONGRATULATION_CONDOLENCE') ...[
+          Row(
+            children: [
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  value: _eventType,
+                  decoration: _inputDecoration(context, '경조 구분'),
+                  items: const [
+                    DropdownMenuItem(value: 'MARRIAGE_SELF', child: Text('본인 결혼')),
+                    DropdownMenuItem(value: 'MARRIAGE_CHILD', child: Text('자녀 결혼')),
+                    DropdownMenuItem(value: 'CHILSOON_PARENT', child: Text('부모 칠순/팔순')),
+                    DropdownMenuItem(value: 'DEATH_PARENT', child: Text('부모/배우자부모 사망')),
+                    DropdownMenuItem(value: 'CHILDBIRTH', child: Text('출산 축하')),
+                    DropdownMenuItem(value: 'OTHER', child: Text('기타 경조사')),
+                  ],
+                  onChanged: (v) => setState(() => _eventType = v ?? 'MARRIAGE_SELF'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () async {
+                    final d = await showDatePicker(
+                      context: context,
+                      initialDate: _eventDate ?? DateTime.now(),
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime(2035),
+                    );
+                    if (d != null) setState(() => _eventDate = d);
+                  },
+                  style: OutlinedButton.styleFrom(
+                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                    side: BorderSide(color: context.colors.border),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: Text(
+                    _eventDate != null ? '일자: ${_eventDate!.toIso8601String().split('T').first}' : '경조일자 선택',
+                    style: TextStyle(fontSize: 12, color: context.colors.textPrimary),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: _eventPlaceController,
+                  decoration: _inputDecoration(context, '경조 장소 / 예식장'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextFormField(
+                  controller: _amountController,
+                  keyboardType: TextInputType.number,
+                  decoration: _inputDecoration(context, '경조금 신청액 (원)'),
+                  onChanged: (_) => _updateRoutePreview(),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          TextFormField(
+            controller: _supportItemsController,
+            decoration: _inputDecoration(context, '물품 지원 요청 (예: 축하화환 1점, 상조용품)'),
+          ),
+          const SizedBox(height: 10),
+        ],
+
+        TextFormField(
+          controller: _generalContentController,
+          maxLines: 4,
+          decoration: _inputDecoration(context, '신청 사유 및 요청 상세 내용 (필수)'),
+          validator: (v) => (v == null || v.trim().isEmpty) ? '신청 사유를 입력하세요' : null,
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: _noteController,
+          decoration: _inputDecoration(context, '비고 / 특이사항 (선택)'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildExpenseSettlementFormFields(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                value: _settlementType,
+                decoration: _inputDecoration(context, '정산 구분'),
+                items: const [
+                  DropdownMenuItem(value: 'CORP_CARD', child: Text('법인카드 정산')),
+                  DropdownMenuItem(value: 'PERSONAL_EXPENSE', child: Text('개인경비 실비환급')),
+                  DropdownMenuItem(value: 'BUSINESS_TRIP', child: Text('출장경비 정산')),
+                  DropdownMenuItem(value: 'ADVANCE_PAY', child: Text('가지급금 정산')),
+                  DropdownMenuItem(value: 'OTHER', child: Text('기타 경비정산')),
+                ],
+                onChanged: (v) => setState(() => _settlementType = v ?? 'CORP_CARD'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                controller: _targetMonthController,
+                decoration: _inputDecoration(context, '귀속 연월 (예: 2026-08)'),
+                validator: (v) => (v == null || v.trim().isEmpty) ? '귀속 연월을 입력하세요' : null,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        if (_settlementType == 'CORP_CARD') ...[
+          TextFormField(
+            controller: _cardNumberController,
+            decoration: _inputDecoration(context, '법인카드 정보 (예: 국민 법인카드 5678)'),
+          ),
+          const SizedBox(height: 10),
+        ] else if (_settlementType == 'PERSONAL_EXPENSE') ...[
+          Row(
+            children: [
+              Expanded(
+                flex: 3,
+                child: TextFormField(
+                  controller: _bankNameController,
+                  decoration: _inputDecoration(context, '환급 은행'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 4,
+                child: TextFormField(
+                  controller: _accountNumberController,
+                  decoration: _inputDecoration(context, '환급 계좌번호'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 3,
+                child: TextFormField(
+                  controller: _accountHolderController,
+                  decoration: _inputDecoration(context, '예금주'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+        ],
+
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _amountController,
+                keyboardType: TextInputType.number,
+                decoration: _inputDecoration(context, '총 정산 금액 (원)'),
+                onChanged: (_) => _updateRoutePreview(),
+                validator: (v) => (v == null || v.trim().isEmpty) ? '정산 금액을 입력하세요' : null,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                controller: _vendorController,
+                decoration: _inputDecoration(context, '주요 가맹점 / 사용처'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: _purposeController,
+          maxLines: 4,
+          decoration: _inputDecoration(context, '정산 개요 및 사용 목적 (필수)'),
+          validator: (v) => (v == null || v.trim().isEmpty) ? '정산 사유를 입력하세요' : null,
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: _noteController,
+          decoration: _inputDecoration(context, '비고 / 증빙 안내 (예: 영수증 총무팀 전달)'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAdvancePaymentFormFields(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                value: _advanceType,
+                decoration: _inputDecoration(context, '신청 구분'),
+                items: const [
+                  DropdownMenuItem(value: 'ADVANCE_PAY', child: Text('가지급금 (업무용)')),
+                  DropdownMenuItem(value: 'PREPAYMENT', child: Text('선급금 (계약상)')),
+                  DropdownMenuItem(value: 'IMPREST_FUND', child: Text('전도금 (상비운영비)')),
+                  DropdownMenuItem(value: 'EVENT_FUND', child: Text('행사/프로젝트 진행비')),
+                  DropdownMenuItem(value: 'OTHER', child: Text('기타 선급금')),
+                ],
+                onChanged: (v) => setState(() => _advanceType = v ?? 'ADVANCE_PAY'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () async {
+                  final d = await showDatePicker(
+                    context: context,
+                    initialDate: _paymentDueDate ?? DateTime.now(),
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2035),
+                  );
+                  if (d != null) setState(() => _paymentDueDate = d);
+                },
+                style: OutlinedButton.styleFrom(
+                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                  side: BorderSide(color: context.colors.border),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                child: Text(
+                  _paymentDueDate != null ? '지급요청: ${_paymentDueDate!.toIso8601String().split('T').first}' : '지급요청일 선택',
+                  style: TextStyle(fontSize: 12, color: context.colors.textPrimary),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _amountController,
+                keyboardType: TextInputType.number,
+                decoration: _inputDecoration(context, '신청 금액 (원)'),
+                onChanged: (_) => _updateRoutePreview(),
+                validator: (v) => (v == null || v.trim().isEmpty) ? '신청 금액을 입력하세요' : null,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () async {
+                  final d = await showDatePicker(
+                    context: context,
+                    initialDate: _settlementDueDate ?? DateTime.now().add(const Duration(days: 14)),
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2035),
+                  );
+                  if (d != null) setState(() => _settlementDueDate = d);
+                },
+                style: OutlinedButton.styleFrom(
+                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                  side: BorderSide(color: context.colors.border),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                child: Text(
+                  _settlementDueDate != null ? '정산예정: ${_settlementDueDate!.toIso8601String().split('T').first}' : '정산예정일 선택',
+                  style: TextStyle(fontSize: 12, color: context.colors.textPrimary),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        Row(
+          children: [
+            Expanded(
+              flex: 3,
+              child: DropdownButtonFormField<String>(
+                value: _receiverType,
+                decoration: _inputDecoration(context, '수령 대상'),
+                items: const [
+                  DropdownMenuItem(value: 'EMPLOYEE', child: Text('임직원 계좌')),
+                  DropdownMenuItem(value: 'VENDOR', child: Text('거래처 지급')),
+                  DropdownMenuItem(value: 'OTHER', child: Text('기타 계좌')),
+                ],
+                onChanged: (v) => setState(() => _receiverType = v ?? 'EMPLOYEE'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              flex: 3,
+              child: TextFormField(
+                controller: _bankNameController,
+                decoration: _inputDecoration(context, '은행명'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              flex: 4,
+              child: TextFormField(
+                controller: _accountNumberController,
+                decoration: _inputDecoration(context, '계좌번호'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: _accountHolderController,
+          decoration: _inputDecoration(context, '예금주명'),
+        ),
+        const SizedBox(height: 10),
+
+        TextFormField(
+          controller: _purposeController,
+          maxLines: 4,
+          decoration: _inputDecoration(context, '사용 목적 및 세부 집행 계획 (필수)'),
+          validator: (v) => (v == null || v.trim().isEmpty) ? '사용 목적을 입력하세요' : null,
+        ),
+        const SizedBox(height: 10),
+
+        CheckboxListTile(
+          value: _settlementPromise,
+          onChanged: (v) => setState(() => _settlementPromise = v ?? true),
+          title: const Text(
+            '정산 예정일까지 영수증 증빙을 첨부하여 전액 정산할 것을 확약합니다.',
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+          ),
+          controlAffinity: ListTileControlAffinity.leading,
+          contentPadding: EdgeInsets.zero,
+        ),
+        const SizedBox(height: 6),
+
+        TextFormField(
+          controller: _noteController,
+          decoration: _inputDecoration(context, '비고 / 특이사항'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildContractFormFields(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                value: _contractType,
+                decoration: _inputDecoration(context, '계약 구분'),
+                items: const [
+                  DropdownMenuItem(value: 'CONSTRUCTION', child: Text('공사 도급/하도급')),
+                  DropdownMenuItem(value: 'SERVICE', child: Text('용역/설계/감리/PM')),
+                  DropdownMenuItem(value: 'PURCHASE', child: Text('물품/자재 구매')),
+                  DropdownMenuItem(value: 'LEASE', child: Text('부동산 임대차')),
+                  DropdownMenuItem(value: 'MOU_NDA', child: Text('MOU/NDA')),
+                  DropdownMenuItem(value: 'OTHER', child: Text('기타 일반계약')),
+                ],
+                onChanged: (v) => setState(() => _contractType = v ?? 'SERVICE'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                value: _contractKind,
+                decoration: _inputDecoration(context, '계약 형태'),
+                items: const [
+                  DropdownMenuItem(value: 'NEW', child: Text('신규 계약')),
+                  DropdownMenuItem(value: 'CHANGE', child: Text('변경(증/감액/연장)')),
+                  DropdownMenuItem(value: 'RENEWAL', child: Text('갱신/연장')),
+                ],
+                onChanged: (v) => setState(() => _contractKind = v ?? 'NEW'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        TextFormField(
+          controller: _contractNameController,
+          decoration: _inputDecoration(context, '계약 건명 (필수)'),
+          validator: (v) => (v == null || v.trim().isEmpty) ? '계약 건명을 입력하세요' : null,
+        ),
+        const SizedBox(height: 10),
+
+        Row(
+          children: [
+            Expanded(
+              flex: 4,
+              child: TextFormField(
+                controller: _vendorController,
+                decoration: _inputDecoration(context, '상대방 상호 (필수)'),
+                validator: (v) => (v == null || v.trim().isEmpty) ? '상대방 상호를 입력하세요' : null,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              flex: 3,
+              child: TextFormField(
+                controller: _contractorCeoController,
+                decoration: _inputDecoration(context, '대표자명'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _contractorRegNumberController,
+                decoration: _inputDecoration(context, '사업자등록번호'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                controller: _contractorContactController,
+                decoration: _inputDecoration(context, '담당자 / 연락처'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        Row(
+          children: [
+            Expanded(
+              flex: 4,
+              child: TextFormField(
+                controller: _amountController,
+                keyboardType: TextInputType.number,
+                decoration: _inputDecoration(context, '총 계약 금액 (원)'),
+                onChanged: (_) => _updateRoutePreview(),
+                validator: (v) => (v == null || v.trim().isEmpty) ? '계약 금액을 입력하세요' : null,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              flex: 3,
+              child: DropdownButtonFormField<String>(
+                value: _vatType,
+                decoration: _inputDecoration(context, '부가세 구분'),
+                items: const [
+                  DropdownMenuItem(value: 'EXCLUDED', child: Text('VAT 별도')),
+                  DropdownMenuItem(value: 'INCLUDED', child: Text('VAT 포함')),
+                  DropdownMenuItem(value: 'ZERO_TAX', child: Text('면세/영세')),
+                ],
+                onChanged: (v) => setState(() => _vatType = v ?? 'EXCLUDED'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () async {
+                  final d = await showDatePicker(
+                    context: context,
+                    initialDate: _startDate ?? DateTime.now(),
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2035),
+                  );
+                  if (d != null) setState(() => _startDate = d);
+                },
+                style: OutlinedButton.styleFrom(
+                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                  side: BorderSide(color: context.colors.border),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                child: Text(
+                  _startDate != null ? '시작: ${_startDate!.toIso8601String().split('T').first}' : '시작일 선택',
+                  style: TextStyle(fontSize: 12, color: context.colors.textPrimary),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () async {
+                  final d = await showDatePicker(
+                    context: context,
+                    initialDate: _endDate ?? DateTime.now().add(const Duration(days: 365)),
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2035),
+                  );
+                  if (d != null) setState(() => _endDate = d);
+                },
+                style: OutlinedButton.styleFrom(
+                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                  side: BorderSide(color: context.colors.border),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                child: Text(
+                  _endDate != null ? '종료: ${_endDate!.toIso8601String().split('T').first}' : '종료일 선택',
+                  style: TextStyle(fontSize: 12, color: context.colors.textPrimary),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        TextFormField(
+          controller: _paymentTermsController,
+          decoration: _inputDecoration(context, '대금 지급 조건 (예: 계약금 10%, 잔금 90%)'),
+        ),
+        const SizedBox(height: 10),
+
+        TextFormField(
+          controller: _warrantyTermsController,
+          decoration: _inputDecoration(context, '이행 / 하자 보증 조건 (예: 하자보증 5%)'),
+        ),
+        const SizedBox(height: 10),
+
+        TextFormField(
+          controller: _purposeController,
+          maxLines: 4,
+          decoration: _inputDecoration(context, '계약 체결 목적 및 추진 배경 (필수)'),
+          validator: (v) => (v == null || v.trim().isEmpty) ? '체결 목적을 입력하세요' : null,
+        ),
+        const SizedBox(height: 10),
+
+        TextFormField(
+          controller: _specialTermsController,
+          maxLines: 2,
+          decoration: _inputDecoration(context, '주요 특약 사항 / 비고'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildContractChangeFormFields(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                value: _contractChangeType,
+                decoration: _inputDecoration(context, '변경/해지 구분'),
+                items: const [
+                  DropdownMenuItem(value: 'COMPREHENSIVE', child: Text('복합변경 (금액+기간)')),
+                  DropdownMenuItem(value: 'AMOUNT_CHANGE', child: Text('금액 변경 (증/감액)')),
+                  DropdownMenuItem(value: 'PERIOD_CHANGE', child: Text('기간 변경 (공기연장)')),
+                  DropdownMenuItem(value: 'SCOPE_CHANGE', child: Text('과업/조건 변경')),
+                  DropdownMenuItem(value: 'TERMINATION', child: Text('중도 해지 / 합의 해제')),
+                ],
+                onChanged: (v) => setState(() => _contractChangeType = v ?? 'COMPREHENSIVE'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                controller: _vendorController,
+                decoration: _inputDecoration(context, '계약 상대방 상호 (필수)'),
+                validator: (v) => (v == null || v.trim().isEmpty) ? '상대방 상호를 입력하세요' : null,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        TextFormField(
+          controller: _origContractNameController,
+          decoration: _inputDecoration(context, '원 계약 건명 (필수)'),
+          validator: (v) => (v == null || v.trim().isEmpty) ? '원 계약 건명을 입력하세요' : null,
+        ),
+        const SizedBox(height: 10),
+
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _origAmountController,
+                keyboardType: TextInputType.number,
+                decoration: _inputDecoration(context, '원 계약 금액 (원)'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () async {
+                  final d = await showDatePicker(
+                    context: context,
+                    initialDate: _origEndDate ?? DateTime.now(),
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2035),
+                  );
+                  if (d != null) setState(() => _origEndDate = d);
+                },
+                style: OutlinedButton.styleFrom(
+                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                  side: BorderSide(color: context.colors.border),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                child: Text(
+                  _origEndDate != null ? '원종료일: ${_origEndDate!.toIso8601String().split('T').first}' : '원종료일 선택',
+                  style: TextStyle(fontSize: 12, color: context.colors.textPrimary),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        if (_contractChangeType != 'TERMINATION') ...[
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: _changeAmountController,
+                  keyboardType: TextInputType.number,
+                  decoration: _inputDecoration(context, '증감 금액 (+/- 원)'),
+                  onChanged: (_) => _updateRoutePreview(),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () async {
+                    final d = await showDatePicker(
+                      context: context,
+                      initialDate: _endDate ?? DateTime.now().add(const Duration(days: 365)),
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime(2035),
+                    );
+                    if (d != null) setState(() => _endDate = d);
+                  },
+                  style: OutlinedButton.styleFrom(
+                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                    side: BorderSide(color: context.colors.border),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: Text(
+                    _endDate != null ? '변경종료: ${_endDate!.toIso8601String().split('T').first}' : '변경종료일 선택',
+                    style: TextStyle(fontSize: 12, color: context.colors.textPrimary),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          TextFormField(
+            controller: _periodChangeDescController,
+            decoration: _inputDecoration(context, '연장 / 단축 사유 및 일수 (예: 30일 공기연장)'),
+          ),
+          const SizedBox(height: 10),
+        ] else ...[
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () async {
+                    final d = await showDatePicker(
+                      context: context,
+                      initialDate: _terminationDate ?? DateTime.now(),
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime(2035),
+                    );
+                    if (d != null) setState(() => _terminationDate = d);
+                  },
+                  style: OutlinedButton.styleFrom(
+                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                    side: BorderSide(color: context.colors.border),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: Text(
+                    _terminationDate != null ? '해지일: ${_terminationDate!.toIso8601String().split('T').first}' : '해지일 선택',
+                    style: TextStyle(fontSize: 12, color: context.colors.textPrimary),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextFormField(
+                  controller: _settlementAmountController,
+                  keyboardType: TextInputType.number,
+                  decoration: _inputDecoration(context, '타절 정산금액 (원)'),
+                  onChanged: (_) => _updateRoutePreview(),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          TextFormField(
+            controller: _penaltyTermsController,
+            decoration: _inputDecoration(context, '위약금 / 보증금 몰취 내역'),
+          ),
+          const SizedBox(height: 10),
+        ],
+
+        TextFormField(
+          controller: _purposeController,
+          maxLines: 4,
+          decoration: _inputDecoration(context, '계약 변경 / 해지 사유 (필수)'),
+          validator: (v) => (v == null || v.trim().isEmpty) ? '변경/해지 사유를 입력하세요' : null,
+        ),
+        const SizedBox(height: 10),
+
+        TextFormField(
+          controller: _subsequentPlanController,
+          maxLines: 2,
+          decoration: _inputDecoration(context, '향후 후속 조치 계획 및 비고'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLegalReviewFormFields(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                value: _legalReviewType,
+                decoration: _inputDecoration(context, '검토 분야'),
+                items: const [
+                  DropdownMenuItem(value: 'CONTRACT_REVIEW', child: Text('계약서/협약서 검토')),
+                  DropdownMenuItem(value: 'LITIGATION_DISPUTE', child: Text('소송/분쟁 대응')),
+                  DropdownMenuItem(value: 'REGULATORY_COMPLIANCE', child: Text('법령해석/인허가')),
+                  DropdownMenuItem(value: 'INTERNAL_RULE', child: Text('사규/내부규정')),
+                  DropdownMenuItem(value: 'CLAIM_NOTICE', child: Text('내용증명/공문')),
+                  DropdownMenuItem(value: 'OTHER', child: Text('기타 법률자문')),
+                ],
+                onChanged: (v) => setState(() => _legalReviewType = v ?? 'CONTRACT_REVIEW'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                value: _legalUrgency,
+                decoration: _inputDecoration(context, '긴급도'),
+                items: const [
+                  DropdownMenuItem(value: 'NORMAL', child: Text('보통 (3~5일)')),
+                  DropdownMenuItem(value: 'URGENT', child: Text('긴급 (1~2일)')),
+                  DropdownMenuItem(value: 'VERY_URGENT', child: Text('당일 긴급')),
+                ],
+                onChanged: (v) => setState(() => _legalUrgency = v ?? 'NORMAL'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        Row(
+          children: [
+            Expanded(
+              flex: 4,
+              child: TextFormField(
+                controller: _contractNameController,
+                decoration: _inputDecoration(context, '의뢰 건명 (필수)'),
+                validator: (v) => (v == null || v.trim().isEmpty) ? '의뢰 건명을 입력하세요' : null,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              flex: 3,
+              child: OutlinedButton(
+                onPressed: () async {
+                  final d = await showDatePicker(
+                    context: context,
+                    initialDate: _reviewDueDate ?? DateTime.now().add(const Duration(days: 5)),
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2035),
+                  );
+                  if (d != null) setState(() => _reviewDueDate = d);
+                },
+                style: OutlinedButton.styleFrom(
+                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                  side: BorderSide(color: context.colors.border),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                child: Text(
+                  _reviewDueDate != null ? '희망: ${_reviewDueDate!.toIso8601String().split('T').first}' : '회신희망일',
+                  style: TextStyle(fontSize: 12, color: context.colors.textPrimary),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _vendorController,
+                decoration: _inputDecoration(context, '상대방 (당사자)'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                controller: _amountController,
+                keyboardType: TextInputType.number,
+                decoration: _inputDecoration(context, '관련 가액 / 분쟁금액 (원)'),
+                onChanged: (_) => _updateRoutePreview(),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        TextFormField(
+          controller: _generalContentController,
           maxLines: 3,
-          decoration: _inputDecoration(context, '구매 목적 및 품목 내역'),
+          decoration: _inputDecoration(context, '사실관계 및 검토 배경 (필수)'),
+          validator: (v) => (v == null || v.trim().isEmpty) ? '사실관계 및 배경을 입력하세요' : null,
+        ),
+        const SizedBox(height: 10),
+
+        TextFormField(
+          controller: _keyIssuesController,
+          maxLines: 4,
+          decoration: _inputDecoration(context, '주요 쟁점 사항 (필수: 조항별 쟁점 기술)'),
+          validator: (v) => (v == null || v.trim().isEmpty) ? '주요 쟁점 사항을 입력하세요' : null,
+        ),
+        const SizedBox(height: 10),
+
+        TextFormField(
+          controller: _noteController,
+          decoration: _inputDecoration(context, '첨부 서류 목록 / 비고'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBusinessReviewFormFields(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              flex: 4,
+              child: TextFormField(
+                controller: _contractNameController,
+                decoration: _inputDecoration(context, '사업명 (프로젝트명 - 필수)'),
+                validator: (v) => (v == null || v.trim().isEmpty) ? '사업명을 입력하세요' : null,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              flex: 3,
+              child: DropdownButtonFormField<String>(
+                value: _bizType,
+                decoration: _inputDecoration(context, '사업 유형'),
+                items: const [
+                  DropdownMenuItem(value: 'DEV_SELF', child: Text('자체 개발사업')),
+                  DropdownMenuItem(value: 'DEV_TRUST', child: Text('토지신탁')),
+                  DropdownMenuItem(value: 'CONTRACT_CIVIL', child: Text('단순 도급(시공)')),
+                  DropdownMenuItem(value: 'REDEVELOPMENT', child: Text('재개발/재건축')),
+                  DropdownMenuItem(value: 'PF_INVEST', child: Text('지분투자/공동')),
+                  DropdownMenuItem(value: 'OTHER', child: Text('기타 신규')),
+                ],
+                onChanged: (v) => setState(() => _bizType = v ?? 'DEV_SELF'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        Row(
+          children: [
+            Expanded(
+              flex: 4,
+              child: TextFormField(
+                controller: _locationController,
+                decoration: _inputDecoration(context, '사업 부지 위치 (필수)'),
+                validator: (v) => (v == null || v.trim().isEmpty) ? '부지 위치를 입력하세요' : null,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              flex: 3,
+              child: TextFormField(
+                controller: _buildingScaleController,
+                decoration: _inputDecoration(context, '건축 규모/세대수'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _landAreaController,
+                decoration: _inputDecoration(context, '대지면적 (㎡)'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                controller: _grossFloorAreaController,
+                decoration: _inputDecoration(context, '연면적 (㎡)'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _totalRevenueController,
+                keyboardType: TextInputType.number,
+                decoration: _inputDecoration(context, '총 분양/매출 수입 (원)'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                controller: _totalCostController,
+                keyboardType: TextInputType.number,
+                decoration: _inputDecoration(context, '총 사업비 (지출 - 원)'),
+                onChanged: (_) => _updateRoutePreview(),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _requiredEquityController,
+                keyboardType: TextInputType.number,
+                decoration: _inputDecoration(context, '자기자본 (Equity - 원)'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                controller: _pfLoanAmountController,
+                keyboardType: TextInputType.number,
+                decoration: _inputDecoration(context, 'PF 차입금 (원)'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () async {
+                  final d = await showDatePicker(
+                    context: context,
+                    initialDate: _startDate ?? DateTime.now().add(const Duration(days: 90)),
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2035),
+                  );
+                  if (d != null) setState(() => _startDate = d);
+                },
+                style: OutlinedButton.styleFrom(
+                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                  side: BorderSide(color: context.colors.border),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                child: Text(
+                  _startDate != null ? '착공: ${_startDate!.toIso8601String().split('T').first}' : '착공/분양일',
+                  style: TextStyle(fontSize: 12, color: context.colors.textPrimary),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () async {
+                  final d = await showDatePicker(
+                    context: context,
+                    initialDate: _completionDate ?? DateTime.now().add(const Duration(days: 730)),
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2035),
+                  );
+                  if (d != null) setState(() => _completionDate = d);
+                },
+                style: OutlinedButton.styleFrom(
+                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                  side: BorderSide(color: context.colors.border),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                child: Text(
+                  _completionDate != null ? '준공: ${_completionDate!.toIso8601String().split('T').first}' : '준공/입주일',
+                  style: TextStyle(fontSize: 12, color: context.colors.textPrimary),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        TextFormField(
+          controller: _marketAnalysisController,
+          maxLines: 2,
+          decoration: _inputDecoration(context, '입지 및 분양성 요약'),
+        ),
+        const SizedBox(height: 10),
+
+        TextFormField(
+          controller: _riskFactorsController,
+          maxLines: 2,
+          decoration: _inputDecoration(context, '주요 리스크 요인 및 대책'),
+        ),
+        const SizedBox(height: 10),
+
+        TextFormField(
+          controller: _purposeController,
+          maxLines: 4,
+          decoration: _inputDecoration(context, '종합 검토의견 및 추진 전략 (필수)'),
+          validator: (v) => (v == null || v.trim().isEmpty) ? '종합 검토의견을 입력하세요' : null,
+        ),
+        const SizedBox(height: 10),
+
+        TextFormField(
+          controller: _noteController,
+          decoration: _inputDecoration(context, '첨부 서류 목록 / 비고'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBusinessApprovalFormFields(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              flex: 4,
+              child: TextFormField(
+                controller: _contractNameController,
+                decoration: _inputDecoration(context, '사업명 (승인 건명 - 필수)'),
+                validator: (v) => (v == null || v.trim().isEmpty) ? '사업명을 입력하세요' : null,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              flex: 3,
+              child: DropdownButtonFormField<String>(
+                value: _bizApprovalType,
+                decoration: _inputDecoration(context, '승인 의결 구분'),
+                items: const [
+                  DropdownMenuItem(value: 'NEW_LAUNCH', child: Text('사업 론칭 승인')),
+                  DropdownMenuItem(value: 'LAND_ACQUISITION', child: Text('토지매매/계약금')),
+                  DropdownMenuItem(value: 'SPC_ESTABLISH', child: Text('SPC/PFV 설립')),
+                  DropdownMenuItem(value: 'PF_EXECUTION', child: Text('본PF약정/인출')),
+                  DropdownMenuItem(value: 'CONSTRUCTION_START', child: Text('시공계약/착공')),
+                  DropdownMenuItem(value: 'OTHER', child: Text('기타 승인')),
+                ],
+                onChanged: (v) => setState(() => _bizApprovalType = v ?? 'NEW_LAUNCH'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        Row(
+          children: [
+            Expanded(
+              flex: 4,
+              child: TextFormField(
+                controller: _locationController,
+                decoration: _inputDecoration(context, '사업 부지 위치 (필수)'),
+                validator: (v) => (v == null || v.trim().isEmpty) ? '부지 위치를 입력하세요' : null,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              flex: 3,
+              child: TextFormField(
+                controller: _bizScaleSummaryController,
+                decoration: _inputDecoration(context, '사업 규모 / 용도'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _requestedAmountController,
+                keyboardType: TextInputType.number,
+                decoration: _inputDecoration(context, '금회 승인요청액 (필수 - 원)'),
+                onChanged: (_) => _updateRoutePreview(),
+                validator: (v) => (v == null || v.trim().isEmpty) ? '승인요청액을 입력하세요' : null,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                controller: _totalProjectCostController,
+                keyboardType: TextInputType.number,
+                decoration: _inputDecoration(context, '전체 총사업비 (원)'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _totalExpectedRevenueController,
+                keyboardType: TextInputType.number,
+                decoration: _inputDecoration(context, '예상 총분양수입 (원)'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                controller: _pmLeadController,
+                decoration: _inputDecoration(context, '총괄 PM / 담당부서'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        TextFormField(
+          controller: _budgetUsagePlanController,
+          decoration: _inputDecoration(context, '금회 승인예산 세부 집행 내역 (필수)'),
+          validator: (v) => (v == null || v.trim().isEmpty) ? '예산 집행 내역을 입력하세요' : null,
+        ),
+        const SizedBox(height: 10),
+
+        TextFormField(
+          controller: _resolutionMattersController,
+          maxLines: 4,
+          decoration: _inputDecoration(context, '주요 승인 의결 요청 사항 (필수: 안건별 기술)'),
+          validator: (v) => (v == null || v.trim().isEmpty) ? '승인 의결 사항을 입력하세요' : null,
+        ),
+        const SizedBox(height: 10),
+
+        TextFormField(
+          controller: _targetScheduleController,
+          decoration: _inputDecoration(context, '향후 주요 추진 일정 (마일스톤)'),
+        ),
+        const SizedBox(height: 10),
+
+        TextFormField(
+          controller: _expectedEffectsController,
+          maxLines: 2,
+          decoration: _inputDecoration(context, '기대 효과 및 주요 리스크 대책'),
+        ),
+        const SizedBox(height: 10),
+
+        TextFormField(
+          controller: _noteController,
+          decoration: _inputDecoration(context, '첨부 서류 목록 / 비고'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProjectDecisionFormFields(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              flex: 4,
+              child: DropdownButtonFormField<String>(
+                value: _projectDecisionType,
+                decoration: _inputDecoration(context, '현안 분야'),
+                items: const [
+                  DropdownMenuItem(value: 'DESIGN_SPEC', child: Text('설계변경/스펙결정')),
+                  DropdownMenuItem(value: 'SALES_PRICING', child: Text('분양가/분양조건')),
+                  DropdownMenuItem(value: 'CONSTRUCTION_METHOD', child: Text('시공공법/자재선정')),
+                  DropdownMenuItem(value: 'FINANCIAL_STRUCTURING', child: Text('금융구조/PF변경')),
+                  DropdownMenuItem(value: 'CLAIM_DISPUTE', child: Text('민원/분쟁대응')),
+                  DropdownMenuItem(value: 'CONTRACTOR_TERMINATION', child: Text('업체선정/타절')),
+                  DropdownMenuItem(value: 'OTHER', child: Text('기타 의사결정')),
+                ],
+                onChanged: (v) => setState(() => _projectDecisionType = v ?? 'DESIGN_SPEC'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              flex: 3,
+              child: DropdownButtonFormField<String>(
+                value: _decisionUrgency,
+                decoration: _inputDecoration(context, '긴급도'),
+                items: const [
+                  DropdownMenuItem(value: 'NORMAL', child: Text('보통')),
+                  DropdownMenuItem(value: 'URGENT', child: Text('긴급(금주내)')),
+                  DropdownMenuItem(value: 'CRITICAL', child: Text('즉시 결정')),
+                ],
+                onChanged: (v) => setState(() => _decisionUrgency = v ?? 'NORMAL'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        Row(
+          children: [
+            Expanded(
+              flex: 4,
+              child: TextFormField(
+                controller: _docNumberExtController,
+                decoration: _inputDecoration(context, '심의 안건명 (필수)'),
+                validator: (v) => (v == null || v.trim().isEmpty) ? '안건명을 입력하세요' : null,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              flex: 3,
+              child: InkWell(
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: _decisionDueDate ?? DateTime.now().add(const Duration(days: 7)),
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2035),
+                  );
+                  if (picked != null) setState(() => _decisionDueDate = picked);
+                },
+                child: InputDecorator(
+                  decoration: _inputDecoration(context, '결정 목표일'),
+                  child: Text(
+                    _decisionDueDate != null ? _decisionDueDate!.toIso8601String().split('T').first : '날짜 선택',
+                    style: TextStyle(fontSize: 13, color: context.colors.textPrimary),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        TextFormField(
+          controller: _amountController,
+          keyboardType: TextInputType.number,
+          decoration: _inputDecoration(context, '재무적 영향 / 증감 예산 (원, 없으면 0)'),
+          onChanged: (_) => _updateRoutePreview(),
+        ),
+        const SizedBox(height: 10),
+
+        TextFormField(
+          controller: _generalContentController,
+          maxLines: 3,
+          decoration: _inputDecoration(context, '현안 배경 및 문제점 (필수)'),
+          validator: (v) => (v == null || v.trim().isEmpty) ? '현안 배경 및 문제점을 입력하세요' : null,
+        ),
+        const SizedBox(height: 10),
+
+        TextFormField(
+          controller: _option1Controller,
+          maxLines: 2,
+          decoration: _inputDecoration(context, '대안 1 (원안: 내용, 장단점, 비용, 공기)'),
+        ),
+        const SizedBox(height: 10),
+
+        TextFormField(
+          controller: _option2Controller,
+          maxLines: 2,
+          decoration: _inputDecoration(context, '대안 2 (추천안/변경안: 내용, 장단점, 비용, 공기)'),
+        ),
+        const SizedBox(height: 10),
+
+        TextFormField(
+          controller: _option3Controller,
+          maxLines: 2,
+          decoration: _inputDecoration(context, '대안 3 (선택 대안 - 선택사항)'),
+        ),
+        const SizedBox(height: 10),
+
+        TextFormField(
+          controller: _purposeController,
+          maxLines: 3,
+          decoration: _inputDecoration(context, '주관부서 최종 추천안 및 선정 사유 (필수)'),
+          validator: (v) => (v == null || v.trim().isEmpty) ? '주관부서 추천안을 입력하세요' : null,
+        ),
+        const SizedBox(height: 10),
+
+        TextFormField(
+          controller: _actionPlanController,
+          decoration: _inputDecoration(context, '향후 조치 계획'),
+        ),
+        const SizedBox(height: 10),
+
+        TextFormField(
+          controller: _noteController,
+          decoration: _inputDecoration(context, '첨부 서류 목록 / 비고'),
         ),
       ],
     );
@@ -544,16 +3222,62 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
     return Column(
       children: [
         TextFormField(
+          controller: _purposeController,
+          decoration: _inputDecoration(context, '품의 목적 (필수)'),
+          validator: (v) => (v == null || v.trim().isEmpty) ? '품의 목적을 입력하세요' : null,
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _scheduleController,
+                decoration: _inputDecoration(context, '추진 일정 / 기간'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                value: _budgetAccount,
+                decoration: _inputDecoration(context, '예산 과목'),
+                items: const [
+                  DropdownMenuItem(value: 'NONE', child: Text('예산 비소요')),
+                  DropdownMenuItem(value: 'GENERAL_EXPENSE', child: Text('일반관리비')),
+                  DropdownMenuItem(value: 'PROJECT_COST', child: Text('사업비')),
+                  DropdownMenuItem(value: 'OUTSOURCING', child: Text('외주용역비')),
+                  DropdownMenuItem(value: 'MARKETING', child: Text('홍보마케팅비')),
+                  DropdownMenuItem(value: 'ASSET_PURCHASE', child: Text('자산취득비')),
+                  DropdownMenuItem(value: 'OTHER', child: Text('기타 예산')),
+                ],
+                onChanged: (v) => setState(() => _budgetAccount = v ?? 'GENERAL_EXPENSE'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
           controller: _amountController,
           keyboardType: TextInputType.number,
-          decoration: _inputDecoration(context, '관련 금액 (선택 사항)'),
+          decoration: _inputDecoration(context, '소요 예산 / 예상 금액 (원) - 결재선 자동반영'),
           onChanged: (_) => _updateRoutePreview(),
         ),
         const SizedBox(height: 10),
         TextFormField(
           controller: _generalContentController,
           maxLines: 5,
-          decoration: _inputDecoration(context, '품의/기안 상세 내용'),
+          decoration: _inputDecoration(context, '세부 품의 내용 (필수)'),
+          validator: (v) => (v == null || v.trim().isEmpty) ? '세부 품의 내용을 입력하세요' : null,
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: _expectedEffectController,
+          maxLines: 2,
+          decoration: _inputDecoration(context, '기대 효과 (선택)'),
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: _noteController,
+          decoration: _inputDecoration(context, '비고 / 특이사항 (선택)'),
         ),
       ],
     );

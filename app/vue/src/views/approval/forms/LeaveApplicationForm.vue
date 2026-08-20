@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed, onMounted } from 'vue'
 
 const props = defineProps<{
   modelValue: Record<string, any>
@@ -27,7 +27,7 @@ const updateField = (key: string, val: any) => {
 
   // 일수 자동 계산 로직
   if (key === 'leave_type' || key === 'start_date' || key === 'end_date') {
-    const lType = updated.leave_type
+    const lType = updated.leave_type ?? 'ANNUAL'
     const sDate = updated.start_date
     const eDate = updated.end_date
 
@@ -49,6 +49,27 @@ const updateField = (key: string, val: any) => {
 
   emit('update:modelValue', updated)
 }
+
+onMounted(() => {
+  const initial = { ...props.modelValue }
+  let changed = false
+
+  if (!initial.leave_type) {
+    initial.leave_type = 'ANNUAL'
+    changed = true
+  }
+  if (!initial.start_date) {
+    const today = new Date().toISOString().substring(0, 10)
+    initial.start_date = today
+    initial.end_date = today
+    initial.days_count = 1
+    changed = true
+  }
+
+  if (changed) {
+    emit('update:modelValue', initial)
+  }
+})
 </script>
 
 <template>
@@ -109,7 +130,7 @@ const updateField = (key: string, val: any) => {
           rows="3"
           placeholder="구체적인 사유를 입력하세요. (예: 개인 사정, 가족 행사 등)"
           required
-          @input="updateField('reason', ($event.target as HTMLInputElement).value)"
+          @input="updateField('reason', ($event.target as HTMLTextAreaElement).value)"
         />
       </CCol>
     </CRow>

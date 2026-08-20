@@ -5,7 +5,7 @@ import { storeToRefs } from 'pinia'
 import { useApproval } from '@/store/pinia/approval'
 import { useAccount } from '@/store/pinia/account'
 import type { DocumentType } from '@/store/types/approval'
-import { STATIC_FORM_REGISTRY, DynamicSchemaForm } from '@/views/approval/forms'
+import { STATIC_FORM_REGISTRY } from '@/views/approval/forms'
 
 const route = useRoute()
 const router = useRouter()
@@ -331,20 +331,12 @@ onMounted(async () => {
 
           <hr class="my-3" />
 
-          <!-- 양식 필드 (STATIC 전용 폼 or DYNAMIC 스키마 폼) -->
+          <!-- 양식 필드 (전용 폼 컴포넌트) -->
           <template v-if="selectedDocType">
-            <!-- 1. STATIC 폼 컴포넌트 -->
             <component
-              :is="STATIC_FORM_REGISTRY[selectedDocType.form_template_key ?? '']"
-              v-if="selectedDocType.form_type === 'STATIC' && selectedDocType.form_template_key && STATIC_FORM_REGISTRY[selectedDocType.form_template_key]"
+              :is="STATIC_FORM_REGISTRY[selectedDocType.form_template_key || selectedDocType.code || '']"
+              v-if="(selectedDocType.form_template_key || selectedDocType.code) && STATIC_FORM_REGISTRY[selectedDocType.form_template_key || selectedDocType.code]"
               v-model="dynamicContent"
-            />
-
-            <!-- 2. DYNAMIC 스키마 폼 -->
-            <DynamicSchemaForm
-              v-else-if="selectedDocType.form_schema && selectedDocType.form_schema.length"
-              v-model="dynamicContent"
-              :schema="selectedDocType.form_schema"
             />
 
             <div v-else class="text-center text-muted py-3 border rounded bg-light mb-3">

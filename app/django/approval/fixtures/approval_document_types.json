@@ -6,13 +6,7 @@
       "name": "업무품의서",
       "code": "BIZ_APPROVAL",
       "description": "업무 추진을 위한 사전 품의 문서입니다. 목적, 내용, 예산 등을 기술하여 결재를 요청합니다.",
-      "form_schema": [
-        {"key": "purpose",  "label": "품의 목적",  "type": "text",     "required": true},
-        {"key": "content",  "label": "품의 내용",  "type": "textarea", "required": true},
-        {"key": "budget",   "label": "예산 (원)",  "type": "number",   "required": false},
-        {"key": "schedule", "label": "추진 일정",  "type": "text",     "required": false},
-        {"key": "note",     "label": "비고",        "type": "textarea", "required": false}
-      ],
+      "form_template_key": "GENERAL",
       "is_active": true,
       "created_at": "2026-08-17T00:00:00Z"
     }

@@ -62,8 +62,7 @@ export interface DocumentType {
   name: string
   code: string
   description: string
-  form_type: 'DYNAMIC' | 'STATIC'
-  form_template_key?: string
+  form_template_key: string
   route_type: 'organization' | 'template'
   route_type_desc?: string
   final_approval_duty?: number | null
@@ -73,7 +72,6 @@ export interface DocumentType {
   allowed_departments?: number[]
   allowed_duties?: number[]
   allowed_positions?: number[]
-  form_schema: FormField[]
   is_active: boolean
   route_templates: RouteTemplate[]
 }
