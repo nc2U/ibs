@@ -111,7 +111,11 @@ onBeforeMount(() => formDataSetup())
             <CRow>
               <CFormLabel class="col-sm-2 col-form-label required">직급 코드</CFormLabel>
               <CCol sm="10">
-                <CFormInput v-model="form.code" required placeholder="직급 코드 (예: G1, G2, G3 등)" />
+                <CFormInput
+                  v-model="form.code"
+                  required
+                  placeholder="직급 코드 (예: G1, G2, G3 등)"
+                />
               </CCol>
             </CRow>
           </CCol>
@@ -129,12 +133,12 @@ onBeforeMount(() => formDataSetup())
 
           <CCol sm="6">
             <CRow>
-              <CFormLabel class="col-sm-4 col-form-label">최소 체류기간</CFormLabel>
+              <CFormLabel class="col-sm-4 col-form-label">최소 근속기간</CFormLabel>
               <CCol sm="8">
                 <CFormInput
                   v-model.number="form.min_promotion_years"
                   type="number"
-                  placeholder="최소 체류기간 (년)"
+                  placeholder="최소 근속기간 (년)"
                 />
               </CCol>
             </CRow>

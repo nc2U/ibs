@@ -43,7 +43,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
         <CTableHeaderCell scope="col">No</CTableHeaderCell>
         <CTableHeaderCell scope="col">코드</CTableHeaderCell>
         <CTableHeaderCell scope="col">역할</CTableHeaderCell>
-        <CTableHeaderCell scope="col">최소 체류기간(년)</CTableHeaderCell>
+        <CTableHeaderCell scope="col">최소 근속기간(년)</CTableHeaderCell>
         <CTableHeaderCell scope="col">허용직위</CTableHeaderCell>
         <CTableHeaderCell scope="col">승급 기준</CTableHeaderCell>
         <CTableHeaderCell v-if="canHrWorkManage" scope="col">비고</CTableHeaderCell>
