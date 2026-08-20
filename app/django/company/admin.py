@@ -81,8 +81,8 @@ class ExecutiveAdmin(ImportExportMixin, admin.ModelAdmin):
 
 
 class StaffAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'company', 'name', 'sort', 'grade', 'position', 'get_executive_rank', 'get_duty',
-                    'get_department', 'email', 'status', 'date_join', 'date_leave')
+    list_display = ('id', 'company', 'name', 'sort', 'get_executive_rank', 'grade', 'position',
+                    'get_duty', 'get_department', 'email', 'status', 'date_join', 'date_leave')
     list_display_links = ('name', 'email')
     list_filter = ('company', 'sort', 'grade', 'position', 'status')
     inlines = (StaffAssignmentInline, ExecutiveInline)
@@ -125,7 +125,8 @@ class StaffEvaluationAdmin(ImportExportMixin, admin.ModelAdmin):
 
 
 class PromotionCandidateAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'company', 'eval_year', 'staff', 'policy', 'tenure_years', 'avg_eval_score', 'status', 'promoted_date')
+    list_display = ('id', 'company', 'eval_year', 'staff', 'policy', 'tenure_years', 'avg_eval_score', 'status',
+                    'promoted_date')
     list_display_links = ('staff',)
     list_editable = ('status', 'promoted_date')
     list_filter = ('company', 'eval_year', 'status', 'policy')
