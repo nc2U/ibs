@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import Cookies from 'js-cookie'
 import { useApproval } from '@/store/pinia/approval'
 import { useAccount } from '@/store/pinia/account'
+import { useIssue } from '@/store/pinia/work_issue'
 import { message } from '@/utils/helper'
 
 export type SSENotificationPayload = {
@@ -19,6 +20,7 @@ let reconnectTimer: ReturnType<typeof setTimeout> | null = null
 export function useSSE() {
   const approvalStore = useApproval()
   const accountStore = useAccount()
+  const issueStore = useIssue()
 
   const connect = () => {
     const token = Cookies.get('accessToken')
@@ -46,13 +48,15 @@ export function useSSE() {
         try {
           const payload: SSENotificationPayload = JSON.parse(event.data)
 
-          // 1. 전자결재 이벤트 -> 결재 대기함 및 사이드바 배지 즉각 갱신
+          // 1. 전자결재 이벤트 -> 결재 대기함 및 사이드바/헤더 배지 즉각 갱신
           if (payload.category === 'approval') {
             approvalStore.fetchMyPending()
           }
 
-          // 2. 업무/할일 이벤트 -> 할일 목록 즉각 갱신
+          // 2. 업무/할일 이벤트 -> 담당 업무 및 할일 목록 즉각 갱신
           if (payload.category === 'work') {
+            const userPk = accountStore.userInfo?.pk
+            issueStore.fetchIssueByMember(userPk ? String(userPk) : undefined)
             accountStore.fetchTodoList()
           }
 

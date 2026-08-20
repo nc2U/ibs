@@ -8,6 +8,7 @@ import { directive as vFullscreen } from 'vue-fullscreen'
 import { logo } from '@/assets/brand/current-logo'
 import AppBreadcrumb from './AppBreadcrumb.vue'
 import AppHeaderDropdown from './AppHeaderDropdown.vue'
+import AppHeaderNotifications from './AppHeaderNotifications.vue'
 import TagsView from '@/layouts/containers/TagsView.vue'
 
 const router = useRouter()
@@ -49,7 +50,7 @@ const toggleAside = () => store.toggleAside()
         <CIcon :icon="logo" height="31" alt="Logo" />
       </CHeaderBrand>
 
-      <CHeaderNav class="d-none d-md-flex me-auto">
+      <CHeaderNav class="d-none d-md-flex me-auto align-items-center">
         <AppBreadcrumb />
       </CHeaderNav>
 
@@ -105,6 +106,11 @@ const toggleAside = () => store.toggleAside()
             </template>
           </CFormCheck>
         </CButtonGroup>
+      </CHeaderNav>
+
+      <!-- 상단 헤더 실시간 알림 섹션 (결재 대기 / 담당 업무 / 할일) -->
+      <CHeaderNav class="d-none d-sm-flex align-items-center mx-2">
+        <AppHeaderNotifications />
       </CHeaderNav>
 
       <CHeaderNav class="mr-sm-0 mr-lg-2">
