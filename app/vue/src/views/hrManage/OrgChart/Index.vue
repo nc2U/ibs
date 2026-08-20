@@ -198,10 +198,10 @@ onMounted(async () => {
         >
           <!-- 좌측: 제목 & 통계 뱃지 -->
           <div class="d-flex align-items-center gap-3">
-            <h4 class="mb-0 fw-bold d-flex align-items-center">
-              <v-icon icon="mdi-sitemap" size="22" class="me-2 text-primary" />
+            <h5 class="mb-0 fw-bold d-flex align-items-center">
+              <v-icon icon="mdi-sitemap" size="22" class="me-3 text-primary" />
               조직도
-            </h4>
+            </h5>
             <div class="d-flex gap-2">
               <span
                 class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1"
@@ -293,10 +293,10 @@ onMounted(async () => {
 
           <div
             v-else
-            class="org-tree-canvas m-3"
+            class="org-tree-canvas"
             :style="{ transform: `scale(${zoomLevel})`, transformOrigin: 'top center' }"
           >
-            <div class="org-roots-wrapper p-3">
+            <div class="org-roots-wrapper p-2">
               <OrgTreeNode
                 v-for="root in orgTree"
                 :key="root.id"
