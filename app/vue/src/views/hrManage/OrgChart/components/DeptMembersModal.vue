@@ -13,12 +13,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <CModal
-    size="lg"
-    alignment="center"
-    :visible="visible"
-    @close="emit('update:visible', false)"
-  >
+  <CModal size="lg" alignment="center" :visible="visible" @close="emit('update:visible', false)">
     <CModalHeader>
       <CModalTitle class="d-flex align-items-center">
         <CIcon name="cilBuilding" class="me-2 text-primary" />
@@ -40,7 +35,10 @@ const emit = defineEmits<{
         <h6 class="mb-0 fw-bold">
           <CIcon name="cilPeople" class="me-1 text-info" />소속 직원 명단
         </h6>
-        <span class="text-muted small">총 <strong>{{ node.members.length }}</strong>명</span>
+        <span class="text-muted small"
+          >총 <strong>{{ node.members.length }}</strong
+          >명</span
+        >
       </div>
 
       <div v-if="!node.members.length" class="text-center text-muted py-4 border rounded bg-light">
@@ -48,27 +46,27 @@ const emit = defineEmits<{
       </div>
 
       <div v-else class="row g-3">
-        <div
-          v-for="member in node.members"
-          :key="member.pk"
-          class="col-md-6"
-        >
+        <div v-for="member in node.members" :key="member.pk" class="col-md-6">
           <div
             class="p-3 border rounded h-100 shadow-xs position-relative"
-            :class="{ 'border-primary bg-primary-subtle': node.manager_name === member.name || member.duty?.includes('장') || member.duty?.includes('대표') }"
+            :class="{
+              'border-primary bg-primary-subtle':
+                node.manager_name === member.name ||
+                member.duty?.includes('장') ||
+                member.duty?.includes('대표'),
+            }"
           >
             <div class="d-flex align-items-center mb-2">
-              <div class="avatar bg-primary text-white rounded-circle me-3 d-flex align-items-center justify-content-center fw-bold" style="width: 40px; height: 40px">
+              <div
+                class="avatar bg-primary text-white rounded-circle me-3 d-flex align-items-center justify-content-center fw-bold"
+                style="width: 40px; height: 40px"
+              >
                 {{ member.name.charAt(0) }}
               </div>
               <div>
                 <div class="fw-bold d-flex align-items-center">
                   {{ member.name }}
-                  <span
-                    v-if="member.duty"
-                    class="badge bg-primary ms-1"
-                    style="font-size: 0.7rem"
-                  >
+                  <span v-if="member.duty" class="badge bg-primary ms-1" style="font-size: 0.7rem">
                     {{ member.duty }}
                   </span>
                   <span
@@ -79,9 +77,7 @@ const emit = defineEmits<{
                     {{ member.position }}
                   </span>
                 </div>
-                <div v-if="member.grade" class="text-muted small">
-                  직급: {{ member.grade }}
-                </div>
+                <div v-if="member.grade" class="text-muted small">직급: {{ member.grade }}</div>
               </div>
             </div>
 
@@ -107,9 +103,14 @@ const emit = defineEmits<{
       </div>
     </CModalBody>
     <CModalFooter>
-      <CButton color="secondary" variant="outline" @click="emit('update:visible', false)">
+      <v-btn
+        color="secondary"
+        size="small"
+        variant="outlined"
+        @click="emit('update:visible', false)"
+      >
         닫기
-      </CButton>
+      </v-btn>
     </CModalFooter>
   </CModal>
 </template>
