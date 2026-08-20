@@ -69,7 +69,6 @@ export interface Grade {
   pk?: number
   company?: string
   code: string
-  name: string
   role: string
   min_promotion_years: number | null
   promotion_criteria: string

@@ -14,7 +14,7 @@ class DepartsInCompanySerializer(serializers.ModelSerializer):
 class GradesInCompanySerializer(serializers.ModelSerializer):
     class Meta:
         model = JobGrade
-        fields = ('pk', 'code', 'name', 'role', 'min_promotion_years', 'promotion_criteria')
+        fields = ('pk', 'code', 'role', 'min_promotion_years', 'promotion_criteria')
 
 
 class CompanySerializer(serializers.ModelSerializer):
@@ -68,13 +68,13 @@ class JobGradeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = JobGrade
-        fields = ('pk', 'company', 'code', 'name', 'role', 'min_promotion_years', 'promotion_criteria', 'positions')
+        fields = ('pk', 'company', 'code', 'role', 'min_promotion_years', 'promotion_criteria', 'positions')
 
 
 class GradesInPositionSerializer(serializers.ModelSerializer):
     class Meta:
         model = JobGrade
-        fields = ('name',)
+        fields = ('code',)
 
 
 class PositionSerializer(serializers.ModelSerializer):
@@ -93,6 +93,7 @@ class DutyTitleSerializer(serializers.ModelSerializer):
         fields = ('pk', 'company', 'name', 'desc')
 
 
+# Staff ----------------------------------------------------------------------------
 class StaffAssignmentSerializer(serializers.ModelSerializer):
     company = serializers.SlugRelatedField(queryset=Company.objects.all(), slug_field='name')
     department_name = serializers.CharField(source='department.name', read_only=True)
@@ -117,7 +118,7 @@ class StaffSerializer(serializers.ModelSerializer):
     department_name = serializers.CharField(write_only=True, required=False, allow_null=True, allow_blank=True)
     position_name = serializers.CharField(write_only=True, required=False, allow_null=True, allow_blank=True)
     duty_name = serializers.CharField(write_only=True, required=False, allow_null=True, allow_blank=True)
-    grade = serializers.SlugRelatedField(queryset=JobGrade.objects.all(), slug_field='name', allow_null=True, required=False)
+    grade = serializers.SlugRelatedField(queryset=JobGrade.objects.all(), slug_field='code', allow_null=True, required=False)
     status = serializers.ChoiceField(choices=Staff.STATUS_CHOICES)
     status_desc = serializers.CharField(source='get_status_display', read_only=True)
     assignments = StaffAssignmentSerializer(many=True, read_only=True)

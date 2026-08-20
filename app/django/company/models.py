@@ -82,14 +82,13 @@ class Department(models.Model):
 
 class JobGrade(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='ranks', verbose_name='회사')
-    code = models.CharField('코드', max_length=10)
-    name = models.CharField('직급', max_length=10, db_index=True)
+    code = models.CharField('직급 코드', max_length=10)
     role = models.CharField('역할', max_length=100, blank=True)
-    promotion_criteria = models.TextField('승급 기준', blank=True)  # 추후  PromotionPolicy 모델과 연결 고도화
+    promotion_criteria = models.TextField('승급 기준', blank=True)  # 추후 PromotionPolicy 모델과 연결 고도화
     min_promotion_years = models.PositiveSmallIntegerField('최소 근속기간(년)', null=True, blank=True)
 
     def __str__(self):
-        return self.name
+        return self.code
 
     class Meta:
         ordering = ['id']

@@ -39,7 +39,6 @@ const form = ref<Grade>({
   pk: undefined,
   company: undefined,
   code: '',
-  name: '',
   role: '',
   min_promotion_years: null,
   positions: [],
@@ -49,13 +48,12 @@ const form = ref<Grade>({
 const formsCheck = computed(() => {
   if (props.grade) {
     const a = form.value.code === props.grade.code
-    const b = form.value.name === props.grade.name
-    const c = form.value.role === props.grade.role
-    const d = form.value.min_promotion_years === props.grade.min_promotion_years
-    const e = JSON.stringify(form.value.positions) === JSON.stringify(props.grade.positions)
-    const f = form.value.promotion_criteria === props.grade.promotion_criteria
+    const b = form.value.role === props.grade.role
+    const c = form.value.min_promotion_years === props.grade.min_promotion_years
+    const d = JSON.stringify(form.value.positions) === JSON.stringify(props.grade.positions)
+    const e = form.value.promotion_criteria === props.grade.promotion_criteria
 
-    return a && b && c && d && e && f
+    return a && b && c && d && e
   } else return false
 })
 
@@ -92,7 +90,6 @@ const formDataSetup = () => {
     form.value.pk = props.grade.pk
     form.value.company = props.grade.company
     form.value.code = props.grade.code
-    form.value.name = props.grade.name
     form.value.role = props.grade.role
     form.value.min_promotion_years = props.grade.min_promotion_years
     form.value.positions = props.grade.positions
@@ -110,20 +107,11 @@ onBeforeMount(() => formDataSetup())
         <CRow class="mb-3"></CRow>
 
         <CRow class="mb-3">
-          <CCol sm="6">
+          <CCol sm="12">
             <CRow>
-              <CFormLabel class="col-sm-4 col-form-label required">코드</CFormLabel>
-              <CCol sm="8">
-                <CFormInput v-model="form.code" required placeholder="직급 코드 (예: G1, G2)" />
-              </CCol>
-            </CRow>
-          </CCol>
-
-          <CCol sm="6">
-            <CRow>
-              <CFormLabel class="col-sm-4 col-form-label required">직급명</CFormLabel>
-              <CCol sm="8">
-                <CFormInput v-model="form.name" required placeholder="직급명" />
+              <CFormLabel class="col-sm-2 col-form-label required">직급 코드</CFormLabel>
+              <CCol sm="10">
+                <CFormInput v-model="form.code" required placeholder="직급 코드 (예: G1, G2, G3 등)" />
               </CCol>
             </CRow>
           </CCol>

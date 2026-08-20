@@ -321,7 +321,7 @@ class ExportPositions(ExcelExportMixin):
         worksheet.ignore_errors({'number_stored_as_text': 'A:D'})
 
         def get_grade(pk):
-            return JobGrade.objects.get(pk=pk).name
+            return JobGrade.objects.get(pk=pk).code
 
         # Write body
         params.insert(0, 'num')
@@ -459,7 +459,6 @@ class ExportGrades(ExcelExportMixin):
         # title_list
         header_src = [[],
                       ['코드', 'code', 10],
-                      ['직급명', 'name', 14],
                       ['역할', 'role', 20],
                       ['최소체류기간(년)', 'min_promotion_years', 16],
                       ['허용직위', 'positions', 28],
@@ -518,7 +517,7 @@ class ExportGrades(ExcelExportMixin):
             else:
                 is_exist = False
                 for dt in data:
-                    if dt['name'] == bd['name']:
+                    if dt['code'] == bd['code']:
                         is_exist = True
                         dt['p_list'].append(bd['positions'])
                 if not is_exist:
@@ -545,13 +544,13 @@ class ExportGrades(ExcelExportMixin):
         # Write body
         for i, row in enumerate(data):
             row_num += 1
-            row_data = [row['num'], row['code'], row['name'], row['role'], row['min_promotion_years'], row['positions'], row['promotion_criteria']]
+            row_data = [row['num'], row['code'], row['role'], row['min_promotion_years'], row['positions'], row['promotion_criteria']]
 
             for col_num, cell_data in enumerate(row_data):
                 if type(cell_data) == list:
                     positions = [get_position(i) for i in cell_data]
                     cell_data = ', '.join(sorted(positions))
-                if col_num in (3, 5, 6):
+                if col_num in (2, 4, 5):
                     body_format['align'] = 'left'
                 else:
                     body_format['align'] = 'center'

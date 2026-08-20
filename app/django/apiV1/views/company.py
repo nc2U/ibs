@@ -44,7 +44,7 @@ class JobGradeViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly, IbsModulePermission)
     pagination_class = PageNumberPaginationOneThousand
     filterset_fields = ('company',)
-    search_fields = ('code', 'name', 'role', 'min_promotion_years', 'positions__name', 'promotion_criteria')
+    search_fields = ('code', 'role', 'min_promotion_years', 'positions__name', 'promotion_criteria')
 
     @property
     def required_permission(self):
