@@ -3,7 +3,8 @@ from import_export.admin import ImportExportMixin
 
 from .models import (
     Company, Logo, Department, JobGrade, Position, DutyTitle,
-    ExecutiveRank, Executive, Staff, StaffAssignment
+    ExecutiveRank, Executive, Staff, StaffAssignment,
+    PromotionPolicy, StaffEvaluation, PromotionCandidate
 )
 
 
@@ -106,6 +107,30 @@ class StaffAssignmentAdmin(ImportExportMixin, admin.ModelAdmin):
     search_fields = ('staff__name', 'department__name', 'assigned_tasks')
 
 
+class PromotionPolicyAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_display = ('id', 'company', 'current_grade', 'target_grade', 'min_years',
+                    'required_eval_grade', 'min_avg_grade_point', 'is_active')
+    list_display_links = ('current_grade', 'target_grade')
+    list_editable = ('min_years', 'is_active')
+    list_filter = ('company', 'is_active')
+    search_fields = ('current_grade__code', 'target_grade__code', 'required_credentials', 'disqualification_conditions')
+
+
+class StaffEvaluationAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_display = ('id', 'company', 'staff', 'eval_year', 'eval_period', 'grade', 'score', 'evaluator', 'reviewer')
+    list_display_links = ('staff',)
+    list_filter = ('company', 'eval_year', 'eval_period', 'grade')
+    search_fields = ('staff__name', 'achievement_summary', 'notes')
+
+
+class PromotionCandidateAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_display = ('id', 'company', 'eval_year', 'staff', 'policy', 'tenure_years', 'avg_eval_score', 'status', 'promoted_date')
+    list_display_links = ('staff',)
+    list_editable = ('status', 'promoted_date')
+    list_filter = ('company', 'eval_year', 'status', 'policy')
+    search_fields = ('staff__name', 'committee_review')
+
+
 admin.site.register(Company, CompanyAdmin)
 admin.site.register(Department, DepartmentAdmin)
 admin.site.register(JobGrade, JobGradeAdmin)
@@ -115,3 +140,6 @@ admin.site.register(ExecutiveRank, ExecutiveRankAdmin)
 admin.site.register(Executive, ExecutiveAdmin)
 admin.site.register(Staff, StaffAdmin)
 admin.site.register(StaffAssignment, StaffAssignmentAdmin)
+admin.site.register(PromotionPolicy, PromotionPolicyAdmin)
+admin.site.register(StaffEvaluation, StaffEvaluationAdmin)
+admin.site.register(PromotionCandidate, PromotionCandidateAdmin)

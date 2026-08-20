@@ -14,6 +14,9 @@ import {
   type Duty,
   type ExecutiveRank,
   type Executive,
+  type PromotionPolicy,
+  type StaffEvaluation,
+  type PromotionCandidate,
   type ComFilter,
 } from '@/store/types/company'
 
@@ -605,6 +608,217 @@ export const useCompany = defineStore('company', () => {
       })
       .catch(err => errorHandle(err.response.data))
 
+  // PromotionPolicy --------------------------------------------------
+  const promotionPolicyList = ref<PromotionPolicy[]>([])
+  const allPromotionPolicyList = ref<PromotionPolicy[]>([])
+  const promotionPolicy = ref<PromotionPolicy | null>(null)
+  const promotionPoliciesCount = ref<number>(0)
+
+  const promotionPolicyPages = (itemsPerPage: number) =>
+    Math.ceil(promotionPoliciesCount.value / itemsPerPage)
+
+  const fetchPromotionPolicyList = async (payload: ComFilter) => {
+    const { page = 1, com = 1, q = '' } = payload
+    const queryStr = `?limit=10&page=${page}&company=${com}&search=${q}`
+    return await api
+      .get(`/promotion-policy/${queryStr}`)
+      .then(res => {
+        promotionPolicyList.value = res.data.results
+        promotionPoliciesCount.value = res.data.count
+      })
+      .catch(err => errorHandle(err.response.data))
+  }
+
+  const fetchAllPromotionPolicyList = (com = 1) =>
+    api
+      .get(`/promotion-policy/?company=${com}&limit=500`)
+      .then(res => {
+        allPromotionPolicyList.value = res.data.results ?? res.data
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const fetchPromotionPolicy = (pk: number) =>
+    api
+      .get(`/promotion-policy/${pk}/`)
+      .then(res => (promotionPolicy.value = res.data))
+      .catch(err => errorHandle(err.response.data))
+
+  const createPromotionPolicy = (payload: PromotionPolicy, page = 1, com = 1) =>
+    api
+      .post(`/promotion-policy/`, payload)
+      .then(async res => {
+        await fetchAllPromotionPolicyList(com)
+        await fetchPromotionPolicyList({ page, com })
+        await fetchPromotionPolicy(res.data.pk)
+        message()
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const updatePromotionPolicy = (payload: PromotionPolicy, page = 1, com = 1) =>
+    api
+      .put(`/promotion-policy/${payload.pk}/`, payload)
+      .then(async res => {
+        await fetchAllPromotionPolicyList(com)
+        await fetchPromotionPolicyList({ page, com })
+        await fetchPromotionPolicy(res.data.pk)
+        message()
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const deletePromotionPolicy = (pk: number, com = 1) =>
+    api
+      .delete(`/promotion-policy/${pk}/`)
+      .then(async () => {
+        await fetchAllPromotionPolicyList(com)
+        await fetchPromotionPolicyList({ com })
+        message('warning', '', '해당 오브젝트가 삭제되었습니다.')
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  // StaffEvaluation --------------------------------------------------
+  const staffEvaluationList = ref<StaffEvaluation[]>([])
+  const allStaffEvaluationList = ref<StaffEvaluation[]>([])
+  const staffEvaluation = ref<StaffEvaluation | null>(null)
+  const staffEvaluationsCount = ref<number>(0)
+
+  const staffEvaluationPages = (itemsPerPage: number) =>
+    Math.ceil(staffEvaluationsCount.value / itemsPerPage)
+
+  const fetchStaffEvaluationList = async (payload: ComFilter & { staff?: number; year?: number }) => {
+    const { page = 1, com = 1, q = '', staff: staffId, year } = payload
+    let queryStr = `?limit=10&page=${page}&company=${com}&search=${q}`
+    if (staffId) queryStr += `&staff=${staffId}`
+    if (year) queryStr += `&eval_year=${year}`
+    return await api
+      .get(`/staff-evaluation/${queryStr}`)
+      .then(res => {
+        staffEvaluationList.value = res.data.results
+        staffEvaluationsCount.value = res.data.count
+      })
+      .catch(err => errorHandle(err.response.data))
+  }
+
+  const fetchAllStaffEvaluationList = (com = 1, year?: number) => {
+    let queryStr = `?company=${com}&limit=500`
+    if (year) queryStr += `&eval_year=${year}`
+    return api
+      .get(`/staff-evaluation/${queryStr}`)
+      .then(res => {
+        allStaffEvaluationList.value = res.data.results ?? res.data
+      })
+      .catch(err => errorHandle(err.response.data))
+  }
+
+  const fetchStaffEvaluation = (pk: number) =>
+    api
+      .get(`/staff-evaluation/${pk}/`)
+      .then(res => (staffEvaluation.value = res.data))
+      .catch(err => errorHandle(err.response.data))
+
+  const createStaffEvaluation = (payload: StaffEvaluation, page = 1, com = 1) =>
+    api
+      .post(`/staff-evaluation/`, payload)
+      .then(async res => {
+        await fetchAllStaffEvaluationList(com)
+        await fetchStaffEvaluationList({ page, com })
+        await fetchStaffEvaluation(res.data.pk)
+        message()
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const updateStaffEvaluation = (payload: StaffEvaluation, page = 1, com = 1) =>
+    api
+      .put(`/staff-evaluation/${payload.pk}/`, payload)
+      .then(async res => {
+        await fetchAllStaffEvaluationList(com)
+        await fetchStaffEvaluationList({ page, com })
+        await fetchStaffEvaluation(res.data.pk)
+        message()
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const deleteStaffEvaluation = (pk: number, com = 1) =>
+    api
+      .delete(`/staff-evaluation/${pk}/`)
+      .then(async () => {
+        await fetchAllStaffEvaluationList(com)
+        await fetchStaffEvaluationList({ com })
+        message('warning', '', '해당 오브젝트가 삭제되었습니다.')
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  // PromotionCandidate -----------------------------------------------
+  const promotionCandidateList = ref<PromotionCandidate[]>([])
+  const allPromotionCandidateList = ref<PromotionCandidate[]>([])
+  const promotionCandidate = ref<PromotionCandidate | null>(null)
+  const promotionCandidatesCount = ref<number>(0)
+
+  const promotionCandidatePages = (itemsPerPage: number) =>
+    Math.ceil(promotionCandidatesCount.value / itemsPerPage)
+
+  const fetchPromotionCandidateList = async (payload: ComFilter & { year?: number; status?: string }) => {
+    const { page = 1, com = 1, q = '', year, status: candStatus } = payload
+    let queryStr = `?limit=10&page=${page}&company=${com}&search=${q}`
+    if (year) queryStr += `&eval_year=${year}`
+    if (candStatus) queryStr += `&status=${candStatus}`
+    return await api
+      .get(`/promotion-candidate/${queryStr}`)
+      .then(res => {
+        promotionCandidateList.value = res.data.results
+        promotionCandidatesCount.value = res.data.count
+      })
+      .catch(err => errorHandle(err.response.data))
+  }
+
+  const fetchAllPromotionCandidateList = (com = 1, year?: number) => {
+    let queryStr = `?company=${com}&limit=500`
+    if (year) queryStr += `&eval_year=${year}`
+    return api
+      .get(`/promotion-candidate/${queryStr}`)
+      .then(res => {
+        allPromotionCandidateList.value = res.data.results ?? res.data
+      })
+      .catch(err => errorHandle(err.response.data))
+  }
+
+  const fetchPromotionCandidate = (pk: number) =>
+    api
+      .get(`/promotion-candidate/${pk}/`)
+      .then(res => (promotionCandidate.value = res.data))
+      .catch(err => errorHandle(err.response.data))
+
+  const createPromotionCandidate = (payload: PromotionCandidate, page = 1, com = 1) =>
+    api
+      .post(`/promotion-candidate/`, payload)
+      .then(async res => {
+        await fetchAllPromotionCandidateList(com)
+        await fetchPromotionCandidateList({ page, com })
+        await fetchPromotionCandidate(res.data.pk)
+        message()
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const updatePromotionCandidate = (payload: PromotionCandidate, page = 1, com = 1) =>
+    api
+      .put(`/promotion-candidate/${payload.pk}/`, payload)
+      .then(async res => {
+        await fetchAllPromotionCandidateList(com)
+        await fetchPromotionCandidateList({ page, com })
+        await fetchPromotionCandidate(res.data.pk)
+        message()
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const deletePromotionCandidate = (pk: number, com = 1) =>
+    api
+      .delete(`/promotion-candidate/${pk}/`)
+      .then(async () => {
+        await fetchAllPromotionCandidateList(com)
+        await fetchPromotionCandidateList({ com })
+        message('warning', '', '해당 오브젝트가 삭제되었습니다.')
+      })
+      .catch(err => errorHandle(err.response.data))
+
   const staffList = ref<Staff[]>([])
   const allStaffList = ref<Staff[]>([])
   const staff = ref<Staff | null>(null)
@@ -776,6 +990,42 @@ export const useCompany = defineStore('company', () => {
     createExecutive,
     updateExecutive,
     deleteExecutive,
+
+    promotionPolicyList,
+    allPromotionPolicyList,
+    promotionPolicy,
+    promotionPoliciesCount,
+    promotionPolicyPages,
+    fetchPromotionPolicyList,
+    fetchAllPromotionPolicyList,
+    fetchPromotionPolicy,
+    createPromotionPolicy,
+    updatePromotionPolicy,
+    deletePromotionPolicy,
+
+    staffEvaluationList,
+    allStaffEvaluationList,
+    staffEvaluation,
+    staffEvaluationsCount,
+    staffEvaluationPages,
+    fetchStaffEvaluationList,
+    fetchAllStaffEvaluationList,
+    fetchStaffEvaluation,
+    createStaffEvaluation,
+    updateStaffEvaluation,
+    deleteStaffEvaluation,
+
+    promotionCandidateList,
+    allPromotionCandidateList,
+    promotionCandidate,
+    promotionCandidatesCount,
+    promotionCandidatePages,
+    fetchPromotionCandidateList,
+    fetchAllPromotionCandidateList,
+    fetchPromotionCandidate,
+    createPromotionCandidate,
+    updatePromotionCandidate,
+    deletePromotionCandidate,
 
     staffList,
     allStaffList,

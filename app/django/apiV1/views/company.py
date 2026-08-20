@@ -3,7 +3,8 @@ from rest_framework import viewsets
 
 from company.models import (
     Company, Logo, Department, JobGrade, Position, DutyTitle,
-    ExecutiveRank, Executive, Staff, StaffAssignment
+    ExecutiveRank, Executive, Staff, StaffAssignment,
+    PromotionPolicy, StaffEvaluation, PromotionCandidate
 )
 from ..pagination import PageNumberPaginationOneThousand
 from apiV1.permissions.auth_perms import permissions, IsSuperUserOrReadOnly, IsStaffOrReadOnly
@@ -13,6 +14,7 @@ from ..serializers.company import (
     JobGradeSerializer, PositionSerializer, DutyTitleSerializer,
     ExecutiveRankSerializer, ExecutiveSerializer,
     StaffSerializer, StaffAssignmentSerializer,
+    PromotionPolicySerializer, StaffEvaluationSerializer, PromotionCandidateSerializer,
 )
 
 
@@ -143,6 +145,52 @@ class StaffAssignmentViewSet(viewsets.ModelViewSet):
     pagination_class = PageNumberPaginationOneThousand
     filterset_fields = ('company', 'staff', 'department', 'duty', 'is_primary')
     search_fields = ('staff__name', 'department__name', 'assigned_tasks')
+
+    @property
+    def required_permission(self):
+        return 'hr_work.read' if self.action in ('list', 'retrieve') else 'hr_work.create' if self.action == 'create' else 'hr_work.update' if self.action in ('update', 'partial_update') else 'hr_work.delete' if self.action == 'destroy' else 'hr_work.read'
+
+
+# Promotion & Evaluation -----------------------------------------------------------
+class PromotionPolicyViewSet(viewsets.ModelViewSet):
+    queryset = PromotionPolicy.objects.all().select_related(
+        'company', 'current_grade', 'target_grade'
+    )
+    serializer_class = PromotionPolicySerializer
+    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly, IbsModulePermission)
+    pagination_class = PageNumberPaginationOneThousand
+    filterset_fields = ('company', 'current_grade', 'target_grade', 'is_active')
+    search_fields = ('current_grade__code', 'target_grade__code', 'required_credentials', 'disqualification_conditions')
+
+    @property
+    def required_permission(self):
+        return 'hr_work.read' if self.action in ('list', 'retrieve') else 'hr_work.create' if self.action == 'create' else 'hr_work.update' if self.action in ('update', 'partial_update') else 'hr_work.delete' if self.action == 'destroy' else 'hr_work.read'
+
+
+class StaffEvaluationViewSet(viewsets.ModelViewSet):
+    queryset = StaffEvaluation.objects.all().select_related(
+        'company', 'staff', 'evaluator', 'reviewer'
+    )
+    serializer_class = StaffEvaluationSerializer
+    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly, IbsModulePermission)
+    pagination_class = PageNumberPaginationOneThousand
+    filterset_fields = ('company', 'staff', 'eval_year', 'eval_period', 'grade')
+    search_fields = ('staff__name', 'achievement_summary', 'notes')
+
+    @property
+    def required_permission(self):
+        return 'hr_work.read' if self.action in ('list', 'retrieve') else 'hr_work.create' if self.action == 'create' else 'hr_work.update' if self.action in ('update', 'partial_update') else 'hr_work.delete' if self.action == 'destroy' else 'hr_work.read'
+
+
+class PromotionCandidateViewSet(viewsets.ModelViewSet):
+    queryset = PromotionCandidate.objects.all().select_related(
+        'company', 'policy__current_grade', 'policy__target_grade', 'staff'
+    )
+    serializer_class = PromotionCandidateSerializer
+    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly, IbsModulePermission)
+    pagination_class = PageNumberPaginationOneThousand
+    filterset_fields = ('company', 'policy', 'staff', 'eval_year', 'status')
+    search_fields = ('staff__name', 'committee_review')
 
     @property
     def required_permission(self):

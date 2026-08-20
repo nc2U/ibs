@@ -127,6 +127,61 @@ export interface Executive {
   note?: string
 }
 
+export type EvaluationPeriod = 'yearly' | '1H' | '2H'
+export type EvaluationGrade = 'S' | 'A' | 'B' | 'C' | 'D'
+export type PromotionStatus = 'candidate' | 'recommended' | 'approved' | 'rejected' | 'hold'
+
+export interface PromotionPolicy {
+  pk?: number
+  company?: string
+  current_grade: number
+  current_grade_code?: string
+  target_grade: number
+  target_grade_code?: string
+  min_years: number
+  min_avg_grade_point?: number | null
+  required_eval_grade?: string
+  required_credentials?: string
+  disqualification_conditions?: string
+  description?: string
+  is_active: boolean
+}
+
+export interface StaffEvaluation {
+  pk?: number
+  company?: string
+  staff: number
+  staff_name?: string
+  eval_year: number
+  eval_period: EvaluationPeriod
+  eval_period_desc?: string
+  grade: EvaluationGrade
+  score?: number | null
+  achievement_summary?: string
+  evaluator?: number | null
+  evaluator_name?: string | null
+  reviewer?: number | null
+  reviewer_name?: string | null
+  notes?: string
+}
+
+export interface PromotionCandidate {
+  pk?: number
+  company?: string
+  policy: number
+  staff: number
+  staff_name?: string
+  current_grade_code?: string
+  target_grade_code?: string
+  eval_year: number
+  tenure_years: number
+  avg_eval_score?: number | null
+  status: PromotionStatus
+  status_desc?: string
+  committee_review?: string
+  promoted_date?: string | null
+}
+
 export type ComFilter = {
   page?: number
   com?: number

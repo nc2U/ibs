@@ -2,7 +2,8 @@ from rest_framework import serializers
 
 from company.models import (
     Company, Logo, Department, JobGrade, Position, DutyTitle,
-    ExecutiveRank, Executive, Staff, StaffAssignment
+    ExecutiveRank, Executive, Staff, StaffAssignment,
+    PromotionPolicy, StaffEvaluation, PromotionCandidate
 )
 from work.models.project import IssueProject
 
@@ -210,3 +211,44 @@ class StaffSerializer(serializers.ModelSerializer):
                 is_primary=True,
                 assigned_tasks='기본 주보직',
             )
+
+
+# Promotion & Evaluation -----------------------------------------------------------
+class PromotionPolicySerializer(serializers.ModelSerializer):
+    company = serializers.SlugRelatedField(queryset=Company.objects.all(), slug_field='name')
+    current_grade_code = serializers.CharField(source='current_grade.code', read_only=True)
+    target_grade_code = serializers.CharField(source='target_grade.code', read_only=True)
+
+    class Meta:
+        model = PromotionPolicy
+        fields = ('pk', 'company', 'current_grade', 'current_grade_code', 'target_grade', 'target_grade_code',
+                  'min_years', 'min_avg_grade_point', 'required_eval_grade', 'required_credentials',
+                  'disqualification_conditions', 'description', 'is_active')
+
+
+class StaffEvaluationSerializer(serializers.ModelSerializer):
+    company = serializers.SlugRelatedField(queryset=Company.objects.all(), slug_field='name')
+    staff_name = serializers.CharField(source='staff.name', read_only=True)
+    eval_period_desc = serializers.CharField(source='get_eval_period_display', read_only=True)
+    evaluator_name = serializers.CharField(source='evaluator.name', read_only=True, allow_null=True)
+    reviewer_name = serializers.CharField(source='reviewer.name', read_only=True, allow_null=True)
+
+    class Meta:
+        model = StaffEvaluation
+        fields = ('pk', 'company', 'staff', 'staff_name', 'eval_year', 'eval_period', 'eval_period_desc',
+                  'grade', 'score', 'achievement_summary', 'evaluator', 'evaluator_name',
+                  'reviewer', 'reviewer_name', 'notes')
+
+
+class PromotionCandidateSerializer(serializers.ModelSerializer):
+    company = serializers.SlugRelatedField(queryset=Company.objects.all(), slug_field='name')
+    staff_name = serializers.CharField(source='staff.name', read_only=True)
+    current_grade_code = serializers.CharField(source='policy.current_grade.code', read_only=True)
+    target_grade_code = serializers.CharField(source='policy.target_grade.code', read_only=True)
+    status_desc = serializers.CharField(source='get_status_display', read_only=True)
+
+    class Meta:
+        model = PromotionCandidate
+        fields = ('pk', 'company', 'policy', 'staff', 'staff_name', 'current_grade_code', 'target_grade_code',
+                  'eval_year', 'tenure_years', 'avg_eval_score', 'status', 'status_desc',
+                  'committee_review', 'promoted_date')
