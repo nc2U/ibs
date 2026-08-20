@@ -9,7 +9,7 @@ part of 'approval_model.dart';
 _$DocCategoryModelImpl _$$DocCategoryModelImplFromJson(
   Map<String, dynamic> json,
 ) => _$DocCategoryModelImpl(
-  id: (json['id'] as num).toInt(),
+  id: (_readId(json, 'id') as num).toInt(),
   name: json['name'] as String,
   code: json['code'] as String,
   description: json['description'] as String? ?? '',
@@ -52,20 +52,14 @@ Map<String, dynamic> _$$FormFieldModelImplToJson(
 _$DocumentTypeModelImpl _$$DocumentTypeModelImplFromJson(
   Map<String, dynamic> json,
 ) => _$DocumentTypeModelImpl(
-  id: (json['id'] as num).toInt(),
+  id: (_readId(json, 'id') as num).toInt(),
   name: json['name'] as String,
   code: json['code'] as String,
   description: json['description'] as String? ?? '',
-  formType: json['form_type'] as String? ?? 'dynamic',
-  formTemplateKey: json['form_template_key'] as String?,
+  formTemplateKey: json['form_template_key'] as String? ?? 'GENERAL',
   routeType: json['route_type'] as String? ?? 'organization',
   category: (json['category'] as num?)?.toInt(),
   categoryName: json['category_name'] as String?,
-  formSchema:
-      (json['form_schema'] as List<dynamic>?)
-          ?.map((e) => FormFieldModel.fromJson(e as Map<String, dynamic>))
-          .toList() ??
-      const [],
   isActive: json['is_active'] as bool? ?? true,
 );
 
@@ -76,28 +70,26 @@ Map<String, dynamic> _$$DocumentTypeModelImplToJson(
   'name': instance.name,
   'code': instance.code,
   'description': instance.description,
-  'form_type': instance.formType,
   'form_template_key': instance.formTemplateKey,
   'route_type': instance.routeType,
   'category': instance.category,
   'category_name': instance.categoryName,
-  'form_schema': instance.formSchema,
   'is_active': instance.isActive,
 };
 
 _$StaffAssignmentItemModelImpl _$$StaffAssignmentItemModelImplFromJson(
   Map<String, dynamic> json,
 ) => _$StaffAssignmentItemModelImpl(
-  id: (json['id'] as num).toInt(),
-  company: (json['company'] as num?)?.toInt(),
-  companyName: json['company_name'] as String?,
+  id: (_readId(json, 'id') as num).toInt(),
+  company: (_readCompanyId(json, 'company') as num?)?.toInt(),
+  companyName: _readCompanyName(json, 'company_name') as String?,
   department: (json['department'] as num?)?.toInt(),
   departmentName: json['department_name'] as String?,
   duty: (json['duty'] as num?)?.toInt(),
   dutyName: json['duty_name'] as String?,
   positionName: json['position_name'] as String?,
   isPrimary: json['is_primary'] as bool? ?? false,
-  desc: json['desc'] as String?,
+  desc: _readDesc(json, 'desc') as String?,
 );
 
 Map<String, dynamic> _$$StaffAssignmentItemModelImplToJson(

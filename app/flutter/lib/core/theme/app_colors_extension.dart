@@ -110,7 +110,7 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
     accentProject: Color(0xFF34D399),
     accentProjectDeep: Color(0xFF064E3B),
     accentApproval: Color(0xFFFBBF24),
-    accentApprovalDeep: Color(0xFF78350F),
+    accentApprovalDeep: Color(0xFFFCD34D),
     accentCorp: Color(0xFF38BDF8), // Crisp Luminous Azure 400 (청량하고 세련된 청색)
     accentCorpDeep: Color(0xFF0369A1),
     success: Color(0xFF22C55E),

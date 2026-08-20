@@ -122,14 +122,17 @@ class ExecutiveSerializer(serializers.ModelSerializer):
 
 # Staff ----------------------------------------------------------------------------
 class StaffAssignmentSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(source='pk', read_only=True)
+    company_name = serializers.CharField(source='company.name', read_only=True)
     company = serializers.SlugRelatedField(queryset=Company.objects.all(), slug_field='name')
     department_name = serializers.CharField(source='department.name', read_only=True)
-    duty_name = serializers.CharField(source='duty.name', read_only=True)
+    duty_name = serializers.CharField(source='duty.name', read_only=True, allow_null=True)
+    position_name = serializers.CharField(source='staff.position.name', read_only=True, allow_null=True)
 
     class Meta:
         model = StaffAssignment
-        fields = ('pk', 'company', 'staff', 'department', 'department_name',
-                  'duty', 'duty_name', 'is_primary', 'assigned_tasks')
+        fields = ('id', 'pk', 'company', 'company_name', 'staff', 'department', 'department_name',
+                  'duty', 'duty_name', 'position_name', 'is_primary', 'assigned_tasks')
 
 
 class StaffSerializer(serializers.ModelSerializer):

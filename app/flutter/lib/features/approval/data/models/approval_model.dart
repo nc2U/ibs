@@ -4,12 +4,36 @@ import '../../../../core/models/common_models.dart';
 part 'approval_model.freezed.dart';
 part 'approval_model.g.dart';
 
+Object? _readId(Map json, String key) {
+  final val = json['id'] ?? json['pk'];
+  if (val is num) return val.toInt();
+  if (val is String) return int.tryParse(val) ?? 0;
+  return 0;
+}
+
+Object? _readCompanyId(Map json, String key) {
+  final val = json['company'];
+  if (val is num) return val.toInt();
+  final valId = json['company_id'];
+  if (valId is num) return valId.toInt();
+  return null;
+}
+
+Object? _readCompanyName(Map json, String key) {
+  if (json['company_name'] != null) return json['company_name'].toString();
+  if (json['company'] is String) return json['company'] as String;
+  return null;
+}
+
+Object? _readDesc(Map json, String key) =>
+    (json['assigned_tasks'] ?? json['desc'])?.toString();
+
 // ── 0. 결재 카테고리 모델 ──────────────────────────────────────────
 @freezed
 class DocCategoryModel with _$DocCategoryModel {
   @JsonSerializable(fieldRename: FieldRename.snake)
   const factory DocCategoryModel({
-    required int id,
+    @JsonKey(readValue: _readId) required int id,
     required String name,
     required String code,
     @Default('') String description,
@@ -42,16 +66,14 @@ class FormFieldModel with _$FormFieldModel {
 class DocumentTypeModel with _$DocumentTypeModel {
   @JsonSerializable(fieldRename: FieldRename.snake)
   const factory DocumentTypeModel({
-    required int id,
+    @JsonKey(readValue: _readId) required int id,
     required String name,
     required String code,
     @Default('') String description,
-    @Default('dynamic') String formType, // dynamic, static
-    String? formTemplateKey, // leave_application, expense_report, purchase_order
-    @Default('organization') String routeType, // organization, template
+    @Default('GENERAL') String formTemplateKey,
+    @Default('organization') String routeType,
     int? category,
     String? categoryName,
-    @Default([]) List<FormFieldModel> formSchema,
     @Default(true) bool isActive,
   }) = _DocumentTypeModel;
 
@@ -64,16 +86,16 @@ class DocumentTypeModel with _$DocumentTypeModel {
 class StaffAssignmentItemModel with _$StaffAssignmentItemModel {
   @JsonSerializable(fieldRename: FieldRename.snake)
   const factory StaffAssignmentItemModel({
-    required int id,
-    int? company,
-    String? companyName,
+    @JsonKey(readValue: _readId) required int id,
+    @JsonKey(readValue: _readCompanyId) int? company,
+    @JsonKey(readValue: _readCompanyName) String? companyName,
     int? department,
     String? departmentName,
     int? duty,
     String? dutyName,
     String? positionName,
     @Default(false) bool isPrimary,
-    String? desc,
+    @JsonKey(readValue: _readDesc) String? desc,
   }) = _StaffAssignmentItemModel;
 
   factory StaffAssignmentItemModel.fromJson(Map<String, dynamic> json) =>

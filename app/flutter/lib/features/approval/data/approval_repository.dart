@@ -14,7 +14,7 @@ class ApprovalRepository {
   /// 1. 카테고리 목록 조회
   Future<List<DocCategoryModel>> fetchDocCategories() async {
     final res = await _dio.get(ApiEndpoints.approvalDocCategories);
-    final list = (res.data['results'] ?? res.data) as List;
+    final list = (res.data is List) ? res.data as List : ((res.data as Map<String, dynamic>)['results'] as List? ?? []);
     return list.map((e) => DocCategoryModel.fromJson(e as Map<String, dynamic>)).toList();
   }
 
@@ -23,7 +23,7 @@ class ApprovalRepository {
     final query = <String, dynamic>{};
     if (categoryId != null) query['category_id'] = categoryId;
     final res = await _dio.get(ApiEndpoints.approvalDocTypes, queryParameters: query);
-    final list = (res.data['results'] ?? res.data) as List;
+    final list = (res.data is List) ? res.data as List : ((res.data as Map<String, dynamic>)['results'] as List? ?? []);
     return list.map((e) => DocumentTypeModel.fromJson(e as Map<String, dynamic>)).toList();
   }
 
@@ -32,14 +32,14 @@ class ApprovalRepository {
     final query = <String, dynamic>{};
     if (assignmentId != null) query['assignment'] = assignmentId;
     final res = await _dio.get(ApiEndpoints.approvalDocTypesForDraft, queryParameters: query);
-    final list = (res.data['results'] ?? res.data) as List;
+    final list = (res.data is List) ? res.data as List : ((res.data as Map<String, dynamic>)['results'] as List? ?? []);
     return list.map((e) => DocumentTypeModel.fromJson(e as Map<String, dynamic>)).toList();
   }
 
   /// 4. 기안자 보직/겸직 목록 조회
   Future<List<StaffAssignmentItemModel>> fetchMyAssignments() async {
     final res = await _dio.get(ApiEndpoints.approvalMyAssignments);
-    final list = (res.data['results'] ?? res.data) as List;
+    final list = (res.data is List) ? res.data as List : ((res.data as Map<String, dynamic>)['results'] as List? ?? []);
     return list.map((e) => StaffAssignmentItemModel.fromJson(e as Map<String, dynamic>)).toList();
   }
 
@@ -54,35 +54,35 @@ class ApprovalRepository {
     if (amount != null && amount.toString().isNotEmpty) query['amount'] = amount;
 
     final res = await _dio.get(ApiEndpoints.approvalPreviewRoute, queryParameters: query);
-    final list = (res.data is List) ? res.data as List : (res.data['results'] as List? ?? []);
+    final list = (res.data is List) ? res.data as List : ((res.data as Map<String, dynamic>)['results'] as List? ?? []);
     return list.map((e) => RoutePreviewStepModel.fromJson(e as Map<String, dynamic>)).toList();
   }
 
   /// 6. 결재 대기 문서 목록 조회 (내 결재 차례)
   Future<List<ApprovalDocumentModel>> fetchMyPending() async {
     final res = await _dio.get(ApiEndpoints.approvalMyPending);
-    final list = (res.data is List) ? res.data as List : (res.data['results'] as List? ?? []);
+    final list = (res.data is List) ? res.data as List : ((res.data as Map<String, dynamic>)['results'] as List? ?? []);
     return list.map((e) => ApprovalDocumentModel.fromJson(e as Map<String, dynamic>)).toList();
   }
 
   /// 7. 내 기안 문서 목록 조회
   Future<List<ApprovalDocumentModel>> fetchMyDrafted() async {
     final res = await _dio.get(ApiEndpoints.approvalMyDrafted);
-    final list = (res.data is List) ? res.data as List : (res.data['results'] as List? ?? []);
+    final list = (res.data is List) ? res.data as List : ((res.data as Map<String, dynamic>)['results'] as List? ?? []);
     return list.map((e) => ApprovalDocumentModel.fromJson(e as Map<String, dynamic>)).toList();
   }
 
   /// 8. 내 결재 완료 문서 목록 조회
   Future<List<ApprovalDocumentModel>> fetchMyApproved() async {
     final res = await _dio.get(ApiEndpoints.approvalMyApproved);
-    final list = (res.data is List) ? res.data as List : (res.data['results'] as List? ?? []);
+    final list = (res.data is List) ? res.data as List : ((res.data as Map<String, dynamic>)['results'] as List? ?? []);
     return list.map((e) => ApprovalDocumentModel.fromJson(e as Map<String, dynamic>)).toList();
   }
 
   /// 9. 내가 참조된 문서 목록 조회
   Future<List<ApprovalDocumentModel>> fetchMyObserved() async {
     final res = await _dio.get(ApiEndpoints.approvalMyObserved);
-    final list = (res.data is List) ? res.data as List : (res.data['results'] as List? ?? []);
+    final list = (res.data is List) ? res.data as List : ((res.data as Map<String, dynamic>)['results'] as List? ?? []);
     return list.map((e) => ApprovalDocumentModel.fromJson(e as Map<String, dynamic>)).toList();
   }
 

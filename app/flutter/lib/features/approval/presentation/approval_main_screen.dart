@@ -80,7 +80,7 @@ class _ApprovalMainScreenState extends ConsumerState<ApprovalMainScreen>
             child: TabBar(
               controller: _tabController,
               isScrollable: false,
-              labelColor: context.colors.accentApprovalDeep,
+              labelColor: context.colors.accentApproval,
               unselectedLabelColor: context.colors.textMuted,
               indicatorColor: context.colors.accentApproval,
               indicatorWeight: 2.5,
@@ -133,7 +133,7 @@ class _ApprovalMainScreenState extends ConsumerState<ApprovalMainScreen>
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.edit_document, color: context.colors.accentApprovalDeep),
+            icon: Icon(Icons.edit_document, color: context.colors.accentApproval),
             tooltip: '새 기안 작성',
             onPressed: _goDraft,
           ),

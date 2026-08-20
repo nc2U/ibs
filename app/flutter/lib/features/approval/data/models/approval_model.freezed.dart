@@ -21,6 +21,7 @@ DocCategoryModel _$DocCategoryModelFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$DocCategoryModel {
+  @JsonKey(readValue: _readId)
   int get id => throw _privateConstructorUsedError;
   String get name => throw _privateConstructorUsedError;
   String get code => throw _privateConstructorUsedError;
@@ -46,7 +47,7 @@ abstract class $DocCategoryModelCopyWith<$Res> {
   ) = _$DocCategoryModelCopyWithImpl<$Res, DocCategoryModel>;
   @useResult
   $Res call({
-    int id,
+    @JsonKey(readValue: _readId) int id,
     String name,
     String code,
     String description,
@@ -119,7 +120,7 @@ abstract class _$$DocCategoryModelImplCopyWith<$Res>
   @override
   @useResult
   $Res call({
-    int id,
+    @JsonKey(readValue: _readId) int id,
     String name,
     String code,
     String description,
@@ -185,7 +186,7 @@ class __$$DocCategoryModelImplCopyWithImpl<$Res>
 @JsonSerializable(fieldRename: FieldRename.snake)
 class _$DocCategoryModelImpl implements _DocCategoryModel {
   const _$DocCategoryModelImpl({
-    required this.id,
+    @JsonKey(readValue: _readId) required this.id,
     required this.name,
     required this.code,
     this.description = '',
@@ -197,6 +198,7 @@ class _$DocCategoryModelImpl implements _DocCategoryModel {
       _$$DocCategoryModelImplFromJson(json);
 
   @override
+  @JsonKey(readValue: _readId)
   final int id;
   @override
   final String name;
@@ -256,7 +258,7 @@ class _$DocCategoryModelImpl implements _DocCategoryModel {
 
 abstract class _DocCategoryModel implements DocCategoryModel {
   const factory _DocCategoryModel({
-    required final int id,
+    @JsonKey(readValue: _readId) required final int id,
     required final String name,
     required final String code,
     final String description,
@@ -268,6 +270,7 @@ abstract class _DocCategoryModel implements DocCategoryModel {
       _$DocCategoryModelImpl.fromJson;
 
   @override
+  @JsonKey(readValue: _readId)
   int get id;
   @override
   String get name;
@@ -559,18 +562,15 @@ DocumentTypeModel _$DocumentTypeModelFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$DocumentTypeModel {
+  @JsonKey(readValue: _readId)
   int get id => throw _privateConstructorUsedError;
   String get name => throw _privateConstructorUsedError;
   String get code => throw _privateConstructorUsedError;
   String get description => throw _privateConstructorUsedError;
-  String get formType => throw _privateConstructorUsedError; // dynamic, static
-  String? get formTemplateKey =>
-      throw _privateConstructorUsedError; // leave_application, expense_report, purchase_order
-  String get routeType =>
-      throw _privateConstructorUsedError; // organization, template
+  String get formTemplateKey => throw _privateConstructorUsedError;
+  String get routeType => throw _privateConstructorUsedError;
   int? get category => throw _privateConstructorUsedError;
   String? get categoryName => throw _privateConstructorUsedError;
-  List<FormFieldModel> get formSchema => throw _privateConstructorUsedError;
   bool get isActive => throw _privateConstructorUsedError;
 
   /// Serializes this DocumentTypeModel to a JSON map.
@@ -591,16 +591,14 @@ abstract class $DocumentTypeModelCopyWith<$Res> {
   ) = _$DocumentTypeModelCopyWithImpl<$Res, DocumentTypeModel>;
   @useResult
   $Res call({
-    int id,
+    @JsonKey(readValue: _readId) int id,
     String name,
     String code,
     String description,
-    String formType,
-    String? formTemplateKey,
+    String formTemplateKey,
     String routeType,
     int? category,
     String? categoryName,
-    List<FormFieldModel> formSchema,
     bool isActive,
   });
 }
@@ -624,12 +622,10 @@ class _$DocumentTypeModelCopyWithImpl<$Res, $Val extends DocumentTypeModel>
     Object? name = null,
     Object? code = null,
     Object? description = null,
-    Object? formType = null,
-    Object? formTemplateKey = freezed,
+    Object? formTemplateKey = null,
     Object? routeType = null,
     Object? category = freezed,
     Object? categoryName = freezed,
-    Object? formSchema = null,
     Object? isActive = null,
   }) {
     return _then(
@@ -650,14 +646,10 @@ class _$DocumentTypeModelCopyWithImpl<$Res, $Val extends DocumentTypeModel>
                 ? _value.description
                 : description // ignore: cast_nullable_to_non_nullable
                       as String,
-            formType: null == formType
-                ? _value.formType
-                : formType // ignore: cast_nullable_to_non_nullable
-                      as String,
-            formTemplateKey: freezed == formTemplateKey
+            formTemplateKey: null == formTemplateKey
                 ? _value.formTemplateKey
                 : formTemplateKey // ignore: cast_nullable_to_non_nullable
-                      as String?,
+                      as String,
             routeType: null == routeType
                 ? _value.routeType
                 : routeType // ignore: cast_nullable_to_non_nullable
@@ -670,10 +662,6 @@ class _$DocumentTypeModelCopyWithImpl<$Res, $Val extends DocumentTypeModel>
                 ? _value.categoryName
                 : categoryName // ignore: cast_nullable_to_non_nullable
                       as String?,
-            formSchema: null == formSchema
-                ? _value.formSchema
-                : formSchema // ignore: cast_nullable_to_non_nullable
-                      as List<FormFieldModel>,
             isActive: null == isActive
                 ? _value.isActive
                 : isActive // ignore: cast_nullable_to_non_nullable
@@ -694,16 +682,14 @@ abstract class _$$DocumentTypeModelImplCopyWith<$Res>
   @override
   @useResult
   $Res call({
-    int id,
+    @JsonKey(readValue: _readId) int id,
     String name,
     String code,
     String description,
-    String formType,
-    String? formTemplateKey,
+    String formTemplateKey,
     String routeType,
     int? category,
     String? categoryName,
-    List<FormFieldModel> formSchema,
     bool isActive,
   });
 }
@@ -726,12 +712,10 @@ class __$$DocumentTypeModelImplCopyWithImpl<$Res>
     Object? name = null,
     Object? code = null,
     Object? description = null,
-    Object? formType = null,
-    Object? formTemplateKey = freezed,
+    Object? formTemplateKey = null,
     Object? routeType = null,
     Object? category = freezed,
     Object? categoryName = freezed,
-    Object? formSchema = null,
     Object? isActive = null,
   }) {
     return _then(
@@ -752,14 +736,10 @@ class __$$DocumentTypeModelImplCopyWithImpl<$Res>
             ? _value.description
             : description // ignore: cast_nullable_to_non_nullable
                   as String,
-        formType: null == formType
-            ? _value.formType
-            : formType // ignore: cast_nullable_to_non_nullable
-                  as String,
-        formTemplateKey: freezed == formTemplateKey
+        formTemplateKey: null == formTemplateKey
             ? _value.formTemplateKey
             : formTemplateKey // ignore: cast_nullable_to_non_nullable
-                  as String?,
+                  as String,
         routeType: null == routeType
             ? _value.routeType
             : routeType // ignore: cast_nullable_to_non_nullable
@@ -772,10 +752,6 @@ class __$$DocumentTypeModelImplCopyWithImpl<$Res>
             ? _value.categoryName
             : categoryName // ignore: cast_nullable_to_non_nullable
                   as String?,
-        formSchema: null == formSchema
-            ? _value._formSchema
-            : formSchema // ignore: cast_nullable_to_non_nullable
-                  as List<FormFieldModel>,
         isActive: null == isActive
             ? _value.isActive
             : isActive // ignore: cast_nullable_to_non_nullable
@@ -790,23 +766,22 @@ class __$$DocumentTypeModelImplCopyWithImpl<$Res>
 @JsonSerializable(fieldRename: FieldRename.snake)
 class _$DocumentTypeModelImpl implements _DocumentTypeModel {
   const _$DocumentTypeModelImpl({
-    required this.id,
+    @JsonKey(readValue: _readId) required this.id,
     required this.name,
     required this.code,
     this.description = '',
-    this.formType = 'dynamic',
-    this.formTemplateKey,
+    this.formTemplateKey = 'GENERAL',
     this.routeType = 'organization',
     this.category,
     this.categoryName,
-    final List<FormFieldModel> formSchema = const [],
     this.isActive = true,
-  }) : _formSchema = formSchema;
+  });
 
   factory _$DocumentTypeModelImpl.fromJson(Map<String, dynamic> json) =>
       _$$DocumentTypeModelImplFromJson(json);
 
   @override
+  @JsonKey(readValue: _readId)
   final int id;
   @override
   final String name;
@@ -817,35 +792,21 @@ class _$DocumentTypeModelImpl implements _DocumentTypeModel {
   final String description;
   @override
   @JsonKey()
-  final String formType;
-  // dynamic, static
-  @override
-  final String? formTemplateKey;
-  // leave_application, expense_report, purchase_order
+  final String formTemplateKey;
   @override
   @JsonKey()
   final String routeType;
-  // organization, template
   @override
   final int? category;
   @override
   final String? categoryName;
-  final List<FormFieldModel> _formSchema;
-  @override
-  @JsonKey()
-  List<FormFieldModel> get formSchema {
-    if (_formSchema is EqualUnmodifiableListView) return _formSchema;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(_formSchema);
-  }
-
   @override
   @JsonKey()
   final bool isActive;
 
   @override
   String toString() {
-    return 'DocumentTypeModel(id: $id, name: $name, code: $code, description: $description, formType: $formType, formTemplateKey: $formTemplateKey, routeType: $routeType, category: $category, categoryName: $categoryName, formSchema: $formSchema, isActive: $isActive)';
+    return 'DocumentTypeModel(id: $id, name: $name, code: $code, description: $description, formTemplateKey: $formTemplateKey, routeType: $routeType, category: $category, categoryName: $categoryName, isActive: $isActive)';
   }
 
   @override
@@ -858,8 +819,6 @@ class _$DocumentTypeModelImpl implements _DocumentTypeModel {
             (identical(other.code, code) || other.code == code) &&
             (identical(other.description, description) ||
                 other.description == description) &&
-            (identical(other.formType, formType) ||
-                other.formType == formType) &&
             (identical(other.formTemplateKey, formTemplateKey) ||
                 other.formTemplateKey == formTemplateKey) &&
             (identical(other.routeType, routeType) ||
@@ -868,10 +827,6 @@ class _$DocumentTypeModelImpl implements _DocumentTypeModel {
                 other.category == category) &&
             (identical(other.categoryName, categoryName) ||
                 other.categoryName == categoryName) &&
-            const DeepCollectionEquality().equals(
-              other._formSchema,
-              _formSchema,
-            ) &&
             (identical(other.isActive, isActive) ||
                 other.isActive == isActive));
   }
@@ -884,12 +839,10 @@ class _$DocumentTypeModelImpl implements _DocumentTypeModel {
     name,
     code,
     description,
-    formType,
     formTemplateKey,
     routeType,
     category,
     categoryName,
-    const DeepCollectionEquality().hash(_formSchema),
     isActive,
   );
 
@@ -912,16 +865,14 @@ class _$DocumentTypeModelImpl implements _DocumentTypeModel {
 
 abstract class _DocumentTypeModel implements DocumentTypeModel {
   const factory _DocumentTypeModel({
-    required final int id,
+    @JsonKey(readValue: _readId) required final int id,
     required final String name,
     required final String code,
     final String description,
-    final String formType,
-    final String? formTemplateKey,
+    final String formTemplateKey,
     final String routeType,
     final int? category,
     final String? categoryName,
-    final List<FormFieldModel> formSchema,
     final bool isActive,
   }) = _$DocumentTypeModelImpl;
 
@@ -929,6 +880,7 @@ abstract class _DocumentTypeModel implements DocumentTypeModel {
       _$DocumentTypeModelImpl.fromJson;
 
   @override
+  @JsonKey(readValue: _readId)
   int get id;
   @override
   String get name;
@@ -937,17 +889,13 @@ abstract class _DocumentTypeModel implements DocumentTypeModel {
   @override
   String get description;
   @override
-  String get formType; // dynamic, static
+  String get formTemplateKey;
   @override
-  String? get formTemplateKey; // leave_application, expense_report, purchase_order
-  @override
-  String get routeType; // organization, template
+  String get routeType;
   @override
   int? get category;
   @override
   String? get categoryName;
-  @override
-  List<FormFieldModel> get formSchema;
   @override
   bool get isActive;
 
@@ -967,8 +915,11 @@ StaffAssignmentItemModel _$StaffAssignmentItemModelFromJson(
 
 /// @nodoc
 mixin _$StaffAssignmentItemModel {
+  @JsonKey(readValue: _readId)
   int get id => throw _privateConstructorUsedError;
+  @JsonKey(readValue: _readCompanyId)
   int? get company => throw _privateConstructorUsedError;
+  @JsonKey(readValue: _readCompanyName)
   String? get companyName => throw _privateConstructorUsedError;
   int? get department => throw _privateConstructorUsedError;
   String? get departmentName => throw _privateConstructorUsedError;
@@ -976,6 +927,7 @@ mixin _$StaffAssignmentItemModel {
   String? get dutyName => throw _privateConstructorUsedError;
   String? get positionName => throw _privateConstructorUsedError;
   bool get isPrimary => throw _privateConstructorUsedError;
+  @JsonKey(readValue: _readDesc)
   String? get desc => throw _privateConstructorUsedError;
 
   /// Serializes this StaffAssignmentItemModel to a JSON map.
@@ -996,16 +948,16 @@ abstract class $StaffAssignmentItemModelCopyWith<$Res> {
   ) = _$StaffAssignmentItemModelCopyWithImpl<$Res, StaffAssignmentItemModel>;
   @useResult
   $Res call({
-    int id,
-    int? company,
-    String? companyName,
+    @JsonKey(readValue: _readId) int id,
+    @JsonKey(readValue: _readCompanyId) int? company,
+    @JsonKey(readValue: _readCompanyName) String? companyName,
     int? department,
     String? departmentName,
     int? duty,
     String? dutyName,
     String? positionName,
     bool isPrimary,
-    String? desc,
+    @JsonKey(readValue: _readDesc) String? desc,
   });
 }
 
@@ -1096,16 +1048,16 @@ abstract class _$$StaffAssignmentItemModelImplCopyWith<$Res>
   @override
   @useResult
   $Res call({
-    int id,
-    int? company,
-    String? companyName,
+    @JsonKey(readValue: _readId) int id,
+    @JsonKey(readValue: _readCompanyId) int? company,
+    @JsonKey(readValue: _readCompanyName) String? companyName,
     int? department,
     String? departmentName,
     int? duty,
     String? dutyName,
     String? positionName,
     bool isPrimary,
-    String? desc,
+    @JsonKey(readValue: _readDesc) String? desc,
   });
 }
 
@@ -1190,26 +1142,29 @@ class __$$StaffAssignmentItemModelImplCopyWithImpl<$Res>
 @JsonSerializable(fieldRename: FieldRename.snake)
 class _$StaffAssignmentItemModelImpl implements _StaffAssignmentItemModel {
   const _$StaffAssignmentItemModelImpl({
-    required this.id,
-    this.company,
-    this.companyName,
+    @JsonKey(readValue: _readId) required this.id,
+    @JsonKey(readValue: _readCompanyId) this.company,
+    @JsonKey(readValue: _readCompanyName) this.companyName,
     this.department,
     this.departmentName,
     this.duty,
     this.dutyName,
     this.positionName,
     this.isPrimary = false,
-    this.desc,
+    @JsonKey(readValue: _readDesc) this.desc,
   });
 
   factory _$StaffAssignmentItemModelImpl.fromJson(Map<String, dynamic> json) =>
       _$$StaffAssignmentItemModelImplFromJson(json);
 
   @override
+  @JsonKey(readValue: _readId)
   final int id;
   @override
+  @JsonKey(readValue: _readCompanyId)
   final int? company;
   @override
+  @JsonKey(readValue: _readCompanyName)
   final String? companyName;
   @override
   final int? department;
@@ -1225,6 +1180,7 @@ class _$StaffAssignmentItemModelImpl implements _StaffAssignmentItemModel {
   @JsonKey()
   final bool isPrimary;
   @override
+  @JsonKey(readValue: _readDesc)
   final String? desc;
 
   @override
@@ -1290,26 +1246,29 @@ class _$StaffAssignmentItemModelImpl implements _StaffAssignmentItemModel {
 
 abstract class _StaffAssignmentItemModel implements StaffAssignmentItemModel {
   const factory _StaffAssignmentItemModel({
-    required final int id,
-    final int? company,
-    final String? companyName,
+    @JsonKey(readValue: _readId) required final int id,
+    @JsonKey(readValue: _readCompanyId) final int? company,
+    @JsonKey(readValue: _readCompanyName) final String? companyName,
     final int? department,
     final String? departmentName,
     final int? duty,
     final String? dutyName,
     final String? positionName,
     final bool isPrimary,
-    final String? desc,
+    @JsonKey(readValue: _readDesc) final String? desc,
   }) = _$StaffAssignmentItemModelImpl;
 
   factory _StaffAssignmentItemModel.fromJson(Map<String, dynamic> json) =
       _$StaffAssignmentItemModelImpl.fromJson;
 
   @override
+  @JsonKey(readValue: _readId)
   int get id;
   @override
+  @JsonKey(readValue: _readCompanyId)
   int? get company;
   @override
+  @JsonKey(readValue: _readCompanyName)
   String? get companyName;
   @override
   int? get department;
@@ -1324,6 +1283,7 @@ abstract class _StaffAssignmentItemModel implements StaffAssignmentItemModel {
   @override
   bool get isPrimary;
   @override
+  @JsonKey(readValue: _readDesc)
   String? get desc;
 
   /// Create a copy of StaffAssignmentItemModel
