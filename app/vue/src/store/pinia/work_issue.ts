@@ -15,10 +15,10 @@ import type {
   Tracker,
 } from '@/store/types/work_issue.ts'
 
-const workStore = useWork()
-const logStore = useLogging()
-
 export const useIssue = defineStore('issue', () => {
+  const workStore = useWork()
+  const logStore = useLogging()
+
   // issue states & getters
   const issue = ref<Issue | null>(null)
   const issueList = ref<Issue[]>([])

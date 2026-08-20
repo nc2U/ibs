@@ -19,9 +19,9 @@ import type {
 } from '@/store/types/notice'
 import { usePayment } from '@/store/pinia/payment.ts'
 
-const payStore = usePayment()
-
 export const useNotice = defineStore('notice', () => {
+  const payStore = usePayment()
+
   // state & getters
   const loading = ref<boolean>(false)
   const billIssue = ref<SalesBillIssue | null>(null)
