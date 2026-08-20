@@ -95,6 +95,7 @@ class JobGrade(models.Model):
         ordering = ['id']
         verbose_name = "03. 직급 정보"
         verbose_name_plural = "03. 직급 정보"
+        unique_together = ('company', 'code')  # 회사 내 직급 코드 중복 방지
 
 
 # PromotionPolicy
