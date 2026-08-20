@@ -75,7 +75,7 @@ const toggleAside = () => store.toggleAside()
         </CHeaderToggler>
 
         <!-- 테마 전환 단일 동적 아이콘 드롭다운 -->
-        <CDropdown placement="bottom-end" class="mr-1">
+        <CDropdown variant="dropdown" placement="bottom-end" class="mr-1">
           <CDropdownToggle
             :caret="false"
             color="link"

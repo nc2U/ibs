@@ -38,6 +38,7 @@ class DepartmentAdmin(ImportExportMixin, admin.ModelAdmin):
 
 class JobGradeAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('id', 'company', 'code', 'name', 'role', 'min_promotion_years', 'promotion_criteria')
+    list_editable = ('role', 'min_promotion_years', 'promotion_criteria')
     list_display_links = ('name',)
     list_filter = ('company',)
 

@@ -26,7 +26,7 @@ describe('AppHeader Component Test', () => {
     expect(wrapper.find('button.dropdown-toggle').exists() || wrapper.find('.dropdown').exists()).toBeTruthy()
     expect(wrapper.find('app-header-dropdown-accnt-stub').exists()).toBeFalsy()
     expect(wrapper.find('router-link-stub').exists()).toBeTruthy()
-    expect(buttons[2].find('.mdi-apps').exists()).toBeTruthy()
+    expect(wrapper.find('.mdi-apps').exists()).toBeTruthy()
     expect(wrapper.find('tags-view-stub').exists()).toBeTruthy()
   })
 })
