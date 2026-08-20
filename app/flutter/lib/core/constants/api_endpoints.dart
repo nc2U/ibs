@@ -38,6 +38,24 @@ abstract class ApiEndpoints {
   // ── Ledger ───────────────────────────────────────
   static const String ledgers       = '/api/v1/ledger/';
 
+  // ── Approval ─────────────────────────────────────
+  static const String approvalDocCategories    = '/api/v1/approval-doc-category/';
+  static const String approvalDocTypes         = '/api/v1/approval-doc-type/';
+  static const String approvalDocTypesForDraft = '/api/v1/approval-doc-type/for_draft/';
+  static const String approvalDocuments        = '/api/v1/approval-document/';
+  static const String approvalDocumentDetail   = '/api/v1/approval-document/{id}/';
+  static const String approvalMyPending        = '/api/v1/approval-document/my_pending/';
+  static const String approvalMyDrafted        = '/api/v1/approval-document/my_drafted/';
+  static const String approvalMyApproved       = '/api/v1/approval-document/my_approved/';
+  static const String approvalMyObserved       = '/api/v1/approval-document/my_observed/';
+  static const String approvalAllDocuments     = '/api/v1/approval-document/all_documents/';
+  static const String approvalMyAssignments    = '/api/v1/approval-document/my_assignments/';
+  static const String approvalPreviewRoute     = '/api/v1/approval-document/preview_route/';
+  static const String approvalSubmit           = '/api/v1/approval-document/{id}/submit/';
+  static const String approvalAct              = '/api/v1/approval-document/{id}/act/';
+  static const String approvalCancel           = '/api/v1/approval-document/{id}/cancel/';
+  static const String approvalAttachments      = '/api/v1/approval-attachment/';
+
   /// URL 패턴에서 {id}/{slug} 등을 실제 값으로 치환
   static String resolve(String pattern, Map<String, dynamic> params) {
     var url = pattern;

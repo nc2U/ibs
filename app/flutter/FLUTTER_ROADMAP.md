@@ -99,9 +99,15 @@
 - [x] **Step 9-6**: 채널 탭 2단 네비게이션 개편 완료 (상단 36px 슬림 캡슐 스위치: `소통 피드` ↔ `전사 라운지 & 온보딩`)
 - [x] **Step 9-7**: 전사 라운지 하이엔드 럭셔리 브랜드 모노그래프 & 캠페인 에디토리얼 레이아웃 구축 완료 (기업 목적, 사명 2035, 5대 핵심 가치관, 조직도, 사규집, 온보딩 로드맵, FAQ 아코디언 완비)
 - [x] **Step 9-8**: 브랜드 컬러 청량한 `Luminous Azure (#38BDF8 / #0284C7)` 전환 및 라운지 3대 시맨틱 포인트 컬러(Blue·Green·Amber) 연동
+- [x] **Step 12**: Phase 3-2 - **모바일 전자결재 (Approval Core) 시스템 전면 구축 완료**
+  - Freezed 데이터 모델 및 `ApprovalRepository` Dio API 클라이언트 완성
+  - 4대 탭 네비게이션: `결재 대기함` (미결 배지 카운트) | `내 기안함` | `결재 문서함` (완료/공람) | `전체 문서함` (관리자 전용 검색/필터)
+  - `ApprovalRouteTimeline` 결재선 진행 현황 시각화 및 양식별 맞춤 본문 렌더링
+  - 하단 원터치 승인/반려/의견/회수 바텀시트 모달 및 WeasyPrint PDF 네이티브 뷰어/공유 연동
+  - `ApprovalDraftScreen` 간편 모바일 기안 폼 및 실시간 결재선 미리보기 위젯
+  - 홈 대시보드 `HomeTab` 실시간 미결 건수 배지 및 `AppRoutes.approval` 라우터 연동
 - [ ] **Step 10**: Phase 2 - 프로젝트별 계약 관리 (`Contract`) 및 수납/입출금 상세 조회 모듈 연동 (다음 진행 예정)
 - [ ] **Step 11**: Phase 3-1 - 실시간 워크스페이스 메신저 (Real-Time Chat & Direct Message) 시스템 구축
-- [ ] **Step 12**: Phase 3-2 - 모바일 전자결재 (Approval) 및 FCM 실시간 푸시 알림 연동
 
 ---
 

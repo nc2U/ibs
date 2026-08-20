@@ -18,6 +18,9 @@ import '../../features/channel/presentation/channel_tab.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/docs/presentation/docs_screen.dart';
 import '../../features/search/presentation/search_results_screen.dart';
+import '../../features/approval/presentation/approval_main_screen.dart';
+import '../../features/approval/presentation/approval_detail_screen.dart';
+import '../../features/approval/presentation/approval_draft_screen.dart';
 
 // ── Route 이름 상수 ─────────────────────────────────────────────────────────────
 abstract class AppRoutes {
@@ -174,11 +177,27 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             },
           ),
 
-          // 전자결재 (탭바 미표시, 홈 히어로카드에서 진입)
+          // 전자결재
           GoRoute(
             path: AppRoutes.approval,
-            builder: (ctx, state) =>
-                const Center(child: Text('전자결재 (준비 중)')),
+            builder: (ctx, state) {
+              final tab = state.uri.queryParameters['tab'];
+              final initialTab = tab != null ? (int.tryParse(tab) ?? 0) : 0;
+              return ApprovalMainScreen(initialTabIndex: initialTab);
+            },
+            routes: [
+              GoRoute(
+                path: 'draft',
+                builder: (ctx, state) => const ApprovalDraftScreen(),
+              ),
+              GoRoute(
+                path: ':docId',
+                builder: (ctx, state) {
+                  final id = int.tryParse(state.pathParameters['docId'] ?? '') ?? 0;
+                  return ApprovalDetailScreen(docId: id);
+                },
+              ),
+            ],
           ),
 
           // 공용 문서 화면

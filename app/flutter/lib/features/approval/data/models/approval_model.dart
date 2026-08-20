@@ -1,0 +1,204 @@
+import 'package:freezed_annotation/freezed_annotation.dart';
+import '../../../../core/models/common_models.dart';
+
+part 'approval_model.freezed.dart';
+part 'approval_model.g.dart';
+
+// ── 0. 결재 카테고리 모델 ──────────────────────────────────────────
+@freezed
+class DocCategoryModel with _$DocCategoryModel {
+  @JsonSerializable(fieldRename: FieldRename.snake)
+  const factory DocCategoryModel({
+    required int id,
+    required String name,
+    required String code,
+    @Default('') String description,
+    @Default(1) int order,
+    @Default(true) bool isActive,
+  }) = _DocCategoryModel;
+
+  factory DocCategoryModel.fromJson(Map<String, dynamic> json) =>
+      _$DocCategoryModelFromJson(json);
+}
+
+// ── 1. 동적 폼 필드 모델 ──────────────────────────────────────────
+@freezed
+class FormFieldModel with _$FormFieldModel {
+  @JsonSerializable(fieldRename: FieldRename.snake)
+  const factory FormFieldModel({
+    required String key,
+    required String label,
+    required String type, // text, textarea, number, date, select
+    @Default(false) bool required,
+    List<String>? options,
+  }) = _FormFieldModel;
+
+  factory FormFieldModel.fromJson(Map<String, dynamic> json) =>
+      _$FormFieldModelFromJson(json);
+}
+
+// ── 2. 문서 유형 모델 ─────────────────────────────────────────────
+@freezed
+class DocumentTypeModel with _$DocumentTypeModel {
+  @JsonSerializable(fieldRename: FieldRename.snake)
+  const factory DocumentTypeModel({
+    required int id,
+    required String name,
+    required String code,
+    @Default('') String description,
+    @Default('dynamic') String formType, // dynamic, static
+    String? formTemplateKey, // leave_application, expense_report, purchase_order
+    @Default('organization') String routeType, // organization, template
+    int? category,
+    String? categoryName,
+    @Default([]) List<FormFieldModel> formSchema,
+    @Default(true) bool isActive,
+  }) = _DocumentTypeModel;
+
+  factory DocumentTypeModel.fromJson(Map<String, dynamic> json) =>
+      _$DocumentTypeModelFromJson(json);
+}
+
+// ── 3. 기안자 보직/겸직 모델 ───────────────────────────────────────
+@freezed
+class StaffAssignmentItemModel with _$StaffAssignmentItemModel {
+  @JsonSerializable(fieldRename: FieldRename.snake)
+  const factory StaffAssignmentItemModel({
+    required int id,
+    int? company,
+    String? companyName,
+    int? department,
+    String? departmentName,
+    int? duty,
+    String? dutyName,
+    String? positionName,
+    @Default(false) bool isPrimary,
+    String? desc,
+  }) = _StaffAssignmentItemModel;
+
+  factory StaffAssignmentItemModel.fromJson(Map<String, dynamic> json) =>
+      _$StaffAssignmentItemModelFromJson(json);
+}
+
+// ── 4. 결재 행동 이력 모델 ─────────────────────────────────────────
+@freezed
+class ApprovalActionModel with _$ApprovalActionModel {
+  @JsonSerializable(fieldRename: FieldRename.snake)
+  const factory ApprovalActionModel({
+    required int id,
+    required SimpleUserModel approver,
+    required String action, // approved, rejected, commented
+    @Default('') String comment,
+    @Default('') String contentHash,
+    required String actedAt,
+  }) = _ApprovalActionModel;
+
+  factory ApprovalActionModel.fromJson(Map<String, dynamic> json) =>
+      _$ApprovalActionModelFromJson(json);
+}
+
+// ── 5. 결재 첨부파일 모델 ──────────────────────────────────────────
+@freezed
+class ApprovalAttachmentModel with _$ApprovalAttachmentModel {
+  @JsonSerializable(fieldRename: FieldRename.snake)
+  const factory ApprovalAttachmentModel({
+    required int id,
+    required int document,
+    String? file,
+    String? fileUrl,
+    @Default('') String fileName,
+    @Default('') String fileType,
+    int? fileSize,
+    String? creatorName,
+    required String createdAt,
+  }) = _ApprovalAttachmentModel;
+
+  factory ApprovalAttachmentModel.fromJson(Map<String, dynamic> json) =>
+      _$ApprovalAttachmentModelFromJson(json);
+}
+
+// ── 6. 결재 단계 모델 ─────────────────────────────────────────────
+@freezed
+class ApprovalStepModel with _$ApprovalStepModel {
+  @JsonSerializable(fieldRename: FieldRename.snake)
+  const factory ApprovalStepModel({
+    required int id,
+    required int stepOrder,
+    required String roleLabel,
+    @Default([]) List<SimpleUserModel> approvers,
+    @Default('AND') String condition, // AND, OR
+    @Default('pending') String status, // pending, approved, rejected, skipped
+    @Default([]) List<ApprovalActionModel> actions,
+  }) = _ApprovalStepModel;
+
+  factory ApprovalStepModel.fromJson(Map<String, dynamic> json) =>
+      _$ApprovalStepModelFromJson(json);
+}
+
+// ── 7. 결재선 미리보기 모델 ────────────────────────────────────────
+@freezed
+class RoutePreviewStepModel with _$RoutePreviewStepModel {
+  @JsonSerializable(fieldRename: FieldRename.snake)
+  const factory RoutePreviewStepModel({
+    required int stepOrder,
+    required String roleLabel,
+    @Default([]) List<SimpleUserModel> approvers,
+    @Default([]) List<int> approverIds,
+    @Default('AND') String condition,
+  }) = _RoutePreviewStepModel;
+
+  factory RoutePreviewStepModel.fromJson(Map<String, dynamic> json) =>
+      _$RoutePreviewStepModelFromJson(json);
+}
+
+// ── 8. 결재 문서 상세 및 목록 모델 ──────────────────────────────────
+@freezed
+class ApprovalDocumentModel with _$ApprovalDocumentModel {
+  @JsonSerializable(fieldRename: FieldRename.snake)
+  const factory ApprovalDocumentModel({
+    required int id,
+    @Default('') String docNumber,
+    required String title,
+    required int docType,
+    String? docTypeName,
+    String? categoryName,
+    DocumentTypeModel? docTypeDetail,
+    required SimpleUserModel drafter,
+    String? drafterName,
+    int? drafterAssignment,
+    String? departmentName,
+    String? drafterAssignmentDesc,
+    @Default({}) Map<String, dynamic> content,
+    @Default('draft') String status, // draft, pending, approved, rejected, cancelled
+    String? statusDesc,
+    @Default(1) int currentStep,
+    @Default('') String contentHash,
+    String? pdfUrl,
+    @Default(0) int attachmentCount,
+    @Default(0) int observerCount,
+    List<ApprovalAttachmentModel>? attachments,
+    List<SimpleUserModel>? observers,
+    List<ApprovalStepModel>? steps,
+    required String createdAt,
+    String? submittedAt,
+    String? completedAt,
+  }) = _ApprovalDocumentModel;
+
+  factory ApprovalDocumentModel.fromJson(Map<String, dynamic> json) =>
+      _$ApprovalDocumentModelFromJson(json);
+}
+
+// ── 9. 결재 문서 페이지네이션 응답 모델 ──────────────────────────────
+@freezed
+class ApprovalDocumentListResponse with _$ApprovalDocumentListResponse {
+  @JsonSerializable(fieldRename: FieldRename.snake)
+  const factory ApprovalDocumentListResponse({
+    @Default(0) int count,
+    String? next,
+    String? previous,
+    @Default([]) List<ApprovalDocumentModel> results,
+  }) = _ApprovalDocumentListResponse;
+
+  factory ApprovalDocumentListResponse.fromJson(Map<String, dynamic> json) =>
+      _$ApprovalDocumentListResponseFromJson(json);
+}

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors_extension.dart';
+import '../../approval/providers/approval_providers.dart';
 
 /// 홈 탭 — 3대 카테고리 히어로 카드 + 채널(공지/게시판) 퀵 카드
 /// ── 배경색과 확연히 분리되면서도 눈이 편안한 프리미엄 서페이스 컬러 적용
@@ -13,6 +14,7 @@ class HomeTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final pendingCount = ref.watch(pendingApprovalCountProvider);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -117,7 +119,7 @@ class HomeTab extends ConsumerWidget {
             gradientColors: isDark
                 ? const [Color(0xFF32281E), Color(0xFF261F17)]
                 : const [Color(0xFFFFFFFF), Color(0xFFFFFBEB)],
-            badgeText: '준비 중...',
+            badgeText: pendingCount > 0 ? '미결 $pendingCount건' : '결재 시스템',
             onTap: () => context.go(AppRoutes.approval),
           ),
           const SizedBox(height: 24),
