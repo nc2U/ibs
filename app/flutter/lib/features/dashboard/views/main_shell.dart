@@ -11,6 +11,7 @@ import '../../../core/providers/permission_provider.dart';
 import '../../../core/providers/share_payload_provider.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors_extension.dart';
+import '../../../core/providers/badge_provider.dart';
 import '../../../core/providers/dio_provider.dart';
 import '../../../core/services/fcm_service.dart';
 import '../../../core/widgets/notification_sheet.dart';
@@ -47,6 +48,9 @@ class MainShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentIdx = _currentIndex(context);
+
+    // 앱 아이콘 알림 뱃지 자동 동기화 (미확인 알림 + 미결 결재)
+    ref.watch(totalAppBadgeCountProvider);
 
     // FCM 푸시 알림 서비스 초기화 (로그인된 세션)
     final dio = ref.watch(dioProvider);

@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'app_badge_service.dart';
 
 /// Firebase Cloud Messaging (FCM) 푸시 알림 서비스
 class FcmService {
@@ -56,6 +57,13 @@ class FcmService {
         // 6. 포그라운드(앱 켜진 상태) 메시지 리스너
         FirebaseMessaging.onMessage.listen((RemoteMessage message) {
           debugPrint('📩 [FCM] 포그라운드 알림 수신: ${message.notification?.title} / ${message.notification?.body}');
+          final badgeStr = message.data['badge'] ?? message.notification?.android?.count;
+          if (badgeStr != null) {
+            final badgeCount = int.tryParse(badgeStr.toString());
+            if (badgeCount != null) {
+              AppBadgeService.updateBadgeCount(badgeCount);
+            }
+          }
         });
 
         // 7. 백그라운드 푸시 탭하여 앱 진입 시 리스너
