@@ -23,9 +23,9 @@ const emit = defineEmits<{
     </CModalHeader>
     <CModalBody v-if="node">
       <!-- 부서 기본 정보 -->
-      <div v-if="node.task" class="alert alert-light border mb-3">
+      <div v-if="node.task" class="alert alert-light border mb-3 bg-more-light">
         <strong class="d-block mb-1 text-secondary">
-          <CIcon name="cilTask" class="me-1" />주요 담당 업무
+          <CIcon name="cilTask" class="me-1" /> 주요 담당 업무
         </strong>
         <div class="text-body small">{{ node.task }}</div>
       </div>
@@ -64,14 +64,14 @@ const emit = defineEmits<{
                 {{ member.name.charAt(0) }}
               </div>
               <div>
-                <div class="fw-bold d-flex align-items-center">
+                <div class="fw-bold d-flex align-items-center text-body">
                   {{ member.name }}
-                  <span v-if="member.duty" class="badge bg-primary ms-1" style="font-size: 0.7rem">
+                  <span v-if="member.duty" class="badge bg-primary ms-2" style="font-size: 0.7rem">
                     {{ member.duty }}
                   </span>
                   <span
                     v-if="member.position"
-                    class="badge bg-secondary ms-1"
+                    class="badge bg-secondary ms-2"
                     style="font-size: 0.7rem"
                   >
                     {{ member.position }}

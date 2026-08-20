@@ -331,7 +331,7 @@ onMounted(async () => {
               "
             >
               <div
-                class="card-header bg-light d-flex align-items-center justify-content-between py-2"
+                class="card-header bg-more-light d-flex align-items-center justify-content-between py-2"
               >
                 <span class="fw-bold">{{ dept.name }}</span>
                 <span class="badge bg-secondary">Lv.{{ dept.level || 1 }}</span>
@@ -380,6 +380,10 @@ onMounted(async () => {
   border: 1px dashed #cbd5e1;
   display: flex;
   justify-content: center;
+}
+.dark-theme .org-chart-viewport {
+  background-color: #282933;
+  border-color: #374151;
 }
 
 .org-tree-canvas {
