@@ -11,7 +11,8 @@ const route = useRoute()
 const router = useRouter()
 const store = useApproval()
 const accStore = useAccount()
-const { docCategoryList, forDraftDocTypeList, document, myAssignments, routePreview } = storeToRefs(store)
+const { docCategoryList, forDraftDocTypeList, document, myAssignments, routePreview } =
+  storeToRefs(store)
 const { usersList } = storeToRefs(accStore)
 const {
   fetchDocCategoryList,
@@ -100,13 +101,23 @@ const onDocTypeChange = () => {
 }
 
 const onAssignmentChange = async () => {
-  await fetchForDraftDocTypeList(form.value.drafter_assignment ? Number(form.value.drafter_assignment) : undefined)
+  await fetchForDraftDocTypeList(
+    form.value.drafter_assignment ? Number(form.value.drafter_assignment) : undefined,
+  )
   updateRoutePreview()
 }
 
 // dynamicContent에서 금액 값 추출
 const currentAmount = computed(() => {
-  for (const key of ['amount', 'estimated_amount', 'total_amount', 'price', 'cost', 'expense_amount', 'payment_amount']) {
+  for (const key of [
+    'amount',
+    'estimated_amount',
+    'total_amount',
+    'price',
+    'cost',
+    'expense_amount',
+    'payment_amount',
+  ]) {
     const val = dynamicContent.value[key]
     if (val !== undefined && val !== '') {
       const clean = String(val).replace(/,/g, '').replace(/ /g, '').replace(/원/g, '')
@@ -188,11 +199,7 @@ const onSubmitAndSend = async () => {
 }
 
 onMounted(async () => {
-  await Promise.all([
-    fetchDocCategoryList(),
-    fetchMyAssignments(),
-    fetchUsersList(),
-  ])
+  await Promise.all([fetchDocCategoryList(), fetchMyAssignments(), fetchUsersList()])
 
   // 기본 주보직 선택
   const primary = myAssignments.value.find(a => a.is_primary) ?? myAssignments.value[0]
@@ -201,7 +208,9 @@ onMounted(async () => {
   }
 
   // 보직에 따른 기안 가능 문서 유형 조회
-  await fetchForDraftDocTypeList(form.value.drafter_assignment ? Number(form.value.drafter_assignment) : undefined)
+  await fetchForDraftDocTypeList(
+    form.value.drafter_assignment ? Number(form.value.drafter_assignment) : undefined,
+  )
 
   if (isEdit.value) {
     await fetchDocument(Number(route.params.docId))
@@ -232,20 +241,14 @@ onMounted(async () => {
         <CForm @submit.prevent="onSubmit">
           <!-- 기안 부서 / 보직 선택 (보직이 있는 경우) -->
           <CRow v-if="myAssignments.length > 0" class="mb-3">
-            <CFormLabel class="col-sm-3 col-form-label">
-              기안 부서/직책
-            </CFormLabel>
+            <CFormLabel class="col-sm-3 col-form-label"> 기안 부서/직책 </CFormLabel>
             <CCol sm="9">
               <CFormSelect
                 v-model="form.drafter_assignment"
                 :disabled="isEdit"
                 @change="onAssignmentChange"
               >
-                <option
-                  v-for="asgn in myAssignments"
-                  :key="asgn.pk"
-                  :value="asgn.pk"
-                >
+                <option v-for="asgn in myAssignments" :key="asgn.pk" :value="asgn.pk">
                   [{{ asgn.is_primary ? '주보직' : '겸직' }}] {{ asgn.department_name }}
                   <template v-if="asgn.duty_name">({{ asgn.duty_name }})</template>
                   <template v-else-if="asgn.position_name">({{ asgn.position_name }})</template>
@@ -279,7 +282,9 @@ onMounted(async () => {
                   <option v-for="dt in types" :key="dt.id" :value="dt.id">
                     {{ dt.name }}
                     <template v-if="dt.policy_rules?.length"> [금액별 전결]</template>
-                    <template v-else-if="dt.final_approval_duty_name"> [{{ dt.final_approval_duty_name }} 전결]</template>
+                    <template v-else-if="dt.final_approval_duty_name">
+                      [{{ dt.final_approval_duty_name }} 전결]</template
+                    >
                   </option>
                 </optgroup>
               </CFormSelect>
@@ -324,7 +329,8 @@ onMounted(async () => {
                 hide-details
               />
               <div class="form-text text-muted">
-                지정된 참조자는 결재가 최종 승인되었을 때 공람 알림을 받고 문서를 열람할 수 있습니다.
+                지정된 참조자는 결재가 최종 승인되었을 때 공람 알림을 받고 문서를 열람할 수
+                있습니다.
               </div>
             </CCol>
           </CRow>
@@ -334,8 +340,15 @@ onMounted(async () => {
           <!-- 양식 필드 (전용 폼 컴포넌트) -->
           <template v-if="selectedDocType">
             <component
-              :is="STATIC_FORM_REGISTRY[selectedDocType.form_template_key || selectedDocType.code || '']"
-              v-if="(selectedDocType.form_template_key || selectedDocType.code) && STATIC_FORM_REGISTRY[selectedDocType.form_template_key || selectedDocType.code]"
+              :is="
+                STATIC_FORM_REGISTRY[
+                  selectedDocType.form_template_key || selectedDocType.code || ''
+                ]
+              "
+              v-if="
+                (selectedDocType.form_template_key || selectedDocType.code) &&
+                STATIC_FORM_REGISTRY[selectedDocType.form_template_key || selectedDocType.code]
+              "
               v-model="dynamicContent"
             />
 
@@ -359,14 +372,14 @@ onMounted(async () => {
                 <CIcon name="cilPaperclip" class="me-1" />
                 첨부파일
               </CFormLabel>
-              <CButton
+              <v-btn
                 color="secondary"
-                variant="outline"
-                size="sm"
+                variant="outlined"
+                size="small"
                 @click="fileInputRef?.click()"
               >
                 <CIcon name="cilPlus" class="me-1" />파일 추가
-              </CButton>
+              </v-btn>
               <input
                 ref="fileInputRef"
                 type="file"
@@ -446,7 +459,9 @@ onMounted(async () => {
               @click="fileInputRef?.click()"
             >
               <CIcon name="cilCloudUpload" size="lg" class="mb-1 text-muted" />
-              <div class="small">클릭하여 관련 증빙 서류나 첨부파일을 추가하세요. (여러 개 선택 가능)</div>
+              <div class="small">
+                클릭하여 관련 증빙 서류나 첨부파일을 추가하세요. (여러 개 선택 가능)
+              </div>
             </div>
           </div>
 
@@ -459,10 +474,18 @@ onMounted(async () => {
                 결재선 미리보기
               </p>
               <div class="d-flex gap-1">
-                <CBadge v-if="selectedDocType?.policy_rules?.length && currentAmount !== null" color="warning" size="sm">
+                <CBadge
+                  v-if="selectedDocType?.policy_rules?.length && currentAmount !== null"
+                  color="warning"
+                  size="sm"
+                >
                   금액 조건 반영 ({{ currentAmount.toLocaleString() }}원)
                 </CBadge>
-                <CBadge v-if="selectedDocType?.route_type === 'organization'" color="info" size="sm">
+                <CBadge
+                  v-if="selectedDocType?.route_type === 'organization'"
+                  color="info"
+                  size="sm"
+                >
                   조직도 기반 자동 생성
                 </CBadge>
               </div>
@@ -485,9 +508,7 @@ onMounted(async () => {
                   </CBadge>
                 </div>
                 <!-- 화살표 연결 (마지막 제외) -->
-                <div v-if="idx < routePreview.length - 1" class="route-arrow">
-                  →
-                </div>
+                <div v-if="idx < routePreview.length - 1" class="route-arrow">→</div>
               </template>
             </div>
           </template>
