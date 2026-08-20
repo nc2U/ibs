@@ -29,21 +29,25 @@ const onDelete = (pk: number) => emit('on-delete', pk)
 <template>
   <CTable hover responsive bordered align="middle">
     <colgroup>
+      <col style="width: 6%" />
       <col style="width: 8%" />
-      <col style="width: 12%" />
       <col style="width: 10%" />
-      <col style="width: 30%" />
-      <col style="width: 30%" />
-      <col v-if="canHrWorkManage" style="width: 10%" />
+      <col style="width: 16%" />
+      <col style="width: 10%" />
+      <col style="width: 20%" />
+      <col style="width: 22%" />
+      <col v-if="canHrWorkManage" style="width: 8%" />
     </colgroup>
 
     <CTableHead :color="TableSecondary">
       <CTableRow class="text-center" align="middle">
         <CTableHeaderCell scope="col">No</CTableHeaderCell>
+        <CTableHeaderCell scope="col">코드</CTableHeaderCell>
         <CTableHeaderCell scope="col">직급명</CTableHeaderCell>
-        <CTableHeaderCell scope="col">승급표준년수</CTableHeaderCell>
+        <CTableHeaderCell scope="col">역할</CTableHeaderCell>
+        <CTableHeaderCell scope="col">최소 체류기간(년)</CTableHeaderCell>
         <CTableHeaderCell scope="col">허용직위</CTableHeaderCell>
-        <CTableHeaderCell scope="col">신입부여 기준</CTableHeaderCell>
+        <CTableHeaderCell scope="col">승급 기준</CTableHeaderCell>
         <CTableHeaderCell v-if="canHrWorkManage" scope="col">비고</CTableHeaderCell>
       </CTableRow>
     </CTableHead>

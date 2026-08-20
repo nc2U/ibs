@@ -82,9 +82,11 @@ class Department(models.Model):
 
 class JobGrade(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='ranks', verbose_name='회사')
+    code = models.CharField('코드', max_length=10)
     name = models.CharField('직급', max_length=10, db_index=True)
-    promotion_period = models.PositiveSmallIntegerField('승급표준년수', null=True, blank=True)
-    criteria_new = models.CharField('신입부여 기준', max_length=50, null=True, blank=True)
+    role = models.CharField('역할', max_length=100, blank=True)
+    promotion_criteria = models.TextField('승급 기준', blank=True)  # 추후  PromotionPolicy 모델과 연결 고도화
+    min_promotion_years = models.PositiveSmallIntegerField('최소 근속기간(년)', null=True, blank=True)
 
     def __str__(self):
         return self.name
@@ -93,6 +95,14 @@ class JobGrade(models.Model):
         ordering = ['id']
         verbose_name = "03. 직급 정보"
         verbose_name_plural = "03. 직급 정보"
+
+
+# PromotionPolicy
+# ├─ 최소 근속기간
+# ├─ 평가등급
+# ├─ 필수역량
+# ├─ 징계 여부
+# └─ 승급 제한 조건
 
 
 class Position(models.Model):
@@ -177,7 +187,8 @@ class StaffAssignment(models.Model):
     """직원 보직/발령 정보 (주 보직 및 겸직 지원)"""
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='assignments', verbose_name='회사')
     staff = models.ForeignKey(Staff, on_delete=models.CASCADE, related_name='assignments', verbose_name='직원')
-    department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='assignments', verbose_name='소속 부서')
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='assignments',
+                                   verbose_name='소속 부서')
     position = models.ForeignKey(Position, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='직위')
     duty = models.ForeignKey(DutyTitle, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='직책')
     is_primary = models.BooleanField('주 부서/보직 여부', default=True, help_text='기본 소속 여부 (직원당 1개만 True)')
@@ -205,5 +216,6 @@ class StaffAssignment(models.Model):
     def save(self, *args, **kwargs):
         # 주 보직(is_primary=True)으로 저장 시 동일 직원의 다른 보직은 is_primary=False로 변경
         if self.is_primary and self.staff_id:
-            StaffAssignment.objects.filter(staff_id=self.staff_id, is_primary=True).exclude(pk=self.pk).update(is_primary=False)
+            StaffAssignment.objects.filter(staff_id=self.staff_id, is_primary=True).exclude(pk=self.pk).update(
+                is_primary=False)
         super().save(*args, **kwargs)

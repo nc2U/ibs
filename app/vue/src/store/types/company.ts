@@ -68,9 +68,11 @@ export type DepFilter = {
 export interface Grade {
   pk?: number
   company?: string
+  code: string
   name: string
-  promotion_period: number | null
-  criteria_new: string
+  role: string
+  min_promotion_years: number | null
+  promotion_criteria: string
   positions?: number[]
 }
 

@@ -458,10 +458,12 @@ class ExportGrades(ExcelExportMixin):
 
         # title_list
         header_src = [[],
+                      ['코드', 'code', 10],
                       ['직급명', 'name', 14],
-                      ['승급표준년수', 'promotion_period', 14],
+                      ['역할', 'role', 20],
+                      ['최소체류기간(년)', 'min_promotion_years', 16],
                       ['허용직위', 'positions', 28],
-                      ['신입부여기준', 'criteria_new', 32]]
+                      ['승급기준', 'promotion_criteria', 32]]
         titles = ['No']  # header titles
         params = []  # ORM 추출 field
         widths = [7]  # No. 컬럼 넓이
@@ -499,10 +501,12 @@ class ExportGrades(ExcelExportMixin):
         search = request.GET.get('search')
         obj_list = JobGrade.objects.filter(company=company)
         obj_list = obj_list.filter(
+            Q(code__icontains=search) |
             Q(name__icontains=search) |
-            Q(promotion_period__icontains=search) |
+            Q(role__icontains=search) |
+            Q(min_promotion_years__icontains=search) |
             Q(positions__name__icontains=search) |
-            Q(criteria_new__icontains=search)) if search else obj_list
+            Q(promotion_criteria__icontains=search)) if search else obj_list
 
         base_data = obj_list.values(*params)
         data = []
@@ -541,13 +545,13 @@ class ExportGrades(ExcelExportMixin):
         # Write body
         for i, row in enumerate(data):
             row_num += 1
-            row_data = [row['num'], row['name'], row['promotion_period'], row['positions'], row['criteria_new']]
+            row_data = [row['num'], row['code'], row['name'], row['role'], row['min_promotion_years'], row['positions'], row['promotion_criteria']]
 
             for col_num, cell_data in enumerate(row_data):
                 if type(cell_data) == list:
                     positions = [get_position(i) for i in cell_data]
                     cell_data = ', '.join(sorted(positions))
-                if col_num in (3, 4):
+                if col_num in (3, 5, 6):
                     body_format['align'] = 'left'
                 else:
                     body_format['align'] = 'center'

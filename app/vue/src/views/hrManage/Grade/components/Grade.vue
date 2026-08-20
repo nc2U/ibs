@@ -40,10 +40,12 @@ const onDelete = (pk: number) => emit('on-delete', pk)
 <template>
   <CTableRow v-if="grade" class="text-center">
     <CTableDataCell>{{ grade.pk }}</CTableDataCell>
+    <CTableDataCell>{{ grade.code }}</CTableDataCell>
     <CTableDataCell>{{ grade.name }}</CTableDataCell>
-    <CTableDataCell>{{ grade.promotion_period }}</CTableDataCell>
+    <CTableDataCell class="text-left">{{ grade.role }}</CTableDataCell>
+    <CTableDataCell>{{ grade.min_promotion_years ?? '-' }}</CTableDataCell>
     <CTableDataCell class="text-left">{{ positions }}</CTableDataCell>
-    <CTableDataCell class="text-left">{{ grade.criteria_new }}</CTableDataCell>
+    <CTableDataCell class="text-left">{{ grade.promotion_criteria }}</CTableDataCell>
     <CTableDataCell v-if="canHrWorkManage">
       <v-btn color="info" size="x-small" @click="showDetail">확인</v-btn>
     </CTableDataCell>

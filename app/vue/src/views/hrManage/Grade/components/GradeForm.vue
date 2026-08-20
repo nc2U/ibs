@@ -38,20 +38,24 @@ const validated = ref(false)
 const form = ref<Grade>({
   pk: undefined,
   company: undefined,
+  code: '',
   name: '',
-  promotion_period: null,
+  role: '',
+  min_promotion_years: null,
   positions: [],
-  criteria_new: '',
+  promotion_criteria: '',
 })
 
 const formsCheck = computed(() => {
   if (props.grade) {
-    const a = form.value.name === props.grade.name
-    const b = form.value.promotion_period === props.grade.promotion_period
-    const c = JSON.stringify(form.value.positions) === JSON.stringify(props.grade.positions)
-    const d = form.value.criteria_new === props.grade.criteria_new
+    const a = form.value.code === props.grade.code
+    const b = form.value.name === props.grade.name
+    const c = form.value.role === props.grade.role
+    const d = form.value.min_promotion_years === props.grade.min_promotion_years
+    const e = JSON.stringify(form.value.positions) === JSON.stringify(props.grade.positions)
+    const f = form.value.promotion_criteria === props.grade.promotion_criteria
 
-    return a && b && c && d
+    return a && b && c && d && e && f
   } else return false
 })
 
@@ -87,10 +91,12 @@ const formDataSetup = () => {
   if (props.grade) {
     form.value.pk = props.grade.pk
     form.value.company = props.grade.company
+    form.value.code = props.grade.code
     form.value.name = props.grade.name
-    form.value.promotion_period = props.grade.promotion_period
+    form.value.role = props.grade.role
+    form.value.min_promotion_years = props.grade.min_promotion_years
     form.value.positions = props.grade.positions
-    form.value.criteria_new = props.grade.criteria_new
+    form.value.promotion_criteria = props.grade.promotion_criteria
   } else form.value.company = props.company
 }
 
@@ -106,21 +112,41 @@ onBeforeMount(() => formDataSetup())
         <CRow class="mb-3">
           <CCol sm="6">
             <CRow>
-              <CFormLabel class="col-sm-4 col-form-label required">직급명</CFormLabel>
+              <CFormLabel class="col-sm-4 col-form-label required">코드</CFormLabel>
               <CCol sm="8">
-                <CFormInput v-model="form.name" required placeholder="직급명" />
+                <CFormInput v-model="form.code" required placeholder="직급 코드 (예: G1, G2)" />
               </CCol>
             </CRow>
           </CCol>
 
           <CCol sm="6">
             <CRow>
-              <CFormLabel class="col-sm-4 col-form-label"> 승급표준년수</CFormLabel>
+              <CFormLabel class="col-sm-4 col-form-label required">직급명</CFormLabel>
+              <CCol sm="8">
+                <CFormInput v-model="form.name" required placeholder="직급명" />
+              </CCol>
+            </CRow>
+          </CCol>
+        </CRow>
+
+        <CRow class="mb-3">
+          <CCol sm="6">
+            <CRow>
+              <CFormLabel class="col-sm-4 col-form-label">역할</CFormLabel>
+              <CCol sm="8">
+                <CFormInput v-model="form.role" placeholder="역할 / 직무 수준" />
+              </CCol>
+            </CRow>
+          </CCol>
+
+          <CCol sm="6">
+            <CRow>
+              <CFormLabel class="col-sm-4 col-form-label">최소 체류기간</CFormLabel>
               <CCol sm="8">
                 <CFormInput
-                  v-model.number="form.promotion_period"
+                  v-model.number="form.min_promotion_years"
                   type="number"
-                  placeholder="승급표준년수"
+                  placeholder="최소 체류기간 (년)"
                 />
               </CCol>
             </CRow>
@@ -150,9 +176,13 @@ onBeforeMount(() => formDataSetup())
         <CRow class="mb-3">
           <CCol sm="12">
             <CRow>
-              <CFormLabel class="col-sm-2 col-form-label"> 신입부여기준</CFormLabel>
+              <CFormLabel class="col-sm-2 col-form-label"> 승급 기준</CFormLabel>
               <CCol sm="10">
-                <CFormInput v-model="form.criteria_new" placeholder="신입부여기준" />
+                <CFormTextarea
+                  v-model="form.promotion_criteria"
+                  rows="3"
+                  placeholder="승급 기준 및 요건"
+                />
               </CCol>
             </CRow>
           </CCol>

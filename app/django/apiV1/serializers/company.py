@@ -14,7 +14,7 @@ class DepartsInCompanySerializer(serializers.ModelSerializer):
 class GradesInCompanySerializer(serializers.ModelSerializer):
     class Meta:
         model = JobGrade
-        fields = ('pk', 'name', 'promotion_period', 'criteria_new')
+        fields = ('pk', 'code', 'name', 'role', 'min_promotion_years', 'promotion_criteria')
 
 
 class CompanySerializer(serializers.ModelSerializer):
@@ -68,7 +68,7 @@ class JobGradeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = JobGrade
-        fields = ('pk', 'company', 'name', 'promotion_period', 'criteria_new', 'positions')
+        fields = ('pk', 'company', 'code', 'name', 'role', 'min_promotion_years', 'promotion_criteria', 'positions')
 
 
 class GradesInPositionSerializer(serializers.ModelSerializer):
