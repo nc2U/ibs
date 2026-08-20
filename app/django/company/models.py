@@ -192,7 +192,8 @@ class Staff(models.Model):
     @property
     def executive_rank(self):
         """임원 직위 (임원인 경우)"""
-        return self.executive.rank.name if hasattr(self, 'executive') and self.executive and self.executive.rank else None
+        return self.executive.rank.name if hasattr(self,
+                                                   'executive') and self.executive and self.executive.rank else None
 
     def __str__(self):
         return self.name
@@ -210,7 +211,6 @@ class Executive(models.Model):
         ('outside', '사외이사'),
         ('non_standing_director', '기타비상무이사'),
         ('auditor', '감사'),
-        ('unregistered', '미등기임원'),
         ('advisor', '고문/자문'),
     )
     REPRESENT_CHOICES = (
@@ -222,11 +222,13 @@ class Executive(models.Model):
 
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='executives', verbose_name='회사')
     staff = models.OneToOneField(Staff, on_delete=models.CASCADE, related_name='executive', verbose_name='임원')
-    rank = models.ForeignKey(ExecutiveRank, on_delete=models.SET_NULL, null=True, blank=True, related_name='executives', verbose_name='임원 직위')
+    rank = models.ForeignKey(ExecutiveRank, on_delete=models.SET_NULL, null=True, blank=True, related_name='executives',
+                             verbose_name='임원 직위')
     director_type = models.CharField('상법상 지위', max_length=25, choices=DIRECTOR_CHOICES, default='unregistered')
     is_registered = models.BooleanField('등기 여부', default=False, help_text='법인 등기부등본 등기 여부')
     is_standing = models.BooleanField('상근 여부', default=True, help_text='상근 또는 비상근')
-    represent_type = models.CharField('대표권 구분', max_length=10, choices=REPRESENT_CHOICES, default='none', help_text='대표권 보유 형태')
+    represent_type = models.CharField('대표권 구분', max_length=10, choices=REPRESENT_CHOICES, default='none',
+                                      help_text='대표권 보유 형태')
     term_start = models.DateField('임기 시작일(취임일)', null=True, blank=True)
     term_end = models.DateField('임기 만료일', null=True, blank=True)
     appointed_date = models.DateField('최초 선임일', null=True, blank=True)
@@ -274,13 +276,18 @@ class StaffAssignment(models.Model):
 class PromotionPolicy(models.Model):
     """직급별 승급 기준 및 정책"""
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='promotion_policies', verbose_name='회사')
-    current_grade = models.ForeignKey(JobGrade, on_delete=models.CASCADE, related_name='promotion_policies_from', verbose_name='현재 직급')
-    target_grade = models.ForeignKey(JobGrade, on_delete=models.CASCADE, related_name='promotion_policies_to', verbose_name='승급 대상 직급')
+    current_grade = models.ForeignKey(JobGrade, on_delete=models.CASCADE, related_name='promotion_policies_from',
+                                      verbose_name='현재 직급')
+    target_grade = models.ForeignKey(JobGrade, on_delete=models.CASCADE, related_name='promotion_policies_to',
+                                     verbose_name='승급 대상 직급')
     min_years = models.PositiveSmallIntegerField('최소 체류기간(년)', default=3, help_text='승급 심사 대상이 되기 위한 최소 근속 년수')
-    min_avg_grade_point = models.DecimalField('최소 평가 평점', max_digits=4, decimal_places=2, null=True, blank=True, help_text='최근 평가 평균 점수 기준 (예: 80.00)')
+    min_avg_grade_point = models.DecimalField('최소 평가 평점', max_digits=4, decimal_places=2, null=True, blank=True,
+                                              help_text='최근 평가 평균 점수 기준 (예: 80.00)')
     required_eval_grade = models.CharField('최소 평가 등급 요건', max_length=20, blank=True, help_text='예: 최근 2개년 평균 B+ 이상')
-    required_credentials = models.CharField('필수 역량/자격 요건', max_length=255, blank=True, help_text='예: 필수 교육 이수, 어학 기준, 관련 자격증 등')
-    disqualification_conditions = models.CharField('승급 결격 사유', max_length=255, blank=True, help_text='예: 최근 1년 내 징계 처분 이력 등')
+    required_credentials = models.CharField('필수 역량/자격 요건', max_length=255, blank=True,
+                                            help_text='예: 필수 교육 이수, 어학 기준, 관련 자격증 등')
+    disqualification_conditions = models.CharField('승급 결격 사유', max_length=255, blank=True,
+                                                   help_text='예: 최근 1년 내 징계 처분 이력 등')
     description = models.TextField('세부 기준 설명', blank=True)
     is_active = models.BooleanField('사용 여부', default=True)
 
@@ -314,10 +321,13 @@ class StaffEvaluation(models.Model):
     eval_year = models.PositiveSmallIntegerField('평가 연도')
     eval_period = models.CharField('평가 주기', max_length=10, choices=PERIOD_CHOICES, default='yearly')
     grade = models.CharField('평가 등급', max_length=5, choices=GRADE_CHOICES)
-    score = models.DecimalField('평가 점수', max_digits=5, decimal_places=2, null=True, blank=True, help_text='100점 만점 환산 점수')
+    score = models.DecimalField('평가 점수', max_digits=5, decimal_places=2, null=True, blank=True,
+                                help_text='100점 만점 환산 점수')
     achievement_summary = models.TextField('주요 업적 요약', blank=True)
-    evaluator = models.ForeignKey(Staff, on_delete=models.SET_NULL, null=True, blank=True, related_name='evaluated_staffs', verbose_name='1차 평가자')
-    reviewer = models.ForeignKey(Staff, on_delete=models.SET_NULL, null=True, blank=True, related_name='reviewed_staffs', verbose_name='2차 평가자/확인자')
+    evaluator = models.ForeignKey(Staff, on_delete=models.SET_NULL, null=True, blank=True,
+                                  related_name='evaluated_staffs', verbose_name='1차 평가자')
+    reviewer = models.ForeignKey(Staff, on_delete=models.SET_NULL, null=True, blank=True,
+                                 related_name='reviewed_staffs', verbose_name='2차 평가자/확인자')
     notes = models.CharField('종합 의견', max_length=255, blank=True)
 
     def __str__(self):
@@ -340,8 +350,10 @@ class PromotionCandidate(models.Model):
         ('hold', '심사 보류'),
     )
 
-    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='promotion_candidates', verbose_name='회사')
-    policy = models.ForeignKey(PromotionPolicy, on_delete=models.CASCADE, related_name='candidates', verbose_name='적용 승급 정책')
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='promotion_candidates',
+                                verbose_name='회사')
+    policy = models.ForeignKey(PromotionPolicy, on_delete=models.CASCADE, related_name='candidates',
+                               verbose_name='적용 승급 정책')
     staff = models.ForeignKey(Staff, on_delete=models.CASCADE, related_name='promotion_records', verbose_name='승급 대상자')
     eval_year = models.PositiveSmallIntegerField('심사 연도')
     tenure_years = models.DecimalField('현 직급 체류 년수', max_digits=4, decimal_places=1, default=0.0)
