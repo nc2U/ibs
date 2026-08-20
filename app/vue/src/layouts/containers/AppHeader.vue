@@ -75,8 +75,12 @@ const toggleAside = () => store.toggleAside()
         </CHeaderToggler>
 
         <!-- 테마 전환 단일 동적 아이콘 드롭다운 -->
-        <CDropdown variant="nav-item" placement="bottom-end" class="mr-1">
-          <CDropdownToggle :caret="false" class="py-1 px-2 border-0 bg-transparent cursor-pointer">
+        <CDropdown placement="bottom-end" class="mr-1">
+          <CDropdownToggle
+            :caret="false"
+            color="link"
+            class="py-1 px-2 border-0 bg-transparent cursor-pointer"
+          >
             <CIcon :icon="currentThemeIcon" size="lg" class="text-50 mt-1" />
             <v-tooltip activator="parent" location="bottom">
               테마: {{ currentThemeLabel }}
@@ -85,6 +89,7 @@ const toggleAside = () => store.toggleAside()
           <CDropdownMenu>
             <CDropdownItem
               :active="theme === 'default'"
+              component="button"
               class="d-flex align-items-center cursor-pointer"
               @click="toggleTheme('default')"
             >
@@ -93,6 +98,7 @@ const toggleAside = () => store.toggleAside()
             </CDropdownItem>
             <CDropdownItem
               :active="theme === 'dark'"
+              component="button"
               class="d-flex align-items-center cursor-pointer"
               @click="toggleTheme('dark')"
             >
@@ -101,6 +107,7 @@ const toggleAside = () => store.toggleAside()
             </CDropdownItem>
             <CDropdownItem
               :active="theme === 'auto'"
+              component="button"
               class="d-flex align-items-center cursor-pointer"
               @click="toggleTheme('auto')"
             >
