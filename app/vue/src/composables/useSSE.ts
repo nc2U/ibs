@@ -66,8 +66,14 @@ export function useSSE() {
           // 3. 알림 사운드 재생 (딩-동♪)
           playNotificationSound()
 
-          // 4. 인앱 토스트 팝업 알림
-          message('info', payload.title, payload.body, 5000)
+          // 4. 인앱 토스트 팝업 알림 (승인은 초록색, 반려는 주황색, 일반은 파란색)
+          let toastType: 'success' | 'warning' | 'info' | 'error' = 'info'
+          if (payload.title.includes('완료') || payload.title.includes('승인')) {
+            toastType = 'success'
+          } else if (payload.title.includes('반려')) {
+            toastType = 'warning'
+          }
+          message(toastType, payload.title, payload.body, 5000)
         } catch (err) {
           console.error('Failed to parse SSE notification payload:', err)
         }

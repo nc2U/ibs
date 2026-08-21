@@ -82,7 +82,7 @@ const openTodo = () => {
       v-if="isStaff"
       size="small"
       variant="tonal"
-      :color="pendingCount > 0 ? 'danger' : 'secondary'"
+      :color="pendingCount > 0 ? 'warning' : 'secondary'"
       class="cursor-pointer font-weight-medium px-3"
       @click="goApproval"
     >
@@ -102,7 +102,7 @@ const openTodo = () => {
       v-if="isStaff"
       size="small"
       variant="tonal"
-      :color="inProgressDraftCount > 0 ? 'info' : 'secondary'"
+      :color="inProgressDraftCount > 0 ? 'warning' : 'secondary'"
       class="cursor-pointer font-weight-medium px-3"
       @click="goDrafted"
     >
@@ -111,7 +111,7 @@ const openTodo = () => {
       <v-badge
         v-if="inProgressDraftCount > 0"
         :content="inProgressDraftCount"
-        color="info"
+        color="danger"
         inline
         class="ms-1"
       />
