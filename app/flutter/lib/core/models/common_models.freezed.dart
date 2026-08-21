@@ -21,9 +21,11 @@ SimpleUserModel _$SimpleUserModelFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$SimpleUserModel {
+  @JsonKey(readValue: _readPk)
   int get pk => throw _privateConstructorUsedError;
   String get username => throw _privateConstructorUsedError;
   String? get email => throw _privateConstructorUsedError;
+  String? get fullName => throw _privateConstructorUsedError;
 
   /// Serializes this SimpleUserModel to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -42,7 +44,12 @@ abstract class $SimpleUserModelCopyWith<$Res> {
     $Res Function(SimpleUserModel) then,
   ) = _$SimpleUserModelCopyWithImpl<$Res, SimpleUserModel>;
   @useResult
-  $Res call({int pk, String username, String? email});
+  $Res call({
+    @JsonKey(readValue: _readPk) int pk,
+    String username,
+    String? email,
+    String? fullName,
+  });
 }
 
 /// @nodoc
@@ -63,6 +70,7 @@ class _$SimpleUserModelCopyWithImpl<$Res, $Val extends SimpleUserModel>
     Object? pk = null,
     Object? username = null,
     Object? email = freezed,
+    Object? fullName = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -77,6 +85,10 @@ class _$SimpleUserModelCopyWithImpl<$Res, $Val extends SimpleUserModel>
             email: freezed == email
                 ? _value.email
                 : email // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            fullName: freezed == fullName
+                ? _value.fullName
+                : fullName // ignore: cast_nullable_to_non_nullable
                       as String?,
           )
           as $Val,
@@ -93,7 +105,12 @@ abstract class _$$SimpleUserModelImplCopyWith<$Res>
   ) = __$$SimpleUserModelImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({int pk, String username, String? email});
+  $Res call({
+    @JsonKey(readValue: _readPk) int pk,
+    String username,
+    String? email,
+    String? fullName,
+  });
 }
 
 /// @nodoc
@@ -113,6 +130,7 @@ class __$$SimpleUserModelImplCopyWithImpl<$Res>
     Object? pk = null,
     Object? username = null,
     Object? email = freezed,
+    Object? fullName = freezed,
   }) {
     return _then(
       _$SimpleUserModelImpl(
@@ -128,6 +146,10 @@ class __$$SimpleUserModelImplCopyWithImpl<$Res>
             ? _value.email
             : email // ignore: cast_nullable_to_non_nullable
                   as String?,
+        fullName: freezed == fullName
+            ? _value.fullName
+            : fullName // ignore: cast_nullable_to_non_nullable
+                  as String?,
       ),
     );
   }
@@ -137,24 +159,29 @@ class __$$SimpleUserModelImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$SimpleUserModelImpl implements _SimpleUserModel {
   const _$SimpleUserModelImpl({
-    required this.pk,
-    required this.username,
+    @JsonKey(readValue: _readPk) required this.pk,
+    this.username = '',
     this.email,
+    this.fullName,
   });
 
   factory _$SimpleUserModelImpl.fromJson(Map<String, dynamic> json) =>
       _$$SimpleUserModelImplFromJson(json);
 
   @override
+  @JsonKey(readValue: _readPk)
   final int pk;
   @override
+  @JsonKey()
   final String username;
   @override
   final String? email;
+  @override
+  final String? fullName;
 
   @override
   String toString() {
-    return 'SimpleUserModel(pk: $pk, username: $username, email: $email)';
+    return 'SimpleUserModel(pk: $pk, username: $username, email: $email, fullName: $fullName)';
   }
 
   @override
@@ -165,12 +192,14 @@ class _$SimpleUserModelImpl implements _SimpleUserModel {
             (identical(other.pk, pk) || other.pk == pk) &&
             (identical(other.username, username) ||
                 other.username == username) &&
-            (identical(other.email, email) || other.email == email));
+            (identical(other.email, email) || other.email == email) &&
+            (identical(other.fullName, fullName) ||
+                other.fullName == fullName));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, pk, username, email);
+  int get hashCode => Object.hash(runtimeType, pk, username, email, fullName);
 
   /// Create a copy of SimpleUserModel
   /// with the given fields replaced by the non-null parameter values.
@@ -191,20 +220,24 @@ class _$SimpleUserModelImpl implements _SimpleUserModel {
 
 abstract class _SimpleUserModel implements SimpleUserModel {
   const factory _SimpleUserModel({
-    required final int pk,
-    required final String username,
+    @JsonKey(readValue: _readPk) required final int pk,
+    final String username,
     final String? email,
+    final String? fullName,
   }) = _$SimpleUserModelImpl;
 
   factory _SimpleUserModel.fromJson(Map<String, dynamic> json) =
       _$SimpleUserModelImpl.fromJson;
 
   @override
+  @JsonKey(readValue: _readPk)
   int get pk;
   @override
   String get username;
   @override
   String? get email;
+  @override
+  String? get fullName;
 
   /// Create a copy of SimpleUserModel
   /// with the given fields replaced by the non-null parameter values.
@@ -220,6 +253,7 @@ SimpleProjectModel _$SimpleProjectModelFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$SimpleProjectModel {
+  @JsonKey(readValue: _readPk)
   int get pk => throw _privateConstructorUsedError;
   String get name => throw _privateConstructorUsedError;
   String get slug => throw _privateConstructorUsedError;
@@ -241,7 +275,7 @@ abstract class $SimpleProjectModelCopyWith<$Res> {
     $Res Function(SimpleProjectModel) then,
   ) = _$SimpleProjectModelCopyWithImpl<$Res, SimpleProjectModel>;
   @useResult
-  $Res call({int pk, String name, String slug});
+  $Res call({@JsonKey(readValue: _readPk) int pk, String name, String slug});
 }
 
 /// @nodoc
@@ -288,7 +322,7 @@ abstract class _$$SimpleProjectModelImplCopyWith<$Res>
   ) = __$$SimpleProjectModelImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({int pk, String name, String slug});
+  $Res call({@JsonKey(readValue: _readPk) int pk, String name, String slug});
 }
 
 /// @nodoc
@@ -328,19 +362,22 @@ class __$$SimpleProjectModelImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$SimpleProjectModelImpl implements _SimpleProjectModel {
   const _$SimpleProjectModelImpl({
-    required this.pk,
-    required this.name,
-    required this.slug,
+    @JsonKey(readValue: _readPk) required this.pk,
+    this.name = '',
+    this.slug = '',
   });
 
   factory _$SimpleProjectModelImpl.fromJson(Map<String, dynamic> json) =>
       _$$SimpleProjectModelImplFromJson(json);
 
   @override
+  @JsonKey(readValue: _readPk)
   final int pk;
   @override
+  @JsonKey()
   final String name;
   @override
+  @JsonKey()
   final String slug;
 
   @override
@@ -381,15 +418,16 @@ class _$SimpleProjectModelImpl implements _SimpleProjectModel {
 
 abstract class _SimpleProjectModel implements SimpleProjectModel {
   const factory _SimpleProjectModel({
-    required final int pk,
-    required final String name,
-    required final String slug,
+    @JsonKey(readValue: _readPk) required final int pk,
+    final String name,
+    final String slug,
   }) = _$SimpleProjectModelImpl;
 
   factory _SimpleProjectModel.fromJson(Map<String, dynamic> json) =
       _$SimpleProjectModelImpl.fromJson;
 
   @override
+  @JsonKey(readValue: _readPk)
   int get pk;
   @override
   String get name;

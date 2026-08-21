@@ -925,10 +925,11 @@ mixin _$StaffAssignmentItemModel {
   String? get departmentName => throw _privateConstructorUsedError;
   int? get duty => throw _privateConstructorUsedError;
   String? get dutyName => throw _privateConstructorUsedError;
+  int? get position => throw _privateConstructorUsedError;
   String? get positionName => throw _privateConstructorUsedError;
-  bool get isPrimary => throw _privateConstructorUsedError;
   @JsonKey(readValue: _readDesc)
-  String? get desc => throw _privateConstructorUsedError;
+  String? get assignedTasks => throw _privateConstructorUsedError;
+  bool get isPrimary => throw _privateConstructorUsedError;
 
   /// Serializes this StaffAssignmentItemModel to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -955,9 +956,10 @@ abstract class $StaffAssignmentItemModelCopyWith<$Res> {
     String? departmentName,
     int? duty,
     String? dutyName,
+    int? position,
     String? positionName,
+    @JsonKey(readValue: _readDesc) String? assignedTasks,
     bool isPrimary,
-    @JsonKey(readValue: _readDesc) String? desc,
   });
 }
 
@@ -986,9 +988,10 @@ class _$StaffAssignmentItemModelCopyWithImpl<
     Object? departmentName = freezed,
     Object? duty = freezed,
     Object? dutyName = freezed,
+    Object? position = freezed,
     Object? positionName = freezed,
+    Object? assignedTasks = freezed,
     Object? isPrimary = null,
-    Object? desc = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -1020,18 +1023,22 @@ class _$StaffAssignmentItemModelCopyWithImpl<
                 ? _value.dutyName
                 : dutyName // ignore: cast_nullable_to_non_nullable
                       as String?,
+            position: freezed == position
+                ? _value.position
+                : position // ignore: cast_nullable_to_non_nullable
+                      as int?,
             positionName: freezed == positionName
                 ? _value.positionName
                 : positionName // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            assignedTasks: freezed == assignedTasks
+                ? _value.assignedTasks
+                : assignedTasks // ignore: cast_nullable_to_non_nullable
                       as String?,
             isPrimary: null == isPrimary
                 ? _value.isPrimary
                 : isPrimary // ignore: cast_nullable_to_non_nullable
                       as bool,
-            desc: freezed == desc
-                ? _value.desc
-                : desc // ignore: cast_nullable_to_non_nullable
-                      as String?,
           )
           as $Val,
     );
@@ -1055,9 +1062,10 @@ abstract class _$$StaffAssignmentItemModelImplCopyWith<$Res>
     String? departmentName,
     int? duty,
     String? dutyName,
+    int? position,
     String? positionName,
+    @JsonKey(readValue: _readDesc) String? assignedTasks,
     bool isPrimary,
-    @JsonKey(readValue: _readDesc) String? desc,
   });
 }
 
@@ -1086,9 +1094,10 @@ class __$$StaffAssignmentItemModelImplCopyWithImpl<$Res>
     Object? departmentName = freezed,
     Object? duty = freezed,
     Object? dutyName = freezed,
+    Object? position = freezed,
     Object? positionName = freezed,
+    Object? assignedTasks = freezed,
     Object? isPrimary = null,
-    Object? desc = freezed,
   }) {
     return _then(
       _$StaffAssignmentItemModelImpl(
@@ -1120,18 +1129,22 @@ class __$$StaffAssignmentItemModelImplCopyWithImpl<$Res>
             ? _value.dutyName
             : dutyName // ignore: cast_nullable_to_non_nullable
                   as String?,
+        position: freezed == position
+            ? _value.position
+            : position // ignore: cast_nullable_to_non_nullable
+                  as int?,
         positionName: freezed == positionName
             ? _value.positionName
             : positionName // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        assignedTasks: freezed == assignedTasks
+            ? _value.assignedTasks
+            : assignedTasks // ignore: cast_nullable_to_non_nullable
                   as String?,
         isPrimary: null == isPrimary
             ? _value.isPrimary
             : isPrimary // ignore: cast_nullable_to_non_nullable
                   as bool,
-        desc: freezed == desc
-            ? _value.desc
-            : desc // ignore: cast_nullable_to_non_nullable
-                  as String?,
       ),
     );
   }
@@ -1149,9 +1162,10 @@ class _$StaffAssignmentItemModelImpl implements _StaffAssignmentItemModel {
     this.departmentName,
     this.duty,
     this.dutyName,
+    this.position,
     this.positionName,
+    @JsonKey(readValue: _readDesc) this.assignedTasks,
     this.isPrimary = false,
-    @JsonKey(readValue: _readDesc) this.desc,
   });
 
   factory _$StaffAssignmentItemModelImpl.fromJson(Map<String, dynamic> json) =>
@@ -1175,17 +1189,19 @@ class _$StaffAssignmentItemModelImpl implements _StaffAssignmentItemModel {
   @override
   final String? dutyName;
   @override
+  final int? position;
+  @override
   final String? positionName;
+  @override
+  @JsonKey(readValue: _readDesc)
+  final String? assignedTasks;
   @override
   @JsonKey()
   final bool isPrimary;
-  @override
-  @JsonKey(readValue: _readDesc)
-  final String? desc;
 
   @override
   String toString() {
-    return 'StaffAssignmentItemModel(id: $id, company: $company, companyName: $companyName, department: $department, departmentName: $departmentName, duty: $duty, dutyName: $dutyName, positionName: $positionName, isPrimary: $isPrimary, desc: $desc)';
+    return 'StaffAssignmentItemModel(id: $id, company: $company, companyName: $companyName, department: $department, departmentName: $departmentName, duty: $duty, dutyName: $dutyName, position: $position, positionName: $positionName, assignedTasks: $assignedTasks, isPrimary: $isPrimary)';
   }
 
   @override
@@ -1204,11 +1220,14 @@ class _$StaffAssignmentItemModelImpl implements _StaffAssignmentItemModel {
             (identical(other.duty, duty) || other.duty == duty) &&
             (identical(other.dutyName, dutyName) ||
                 other.dutyName == dutyName) &&
+            (identical(other.position, position) ||
+                other.position == position) &&
             (identical(other.positionName, positionName) ||
                 other.positionName == positionName) &&
+            (identical(other.assignedTasks, assignedTasks) ||
+                other.assignedTasks == assignedTasks) &&
             (identical(other.isPrimary, isPrimary) ||
-                other.isPrimary == isPrimary) &&
-            (identical(other.desc, desc) || other.desc == desc));
+                other.isPrimary == isPrimary));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1222,9 +1241,10 @@ class _$StaffAssignmentItemModelImpl implements _StaffAssignmentItemModel {
     departmentName,
     duty,
     dutyName,
+    position,
     positionName,
+    assignedTasks,
     isPrimary,
-    desc,
   );
 
   /// Create a copy of StaffAssignmentItemModel
@@ -1253,9 +1273,10 @@ abstract class _StaffAssignmentItemModel implements StaffAssignmentItemModel {
     final String? departmentName,
     final int? duty,
     final String? dutyName,
+    final int? position,
     final String? positionName,
+    @JsonKey(readValue: _readDesc) final String? assignedTasks,
     final bool isPrimary,
-    @JsonKey(readValue: _readDesc) final String? desc,
   }) = _$StaffAssignmentItemModelImpl;
 
   factory _StaffAssignmentItemModel.fromJson(Map<String, dynamic> json) =
@@ -1279,12 +1300,14 @@ abstract class _StaffAssignmentItemModel implements StaffAssignmentItemModel {
   @override
   String? get dutyName;
   @override
+  int? get position;
+  @override
   String? get positionName;
   @override
-  bool get isPrimary;
-  @override
   @JsonKey(readValue: _readDesc)
-  String? get desc;
+  String? get assignedTasks;
+  @override
+  bool get isPrimary;
 
   /// Create a copy of StaffAssignmentItemModel
   /// with the given fields replaced by the non-null parameter values.
@@ -1300,6 +1323,7 @@ ApprovalActionModel _$ApprovalActionModelFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$ApprovalActionModel {
+  @JsonKey(readValue: _readId)
   int get id => throw _privateConstructorUsedError;
   SimpleUserModel get approver => throw _privateConstructorUsedError;
   String get action =>
@@ -1326,7 +1350,7 @@ abstract class $ApprovalActionModelCopyWith<$Res> {
   ) = _$ApprovalActionModelCopyWithImpl<$Res, ApprovalActionModel>;
   @useResult
   $Res call({
-    int id,
+    @JsonKey(readValue: _readId) int id,
     SimpleUserModel approver,
     String action,
     String comment,
@@ -1411,7 +1435,7 @@ abstract class _$$ApprovalActionModelImplCopyWith<$Res>
   @override
   @useResult
   $Res call({
-    int id,
+    @JsonKey(readValue: _readId) int id,
     SimpleUserModel approver,
     String action,
     String comment,
@@ -1480,7 +1504,7 @@ class __$$ApprovalActionModelImplCopyWithImpl<$Res>
 @JsonSerializable(fieldRename: FieldRename.snake)
 class _$ApprovalActionModelImpl implements _ApprovalActionModel {
   const _$ApprovalActionModelImpl({
-    required this.id,
+    @JsonKey(readValue: _readId) required this.id,
     required this.approver,
     required this.action,
     this.comment = '',
@@ -1492,6 +1516,7 @@ class _$ApprovalActionModelImpl implements _ApprovalActionModel {
       _$$ApprovalActionModelImplFromJson(json);
 
   @override
+  @JsonKey(readValue: _readId)
   final int id;
   @override
   final SimpleUserModel approver;
@@ -1558,7 +1583,7 @@ class _$ApprovalActionModelImpl implements _ApprovalActionModel {
 
 abstract class _ApprovalActionModel implements ApprovalActionModel {
   const factory _ApprovalActionModel({
-    required final int id,
+    @JsonKey(readValue: _readId) required final int id,
     required final SimpleUserModel approver,
     required final String action,
     final String comment,
@@ -1570,6 +1595,7 @@ abstract class _ApprovalActionModel implements ApprovalActionModel {
       _$ApprovalActionModelImpl.fromJson;
 
   @override
+  @JsonKey(readValue: _readId)
   int get id;
   @override
   SimpleUserModel get approver;
@@ -1598,7 +1624,9 @@ ApprovalAttachmentModel _$ApprovalAttachmentModelFromJson(
 
 /// @nodoc
 mixin _$ApprovalAttachmentModel {
+  @JsonKey(readValue: _readId)
   int get id => throw _privateConstructorUsedError;
+  @JsonKey(readValue: _readId)
   int get document => throw _privateConstructorUsedError;
   String? get file => throw _privateConstructorUsedError;
   String? get fileUrl => throw _privateConstructorUsedError;
@@ -1626,8 +1654,8 @@ abstract class $ApprovalAttachmentModelCopyWith<$Res> {
   ) = _$ApprovalAttachmentModelCopyWithImpl<$Res, ApprovalAttachmentModel>;
   @useResult
   $Res call({
-    int id,
-    int document,
+    @JsonKey(readValue: _readId) int id,
+    @JsonKey(readValue: _readId) int document,
     String? file,
     String? fileUrl,
     String fileName,
@@ -1720,8 +1748,8 @@ abstract class _$$ApprovalAttachmentModelImplCopyWith<$Res>
   @override
   @useResult
   $Res call({
-    int id,
-    int document,
+    @JsonKey(readValue: _readId) int id,
+    @JsonKey(readValue: _readId) int document,
     String? file,
     String? fileUrl,
     String fileName,
@@ -1808,8 +1836,8 @@ class __$$ApprovalAttachmentModelImplCopyWithImpl<$Res>
 @JsonSerializable(fieldRename: FieldRename.snake)
 class _$ApprovalAttachmentModelImpl implements _ApprovalAttachmentModel {
   const _$ApprovalAttachmentModelImpl({
-    required this.id,
-    required this.document,
+    @JsonKey(readValue: _readId) required this.id,
+    @JsonKey(readValue: _readId) required this.document,
     this.file,
     this.fileUrl,
     this.fileName = '',
@@ -1823,8 +1851,10 @@ class _$ApprovalAttachmentModelImpl implements _ApprovalAttachmentModel {
       _$$ApprovalAttachmentModelImplFromJson(json);
 
   @override
+  @JsonKey(readValue: _readId)
   final int id;
   @override
+  @JsonKey(readValue: _readId)
   final int document;
   @override
   final String? file;
@@ -1904,8 +1934,8 @@ class _$ApprovalAttachmentModelImpl implements _ApprovalAttachmentModel {
 
 abstract class _ApprovalAttachmentModel implements ApprovalAttachmentModel {
   const factory _ApprovalAttachmentModel({
-    required final int id,
-    required final int document,
+    @JsonKey(readValue: _readId) required final int id,
+    @JsonKey(readValue: _readId) required final int document,
     final String? file,
     final String? fileUrl,
     final String fileName,
@@ -1919,8 +1949,10 @@ abstract class _ApprovalAttachmentModel implements ApprovalAttachmentModel {
       _$ApprovalAttachmentModelImpl.fromJson;
 
   @override
+  @JsonKey(readValue: _readId)
   int get id;
   @override
+  @JsonKey(readValue: _readId)
   int get document;
   @override
   String? get file;
@@ -1951,6 +1983,7 @@ ApprovalStepModel _$ApprovalStepModelFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$ApprovalStepModel {
+  @JsonKey(readValue: _readId)
   int get id => throw _privateConstructorUsedError;
   int get stepOrder => throw _privateConstructorUsedError;
   String get roleLabel => throw _privateConstructorUsedError;
@@ -1978,7 +2011,7 @@ abstract class $ApprovalStepModelCopyWith<$Res> {
   ) = _$ApprovalStepModelCopyWithImpl<$Res, ApprovalStepModel>;
   @useResult
   $Res call({
-    int id,
+    @JsonKey(readValue: _readId) int id,
     int stepOrder,
     String roleLabel,
     List<SimpleUserModel> approvers,
@@ -2057,7 +2090,7 @@ abstract class _$$ApprovalStepModelImplCopyWith<$Res>
   @override
   @useResult
   $Res call({
-    int id,
+    @JsonKey(readValue: _readId) int id,
     int stepOrder,
     String roleLabel,
     List<SimpleUserModel> approvers,
@@ -2129,7 +2162,7 @@ class __$$ApprovalStepModelImplCopyWithImpl<$Res>
 @JsonSerializable(fieldRename: FieldRename.snake)
 class _$ApprovalStepModelImpl implements _ApprovalStepModel {
   const _$ApprovalStepModelImpl({
-    required this.id,
+    @JsonKey(readValue: _readId) required this.id,
     required this.stepOrder,
     required this.roleLabel,
     final List<SimpleUserModel> approvers = const [],
@@ -2143,6 +2176,7 @@ class _$ApprovalStepModelImpl implements _ApprovalStepModel {
       _$$ApprovalStepModelImplFromJson(json);
 
   @override
+  @JsonKey(readValue: _readId)
   final int id;
   @override
   final int stepOrder;
@@ -2232,7 +2266,7 @@ class _$ApprovalStepModelImpl implements _ApprovalStepModel {
 
 abstract class _ApprovalStepModel implements ApprovalStepModel {
   const factory _ApprovalStepModel({
-    required final int id,
+    @JsonKey(readValue: _readId) required final int id,
     required final int stepOrder,
     required final String roleLabel,
     final List<SimpleUserModel> approvers,
@@ -2245,6 +2279,7 @@ abstract class _ApprovalStepModel implements ApprovalStepModel {
       _$ApprovalStepModelImpl.fromJson;
 
   @override
+  @JsonKey(readValue: _readId)
   int get id;
   @override
   int get stepOrder;
@@ -2561,9 +2596,11 @@ ApprovalDocumentModel _$ApprovalDocumentModelFromJson(
 
 /// @nodoc
 mixin _$ApprovalDocumentModel {
+  @JsonKey(readValue: _readId)
   int get id => throw _privateConstructorUsedError;
   String get docNumber => throw _privateConstructorUsedError;
   String get title => throw _privateConstructorUsedError;
+  @JsonKey(readValue: _readDocTypeId)
   int get docType => throw _privateConstructorUsedError;
   String? get docTypeName => throw _privateConstructorUsedError;
   String? get categoryName => throw _privateConstructorUsedError;
@@ -2608,10 +2645,10 @@ abstract class $ApprovalDocumentModelCopyWith<$Res> {
   ) = _$ApprovalDocumentModelCopyWithImpl<$Res, ApprovalDocumentModel>;
   @useResult
   $Res call({
-    int id,
+    @JsonKey(readValue: _readId) int id,
     String docNumber,
     String title,
-    int docType,
+    @JsonKey(readValue: _readDocTypeId) int docType,
     String? docTypeName,
     String? categoryName,
     DocumentTypeModel? docTypeDetail,
@@ -2831,10 +2868,10 @@ abstract class _$$ApprovalDocumentModelImplCopyWith<$Res>
   @override
   @useResult
   $Res call({
-    int id,
+    @JsonKey(readValue: _readId) int id,
     String docNumber,
     String title,
-    int docType,
+    @JsonKey(readValue: _readDocTypeId) int docType,
     String? docTypeName,
     String? categoryName,
     DocumentTypeModel? docTypeDetail,
@@ -3023,10 +3060,10 @@ class __$$ApprovalDocumentModelImplCopyWithImpl<$Res>
 @JsonSerializable(fieldRename: FieldRename.snake)
 class _$ApprovalDocumentModelImpl implements _ApprovalDocumentModel {
   const _$ApprovalDocumentModelImpl({
-    required this.id,
+    @JsonKey(readValue: _readId) required this.id,
     this.docNumber = '',
     required this.title,
-    required this.docType,
+    @JsonKey(readValue: _readDocTypeId) required this.docType,
     this.docTypeName,
     this.categoryName,
     this.docTypeDetail,
@@ -3058,6 +3095,7 @@ class _$ApprovalDocumentModelImpl implements _ApprovalDocumentModel {
       _$$ApprovalDocumentModelImplFromJson(json);
 
   @override
+  @JsonKey(readValue: _readId)
   final int id;
   @override
   @JsonKey()
@@ -3065,6 +3103,7 @@ class _$ApprovalDocumentModelImpl implements _ApprovalDocumentModel {
   @override
   final String title;
   @override
+  @JsonKey(readValue: _readDocTypeId)
   final int docType;
   @override
   final String? docTypeName;
@@ -3260,10 +3299,10 @@ class _$ApprovalDocumentModelImpl implements _ApprovalDocumentModel {
 
 abstract class _ApprovalDocumentModel implements ApprovalDocumentModel {
   const factory _ApprovalDocumentModel({
-    required final int id,
+    @JsonKey(readValue: _readId) required final int id,
     final String docNumber,
     required final String title,
-    required final int docType,
+    @JsonKey(readValue: _readDocTypeId) required final int docType,
     final String? docTypeName,
     final String? categoryName,
     final DocumentTypeModel? docTypeDetail,
@@ -3292,12 +3331,14 @@ abstract class _ApprovalDocumentModel implements ApprovalDocumentModel {
       _$ApprovalDocumentModelImpl.fromJson;
 
   @override
+  @JsonKey(readValue: _readId)
   int get id;
   @override
   String get docNumber;
   @override
   String get title;
   @override
+  @JsonKey(readValue: _readDocTypeId)
   int get docType;
   @override
   String? get docTypeName;

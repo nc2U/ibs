@@ -87,9 +87,10 @@ _$StaffAssignmentItemModelImpl _$$StaffAssignmentItemModelImplFromJson(
   departmentName: json['department_name'] as String?,
   duty: (json['duty'] as num?)?.toInt(),
   dutyName: json['duty_name'] as String?,
+  position: (json['position'] as num?)?.toInt(),
   positionName: json['position_name'] as String?,
+  assignedTasks: _readDesc(json, 'assigned_tasks') as String?,
   isPrimary: json['is_primary'] as bool? ?? false,
-  desc: _readDesc(json, 'desc') as String?,
 );
 
 Map<String, dynamic> _$$StaffAssignmentItemModelImplToJson(
@@ -102,15 +103,16 @@ Map<String, dynamic> _$$StaffAssignmentItemModelImplToJson(
   'department_name': instance.departmentName,
   'duty': instance.duty,
   'duty_name': instance.dutyName,
+  'position': instance.position,
   'position_name': instance.positionName,
+  'assigned_tasks': instance.assignedTasks,
   'is_primary': instance.isPrimary,
-  'desc': instance.desc,
 };
 
 _$ApprovalActionModelImpl _$$ApprovalActionModelImplFromJson(
   Map<String, dynamic> json,
 ) => _$ApprovalActionModelImpl(
-  id: (json['id'] as num).toInt(),
+  id: (_readId(json, 'id') as num).toInt(),
   approver: SimpleUserModel.fromJson(json['approver'] as Map<String, dynamic>),
   action: json['action'] as String,
   comment: json['comment'] as String? ?? '',
@@ -132,8 +134,8 @@ Map<String, dynamic> _$$ApprovalActionModelImplToJson(
 _$ApprovalAttachmentModelImpl _$$ApprovalAttachmentModelImplFromJson(
   Map<String, dynamic> json,
 ) => _$ApprovalAttachmentModelImpl(
-  id: (json['id'] as num).toInt(),
-  document: (json['document'] as num).toInt(),
+  id: (_readId(json, 'id') as num).toInt(),
+  document: (_readId(json, 'document') as num).toInt(),
   file: json['file'] as String?,
   fileUrl: json['file_url'] as String?,
   fileName: json['file_name'] as String? ?? '',
@@ -160,7 +162,7 @@ Map<String, dynamic> _$$ApprovalAttachmentModelImplToJson(
 _$ApprovalStepModelImpl _$$ApprovalStepModelImplFromJson(
   Map<String, dynamic> json,
 ) => _$ApprovalStepModelImpl(
-  id: (json['id'] as num).toInt(),
+  id: (_readId(json, 'id') as num).toInt(),
   stepOrder: (json['step_order'] as num).toInt(),
   roleLabel: json['role_label'] as String,
   approvers:
@@ -220,10 +222,10 @@ Map<String, dynamic> _$$RoutePreviewStepModelImplToJson(
 _$ApprovalDocumentModelImpl _$$ApprovalDocumentModelImplFromJson(
   Map<String, dynamic> json,
 ) => _$ApprovalDocumentModelImpl(
-  id: (json['id'] as num).toInt(),
+  id: (_readId(json, 'id') as num).toInt(),
   docNumber: json['doc_number'] as String? ?? '',
   title: json['title'] as String,
-  docType: (json['doc_type'] as num).toInt(),
+  docType: (_readDocTypeId(json, 'doc_type') as num).toInt(),
   docTypeName: json['doc_type_name'] as String?,
   categoryName: json['category_name'] as String?,
   docTypeDetail: json['doc_type_detail'] == null

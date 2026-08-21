@@ -28,6 +28,17 @@ Object? _readCompanyName(Map json, String key) {
 Object? _readDesc(Map json, String key) =>
     (json['assigned_tasks'] ?? json['desc'])?.toString();
 
+Object? _readDocTypeId(Map json, String key) {
+  final val = json['doc_type'];
+  if (val is num) return val.toInt();
+  if (val is Map) {
+    final subId = val['id'] ?? val['pk'];
+    if (subId is num) return subId.toInt();
+  }
+  if (val is String) return int.tryParse(val) ?? 0;
+  return 0;
+}
+
 // ── 0. 결재 카테고리 모델 ──────────────────────────────────────────
 @freezed
 class DocCategoryModel with _$DocCategoryModel {
@@ -93,9 +104,10 @@ class StaffAssignmentItemModel with _$StaffAssignmentItemModel {
     String? departmentName,
     int? duty,
     String? dutyName,
+    int? position,
     String? positionName,
+    @JsonKey(readValue: _readDesc) String? assignedTasks,
     @Default(false) bool isPrimary,
-    @JsonKey(readValue: _readDesc) String? desc,
   }) = _StaffAssignmentItemModel;
 
   factory StaffAssignmentItemModel.fromJson(Map<String, dynamic> json) =>
@@ -107,7 +119,7 @@ class StaffAssignmentItemModel with _$StaffAssignmentItemModel {
 class ApprovalActionModel with _$ApprovalActionModel {
   @JsonSerializable(fieldRename: FieldRename.snake)
   const factory ApprovalActionModel({
-    required int id,
+    @JsonKey(readValue: _readId) required int id,
     required SimpleUserModel approver,
     required String action, // approved, rejected, commented
     @Default('') String comment,
@@ -124,8 +136,8 @@ class ApprovalActionModel with _$ApprovalActionModel {
 class ApprovalAttachmentModel with _$ApprovalAttachmentModel {
   @JsonSerializable(fieldRename: FieldRename.snake)
   const factory ApprovalAttachmentModel({
-    required int id,
-    required int document,
+    @JsonKey(readValue: _readId) required int id,
+    @JsonKey(readValue: _readId) required int document,
     String? file,
     String? fileUrl,
     @Default('') String fileName,
@@ -144,7 +156,7 @@ class ApprovalAttachmentModel with _$ApprovalAttachmentModel {
 class ApprovalStepModel with _$ApprovalStepModel {
   @JsonSerializable(fieldRename: FieldRename.snake)
   const factory ApprovalStepModel({
-    required int id,
+    @JsonKey(readValue: _readId) required int id,
     required int stepOrder,
     required String roleLabel,
     @Default([]) List<SimpleUserModel> approvers,
@@ -178,10 +190,10 @@ class RoutePreviewStepModel with _$RoutePreviewStepModel {
 class ApprovalDocumentModel with _$ApprovalDocumentModel {
   @JsonSerializable(fieldRename: FieldRename.snake)
   const factory ApprovalDocumentModel({
-    required int id,
+    @JsonKey(readValue: _readId) required int id,
     @Default('') String docNumber,
     required String title,
-    required int docType,
+    @JsonKey(readValue: _readDocTypeId) required int docType,
     String? docTypeName,
     String? categoryName,
     DocumentTypeModel? docTypeDetail,
