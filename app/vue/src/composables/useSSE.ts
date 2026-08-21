@@ -49,9 +49,11 @@ export function useSSE() {
         try {
           const payload: SSENotificationPayload = JSON.parse(event.data)
 
-          // 1. 전자결재 이벤트 -> 결재 대기함 및 사이드바/헤더 배지 즉각 갱신
+          // 1. 전자결재 이벤트 -> 대기함, 기안함, 완료함 및 헤더 배지 즉각 동기화
           if (payload.category === 'approval') {
             approvalStore.fetchMyPending()
+            approvalStore.fetchMyDrafted()
+            approvalStore.fetchMyApproved()
           }
 
           // 2. 업무/할일 이벤트 -> 담당 업무 및 할일 목록 즉각 갱신

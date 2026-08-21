@@ -20,6 +20,9 @@ const isAuthorized = computed(() => accountStore.isAuthorized)
 const userPk = computed(() => accountStore.userInfo?.pk)
 
 const pendingCount = computed(() => approvalStore.pendingList.length)
+const inProgressDraftCount = computed(
+  () => approvalStore.draftedList.filter(d => d.status === 'pending').length,
+)
 const assignedIssueCount = computed(() => issueStore.issueNumByMember.open_charged || 0)
 const todoCount = computed(() => accountStore.myTodos.length)
 
@@ -34,6 +37,7 @@ const fetchAllCounts = () => {
   if (isAuthorized.value) {
     if (isStaff.value) {
       approvalStore.fetchMyPending()
+      approvalStore.fetchMyDrafted()
     }
     issueStore.fetchIssueByMember(userPk.value ? String(userPk.value) : undefined)
     accountStore.fetchTodoList()
@@ -56,6 +60,10 @@ watch(
 
 const goApproval = () => {
   router.push('/approval/pending')
+}
+
+const goDrafted = () => {
+  router.push('/approval/drafted')
 }
 
 const goIssue = () => {
@@ -89,7 +97,35 @@ const openTodo = () => {
       </v-tooltip>
     </v-chip>
 
-    <!-- 2. 담당 업무 알림 -->
+    <!-- 2. 내 기안 문서 알림 (결재 진행중 건수) -->
+    <v-chip
+      v-if="isStaff"
+      size="small"
+      variant="tonal"
+      :color="inProgressDraftCount > 0 ? 'info' : 'secondary'"
+      class="cursor-pointer font-weight-medium px-3"
+      @click="goDrafted"
+    >
+      <v-icon icon="mdi-file-send-outline" start size="small" />
+      내 기안
+      <v-badge
+        v-if="inProgressDraftCount > 0"
+        :content="inProgressDraftCount"
+        color="info"
+        inline
+        class="ms-1"
+      />
+      <span v-else class="text-caption ms-1 text-disabled">0</span>
+      <v-tooltip activator="parent" location="bottom">
+        {{
+          inProgressDraftCount > 0
+            ? `결재 진행 중인 내 기안 ${inProgressDraftCount}건 (클릭하여 기안함 열기)`
+            : '진행 중인 기안 문서가 없습니다'
+        }}
+      </v-tooltip>
+    </v-chip>
+
+    <!-- 3. 담당 업무 알림 -->
     <v-chip
       size="small"
       variant="tonal"
@@ -116,7 +152,7 @@ const openTodo = () => {
       </v-tooltip>
     </v-chip>
 
-    <!-- 3. 오늘의 할일 알림 -->
+    <!-- 4. 오늘의 할일 알림 -->
     <v-chip
       size="small"
       variant="tonal"
