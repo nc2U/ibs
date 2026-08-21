@@ -62,13 +62,13 @@ const openTodo = () => {
       v-if="isStaff"
       size="small"
       variant="tonal"
-      :color="pendingCount > 0 ? 'error' : 'secondary'"
+      :color="pendingCount > 0 ? 'danger' : 'secondary'"
       class="cursor-pointer font-weight-medium px-3"
       @click="goApproval"
     >
       <v-icon icon="mdi-file-check-outline" start size="small" />
       결재 대기
-      <v-badge v-if="pendingCount > 0" :content="pendingCount" color="error" inline class="ms-1" />
+      <v-badge v-if="pendingCount > 0" :content="pendingCount" color="danger" inline class="ms-1" />
       <span v-else class="text-caption ms-1 text-disabled">0</span>
       <v-tooltip activator="parent" location="bottom">
         {{
