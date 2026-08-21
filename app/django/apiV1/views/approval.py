@@ -319,8 +319,12 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
         if not current_step.approvers.filter(pk=request.user.pk).exists():
             return Response({'detail': '이 단계의 결재 권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
 
-        if current_step.actions.filter(approver=request.user).exists():
-            return Response({'detail': '이미 결재 처리하셨습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+        # 이미 승인/반려 처리를 완료한 경우 재처리 불가 (단, 단순 의견 작성자는 추후 승인/반려 가능)
+        if current_step.actions.filter(
+            approver=request.user,
+            action__in=[ApprovalAction.ACTION_APPROVED, ApprovalAction.ACTION_REJECTED]
+        ).exists():
+            return Response({'detail': '이미 승인 또는 반려 처리하셨습니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
         # 결재 행동 기록
         ApprovalAction.objects.create(
@@ -330,6 +334,14 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
             comment=act_data.get('comment', ''),
             content_hash=document.content_hash,
         )
+
+        # ── 단순 의견(commented) 등록인 경우: 문서 상태를 변경하지 않고 종료 ──
+        if act_data['action'] == ApprovalAction.ACTION_COMMENTED:
+            try:
+                notify_drafter_task.delay(document.pk, 'commented', act_data.get('comment', ''))
+            except Exception:
+                notify_drafter_task(document.pk, 'commented', act_data.get('comment', ''))
+            return Response({'detail': '결재 의견이 성공적으로 등록되었습니다.'})
 
         # AND/OR 조건 처리
         completed, approved = current_step.is_completed()
@@ -342,7 +354,10 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
             current_step.save()
             document.status = ApprovalDocument.STATUS_REJECTED
             document.save()
-            notify_drafter_task.delay(document.pk, 'rejected', act_data.get('comment', ''))
+            try:
+                notify_drafter_task.delay(document.pk, 'rejected', act_data.get('comment', ''))
+            except Exception:
+                notify_drafter_task(document.pk, 'rejected', act_data.get('comment', ''))
             return Response({'detail': '반려 처리되었습니다.'})
 
         # 단계 승인
@@ -353,7 +368,10 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
         if next_step:
             document.current_step += 1
             document.save()
-            notify_approvers_task.delay(document.pk, next_step.pk)
+            try:
+                notify_approvers_task.delay(document.pk, next_step.pk)
+            except Exception:
+                notify_approvers_task(document.pk, next_step.pk)
             return Response({'detail': f'{next_step.role_label} 결재자에게 요청이 전달되었습니다.'})
 
         # 최종 승인
@@ -361,8 +379,14 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
         document.completed_at = timezone.now()
         document.doc_number = document.generate_doc_number()
         document.save()
-        notify_drafter_task.delay(document.pk, 'approved')
-        generate_approval_pdf_task.delay(document.pk)
+        try:
+            notify_drafter_task.delay(document.pk, 'approved')
+        except Exception:
+            notify_drafter_task(document.pk, 'approved')
+        try:
+            generate_approval_pdf_task.delay(document.pk)
+        except Exception:
+            generate_approval_pdf_task(document.pk)
         return Response({'detail': '최종 승인되었습니다. PDF가 생성됩니다.'})
 
     # ── POST /approval-document/{id}/cancel/ ─────────────────

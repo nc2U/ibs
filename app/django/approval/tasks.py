@@ -43,6 +43,9 @@ def notify_drafter_task(document_pk, action, comment=''):
         elif action == 'rejected':
             push_title = f'[결재 반려] {document.doc_type.name}'
             push_body = f'"{document.title}" 결재가 반려되었습니다.' + (f' 사유: {comment}' if comment else '')
+        elif action == 'commented':
+            push_title = f'[결재 의견 등록] {document.doc_type.name}'
+            push_body = f'"{document.title}" 결재에 새로운 의견이 등록되었습니다.' + (f': {comment}' if comment else '')
         else:
             return
 
