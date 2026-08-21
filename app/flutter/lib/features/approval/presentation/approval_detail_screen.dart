@@ -1548,9 +1548,9 @@ class ApprovalDetailScreen extends ConsumerWidget {
         child: SafeArea(
           child: Row(
             children: [
-              // 반려 버튼
+              // 반려 버튼 (40%)
               Expanded(
-                flex: 3,
+                flex: 4,
                 child: SizedBox(
                   height: 44,
                   child: ElevatedButton.icon(
@@ -1568,45 +1568,17 @@ class ApprovalDetailScreen extends ConsumerWidget {
                       backgroundColor: context.colors.error,
                       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                       elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
                     ),
-                    icon: const Icon(Icons.close_rounded, color: Colors.white, size: 16),
-                    label: const Text('반려', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13), maxLines: 1),
+                    icon: const Icon(Icons.close_rounded, color: Colors.white, size: 18),
+                    label: const Text('반려', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14)),
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
 
-              // 의견 버튼
+              // 결재 승인 버튼 (60%)
               Expanded(
-                flex: 3,
-                child: SizedBox(
-                  height: 44,
-                  child: OutlinedButton(
-                    onPressed: () {
-                      ApprovalActionBottomSheet.show(
-                        context,
-                        type: ApprovalActionModalType.comment,
-                        title: doc.title,
-                        onConfirm: (comment) => ref
-                            .read(approvalActionControllerProvider.notifier)
-                            .addComment(doc.id, comment: comment ?? ''),
-                      );
-                    },
-                    style: OutlinedButton.styleFrom(
-                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-                      side: BorderSide(color: context.colors.border),
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                    ),
-                    child: Text('의견', style: TextStyle(color: context.colors.textSecond, fontWeight: FontWeight.w600, fontSize: 13), maxLines: 1),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-
-              // 승인 버튼
-              Expanded(
-                flex: 4,
+                flex: 6,
                 child: SizedBox(
                   height: 44,
                   child: ElevatedButton.icon(
@@ -1624,10 +1596,9 @@ class ApprovalDetailScreen extends ConsumerWidget {
                       backgroundColor: context.colors.success,
                       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                       elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
                     ),
-                    icon: const Icon(Icons.check_rounded, color: Colors.white, size: 16),
-                    label: const Text('결재 승인', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13), maxLines: 1),
+                    icon: const Icon(Icons.check_rounded, color: Colors.white, size: 18),
+                    label: const Text('결재 승인', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14)),
                   ),
                 ),
               ),
