@@ -149,7 +149,7 @@ class ApprovalDocumentSerializer(serializers.ModelSerializer):
         many=True, queryset=User.objects.all(), source='observers', required=False, write_only=True
     )
     drafter_assignment_desc = serializers.SerializerMethodField()
-    content = serializers.JSONField(required=False, default=dict)
+    content = serializers.DictField(required=False, default=dict)
     pdf_url = serializers.SerializerMethodField()
 
     def get_drafter_assignment_desc(self, obj):

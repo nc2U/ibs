@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 
 interface AppointmentTarget {
   name: string
@@ -18,6 +18,10 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'update:modelValue', val: Record<string, any>): void
 }>()
+
+const targetsList = computed<AppointmentTarget[]>(() => {
+  return Array.isArray(props.modelValue.targets) ? props.modelValue.targets : []
+})
 
 const appointmentTypes = [
   { value: 'PROMOTION', label: '승진 / 승격' },
@@ -52,17 +56,19 @@ const addTarget = () => {
   updateField('targets', targets)
 }
 
-const removeTarget = (index: number) => {
+const removeTarget = (index: number | string) => {
+  const i = typeof index === 'string' ? parseInt(index, 10) : index
   const targets: AppointmentTarget[] = [...(props.modelValue.targets || [])]
-  targets.splice(index, 1)
+  targets.splice(i, 1)
   updateField('targets', targets)
 }
 
-const updateTarget = (index: number, field: keyof AppointmentTarget, val: string) => {
+const updateTarget = (index: number | string, field: keyof AppointmentTarget, val: string) => {
+  const i = typeof index === 'string' ? parseInt(index, 10) : index
   const targets: AppointmentTarget[] = [...(props.modelValue.targets || [])]
-  if (targets[index]) {
-    targets[index] = {
-      ...targets[index],
+  if (targets[i]) {
+    targets[i] = {
+      ...targets[i],
       [field]: val,
     }
     updateField('targets', targets)
@@ -157,7 +163,7 @@ onMounted(() => {
       <div class="card-header d-flex justify-content-between align-items-center bg-white py-2">
         <span class="fw-bold text-dark">
           <CIcon name="cilPeople" class="me-1 text-primary" />
-          발령 대상자 명단 (총 {{ modelValue.targets?.length || 0 }}명)
+          발령 대상자 명단 (총 {{ targetsList.length }}명)
         </span>
         <CButton color="primary" size="sm" variant="outline" @click="addTarget">
           + 대상자 추가
@@ -180,7 +186,7 @@ onMounted(() => {
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(item, idx) in modelValue.targets || []" :key="idx">
+              <tr v-for="(item, idx) in targetsList" :key="idx">
                 <td class="text-center text-muted small">{{ idx + 1 }}</td>
                 <td>
                   <CFormInput
@@ -246,7 +252,7 @@ onMounted(() => {
                     size="sm"
                     variant="ghost"
                     class="p-0"
-                    :disabled="(modelValue.targets || []).length <= 1"
+                    :disabled="targetsList.length <= 1"
                     @click="removeTarget(idx)"
                   >
                     ×
