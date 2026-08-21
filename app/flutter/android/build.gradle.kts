@@ -19,8 +19,8 @@ subprojects {
         if (project.hasProperty("android")) {
             project.extensions.findByType(com.android.build.gradle.BaseExtension::class.java)?.apply {
                 if (namespace == null) {
-                    val fallbackNs = if (project.group.toString().isNotEmpty()) project.group.toString() else "com.plugin.${project.name.replace('-', '_')}"
-                    namespace = if (project.name == "flutter_app_badger") "fr.g1ntoki.flutterappbadger" else fallbackNs
+                    namespace = project.group.toString().takeIf { it.isNotEmpty() }
+                        ?: "com.plugin.${project.name.replace('-', '_')}"
                 }
                 compileSdkVersion(36)
                 compileOptions {
