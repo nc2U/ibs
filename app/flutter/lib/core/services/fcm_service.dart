@@ -37,8 +37,16 @@ class FcmService {
 
         // 3. APNs 토큰 대기 (iOS인 경우)
         if (Platform.isIOS) {
-          String? apnsToken = await _messaging.getAPNSToken();
-          debugPrint('🍎 [FCM] APNs Token: $apnsToken');
+          String? apnsToken;
+          int retryCount = 0;
+          while (apnsToken == null && retryCount < 10) {
+            apnsToken = await _messaging.getAPNSToken();
+            if (apnsToken == null) {
+              await Future.delayed(const Duration(milliseconds: 500));
+              retryCount++;
+            }
+          }
+          debugPrint('🍎 [FCM] APNs Token: $apnsToken (retries: $retryCount)');
         }
 
         // 4. 기기 고유 FCM 토큰 발급
@@ -46,6 +54,8 @@ class FcmService {
         if (fcmToken != null && fcmToken.isNotEmpty) {
           debugPrint('🔑 [FCM] Device Token: $fcmToken');
           await _registerTokenToServer(dio, fcmToken);
+        } else {
+          debugPrint('⚠️ [FCM] FCM Token 발급 실패 (null 또는 empty)');
         }
 
         // 5. 토큰 갱신 이벤트 리스너
@@ -91,11 +101,12 @@ class FcmService {
         '/api/v1/fcm-device/',
         data: {
           'registration_id': token,
+          'platform': deviceType,
           'device_type': deviceType,
           'is_active': true,
         },
       );
-      debugPrint('✅ [FCM] 백엔드에 기기 토큰 등록 성공');
+      debugPrint('✅ [FCM] 백엔드에 기기 토큰 등록 성공 ($deviceType)');
     } on DioException catch (e) {
       debugPrint('❌ [FCM] 기기 토큰 백엔드 등록 실패: ${e.response?.statusCode} ${e.response?.data}');
     } catch (e) {

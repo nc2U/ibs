@@ -10,8 +10,8 @@ _$DocCategoryModelImpl _$$DocCategoryModelImplFromJson(
   Map<String, dynamic> json,
 ) => _$DocCategoryModelImpl(
   id: (_readId(json, 'id') as num).toInt(),
-  name: json['name'] as String,
-  code: json['code'] as String,
+  name: _readStr(json, 'name') as String? ?? '',
+  code: _readStr(json, 'code') as String? ?? '',
   description: json['description'] as String? ?? '',
   order: (json['order'] as num?)?.toInt() ?? 1,
   isActive: json['is_active'] as bool? ?? true,
@@ -53,8 +53,8 @@ _$DocumentTypeModelImpl _$$DocumentTypeModelImplFromJson(
   Map<String, dynamic> json,
 ) => _$DocumentTypeModelImpl(
   id: (_readId(json, 'id') as num).toInt(),
-  name: json['name'] as String,
-  code: json['code'] as String,
+  name: _readStr(json, 'name') as String? ?? '',
+  code: _readStr(json, 'code') as String? ?? '',
   description: json['description'] as String? ?? '',
   formTemplateKey: json['form_template_key'] as String? ?? 'GENERAL',
   routeType: json['route_type'] as String? ?? 'organization',
@@ -114,10 +114,10 @@ _$ApprovalActionModelImpl _$$ApprovalActionModelImplFromJson(
 ) => _$ApprovalActionModelImpl(
   id: (_readId(json, 'id') as num).toInt(),
   approver: SimpleUserModel.fromJson(json['approver'] as Map<String, dynamic>),
-  action: json['action'] as String,
-  comment: json['comment'] as String? ?? '',
-  contentHash: json['content_hash'] as String? ?? '',
-  actedAt: json['acted_at'] as String,
+  action: _readStr(json, 'action') as String? ?? 'approved',
+  comment: _readStr(json, 'comment') as String? ?? '',
+  contentHash: _readStr(json, 'content_hash') as String? ?? '',
+  actedAt: _readStr(json, 'acted_at') as String? ?? '',
 );
 
 Map<String, dynamic> _$$ApprovalActionModelImplToJson(
@@ -138,11 +138,11 @@ _$ApprovalAttachmentModelImpl _$$ApprovalAttachmentModelImplFromJson(
   document: (_readId(json, 'document') as num).toInt(),
   file: json['file'] as String?,
   fileUrl: json['file_url'] as String?,
-  fileName: json['file_name'] as String? ?? '',
-  fileType: json['file_type'] as String? ?? '',
+  fileName: _readStr(json, 'file_name') as String? ?? '',
+  fileType: _readStr(json, 'file_type') as String? ?? '',
   fileSize: (json['file_size'] as num?)?.toInt(),
   creatorName: json['creator_name'] as String?,
-  createdAt: json['created_at'] as String,
+  createdAt: _readStr(json, 'created_at') as String? ?? '',
 );
 
 Map<String, dynamic> _$$ApprovalAttachmentModelImplToJson(
@@ -164,14 +164,14 @@ _$ApprovalStepModelImpl _$$ApprovalStepModelImplFromJson(
 ) => _$ApprovalStepModelImpl(
   id: (_readId(json, 'id') as num).toInt(),
   stepOrder: (json['step_order'] as num).toInt(),
-  roleLabel: json['role_label'] as String,
+  roleLabel: _readStr(json, 'role_label') as String? ?? '',
   approvers:
       (json['approvers'] as List<dynamic>?)
           ?.map((e) => SimpleUserModel.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const [],
-  condition: json['condition'] as String? ?? 'AND',
-  status: json['status'] as String? ?? 'pending',
+  condition: _readStr(json, 'condition') as String? ?? 'AND',
+  status: _readStr(json, 'status') as String? ?? 'pending',
   actions:
       (json['actions'] as List<dynamic>?)
           ?.map((e) => ApprovalActionModel.fromJson(e as Map<String, dynamic>))
@@ -195,7 +195,7 @@ _$RoutePreviewStepModelImpl _$$RoutePreviewStepModelImplFromJson(
   Map<String, dynamic> json,
 ) => _$RoutePreviewStepModelImpl(
   stepOrder: (json['step_order'] as num).toInt(),
-  roleLabel: json['role_label'] as String,
+  roleLabel: _readStr(json, 'role_label') as String? ?? '',
   approvers:
       (json['approvers'] as List<dynamic>?)
           ?.map((e) => SimpleUserModel.fromJson(e as Map<String, dynamic>))
@@ -206,7 +206,7 @@ _$RoutePreviewStepModelImpl _$$RoutePreviewStepModelImplFromJson(
           ?.map((e) => (e as num).toInt())
           .toList() ??
       const [],
-  condition: json['condition'] as String? ?? 'AND',
+  condition: _readStr(json, 'condition') as String? ?? 'AND',
 );
 
 Map<String, dynamic> _$$RoutePreviewStepModelImplToJson(
@@ -223,8 +223,8 @@ _$ApprovalDocumentModelImpl _$$ApprovalDocumentModelImplFromJson(
   Map<String, dynamic> json,
 ) => _$ApprovalDocumentModelImpl(
   id: (_readId(json, 'id') as num).toInt(),
-  docNumber: json['doc_number'] as String? ?? '',
-  title: json['title'] as String,
+  docNumber: _readStr(json, 'doc_number') as String? ?? '',
+  title: _readStr(json, 'title') as String? ?? '',
   docType: (_readDocTypeId(json, 'doc_type') as num).toInt(),
   docTypeName: json['doc_type_name'] as String?,
   categoryName: json['category_name'] as String?,
@@ -239,10 +239,10 @@ _$ApprovalDocumentModelImpl _$$ApprovalDocumentModelImplFromJson(
   departmentName: json['department_name'] as String?,
   drafterAssignmentDesc: json['drafter_assignment_desc'] as String?,
   content: json['content'] as Map<String, dynamic>? ?? const {},
-  status: json['status'] as String? ?? 'draft',
+  status: _readStr(json, 'status') as String? ?? 'draft',
   statusDesc: json['status_desc'] as String?,
   currentStep: (json['current_step'] as num?)?.toInt() ?? 1,
-  contentHash: json['content_hash'] as String? ?? '',
+  contentHash: _readStr(json, 'content_hash') as String? ?? '',
   pdfUrl: json['pdf_url'] as String?,
   attachmentCount: (json['attachment_count'] as num?)?.toInt() ?? 0,
   observerCount: (json['observer_count'] as num?)?.toInt() ?? 0,
@@ -255,7 +255,7 @@ _$ApprovalDocumentModelImpl _$$ApprovalDocumentModelImplFromJson(
   steps: (json['steps'] as List<dynamic>?)
       ?.map((e) => ApprovalStepModel.fromJson(e as Map<String, dynamic>))
       .toList(),
-  createdAt: json['created_at'] as String,
+  createdAt: _readStr(json, 'created_at') as String? ?? '',
   submittedAt: json['submitted_at'] as String?,
   completedAt: json['completed_at'] as String?,
 );

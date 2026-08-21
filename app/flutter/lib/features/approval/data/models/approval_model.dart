@@ -39,14 +39,16 @@ Object? _readDocTypeId(Map json, String key) {
   return 0;
 }
 
+Object? _readStr(Map json, String key) => json[key]?.toString() ?? '';
+
 // ── 0. 결재 카테고리 모델 ──────────────────────────────────────────
 @freezed
 class DocCategoryModel with _$DocCategoryModel {
   @JsonSerializable(fieldRename: FieldRename.snake)
   const factory DocCategoryModel({
     @JsonKey(readValue: _readId) required int id,
-    required String name,
-    required String code,
+    @JsonKey(readValue: _readStr) @Default('') String name,
+    @JsonKey(readValue: _readStr) @Default('') String code,
     @Default('') String description,
     @Default(1) int order,
     @Default(true) bool isActive,
@@ -78,8 +80,8 @@ class DocumentTypeModel with _$DocumentTypeModel {
   @JsonSerializable(fieldRename: FieldRename.snake)
   const factory DocumentTypeModel({
     @JsonKey(readValue: _readId) required int id,
-    required String name,
-    required String code,
+    @JsonKey(readValue: _readStr) @Default('') String name,
+    @JsonKey(readValue: _readStr) @Default('') String code,
     @Default('') String description,
     @Default('GENERAL') String formTemplateKey,
     @Default('organization') String routeType,
@@ -121,10 +123,10 @@ class ApprovalActionModel with _$ApprovalActionModel {
   const factory ApprovalActionModel({
     @JsonKey(readValue: _readId) required int id,
     required SimpleUserModel approver,
-    required String action, // approved, rejected, commented
-    @Default('') String comment,
-    @Default('') String contentHash,
-    required String actedAt,
+    @JsonKey(readValue: _readStr) @Default('approved') String action, // approved, rejected, commented
+    @JsonKey(readValue: _readStr) @Default('') String comment,
+    @JsonKey(readValue: _readStr) @Default('') String contentHash,
+    @JsonKey(readValue: _readStr) @Default('') String actedAt,
   }) = _ApprovalActionModel;
 
   factory ApprovalActionModel.fromJson(Map<String, dynamic> json) =>
@@ -140,11 +142,11 @@ class ApprovalAttachmentModel with _$ApprovalAttachmentModel {
     @JsonKey(readValue: _readId) required int document,
     String? file,
     String? fileUrl,
-    @Default('') String fileName,
-    @Default('') String fileType,
+    @JsonKey(readValue: _readStr) @Default('') String fileName,
+    @JsonKey(readValue: _readStr) @Default('') String fileType,
     int? fileSize,
     String? creatorName,
-    required String createdAt,
+    @JsonKey(readValue: _readStr) @Default('') String createdAt,
   }) = _ApprovalAttachmentModel;
 
   factory ApprovalAttachmentModel.fromJson(Map<String, dynamic> json) =>
@@ -158,10 +160,10 @@ class ApprovalStepModel with _$ApprovalStepModel {
   const factory ApprovalStepModel({
     @JsonKey(readValue: _readId) required int id,
     required int stepOrder,
-    required String roleLabel,
+    @JsonKey(readValue: _readStr) @Default('') String roleLabel,
     @Default([]) List<SimpleUserModel> approvers,
-    @Default('AND') String condition, // AND, OR
-    @Default('pending') String status, // pending, approved, rejected, skipped
+    @JsonKey(readValue: _readStr) @Default('AND') String condition, // AND, OR
+    @JsonKey(readValue: _readStr) @Default('pending') String status, // pending, approved, rejected, skipped
     @Default([]) List<ApprovalActionModel> actions,
   }) = _ApprovalStepModel;
 
@@ -175,10 +177,10 @@ class RoutePreviewStepModel with _$RoutePreviewStepModel {
   @JsonSerializable(fieldRename: FieldRename.snake)
   const factory RoutePreviewStepModel({
     required int stepOrder,
-    required String roleLabel,
+    @JsonKey(readValue: _readStr) @Default('') String roleLabel,
     @Default([]) List<SimpleUserModel> approvers,
     @Default([]) List<int> approverIds,
-    @Default('AND') String condition,
+    @JsonKey(readValue: _readStr) @Default('AND') String condition,
   }) = _RoutePreviewStepModel;
 
   factory RoutePreviewStepModel.fromJson(Map<String, dynamic> json) =>
@@ -191,8 +193,8 @@ class ApprovalDocumentModel with _$ApprovalDocumentModel {
   @JsonSerializable(fieldRename: FieldRename.snake)
   const factory ApprovalDocumentModel({
     @JsonKey(readValue: _readId) required int id,
-    @Default('') String docNumber,
-    required String title,
+    @JsonKey(readValue: _readStr) @Default('') String docNumber,
+    @JsonKey(readValue: _readStr) @Default('') String title,
     @JsonKey(readValue: _readDocTypeId) required int docType,
     String? docTypeName,
     String? categoryName,
@@ -203,17 +205,17 @@ class ApprovalDocumentModel with _$ApprovalDocumentModel {
     String? departmentName,
     String? drafterAssignmentDesc,
     @Default({}) Map<String, dynamic> content,
-    @Default('draft') String status, // draft, pending, approved, rejected, cancelled
+    @JsonKey(readValue: _readStr) @Default('draft') String status, // draft, pending, approved, rejected, cancelled
     String? statusDesc,
     @Default(1) int currentStep,
-    @Default('') String contentHash,
+    @JsonKey(readValue: _readStr) @Default('') String contentHash,
     String? pdfUrl,
     @Default(0) int attachmentCount,
     @Default(0) int observerCount,
     List<ApprovalAttachmentModel>? attachments,
     List<SimpleUserModel>? observers,
     List<ApprovalStepModel>? steps,
-    required String createdAt,
+    @JsonKey(readValue: _readStr) @Default('') String createdAt,
     String? submittedAt,
     String? completedAt,
   }) = _ApprovalDocumentModel;

@@ -150,16 +150,16 @@ class ApprovalActionController extends StateNotifier<AsyncValue<void>> {
   }
 
   /// 결재 승인
-  Future<ApprovalDocumentModel?> approve(int docId, {String? comment}) async {
+  Future<String?> approve(int docId, {String? comment}) async {
     state = const AsyncValue.loading();
     try {
-      final doc = await _repo.actDocument(docId, action: 'approved', comment: comment);
+      final msg = await _repo.actDocument(docId, action: 'approved', comment: comment);
       _ref.invalidate(pendingApprovalsProvider);
       _ref.invalidate(approvedApprovalsProvider);
       _ref.invalidate(allApprovalsProvider);
       _ref.invalidate(approvalDetailProvider(docId));
       state = const AsyncValue.data(null);
-      return doc;
+      return msg;
     } catch (e, st) {
       state = AsyncValue.error(e, st);
       rethrow;
@@ -167,16 +167,16 @@ class ApprovalActionController extends StateNotifier<AsyncValue<void>> {
   }
 
   /// 결재 반려
-  Future<ApprovalDocumentModel?> reject(int docId, {required String comment}) async {
+  Future<String?> reject(int docId, {required String comment}) async {
     state = const AsyncValue.loading();
     try {
-      final doc = await _repo.actDocument(docId, action: 'rejected', comment: comment);
+      final msg = await _repo.actDocument(docId, action: 'rejected', comment: comment);
       _ref.invalidate(pendingApprovalsProvider);
       _ref.invalidate(draftedApprovalsProvider);
       _ref.invalidate(allApprovalsProvider);
       _ref.invalidate(approvalDetailProvider(docId));
       state = const AsyncValue.data(null);
-      return doc;
+      return msg;
     } catch (e, st) {
       state = AsyncValue.error(e, st);
       rethrow;
@@ -184,13 +184,13 @@ class ApprovalActionController extends StateNotifier<AsyncValue<void>> {
   }
 
   /// 결재 의견 등록
-  Future<ApprovalDocumentModel?> addComment(int docId, {required String comment}) async {
+  Future<String?> addComment(int docId, {required String comment}) async {
     state = const AsyncValue.loading();
     try {
-      final doc = await _repo.actDocument(docId, action: 'commented', comment: comment);
+      final msg = await _repo.actDocument(docId, action: 'commented', comment: comment);
       _ref.invalidate(approvalDetailProvider(docId));
       state = const AsyncValue.data(null);
-      return doc;
+      return msg;
     } catch (e, st) {
       state = AsyncValue.error(e, st);
       rethrow;
@@ -198,15 +198,15 @@ class ApprovalActionController extends StateNotifier<AsyncValue<void>> {
   }
 
   /// 기안 회수/취소
-  Future<ApprovalDocumentModel?> cancel(int docId) async {
+  Future<String?> cancel(int docId) async {
     state = const AsyncValue.loading();
     try {
-      final doc = await _repo.cancelDocument(docId);
+      final msg = await _repo.cancelDocument(docId);
       _ref.invalidate(pendingApprovalsProvider);
       _ref.invalidate(draftedApprovalsProvider);
       _ref.invalidate(approvalDetailProvider(docId));
       state = const AsyncValue.data(null);
-      return doc;
+      return msg;
     } catch (e, st) {
       state = AsyncValue.error(e, st);
       rethrow;

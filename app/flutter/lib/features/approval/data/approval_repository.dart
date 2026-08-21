@@ -173,7 +173,7 @@ class ApprovalRepository {
   }
 
   /// 16. 결재 행동 수행 (승인 / 반려 / 의견)
-  Future<ApprovalDocumentModel> actDocument(
+  Future<String> actDocument(
     int id, {
     required String action, // approved, rejected, commented
     String? comment,
@@ -183,14 +183,20 @@ class ApprovalRepository {
       'action': action,
       if (comment != null && comment.isNotEmpty) 'comment': comment,
     });
-    return ApprovalDocumentModel.fromJson(res.data as Map<String, dynamic>);
+    if (res.data is Map && res.data['detail'] != null) {
+      return res.data['detail'].toString();
+    }
+    return '처리되었습니다.';
   }
 
   /// 17. 기안 회수/취소
-  Future<ApprovalDocumentModel> cancelDocument(int id) async {
+  Future<String> cancelDocument(int id) async {
     final url = ApiEndpoints.resolve(ApiEndpoints.approvalCancel, {'id': id});
     final res = await _dio.post(url);
-    return ApprovalDocumentModel.fromJson(res.data as Map<String, dynamic>);
+    if (res.data is Map && res.data['detail'] != null) {
+      return res.data['detail'].toString();
+    }
+    return '취소되었습니다.';
   }
 
   /// 18. 결재 문서 인쇄용 PDF 다운로드

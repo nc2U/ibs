@@ -14,17 +14,27 @@ import '../../../core/theme/app_colors_extension.dart';
 import '../../../core/providers/badge_provider.dart';
 import '../../../core/providers/dio_provider.dart';
 import '../../../core/services/fcm_service.dart';
+import '../../../core/services/sse_notification_service.dart';
 import '../../../core/widgets/notification_sheet.dart';
 import '../../../core/widgets/user_avatar.dart';
+import '../../approval/providers/approval_providers.dart';
 import '../../docs/presentation/widgets/document_form_sheet.dart';
+
+import 'dart:async';
 
 /// ShellRoute 메인 래퍼
 /// - 하단 탭바를 모든 탭에서 유지 (홈 / 업무 / 프로젝트 / 채널)
 /// - AppBar 우측: 알림 아이콘 + 아바타(내 설정 진입)
-class MainShell extends ConsumerWidget {
+/// - 앱 라이프사이클 및 30초 주기 알림/뱃지 자동 동기화
+class MainShell extends ConsumerStatefulWidget {
   final Widget child;
   const MainShell({super.key, required this.child});
 
+  @override
+  ConsumerState<MainShell> createState() => _MainShellState();
+}
+
+class _MainShellState extends ConsumerState<MainShell> {
   static const _tabs = [
     _TabItem(route: AppRoutes.home,     icon: Icons.grid_view_rounded,       label: '홈'),
     _TabItem(route: AppRoutes.work,     icon: Icons.assignment_rounded,       label: '업무'),
@@ -32,6 +42,37 @@ class MainShell extends ConsumerWidget {
     _TabItem(route: AppRoutes.approval, icon: Icons.draw_rounded,             label: '전자결재'),
     _TabItem(route: AppRoutes.channel,  icon: Icons.campaign_rounded,         label: '채널'),
   ];
+
+  Timer? _syncTimer;
+  late final AppLifecycleListener _lifecycleListener;
+
+  @override
+  void initState() {
+    super.initState();
+    // 1. 앱 포그라운드 복귀 시 알림 & 결재 대기 즉시 동기화
+    _lifecycleListener = AppLifecycleListener(
+      onResume: _syncData,
+      onShow: _syncData,
+    );
+
+    // 2. 앱 실행 중 15초 주기 자동 동기화
+    _syncTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+      _syncData();
+    });
+  }
+
+  void _syncData() {
+    if (!mounted) return;
+    ref.read(notificationListProvider.notifier).fetchNotifications();
+    ref.invalidate(pendingApprovalsProvider);
+  }
+
+  @override
+  void dispose() {
+    _syncTimer?.cancel();
+    _lifecycleListener.dispose();
+    super.dispose();
+  }
 
   int _currentIndex(BuildContext context) {
     final location = GoRouterState.of(context).matchedLocation;
@@ -42,15 +83,23 @@ class MainShell extends ConsumerWidget {
   }
 
   void _onTabTap(BuildContext context, int index) {
+    if (index == 3) {
+      // 전자결재 탭 진입 시 대기 목록 즉시 갱신
+      ref.invalidate(pendingApprovalsProvider);
+    }
     context.go(_tabs[index].route);
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final currentIdx = _currentIndex(context);
 
     // 앱 아이콘 알림 뱃지 자동 동기화 (미확인 알림 + 미결 결재)
-    ref.watch(totalAppBadgeCountProvider);
+    final totalBadgeCount = ref.watch(totalAppBadgeCountProvider);
+    final pendingCount = ref.watch(pendingApprovalCountProvider);
+
+    // 실시간 SSE 알림 스트림 연결 유지 (웹과 동일한 0.1초 즉시 동기화)
+    ref.watch(sseNotificationServiceProvider);
 
     // FCM 푸시 알림 서비스 초기화 (로그인된 세션)
     final dio = ref.watch(dioProvider);
@@ -111,49 +160,48 @@ class MainShell extends ConsumerWidget {
           ],
         ),
         actions: [
-          Consumer(
-            builder: (ctx, ref, _) {
-              final unreadCount = ref.watch(unreadNotificationCountProvider);
-              return Stack(
-                alignment: Alignment.center,
-                children: [
-                  IconButton(
-                    icon: Icon(
-                      unreadCount > 0
-                          ? Icons.notifications_active_rounded
-                          : Icons.notifications_none_rounded,
-                      size: 23,
-                      color: unreadCount > 0
-                          ? context.colors.accentWork
-                          : context.colors.textMuted,
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              IconButton(
+                icon: Icon(
+                  totalBadgeCount > 0
+                      ? Icons.notifications_active_rounded
+                      : Icons.notifications_none_rounded,
+                  size: 23,
+                  color: totalBadgeCount > 0
+                      ? context.colors.accentWork
+                      : context.colors.textMuted,
+                ),
+                tooltip: '알림 센터',
+                onPressed: () {
+                  ref.read(notificationListProvider.notifier).fetchNotifications();
+                  ref.invalidate(pendingApprovalsProvider);
+                  NotificationSheet.show(context);
+                },
+              ),
+              if (totalBadgeCount > 0)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(3.5),
+                    decoration: BoxDecoration(
+                      color: context.colors.accentWork,
+                      shape: BoxShape.circle,
                     ),
-                    tooltip: '알림 센터',
-                    onPressed: () => NotificationSheet.show(context),
-                  ),
-                  if (unreadCount > 0)
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: Container(
-                        padding: const EdgeInsets.all(3.5),
-                        decoration: BoxDecoration(
-                          color: context.colors.accentWork,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Text(
-                          unreadCount > 99 ? '99+' : '$unreadCount',
-                          style: const TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            height: 1,
-                          ),
-                        ),
+                    child: Text(
+                      totalBadgeCount > 99 ? '99+' : '$totalBadgeCount',
+                      style: const TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        height: 1,
                       ),
                     ),
-                ],
-              );
-            },
+                  ),
+                ),
+            ],
           ),
           Consumer(
             builder: (ctx, ref, _) {
@@ -172,7 +220,7 @@ class MainShell extends ConsumerWidget {
           ),
         ],
       ),
-      body: child,
+      body: widget.child,
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: currentIdx,
         onTap: (i) => _onTabTap(context, i),
@@ -184,12 +232,20 @@ class MainShell extends ConsumerWidget {
             const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
         unselectedLabelStyle: const TextStyle(fontSize: 11),
         elevation: 12,
-        items: _tabs
-            .map((t) => BottomNavigationBarItem(
-                  icon: Icon(t.icon),
-                  label: t.label,
-                ))
-            .toList(),
+        items: _tabs.map((t) {
+          Widget iconWidget = Icon(t.icon);
+          if (t.route == AppRoutes.approval && pendingCount > 0) {
+            iconWidget = Badge(
+              label: Text('$pendingCount', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+              backgroundColor: context.colors.error,
+              child: Icon(t.icon),
+            );
+          }
+          return BottomNavigationBarItem(
+            icon: iconWidget,
+            label: t.label,
+          );
+        }).toList(),
       ),
     );
   }

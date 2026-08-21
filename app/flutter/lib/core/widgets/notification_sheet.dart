@@ -5,6 +5,7 @@ import '../constants/app_text_styles.dart';
 import '../models/notification_model.dart';
 import '../providers/notification_provider.dart';
 import '../theme/app_colors_extension.dart';
+import '../../features/approval/providers/approval_providers.dart';
 
 /// 알림 센터 바텀 시트
 class NotificationSheet extends ConsumerStatefulWidget {
@@ -180,8 +181,55 @@ class _NotificationSheetState extends ConsumerState<NotificationSheet> {
             ),
           ),
 
+          // ── 결재 대기 바로가기 배너 (대기 문서가 있을 때) ───────────────
+          if (ref.watch(pendingApprovalCountProvider) > 0)
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: context.colors.accentApproval.withAlpha(20),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: context.colors.accentApproval.withAlpha(80),
+                  width: 0.8,
+                ),
+              ),
+              child: InkWell(
+                onTap: () {
+                  Navigator.of(context).pop();
+                  context.go('/approval');
+                },
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.draw_rounded,
+                      size: 18,
+                      color: context.colors.accentApproval,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '결재 대기 중인 문서가 ${ref.watch(pendingApprovalCountProvider)}건 있습니다.',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: context.colors.accentApproval,
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 12,
+                      color: context.colors.accentApproval,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
           // ── 카테고리 필터 칩 ──────────────────────────────────────────
-          Padding(
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             child: Row(
               children: [

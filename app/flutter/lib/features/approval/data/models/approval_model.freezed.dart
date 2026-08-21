@@ -23,7 +23,9 @@ DocCategoryModel _$DocCategoryModelFromJson(Map<String, dynamic> json) {
 mixin _$DocCategoryModel {
   @JsonKey(readValue: _readId)
   int get id => throw _privateConstructorUsedError;
+  @JsonKey(readValue: _readStr)
   String get name => throw _privateConstructorUsedError;
+  @JsonKey(readValue: _readStr)
   String get code => throw _privateConstructorUsedError;
   String get description => throw _privateConstructorUsedError;
   int get order => throw _privateConstructorUsedError;
@@ -48,8 +50,8 @@ abstract class $DocCategoryModelCopyWith<$Res> {
   @useResult
   $Res call({
     @JsonKey(readValue: _readId) int id,
-    String name,
-    String code,
+    @JsonKey(readValue: _readStr) String name,
+    @JsonKey(readValue: _readStr) String code,
     String description,
     int order,
     bool isActive,
@@ -121,8 +123,8 @@ abstract class _$$DocCategoryModelImplCopyWith<$Res>
   @useResult
   $Res call({
     @JsonKey(readValue: _readId) int id,
-    String name,
-    String code,
+    @JsonKey(readValue: _readStr) String name,
+    @JsonKey(readValue: _readStr) String code,
     String description,
     int order,
     bool isActive,
@@ -187,8 +189,8 @@ class __$$DocCategoryModelImplCopyWithImpl<$Res>
 class _$DocCategoryModelImpl implements _DocCategoryModel {
   const _$DocCategoryModelImpl({
     @JsonKey(readValue: _readId) required this.id,
-    required this.name,
-    required this.code,
+    @JsonKey(readValue: _readStr) this.name = '',
+    @JsonKey(readValue: _readStr) this.code = '',
     this.description = '',
     this.order = 1,
     this.isActive = true,
@@ -201,8 +203,10 @@ class _$DocCategoryModelImpl implements _DocCategoryModel {
   @JsonKey(readValue: _readId)
   final int id;
   @override
+  @JsonKey(readValue: _readStr)
   final String name;
   @override
+  @JsonKey(readValue: _readStr)
   final String code;
   @override
   @JsonKey()
@@ -259,8 +263,8 @@ class _$DocCategoryModelImpl implements _DocCategoryModel {
 abstract class _DocCategoryModel implements DocCategoryModel {
   const factory _DocCategoryModel({
     @JsonKey(readValue: _readId) required final int id,
-    required final String name,
-    required final String code,
+    @JsonKey(readValue: _readStr) final String name,
+    @JsonKey(readValue: _readStr) final String code,
     final String description,
     final int order,
     final bool isActive,
@@ -273,8 +277,10 @@ abstract class _DocCategoryModel implements DocCategoryModel {
   @JsonKey(readValue: _readId)
   int get id;
   @override
+  @JsonKey(readValue: _readStr)
   String get name;
   @override
+  @JsonKey(readValue: _readStr)
   String get code;
   @override
   String get description;
@@ -564,7 +570,9 @@ DocumentTypeModel _$DocumentTypeModelFromJson(Map<String, dynamic> json) {
 mixin _$DocumentTypeModel {
   @JsonKey(readValue: _readId)
   int get id => throw _privateConstructorUsedError;
+  @JsonKey(readValue: _readStr)
   String get name => throw _privateConstructorUsedError;
+  @JsonKey(readValue: _readStr)
   String get code => throw _privateConstructorUsedError;
   String get description => throw _privateConstructorUsedError;
   String get formTemplateKey => throw _privateConstructorUsedError;
@@ -592,8 +600,8 @@ abstract class $DocumentTypeModelCopyWith<$Res> {
   @useResult
   $Res call({
     @JsonKey(readValue: _readId) int id,
-    String name,
-    String code,
+    @JsonKey(readValue: _readStr) String name,
+    @JsonKey(readValue: _readStr) String code,
     String description,
     String formTemplateKey,
     String routeType,
@@ -683,8 +691,8 @@ abstract class _$$DocumentTypeModelImplCopyWith<$Res>
   @useResult
   $Res call({
     @JsonKey(readValue: _readId) int id,
-    String name,
-    String code,
+    @JsonKey(readValue: _readStr) String name,
+    @JsonKey(readValue: _readStr) String code,
     String description,
     String formTemplateKey,
     String routeType,
@@ -767,8 +775,8 @@ class __$$DocumentTypeModelImplCopyWithImpl<$Res>
 class _$DocumentTypeModelImpl implements _DocumentTypeModel {
   const _$DocumentTypeModelImpl({
     @JsonKey(readValue: _readId) required this.id,
-    required this.name,
-    required this.code,
+    @JsonKey(readValue: _readStr) this.name = '',
+    @JsonKey(readValue: _readStr) this.code = '',
     this.description = '',
     this.formTemplateKey = 'GENERAL',
     this.routeType = 'organization',
@@ -784,8 +792,10 @@ class _$DocumentTypeModelImpl implements _DocumentTypeModel {
   @JsonKey(readValue: _readId)
   final int id;
   @override
+  @JsonKey(readValue: _readStr)
   final String name;
   @override
+  @JsonKey(readValue: _readStr)
   final String code;
   @override
   @JsonKey()
@@ -866,8 +876,8 @@ class _$DocumentTypeModelImpl implements _DocumentTypeModel {
 abstract class _DocumentTypeModel implements DocumentTypeModel {
   const factory _DocumentTypeModel({
     @JsonKey(readValue: _readId) required final int id,
-    required final String name,
-    required final String code,
+    @JsonKey(readValue: _readStr) final String name,
+    @JsonKey(readValue: _readStr) final String code,
     final String description,
     final String formTemplateKey,
     final String routeType,
@@ -883,8 +893,10 @@ abstract class _DocumentTypeModel implements DocumentTypeModel {
   @JsonKey(readValue: _readId)
   int get id;
   @override
+  @JsonKey(readValue: _readStr)
   String get name;
   @override
+  @JsonKey(readValue: _readStr)
   String get code;
   @override
   String get description;
@@ -1326,10 +1338,13 @@ mixin _$ApprovalActionModel {
   @JsonKey(readValue: _readId)
   int get id => throw _privateConstructorUsedError;
   SimpleUserModel get approver => throw _privateConstructorUsedError;
-  String get action =>
-      throw _privateConstructorUsedError; // approved, rejected, commented
+  @JsonKey(readValue: _readStr)
+  String get action => throw _privateConstructorUsedError; // approved, rejected, commented
+  @JsonKey(readValue: _readStr)
   String get comment => throw _privateConstructorUsedError;
+  @JsonKey(readValue: _readStr)
   String get contentHash => throw _privateConstructorUsedError;
+  @JsonKey(readValue: _readStr)
   String get actedAt => throw _privateConstructorUsedError;
 
   /// Serializes this ApprovalActionModel to a JSON map.
@@ -1352,10 +1367,10 @@ abstract class $ApprovalActionModelCopyWith<$Res> {
   $Res call({
     @JsonKey(readValue: _readId) int id,
     SimpleUserModel approver,
-    String action,
-    String comment,
-    String contentHash,
-    String actedAt,
+    @JsonKey(readValue: _readStr) String action,
+    @JsonKey(readValue: _readStr) String comment,
+    @JsonKey(readValue: _readStr) String contentHash,
+    @JsonKey(readValue: _readStr) String actedAt,
   });
 
   $SimpleUserModelCopyWith<$Res> get approver;
@@ -1437,10 +1452,10 @@ abstract class _$$ApprovalActionModelImplCopyWith<$Res>
   $Res call({
     @JsonKey(readValue: _readId) int id,
     SimpleUserModel approver,
-    String action,
-    String comment,
-    String contentHash,
-    String actedAt,
+    @JsonKey(readValue: _readStr) String action,
+    @JsonKey(readValue: _readStr) String comment,
+    @JsonKey(readValue: _readStr) String contentHash,
+    @JsonKey(readValue: _readStr) String actedAt,
   });
 
   @override
@@ -1506,10 +1521,10 @@ class _$ApprovalActionModelImpl implements _ApprovalActionModel {
   const _$ApprovalActionModelImpl({
     @JsonKey(readValue: _readId) required this.id,
     required this.approver,
-    required this.action,
-    this.comment = '',
-    this.contentHash = '',
-    required this.actedAt,
+    @JsonKey(readValue: _readStr) this.action = 'approved',
+    @JsonKey(readValue: _readStr) this.comment = '',
+    @JsonKey(readValue: _readStr) this.contentHash = '',
+    @JsonKey(readValue: _readStr) this.actedAt = '',
   });
 
   factory _$ApprovalActionModelImpl.fromJson(Map<String, dynamic> json) =>
@@ -1521,15 +1536,17 @@ class _$ApprovalActionModelImpl implements _ApprovalActionModel {
   @override
   final SimpleUserModel approver;
   @override
+  @JsonKey(readValue: _readStr)
   final String action;
   // approved, rejected, commented
   @override
-  @JsonKey()
+  @JsonKey(readValue: _readStr)
   final String comment;
   @override
-  @JsonKey()
+  @JsonKey(readValue: _readStr)
   final String contentHash;
   @override
+  @JsonKey(readValue: _readStr)
   final String actedAt;
 
   @override
@@ -1585,10 +1602,10 @@ abstract class _ApprovalActionModel implements ApprovalActionModel {
   const factory _ApprovalActionModel({
     @JsonKey(readValue: _readId) required final int id,
     required final SimpleUserModel approver,
-    required final String action,
-    final String comment,
-    final String contentHash,
-    required final String actedAt,
+    @JsonKey(readValue: _readStr) final String action,
+    @JsonKey(readValue: _readStr) final String comment,
+    @JsonKey(readValue: _readStr) final String contentHash,
+    @JsonKey(readValue: _readStr) final String actedAt,
   }) = _$ApprovalActionModelImpl;
 
   factory _ApprovalActionModel.fromJson(Map<String, dynamic> json) =
@@ -1600,12 +1617,16 @@ abstract class _ApprovalActionModel implements ApprovalActionModel {
   @override
   SimpleUserModel get approver;
   @override
+  @JsonKey(readValue: _readStr)
   String get action; // approved, rejected, commented
   @override
+  @JsonKey(readValue: _readStr)
   String get comment;
   @override
+  @JsonKey(readValue: _readStr)
   String get contentHash;
   @override
+  @JsonKey(readValue: _readStr)
   String get actedAt;
 
   /// Create a copy of ApprovalActionModel
@@ -1630,10 +1651,13 @@ mixin _$ApprovalAttachmentModel {
   int get document => throw _privateConstructorUsedError;
   String? get file => throw _privateConstructorUsedError;
   String? get fileUrl => throw _privateConstructorUsedError;
+  @JsonKey(readValue: _readStr)
   String get fileName => throw _privateConstructorUsedError;
+  @JsonKey(readValue: _readStr)
   String get fileType => throw _privateConstructorUsedError;
   int? get fileSize => throw _privateConstructorUsedError;
   String? get creatorName => throw _privateConstructorUsedError;
+  @JsonKey(readValue: _readStr)
   String get createdAt => throw _privateConstructorUsedError;
 
   /// Serializes this ApprovalAttachmentModel to a JSON map.
@@ -1658,11 +1682,11 @@ abstract class $ApprovalAttachmentModelCopyWith<$Res> {
     @JsonKey(readValue: _readId) int document,
     String? file,
     String? fileUrl,
-    String fileName,
-    String fileType,
+    @JsonKey(readValue: _readStr) String fileName,
+    @JsonKey(readValue: _readStr) String fileType,
     int? fileSize,
     String? creatorName,
-    String createdAt,
+    @JsonKey(readValue: _readStr) String createdAt,
   });
 }
 
@@ -1752,11 +1776,11 @@ abstract class _$$ApprovalAttachmentModelImplCopyWith<$Res>
     @JsonKey(readValue: _readId) int document,
     String? file,
     String? fileUrl,
-    String fileName,
-    String fileType,
+    @JsonKey(readValue: _readStr) String fileName,
+    @JsonKey(readValue: _readStr) String fileType,
     int? fileSize,
     String? creatorName,
-    String createdAt,
+    @JsonKey(readValue: _readStr) String createdAt,
   });
 }
 
@@ -1840,11 +1864,11 @@ class _$ApprovalAttachmentModelImpl implements _ApprovalAttachmentModel {
     @JsonKey(readValue: _readId) required this.document,
     this.file,
     this.fileUrl,
-    this.fileName = '',
-    this.fileType = '',
+    @JsonKey(readValue: _readStr) this.fileName = '',
+    @JsonKey(readValue: _readStr) this.fileType = '',
     this.fileSize,
     this.creatorName,
-    required this.createdAt,
+    @JsonKey(readValue: _readStr) this.createdAt = '',
   });
 
   factory _$ApprovalAttachmentModelImpl.fromJson(Map<String, dynamic> json) =>
@@ -1861,16 +1885,17 @@ class _$ApprovalAttachmentModelImpl implements _ApprovalAttachmentModel {
   @override
   final String? fileUrl;
   @override
-  @JsonKey()
+  @JsonKey(readValue: _readStr)
   final String fileName;
   @override
-  @JsonKey()
+  @JsonKey(readValue: _readStr)
   final String fileType;
   @override
   final int? fileSize;
   @override
   final String? creatorName;
   @override
+  @JsonKey(readValue: _readStr)
   final String createdAt;
 
   @override
@@ -1938,11 +1963,11 @@ abstract class _ApprovalAttachmentModel implements ApprovalAttachmentModel {
     @JsonKey(readValue: _readId) required final int document,
     final String? file,
     final String? fileUrl,
-    final String fileName,
-    final String fileType,
+    @JsonKey(readValue: _readStr) final String fileName,
+    @JsonKey(readValue: _readStr) final String fileType,
     final int? fileSize,
     final String? creatorName,
-    required final String createdAt,
+    @JsonKey(readValue: _readStr) final String createdAt,
   }) = _$ApprovalAttachmentModelImpl;
 
   factory _ApprovalAttachmentModel.fromJson(Map<String, dynamic> json) =
@@ -1959,14 +1984,17 @@ abstract class _ApprovalAttachmentModel implements ApprovalAttachmentModel {
   @override
   String? get fileUrl;
   @override
+  @JsonKey(readValue: _readStr)
   String get fileName;
   @override
+  @JsonKey(readValue: _readStr)
   String get fileType;
   @override
   int? get fileSize;
   @override
   String? get creatorName;
   @override
+  @JsonKey(readValue: _readStr)
   String get createdAt;
 
   /// Create a copy of ApprovalAttachmentModel
@@ -1986,11 +2014,13 @@ mixin _$ApprovalStepModel {
   @JsonKey(readValue: _readId)
   int get id => throw _privateConstructorUsedError;
   int get stepOrder => throw _privateConstructorUsedError;
+  @JsonKey(readValue: _readStr)
   String get roleLabel => throw _privateConstructorUsedError;
   List<SimpleUserModel> get approvers => throw _privateConstructorUsedError;
+  @JsonKey(readValue: _readStr)
   String get condition => throw _privateConstructorUsedError; // AND, OR
-  String get status =>
-      throw _privateConstructorUsedError; // pending, approved, rejected, skipped
+  @JsonKey(readValue: _readStr)
+  String get status => throw _privateConstructorUsedError; // pending, approved, rejected, skipped
   List<ApprovalActionModel> get actions => throw _privateConstructorUsedError;
 
   /// Serializes this ApprovalStepModel to a JSON map.
@@ -2013,10 +2043,10 @@ abstract class $ApprovalStepModelCopyWith<$Res> {
   $Res call({
     @JsonKey(readValue: _readId) int id,
     int stepOrder,
-    String roleLabel,
+    @JsonKey(readValue: _readStr) String roleLabel,
     List<SimpleUserModel> approvers,
-    String condition,
-    String status,
+    @JsonKey(readValue: _readStr) String condition,
+    @JsonKey(readValue: _readStr) String status,
     List<ApprovalActionModel> actions,
   });
 }
@@ -2092,10 +2122,10 @@ abstract class _$$ApprovalStepModelImplCopyWith<$Res>
   $Res call({
     @JsonKey(readValue: _readId) int id,
     int stepOrder,
-    String roleLabel,
+    @JsonKey(readValue: _readStr) String roleLabel,
     List<SimpleUserModel> approvers,
-    String condition,
-    String status,
+    @JsonKey(readValue: _readStr) String condition,
+    @JsonKey(readValue: _readStr) String status,
     List<ApprovalActionModel> actions,
   });
 }
@@ -2164,10 +2194,10 @@ class _$ApprovalStepModelImpl implements _ApprovalStepModel {
   const _$ApprovalStepModelImpl({
     @JsonKey(readValue: _readId) required this.id,
     required this.stepOrder,
-    required this.roleLabel,
+    @JsonKey(readValue: _readStr) this.roleLabel = '',
     final List<SimpleUserModel> approvers = const [],
-    this.condition = 'AND',
-    this.status = 'pending',
+    @JsonKey(readValue: _readStr) this.condition = 'AND',
+    @JsonKey(readValue: _readStr) this.status = 'pending',
     final List<ApprovalActionModel> actions = const [],
   }) : _approvers = approvers,
        _actions = actions;
@@ -2181,6 +2211,7 @@ class _$ApprovalStepModelImpl implements _ApprovalStepModel {
   @override
   final int stepOrder;
   @override
+  @JsonKey(readValue: _readStr)
   final String roleLabel;
   final List<SimpleUserModel> _approvers;
   @override
@@ -2192,11 +2223,11 @@ class _$ApprovalStepModelImpl implements _ApprovalStepModel {
   }
 
   @override
-  @JsonKey()
+  @JsonKey(readValue: _readStr)
   final String condition;
   // AND, OR
   @override
-  @JsonKey()
+  @JsonKey(readValue: _readStr)
   final String status;
   // pending, approved, rejected, skipped
   final List<ApprovalActionModel> _actions;
@@ -2268,10 +2299,10 @@ abstract class _ApprovalStepModel implements ApprovalStepModel {
   const factory _ApprovalStepModel({
     @JsonKey(readValue: _readId) required final int id,
     required final int stepOrder,
-    required final String roleLabel,
+    @JsonKey(readValue: _readStr) final String roleLabel,
     final List<SimpleUserModel> approvers,
-    final String condition,
-    final String status,
+    @JsonKey(readValue: _readStr) final String condition,
+    @JsonKey(readValue: _readStr) final String status,
     final List<ApprovalActionModel> actions,
   }) = _$ApprovalStepModelImpl;
 
@@ -2284,12 +2315,15 @@ abstract class _ApprovalStepModel implements ApprovalStepModel {
   @override
   int get stepOrder;
   @override
+  @JsonKey(readValue: _readStr)
   String get roleLabel;
   @override
   List<SimpleUserModel> get approvers;
   @override
+  @JsonKey(readValue: _readStr)
   String get condition; // AND, OR
   @override
+  @JsonKey(readValue: _readStr)
   String get status; // pending, approved, rejected, skipped
   @override
   List<ApprovalActionModel> get actions;
@@ -2311,9 +2345,11 @@ RoutePreviewStepModel _$RoutePreviewStepModelFromJson(
 /// @nodoc
 mixin _$RoutePreviewStepModel {
   int get stepOrder => throw _privateConstructorUsedError;
+  @JsonKey(readValue: _readStr)
   String get roleLabel => throw _privateConstructorUsedError;
   List<SimpleUserModel> get approvers => throw _privateConstructorUsedError;
   List<int> get approverIds => throw _privateConstructorUsedError;
+  @JsonKey(readValue: _readStr)
   String get condition => throw _privateConstructorUsedError;
 
   /// Serializes this RoutePreviewStepModel to a JSON map.
@@ -2335,10 +2371,10 @@ abstract class $RoutePreviewStepModelCopyWith<$Res> {
   @useResult
   $Res call({
     int stepOrder,
-    String roleLabel,
+    @JsonKey(readValue: _readStr) String roleLabel,
     List<SimpleUserModel> approvers,
     List<int> approverIds,
-    String condition,
+    @JsonKey(readValue: _readStr) String condition,
   });
 }
 
@@ -2405,10 +2441,10 @@ abstract class _$$RoutePreviewStepModelImplCopyWith<$Res>
   @useResult
   $Res call({
     int stepOrder,
-    String roleLabel,
+    @JsonKey(readValue: _readStr) String roleLabel,
     List<SimpleUserModel> approvers,
     List<int> approverIds,
-    String condition,
+    @JsonKey(readValue: _readStr) String condition,
   });
 }
 
@@ -2466,10 +2502,10 @@ class __$$RoutePreviewStepModelImplCopyWithImpl<$Res>
 class _$RoutePreviewStepModelImpl implements _RoutePreviewStepModel {
   const _$RoutePreviewStepModelImpl({
     required this.stepOrder,
-    required this.roleLabel,
+    @JsonKey(readValue: _readStr) this.roleLabel = '',
     final List<SimpleUserModel> approvers = const [],
     final List<int> approverIds = const [],
-    this.condition = 'AND',
+    @JsonKey(readValue: _readStr) this.condition = 'AND',
   }) : _approvers = approvers,
        _approverIds = approverIds;
 
@@ -2479,6 +2515,7 @@ class _$RoutePreviewStepModelImpl implements _RoutePreviewStepModel {
   @override
   final int stepOrder;
   @override
+  @JsonKey(readValue: _readStr)
   final String roleLabel;
   final List<SimpleUserModel> _approvers;
   @override
@@ -2499,7 +2536,7 @@ class _$RoutePreviewStepModelImpl implements _RoutePreviewStepModel {
   }
 
   @override
-  @JsonKey()
+  @JsonKey(readValue: _readStr)
   final String condition;
 
   @override
@@ -2560,10 +2597,10 @@ class _$RoutePreviewStepModelImpl implements _RoutePreviewStepModel {
 abstract class _RoutePreviewStepModel implements RoutePreviewStepModel {
   const factory _RoutePreviewStepModel({
     required final int stepOrder,
-    required final String roleLabel,
+    @JsonKey(readValue: _readStr) final String roleLabel,
     final List<SimpleUserModel> approvers,
     final List<int> approverIds,
-    final String condition,
+    @JsonKey(readValue: _readStr) final String condition,
   }) = _$RoutePreviewStepModelImpl;
 
   factory _RoutePreviewStepModel.fromJson(Map<String, dynamic> json) =
@@ -2572,12 +2609,14 @@ abstract class _RoutePreviewStepModel implements RoutePreviewStepModel {
   @override
   int get stepOrder;
   @override
+  @JsonKey(readValue: _readStr)
   String get roleLabel;
   @override
   List<SimpleUserModel> get approvers;
   @override
   List<int> get approverIds;
   @override
+  @JsonKey(readValue: _readStr)
   String get condition;
 
   /// Create a copy of RoutePreviewStepModel
@@ -2598,7 +2637,9 @@ ApprovalDocumentModel _$ApprovalDocumentModelFromJson(
 mixin _$ApprovalDocumentModel {
   @JsonKey(readValue: _readId)
   int get id => throw _privateConstructorUsedError;
+  @JsonKey(readValue: _readStr)
   String get docNumber => throw _privateConstructorUsedError;
+  @JsonKey(readValue: _readStr)
   String get title => throw _privateConstructorUsedError;
   @JsonKey(readValue: _readDocTypeId)
   int get docType => throw _privateConstructorUsedError;
@@ -2611,10 +2652,11 @@ mixin _$ApprovalDocumentModel {
   String? get departmentName => throw _privateConstructorUsedError;
   String? get drafterAssignmentDesc => throw _privateConstructorUsedError;
   Map<String, dynamic> get content => throw _privateConstructorUsedError;
-  String get status =>
-      throw _privateConstructorUsedError; // draft, pending, approved, rejected, cancelled
+  @JsonKey(readValue: _readStr)
+  String get status => throw _privateConstructorUsedError; // draft, pending, approved, rejected, cancelled
   String? get statusDesc => throw _privateConstructorUsedError;
   int get currentStep => throw _privateConstructorUsedError;
+  @JsonKey(readValue: _readStr)
   String get contentHash => throw _privateConstructorUsedError;
   String? get pdfUrl => throw _privateConstructorUsedError;
   int get attachmentCount => throw _privateConstructorUsedError;
@@ -2623,6 +2665,7 @@ mixin _$ApprovalDocumentModel {
       throw _privateConstructorUsedError;
   List<SimpleUserModel>? get observers => throw _privateConstructorUsedError;
   List<ApprovalStepModel>? get steps => throw _privateConstructorUsedError;
+  @JsonKey(readValue: _readStr)
   String get createdAt => throw _privateConstructorUsedError;
   String? get submittedAt => throw _privateConstructorUsedError;
   String? get completedAt => throw _privateConstructorUsedError;
@@ -2646,8 +2689,8 @@ abstract class $ApprovalDocumentModelCopyWith<$Res> {
   @useResult
   $Res call({
     @JsonKey(readValue: _readId) int id,
-    String docNumber,
-    String title,
+    @JsonKey(readValue: _readStr) String docNumber,
+    @JsonKey(readValue: _readStr) String title,
     @JsonKey(readValue: _readDocTypeId) int docType,
     String? docTypeName,
     String? categoryName,
@@ -2658,17 +2701,17 @@ abstract class $ApprovalDocumentModelCopyWith<$Res> {
     String? departmentName,
     String? drafterAssignmentDesc,
     Map<String, dynamic> content,
-    String status,
+    @JsonKey(readValue: _readStr) String status,
     String? statusDesc,
     int currentStep,
-    String contentHash,
+    @JsonKey(readValue: _readStr) String contentHash,
     String? pdfUrl,
     int attachmentCount,
     int observerCount,
     List<ApprovalAttachmentModel>? attachments,
     List<SimpleUserModel>? observers,
     List<ApprovalStepModel>? steps,
-    String createdAt,
+    @JsonKey(readValue: _readStr) String createdAt,
     String? submittedAt,
     String? completedAt,
   });
@@ -2869,8 +2912,8 @@ abstract class _$$ApprovalDocumentModelImplCopyWith<$Res>
   @useResult
   $Res call({
     @JsonKey(readValue: _readId) int id,
-    String docNumber,
-    String title,
+    @JsonKey(readValue: _readStr) String docNumber,
+    @JsonKey(readValue: _readStr) String title,
     @JsonKey(readValue: _readDocTypeId) int docType,
     String? docTypeName,
     String? categoryName,
@@ -2881,17 +2924,17 @@ abstract class _$$ApprovalDocumentModelImplCopyWith<$Res>
     String? departmentName,
     String? drafterAssignmentDesc,
     Map<String, dynamic> content,
-    String status,
+    @JsonKey(readValue: _readStr) String status,
     String? statusDesc,
     int currentStep,
-    String contentHash,
+    @JsonKey(readValue: _readStr) String contentHash,
     String? pdfUrl,
     int attachmentCount,
     int observerCount,
     List<ApprovalAttachmentModel>? attachments,
     List<SimpleUserModel>? observers,
     List<ApprovalStepModel>? steps,
-    String createdAt,
+    @JsonKey(readValue: _readStr) String createdAt,
     String? submittedAt,
     String? completedAt,
   });
@@ -3061,8 +3104,8 @@ class __$$ApprovalDocumentModelImplCopyWithImpl<$Res>
 class _$ApprovalDocumentModelImpl implements _ApprovalDocumentModel {
   const _$ApprovalDocumentModelImpl({
     @JsonKey(readValue: _readId) required this.id,
-    this.docNumber = '',
-    required this.title,
+    @JsonKey(readValue: _readStr) this.docNumber = '',
+    @JsonKey(readValue: _readStr) this.title = '',
     @JsonKey(readValue: _readDocTypeId) required this.docType,
     this.docTypeName,
     this.categoryName,
@@ -3073,17 +3116,17 @@ class _$ApprovalDocumentModelImpl implements _ApprovalDocumentModel {
     this.departmentName,
     this.drafterAssignmentDesc,
     final Map<String, dynamic> content = const {},
-    this.status = 'draft',
+    @JsonKey(readValue: _readStr) this.status = 'draft',
     this.statusDesc,
     this.currentStep = 1,
-    this.contentHash = '',
+    @JsonKey(readValue: _readStr) this.contentHash = '',
     this.pdfUrl,
     this.attachmentCount = 0,
     this.observerCount = 0,
     final List<ApprovalAttachmentModel>? attachments,
     final List<SimpleUserModel>? observers,
     final List<ApprovalStepModel>? steps,
-    required this.createdAt,
+    @JsonKey(readValue: _readStr) this.createdAt = '',
     this.submittedAt,
     this.completedAt,
   }) : _content = content,
@@ -3098,9 +3141,10 @@ class _$ApprovalDocumentModelImpl implements _ApprovalDocumentModel {
   @JsonKey(readValue: _readId)
   final int id;
   @override
-  @JsonKey()
+  @JsonKey(readValue: _readStr)
   final String docNumber;
   @override
+  @JsonKey(readValue: _readStr)
   final String title;
   @override
   @JsonKey(readValue: _readDocTypeId)
@@ -3131,7 +3175,7 @@ class _$ApprovalDocumentModelImpl implements _ApprovalDocumentModel {
   }
 
   @override
-  @JsonKey()
+  @JsonKey(readValue: _readStr)
   final String status;
   // draft, pending, approved, rejected, cancelled
   @override
@@ -3140,7 +3184,7 @@ class _$ApprovalDocumentModelImpl implements _ApprovalDocumentModel {
   @JsonKey()
   final int currentStep;
   @override
-  @JsonKey()
+  @JsonKey(readValue: _readStr)
   final String contentHash;
   @override
   final String? pdfUrl;
@@ -3181,6 +3225,7 @@ class _$ApprovalDocumentModelImpl implements _ApprovalDocumentModel {
   }
 
   @override
+  @JsonKey(readValue: _readStr)
   final String createdAt;
   @override
   final String? submittedAt;
@@ -3300,8 +3345,8 @@ class _$ApprovalDocumentModelImpl implements _ApprovalDocumentModel {
 abstract class _ApprovalDocumentModel implements ApprovalDocumentModel {
   const factory _ApprovalDocumentModel({
     @JsonKey(readValue: _readId) required final int id,
-    final String docNumber,
-    required final String title,
+    @JsonKey(readValue: _readStr) final String docNumber,
+    @JsonKey(readValue: _readStr) final String title,
     @JsonKey(readValue: _readDocTypeId) required final int docType,
     final String? docTypeName,
     final String? categoryName,
@@ -3312,17 +3357,17 @@ abstract class _ApprovalDocumentModel implements ApprovalDocumentModel {
     final String? departmentName,
     final String? drafterAssignmentDesc,
     final Map<String, dynamic> content,
-    final String status,
+    @JsonKey(readValue: _readStr) final String status,
     final String? statusDesc,
     final int currentStep,
-    final String contentHash,
+    @JsonKey(readValue: _readStr) final String contentHash,
     final String? pdfUrl,
     final int attachmentCount,
     final int observerCount,
     final List<ApprovalAttachmentModel>? attachments,
     final List<SimpleUserModel>? observers,
     final List<ApprovalStepModel>? steps,
-    required final String createdAt,
+    @JsonKey(readValue: _readStr) final String createdAt,
     final String? submittedAt,
     final String? completedAt,
   }) = _$ApprovalDocumentModelImpl;
@@ -3334,8 +3379,10 @@ abstract class _ApprovalDocumentModel implements ApprovalDocumentModel {
   @JsonKey(readValue: _readId)
   int get id;
   @override
+  @JsonKey(readValue: _readStr)
   String get docNumber;
   @override
+  @JsonKey(readValue: _readStr)
   String get title;
   @override
   @JsonKey(readValue: _readDocTypeId)
@@ -3359,12 +3406,14 @@ abstract class _ApprovalDocumentModel implements ApprovalDocumentModel {
   @override
   Map<String, dynamic> get content;
   @override
+  @JsonKey(readValue: _readStr)
   String get status; // draft, pending, approved, rejected, cancelled
   @override
   String? get statusDesc;
   @override
   int get currentStep;
   @override
+  @JsonKey(readValue: _readStr)
   String get contentHash;
   @override
   String? get pdfUrl;
@@ -3379,6 +3428,7 @@ abstract class _ApprovalDocumentModel implements ApprovalDocumentModel {
   @override
   List<ApprovalStepModel>? get steps;
   @override
+  @JsonKey(readValue: _readStr)
   String get createdAt;
   @override
   String? get submittedAt;
