@@ -4,6 +4,7 @@ import { useApproval } from '@/store/pinia/approval'
 import { useAccount } from '@/store/pinia/account'
 import { useIssue } from '@/store/pinia/work_issue'
 import { message } from '@/utils/helper'
+import { playNotificationSound } from '@/utils/sound'
 
 export type SSENotificationPayload = {
   category: 'approval' | 'work' | 'meeting' | 'notice' | string
@@ -60,7 +61,10 @@ export function useSSE() {
             accountStore.fetchTodoList()
           }
 
-          // 3. 인앱 토스트 팝업 알림
+          // 3. 알림 사운드 재생 (딩-동♪)
+          playNotificationSound()
+
+          // 4. 인앱 토스트 팝업 알림
           message('info', payload.title, payload.body, 5000)
         } catch (err) {
           console.error('Failed to parse SSE notification payload:', err)

@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useAccount } from '@/store/pinia/account'
 import { useApproval } from '@/store/pinia/approval'
 import { useIssue } from '@/store/pinia/work_issue'
+import { playNotificationSound } from '@/utils/sound'
 import TodoModal from '@/components/Modals/TodoModal.vue'
 
 const router = useRouter()
@@ -12,6 +13,7 @@ const approvalStore = useApproval()
 const issueStore = useIssue()
 
 const refsTodoModal = ref()
+let isInitial = true
 
 const isStaff = computed(() => accountStore.isStaff)
 const isAuthorized = computed(() => accountStore.isAuthorized)
@@ -20,6 +22,13 @@ const userPk = computed(() => accountStore.userInfo?.pk)
 const pendingCount = computed(() => approvalStore.pendingList.length)
 const assignedIssueCount = computed(() => issueStore.issueNumByMember.open_charged || 0)
 const todoCount = computed(() => accountStore.myTodos.length)
+
+// 결재 대기 건수 증가 시 알림 사운드 재생
+watch(pendingCount, (newVal, oldVal) => {
+  if (!isInitial && newVal > (oldVal ?? 0)) {
+    playNotificationSound()
+  }
+})
 
 const fetchAllCounts = () => {
   if (isAuthorized.value) {
@@ -33,6 +42,9 @@ const fetchAllCounts = () => {
 
 onMounted(() => {
   fetchAllCounts()
+  setTimeout(() => {
+    isInitial = false
+  }, 2000)
 })
 
 watch(
