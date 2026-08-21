@@ -29,6 +29,7 @@ class DocumentTypeAdmin(admin.ModelAdmin):
     list_display = ('category', 'code', 'name', 'form_template_key', 'route_type', 'final_approval_duty',
                     'final_dept_level', 'is_active', 'created_at')
     list_filter = ('category', 'form_template_key', 'route_type', 'is_active')
+    list_display_links = ('code', 'name')
     search_fields = ('code', 'name')
     filter_horizontal = ('allowed_departments', 'allowed_duties', 'allowed_positions')
     inlines = [ApprovalPolicyRuleInline, RouteTemplateInline]
@@ -76,7 +77,8 @@ class ApprovalAttachmentInline(admin.TabularInline):
 
 @admin.register(ApprovalDocument)
 class ApprovalDocumentAdmin(admin.ModelAdmin):
-    list_display = ('doc_number', 'title', 'doc_type', 'drafter', 'drafter_assignment', 'status', 'created_at', 'submitted_at', 'completed_at')
+    list_display = ('doc_number', 'title', 'doc_type', 'drafter', 'drafter_assignment', 'status', 'created_at',
+                    'submitted_at', 'completed_at')
     list_filter = ('status', 'doc_type', 'created_at')
     search_fields = ('title', 'drafter__username', 'doc_number')
     readonly_fields = ('doc_number', 'content_hash', 'created_at', 'updated_at', 'submitted_at', 'completed_at')
@@ -97,7 +99,8 @@ class ApprovalStepAdmin(admin.ModelAdmin):
 class ApprovalActionAdmin(admin.ModelAdmin):
     list_display = ('id', 'get_document', 'step', 'approver', 'action', 'comment', 'acted_at')
     list_filter = ('action', 'acted_at')
-    search_fields = ('approver__username', 'comment', 'content_hash', 'step__document__title', 'step__document__doc_number')
+    search_fields = ('approver__username', 'comment', 'content_hash', 'step__document__title',
+                     'step__document__doc_number')
     readonly_fields = ('step', 'approver', 'action', 'comment', 'content_hash', 'acted_at')
 
     @admin.display(description='결재 문서')
