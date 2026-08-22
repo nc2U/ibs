@@ -22,7 +22,7 @@ subprojects {
                     namespace = project.group.toString().takeIf { it.isNotEmpty() }
                         ?: "com.plugin.${project.name.replace('-', '_')}"
                 }
-                compileSdkVersion(36)
+                compileSdkVersion(35)
                 compileOptions {
                     sourceCompatibility = JavaVersion.VERSION_17
                     targetCompatibility = JavaVersion.VERSION_17
