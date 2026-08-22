@@ -46,19 +46,24 @@ class _NotificationSheetState extends ConsumerState<NotificationSheet> {
     Navigator.of(context).pop();
 
     // 3. 딥링크 라우팅
-    if (n.targetType == 'issue' && n.targetId.isNotEmpty) {
-      context.go('/work/issues/${n.targetId}');
-    } else if (n.targetType == 'meeting' && n.targetId.isNotEmpty) {
-      context.go('/work/meetings/${n.targetId}');
-    } else if (n.category == 'notice') {
-      context.go('/channel?section=0&tab=0');
-    } else if (n.category == 'approval') {
-      if (n.targetId.isNotEmpty) {
-        context.go('/approval/${n.targetId}');
-      } else {
-        context.go('/approval');
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!context.mounted) return;
+      if (n.targetType == 'issue' && n.targetId.isNotEmpty) {
+        context.push('/work/issues/${n.targetId}');
+      } else if (n.targetType == 'meeting' && n.targetId.isNotEmpty) {
+        context.push('/work/meetings/${n.targetId}');
+      } else if (n.category == 'notice') {
+        context.go('/channel?section=0&tab=0');
+      } else if (n.category == 'approval') {
+        final docId = int.tryParse(n.targetId) ?? 0;
+        if (docId > 0) {
+          ref.invalidate(approvalDetailProvider(docId));
+          context.push('/approval/$docId');
+        } else {
+          context.go('/approval');
+        }
       }
-    }
+    });
   }
 
   Color _getCategoryColor(String category, BuildContext context) {
@@ -234,6 +239,8 @@ class _NotificationSheetState extends ConsumerState<NotificationSheet> {
             child: Row(
               children: [
                 _buildFilterChip('all', '전체'),
+                const SizedBox(width: 6),
+                _buildFilterChip('approval', '결재'),
                 const SizedBox(width: 6),
                 _buildFilterChip('work', '업무'),
                 const SizedBox(width: 6),

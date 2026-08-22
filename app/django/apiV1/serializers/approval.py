@@ -141,6 +141,11 @@ class ApprovalDocumentListSerializer(serializers.ModelSerializer):
 
 class ApprovalDocumentSerializer(serializers.ModelSerializer):
     drafter = SimpleUserSerializer(read_only=True)
+    drafter_name = serializers.SerializerMethodField()
+    category_name = serializers.CharField(source='doc_type.category.name', read_only=True, allow_null=True)
+    doc_type_name = serializers.CharField(source='doc_type.name', read_only=True)
+    department_name = serializers.CharField(source='drafter_assignment.department.name', read_only=True, allow_null=True)
+    status_desc = serializers.CharField(source='get_status_display', read_only=True)
     doc_type_detail = DocumentTypeSerializer(source='doc_type', read_only=True)
     steps = ApprovalStepSerializer(many=True, read_only=True)
     attachments = ApprovalAttachmentSerializer(many=True, read_only=True)
@@ -151,6 +156,14 @@ class ApprovalDocumentSerializer(serializers.ModelSerializer):
     drafter_assignment_desc = serializers.SerializerMethodField()
     content = serializers.DictField(required=False, default=dict)
     pdf_url = serializers.SerializerMethodField()
+
+    def get_drafter_name(self, obj):
+        if obj.drafter:
+            profile = getattr(obj.drafter, 'profile', None)
+            if profile and profile.name:
+                return profile.name
+            return obj.drafter.username
+        return ''
 
     def get_drafter_assignment_desc(self, obj):
         if obj.drafter_assignment:
@@ -237,10 +250,10 @@ class ApprovalDocumentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ApprovalDocument
-        fields = ('id', 'doc_number', 'title', 'doc_type', 'doc_type_detail',
-                  'content', 'attachment', 'attachments', 'observers', 'observer_ids',
-                  'drafter', 'drafter_assignment', 'drafter_assignment_desc',
-                  'workspace', 'status', 'current_step', 'content_hash',
+        fields = ('id', 'doc_number', 'title', 'doc_type', 'doc_type_name', 'category_name',
+                  'doc_type_detail', 'content', 'attachment', 'attachments', 'observers', 'observer_ids',
+                  'drafter', 'drafter_name', 'drafter_assignment', 'department_name', 'drafter_assignment_desc',
+                  'workspace', 'status', 'status_desc', 'current_step', 'content_hash',
                   'pdf_url', 'created_at', 'submitted_at', 'completed_at',
                   'steps')
         read_only_fields = ('doc_number', 'drafter', 'status', 'current_step',
