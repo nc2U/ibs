@@ -253,7 +253,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
     if (c['itinerary'] != null) _itineraryController.text = c['itinerary'].toString();
 
     // 5. 연장근무
-    if (c['work_type'] != null) _overtimeType = c['work_type'].toString();
+    if (c['work_type'] != null) _workType = c['work_type'].toString();
     if (c['start_time'] != null) _startTimeController.text = c['start_time'].toString();
     if (c['end_time'] != null) _endTimeController.text = c['end_time'].toString();
     if (c['total_hours'] != null) _totalHoursController.text = c['total_hours'].toString();

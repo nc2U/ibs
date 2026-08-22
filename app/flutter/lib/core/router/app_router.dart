@@ -18,6 +18,7 @@ import '../../features/channel/presentation/channel_tab.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/docs/presentation/docs_screen.dart';
 import '../../features/search/presentation/search_results_screen.dart';
+import '../../features/approval/data/models/approval_model.dart';
 import '../../features/approval/presentation/approval_main_screen.dart';
 import '../../features/approval/presentation/approval_detail_screen.dart';
 import '../../features/approval/presentation/approval_draft_screen.dart';
