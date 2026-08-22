@@ -3,14 +3,50 @@ import 'package:dio/dio.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'app_badge_service.dart';
 
-/// Firebase Cloud Messaging (FCM) 푸시 알림 서비스
+/// 백엔드(_utils/push_service.py)와 일치하는 중요 알림 채널 ID
+const String kHighImportanceChannelId = 'ibs_high_importance_channel';
+
+/// 안드로이드 고유 Notification Channel 정의 (소리, 진동, 헤드업 알림 및 뱃지 허용)
+const AndroidNotificationChannel kAndroidNotificationChannel = AndroidNotificationChannel(
+  kHighImportanceChannelId,
+  'IBS 중요 알림',
+  description: '전자결재, 업무, 회의 및 긴급 공지사항 알림',
+  importance: Importance.max,
+  playSound: true,
+  enableVibration: true,
+  showBadge: true,
+);
+
+/// 로컬 알림 플러그인 싱글톤 인스턴스
+final FlutterLocalNotificationsPlugin kLocalNotificationsPlugin =
+    FlutterLocalNotificationsPlugin();
+
+/// 백그라운드 / 앱 종료 상태에서 FCM 메시지 수신 시 실행되는 글로벌 최상위 핸들러
+@pragma('vm:entry-point')
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  if (Firebase.apps.isEmpty) {
+    await Firebase.initializeApp();
+  }
+  debugPrint('🌙 [FCM Background] 알림 수신: ${message.messageId} / ${message.notification?.title}');
+
+  final badgeStr = message.data['badge'] ?? message.notification?.android?.count;
+  if (badgeStr != null) {
+    final badgeCount = int.tryParse(badgeStr.toString());
+    if (badgeCount != null) {
+      await AppBadgeService.updateBadgeCount(badgeCount);
+    }
+  }
+}
+
+/// Firebase Cloud Messaging (FCM) 푸시 알림 및 로컬 알림 서비스
 class FcmService {
   static final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   static bool _isInitialized = false;
 
-  /// FCM 초기화 및 백엔드 기기 등록
+  /// FCM 초기화, 알림 채널 등록 및 백엔드 기기 토큰 등록
   static Future<void> initialize(Dio dio) async {
     if (_isInitialized) return;
 
@@ -20,7 +56,32 @@ class FcmService {
         await Firebase.initializeApp();
       }
 
-      // 2. 푸시 알림 수신 권한 요청 (iOS 대응)
+      // 2. 안드로이드 로컬 알림 플러그인 초기화 및 Notification Channel 등록
+      const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+      const iosInit = DarwinInitializationSettings(
+        requestAlertPermission: true,
+        requestBadgePermission: true,
+        requestSoundPermission: true,
+      );
+      const initSettings = InitializationSettings(android: androidInit, iOS: iosInit);
+
+      await kLocalNotificationsPlugin.initialize(
+        initSettings,
+        onDidReceiveNotificationResponse: (response) {
+          debugPrint('👆 [LocalNotification] 알림 탭: ${response.payload}');
+        },
+      );
+
+      // 안드로이드 시스템에 'ibs_high_importance_channel' 채널 공식 등록
+      final androidImplementation = kLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
+      if (androidImplementation != null) {
+        await androidImplementation.createNotificationChannel(kAndroidNotificationChannel);
+        debugPrint('📢 [FCM] Android Notification Channel 등록 완료 ($kHighImportanceChannelId)');
+      }
+
+      // 3. 푸시 알림 수신 권한 요청 (Android 13+ 및 iOS)
       NotificationSettings settings = await _messaging.requestPermission(
         alert: true,
         announcement: false,
@@ -35,7 +96,7 @@ class FcmService {
           settings.authorizationStatus == AuthorizationStatus.provisional) {
         debugPrint('🔔 [FCM] 푸시 알림 권한 승인됨: ${settings.authorizationStatus}');
 
-        // 3. APNs 토큰 대기 (iOS인 경우)
+        // 4. APNs 토큰 대기 (iOS인 경우)
         if (Platform.isIOS) {
           String? apnsToken;
           int retryCount = 0;
@@ -49,7 +110,7 @@ class FcmService {
           debugPrint('🍎 [FCM] APNs Token: $apnsToken (retries: $retryCount)');
         }
 
-        // 4. 기기 고유 FCM 토큰 발급
+        // 5. 기기 고유 FCM 토큰 발급
         String? fcmToken = await _messaging.getToken();
         if (fcmToken != null && fcmToken.isNotEmpty) {
           debugPrint('🔑 [FCM] Device Token: $fcmToken');
@@ -58,15 +119,48 @@ class FcmService {
           debugPrint('⚠️ [FCM] FCM Token 발급 실패 (null 또는 empty)');
         }
 
-        // 5. 토큰 갱신 이벤트 리스너
+        // 6. 토큰 갱신 이벤트 리스너
         _messaging.onTokenRefresh.listen((newToken) {
           debugPrint('🔄 [FCM] Device Token Refreshed: $newToken');
           _registerTokenToServer(dio, newToken);
         });
 
-        // 6. 포그라운드(앱 켜진 상태) 메시지 리스너
+        // 7. 포그라운드(앱 켜진 상태) 메시지 리스너
         FirebaseMessaging.onMessage.listen((RemoteMessage message) {
           debugPrint('📩 [FCM] 포그라운드 알림 수신: ${message.notification?.title} / ${message.notification?.body}');
+
+          final notification = message.notification;
+          final android = message.notification?.android;
+
+          // 포그라운드에서도 상단 헤드업 팝업 및 상태바 알림 생성 (OS 뱃지 자동 연동)
+          if (notification != null && !kIsWeb) {
+            kLocalNotificationsPlugin.show(
+              notification.hashCode,
+              notification.title,
+              notification.body,
+              NotificationDetails(
+                android: AndroidNotificationDetails(
+                  kAndroidNotificationChannel.id,
+                  kAndroidNotificationChannel.name,
+                  channelDescription: kAndroidNotificationChannel.description,
+                  importance: Importance.max,
+                  priority: Priority.high,
+                  icon: android?.smallIcon ?? '@mipmap/ic_launcher',
+                  playSound: true,
+                  enableVibration: true,
+                  number: android?.count,
+                ),
+                iOS: const DarwinNotificationDetails(
+                  presentAlert: true,
+                  presentBadge: true,
+                  presentSound: true,
+                ),
+              ),
+              payload: message.data.toString(),
+            );
+          }
+
+          // 뱃지 카운트 갱신
           final badgeStr = message.data['badge'] ?? message.notification?.android?.count;
           if (badgeStr != null) {
             final badgeCount = int.tryParse(badgeStr.toString());
@@ -76,7 +170,7 @@ class FcmService {
           }
         });
 
-        // 7. 백그라운드 푸시 탭하여 앱 진입 시 리스너
+        // 8. 백그라운드 푸시 탭하여 앱 진입 시 리스너
         FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
           debugPrint('🚀 [FCM] 백그라운드 푸시 탭으로 앱 진입: ${message.data}');
         });
