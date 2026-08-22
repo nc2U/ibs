@@ -94,11 +94,55 @@ def _get_company_ceos(company, added_user_ids: set):
     return ceo_users
 
 
+def _find_highest_role_label(user, current_dept_label: str, company, current_dept=None):
+    """
+    동일 결재자가 하위 직책(팀장 등)과 상위 직책(본부장, 대표이사 등)을 겸직하고 있는 경우,
+    결재선 및 문서에 표기될 최상위 공식 직함 라벨을 산출합니다.
+    (예: 경영지원팀장 + 대표이사 -> '대표이사 최종 승인')
+    (예: 프로젝트1팀장 + 사업운영본부장 -> '사업운영본부 본부장')
+    """
+    if not user:
+        return current_dept_label
+
+    # 1. 대표이사(CEO) 겸직 여부 확인 (최우선)
+    if company:
+        ceo_users = _get_company_ceos(company, set())
+        if user in ceo_users or any(u.id == user.id for u in ceo_users):
+            is_joint = any(
+                hasattr(u, 'staff') and hasattr(u.staff, 'executive') and
+                u.staff.executive and u.staff.executive.represent_type == 'joint'
+                for u in ceo_users if u.id == user.id
+            )
+            return '공동대표 최종 승인' if is_joint else '대표이사 최종 승인'
+
+    # 2. 상위 부서(본부장, 실장 등) 겸직 여부 확인
+    if current_dept and company:
+        # 상향 트리 순회하면서 이 사용자가 책임자로 있는 가장 상위 부서 탐색
+        highest_dept = current_dept
+        highest_duty_str = None
+
+        search_dept = current_dept
+        while search_dept:
+            mgr_user, mgr_duty = _get_department_manager(search_dept, set())
+            if mgr_user and mgr_user.id == user.id:
+                highest_dept = search_dept
+                if mgr_duty:
+                    highest_duty_str = mgr_duty.name
+            search_dept = search_dept.upper_depart
+
+        if highest_dept and highest_dept != current_dept:
+            duty_name = highest_duty_str or '책임자'
+            return f'{highest_dept.name} {duty_name}'
+
+    return current_dept_label
+
+
 def build_dynamic_approval_route(doc_type: DocumentType, drafter_user, drafter_assignment: StaffAssignment = None, content: dict = None):
     """
     기안자의 보직(소속 부서), 문서 유형의 전결 규정 및 금액별 조건부 정책(ApprovalPolicyRule)에 따라
     결재 단계 목록을 동적으로 생성합니다.
-    대표이사가 특정 팀/부서의 장을 겸직하는 경우에도 중복 없이 1단계에 정상 할당됩니다.
+    동일인이 하위 직책과 상위 직책을 겸직(예: 팀장 겸 대표이사, 팀장 겸 본부장)하는 경우,
+    동일 결재선 내에서 최상위 직함(대표이사, 본부장)으로 자동 승격(Highest Role Promotion)하여 표기합니다.
     """
     # 1. 고정 템플릿 방식인 경우
     if doc_type.route_type == DocumentType.ROUTE_TEMPLATE:
@@ -161,16 +205,27 @@ def build_dynamic_approval_route(doc_type: DocumentType, drafter_user, drafter_a
                 added_user_ids.add(manager_user.id)
 
                 duty_str = manager_duty.name if manager_duty else '책임자'
-                role_label = f'{current_dept.name} {duty_str}'
+                base_label = f'{current_dept.name} {duty_str}'
+
+                # 🌟 겸직 시 최상위 직함(대표이사 / 상위 본부장)으로 라벨 승격 판정
+                promoted_label = _find_highest_role_label(
+                    manager_user, base_label, company, current_dept=current_dept
+                )
 
                 steps.append({
                     'step_order': step_order,
-                    'role_label': role_label,
+                    'role_label': promoted_label,
                     'approvers': [manager_user],
                     'approver_ids': [manager_user.id],
                     'condition': 'AND',
                 })
                 step_order += 1
+
+                # 만약 해당 책임자가 대표이사라면 이미 회사 최종 결재에 도달한 것이므로 전결 처리
+                ceo_users = _get_company_ceos(company, set()) if company else []
+                if manager_user in ceo_users or any(u.id == manager_user.id for u in ceo_users):
+                    reached_final = True
+                    break
 
                 # 전결 규정 체크: 직책 전결 (예: 팀장 전결, 본부장 전결)
                 if effective_final_duty and manager_duty and manager_duty.id == effective_final_duty.id:
