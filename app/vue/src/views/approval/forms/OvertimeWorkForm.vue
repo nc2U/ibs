@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 
 const props = defineProps<{
   modelValue: Record<string, any>
@@ -57,6 +58,11 @@ const updateField = (key: string, val: any) => {
 
   emit('update:modelValue', updated)
 }
+
+const workDate = computed({
+  get: () => props.modelValue.work_date ?? '',
+  set: (val: string) => updateField('work_date', val),
+})
 
 onMounted(() => {
   const initial = { ...props.modelValue }
@@ -120,11 +126,10 @@ onMounted(() => {
       </CCol>
       <CFormLabel class="col-sm-2 col-form-label required text-sm-end">근무 일자</CFormLabel>
       <CCol sm="4">
-        <CFormInput
-          type="date"
-          :value="modelValue.work_date ?? ''"
+        <DatePicker
+          v-model="workDate"
           required
-          @input="updateField('work_date', ($event.target as HTMLInputElement).value)"
+          placeholder="근무 일자 선택"
         />
       </CCol>
     </CRow>

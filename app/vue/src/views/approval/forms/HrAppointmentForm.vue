@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 
 interface AppointmentTarget {
   name: string
@@ -21,6 +22,11 @@ const emit = defineEmits<{
 
 const targetsList = computed<AppointmentTarget[]>(() => {
   return Array.isArray(props.modelValue.targets) ? props.modelValue.targets : []
+})
+
+const effectiveDate = computed({
+  get: () => props.modelValue.effective_date ?? '',
+  set: (val: string) => updateField('effective_date', val),
 })
 
 const appointmentTypes = [
@@ -135,11 +141,10 @@ onMounted(() => {
       </CCol>
       <CFormLabel class="col-sm-2 col-form-label required text-sm-end">발령 시행일</CFormLabel>
       <CCol sm="4">
-        <CFormInput
-          type="date"
-          :value="modelValue.effective_date ?? ''"
+        <DatePicker
+          v-model="effectiveDate"
           required
-          @input="updateField('effective_date', ($event.target as HTMLInputElement).value)"
+          placeholder="발령 시행일 선택"
         />
       </CCol>
     </CRow>

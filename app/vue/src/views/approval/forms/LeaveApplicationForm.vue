@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 
 const props = defineProps<{
   modelValue: Record<string, any>
@@ -50,6 +51,16 @@ const updateField = (key: string, val: any) => {
   emit('update:modelValue', updated)
 }
 
+const startDate = computed({
+  get: () => props.modelValue.start_date ?? '',
+  set: (val: string) => updateField('start_date', val),
+})
+
+const endDate = computed({
+  get: () => props.modelValue.end_date ?? '',
+  set: (val: string) => updateField('end_date', val),
+})
+
 onMounted(() => {
   const initial = { ...props.modelValue }
   let changed = false
@@ -76,7 +87,7 @@ onMounted(() => {
   <div class="leave-application-form p-3 border rounded bg-more-light mb-3">
     <h6 class="fw-bold mb-3 text-primary">
       <CIcon name="cilCalendar" class="me-1" />
-      휴가 / 연차 신청 정보
+      휴가 신청 기본 정보
     </h6>
 
     <!-- 휴가 구분 -->
@@ -99,22 +110,20 @@ onMounted(() => {
     <CRow class="mb-3">
       <CFormLabel class="col-sm-3 col-form-label required">휴가 기간</CFormLabel>
       <CCol sm="9">
-        <div class="d-flex align-items-center gap-2">
-          <CFormInput
-            type="date"
-            :value="modelValue.start_date ?? ''"
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <DatePicker
+            v-model="startDate"
             required
-            @input="updateField('start_date', ($event.target as HTMLInputElement).value)"
+            placeholder="휴가 시작일"
           />
           <span v-if="modelValue.leave_type !== 'HALF_AM' && modelValue.leave_type !== 'HALF_PM'"
             >~</span
           >
-          <CFormInput
+          <DatePicker
             v-if="modelValue.leave_type !== 'HALF_AM' && modelValue.leave_type !== 'HALF_PM'"
-            type="date"
-            :value="modelValue.end_date ?? ''"
+            v-model="endDate"
             required
-            @input="updateField('end_date', ($event.target as HTMLInputElement).value)"
+            placeholder="휴가 종료일"
           />
           <CBadge color="primary" class="p-2 text-nowrap">
             신청일수: {{ modelValue.days_count ?? 1 }}일

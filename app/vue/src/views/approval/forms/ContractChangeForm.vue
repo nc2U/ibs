@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 
 const props = defineProps<{
   modelValue: Record<string, any>
@@ -25,6 +26,26 @@ const finalCalculatedAmount = computed(() => {
     return Number(props.modelValue.settlement_amount) || 0
   }
   return originalAmount.value + changeAmount.value
+})
+
+const originalContractDate = computed({
+  get: () => props.modelValue.original_contract_date ?? '',
+  set: (val: string) => updateField('original_contract_date', val),
+})
+
+const originalEndDate = computed({
+  get: () => props.modelValue.original_end_date ?? '',
+  set: (val: string) => updateField('original_end_date', val),
+})
+
+const finalEndDate = computed({
+  get: () => props.modelValue.final_end_date ?? '',
+  set: (val: string) => updateField('final_end_date', val),
+})
+
+const terminationDate = computed({
+  get: () => props.modelValue.termination_date ?? '',
+  set: (val: string) => updateField('termination_date', val),
 })
 
 const updateField = (key: string, val: any) => {
@@ -133,22 +154,16 @@ onMounted(() => {
         <CRow class="mb-2">
           <CFormLabel class="col-sm-2 col-form-label small">원 계약 체결일</CFormLabel>
           <CCol sm="4">
-            <CFormInput
-              type="date"
-              size="sm"
-              :value="modelValue.original_contract_date ?? ''"
-              @input="
-                updateField('original_contract_date', ($event.target as HTMLInputElement).value)
-              "
+            <DatePicker
+              v-model="originalContractDate"
+              placeholder="체결일 선택"
             />
           </CCol>
           <CFormLabel class="col-sm-2 col-form-label small text-sm-end">원 계약 종료일</CFormLabel>
           <CCol sm="4">
-            <CFormInput
-              type="date"
-              size="sm"
-              :value="modelValue.original_end_date ?? ''"
-              @input="updateField('original_end_date', ($event.target as HTMLInputElement).value)"
+            <DatePicker
+              v-model="originalEndDate"
+              placeholder="종료일 선택"
             />
           </CCol>
         </CRow>
@@ -234,11 +249,9 @@ onMounted(() => {
         <CRow>
           <CFormLabel class="col-sm-2 col-form-label small">변경 후 종료일</CFormLabel>
           <CCol sm="4">
-            <CFormInput
-              type="date"
-              size="sm"
-              :value="modelValue.final_end_date ?? ''"
-              @input="updateField('final_end_date', ($event.target as HTMLInputElement).value)"
+            <DatePicker
+              v-model="finalEndDate"
+              placeholder="변경 후 종료일 선택"
             />
           </CCol>
           <CFormLabel class="col-sm-2 col-form-label small text-sm-end"
@@ -266,12 +279,10 @@ onMounted(() => {
         <CRow class="mb-2">
           <CFormLabel class="col-sm-2 col-form-label small required">해지 기준일</CFormLabel>
           <CCol sm="4">
-            <CFormInput
-              type="date"
-              size="sm"
-              :value="modelValue.termination_date ?? ''"
+            <DatePicker
+              v-model="terminationDate"
               required
-              @input="updateField('termination_date', ($event.target as HTMLInputElement).value)"
+              placeholder="해지 기준일 선택"
             />
           </CCol>
           <CFormLabel class="col-sm-2 col-form-label small required text-sm-end"

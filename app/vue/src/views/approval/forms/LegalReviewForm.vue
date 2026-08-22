@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 
 const props = defineProps<{
   modelValue: Record<string, any>
@@ -43,6 +44,11 @@ const updateField = (key: string, val: any) => {
 
   emit('update:modelValue', updated)
 }
+
+const reviewDueDate = computed({
+  get: () => props.modelValue.review_due_date ?? '',
+  set: (val: string) => updateField('review_due_date', val),
+})
 
 onMounted(() => {
   const initial = { ...props.modelValue }
@@ -124,11 +130,10 @@ onMounted(() => {
         />
       </CCol>
       <CFormLabel class="col-sm-2 col-form-label text-sm-end">회신 희망일</CFormLabel>
-      <CCol sm="2">
-        <CFormInput
-          type="date"
-          :value="modelValue.review_due_date ?? ''"
-          @input="updateField('review_due_date', ($event.target as HTMLInputElement).value)"
+      <CCol sm="4">
+        <DatePicker
+          v-model="reviewDueDate"
+          placeholder="회신 희망일 선택"
         />
       </CCol>
     </CRow>

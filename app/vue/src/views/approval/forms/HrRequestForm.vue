@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 
 const props = defineProps<{
   modelValue: Record<string, any>
@@ -8,6 +9,26 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'update:modelValue', val: Record<string, any>): void
 }>()
+
+const eventDate = computed({
+  get: () => props.modelValue.event_date ?? '',
+  set: (val: string) => updateField('event_date', val),
+})
+
+const leaveStartDate = computed({
+  get: () => props.modelValue.leave_start_date ?? '',
+  set: (val: string) => updateField('leave_start_date', val),
+})
+
+const leaveEndDate = computed({
+  get: () => props.modelValue.leave_end_date ?? '',
+  set: (val: string) => updateField('leave_end_date', val),
+})
+
+const reinstatementDate = computed({
+  get: () => props.modelValue.reinstatement_date ?? '',
+  set: (val: string) => updateField('reinstatement_date', val),
+})
 
 const requestTypes = [
   { value: 'CERTIFICATE', label: '제증명서 발급 신청' },
@@ -240,11 +261,10 @@ onMounted(() => {
         </CCol>
         <CFormLabel class="col-sm-2 col-form-label text-sm-end required">경조 일자</CFormLabel>
         <CCol sm="4">
-          <CFormInput
-            type="date"
-            :value="modelValue.event_date ?? ''"
+          <DatePicker
+            v-model="eventDate"
             required
-            @input="updateField('event_date', ($event.target as HTMLInputElement).value)"
+            placeholder="경조 일자 선택"
           />
         </CCol>
       </CRow>
@@ -307,21 +327,17 @@ onMounted(() => {
       <CRow v-if="modelValue.request_type === 'LEAVE_OF_ABSENCE'" class="mb-2">
         <CFormLabel class="col-sm-2 col-form-label required">휴직 예정 기간</CFormLabel>
         <CCol sm="10">
-          <div class="d-flex align-items-center gap-2">
-            <CFormInput
-              type="date"
-              class="w-auto"
-              :value="modelValue.leave_start_date ?? ''"
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <DatePicker
+              v-model="leaveStartDate"
               required
-              @input="updateField('leave_start_date', ($event.target as HTMLInputElement).value)"
+              placeholder="휴직 시작일"
             />
             <span>~</span>
-            <CFormInput
-              type="date"
-              class="w-auto"
-              :value="modelValue.leave_end_date ?? ''"
+            <DatePicker
+              v-model="leaveEndDate"
               required
-              @input="updateField('leave_end_date', ($event.target as HTMLInputElement).value)"
+              placeholder="휴직 종료일"
             />
           </div>
         </CCol>
@@ -329,11 +345,10 @@ onMounted(() => {
       <CRow v-else class="mb-2">
         <CFormLabel class="col-sm-2 col-form-label required">복직 희망일</CFormLabel>
         <CCol sm="4">
-          <CFormInput
-            type="date"
-            :value="modelValue.reinstatement_date ?? ''"
+          <DatePicker
+            v-model="reinstatementDate"
             required
-            @input="updateField('reinstatement_date', ($event.target as HTMLInputElement).value)"
+            placeholder="복직 희망일 선택"
           />
         </CCol>
       </CRow>

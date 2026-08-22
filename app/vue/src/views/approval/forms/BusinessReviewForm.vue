@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 
 const props = defineProps<{
   modelValue: Record<string, any>
@@ -17,6 +18,26 @@ const bizTypes = [
   { value: 'PF_INVEST', label: '지분 투자 / 공동 개발' },
   { value: 'OTHER', label: '기타 신규 사업' },
 ]
+
+const landSecureDate = computed({
+  get: () => props.modelValue.land_secure_date ?? '',
+  set: (val: string) => updateField('land_secure_date', val),
+})
+
+const approvalTargetDate = computed({
+  get: () => props.modelValue.approval_target_date ?? '',
+  set: (val: string) => updateField('approval_target_date', val),
+})
+
+const startDate = computed({
+  get: () => props.modelValue.start_date ?? '',
+  set: (val: string) => updateField('start_date', val),
+})
+
+const completionDate = computed({
+  get: () => props.modelValue.completion_date ?? '',
+  set: (val: string) => updateField('completion_date', val),
+})
 
 const totalRevenue = computed(() => Number(props.modelValue.total_revenue) || 0)
 const totalCost = computed(() => Number(props.modelValue.total_cost) || 0)
@@ -289,40 +310,30 @@ onMounted(() => {
         <CRow>
           <CCol sm="3">
             <CFormLabel class="small mb-1">토지 확보/계약</CFormLabel>
-            <CFormInput
-              type="date"
-              size="sm"
-              :value="modelValue.land_secure_date ?? ''"
-              @input="updateField('land_secure_date', ($event.target as HTMLInputElement).value)"
+            <DatePicker
+              v-model="landSecureDate"
+              placeholder="토지계약일 선택"
             />
           </CCol>
           <CCol sm="3">
             <CFormLabel class="small mb-1">인허가/사업승인</CFormLabel>
-            <CFormInput
-              type="date"
-              size="sm"
-              :value="modelValue.approval_target_date ?? ''"
-              @input="
-                updateField('approval_target_date', ($event.target as HTMLInputElement).value)
-              "
+            <DatePicker
+              v-model="approvalTargetDate"
+              placeholder="사업승인일 선택"
             />
           </CCol>
           <CCol sm="3">
             <CFormLabel class="small mb-1">착공 및 분양</CFormLabel>
-            <CFormInput
-              type="date"
-              size="sm"
-              :value="modelValue.start_date ?? ''"
-              @input="updateField('start_date', ($event.target as HTMLInputElement).value)"
+            <DatePicker
+              v-model="startDate"
+              placeholder="착공/분양일 선택"
             />
           </CCol>
           <CCol sm="3">
             <CFormLabel class="small mb-1">준공 및 입주</CFormLabel>
-            <CFormInput
-              type="date"
-              size="sm"
-              :value="modelValue.completion_date ?? ''"
-              @input="updateField('completion_date', ($event.target as HTMLInputElement).value)"
+            <DatePicker
+              v-model="completionDate"
+              placeholder="준공/입주일 선택"
             />
           </CCol>
         </CRow>

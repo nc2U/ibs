@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 
 export interface PurchaseItem {
   name: string
@@ -20,6 +21,11 @@ const emit = defineEmits<{
 
 const items = computed<PurchaseItem[]>(() => {
   return Array.isArray(props.modelValue.items) ? props.modelValue.items : []
+})
+
+const deliveryDueDate = computed({
+  get: () => props.modelValue.delivery_due_date ?? '',
+  set: (val: string) => updateField('delivery_due_date', val),
 })
 
 const totalSupplyPrice = computed(() => {
@@ -127,10 +133,9 @@ onMounted(() => {
     <CRow class="mb-3">
       <CFormLabel class="col-sm-3 col-form-label">납품 희망일</CFormLabel>
       <CCol sm="3">
-        <CFormInput
-          type="date"
-          :value="modelValue.delivery_due_date ?? ''"
-          @input="updateField('delivery_due_date', ($event.target as HTMLInputElement).value)"
+        <DatePicker
+          v-model="deliveryDueDate"
+          placeholder="납품 희망일 선택"
         />
       </CCol>
       <CFormLabel class="col-sm-2 col-form-label text-sm-end">납품 장소</CFormLabel>

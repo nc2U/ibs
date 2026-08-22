@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 
 const props = defineProps<{
   modelValue: Record<string, any>
@@ -66,6 +67,16 @@ const updateField = (key: string, val: any) => {
 
   emit('update:modelValue', updated)
 }
+
+const startDate = computed({
+  get: () => props.modelValue.start_date ?? '',
+  set: (val: string) => updateField('start_date', val),
+})
+
+const endDate = computed({
+  get: () => props.modelValue.end_date ?? '',
+  set: (val: string) => updateField('end_date', val),
+})
 
 const formattedTotal = computed(() => {
   const t = props.modelValue.total_cost ?? props.modelValue.amount ?? 0
@@ -136,20 +147,16 @@ onMounted(() => {
       <CFormLabel class="col-sm-2 col-form-label required">출장 기간</CFormLabel>
       <CCol sm="10">
         <div class="d-flex align-items-center gap-2 flex-wrap">
-          <CFormInput
-            type="date"
-            class="w-auto"
-            :value="modelValue.start_date ?? ''"
+          <DatePicker
+            v-model="startDate"
             required
-            @input="updateField('start_date', ($event.target as HTMLInputElement).value)"
+            placeholder="출장 시작일"
           />
           <span>~</span>
-          <CFormInput
-            type="date"
-            class="w-auto"
-            :value="modelValue.end_date ?? ''"
+          <DatePicker
+            v-model="endDate"
             required
-            @input="updateField('end_date', ($event.target as HTMLInputElement).value)"
+            placeholder="출장 종료일"
           />
           <CBadge color="primary" class="p-2 text-nowrap">
             {{ modelValue.nights_count ?? 0 }}박 {{ modelValue.days_count ?? 1 }}일

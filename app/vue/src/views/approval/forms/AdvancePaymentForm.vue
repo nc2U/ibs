@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 
 const props = defineProps<{
   modelValue: Record<string, any>
@@ -30,6 +31,16 @@ const updateField = (key: string, val: any) => {
 
   emit('update:modelValue', updated)
 }
+
+const paymentDueDate = computed({
+  get: () => props.modelValue.payment_due_date ?? '',
+  set: (val: string) => updateField('payment_due_date', val),
+})
+
+const settlementDueDate = computed({
+  get: () => props.modelValue.settlement_due_date ?? '',
+  set: (val: string) => updateField('settlement_due_date', val),
+})
 
 onMounted(() => {
   const initial = { ...props.modelValue }
@@ -92,11 +103,10 @@ onMounted(() => {
       </CCol>
       <CFormLabel class="col-sm-2 col-form-label required text-sm-end">지급 요청일</CFormLabel>
       <CCol sm="4">
-        <CFormInput
-          type="date"
-          :value="modelValue.payment_due_date ?? ''"
+        <DatePicker
+          v-model="paymentDueDate"
           required
-          @input="updateField('payment_due_date', ($event.target as HTMLInputElement).value)"
+          placeholder="지급 요청일 선택"
         />
       </CCol>
     </CRow>
@@ -123,11 +133,10 @@ onMounted(() => {
       </CCol>
       <CFormLabel class="col-sm-2 col-form-label required text-sm-end">정산 예정일</CFormLabel>
       <CCol sm="4">
-        <CFormInput
-          type="date"
-          :value="modelValue.settlement_due_date ?? ''"
+        <DatePicker
+          v-model="settlementDueDate"
           required
-          @input="updateField('settlement_due_date', ($event.target as HTMLInputElement).value)"
+          placeholder="정산 예정일 선택"
         />
       </CCol>
     </CRow>

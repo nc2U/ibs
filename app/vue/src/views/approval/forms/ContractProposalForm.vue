@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 
 const props = defineProps<{
   modelValue: Record<string, any>
@@ -37,6 +38,16 @@ const updateField = (key: string, val: any) => {
 
   emit('update:modelValue', updated)
 }
+
+const contractStartDate = computed({
+  get: () => props.modelValue.contract_start_date ?? '',
+  set: (val: string) => updateField('contract_start_date', val),
+})
+
+const contractEndDate = computed({
+  get: () => props.modelValue.contract_end_date ?? '',
+  set: (val: string) => updateField('contract_end_date', val),
+})
 
 onMounted(() => {
   const initial = { ...props.modelValue }
@@ -213,20 +224,18 @@ onMounted(() => {
     <CRow class="mb-3">
       <CFormLabel class="col-sm-2 col-form-label required">계약 기간</CFormLabel>
       <CCol sm="4">
-        <CFormInput
-          type="date"
-          :value="modelValue.contract_start_date ?? ''"
+        <DatePicker
+          v-model="contractStartDate"
           required
-          @input="updateField('contract_start_date', ($event.target as HTMLInputElement).value)"
+          placeholder="계약 시작일"
         />
       </CCol>
-      <CCol sm="2" class="text-center pt-2 fw-bold text-muted">~</CCol>
+      <CCol sm="1" class="text-center pt-2 fw-bold text-muted">~</CCol>
       <CCol sm="4">
-        <CFormInput
-          type="date"
-          :value="modelValue.contract_end_date ?? ''"
+        <DatePicker
+          v-model="contractEndDate"
           required
-          @input="updateField('contract_end_date', ($event.target as HTMLInputElement).value)"
+          placeholder="계약 종료일"
         />
       </CCol>
     </CRow>

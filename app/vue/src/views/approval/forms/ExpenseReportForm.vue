@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 
 export interface ExpenseItem {
   date: string
@@ -18,6 +19,11 @@ const emit = defineEmits<{
 
 const items = computed<ExpenseItem[]>(() => {
   return Array.isArray(props.modelValue.items) ? props.modelValue.items : []
+})
+
+const paymentDueDate = computed({
+  get: () => props.modelValue.payment_due_date ?? '',
+  set: (val: string) => updateField('payment_due_date', val),
 })
 
 const totalAmount = computed(() => {
@@ -102,11 +108,10 @@ onMounted(() => {
         </CFormSelect>
       </CCol>
       <CFormLabel class="col-sm-2 col-form-label text-sm-end">지급요청일</CFormLabel>
-      <CCol sm="3">
-        <CFormInput
-          type="date"
-          :value="modelValue.payment_due_date ?? ''"
-          @input="updateField('payment_due_date', ($event.target as HTMLInputElement).value)"
+      <CCol sm="4">
+        <DatePicker
+          v-model="paymentDueDate"
+          placeholder="지급요청일 선택"
         />
       </CCol>
     </CRow>
@@ -149,7 +154,7 @@ onMounted(() => {
       <CTable small bordered responsive class="bg-more-white mb-2">
         <CTableHead color="light">
           <CTableRow class="text-center">
-            <CTableHeaderCell style="width: 130px">일자</CTableHeaderCell>
+            <CTableHeaderCell style="width: 140px">일자</CTableHeaderCell>
             <CTableHeaderCell>사용 내역 / 항목명</CTableHeaderCell>
             <CTableHeaderCell style="width: 150px">금액 (원)</CTableHeaderCell>
             <CTableHeaderCell style="width: 150px">비고</CTableHeaderCell>
@@ -159,12 +164,11 @@ onMounted(() => {
         <CTableBody>
           <CTableRow v-for="(item, idx) in items" :key="idx">
             <CTableDataCell>
-              <CFormInput
-                type="date"
-                size="sm"
-                :value="item.date"
+              <DatePicker
+                :model-value="item.date"
                 required
-                @input="updateItem(idx, 'date', ($event.target as HTMLInputElement).value)"
+                placeholder="일자 선택"
+                @update:model-value="updateItem(idx, 'date', $event)"
               />
             </CTableDataCell>
             <CTableDataCell>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 
 export interface SettlementItem {
   date: string
@@ -239,12 +240,11 @@ onMounted(() => {
             <tbody>
               <tr v-for="(item, idx) in items" :key="idx">
                 <td>
-                  <CFormInput
-                    type="date"
-                    size="sm"
-                    :value="item.date"
+                  <DatePicker
+                    :model-value="item.date"
                     required
-                    @input="updateItem(idx, 'date', ($event.target as HTMLInputElement).value)"
+                    placeholder="일자 선택"
+                    @update:model-value="updateItem(idx, 'date', $event)"
                   />
                 </td>
                 <td>

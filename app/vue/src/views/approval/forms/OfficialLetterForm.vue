@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 
 const props = defineProps<{
   modelValue: Record<string, any>
@@ -31,6 +32,11 @@ const updateField = (key: string, val: any) => {
     [key]: val,
   })
 }
+
+const sendDueDate = computed({
+  get: () => props.modelValue.send_due_date ?? '',
+  set: (val: string) => updateField('send_due_date', val),
+})
 
 onMounted(() => {
   // 기본값 세팅
@@ -171,11 +177,10 @@ onMounted(() => {
       </CCol>
       <CFormLabel class="col-sm-2 col-form-label required">발송 희망일</CFormLabel>
       <CCol sm="4">
-        <CFormInput
-          type="date"
-          :value="modelValue.send_due_date ?? ''"
+        <DatePicker
+          v-model="sendDueDate"
           required
-          @input="updateField('send_due_date', ($event.target as HTMLInputElement).value)"
+          placeholder="발송 희망일 선택"
         />
       </CCol>
     </CRow>
