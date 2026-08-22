@@ -2,13 +2,12 @@
 import { computed, onBeforeMount, ref, watch } from 'vue'
 import { navMenu, pageTitle } from '@/views/comDocs/_menu/headermixin'
 import {
-  onBeforeRouteUpdate,
   onBeforeRouteLeave,
+  onBeforeRouteUpdate,
   type RouteLocationNormalizedLoaded as Loaded,
   useRoute,
   useRouter,
 } from 'vue-router'
-import { useAccount } from '@/store/pinia/account'
 import { useCompany } from '@/store/pinia/company'
 import type { Company } from '@/store/types/settings.ts'
 import { type LetterFilter, useDocs } from '@/store/pinia/docs'
