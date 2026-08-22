@@ -20,9 +20,6 @@ class AppBadgeService {
   /// 뱃지 숫자 갱신 (0 이하면 뱃지 제거)
   static Future<void> updateBadgeCount(int count) async {
     try {
-      final supported = await isSupported();
-      if (!supported) return;
-
       if (count > 0) {
         await AppBadgePlus.updateBadge(count);
         debugPrint('🏷️ [AppBadge] 뱃지 카운트 갱신: $count');
@@ -38,11 +35,8 @@ class AppBadgeService {
   /// 뱃지 완전 제거
   static Future<void> removeBadge() async {
     try {
-      final supported = await isSupported();
-      if (supported) {
-        await AppBadgePlus.updateBadge(0);
-        debugPrint('🏷️ [AppBadge] 뱃지 제거 완료');
-      }
+      await AppBadgePlus.updateBadge(0);
+      debugPrint('🏷️ [AppBadge] 뱃지 제거 완료');
     } catch (e) {
       debugPrint('⚠️ [AppBadge] 뱃지 제거 오류: $e');
     }
