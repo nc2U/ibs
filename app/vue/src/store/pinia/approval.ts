@@ -251,7 +251,7 @@ export const useApproval = defineStore('approval', () => {
     api
       .post('/approval-delegation/', payload)
       .then(() => {
-        message('결재 위임(대결) 설정이 등록되었습니다.')
+        message()
         fetchDelegationList()
       })
       .catch(err => errorHandle(err.response.data))
@@ -260,7 +260,7 @@ export const useApproval = defineStore('approval', () => {
     api
       .patch(`/approval-delegation/${id}/`, payload)
       .then(() => {
-        message('결재 위임 설정이 수정되었습니다.')
+        message()
         fetchDelegationList()
       })
       .catch(err => errorHandle(err.response.data))
@@ -269,7 +269,7 @@ export const useApproval = defineStore('approval', () => {
     api
       .delete(`/approval-delegation/${id}/`)
       .then(() => {
-        message('결재 위임 설정이 삭제되었습니다.')
+        message()
         fetchDelegationList()
       })
       .catch(err => errorHandle(err.response.data))
