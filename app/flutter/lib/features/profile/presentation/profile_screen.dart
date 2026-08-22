@@ -8,6 +8,7 @@ import '../../../core/router/app_router.dart';
 import '../../../core/services/biometric_service.dart';
 import '../../../core/theme/app_colors_extension.dart';
 import '../../../core/widgets/user_avatar.dart';
+import 'delegation_settings_screen.dart';
 
 /// 내 설정 화면 — 프로필 / 알림 / 계정 관리
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -313,6 +314,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ),
               const SizedBox(height: 16),
             ],
+
+            // ── 전자결재 및 위임 관리 섹션 ─────────────────────────────────────
+            const _SectionLabel(title: '전자결재 및 부재 설정'),
+            _SettingTile(
+              leading: Icon(Icons.shield_outlined,
+                  color: context.colors.accentApprovalDeep, size: 24),
+              title: '부재 및 결재 위임(대결)',
+              subtitle: '휴가/출장 시 대결자 지정 및 권한 위임',
+              trailing: Icon(Icons.chevron_right_rounded,
+                  color: context.colors.textDisabled),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const DelegationSettingsScreen()),
+                );
+              },
+            ),
+            const SizedBox(height: 16),
 
             // ── 계정 섹션 ─────────────────────────────────────────────────────
             const _SectionLabel(title: '계정'),

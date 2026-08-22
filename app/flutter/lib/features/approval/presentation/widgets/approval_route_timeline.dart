@@ -97,16 +97,29 @@ class ApprovalRouteTimeline extends StatelessWidget {
     final approvedAction = step.actions.where((a) => a.action == 'approved').firstOrNull;
     final rejectedAction = step.actions.where((a) => a.action == 'rejected').firstOrNull;
 
+    String? delegatedInfo;
     if (rejectedAction != null) {
       nodeColor = context.colors.error;
       nodeIcon = Icons.cancel_rounded;
-      statusStr = '반려';
+      if (rejectedAction.isDelegated) {
+        final actName = (rejectedAction.approver.fullName != null && rejectedAction.approver.fullName!.isNotEmpty)
+            ? rejectedAction.approver.fullName!
+            : rejectedAction.approver.username;
+        delegatedInfo = '[대결: $actName]';
+      }
+      statusStr = delegatedInfo != null ? '$delegatedInfo 반려' : '반려';
       timeStr = _formatTime(rejectedAction.actedAt);
       commentStr = rejectedAction.comment;
     } else if (approvedAction != null) {
       nodeColor = context.colors.success;
       nodeIcon = Icons.check_circle_rounded;
-      statusStr = '승인';
+      if (approvedAction.isDelegated) {
+        final actName = (approvedAction.approver.fullName != null && approvedAction.approver.fullName!.isNotEmpty)
+            ? approvedAction.approver.fullName!
+            : approvedAction.approver.username;
+        delegatedInfo = '[대결: $actName]';
+      }
+      statusStr = delegatedInfo != null ? '$delegatedInfo 승인' : '승인';
       timeStr = _formatTime(approvedAction.actedAt);
       commentStr = approvedAction.comment.isNotEmpty ? approvedAction.comment : null;
     } else if (step.status == 'approved') {

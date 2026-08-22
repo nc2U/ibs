@@ -117,12 +117,15 @@ class StaffAssignmentItemModel with _$StaffAssignmentItemModel {
 }
 
 // ── 4. 결재 행동 이력 모델 ─────────────────────────────────────────
+// ── 4. 결재 행동 이력 모델 ─────────────────────────────────────────
 @freezed
 class ApprovalActionModel with _$ApprovalActionModel {
   @JsonSerializable(fieldRename: FieldRename.snake)
   const factory ApprovalActionModel({
     @JsonKey(readValue: _readId) required int id,
     required SimpleUserModel approver,
+    @Default(false) bool isDelegated,
+    SimpleUserModel? delegatedFrom,
     @JsonKey(readValue: _readStr) @Default('approved') String action, // approved, rejected, commented
     @JsonKey(readValue: _readStr) @Default('') String comment,
     @JsonKey(readValue: _readStr) @Default('') String contentHash,
@@ -237,4 +240,56 @@ class ApprovalDocumentListResponse with _$ApprovalDocumentListResponse {
 
   factory ApprovalDocumentListResponse.fromJson(Map<String, dynamic> json) =>
       _$ApprovalDocumentListResponseFromJson(json);
+}
+
+// ── 10. 결재 권한 위임 (대결) 모델 ─────────────────────────────────────
+class ApprovalDelegationModel {
+  final int id;
+  final SimpleUserModel? delegator;
+  final SimpleUserModel? delegatee;
+  final String startDate;
+  final String endDate;
+  final String? reason;
+  final bool isActive;
+  final bool isValidNow;
+  final String? createdAt;
+  final String? updatedAt;
+
+  const ApprovalDelegationModel({
+    required this.id,
+    this.delegator,
+    this.delegatee,
+    required this.startDate,
+    required this.endDate,
+    this.reason,
+    this.isActive = true,
+    this.isValidNow = false,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  factory ApprovalDelegationModel.fromJson(Map<String, dynamic> json) {
+    return ApprovalDelegationModel(
+      id: json['id'] is num ? (json['id'] as num).toInt() : (int.tryParse(json['id']?.toString() ?? '') ?? 0),
+      delegator: json['delegator'] is Map<String, dynamic> ? SimpleUserModel.fromJson(json['delegator'] as Map<String, dynamic>) : null,
+      delegatee: json['delegatee'] is Map<String, dynamic> ? SimpleUserModel.fromJson(json['delegatee'] as Map<String, dynamic>) : null,
+      startDate: json['start_date']?.toString() ?? '',
+      endDate: json['end_date']?.toString() ?? '',
+      reason: json['reason']?.toString(),
+      isActive: json['is_active'] == true,
+      isValidNow: json['is_valid_now'] == true,
+      createdAt: json['created_at']?.toString(),
+      updatedAt: json['updated_at']?.toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'start_date': startDate,
+      'end_date': endDate,
+      'reason': reason,
+      'is_active': isActive,
+    };
+  }
 }

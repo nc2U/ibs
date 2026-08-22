@@ -55,6 +55,8 @@ abstract class ApiEndpoints {
   static const String approvalAct              = '/api/v1/approval-document/{id}/act/';
   static const String approvalCancel           = '/api/v1/approval-document/{id}/cancel/';
   static const String approvalAttachments      = '/api/v1/approval-attachment/';
+  static const String approvalDelegations      = '/api/v1/approval-delegation/';
+  static const String approvalDelegationDetail = '/api/v1/approval-delegation/{id}/';
 
   /// URL 패턴에서 {id}/{slug} 등을 실제 값으로 치환
   static String resolve(String pattern, Map<String, dynamic> params) {

@@ -217,3 +217,9 @@ final approvalActionControllerProvider = StateNotifierProvider.autoDispose<Appro
   final repo = ref.watch(approvalRepositoryProvider);
   return ApprovalActionController(repo, ref);
 });
+
+// ── 13. 결재 권한 위임(대결) 목록 프로바이더 ─────────────────────────────────────
+final delegationsProvider = FutureProvider.autoDispose<List<ApprovalDelegationModel>>((ref) async {
+  final repo = ref.watch(approvalRepositoryProvider);
+  return repo.fetchDelegations();
+});

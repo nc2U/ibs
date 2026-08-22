@@ -220,6 +220,36 @@ class ApprovalRepository {
     await file.writeAsBytes(res.data as List<int>);
     return filePath;
   }
+
+  /// 19. 결재 권한 위임(대결) 목록 조회
+  Future<List<ApprovalDelegationModel>> fetchDelegations() async {
+    final res = await _dio.get(ApiEndpoints.approvalDelegations);
+    final list = (res.data is List)
+        ? res.data as List
+        : ((res.data as Map<String, dynamic>)['results'] as List? ?? []);
+    return list
+        .map((e) => ApprovalDelegationModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// 20. 결재 권한 위임(대결) 등록
+  Future<ApprovalDelegationModel> createDelegation(Map<String, dynamic> data) async {
+    final res = await _dio.post(ApiEndpoints.approvalDelegations, data: data);
+    return ApprovalDelegationModel.fromJson(res.data as Map<String, dynamic>);
+  }
+
+  /// 21. 결재 권한 위임(대결) 수정
+  Future<ApprovalDelegationModel> updateDelegation(int id, Map<String, dynamic> data) async {
+    final url = ApiEndpoints.resolve(ApiEndpoints.approvalDelegationDetail, {'id': id});
+    final res = await _dio.patch(url, data: data);
+    return ApprovalDelegationModel.fromJson(res.data as Map<String, dynamic>);
+  }
+
+  /// 22. 결재 권한 위임(대결) 삭제
+  Future<void> deleteDelegation(int id) async {
+    final url = ApiEndpoints.resolve(ApiEndpoints.approvalDelegationDetail, {'id': id});
+    await _dio.delete(url);
+  }
 }
 
 final approvalRepositoryProvider = Provider<ApprovalRepository>((ref) {

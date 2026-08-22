@@ -114,6 +114,12 @@ _$ApprovalActionModelImpl _$$ApprovalActionModelImplFromJson(
 ) => _$ApprovalActionModelImpl(
   id: (_readId(json, 'id') as num).toInt(),
   approver: SimpleUserModel.fromJson(json['approver'] as Map<String, dynamic>),
+  isDelegated: json['is_delegated'] as bool? ?? false,
+  delegatedFrom: json['delegated_from'] == null
+      ? null
+      : SimpleUserModel.fromJson(
+          json['delegated_from'] as Map<String, dynamic>,
+        ),
   action: _readStr(json, 'action') as String? ?? 'approved',
   comment: _readStr(json, 'comment') as String? ?? '',
   contentHash: _readStr(json, 'content_hash') as String? ?? '',
@@ -125,6 +131,8 @@ Map<String, dynamic> _$$ApprovalActionModelImplToJson(
 ) => <String, dynamic>{
   'id': instance.id,
   'approver': instance.approver,
+  'is_delegated': instance.isDelegated,
+  'delegated_from': instance.delegatedFrom,
   'action': instance.action,
   'comment': instance.comment,
   'content_hash': instance.contentHash,

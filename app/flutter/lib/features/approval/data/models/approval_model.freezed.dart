@@ -1338,6 +1338,8 @@ mixin _$ApprovalActionModel {
   @JsonKey(readValue: _readId)
   int get id => throw _privateConstructorUsedError;
   SimpleUserModel get approver => throw _privateConstructorUsedError;
+  bool get isDelegated => throw _privateConstructorUsedError;
+  SimpleUserModel? get delegatedFrom => throw _privateConstructorUsedError;
   @JsonKey(readValue: _readStr)
   String get action => throw _privateConstructorUsedError; // approved, rejected, commented
   @JsonKey(readValue: _readStr)
@@ -1367,6 +1369,8 @@ abstract class $ApprovalActionModelCopyWith<$Res> {
   $Res call({
     @JsonKey(readValue: _readId) int id,
     SimpleUserModel approver,
+    bool isDelegated,
+    SimpleUserModel? delegatedFrom,
     @JsonKey(readValue: _readStr) String action,
     @JsonKey(readValue: _readStr) String comment,
     @JsonKey(readValue: _readStr) String contentHash,
@@ -1374,6 +1378,7 @@ abstract class $ApprovalActionModelCopyWith<$Res> {
   });
 
   $SimpleUserModelCopyWith<$Res> get approver;
+  $SimpleUserModelCopyWith<$Res>? get delegatedFrom;
 }
 
 /// @nodoc
@@ -1393,6 +1398,8 @@ class _$ApprovalActionModelCopyWithImpl<$Res, $Val extends ApprovalActionModel>
   $Res call({
     Object? id = null,
     Object? approver = null,
+    Object? isDelegated = null,
+    Object? delegatedFrom = freezed,
     Object? action = null,
     Object? comment = null,
     Object? contentHash = null,
@@ -1408,6 +1415,14 @@ class _$ApprovalActionModelCopyWithImpl<$Res, $Val extends ApprovalActionModel>
                 ? _value.approver
                 : approver // ignore: cast_nullable_to_non_nullable
                       as SimpleUserModel,
+            isDelegated: null == isDelegated
+                ? _value.isDelegated
+                : isDelegated // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            delegatedFrom: freezed == delegatedFrom
+                ? _value.delegatedFrom
+                : delegatedFrom // ignore: cast_nullable_to_non_nullable
+                      as SimpleUserModel?,
             action: null == action
                 ? _value.action
                 : action // ignore: cast_nullable_to_non_nullable
@@ -1438,6 +1453,20 @@ class _$ApprovalActionModelCopyWithImpl<$Res, $Val extends ApprovalActionModel>
       return _then(_value.copyWith(approver: value) as $Val);
     });
   }
+
+  /// Create a copy of ApprovalActionModel
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $SimpleUserModelCopyWith<$Res>? get delegatedFrom {
+    if (_value.delegatedFrom == null) {
+      return null;
+    }
+
+    return $SimpleUserModelCopyWith<$Res>(_value.delegatedFrom!, (value) {
+      return _then(_value.copyWith(delegatedFrom: value) as $Val);
+    });
+  }
 }
 
 /// @nodoc
@@ -1452,6 +1481,8 @@ abstract class _$$ApprovalActionModelImplCopyWith<$Res>
   $Res call({
     @JsonKey(readValue: _readId) int id,
     SimpleUserModel approver,
+    bool isDelegated,
+    SimpleUserModel? delegatedFrom,
     @JsonKey(readValue: _readStr) String action,
     @JsonKey(readValue: _readStr) String comment,
     @JsonKey(readValue: _readStr) String contentHash,
@@ -1460,6 +1491,8 @@ abstract class _$$ApprovalActionModelImplCopyWith<$Res>
 
   @override
   $SimpleUserModelCopyWith<$Res> get approver;
+  @override
+  $SimpleUserModelCopyWith<$Res>? get delegatedFrom;
 }
 
 /// @nodoc
@@ -1478,6 +1511,8 @@ class __$$ApprovalActionModelImplCopyWithImpl<$Res>
   $Res call({
     Object? id = null,
     Object? approver = null,
+    Object? isDelegated = null,
+    Object? delegatedFrom = freezed,
     Object? action = null,
     Object? comment = null,
     Object? contentHash = null,
@@ -1493,6 +1528,14 @@ class __$$ApprovalActionModelImplCopyWithImpl<$Res>
             ? _value.approver
             : approver // ignore: cast_nullable_to_non_nullable
                   as SimpleUserModel,
+        isDelegated: null == isDelegated
+            ? _value.isDelegated
+            : isDelegated // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        delegatedFrom: freezed == delegatedFrom
+            ? _value.delegatedFrom
+            : delegatedFrom // ignore: cast_nullable_to_non_nullable
+                  as SimpleUserModel?,
         action: null == action
             ? _value.action
             : action // ignore: cast_nullable_to_non_nullable
@@ -1521,6 +1564,8 @@ class _$ApprovalActionModelImpl implements _ApprovalActionModel {
   const _$ApprovalActionModelImpl({
     @JsonKey(readValue: _readId) required this.id,
     required this.approver,
+    this.isDelegated = false,
+    this.delegatedFrom,
     @JsonKey(readValue: _readStr) this.action = 'approved',
     @JsonKey(readValue: _readStr) this.comment = '',
     @JsonKey(readValue: _readStr) this.contentHash = '',
@@ -1535,6 +1580,11 @@ class _$ApprovalActionModelImpl implements _ApprovalActionModel {
   final int id;
   @override
   final SimpleUserModel approver;
+  @override
+  @JsonKey()
+  final bool isDelegated;
+  @override
+  final SimpleUserModel? delegatedFrom;
   @override
   @JsonKey(readValue: _readStr)
   final String action;
@@ -1551,7 +1601,7 @@ class _$ApprovalActionModelImpl implements _ApprovalActionModel {
 
   @override
   String toString() {
-    return 'ApprovalActionModel(id: $id, approver: $approver, action: $action, comment: $comment, contentHash: $contentHash, actedAt: $actedAt)';
+    return 'ApprovalActionModel(id: $id, approver: $approver, isDelegated: $isDelegated, delegatedFrom: $delegatedFrom, action: $action, comment: $comment, contentHash: $contentHash, actedAt: $actedAt)';
   }
 
   @override
@@ -1562,6 +1612,10 @@ class _$ApprovalActionModelImpl implements _ApprovalActionModel {
             (identical(other.id, id) || other.id == id) &&
             (identical(other.approver, approver) ||
                 other.approver == approver) &&
+            (identical(other.isDelegated, isDelegated) ||
+                other.isDelegated == isDelegated) &&
+            (identical(other.delegatedFrom, delegatedFrom) ||
+                other.delegatedFrom == delegatedFrom) &&
             (identical(other.action, action) || other.action == action) &&
             (identical(other.comment, comment) || other.comment == comment) &&
             (identical(other.contentHash, contentHash) ||
@@ -1575,6 +1629,8 @@ class _$ApprovalActionModelImpl implements _ApprovalActionModel {
     runtimeType,
     id,
     approver,
+    isDelegated,
+    delegatedFrom,
     action,
     comment,
     contentHash,
@@ -1602,6 +1658,8 @@ abstract class _ApprovalActionModel implements ApprovalActionModel {
   const factory _ApprovalActionModel({
     @JsonKey(readValue: _readId) required final int id,
     required final SimpleUserModel approver,
+    final bool isDelegated,
+    final SimpleUserModel? delegatedFrom,
     @JsonKey(readValue: _readStr) final String action,
     @JsonKey(readValue: _readStr) final String comment,
     @JsonKey(readValue: _readStr) final String contentHash,
@@ -1616,6 +1674,10 @@ abstract class _ApprovalActionModel implements ApprovalActionModel {
   int get id;
   @override
   SimpleUserModel get approver;
+  @override
+  bool get isDelegated;
+  @override
+  SimpleUserModel? get delegatedFrom;
   @override
   @JsonKey(readValue: _readStr)
   String get action; // approved, rejected, commented
