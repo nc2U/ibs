@@ -197,7 +197,9 @@ def build_dynamic_approval_route(doc_type: DocumentType, drafter_user, drafter_a
     # (1) 부서 트리 상향 순회 (직속 부서장 → 상위 부서장 → ...)
     if assignment and assignment.department:
         current_dept = assignment.department
-        while current_dept:
+        visited_dept_ids = set()
+        while current_dept and current_dept.id not in visited_dept_ids:
+            visited_dept_ids.add(current_dept.id)
             manager_user, manager_duty = _get_department_manager(current_dept, added_user_ids)
 
             # 부서 책임자가 존재하고 기안자 본인이 아닌 경우

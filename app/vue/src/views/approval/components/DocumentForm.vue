@@ -130,7 +130,7 @@ const currentAmount = computed<number | null>(() => {
   return null
 })
 
-// 금액 또는 양식 데이터 변경 시 실시간 결재선 미리보기 갱신
+// 금액 또는 양식 데이터 변경 시 실시간 결재선 미리보기 갱신 (디바운스)
 watch(
   () => currentAmount.value,
   () => {
@@ -146,17 +146,29 @@ watch(
       if (dt?.default_security_level && !isEdit.value) {
         form.value.security_level = dt.default_security_level
       }
+      updateRoutePreview(true)
     }
   },
 )
 
-const updateRoutePreview = async () => {
+let previewTimer: ReturnType<typeof setTimeout> | null = null
+const updateRoutePreview = (immediate = false) => {
   if (!form.value.doc_type) return
-  await fetchRoutePreview(
-    Number(form.value.doc_type),
-    form.value.drafter_assignment ? Number(form.value.drafter_assignment) : undefined,
-    currentAmount.value,
-  )
+  if (previewTimer) clearTimeout(previewTimer)
+
+  const execute = () => {
+    fetchRoutePreview(
+      Number(form.value.doc_type),
+      form.value.drafter_assignment ? Number(form.value.drafter_assignment) : undefined,
+      currentAmount.value,
+    )
+  }
+
+  if (immediate) {
+    execute()
+  } else {
+    previewTimer = setTimeout(execute, 200)
+  }
 }
 
 const buildFormData = () => {
