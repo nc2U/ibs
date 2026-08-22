@@ -12,6 +12,7 @@ import type {
   RoutePreviewStep,
   AllDocFilter,
   ApprovalDocumentListItem,
+  ApprovalDelegation,
 } from '@/store/types/approval'
 
 export type DocFilter = {
@@ -237,6 +238,42 @@ export const useApproval = defineStore('approval', () => {
     }
   }
 
+  // ── 결재 위임 (대결) ──────────────────────────────────
+  const delegationList = ref<ApprovalDelegation[]>([])
+
+  const fetchDelegationList = () =>
+    api
+      .get('/approval-delegation/')
+      .then(res => (delegationList.value = res.data.results ?? res.data))
+      .catch(err => errorHandle(err.response.data))
+
+  const createDelegation = (payload: Partial<ApprovalDelegation>) =>
+    api
+      .post('/approval-delegation/', payload)
+      .then(() => {
+        message('결재 위임(대결) 설정이 등록되었습니다.')
+        fetchDelegationList()
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const updateDelegation = (id: number, payload: Partial<ApprovalDelegation>) =>
+    api
+      .patch(`/approval-delegation/${id}/`, payload)
+      .then(() => {
+        message('결재 위임 설정이 수정되었습니다.')
+        fetchDelegationList()
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const deleteDelegation = (id: number) =>
+    api
+      .delete(`/approval-delegation/${id}/`)
+      .then(() => {
+        message('결재 위임 설정이 삭제되었습니다.')
+        fetchDelegationList()
+      })
+      .catch(err => errorHandle(err.response.data))
+
   return {
     // state
     docCategoryList,
@@ -254,6 +291,7 @@ export const useApproval = defineStore('approval', () => {
     allDocumentList,
     allDocumentsCount,
     allDocumentPages,
+    delegationList,
     // actions
     fetchDocCategoryList,
     fetchDocTypeList,
@@ -274,5 +312,9 @@ export const useApproval = defineStore('approval', () => {
     submitDocument,
     actDocument,
     cancelDocument,
+    fetchDelegationList,
+    createDelegation,
+    updateDelegation,
+    deleteDelegation,
   }
 })

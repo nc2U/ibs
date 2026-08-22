@@ -11,14 +11,48 @@ from apiV1.serializers.approval import (
     DocCategorySerializer, DocumentTypeSerializer, ApprovalDocumentSerializer,
     ApprovalDocumentListSerializer, ApprovalActionCreateSerializer,
     ApprovalAttachmentSerializer, RoutePreviewStepSerializer,
+    ApprovalDelegationSerializer,
 )
 from apiV1.serializers.company import StaffAssignmentSerializer
 from approval.models import (
-    DocCategory, DocumentType, ApprovalDocument, ApprovalStep, ApprovalAction, ApprovalAttachment
+    DocCategory, DocumentType, ApprovalDocument, ApprovalStep, ApprovalAction, ApprovalDelegation, ApprovalAttachment
 )
 from approval.services import build_dynamic_approval_route
 from approval.tasks import notify_approvers_task, notify_drafter_task, notify_cancel_task, generate_approval_pdf_task
 from company.models import Staff, StaffAssignment
+
+
+def get_active_delegator_ids(user):
+    """현재 날짜 기준으로 해당 사용자에게 결재 권한을 위임한 위임자(원 결재자) ID 목록"""
+    today = timezone.localdate()
+    return list(ApprovalDelegation.objects.filter(
+        delegatee=user,
+        is_active=True,
+        start_date__lte=today,
+        end_date__gte=today,
+    ).values_list('delegator_id', flat=True))
+
+
+class ApprovalDelegationViewSet(viewsets.ModelViewSet):
+    """결재 권한 위임 (부재 및 대결 설정) ViewSet"""
+    serializer_class = ApprovalDelegationSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_superuser:
+            return ApprovalDelegation.objects.all().select_related('delegator__profile', 'delegatee__profile')
+        # 내가 위임했거나(delegator) 위임받은(delegatee) 내역 조회
+        return ApprovalDelegation.objects.filter(
+            Q(delegator=user) | Q(delegatee=user)
+        ).select_related('delegator__profile', 'delegatee__profile')
+
+    def perform_create(self, serializer):
+        # 관리자가 명시하지 않은 경우 본인을 delegator로 설정
+        if 'delegator' not in serializer.validated_data or not self.request.user.is_superuser:
+            serializer.save(delegator=self.request.user)
+        else:
+            serializer.save()
 
 
 class DocCategoryViewSet(viewsets.ReadOnlyModelViewSet):
@@ -142,13 +176,20 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
         ).prefetch_related(
             'attachments__creator__profile',
             'observers__profile',
-            'steps__approvers__profile', 'steps__actions__approver__profile'
+            'steps__approvers__profile', 'steps__actions__approver__profile',
+            'steps__actions__delegated_from__profile',
         )
         if user.is_superuser:
             return qs
-        # 기안자, 결재자, 또는 참조자인 문서만 조회 가능
+
+        # 기안자, 결재자(본인 또는 위임받은 대결자), 또는 참조자인 문서만 조회 가능
+        delegator_ids = get_active_delegator_ids(user)
+        approver_q = Q(steps__approvers=user)
+        if delegator_ids:
+            approver_q |= Q(steps__approvers__in=delegator_ids)
+
         return (
-            qs.filter(drafter=user) | qs.filter(steps__approvers=user) | qs.filter(observers=user)
+            qs.filter(drafter=user) | qs.filter(approver_q) | qs.filter(observers=user)
         ).distinct()
 
     def get_serializer_class(self):
@@ -316,12 +357,27 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
         except ApprovalStep.DoesNotExist:
             return Response({'detail': '현재 결재 단계를 찾을 수 없습니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        if not current_step.approvers.filter(pk=request.user.pk).exists():
-            return Response({'detail': '이 단계의 결재 권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+        is_direct_approver = current_step.approvers.filter(pk=request.user.pk).exists()
+        is_delegated = False
+        delegated_from = None
+
+        if not is_direct_approver:
+            # 대결 권한 확인
+            delegator_ids = get_active_delegator_ids(request.user)
+            delegator_match = current_step.approvers.filter(pk__in=delegator_ids).first()
+            if delegator_match:
+                is_delegated = True
+                delegated_from = delegator_match
+            else:
+                return Response({'detail': '이 단계의 결재 권한(또는 대결 권한)이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
 
         # 이미 승인/반려 처리를 완료한 경우 재처리 불가 (단, 단순 의견 작성자는 추후 승인/반려 가능)
+        existing_action_filter = Q(approver=request.user)
+        if is_delegated and delegated_from:
+            existing_action_filter |= Q(delegated_from=delegated_from)
+
         if current_step.actions.filter(
-            approver=request.user,
+            existing_action_filter,
             action__in=[ApprovalAction.ACTION_APPROVED, ApprovalAction.ACTION_REJECTED]
         ).exists():
             return Response({'detail': '이미 승인 또는 반려 처리하셨습니다.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -330,6 +386,8 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
         ApprovalAction.objects.create(
             step=current_step,
             approver=request.user,
+            is_delegated=is_delegated,
+            delegated_from=delegated_from,
             action=act_data['action'],
             comment=act_data.get('comment', ''),
             content_hash=document.content_hash,
@@ -433,14 +491,18 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
     # ── GET /approval-document/my_pending/ ───────────────────
     @action(detail=False, methods=['get'])
     def my_pending(self, request):
-        """현재 사용자가 결재해야 할 대기 문서 목록 (현재 단계 한정)"""
+        """현재 사용자가 결재해야 할 대기 문서 목록 (대결 권한 포함)"""
         from django.db.models import F
+        delegator_ids = get_active_delegator_ids(request.user)
+        approver_q = Q(steps__approvers=request.user)
+        if delegator_ids:
+            approver_q |= Q(steps__approvers__in=delegator_ids)
+
         qs = ApprovalDocument.objects.filter(
             status=ApprovalDocument.STATUS_PENDING,
             steps__status=ApprovalStep.STATUS_PENDING,
             steps__step_order=F('current_step'),
-            steps__approvers=request.user,
-        ).select_related('doc_type', 'drafter', 'drafter__profile').distinct()
+        ).filter(approver_q).select_related('doc_type', 'drafter', 'drafter__profile').distinct()
 
         serializer = ApprovalDocumentListSerializer(qs, many=True, context={'request': request})
         return Response(serializer.data)

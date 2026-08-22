@@ -87,12 +87,26 @@ const toList = () => {
 }
 
 const getAction = (step: ApprovalStep, userId: number): ApprovalActionRecord | undefined =>
-  step.actions.find(a => a.approver.id === userId)
+  step.actions.find(a => a.approver.id === userId || a.delegated_from?.id === userId)
+
+const isDelegateFor = (approverId: number) => {
+  const today = new Date().toISOString().split('T')[0]
+  return approvalStore.delegationList.some(
+    d =>
+      d.is_active &&
+      (d.delegator?.id === approverId || d.delegator_id === approverId) &&
+      (d.delegatee?.id === myUser.value?.pk || d.delegatee_id === myUser.value?.pk) &&
+      d.start_date <= today &&
+      d.end_date >= today,
+  )
+}
 
 const canAct = (step: ApprovalStep, approverId: number) => {
   if (!document.value || document.value.status !== 'pending') return false
   if (document.value.current_step !== step.step_order) return false
-  if (approverId !== myUser.value?.pk) return false
+  const isDirect = approverId === myUser.value?.pk
+  const isDelegate = isDelegateFor(approverId)
+  if (!isDirect && !isDelegate) return false
   return !getAction(step, approverId)
 }
 
@@ -2449,14 +2463,23 @@ onMounted(() => fetchDocument(docId.value))
                 <div class="fw-semibold small mb-1">{{ approver.full_name }}</div>
 
                 <template v-if="getAction(step, approver.id)">
-                  <CBadge
-                    :color="
-                      getAction(step, approver.id)!.action === 'approved' ? 'success' : 'danger'
-                    "
-                    class="mb-1"
-                  >
-                    {{ getAction(step, approver.id)!.action === 'approved' ? '✓ 승인' : '✗ 반려' }}
-                  </CBadge>
+                  <div class="d-flex align-items-center gap-1 mb-1">
+                    <CBadge
+                      :color="
+                        getAction(step, approver.id)!.action === 'approved' ? 'success' : 'danger'
+                      "
+                    >
+                      {{ getAction(step, approver.id)!.action === 'approved' ? '✓ 승인' : '✗ 반려' }}
+                    </CBadge>
+                    <CBadge
+                      v-if="getAction(step, approver.id)!.is_delegated"
+                      color="warning"
+                      size="sm"
+                      title="대리 결재"
+                    >
+                      대결: {{ getAction(step, approver.id)!.approver.full_name }}
+                    </CBadge>
+                  </div>
                   <div class="text-muted" style="font-size: 0.72rem">
                     {{ fmtDatetime(getAction(step, approver.id)!.acted_at) }}
                   </div>

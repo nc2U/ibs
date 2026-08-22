@@ -212,15 +212,56 @@ class ApprovalAction(models.Model):
         '문서 해시', max_length=64, blank=True,
         help_text='결재 시점의 문서 SHA-256 해시값 (위변조 검증용)'
     )
+    # ── 대결(결재 위임) 처리 필드 ──
+    is_delegated = models.BooleanField('대결 여부', default=False)
+    delegated_from = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='delegated_actions',
+        verbose_name='원 결재권자 (위임자)'
+    )
     acted_at = models.DateTimeField('결재일시', auto_now_add=True)
 
     def __str__(self):
-        return f'{self.approver} → {self.get_action_display()} ({self.step})'
+        del_str = f' [대결: 위임자 {self.delegated_from}]' if self.is_delegated else ''
+        return f'{self.approver}{del_str} → {self.get_action_display()} ({self.step})'
 
     class Meta:
         ordering = ['acted_at']
         verbose_name = '05. 결재 행동 이력'
         verbose_name_plural = '05. 결재 행동 이력 목록'
+
+
+class ApprovalDelegation(models.Model):
+    """결재 권한 위임 (부재 및 대결 설정)"""
+
+    delegator = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name='delegations_given', verbose_name='위임자 (원 결재권자)'
+    )
+    delegatee = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name='delegations_received', verbose_name='수임자 (대결자)'
+    )
+    start_date = models.DateField('위임 시작일')
+    end_date = models.DateField('위임 종료일')
+    reason = models.CharField('위임 사유 (부재 사유)', max_length=200, blank=True)
+    is_active = models.BooleanField('활성화 여부', default=True)
+    created_at = models.DateTimeField('등록일시', auto_now_add=True)
+    updated_at = models.DateTimeField('수정일시', auto_now=True)
+
+    def __str__(self):
+        return f'{self.delegator} → {self.delegatee} ({self.start_date} ~ {self.end_date})'
+
+    def is_currently_valid(self):
+        """현재 날짜 기준으로 유효한지 확인"""
+        from django.utils import timezone
+        today = timezone.localdate()
+        return self.is_active and (self.start_date <= today <= self.end_date)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = '07. 결재 권한 위임 (대결)'
+        verbose_name_plural = '07. 결재 권한 위임 (대결) 목록'
 
 
 class ApprovalAttachment(models.Model):

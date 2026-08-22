@@ -72,6 +72,12 @@ const approval = {
         },
       ],
     },
+    {
+      path: 'delegation',
+      name: '결재 위임 관리',
+      component: () => import('@/views/approval/Index.vue'),
+      meta: { title: '결재 위임 관리', auth: true },
+    },
   ],
 }
 

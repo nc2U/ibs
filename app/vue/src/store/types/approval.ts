@@ -92,9 +92,26 @@ export type StepStatus = 'pending' | 'approved' | 'rejected' | 'skipped'
 export interface ApprovalActionRecord {
   id: number
   approver: SimpleUser
+  is_delegated?: boolean
+  delegated_from?: SimpleUser | null
   action: ApprovalActionType
   comment: string
   acted_at: string
+}
+
+export interface ApprovalDelegation {
+  id?: number
+  delegator?: SimpleUser
+  delegator_id?: number
+  delegatee?: SimpleUser
+  delegatee_id: number
+  start_date: string
+  end_date: string
+  reason?: string
+  is_active: boolean
+  is_valid_now?: boolean
+  created_at?: string
+  updated_at?: string
 }
 
 export interface ApprovalAttachment {

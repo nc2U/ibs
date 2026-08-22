@@ -50,6 +50,7 @@ router.register(r'approval-doc-category', approval.DocCategoryViewSet, basename=
 router.register(r'approval-doc-type', approval.DocumentTypeViewSet, basename='approval-doc-type')
 router.register(r'approval-document', approval.ApprovalDocumentViewSet, basename='approval-document')
 router.register(r'approval-attachment', approval.ApprovalAttachmentViewSet, basename='approval-attachment')
+router.register(r'approval-delegation', approval.ApprovalDelegationViewSet, basename='approval-delegation')
 
 # ibs
 router.register(r'schedule', ibs.CalendarScheduleViewSet)

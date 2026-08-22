@@ -8,12 +8,23 @@ from _utils.push_service import send_push_notification
 
 @shared_task
 def notify_approvers_task(document_pk, step_pk):
-    """결재 요청 알림: 다음 결재 단계 결재자들에게 푸시 + 인앱 알림 발송"""
-    from approval.models import ApprovalDocument, ApprovalStep
+    """결재 요청 알림: 다음 결재 단계 결재자(및 부재 시 활성 대결자)들에게 푸시 + 인앱 알림 발송"""
+    from approval.models import ApprovalDocument, ApprovalStep, ApprovalDelegation
     try:
         document = ApprovalDocument.objects.select_related('doc_type', 'drafter__profile').get(pk=document_pk)
         step = ApprovalStep.objects.prefetch_related('approvers').get(pk=step_pk)
         approver_ids = list(step.approvers.values_list('id', flat=True))
+
+        # 현재 유효한 대결자(Delegates) 목록도 포함하여 알림 발송
+        today = timezone.localdate()
+        delegation_ids = list(ApprovalDelegation.objects.filter(
+            delegator_id__in=approver_ids,
+            is_active=True,
+            start_date__lte=today,
+            end_date__gte=today,
+        ).values_list('delegatee_id', flat=True))
+
+        all_target_ids = list(set(approver_ids + delegation_ids))
 
         push_title = f'[결재 요청] {document.doc_type.name}'
         profile = getattr(document.drafter, 'profile', None)
@@ -21,7 +32,7 @@ def notify_approvers_task(document_pk, step_pk):
         push_body = f'{drafter_name}님이 결재를 요청했습니다: {document.title}'
 
         send_push_notification(
-            user_ids=approver_ids,
+            user_ids=all_target_ids,
             title=push_title,
             body=push_body,
             category='approval',

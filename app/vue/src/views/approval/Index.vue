@@ -9,6 +9,7 @@ import PendingList from '@/views/approval/components/PendingList.vue'
 import DraftedList from '@/views/approval/components/DraftedList.vue'
 import ApprovedList from '@/views/approval/components/ApprovedList.vue'
 import AllDocumentsList from '@/views/approval/components/AllDocumentsList.vue'
+import DelegationList from '@/views/approval/components/DelegationList.vue'
 import DocumentForm from '@/views/approval/components/DocumentForm.vue'
 import DocumentDetail from '@/views/approval/components/DocumentDetail.vue'
 import ComAuthGuard from '@/components/AuthGuard/ComAuthGuard.vue'
@@ -53,6 +54,8 @@ onBeforeMount(async () => {
         <ApprovedList v-else-if="route.name === '결재 문서함'" />
 
         <AllDocumentsList v-else-if="route.name === '전체 문서함'" />
+
+        <DelegationList v-else-if="route.name === '결재 위임 관리'" />
 
         <DocumentDetail
           v-else-if="

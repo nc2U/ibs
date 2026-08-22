@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from approval.models import (
     DocCategory, DocumentType, ApprovalPolicyRule,
-    RouteTemplate, ApprovalDocument, ApprovalStep, ApprovalAction, ApprovalAttachment
+    RouteTemplate, ApprovalDocument, ApprovalStep, ApprovalAction, ApprovalDelegation, ApprovalAttachment
 )
 from django.contrib.auth import get_user_model
 import json
@@ -22,6 +22,35 @@ class SimpleUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'username', 'full_name')
+
+
+class ApprovalDelegationSerializer(serializers.ModelSerializer):
+    """결재 권한 위임 (대결) Serializer"""
+    delegator = SimpleUserSerializer(read_only=True)
+    delegator_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), source='delegator', write_only=True, required=False
+    )
+    delegatee = SimpleUserSerializer(read_only=True)
+    delegatee_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), source='delegatee', write_only=True
+    )
+    is_valid_now = serializers.BooleanField(source='is_currently_valid', read_only=True)
+
+    def validate(self, attrs):
+        start_date = attrs.get('start_date')
+        end_date = attrs.get('end_date')
+        if start_date and end_date and start_date > end_date:
+            raise serializers.ValidationError({'end_date': '위임 종료일은 시작일 이후여야 합니다.'})
+        return attrs
+
+    class Meta:
+        model = ApprovalDelegation
+        fields = (
+            'id', 'delegator', 'delegator_id', 'delegatee', 'delegatee_id',
+            'start_date', 'end_date', 'reason', 'is_active', 'is_valid_now',
+            'created_at', 'updated_at'
+        )
+        read_only_fields = ('created_at', 'updated_at')
 
 
 class DocCategorySerializer(serializers.ModelSerializer):
@@ -70,11 +99,12 @@ class DocumentTypeSerializer(serializers.ModelSerializer):
 
 class ApprovalActionSerializer(serializers.ModelSerializer):
     approver = SimpleUserSerializer(read_only=True)
+    delegated_from = SimpleUserSerializer(read_only=True)
 
     class Meta:
         model = ApprovalAction
-        fields = ('id', 'approver', 'action', 'comment', 'acted_at')
-        read_only_fields = ('approver', 'acted_at')
+        fields = ('id', 'approver', 'is_delegated', 'delegated_from', 'action', 'comment', 'acted_at')
+        read_only_fields = ('approver', 'is_delegated', 'delegated_from', 'acted_at')
 
 
 class ApprovalAttachmentSerializer(serializers.ModelSerializer):

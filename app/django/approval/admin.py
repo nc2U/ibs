@@ -1,7 +1,7 @@
 from django.contrib import admin
 from approval.models import (
     DocCategory, DocumentType, ApprovalPolicyRule,
-    RouteTemplate, ApprovalDocument, ApprovalStep, ApprovalAction, ApprovalAttachment
+    RouteTemplate, ApprovalDocument, ApprovalStep, ApprovalAction, ApprovalDelegation, ApprovalAttachment
 )
 
 
@@ -97,15 +97,23 @@ class ApprovalStepAdmin(admin.ModelAdmin):
 
 @admin.register(ApprovalAction)
 class ApprovalActionAdmin(admin.ModelAdmin):
-    list_display = ('id', 'get_document', 'step', 'approver', 'action', 'comment', 'acted_at')
-    list_filter = ('action', 'acted_at')
-    search_fields = ('approver__username', 'comment', 'content_hash', 'step__document__title',
+    list_display = ('id', 'get_document', 'step', 'approver', 'is_delegated', 'delegated_from', 'action', 'comment', 'acted_at')
+    list_filter = ('action', 'is_delegated', 'acted_at')
+    search_fields = ('approver__username', 'delegated_from__username', 'comment', 'content_hash', 'step__document__title',
                      'step__document__doc_number')
-    readonly_fields = ('step', 'approver', 'action', 'comment', 'content_hash', 'acted_at')
+    readonly_fields = ('step', 'approver', 'action', 'comment', 'content_hash', 'is_delegated', 'delegated_from', 'acted_at')
 
     @admin.display(description='결재 문서')
     def get_document(self, obj):
         return obj.step.document.title if obj.step and obj.step.document else '-'
+
+
+@admin.register(ApprovalDelegation)
+class ApprovalDelegationAdmin(admin.ModelAdmin):
+    list_display = ('id', 'delegator', 'delegatee', 'start_date', 'end_date', 'reason', 'is_active', 'created_at')
+    list_filter = ('is_active', 'start_date', 'end_date')
+    search_fields = ('delegator__username', 'delegatee__username', 'reason')
+    list_editable = ('is_active',)
 
 
 @admin.register(ApprovalAttachment)
