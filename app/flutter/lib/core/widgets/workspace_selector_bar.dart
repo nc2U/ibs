@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../constants/app_colors.dart';
 import '../constants/app_text_styles.dart';
 import '../providers/project_provider.dart';
+import '../theme/app_colors_extension.dart';
 import 'project_selector_bottom_sheet.dart';
 
 /// 앱 공용 워크스페이스 / 프로젝트 선택 상단 바 위젯 (radius = 0)
@@ -41,14 +41,14 @@ class WorkspaceSelectorBar extends ConsumerWidget {
         onProjectChanged?.call();
       },
       child: Container(
-        color: AppColors.bgSurface,
+        color: context.colors.bgSurface,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: Row(
           children: [
-            const Icon(
+            Icon(
               Icons.business_center_rounded,
               size: 18,
-              color: AppColors.accentProject,
+              color: context.colors.accentProject,
             ),
             const SizedBox(width: 8),
             Expanded(
@@ -56,7 +56,7 @@ class WorkspaceSelectorBar extends ConsumerWidget {
                 displayName,
                 style: AppTextStyles.titleSm.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+                  color: context.colors.textPrimary,
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
@@ -65,10 +65,10 @@ class WorkspaceSelectorBar extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: AppColors.accentProject.withAlpha(20),
+                color: context.colors.accentProject.withAlpha(20),
                 borderRadius: BorderRadius.zero,
                 border: Border.all(
-                  color: AppColors.accentProject.withAlpha(60),
+                  color: context.colors.accentProject.withAlpha(60),
                   width: 0.8,
                 ),
               ),
@@ -78,15 +78,15 @@ class WorkspaceSelectorBar extends ConsumerWidget {
                   Text(
                     '변경',
                     style: AppTextStyles.label.copyWith(
-                      color: AppColors.accentProject,
+                      color: context.colors.accentProject,
                       fontSize: 11,
                     ),
                   ),
                   const SizedBox(width: 2),
-                  const Icon(
+                  Icon(
                     Icons.keyboard_arrow_down_rounded,
                     size: 15,
-                    color: AppColors.accentProject,
+                    color: context.colors.accentProject,
                   ),
                 ],
               ),

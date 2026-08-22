@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
+import '../../../core/theme/app_colors_extension.dart';
 
 /// 사업 부지 관리 (Site) 메인 모듈 화면 (IBS Global - type == '2' 부동산 개발 전용)
 /// 필지 목록 / 소유자 관리 / 부지 매매계약 / 협의 이력 관리 UI (radius = 0)
@@ -19,7 +19,7 @@ class SiteScreen extends ConsumerWidget {
       children: [
         // ── 1. 사업 부지 모듈 헤더 배너 ──────────────────────────────────
         Container(
-          color: AppColors.bgSurface,
+          color: context.colors.bgSurface,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
@@ -44,6 +44,7 @@ class SiteScreen extends ConsumerWidget {
                     Text(
                       '부지 정보 관리 (Site)',
                       style: AppTextStyles.titleSm.copyWith(
+                        color: context.colors.textPrimary,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -51,7 +52,7 @@ class SiteScreen extends ConsumerWidget {
                     Text(
                       '지번 목록 현황, 토지 소유자 정보 및 매입 계약 관리',
                       style: AppTextStyles.caption.copyWith(
-                        color: AppColors.textMuted,
+                        color: context.colors.textMuted,
                       ),
                     ),
                   ],
@@ -60,7 +61,7 @@ class SiteScreen extends ConsumerWidget {
             ],
           ),
         ),
-        const Divider(color: AppColors.border, height: 1),
+        Divider(color: context.colors.border, height: 1),
 
         // ── 2. 부지 관리 세부 영역 목록 ────────────────────────────────────
         Expanded(
@@ -141,9 +142,9 @@ class _SiteGroupTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.bgCard,
+        color: context.colors.bgCard,
         borderRadius: BorderRadius.zero,
-        border: Border.all(color: AppColors.border, width: 0.8),
+        border: Border.all(color: context.colors.border, width: 0.8),
       ),
       child: Material(
         color: Colors.transparent,
@@ -178,6 +179,7 @@ class _SiteGroupTile extends StatelessWidget {
                           Text(
                             title,
                             style: AppTextStyles.label.copyWith(
+                              color: context.colors.textPrimary,
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
                             ),
@@ -209,15 +211,15 @@ class _SiteGroupTile extends StatelessWidget {
                       Text(
                         subtitle,
                         style: AppTextStyles.caption
-                            .copyWith(color: AppColors.textMuted),
+                            .copyWith(color: context.colors.textMuted),
                       ),
                     ],
                   ),
                 ),
-                const Icon(
+                Icon(
                   Icons.chevron_right_rounded,
                   size: 18,
-                  color: AppColors.textMuted,
+                  color: context.colors.textMuted,
                 ),
               ],
             ),

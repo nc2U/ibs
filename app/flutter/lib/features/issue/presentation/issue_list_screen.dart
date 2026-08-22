@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/constants/permissions.dart';
 import '../../../core/providers/permission_provider.dart';
 import '../../../core/providers/project_provider.dart';
+import '../../../core/theme/app_colors_extension.dart';
 import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/loading_shimmer.dart';
 import '../data/models/issue_model.dart';
@@ -114,7 +114,7 @@ class _IssueListScreenState extends ConsumerState<IssueListScreen> {
       children: [
         // ── 필터 칩 바 ──────────────────────────────────────────────────────────
         Container(
-          color: AppColors.bgSurface,
+          color: context.colors.bgSurface,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           child: Row(
             children: [
@@ -161,8 +161,8 @@ class _IssueListScreenState extends ConsumerState<IssueListScreen> {
               }
 
               return RefreshIndicator(
-                color: AppColors.accentWork,
-                backgroundColor: AppColors.bgCard,
+                color: context.colors.accentWork,
+                backgroundColor: context.colors.bgCard,
                 onRefresh: () =>
                     ref.read(issueListProvider.notifier).refresh(),
                 child: ListView.separated(
@@ -174,11 +174,11 @@ class _IssueListScreenState extends ConsumerState<IssueListScreen> {
                   separatorBuilder: (_, __) => const SizedBox(height: 8),
                   itemBuilder: (ctx, index) {
                     if (index >= state.items.length) {
-                      return const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 16),
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
                         child: Center(
                           child: CircularProgressIndicator(
-                              color: AppColors.accentWork),
+                              color: context.colors.accentWork),
                         ),
                       );
                     }
@@ -230,18 +230,19 @@ class _FilterChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
           color: selected
-              ? AppColors.accentWork.withAlpha(40)
-              : AppColors.bgCard,
+              ? context.colors.accentWork.withAlpha(40)
+              : context.colors.bgCard,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: selected ? AppColors.accentWork : AppColors.border,
+            color: selected ? context.colors.accentWork : context.colors.border,
             width: selected ? 1.5 : 0.8,
           ),
         ),
         child: Text(
           label,
           style: AppTextStyles.label.copyWith(
-            color: selected ? AppColors.accentWork : AppColors.textMuted,
+            color: selected ? context.colors.accentWork : context.colors.textMuted,
+            fontWeight: selected ? FontWeight.bold : FontWeight.normal,
           ),
         ),
       ),

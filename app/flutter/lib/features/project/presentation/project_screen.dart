@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/models/common_models.dart';
 import '../../../../core/providers/docs_context_provider.dart';
 import '../../../../core/providers/project_provider.dart';
+import '../../../../core/theme/app_colors_extension.dart';
 import '../../../../core/widgets/project_selector_bottom_sheet.dart';
 import '../../../../core/widgets/workspace_selector_bar.dart';
 import '../../contract/presentation/contract_list_screen.dart';
@@ -84,7 +84,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
       }
 
       return Scaffold(
-        backgroundColor: AppColors.bgPrimary,
+        backgroundColor: context.colors.bgPrimary,
         body: Column(
           children: [
             // ── 서브모듈 전용 1줄 고정 프로젝트 선택 바 (공용 컴포넌트) ─────────
@@ -110,21 +110,21 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: AppColors.accentProject.withAlpha(20),
+                    color: context.colors.accentProject.withAlpha(20),
                     borderRadius: BorderRadius.zero,
                     border: Border.all(
-                        color: AppColors.accentProject.withAlpha(60),
+                        color: context.colors.accentProject.withAlpha(60),
                         width: 0.8),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.arrow_back_rounded,
-                          size: 13, color: AppColors.accentProject),
+                      Icon(Icons.arrow_back_rounded,
+                          size: 13, color: context.colors.accentProject),
                       const SizedBox(width: 4),
                       Text('메인으로',
                           style: AppTextStyles.label.copyWith(
-                            color: AppColors.accentProject,
+                            color: context.colors.accentProject,
                             fontSize: 11,
                           )),
                     ],
@@ -132,7 +132,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
                 ),
               ),
             ),
-            const Divider(color: AppColors.border, height: 1),
+            Divider(color: context.colors.border, height: 1),
 
             // ── 활성화된 서브모듈 화면 ─────────────────────────────────────
             Expanded(child: contentWidget),
@@ -143,7 +143,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
 
     // 기본 프로젝트 관리 메인 뷰 모드
     return Scaffold(
-      backgroundColor: AppColors.bgPrimary,
+      backgroundColor: context.colors.bgPrimary,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -154,12 +154,12 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.bgCard,
+                color: context.colors.bgCard,
                 borderRadius: BorderRadius.zero,
                 border: Border.all(
                   color: isRealEstateProject
-                      ? AppColors.accentProject.withAlpha(80)
-                      : AppColors.warning.withAlpha(100),
+                      ? context.colors.accentProject.withAlpha(80)
+                      : context.colors.warning.withAlpha(100),
                   width: 1,
                 ),
               ),
@@ -179,8 +179,8 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
                                   : Icons.warning_amber_rounded,
                               size: 18,
                               color: isRealEstateProject
-                                  ? AppColors.accentProject
-                                  : AppColors.warning,
+                                  ? context.colors.accentProject
+                                  : context.colors.warning,
                             ),
                             const SizedBox(width: 8),
                             Expanded(
@@ -203,14 +203,14 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
                       const SizedBox(width: 10),
                       Material(
                         color: isRealEstateProject
-                            ? AppColors.accentProject.withAlpha(20)
-                            : AppColors.warning.withAlpha(25),
+                            ? context.colors.accentProject.withAlpha(20)
+                            : context.colors.warning.withAlpha(25),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.zero,
                           side: BorderSide(
                             color: isRealEstateProject
-                                ? AppColors.accentProject.withAlpha(80)
-                                : AppColors.warning.withAlpha(90),
+                                ? context.colors.accentProject.withAlpha(80)
+                                : context.colors.warning.withAlpha(90),
                             width: 0.8,
                           ),
                         ),
@@ -229,16 +229,16 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
                                   Icons.swap_horiz_rounded,
                                   size: 14,
                                   color: isRealEstateProject
-                                      ? AppColors.accentProject
-                                      : AppColors.warning,
+                                      ? context.colors.accentProject
+                                      : context.colors.warning,
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
                                   isRealEstateProject ? '전환' : '선택',
                                   style: AppTextStyles.label.copyWith(
                                     color: isRealEstateProject
-                                        ? AppColors.accentProject
-                                        : AppColors.warning,
+                                        ? context.colors.accentProject
+                                        : context.colors.warning,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 11.5,
                                   ),
@@ -262,8 +262,8 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
                         : '계약 정보, 대금 수납, 회계 자금, 부지 정보 모듈은 부동산 개발 사업 프로젝트 전용 기능입니다.',
                     style: AppTextStyles.bodySecond.copyWith(
                       color: isRealEstateProject
-                          ? AppColors.textSecond
-                          : AppColors.textMuted,
+                          ? context.colors.textSecond
+                          : context.colors.textMuted,
                       fontSize: 12.5,
                       height: 1.4,
                     ),
@@ -272,7 +272,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
                   // ── 하단 행: [⚙️ 프로젝트 설정] + [📂 프로젝트 문서함] 퀵 액션 ────────
                   if (isRealEstateProject) ...[
                     const SizedBox(height: 12),
-                    const Divider(color: AppColors.border, height: 1),
+                    Divider(color: context.colors.border, height: 1),
                     const SizedBox(height: 10),
                     Row(
                       children: [
@@ -377,13 +377,13 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
                 Container(
                   width: 3,
                   height: 14,
-                  color: AppColors.accentProject,
+                  color: context.colors.accentProject,
                   margin: const EdgeInsets.only(right: 6),
                 ),
                 Text(
                   '핵심 관리 모듈',
                   style: AppTextStyles.titleSm.copyWith(
-                    color: AppColors.textPrimary,
+                    color: context.colors.textPrimary,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -392,8 +392,8 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
                   isRealEstateProject ? '4개 모듈 활성' : '프로젝트 선택 필요',
                   style: AppTextStyles.caption.copyWith(
                     color: isRealEstateProject
-                        ? AppColors.textMuted
-                        : AppColors.warning,
+                        ? context.colors.textMuted
+                        : context.colors.warning,
                   ),
                 ),
               ],
@@ -483,15 +483,15 @@ class _ModuleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveColor = isEnabled ? accentColor : AppColors.textDisabled;
+    final effectiveColor = isEnabled ? accentColor : context.colors.textDisabled;
 
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: AppColors.bgCard,
+        color: context.colors.bgCard,
         borderRadius: BorderRadius.zero,
         border: Border.all(
-          color: isEnabled ? accentColor.withAlpha(65) : AppColors.border,
+          color: isEnabled ? accentColor.withAlpha(65) : context.colors.border,
           width: 1,
         ),
       ),
@@ -534,8 +534,8 @@ class _ModuleCard extends StatelessWidget {
                                 title,
                                 style: AppTextStyles.titleSm.copyWith(
                                   color: isEnabled
-                                      ? AppColors.textPrimary
-                                      : AppColors.textDisabled,
+                                      ? context.colors.textPrimary
+                                      : context.colors.textDisabled,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 15,
                                 ),
@@ -581,8 +581,8 @@ class _ModuleCard extends StatelessWidget {
                   subtitle,
                   style: AppTextStyles.bodySecond.copyWith(
                     color: isEnabled
-                        ? AppColors.textSecond
-                        : AppColors.textDisabled,
+                        ? context.colors.textSecond
+                        : context.colors.textDisabled,
                     fontSize: 12.5,
                     height: 1.38,
                   ),
@@ -599,13 +599,13 @@ class _ModuleCard extends StatelessWidget {
                           horizontal: 7, vertical: 2.5),
                       decoration: BoxDecoration(
                         color: isEnabled
-                            ? AppColors.bgSurface
-                            : AppColors.bgSurface.withAlpha(100),
+                            ? context.colors.bgSurface
+                            : context.colors.bgSurface.withAlpha(100),
                         borderRadius: BorderRadius.zero,
                         border: Border.all(
                           color: isEnabled
-                              ? AppColors.border
-                              : AppColors.borderSubtle,
+                              ? context.colors.border
+                              : context.colors.borderSubtle,
                           width: 0.8,
                         ),
                       ),
@@ -613,8 +613,8 @@ class _ModuleCard extends StatelessWidget {
                         tag,
                         style: AppTextStyles.caption.copyWith(
                           color: isEnabled
-                              ? AppColors.textMuted
-                              : AppColors.textDisabled,
+                              ? context.colors.textMuted
+                              : context.colors.textDisabled,
                           fontSize: 11,
                         ),
                       ),

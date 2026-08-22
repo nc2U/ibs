@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/theme/app_colors_extension.dart';
 import '../../data/models/forum_model.dart';
 
 /// 게시판 게시글 카드 위젯 (radius = 0)
@@ -17,10 +17,14 @@ class PostCard extends StatelessWidget {
   });
 
   static const _noticeAccent = Color(0xFFE5A93C); // 품위 있는 웜 앰버-골드
-  static const _noticeBg = Color(0xFF222538);     // 은은한 웜 딥네이비
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.isDarkMode;
+    final noticeBg = isDark
+        ? const Color(0xFF222538)
+        : const Color(0xFFFFFBEB); // 웜 앰버 라이트 틴트 (Amber 50)
+
     final plainContent = _stripHtml(post.content);
     final hasFiles = post.files.isNotEmpty;
     final hasComments = post.comments.isNotEmpty;
@@ -28,16 +32,22 @@ class PostCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: post.isNotice ? _noticeBg : AppColors.bgCard,
+        color: post.isNotice ? noticeBg : context.colors.bgCard,
         borderRadius: BorderRadius.zero,
         border: post.isNotice
-            ? const Border(
-                left: BorderSide(color: _noticeAccent, width: 3.5),
-                top: BorderSide(color: Color(0x60E5A93C), width: 0.8),
-                right: BorderSide(color: Color(0x60E5A93C), width: 0.8),
-                bottom: BorderSide(color: Color(0x60E5A93C), width: 0.8),
+            ? Border(
+                left: const BorderSide(color: _noticeAccent, width: 3.5),
+                top: BorderSide(
+                    color: _noticeAccent.withAlpha(isDark ? 96 : 140),
+                    width: 0.8),
+                right: BorderSide(
+                    color: _noticeAccent.withAlpha(isDark ? 96 : 140),
+                    width: 0.8),
+                bottom: BorderSide(
+                    color: _noticeAccent.withAlpha(isDark ? 96 : 140),
+                    width: 0.8),
               )
-            : Border.all(color: AppColors.border, width: 0.8),
+            : Border.all(color: context.colors.border, width: 0.8),
       ),
       child: Material(
         color: Colors.transparent,
@@ -87,17 +97,17 @@ class PostCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: AppColors.accentWork.withAlpha(15),
+                          color: context.colors.accentChannel.withAlpha(15),
                           borderRadius: BorderRadius.zero,
                           border: Border.all(
-                            color: AppColors.accentWork.withAlpha(60),
+                            color: context.colors.accentChannel.withAlpha(60),
                             width: 0.8,
                           ),
                         ),
                         child: Text(
                           post.cateName!,
                           style: AppTextStyles.caption.copyWith(
-                            color: AppColors.accentWork,
+                            color: context.colors.accentChannel,
                             fontWeight: FontWeight.w600,
                             fontSize: 11,
                           ),
@@ -110,17 +120,17 @@ class PostCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: AppColors.bgSurface,
+                          color: context.colors.bgSurface,
                           borderRadius: BorderRadius.zero,
                           border: Border.all(
-                            color: AppColors.border,
+                            color: context.colors.border,
                             width: 0.8,
                           ),
                         ),
                         child: Text(
                           post.forumName,
                           style: AppTextStyles.caption.copyWith(
-                            color: AppColors.textSecond,
+                            color: context.colors.textSecond,
                             fontSize: 11,
                           ),
                         ),
@@ -132,13 +142,13 @@ class PostCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 5, vertical: 1),
                         decoration: BoxDecoration(
-                          color: AppColors.warning.withAlpha(30),
+                          color: context.colors.warning.withAlpha(30),
                           borderRadius: BorderRadius.zero,
                         ),
                         child: Text(
                           'N',
                           style: AppTextStyles.caption.copyWith(
-                            color: AppColors.warning,
+                            color: context.colors.warning,
                             fontWeight: FontWeight.bold,
                             fontSize: 10,
                           ),
@@ -147,8 +157,8 @@ class PostCard extends StatelessWidget {
                       const SizedBox(width: 4),
                     ],
                     if (post.isSecret)
-                      const Icon(Icons.lock_rounded,
-                          size: 14, color: AppColors.warning),
+                      Icon(Icons.lock_rounded,
+                          size: 14, color: context.colors.warning),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -157,6 +167,7 @@ class PostCard extends StatelessWidget {
                 Text(
                   post.title,
                   style: AppTextStyles.titleSm.copyWith(
+                    color: context.colors.textPrimary,
                     fontWeight:
                         post.isNotice ? FontWeight.bold : FontWeight.w600,
                   ),
@@ -170,7 +181,7 @@ class PostCard extends StatelessWidget {
                   Text(
                     plainContent,
                     style: AppTextStyles.bodySm
-                        .copyWith(color: AppColors.textSecond, height: 1.3),
+                        .copyWith(color: context.colors.textSecond, height: 1.3),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -181,31 +192,31 @@ class PostCard extends StatelessWidget {
                 Row(
                   children: [
                     Icon(Icons.person_outline_rounded,
-                        size: 14, color: AppColors.textMuted),
+                    size: 14, color: context.colors.textMuted),
                     const SizedBox(width: 4),
                     Text(
                       post.creator?.username ?? '익명',
                       style: AppTextStyles.caption
-                          .copyWith(color: AppColors.textSecond),
+                          .copyWith(color: context.colors.textSecond),
                     ),
                     const SizedBox(width: 8),
                     Text(
                       _formatDate(post.created ?? ''),
                       style: AppTextStyles.caption
-                          .copyWith(color: AppColors.textMuted),
+                          .copyWith(color: context.colors.textMuted),
                     ),
                     const Spacer(),
                     // 조회수
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.visibility_outlined,
-                            size: 13, color: AppColors.textMuted),
+                        Icon(Icons.visibility_outlined,
+                            size: 13, color: context.colors.textMuted),
                         const SizedBox(width: 3),
                         Text(
                           '${post.hit}',
                           style: AppTextStyles.caption
-                              .copyWith(color: AppColors.textMuted),
+                              .copyWith(color: context.colors.textMuted),
                         ),
                       ],
                     ),
@@ -214,13 +225,13 @@ class PostCard extends StatelessWidget {
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.thumb_up_alt_outlined,
-                              size: 12, color: AppColors.accentProject),
+                          Icon(Icons.thumb_up_alt_outlined,
+                              size: 12, color: context.colors.accentProject),
                           const SizedBox(width: 2),
                           Text(
                             '${post.like}',
                             style: AppTextStyles.caption.copyWith(
-                              color: AppColors.accentProject,
+                              color: context.colors.accentProject,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -232,13 +243,13 @@ class PostCard extends StatelessWidget {
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.attach_file_rounded,
-                              size: 13, color: AppColors.textMuted),
+                          Icon(Icons.attach_file_rounded,
+                              size: 13, color: context.colors.textMuted),
                           const SizedBox(width: 2),
                           Text(
                             '${post.files.length}',
                             style: AppTextStyles.caption
-                                .copyWith(color: AppColors.textSecond),
+                                .copyWith(color: context.colors.textSecond),
                           ),
                         ],
                       ),
@@ -248,13 +259,13 @@ class PostCard extends StatelessWidget {
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.chat_bubble_outline_rounded,
-                              size: 13, color: AppColors.accentWork),
+                          Icon(Icons.chat_bubble_outline_rounded,
+                              size: 13, color: context.colors.accentChannel),
                           const SizedBox(width: 3),
                           Text(
                             '${post.comments.length}',
                             style: AppTextStyles.caption.copyWith(
-                              color: AppColors.accentWork,
+                              color: context.colors.accentChannel,
                               fontWeight: FontWeight.bold,
                             ),
                           ),

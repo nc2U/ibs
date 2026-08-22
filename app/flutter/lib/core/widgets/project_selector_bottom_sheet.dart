@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../constants/app_colors.dart';
 import '../constants/app_text_styles.dart';
 import '../providers/project_provider.dart';
+import '../theme/app_colors_extension.dart';
 import '../../features/issue/providers/issue_provider.dart';
 import '../../features/meeting/providers/meeting_provider.dart';
 import '../../features/project/providers/project_provider.dart';
@@ -14,7 +14,7 @@ void showProjectSelectorBottomSheet(BuildContext context,
     {bool onlyRealEstate = false}) {
   showModalBottomSheet(
     context: context,
-    backgroundColor: AppColors.bgCard,
+    backgroundColor: context.colors.bgCard,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
     ),
@@ -45,7 +45,7 @@ class _ProjectSelectorContent extends ConsumerWidget {
             width: 36,
             height: 4,
             decoration: BoxDecoration(
-              color: AppColors.textDisabled,
+              color: context.colors.textDisabled,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -56,20 +56,20 @@ class _ProjectSelectorContent extends ConsumerWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
           child: Text(
             onlyRealEstate ? '프로젝트 선택' : '워크스페이스 선택',
-            style: AppTextStyles.titleMd,
+            style: AppTextStyles.titleMd.copyWith(color: context.colors.textPrimary),
           ),
         ),
-        const Divider(color: AppColors.border, height: 16),
+        Divider(color: context.colors.border, height: 16),
 
         // ── 목록 ────────────────────────────────────────────────────────────────
         Expanded(
           child: projectsAsync.when(
-            loading: () => const Center(
-              child: CircularProgressIndicator(color: AppColors.accentWork),
+            loading: () => Center(
+              child: CircularProgressIndicator(color: context.colors.accentWork),
             ),
             error: (e, _) => Center(
               child: Text('목록을 불러올 수 없습니다: $e',
-                  style: AppTextStyles.bodyMuted),
+                  style: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted)),
             ),
             data: (projects) {
               if (projects.isEmpty) {
@@ -81,7 +81,10 @@ class _ProjectSelectorContent extends ConsumerWidget {
                           ? '소속된 부동산 개발 프로젝트가 없습니다.\n(관리자에게 프로젝트 멤버 등록을 요청해 주세요)'
                           : '등록된 워크스페이스가 없습니다.',
                       textAlign: TextAlign.center,
-                      style: AppTextStyles.bodyMuted.copyWith(height: 1.4),
+                      style: AppTextStyles.bodyMuted.copyWith(
+                        color: context.colors.textMuted,
+                        height: 1.4,
+                      ),
                     ),
                   ),
                 );
@@ -101,7 +104,7 @@ class _ProjectSelectorContent extends ConsumerWidget {
                         Navigator.pop(context);
                       },
                     ),
-                    const Divider(color: AppColors.border, height: 1),
+                    Divider(color: context.colors.border, height: 1),
                   ],
 
                   // Option: 항목들 (계층 구조 indentedLabel 적용)
@@ -166,16 +169,16 @@ class _ProjectTile extends StatelessWidget {
       title: Text(
         title,
         style: AppTextStyles.bodyMd.copyWith(
-          color: isSelected ? AppColors.accentWork : AppColors.textPrimary,
+          color: isSelected ? context.colors.accentWork : context.colors.textPrimary,
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
         ),
       ),
       subtitle: subtitle != null
-          ? Text(subtitle!, style: AppTextStyles.caption)
+          ? Text(subtitle!, style: AppTextStyles.caption.copyWith(color: context.colors.textMuted))
           : null,
       trailing: isSelected
-          ? const Icon(Icons.check_circle_rounded,
-              color: AppColors.accentWork, size: 20)
+          ? Icon(Icons.check_circle_rounded,
+              color: context.colors.accentWork, size: 20)
           : null,
       onTap: onTap,
     );

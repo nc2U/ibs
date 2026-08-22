@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/theme_provider.dart';
@@ -161,10 +160,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             // ── 프로필 헤더 카드 ───────────────────────────────────────────
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: context.colors.bgCard,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.zero,
                 border: Border.all(color: context.colors.border, width: 0.8),
               ),
               child: Column(
@@ -200,9 +199,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ],
               ),
             ),
+            const SizedBox(height: 16),
 
             // ── 화면 설정 섹션 ────────────────────────────────────────────────
-            _SectionLabel(title: '화면 설정'),
+            const _SectionLabel(title: '화면 설정'),
             _SettingTile(
               leading: Icon(
                 switch (themeMode) {
@@ -219,10 +219,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   color: context.colors.textDisabled),
               onTap: () => _showThemeSelector(context),
             ),
-            const _Divider(),
+            const SizedBox(height: 16),
 
             // ── 알림 설정 섹션 ────────────────────────────────────────────────
-            _SectionLabel(title: '알림 설정'),
+            const _SectionLabel(title: '알림 설정'),
             _SettingTile(
               leading: Icon(Icons.email_outlined,
                   color: context.colors.textSecond, size: 22),
@@ -231,7 +231,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               trailing: Switch(
                 value: _emailNotif,
                 onChanged: (v) => setState(() => _emailNotif = v),
-                activeColor: context.colors.accentWork,
+                activeTrackColor: context.colors.accentWork,
                 activeThumbColor: Colors.white,
               ),
             ),
@@ -244,13 +244,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               trailing: Switch(
                 value: _pushNotif,
                 onChanged: (v) => setState(() => _pushNotif = v),
-                activeColor: context.colors.accentWork,
+                activeTrackColor: context.colors.accentWork,
                 activeThumbColor: Colors.white,
               ),
             ),
+            const SizedBox(height: 16),
 
             // ── 계정 섹션 ─────────────────────────────────────────────────────
-            _SectionLabel(title: '계정'),
+            const _SectionLabel(title: '계정'),
             _SettingTile(
               leading: Icon(Icons.lock_outline_rounded,
                   color: context.colors.textSecond, size: 22),
@@ -263,13 +264,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             const _Divider(),
             _SettingTile(
               leading: Icon(Icons.logout_rounded,
-                  color: context.colors.textSecond, size: 22),
+                  color: context.colors.error, size: 22),
               title: '로그아웃',
-              trailing: const Icon(Icons.chevron_right_rounded,
-                  color: AppColors.textDisabled),
+              titleColor: context.colors.error,
+              trailing: Icon(Icons.chevron_right_rounded,
+                  color: context.colors.textDisabled),
               onTap: _handleLogout,
             ),
-            const _Divider(),
             const SizedBox(height: 32),
           ],
         ),
@@ -278,7 +279,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 }
 
-// ── 섹션 라벨 (회색 배경 구분자) ──────────────────────────────────────────────
+// ── 섹션 라벨 (구분 헤더) ──────────────────────────────────────────────────────
 class _SectionLabel extends StatelessWidget {
   final String title;
   const _SectionLabel({required this.title});
@@ -286,9 +287,17 @@ class _SectionLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: AppColors.bgSurface,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Text(title, style: AppTextStyles.bodyMuted),
+      width: double.infinity,
+      color: context.colors.bgSurface,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Text(
+        title,
+        style: AppTextStyles.caption.copyWith(
+          color: context.colors.textMuted,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 0.5,
+        ),
+      ),
     );
   }
 }
@@ -297,6 +306,7 @@ class _SectionLabel extends StatelessWidget {
 class _SettingTile extends StatelessWidget {
   final Widget leading;
   final String title;
+  final Color? titleColor;
   final String? subtitle;
   final Widget? trailing;
   final VoidCallback? onTap;
@@ -304,6 +314,7 @@ class _SettingTile extends StatelessWidget {
   const _SettingTile({
     required this.leading,
     required this.title,
+    this.titleColor,
     this.subtitle,
     this.trailing,
     this.onTap,
@@ -312,7 +323,7 @@ class _SettingTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppColors.bgCard,
+      color: context.colors.bgCard,
       child: InkWell(
         onTap: onTap,
         child: Padding(
@@ -328,15 +339,17 @@ class _SettingTile extends StatelessWidget {
                     Text(
                       title,
                       style: AppTextStyles.bodyMd.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w500,
+                        color: titleColor ?? context.colors.textPrimary,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     if (subtitle != null) ...[
                       const SizedBox(height: 2),
-                      Text(subtitle!,
-                          style: AppTextStyles.bodySm
-                              .copyWith(color: AppColors.textMuted)),
+                      Text(
+                        subtitle!,
+                        style: AppTextStyles.bodySm
+                            .copyWith(color: context.colors.textMuted),
+                      ),
                     ],
                   ],
                 ),
@@ -355,7 +368,11 @@ class _Divider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Divider(
-        height: 1, thickness: 1, color: AppColors.border, indent: 52);
+    return Divider(
+      height: 1,
+      thickness: 0.8,
+      color: context.colors.border,
+      indent: 52,
+    );
   }
 }

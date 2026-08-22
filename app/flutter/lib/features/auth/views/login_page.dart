@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/router/app_router.dart';
@@ -60,8 +59,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.isDarkMode;
+
     return Scaffold(
-      backgroundColor: AppColors.bgPrimary,
+      backgroundColor: context.colors.bgPrimary,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -73,7 +74,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 // 로고
                 Center(
                   child: SvgPicture.asset(
-                    context.isDarkMode
+                    isDark
                         ? 'assets/images/sygnet.svg'
                         : 'assets/images/sygnet_light.svg',
                     width: 80,
@@ -81,22 +82,31 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                Text('IBS 워크스페이스', textAlign: TextAlign.center, style: AppTextStyles.h1),
+                Text(
+                  'IBS 워크스페이스',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.h1.copyWith(color: context.colors.textPrimary),
+                ),
                 const SizedBox(height: 8),
-                Text('|주|대영아이비에스 업무/프로젝트 관리시스템',
-                    textAlign: TextAlign.center, style: AppTextStyles.caption),
+                Text(
+                  '(주)대영아이비에스 업무/프로젝트 관리시스템',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.caption.copyWith(color: context.colors.textMuted),
+                ),
                 const SizedBox(height: 40),
 
                 // 로그인 카드
                 Container(
                   padding: const EdgeInsets.all(24.0),
                   decoration: BoxDecoration(
-                    color: AppColors.bgCard,
+                    color: context.colors.bgCard,
                     borderRadius: BorderRadius.zero,
-                    border: Border.all(color: AppColors.border, width: 1.2),
+                    border: Border.all(color: context.colors.border, width: 1.2),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.3),
+                        color: isDark
+                            ? Colors.black.withAlpha(76)
+                            : Colors.black.withAlpha(15),
                         blurRadius: 16,
                         offset: const Offset(0, 6),
                       ),
@@ -112,16 +122,16 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: AppColors.errorBg,
-                              border: Border.all(color: AppColors.errorBorder),
+                              color: context.colors.errorBg,
+                              border: Border.all(color: context.colors.errorBorder),
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.error_outline, color: Color(0xFFFCA5A5), size: 20),
+                                Icon(Icons.error_outline, color: context.colors.error, size: 20),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(_errorMessage!,
-                                      style: AppTextStyles.bodySm.copyWith(color: const Color(0xFFFCA5A5))),
+                                      style: AppTextStyles.bodySm.copyWith(color: context.colors.error)),
                                 ),
                               ],
                             ),
@@ -133,8 +143,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         TextFormField(
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
-                          style: AppTextStyles.bodyMd,
-                          decoration: _inputDecoration('이메일 주소', Icons.email_outlined),
+                          style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
+                          decoration: _inputDecoration(context, '이메일 주소', Icons.email_outlined),
                           validator: (v) =>
                               (v == null || v.trim().isEmpty) ? '이메일 주소를 입력해주세요' : null,
                         ),
@@ -144,14 +154,15 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         TextFormField(
                           controller: _passwordController,
                           obscureText: _obscurePassword,
-                          style: AppTextStyles.bodyMd,
+                          style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
                           decoration: _inputDecoration(
+                            context,
                             '비밀번호',
                             Icons.lock_outline,
                             suffix: IconButton(
                               icon: Icon(
                                 _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                                color: AppColors.textMuted,
+                                color: context.colors.textMuted,
                                 size: 20,
                               ),
                               onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
@@ -167,11 +178,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         ElevatedButton(
                           onPressed: _isLoading ? null : _handleLogin,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.accentWorkDeep,
+                            backgroundColor: isDark ? context.colors.accentWorkDeep : context.colors.accentWork,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-                            elevation: 4,
+                            elevation: isDark ? 4 : 1,
                           ),
                           child: _isLoading
                               ? const SizedBox(
@@ -179,7 +190,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                   width: 22,
                                   child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
                                 )
-                              : Text('로그인', style: AppTextStyles.titleMd),
+                              : Text('로그인', style: AppTextStyles.titleMd.copyWith(color: Colors.white)),
                         ),
                       ],
                     ),
@@ -193,29 +204,29 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     );
   }
 
-  InputDecoration _inputDecoration(String label, IconData icon, {Widget? suffix}) {
+  InputDecoration _inputDecoration(BuildContext context, String label, IconData icon, {Widget? suffix}) {
     return InputDecoration(
       labelText: label,
-      labelStyle: AppTextStyles.bodyMuted,
-      prefixIcon: Icon(icon, color: AppColors.accentWork),
+      labelStyle: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted),
+      prefixIcon: Icon(icon, color: context.colors.accentWork),
       suffixIcon: suffix,
       filled: true,
-      fillColor: AppColors.bgInput,
-      enabledBorder: const OutlineInputBorder(
+      fillColor: context.colors.bgInput,
+      enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.zero,
-        borderSide: BorderSide(color: AppColors.border),
+        borderSide: BorderSide(color: context.colors.border),
       ),
-      focusedBorder: const OutlineInputBorder(
+      focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.zero,
-        borderSide: BorderSide(color: AppColors.accentWork, width: 1.5),
+        borderSide: BorderSide(color: context.colors.accentWork, width: 1.5),
       ),
-      errorBorder: const OutlineInputBorder(
+      errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.zero,
-        borderSide: BorderSide(color: AppColors.error),
+        borderSide: BorderSide(color: context.colors.error),
       ),
-      focusedErrorBorder: const OutlineInputBorder(
+      focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.zero,
-        borderSide: BorderSide(color: AppColors.error, width: 1.5),
+        borderSide: BorderSide(color: context.colors.error, width: 1.5),
       ),
     );
   }

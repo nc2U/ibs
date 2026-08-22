@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/theme/app_colors_extension.dart';
 import '../../data/models/issue_model.dart';
 
 /// 업무 목록 카드 위젯
@@ -23,8 +23,8 @@ class IssueCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: AppColors.bgCard,
-          border: Border.all(color: AppColors.border, width: 0.8),
+          color: context.colors.bgCard,
+          border: Border.all(color: context.colors.border, width: 0.8),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -39,8 +39,8 @@ class IssueCard extends StatelessWidget {
                 _PriorityChip(priority: issue.priority),
                 const Spacer(),
                 if (issue.isPrivate)
-                  const Icon(Icons.lock_outline_rounded,
-                      size: 14, color: AppColors.textMuted),
+                  Icon(Icons.lock_outline_rounded,
+                      size: 14, color: context.colors.textMuted),
               ],
             ),
             const SizedBox(height: 8),
@@ -48,7 +48,10 @@ class IssueCard extends StatelessWidget {
             // ── 제목 ──────────────────────────────────────────────────────────
             Text(
               issue.subject,
-              style: AppTextStyles.titleSm,
+              style: AppTextStyles.titleSm.copyWith(
+                color: context.colors.textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
@@ -59,12 +62,14 @@ class IssueCard extends StatelessWidget {
               children: [
                 // 담당자
                 Icon(Icons.person_outline_rounded,
-                    size: 13, color: AppColors.textMuted),
+                    size: 13, color: context.colors.textMuted),
                 const SizedBox(width: 3),
                 Expanded(
                   child: Text(
                     issue.assignedTo?.username ?? '미배정',
-                    style: AppTextStyles.caption,
+                    style: AppTextStyles.caption.copyWith(
+                      color: context.colors.textSecond,
+                    ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -93,11 +98,11 @@ class IssueCard extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: issue.doneRatio / 100.0,
                 minHeight: 3,
-                backgroundColor: AppColors.bgSurface,
+                backgroundColor: context.colors.bgSurface,
                 valueColor: AlwaysStoppedAnimation<Color>(
                   issue.doneRatio == 100
-                      ? AppColors.success
-                      : AppColors.accentWork,
+                      ? context.colors.success
+                      : context.colors.accentWork,
                 ),
               ),
             ),
@@ -120,7 +125,7 @@ class _DueDateBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     String badgeText = '';
-    Color statusColor = AppColors.textMuted;
+    Color statusColor = context.colors.textMuted;
     Color? badgeBgColor;
     bool isUrgent = false;
 
@@ -133,19 +138,19 @@ class _DueDateBadge extends StatelessWidget {
         final diffDays = dueDay.difference(today).inDays;
 
         if (diffDays < 0) {
-          statusColor = AppColors.error;
+          statusColor = context.colors.error;
           badgeText = ' (지연 ${-diffDays}일)';
-          badgeBgColor = AppColors.error.withAlpha(30);
+          badgeBgColor = context.colors.error.withAlpha(30);
           isUrgent = true;
         } else if (diffDays == 0) {
-          statusColor = AppColors.error;
+          statusColor = context.colors.error;
           badgeText = ' (오늘 마감)';
-          badgeBgColor = AppColors.error.withAlpha(30);
+          badgeBgColor = context.colors.error.withAlpha(30);
           isUrgent = true;
         } else if (diffDays <= 3) {
-          statusColor = AppColors.warning;
+          statusColor = context.colors.warning;
           badgeText = ' (D-$diffDays)';
-          badgeBgColor = AppColors.warning.withAlpha(30);
+          badgeBgColor = context.colors.warning.withAlpha(30);
           isUrgent = true;
         }
       } catch (_) {}
@@ -182,12 +187,14 @@ class _DueDateBadge extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(Icons.event_outlined, size: 13, color: isClosed ? AppColors.textDisabled : statusColor),
+        Icon(Icons.event_outlined,
+            size: 13,
+            color: isClosed ? context.colors.textDisabled : statusColor),
         const SizedBox(width: 3),
         Text(
           formatted,
           style: AppTextStyles.caption.copyWith(
-            color: isClosed ? AppColors.textDisabled : statusColor,
+            color: isClosed ? context.colors.textDisabled : statusColor,
           ),
         ),
       ],
@@ -214,12 +221,14 @@ class _TrackerChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
       decoration: BoxDecoration(
-        color: AppColors.accentWork.withAlpha(30),
+        color: context.colors.accentWork.withAlpha(30),
         borderRadius: BorderRadius.circular(3),
-        border: Border.all(color: AppColors.accentWork.withAlpha(80)),
+        border: Border.all(color: context.colors.accentWork.withAlpha(80)),
       ),
-      child: Text(name,
-          style: AppTextStyles.label.copyWith(color: AppColors.accentWork)),
+      child: Text(
+        name,
+        style: AppTextStyles.label.copyWith(color: context.colors.accentWork),
+      ),
     );
   }
 }
@@ -229,22 +238,25 @@ class _StatusChip extends StatelessWidget {
   final IssueStatusModel status;
   const _StatusChip({required this.status});
 
-  Color get _color {
-    if (status.closed) return AppColors.textDisabled;
-    return AppColors.success;
+  Color _getColor(BuildContext context) {
+    if (status.closed) return context.colors.textDisabled;
+    return context.colors.success;
   }
 
   @override
   Widget build(BuildContext context) {
+    final color = _getColor(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
       decoration: BoxDecoration(
-        color: _color.withAlpha(30),
+        color: color.withAlpha(30),
         borderRadius: BorderRadius.circular(3),
-        border: Border.all(color: _color.withAlpha(80)),
+        border: Border.all(color: color.withAlpha(80)),
       ),
-      child: Text(status.name,
-          style: AppTextStyles.label.copyWith(color: _color)),
+      child: Text(
+        status.name,
+        style: AppTextStyles.label.copyWith(color: color),
+      ),
     );
   }
 }
@@ -254,27 +266,30 @@ class _PriorityChip extends StatelessWidget {
   final IssuePriorityModel priority;
   const _PriorityChip({required this.priority});
 
-  Color get _color {
+  Color _getColor(BuildContext context) {
     return switch (priority.pk) {
-      1 => AppColors.textDisabled,      // 낮음
-      2 => AppColors.accentWork,        // 보통
-      3 => AppColors.warning,           // 높음
-      4 => AppColors.error,             // 긴급
-      _ => AppColors.accentApproval,    // 즉시
+      1 => context.colors.textDisabled, // 낮음
+      2 => context.colors.accentWork,   // 보통
+      3 => context.colors.warning,      // 높음
+      4 => context.colors.error,        // 긴급
+      _ => context.colors.accentApproval, // 즉시
     };
   }
 
   @override
   Widget build(BuildContext context) {
+    final color = _getColor(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
       decoration: BoxDecoration(
-        color: _color.withAlpha(30),
+        color: color.withAlpha(30),
         borderRadius: BorderRadius.circular(3),
-        border: Border.all(color: _color.withAlpha(80)),
+        border: Border.all(color: color.withAlpha(80)),
       ),
-      child: Text(priority.name,
-          style: AppTextStyles.label.copyWith(color: _color)),
+      child: Text(
+        priority.name,
+        style: AppTextStyles.label.copyWith(color: color),
+      ),
     );
   }
 }
@@ -286,7 +301,7 @@ class _DoneRatioBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = ratio == 100 ? AppColors.success : AppColors.accentWork;
+    final color = ratio == 100 ? context.colors.success : context.colors.accentWork;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
@@ -294,9 +309,13 @@ class _DoneRatioBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(3),
         border: Border.all(color: color.withAlpha(80)),
       ),
-      child: Text('$ratio%',
-          style: AppTextStyles.label.copyWith(
-              color: color, fontWeight: FontWeight.bold)),
+      child: Text(
+        '$ratio%',
+        style: AppTextStyles.label.copyWith(
+          color: color,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
   }
 }

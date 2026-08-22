@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/theme/app_colors_extension.dart';
 import '../../data/models/meeting_model.dart';
 
 /// 회의 목록 카드 위젯
@@ -18,15 +18,15 @@ class MeetingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final statusColor = _statusColor(meeting.status);
+    final statusColor = _statusColor(context, meeting.status);
 
     return InkWell(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: AppColors.bgCard,
-          border: Border.all(color: AppColors.border, width: 0.8),
+          color: context.colors.bgCard,
+          border: Border.all(color: context.colors.border, width: 0.8),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -51,25 +51,25 @@ class MeetingCard extends StatelessWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: AppColors.accentProject.withAlpha(30),
+                      color: context.colors.accentProject.withAlpha(30),
                       borderRadius: BorderRadius.circular(3),
                       border: Border.all(
-                          color: AppColors.accentProject.withAlpha(80)),
+                          color: context.colors.accentProject.withAlpha(80)),
                     ),
                     child: Text(
                       '확정',
                       style: AppTextStyles.label
-                          .copyWith(color: AppColors.accentProject),
+                          .copyWith(color: context.colors.accentProject),
                     ),
                   ),
                 ],
                 const Spacer(),
                 Icon(Icons.calendar_today_outlined,
-                    size: 13, color: AppColors.textMuted),
+                    size: 13, color: context.colors.textMuted),
                 const SizedBox(width: 4),
                 Text(
                   _formatDate(meeting.meetingDate),
-                  style: AppTextStyles.caption,
+                  style: AppTextStyles.caption.copyWith(color: context.colors.textMuted),
                 ),
               ],
             ),
@@ -78,7 +78,10 @@ class MeetingCard extends StatelessWidget {
             // ── 제목 ──────────────────────────────────────────────────────────
             Text(
               meeting.title,
-              style: AppTextStyles.titleSm,
+              style: AppTextStyles.titleSm.copyWith(
+                color: context.colors.textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
@@ -88,31 +91,31 @@ class MeetingCard extends StatelessWidget {
             Row(
               children: [
                 Icon(Icons.people_outline_rounded,
-                    size: 14, color: AppColors.textMuted),
+                    size: 14, color: context.colors.textMuted),
                 const SizedBox(width: 4),
                 Text(
                   '${meeting.attendeesDesc.length}명 참석',
-                  style: AppTextStyles.caption,
+                  style: AppTextStyles.caption.copyWith(color: context.colors.textSecond),
                 ),
                 if (meeting.issues.isNotEmpty) ...[
                   const SizedBox(width: 12),
                   Icon(Icons.task_alt_rounded,
-                      size: 14, color: AppColors.accentWork),
+                      size: 14, color: context.colors.accentWork),
                   const SizedBox(width: 4),
                   Text(
                     '액션아이템 ${meeting.issues.length}건',
                     style: AppTextStyles.caption
-                        .copyWith(color: AppColors.accentWork),
+                        .copyWith(color: context.colors.accentWork, fontWeight: FontWeight.w600),
                   ),
                 ],
                 const Spacer(),
                 if (onExportPdf != null)
                   Material(
-                    color: AppColors.accentWork.withAlpha(20),
+                    color: context.colors.accentWork.withAlpha(20),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.zero,
                       side: BorderSide(
-                        color: AppColors.accentWork.withAlpha(70),
+                        color: context.colors.accentWork.withAlpha(70),
                         width: 0.8,
                       ),
                     ),
@@ -133,7 +136,7 @@ class MeetingCard extends StatelessWidget {
                             Text(
                               'PDF',
                               style: AppTextStyles.caption.copyWith(
-                                color: Colors.white,
+                                color: context.colors.accentWork,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 11,
                                 letterSpacing: 0.3,
@@ -152,16 +155,16 @@ class MeetingCard extends StatelessWidget {
     );
   }
 
-  Color _statusColor(String status) {
+  Color _statusColor(BuildContext context, String status) {
     switch (status) {
       case '1': // 준비
-        return AppColors.accentWork;
+        return context.colors.accentWork;
       case '2': // 종료
-        return AppColors.textDisabled;
+        return context.colors.textDisabled;
       case '3': // 취소
-        return AppColors.error;
+        return context.colors.error;
       default:
-        return AppColors.accentWork;
+        return context.colors.accentWork;
     }
   }
 
@@ -182,18 +185,18 @@ class _CategoryBadge extends StatelessWidget {
   final String colorHex;
   const _CategoryBadge({required this.name, required this.colorHex});
 
-  Color _parseColor(String hex) {
+  Color _parseColor(BuildContext context, String hex) {
     try {
       final cleaned = hex.replaceAll('#', '');
       return Color(int.parse('FF$cleaned', radix: 16));
     } catch (_) {
-      return AppColors.accentWork;
+      return context.colors.accentWork;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final color = _parseColor(colorHex);
+    final color = _parseColor(context, colorHex);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
       decoration: BoxDecoration(

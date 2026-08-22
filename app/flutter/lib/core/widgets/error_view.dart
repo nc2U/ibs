@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../constants/app_colors.dart';
 import '../constants/app_text_styles.dart';
+import '../theme/app_colors_extension.dart';
 
 /// 공통 에러/빈 상태 위젯
 class ErrorView extends StatelessWidget {
@@ -43,15 +43,15 @@ class ErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 52, color: AppColors.textDisabled),
+            Icon(icon, size: 52, color: context.colors.textDisabled),
             const SizedBox(height: 16),
             Text(message,
-                style: AppTextStyles.titleMd.copyWith(color: AppColors.textMuted),
+                style: AppTextStyles.titleMd.copyWith(color: context.colors.textMuted),
                 textAlign: TextAlign.center),
             if (subMessage != null) ...[
               const SizedBox(height: 8),
               Text(subMessage!,
-                  style: AppTextStyles.bodySm,
+                  style: AppTextStyles.bodySm.copyWith(color: context.colors.textMuted),
                   textAlign: TextAlign.center),
             ],
             if (onRetry != null) ...[
@@ -61,8 +61,8 @@ class ErrorView extends StatelessWidget {
                 icon: const Icon(Icons.refresh_rounded, size: 18),
                 label: const Text('다시 시도'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.accentWork,
-                  side: const BorderSide(color: AppColors.accentWork),
+                  foregroundColor: context.colors.accentWork,
+                  side: BorderSide(color: context.colors.accentWork),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(6),
                   ),

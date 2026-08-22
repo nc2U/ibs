@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/constants/permissions.dart';
 import '../../../../core/providers/permission_provider.dart';
 import '../../../../core/providers/project_provider.dart';
+import '../../../../core/theme/app_colors_extension.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/loading_shimmer.dart';
 import '../../providers/forum_provider.dart';
@@ -106,22 +106,22 @@ class _ForumTabViewState extends ConsumerState<ForumTabView> {
           children: [
             // ── 1. 검색 바 (최상단 고정) ──────────────────────────────────
             Container(
-              color: AppColors.bgSurface,
+              color: context.colors.bgSurface,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               child: TextField(
                 controller: _searchController,
                 onSubmitted: _onSearch,
                 textInputAction: TextInputAction.search,
-                style: AppTextStyles.bodySm,
+                style: AppTextStyles.bodySm.copyWith(color: context.colors.textPrimary),
                 decoration: InputDecoration(
                   hintText: '게시글 제목, 내용, 작성자 검색',
-                  hintStyle: AppTextStyles.bodyMuted,
-                  prefixIcon: const Icon(Icons.search_rounded,
-                      size: 18, color: AppColors.textMuted),
+                  hintStyle: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted),
+                  prefixIcon: Icon(Icons.search_rounded,
+                      size: 18, color: context.colors.textMuted),
                   suffixIcon: _searchController.text.isNotEmpty
                       ? IconButton(
-                          icon: const Icon(Icons.clear_rounded,
-                              size: 16, color: AppColors.textMuted),
+                          icon: Icon(Icons.clear_rounded,
+                              size: 16, color: context.colors.textMuted),
                           onPressed: () {
                             _searchController.clear();
                             _onSearch('');
@@ -129,31 +129,31 @@ class _ForumTabViewState extends ConsumerState<ForumTabView> {
                         )
                       : null,
                   filled: true,
-                  fillColor: AppColors.bgCard,
+                  fillColor: context.colors.bgCard,
                   isDense: true,
                   contentPadding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  border: const OutlineInputBorder(
+                  border: OutlineInputBorder(
                     borderRadius: BorderRadius.zero,
-                    borderSide: BorderSide(color: AppColors.border),
+                    borderSide: BorderSide(color: context.colors.border),
                   ),
-                  enabledBorder: const OutlineInputBorder(
+                  enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.zero,
-                    borderSide: BorderSide(color: AppColors.border),
+                    borderSide: BorderSide(color: context.colors.border),
                   ),
-                  focusedBorder: const OutlineInputBorder(
+                  focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.zero,
-                    borderSide: BorderSide(color: AppColors.accentWork),
+                    borderSide: BorderSide(color: context.colors.accentChannel),
                   ),
                 ),
               ),
             ),
-            const Divider(color: AppColors.border, height: 1),
+            Divider(color: context.colors.border, height: 1),
 
             // ── 2. 게시판 선택 칩 바 (가로 스크롤 레일, 100% Full Width) ────────
             Container(
               width: double.infinity,
-              color: AppColors.bgSurface,
+              color: context.colors.bgSurface,
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -170,12 +170,12 @@ class _ForumTabViewState extends ConsumerState<ForumTabView> {
                         showCheckmark: false,
                         shape: const RoundedRectangleBorder(
                             borderRadius: BorderRadius.zero),
-                        backgroundColor: AppColors.bgCard,
-                        selectedColor: AppColors.accentWork.withAlpha(30),
+                        backgroundColor: context.colors.bgCard,
+                        selectedColor: context.colors.accentChannel.withAlpha(30),
                         labelStyle: TextStyle(
                           color: selectedForumId == null
-                              ? AppColors.accentWork
-                              : AppColors.textSecond,
+                              ? context.colors.accentChannel
+                              : context.colors.textSecond,
                           fontWeight: selectedForumId == null
                               ? FontWeight.bold
                               : FontWeight.normal,
@@ -183,8 +183,8 @@ class _ForumTabViewState extends ConsumerState<ForumTabView> {
                         ),
                         side: BorderSide(
                           color: selectedForumId == null
-                              ? AppColors.accentWork
-                              : AppColors.border,
+                              ? context.colors.accentChannel
+                              : context.colors.border,
                         ),
                         onSelected: (_) {
                           ref.read(selectedForumIdProvider.notifier).state =
@@ -210,8 +210,8 @@ class _ForumTabViewState extends ConsumerState<ForumTabView> {
                                   '${forum.postCount}',
                                   style: TextStyle(
                                     color: isSelected
-                                        ? AppColors.accentWork
-                                        : AppColors.textMuted,
+                                        ? context.colors.accentChannel
+                                        : context.colors.textMuted,
                                     fontSize: 11,
                                   ),
                                 ),
@@ -222,12 +222,12 @@ class _ForumTabViewState extends ConsumerState<ForumTabView> {
                           showCheckmark: false,
                           shape: const RoundedRectangleBorder(
                               borderRadius: BorderRadius.zero),
-                          backgroundColor: AppColors.bgCard,
-                          selectedColor: AppColors.accentWork.withAlpha(30),
+                          backgroundColor: context.colors.bgCard,
+                          selectedColor: context.colors.accentChannel.withAlpha(30),
                           labelStyle: TextStyle(
                             color: isSelected
-                                ? AppColors.accentWork
-                                : AppColors.textSecond,
+                                ? context.colors.accentChannel
+                                : context.colors.textSecond,
                             fontWeight: isSelected
                                 ? FontWeight.bold
                                 : FontWeight.normal,
@@ -235,8 +235,8 @@ class _ForumTabViewState extends ConsumerState<ForumTabView> {
                           ),
                           side: BorderSide(
                             color: isSelected
-                                ? AppColors.accentWork
-                                : AppColors.border,
+                                ? context.colors.accentChannel
+                                : context.colors.border,
                           ),
                           onSelected: (_) {
                             ref.read(selectedForumIdProvider.notifier).state =
@@ -259,7 +259,7 @@ class _ForumTabViewState extends ConsumerState<ForumTabView> {
                   if (categories.isEmpty) return const SizedBox.shrink();
                   return Container(
                     width: double.infinity,
-                    color: AppColors.bgSurface,
+                    color: context.colors.bgSurface,
                     padding: const EdgeInsets.only(bottom: 8),
                     child: SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
@@ -274,12 +274,12 @@ class _ForumTabViewState extends ConsumerState<ForumTabView> {
                               selected: selectedCategoryId == null,
                               shape: const RoundedRectangleBorder(
                                   borderRadius: BorderRadius.zero),
-                              backgroundColor: AppColors.bgCard,
-                              selectedColor: AppColors.accentProject.withAlpha(30),
+                              backgroundColor: context.colors.bgCard,
+                              selectedColor: context.colors.accentProject.withAlpha(30),
                               labelStyle: TextStyle(
                                 color: selectedCategoryId == null
-                                    ? AppColors.accentProject
-                                    : AppColors.textSecond,
+                                    ? context.colors.accentProject
+                                    : context.colors.textSecond,
                                 fontSize: 11,
                                 fontWeight: selectedCategoryId == null
                                     ? FontWeight.bold
@@ -287,8 +287,8 @@ class _ForumTabViewState extends ConsumerState<ForumTabView> {
                               ),
                               side: BorderSide(
                                 color: selectedCategoryId == null
-                                    ? AppColors.accentProject
-                                    : AppColors.border,
+                                    ? context.colors.accentProject
+                                    : context.colors.border,
                               ),
                               onSelected: (_) {
                                 ref
@@ -306,12 +306,12 @@ class _ForumTabViewState extends ConsumerState<ForumTabView> {
                                 selected: isCatSelected,
                                 shape: const RoundedRectangleBorder(
                                     borderRadius: BorderRadius.zero),
-                                backgroundColor: AppColors.bgCard,
-                                selectedColor: AppColors.accentProject.withAlpha(30),
+                                backgroundColor: context.colors.bgCard,
+                                selectedColor: context.colors.accentProject.withAlpha(30),
                                 labelStyle: TextStyle(
                                   color: isCatSelected
-                                      ? AppColors.accentProject
-                                      : AppColors.textSecond,
+                                      ? context.colors.accentProject
+                                      : context.colors.textSecond,
                                   fontSize: 11,
                                   fontWeight: isCatSelected
                                       ? FontWeight.bold
@@ -319,8 +319,8 @@ class _ForumTabViewState extends ConsumerState<ForumTabView> {
                                 ),
                                 side: BorderSide(
                                   color: isCatSelected
-                                      ? AppColors.accentProject
-                                      : AppColors.border,
+                                      ? context.colors.accentProject
+                                      : context.colors.border,
                                 ),
                                 onSelected: (_) {
                                   ref
@@ -338,7 +338,7 @@ class _ForumTabViewState extends ConsumerState<ForumTabView> {
                 orElse: () => const SizedBox.shrink(),
               ),
 
-            const Divider(color: AppColors.border, height: 1),
+            Divider(color: context.colors.border, height: 1),
 
             // ── 4. 게시글 피드 목록 ───────────────────────────────────────
             Expanded(

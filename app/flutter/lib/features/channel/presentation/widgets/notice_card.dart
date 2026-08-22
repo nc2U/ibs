@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/theme/app_colors_extension.dart';
 import '../../data/models/notice_model.dart';
 
 /// 공지사항 목록 아이템 카드 (radius = 0)
@@ -10,7 +10,6 @@ class NoticeCard extends StatelessWidget {
   final bool showWorkspaceBadge;
 
   static const _importantAccent = Color(0xFFE5A93C); // 품위 있는 웜 앰버-골드
-  static const _importantBg = Color(0xFF222538);     // 은은한 웜 딥네이비
 
   const NoticeCard({
     super.key,
@@ -21,6 +20,11 @@ class NoticeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.isDarkMode;
+    final importantBg = isDark
+        ? const Color(0xFF222538)
+        : const Color(0xFFFFFBEB); // 웜 앰버 라이트 틴트 (Amber 50)
+
     final hasFiles = notice.files.isNotEmpty;
     final hasComments = notice.comments.isNotEmpty;
 
@@ -29,16 +33,22 @@ class NoticeCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: notice.isImportant ? _importantBg : AppColors.bgCard,
+          color: notice.isImportant ? importantBg : context.colors.bgCard,
           borderRadius: BorderRadius.zero,
           border: notice.isImportant
-              ? const Border(
-                  left: BorderSide(color: _importantAccent, width: 3.5),
-                  top: BorderSide(color: Color(0x60E5A93C), width: 0.8),
-                  right: BorderSide(color: Color(0x60E5A93C), width: 0.8),
-                  bottom: BorderSide(color: Color(0x60E5A93C), width: 0.8),
+              ? Border(
+                  left: const BorderSide(color: _importantAccent, width: 3.5),
+                  top: BorderSide(
+                      color: _importantAccent.withAlpha(isDark ? 96 : 140),
+                      width: 0.8),
+                  right: BorderSide(
+                      color: _importantAccent.withAlpha(isDark ? 96 : 140),
+                      width: 0.8),
+                  bottom: BorderSide(
+                      color: _importantAccent.withAlpha(isDark ? 96 : 140),
+                      width: 0.8),
                 )
-              : Border.all(color: AppColors.border, width: 0.8),
+              : Border.all(color: context.colors.border, width: 0.8),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -80,15 +90,15 @@ class NoticeCard extends StatelessWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: AppColors.accentWork.withAlpha(20),
+                      color: context.colors.accentChannel.withAlpha(20),
                       borderRadius: BorderRadius.zero,
                       border:
-                          Border.all(color: AppColors.accentWork, width: 0.8),
+                          Border.all(color: context.colors.accentChannel.withAlpha(60), width: 0.8),
                     ),
                     child: Text(
                       notice.project!.name,
                       style: AppTextStyles.caption.copyWith(
-                        color: AppColors.accentWork,
+                        color: context.colors.accentChannel,
                         fontSize: 11,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -101,15 +111,15 @@ class NoticeCard extends StatelessWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                     decoration: BoxDecoration(
-                      color: AppColors.warning.withAlpha(30),
+                      color: context.colors.warning.withAlpha(30),
                       borderRadius: BorderRadius.zero,
                       border: Border.all(
-                          color: AppColors.warning.withAlpha(80), width: 0.8),
+                          color: context.colors.warning.withAlpha(80), width: 0.8),
                     ),
-                    child: const Text(
+                    child: Text(
                       'N',
                       style: TextStyle(
-                        color: AppColors.warning,
+                        color: context.colors.warning,
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
                       ),
@@ -121,7 +131,7 @@ class NoticeCard extends StatelessWidget {
                   Text(
                     _formatDate(notice.created!),
                     style: AppTextStyles.caption
-                        .copyWith(color: AppColors.textMuted),
+                        .copyWith(color: context.colors.textMuted),
                   ),
               ],
             ),
@@ -133,9 +143,7 @@ class NoticeCard extends StatelessWidget {
               style: AppTextStyles.titleSm.copyWith(
                 fontWeight:
                     notice.isImportant ? FontWeight.bold : FontWeight.w600,
-                color: notice.isImportant
-                    ? AppColors.textPrimary
-                    : AppColors.textPrimary,
+                color: context.colors.textPrimary,
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -147,52 +155,52 @@ class NoticeCard extends StatelessWidget {
               Text(
                 _stripHtml(notice.summary),
                 style: AppTextStyles.bodySm
-                    .copyWith(color: AppColors.textSecond, height: 1.3),
+                    .copyWith(color: context.colors.textSecond, height: 1.3),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
             ],
             const SizedBox(height: 10),
 
-            // ── 하단 메타 (작성자 + 첨부파일 + 댓글 수) ────────────────────────
+            // ── 하단 메타정보 (작성자 + 파일/댓글 카운트) ─────────────────────
             Row(
               children: [
                 Icon(Icons.person_outline_rounded,
-                    size: 14, color: AppColors.textMuted),
+                    size: 14, color: context.colors.textMuted),
                 const SizedBox(width: 4),
                 Text(
-                  notice.author?.username ?? '작성자 미상',
+                  notice.author?.username ?? '관리자',
                   style: AppTextStyles.caption
-                      .copyWith(color: AppColors.textSecond),
+                      .copyWith(color: context.colors.textSecond),
                 ),
                 const Spacer(),
                 if (hasFiles) ...[
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.attach_file_rounded,
-                          size: 14, color: AppColors.textMuted),
+                      Icon(Icons.attach_file_rounded,
+                          size: 13, color: context.colors.textMuted),
                       const SizedBox(width: 2),
                       Text(
                         '${notice.files.length}',
                         style: AppTextStyles.caption
-                            .copyWith(color: AppColors.textSecond),
+                            .copyWith(color: context.colors.textSecond),
                       ),
                     ],
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
                 ],
                 if (hasComments) ...[
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.chat_bubble_outline_rounded,
-                          size: 13, color: AppColors.accentWork),
+                      Icon(Icons.chat_bubble_outline_rounded,
+                          size: 13, color: context.colors.accentChannel),
                       const SizedBox(width: 3),
                       Text(
                         '${notice.comments.length}',
                         style: AppTextStyles.caption.copyWith(
-                          color: AppColors.accentWork,
+                          color: context.colors.accentChannel,
                           fontWeight: FontWeight.bold,
                         ),
                       ),

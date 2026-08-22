@@ -140,7 +140,7 @@ class _MainShellState extends ConsumerState<MainShell> {
     });
 
     return Scaffold(
-      backgroundColor: AppColors.bgPrimary,
+      backgroundColor: context.colors.bgPrimary,
       appBar: AppBar(
         backgroundColor: context.colors.bgPrimary,
         foregroundColor: context.colors.textPrimary,
@@ -231,13 +231,13 @@ class _MainShellState extends ConsumerState<MainShell> {
         currentIndex: currentIdx,
         onTap: (i) => _onTabTap(context, i),
         type: BottomNavigationBarType.fixed,
-        backgroundColor: AppColors.bgSurface,
-        selectedItemColor: AppColors.accentWork,
-        unselectedItemColor: AppColors.textDisabled,
+        backgroundColor: context.colors.bgSurface,
+        selectedItemColor: context.colors.accentWork,
+        unselectedItemColor: context.colors.textDisabled,
         selectedLabelStyle:
             const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
         unselectedLabelStyle: const TextStyle(fontSize: 11),
-        elevation: 12,
+        elevation: 8,
         items: _tabs.map((t) {
           Widget iconWidget = Icon(t.icon);
           if (t.route == AppRoutes.approval && pendingCount > 0) {
