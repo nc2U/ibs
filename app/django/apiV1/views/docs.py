@@ -507,7 +507,9 @@ class OfficialLetterViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def submit_approval(self, request, pk=None):
         """공문을 전자결재(ApprovalDocument)로 상신"""
-        from approval.models import ApprovalDocument, DocumentType, StaffAssignment, ApprovalStep
+        from approval.models import ApprovalDocument, DocumentType, ApprovalStep
+        from company.models import StaffAssignment
+        from approval.services.route_builder import build_dynamic_approval_route
         from approval.tasks import notify_approvers_task
         letter = self.get_object()
 
@@ -525,6 +527,8 @@ class OfficialLetterViewSet(viewsets.ModelViewSet):
 
         # 기안자 보직 조회
         assignment = StaffAssignment.objects.filter(staff__user=request.user, is_primary=True).first()
+        if not assignment:
+            assignment = StaffAssignment.objects.filter(staff__user=request.user).first()
 
         # ApprovalDocument 생성
         content_payload = {
@@ -549,11 +553,9 @@ class OfficialLetterViewSet(viewsets.ModelViewSet):
         )
 
         # 동적 결재선 빌드 및 저장
-        from approval.services.route_service import ApprovalRouteService
-        route_service = ApprovalRouteService()
-        steps = route_service.build_approval_line(
+        steps = build_dynamic_approval_route(
             doc_type=doc_type,
-            drafter=request.user,
+            drafter_user=request.user,
             drafter_assignment=assignment,
             content=content_payload,
         )

@@ -261,4 +261,14 @@ def build_dynamic_approval_route(doc_type: DocumentType, drafter_user, drafter_a
                 'condition': condition,
             })
 
+    # (3) 기안자가 최고 결재권자(대표이사 등)이거나 상위 결재자가 없어 결재선이 빈 경우 (자가 결재선 생성)
+    if not steps and drafter_user:
+        steps.append({
+            'step_order': 1,
+            'role_label': '대표이사 승인',
+            'approvers': [drafter_user],
+            'approver_ids': [drafter_user.id],
+            'condition': 'OR',
+        })
+
     return steps
