@@ -79,7 +79,6 @@ class _ApprovalMainScreenState extends ConsumerState<ApprovalMainScreen>
 
     return Scaffold(
       backgroundColor: context.colors.bgPrimary,
-<<<<<<< HEAD
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -158,85 +157,17 @@ class _ApprovalMainScreenState extends ConsumerState<ApprovalMainScreen>
                                 fontWeight: FontWeight.w800,
                                 color: Colors.white,
                               ),
-=======
-      appBar: AppBar(
-        title: Text(
-          '전자결재',
-          style: AppTextStyles.titleMd.copyWith(
-            fontWeight: FontWeight.w800,
-            color: context.colors.textPrimary,
-          ),
-        ),
-        centerTitle: false,
-        backgroundColor: context.colors.bgCard,
-        elevation: 0,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(44),
-          child: Container(
-            decoration: BoxDecoration(
-              color: context.colors.bgSurface,
-              border: Border(
-                bottom: BorderSide(color: context.colors.border, width: 0.8),
-              ),
-            ),
-            child: TabBar(
-              controller: _tabController,
-              isScrollable: false,
-              indicatorSize: TabBarIndicatorSize.tab,
-              indicator: BoxDecoration(
-                color: context.colors.bgCard,
-                border: Border(
-                  bottom: BorderSide(
-                    color: context.colors.accentApproval,
-                    width: 3.0,
-                  ),
-                ),
-              ),
-              labelColor: context.colors.textPrimary,
-              unselectedLabelColor: context.colors.textMuted,
-              labelStyle: AppTextStyles.titleSm.copyWith(fontWeight: FontWeight.w700),
-              unselectedLabelStyle: AppTextStyles.bodyMd,
-              dividerColor: Colors.transparent,
-              tabs: [
-                Tab(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text('대기함'),
-                      if (pendingCount > 0) ...[
-                        const SizedBox(width: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                          decoration: BoxDecoration(
-                            color: context.colors.error,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            '$pendingCount',
-                            style: const TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
->>>>>>> f695059595 (approval ui update)
                             ),
                           ),
                         ],
                       ],
                     ),
                   ),
-<<<<<<< HEAD
                   const Tab(text: '기안함'),
                   const Tab(text: '문서함'),
                   if (isSuperuser) const Tab(text: '전체'),
                 ],
               ),
-=======
-                ),
-                const Tab(text: '기안함'),
-                const Tab(text: '문서함'),
-                if (isSuperuser) const Tab(text: '전체'),
-              ],
->>>>>>> f695059595 (approval ui update)
             ),
 
             // ── 탭 뷰 본문 ─────────────────────────────────────────────
@@ -260,32 +191,6 @@ class _ApprovalMainScreenState extends ConsumerState<ApprovalMainScreen>
             ),
           ],
         ),
-<<<<<<< HEAD
-=======
-        actions: [
-          IconButton(
-            icon: Icon(Icons.edit_document, color: context.colors.accentApproval),
-            tooltip: '새 기안 작성',
-            onPressed: _goDraft,
-          ),
-        ],
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          // ── 0. 결재 대기함 ──────────────────────────────────────────
-          _buildPendingTab(),
-
-          // ── 1. 내 기안함 ──────────────────────────────────────────
-          _buildDraftedTab(),
-
-          // ── 2. 결재 문서함 (완료 / 참조) ───────────────────────────
-          _buildApprovedTab(),
-
-          // ── 3. 전체 문서함 (최고 관리자 전용) ────────────────────────
-          if (isSuperuser) _buildAllDocumentsTab(),
-        ],
->>>>>>> f695059595 (approval ui update)
       ),
       floatingActionButton: FloatingActionButton.extended(
         elevation: 4,

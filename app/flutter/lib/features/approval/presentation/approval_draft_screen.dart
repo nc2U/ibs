@@ -338,7 +338,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
   }
 
   Map<String, dynamic> _buildContentMap() {
-    final normKey = _selectedDocType?.formTemplateKey?.toUpperCase();
+    final normKey = _selectedDocType?.formTemplateKey.toUpperCase();
     final map = <String, dynamic>{};
 
     if (normKey == 'LEAVE_APPLICATION' || normKey == 'LEAVE') {
@@ -828,7 +828,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
     }
 
     final docTypesAsync = ref.watch(forDraftDocTypesProvider(_selectedAssignment?.id));
-    final normKey = _selectedDocType?.formTemplateKey?.toUpperCase();
+    final normKey = _selectedDocType?.formTemplateKey.toUpperCase();
 
     return Form(
       key: _formKey,
