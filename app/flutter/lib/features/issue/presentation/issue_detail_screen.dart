@@ -6,11 +6,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/constants/permissions.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/permission_provider.dart';
+import '../../../core/theme/app_colors_extension.dart';
 import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/loading_shimmer.dart';
 import '../../project/providers/project_provider.dart';
@@ -80,7 +80,7 @@ class _IssueDetailScreenState extends ConsumerState<IssueDetailScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(msg),
-            backgroundColor: AppColors.error,
+            backgroundColor: context.colors.error,
             duration: const Duration(seconds: 4),
           ),
         );
@@ -102,18 +102,18 @@ class _IssueDetailScreenState extends ConsumerState<IssueDetailScreen> {
       ref.invalidate(issueDetailProvider(widget.issueId));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('사진이 첨부되었습니다.'),
-            backgroundColor: AppColors.success,
+          SnackBar(
+            content: const Text('사진이 첨부되었습니다.'),
+            backgroundColor: context.colors.success,
           ),
         );
       }
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('파일 업로드에 실패했습니다.'),
-            backgroundColor: AppColors.error,
+          SnackBar(
+            content: const Text('파일 업로드에 실패했습니다.'),
+            backgroundColor: context.colors.error,
           ),
         );
       }
@@ -125,30 +125,30 @@ class _IssueDetailScreenState extends ConsumerState<IssueDetailScreen> {
     final detailState = ref.watch(issueDetailProvider(widget.issueId));
 
     return Scaffold(
-      backgroundColor: AppColors.bgPrimary,
+      backgroundColor: context.colors.bgPrimary,
       appBar: AppBar(
-        backgroundColor: AppColors.bgPrimary,
-        foregroundColor: AppColors.textPrimary,
+        backgroundColor: context.colors.bgPrimary,
+        foregroundColor: context.colors.textPrimary,
         elevation: 0,
         title: detailState.maybeWhen(
           data: (issue) => Row(
             children: [
               if (issue.isPrivate)
-                const Padding(
-                  padding: EdgeInsets.only(right: 6),
+                Padding(
+                  padding: const EdgeInsets.only(right: 6),
                   child: Icon(Icons.lock_outline_rounded,
-                      size: 16, color: AppColors.textMuted),
+                      size: 16, color: context.colors.textMuted),
                 ),
               Expanded(
                 child: Text(
                   '#${issue.pk} ${issue.subject}',
-                  style: AppTextStyles.titleMd,
+                  style: AppTextStyles.titleMd.copyWith(color: context.colors.textPrimary),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
-          orElse: () => Text('업무 상세', style: AppTextStyles.titleMd),
+          orElse: () => Text('업무 상세', style: AppTextStyles.titleMd.copyWith(color: context.colors.textPrimary)),
         ),
         actions: [
           detailState.maybeWhen(
@@ -177,8 +177,8 @@ class _IssueDetailScreenState extends ConsumerState<IssueDetailScreen> {
                           ? Icons.star_rounded
                           : Icons.star_outline_rounded,
                       color: isMyWatching
-                          ? AppColors.warning
-                          : AppColors.textMuted,
+                          ? context.colors.warning
+                          : context.colors.textMuted,
                       size: 24,
                     ),
                     tooltip: isMyWatching ? '관심끄기' : '지켜보기',
@@ -200,6 +200,7 @@ class _IssueDetailScreenState extends ConsumerState<IssueDetailScreen> {
                               content: Text(nowWatching
                                   ? '이 업무를 지켜봅니다.'
                                   : '관심을 껐습니다.'),
+                              backgroundColor: context.colors.accentWork,
                               duration: const Duration(seconds: 2),
                             ),
                           );
@@ -207,9 +208,9 @@ class _IssueDetailScreenState extends ConsumerState<IssueDetailScreen> {
                       } catch (_) {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('지켜보기 설정 변경에 실패했습니다.'),
-                              backgroundColor: AppColors.error,
+                            SnackBar(
+                              content: const Text('지켜보기 설정 변경에 실패했습니다.'),
+                              backgroundColor: context.colors.error,
                             ),
                           );
                         }
@@ -273,21 +274,21 @@ class _IssueDetailScreenState extends ConsumerState<IssueDetailScreen> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
-                      color: AppColors.warning.withAlpha(25),
+                      color: context.colors.warning.withAlpha(25),
                       border: Border.all(
-                          color: AppColors.warning.withAlpha(80), width: 0.8),
+                          color: context.colors.warning.withAlpha(80), width: 0.8),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.lock_clock_outlined,
-                            size: 16, color: AppColors.warning),
+                        Icon(Icons.lock_clock_outlined,
+                            size: 16, color: context.colors.warning),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             '닫힌 워크스페이스입니다. 모든 데이터는 읽기 전용으로 제공됩니다.',
                             style: AppTextStyles.caption
-                                .copyWith(color: AppColors.warning),
+                                .copyWith(color: context.colors.warning),
                           ),
                         ),
                       ],
@@ -300,30 +301,30 @@ class _IssueDetailScreenState extends ConsumerState<IssueDetailScreen> {
 
                 // ── 설명 ────────────────────────────────────────────────────
                 if (issue.description.isNotEmpty) ...[
-                  _SectionLabel(label: '설명'),
+                  const _SectionLabel(label: '설명'),
                   _Card(
                     child: MarkdownBody(
                       data: issue.description,
                       selectable: true,
                       styleSheet: MarkdownStyleSheet(
-                        p: AppTextStyles.bodyMd,
+                        p: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
                         strong: AppTextStyles.bodyMd.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
+                          color: context.colors.textPrimary,
                         ),
                         blockquote: AppTextStyles.bodyMd.copyWith(
-                          color: AppColors.textMuted,
+                          color: context.colors.textMuted,
                         ),
                         blockquoteDecoration: BoxDecoration(
-                          color: AppColors.bgSurface,
-                          border: const Border(
+                          color: context.colors.bgSurface,
+                          border: Border(
                             left: BorderSide(
-                                color: AppColors.accentWork, width: 3),
+                                color: context.colors.accentWork, width: 3),
                           ),
                         ),
-                        code: const TextStyle(
-                          backgroundColor: AppColors.bgSurface,
-                          color: AppColors.accentWork,
+                        code: TextStyle(
+                          backgroundColor: context.colors.bgSurface,
+                          color: context.colors.accentWork,
                           fontFamily: 'monospace',
                         ),
                       ),
@@ -346,7 +347,7 @@ class _IssueDetailScreenState extends ConsumerState<IssueDetailScreen> {
                 // ── 연결 업무 ────────────────────────────────────────────────
                 if (issue.outgoingRelations.isNotEmpty ||
                     issue.incomingRelation != null) ...[
-                  _SectionLabel(label: '연결 업무'),
+                  const _SectionLabel(label: '연결 업무'),
                   if (issue.incomingRelation?.issue != null)
                     _RelationRow(
                       relation: issue.incomingRelation!,
@@ -367,7 +368,7 @@ class _IssueDetailScreenState extends ConsumerState<IssueDetailScreen> {
                 ],
 
                 // ── 변경 이력 및 댓글 ───────────────────────────────────────
-                _SectionLabel(label: '이력 및 댓글'),
+                const _SectionLabel(label: '이력 및 댓글'),
                 _HistoryAndCommentSection(issueId: issue.pk),
                 const SizedBox(height: 80), // 하단 입력창 여백
               ],
@@ -413,7 +414,7 @@ class _InfoSection extends StatelessWidget {
             (isCreator || isAssignee));
 
     final doneColor =
-        issue.doneRatio == 100 ? AppColors.success : AppColors.accentWork;
+        issue.doneRatio == 100 ? context.colors.success : context.colors.accentWork;
 
     return _Card(
       child: Column(
@@ -428,8 +429,8 @@ class _InfoSection extends StatelessWidget {
             value: issue.status.name,
             icon: Icons.flag_outlined,
             valueColor: issue.status.closed
-                ? AppColors.textDisabled
-                : AppColors.success,
+                ? context.colors.textDisabled
+                : context.colors.success,
           ),
           _InfoRow(
             label: '우선순위',
@@ -454,7 +455,7 @@ class _InfoSection extends StatelessWidget {
               icon: Icons.calendar_today_outlined,
             ),
           if (issue.dueDate != null)
-            _buildDueDateRow(issue.dueDate!, issue.status.closed),
+            _buildDueDateRow(context, issue.dueDate!, issue.status.closed),
           _InfoRow(
             label: '업무 관람자',
             value: issue.watchers.isNotEmpty
@@ -463,7 +464,7 @@ class _InfoSection extends StatelessWidget {
             icon: Icons.visibility_outlined,
           ),
           // 진척률 (탭 → 바텀시트)
-          const Divider(height: 1, color: AppColors.border),
+          Divider(height: 1, color: context.colors.border),
           const SizedBox(height: 10),
           GestureDetector(
             onTap: canUpdate
@@ -478,7 +479,7 @@ class _InfoSection extends StatelessWidget {
               children: [
                 Icon(Icons.percent_rounded, size: 16, color: doneColor),
                 const SizedBox(width: 8),
-                Text('진척률', style: AppTextStyles.bodyMuted),
+                Text('진척률', style: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted)),
                 const Spacer(),
                 Text(
                   '${issue.doneRatio}%',
@@ -497,7 +498,7 @@ class _InfoSection extends StatelessWidget {
             child: LinearProgressIndicator(
               value: issue.doneRatio / 100.0,
               minHeight: 6,
-              backgroundColor: AppColors.bgSurface,
+              backgroundColor: context.colors.bgSurface,
               valueColor: AlwaysStoppedAnimation<Color>(doneColor),
             ),
           ),
@@ -506,10 +507,10 @@ class _InfoSection extends StatelessWidget {
     );
   }
 
-  Widget _buildDueDateRow(String dueDateStr, bool isClosed) {
+  Widget _buildDueDateRow(BuildContext context, String dueDateStr, bool isClosed) {
     String formattedDate = _fmt(dueDateStr);
     String badgeText = '';
-    Color statusColor = AppColors.textPrimary;
+    Color statusColor = context.colors.textPrimary;
     Color badgeBgColor = Colors.transparent;
     Color badgeTextColor = Colors.transparent;
     bool hasBadge = false;
@@ -524,24 +525,24 @@ class _InfoSection extends StatelessWidget {
 
         if (diffDays < 0) {
           // 기한 초과 (Overdue) - Danger
-          statusColor = AppColors.error;
+          statusColor = context.colors.error;
           badgeText = '기한초과 (${-diffDays}일)';
-          badgeBgColor = AppColors.error.withAlpha(30);
-          badgeTextColor = AppColors.error;
+          badgeBgColor = context.colors.error.withAlpha(30);
+          badgeTextColor = context.colors.error;
           hasBadge = true;
         } else if (diffDays == 0) {
           // 오늘 마감 (D-Day) - Danger
-          statusColor = AppColors.error;
+          statusColor = context.colors.error;
           badgeText = '오늘 마감 (D-Day)';
-          badgeBgColor = AppColors.error.withAlpha(30);
-          badgeTextColor = AppColors.error;
+          badgeBgColor = context.colors.error.withAlpha(30);
+          badgeTextColor = context.colors.error;
           hasBadge = true;
         } else if (diffDays <= 3) {
           // 임박 (D-1 ~ D-3) - Warning
-          statusColor = AppColors.warning;
+          statusColor = context.colors.warning;
           badgeText = 'D-$diffDays 임박';
-          badgeBgColor = AppColors.warning.withAlpha(30);
-          badgeTextColor = AppColors.warning;
+          badgeBgColor = context.colors.warning.withAlpha(30);
+          badgeTextColor = context.colors.warning;
           hasBadge = true;
         }
       } catch (_) {}
@@ -551,11 +552,11 @@ class _InfoSection extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 7),
       child: Row(
         children: [
-          const Icon(Icons.event_outlined, size: 16, color: AppColors.textMuted),
+          Icon(Icons.event_outlined, size: 16, color: context.colors.textMuted),
           const SizedBox(width: 10),
           SizedBox(
             width: 110,
-            child: Text('완료기한', style: AppTextStyles.bodyMuted),
+            child: Text('완료기한', style: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted)),
           ),
           const Spacer(),
           if (hasBadge) ...[
@@ -580,7 +581,7 @@ class _InfoSection extends StatelessWidget {
           Text(
             formattedDate,
             style: AppTextStyles.bodyMd.copyWith(
-              color: isClosed ? AppColors.textDisabled : statusColor,
+              color: isClosed ? context.colors.textDisabled : statusColor,
               fontWeight: hasBadge ? FontWeight.bold : FontWeight.normal,
             ),
           ),
@@ -610,8 +611,8 @@ class _Card extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.bgCard,
-        border: Border.all(color: AppColors.border, width: 0.8),
+        color: context.colors.bgCard,
+        border: Border.all(color: context.colors.border, width: 0.8),
       ),
       child: child,
     );
@@ -630,18 +631,18 @@ class _SectionLabel extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         children: [
-          Text(label, style: AppTextStyles.titleSm.copyWith(color: AppColors.textMuted)),
+          Text(label, style: AppTextStyles.titleSm.copyWith(color: context.colors.textMuted)),
           if (count != null) ...[
             const SizedBox(width: 6),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
               decoration: BoxDecoration(
-                color: AppColors.accentWork.withAlpha(40),
+                color: context.colors.accentWork.withAlpha(40),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text('$count',
                   style: AppTextStyles.label.copyWith(
-                      color: AppColors.accentWork)),
+                      color: context.colors.accentWork)),
             ),
           ],
         ],
@@ -668,13 +669,13 @@ class _InfoRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 7),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: AppColors.textMuted),
+          Icon(icon, size: 16, color: context.colors.textMuted),
           const SizedBox(width: 10),
           SizedBox(
             width: 110,
             child: Text(
               label,
-              style: AppTextStyles.bodyMuted,
+              style: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted),
               maxLines: 1,
             ),
           ),
@@ -682,7 +683,9 @@ class _InfoRow extends StatelessWidget {
           Expanded(
             child: Text(
               value,
-              style: AppTextStyles.bodyMd.copyWith(color: valueColor),
+              style: AppTextStyles.bodyMd.copyWith(
+                color: valueColor ?? context.colors.textPrimary,
+              ),
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -704,31 +707,32 @@ class _SubIssueRow extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: AppColors.bgCard,
-          border: Border.all(color: AppColors.border, width: 0.8),
+          color: context.colors.bgCard,
+          border: Border.all(color: context.colors.border, width: 0.8),
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: AppColors.accentWork.withAlpha(30),
+                color: context.colors.accentWork.withAlpha(30),
                 borderRadius: BorderRadius.circular(3),
               ),
               child: Text(sub.tracker.name,
                   style: AppTextStyles.label
-                      .copyWith(color: AppColors.accentWork)),
+                      .copyWith(color: context.colors.accentWork)),
             ),
             const SizedBox(width: 8),
             Expanded(
               child: Text('#${sub.pk} ${sub.subject}',
-                  style: AppTextStyles.bodyMd, overflow: TextOverflow.ellipsis),
+                  style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
+                  overflow: TextOverflow.ellipsis),
             ),
             Text('${sub.doneRatio}%',
                 style: AppTextStyles.caption.copyWith(
                     color: sub.doneRatio == 100
-                        ? AppColors.success
-                        : AppColors.textMuted)),
+                        ? context.colors.success
+                        : context.colors.textMuted)),
           ],
         ),
       ),
@@ -746,7 +750,7 @@ class _RelationRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final relIssue = relation.issue!;
     final isPrec = direction == '선행';
-    final color = isPrec ? AppColors.accentApproval : AppColors.accentProject;
+    final color = isPrec ? context.colors.accentApproval : context.colors.accentProject;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
@@ -755,7 +759,7 @@ class _RelationRow extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
-            color: AppColors.bgCard,
+            color: context.colors.bgCard,
             border: Border.all(color: color.withAlpha(80), width: 0.8),
           ),
           child: Row(
@@ -774,13 +778,13 @@ class _RelationRow extends StatelessWidget {
               Expanded(
                 child: Text(
                   '#${relIssue.pk} ${relIssue.subject}',
-                  style: AppTextStyles.bodyMd,
+                  style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
               if (relation.delay != null && relation.delay! > 0)
                 Text('+${relation.delay}일',
-                    style: AppTextStyles.caption),
+                    style: AppTextStyles.caption.copyWith(color: context.colors.textMuted)),
             ],
           ),
         ),
@@ -813,27 +817,27 @@ class _FileRow extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
-            color: AppColors.bgCard,
-            border: Border.all(color: AppColors.border, width: 0.8),
+            color: context.colors.bgCard,
+            border: Border.all(color: context.colors.border, width: 0.8),
           ),
           child: Row(
             children: [
-              Icon(_icon(), size: 20, color: AppColors.accentWork),
+              Icon(_icon(), size: 20, color: context.colors.accentWork),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(file.fileName,
-                        style: AppTextStyles.bodyMd,
+                        style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
                         overflow: TextOverflow.ellipsis),
                     if (file.description.isNotEmpty)
-                      Text(file.description, style: AppTextStyles.caption),
+                      Text(file.description, style: AppTextStyles.caption.copyWith(color: context.colors.textMuted)),
                   ],
                 ),
               ),
               Icon(Icons.open_in_new_rounded,
-                  size: 16, color: AppColors.textMuted),
+                  size: 16, color: context.colors.textMuted),
             ],
           ),
         ),
@@ -873,7 +877,7 @@ class _HistoryAndCommentSectionState
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Text('등록된 변경 이력 및 댓글이 없습니다.',
-                    style: AppTextStyles.bodyMuted),
+                    style: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted)),
               );
             }
 
@@ -929,7 +933,7 @@ class _HistoryAndCommentSectionState
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     child: Center(
                       child: Text('해당 탭의 내역이 없습니다.',
-                          style: AppTextStyles.caption),
+                          style: AppTextStyles.caption.copyWith(color: context.colors.textMuted)),
                     ),
                   )
                 else
@@ -965,11 +969,11 @@ class _HistoryTabChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
           color: selected
-              ? AppColors.accentWork.withAlpha(35)
-              : AppColors.bgCard,
+              ? context.colors.accentWork.withAlpha(35)
+              : context.colors.bgCard,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: selected ? AppColors.accentWork : AppColors.border,
+            color: selected ? context.colors.accentWork : context.colors.border,
             width: selected ? 1.2 : 0.8,
           ),
         ),
@@ -979,7 +983,7 @@ class _HistoryTabChip extends StatelessWidget {
             Text(
               label,
               style: AppTextStyles.label.copyWith(
-                color: selected ? AppColors.accentWork : AppColors.textMuted,
+                color: selected ? context.colors.accentWork : context.colors.textMuted,
                 fontWeight: selected ? FontWeight.bold : FontWeight.normal,
               ),
             ),
@@ -987,7 +991,7 @@ class _HistoryTabChip extends StatelessWidget {
             Text(
               '$count',
               style: AppTextStyles.caption.copyWith(
-                color: selected ? AppColors.accentWork : AppColors.textDisabled,
+                color: selected ? context.colors.accentWork : context.colors.textDisabled,
                 fontWeight: FontWeight.bold,
                 fontSize: 10.5,
               ),
@@ -1030,9 +1034,9 @@ class _CommentInputBar extends StatelessWidget {
         top: 6,
         bottom: MediaQuery.of(context).viewInsets.bottom + 8,
       ),
-      decoration: const BoxDecoration(
-        color: AppColors.bgSurface,
-        border: Border(top: BorderSide(color: AppColors.border, width: 0.8)),
+      decoration: BoxDecoration(
+        color: context.colors.bgSurface,
+        border: Border(top: BorderSide(color: context.colors.border, width: 0.8)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1042,12 +1046,12 @@ class _CommentInputBar extends StatelessWidget {
               padding: const EdgeInsets.only(left: 12, bottom: 4),
               child: Row(
                 children: [
-                  const Icon(Icons.lock_rounded,
-                      size: 13, color: AppColors.warning),
+                  Icon(Icons.lock_rounded,
+                      size: 13, color: context.colors.warning),
                   const SizedBox(width: 4),
                   Text('비밀 댓글로 등록됩니다 (관리자 및 작성자만 조회 가능)',
                       style: AppTextStyles.caption
-                          .copyWith(color: AppColors.warning)),
+                          .copyWith(color: context.colors.warning)),
                 ],
               ),
             ),
@@ -1055,8 +1059,8 @@ class _CommentInputBar extends StatelessWidget {
             children: [
               // 카메라/사진 첨부 버튼
               IconButton(
-                icon: const Icon(Icons.camera_alt_outlined,
-                    color: AppColors.textMuted, size: 20),
+                icon: Icon(Icons.camera_alt_outlined,
+                    color: context.colors.textMuted, size: 20),
                 tooltip: '사진 첨부',
                 onPressed: onAttachPhoto,
                 padding: const EdgeInsets.all(8),
@@ -1070,7 +1074,7 @@ class _CommentInputBar extends StatelessWidget {
                         ? Icons.lock_rounded
                         : Icons.lock_open_outlined,
                     color:
-                        isPrivate ? AppColors.warning : AppColors.textMuted,
+                        isPrivate ? context.colors.warning : context.colors.textMuted,
                     size: 20,
                   ),
                   tooltip: isPrivate ? '비밀 댓글 해제' : '비밀 댓글 설정',
@@ -1084,30 +1088,30 @@ class _CommentInputBar extends StatelessWidget {
                 child: TextField(
                   controller: controller,
                   focusNode: focusNode,
-                  style: AppTextStyles.bodyMd,
+                  style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
                   maxLines: 4,
                   minLines: 1,
                   decoration: InputDecoration(
                     hintText: isPrivate ? '비밀 댓글을 입력하세요...' : '댓글을 입력하세요...',
-                    hintStyle: AppTextStyles.bodyMuted,
+                    hintStyle: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted),
                     filled: true,
-                    fillColor: AppColors.bgCard,
+                    fillColor: context.colors.bgCard,
                     contentPadding: const EdgeInsets.symmetric(
                         horizontal: 12, vertical: 8),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide:
-                          const BorderSide(color: AppColors.border, width: 0.8),
+                          BorderSide(color: context.colors.border, width: 0.8),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide:
-                          const BorderSide(color: AppColors.border, width: 0.8),
+                          BorderSide(color: context.colors.border, width: 0.8),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide:
-                          const BorderSide(color: AppColors.accentWork, width: 1.5),
+                          BorderSide(color: context.colors.accentWork, width: 1.5),
                     ),
                   ),
                 ),
@@ -1118,17 +1122,17 @@ class _CommentInputBar extends StatelessWidget {
                 width: 40,
                 height: 40,
                 child: isSending
-                    ? const Center(
+                    ? Center(
                         child: SizedBox(
                           width: 18,
                           height: 18,
                           child: CircularProgressIndicator(
-                              strokeWidth: 2, color: AppColors.accentWork),
+                              strokeWidth: 2, color: context.colors.accentWork),
                         ),
                       )
                     : IconButton(
-                        icon: const Icon(Icons.send_rounded,
-                            color: AppColors.accentWork, size: 20),
+                        icon: Icon(Icons.send_rounded,
+                            color: context.colors.accentWork, size: 20),
                         tooltip: '전송',
                         padding: EdgeInsets.zero,
                         onPressed: onSend,

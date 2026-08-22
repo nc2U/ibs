@@ -3,13 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
-import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/constants/permissions.dart';
 import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/dio_provider.dart';
 import '../../../../core/providers/permission_provider.dart';
 import '../../../../core/providers/project_provider.dart';
+import '../../../../core/theme/app_colors_extension.dart';
 import '../../data/models/forum_model.dart';
 import '../../data/forum_repository.dart';
 import '../../providers/forum_provider.dart';
@@ -46,26 +46,26 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
     super.dispose();
   }
 
-  Future<void> _handleDeletePost(BuildContext context) async {
+  Future<void> _handleDeletePost() async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.bgCard,
+        backgroundColor: context.colors.bgCard,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-        title: Text('게시글 삭제', style: AppTextStyles.titleLg),
+        title: Text('게시글 삭제', style: AppTextStyles.titleLg.copyWith(color: context.colors.textPrimary)),
         content: Text(
           '\'${widget.post.title}\' 게시글을 정말 삭제하시겠습니까?',
-          style: AppTextStyles.bodySecond,
+          style: AppTextStyles.bodySecond.copyWith(color: context.colors.textPrimary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('취소', style: AppTextStyles.bodyMuted),
+            child: Text('취소', style: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted)),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: FilledButton.styleFrom(
-              backgroundColor: AppColors.error,
+              backgroundColor: context.colors.error,
               shape: const RoundedRectangleBorder(
                   borderRadius: BorderRadius.zero),
             ),
@@ -92,7 +92,7 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('삭제 실패: $e'),
-            backgroundColor: AppColors.error,
+            backgroundColor: context.colors.error,
           ),
         );
       }
@@ -108,7 +108,7 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$e'), backgroundColor: AppColors.error),
+          SnackBar(content: Text('$e'), backgroundColor: context.colors.error),
         );
       }
     }
@@ -123,7 +123,7 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$e'), backgroundColor: AppColors.error),
+          SnackBar(content: Text('$e'), backgroundColor: context.colors.error),
         );
       }
     }
@@ -155,7 +155,7 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('댓글 작성 실패: $e'),
-            backgroundColor: AppColors.error,
+            backgroundColor: context.colors.error,
           ),
         );
       }
@@ -168,19 +168,19 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.bgCard,
+        backgroundColor: context.colors.bgCard,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-        title: Text('댓글 삭제', style: AppTextStyles.titleLg),
-        content: const Text('댓글을 삭제하시겠습니까?'),
+        title: Text('댓글 삭제', style: AppTextStyles.titleLg.copyWith(color: context.colors.textPrimary)),
+        content: Text('댓글을 삭제하시겠습니까?', style: AppTextStyles.bodySecond.copyWith(color: context.colors.textPrimary)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('취소', style: AppTextStyles.bodyMuted),
+            child: Text('취소', style: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted)),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: FilledButton.styleFrom(
-              backgroundColor: AppColors.error,
+              backgroundColor: context.colors.error,
               shape: const RoundedRectangleBorder(
                   borderRadius: BorderRadius.zero),
             ),
@@ -203,7 +203,7 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('댓글 삭제 실패: $e'),
-            backgroundColor: AppColors.error,
+            backgroundColor: context.colors.error,
           ),
         );
       }
@@ -230,7 +230,7 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('파일 다운로드 실패: $e'),
-            backgroundColor: AppColors.error,
+            backgroundColor: context.colors.error,
           ),
         );
       }
@@ -263,8 +263,8 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.9,
       ),
-      decoration: const BoxDecoration(
-        color: AppColors.bgCard,
+      decoration: BoxDecoration(
+        color: context.colors.bgCard,
         borderRadius: BorderRadius.zero,
       ),
       child: Column(
@@ -272,8 +272,8 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
           // ── 1. 상단 바 (배지 + 수정/삭제/닫기) ─────────────────────────
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: AppColors.border, width: 0.8)),
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: context.colors.border, width: 0.8)),
             ),
             child: Row(
               children: [
@@ -311,17 +311,17 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: AppColors.accentWork.withAlpha(20),
+                      color: context.colors.accentWork.withAlpha(20),
                       borderRadius: BorderRadius.zero,
                       border: Border.all(
-                        color: AppColors.accentWork.withAlpha(60),
+                        color: context.colors.accentWork.withAlpha(60),
                         width: 0.8,
                       ),
                     ),
                     child: Text(
                       post.cateName!,
                       style: AppTextStyles.caption.copyWith(
-                        color: AppColors.accentWork,
+                        color: context.colors.accentWork,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -332,7 +332,7 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
                   Text(
                     post.forumName,
                     style: AppTextStyles.caption.copyWith(
-                      color: AppColors.textSecond,
+                      color: context.colors.textSecond,
                     ),
                   ),
                 ],
@@ -340,7 +340,7 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
                 if (canUpdate)
                   IconButton(
                     icon: const Icon(Icons.edit_outlined, size: 20),
-                    color: AppColors.textSecond,
+                    color: context.colors.textSecond,
                     onPressed: () {
                       Navigator.pop(context);
                       showModalBottomSheet(
@@ -354,12 +354,12 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
                 if (canDelete)
                   IconButton(
                     icon: const Icon(Icons.delete_outline_rounded, size: 20),
-                    color: AppColors.error,
-                    onPressed: () => _handleDeletePost(context),
+                    color: context.colors.error,
+                    onPressed: () => _handleDeletePost(),
                   ),
                 IconButton(
                   icon: const Icon(Icons.close_rounded, size: 20),
-                  color: AppColors.textPrimary,
+                  color: context.colors.textPrimary,
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
@@ -374,39 +374,39 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // 제목
-                  Text(post.title, style: AppTextStyles.titleLg),
+                  Text(post.title, style: AppTextStyles.titleLg.copyWith(color: context.colors.textPrimary)),
                   const SizedBox(height: 10),
 
                   // 메타 정보 (작성자 + 등록일 + 조회수 + 추천수)
                   Row(
                     children: [
-                      const Icon(Icons.person_outline_rounded,
-                          size: 15, color: AppColors.textMuted),
+                      Icon(Icons.person_outline_rounded,
+                          size: 15, color: context.colors.textMuted),
                       const SizedBox(width: 4),
                       Text(
                         post.creator?.username ?? '익명',
                         style: AppTextStyles.bodySm.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
+                          color: context.colors.textPrimary,
                         ),
                       ),
                       const SizedBox(width: 12),
-                      const Icon(Icons.access_time_rounded,
-                          size: 13, color: AppColors.textMuted),
+                      Icon(Icons.access_time_rounded,
+                          size: 13, color: context.colors.textMuted),
                       const SizedBox(width: 4),
                       Text(
                         post.created?.substring(0, 16).replaceAll('T', ' ') ??
                             '',
                         style: AppTextStyles.caption
-                            .copyWith(color: AppColors.textMuted),
+                            .copyWith(color: context.colors.textMuted),
                       ),
                       const Spacer(),
-                      const Icon(Icons.visibility_outlined,
-                          size: 13, color: AppColors.textMuted),
+                      Icon(Icons.visibility_outlined,
+                          size: 13, color: context.colors.textMuted),
                       const SizedBox(width: 3),
                       Text('${post.hit}',
                           style: AppTextStyles.caption
-                              .copyWith(color: AppColors.textMuted)),
+                              .copyWith(color: context.colors.textMuted)),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -416,15 +416,15 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: AppColors.bgSurface,
+                      color: context.colors.bgSurface,
                       borderRadius: BorderRadius.zero,
-                      border: Border.all(color: AppColors.border, width: 0.8),
+                      border: Border.all(color: context.colors.border, width: 0.8),
                     ),
                     child: post.content.isNotEmpty
                         ? HtmlWidget(
                             post.content,
                             textStyle: AppTextStyles.bodyMd.copyWith(
-                              color: AppColors.textPrimary,
+                              color: context.colors.textPrimary,
                               height: 1.5,
                             ),
                             customStylesBuilder: (element) {
@@ -437,7 +437,7 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
                               if (element.localName == 'th' ||
                                   element.localName == 'td') {
                                 return {
-                                  'border': '1px solid #444',
+                                  'border': '1px solid #888',
                                   'padding': '6px 8px',
                                 };
                               }
@@ -453,7 +453,7 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
                         : Text(
                             '본문 내용이 없습니다.',
                             style: AppTextStyles.bodyMd.copyWith(
-                              color: AppColors.textMuted,
+                              color: context.colors.textMuted,
                             ),
                           ),
                   ),
@@ -471,15 +471,15 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
                               : Icons.thumb_up_alt_outlined,
                           size: 16,
                           color: post.myLike
-                              ? AppColors.accentProject
-                              : AppColors.textSecond,
+                              ? context.colors.accentProject
+                              : context.colors.textSecond,
                         ),
                         label: Text(
                           '추천 ${post.like}',
                           style: TextStyle(
                             color: post.myLike
-                                ? AppColors.accentProject
-                                : AppColors.textPrimary,
+                                ? context.colors.accentProject
+                                : context.colors.textPrimary,
                             fontWeight: post.myLike
                                 ? FontWeight.bold
                                 : FontWeight.normal,
@@ -488,8 +488,8 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
                         style: OutlinedButton.styleFrom(
                           side: BorderSide(
                             color: post.myLike
-                                ? AppColors.accentProject
-                                : AppColors.border,
+                                ? context.colors.accentProject
+                                : context.colors.border,
                           ),
                           shape: const RoundedRectangleBorder(
                               borderRadius: BorderRadius.zero),
@@ -504,15 +504,15 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
                               : Icons.thumb_down_alt_outlined,
                           size: 16,
                           color: post.myBlame
-                              ? AppColors.error
-                              : AppColors.textSecond,
+                              ? context.colors.error
+                              : context.colors.textSecond,
                         ),
                         label: Text(
                           '비추천 ${post.blame}',
                           style: TextStyle(
                             color: post.myBlame
-                                ? AppColors.error
-                                : AppColors.textPrimary,
+                                ? context.colors.error
+                                : context.colors.textPrimary,
                             fontWeight: post.myBlame
                                 ? FontWeight.bold
                                 : FontWeight.normal,
@@ -521,8 +521,8 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
                         style: OutlinedButton.styleFrom(
                           side: BorderSide(
                             color: post.myBlame
-                                ? AppColors.error
-                                : AppColors.border,
+                                ? context.colors.error
+                                : context.colors.border,
                           ),
                           shape: const RoundedRectangleBorder(
                               borderRadius: BorderRadius.zero),
@@ -537,7 +537,7 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
                     Text(
                       '첨부파일 (${post.files.length})',
                       style: AppTextStyles.titleSm
-                          .copyWith(color: AppColors.textSecond),
+                          .copyWith(color: context.colors.textPrimary),
                     ),
                     const SizedBox(height: 8),
                     ...post.files.map((file) => Container(
@@ -545,26 +545,26 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 10),
                           decoration: BoxDecoration(
-                            color: AppColors.bgSurface,
+                            color: context.colors.bgSurface,
                             borderRadius: BorderRadius.zero,
                             border:
-                                Border.all(color: AppColors.border, width: 0.8),
+                                Border.all(color: context.colors.border, width: 0.8),
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.attach_file_rounded,
-                                  size: 16, color: AppColors.accentWork),
+                              Icon(Icons.attach_file_rounded,
+                                  size: 16, color: context.colors.accentWork),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
                                   file.fileName,
-                                  style: AppTextStyles.bodySm,
+                                  style: AppTextStyles.bodySm.copyWith(color: context.colors.textPrimary),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.download_rounded,
-                                    size: 18, color: AppColors.accentWork),
+                                icon: Icon(Icons.download_rounded,
+                                    size: 18, color: context.colors.accentWork),
                                 onPressed: _isDownloadingFile
                                     ? null
                                     : () => _downloadAndOpenFile(file),
@@ -587,13 +587,13 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
                         children: [
                           Row(
                             children: [
-                              const Icon(Icons.chat_bubble_outline_rounded,
-                                  size: 16, color: AppColors.accentWork),
+                              Icon(Icons.chat_bubble_outline_rounded,
+                                  size: 16, color: context.colors.accentWork),
                               const SizedBox(width: 6),
                               Text(
                                 '댓글 ($totalCount)',
                                 style: AppTextStyles.titleSm
-                                    .copyWith(color: AppColors.textPrimary),
+                                    .copyWith(color: context.colors.textPrimary),
                               ),
                             ],
                           ),
@@ -606,7 +606,7 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
                               child: Text(
                                 '등록된 댓글이 없습니다. 첫 번째 댓글을 남겨보세요!',
                                 style: AppTextStyles.caption
-                                    .copyWith(color: AppColors.textMuted),
+                                    .copyWith(color: context.colors.textMuted),
                               ),
                             )
                           else
@@ -630,7 +630,7 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
                       padding: const EdgeInsets.all(8.0),
                       child: Text('댓글 로드 실패: $e',
                           style: AppTextStyles.caption
-                              .copyWith(color: AppColors.error)),
+                              .copyWith(color: context.colors.error)),
                     ),
                   ),
                 ],
@@ -640,9 +640,9 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
 
           // ── 3. 하단 댓글 입력 바 ─────────────────────────────────────
           Container(
-            decoration: const BoxDecoration(
-              color: AppColors.bgSurface,
-              border: Border(top: BorderSide(color: AppColors.border, width: 0.8)),
+            decoration: BoxDecoration(
+              color: context.colors.bgSurface,
+              border: Border(top: BorderSide(color: context.colors.border, width: 0.8)),
             ),
             child: SafeArea(
               top: false,
@@ -653,16 +653,16 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
                     Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 6),
-                      color: AppColors.accentWork.withAlpha(25),
+                      color: context.colors.accentWork.withAlpha(25),
                       child: Row(
                         children: [
-                          const Icon(Icons.reply_rounded,
-                              size: 14, color: AppColors.accentWork),
+                          Icon(Icons.reply_rounded,
+                              size: 14, color: context.colors.accentWork),
                           const SizedBox(width: 6),
                           Text(
                             '답글 작성 중...',
                             style: AppTextStyles.caption.copyWith(
-                              color: AppColors.accentWork,
+                              color: context.colors.accentWork,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -670,8 +670,8 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
                           GestureDetector(
                             onTap: () =>
                                 setState(() => _replyParentId = null),
-                            child: const Icon(Icons.close_rounded,
-                                size: 14, color: AppColors.textMuted),
+                            child: Icon(Icons.close_rounded,
+                                size: 14, color: context.colors.textMuted),
                           ),
                         ],
                       ),
@@ -684,28 +684,29 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
                         Expanded(
                           child: TextField(
                             controller: _commentController,
+                            style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
                             decoration: InputDecoration(
                               hintText: _replyParentId != null
                                   ? '답글을 입력해 주세요...'
                                   : '댓글을 입력해 주세요...',
-                              hintStyle: AppTextStyles.bodyMuted,
+                              hintStyle: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted),
                               filled: true,
-                              fillColor: AppColors.bgCard,
+                              fillColor: context.colors.bgCard,
                               isDense: true,
                               contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 12, vertical: 10),
-                              border: const OutlineInputBorder(
+                              border: OutlineInputBorder(
                                 borderRadius: BorderRadius.zero,
-                                borderSide: BorderSide(color: AppColors.border),
+                                borderSide: BorderSide(color: context.colors.border),
                               ),
-                              enabledBorder: const OutlineInputBorder(
+                              enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.zero,
-                                borderSide: BorderSide(color: AppColors.border),
+                                borderSide: BorderSide(color: context.colors.border),
                               ),
-                              focusedBorder: const OutlineInputBorder(
+                              focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.zero,
                                 borderSide:
-                                    BorderSide(color: AppColors.accentWork),
+                                    BorderSide(color: context.colors.accentWork),
                               ),
                             ),
                           ),
@@ -716,7 +717,7 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
                               ? null
                               : _handleAddComment,
                           style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.accentWork,
+                            backgroundColor: context.colors.accentWork,
                             shape: const RoundedRectangleBorder(
                                 borderRadius: BorderRadius.zero),
                             padding: const EdgeInsets.symmetric(
@@ -766,10 +767,10 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: isReply
-                ? AppColors.bgSurface.withAlpha(160)
-                : AppColors.bgSurface,
+                ? context.colors.bgSurface.withAlpha(160)
+                : context.colors.bgSurface,
             borderRadius: BorderRadius.zero,
-            border: Border.all(color: AppColors.border, width: 0.8),
+            border: Border.all(color: context.colors.border, width: 0.8),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -777,21 +778,22 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
               Row(
                 children: [
                   if (isReply) ...[
-                    const Icon(Icons.subdirectory_arrow_right_rounded,
-                        size: 14, color: AppColors.textMuted),
+                    Icon(Icons.subdirectory_arrow_right_rounded,
+                        size: 14, color: context.colors.textMuted),
                     const SizedBox(width: 4),
                   ],
                   Text(
                     c.creator?.username ?? '사용자',
                     style: AppTextStyles.label.copyWith(
                       fontWeight: FontWeight.bold,
+                      color: context.colors.textPrimary,
                     ),
                   ),
                   const SizedBox(width: 8),
                   Text(
                     c.created?.substring(0, 16).replaceAll('T', ' ') ?? '',
                     style: AppTextStyles.caption
-                        .copyWith(color: AppColors.textMuted),
+                        .copyWith(color: context.colors.textMuted),
                   ),
                   const Spacer(),
                   if (!isReply)
@@ -806,8 +808,8 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
                         _replyParentId == c.pk ? '답글취소' : '답글',
                         style: AppTextStyles.caption.copyWith(
                           color: _replyParentId == c.pk
-                              ? AppColors.error
-                              : AppColors.accentWork,
+                              ? context.colors.error
+                              : context.colors.accentWork,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -815,8 +817,8 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
                   if (canDeleteThisComment) ...[
                     const SizedBox(width: 10),
                     IconButton(
-                      icon: const Icon(Icons.close_rounded,
-                          size: 14, color: AppColors.textMuted),
+                      icon: Icon(Icons.close_rounded,
+                          size: 14, color: context.colors.textMuted),
                       onPressed: () => _handleDeleteComment(c.pk),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
@@ -828,7 +830,7 @@ class _PostDetailSheetState extends ConsumerState<PostDetailSheet> {
               Text(
                 c.content,
                 style: AppTextStyles.bodySm
-                    .copyWith(color: AppColors.textPrimary),
+                    .copyWith(color: context.colors.textPrimary),
               ),
             ],
           ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/theme/app_colors_extension.dart';
 import '../../providers/issue_provider.dart';
 
 /// 진척률 슬라이더 바텀 시트
@@ -15,7 +15,7 @@ Future<void> showDoneRatioBottomSheet({
 }) {
   return showModalBottomSheet(
     context: context,
-    backgroundColor: AppColors.bgCard,
+    backgroundColor: context.colors.bgCard,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
     ),
@@ -63,9 +63,9 @@ class _DoneRatioSheetState extends State<_DoneRatioSheet> {
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('진척률 저장에 실패했습니다.'),
-            backgroundColor: AppColors.error,
+          SnackBar(
+            content: const Text('진척률 저장에 실패했습니다.'),
+            backgroundColor: context.colors.error,
           ),
         );
       }
@@ -77,7 +77,7 @@ class _DoneRatioSheetState extends State<_DoneRatioSheet> {
   @override
   Widget build(BuildContext context) {
     final ratio = _ratio.round();
-    final color = ratio == 100 ? AppColors.success : AppColors.accentWork;
+    final color = ratio == 100 ? context.colors.success : context.colors.accentWork;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
@@ -92,16 +92,16 @@ class _DoneRatioSheetState extends State<_DoneRatioSheet> {
               height: 4,
               margin: const EdgeInsets.only(bottom: 20),
               decoration: BoxDecoration(
-                color: AppColors.border,
+                color: context.colors.border,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
           ),
 
-          Text('진척률 수정', style: AppTextStyles.h3),
+          Text('진척률 수정', style: AppTextStyles.h3.copyWith(color: context.colors.textPrimary)),
           const SizedBox(height: 4),
           Text('#${widget.issueId} 업무의 진행률을 설정합니다.',
-              style: AppTextStyles.bodyMuted),
+              style: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted)),
           const SizedBox(height: 24),
 
           // 현재 진척률 표시
@@ -119,7 +119,7 @@ class _DoneRatioSheetState extends State<_DoneRatioSheet> {
             child: LinearProgressIndicator(
               value: _ratio / 100.0,
               minHeight: 8,
-              backgroundColor: AppColors.bgSurface,
+              backgroundColor: context.colors.bgSurface,
               valueColor: AlwaysStoppedAnimation<Color>(color),
             ),
           ),
@@ -130,7 +130,7 @@ class _DoneRatioSheetState extends State<_DoneRatioSheet> {
             data: SliderThemeData(
               activeTrackColor: color,
               thumbColor: color,
-              inactiveTrackColor: AppColors.bgSurface,
+              inactiveTrackColor: context.colors.bgSurface,
               overlayColor: color.withAlpha(30),
               trackHeight: 4,
               thumbShape:
@@ -149,7 +149,7 @@ class _DoneRatioSheetState extends State<_DoneRatioSheet> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: ['0%', '50%', '100%']
-                .map((l) => Text(l, style: AppTextStyles.caption))
+                .map((l) => Text(l, style: AppTextStyles.caption.copyWith(color: context.colors.textMuted)))
                 .toList(),
           ),
           const SizedBox(height: 24),

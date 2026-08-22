@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/models/common_models.dart';
 import '../../../core/providers/project_provider.dart';
+import '../../../core/theme/app_colors_extension.dart';
 import '../data/meeting_repository.dart';
 import '../data/models/meeting_model.dart';
 import '../providers/meeting_provider.dart';
@@ -130,7 +130,10 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
 
     if (widget.initialMeeting == null && _selectedProjectPk == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('프로젝트를 먼저 선택해 주세요.')),
+        SnackBar(
+          content: const Text('프로젝트를 먼저 선택해 주세요.'),
+          backgroundColor: context.colors.error,
+        ),
       );
       return;
     }
@@ -171,7 +174,7 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
             content: Text(widget.initialMeeting != null
                 ? '회의록이 수정되었습니다.'
                 : '새 회의록이 등록되었습니다.'),
-            backgroundColor: AppColors.success,
+            backgroundColor: context.colors.success,
           ),
         );
         context.pop();
@@ -181,7 +184,7 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('저장 실패: $e'),
-            backgroundColor: AppColors.error,
+            backgroundColor: context.colors.error,
           ),
         );
       }
@@ -196,25 +199,25 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
     final projectsAsync = ref.watch(meetingFormProjectsProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.bgPrimary,
+      backgroundColor: context.colors.bgPrimary,
       appBar: AppBar(
-        backgroundColor: AppColors.bgPrimary,
-        foregroundColor: AppColors.textPrimary,
+        backgroundColor: context.colors.bgPrimary,
+        foregroundColor: context.colors.textPrimary,
         title:
-            Text(isEdit ? '회의록 수정' : '새 회의록 작성', style: AppTextStyles.titleMd),
+            Text(isEdit ? '회의록 수정' : '새 회의록 작성', style: AppTextStyles.titleMd.copyWith(color: context.colors.textPrimary)),
         actions: [
           TextButton(
             onPressed: _isSaving ? null : _submit,
             child: _isSaving
-                ? const SizedBox(
+                ? SizedBox(
                     width: 18,
                     height: 18,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: AppColors.accentWork),
+                        strokeWidth: 2, color: context.colors.accentWork),
                   )
                 : Text('저장',
                     style: AppTextStyles.titleSm
-                        .copyWith(color: AppColors.accentWork)),
+                        .copyWith(color: context.colors.accentWork)),
           ),
         ],
       ),
@@ -230,17 +233,17 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
 
               // 프로젝트 선택 (신규 등록 시)
               if (!isEdit) ...[
-                Text('워크스페이스 (프로젝트) *', style: AppTextStyles.titleSm),
+                Text('워크스페이스 (프로젝트) *', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
                 const SizedBox(height: 6),
                 projectsAsync.when(
-                  loading: () => const SizedBox(
+                  loading: () => SizedBox(
                     height: 48,
                     child: Center(
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: AppColors.accentWork)),
+                            strokeWidth: 2, color: context.colors.accentWork)),
                   ),
                   error: (e, _) => Text('프로젝트 목록을 불러올 수 없습니다.',
-                      style: AppTextStyles.bodyMuted),
+                      style: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted)),
                   data: (projects) {
                     final validProjectPk = (_selectedProjectPk != null &&
                             projects.any((p) => p.pk == _selectedProjectPk))
@@ -250,8 +253,8 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                     return DropdownButtonFormField<int>(
                       value: validProjectPk,
                       isExpanded: true,
-                      style: AppTextStyles.bodyMd,
-                      dropdownColor: AppColors.bgCard,
+                      style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
+                      dropdownColor: context.colors.bgCard,
                       decoration: _inputDecoration('프로젝트 선택'),
                       items: projects
                           .map((p) => DropdownMenuItem(
@@ -275,11 +278,11 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
               ],
 
               // 회의 제목
-              Text('회의 제목 *', style: AppTextStyles.titleSm),
+              Text('회의 제목 *', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
               const SizedBox(height: 6),
               TextFormField(
                 controller: _titleController,
-                style: AppTextStyles.bodyMd,
+                style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
                 validator: (v) =>
                     (v == null || v.trim().isEmpty) ? '제목을 입력해 주세요.' : null,
                 decoration: _inputDecoration('회의 제목을 입력하세요'),
@@ -293,17 +296,17 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('회의 일시', style: AppTextStyles.titleSm),
+                        Text('회의 일시', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
                         const SizedBox(height: 6),
                         TextField(
                           controller: _meetingDateController,
                           readOnly: true,
-                          style: AppTextStyles.bodyMd,
+                          style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
                           decoration:
                               _inputDecoration('YYYY-MM-DD HH:mm').copyWith(
                             suffixIcon: IconButton(
-                              icon: const Icon(Icons.access_time_rounded,
-                                  size: 18),
+                              icon: Icon(Icons.access_time_rounded,
+                                  size: 18, color: context.colors.textMuted),
                               onPressed: _selectDateTime,
                             ),
                           ),
@@ -316,13 +319,13 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('진행 상태', style: AppTextStyles.titleSm),
+                        Text('진행 상태', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
                         const SizedBox(height: 6),
                         DropdownButtonFormField<String>(
                           value: _status,
                           isExpanded: true,
-                          style: AppTextStyles.bodyMd,
-                          dropdownColor: AppColors.bgCard,
+                          style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
+                          dropdownColor: context.colors.bgCard,
                           decoration: _inputDecoration(''),
                           items: const [
                             DropdownMenuItem(value: '1', child: Text('준비')),
@@ -339,7 +342,7 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
               const SizedBox(height: 14),
 
               // 카테고리 (100% 전체 폭)
-              Text('카테고리', style: AppTextStyles.titleSm),
+              Text('카테고리', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
               const SizedBox(height: 6),
               ref.watch(meetingCategoriesProvider(_selectedProjectPk)).when(
                     data: (categories) {
@@ -351,8 +354,8 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                       return DropdownButtonFormField<int?>(
                         value: validCategoryPk,
                         isExpanded: true,
-                        style: AppTextStyles.bodyMd,
-                        dropdownColor: AppColors.bgCard,
+                        style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
+                        dropdownColor: context.colors.bgCard,
                         decoration: _inputDecoration('카테고리 선택'),
                         items: [
                           const DropdownMenuItem<int?>(
@@ -397,19 +400,19 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                         children: [
                           Row(
                             children: [
-                              Text('참석자 (사내 멤버)', style: AppTextStyles.titleSm),
+                              Text('참석자 (사내 멤버)', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
                               if (_selectedAttendeePks.isNotEmpty) ...[
                                 const SizedBox(width: 6),
                                 Container(
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 6, vertical: 1),
                                   decoration: BoxDecoration(
-                                    color: AppColors.accentWork.withAlpha(40),
+                                    color: context.colors.accentWork.withAlpha(40),
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: Text('${_selectedAttendeePks.length}',
                                       style: AppTextStyles.label.copyWith(
-                                          color: AppColors.accentWork)),
+                                          color: context.colors.accentWork)),
                                 ),
                               ],
                             ],
@@ -424,17 +427,17 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 12, vertical: 10),
                               decoration: BoxDecoration(
-                                color: AppColors.bgCard,
+                                color: context.colors.bgCard,
                                 borderRadius: BorderRadius.circular(6),
                                 border: Border.all(
-                                    color: AppColors.border, width: 0.8),
+                                    color: context.colors.border, width: 0.8),
                               ),
                               child: Row(
                                 children: [
                                   Expanded(
                                     child: selectedUsers.isEmpty
                                         ? Text('참석자를 선택하세요 (검색 가능)',
-                                            style: AppTextStyles.bodyMuted)
+                                            style: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted))
                                         : Wrap(
                                             spacing: 6,
                                             runSpacing: 4,
@@ -446,11 +449,11 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                                                             horizontal: 8,
                                                             vertical: 3),
                                                     decoration: BoxDecoration(
-                                                      color: AppColors
+                                                      color: context.colors
                                                           .accentWork
                                                           .withAlpha(30),
                                                       border: Border.all(
-                                                        color: AppColors
+                                                        color: context.colors
                                                             .accentWork
                                                             .withAlpha(100),
                                                         width: 0.8,
@@ -464,7 +467,7 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                                                       style: AppTextStyles.label
                                                           .copyWith(
                                                         color:
-                                                            AppColors.accentWork,
+                                                            context.colors.accentWork,
                                                       ),
                                                     ),
                                                   ),
@@ -473,8 +476,8 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                                           ),
                                   ),
                                   const SizedBox(width: 8),
-                                  const Icon(Icons.people_alt_outlined,
-                                      size: 20, color: AppColors.textMuted),
+                                  Icon(Icons.people_alt_outlined,
+                                      size: 20, color: context.colors.textMuted),
                                 ],
                               ),
                             ),
@@ -488,11 +491,11 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                   ),
 
               // 기타 참석자 (외부인)
-              Text('기타 참석자 (외부인/기관)', style: AppTextStyles.titleSm),
+              Text('기타 참석자 (외부인/기관)', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
               const SizedBox(height: 6),
               TextFormField(
                 controller: _otherAttendeesController,
-                style: AppTextStyles.bodyMd,
+                style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
                 decoration: _inputDecoration(
                     '예: 시공사 김소장, 감리단 박팀장 (쉼표 구분)'),
               ),
@@ -502,45 +505,45 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
               _buildSectionHeader('회의 기록', Icons.edit_note_rounded),
 
               // 회의 의제
-              Text('회의 의제 (Agenda)', style: AppTextStyles.titleSm),
+              Text('회의 의제 (Agenda)', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
               const SizedBox(height: 6),
               TextFormField(
                 controller: _agendaController,
                 maxLines: 3,
-                style: AppTextStyles.bodyMd,
+                style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
                 decoration: _inputDecoration('회의 안건 및 의제를 입력하세요'),
               ),
               const SizedBox(height: 14),
 
               // 회의 내용
-              Text('회의 내용 (Content)', style: AppTextStyles.titleSm),
+              Text('회의 내용 (Content)', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
               const SizedBox(height: 6),
               TextFormField(
                 controller: _contentController,
                 maxLines: 5,
-                style: AppTextStyles.bodyMd,
+                style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
                 decoration: _inputDecoration('논의된 회의 상세 내용을 입력하세요'),
               ),
               const SizedBox(height: 14),
 
               // 주요 결정 사항
-              Text('주요 결정 사항 (Decisions)', style: AppTextStyles.titleSm),
+              Text('주요 결정 사항 (Decisions)', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
               const SizedBox(height: 6),
               TextFormField(
                 controller: _decisionsController,
                 maxLines: 3,
-                style: AppTextStyles.bodyMd,
+                style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
                 decoration: _inputDecoration('회의에서 결정된 최종 사항을 입력하세요'),
               ),
               const SizedBox(height: 14),
 
               // 후속 조치 사항
-              Text('후속 조치 사항 (Action Items)', style: AppTextStyles.titleSm),
+              Text('후속 조치 사항 (Action Items)', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
               const SizedBox(height: 6),
               TextFormField(
                 controller: _actionItemsController,
                 maxLines: 3,
-                style: AppTextStyles.bodyMd,
+                style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
                 decoration: _inputDecoration('회의 후 진행할 액션 아이템을 입력하세요'),
               ),
               const SizedBox(height: 32),
@@ -556,18 +559,18 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
       padding: const EdgeInsets.only(top: 6, bottom: 14),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: AppColors.accentWork),
+          Icon(icon, size: 18, color: context.colors.accentWork),
           const SizedBox(width: 8),
           Text(
             title,
             style: AppTextStyles.titleSm.copyWith(
               fontWeight: FontWeight.bold,
-              color: AppColors.accentWork,
+              color: context.colors.accentWork,
             ),
           ),
           const SizedBox(width: 10),
-          const Expanded(
-            child: Divider(height: 1, color: AppColors.border),
+          Expanded(
+            child: Divider(height: 1, color: context.colors.border),
           ),
         ],
       ),
@@ -581,7 +584,7 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.bgCard,
+      backgroundColor: context.colors.bgCard,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -611,7 +614,7 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                         width: 36,
                         height: 4,
                         decoration: BoxDecoration(
-                          color: AppColors.textDisabled.withAlpha(80),
+                          color: context.colors.textDisabled.withAlpha(80),
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -621,16 +624,16 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                       child: Row(
                         children: [
-                          Text('참석자 선택', style: AppTextStyles.titleMd),
+                          Text('참석자 선택', style: AppTextStyles.titleMd.copyWith(color: context.colors.textPrimary)),
                           const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                             decoration: BoxDecoration(
-                              color: AppColors.accentWork.withAlpha(40),
+                              color: context.colors.accentWork.withAlpha(40),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Text('${tempSelected.length}명',
-                                style: AppTextStyles.label.copyWith(color: AppColors.accentWork)),
+                                style: AppTextStyles.label.copyWith(color: context.colors.accentWork)),
                           ),
                           const Spacer(),
                           if (tempSelected.isNotEmpty)
@@ -638,11 +641,11 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                               onPressed: () {
                                 setModalState(() => tempSelected.clear());
                               },
-                              child: Text('전체 해제', style: AppTextStyles.caption.copyWith(color: AppColors.accentApproval)),
+                              child: Text('전체 해제', style: AppTextStyles.caption.copyWith(color: context.colors.accentApproval)),
                             ),
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.accentWork,
+                              backgroundColor: context.colors.accentWork,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                             ),
@@ -656,21 +659,21 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       child: TextField(
-                        style: AppTextStyles.bodyMd,
+                        style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
                         decoration: InputDecoration(
                           hintText: '이름 또는 이메일 검색',
-                          hintStyle: AppTextStyles.bodyMuted,
-                          prefixIcon: const Icon(Icons.search, size: 20, color: AppColors.textMuted),
+                          hintStyle: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted),
+                          prefixIcon: Icon(Icons.search, size: 20, color: context.colors.textMuted),
                           filled: true,
-                          fillColor: AppColors.bgPrimary,
+                          fillColor: context.colors.bgPrimary,
                           contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: AppColors.border, width: 0.8),
+                            borderSide: BorderSide(color: context.colors.border, width: 0.8),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: AppColors.border, width: 0.8),
+                            borderSide: BorderSide(color: context.colors.border, width: 0.8),
                           ),
                         ),
                         onChanged: (v) {
@@ -678,23 +681,23 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                         },
                       ),
                     ),
-                    const Divider(height: 1, color: AppColors.border),
+                    Divider(height: 1, color: context.colors.border),
                     // 멤버 목록
                     Expanded(
                       child: filteredMembers.isEmpty
                           ? Center(
                               child: Text(
                                 '검색 결과가 없습니다.',
-                                style: AppTextStyles.bodyMuted,
+                                style: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted),
                               ),
                             )
                           : ListView.separated(
                               controller: scrollController,
                               padding: const EdgeInsets.symmetric(vertical: 6),
                               itemCount: filteredMembers.length,
-                              separatorBuilder: (_, __) => const Divider(
+                              separatorBuilder: (_, __) => Divider(
                                 height: 1,
-                                color: Color(0xFF2E334D),
+                                color: context.colors.borderSubtle,
                                 indent: 56,
                               ),
                               itemBuilder: (context, idx) {
@@ -703,21 +706,21 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
 
                                 return CheckboxListTile(
                                   value: isSelected,
-                                  activeColor: AppColors.accentWork,
+                                  activeColor: context.colors.accentWork,
                                   checkColor: Colors.white,
-                                  title: Text(user.username, style: AppTextStyles.bodyMd),
+                                  title: Text(user.username, style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary)),
                                   subtitle: user.email != null && user.email!.isNotEmpty
-                                      ? Text(user.email!, style: AppTextStyles.caption.copyWith(color: AppColors.textMuted))
+                                      ? Text(user.email!, style: AppTextStyles.caption.copyWith(color: context.colors.textMuted))
                                       : null,
                                   secondary: CircleAvatar(
                                     radius: 16,
                                     backgroundColor: isSelected
-                                        ? AppColors.accentWork.withAlpha(40)
-                                        : AppColors.bgPrimary,
+                                        ? context.colors.accentWork.withAlpha(40)
+                                        : context.colors.bgSurface,
                                     child: Text(
                                       user.username.isNotEmpty ? user.username.substring(0, 1) : '?',
                                       style: TextStyle(
-                                        color: isSelected ? AppColors.accentWork : AppColors.textMuted,
+                                        color: isSelected ? context.colors.accentWork : context.colors.textMuted,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 12,
                                       ),
@@ -753,21 +756,21 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
   InputDecoration _inputDecoration(String hint) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: AppTextStyles.bodyMuted,
+      hintStyle: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted),
       filled: true,
-      fillColor: AppColors.bgCard,
+      fillColor: context.colors.bgCard,
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(6),
-        borderSide: const BorderSide(color: AppColors.border, width: 0.8),
+        borderSide: BorderSide(color: context.colors.border, width: 0.8),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(6),
-        borderSide: const BorderSide(color: AppColors.border, width: 0.8),
+        borderSide: BorderSide(color: context.colors.border, width: 0.8),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(6),
-        borderSide: const BorderSide(color: AppColors.accentWork, width: 1.5),
+        borderSide: BorderSide(color: context.colors.accentWork, width: 1.5),
       ),
     );
   }

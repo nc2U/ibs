@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/constants/permissions.dart';
 import '../../../../core/providers/permission_provider.dart';
+import '../../../../core/theme/app_colors_extension.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/loading_shimmer.dart';
 import '../../project/providers/project_provider.dart';
@@ -25,18 +25,18 @@ class MeetingDetailScreen extends ConsumerWidget {
     final detailState = ref.watch(meetingDetailProvider(meetingId));
 
     return Scaffold(
-      backgroundColor: AppColors.bgPrimary,
+      backgroundColor: context.colors.bgPrimary,
       appBar: AppBar(
-        backgroundColor: AppColors.bgPrimary,
-        foregroundColor: AppColors.textPrimary,
+        backgroundColor: context.colors.bgPrimary,
+        foregroundColor: context.colors.textPrimary,
         elevation: 0,
         title: detailState.maybeWhen(
           data: (meeting) => Text(
             meeting.title,
-            style: AppTextStyles.titleMd,
+            style: AppTextStyles.titleMd.copyWith(color: context.colors.textPrimary),
             overflow: TextOverflow.ellipsis,
           ),
-          orElse: () => Text('회의 상세', style: AppTextStyles.titleMd),
+          orElse: () => Text('회의 상세', style: AppTextStyles.titleMd.copyWith(color: context.colors.textPrimary)),
         ),
         actions: [
           detailState.maybeWhen(
@@ -59,10 +59,10 @@ class MeetingDetailScreen extends ConsumerWidget {
                             : Icons.check_circle_outline_rounded,
                         size: 22,
                         color: meeting.isConfirmed
-                            ? AppColors.accentProject
+                            ? context.colors.accentProject
                             : (meeting.status == '2'
-                                ? AppColors.textPrimary
-                                : AppColors.textDisabled),
+                                ? context.colors.textPrimary
+                                : context.colors.textDisabled),
                       ),
                       tooltip: meeting.isConfirmed ? '확정 취소' : '회의 확정',
                       onPressed: () => _handleConfirmToggle(context, ref, meeting),
@@ -141,25 +141,25 @@ class MeetingDetailScreen extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.bgCard,
+        backgroundColor: context.colors.bgCard,
         shape: const RoundedRectangleBorder(),
-        title: Text('회의 $actionText', style: AppTextStyles.titleMd),
+        title: Text('회의 $actionText', style: AppTextStyles.titleMd.copyWith(color: context.colors.textPrimary)),
         content: Text(
           willConfirm
               ? '이 회의를 확정하시겠습니까?\n확정 시 참석자들에게 확정 알림이 전송됩니다.'
               : '이 회의의 확정을 취소하시겠습니까?',
-          style: AppTextStyles.bodyMd,
+          style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('취소', style: AppTextStyles.bodyMuted),
+            child: Text('취소', style: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: willConfirm
-                  ? AppColors.accentProject
-                  : AppColors.accentApproval,
+                  ? context.colors.accentProject
+                  : context.colors.accentApproval,
               shape: const RoundedRectangleBorder(),
             ),
             onPressed: () => Navigator.pop(ctx, true),
@@ -181,6 +181,7 @@ class MeetingDetailScreen extends ConsumerWidget {
               content: Text(result
                   ? '회의가 확정되었습니다.'
                   : '회의 확정이 취소되었습니다.'),
+              backgroundColor: context.colors.success,
               duration: const Duration(seconds: 2),
             ),
           );
@@ -190,7 +191,7 @@ class MeetingDetailScreen extends ConsumerWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('처리 중 오류가 발생했습니다: $e'),
-              backgroundColor: AppColors.accentApproval,
+              backgroundColor: context.colors.error,
             ),
           );
         }
@@ -203,21 +204,21 @@ class MeetingDetailScreen extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.bgCard,
+        backgroundColor: context.colors.bgCard,
         shape: const RoundedRectangleBorder(),
-        title: Text('회의 삭제', style: AppTextStyles.titleMd),
+        title: Text('회의 삭제', style: AppTextStyles.titleMd.copyWith(color: context.colors.textPrimary)),
         content: Text(
           '정말로 이 회의록을 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.',
-          style: AppTextStyles.bodyMd,
+          style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('취소', style: AppTextStyles.bodyMuted),
+            child: Text('취소', style: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.accentApproval,
+              backgroundColor: context.colors.error,
               shape: const RoundedRectangleBorder(),
             ),
             onPressed: () => Navigator.pop(ctx, true),
@@ -236,9 +237,10 @@ class MeetingDetailScreen extends ConsumerWidget {
 
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('회의록이 삭제되었습니다.'),
-              duration: Duration(seconds: 2),
+            SnackBar(
+              content: const Text('회의록이 삭제되었습니다.'),
+              backgroundColor: context.colors.success,
+              duration: const Duration(seconds: 2),
             ),
           );
           context.pop();
@@ -248,7 +250,7 @@ class MeetingDetailScreen extends ConsumerWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('삭제 실패: $e'),
-              backgroundColor: AppColors.accentApproval,
+              backgroundColor: context.colors.error,
             ),
           );
         }
@@ -274,20 +276,20 @@ class MeetingDetailScreen extends ConsumerWidget {
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: AppColors.warning.withAlpha(25),
+                color: context.colors.warning.withAlpha(25),
                 border: Border.all(
-                    color: AppColors.warning.withAlpha(80), width: 0.8),
+                    color: context.colors.warning.withAlpha(80), width: 0.8),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.lock_clock_outlined,
-                      size: 16, color: AppColors.warning),
+                  Icon(Icons.lock_clock_outlined,
+                      size: 16, color: context.colors.warning),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       '닫힌 워크스페이스입니다. 모든 데이터는 읽기 전용으로 제공됩니다.',
-                      style: AppTextStyles.caption.copyWith(color: AppColors.warning),
+                      style: AppTextStyles.caption.copyWith(color: context.colors.warning),
                     ),
                   ),
                 ],
@@ -320,7 +322,7 @@ class MeetingDetailScreen extends ConsumerWidget {
             const _SectionLabel(label: '주요 결정 사항'),
             _TextCard(
               content: meeting.decisions,
-              borderColor: AppColors.accentProject,
+              borderColor: context.colors.accentProject,
             ),
             const SizedBox(height: 12),
           ],
@@ -330,7 +332,7 @@ class MeetingDetailScreen extends ConsumerWidget {
             const _SectionLabel(label: '후속 조치 사항'),
             _TextCard(
               content: meeting.actionItems,
-              borderColor: AppColors.accentApproval,
+              borderColor: context.colors.accentApproval,
             ),
             const SizedBox(height: 12),
           ],
@@ -373,13 +375,13 @@ class MeetingDetailScreen extends ConsumerWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.add,
-                              size: 14, color: AppColors.accentWork),
+                          Icon(Icons.add,
+                              size: 14, color: context.colors.accentWork),
                           const SizedBox(width: 2),
                           Text(
                             '관련 업무 추가',
                             style: AppTextStyles.label
-                                .copyWith(color: AppColors.accentWork),
+                                .copyWith(color: context.colors.accentWork),
                           ),
                         ],
                       ),
@@ -399,12 +401,12 @@ class MeetingDetailScreen extends ConsumerWidget {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
               decoration: BoxDecoration(
-                color: AppColors.bgCard.withAlpha(50),
-                border: Border.all(color: AppColors.border.withAlpha(50), width: 0.8),
+                color: context.colors.bgCard.withAlpha(50),
+                border: Border.all(color: context.colors.border.withAlpha(50), width: 0.8),
               ),
               child: Text(
                 '연결된 관련 업무가 없습니다.',
-                style: AppTextStyles.caption.copyWith(color: AppColors.textDisabled),
+                style: AppTextStyles.caption.copyWith(color: context.colors.textDisabled),
               ),
             ),
           const SizedBox(height: 30),
@@ -440,8 +442,8 @@ class _InfoCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.bgCard,
-        border: Border.all(color: AppColors.border, width: 0.8),
+        color: context.colors.bgCard,
+        border: Border.all(color: context.colors.border, width: 0.8),
       ),
       child: Column(
         children: [
@@ -457,28 +459,28 @@ class _InfoCard extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 5),
             child: Row(
               children: [
-                const Icon(Icons.flag_outlined, size: 16, color: AppColors.textMuted),
+                Icon(Icons.flag_outlined, size: 16, color: context.colors.textMuted),
                 const SizedBox(width: 8),
                 SizedBox(
                   width: 110,
-                  child: Text('상태', style: AppTextStyles.bodyMuted),
+                  child: Text('상태', style: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted)),
                 ),
                 Text(
                   meeting.statusDisplay,
-                  style: AppTextStyles.bodyMd,
+                  style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
                 ),
                 if (meeting.isConfirmed) ...[
                   const SizedBox(width: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
                     decoration: BoxDecoration(
-                      color: AppColors.accentProject.withAlpha(30),
-                      border: Border.all(color: AppColors.accentProject.withAlpha(80)),
+                      color: context.colors.accentProject.withAlpha(30),
+                      border: Border.all(color: context.colors.accentProject.withAlpha(80)),
                       borderRadius: BorderRadius.circular(3),
                     ),
                     child: Text(
                       '확정됨',
-                      style: AppTextStyles.label.copyWith(color: AppColors.accentProject),
+                      style: AppTextStyles.label.copyWith(color: context.colors.accentProject),
                     ),
                   ),
                 ],
@@ -496,7 +498,7 @@ class _InfoCard extends StatelessWidget {
                 value: attendeesText,
                 icon: Icons.people_outline_rounded),
           const SizedBox(height: 10),
-          const Divider(height: 1, color: AppColors.border),
+          Divider(height: 1, color: context.colors.border),
           const SizedBox(height: 10),
           SizedBox(
             width: double.infinity,
@@ -506,8 +508,8 @@ class _InfoCard extends StatelessWidget {
                   size: 16, color: Color(0xFFEF5350)),
               label: const Text('회의록 PDF 보기 / 출력'),
               style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.textPrimary,
-                side: const BorderSide(color: AppColors.border),
+                foregroundColor: context.colors.textPrimary,
+                side: BorderSide(color: context.colors.border),
                 shape: const RoundedRectangleBorder(
                     borderRadius: BorderRadius.zero),
                 padding: const EdgeInsets.symmetric(vertical: 10),
@@ -532,20 +534,20 @@ class _Row extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: AppColors.textMuted),
+          Icon(icon, size: 16, color: context.colors.textMuted),
           const SizedBox(width: 8),
           SizedBox(
             width: 110,
             child: Text(
               label,
-              style: AppTextStyles.bodyMuted,
+              style: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted),
               maxLines: 1,
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: AppTextStyles.bodyMd,
+              style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -567,13 +569,13 @@ class _TextCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.bgCard,
+        color: context.colors.bgCard,
         border: Border.all(
-          color: borderColor ?? AppColors.border,
+          color: borderColor ?? context.colors.border,
           width: borderColor != null ? 1.2 : 0.8,
         ),
       ),
-      child: Text(content, style: AppTextStyles.bodyMd),
+      child: Text(content, style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary)),
     );
   }
 }
@@ -593,18 +595,18 @@ class _SectionLabel extends StatelessWidget {
         children: [
           Text(label,
               style:
-                  AppTextStyles.titleSm.copyWith(color: AppColors.textMuted)),
+                  AppTextStyles.titleSm.copyWith(color: context.colors.textMuted)),
           if (count != null) ...[
             const SizedBox(width: 6),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
               decoration: BoxDecoration(
-                color: AppColors.accentWork.withAlpha(40),
+                color: context.colors.accentWork.withAlpha(40),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text('$count',
                   style: AppTextStyles.label
-                      .copyWith(color: AppColors.accentWork)),
+                      .copyWith(color: context.colors.accentWork)),
             ),
           ],
           if (action != null) ...[
@@ -629,31 +631,31 @@ class _MeetingIssueTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: AppColors.bgCard,
-          border: Border.all(color: AppColors.border, width: 0.8),
+          color: context.colors.bgCard,
+          border: Border.all(color: context.colors.border, width: 0.8),
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: AppColors.accentWork.withAlpha(30),
+                color: context.colors.accentWork.withAlpha(30),
                 borderRadius: BorderRadius.circular(3),
               ),
               child: Text(issue.status,
                   style: AppTextStyles.label
-                      .copyWith(color: AppColors.accentWork)),
+                      .copyWith(color: context.colors.accentWork)),
             ),
             const SizedBox(width: 8),
             Expanded(
               child: Text('#${issue.pk} ${issue.subject}',
-                  style: AppTextStyles.bodyMd,
+                  style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
                   overflow: TextOverflow.ellipsis),
             ),
             if (issue.assignedTo != null) ...[
               const SizedBox(width: 6),
               Text(issue.assignedTo!.username,
-                  style: AppTextStyles.caption),
+                  style: AppTextStyles.caption.copyWith(color: context.colors.textMuted)),
             ],
           ],
         ),
@@ -679,21 +681,21 @@ class _MeetingFileTile extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
-            color: AppColors.bgCard,
-            border: Border.all(color: AppColors.border, width: 0.8),
+            color: context.colors.bgCard,
+            border: Border.all(color: context.colors.border, width: 0.8),
           ),
           child: Row(
             children: [
-              const Icon(Icons.attach_file_rounded,
-                  size: 18, color: AppColors.accentWork),
+              Icon(Icons.attach_file_rounded,
+                  size: 18, color: context.colors.accentWork),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(file.fileName,
-                    style: AppTextStyles.bodyMd,
+                    style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
                     overflow: TextOverflow.ellipsis),
               ),
-              const Icon(Icons.open_in_new_rounded,
-                  size: 16, color: AppColors.textMuted),
+              Icon(Icons.open_in_new_rounded,
+                  size: 16, color: context.colors.textMuted),
             ],
           ),
         ),
@@ -719,21 +721,21 @@ class _MeetingLinkTile extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
-            color: AppColors.bgCard,
-            border: Border.all(color: AppColors.border, width: 0.8),
+            color: context.colors.bgCard,
+            border: Border.all(color: context.colors.border, width: 0.8),
           ),
           child: Row(
             children: [
-              const Icon(Icons.link_rounded,
-                  size: 18, color: AppColors.accentWork),
+              Icon(Icons.link_rounded,
+                  size: 18, color: context.colors.accentWork),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(link.name.isNotEmpty ? link.name : link.link,
-                    style: AppTextStyles.bodyMd,
+                    style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
                     overflow: TextOverflow.ellipsis),
               ),
-              const Icon(Icons.open_in_new_rounded,
-                  size: 16, color: AppColors.textMuted),
+              Icon(Icons.open_in_new_rounded,
+                  size: 16, color: context.colors.textMuted),
             ],
           ),
         ),

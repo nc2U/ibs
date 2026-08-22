@@ -3,12 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
-import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/constants/permissions.dart';
 import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/dio_provider.dart';
 import '../../../../core/providers/permission_provider.dart';
+import '../../../../core/theme/app_colors_extension.dart';
 import '../../data/models/notice_model.dart';
 import '../../data/notice_repository.dart';
 import '../../providers/notice_provider.dart';
@@ -35,26 +35,26 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
     super.dispose();
   }
 
-  Future<void> _handleDelete(BuildContext context) async {
+  Future<void> _handleDelete() async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.bgCard,
+        backgroundColor: context.colors.bgCard,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-        title: Text('공지사항 삭제', style: AppTextStyles.titleLg),
+        title: Text('공지사항 삭제', style: AppTextStyles.titleLg.copyWith(color: context.colors.textPrimary)),
         content: Text(
           '\'${widget.notice.title}\' 공지사항을 삭제하시겠습니까?',
-          style: AppTextStyles.bodySecond,
+          style: AppTextStyles.bodySecond.copyWith(color: context.colors.textPrimary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('취소', style: AppTextStyles.bodyMuted),
+            child: Text('취소', style: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted)),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: FilledButton.styleFrom(
-              backgroundColor: AppColors.error,
+              backgroundColor: context.colors.error,
               shape:
                   const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
             ),
@@ -81,7 +81,7 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('삭제 실패: $e'),
-            backgroundColor: AppColors.error,
+            backgroundColor: context.colors.error,
           ),
         );
       }
@@ -105,7 +105,7 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('댓글 등록 실패: $e'),
-            backgroundColor: AppColors.error,
+            backgroundColor: context.colors.error,
           ),
         );
       }
@@ -125,7 +125,7 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('댓글 삭제 실패: $e'),
-            backgroundColor: AppColors.error,
+            backgroundColor: context.colors.error,
           ),
         );
       }
@@ -146,7 +146,7 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('파일 열기 실패: $e'),
-            backgroundColor: AppColors.error,
+            backgroundColor: context.colors.error,
           ),
         );
       }
@@ -170,8 +170,8 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.88,
       ),
-      decoration: const BoxDecoration(
-        color: AppColors.bgCard,
+      decoration: BoxDecoration(
+        color: context.colors.bgCard,
         borderRadius: BorderRadius.zero,
       ),
       child: Column(
@@ -179,8 +179,8 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
           // ── 상단 드래그 핸들 & 액션 바 ─────────────────────────────────
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: AppColors.border, width: 0.8)),
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: context.colors.border, width: 0.8)),
             ),
             child: Row(
               children: [
@@ -218,15 +218,15 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: AppColors.accentWork.withAlpha(20),
+                      color: context.colors.accentWork.withAlpha(20),
                       borderRadius: BorderRadius.zero,
                       border:
-                          Border.all(color: AppColors.accentWork, width: 0.8),
+                          Border.all(color: context.colors.accentWork, width: 0.8),
                     ),
                     child: Text(
                       notice.project!.name,
                       style: AppTextStyles.caption.copyWith(
-                        color: AppColors.accentWork,
+                        color: context.colors.accentWork,
                       ),
                     ),
                   ),
@@ -235,7 +235,7 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
                 if (canManage) ...[
                   IconButton(
                     icon: const Icon(Icons.edit_outlined, size: 20),
-                    color: AppColors.textSecond,
+                    color: context.colors.textSecond,
                     onPressed: () {
                       Navigator.pop(context);
                       showModalBottomSheet(
@@ -248,13 +248,13 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
                   ),
                   IconButton(
                     icon: const Icon(Icons.delete_outline_rounded, size: 20),
-                    color: AppColors.error,
-                    onPressed: () => _handleDelete(context),
+                    color: context.colors.error,
+                    onPressed: () => _handleDelete(),
                   ),
                 ],
                 IconButton(
                   icon: const Icon(Icons.close_rounded, size: 20),
-                  color: AppColors.textPrimary,
+                  color: context.colors.textPrimary,
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
@@ -269,29 +269,29 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // 1. 공지 제목
-                  Text(notice.title, style: AppTextStyles.titleLg),
+                  Text(notice.title, style: AppTextStyles.titleLg.copyWith(color: context.colors.textPrimary)),
                   const SizedBox(height: 8),
 
                   // 2. 작성자 및 작성일시
                   Row(
                     children: [
-                      const Icon(Icons.person_outline_rounded,
-                          size: 14, color: AppColors.textMuted),
+                      Icon(Icons.person_outline_rounded,
+                          size: 14, color: context.colors.textMuted),
                       const SizedBox(width: 4),
                       Text(
                         notice.author?.username ?? '작성자 미상',
                         style: AppTextStyles.caption
-                            .copyWith(color: AppColors.textSecond),
+                            .copyWith(color: context.colors.textSecond),
                       ),
                       const SizedBox(width: 12),
-                      const Icon(Icons.access_time_rounded,
-                          size: 14, color: AppColors.textMuted),
+                      Icon(Icons.access_time_rounded,
+                          size: 14, color: context.colors.textMuted),
                       const SizedBox(width: 4),
                       Text(
                         notice.created?.substring(0, 16).replaceAll('T', ' ') ??
                             '',
                         style: AppTextStyles.caption
-                            .copyWith(color: AppColors.textMuted),
+                            .copyWith(color: context.colors.textMuted),
                       ),
                     ],
                   ),
@@ -303,14 +303,14 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: AppColors.bgSurface,
+                        color: context.colors.bgSurface,
                         borderRadius: BorderRadius.zero,
-                        border: Border.all(color: AppColors.border, width: 0.8),
+                        border: Border.all(color: context.colors.border, width: 0.8),
                       ),
                       child: Text(
                         notice.summary,
                         style: AppTextStyles.bodyMd.copyWith(
-                          color: AppColors.textPrimary,
+                          color: context.colors.textPrimary,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -323,15 +323,15 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: AppColors.bgSurface,
+                      color: context.colors.bgSurface,
                       borderRadius: BorderRadius.zero,
-                      border: Border.all(color: AppColors.border, width: 0.8),
+                      border: Border.all(color: context.colors.border, width: 0.8),
                     ),
                     child: notice.content.isNotEmpty
                         ? HtmlWidget(
                             notice.content,
                             textStyle: AppTextStyles.bodyMd.copyWith(
-                              color: AppColors.textPrimary,
+                              color: context.colors.textPrimary,
                               height: 1.5,
                             ),
                             customStylesBuilder: (element) {
@@ -344,7 +344,7 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
                               if (element.localName == 'th' ||
                                   element.localName == 'td') {
                                 return {
-                                  'border': '1px solid #444',
+                                  'border': '1px solid #888',
                                   'padding': '6px 8px',
                                 };
                               }
@@ -360,7 +360,7 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
                         : Text(
                             '본문 내용이 없습니다.',
                             style: AppTextStyles.bodyMd.copyWith(
-                              color: AppColors.textMuted,
+                              color: context.colors.textMuted,
                             ),
                           ),
                   ),
@@ -371,7 +371,7 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
                     Text(
                       '첨부파일 (${notice.files.length})',
                       style: AppTextStyles.titleSm
-                          .copyWith(color: AppColors.textSecond),
+                          .copyWith(color: context.colors.textPrimary),
                     ),
                     const SizedBox(height: 8),
                     ...notice.files.map((file) => Container(
@@ -379,26 +379,26 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 10),
                           decoration: BoxDecoration(
-                            color: AppColors.bgSurface,
+                            color: context.colors.bgSurface,
                             borderRadius: BorderRadius.zero,
                             border:
-                                Border.all(color: AppColors.border, width: 0.8),
+                                Border.all(color: context.colors.border, width: 0.8),
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.attach_file_rounded,
-                                  size: 16, color: AppColors.accentWork),
+                              Icon(Icons.attach_file_rounded,
+                                  size: 16, color: context.colors.accentWork),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
                                   file.fileName,
-                                  style: AppTextStyles.bodySm,
+                                  style: AppTextStyles.bodySm.copyWith(color: context.colors.textPrimary),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.download_rounded,
-                                    size: 18, color: AppColors.accentWork),
+                                icon: Icon(Icons.download_rounded,
+                                    size: 18, color: context.colors.accentWork),
                                 onPressed: _isDownloadingFile
                                     ? null
                                     : () => _downloadAndOpenFile(file),
@@ -412,13 +412,13 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
                   // 6. 댓글 섹션
                   Row(
                     children: [
-                      const Icon(Icons.chat_bubble_outline_rounded,
-                          size: 16, color: AppColors.accentWork),
+                      Icon(Icons.chat_bubble_outline_rounded,
+                          size: 16, color: context.colors.accentWork),
                       const SizedBox(width: 6),
                       Text(
                         '댓글 (${notice.comments.length})',
                         style: AppTextStyles.titleSm
-                            .copyWith(color: AppColors.textPrimary),
+                            .copyWith(color: context.colors.textPrimary),
                       ),
                     ],
                   ),
@@ -431,7 +431,7 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
                       child: Text(
                         '등록된 댓글이 없습니다.',
                         style: AppTextStyles.caption
-                            .copyWith(color: AppColors.textMuted),
+                            .copyWith(color: context.colors.textMuted),
                       ),
                     )
                   else
@@ -447,10 +447,10 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
                           margin: const EdgeInsets.only(bottom: 8),
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: AppColors.bgSurface,
+                            color: context.colors.bgSurface,
                             borderRadius: BorderRadius.zero,
                             border:
-                                Border.all(color: AppColors.border, width: 0.8),
+                                Border.all(color: context.colors.border, width: 0.8),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -461,6 +461,7 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
                                     c.creator?.username ?? '사용자',
                                     style: AppTextStyles.label.copyWith(
                                       fontWeight: FontWeight.bold,
+                                      color: context.colors.textPrimary,
                                     ),
                                   ),
                                   const SizedBox(width: 8),
@@ -468,13 +469,13 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
                                     c.created?.substring(0, 16).replaceAll('T', ' ') ??
                                         '',
                                     style: AppTextStyles.caption
-                                        .copyWith(color: AppColors.textMuted),
+                                        .copyWith(color: context.colors.textMuted),
                                   ),
                                   const Spacer(),
                                   if (canDeleteComment)
                                     IconButton(
-                                      icon: const Icon(Icons.close_rounded,
-                                          size: 14, color: AppColors.textMuted),
+                                      icon: Icon(Icons.close_rounded,
+                                          size: 14, color: context.colors.textMuted),
                                       onPressed: () => _handleDeleteComment(c.pk),
                                       padding: EdgeInsets.zero,
                                       constraints: const BoxConstraints(),
@@ -485,7 +486,7 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
                               Text(
                                 c.content,
                                 style: AppTextStyles.bodySm
-                                    .copyWith(color: AppColors.textPrimary),
+                                    .copyWith(color: context.colors.textPrimary),
                               ),
                             ],
                           ),
@@ -501,9 +502,9 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
           if (canComment)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: const BoxDecoration(
-                color: AppColors.bgSurface,
-                border: Border(top: BorderSide(color: AppColors.border, width: 0.8)),
+              decoration: BoxDecoration(
+                color: context.colors.bgSurface,
+                border: Border(top: BorderSide(color: context.colors.border, width: 0.8)),
               ),
               child: SafeArea(
                 top: false,
@@ -512,28 +513,29 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
                     Expanded(
                       child: TextField(
                         controller: _commentController,
+                        style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
                         decoration: InputDecoration(
                           hintText: '댓글을 입력해 주세요...',
-                          hintStyle: AppTextStyles.bodyMuted,
+                          hintStyle: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted),
                           filled: true,
-                          fillColor: AppColors.bgCard,
+                          fillColor: context.colors.bgCard,
                           isDense: true,
                           contentPadding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 10),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.zero,
                             borderSide:
-                                const BorderSide(color: AppColors.border),
+                                BorderSide(color: context.colors.border),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.zero,
                             borderSide:
-                                const BorderSide(color: AppColors.border),
+                                BorderSide(color: context.colors.border),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.zero,
                             borderSide:
-                                const BorderSide(color: AppColors.accentWork),
+                                BorderSide(color: context.colors.accentWork),
                           ),
                         ),
                       ),
@@ -543,7 +545,7 @@ class _NoticeDetailSheetState extends ConsumerState<NoticeDetailSheet> {
                       onPressed:
                           _isSubmittingComment ? null : _handleAddComment,
                       style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.accentWork,
+                        backgroundColor: context.colors.accentWork,
                         shape: const RoundedRectangleBorder(
                             borderRadius: BorderRadius.zero),
                         padding: const EdgeInsets.symmetric(

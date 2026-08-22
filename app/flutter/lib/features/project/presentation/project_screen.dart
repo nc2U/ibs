@@ -189,6 +189,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
                                     ? selectedProject.name
                                     : '관리 대상 프로젝트를 선택해 주세요',
                                 style: AppTextStyles.titleLg.copyWith(
+                                  color: context.colors.textPrimary,
                                   fontSize: 17,
                                   fontWeight: FontWeight.bold,
                                   letterSpacing: -0.3,
@@ -299,13 +300,13 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
                                   const Icon(
                                     Icons.settings_outlined,
                                     size: 13,
-                                    color: Color(0xFF4DB6AC),
+                                    color: Color(0xFF00897B),
                                   ),
                                   const SizedBox(width: 5),
                                   Text(
                                     '프로젝트 설정',
                                     style: AppTextStyles.label.copyWith(
-                                      color: Colors.white,
+                                      color: const Color(0xFF00796B),
                                       fontWeight: FontWeight.bold,
                                       fontSize: 11.5,
                                     ),
@@ -319,7 +320,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
 
                         // 우측: 프로젝트 문서함 바로가기
                         Material(
-                          color: const Color(0xFF8E24AA).withAlpha(30),
+                          color: const Color(0xFF8E24AA).withAlpha(25),
                           shape: const RoundedRectangleBorder(
                             borderRadius: BorderRadius.zero,
                             side: BorderSide(
@@ -341,13 +342,13 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
                                   const Icon(
                                     Icons.folder_shared_outlined,
                                     size: 13,
-                                    color: Color(0xFFCE93D8),
+                                    color: Color(0xFF8E24AA),
                                   ),
                                   const SizedBox(width: 5),
                                   Text(
                                     '프로젝트 문서함',
                                     style: AppTextStyles.label.copyWith(
-                                      color: Colors.white,
+                                      color: const Color(0xFF8E24AA),
                                       fontWeight: FontWeight.bold,
                                       fontSize: 11.5,
                                     ),
@@ -356,7 +357,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
                                   const Icon(
                                     Icons.arrow_forward_rounded,
                                     size: 12,
-                                    color: Color(0xFFCE93D8),
+                                    color: Color(0xFF8E24AA),
                                   ),
                                 ],
                               ),

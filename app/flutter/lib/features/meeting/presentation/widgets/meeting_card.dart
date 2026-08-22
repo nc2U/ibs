@@ -194,19 +194,38 @@ class _CategoryBadge extends StatelessWidget {
     }
   }
 
+  Color _adjustTextColor(BuildContext context, Color color) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    if (isDark) {
+      return color.computeLuminance() < 0.25
+          ? HSLColor.fromColor(color).withLightness(0.65).toColor()
+          : color;
+    } else {
+      // 라이트 모드에서는 색상이 너무 밝으면 가독성이 떨어지므로 어둡게 조정
+      return color.computeLuminance() > 0.4
+          ? HSLColor.fromColor(color).withLightness(0.35).toColor()
+          : color;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final color = _parseColor(context, colorHex);
+    final rawColor = _parseColor(context, colorHex);
+    final textColor = _adjustTextColor(context, rawColor);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withAlpha(30),
+        color: textColor.withAlpha(25),
         borderRadius: BorderRadius.circular(3),
-        border: Border.all(color: color.withAlpha(80)),
+        border: Border.all(color: textColor.withAlpha(70)),
       ),
       child: Text(
         name,
-        style: AppTextStyles.label.copyWith(color: color),
+        style: AppTextStyles.label.copyWith(
+          color: textColor,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
@@ -222,13 +241,16 @@ class _StatusBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withAlpha(30),
+        color: color.withAlpha(25),
         borderRadius: BorderRadius.circular(3),
-        border: Border.all(color: color.withAlpha(80)),
+        border: Border.all(color: color.withAlpha(70)),
       ),
       child: Text(
         label,
-        style: AppTextStyles.label.copyWith(color: color),
+        style: AppTextStyles.label.copyWith(
+          color: color,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }

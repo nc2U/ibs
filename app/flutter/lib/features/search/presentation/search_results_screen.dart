@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/providers/project_provider.dart';
+import '../../../core/theme/app_colors_extension.dart';
 import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/loading_shimmer.dart';
 import '../../channel/data/forum_repository.dart';
@@ -54,12 +54,12 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
     final searchResultsAsync = ref.watch(searchResultsProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.bgPrimary,
+      backgroundColor: context.colors.bgPrimary,
       body: Column(
         children: [
           // ── 상단 검색 입력창 바 ─────────────────────────────────────────
           Container(
-            color: AppColors.bgSurface,
+            color: context.colors.bgSurface,
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
             child: Column(
               children: [
@@ -69,23 +69,23 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                       child: Container(
                         height: 42,
                         decoration: BoxDecoration(
-                          color: AppColors.bgInput,
+                          color: context.colors.bgInput,
                           borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: AppColors.border, width: 0.8),
+                          border: Border.all(color: context.colors.border, width: 0.8),
                         ),
                         child: TextField(
                           controller: _controller,
                           textInputAction: TextInputAction.search,
-                          style: AppTextStyles.bodyMd,
+                          style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
                           decoration: InputDecoration(
                             hintText: '통합 검색 (2자 이상 입력)...',
-                            hintStyle: AppTextStyles.bodyMuted,
-                            prefixIcon: const Icon(Icons.search,
-                                size: 20, color: AppColors.accentWork),
+                            hintStyle: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted),
+                            prefixIcon: Icon(Icons.search,
+                                size: 20, color: context.colors.accentWork),
                             suffixIcon: _controller.text.isNotEmpty
                                 ? IconButton(
-                                    icon: const Icon(Icons.clear,
-                                        size: 16, color: AppColors.textMuted),
+                                    icon: Icon(Icons.clear,
+                                        size: 16, color: context.colors.textMuted),
                                     onPressed: () {
                                       _controller.clear();
                                       ref.read(searchQueryProvider.notifier).state = '';
@@ -109,7 +109,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                     const SizedBox(width: 8),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.accentWork,
+                        backgroundColor: context.colors.accentWork,
                         foregroundColor: Colors.white,
                         shape: const RoundedRectangleBorder(
                             borderRadius: BorderRadius.zero),
@@ -129,7 +129,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                   children: [
                     Text('검색 범위:',
                         style: AppTextStyles.caption
-                            .copyWith(color: AppColors.textMuted)),
+                            .copyWith(color: context.colors.textMuted)),
                     const SizedBox(width: 8),
                     _ScopeChip(
                       label: '🌐 전체 워크스페이스',
@@ -157,7 +157,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
             data: (res) {
               if (res == null || res.isEmpty) return const SizedBox.shrink();
               return Container(
-                color: AppColors.bgSurface,
+                color: context.colors.bgSurface,
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
@@ -167,7 +167,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                         label: '전체',
                         count: res.totalCount,
                         selected: selectedTab == 'all',
-                        color: AppColors.textPrimary,
+                        color: context.colors.textPrimary,
                         onTap: () => ref
                             .read(searchTargetTabProvider.notifier)
                             .state = 'all',
@@ -251,7 +251,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
             },
             orElse: () => const SizedBox.shrink(),
           ),
-          const Divider(color: AppColors.border, height: 1),
+          Divider(color: context.colors.border, height: 1),
 
           // ── 본문 검색 결과 목록 ─────────────────────────────────────────
           Expanded(
@@ -260,10 +260,10 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.search, size: 48, color: AppColors.textDisabled),
+                        Icon(Icons.search, size: 48, color: context.colors.textDisabled),
                         const SizedBox(height: 12),
                         Text('검색어를 2자 이상 입력하세요.',
-                            style: AppTextStyles.bodyMuted),
+                            style: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted)),
                       ],
                     ),
                   )
@@ -279,11 +279,11 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.search_off_rounded,
-                                  size: 48, color: AppColors.textDisabled),
+                              Icon(Icons.search_off_rounded,
+                                  size: 48, color: context.colors.textDisabled),
                               const SizedBox(height: 12),
                               Text('\'$query\'에 대한 검색 결과가 없습니다.',
-                                  style: AppTextStyles.bodyMuted),
+                                  style: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted)),
                             ],
                           ),
                         );
@@ -507,17 +507,17 @@ class _ScopeChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: selected ? AppColors.accentWork.withAlpha(40) : AppColors.bgCard,
+          color: selected ? context.colors.accentWork.withAlpha(40) : context.colors.bgCard,
           borderRadius: BorderRadius.circular(4),
           border: Border.all(
-            color: selected ? AppColors.accentWork : AppColors.border,
+            color: selected ? context.colors.accentWork : context.colors.border,
             width: 0.8,
           ),
         ),
         child: Text(
           label,
           style: AppTextStyles.caption.copyWith(
-            color: selected ? AppColors.accentWork : AppColors.textMuted,
+            color: selected ? context.colors.accentWork : context.colors.textMuted,
             fontWeight: selected ? FontWeight.bold : FontWeight.normal,
           ),
         ),
@@ -549,10 +549,10 @@ class _CategoryTabChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          color: selected ? color.withAlpha(45) : AppColors.bgCard,
+          color: selected ? color.withAlpha(45) : context.colors.bgCard,
           borderRadius: BorderRadius.circular(4),
           border: Border.all(
-            color: selected ? color : AppColors.border,
+            color: selected ? color : context.colors.border,
             width: selected ? 1.2 : 0.8,
           ),
         ),
@@ -562,7 +562,7 @@ class _CategoryTabChip extends StatelessWidget {
             Text(
               label,
               style: AppTextStyles.caption.copyWith(
-                color: selected ? color : AppColors.textSecond,
+                color: selected ? color : context.colors.textSecond,
                 fontWeight: selected ? FontWeight.bold : FontWeight.normal,
               ),
             ),
@@ -570,15 +570,15 @@ class _CategoryTabChip extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
               decoration: BoxDecoration(
-                color: selected ? color : AppColors.border,
+                color: selected ? color : context.colors.border,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
                 '$count',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: selected ? Colors.white : context.colors.textSecond,
                 ),
               ),
             ),
@@ -641,9 +641,9 @@ class _ResultCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: AppColors.bgCard,
+        color: context.colors.bgCard,
         borderRadius: BorderRadius.zero,
-        border: Border.all(color: AppColors.border, width: 0.8),
+        border: Border.all(color: context.colors.border, width: 0.8),
       ),
       child: InkWell(
         onTap: onTap,
@@ -676,7 +676,7 @@ class _ResultCard extends StatelessWidget {
                     child: Text(
                       project,
                       style: AppTextStyles.caption
-                          .copyWith(color: AppColors.textMuted),
+                          .copyWith(color: context.colors.textMuted),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -685,14 +685,17 @@ class _ResultCard extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 title,
-                style: AppTextStyles.titleSm.copyWith(fontWeight: FontWeight.w600),
+                style: AppTextStyles.titleSm.copyWith(
+                  color: context.colors.textPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 4),
               Text(
                 subInfo,
-                style: AppTextStyles.caption.copyWith(color: AppColors.textDisabled),
+                style: AppTextStyles.caption.copyWith(color: context.colors.textDisabled),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),

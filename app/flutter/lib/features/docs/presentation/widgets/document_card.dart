@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/theme/app_colors_extension.dart';
 import '../../data/models/docs_model.dart';
 
 /// 공용 문서 카드 위젯 (radius = 0)
@@ -20,17 +20,17 @@ class DocumentCard extends StatelessWidget {
     final scopeLabel = doc.project != null
         ? (isRealEstate ? '🏗 ${doc.project!.name}' : '📋 ${doc.project!.name}')
         : '전체 공용';
-    final scopeColor = isRealEstate ? AppColors.accentProject : const Color(0xFF1565C0);
+    final scopeColor = isRealEstate ? context.colors.accentProject : const Color(0xFF1565C0);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: AppColors.bgCard,
+        color: context.colors.bgCard,
         borderRadius: BorderRadius.zero,
         border: Border.all(
           color: doc.isPinned
-              ? AppColors.accentWork.withAlpha(120)
-              : AppColors.border,
+              ? context.colors.accentWork.withAlpha(120)
+              : context.colors.border,
           width: doc.isPinned ? 1.2 : 0.8,
         ),
       ),
@@ -72,25 +72,28 @@ class DocumentCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: AppColors.bgSurface,
+                          color: context.colors.bgSurface,
                           borderRadius: BorderRadius.zero,
-                          border: Border.all(color: AppColors.border),
+                          border: Border.all(color: context.colors.border),
                         ),
                         child: Text(
                           doc.cateName!,
-                          style: AppTextStyles.caption.copyWith(fontSize: 11),
+                          style: AppTextStyles.caption.copyWith(
+                            fontSize: 11,
+                            color: context.colors.textMuted,
+                          ),
                         ),
                       ),
                     ],
                     const Spacer(),
                     if (doc.isPinned) ...[
-                      const Icon(Icons.push_pin_rounded,
-                          size: 15, color: AppColors.accentWork),
+                      Icon(Icons.push_pin_rounded,
+                          size: 15, color: context.colors.accentWork),
                       const SizedBox(width: 4),
                     ],
                     if (doc.isSecret)
-                      const Icon(Icons.lock_rounded,
-                          size: 15, color: AppColors.warning),
+                      Icon(Icons.lock_rounded,
+                          size: 15, color: context.colors.warning),
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -99,6 +102,7 @@ class DocumentCard extends StatelessWidget {
                 Text(
                   doc.title,
                   style: AppTextStyles.titleSm.copyWith(
+                    color: context.colors.textPrimary,
                     fontWeight: doc.isPinned ? FontWeight.bold : FontWeight.w600,
                   ),
                   maxLines: 2,
@@ -109,7 +113,7 @@ class DocumentCard extends StatelessWidget {
                   Text(
                     _stripHtml(doc.description),
                     style: AppTextStyles.bodySm
-                        .copyWith(color: AppColors.textMuted),
+                        .copyWith(color: context.colors.textMuted),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -120,33 +124,33 @@ class DocumentCard extends StatelessWidget {
                 Row(
                   children: [
                     if (doc.executionDate != null && doc.executionDate!.isNotEmpty) ...[
-                      const Icon(Icons.event_note_rounded,
-                          size: 13, color: AppColors.textMuted),
+                      Icon(Icons.event_note_rounded,
+                          size: 13, color: context.colors.textMuted),
                       const SizedBox(width: 4),
                       Text(
                         doc.executionDate!,
-                        style: AppTextStyles.caption,
+                        style: AppTextStyles.caption.copyWith(color: context.colors.textMuted),
                       ),
                       const SizedBox(width: 12),
                     ],
                     if (doc.creator != null) ...[
-                      const Icon(Icons.person_outline_rounded,
-                          size: 13, color: AppColors.textMuted),
+                      Icon(Icons.person_outline_rounded,
+                          size: 13, color: context.colors.textMuted),
                       const SizedBox(width: 4),
                       Text(
                         doc.creator!.username,
-                        style: AppTextStyles.caption,
+                        style: AppTextStyles.caption.copyWith(color: context.colors.textMuted),
                       ),
                       const SizedBox(width: 12),
                     ],
                     if (doc.files.isNotEmpty) ...[
-                      const Icon(Icons.attach_file_rounded,
-                          size: 13, color: AppColors.accentWork),
+                      Icon(Icons.attach_file_rounded,
+                          size: 13, color: context.colors.accentWork),
                       const SizedBox(width: 2),
                       Text(
                         '${doc.files.length}',
                         style: AppTextStyles.caption.copyWith(
-                          color: AppColors.accentWork,
+                          color: context.colors.accentWork,
                           fontWeight: FontWeight.bold,
                         ),
                       ),

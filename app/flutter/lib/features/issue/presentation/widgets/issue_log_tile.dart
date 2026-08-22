@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/theme/app_colors_extension.dart';
 import '../../data/models/issue_model.dart';
 
 /// 업무 변경 이력 로그 타일 위젯 (마크다운 렌더링 지원)
@@ -24,8 +24,8 @@ class IssueLogTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.bgCard,
-        border: Border.all(color: AppColors.border, width: 0.8),
+        color: context.colors.bgCard,
+        border: Border.all(color: context.colors.border, width: 0.8),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -36,33 +36,33 @@ class IssueLogTile extends StatelessWidget {
               CircleAvatar(
                 radius: 12,
                 backgroundColor: hasComment
-                    ? AppColors.accentWork.withAlpha(40)
-                    : AppColors.accentProject.withAlpha(40),
+                    ? context.colors.accentWork.withAlpha(40)
+                    : context.colors.accentProject.withAlpha(40),
                 child: Icon(
                   hasComment
                       ? Icons.chat_bubble_outline_rounded
                       : Icons.history_rounded,
                   size: 13,
                   color: hasComment
-                      ? AppColors.accentWork
-                      : AppColors.accentProject,
+                      ? context.colors.accentWork
+                      : context.colors.accentProject,
                 ),
               ),
               const SizedBox(width: 8),
-              Text(creatorName, style: AppTextStyles.titleSm),
+              Text(creatorName, style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
               const SizedBox(width: 6),
               Text(
                 hasComment ? '댓글 작성' : '항목 변경',
                 style: AppTextStyles.caption.copyWith(
                   color: hasComment
-                      ? AppColors.accentWork
-                      : AppColors.accentProject,
+                      ? context.colors.accentWork
+                      : context.colors.accentProject,
                   fontWeight: FontWeight.w600,
                 ),
               ),
               const Spacer(),
               Text(_formatDateTime(log.timestamp),
-                  style: AppTextStyles.caption),
+                  style: AppTextStyles.caption.copyWith(color: context.colors.textMuted)),
             ],
           ),
 
@@ -73,10 +73,10 @@ class IssueLogTile extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               decoration: BoxDecoration(
-                color: AppColors.bgSurface.withAlpha(120),
+                color: context.colors.bgSurface.withAlpha(120),
                 borderRadius: BorderRadius.circular(4),
                 border: Border.all(
-                    color: AppColors.border.withAlpha(80), width: 0.6),
+                    color: context.colors.border.withAlpha(80), width: 0.6),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -88,18 +88,18 @@ class IssueLogTile extends StatelessWidget {
                           ? detail
                           : '• $detail',
                       styleSheet: MarkdownStyleSheet(
-                        p: AppTextStyles.bodyMd.copyWith(fontSize: 13),
+                        p: AppTextStyles.bodyMd.copyWith(fontSize: 13, color: context.colors.textPrimary),
                         strong: AppTextStyles.bodyMd.copyWith(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
+                          color: context.colors.textPrimary,
                         ),
                         em: AppTextStyles.bodyMd.copyWith(
                           fontSize: 13,
                           fontStyle: FontStyle.italic,
-                          color: AppColors.textSecond,
+                          color: context.colors.textSecond,
                         ),
-                        listBullet: AppTextStyles.caption,
+                        listBullet: AppTextStyles.caption.copyWith(color: context.colors.textMuted),
                       ),
                     ),
                   );
@@ -115,31 +115,31 @@ class IssueLogTile extends StatelessWidget {
               data: log.comment!.content,
               selectable: true,
               styleSheet: MarkdownStyleSheet(
-                p: AppTextStyles.bodyMd,
+                p: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
                 strong: AppTextStyles.bodyMd.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+                  color: context.colors.textPrimary,
                 ),
                 em: AppTextStyles.bodyMd.copyWith(
                   fontStyle: FontStyle.italic,
-                  color: AppColors.textSecond,
+                  color: context.colors.textSecond,
                 ),
                 blockquote: AppTextStyles.bodyMd.copyWith(
-                  color: AppColors.textMuted,
+                  color: context.colors.textMuted,
                   fontStyle: FontStyle.italic,
                 ),
                 blockquoteDecoration: BoxDecoration(
-                  color: AppColors.bgSurface,
-                  border: const Border(
-                    left: BorderSide(color: AppColors.accentWork, width: 3),
+                  color: context.colors.bgSurface,
+                  border: Border(
+                    left: BorderSide(color: context.colors.accentWork, width: 3),
                   ),
                   borderRadius: BorderRadius.circular(2),
                 ),
                 blockquotePadding: const EdgeInsets.symmetric(
                     horizontal: 10, vertical: 6),
                 code: TextStyle(
-                  backgroundColor: AppColors.bgSurface,
-                  color: AppColors.accentWork,
+                  backgroundColor: context.colors.bgSurface,
+                  color: context.colors.accentWork,
                   fontFamily: 'monospace',
                   fontSize: 12.5,
                 ),

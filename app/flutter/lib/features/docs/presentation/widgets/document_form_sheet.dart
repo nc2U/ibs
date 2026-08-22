@@ -2,12 +2,12 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/constants/permissions.dart';
 import '../../../../core/providers/docs_context_provider.dart';
 import '../../../../core/providers/permission_provider.dart';
 import '../../../../core/providers/project_provider.dart';
+import '../../../../core/theme/app_colors_extension.dart';
 import '../../../project/providers/project_provider.dart';
 
 import '../../data/docs_repository.dart';
@@ -109,11 +109,11 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: AppColors.accentWork,
+            colorScheme: ColorScheme.dark(
+              primary: context.colors.accentWork,
               onPrimary: Colors.white,
-              surface: AppColors.bgSurface,
-              onSurface: AppColors.textPrimary,
+              surface: context.colors.bgSurface,
+              onSurface: context.colors.textPrimary,
             ),
           ),
           child: child!,
@@ -142,7 +142,10 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('파일을 선택하지 못했습니다: $e')),
+          SnackBar(
+            content: Text('파일을 선택하지 못했습니다: $e'),
+            backgroundColor: context.colors.error,
+          ),
         );
       }
     }
@@ -156,7 +159,7 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
         builder: (context, setDialogState) => Dialog(
           insetPadding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-          backgroundColor: AppColors.bgCard,
+          backgroundColor: context.colors.bgCard,
           shape:
               const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
           child: Container(
@@ -174,12 +177,12 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                         const Icon(Icons.link_rounded,
                             size: 22, color: Color(0xFF1565C0)),
                         const SizedBox(width: 8),
-                        Text('관련 웹 링크 추가', style: AppTextStyles.titleLg),
+                        Text('관련 웹 링크 추가', style: AppTextStyles.titleLg.copyWith(color: context.colors.textPrimary)),
                       ],
                     ),
                     IconButton(
                       icon: const Icon(Icons.close_rounded, size: 20),
-                      color: AppColors.textMuted,
+                      color: context.colors.textMuted,
                       onPressed: () => Navigator.pop(ctx),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
@@ -190,7 +193,7 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                 Text(
                   'Google Drive, Notion, 클라우드, 웹 페이지 등의 URL을 입력하세요.',
                   style: AppTextStyles.caption
-                      .copyWith(color: AppColors.textMuted),
+                      .copyWith(color: context.colors.textMuted),
                 ),
                 const SizedBox(height: 14),
                 // 입력창
@@ -201,14 +204,15 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                   minLines: 2,
                   keyboardType: TextInputType.url,
                   style:
-                      AppTextStyles.bodyMd.copyWith(fontFamily: 'monospace'),
-                  decoration: const InputDecoration(
+                      AppTextStyles.bodyMd.copyWith(fontFamily: 'monospace', color: context.colors.textPrimary),
+                  decoration: InputDecoration(
                     hintText: 'https://drive.google.com/... 또는 https://...',
+                    hintStyle: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted),
                     alignLabelWithHint: true,
-                    contentPadding: EdgeInsets.all(12),
+                    contentPadding: const EdgeInsets.all(12),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.zero,
-                      borderSide: BorderSide(color: AppColors.border),
+                      borderSide: BorderSide(color: context.colors.border),
                     ),
                   ),
                   onChanged: (_) => setDialogState(() {}),
@@ -230,8 +234,8 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                       icon: const Icon(Icons.content_paste_rounded, size: 15),
                       label: const Text('클립보드 붙여넣기'),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.textPrimary,
-                        side: const BorderSide(color: AppColors.border),
+                        foregroundColor: context.colors.textPrimary,
+                        side: BorderSide(color: context.colors.border),
                         shape: const RoundedRectangleBorder(
                             borderRadius: BorderRadius.zero),
                         padding: const EdgeInsets.symmetric(
@@ -250,7 +254,7 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                         icon: const Icon(Icons.clear_rounded, size: 15),
                         label: const Text('지우기'),
                         style: TextButton.styleFrom(
-                          foregroundColor: AppColors.textMuted,
+                          foregroundColor: context.colors.textMuted,
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 6),
                           minimumSize: Size.zero,
@@ -269,8 +273,8 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                       child: OutlinedButton(
                         onPressed: () => Navigator.pop(ctx),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.textSecond,
-                          side: const BorderSide(color: AppColors.border),
+                          foregroundColor: context.colors.textSecond,
+                          side: BorderSide(color: context.colors.border),
                           shape: const RoundedRectangleBorder(
                               borderRadius: BorderRadius.zero),
                           padding: const EdgeInsets.symmetric(vertical: 13),
@@ -346,9 +350,9 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
 
     if (_selectedDocType == '2' && _selectedLawsuit == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('소송 문서는 소송 사건을 반드시 선택해야 합니다.'),
-          backgroundColor: AppColors.error,
+        SnackBar(
+          content: const Text('소송 문서는 소송 사건을 반드시 선택해야 합니다.'),
+          backgroundColor: context.colors.error,
         ),
       );
       return;
@@ -363,7 +367,7 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
           content: Text(isEdit
               ? '문서 수정 권한(docs.update)이 없습니다.'
               : '문서 등록 권한(docs.create)이 없습니다.'),
-          backgroundColor: AppColors.error,
+          backgroundColor: context.colors.error,
         ),
       );
       return;
@@ -478,8 +482,8 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
         [];
 
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.bgCard,
+      decoration: BoxDecoration(
+        color: context.colors.bgCard,
         borderRadius: BorderRadius.zero,
       ),
       padding: EdgeInsets.only(
@@ -502,7 +506,7 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
-                    color: AppColors.border,
+                    color: context.colors.border,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -516,19 +520,19 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                     children: [
                       Icon(
                         isEdit ? Icons.edit_note_rounded : Icons.note_add_rounded,
-                        color: AppColors.accentWork,
+                        color: context.colors.accentWork,
                         size: 24,
                       ),
                       const SizedBox(width: 8),
                       Text(
                         isEdit ? '문서 수정' : '신규 문서 등록',
-                        style: AppTextStyles.titleLg,
+                        style: AppTextStyles.titleLg.copyWith(color: context.colors.textPrimary),
                       ),
                     ],
                   ),
                   IconButton(
                     icon: const Icon(Icons.close_rounded, size: 22),
-                    color: AppColors.textMuted,
+                    color: context.colors.textMuted,
                     onPressed: () => Navigator.pop(context),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
@@ -536,7 +540,7 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                 ],
               ),
               const SizedBox(height: 16),
-              const Divider(color: AppColors.border, height: 1),
+              Divider(color: context.colors.border, height: 1),
               const SizedBox(height: 16),
 
               // ── 0. 문서 구분 선택 (일반 문서 vs 소송 기록) ───────────────────
@@ -549,12 +553,12 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                         padding: const EdgeInsets.symmetric(vertical: 9),
                         decoration: BoxDecoration(
                           color: _selectedDocType == '1'
-                              ? AppColors.accentWork.withAlpha(25)
-                              : AppColors.bgSurface,
+                              ? context.colors.accentWork.withAlpha(25)
+                              : context.colors.bgSurface,
                           border: Border.all(
                             color: _selectedDocType == '1'
-                                ? AppColors.accentWork
-                                : AppColors.border,
+                                ? context.colors.accentWork
+                                : context.colors.border,
                             width: 1,
                           ),
                         ),
@@ -565,16 +569,16 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                               Icons.description_outlined,
                               size: 15,
                               color: _selectedDocType == '1'
-                                  ? AppColors.accentWork
-                                  : AppColors.textMuted,
+                                  ? context.colors.accentWork
+                                  : context.colors.textMuted,
                             ),
                             const SizedBox(width: 6),
                             Text(
                               '일반 문서',
                               style: AppTextStyles.label.copyWith(
                                 color: _selectedDocType == '1'
-                                    ? AppColors.accentWork
-                                    : AppColors.textMuted,
+                                    ? context.colors.accentWork
+                                    : context.colors.textMuted,
                                 fontWeight: _selectedDocType == '1'
                                     ? FontWeight.bold
                                     : FontWeight.normal,
@@ -594,11 +598,11 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                         decoration: BoxDecoration(
                           color: _selectedDocType == '2'
                               ? const Color(0xFFBA68C8).withAlpha(25)
-                              : AppColors.bgSurface,
+                              : context.colors.bgSurface,
                           border: Border.all(
                             color: _selectedDocType == '2'
                                 ? const Color(0xFFBA68C8)
-                                : AppColors.border,
+                                : context.colors.border,
                             width: 1,
                           ),
                         ),
@@ -610,7 +614,7 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                               size: 15,
                               color: _selectedDocType == '2'
                                   ? const Color(0xFFCE93D8)
-                                  : AppColors.textMuted,
+                                  : context.colors.textMuted,
                             ),
                             const SizedBox(width: 6),
                             Text(
@@ -618,7 +622,7 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                               style: AppTextStyles.label.copyWith(
                                 color: _selectedDocType == '2'
                                     ? const Color(0xFFCE93D8)
-                                    : AppColors.textMuted,
+                                    : context.colors.textMuted,
                                 fontWeight: _selectedDocType == '2'
                                     ? FontWeight.bold
                                     : FontWeight.normal,
@@ -639,11 +643,11 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 12, vertical: 10),
                   decoration: BoxDecoration(
-                    color: AppColors.bgSurface,
+                    color: context.colors.bgSurface,
                     border: Border.all(
                       color: isProjectScope
-                          ? AppColors.accentProject.withAlpha(60)
-                          : AppColors.border,
+                          ? context.colors.accentProject.withAlpha(60)
+                          : context.colors.border,
                     ),
                   ),
                   child: Row(
@@ -654,8 +658,8 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                             : Icons.folder_open_rounded,
                         size: 18,
                         color: isProjectScope
-                            ? AppColors.accentProject
-                            : AppColors.accentWork,
+                            ? context.colors.accentProject
+                            : context.colors.accentWork,
                       ),
                       const SizedBox(width: 8),
                       Text(
@@ -663,15 +667,15 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                             ? '소속 프로젝트: '
                             : '소속 워크스페이스: ',
                         style: AppTextStyles.caption
-                            .copyWith(color: AppColors.textMuted),
+                            .copyWith(color: context.colors.textMuted),
                       ),
                       Expanded(
                         child: Text(
                           fixedProjectName,
                           style: AppTextStyles.titleSm.copyWith(
                             color: isProjectScope
-                                ? AppColors.accentProject
-                                : AppColors.accentWork,
+                                ? context.colors.accentProject
+                                : context.colors.accentWork,
                             fontWeight: FontWeight.bold,
                           ),
                           overflow: TextOverflow.ellipsis,
@@ -685,13 +689,13 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                 // 전체 문서함(DocsScopeType.all)에서 신규 등록 시에만 워크스페이스 선택 노출
                 Text('워크스페이스 *',
                     style: AppTextStyles.caption
-                        .copyWith(color: AppColors.textMuted)),
+                        .copyWith(color: context.colors.textMuted)),
                 const SizedBox(height: 6),
                 ref.watch(docFormProjectsProvider).when(
                       loading: () => const LinearProgressIndicator(),
                       error: (_, __) => Text('프로젝트 목록 로드 실패',
                           style: AppTextStyles.caption
-                              .copyWith(color: AppColors.error)),
+                              .copyWith(color: context.colors.error)),
                       data: (projects) {
                         final validPk = (_selectedProjectPk != null &&
                                 projects.any((p) => p.pk == _selectedProjectPk))
@@ -709,23 +713,25 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                         return DropdownButtonFormField<int>(
                           value: validPk,
                           isExpanded: true,
-                          style: AppTextStyles.bodyMd,
-                          dropdownColor: AppColors.bgCard,
-                          decoration: const InputDecoration(
+                          style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
+                          dropdownColor: context.colors.bgCard,
+                          decoration: InputDecoration(
                             hintText: '워크스페이스 선택',
+                            hintStyle: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted),
                             prefixIcon: Icon(Icons.folder_outlined,
-                                size: 18, color: AppColors.accentWork),
-                            contentPadding: EdgeInsets.symmetric(
+                                size: 18, color: context.colors.accentWork),
+                            contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 12, vertical: 10),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.zero,
-                              borderSide: BorderSide(color: AppColors.border),
+                              borderSide: BorderSide(color: context.colors.border),
                             ),
                           ),
                           items: projects
                               .map((p) => DropdownMenuItem<int>(
                                     value: p.pk,
                                     child: Text(p.indentedLabel,
+                                        style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
                                         overflow: TextOverflow.ellipsis),
                                   ))
                               .toList(),
@@ -751,7 +757,7 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                   children: [
                     Text('소송 사건 *',
                         style: AppTextStyles.caption
-                            .copyWith(color: AppColors.textMuted)),
+                            .copyWith(color: context.colors.textMuted)),
                     if (_selectedLawsuit != null)
                       Text(
                         '사건 지정 완료',
@@ -768,13 +774,13 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                       error: (e, _) => Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: AppColors.bgSurface,
-                          border: Border.all(color: AppColors.border),
+                          color: context.colors.bgSurface,
+                          border: Border.all(color: context.colors.border),
                         ),
                         child: Text(
                           '소송 사건 목록을 불러오지 못했습니다.',
                           style: AppTextStyles.caption
-                              .copyWith(color: AppColors.error),
+                              .copyWith(color: context.colors.error),
                         ),
                       ),
                       data: (cases) {
@@ -782,24 +788,24 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                           return Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: AppColors.bgSurface,
+                              color: context.colors.bgSurface,
                               border: Border.all(
-                                color: AppColors.warning.withAlpha(80),
+                                color: context.colors.warning.withAlpha(80),
                               ),
                             ),
                             child: Row(
                               children: [
-                                const Icon(
+                                Icon(
                                   Icons.info_outline_rounded,
                                   size: 16,
-                                  color: AppColors.warning,
+                                  color: context.colors.warning,
                                 ),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
                                     '등록된 소송 사건이 없습니다. 신규 소송 사건은 PC 웹에서 등록해 주세요.',
                                     style: AppTextStyles.caption.copyWith(
-                                      color: AppColors.warning,
+                                      color: context.colors.warning,
                                       fontSize: 12,
                                     ),
                                   ),
@@ -818,7 +824,7 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                           // 사건 미선택 상태 -> 검색 선택 트리거 바
                           return Container(
                             decoration: BoxDecoration(
-                              color: AppColors.bgSurface,
+                              color: context.colors.bgSurface,
                               borderRadius: BorderRadius.zero,
                               border: Border.all(
                                 color: const Color(0xFFBA68C8).withAlpha(80),
@@ -845,14 +851,14 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                                         child: Text(
                                           '소송 사건 검색 및 선택 (총 ${cases.length}건)',
                                           style: AppTextStyles.bodyMd.copyWith(
-                                            color: AppColors.textMuted,
+                                            color: context.colors.textMuted,
                                           ),
                                         ),
                                       ),
-                                      const Icon(
+                                      Icon(
                                         Icons.arrow_drop_down_rounded,
                                         size: 20,
-                                        color: AppColors.textMuted,
+                                        color: context.colors.textMuted,
                                       ),
                                     ],
                                   ),
@@ -896,7 +902,7 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                                     Text(
                                       selectedCase.label,
                                       style: AppTextStyles.label.copyWith(
-                                        color: Colors.white,
+                                        color: context.colors.textPrimary,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 13,
                                       ),
@@ -937,8 +943,8 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                               ),
                               // 취소 버튼
                               IconButton(
-                                icon: const Icon(Icons.close_rounded,
-                                    size: 16, color: AppColors.textMuted),
+                                icon: Icon(Icons.close_rounded,
+                                    size: 16, color: context.colors.textMuted),
                                 onPressed: () =>
                                     setState(() => _selectedLawsuit = null),
                                 padding: EdgeInsets.zero,
@@ -954,15 +960,16 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
               ],
 
               // ── 2. 문서 제목 ─────────────────────────────────────────────
-              Text('문서 제목 *', style: AppTextStyles.caption.copyWith(color: AppColors.textMuted)),
+              Text('문서 제목 *', style: AppTextStyles.caption.copyWith(color: context.colors.textMuted)),
               const SizedBox(height: 6),
               TextFormField(
                 controller: _titleController,
-                style: AppTextStyles.bodyLg,
-                decoration: const InputDecoration(
+                style: AppTextStyles.bodyLg.copyWith(color: context.colors.textPrimary),
+                decoration: InputDecoration(
                   hintText: '문서 제목을 입력하세요',
-                  prefixIcon: Icon(Icons.title_rounded, size: 18, color: AppColors.textMuted),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  hintStyle: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted),
+                  prefixIcon: Icon(Icons.title_rounded, size: 18, color: context.colors.textMuted),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                 ),
                 validator: (v) => (v == null || v.trim().isEmpty) ? '제목을 입력해 주세요.' : null,
               ),
@@ -977,7 +984,7 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('카테고리', style: AppTextStyles.caption.copyWith(color: AppColors.textMuted)),
+                        Text('카테고리', style: AppTextStyles.caption.copyWith(color: context.colors.textMuted)),
                         const SizedBox(height: 6),
                         categoriesAsync.when(
                           data: (categories) {
@@ -989,20 +996,20 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                             return DropdownButtonFormField<int?>(
                               value: validCate,
                               isExpanded: true,
-                              style: AppTextStyles.bodyMd,
-                              dropdownColor: AppColors.bgCard,
-                              decoration: const InputDecoration(
-                                prefixIcon: Icon(Icons.label_outline_rounded, size: 18, color: AppColors.textMuted),
-                                contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                              style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
+                              dropdownColor: context.colors.bgCard,
+                              decoration: InputDecoration(
+                                prefixIcon: Icon(Icons.label_outline_rounded, size: 18, color: context.colors.textMuted),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                               ),
                               items: [
-                                const DropdownMenuItem<int?>(
+                                DropdownMenuItem<int?>(
                                   value: null,
-                                  child: Text('선택 안 함'),
+                                  child: Text('선택 안 함', style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary)),
                                 ),
                                 ...categories.map((c) => DropdownMenuItem<int?>(
                                       value: c.pk,
-                                      child: Text(c.name, overflow: TextOverflow.ellipsis),
+                                      child: Text(c.name, style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary), overflow: TextOverflow.ellipsis),
                                     )),
                               ],
                               onChanged: (v) => setState(() => _selectedCategory = v),
@@ -1010,7 +1017,7 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                           },
                           loading: () => const LinearProgressIndicator(),
                           error: (e, s) => Text('카테고리 로드 실패',
-                              style: AppTextStyles.caption.copyWith(color: AppColors.error)),
+                              style: AppTextStyles.caption.copyWith(color: context.colors.error)),
                         ),
                       ],
                     ),
@@ -1021,16 +1028,17 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('시행일자', style: AppTextStyles.caption.copyWith(color: AppColors.textMuted)),
+                        Text('시행일자', style: AppTextStyles.caption.copyWith(color: context.colors.textMuted)),
                         const SizedBox(height: 6),
                         TextFormField(
                           controller: _dateController,
                           readOnly: true,
                           onTap: _pickDate,
-                          style: AppTextStyles.bodyMd,
+                          style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
                           decoration: InputDecoration(
                             hintText: '날짜 선택',
-                            prefixIcon: const Icon(Icons.calendar_today_rounded, size: 18, color: AppColors.textMuted),
+                            hintStyle: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted),
+                            prefixIcon: Icon(Icons.calendar_today_rounded, size: 18, color: context.colors.textMuted),
                             suffixIcon: _dateController.text.isNotEmpty
                                 ? IconButton(
                                     icon: const Icon(Icons.clear_rounded, size: 16),
@@ -1048,15 +1056,16 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
               const SizedBox(height: 14),
 
               // ── 4. 설명 / 내용 ───────────────────────────────────────────
-              Text('설명 / 비고', style: AppTextStyles.caption.copyWith(color: AppColors.textMuted)),
+              Text('설명 / 비고', style: AppTextStyles.caption.copyWith(color: context.colors.textMuted)),
               const SizedBox(height: 6),
               TextFormField(
                 controller: _descController,
                 maxLines: 3,
-                style: AppTextStyles.bodyMd,
-                decoration: const InputDecoration(
+                style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
+                decoration: InputDecoration(
                   hintText: '문서 관련 주요 설명이나 비고를 입력하세요',
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  hintStyle: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 ),
               ),
               const SizedBox(height: 16),
@@ -1067,10 +1076,10 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.attach_file_rounded, size: 18, color: AppColors.accentWork),
+                      Icon(Icons.attach_file_rounded, size: 18, color: context.colors.accentWork),
                       const SizedBox(width: 6),
                       Text('첨부 파일 (${existingFiles.length + _newFiles.length})',
-                          style: AppTextStyles.titleSm),
+                          style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
                     ],
                   ),
                   OutlinedButton.icon(
@@ -1078,8 +1087,8 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                     icon: const Icon(Icons.add_rounded, size: 15),
                     label: const Text('파일 추가'),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.accentWork,
-                      side: const BorderSide(color: AppColors.accentWork),
+                      foregroundColor: context.colors.accentWork,
+                      side: BorderSide(color: context.colors.accentWork),
                       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       minimumSize: Size.zero,
@@ -1094,12 +1103,12 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   decoration: BoxDecoration(
-                    color: AppColors.bgSurface,
-                    border: Border.all(color: AppColors.border),
+                    color: context.colors.bgSurface,
+                    border: Border.all(color: context.colors.border),
                   ),
                   child: Center(
                     child: Text('첨부된 파일이 없습니다. (+ 파일 추가)',
-                        style: AppTextStyles.caption.copyWith(color: AppColors.textMuted)),
+                        style: AppTextStyles.caption.copyWith(color: context.colors.textMuted)),
                   ),
                 )
               else
@@ -1110,23 +1119,23 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                           margin: const EdgeInsets.only(bottom: 6),
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                           decoration: BoxDecoration(
-                            color: AppColors.bgSurface,
-                            border: Border.all(color: AppColors.border),
+                            color: context.colors.bgSurface,
+                            border: Border.all(color: context.colors.border),
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.insert_drive_file_outlined,
-                                  size: 18, color: AppColors.accentWork),
+                              Icon(Icons.insert_drive_file_outlined,
+                                  size: 18, color: context.colors.accentWork),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
                                   file.fileName ?? (file.file?.split('/').last ?? '첨부파일'),
-                                  style: AppTextStyles.bodySm,
+                                  style: AppTextStyles.bodySm.copyWith(color: context.colors.textPrimary),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.close_rounded, size: 16, color: AppColors.error),
+                                icon: Icon(Icons.close_rounded, size: 16, color: context.colors.error),
                                 onPressed: () {
                                   setState(() {
                                     _deleteFilePks.add(file.pk);
@@ -1147,12 +1156,12 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                         margin: const EdgeInsets.only(bottom: 6),
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                         decoration: BoxDecoration(
-                          color: AppColors.accentWork.withAlpha(15),
-                          border: Border.all(color: AppColors.accentWork.withAlpha(80)),
+                          color: context.colors.accentWork.withAlpha(15),
+                          border: Border.all(color: context.colors.accentWork.withAlpha(80)),
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.upload_file_rounded, size: 18, color: AppColors.accentWork),
+                            Icon(Icons.upload_file_rounded, size: 18, color: context.colors.accentWork),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Column(
@@ -1160,18 +1169,18 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                                 children: [
                                   Text(
                                     file.name,
-                                    style: AppTextStyles.bodySm.copyWith(fontWeight: FontWeight.w600),
+                                    style: AppTextStyles.bodySm.copyWith(fontWeight: FontWeight.w600, color: context.colors.textPrimary),
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   Text(
                                     _formatFileSize(file.size),
-                                    style: AppTextStyles.caption.copyWith(color: AppColors.textMuted),
+                                    style: AppTextStyles.caption.copyWith(color: context.colors.textMuted),
                                   ),
                                 ],
                               ),
                             ),
                             IconButton(
-                              icon: const Icon(Icons.close_rounded, size: 16, color: AppColors.textMuted),
+                              icon: Icon(Icons.close_rounded, size: 16, color: context.colors.textMuted),
                               onPressed: () {
                                 setState(() {
                                   _newFiles.removeAt(idx);
@@ -1198,7 +1207,7 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                       const Icon(Icons.link_rounded, size: 18, color: Color(0xFF1565C0)),
                       const SizedBox(width: 6),
                       Text('관련 링크 (${existingLinks.length + _newLinks.length})',
-                          style: AppTextStyles.titleSm),
+                          style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
                     ],
                   ),
                   OutlinedButton.icon(
@@ -1222,12 +1231,12 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   decoration: BoxDecoration(
-                    color: AppColors.bgSurface,
-                    border: Border.all(color: AppColors.border),
+                    color: context.colors.bgSurface,
+                    border: Border.all(color: context.colors.border),
                   ),
                   child: Center(
                     child: Text('등록된 웹 링크가 없습니다. (+ 링크 추가)',
-                        style: AppTextStyles.caption.copyWith(color: AppColors.textMuted)),
+                        style: AppTextStyles.caption.copyWith(color: context.colors.textMuted)),
                   ),
                 )
               else
@@ -1238,8 +1247,8 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                           margin: const EdgeInsets.only(bottom: 6),
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                           decoration: BoxDecoration(
-                            color: AppColors.bgSurface,
-                            border: Border.all(color: AppColors.border),
+                            color: context.colors.bgSurface,
+                            border: Border.all(color: context.colors.border),
                           ),
                           child: Row(
                             children: [
@@ -1253,7 +1262,7 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                                 ),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.close_rounded, size: 16, color: AppColors.error),
+                                icon: Icon(Icons.close_rounded, size: 16, color: context.colors.error),
                                 onPressed: () {
                                   setState(() {
                                     _deleteLinkPks.add(link.pk);
@@ -1289,7 +1298,7 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                               ),
                             ),
                             IconButton(
-                              icon: const Icon(Icons.close_rounded, size: 16, color: AppColors.textMuted),
+                              icon: Icon(Icons.close_rounded, size: 16, color: context.colors.textMuted),
                               onPressed: () {
                                 setState(() {
                                   _newLinks.removeAt(idx);
@@ -1311,9 +1320,9 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: AppColors.bgSurface,
+                  color: context.colors.bgSurface,
                   border: Border.all(
-                    color: _isSecret ? AppColors.warning.withAlpha(120) : AppColors.border,
+                    color: _isSecret ? context.colors.warning.withAlpha(120) : context.colors.border,
                   ),
                 ),
                 child: Row(
@@ -1321,23 +1330,23 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                     Icon(
                       _isSecret ? Icons.lock_rounded : Icons.lock_open_rounded,
                       size: 20,
-                      color: _isSecret ? AppColors.warning : AppColors.textMuted,
+                      color: _isSecret ? context.colors.warning : context.colors.textMuted,
                     ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('비밀글 설정', style: AppTextStyles.titleSm),
+                          Text('비밀글 설정', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
                           Text('작성자 및 관리자만 조회 가능',
-                              style: AppTextStyles.caption.copyWith(color: AppColors.textMuted)),
+                              style: AppTextStyles.caption.copyWith(color: context.colors.textMuted)),
                         ],
                       ),
                     ),
                     Switch(
                       value: _isSecret,
                       onChanged: (v) => setState(() => _isSecret = v),
-                      activeColor: AppColors.warning,
+                      activeThumbColor: context.colors.warning,
                     ),
                   ],
                 ),
@@ -1352,8 +1361,8 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                     child: OutlinedButton(
                       onPressed: () => Navigator.pop(context),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.textSecond,
-                        side: const BorderSide(color: AppColors.border),
+                        foregroundColor: context.colors.textSecond,
+                        side: BorderSide(color: context.colors.border),
                         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                         padding: const EdgeInsets.symmetric(vertical: 13),
                       ),
@@ -1368,7 +1377,7 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                           ? null
                           : () => _submit(effectiveProjectPk),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.accentWork,
+                        backgroundColor: context.colors.accentWork,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 13),
                         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
@@ -1438,20 +1447,20 @@ class _SuitCaseSearchSheetState extends State<_SuitCaseSearchSheet> {
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.75,
-      decoration: const BoxDecoration(
-        color: AppColors.bgCard,
+      decoration: BoxDecoration(
+        color: context.colors.bgCard,
         borderRadius: BorderRadius.zero,
       ),
       child: Column(
         children: [
-          // ── 드래그 핸들 ──────────────────────────────────────────
+          // ── 드래그 핸들 ───────────────────────────────────────────
           Center(
             child: Container(
               width: 36,
               height: 4,
               margin: const EdgeInsets.only(top: 12, bottom: 8),
               decoration: BoxDecoration(
-                color: AppColors.border,
+                color: context.colors.border,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -1471,7 +1480,7 @@ class _SuitCaseSearchSheetState extends State<_SuitCaseSearchSheet> {
                       color: Color(0xFFBA68C8),
                     ),
                     const SizedBox(width: 8),
-                    Text('소송 사건 선택', style: AppTextStyles.titleLg),
+                    Text('소송 사건 선택', style: AppTextStyles.titleLg.copyWith(color: context.colors.textPrimary)),
                     const SizedBox(width: 6),
                     Text(
                       '(${widget.cases.length}건)',
@@ -1484,7 +1493,7 @@ class _SuitCaseSearchSheetState extends State<_SuitCaseSearchSheet> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.close_rounded, size: 20),
-                  color: AppColors.textMuted,
+                  color: context.colors.textMuted,
                   onPressed: () => Navigator.pop(context),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
@@ -1492,7 +1501,7 @@ class _SuitCaseSearchSheetState extends State<_SuitCaseSearchSheet> {
               ],
             ),
           ),
-          const Divider(color: AppColors.border, height: 1),
+          Divider(color: context.colors.border, height: 1),
 
           // ── 실시간 검색창 ─────────────────────────────────────────
           Padding(
@@ -1500,9 +1509,10 @@ class _SuitCaseSearchSheetState extends State<_SuitCaseSearchSheet> {
             child: TextField(
               controller: _searchController,
               autofocus: true,
-              style: AppTextStyles.bodyMd,
+              style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
               decoration: InputDecoration(
                 hintText: '사건번호, 사건명, 법원명으로 검색...',
+                hintStyle: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted),
                 prefixIcon: const Icon(Icons.search_rounded,
                     size: 18, color: Color(0xFFBA68C8)),
                 suffixIcon: _query.isNotEmpty
@@ -1517,14 +1527,14 @@ class _SuitCaseSearchSheetState extends State<_SuitCaseSearchSheet> {
                 contentPadding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 filled: true,
-                fillColor: AppColors.bgSurface,
-                border: const OutlineInputBorder(
+                fillColor: context.colors.bgSurface,
+                border: OutlineInputBorder(
                   borderRadius: BorderRadius.zero,
-                  borderSide: BorderSide(color: AppColors.border),
+                  borderSide: BorderSide(color: context.colors.border),
                 ),
-                enabledBorder: const OutlineInputBorder(
+                enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.zero,
-                  borderSide: BorderSide(color: AppColors.border),
+                  borderSide: BorderSide(color: context.colors.border),
                 ),
                 focusedBorder: const OutlineInputBorder(
                   borderRadius: BorderRadius.zero,
@@ -1542,13 +1552,13 @@ class _SuitCaseSearchSheetState extends State<_SuitCaseSearchSheet> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.search_off_rounded,
-                            size: 36, color: AppColors.textMuted),
+                        Icon(Icons.search_off_rounded,
+                            size: 36, color: context.colors.textMuted),
                         const SizedBox(height: 8),
                         Text(
                           '일치하는 소송 사건이 없습니다.',
                           style: AppTextStyles.bodySm
-                              .copyWith(color: AppColors.textMuted),
+                              .copyWith(color: context.colors.textMuted),
                         ),
                       ],
                     ),
@@ -1567,12 +1577,12 @@ class _SuitCaseSearchSheetState extends State<_SuitCaseSearchSheet> {
                         decoration: BoxDecoration(
                           color: isSelected
                               ? const Color(0xFFBA68C8).withAlpha(20)
-                              : AppColors.bgSurface,
+                              : context.colors.bgSurface,
                           borderRadius: BorderRadius.zero,
                           border: Border.all(
                             color: isSelected
                                 ? const Color(0xFFBA68C8)
-                                : AppColors.border,
+                                : context.colors.border,
                             width: isSelected ? 1.2 : 0.8,
                           ),
                         ),
@@ -1616,8 +1626,8 @@ class _SuitCaseSearchSheetState extends State<_SuitCaseSearchSheet> {
                                                 ? FontWeight.bold
                                                 : FontWeight.w600,
                                             color: isSelected
-                                                ? Colors.white
-                                                : AppColors.textPrimary,
+                                                ? (Theme.of(context).brightness == Brightness.dark ? Colors.white : const Color(0xFF6A1B9A))
+                                                : context.colors.textPrimary,
                                             fontSize: 13,
                                           ),
                                           maxLines: 2,

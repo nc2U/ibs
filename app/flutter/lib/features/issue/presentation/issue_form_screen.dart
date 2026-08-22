@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/project_provider.dart';
+import '../../../core/theme/app_colors_extension.dart';
 import '../data/issue_repository.dart';
 import '../data/models/issue_model.dart';
 import '../providers/issue_provider.dart';
@@ -44,61 +44,66 @@ class IssueFormScreen extends ConsumerStatefulWidget {
 
 class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
   final _formKey = GlobalKey<FormState>();
+
   late TextEditingController _subjectController;
   late TextEditingController _descriptionController;
   late TextEditingController _startDateController;
   late TextEditingController _dueDateController;
 
-  int _trackerId = 4; // 기본: 기획일반
-  int _statusId = 1; // 기본: 준비
-  int _priorityId = 2; // 기본: 보통
-  bool _isPrivate = false;
-  bool _isSaving = false;
-
+  int _trackerId = 4; // 기본값: 기획일반(4)
+  int _statusId = 1; // 기본값: 준비/신규(1)
+  int _priorityId = 2; // 기본값: 보통(2)
   int? _assignedToId;
   int? _parentIssueId;
   int? _fixedVersionId;
   int? _categoryId;
   String? _expectedDuration;
+  bool _isPrivate = false;
 
   String? _selectedProjectSlug;
   int? _meetingId;
+  bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
     final issue = widget.initialIssue;
+
     _subjectController = TextEditingController(text: issue?.subject ?? '');
     _descriptionController =
         TextEditingController(text: issue?.description ?? '');
-    _startDateController = TextEditingController(
-        text: issue?.startDate ??
-            DateTime.now().toIso8601String().substring(0, 10));
+    _startDateController =
+        TextEditingController(text: issue?.startDate ?? _todayStr());
     _dueDateController = TextEditingController(text: issue?.dueDate ?? '');
 
     if (issue != null) {
       _trackerId = issue.tracker.pk;
       _statusId = issue.status.pk;
       _priorityId = issue.priority.pk;
-      _isPrivate = issue.isPrivate;
-      _meetingId = issue.meeting;
-      _selectedProjectSlug = issue.project.slug;
       _assignedToId = issue.assignedTo?.pk;
       _parentIssueId = issue.parent?.pk;
       _fixedVersionId = issue.fixedVersion?.pk;
       _categoryId = issue.category;
       _expectedDuration = issue.expectedDuration;
+      _isPrivate = issue.isPrivate;
+      _meetingId = issue.meeting ?? widget.initialMeetingId;
+      _selectedProjectSlug = issue.project.slug;
     } else {
       _meetingId = widget.initialMeetingId;
-      _selectedProjectSlug = widget.initialProjectSlug;
-
-      if (_selectedProjectSlug == null) {
-        final selectedProj = ref.read(selectedProjectProvider);
-        if (selectedProj != null) {
-          _selectedProjectSlug = selectedProj.slug;
+      if (widget.initialProjectSlug != null) {
+        _selectedProjectSlug = widget.initialProjectSlug;
+      } else {
+        final currentProj = ref.read(selectedProjectProvider);
+        if (currentProj != null) {
+          _selectedProjectSlug = currentProj.slug;
         }
       }
     }
+  }
+
+  String _todayStr() {
+    final now = DateTime.now();
+    return "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
   }
 
   @override
@@ -111,31 +116,36 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
   }
 
   Future<void> _selectDate(TextEditingController controller) async {
-    DateTime initial = DateTime.now();
-    if (controller.text.isNotEmpty) {
-      final parsed = DateTime.tryParse(controller.text);
+    final now = DateTime.now();
+    DateTime initial = now;
+    if (controller.text.trim().isNotEmpty) {
+      final parsed = DateTime.tryParse(controller.text.trim());
       if (parsed != null) initial = parsed;
     }
+
     final picked = await showDatePicker(
       context: context,
       initialDate: initial,
       firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
+      lastDate: DateTime(2035),
     );
+
     if (picked != null) {
-      setState(() {
-        controller.text = picked.toIso8601String().substring(0, 10);
-      });
+      final str =
+          "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+      setState(() => controller.text = str);
     }
   }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (widget.initialIssue == null &&
-        (_selectedProjectSlug == null || _selectedProjectSlug!.isEmpty)) {
+    if (_selectedProjectSlug == null || _selectedProjectSlug!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('프로젝트를 먼저 선택해 주세요.')),
+        SnackBar(
+          content: const Text('워크스페이스(프로젝트)를 선택해 주세요.'),
+          backgroundColor: context.colors.error,
+        ),
       );
       return;
     }
@@ -148,50 +158,23 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
       'tracker': _trackerId,
       'status': _statusId,
       'priority': _priorityId,
-      'start_date': _startDateController.text.trim(),
       'is_private': _isPrivate,
+      'start_date': _startDateController.text.trim().isNotEmpty
+          ? _startDateController.text.trim()
+          : null,
     };
 
-    if (_assignedToId != null) {
-      payload['assigned_to'] = _assignedToId;
-    } else {
-      payload['assigned_to'] = null;
-    }
-
-    if (_parentIssueId != null) {
-      payload['parent'] = _parentIssueId;
-    } else {
-      payload['parent'] = null;
-    }
-
-    if (_fixedVersionId != null) {
-      payload['fixed_version'] = _fixedVersionId;
-    } else {
-      payload['fixed_version'] = null;
-    }
-
-    if (_categoryId != null) {
-      payload['category'] = _categoryId;
-    } else {
-      payload['category'] = null;
-    }
-
+    if (_assignedToId != null) payload['assigned_to'] = _assignedToId;
+    if (_parentIssueId != null) payload['parent'] = _parentIssueId;
+    if (_fixedVersionId != null) payload['fixed_version'] = _fixedVersionId;
+    if (_categoryId != null) payload['category'] = _categoryId;
     if (_expectedDuration != null && _expectedDuration!.isNotEmpty) {
       payload['expected_duration'] = _expectedDuration;
-    } else {
-      payload['expected_duration'] = null;
     }
-
     if (_dueDateController.text.trim().isNotEmpty) {
       payload['due_date'] = _dueDateController.text.trim();
-    } else {
-      payload['due_date'] = null;
     }
-
-    if (_meetingId != null) {
-      payload['meeting'] = _meetingId;
-    }
-
+    if (_meetingId != null) payload['meeting'] = _meetingId;
     if (widget.initialIssue == null && _selectedProjectSlug != null) {
       payload['project'] = _selectedProjectSlug;
     }
@@ -213,7 +196,7 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
             content: Text(widget.initialIssue != null
                 ? '업무가 수정되었습니다.'
                 : '새 업무가 등록되었습니다.'),
-            backgroundColor: AppColors.success,
+            backgroundColor: context.colors.success,
           ),
         );
         context.pop();
@@ -223,7 +206,7 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('저장 실패: $e'),
-            backgroundColor: AppColors.error,
+            backgroundColor: context.colors.error,
           ),
         );
       }
@@ -237,7 +220,6 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
     final isEdit = widget.initialIssue != null;
     final projectsAsync = ref.watch(issueFormProjectsProvider);
 
-    // 현재 선택된 프로젝트의 상세 정보 (멤버, 버전, 범주)
     final projectSlug = _selectedProjectSlug ??
         (projectsAsync.valueOrNull?.isNotEmpty == true
             ? projectsAsync.valueOrNull!.first.slug
@@ -246,37 +228,33 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
         ? ref.watch(projectDetailProvider(projectSlug))
         : null;
 
-    // 상위업무 후보 목록 (현재 프로젝트의 이슈 목록)
     final projectIssuesAsync = projectSlug.isNotEmpty
         ? ref.watch(issueListProvider)
         : null;
 
-    // 전역 공용 상태 & 우선순위 목록
     final statusListAsync = ref.watch(issueStatusListProvider);
     final priorityListAsync = ref.watch(issuePriorityListProvider);
-
-    // 현재 로그인 사용자 정보 (나에게 배정용)
     final currentUser = ref.watch(currentUserProvider).valueOrNull;
 
     return Scaffold(
-      backgroundColor: AppColors.bgPrimary,
+      backgroundColor: context.colors.bgPrimary,
       appBar: AppBar(
-        backgroundColor: AppColors.bgPrimary,
-        foregroundColor: AppColors.textPrimary,
-        title: Text(isEdit ? '업무 수정' : '새 업무 등록', style: AppTextStyles.titleMd),
+        backgroundColor: context.colors.bgPrimary,
+        foregroundColor: context.colors.textPrimary,
+        title: Text(isEdit ? '업무 수정' : '새 업무 등록', style: AppTextStyles.titleMd.copyWith(color: context.colors.textPrimary)),
         actions: [
           TextButton(
             onPressed: _isSaving ? null : _submit,
             child: _isSaving
-                ? const SizedBox(
+                ? SizedBox(
                     width: 18,
                     height: 18,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: AppColors.accentWork),
+                        strokeWidth: 2, color: context.colors.accentWork),
                   )
                 : Text('저장',
                     style: AppTextStyles.titleSm
-                        .copyWith(color: AppColors.accentWork)),
+                        .copyWith(color: context.colors.accentWork)),
           ),
         ],
       ),
@@ -287,27 +265,24 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ══════════════════════════════════════════════════════════════
-              // 1. 핵심 내용 섹션 (프로젝트 / 제목 / 설명)
-              // ══════════════════════════════════════════════════════════════
               if (!isEdit) ...[
-                Text('워크스페이스 (프로젝트) *', style: AppTextStyles.titleSm),
+                Text('워크스페이스 (프로젝트) *', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
                 const SizedBox(height: 6),
                 projectsAsync.when(
-                  loading: () => const SizedBox(
+                  loading: () => SizedBox(
                     height: 48,
                     child: Center(
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: AppColors.accentWork)),
+                            strokeWidth: 2, color: context.colors.accentWork)),
                   ),
                   error: (e, _) => Text('프로젝트 목록을 불러올 수 없습니다.',
-                      style: AppTextStyles.bodyMuted),
+                      style: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted)),
                   data: (projects) => DropdownButtonFormField<String>(
                     value: _selectedProjectSlug ??
                         (projects.isNotEmpty ? projects.first.slug : null),
                     isExpanded: true,
-                    style: AppTextStyles.bodyMd,
-                    dropdownColor: AppColors.bgCard,
+                    style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
+                    dropdownColor: context.colors.bgCard,
                     decoration: _inputDecoration('프로젝트 선택'),
                     items: projects
                         .map((p) => DropdownMenuItem(
@@ -332,72 +307,62 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                 const SizedBox(height: 16),
               ],
 
-              // ── 제목 ────────────────────────────────────────────────────────
-              Text('제목 *', style: AppTextStyles.titleSm),
+              Text('제목 *', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
               const SizedBox(height: 6),
               TextFormField(
                 controller: _subjectController,
-                style: AppTextStyles.bodyMd,
+                style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
                 validator: (v) =>
                     (v == null || v.trim().isEmpty) ? '제목을 입력해 주세요.' : null,
                 decoration: _inputDecoration('업무 제목을 입력하세요'),
               ),
               const SizedBox(height: 16),
 
-              // ── 설명 ────────────────────────────────────────────────────────
-              Text('설명', style: AppTextStyles.titleSm),
+              Text('설명', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
               const SizedBox(height: 6),
               TextFormField(
                 controller: _descriptionController,
                 maxLines: 5,
-                style: AppTextStyles.bodyMd,
+                style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
                 decoration:
                     _inputDecoration('상세 설명 및 안내 사항을 입력하세요 (마크다운 지원)'),
               ),
               const SizedBox(height: 20),
 
-              // ══════════════════════════════════════════════════════════════
-              // 2. 기본/필수 메타정보 섹션 (유형, 상태, 우선순위, 예상처리기간, 시작/마감일)
-              // ══════════════════════════════════════════════════════════════
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: AppColors.bgCard,
+                  color: context.colors.bgCard,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.border, width: 0.8),
+                  border: Border.all(color: context.colors.border, width: 0.8),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('기본 설정', style: AppTextStyles.titleMd),
+                    Text('기본 설정', style: AppTextStyles.titleMd.copyWith(color: context.colors.textPrimary)),
                     const SizedBox(height: 12),
 
-                    // 1. 유형 & 우선순위
                     Row(
                       children: [
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('유형', style: AppTextStyles.titleSm),
+                              Text('유형', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
                               const SizedBox(height: 6),
                               projectDetailAsync?.when(
                                     loading: () => const SizedBox(height: 48),
                                     error: (_, __) =>
                                         DropdownButtonFormField<int>(
                                       value: _trackerId,
-                                      style: AppTextStyles.bodyMd,
-                                      dropdownColor: AppColors.bgCard,
+                                      style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
+                                      dropdownColor: context.colors.bgCard,
                                       decoration: _inputDecoration(''),
                                       items: const [
-                                        DropdownMenuItem(
-                                            value: 4, child: Text('기획일반')),
-                                        DropdownMenuItem(
-                                            value: 1, child: Text('결함')),
-                                        DropdownMenuItem(
-                                            value: 2, child: Text('기능')),
-                                        DropdownMenuItem(
-                                            value: 3, child: Text('지원')),
+                                        DropdownMenuItem(value: 4, child: Text('기획일반')),
+                                        DropdownMenuItem(value: 1, child: Text('결함')),
+                                        DropdownMenuItem(value: 2, child: Text('기능')),
+                                        DropdownMenuItem(value: 3, child: Text('지원')),
                                       ],
                                       onChanged: (v) =>
                                           setState(() => _trackerId = v ?? 4),
@@ -405,23 +370,20 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                     data: (proj) {
                                       final trackers = proj.trackers;
                                       final uniqueTrackers = <int, ProjectTrackerModel>{};
-                                      for (final t in trackers) {
-                                        uniqueTrackers[t.pk] = t;
-                                      }
+                                      for (final t in trackers) uniqueTrackers[t.pk] = t;
                                       final trackerList = uniqueTrackers.values.toList();
                                       final hasTrackers = trackerList.isNotEmpty;
 
                                       final currentTrackerId = (hasTrackers &&
-                                              !trackerList
-                                                  .any((t) => t.pk == _trackerId))
+                                              !trackerList.any((t) => t.pk == _trackerId))
                                           ? trackerList.first.pk
                                           : _trackerId;
 
                                       return DropdownButtonFormField<int>(
                                         value: currentTrackerId,
                                         isExpanded: true,
-                                        style: AppTextStyles.bodyMd,
-                                        dropdownColor: AppColors.bgCard,
+                                        style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
+                                        dropdownColor: context.colors.bgCard,
                                         decoration: _inputDecoration(''),
                                         items: hasTrackers
                                             ? trackerList
@@ -431,18 +393,10 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                                     ))
                                                 .toList()
                                             : const [
-                                                DropdownMenuItem(
-                                                    value: 4,
-                                                    child: Text('기획일반')),
-                                                DropdownMenuItem(
-                                                    value: 1,
-                                                    child: Text('결함')),
-                                                DropdownMenuItem(
-                                                    value: 2,
-                                                    child: Text('기능')),
-                                                DropdownMenuItem(
-                                                    value: 3,
-                                                    child: Text('지원')),
+                                                DropdownMenuItem(value: 4, child: Text('기획일반')),
+                                                DropdownMenuItem(value: 1, child: Text('결함')),
+                                                DropdownMenuItem(value: 2, child: Text('기능')),
+                                                DropdownMenuItem(value: 3, child: Text('지원')),
                                               ],
                                         onChanged: (v) =>
                                             setState(() => _trackerId = v ?? 4),
@@ -452,18 +406,14 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                   DropdownButtonFormField<int>(
                                     value: _trackerId,
                                     isExpanded: true,
-                                    style: AppTextStyles.bodyMd,
-                                    dropdownColor: AppColors.bgCard,
+                                    style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
+                                    dropdownColor: context.colors.bgCard,
                                     decoration: _inputDecoration(''),
                                     items: const [
-                                      DropdownMenuItem(
-                                          value: 4, child: Text('기획일반')),
-                                      DropdownMenuItem(
-                                          value: 1, child: Text('결함')),
-                                      DropdownMenuItem(
-                                          value: 2, child: Text('기능')),
-                                      DropdownMenuItem(
-                                          value: 3, child: Text('지원')),
+                                      DropdownMenuItem(value: 4, child: Text('기획일반')),
+                                      DropdownMenuItem(value: 1, child: Text('결함')),
+                                      DropdownMenuItem(value: 2, child: Text('기능')),
+                                      DropdownMenuItem(value: 3, child: Text('지원')),
                                     ],
                                     onChanged: (v) =>
                                         setState(() => _trackerId = v ?? 4),
@@ -476,15 +426,15 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('우선순위', style: AppTextStyles.titleSm),
+                              Text('우선순위', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
                               const SizedBox(height: 6),
                               priorityListAsync.when(
                                 loading: () => const SizedBox(height: 48),
                                 error: (_, __) => DropdownButtonFormField<int>(
                                   value: _priorityId,
                                   isExpanded: true,
-                                  style: AppTextStyles.bodyMd,
-                                  dropdownColor: AppColors.bgCard,
+                                  style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
+                                  dropdownColor: context.colors.bgCard,
                                   decoration: _inputDecoration(''),
                                   items: const [
                                     DropdownMenuItem(value: 1, child: Text('낮음')),
@@ -498,23 +448,20 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                 ),
                                 data: (priorities) {
                                   final uniquePriorities = <int, IssuePriorityModel>{};
-                                  for (final p in priorities) {
-                                    uniquePriorities[p.pk] = p;
-                                  }
+                                  for (final p in priorities) uniquePriorities[p.pk] = p;
                                   final priorityList = uniquePriorities.values.toList();
                                   final hasPriorities = priorityList.isNotEmpty;
 
                                   final currentPriorityId = (hasPriorities &&
-                                          !priorityList
-                                              .any((p) => p.pk == _priorityId))
+                                          !priorityList.any((p) => p.pk == _priorityId))
                                       ? priorityList.first.pk
                                       : _priorityId;
 
                                   return DropdownButtonFormField<int>(
                                     value: currentPriorityId,
                                     isExpanded: true,
-                                    style: AppTextStyles.bodyMd,
-                                    dropdownColor: AppColors.bgCard,
+                                    style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
+                                    dropdownColor: context.colors.bgCard,
                                     decoration: _inputDecoration(''),
                                     items: hasPriorities
                                         ? priorityList
@@ -524,16 +471,11 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                                 ))
                                             .toList()
                                         : const [
-                                            DropdownMenuItem(
-                                                value: 1, child: Text('낮음')),
-                                            DropdownMenuItem(
-                                                value: 2, child: Text('보통')),
-                                            DropdownMenuItem(
-                                                value: 3, child: Text('높음')),
-                                            DropdownMenuItem(
-                                                value: 4, child: Text('긴급')),
-                                            DropdownMenuItem(
-                                                value: 5, child: Text('즉시')),
+                                            DropdownMenuItem(value: 1, child: Text('낮음')),
+                                            DropdownMenuItem(value: 2, child: Text('보통')),
+                                            DropdownMenuItem(value: 3, child: Text('높음')),
+                                            DropdownMenuItem(value: 4, child: Text('긴급')),
+                                            DropdownMenuItem(value: 5, child: Text('즉시')),
                                           ],
                                     onChanged: (v) =>
                                         setState(() => _priorityId = v ?? 2),
@@ -547,7 +489,6 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                     ),
                     const SizedBox(height: 14),
 
-                    // 2. 담당자 & 상태
                     Row(
                       children: [
                         Expanded(
@@ -555,26 +496,19 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text('담당자', style: AppTextStyles.titleSm),
-                                  if (currentUser != null &&
-                                      _assignedToId != currentUser.pk)
+                                  Text('담당자', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
+                                  if (currentUser != null && _assignedToId != currentUser.pk)
                                     InkWell(
                                       borderRadius: BorderRadius.circular(4),
-                                      onTap: () {
-                                        setState(() {
-                                          _assignedToId = currentUser.pk;
-                                        });
-                                      },
+                                      onTap: () => setState(() => _assignedToId = currentUser.pk),
                                       child: Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 4, vertical: 1),
+                                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                                         child: Text(
                                           '« 나에게',
                                           style: AppTextStyles.caption.copyWith(
-                                            color: AppColors.accentWork,
+                                            color: context.colors.accentWork,
                                             fontWeight: FontWeight.w600,
                                           ),
                                         ),
@@ -584,35 +518,28 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                               ),
                               const SizedBox(height: 6),
                               projectDetailAsync?.when(
-                                    loading: () => const SizedBox(
+                                    loading: () => SizedBox(
                                       height: 48,
                                       child: Center(
                                           child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              color: AppColors.accentWork)),
+                                              strokeWidth: 2, color: context.colors.accentWork)),
                                     ),
                                     error: (_, __) =>
                                         DropdownButtonFormField<int?>(
                                       value: null,
                                       isExpanded: true,
-                                      style: AppTextStyles.bodyMd,
-                                      dropdownColor: AppColors.bgCard,
+                                      style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
+                                      dropdownColor: context.colors.bgCard,
                                       decoration: _inputDecoration('미배정'),
                                       items: const [
-                                        DropdownMenuItem(
-                                            value: null, child: Text('미배정')),
+                                        DropdownMenuItem(value: null, child: Text('미배정')),
                                       ],
-                                      onChanged: (v) =>
-                                          setState(() => _assignedToId = v),
+                                      onChanged: (v) => setState(() => _assignedToId = v),
                                     ),
                                     data: (proj) {
                                       final uniqueMembers = <int, ProjectMemberModel>{};
-                                      for (final m in proj.members) {
-                                        uniqueMembers[m.user.pk] = m;
-                                      }
+                                      for (final m in proj.members) uniqueMembers[m.user.pk] = m;
                                       final memberList = uniqueMembers.values.toList();
-
-                                      // 현재 선택된 담당자가 멤버 목록에 없으면(예: 퇴사자, 임의 유저 등) 보정
                                       final currentAssignedId = (_assignedToId != null &&
                                               !memberList.any((m) => m.user.pk == _assignedToId))
                                           ? null
@@ -621,35 +548,30 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                       return DropdownButtonFormField<int?>(
                                         value: currentAssignedId,
                                         isExpanded: true,
-                                        style: AppTextStyles.bodyMd,
-                                        dropdownColor: AppColors.bgCard,
-                                        decoration:
-                                            _inputDecoration('담당자 선택'),
+                                        style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
+                                        dropdownColor: context.colors.bgCard,
+                                        decoration: _inputDecoration('담당자 선택'),
                                         items: [
-                                          const DropdownMenuItem(
-                                              value: null, child: Text('미배정')),
+                                          const DropdownMenuItem(value: null, child: Text('미배정')),
                                           ...memberList.map((m) => DropdownMenuItem(
                                                 value: m.user.pk,
                                                 child: Text(m.user.username),
                                               )),
                                         ],
-                                        onChanged: (v) =>
-                                            setState(() => _assignedToId = v),
+                                        onChanged: (v) => setState(() => _assignedToId = v),
                                       );
                                     },
                                   ) ??
                                   DropdownButtonFormField<int?>(
                                     value: null,
                                     isExpanded: true,
-                                    style: AppTextStyles.bodyMd,
-                                    dropdownColor: AppColors.bgCard,
+                                    style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
+                                    dropdownColor: context.colors.bgCard,
                                     decoration: _inputDecoration('미배정'),
                                     items: const [
-                                      DropdownMenuItem(
-                                          value: null, child: Text('미배정')),
+                                      DropdownMenuItem(value: null, child: Text('미배정')),
                                     ],
-                                    onChanged: (v) =>
-                                        setState(() => _assignedToId = v),
+                                    onChanged: (v) => setState(() => _assignedToId = v),
                                   ),
                             ],
                           ),
@@ -660,23 +582,19 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text('상태', style: AppTextStyles.titleSm),
-                                  // 준비(1) 상태일 때는 '진행 »', 진행(2) 상태일 때는 '완료 »' 빠른 전환 버튼
+                                  Text('상태', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
                                   if (_statusId == 1)
                                     InkWell(
                                       borderRadius: BorderRadius.circular(4),
-                                      onTap: () =>
-                                          setState(() => _statusId = 2),
+                                      onTap: () => setState(() => _statusId = 2),
                                       child: Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 4, vertical: 1),
+                                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                                         child: Text(
                                           '진행 »',
                                           style: AppTextStyles.caption.copyWith(
-                                            color: AppColors.accentWork,
+                                            color: context.colors.accentWork,
                                             fontWeight: FontWeight.w600,
                                           ),
                                         ),
@@ -685,15 +603,13 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                   else if (_statusId == 2)
                                     InkWell(
                                       borderRadius: BorderRadius.circular(4),
-                                      onTap: () =>
-                                          setState(() => _statusId = 5),
+                                      onTap: () => setState(() => _statusId = 5),
                                       child: Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 4, vertical: 1),
+                                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                                         child: Text(
                                           '완료 »',
                                           style: AppTextStyles.caption.copyWith(
-                                            color: AppColors.success,
+                                            color: context.colors.success,
                                             fontWeight: FontWeight.w600,
                                           ),
                                         ),
@@ -707,8 +623,8 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                 error: (_, __) => DropdownButtonFormField<int>(
                                   value: _statusId,
                                   isExpanded: true,
-                                  style: AppTextStyles.bodyMd,
-                                  dropdownColor: AppColors.bgCard,
+                                  style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
+                                  dropdownColor: context.colors.bgCard,
                                   decoration: _inputDecoration(''),
                                   items: const [
                                     DropdownMenuItem(value: 1, child: Text('신규')),
@@ -717,32 +633,24 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                     DropdownMenuItem(value: 4, child: Text('의견')),
                                     DropdownMenuItem(value: 5, child: Text('완료')),
                                   ],
-                                  onChanged: (v) =>
-                                      setState(() => _statusId = v ?? 2),
+                                  onChanged: (v) => setState(() => _statusId = v ?? 2),
                                 ),
                                 data: (statuses) {
-                                  final filtered = isEdit
-                                      ? statuses
-                                      : statuses.where((s) => s.pk <= 2).toList();
-
+                                  final filtered = isEdit ? statuses : statuses.where((s) => s.pk <= 2).toList();
                                   final uniqueStatuses = <int, IssueStatusModel>{};
-                                  for (final s in filtered) {
-                                    uniqueStatuses[s.pk] = s;
-                                  }
+                                  for (final s in filtered) uniqueStatuses[s.pk] = s;
                                   final availableStatuses = uniqueStatuses.values.toList();
-
                                   final hasStatuses = availableStatuses.isNotEmpty;
                                   final currentStatusId = (hasStatuses &&
-                                          !availableStatuses
-                                              .any((s) => s.pk == _statusId))
+                                          !availableStatuses.any((s) => s.pk == _statusId))
                                       ? availableStatuses.first.pk
                                       : _statusId;
 
                                   return DropdownButtonFormField<int>(
                                     value: currentStatusId,
                                     isExpanded: true,
-                                    style: AppTextStyles.bodyMd,
-                                    dropdownColor: AppColors.bgCard,
+                                    style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
+                                    dropdownColor: context.colors.bgCard,
                                     decoration: _inputDecoration(''),
                                     items: hasStatuses
                                         ? availableStatuses
@@ -752,13 +660,10 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                                 ))
                                             .toList()
                                         : const [
-                                            DropdownMenuItem(
-                                                value: 1, child: Text('준비')),
-                                            DropdownMenuItem(
-                                                value: 2, child: Text('진행')),
+                                            DropdownMenuItem(value: 1, child: Text('준비')),
+                                            DropdownMenuItem(value: 2, child: Text('진행')),
                                           ],
-                                    onChanged: (v) =>
-                                        setState(() => _statusId = v ?? 1),
+                                    onChanged: (v) => setState(() => _statusId = v ?? 1),
                                   );
                                 },
                               ),
@@ -769,24 +674,23 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                     ),
                     const SizedBox(height: 14),
 
-                    // 3. 시작일 & 예상 처리기간 (필수)
                     Row(
                       children: [
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('시작일 *', style: AppTextStyles.titleSm),
+                              Text('시작일 *', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
                               const SizedBox(height: 6),
                               TextField(
                                 controller: _startDateController,
                                 readOnly: true,
-                                style: AppTextStyles.bodyMd,
+                                style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
                                 decoration:
                                     _inputDecoration('YYYY-MM-DD').copyWith(
                                   suffixIcon: IconButton(
-                                    icon: const Icon(Icons.calendar_today,
-                                        size: 18),
+                                    icon: Icon(Icons.calendar_today,
+                                        size: 18, color: context.colors.textMuted),
                                     onPressed: () =>
                                         _selectDate(_startDateController),
                                   ),
@@ -801,22 +705,17 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                // 준비(초기) 상태가 아닐 때는 필수(*) 표기
-                                (_statusId == 1)
-                                    ? '예상 처리기간'
-                                    : '예상 처리기간 *',
-                                style: AppTextStyles.titleSm,
+                                (_statusId == 1) ? '예상 처리기간' : '예상 처리기간 *',
+                                style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary),
                               ),
                               const SizedBox(height: 6),
                               DropdownButtonFormField<String?>(
                                 value: _expectedDuration,
                                 isExpanded: true,
-                                style: AppTextStyles.bodyMd,
-                                dropdownColor: AppColors.bgCard,
+                                style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
+                                dropdownColor: context.colors.bgCard,
                                 decoration: _inputDecoration(
-                                  (_statusId == 1)
-                                      ? '선택 안함'
-                                      : '처리기간 선택',
+                                  (_statusId == 1) ? '선택 안함' : '처리기간 선택',
                                 ),
                                 items: [
                                   const DropdownMenuItem(
@@ -855,9 +754,9 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
               // ══════════════════════════════════════════════════════════════
               Container(
                 decoration: BoxDecoration(
-                  color: AppColors.bgCard,
+                  color: context.colors.bgCard,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.border, width: 0.8),
+                  border: Border.all(color: context.colors.border, width: 0.8),
                 ),
                 child: Theme(
                   data: Theme.of(context)
@@ -871,10 +770,10 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                         _isPrivate,
                     tilePadding: const EdgeInsets.symmetric(horizontal: 14),
                     childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 16),
-                    leading: const Icon(Icons.tune_rounded,
-                        size: 20, color: AppColors.accentWork),
+                    leading: Icon(Icons.tune_rounded,
+                        size: 20, color: context.colors.accentWork),
                     title: Text('추가 상세 항목',
-                        style: AppTextStyles.titleSm),
+                        style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
                     subtitle: Text(
                       _dueDateController.text.isNotEmpty ||
                               _parentIssueId != null ||
@@ -883,10 +782,10 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                               _isPrivate
                           ? '설정된 항목이 있습니다.'
                           : '필요 시 펼쳐서 설정할 수 있습니다.',
-                      style: AppTextStyles.caption,
+                      style: AppTextStyles.caption.copyWith(color: context.colors.textMuted),
                     ),
                     children: [
-                      const Divider(height: 16, color: AppColors.border),
+                      Divider(height: 16, color: context.colors.border),
 
                       // ── Row 1: 목표단계 (50%) & 범주 (50%) ───────────────
                       Row(
@@ -896,7 +795,7 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text('목표단계 (버전)',
-                                    style: AppTextStyles.titleSm),
+                                    style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
                                 const SizedBox(height: 6),
                                 projectDetailAsync?.when(
                                       loading: () =>
@@ -905,8 +804,8 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                           DropdownButtonFormField<int?>(
                                         value: null,
                                         isExpanded: true,
-                                        style: AppTextStyles.bodyMd,
-                                        dropdownColor: AppColors.bgCard,
+                                        style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
+                                        dropdownColor: context.colors.bgCard,
                                         decoration: _inputDecoration('없음'),
                                         items: const [
                                           DropdownMenuItem(
@@ -954,8 +853,8 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                         return DropdownButtonFormField<int?>(
                                           value: selectedVerId,
                                           isExpanded: true,
-                                          style: AppTextStyles.bodyMd,
-                                          dropdownColor: AppColors.bgCard,
+                                          style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
+                                          dropdownColor: context.colors.bgCard,
                                           decoration:
                                               _inputDecoration('목표단계 선택'),
                                           items: [
@@ -979,8 +878,8 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                     DropdownButtonFormField<int?>(
                                       value: null,
                                       isExpanded: true,
-                                      style: AppTextStyles.bodyMd,
-                                      dropdownColor: AppColors.bgCard,
+                                      style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
+                                      dropdownColor: context.colors.bgCard,
                                       decoration: _inputDecoration('없음'),
                                       items: const [
                                         DropdownMenuItem(
@@ -997,7 +896,7 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('범주', style: AppTextStyles.titleSm),
+                                Text('범주', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
                                 const SizedBox(height: 6),
                                 projectDetailAsync?.when(
                                       loading: () =>
@@ -1006,8 +905,8 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                           DropdownButtonFormField<int?>(
                                         value: null,
                                         isExpanded: true,
-                                        style: AppTextStyles.bodyMd,
-                                        dropdownColor: AppColors.bgCard,
+                                        style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
+                                        dropdownColor: context.colors.bgCard,
                                         decoration: _inputDecoration('없음'),
                                         items: const [
                                           DropdownMenuItem(
@@ -1035,8 +934,8 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                         return DropdownButtonFormField<int?>(
                                           value: currentCategoryId,
                                           isExpanded: true,
-                                          style: AppTextStyles.bodyMd,
-                                          dropdownColor: AppColors.bgCard,
+                                          style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
+                                          dropdownColor: context.colors.bgCard,
                                           decoration: _inputDecoration('범주 선택'),
                                           items: [
                                             const DropdownMenuItem(
@@ -1073,8 +972,8 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                                     DropdownButtonFormField<int?>(
                                       value: null,
                                       isExpanded: true,
-                                      style: AppTextStyles.bodyMd,
-                                      dropdownColor: AppColors.bgCard,
+                                      style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
+                                      dropdownColor: context.colors.bgCard,
                                       decoration: _inputDecoration('없음'),
                                       items: const [
                                         DropdownMenuItem(
@@ -1091,25 +990,25 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                       const SizedBox(height: 14),
 
                       // ── Row 2: 완료기한 (100% 전체 폭) ─────────────────────
-                      Text('완료기한', style: AppTextStyles.titleSm),
+                      Text('완료기한', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
                       const SizedBox(height: 6),
                       TextField(
                         controller: _dueDateController,
                         readOnly: true,
                         onTap: () => _selectDate(_dueDateController),
-                        style: AppTextStyles.bodyMd,
+                        style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
                         decoration: _inputDecoration('YYYY-MM-DD').copyWith(
                           suffixIcon: _dueDateController.text.isNotEmpty
                               ? IconButton(
-                                  icon: const Icon(Icons.clear_rounded,
-                                      size: 18, color: AppColors.textMuted),
+                                  icon: Icon(Icons.clear_rounded,
+                                      size: 18, color: context.colors.textMuted),
                                   tooltip: '기한 삭제',
                                   onPressed: () => setState(
                                       () => _dueDateController.clear()),
                                 )
                               : IconButton(
-                                  icon: const Icon(Icons.calendar_today,
-                                      size: 18),
+                                  icon: Icon(Icons.calendar_today,
+                                      size: 18, color: context.colors.textMuted),
                                   onPressed: () =>
                                       _selectDate(_dueDateController),
                                 ),
@@ -1118,15 +1017,15 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                       const SizedBox(height: 14),
 
                       // ── Row 3: 상위업무 (100% 전체 폭) ───────────────────
-                      Text('상위업무', style: AppTextStyles.titleSm),
+                      Text('상위업무', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
                       const SizedBox(height: 6),
                       projectIssuesAsync?.when(
-                            loading: () => const SizedBox(
+                            loading: () => SizedBox(
                               height: 48,
                               child: Center(
                                   child: CircularProgressIndicator(
                                       strokeWidth: 2,
-                                      color: AppColors.accentWork)),
+                                      color: context.colors.accentWork)),
                             ),
                             error: (_, __) =>
                                 _buildParentIssueSelector(const []),
@@ -1146,13 +1045,13 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                       // ── Row 4: 비공개 업무 토글 (100% 전체 폭 및 상세 설명) ──
                       SwitchListTile(
                         contentPadding: EdgeInsets.zero,
-                        title: Text('비공개 업무', style: AppTextStyles.titleSm),
+                        title: Text('비공개 업무', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
                         subtitle: Text(
                           '본인 및 담당자, 권한 있는 관리자에게만 공개됩니다.',
-                          style: AppTextStyles.caption,
+                          style: AppTextStyles.caption.copyWith(color: context.colors.textMuted),
                         ),
                         value: _isPrivate,
-                        activeColor: AppColors.accentWork,
+                        activeThumbColor: context.colors.accentWork,
                         onChanged: (v) => setState(() => _isPrivate = v),
                       ),
                     ],
@@ -1191,39 +1090,39 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
         decoration: BoxDecoration(
-          color: AppColors.bgCard,
+          color: context.colors.bgCard,
           borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: AppColors.border, width: 0.8),
+          border: Border.all(color: context.colors.border, width: 0.8),
         ),
         child: Row(
           children: [
             Icon(
               Icons.account_tree_outlined,
               size: 18,
-              color: isSelected ? AppColors.accentWork : AppColors.textMuted,
+              color: isSelected ? context.colors.accentWork : context.colors.textMuted,
             ),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
                 displayTitle,
                 style: isSelected
-                    ? AppTextStyles.bodyMd.copyWith(color: AppColors.textPrimary)
-                    : AppTextStyles.bodyMuted,
+                    ? AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary)
+                    : AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
             if (isSelected)
               GestureDetector(
                 onTap: () => setState(() => _parentIssueId = null),
-                child: const Padding(
-                  padding: EdgeInsets.only(left: 8),
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 8),
                   child: Icon(Icons.close_rounded,
-                      size: 18, color: AppColors.textMuted),
+                      size: 18, color: context.colors.textMuted),
                 ),
               )
             else
-              const Icon(Icons.search_rounded,
-                  size: 18, color: AppColors.textMuted),
+              Icon(Icons.search_rounded,
+                  size: 18, color: context.colors.textMuted),
           ],
         ),
       ),
@@ -1234,7 +1133,7 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.bgCard,
+      backgroundColor: context.colors.bgCard,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -1254,21 +1153,21 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
   InputDecoration _inputDecoration(String hint) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: AppTextStyles.bodyMuted,
+      hintStyle: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted),
       filled: true,
-      fillColor: AppColors.bgCard,
+      fillColor: context.colors.bgCard,
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(6),
-        borderSide: const BorderSide(color: AppColors.border, width: 0.8),
+        borderSide: BorderSide(color: context.colors.border, width: 0.8),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(6),
-        borderSide: const BorderSide(color: AppColors.border, width: 0.8),
+        borderSide: BorderSide(color: context.colors.border, width: 0.8),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(6),
-        borderSide: const BorderSide(color: AppColors.accentWork, width: 1.5),
+        borderSide: BorderSide(color: context.colors.accentWork, width: 1.5),
       ),
     );
   }
@@ -1329,7 +1228,7 @@ class _ParentIssueSearchModalState extends State<_ParentIssueSearchModal> {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
-                    color: AppColors.border,
+                    color: context.colors.border,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -1339,9 +1238,9 @@ class _ParentIssueSearchModalState extends State<_ParentIssueSearchModal> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('상위업무 선택', style: AppTextStyles.titleLg),
+                  Text('상위업무 선택', style: AppTextStyles.titleLg.copyWith(color: context.colors.textPrimary)),
                   IconButton(
-                    icon: const Icon(Icons.close_rounded, size: 20),
+                    icon: Icon(Icons.close_rounded, size: 20, color: context.colors.textPrimary),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ],
@@ -1351,14 +1250,14 @@ class _ParentIssueSearchModalState extends State<_ParentIssueSearchModal> {
               // ── 검색창 ──────────────────────────────────────────────────
               TextField(
                 controller: _searchController,
-                style: AppTextStyles.bodyMd,
+                style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
                 decoration: InputDecoration(
                   hintText: '업무 번호(#ID) 또는 제목 검색',
-                  hintStyle: AppTextStyles.bodyMuted,
-                  prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                  hintStyle: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted),
+                  prefixIcon: Icon(Icons.search_rounded, size: 20, color: context.colors.textMuted),
                   suffixIcon: _query.isNotEmpty
                       ? IconButton(
-                          icon: const Icon(Icons.clear_rounded, size: 18),
+                          icon: Icon(Icons.clear_rounded, size: 18, color: context.colors.textMuted),
                           onPressed: () {
                             _searchController.clear();
                             setState(() => _query = '');
@@ -1366,7 +1265,7 @@ class _ParentIssueSearchModalState extends State<_ParentIssueSearchModal> {
                         )
                       : null,
                   filled: true,
-                  fillColor: AppColors.bgSurface,
+                  fillColor: context.colors.bgSurface,
                   contentPadding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   border: OutlineInputBorder(
@@ -1385,13 +1284,13 @@ class _ParentIssueSearchModalState extends State<_ParentIssueSearchModal> {
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(6)),
                 tileColor: widget.currentParentId == null
-                    ? AppColors.accentWork.withAlpha(25)
+                    ? context.colors.accentWork.withAlpha(25)
                     : null,
                 leading: Icon(
                   Icons.block_rounded,
                   color: widget.currentParentId == null
-                      ? AppColors.accentWork
-                      : AppColors.textMuted,
+                      ? context.colors.accentWork
+                      : context.colors.textMuted,
                   size: 20,
                 ),
                 title: Text(
@@ -1401,17 +1300,17 @@ class _ParentIssueSearchModalState extends State<_ParentIssueSearchModal> {
                         ? FontWeight.bold
                         : FontWeight.normal,
                     color: widget.currentParentId == null
-                        ? AppColors.accentWork
-                        : AppColors.textPrimary,
+                        ? context.colors.accentWork
+                        : context.colors.textPrimary,
                   ),
                 ),
                 trailing: widget.currentParentId == null
-                    ? const Icon(Icons.check_rounded,
-                        color: AppColors.accentWork, size: 20)
+                    ? Icon(Icons.check_rounded,
+                        color: context.colors.accentWork, size: 20)
                     : null,
                 onTap: () => widget.onSelect(null),
               ),
-              const Divider(height: 12, color: AppColors.border),
+              Divider(height: 12, color: context.colors.border),
 
               // ── 검색된 업무 목록 ─────────────────────────────────────────
               Expanded(
@@ -1421,14 +1320,14 @@ class _ParentIssueSearchModalState extends State<_ParentIssueSearchModal> {
                           _query.isEmpty
                               ? '선택 가능한 업무가 없습니다.'
                               : '검색 결과가 없습니다.',
-                          style: AppTextStyles.bodyMuted,
+                          style: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted),
                         ),
                       )
                     : ListView.separated(
                         controller: scrollController,
                         itemCount: filtered.length,
                         separatorBuilder: (_, __) =>
-                            const Divider(height: 1, color: AppColors.border),
+                            Divider(height: 1, color: context.colors.border),
                         itemBuilder: (context, index) {
                           final item = filtered[index];
                           final isCurrent = widget.currentParentId == item.pk;
@@ -1437,7 +1336,7 @@ class _ParentIssueSearchModalState extends State<_ParentIssueSearchModal> {
                             contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 4),
                             tileColor: isCurrent
-                                ? AppColors.accentWork.withAlpha(25)
+                                ? context.colors.accentWork.withAlpha(25)
                                 : null,
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(6)),
@@ -1445,20 +1344,21 @@ class _ParentIssueSearchModalState extends State<_ParentIssueSearchModal> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                color: AppColors.bgSurface,
+                                color: context.colors.bgSurface,
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
                                 '#${item.pk}',
                                 style: AppTextStyles.caption.copyWith(
                                   fontWeight: FontWeight.bold,
-                                  color: AppColors.accentWork,
+                                  color: context.colors.accentWork,
                                 ),
                               ),
                             ),
                             title: Text(
                               item.subject,
                               style: AppTextStyles.bodyMd.copyWith(
+                                color: context.colors.textPrimary,
                                 fontWeight: isCurrent
                                     ? FontWeight.bold
                                     : FontWeight.normal,
@@ -1468,11 +1368,11 @@ class _ParentIssueSearchModalState extends State<_ParentIssueSearchModal> {
                             ),
                             subtitle: Text(
                               '${item.tracker.name} • ${item.status.name} • 담당: ${item.assignedTo?.username ?? "미배정"}',
-                              style: AppTextStyles.caption,
+                              style: AppTextStyles.caption.copyWith(color: context.colors.textMuted),
                             ),
                             trailing: isCurrent
-                                ? const Icon(Icons.check_rounded,
-                                    color: AppColors.accentWork, size: 20)
+                                ? Icon(Icons.check_rounded,
+                                    color: context.colors.accentWork, size: 20)
                                 : null,
                             onTap: () => widget.onSelect(item.pk),
                           );

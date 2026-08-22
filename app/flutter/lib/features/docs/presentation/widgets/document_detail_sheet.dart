@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/constants/permissions.dart';
 import '../../../../core/providers/permission_provider.dart';
+import '../../../../core/theme/app_colors_extension.dart';
 import '../../data/docs_repository.dart';
 import '../../data/models/docs_model.dart';
 import '../../providers/docs_provider.dart';
@@ -21,22 +21,22 @@ class DocumentDetailSheet extends ConsumerWidget {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.bgCard,
+        backgroundColor: context.colors.bgCard,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-        title: Text('문서 삭제', style: AppTextStyles.titleLg),
+        title: Text('문서 삭제', style: AppTextStyles.titleLg.copyWith(color: context.colors.textPrimary)),
         content: Text(
           '\'${doc.title}\' 문서를 삭제하시겠습니까?\n삭제된 문서는 휴지통으로 이동합니다.',
-          style: AppTextStyles.bodySecond,
+          style: AppTextStyles.bodySecond.copyWith(color: context.colors.textPrimary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('취소', style: AppTextStyles.bodyMuted),
+            child: Text('취소', style: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.error,
+              backgroundColor: context.colors.error,
               foregroundColor: Colors.white,
               shape: const RoundedRectangleBorder(
                   borderRadius: BorderRadius.zero),
@@ -56,7 +56,10 @@ class DocumentDetailSheet extends ConsumerWidget {
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('삭제 실패: $e')),
+            SnackBar(
+              content: Text('삭제 실패: $e'),
+              backgroundColor: context.colors.error,
+            ),
           );
         }
       }
@@ -171,7 +174,7 @@ class DocumentDetailSheet extends ConsumerWidget {
         : '전체 공용';
 
     return Container(
-      color: AppColors.bgCard,
+      color: context.colors.bgCard,
       padding: EdgeInsets.only(
         left: 20,
         right: 20,
@@ -187,7 +190,7 @@ class DocumentDetailSheet extends ConsumerWidget {
             child: Container(
               width: 36,
               height: 4,
-              color: AppColors.border,
+              color: context.colors.border,
             ),
           ),
           const SizedBox(height: 16),
@@ -200,12 +203,12 @@ class DocumentDetailSheet extends ConsumerWidget {
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: isRealEstate
-                      ? AppColors.accentProject.withAlpha(30)
+                      ? context.colors.accentProject.withAlpha(30)
                       : const Color(0xFF1565C0).withAlpha(30),
                   borderRadius: BorderRadius.zero,
                   border: Border.all(
                     color: isRealEstate
-                        ? AppColors.accentProject.withAlpha(60)
+                        ? context.colors.accentProject.withAlpha(60)
                         : const Color(0xFF1565C0).withAlpha(60),
                   ),
                 ),
@@ -213,7 +216,7 @@ class DocumentDetailSheet extends ConsumerWidget {
                   scopeLabel,
                   style: AppTextStyles.caption.copyWith(
                     color: isRealEstate
-                        ? AppColors.accentProject
+                        ? context.colors.accentProject
                         : const Color(0xFF1565C0),
                     fontWeight: FontWeight.bold,
                   ),
@@ -225,17 +228,17 @@ class DocumentDetailSheet extends ConsumerWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                   decoration: BoxDecoration(
-                    color: AppColors.warning.withAlpha(25),
+                    color: context.colors.warning.withAlpha(25),
                     borderRadius: BorderRadius.zero,
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.lock_rounded,
-                          size: 13, color: AppColors.warning),
+                      Icon(Icons.lock_rounded,
+                          size: 13, color: context.colors.warning),
                       const SizedBox(width: 4),
                       Text('비밀글',
                           style: AppTextStyles.caption
-                              .copyWith(color: AppColors.warning)),
+                              .copyWith(color: context.colors.warning)),
                     ],
                   ),
                 ),
@@ -244,7 +247,7 @@ class DocumentDetailSheet extends ConsumerWidget {
               if (ref.can(Perm.docsUpdate))
                 IconButton(
                   icon: const Icon(Icons.edit_outlined, size: 20),
-                  color: AppColors.textSecond,
+                  color: context.colors.textSecond,
                   onPressed: () {
                     Navigator.pop(context);
                     showModalBottomSheet(
@@ -258,7 +261,7 @@ class DocumentDetailSheet extends ConsumerWidget {
               if (ref.can(Perm.docsDelete))
                 IconButton(
                   icon: const Icon(Icons.delete_outline_rounded, size: 20),
-                  color: AppColors.error,
+                  color: context.colors.error,
                   onPressed: () => _handleDelete(context, ref),
                 ),
             ],
@@ -266,16 +269,16 @@ class DocumentDetailSheet extends ConsumerWidget {
           const SizedBox(height: 12),
 
           // ── 문서 제목 ───────────────────────────────────────────────────
-          Text(doc.title, style: AppTextStyles.titleLg),
+          Text(doc.title, style: AppTextStyles.titleLg.copyWith(color: context.colors.textPrimary)),
           const SizedBox(height: 8),
 
           // ── 정보 목록 ────────────────────────────────────────────────────
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.bgSurface,
+              color: context.colors.bgSurface,
               borderRadius: BorderRadius.zero,
-              border: Border.all(color: AppColors.border, width: 0.8),
+              border: Border.all(color: context.colors.border, width: 0.8),
             ),
             child: Column(
               children: [
@@ -301,21 +304,21 @@ class DocumentDetailSheet extends ConsumerWidget {
           const SizedBox(height: 16),
 
           // ── 상세 설명 (HTML 파싱 렌더링) ─────────────────────────────────
-          Text('설명 / 비고', style: AppTextStyles.titleSm),
+          Text('설명 / 비고', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
           const SizedBox(height: 6),
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.bgSurface,
+              color: context.colors.bgSurface,
               borderRadius: BorderRadius.zero,
-              border: Border.all(color: AppColors.border, width: 0.8),
+              border: Border.all(color: context.colors.border, width: 0.8),
             ),
             child: doc.description.isNotEmpty
                 ? HtmlWidget(
                     doc.description,
                     textStyle: AppTextStyles.bodyMd.copyWith(
-                      color: AppColors.textPrimary,
+                      color: context.colors.textPrimary,
                       height: 1.5,
                     ),
                     customStylesBuilder: (element) {
@@ -328,7 +331,7 @@ class DocumentDetailSheet extends ConsumerWidget {
                       if (element.localName == 'th' ||
                           element.localName == 'td') {
                         return {
-                          'border': '1px solid #444',
+                          'border': '1px solid #888',
                           'padding': '6px 8px',
                         };
                       }
@@ -343,14 +346,14 @@ class DocumentDetailSheet extends ConsumerWidget {
                   )
                 : Text(
                     '등록된 상세 설명이 없습니다.',
-                    style: AppTextStyles.bodyMuted,
+                    style: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted),
                   ),
           ),
           const SizedBox(height: 20),
 
           // ── 첨부파일 목록 ────────────────────────────────────────────────
           if (doc.files.isNotEmpty) ...[
-            Text('첨부파일 (${doc.files.length})', style: AppTextStyles.titleSm),
+            Text('첨부파일 (${doc.files.length})', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
             const SizedBox(height: 8),
             ...doc.files.map(
               (f) {
@@ -363,14 +366,14 @@ class DocumentDetailSheet extends ConsumerWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 10),
                       decoration: BoxDecoration(
-                        color: AppColors.bgSurface,
+                        color: context.colors.bgSurface,
                         borderRadius: BorderRadius.zero,
-                        border: Border.all(color: AppColors.border, width: 0.8),
+                        border: Border.all(color: context.colors.border, width: 0.8),
                       ),
                       child: Row(
                         children: [
                           Icon(_getFileIcon(f.fileName, f.fileType),
-                              size: 18, color: AppColors.accentWork),
+                              size: 18, color: context.colors.accentWork),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Column(
@@ -380,7 +383,7 @@ class DocumentDetailSheet extends ConsumerWidget {
                                   f.fileName ?? '첨부파일',
                                   style: AppTextStyles.bodySm.copyWith(
                                     fontWeight: FontWeight.w600,
-                                    color: AppColors.textPrimary,
+                                    color: context.colors.textPrimary,
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -395,15 +398,15 @@ class DocumentDetailSheet extends ConsumerWidget {
                                         f.description!,
                                     ].join(' • '),
                                     style: AppTextStyles.caption.copyWith(
-                                      color: AppColors.textMuted,
+                                      color: context.colors.textMuted,
                                     ),
                                   ),
                               ],
                             ),
                           ),
                           const SizedBox(width: 8),
-                          const Icon(Icons.download_rounded,
-                              size: 18, color: AppColors.accentWork),
+                          Icon(Icons.download_rounded,
+                              size: 18, color: context.colors.accentWork),
                         ],
                       ),
                     ),
@@ -416,7 +419,7 @@ class DocumentDetailSheet extends ConsumerWidget {
           // ── 관련 링크 목록 ────────────────────────────────────────────────
           if (doc.links.isNotEmpty) ...[
             const SizedBox(height: 16),
-            Text('관련 링크 (${doc.links.length})', style: AppTextStyles.titleSm),
+            Text('관련 링크 (${doc.links.length})', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
             const SizedBox(height: 8),
             ...doc.links.map(
               (l) => Padding(
@@ -425,16 +428,16 @@ class DocumentDetailSheet extends ConsumerWidget {
                   onTap: () => _launchWebLink(context, l.link),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 10),
+                          horizontal: 12, vertical: 10),
                     decoration: BoxDecoration(
-                      color: AppColors.bgSurface,
+                      color: context.colors.bgSurface,
                       borderRadius: BorderRadius.zero,
-                      border: Border.all(color: AppColors.border, width: 0.8),
+                      border: Border.all(color: context.colors.border, width: 0.8),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.link_rounded,
-                            size: 18, color: AppColors.accentWork),
+                        Icon(Icons.link_rounded,
+                            size: 18, color: context.colors.accentWork),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
@@ -442,15 +445,15 @@ class DocumentDetailSheet extends ConsumerWidget {
                                 ? '${l.description} (${l.link})'
                                 : l.link,
                             style: AppTextStyles.bodySm.copyWith(
-                              color: AppColors.accentWork,
+                              color: context.colors.accentWork,
                               decoration: TextDecoration.underline,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         const SizedBox(width: 8),
-                        const Icon(Icons.open_in_new_rounded,
-                            size: 16, color: AppColors.textMuted),
+                        Icon(Icons.open_in_new_rounded,
+                            size: 16, color: context.colors.textMuted),
                       ],
                     ),
                   ),
@@ -476,12 +479,15 @@ class _InfoRow extends StatelessWidget {
       children: [
         SizedBox(
           width: 80,
-          child: Text(label, style: AppTextStyles.caption),
+          child: Text(label, style: AppTextStyles.caption.copyWith(color: context.colors.textMuted)),
         ),
         Expanded(
           child: Text(
             value,
-            style: AppTextStyles.bodySm.copyWith(fontWeight: FontWeight.w500),
+            style: AppTextStyles.bodySm.copyWith(
+              fontWeight: FontWeight.w500,
+              color: context.colors.textPrimary,
+            ),
           ),
         ),
       ],

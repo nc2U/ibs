@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/constants/permissions.dart';
 import '../../../../core/providers/docs_context_provider.dart';
 import '../../../../core/providers/permission_provider.dart';
+import '../../../../core/theme/app_colors_extension.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/loading_shimmer.dart';
 import '../../../../core/widgets/project_selector_bottom_sheet.dart';
@@ -40,9 +40,9 @@ class _DocsScreenState extends ConsumerState<DocsScreen> {
   Widget build(BuildContext context) {
     final canRead = ref.can(Perm.docsRead);
     if (!canRead) {
-      return const Scaffold(
-        backgroundColor: AppColors.bgPrimary,
-        body: Center(
+      return Scaffold(
+        backgroundColor: context.colors.bgPrimary,
+        body: const Center(
           child: Padding(
             padding: EdgeInsets.all(24.0),
             child: ErrorView.empty(
@@ -58,13 +58,13 @@ class _DocsScreenState extends ConsumerState<DocsScreen> {
     final docsListAsync = ref.watch(docsListProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.bgPrimary,
+      backgroundColor: context.colors.bgPrimary,
       body: Column(
         children: [
           // ── 1. 선택적 컨텍스트 선택바 (showScopeHeader == true 일 때만 표시) ──
           if (widget.showScopeHeader) ...[
             Container(
-              color: AppColors.bgSurface,
+              color: context.colors.bgSurface,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               child: Row(
                 children: [
@@ -72,7 +72,7 @@ class _DocsScreenState extends ConsumerState<DocsScreen> {
                       docsContext.scopeType != DocsScopeType.all) ...[
                     IconButton(
                       icon: const Icon(Icons.arrow_back_rounded, size: 20),
-                      color: AppColors.textPrimary,
+                      color: context.colors.textPrimary,
                       tooltip: '돌아가기',
                       onPressed: () {
                         if (Navigator.canPop(context)) {
@@ -92,17 +92,17 @@ class _DocsScreenState extends ConsumerState<DocsScreen> {
                         Text(
                           '문서 조회 범위',
                           style: AppTextStyles.caption
-                              .copyWith(color: AppColors.textMuted),
+                              .copyWith(color: context.colors.textMuted),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           docsContext.displayName,
                           style: AppTextStyles.titleSm.copyWith(
                             color: docsContext.scopeType == DocsScopeType.all
-                                ? AppColors.textPrimary
+                                ? context.colors.textPrimary
                                 : (docsContext.scopeType ==
                                         DocsScopeType.project
-                                    ? AppColors.accentProject
+                                    ? context.colors.accentProject
                                     : const Color(0xFF1565C0)),
                           ),
                           overflow: TextOverflow.ellipsis,
@@ -119,8 +119,8 @@ class _DocsScreenState extends ConsumerState<DocsScreen> {
                           : '범위 변경',
                     ),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.accentWork,
-                      side: const BorderSide(color: AppColors.accentWork),
+                      foregroundColor: context.colors.accentWork,
+                      side: BorderSide(color: context.colors.accentWork),
                       shape: const RoundedRectangleBorder(
                           borderRadius: BorderRadius.zero),
                       padding: const EdgeInsets.symmetric(
@@ -133,7 +133,7 @@ class _DocsScreenState extends ConsumerState<DocsScreen> {
                     const SizedBox(width: 6),
                     IconButton(
                       icon: const Icon(Icons.clear_rounded, size: 18),
-                      color: AppColors.textMuted,
+                      color: context.colors.textMuted,
                       tooltip: '전체 문서로 리셋',
                       onPressed: () {
                         ref.read(docsContextProvider.notifier).state =
@@ -144,21 +144,22 @@ class _DocsScreenState extends ConsumerState<DocsScreen> {
                 ],
               ),
             ),
-            const Divider(color: AppColors.border, height: 1),
+            Divider(color: context.colors.border, height: 1),
           ],
 
           // ── 2. 검색바 ────────────────────────────────────────────────────
           Container(
-            color: AppColors.bgSurface,
+            color: context.colors.bgSurface,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: TextField(
               controller: _searchController,
               onSubmitted: _onSearch,
-              style: AppTextStyles.bodyMd,
+              style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
               decoration: InputDecoration(
                 hintText: '문서 제목 검색...',
-                prefixIcon: const Icon(Icons.search_rounded,
-                    size: 18, color: AppColors.textMuted),
+                hintStyle: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted),
+                prefixIcon: Icon(Icons.search_rounded,
+                    size: 18, color: context.colors.textMuted),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Icons.close_rounded, size: 18),
@@ -172,14 +173,14 @@ class _DocsScreenState extends ConsumerState<DocsScreen> {
               ),
             ),
           ),
-          const Divider(color: AppColors.border, height: 1),
+          Divider(color: context.colors.border, height: 1),
 
           // ── 3. 문서 유형 필터 탭 (일반 문서 | 소송 기록) ──────────────────
           Builder(
             builder: (ctx) {
               final selectedDocType = ref.watch(docTypeFilterProvider);
               return Container(
-                color: AppColors.bgSurface,
+                color: context.colors.bgSurface,
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                 child: Row(
@@ -212,7 +213,7 @@ class _DocsScreenState extends ConsumerState<DocsScreen> {
               );
             },
           ),
-          const Divider(color: AppColors.border, height: 1),
+          Divider(color: context.colors.border, height: 1),
 
           // ── 4. 카테고리 셀렉트(드롭다운) 필터 바 ──────────────────────────────
           Consumer(
@@ -230,60 +231,60 @@ class _DocsScreenState extends ConsumerState<DocsScreen> {
                       .toList();
 
                   return Container(
-                    color: AppColors.bgSurface,
+                    color: context.colors.bgSurface,
                     padding:
                         const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                     child: Row(
                       children: [
-                        const Icon(Icons.filter_list_rounded,
-                            size: 16, color: AppColors.accentWork),
+                        Icon(Icons.filter_list_rounded,
+                            size: 16, color: context.colors.accentWork),
                         const SizedBox(width: 8),
                         Text('카테고리:',
                             style: AppTextStyles.caption
-                                .copyWith(color: AppColors.textMuted)),
+                                .copyWith(color: context.colors.textMuted)),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Container(
                             height: 34,
                             padding: const EdgeInsets.symmetric(horizontal: 10),
                             decoration: BoxDecoration(
-                              color: AppColors.bgCard,
+                              color: context.colors.bgCard,
                               borderRadius: BorderRadius.zero,
                               border: Border.all(
                                 color: selectedCategory != null
-                                    ? AppColors.accentWork.withAlpha(120)
-                                    : AppColors.border,
+                                    ? context.colors.accentWork.withAlpha(120)
+                                    : context.colors.border,
                               ),
                             ),
                             child: DropdownButtonHideUnderline(
                               child: DropdownButton<int?>(
                                 value: selectedCategory,
                                 isExpanded: true,
-                                icon: const Icon(
+                                icon: Icon(
                                     Icons.keyboard_arrow_down_rounded,
                                     size: 18,
-                                    color: AppColors.textSecond),
+                                    color: context.colors.textSecond),
                                 style: AppTextStyles.bodySm.copyWith(
                                   color: selectedCategory != null
-                                      ? AppColors.accentWork
-                                      : AppColors.textPrimary,
+                                      ? context.colors.accentWork
+                                      : context.colors.textPrimary,
                                   fontWeight: selectedCategory != null
                                       ? FontWeight.bold
                                       : FontWeight.normal,
                                 ),
-                                dropdownColor: AppColors.bgCard,
+                                dropdownColor: context.colors.bgCard,
                                 items: [
                                   DropdownMenuItem<int?>(
                                     value: null,
                                     child: Text(
                                         '전체 카테고리 (${categories.length}개)',
-                                        style: AppTextStyles.bodySm),
+                                        style: AppTextStyles.bodySm.copyWith(color: context.colors.textPrimary)),
                                   ),
                                   ...categories.map(
                                     (c) => DropdownMenuItem<int?>(
                                       value: c.pk,
                                       child: Text(c.name,
-                                          style: AppTextStyles.bodySm),
+                                          style: AppTextStyles.bodySm.copyWith(color: context.colors.textPrimary)),
                                     ),
                                   ),
                                 ],
@@ -305,7 +306,7 @@ class _DocsScreenState extends ConsumerState<DocsScreen> {
               );
             },
           ),
-          const Divider(color: AppColors.border, height: 1),
+          Divider(color: context.colors.border, height: 1),
 
           // ── 5. 문서 목록 ──────────────────────────────────────────────────
           Expanded(
@@ -402,18 +403,18 @@ class _DocTypeFilterChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.accentWork
-              : AppColors.bgCard,
+              ? context.colors.accentWork
+              : context.colors.bgCard,
           borderRadius: BorderRadius.zero,
           border: Border.all(
-            color: isSelected ? AppColors.accentWork : AppColors.border,
+            color: isSelected ? context.colors.accentWork : context.colors.border,
           ),
         ),
         child: Text(
           label,
           textAlign: TextAlign.center,
           style: AppTextStyles.label.copyWith(
-            color: isSelected ? Colors.white : AppColors.textSecond,
+            color: isSelected ? Colors.white : context.colors.textSecond,
             fontSize: 11.5,
           ),
         ),
