@@ -200,9 +200,13 @@ class ApprovalRepository {
   }
 
   /// 18. 결재 문서 인쇄용 PDF 다운로드
-  Future<String> downloadDocumentPdf(int docId, String title) async {
+  Future<String> downloadDocumentPdf(int docId, String title, {String? pdfUrl}) async {
+    final downloadUrl = (pdfUrl != null && pdfUrl.isNotEmpty)
+        ? pdfUrl
+        : '/pdf/approval/document/$docId/';
+
     final res = await _dio.get(
-      '/pdf/approval/document/$docId/',
+      downloadUrl,
       options: Options(
         responseType: ResponseType.bytes,
         headers: {'Accept': 'application/pdf, */*'},

@@ -37,7 +37,11 @@ Future<void> exportApprovalPdf(
     }
 
     final repo = ref.read(approvalRepositoryProvider);
-    final filePath = await repo.downloadDocumentPdf(document.id, document.title);
+    final filePath = await repo.downloadDocumentPdf(
+      document.id,
+      document.title,
+      pdfUrl: document.pdfUrl,
+    );
 
     ResultType? openType;
     try {

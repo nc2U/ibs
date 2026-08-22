@@ -82,3 +82,29 @@ final currentUserProvider = FutureProvider<UserModel?>((ref) async {
   } catch (_) {}
   return null;
 });
+
+/// 현재 로그인 사용자의 PK ID 즉시 반환 프로바이더 (네트워크 대기 없이 토큰에서 동기 추출)
+final currentUserIdProvider = Provider<int?>((ref) {
+  final authState = ref.watch(authProvider).valueOrNull;
+  if (authState == null) return null;
+
+  final token = authState.maybeWhen(
+    authenticated: (t) => t,
+    orElse: () => null,
+  );
+  if (token == null || token.isEmpty) return null;
+
+  try {
+    final parts = token.split('.');
+    if (parts.length >= 2) {
+      final normalized = base64Url.normalize(parts[1]);
+      final payloadString = utf8.decode(base64Url.decode(normalized));
+      final payload = jsonDecode(payloadString) as Map<String, dynamic>;
+      final uid = payload['user_id'];
+      if (uid is int) return uid;
+      if (uid is num) return uid.toInt();
+      if (uid is String) return int.tryParse(uid);
+    }
+  } catch (_) {}
+  return null;
+});

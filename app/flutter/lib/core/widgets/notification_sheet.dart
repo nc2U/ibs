@@ -75,7 +75,7 @@ class _NotificationSheetState extends ConsumerState<NotificationSheet> {
       case 'notice':
         return const Color(0xFFF59E0B); // Amber
       case 'approval':
-        return const Color(0xFF8B5CF6); // Purple
+        return context.colors.accentApproval;
       default:
         return context.colors.accentCorp;
     }

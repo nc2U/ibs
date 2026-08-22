@@ -81,8 +81,8 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
     accentWorkDeep: Color(0xFF0369A1),
     accentProject: Color(0xFF059669), // Emerald 600
     accentProjectDeep: Color(0xFF047857),
-    accentApproval: Color(0xFFD97706), // Amber 600
-    accentApprovalDeep: Color(0xFFB45309),
+    accentApproval: Color(0xFF6366F1), // Indigo 500
+    accentApprovalDeep: Color(0xFF4F46E5), // Indigo 600
     accentCorp: Color(0xFF0284C7), // Sky/Azure 600 (청량하고 세련된 청색)
     accentCorpDeep: Color(0xFF0369A1),
     success: Color(0xFF16A34A),
@@ -109,8 +109,8 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
     accentWorkDeep: Color(0xFF1E3A8A),
     accentProject: Color(0xFF34D399),
     accentProjectDeep: Color(0xFF064E3B),
-    accentApproval: Color(0xFFFBBF24),
-    accentApprovalDeep: Color(0xFFFCD34D),
+    accentApproval: Color(0xFF818CF8), // Indigo 400
+    accentApprovalDeep: Color(0xFFA5B4FC), // Indigo 300
     accentCorp: Color(0xFF38BDF8), // Crisp Luminous Azure 400 (청량하고 세련된 청색)
     accentCorpDeep: Color(0xFF0369A1),
     success: Color(0xFF22C55E),

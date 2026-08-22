@@ -48,7 +48,7 @@ class ApprovalDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final docAsync = ref.watch(approvalDetailProvider(docId));
-    final currentUser = ref.watch(currentUserProvider).valueOrNull;
+    final currentUserId = ref.watch(currentUserIdProvider);
 
     return Scaffold(
       backgroundColor: context.colors.bgPrimary,
@@ -64,11 +64,13 @@ class ApprovalDetailScreen extends ConsumerWidget {
         elevation: 0,
         actions: [
           docAsync.maybeWhen(
-            data: (doc) => IconButton(
-              icon: Icon(Icons.picture_as_pdf_rounded, color: context.colors.accentApprovalDeep),
-              tooltip: 'PDF 다운로드 / 인쇄',
-              onPressed: () => exportApprovalPdf(context, ref, doc),
-            ),
+            data: (doc) => (doc.status == 'approved' && doc.pdfUrl != null && doc.pdfUrl!.isNotEmpty)
+                ? IconButton(
+                    icon: Icon(Icons.picture_as_pdf_rounded, color: context.colors.accentApprovalDeep),
+                    tooltip: 'PDF 다운로드 / 인쇄',
+                    onPressed: () => exportApprovalPdf(context, ref, doc),
+                  )
+                : const SizedBox.shrink(),
             orElse: () => const SizedBox.shrink(),
           ),
           IconButton(
@@ -79,7 +81,7 @@ class ApprovalDetailScreen extends ConsumerWidget {
         ],
       ),
       body: docAsync.when(
-        data: (doc) => _buildDetailBody(context, ref, doc, currentUser?.pk),
+        data: (doc) => _buildDetailBody(context, ref, doc, currentUserId),
         loading: () => const LoadingShimmer(itemCount: 4, itemHeight: 120),
         error: (err, _) => ErrorView(
           message: '문서 상세 정보를 불러오지 못했습니다.',
@@ -88,7 +90,7 @@ class ApprovalDetailScreen extends ConsumerWidget {
         ),
       ),
       bottomNavigationBar: docAsync.maybeWhen(
-        data: (doc) => _buildBottomActionBar(context, ref, doc, currentUser?.pk),
+        data: (doc) => _buildBottomActionBar(context, ref, doc, currentUserId),
         orElse: () => null,
       ),
     );
@@ -1608,8 +1610,9 @@ class ApprovalDetailScreen extends ConsumerWidget {
       );
     }
 
-    // 내가 기안자이고 임시저장 상태인 경우 -> 상신 버튼
-    if (isMyDraft && doc.status == 'draft') {
+    // 내가 기안자이고 임시저장(draft) 또는 반려(rejected) 상태인 경우 -> 상신/재상신 버튼
+    if (isMyDraft && (doc.status == 'draft' || doc.status == 'rejected')) {
+      final isRejected = doc.status == 'rejected';
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
@@ -1636,7 +1639,10 @@ class ApprovalDetailScreen extends ConsumerWidget {
                 elevation: 0,
               ),
               icon: const Icon(Icons.send_rounded, color: Colors.white, size: 18),
-              label: const Text('결재 상신하기', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+              label: Text(
+                isRejected ? '결재 재상신하기' : '결재 상신하기',
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14),
+              ),
             ),
           ),
         ),

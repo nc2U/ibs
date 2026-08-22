@@ -28,9 +28,9 @@ abstract class AppColors {
   static const Color accentProject     = Color(0xFF34D399);
   static const Color accentProjectDeep = Color(0xFF064E3B);
 
-  /// 전자결재 — Amber Gold
-  static const Color accentApproval     = Color(0xFFFBBF24);
-  static const Color accentApprovalDeep = Color(0xFFFCD34D);
+  /// 전자결재 — Royal Indigo
+  static const Color accentApproval     = Color(0xFF818CF8);
+  static const Color accentApprovalDeep = Color(0xFFA5B4FC);
 
   /// 전사정보 — Corporate Blue
   static const Color accentCorp     = Color(0xFF60A5FA);
