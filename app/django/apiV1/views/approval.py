@@ -138,6 +138,7 @@ class ApprovalDocumentFilter(FilterSet):
     doc_type = NumberFilter(field_name='doc_type')
     doc_type_code = CharFilter(field_name='doc_type__code', lookup_expr='exact')
     status = CharFilter(field_name='status', lookup_expr='exact')
+    security_level = CharFilter(field_name='security_level', lookup_expr='exact')
     department = NumberFilter(field_name='drafter_assignment__department')
     drafter = CharFilter(field_name='drafter__username', lookup_expr='exact')
     drafter_name = CharFilter(field_name='drafter__profile__name', lookup_expr='icontains')
@@ -147,7 +148,7 @@ class ApprovalDocumentFilter(FilterSet):
 
     class Meta:
         model = ApprovalDocument
-        fields = ('category', 'doc_type', 'doc_type_code', 'status', 'department',
+        fields = ('category', 'doc_type', 'doc_type_code', 'status', 'security_level', 'department',
                   'drafter', 'drafter_name', 'start_date', 'end_date', 'search')
 
     def filter_search(self, queryset, name, value):
@@ -179,18 +180,33 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
             'steps__approvers__profile', 'steps__actions__approver__profile',
             'steps__actions__delegated_from__profile',
         )
-        if user.is_superuser:
+        if user.is_superuser or getattr(user, 'work_manager', False):
             return qs
 
-        # 기안자, 결재자(본인 또는 위임받은 대결자), 또는 참조자인 문서만 조회 가능
+        # 1. 직접 접근 권한: 기안자, 결재자(본인 또는 위임받은 대결자), 또는 참조자인 문서
         delegator_ids = get_active_delegator_ids(user)
         approver_q = Q(steps__approvers=user)
         if delegator_ids:
             approver_q |= Q(steps__approvers__in=delegator_ids)
 
-        return (
-            qs.filter(drafter=user) | qs.filter(approver_q) | qs.filter(observers=user)
-        ).distinct()
+        direct_access_q = Q(drafter=user) | approver_q | Q(observers=user)
+
+        # 2. 3등급 (전사공개): 상신/완료된 문서 전사 열람 허용
+        public_q = Q(security_level=ApprovalDocument.SECURITY_PUBLIC) & ~Q(status=ApprovalDocument.STATUS_DRAFT)
+
+        # 3. 2등급 (부서공개): 기안자의 소속 부서와 동일한 부서 구성원 열람 허용
+        dept_ids = list(
+            StaffAssignment.objects.filter(staff__user=user, department__isnull=False).values_list('department_id', flat=True)
+        )
+        dept_q = Q()
+        if dept_ids:
+            dept_q = (
+                Q(security_level=ApprovalDocument.SECURITY_DEPT) &
+                Q(drafter_assignment__department_id__in=dept_ids) &
+                ~Q(status=ApprovalDocument.STATUS_DRAFT)
+            )
+
+        return qs.filter(direct_access_q | public_q | dept_q).distinct()
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -589,10 +605,7 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
     # ── GET /approval-document/all_documents/ ────────────────
     @action(detail=False, methods=['get'])
     def all_documents(self, request):
-        """전사 결재 문서 목록 조회 (현재 슈퍼유저 전용, 페이지네이션 및 필터 지원)"""
-        if not request.user.is_superuser:
-            return Response({'detail': '전사 결재 문서를 조회할 권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
-
+        """전사 결재 문서 목록 조회 (보안 등급 기반 권한 필터링 자동 적용, 페이지네이션 및 필터 지원)"""
         qs = self.filter_queryset(self.get_queryset()).order_by('-created_at', '-id')
         page = self.paginate_queryset(qs)
         if page is not None:

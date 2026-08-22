@@ -66,6 +66,19 @@ class ApprovalDocument(models.Model):
         verbose_name='참조자 목록',
         help_text='결재 진행 및 완료 시 열람 권한 및 알림을 수신하는 참조자'
     )
+    SECURITY_SECRET = '1'
+    SECURITY_DEPT = '2'
+    SECURITY_PUBLIC = '3'
+    SECURITY_LEVEL_CHOICES = (
+        (SECURITY_SECRET, '1등급 (비공개 / 결재선 및 참조자)'),
+        (SECURITY_DEPT, '2등급 (부서공개 / 소속 부서)'),
+        (SECURITY_PUBLIC, '3등급 (전사공개 / 회사 전체)'),
+    )
+    security_level = models.CharField(
+        '보안 등급', max_length=1,
+        choices=SECURITY_LEVEL_CHOICES, default=SECURITY_DEPT, db_index=True,
+        help_text='1등급: 비공개(결재선/참조자만), 2등급: 부서공개, 3등급: 전사공개'
+    )
     status = models.CharField(
         '결재 상태', max_length=15,
         choices=STATUS_CHOICES, default=STATUS_DRAFT
@@ -102,6 +115,11 @@ class ApprovalDocument(models.Model):
             completed_at__year=year,
         ).count()
         return f'{code}-{year}-{str(count).zfill(4)}'
+
+    def save(self, *args, **kwargs):
+        if not self.security_level and self.doc_type_id:
+            self.security_level = self.doc_type.default_security_level
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f'[{self.get_status_display()}] {self.title} ({self.drafter})'

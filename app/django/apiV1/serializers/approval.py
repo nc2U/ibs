@@ -85,12 +85,13 @@ class DocumentTypeSerializer(serializers.ModelSerializer):
     route_templates = RouteTemplateSerializer(many=True, read_only=True)
     policy_rules = ApprovalPolicyRuleSerializer(many=True, read_only=True)
     route_type_desc = serializers.CharField(source='get_route_type_display', read_only=True)
+    default_security_level_desc = serializers.CharField(source='get_default_security_level_display', read_only=True)
     final_approval_duty_name = serializers.CharField(source='final_approval_duty.name', read_only=True)
 
     class Meta:
         model = DocumentType
         fields = ('id', 'category', 'category_name', 'name', 'code', 'description',
-                  'form_template_key',
+                  'form_template_key', 'default_security_level', 'default_security_level_desc',
                   'route_type', 'route_type_desc',
                   'final_approval_duty', 'final_approval_duty_name', 'final_dept_level',
                   'policy_rules', 'allowed_departments', 'allowed_duties', 'allowed_positions',
@@ -141,6 +142,7 @@ class ApprovalDocumentListSerializer(serializers.ModelSerializer):
     department_name = serializers.CharField(source='drafter_assignment.department.name', read_only=True, allow_null=True)
     drafter_assignment_desc = serializers.SerializerMethodField()
     status_desc = serializers.CharField(source='get_status_display', read_only=True)
+    security_level_desc = serializers.CharField(source='get_security_level_display', read_only=True)
     attachment_count = serializers.IntegerField(source='attachments.count', read_only=True)
     observer_count = serializers.IntegerField(source='observers.count', read_only=True)
 
@@ -165,7 +167,8 @@ class ApprovalDocumentListSerializer(serializers.ModelSerializer):
         model = ApprovalDocument
         fields = ('id', 'doc_number', 'title', 'doc_type', 'doc_type_name', 'category_name', 'drafter',
                   'drafter_name', 'drafter_assignment', 'department_name', 'drafter_assignment_desc',
-                  'attachment_count', 'observer_count', 'status', 'status_desc', 'current_step',
+                  'attachment_count', 'observer_count', 'security_level', 'security_level_desc',
+                  'status', 'status_desc', 'current_step',
                   'created_at', 'submitted_at', 'completed_at')
 
 
@@ -176,6 +179,7 @@ class ApprovalDocumentSerializer(serializers.ModelSerializer):
     doc_type_name = serializers.CharField(source='doc_type.name', read_only=True)
     department_name = serializers.CharField(source='drafter_assignment.department.name', read_only=True, allow_null=True)
     status_desc = serializers.CharField(source='get_status_display', read_only=True)
+    security_level_desc = serializers.CharField(source='get_security_level_display', read_only=True)
     doc_type_detail = DocumentTypeSerializer(source='doc_type', read_only=True)
     steps = ApprovalStepSerializer(many=True, read_only=True)
     attachments = ApprovalAttachmentSerializer(many=True, read_only=True)
@@ -283,7 +287,8 @@ class ApprovalDocumentSerializer(serializers.ModelSerializer):
         fields = ('id', 'doc_number', 'title', 'doc_type', 'doc_type_name', 'category_name',
                   'doc_type_detail', 'content', 'attachment', 'attachments', 'observers', 'observer_ids',
                   'drafter', 'drafter_name', 'drafter_assignment', 'department_name', 'drafter_assignment_desc',
-                  'workspace', 'status', 'status_desc', 'current_step', 'content_hash',
+                  'workspace', 'security_level', 'security_level_desc',
+                  'status', 'status_desc', 'current_step', 'content_hash',
                   'pdf_url', 'created_at', 'submitted_at', 'completed_at',
                   'steps')
         read_only_fields = ('doc_number', 'drafter', 'status', 'current_step',

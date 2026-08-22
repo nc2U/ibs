@@ -576,6 +576,8 @@ mixin _$DocumentTypeModel {
   String get code => throw _privateConstructorUsedError;
   String get description => throw _privateConstructorUsedError;
   String get formTemplateKey => throw _privateConstructorUsedError;
+  String get defaultSecurityLevel => throw _privateConstructorUsedError;
+  String? get defaultSecurityLevelDesc => throw _privateConstructorUsedError;
   String get routeType => throw _privateConstructorUsedError;
   int? get category => throw _privateConstructorUsedError;
   String? get categoryName => throw _privateConstructorUsedError;
@@ -604,6 +606,8 @@ abstract class $DocumentTypeModelCopyWith<$Res> {
     @JsonKey(readValue: _readStr) String code,
     String description,
     String formTemplateKey,
+    String defaultSecurityLevel,
+    String? defaultSecurityLevelDesc,
     String routeType,
     int? category,
     String? categoryName,
@@ -631,6 +635,8 @@ class _$DocumentTypeModelCopyWithImpl<$Res, $Val extends DocumentTypeModel>
     Object? code = null,
     Object? description = null,
     Object? formTemplateKey = null,
+    Object? defaultSecurityLevel = null,
+    Object? defaultSecurityLevelDesc = freezed,
     Object? routeType = null,
     Object? category = freezed,
     Object? categoryName = freezed,
@@ -658,6 +664,14 @@ class _$DocumentTypeModelCopyWithImpl<$Res, $Val extends DocumentTypeModel>
                 ? _value.formTemplateKey
                 : formTemplateKey // ignore: cast_nullable_to_non_nullable
                       as String,
+            defaultSecurityLevel: null == defaultSecurityLevel
+                ? _value.defaultSecurityLevel
+                : defaultSecurityLevel // ignore: cast_nullable_to_non_nullable
+                      as String,
+            defaultSecurityLevelDesc: freezed == defaultSecurityLevelDesc
+                ? _value.defaultSecurityLevelDesc
+                : defaultSecurityLevelDesc // ignore: cast_nullable_to_non_nullable
+                      as String?,
             routeType: null == routeType
                 ? _value.routeType
                 : routeType // ignore: cast_nullable_to_non_nullable
@@ -695,6 +709,8 @@ abstract class _$$DocumentTypeModelImplCopyWith<$Res>
     @JsonKey(readValue: _readStr) String code,
     String description,
     String formTemplateKey,
+    String defaultSecurityLevel,
+    String? defaultSecurityLevelDesc,
     String routeType,
     int? category,
     String? categoryName,
@@ -721,6 +737,8 @@ class __$$DocumentTypeModelImplCopyWithImpl<$Res>
     Object? code = null,
     Object? description = null,
     Object? formTemplateKey = null,
+    Object? defaultSecurityLevel = null,
+    Object? defaultSecurityLevelDesc = freezed,
     Object? routeType = null,
     Object? category = freezed,
     Object? categoryName = freezed,
@@ -748,6 +766,14 @@ class __$$DocumentTypeModelImplCopyWithImpl<$Res>
             ? _value.formTemplateKey
             : formTemplateKey // ignore: cast_nullable_to_non_nullable
                   as String,
+        defaultSecurityLevel: null == defaultSecurityLevel
+            ? _value.defaultSecurityLevel
+            : defaultSecurityLevel // ignore: cast_nullable_to_non_nullable
+                  as String,
+        defaultSecurityLevelDesc: freezed == defaultSecurityLevelDesc
+            ? _value.defaultSecurityLevelDesc
+            : defaultSecurityLevelDesc // ignore: cast_nullable_to_non_nullable
+                  as String?,
         routeType: null == routeType
             ? _value.routeType
             : routeType // ignore: cast_nullable_to_non_nullable
@@ -779,6 +805,8 @@ class _$DocumentTypeModelImpl implements _DocumentTypeModel {
     @JsonKey(readValue: _readStr) this.code = '',
     this.description = '',
     this.formTemplateKey = 'GENERAL',
+    this.defaultSecurityLevel = '2',
+    this.defaultSecurityLevelDesc,
     this.routeType = 'organization',
     this.category,
     this.categoryName,
@@ -805,6 +833,11 @@ class _$DocumentTypeModelImpl implements _DocumentTypeModel {
   final String formTemplateKey;
   @override
   @JsonKey()
+  final String defaultSecurityLevel;
+  @override
+  final String? defaultSecurityLevelDesc;
+  @override
+  @JsonKey()
   final String routeType;
   @override
   final int? category;
@@ -816,7 +849,7 @@ class _$DocumentTypeModelImpl implements _DocumentTypeModel {
 
   @override
   String toString() {
-    return 'DocumentTypeModel(id: $id, name: $name, code: $code, description: $description, formTemplateKey: $formTemplateKey, routeType: $routeType, category: $category, categoryName: $categoryName, isActive: $isActive)';
+    return 'DocumentTypeModel(id: $id, name: $name, code: $code, description: $description, formTemplateKey: $formTemplateKey, defaultSecurityLevel: $defaultSecurityLevel, defaultSecurityLevelDesc: $defaultSecurityLevelDesc, routeType: $routeType, category: $category, categoryName: $categoryName, isActive: $isActive)';
   }
 
   @override
@@ -831,6 +864,13 @@ class _$DocumentTypeModelImpl implements _DocumentTypeModel {
                 other.description == description) &&
             (identical(other.formTemplateKey, formTemplateKey) ||
                 other.formTemplateKey == formTemplateKey) &&
+            (identical(other.defaultSecurityLevel, defaultSecurityLevel) ||
+                other.defaultSecurityLevel == defaultSecurityLevel) &&
+            (identical(
+                  other.defaultSecurityLevelDesc,
+                  defaultSecurityLevelDesc,
+                ) ||
+                other.defaultSecurityLevelDesc == defaultSecurityLevelDesc) &&
             (identical(other.routeType, routeType) ||
                 other.routeType == routeType) &&
             (identical(other.category, category) ||
@@ -850,6 +890,8 @@ class _$DocumentTypeModelImpl implements _DocumentTypeModel {
     code,
     description,
     formTemplateKey,
+    defaultSecurityLevel,
+    defaultSecurityLevelDesc,
     routeType,
     category,
     categoryName,
@@ -880,6 +922,8 @@ abstract class _DocumentTypeModel implements DocumentTypeModel {
     @JsonKey(readValue: _readStr) final String code,
     final String description,
     final String formTemplateKey,
+    final String defaultSecurityLevel,
+    final String? defaultSecurityLevelDesc,
     final String routeType,
     final int? category,
     final String? categoryName,
@@ -902,6 +946,10 @@ abstract class _DocumentTypeModel implements DocumentTypeModel {
   String get description;
   @override
   String get formTemplateKey;
+  @override
+  String get defaultSecurityLevel;
+  @override
+  String? get defaultSecurityLevelDesc;
   @override
   String get routeType;
   @override
@@ -2717,6 +2765,8 @@ mixin _$ApprovalDocumentModel {
   @JsonKey(readValue: _readStr)
   String get status => throw _privateConstructorUsedError; // draft, pending, approved, rejected, cancelled
   String? get statusDesc => throw _privateConstructorUsedError;
+  String get securityLevel => throw _privateConstructorUsedError;
+  String? get securityLevelDesc => throw _privateConstructorUsedError;
   int get currentStep => throw _privateConstructorUsedError;
   @JsonKey(readValue: _readStr)
   String get contentHash => throw _privateConstructorUsedError;
@@ -2765,6 +2815,8 @@ abstract class $ApprovalDocumentModelCopyWith<$Res> {
     Map<String, dynamic> content,
     @JsonKey(readValue: _readStr) String status,
     String? statusDesc,
+    String securityLevel,
+    String? securityLevelDesc,
     int currentStep,
     @JsonKey(readValue: _readStr) String contentHash,
     String? pdfUrl,
@@ -2815,6 +2867,8 @@ class _$ApprovalDocumentModelCopyWithImpl<
     Object? content = null,
     Object? status = null,
     Object? statusDesc = freezed,
+    Object? securityLevel = null,
+    Object? securityLevelDesc = freezed,
     Object? currentStep = null,
     Object? contentHash = null,
     Object? pdfUrl = freezed,
@@ -2888,6 +2942,14 @@ class _$ApprovalDocumentModelCopyWithImpl<
             statusDesc: freezed == statusDesc
                 ? _value.statusDesc
                 : statusDesc // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            securityLevel: null == securityLevel
+                ? _value.securityLevel
+                : securityLevel // ignore: cast_nullable_to_non_nullable
+                      as String,
+            securityLevelDesc: freezed == securityLevelDesc
+                ? _value.securityLevelDesc
+                : securityLevelDesc // ignore: cast_nullable_to_non_nullable
                       as String?,
             currentStep: null == currentStep
                 ? _value.currentStep
@@ -2988,6 +3050,8 @@ abstract class _$$ApprovalDocumentModelImplCopyWith<$Res>
     Map<String, dynamic> content,
     @JsonKey(readValue: _readStr) String status,
     String? statusDesc,
+    String securityLevel,
+    String? securityLevelDesc,
     int currentStep,
     @JsonKey(readValue: _readStr) String contentHash,
     String? pdfUrl,
@@ -3037,6 +3101,8 @@ class __$$ApprovalDocumentModelImplCopyWithImpl<$Res>
     Object? content = null,
     Object? status = null,
     Object? statusDesc = freezed,
+    Object? securityLevel = null,
+    Object? securityLevelDesc = freezed,
     Object? currentStep = null,
     Object? contentHash = null,
     Object? pdfUrl = freezed,
@@ -3111,6 +3177,14 @@ class __$$ApprovalDocumentModelImplCopyWithImpl<$Res>
             ? _value.statusDesc
             : statusDesc // ignore: cast_nullable_to_non_nullable
                   as String?,
+        securityLevel: null == securityLevel
+            ? _value.securityLevel
+            : securityLevel // ignore: cast_nullable_to_non_nullable
+                  as String,
+        securityLevelDesc: freezed == securityLevelDesc
+            ? _value.securityLevelDesc
+            : securityLevelDesc // ignore: cast_nullable_to_non_nullable
+                  as String?,
         currentStep: null == currentStep
             ? _value.currentStep
             : currentStep // ignore: cast_nullable_to_non_nullable
@@ -3180,6 +3254,8 @@ class _$ApprovalDocumentModelImpl implements _ApprovalDocumentModel {
     final Map<String, dynamic> content = const {},
     @JsonKey(readValue: _readStr) this.status = 'draft',
     this.statusDesc,
+    this.securityLevel = '2',
+    this.securityLevelDesc,
     this.currentStep = 1,
     @JsonKey(readValue: _readStr) this.contentHash = '',
     this.pdfUrl,
@@ -3244,6 +3320,11 @@ class _$ApprovalDocumentModelImpl implements _ApprovalDocumentModel {
   final String? statusDesc;
   @override
   @JsonKey()
+  final String securityLevel;
+  @override
+  final String? securityLevelDesc;
+  @override
+  @JsonKey()
   final int currentStep;
   @override
   @JsonKey(readValue: _readStr)
@@ -3296,7 +3377,7 @@ class _$ApprovalDocumentModelImpl implements _ApprovalDocumentModel {
 
   @override
   String toString() {
-    return 'ApprovalDocumentModel(id: $id, docNumber: $docNumber, title: $title, docType: $docType, docTypeName: $docTypeName, categoryName: $categoryName, docTypeDetail: $docTypeDetail, drafter: $drafter, drafterName: $drafterName, drafterAssignment: $drafterAssignment, departmentName: $departmentName, drafterAssignmentDesc: $drafterAssignmentDesc, content: $content, status: $status, statusDesc: $statusDesc, currentStep: $currentStep, contentHash: $contentHash, pdfUrl: $pdfUrl, attachmentCount: $attachmentCount, observerCount: $observerCount, attachments: $attachments, observers: $observers, steps: $steps, createdAt: $createdAt, submittedAt: $submittedAt, completedAt: $completedAt)';
+    return 'ApprovalDocumentModel(id: $id, docNumber: $docNumber, title: $title, docType: $docType, docTypeName: $docTypeName, categoryName: $categoryName, docTypeDetail: $docTypeDetail, drafter: $drafter, drafterName: $drafterName, drafterAssignment: $drafterAssignment, departmentName: $departmentName, drafterAssignmentDesc: $drafterAssignmentDesc, content: $content, status: $status, statusDesc: $statusDesc, securityLevel: $securityLevel, securityLevelDesc: $securityLevelDesc, currentStep: $currentStep, contentHash: $contentHash, pdfUrl: $pdfUrl, attachmentCount: $attachmentCount, observerCount: $observerCount, attachments: $attachments, observers: $observers, steps: $steps, createdAt: $createdAt, submittedAt: $submittedAt, completedAt: $completedAt)';
   }
 
   @override
@@ -3328,6 +3409,10 @@ class _$ApprovalDocumentModelImpl implements _ApprovalDocumentModel {
             (identical(other.status, status) || other.status == status) &&
             (identical(other.statusDesc, statusDesc) ||
                 other.statusDesc == statusDesc) &&
+            (identical(other.securityLevel, securityLevel) ||
+                other.securityLevel == securityLevel) &&
+            (identical(other.securityLevelDesc, securityLevelDesc) ||
+                other.securityLevelDesc == securityLevelDesc) &&
             (identical(other.currentStep, currentStep) ||
                 other.currentStep == currentStep) &&
             (identical(other.contentHash, contentHash) ||
@@ -3373,6 +3458,8 @@ class _$ApprovalDocumentModelImpl implements _ApprovalDocumentModel {
     const DeepCollectionEquality().hash(_content),
     status,
     statusDesc,
+    securityLevel,
+    securityLevelDesc,
     currentStep,
     contentHash,
     pdfUrl,
@@ -3421,6 +3508,8 @@ abstract class _ApprovalDocumentModel implements ApprovalDocumentModel {
     final Map<String, dynamic> content,
     @JsonKey(readValue: _readStr) final String status,
     final String? statusDesc,
+    final String securityLevel,
+    final String? securityLevelDesc,
     final int currentStep,
     @JsonKey(readValue: _readStr) final String contentHash,
     final String? pdfUrl,
@@ -3472,6 +3561,10 @@ abstract class _ApprovalDocumentModel implements ApprovalDocumentModel {
   String get status; // draft, pending, approved, rejected, cancelled
   @override
   String? get statusDesc;
+  @override
+  String get securityLevel;
+  @override
+  String? get securityLevelDesc;
   @override
   int get currentStep;
   @override

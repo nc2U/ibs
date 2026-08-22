@@ -36,6 +36,7 @@ const { allDepartList } = storeToRefs(companyStore)
 const filterCategory = ref<string>('')
 const filterDocType = ref<string>('')
 const filterStatus = ref<DocumentStatus | ''>('')
+const filterSecurityLevel = ref<string>('')
 const filterDepartment = ref<string>('')
 const filterStartDate = ref('')
 const filterEndDate = ref('')
@@ -81,6 +82,7 @@ const fetchList = async (page = 1) => {
     category: filterCategory.value ? Number(filterCategory.value) : null,
     doc_type: filterDocType.value ? Number(filterDocType.value) : null,
     status: filterStatus.value || undefined,
+    security_level: filterSecurityLevel.value || undefined,
     department: filterDepartment.value ? Number(filterDepartment.value) : null,
     start_date: filterStartDate.value || undefined,
     end_date: filterEndDate.value || undefined,
@@ -96,6 +98,7 @@ const resetFilter = () => {
   filterCategory.value = ''
   filterDocType.value = ''
   filterStatus.value = ''
+  filterSecurityLevel.value = ''
   filterDepartment.value = ''
   filterStartDate.value = ''
   filterEndDate.value = ''
@@ -126,7 +129,7 @@ onMounted(async () => {
       <CCardBody class="p-3">
         <CRow class="g-2 mb-2 align-items-center">
           <!-- 카테고리 -->
-          <CCol xs="12" sm="6" md="3">
+          <CCol xs="12" sm="6" md="2">
             <CFormSelect v-model="filterCategory" size="sm" @change="onSearch">
               <option value="">전체 카테고리</option>
               <option v-for="cat in docCategoryList" :key="cat.id" :value="String(cat.id)">
@@ -145,8 +148,18 @@ onMounted(async () => {
             </CFormSelect>
           </CCol>
 
+          <!-- 공개 등급 -->
+          <CCol xs="12" sm="6" md="2">
+            <CFormSelect v-model="filterSecurityLevel" size="sm" @change="onSearch">
+              <option value="">전체 공개등급</option>
+              <option value="1">🔒 1등급 (비공개)</option>
+              <option value="2">👥 2등급 (부서공개)</option>
+              <option value="3">🌐 3등급 (전사공개)</option>
+            </CFormSelect>
+          </CCol>
+
           <!-- 결재 상태 -->
-          <CCol xs="12" sm="6" md="3">
+          <CCol xs="12" sm="6" md="2">
             <CFormSelect v-model="filterStatus" size="sm" @change="onSearch">
               <option value="">전체 상태</option>
               <option value="pending">결재중</option>
@@ -221,6 +234,7 @@ onMounted(async () => {
         <CTableRow class="text-center">
           <CTableHeaderCell scope="col">No</CTableHeaderCell>
           <CTableHeaderCell scope="col">문서번호</CTableHeaderCell>
+          <CTableHeaderCell scope="col">공개등급</CTableHeaderCell>
           <CTableHeaderCell scope="col">카테고리 / 유형</CTableHeaderCell>
           <CTableHeaderCell scope="col">기안 부서 / 직책</CTableHeaderCell>
           <CTableHeaderCell scope="col">기안자</CTableHeaderCell>
@@ -232,7 +246,7 @@ onMounted(async () => {
 
       <CTableBody>
         <CTableRow v-if="allDocumentList.length === 0">
-          <CTableDataCell colspan="8" class="text-center py-5 text-muted">
+          <CTableDataCell colspan="9" class="text-center py-5 text-muted">
             <v-icon icon="mdi-file-document-outline" size="large" class="mb-2" />
             <div>조회된 결재 문서가 없습니다.</div>
           </CTableDataCell>
@@ -252,6 +266,17 @@ onMounted(async () => {
           <!-- 문서번호 -->
           <CTableDataCell class="text-center fw-semibold font-monospace small">
             {{ doc.doc_number || '-' }}
+          </CTableDataCell>
+
+          <!-- 공개등급 -->
+          <CTableDataCell class="text-center">
+            <CBadge
+              :color="doc.security_level === '1' ? 'danger' : doc.security_level === '2' ? 'primary' : 'success'"
+              variant="outline"
+              class="small"
+            >
+              {{ doc.security_level === '1' ? '🔒 1등급' : doc.security_level === '2' ? '👥 2등급' : '🌐 3등급' }}
+            </CBadge>
           </CTableDataCell>
 
           <!-- 카테고리 / 문서유형 -->

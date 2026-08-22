@@ -116,24 +116,25 @@ onMounted(() => {
   <CTable hover responsive bordered align="middle">
     <CTableHead color="light">
       <CTableRow class="text-center">
-        <CTableHeaderCell style="width: 200px">문서번호</CTableHeaderCell>
-        <CTableHeaderCell style="width: 130px">문서 유형</CTableHeaderCell>
+        <CTableHeaderCell style="width: 180px">문서번호</CTableHeaderCell>
+        <CTableHeaderCell style="width: 120px">문서 유형</CTableHeaderCell>
+        <CTableHeaderCell style="width: 90px">공개등급</CTableHeaderCell>
         <CTableHeaderCell>제목</CTableHeaderCell>
         <CTableHeaderCell v-if="activeTab === 'observed'" style="width: 90px">
           상태
         </CTableHeaderCell>
         <CTableHeaderCell style="width: 120px">기안자</CTableHeaderCell>
-        <CTableHeaderCell style="width: 140px">기안일</CTableHeaderCell>
-        <CTableHeaderCell style="width: 140px">
+        <CTableHeaderCell style="width: 130px">기안일</CTableHeaderCell>
+        <CTableHeaderCell style="width: 130px">
           {{ activeTab === 'approved' ? '최종 승인일' : '완료일시' }}
         </CTableHeaderCell>
-        <CTableHeaderCell style="width: 120px">관리</CTableHeaderCell>
+        <CTableHeaderCell style="width: 100px">관리</CTableHeaderCell>
       </CTableRow>
     </CTableHead>
     <CTableBody>
       <CTableRow v-if="!filteredList.length">
         <CTableDataCell
-          :colspan="activeTab === 'observed' ? 8 : 7"
+          :colspan="activeTab === 'observed' ? 9 : 8"
           class="text-center text-medium-emphasis py-5"
         >
           <CIcon
@@ -164,6 +165,19 @@ onMounted(() => {
         <!-- 문서 유형 -->
         <CTableDataCell class="text-center">
           <v-chip color="primary" size="x-small">{{ doc.doc_type_name }}</v-chip>
+        </CTableDataCell>
+
+        <!-- 공개 등급 -->
+        <CTableDataCell class="text-center">
+          <v-chip
+            v-if="doc.security_level"
+            size="x-small"
+            variant="tonal"
+            :color="doc.security_level === '1' ? 'error' : doc.security_level === '2' ? 'primary' : 'success'"
+          >
+            {{ doc.security_level === '1' ? '🔒 1등급' : doc.security_level === '2' ? '👥 2등급' : '🌐 3등급' }}
+          </v-chip>
+          <span v-else class="text-muted small">-</span>
         </CTableDataCell>
 
         <!-- 제목 -->

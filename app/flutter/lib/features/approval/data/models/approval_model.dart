@@ -84,6 +84,8 @@ class DocumentTypeModel with _$DocumentTypeModel {
     @JsonKey(readValue: _readStr) @Default('') String code,
     @Default('') String description,
     @Default('GENERAL') String formTemplateKey,
+    @Default('2') String defaultSecurityLevel,
+    String? defaultSecurityLevelDesc,
     @Default('organization') String routeType,
     int? category,
     String? categoryName,
@@ -210,6 +212,8 @@ class ApprovalDocumentModel with _$ApprovalDocumentModel {
     @Default({}) Map<String, dynamic> content,
     @JsonKey(readValue: _readStr) @Default('draft') String status, // draft, pending, approved, rejected, cancelled
     String? statusDesc,
+    @Default('2') String securityLevel,
+    String? securityLevelDesc,
     @Default(1) int currentStep,
     @JsonKey(readValue: _readStr) @Default('') String contentHash,
     String? pdfUrl,

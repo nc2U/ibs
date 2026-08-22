@@ -197,6 +197,20 @@ onMounted(() => fetchDocument(docId.value))
           >
             {{ STATUS_LABEL[document.status] }}
           </v-chip>
+          <v-chip
+            v-if="document.security_level"
+            variant="tonal"
+            size="x-small"
+            :color="document.security_level === '1' ? 'error' : document.security_level === '2' ? 'primary' : 'success'"
+            class="me-2"
+          >
+            <v-icon
+              start
+              size="x-small"
+              :icon="document.security_level === '1' ? 'mdi-lock' : document.security_level === '2' ? 'mdi-account-group' : 'mdi-earth'"
+            />
+            {{ document.security_level === '1' ? '1등급 (비공개)' : document.security_level === '2' ? '2등급 (부서공개)' : '3등급 (전사공개)' }}
+          </v-chip>
           <span class="fw-semibold fs-5">{{ document.title }}</span>
         </div>
         <div class="d-flex gap-2 flex-wrap">

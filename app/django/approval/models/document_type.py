@@ -74,10 +74,24 @@ class DocumentType(models.Model):
         ('PROJECT_DECISION', '프로젝트 주요 의사결정서 (PROJECT_DECISION)'),
     )
 
+    SECURITY_SECRET = '1'
+    SECURITY_DEPT = '2'
+    SECURITY_PUBLIC = '3'
+    SECURITY_LEVEL_CHOICES = (
+        (SECURITY_SECRET, '1등급 (비공개 / 결재선 및 참조자)'),
+        (SECURITY_DEPT, '2등급 (부서공개 / 소속 부서)'),
+        (SECURITY_PUBLIC, '3등급 (전사공개 / 회사 전체)'),
+    )
+
     form_template_key = models.CharField(
         '결재 양식 템플릿', max_length=50,
         choices=FORM_TEMPLATE_CHOICES, default='GENERAL',
         help_text='매칭할 전자결재 양식 템플릿 (웹/모바일 공통 적용)'
+    )
+    default_security_level = models.CharField(
+        '기본 보안 등급', max_length=1,
+        choices=SECURITY_LEVEL_CHOICES, default=SECURITY_DEPT,
+        help_text='1등급: 비공개(결재선/참조자만), 2등급: 부서공개, 3등급: 전사공개'
     )
 
     # 기안 가능 권한 제어 (비어있으면 전체 허용)

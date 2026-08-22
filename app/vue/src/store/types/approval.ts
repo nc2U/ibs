@@ -55,6 +55,8 @@ export interface ApprovalPolicyRule {
   priority: number
 }
 
+export type SecurityLevel = '1' | '2' | '3' // 1: 비공개, 2: 부서공개, 3: 전사공개
+
 export interface DocumentType {
   id: number
   category?: number | null
@@ -63,6 +65,8 @@ export interface DocumentType {
   code: string
   description: string
   form_template_key: string
+  default_security_level?: SecurityLevel
+  default_security_level_desc?: string
   route_type: 'organization' | 'template'
   route_type_desc?: string
   final_approval_duty?: number | null
@@ -154,6 +158,8 @@ export interface ApprovalDocument {
   observer_count?: number
   drafter: SimpleUser
   workspace?: number | null
+  security_level?: SecurityLevel
+  security_level_desc?: string
   status: DocumentStatus
   current_step: number
   content_hash: string
@@ -170,6 +176,7 @@ export interface PatchApprovalDocument {
   drafter_assignment?: number | null
   content?: Record<string, unknown>
   workspace?: number | null
+  security_level?: SecurityLevel
   observer_ids?: number[]
 }
 
@@ -183,6 +190,7 @@ export interface AllDocFilter {
   category?: number | null
   doc_type?: number | null
   status?: string
+  security_level?: string
   department?: number | null
   search?: string
   start_date?: string
@@ -203,6 +211,8 @@ export interface ApprovalDocumentListItem {
   drafter_assignment_desc?: string
   attachment_count?: number
   observer_count?: number
+  security_level?: SecurityLevel
+  security_level_desc?: string
   status: DocumentStatus
   status_desc?: string
   current_step: number

@@ -35,6 +35,7 @@ const form = ref({
   doc_type: '' as number | '',
   drafter_assignment: '' as number | '',
   title: '',
+  security_level: '2' as '1' | '2' | '3',
 })
 const dynamicContent = ref<Record<string, string>>({})
 const selectedObservers = ref<number[]>([])
@@ -98,6 +99,9 @@ const groupedDocTypes = computed(() => {
 
 const onDocTypeChange = () => {
   dynamicContent.value = {}
+  if (selectedDocType.value && selectedDocType.value.default_security_level) {
+    form.value.security_level = selectedDocType.value.default_security_level
+  }
   updateRoutePreview()
 }
 
@@ -150,6 +154,7 @@ const buildFormData = () => {
     fd.append('drafter_assignment', String(form.value.drafter_assignment))
   }
   fd.append('title', form.value.title)
+  fd.append('security_level', form.value.security_level)
   fd.append('content', JSON.stringify(dynamicContent.value))
 
   // 참조자 추가
@@ -244,6 +249,7 @@ onMounted(async () => {
       form.value.doc_type = document.value.doc_type
       form.value.drafter_assignment = document.value.drafter_assignment ?? ''
       form.value.title = document.value.title
+      form.value.security_level = (document.value.security_level as '1' | '2' | '3') || '2'
       dynamicContent.value = { ...(document.value.content as Record<string, string>) }
       selectedObservers.value = (document.value.observers || []).map(o => o.id)
       await updateRoutePreview()
@@ -337,6 +343,47 @@ onMounted(async () => {
                 placeholder="결재 문서 제목을 입력하세요."
                 required
               />
+            </CCol>
+          </CRow>
+
+          <!-- 공개 등급 (보안 레벨) -->
+          <CRow class="mb-3">
+            <CFormLabel class="col-sm-3 col-form-label">
+              공개 등급 <span class="text-danger">*</span>
+            </CFormLabel>
+            <CCol sm="9">
+              <div class="d-flex gap-3 flex-wrap align-items-center pt-1">
+                <CFormCheck
+                  type="radio"
+                  name="security_level"
+                  id="sec_1"
+                  value="1"
+                  :checked="form.security_level === '1'"
+                  @change="form.security_level = '1'"
+                  label="🔒 1등급 (비공개: 기안자/결재선/참조자)"
+                />
+                <CFormCheck
+                  type="radio"
+                  name="security_level"
+                  id="sec_2"
+                  value="2"
+                  :checked="form.security_level === '2'"
+                  @change="form.security_level = '2'"
+                  label="👥 2등급 (부서공개: 소속 부서 공유)"
+                />
+                <CFormCheck
+                  type="radio"
+                  name="security_level"
+                  id="sec_3"
+                  value="3"
+                  :checked="form.security_level === '3'"
+                  @change="form.security_level = '3'"
+                  label="🌐 3등급 (전사공개: 회사 전체 공유)"
+                />
+              </div>
+              <div class="form-text text-muted">
+                문서 유형별 기본 등급이 자동 지정되며, 필요 시 기안자가 등급을 변경할 수 있습니다.
+              </div>
             </CCol>
           </CRow>
 

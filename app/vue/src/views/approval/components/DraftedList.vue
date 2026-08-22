@@ -123,6 +123,7 @@ onMounted(fetchMyDrafted)
     <CTableHead color="light">
       <CTableRow>
         <CTableHeaderCell class="text-center" style="width: 130px">문서 유형</CTableHeaderCell>
+        <CTableHeaderCell class="text-center" style="width: 90px">공개등급</CTableHeaderCell>
         <CTableHeaderCell>제목</CTableHeaderCell>
         <CTableHeaderCell class="text-center" style="width: 100px">상태</CTableHeaderCell>
         <CTableHeaderCell class="text-center" style="width: 100px">단계</CTableHeaderCell>
@@ -133,7 +134,7 @@ onMounted(fetchMyDrafted)
     </CTableHead>
     <CTableBody>
       <CTableRow v-if="!filteredList.length">
-        <CTableDataCell colspan="7" class="text-center text-medium-emphasis py-5">
+        <CTableDataCell colspan="8" class="text-center text-medium-emphasis py-5">
           <div class="mb-2" style="font-size: 2rem">📄</div>
           <div>기안한 문서가 없습니다.</div>
           <v-btn
@@ -154,6 +155,17 @@ onMounted(fetchMyDrafted)
       >
         <CTableDataCell class="text-center">
           <v-chip color="primary" variant="elevated" size="x-small">{{ doc.doc_type_name }}</v-chip>
+        </CTableDataCell>
+        <CTableDataCell class="text-center">
+          <v-chip
+            v-if="doc.security_level"
+            size="x-small"
+            variant="tonal"
+            :color="doc.security_level === '1' ? 'error' : doc.security_level === '2' ? 'primary' : 'success'"
+          >
+            {{ doc.security_level === '1' ? '🔒 1등급' : doc.security_level === '2' ? '👥 2등급' : '🌐 3등급' }}
+          </v-chip>
+          <span v-else class="text-muted small">-</span>
         </CTableDataCell>
         <CTableDataCell class="fw-semibold">{{ doc.title }}</CTableDataCell>
         <CTableDataCell class="text-center">
