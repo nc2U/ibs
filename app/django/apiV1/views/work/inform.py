@@ -54,7 +54,12 @@ class NewsViewSet(viewsets.ModelViewSet):
         return base_qs.select_related('project', 'author').prefetch_related('files__creator', 'comments__creator')
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+        instance = serializer.save(author=self.request.user)
+        try:
+            from work.tasks import send_news_push_task
+            send_news_push_task.delay(instance.pk)
+        except Exception as e:
+            print(f"❌ Failed to trigger news push task: {e}")
 
 
 class NewsFileViewSet(viewsets.ModelViewSet):

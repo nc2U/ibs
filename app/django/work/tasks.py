@@ -160,3 +160,55 @@ def send_issue_mail_task(issue_pk, user_pk, mail_type, old_status_name=None, old
     except Exception as e:
         print(f"❌ Async issue notification task failed: {e}")
 
+
+@shared_task
+def send_news_push_task(news_pk):
+    """공지사항 등록 시 워크스페이스 멤버(또는 전체 사용자)에게 실시간 모바일 푸시 발송"""
+    from work.models.inform import News
+    from work.models.project import Member
+    try:
+        instance = News.objects.select_related('project', 'author').get(pk=news_pk)
+        project = instance.project
+
+        # 1. 수신 대상자 구성
+        if getattr(project, 'is_public', False) or getattr(project, 'kind', '') == '1':
+            # 전체 공개 워크스페이스 또는 본사 공지 ➔ 전체 활성 사용자 대상
+            recipient_ids = set(User.objects.filter(is_active=True).values_list('id', flat=True))
+        else:
+            # 특정 워크스페이스 공지 ➔ 워크스페이스 소속 멤버 대상
+            member_ids = set(
+                Member.objects.filter(
+                    project=project,
+                    user__is_active=True
+                ).values_list('user_id', flat=True)
+            )
+            # 워크스페이스 관리자 및 작성자 포함
+            recipient_ids = member_ids
+
+        # 작성자 본인은 푸시 수신 대상에서 제외
+        recipient_ids.discard(instance.author_id)
+
+        if not recipient_ids:
+            return
+
+        tag = '긴급 공지' if instance.is_important else '공지'
+        push_title = f'[{tag}] {project.name}'
+        push_body = instance.title
+
+        send_push_notification(
+            user_ids=list(recipient_ids),
+            title=push_title,
+            body=push_body,
+            category='notice',
+            target_type='news',
+            target_id=str(instance.pk),
+            extra_data={
+                'news_id': str(instance.pk),
+                'project_id': str(project.id),
+                'is_important': str(instance.is_important),
+            },
+        )
+    except Exception as e:
+        print(f"❌ Async news notification task failed: {e}")
+
+
