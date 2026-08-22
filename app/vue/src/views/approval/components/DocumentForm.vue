@@ -29,6 +29,8 @@ const { fetchUsersList } = accStore
 
 const isEdit = computed(() => !!route.params.docId)
 const saving = ref<'draft' | 'submit' | ''>('')
+const validated = ref(false)
+const formRef = ref<HTMLFormElement | null>(null)
 
 const form = ref({
   doc_type: '' as number | '',
@@ -104,27 +106,24 @@ const onAssignmentChange = async () => {
   await fetchForDraftDocTypeList(
     form.value.drafter_assignment ? Number(form.value.drafter_assignment) : undefined,
   )
+  if (!forDraftDocTypeList.value.some(d => d.id === Number(form.value.doc_type))) {
+    form.value.doc_type = ''
+    dynamicContent.value = {}
+  }
   updateRoutePreview()
 }
 
 // dynamicContent에서 금액 값 추출
-const currentAmount = computed(() => {
-  for (const key of [
-    'amount',
-    'estimated_amount',
-    'total_amount',
-    'price',
-    'cost',
-    'expense_amount',
-    'payment_amount',
-  ]) {
-    const val = dynamicContent.value[key]
-    if (val !== undefined && val !== '') {
-      const clean = String(val).replace(/,/g, '').replace(/ /g, '').replace(/원/g, '')
-      const parsed = parseFloat(clean)
-      if (!isNaN(parsed)) return parsed
-    }
-  }
+const currentAmount = computed<number | null>(() => {
+  const c = dynamicContent.value
+  if (!c) return null
+  if (c.amount !== undefined && c.amount !== null && c.amount !== '') return Number(c.amount)
+  if (c.contract_amount !== undefined && c.contract_amount !== '') return Number(c.contract_amount)
+  if (c.advance_amount !== undefined && c.advance_amount !== '') return Number(c.advance_amount)
+  if (c.total_cost !== undefined && c.total_cost !== '') return Number(c.total_cost)
+  if (c.total_budget !== undefined && c.total_budget !== '') return Number(c.total_budget)
+  if (c.settlement_amount !== undefined && c.settlement_amount !== '')
+    return Number(c.settlement_amount)
   return null
 })
 
@@ -137,13 +136,12 @@ watch(
 )
 
 const updateRoutePreview = async () => {
-  if (form.value.doc_type) {
-    await fetchRoutePreview(
-      Number(form.value.doc_type),
-      form.value.drafter_assignment ? Number(form.value.drafter_assignment) : undefined,
-      currentAmount.value,
-    )
-  }
+  if (!form.value.doc_type) return
+  await fetchRoutePreview(
+    Number(form.value.doc_type),
+    form.value.drafter_assignment ? Number(form.value.drafter_assignment) : undefined,
+    currentAmount.value,
+  )
 }
 
 const buildFormData = () => {
@@ -198,6 +196,35 @@ const onSubmitAndSend = async () => {
   saving.value = ''
 }
 
+const getFormElement = (e?: Event): HTMLFormElement | null => {
+  if (formRef.value) {
+    if (formRef.value instanceof HTMLFormElement) return formRef.value
+    if ((formRef.value as any).$el instanceof HTMLFormElement) return (formRef.value as any).$el
+  }
+  if (e?.target && (e.target as HTMLElement).closest) {
+    return (e.target as HTMLElement).closest('form')
+  }
+  return window.document.querySelector('form.needs-validation')
+}
+
+const handleSubmit = async (e: Event, type: 'draft' | 'submit') => {
+  const formEl = getFormElement(e)
+  if (formEl && typeof formEl.checkValidity === 'function' && !formEl.checkValidity()) {
+    e.preventDefault()
+    e.stopPropagation()
+    validated.value = true
+    return
+  }
+
+  validated.value = true
+
+  if (type === 'draft') {
+    await onSubmit()
+  } else if (type === 'submit') {
+    await onSubmitAndSend()
+  }
+}
+
 onMounted(async () => {
   await Promise.all([fetchDocCategoryList(), fetchMyAssignments(), fetchUsersList()])
 
@@ -220,7 +247,7 @@ onMounted(async () => {
       form.value.title = document.value.title
       dynamicContent.value = { ...(document.value.content as Record<string, string>) }
       selectedObservers.value = (document.value.observers || []).map(o => o.id)
-      updateRoutePreview()
+      await updateRoutePreview()
     }
   }
 })
@@ -238,7 +265,13 @@ onMounted(async () => {
       </CCardHeader>
 
       <CCardBody>
-        <CForm @submit.prevent="onSubmit">
+        <CForm
+          ref="formRef"
+          class="needs-validation"
+          novalidate
+          :validated="validated"
+          @submit.prevent="handleSubmit($event, 'draft')"
+        >
           <!-- 기안 부서 / 보직 선택 (보직이 있는 경우) -->
           <CRow v-if="myAssignments.length > 0" class="mb-3">
             <CFormLabel class="col-sm-3 col-form-label"> 기안 부서/직책 </CFormLabel>
@@ -518,7 +551,7 @@ onMounted(async () => {
             <v-btn
               type="submit"
               color="blue-grey-lighten-2"
-              :disabled="!!saving || !form.doc_type"
+              :disabled="!!saving"
               flat
             >
               <CSpinner v-if="saving === 'draft'" size="sm" class="me-1" />
@@ -527,8 +560,8 @@ onMounted(async () => {
             <v-btn
               type="button"
               color="primary"
-              :disabled="!!saving || !form.doc_type || !form.title"
-              @click="onSubmitAndSend"
+              :disabled="!!saving"
+              @click="handleSubmit($event, 'submit')"
             >
               <CSpinner v-if="saving === 'submit'" size="sm" class="me-1" />
               저장 후 상신
