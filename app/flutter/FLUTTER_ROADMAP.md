@@ -219,6 +219,9 @@ color: context.colors.accentCorp     // 전사정보 액센트 (Dark: #38BDF8 / 
   - 금액 입력 시 전결 규정(`ApprovalPolicyRule`)에 따른 실시간 결재선 반영
 * **4대 탭 관리**: 미결함(미결 배지), 기안함, 결재문서함(승인/공람), 전체문서함(관리자 전용)
 * **원터치 모바일 승인/반려/의견 등록 및 회수 바텀시트**
+* **🔐 생체 인증 2차 보안 결재 (Biometric Authentication)**:
+  - 결재 승인 시 **지문(Fingerprint) / Face ID** 생체 인증 팝업 호출 (`local_auth`)
+  - [내 설정] 화면에서 기기 지원 여부에 따라 생체 인증 결재 ON/OFF 토글 제어
 * **WeasyPrint PDF 네이티브 출력 및 외부 공유 (`SharePlus`)**
 
 #### 3-3. 전사 실시간 알림 (FCM Push Notifications) [Phase 3 진행 예정]

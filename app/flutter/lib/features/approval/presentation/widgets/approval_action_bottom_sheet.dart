@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/services/biometric_service.dart';
 import '../../../../core/theme/app_colors_extension.dart';
 
 enum ApprovalActionModalType {
@@ -100,6 +101,24 @@ class _ApprovalActionBottomSheetState extends State<ApprovalActionBottomSheet> {
       _isLoading = true;
       _errorText = null;
     });
+
+    // 🌟 결재 승인 시 생체 인증(지문 / Face ID) 수행
+    if (widget.type == ApprovalActionModalType.approve) {
+      final bioResult = await BiometricService.authenticate(
+        reason: '결재 문서 승인을 위해 본인 인증을 진행합니다.',
+      );
+      if (bioResult == BiometricAuthResult.failed || bioResult == BiometricAuthResult.lockedOut) {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _errorText = bioResult == BiometricAuthResult.lockedOut
+                ? '생체 인증 시도 횟수를 초과했습니다. 잠시 후 다시 시도해 주세요.'
+                : '본인 인증(생체 인증)이 취소되었거나 실패했습니다.';
+          });
+        }
+        return;
+      }
+    }
 
     try {
       await widget.onConfirm(comment.isNotEmpty ? comment : null);

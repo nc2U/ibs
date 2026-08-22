@@ -38,8 +38,9 @@ dependencies:
   # Routing
   go_router: ^14.8.1
 
-  # Secure storage
+  # Secure storage & Biometrics
   flutter_secure_storage: ^9.2.4
+  local_auth: ^2.3.0
 
   # UI
   flutter_svg: ^2.0.10+1

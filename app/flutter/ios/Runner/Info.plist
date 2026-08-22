@@ -24,6 +24,8 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>전자결재 승인 및 안전한 본인 확인을 위해 Face ID를 사용합니다.</string>
 	<key>CFBundleDocumentTypes</key>
 	<array>
 		<dict>

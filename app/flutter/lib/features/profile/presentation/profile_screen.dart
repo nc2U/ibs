@@ -5,6 +5,7 @@ import '../../../core/constants/app_text_styles.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/theme_provider.dart';
 import '../../../core/router/app_router.dart';
+import '../../../core/services/biometric_service.dart';
 import '../../../core/theme/app_colors_extension.dart';
 import '../../../core/widgets/user_avatar.dart';
 
@@ -19,6 +20,46 @@ class ProfileScreen extends ConsumerStatefulWidget {
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _emailNotif = false;
   bool _pushNotif = false;
+  bool _isBiometricSupported = false;
+  bool _biometricEnabled = false;
+  String _biometricLabel = '생체 인증';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBiometricSettings();
+  }
+
+  Future<void> _loadBiometricSettings() async {
+    final canAuth = await BiometricService.canAuthenticate();
+    if (canAuth) {
+      final isEnabled = await BiometricService.isBiometricEnabled();
+      final label = await BiometricService.getBiometricLabel();
+      if (mounted) {
+        setState(() {
+          _isBiometricSupported = true;
+          _biometricEnabled = isEnabled;
+          _biometricLabel = label;
+        });
+      }
+    }
+  }
+
+  Future<void> _toggleBiometric(bool value) async {
+    if (value) {
+      // 켤 때는 실제 생체 인증을 한번 확인
+      final result = await BiometricService.authenticate(
+        reason: '$_biometricLabel 사용을 위해 본인 인증을 진행합니다.',
+      );
+      if (result == BiometricAuthResult.success) {
+        await BiometricService.setBiometricEnabled(true);
+        if (mounted) setState(() => _biometricEnabled = true);
+      }
+    } else {
+      await BiometricService.setBiometricEnabled(false);
+      if (mounted) setState(() => _biometricEnabled = false);
+    }
+  }
 
   void _showThemeSelector(BuildContext context) {
     final currentMode = ref.read(themeModeProvider);
@@ -249,6 +290,29 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ),
             ),
             const SizedBox(height: 16),
+
+            // ── 보안 및 인증 섹션 ────────────────────────────────────────────
+            if (_isBiometricSupported) ...[
+              const _SectionLabel(title: '보안 및 결재 인증'),
+              _SettingTile(
+                leading: Icon(
+                  _biometricLabel == 'Face ID'
+                      ? Icons.face_rounded
+                      : Icons.fingerprint_rounded,
+                  color: context.colors.accentApprovalDeep,
+                  size: 24,
+                ),
+                title: '$_biometricLabel 결재 승인',
+                subtitle: '결재 승인 시 본인 생체 인증 사용',
+                trailing: Switch(
+                  value: _biometricEnabled,
+                  onChanged: _toggleBiometric,
+                  activeTrackColor: context.colors.accentApproval,
+                  activeThumbColor: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
 
             // ── 계정 섹션 ─────────────────────────────────────────────────────
             const _SectionLabel(title: '계정'),

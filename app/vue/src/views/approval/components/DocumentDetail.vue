@@ -132,6 +132,19 @@ const docContent = computed<Record<string, any>>(() => {
   return (document.value?.content || {}) as Record<string, any>
 })
 
+const getBudgetAccountLabel = (code?: string) => {
+  const map: Record<string, string> = {
+    NONE: '예산 비소요 (0원)',
+    GENERAL_EXPENSE: '일반관리비 / 경상운영비',
+    PROJECT_COST: '사업비 / 현장 직접비',
+    OUTSOURCING: '외주 용역비',
+    MARKETING: '홍보 및 마케팅비',
+    ASSET_PURCHASE: '자산 취득비',
+    OTHER: '기타 예산',
+  }
+  return (code && map[code]) || code || '-'
+}
+
 onMounted(() => fetchDocument(docId.value))
 </script>
 
@@ -2128,10 +2141,118 @@ onMounted(() => fetchDocument(docId.value))
           </CTable>
         </template>
 
-        <!-- 기본 JSON fallback -->
-        <pre v-else class="mb-0 text-muted small">
-          {{ JSON.stringify(docContent, null, 2) }}
-        </pre>
+        <!-- 18. 일반 업무 품의서 (GENERAL / GENERAL_PROPOSAL / BIZ_APPROVAL / PROPOSAL / GENERAL_DRAFT) -->
+        <template
+          v-else-if="
+            document.doc_type_detail?.form_template_key === 'GENERAL' ||
+            document.doc_type_detail?.form_template_key === 'GENERAL_PROPOSAL' ||
+            document.doc_type_detail?.form_template_key === 'BIZ_APPROVAL' ||
+            document.doc_type_detail?.form_template_key === 'PROPOSAL' ||
+            document.doc_type_detail?.form_template_key === 'GENERAL_DRAFT'
+          "
+        >
+          <CTable small bordered responsive class="mb-3">
+            <CTableBody>
+              <CTableRow v-if="docContent.purpose">
+                <CTableHeaderCell class="text-center bg-more-light" style="width: 130px">
+                  품의 목적
+                </CTableHeaderCell>
+                <CTableDataCell colspan="3" class="pl-3 fw-bold text-body fs-6">
+                  {{ docContent.purpose }}
+                </CTableDataCell>
+              </CTableRow>
+              <CTableRow v-if="docContent.schedule || docContent.budget_account">
+                <CTableHeaderCell class="text-center bg-more-light" style="width: 130px">
+                  추진 일정
+                </CTableHeaderCell>
+                <CTableDataCell class="pl-3">
+                  {{ docContent.schedule || '-' }}
+                </CTableDataCell>
+                <CTableHeaderCell class="text-center bg-more-light" style="width: 130px">
+                  예산 과목
+                </CTableHeaderCell>
+                <CTableDataCell class="pl-3">
+                  {{ getBudgetAccountLabel(docContent.budget_account) }}
+                </CTableDataCell>
+              </CTableRow>
+              <CTableRow v-if="docContent.budget !== undefined || docContent.amount !== undefined">
+                <CTableHeaderCell class="text-center bg-more-light">
+                  소요 예산
+                </CTableHeaderCell>
+                <CTableDataCell colspan="3" class="pl-3 fw-bold text-danger fs-6">
+                  {{ (Number(docContent.budget ?? docContent.amount) || 0).toLocaleString() }} 원
+                </CTableDataCell>
+              </CTableRow>
+              <CTableRow>
+                <CTableHeaderCell class="text-center bg-more-light">
+                  세부 품의 내용
+                </CTableHeaderCell>
+                <CTableDataCell colspan="3" class="pl-3" style="white-space: pre-wrap; line-height: 1.6">
+                  {{ docContent.content || docContent.body || docContent.description || '-' }}
+                </CTableDataCell>
+              </CTableRow>
+              <CTableRow v-if="docContent.expected_effect">
+                <CTableHeaderCell class="text-center bg-more-light">
+                  기대 효과
+                </CTableHeaderCell>
+                <CTableDataCell colspan="3" class="pl-3" style="white-space: pre-wrap">
+                  {{ docContent.expected_effect }}
+                </CTableDataCell>
+              </CTableRow>
+              <CTableRow v-if="docContent.note">
+                <CTableHeaderCell class="text-center bg-more-light">
+                  비고 / 특이사항
+                </CTableHeaderCell>
+                <CTableDataCell colspan="3" class="pl-3 text-muted">
+                  {{ docContent.note }}
+                </CTableDataCell>
+              </CTableRow>
+            </CTableBody>
+          </CTable>
+        </template>
+
+        <!-- 19. 기본 일반 본문 렌더링 fallback (body/content가 있거나 기타 동적 필드) -->
+        <template v-else>
+          <!-- body 또는 content 단독 텍스트인 경우 -->
+          <div
+            v-if="docContent.body || docContent.content || docContent.description"
+            class="p-3 bg-more-light border rounded mb-3"
+            style="white-space: pre-wrap; line-height: 1.6"
+          >
+            {{ docContent.body || docContent.content || docContent.description }}
+          </div>
+
+          <!-- 기타 다중 key-value 필드가 있는 경우 테이블로 렌더링 -->
+          <CTable
+            v-if="Object.keys(docContent).some(k => !['body', 'content', 'description'].includes(String(k)))"
+            small
+            bordered
+            responsive
+            class="mb-0"
+          >
+            <CTableBody>
+              <CTableRow
+                v-for="(val, key) in docContent"
+                :key="key"
+                v-show="!['body', 'content', 'description'].includes(String(key))"
+              >
+                <CTableHeaderCell class="text-center bg-more-light" style="width: 140px">
+                  {{ String(key) }}
+                </CTableHeaderCell>
+                <CTableDataCell class="pl-3" style="white-space: pre-wrap">
+                  {{ typeof val === 'object' ? JSON.stringify(val, null, 2) : String(val) }}
+                </CTableDataCell>
+              </CTableRow>
+            </CTableBody>
+          </CTable>
+
+          <div
+            v-if="!Object.keys(docContent).length"
+            class="text-center text-muted py-3"
+          >
+            등록된 상세 품의 내용이 없습니다.
+          </div>
+        </template>
       </CCardBody>
     </CCard>
 
