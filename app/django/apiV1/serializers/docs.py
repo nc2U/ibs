@@ -344,6 +344,8 @@ class OfficialLetterSerializer(serializers.ModelSerializer):
     company_name = serializers.SlugField(source='company', read_only=True)
     creator = SimpleUserSerializer(read_only=True)
     updator = SimpleUserSerializer(read_only=True)
+    approval_document_detail = serializers.SerializerMethodField(read_only=True)
+    approval_status_desc = serializers.CharField(source='get_approval_status_display', read_only=True)
     prev_pk = serializers.SerializerMethodField(read_only=True)
     next_pk = serializers.SerializerMethodField(read_only=True)
 
@@ -353,8 +355,20 @@ class OfficialLetterSerializer(serializers.ModelSerializer):
                   'recipient_name', 'recipient_address', 'recipient_contact',
                   'recipient_reference', 'sender_name', 'sender_position',
                   'sender_department', 'content', 'issue_date', 'pdf_file',
+                  'approval_document', 'approval_document_detail', 'approval_status', 'approval_status_desc',
                   'creator', 'updator', 'created', 'updated', 'prev_pk', 'next_pk')
         read_only_fields = ('document_number', 'pdf_file')
+
+    def get_approval_document_detail(self, obj):
+        if obj.approval_document:
+            return {
+                'pk': obj.approval_document.pk,
+                'doc_number': obj.approval_document.doc_number,
+                'title': obj.approval_document.title,
+                'status': obj.approval_document.status,
+                'status_desc': obj.approval_document.get_status_display(),
+            }
+        return None
 
     def get_prev_pk(self, obj):
         view = self.context.get('view')
@@ -378,8 +392,10 @@ class OfficialLetterSerializer(serializers.ModelSerializer):
 class SimpleOfficialLetterSerializer(serializers.ModelSerializer):
     """목록 조회용 간략 시리얼라이저"""
     creator = SimpleUserSerializer(read_only=True)
+    approval_status_desc = serializers.CharField(source='get_approval_status_display', read_only=True)
 
     class Meta:
         model = OfficialLetter
         fields = ('pk', 'document_number', 'title', 'recipient_name',
-                  'issue_date', 'pdf_file', 'creator', 'created')
+                  'issue_date', 'pdf_file', 'approval_document', 'approval_status',
+                  'approval_status_desc', 'creator', 'created')

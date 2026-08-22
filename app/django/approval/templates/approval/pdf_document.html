@@ -4,100 +4,583 @@
 <meta charset="UTF-8">
 <title>{{ document.doc_type.name }} - {{ document.title }}</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800&family=Noto+Serif+KR:wght@600;700&display=swap');
+  
+  @page {
+    size: A4 portrait;
+    margin: 18mm 15mm 15mm 15mm;
+    @bottom-right {
+      content: "Page " counter(page) " / " counter(pages);
+      font-size: 8pt;
+      color: #888;
+      font-family: 'Noto Sans KR', sans-serif;
+    }
+  }
+
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Noto Sans KR', sans-serif; font-size: 11pt; color: #222; padding: 30mm 20mm; }
-  h1.doc-title { text-align: center; font-size: 20pt; font-weight: 700; margin-bottom: 8mm; letter-spacing: -0.5px; }
-  .doc-meta { width: 100%; border-collapse: collapse; margin-bottom: 8mm; font-size: 9pt; }
-  .doc-meta td { border: 1px solid #ccc; padding: 4px 8px; }
-  .doc-meta .label { background: #f5f5f5; font-weight: 500; width: 80px; }
-  .section-title { font-size: 11pt; font-weight: 700; border-bottom: 2px solid #333; padding-bottom: 3px; margin: 6mm 0 4mm; }
-  .content-box { border: 1px solid #ddd; padding: 5mm; min-height: 40mm; white-space: pre-wrap; font-size: 10pt; line-height: 1.8; }
-  .approval-table { width: 100%; border-collapse: collapse; margin-top: 6mm; font-size: 9pt; }
-  .approval-table th { background: #333; color: #fff; padding: 5px 8px; text-align: center; }
-  .approval-table td { border: 1px solid #ccc; padding: 5px 8px; text-align: center; vertical-align: middle; }
-  .approved { color: #1565C0; font-weight: 700; }
-  .rejected { color: #c62828; font-weight: 700; }
-  .pending  { color: #888; }
-  .doc-number { text-align: right; font-size: 8.5pt; color: #888; margin-bottom: 3mm; }
-  .hash-footer { margin-top: 10mm; font-size: 7.5pt; color: #aaa; word-break: break-all; }
-  .stamp-box { display: inline-block; width: 18mm; height: 18mm; border: 2px solid #1565C0; border-radius: 50%;
-               text-align: center; line-height: 18mm; font-size: 8.5pt; font-weight: 700; color: #1565C0; margin-top: 3mm; }
+  body {
+    font-family: 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+    font-size: 9.5pt;
+    color: #222;
+    line-height: 1.5;
+    background: #fff;
+  }
+
+  /* ── 상단 헤더 & 타이틀 ── */
+  .company-header {
+    text-align: center;
+    font-size: 13pt;
+    font-weight: 700;
+    color: #444;
+    letter-spacing: 2px;
+    margin-bottom: 2mm;
+  }
+  .doc-main-title {
+    text-align: center;
+    font-size: 20pt;
+    font-weight: 800;
+    font-family: 'Noto Serif KR', serif;
+    letter-spacing: 6px;
+    margin-bottom: 6mm;
+    color: #111;
+    border-bottom: 2px solid #111;
+    padding-bottom: 3mm;
+  }
+
+  /* ── 메타 정보 & 결재선 2단 헤더 테이블 ── */
+  .top-meta-container {
+    width: 100%;
+    margin-bottom: 5mm;
+    border-collapse: collapse;
+  }
+  .top-meta-container td {
+    vertical-align: top;
+    padding: 0;
+  }
+
+  /* 좌측 문서 기본 정보 */
+  .doc-info-table {
+    width: 95%;
+    border-collapse: collapse;
+    font-size: 8.5pt;
+  }
+  .doc-info-table th, .doc-info-table td {
+    border: 1px solid #777;
+    padding: 4px 6px;
+    height: 22px;
+  }
+  .doc-info-table th {
+    background-color: #f2f4f7;
+    font-weight: 600;
+    text-align: center;
+    width: 70px;
+    color: #333;
+  }
+
+  /* 우측 결재란 테이블 */
+  .approval-line-table {
+    border-collapse: collapse;
+    font-size: 8pt;
+    margin-left: auto;
+  }
+  .approval-line-table th, .approval-line-table td {
+    border: 1px solid #777;
+    text-align: center;
+  }
+  .approval-line-table .header-title {
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+    letter-spacing: 4px;
+    width: 20px;
+    background: #f2f4f7;
+    font-weight: 700;
+    font-size: 8pt;
+    padding: 4px 2px;
+  }
+  .approval-line-table .step-role {
+    background: #f9fafb;
+    font-weight: 600;
+    width: 62px;
+    padding: 3px 2px;
+    font-size: 8pt;
+    height: 20px;
+  }
+  .approval-line-table .stamp-cell {
+    height: 52px;
+    vertical-align: middle;
+    padding: 2px;
+    position: relative;
+  }
+  .approval-line-table .step-date {
+    font-size: 7pt;
+    color: #666;
+    height: 16px;
+    background: #fff;
+  }
+
+  /* 전자 직인 도장 */
+  .stamp-circle {
+    display: inline-block;
+    width: 42px;
+    height: 42px;
+    border: 1.5px solid #d32f2f;
+    border-radius: 50%;
+    color: #d32f2f;
+    text-align: center;
+    padding-top: 5px;
+    font-weight: 700;
+    font-size: 7.5pt;
+    line-height: 1.1;
+  }
+  .stamp-circle.delegated {
+    border-color: #f57c00;
+    color: #f57c00;
+  }
+  .stamp-circle .stamp-name {
+    font-size: 7pt;
+    font-weight: 600;
+    display: block;
+    margin-top: 1px;
+  }
+
+  /* ── 문서 기본 개요 테이블 ── */
+  .detail-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 5mm;
+    font-size: 9pt;
+  }
+  .detail-table th, .detail-table td {
+    border: 1px solid #777;
+    padding: 6px 8px;
+  }
+  .detail-table th {
+    background-color: #f2f4f7;
+    font-weight: 600;
+    width: 90px;
+    text-align: center;
+    color: #222;
+  }
+
+  /* ── 섹션 헤더 ── */
+  .section-header {
+    font-size: 10pt;
+    font-weight: 700;
+    color: #1a365d;
+    border-left: 3.5px solid #1a365d;
+    padding-left: 6px;
+    margin: 5mm 0 2.5mm;
+    display: flex;
+    align-items: center;
+  }
+
+  /* ── 본문 박스 ── */
+  .main-content-box {
+    border: 1px solid #777;
+    padding: 8mm 6mm;
+    min-height: 70mm;
+    font-size: 9.5pt;
+    line-height: 1.8;
+    background: #fff;
+    margin-bottom: 5mm;
+  }
+  .formatted-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 3mm 0;
+    font-size: 8.5pt;
+  }
+  .formatted-table th, .formatted-table td {
+    border: 1px solid #aaa;
+    padding: 5px 6px;
+  }
+  .formatted-table th {
+    background: #f8f9fa;
+    text-align: center;
+    font-weight: 600;
+  }
+
+  /* ── 결재 이력 및 의견 테이블 ── */
+  .history-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 8pt;
+    margin-top: 2mm;
+    margin-bottom: 5mm;
+  }
+  .history-table th, .history-table td {
+    border: 1px solid #999;
+    padding: 4px 6px;
+    text-align: center;
+  }
+  .history-table th {
+    background: #eaedf1;
+    font-weight: 600;
+  }
+  .history-table td.comment-cell {
+    text-align: left;
+    color: #333;
+  }
+
+  /* ── 첨부파일 목록 ── */
+  .attachment-list {
+    border: 1px solid #ddd;
+    background: #fafafa;
+    padding: 3mm 4mm;
+    font-size: 8pt;
+    color: #555;
+    margin-bottom: 5mm;
+  }
+
+  /* ── 문서 무결성 푸터 ── */
+  .doc-footer {
+    border-top: 1px solid #ccc;
+    padding-top: 3mm;
+    margin-top: 6mm;
+    font-size: 7pt;
+    color: #777;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+  .hash-code {
+    font-family: monospace;
+    font-size: 7pt;
+    color: #888;
+    word-break: break-all;
+  }
 </style>
 </head>
 <body>
-{% if document.doc_number %}
-<div class="doc-number">문서번호: {{ document.doc_number }}</div>
-{% endif %}
 
-<h1 class="doc-title">{{ document.doc_type.name }}</h1>
+<!-- 1. 상단 회사명 및 대제목 -->
+<div class="company-header">
+  {% if document.drafter_assignment and document.drafter_assignment.company %}
+    {{ document.drafter_assignment.company.name }}
+  {% else %}
+    (주) 아이비에스건설
+  {% endif %}
+</div>
+<h1 class="doc-main-title">{{ document.doc_type.name }}</h1>
 
-<table class="doc-meta">
+<!-- 2. 상단 메타 정보 및 결재란 (2단 분할) -->
+<table class="top-meta-container">
   <tr>
-    <td class="label">제 목</td>
-    <td colspan="3">{{ document.title }}</td>
+    <!-- 좌측: 문서 기본 메타 -->
+    <td style="width: 50%;">
+      <table class="doc-info-table">
+        <tr>
+          <th>문서번호</th>
+          <td><strong>{{ document.doc_number|default:"(채번 대기)" }}</strong></td>
+        </tr>
+        <tr>
+          <th>기안부서</th>
+          <td>{{ document.drafter_assignment.department.name|default:"본사" }}</td>
+        </tr>
+        <tr>
+          <th>기 안 자</th>
+          <td>
+            {{ document.drafter.profile.name|default:document.drafter.username }}
+            {% if document.drafter_assignment.duty %}
+              {{ document.drafter_assignment.duty.name }}
+            {% elif document.drafter_assignment.staff.position %}
+              {{ document.drafter_assignment.staff.position.name }}
+            {% endif %}
+          </td>
+        </tr>
+        <tr>
+          <th>기안일자</th>
+          <td>{{ document.submitted_at|date:"Y년 m월 d일"|default:document.created_at|date:"Y년 m월 d일" }}</td>
+        </tr>
+      </table>
+    </td>
+
+    <!-- 우측: 결재선 (기안 + 단계별 결재란) -->
+    <td style="width: 50%;">
+      <table class="approval-line-table">
+        <tr>
+          <th rowspan="4" class="header-title">결<br><br>재</th>
+          <!-- 기안자 칸 -->
+          <th class="step-role">기 안</th>
+          <!-- 각 결재 단계별 헤더 -->
+          {% for step in steps %}
+            <th class="step-role">{{ step.role_label }}</th>
+          {% endfor %}
+        </tr>
+        <tr>
+          <!-- 기안자 직인/서명 -->
+          <td class="stamp-cell">
+            <div class="stamp-circle">
+              기 안<br>
+              <span class="stamp-name">{{ document.drafter.profile.name|default:document.drafter.username }}</span>
+            </div>
+          </td>
+          <!-- 단계별 승인자 직인/서명 -->
+          {% for step in steps %}
+            <td class="stamp-cell">
+              {% with approved_action=step.actions.all|dictsort:"acted_at" %}
+                {% for act in approved_action %}
+                  {% if act.action == 'approved' %}
+                    <div class="stamp-circle {% if act.is_delegated %}delegated{% endif %}">
+                      {% if act.is_delegated %}대 결{% else %}승 인{% endif %}<br>
+                      <span class="stamp-name">{{ act.approver.profile.name|default:act.approver.username }}</span>
+                    </div>
+                  {% elif act.action == 'rejected' %}
+                    <div class="stamp-circle" style="border-color:#b71c1c; color:#b71c1c;">
+                      반 려<br>
+                      <span class="stamp-name">{{ act.approver.profile.name|default:act.approver.username }}</span>
+                    </div>
+                  {% endif %}
+                {% empty %}
+                  <span style="color:#aaa; font-size:8pt;">대 기</span>
+                {% endfor %}
+              {% endwith %}
+            </td>
+          {% endfor %}
+        </tr>
+        <tr>
+          <!-- 기안 일자 -->
+          <td class="step-date">
+            {{ document.submitted_at|date:"m/d"|default:document.created_at|date:"m/d" }}
+          </td>
+          <!-- 결재 일자 -->
+          {% for step in steps %}
+            <td class="step-date">
+              {% for act in step.actions.all %}
+                {% if act.action == 'approved' or act.action == 'rejected' %}
+                  {{ act.acted_at|date:"m/d" }}
+                {% endif %}
+              {% empty %}
+                -
+              {% endfor %}
+            </td>
+          {% endfor %}
+        </tr>
+      </table>
+    </td>
   </tr>
+</table>
+
+<!-- 3. 문서 제목 및 참조 정보 -->
+<table class="detail-table">
   <tr>
-    <td class="label">기안자</td>
-    <td>{{ document.drafter.get_full_name|default:document.drafter.username }}</td>
-    <td class="label">기안일시</td>
-    <td>{{ document.submitted_at|date:"Y년 m월 d일 H:i" }}</td>
+    <th>제&nbsp;&nbsp;&nbsp;&nbsp;목</th>
+    <td colspan="3" style="font-size: 10pt; font-weight: 700; color: #111;">
+      {{ document.title }}
+    </td>
   </tr>
+  {% if document.observers.exists %}
   <tr>
-    <td class="label">완료일시</td>
-    <td>{{ document.completed_at|date:"Y년 m월 d일 H:i"|default:"-" }}</td>
-    <td class="label">문서 유형</td>
-    <td>{{ document.doc_type.name }}</td>
-  </tr>
-  {% if document.workspace %}
-  <tr>
-    <td class="label">워크스페이스</td>
-    <td colspan="3">{{ document.workspace }}</td>
+    <th>참&nbsp;&nbsp;&nbsp;&nbsp;조</th>
+    <td colspan="3" style="color: #444;">
+      {% for obs in document.observers.all %}
+        {{ obs.profile.name|default:obs.username }}{% if not forloop.last %}, {% endif %}
+      {% endfor %}
+    </td>
   </tr>
   {% endif %}
 </table>
 
-<div class="section-title">결재 내용</div>
-<div class="content-box">
-{% for key, value in document.content.items %}
-  <strong>{{ key }}</strong>: {{ value }}
-{% endfor %}
+<!-- 4. 결재 상세 내용 (양식별 서식화 렌더링) -->
+<div class="section-header">1. 상세 품의 내용</div>
+<div class="main-content-box">
+  <!-- A. 휴가 신청서 (LEAVE) 양식인 경우 -->
+  {% if document.content.leave_type or document.doc_type.form_template_key == 'LEAVE' %}
+    <table class="formatted-table">
+      <tr>
+        <th style="width:18%;">휴가 구분</th>
+        <td style="width:32%;"><strong>{{ document.content.leave_type|default:"연차" }}</strong></td>
+        <th style="width:18%;">신청 일수</th>
+        <td style="width:32%;">{{ document.content.days_count|default:"1" }} 일간</td>
+      </tr>
+      <tr>
+        <th>휴가 기간</th>
+        <td colspan="3">{{ document.content.start_date }} ~ {{ document.content.end_date }}</td>
+      </tr>
+      <tr>
+        <th>업무 대행자</th>
+        <td>{{ document.content.substitute_worker|default:"-" }}</td>
+        <th>비상 연락처</th>
+        <td>{{ document.content.emergency_contact|default:"-" }}</td>
+      </tr>
+      <tr>
+        <th>휴가 사유</th>
+        <td colspan="3" style="min-height:20mm; padding:8px;">{{ document.content.reason|default:document.content.body|linebreaks }}</td>
+      </tr>
+    </table>
+
+  <!-- B. 지출결의서 / 경비정산 (EXPENSE / SETTLEMENT) 양식인 경우 -->
+  {% elif document.content.amount or document.content.budget or document.doc_type.form_template_key == 'EXPENSE' %}
+    <table class="formatted-table">
+      <tr>
+        <th style="width:18%;">청구(집행)금액</th>
+        <td style="width:32%; font-size:10.5pt; font-weight:700; color:#c62828;">
+          {{ document.content.amount|default:document.content.budget }} 원
+        </td>
+        <th style="width:18%;">예산/비목과목</th>
+        <td style="width:32%;">{{ document.content.budget_account|default:"일반관리비" }}</td>
+      </tr>
+      {% if document.content.bank_name or document.content.account_number %}
+      <tr>
+        <th>입금 계좌</th>
+        <td colspan="3">
+          {{ document.content.bank_name }} {{ document.content.account_number }} (예금주: {{ document.content.account_holder }})
+        </td>
+      </tr>
+      {% endif %}
+      <tr>
+        <th>지출 목적</th>
+        <td colspan="3">{{ document.content.purpose|default:document.title }}</td>
+      </tr>
+      <tr>
+        <th>상세 내역</th>
+        <td colspan="3" style="min-height:30mm; padding:8px;">{{ document.content.content|default:document.content.body|linebreaks }}</td>
+      </tr>
+    </table>
+
+  <!-- C. 계약 체결 / 계약 변경 (CONTRACT / CONTRACT_CHANGE) 양식인 경우 -->
+  {% elif document.content.contract_name or document.doc_type.form_template_key == 'CONTRACT' %}
+    <table class="formatted-table">
+      <tr>
+        <th style="width:18%;">계 약 명</th>
+        <td colspan="3"><strong>{{ document.content.contract_name|default:document.title }}</strong></td>
+      </tr>
+      <tr>
+        <th>계약 상대방</th>
+        <td>{{ document.content.contractor_ceo|default:"-" }} (사업자번호: {{ document.content.contractor_reg_number|default:"-" }})</td>
+        <th>계약 금액</th>
+        <td style="font-weight:700; color:#1565c0;">{{ document.content.contract_amount|default:document.content.amount }} 원</td>
+      </tr>
+      <tr>
+        <th>대금 지급조건</th>
+        <td colspan="3">{{ document.content.payment_terms|default:"계약서 조항에 따름" }}</td>
+      </tr>
+      <tr>
+        <th>하자 보증조건</th>
+        <td colspan="3">{{ document.content.warranty_terms|default:"준공 후 2년간" }}</td>
+      </tr>
+      <tr>
+        <th>특약 및 주요내용</th>
+        <td colspan="3" style="min-height:30mm; padding:8px;">{{ document.content.content|default:document.content.body|linebreaks }}</td>
+      </tr>
+    </table>
+
+  <!-- D. 대외 공문 발송 (OFFICIAL_LETTER) 양식인 경우 -->
+  {% elif document.content.receiver or document.doc_type.form_template_key == 'OFFICIAL_LETTER' %}
+    <table class="formatted-table">
+      <tr>
+        <th style="width:18%;">수 신 처</th>
+        <td style="width:32%;">{{ document.content.receiver|default:"수신처 참조" }}</td>
+        <th style="width:18%;">참 조</th>
+        <td style="width:32%;">{{ document.content.refer_to|default:"-" }}</td>
+      </tr>
+      <tr>
+        <th>발 신 자</th>
+        <td>{{ document.content.sender_name|default:"대표이사" }}</td>
+        <th>시행/발송기한</th>
+        <td>{{ document.content.send_due_date|default:"승인 즉시 시행" }}</td>
+      </tr>
+      <tr>
+        <th>공문 제목</th>
+        <td colspan="3" style="font-weight:700;">{{ document.content.letter_subject|default:document.title }}</td>
+      </tr>
+      <tr>
+        <th>공문 본문</th>
+        <td colspan="3" style="min-height:40mm; padding:10px; line-height:1.8;">
+          {{ document.content.letter_body|default:document.content.body|linebreaks }}
+        </td>
+      </tr>
+    </table>
+
+  <!-- E. 일반 품의서 및 기타 서식 -->
+  {% else %}
+    <div style="padding:4px 0 8px;">
+      {{ document.content.body|default:document.content.content|linebreaks }}
+    </div>
+    {% if document.content.items %}
+      <table class="formatted-table">
+        {% for k, v in document.content.items %}
+          {% if k != 'body' and k != 'content' %}
+          <tr>
+            <th style="width:25%;">{{ k }}</th>
+            <td>{{ v }}</td>
+          </tr>
+          {% endif %}
+        {% endfor %}
+      </table>
+    {% endif %}
+  {% endif %}
 </div>
 
-<div class="section-title">결재 이력</div>
-<table class="approval-table">
+<!-- 5. 첨부파일 목록 (있는 경우) -->
+{% if document.attachments.exists %}
+<div class="section-header">2. 첨부 서류</div>
+<div class="attachment-list">
+  {% for att in document.attachments.all %}
+    <div>• {{ att.file_name }} ({{ att.file_size|filesizeformat }}) - 등록자: {{ att.creator_name|default:att.creator.username }}</div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- 6. 결재 진행 및 의견 이력 -->
+<div class="section-header">3. 결재 진행 및 심사의견 이력</div>
+<table class="history-table">
   <thead>
     <tr>
-      <th>순서</th><th>단계명</th><th>결재자</th><th>결재 조건</th><th>결재 행동</th><th>의견</th><th>결재일시</th>
+      <th style="width:40px;">단계</th>
+      <th style="width:80px;">구분</th>
+      <th style="width:90px;">결재자</th>
+      <th style="width:70px;">처리결과</th>
+      <th style="width:110px;">처리일시</th>
+      <th>결재 및 심사의견</th>
     </tr>
   </thead>
   <tbody>
-  {% for step in steps %}
-    {% for approver in step.approvers.all %}
-      {% with action=step.actions.all|dictsort:"approver_id" %}
+    <tr>
+      <td>-</td>
+      <td>기안상신</td>
+      <td>{{ document.drafter.profile.name|default:document.drafter.username }}</td>
+      <td><strong style="color:#1565c0;">상신완료</strong></td>
+      <td>{{ document.submitted_at|date:"Y-m-d H:i"|default:document.created_at|date:"Y-m-d H:i" }}</td>
+      <td class="comment-cell">문서 기안 및 결재 상신</td>
+    </tr>
+    {% for step in steps %}
+      {% for act in step.actions.all %}
       <tr>
         <td>{{ step.step_order }}</td>
         <td>{{ step.role_label }}</td>
-        <td>{{ approver.get_full_name|default:approver.username }}</td>
-        <td>{{ step.get_condition_display }}</td>
-        {% for act in step.actions.all %}
-          {% if act.approver == approver %}
-          <td class="{{ act.action }}">{{ act.get_action_display }}</td>
-          <td>{{ act.comment|default:"-" }}</td>
-          <td>{{ act.acted_at|date:"Y-m-d H:i" }}</td>
+        <td>
+          {{ act.approver.profile.name|default:act.approver.username }}
+          {% if act.is_delegated %}<span style="color:#e65100; font-size:7pt;">[대결]</span>{% endif %}
+        </td>
+        <td>
+          {% if act.action == 'approved' %}
+            <strong style="color:#2e7d32;">승인</strong>
+          {% elif act.action == 'rejected' %}
+            <strong style="color:#c62828;">반려</strong>
+          {% else %}
+            <span style="color:#555;">의견등록</span>
           {% endif %}
-        {% empty %}
-          <td class="pending">대기</td><td>-</td><td>-</td>
-        {% endfor %}
+        </td>
+        <td>{{ act.acted_at|date:"Y-m-d H:i" }}</td>
+        <td class="comment-cell">{{ act.comment|default:"-" }}</td>
       </tr>
-      {% endwith %}
+      {% endfor %}
     {% endfor %}
-  {% endfor %}
   </tbody>
 </table>
 
-<div class="hash-footer">
-  문서 무결성 검증 해시 (SHA-256): {{ document.content_hash }}
+<!-- 7. 문서 무결성 검증 및 푸터 -->
+<div class="doc-footer">
+  <div>
+    <div><strong>위변조 방지 전자서명 해시 (SHA-256):</strong></div>
+    <div class="hash-code">{{ document.content_hash }}</div>
+  </div>
+  <div style="text-align: right;">
+    <div>발급 시스템: <strong>IBS 통합건설관리시스템</strong></div>
+    <div>출력일시: {{ "now"|date:"Y-m-d H:i:s" }}</div>
+  </div>
 </div>
+
 </body>
 </html>

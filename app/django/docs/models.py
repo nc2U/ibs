@@ -251,6 +251,21 @@ class OfficialLetter(models.Model):
     issue_date = models.DateField('발신일자')  # 발신일자
     pdf_file = models.FileField('PDF 파일', upload_to=get_letter_pdf_path,
                                 storage=default_storage, null=True, blank=True)  # 생성된 PDF
+    APPROVAL_STATUS_CHOICES = (
+        ('none', '미상신'),
+        ('pending', '결재진행중'),
+        ('approved', '결재승인'),
+        ('rejected', '반려'),
+    )
+    approval_document = models.ForeignKey(
+        'approval.ApprovalDocument', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='official_letters',
+        verbose_name='연동 전자결재 문서'
+    )
+    approval_status = models.CharField(
+        '결재 상태', max_length=10, choices=APPROVAL_STATUS_CHOICES,
+        default='none', db_index=True
+    )
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
                                 null=True, verbose_name='작성자', related_name='created_letters')  # 메타데이터
     updator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,

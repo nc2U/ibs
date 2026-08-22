@@ -533,6 +533,16 @@ export const useDocs = defineStore('docs', () => {
       .then(res => res.data.next_document_number)
       .catch(err => errorHandle(err.response.data))
 
+  const submitApproval = async (pk: number) =>
+    api
+      .post(`/official-letter/${pk}/submit_approval/`)
+      .then(res => {
+        fetchLetter(pk)
+        message('success', '', '전자결재가 성공적으로 상신되었습니다.')
+        return res.data
+      })
+      .catch(err => errorHandle(err.response.data))
+
   return {
     docTypes,
 
@@ -622,5 +632,6 @@ export const useDocs = defineStore('docs', () => {
     deleteLetter,
     generatePdf,
     getNextDocumentNumber,
+    submitApproval,
   }
 })

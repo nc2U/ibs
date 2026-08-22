@@ -412,6 +412,13 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
             current_step.save()
             document.status = ApprovalDocument.STATUS_REJECTED
             document.save()
+
+            # 연동된 공문(OfficialLetter) 상태 동기화
+            official_letter_id = (document.content or {}).get('official_letter_id')
+            if official_letter_id:
+                from docs.models import OfficialLetter
+                OfficialLetter.objects.filter(pk=official_letter_id).update(approval_status='rejected')
+
             try:
                 notify_drafter_task.delay(document.pk, 'rejected', act_data.get('comment', ''))
             except Exception:
@@ -437,6 +444,13 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
         document.completed_at = timezone.now()
         document.doc_number = document.generate_doc_number()
         document.save()
+
+        # 연동된 공문(OfficialLetter) 상태 동기화
+        official_letter_id = (document.content or {}).get('official_letter_id')
+        if official_letter_id:
+            from docs.models import OfficialLetter
+            OfficialLetter.objects.filter(pk=official_letter_id).update(approval_status='approved')
+
         try:
             notify_drafter_task.delay(document.pk, 'approved')
         except Exception:
@@ -487,6 +501,33 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
                 notify_cancel_task(document.pk, approver_ids)
 
         return Response({'detail': '기안 문서가 성공적으로 회수되었습니다. 내용을 수정하여 다시 상신할 수 있습니다.'})
+
+    # ── GET /approval-document/{id}/print_pdf/ ────────────────
+    @action(detail=True, methods=['get'])
+    def print_pdf(self, request, pk=None):
+        """결재 문서 공식 PDF 렌더링 및 다운로드/미리보기"""
+        from django.http import HttpResponse
+        from django.template.loader import render_to_string
+        from urllib.parse import quote
+        try:
+            from weasyprint import HTML
+        except ImportError:
+            return Response({'detail': 'WeasyPrint PDF 렌더러가 설정되지 않았습니다.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        document = self.get_object()
+        html_string = render_to_string('approval/pdf_document.html', {
+            'document': document,
+            'steps': document.steps.all().prefetch_related('actions__approver__profile', 'approvers__profile'),
+            'settings': settings,
+        })
+        pdf_bytes = HTML(string=html_string, base_url=settings.DOMAIN_HOST).write_pdf()
+
+        filename = f'전자결재_{document.doc_type.name}_{document.doc_number or document.pk}.pdf'
+        encoded_filename = quote(filename.encode('utf-8'))
+
+        response = HttpResponse(pdf_bytes, content_type='application/pdf')
+        response['Content-Disposition'] = f"inline; filename*=UTF-8''{encoded_filename}"
+        return response
 
     # ── GET /approval-document/my_pending/ ───────────────────
     @action(detail=False, methods=['get'])

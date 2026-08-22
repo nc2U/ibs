@@ -144,6 +144,7 @@ const formatDate = (dateStr: string | undefined) => {
           <CTableHeaderCell class="text-center" style="width: 150px">수신처</CTableHeaderCell>
           <CTableHeaderCell class="text-center" style="width: 110px">발신일</CTableHeaderCell>
           <CTableHeaderCell class="text-center" style="width: 100px">작성자</CTableHeaderCell>
+          <CTableHeaderCell class="text-center" style="width: 90px">결재상태</CTableHeaderCell>
           <CTableHeaderCell class="text-center" style="width: 80px">PDF</CTableHeaderCell>
         </CTableRow>
       </CTableHead>
@@ -162,6 +163,12 @@ const formatDate = (dateStr: string | undefined) => {
           <CTableDataCell class="text-center">{{ formatDate(letter.issue_date) }}</CTableDataCell>
           <CTableDataCell class="text-center">{{ letter.creator?.username || '-' }}</CTableDataCell>
           <CTableDataCell class="text-center">
+            <CBadge v-if="letter.approval_status === 'approved'" color="success">승인완료</CBadge>
+            <CBadge v-else-if="letter.approval_status === 'pending'" color="warning">진행중</CBadge>
+            <CBadge v-else-if="letter.approval_status === 'rejected'" color="danger">반려</CBadge>
+            <CBadge v-else color="secondary">미상신</CBadge>
+          </CTableDataCell>
+          <CTableDataCell class="text-center">
             <CBadge v-if="letter.pdf_file" color="success">
               <CIcon name="cilFile" />
             </CBadge>
@@ -169,7 +176,7 @@ const formatDate = (dateStr: string | undefined) => {
           </CTableDataCell>
         </CTableRow>
         <CTableRow v-if="letterList.length === 0">
-          <CTableDataCell colspan="6" class="text-center text-muted py-5">
+          <CTableDataCell colspan="7" class="text-center text-muted py-5">
             등록된 공문이 없습니다.
           </CTableDataCell>
         </CTableRow>

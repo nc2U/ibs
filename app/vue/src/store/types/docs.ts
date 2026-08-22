@@ -205,6 +205,16 @@ export interface OfficialLetter {
   content: string
   issue_date: string
   pdf_file?: string | null
+  approval_document?: number | null
+  approval_document_detail?: {
+    pk: number
+    doc_number: string
+    title: string
+    status: string
+    status_desc: string
+  } | null
+  approval_status?: 'none' | 'pending' | 'approved' | 'rejected'
+  approval_status_desc?: string
   creator?: SimpleUser
   updator?: SimpleUser
   created?: string

@@ -426,7 +426,8 @@ class OfficialLetterViewSet(viewsets.ModelViewSet):
             'destroy': 'docs.delete',
             'generate_pdf': 'docs.create',
             'download_pdf': 'docs.read',
-            'next_document_number': 'docs.read'
+            'next_document_number': 'docs.read',
+            'submit_approval': 'docs.create'
         }
         return mapping.get(self.action, None)
 
@@ -502,3 +503,86 @@ class OfficialLetterViewSet(viewsets.ModelViewSet):
         except Company.DoesNotExist:
             return Response({'error': '회사를 찾을 수 없습니다.'},
                             status=status.HTTP_404_NOT_FOUND)
+
+    @action(detail=True, methods=['post'])
+    def submit_approval(self, request, pk=None):
+        """공문을 전자결재(ApprovalDocument)로 상신"""
+        from approval.models import ApprovalDocument, DocumentType, StaffAssignment, ApprovalStep
+        from approval.tasks import notify_approvers_task
+        letter = self.get_object()
+
+        if letter.approval_status == 'pending':
+            return Response({'detail': '이미 결재가 진행 중인 공문입니다.'}, status=status.HTTP_400_BAD_REQUEST)
+        if letter.approval_status == 'approved':
+            return Response({'detail': '이미 최종 승인된 공문입니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # OFFICIAL_LETTER 양식의 DocumentType 조회 (없으면 첫번째 활성 유형)
+        doc_type = DocumentType.objects.filter(form_template_key='OFFICIAL_LETTER', is_active=True).first()
+        if not doc_type:
+            doc_type = DocumentType.objects.filter(is_active=True).first()
+        if not doc_type:
+            return Response({'detail': '사용 가능한 전자결재 문서 유형이 없습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 기안자 보직 조회
+        assignment = StaffAssignment.objects.filter(staff__user=request.user, is_primary=True).first()
+
+        # ApprovalDocument 생성
+        content_payload = {
+            'receiver': letter.recipient_name,
+            'refer_to': letter.recipient_reference,
+            'sender_name': letter.sender_name,
+            'send_due_date': str(letter.issue_date),
+            'letter_subject': letter.title,
+            'letter_body': letter.content,
+            'official_letter_id': letter.pk,
+            'body': f"[대외 공문 발송 품의]\n\n• 수신처: {letter.recipient_name}\n• 참조: {letter.recipient_reference or '-'}\n• 발신자: {letter.sender_name} ({letter.sender_department} {letter.sender_position})\n• 시행일자: {letter.issue_date}\n\n[공문 본문]\n{letter.content}",
+        }
+
+        doc = ApprovalDocument.objects.create(
+            title=f'[공문 발송 품의] {letter.title}',
+            doc_type=doc_type,
+            drafter=request.user,
+            drafter_assignment=assignment,
+            content=content_payload,
+            status=ApprovalDocument.STATUS_PENDING,
+            submitted_at=timezone.now(),
+        )
+
+        # 동적 결재선 빌드 및 저장
+        from approval.services.route_service import ApprovalRouteService
+        route_service = ApprovalRouteService()
+        steps = route_service.build_approval_line(
+            doc_type=doc_type,
+            drafter=request.user,
+            drafter_assignment=assignment,
+            content=content_payload,
+        )
+
+        for step_data in steps:
+            step = ApprovalStep.objects.create(
+                document=doc,
+                step_order=step_data['step_order'],
+                role_label=step_data['role_label'],
+                condition=step_data.get('condition', 'AND'),
+                status='pending',
+            )
+            step.approvers.set(step_data['approvers'])
+
+        # 공문과 결재문서 상호 연결
+        letter.approval_document = doc
+        letter.approval_status = 'pending'
+        letter.save(update_fields=['approval_document', 'approval_status'])
+
+        # 1차 결재자 알림 발송
+        first_step = doc.steps.filter(step_order=1).first()
+        if first_step:
+            try:
+                notify_approvers_task.delay(doc.pk, first_step.pk)
+            except Exception:
+                notify_approvers_task(doc.pk, first_step.pk)
+
+        return Response({
+            'detail': '전자결재가 성공적으로 상신되었습니다.',
+            'approval_document_id': doc.pk,
+            'approval_status': letter.approval_status,
+        })

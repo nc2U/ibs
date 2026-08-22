@@ -91,6 +91,23 @@ const downloadPdf = () => {
   }
 }
 
+const approvalLoading = ref(false)
+
+const onSubmitApproval = async () => {
+  if (props.letter?.pk) {
+    approvalLoading.value = true
+    try {
+      await docStore.submitApproval(props.letter.pk)
+    } finally {
+      approvalLoading.value = false
+    }
+  }
+}
+
+const goToApprovalDetail = (docId: number) => {
+  router.push({ name: '전자 결재 관리', query: { docId } })
+}
+
 const formatDate = (dateStr: string | undefined) => {
   if (!dateStr) return '-'
   return dateStr.substring(0, 10)
@@ -123,6 +140,54 @@ const formatDateTime = (dateStr: string | undefined) => {
         </div>
       </CCol>
     </CRow>
+
+    <!-- Approval Integration Banner -->
+    <CCard class="mb-4 border-primary">
+      <CCardBody class="d-flex justify-content-between align-items-center py-2 px-3">
+        <div class="d-flex align-items-center">
+          <CIcon name="cilShieldAlt" size="lg" class="text-primary me-2" />
+          <div>
+            <strong>전자결재 연동 상태: </strong>
+            <CBadge v-if="letter.approval_status === 'approved'" color="success" class="ms-1">
+              결재 승인완료 ({{ letter.approval_document_detail?.doc_number || '공문' }})
+            </CBadge>
+            <CBadge v-else-if="letter.approval_status === 'pending'" color="warning" class="ms-1">
+              결재 진행중
+            </CBadge>
+            <CBadge v-else-if="letter.approval_status === 'rejected'" color="danger" class="ms-1">
+              결재 반려
+            </CBadge>
+            <CBadge v-else color="secondary" class="ms-1">
+              미상신 (임시/초안)
+            </CBadge>
+          </div>
+        </div>
+        <div>
+          <CButton
+            v-if="letter.approval_document"
+            color="info"
+            variant="outline"
+            size="sm"
+            class="me-2"
+            @click="goToApprovalDetail(letter.approval_document)"
+          >
+            <CIcon name="cilExternalLink" class="me-1" />
+            결재 문서 보기
+          </CButton>
+          <CButton
+            v-if="letter.approval_status === 'none' || letter.approval_status === 'rejected'"
+            color="primary"
+            size="sm"
+            :disabled="approvalLoading"
+            @click="onSubmitApproval"
+          >
+            <CSpinner v-if="approvalLoading" size="sm" class="me-1" />
+            <CIcon v-else name="cilPaperPlane" class="me-1" />
+            {{ letter.approval_status === 'rejected' ? '전자결재 재상신' : '전자결재 상신하기' }}
+          </CButton>
+        </div>
+      </CCardBody>
+    </CCard>
 
     <!-- Letter Header -->
     <CCard class="mb-4">
