@@ -78,7 +78,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="legal-review-form p-3 border rounded bg-light mb-3">
+  <div class="legal-review-form p-3 border rounded bg-more-light mb-3">
     <h6 class="fw-bold mb-3 text-secondary">
       <CIcon name="cilBalanceScale" class="me-1 text-primary" />
       법무 검토 의뢰 및 결과 보고
@@ -153,7 +153,9 @@ onMounted(() => {
             class="text-end fw-semibold"
             :value="modelValue.dispute_amount ?? modelValue.amount ?? 0"
             placeholder="0"
-            @input="updateField('dispute_amount', Number(($event.target as HTMLInputElement).value) || 0)"
+            @input="
+              updateField('dispute_amount', Number(($event.target as HTMLInputElement).value) || 0)
+            "
           />
           <CInputGroupText>원</CInputGroupText>
         </CInputGroup>
@@ -190,13 +192,15 @@ onMounted(() => {
 
     <!-- 법무 검토 종합 의견 (법무팀/자문변호사 회신 영역) -->
     <div class="card mb-3 border border-primary">
-      <div class="card-header bg-primary bg-opacity-10 py-2 fw-semibold small text-primary d-flex justify-content-between align-items-center">
+      <div
+        class="card-header bg-primary bg-opacity-10 py-2 fw-semibold small text-primary d-flex justify-content-between align-items-center"
+      >
         <span>
           <CIcon name="cilCheckCircle" class="me-1 text-primary" />
           법무 검토 결과 및 종합의견 (법무팀 작성 / 회신)
         </span>
         <div class="d-flex align-items-center">
-          <span class="me-2 small text-dark fw-normal">법적 리스크:</span>
+          <span class="me-2 text-body fw-normal">법적 리스크:</span>
           <CFormSelect
             size="sm"
             style="width: 210px"

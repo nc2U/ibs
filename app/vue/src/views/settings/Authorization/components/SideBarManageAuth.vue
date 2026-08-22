@@ -149,7 +149,7 @@ onMounted(() => {
         <div v-else class="space-y-4">
           <CCard v-for="proj in allDevProjects" :key="proj.pk" class="mb-3">
             <CCardHeader class="bg-more-light d-flex align-items-center justify-content-between">
-              <span class="fw-bold text-dark d-flex align-items-center text-body">
+              <span class="fw-bold text-body d-flex align-items-center">
                 <v-icon icon="mdi-folder" color="grey" size="small" class="pt-1 mr-1" />
                 {{ proj.name }}
                 <v-chip

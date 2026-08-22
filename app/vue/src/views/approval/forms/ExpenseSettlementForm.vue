@@ -84,7 +84,7 @@ const updateItem = (index: number, field: keyof SettlementItem, val: any) => {
   const currentItems = [...items.value]
   currentItems[index] = {
     ...currentItems[index],
-    [field]: field === 'amount' ? (parseFloat(val) || 0) : val,
+    [field]: field === 'amount' ? parseFloat(val) || 0 : val,
   }
   const newTotal = currentItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
   emit('update:modelValue', {
@@ -127,7 +127,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="expense-settlement-form p-3 border rounded bg-light mb-3">
+  <div class="expense-settlement-form p-3 border rounded bg-more-light mb-3">
     <h6 class="fw-bold mb-3 text-primary">
       <CIcon name="cilCreditCard" class="me-1" />
       경비 정산 기본 정보
@@ -214,8 +214,8 @@ onMounted(() => {
 
     <!-- 세부 영수증 사용 내역 그리드 -->
     <div class="card mb-3 border">
-      <div class="card-header d-flex justify-content-between align-items-center bg-white py-2">
-        <span class="fw-bold text-dark">
+      <div class="card-header d-flex justify-content-between align-items-center bg-more-white py-2">
+        <span class="fw-bold text-body">
           <CIcon name="cilList" class="me-1 text-primary" />
           세부 영수증 / 사용 내역 (총 {{ items.length }}건)
         </span>
@@ -251,7 +251,9 @@ onMounted(() => {
                   <CFormSelect
                     size="sm"
                     :value="item.category"
-                    @change="updateItem(idx, 'category', ($event.target as HTMLSelectElement).value)"
+                    @change="
+                      updateItem(idx, 'category', ($event.target as HTMLSelectElement).value)
+                    "
                   >
                     <option v-for="cat in expenseCategories" :key="cat" :value="cat">
                       {{ cat }}
@@ -305,7 +307,9 @@ onMounted(() => {
         </div>
 
         <!-- 총 금액 합계 바 -->
-        <div class="d-flex justify-content-end align-items-center p-2 mt-2 bg-light border rounded">
+        <div
+          class="d-flex justify-content-end align-items-center p-2 mt-2 bg-more-light border rounded"
+        >
           <span class="me-2 fw-semibold">총 정산 합계 금액:</span>
           <span class="fs-5 fw-bold text-danger">{{ totalAmount.toLocaleString() }} 원</span>
         </div>

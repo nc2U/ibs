@@ -76,7 +76,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="contract-proposal-form p-3 border rounded bg-light mb-3">
+  <div class="contract-proposal-form p-3 border rounded bg-more-light mb-3">
     <h6 class="fw-bold mb-3 text-info">
       <CIcon name="cilDescription" class="me-1" />
       계약 체결 품의 정보
@@ -125,7 +125,7 @@ onMounted(() => {
 
     <!-- 계약 상대방 정보 -->
     <div class="card mb-3 border">
-      <div class="card-header bg-white py-2 fw-semibold small text-primary">
+      <div class="card-header bg-more-white py-2 fw-semibold small text-primary">
         <CIcon name="cilBuilding" class="me-1" />
         계약 상대방 (업체 / 거래처 정보)
       </div>
@@ -158,7 +158,9 @@ onMounted(() => {
               size="sm"
               :value="modelValue.contractor_reg_number ?? ''"
               placeholder="000-00-00000"
-              @input="updateField('contractor_reg_number', ($event.target as HTMLInputElement).value)"
+              @input="
+                updateField('contractor_reg_number', ($event.target as HTMLInputElement).value)
+              "
             />
           </CCol>
           <CFormLabel class="col-sm-2 col-form-label small text-sm-end">담당자 / 연락처</CFormLabel>
@@ -187,7 +189,9 @@ onMounted(() => {
             :value="modelValue.contract_amount ?? modelValue.amount ?? 0"
             placeholder="0"
             required
-            @input="updateField('contract_amount', Number(($event.target as HTMLInputElement).value) || 0)"
+            @input="
+              updateField('contract_amount', Number(($event.target as HTMLInputElement).value) || 0)
+            "
           />
           <CInputGroupText>원</CInputGroupText>
         </CInputGroup>

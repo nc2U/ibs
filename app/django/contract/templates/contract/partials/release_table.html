@@ -36,7 +36,7 @@
         {% for object in object_list %}
             <tr>
                 <th scope="row"><input type="checkbox" disabled></th>
-                <td class="text-center text-dark"
+                <td class="text-center text-body"
                         {% if object.note %}
                     data-toggle="tooltip"
                     data-placement="right" title=""
@@ -46,7 +46,7 @@
                         {{ object.contractor|truncatechars:"26" }}
                     </a>
                 </td>
-                <td class="text-center {% if object.status == '3' %}text-success{% else %}text-dark{% endif %}">{{ object.get_status_display }}</td>
+                <td class="text-center {% if object.status == '3' %}text-success{% else %}text-body{% endif %}">{{ object.get_status_display }}</td>
                 <td class="text-right">{{ object.refund_amount|default:"-"|intcomma }}</td>
                 <td class="text-center">{{ object.refund_account_bank|default:"-" }}</td>
                 <td class="text-center">{{ object.refund_account_number|default:"-" }}</td>

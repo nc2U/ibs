@@ -352,14 +352,14 @@ onMounted(async () => {
               v-model="dynamicContent"
             />
 
-            <div v-else class="text-center text-muted py-3 border rounded bg-light mb-3">
+            <div v-else class="text-center text-muted py-3 border rounded bg-more-light mb-3">
               별도의 추가 양식 필드가 없는 일반 기안 문서입니다.
             </div>
           </template>
 
           <div
             v-else-if="!form.doc_type"
-            class="text-center text-muted py-4 border rounded bg-light mb-3"
+            class="text-center text-muted py-4 border rounded bg-more-light mb-3"
           >
             문서 유형을 선택하면 작성 양식이 표시됩니다.
           </div>
@@ -454,7 +454,7 @@ onMounted(async () => {
             <!-- 빈 상태 안내 -->
             <div
               v-if="!existingAttachments.length && !selectedFiles.length"
-              class="text-center text-muted py-3 border border-dashed rounded bg-light"
+              class="text-center text-muted py-3 border border-dashed rounded bg-more-light"
               style="cursor: pointer"
               @click="fileInputRef?.click()"
             >

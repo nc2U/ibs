@@ -35,8 +35,8 @@ const updateField = (key: string, val: any) => {
 
   // 금액 변경 시 final_amount 및 결재선용 amount 자동 계산
   if (key === 'original_amount' || key === 'change_amount') {
-    const orig = key === 'original_amount' ? (Number(val) || 0) : originalAmount.value
-    const chg = key === 'change_amount' ? (Number(val) || 0) : changeAmount.value
+    const orig = key === 'original_amount' ? Number(val) || 0 : originalAmount.value
+    const chg = key === 'change_amount' ? Number(val) || 0 : changeAmount.value
     const fin = orig + chg
     updated.final_amount = fin
     updated.amount = Math.abs(chg) > 0 ? Math.abs(chg) : fin // 변경 증감액 또는 최종액을 결재선 기준으로 반영
@@ -79,7 +79,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="contract-change-form p-3 border rounded bg-light mb-3">
+  <div class="contract-change-form p-3 border rounded bg-more-light mb-3">
     <h6 class="fw-bold mb-3 text-warning">
       <CIcon name="cilSync" class="me-1" />
       계약 변경 및 해지 정보
@@ -125,7 +125,7 @@ onMounted(() => {
 
     <!-- 원 계약 조건 (변경 전) -->
     <div class="card mb-3 border">
-      <div class="card-header bg-white py-2 fw-semibold small text-secondary">
+      <div class="card-header bg-more-white py-2 fw-semibold small text-secondary">
         <CIcon name="cilHistory" class="me-1" />
         원 계약 내용 (변경 전)
       </div>
@@ -137,7 +137,9 @@ onMounted(() => {
               type="date"
               size="sm"
               :value="modelValue.original_contract_date ?? ''"
-              @input="updateField('original_contract_date', ($event.target as HTMLInputElement).value)"
+              @input="
+                updateField('original_contract_date', ($event.target as HTMLInputElement).value)
+              "
             />
           </CCol>
           <CFormLabel class="col-sm-2 col-form-label small text-sm-end">원 계약 종료일</CFormLabel>
@@ -160,7 +162,12 @@ onMounted(() => {
                 step="10000"
                 class="text-end fw-semibold"
                 :value="modelValue.original_amount ?? 0"
-                @input="updateField('original_amount', Number(($event.target as HTMLInputElement).value) || 0)"
+                @input="
+                  updateField(
+                    'original_amount',
+                    Number(($event.target as HTMLInputElement).value) || 0,
+                  )
+                "
               />
               <CInputGroupText>원</CInputGroupText>
             </CInputGroup>
@@ -171,7 +178,9 @@ onMounted(() => {
               size="sm"
               :value="modelValue.original_contract_no ?? ''"
               placeholder="관리 계약번호"
-              @input="updateField('original_contract_no', ($event.target as HTMLInputElement).value)"
+              @input="
+                updateField('original_contract_no', ($event.target as HTMLInputElement).value)
+              "
             />
           </CCol>
         </CRow>
@@ -180,7 +189,7 @@ onMounted(() => {
 
     <!-- 변경 조건 (금액 / 기간 변경의 경우) -->
     <div v-if="modelValue.change_type !== 'TERMINATION'" class="card mb-3 border border-warning">
-      <div class="card-header bg-warning bg-opacity-10 py-2 fw-semibold small text-dark">
+      <div class="card-header bg-warning bg-opacity-10 py-2 fw-semibold small text-body">
         <CIcon name="cilCheckCircle" class="me-1 text-warning" />
         변경 후 계약 조건 대조
       </div>
@@ -196,12 +205,19 @@ onMounted(() => {
                 :class="changeAmount >= 0 ? 'text-danger' : 'text-primary'"
                 :value="modelValue.change_amount ?? 0"
                 placeholder="증액: 양수(+), 감액: 음수(-)"
-                @input="updateField('change_amount', Number(($event.target as HTMLInputElement).value) || 0)"
+                @input="
+                  updateField(
+                    'change_amount',
+                    Number(($event.target as HTMLInputElement).value) || 0,
+                  )
+                "
               />
               <CInputGroupText>원</CInputGroupText>
             </CInputGroup>
           </CCol>
-          <CFormLabel class="col-sm-2 col-form-label small required text-sm-end">최종 계약금액</CFormLabel>
+          <CFormLabel class="col-sm-2 col-form-label small required text-sm-end"
+            >최종 계약금액</CFormLabel
+          >
           <CCol sm="4">
             <CInputGroup size="sm">
               <CFormInput
@@ -225,7 +241,9 @@ onMounted(() => {
               @input="updateField('final_end_date', ($event.target as HTMLInputElement).value)"
             />
           </CCol>
-          <CFormLabel class="col-sm-2 col-form-label small text-sm-end">연장 / 단축 일수</CFormLabel>
+          <CFormLabel class="col-sm-2 col-form-label small text-sm-end"
+            >연장 / 단축 일수</CFormLabel
+          >
           <CCol sm="4">
             <CFormInput
               size="sm"
@@ -256,7 +274,9 @@ onMounted(() => {
               @input="updateField('termination_date', ($event.target as HTMLInputElement).value)"
             />
           </CCol>
-          <CFormLabel class="col-sm-2 col-form-label small required text-sm-end">타절 정산금액</CFormLabel>
+          <CFormLabel class="col-sm-2 col-form-label small required text-sm-end"
+            >타절 정산금액</CFormLabel
+          >
           <CCol sm="4">
             <CInputGroup size="sm">
               <CFormInput
@@ -266,7 +286,12 @@ onMounted(() => {
                 class="text-end fw-bold text-danger"
                 :value="modelValue.settlement_amount ?? 0"
                 required
-                @input="updateField('settlement_amount', Number(($event.target as HTMLInputElement).value) || 0)"
+                @input="
+                  updateField(
+                    'settlement_amount',
+                    Number(($event.target as HTMLInputElement).value) || 0,
+                  )
+                "
               />
               <CInputGroupText>원</CInputGroupText>
             </CInputGroup>

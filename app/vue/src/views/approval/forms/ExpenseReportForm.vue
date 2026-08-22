@@ -55,7 +55,7 @@ const updateItem = (index: number, field: keyof ExpenseItem, val: any) => {
   const currentItems = [...items.value]
   currentItems[index] = {
     ...currentItems[index],
-    [field]: field === 'amount' ? (parseFloat(val) || 0) : val,
+    [field]: field === 'amount' ? parseFloat(val) || 0 : val,
   }
   const newTotal = currentItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
   emit('update:modelValue', {
@@ -80,7 +80,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="expense-report-form p-3 border rounded bg-light mb-3">
+  <div class="expense-report-form p-3 border rounded bg-more-light mb-3">
     <h6 class="fw-bold mb-3 text-success">
       <CIcon name="cilMoney" class="me-1" />
       지출결의 상세 명세
@@ -146,7 +146,7 @@ onMounted(() => {
         </CButton>
       </div>
 
-      <CTable small bordered responsive class="bg-white mb-2">
+      <CTable small bordered responsive class="bg-more-white mb-2">
         <CTableHead color="light">
           <CTableRow class="text-center">
             <CTableHeaderCell style="width: 130px">일자</CTableHeaderCell>
@@ -212,7 +212,7 @@ onMounted(() => {
       </CTable>
 
       <!-- 총 금액 합계 바 -->
-      <div class="d-flex justify-content-end align-items-center p-2 bg-white border rounded">
+      <div class="d-flex justify-content-end align-items-center p-2 bg-more-white border rounded">
         <span class="me-3 fw-semibold">총 지출 결의 금액:</span>
         <span class="fs-5 fw-bold text-danger">{{ totalAmount.toLocaleString() }} 원</span>
       </div>

@@ -61,7 +61,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="official-letter-form p-3 border rounded bg-light mb-3">
+  <div class="official-letter-form p-3 border rounded bg-more-light mb-3">
     <h6 class="fw-bold mb-3 text-primary">
       <CIcon name="cilEnvelopeLetter" class="me-1" />
       공문 발신 / 대외 발송 정보

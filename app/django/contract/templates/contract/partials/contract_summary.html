@@ -36,8 +36,8 @@
                     {% for og in groups %}
                         <td class="text-right">{{ cnum.pop|default:"-"|intcomma }}</td>
                     {% endfor %}
-                    <td class="text-right text-dark">{{ tn|default:"-"|intcomma }}</td>
-                    <td class="text-right text-dark">{{ un|sub:tn|sub:rn|default:"-"|intcomma }}</td>
+                    <td class="text-right text-body">{{ tn|default:"-"|intcomma }}</td>
+                    <td class="text-right text-body">{{ un|sub:tn|sub:rn|default:"-"|intcomma }}</td>
                     <td class="text-right">{% if tn and un %}{{ tn|div:un|mul:100|floatformat:2|intcomma }}{% else %}-{% endif %} %</td>
                     {% with cr=rn|add:tn %}
                         <td class="text-right">{% if tn and un %}{{ cr|div:un|mul:100|floatformat:2|intcomma }}{% else %}-{% endif %} %</td>

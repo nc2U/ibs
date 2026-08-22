@@ -54,7 +54,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="general-proposal-form p-3 border rounded bg-light mb-3">
+  <div class="general-proposal-form p-3 border rounded bg-more-light mb-3">
     <h6 class="fw-bold mb-3 text-primary">
       <CIcon name="cilNotes" class="me-1" />
       일반 업무 품의 정보

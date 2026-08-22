@@ -70,7 +70,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="advance-payment-form p-3 border rounded bg-light mb-3">
+  <div class="advance-payment-form p-3 border rounded bg-more-light mb-3">
     <h6 class="fw-bold mb-3 text-danger">
       <CIcon name="cilCash" class="me-1" />
       선급금 / 가지급금 신청 정보
@@ -114,7 +114,9 @@ onMounted(() => {
             :value="modelValue.advance_amount ?? modelValue.amount ?? 0"
             placeholder="0"
             required
-            @input="updateField('advance_amount', Number(($event.target as HTMLInputElement).value) || 0)"
+            @input="
+              updateField('advance_amount', Number(($event.target as HTMLInputElement).value) || 0)
+            "
           />
           <CInputGroupText>원</CInputGroupText>
         </CInputGroup>

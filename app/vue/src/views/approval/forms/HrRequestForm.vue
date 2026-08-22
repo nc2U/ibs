@@ -98,7 +98,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="hr-request-form p-3 border rounded bg-light mb-3">
+  <div class="hr-request-form p-3 border rounded bg-more-light mb-3">
     <h6 class="fw-bold mb-3 text-primary">
       <CIcon name="cilContact" class="me-1" />
       인사 관련 신청 정보
@@ -132,7 +132,10 @@ onMounted(() => {
     </CRow>
 
     <!-- 1. 제증명서 발급 상세 섹션 -->
-    <div v-if="modelValue.request_type === 'CERTIFICATE'" class="p-3 bg-white border rounded mb-3">
+    <div
+      v-if="modelValue.request_type === 'CERTIFICATE'"
+      class="p-3 bg-more-white border rounded mb-3"
+    >
       <h6 class="fw-bold text-secondary mb-3 small">
         <CIcon name="cilDescription" class="me-1" />
         증명서 발급 세부 정보
@@ -150,7 +153,9 @@ onMounted(() => {
             </option>
           </CFormSelect>
         </CCol>
-        <CFormLabel class="col-sm-2 col-form-label text-sm-end required">발급 언어 / 부수</CFormLabel>
+        <CFormLabel class="col-sm-2 col-form-label text-sm-end required"
+          >발급 언어 / 부수</CFormLabel
+        >
         <CCol sm="2">
           <CFormSelect
             :value="modelValue.cert_language ?? 'KOREAN'"
@@ -166,7 +171,9 @@ onMounted(() => {
               type="number"
               min="1"
               :value="modelValue.cert_count ?? 1"
-              @input="updateField('cert_count', Number(($event.target as HTMLInputElement).value) || 1)"
+              @input="
+                updateField('cert_count', Number(($event.target as HTMLInputElement).value) || 1)
+              "
             />
             <CInputGroupText>부</CInputGroupText>
           </CInputGroup>
@@ -201,14 +208,19 @@ onMounted(() => {
             id="residentNumCheck"
             label="주민등록번호 뒷자리 전체 표기 (미체크 시 생년월일만 표기됨)"
             :checked="modelValue.include_resident_num ?? false"
-            @change="updateField('include_resident_num', ($event.target as HTMLInputElement).checked)"
+            @change="
+              updateField('include_resident_num', ($event.target as HTMLInputElement).checked)
+            "
           />
         </CCol>
       </CRow>
     </div>
 
     <!-- 2. 경조사 지원 / 경조금 상세 섹션 -->
-    <div v-else-if="modelValue.request_type === 'CONGRATULATION_CONDOLENCE'" class="p-3 bg-white border rounded mb-3">
+    <div
+      v-else-if="modelValue.request_type === 'CONGRATULATION_CONDOLENCE'"
+      class="p-3 bg-white border rounded mb-3"
+    >
       <h6 class="fw-bold text-secondary mb-3 small">
         <CIcon name="cilHeart" class="me-1 text-danger" />
         경조사 지원 및 경조금 신청 정보
@@ -256,7 +268,12 @@ onMounted(() => {
               step="50000"
               :value="modelValue.congratulation_amount ?? modelValue.amount ?? 0"
               placeholder="0"
-              @input="updateField('congratulation_amount', Number(($event.target as HTMLInputElement).value) || 0)"
+              @input="
+                updateField(
+                  'congratulation_amount',
+                  Number(($event.target as HTMLInputElement).value) || 0,
+                )
+              "
             />
             <CInputGroupText>원</CInputGroupText>
           </CInputGroup>
@@ -276,7 +293,13 @@ onMounted(() => {
     </div>
 
     <!-- 3. 휴직 / 복직 상세 섹션 -->
-    <div v-else-if="modelValue.request_type === 'LEAVE_OF_ABSENCE' || modelValue.request_type === 'REINSTATEMENT'" class="p-3 bg-white border rounded mb-3">
+    <div
+      v-else-if="
+        modelValue.request_type === 'LEAVE_OF_ABSENCE' ||
+        modelValue.request_type === 'REINSTATEMENT'
+      "
+      class="p-3 bg-white border rounded mb-3"
+    >
       <h6 class="fw-bold text-secondary mb-3 small">
         <CIcon name="cilCalendar" class="me-1" />
         {{ modelValue.request_type === 'LEAVE_OF_ABSENCE' ? '휴직 신청' : '복직원' }} 기간 정보

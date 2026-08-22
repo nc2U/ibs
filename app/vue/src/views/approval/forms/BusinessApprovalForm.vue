@@ -18,7 +18,9 @@ const approvalTypes = [
   { value: 'OTHER', label: '기타 주요 사업 마일스톤 승인' },
 ]
 
-const requestedAmount = computed(() => Number(props.modelValue.requested_amount) || Number(props.modelValue.approval_budget) || 0)
+const requestedAmount = computed(
+  () => Number(props.modelValue.requested_amount) || Number(props.modelValue.approval_budget) || 0,
+)
 const totalCost = computed(() => Number(props.modelValue.total_project_cost) || 0)
 const totalRevenue = computed(() => Number(props.modelValue.total_expected_revenue) || 0)
 const expectedProfit = computed(() => totalRevenue.value - totalCost.value)
@@ -36,8 +38,8 @@ const updateField = (key: string, val: any) => {
     updated.approval_budget = amt
     updated.amount = amt
   } else if (key === 'total_expected_revenue' || key === 'total_project_cost') {
-    const rev = key === 'total_expected_revenue' ? (Number(val) || 0) : totalRevenue.value
-    const cst = key === 'total_project_cost' ? (Number(val) || 0) : totalCost.value
+    const rev = key === 'total_expected_revenue' ? Number(val) || 0 : totalRevenue.value
+    const cst = key === 'total_project_cost' ? Number(val) || 0 : totalCost.value
     updated.expected_profit = rev - cst
   }
 
@@ -65,7 +67,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="business-approval-form p-3 border rounded bg-light mb-3">
+  <div class="business-approval-form p-3 border rounded bg-more-light mb-3">
     <h6 class="fw-bold mb-3 text-success">
       <CIcon name="cilCheckCircle" class="me-1 text-success" />
       사업추진 및 투자 집행 승인
@@ -125,7 +127,9 @@ onMounted(() => {
       </div>
       <div class="card-body p-2">
         <CRow class="mb-2">
-          <CFormLabel class="col-sm-2 col-form-label small required text-success fw-bold">금회 승인 요청액</CFormLabel>
+          <CFormLabel class="col-sm-2 col-form-label small required text-success fw-bold"
+            >금회 승인 요청액</CFormLabel
+          >
           <CCol sm="4">
             <CInputGroup size="sm">
               <CFormInput
@@ -133,9 +137,19 @@ onMounted(() => {
                 min="0"
                 step="10000000"
                 class="text-end fw-bold text-success fs-6"
-                :value="modelValue.requested_amount ?? modelValue.approval_budget ?? modelValue.amount ?? 0"
+                :value="
+                  modelValue.requested_amount ??
+                  modelValue.approval_budget ??
+                  modelValue.amount ??
+                  0
+                "
                 required
-                @input="updateField('requested_amount', Number(($event.target as HTMLInputElement).value) || 0)"
+                @input="
+                  updateField(
+                    'requested_amount',
+                    Number(($event.target as HTMLInputElement).value) || 0,
+                  )
+                "
               />
               <CInputGroupText class="fw-bold text-success">원</CInputGroupText>
             </CInputGroup>
@@ -149,7 +163,12 @@ onMounted(() => {
                 step="10000000"
                 class="text-end fw-semibold text-danger"
                 :value="modelValue.total_project_cost ?? 0"
-                @input="updateField('total_project_cost', Number(($event.target as HTMLInputElement).value) || 0)"
+                @input="
+                  updateField(
+                    'total_project_cost',
+                    Number(($event.target as HTMLInputElement).value) || 0,
+                  )
+                "
               />
               <CInputGroupText>원</CInputGroupText>
             </CInputGroup>
@@ -166,7 +185,12 @@ onMounted(() => {
                 step="10000000"
                 class="text-end fw-semibold text-primary"
                 :value="modelValue.total_expected_revenue ?? 0"
-                @input="updateField('total_expected_revenue', Number(($event.target as HTMLInputElement).value) || 0)"
+                @input="
+                  updateField(
+                    'total_expected_revenue',
+                    Number(($event.target as HTMLInputElement).value) || 0,
+                  )
+                "
               />
               <CInputGroupText>원</CInputGroupText>
             </CInputGroup>

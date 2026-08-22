@@ -69,7 +69,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="project-decision-form p-3 border rounded bg-light mb-3">
+  <div class="project-decision-form p-3 border rounded bg-more-light mb-3">
     <h6 class="fw-bold mb-3 text-danger">
       <CIcon name="cilLightbulb" class="me-1 text-danger" />
       프로젝트 주요 현안 및 의사결정 심의
@@ -135,7 +135,12 @@ onMounted(() => {
             class="text-end fw-semibold"
             :value="modelValue.financial_impact ?? modelValue.amount ?? 0"
             placeholder="0"
-            @input="updateField('financial_impact', Number(($event.target as HTMLInputElement).value) || 0)"
+            @input="
+              updateField(
+                'financial_impact',
+                Number(($event.target as HTMLInputElement).value) || 0,
+              )
+            "
           />
           <CInputGroupText>원</CInputGroupText>
         </CInputGroup>
@@ -161,7 +166,7 @@ onMounted(() => {
 
     <!-- 대안 비교 분석 (Option 1 vs Option 2 vs Option 3) -->
     <div class="card mb-3 border border-secondary">
-      <div class="card-header bg-secondary bg-opacity-10 py-2 fw-semibold small text-dark">
+      <div class="card-header bg-secondary bg-opacity-10 py-2 fw-semibold small text-body">
         <CIcon name="cilColumns" class="me-1" />
         검토 대안별 비교 분석 (Alternatives Comparison)
       </div>
@@ -218,7 +223,9 @@ onMounted(() => {
 
     <!-- 주관부서 최종 추천안 및 선정 사유 -->
     <CRow class="mb-3">
-      <CFormLabel class="col-sm-2 col-form-label required text-primary fw-bold">주관부서 추천안</CFormLabel>
+      <CFormLabel class="col-sm-2 col-form-label required text-primary fw-bold"
+        >주관부서 추천안</CFormLabel
+      >
       <CCol sm="10">
         <CFormTextarea
           :value="modelValue.recommendation ?? ''"

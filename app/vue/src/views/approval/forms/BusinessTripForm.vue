@@ -100,7 +100,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="business-trip-form p-3 border rounded bg-light mb-3">
+  <div class="business-trip-form p-3 border rounded bg-more-light mb-3">
     <h6 class="fw-bold mb-3 text-primary">
       <CIcon name="cilFlightTakeoff" class="me-1" />
       출장 신청 기본 정보
@@ -232,7 +232,9 @@ onMounted(() => {
             step="1000"
             :value="modelValue.transport_cost ?? 0"
             placeholder="0"
-            @input="updateField('transport_cost', Number(($event.target as HTMLInputElement).value) || 0)"
+            @input="
+              updateField('transport_cost', Number(($event.target as HTMLInputElement).value) || 0)
+            "
           />
           <CInputGroupText>원</CInputGroupText>
         </CInputGroup>
@@ -246,7 +248,9 @@ onMounted(() => {
             step="1000"
             :value="modelValue.lodging_cost ?? 0"
             placeholder="0"
-            @input="updateField('lodging_cost', Number(($event.target as HTMLInputElement).value) || 0)"
+            @input="
+              updateField('lodging_cost', Number(($event.target as HTMLInputElement).value) || 0)
+            "
           />
           <CInputGroupText>원</CInputGroupText>
         </CInputGroup>
@@ -260,7 +264,9 @@ onMounted(() => {
             step="1000"
             :value="modelValue.daily_allowance ?? 0"
             placeholder="0"
-            @input="updateField('daily_allowance', Number(($event.target as HTMLInputElement).value) || 0)"
+            @input="
+              updateField('daily_allowance', Number(($event.target as HTMLInputElement).value) || 0)
+            "
           />
           <CInputGroupText>원</CInputGroupText>
         </CInputGroup>
@@ -274,7 +280,9 @@ onMounted(() => {
             step="1000"
             :value="modelValue.other_cost ?? 0"
             placeholder="0"
-            @input="updateField('other_cost', Number(($event.target as HTMLInputElement).value) || 0)"
+            @input="
+              updateField('other_cost', Number(($event.target as HTMLInputElement).value) || 0)
+            "
           />
           <CInputGroupText>원</CInputGroupText>
         </CInputGroup>

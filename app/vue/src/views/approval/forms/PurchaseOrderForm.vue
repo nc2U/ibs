@@ -76,7 +76,7 @@ const updateItem = (index: number, field: keyof PurchaseItem, val: any) => {
     target.supply_price = target.quantity * target.unit_price
     target.vat = Math.round(target.supply_price * 0.1)
   } else {
-    (target as any)[field] = val
+    ;(target as any)[field] = val
   }
 
   currentItems[index] = target
@@ -105,7 +105,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="purchase-order-form p-3 border rounded bg-light mb-3">
+  <div class="purchase-order-form p-3 border rounded bg-more-light mb-3">
     <h6 class="fw-bold mb-3 text-info">
       <CIcon name="cilCart" class="me-1" />
       구매품의 상세 정보
@@ -152,7 +152,7 @@ onMounted(() => {
         </CButton>
       </div>
 
-      <CTable small bordered responsive class="bg-white mb-2">
+      <CTable small bordered responsive class="bg-more-white mb-2">
         <CTableHead color="light">
           <CTableRow class="text-center">
             <CTableHeaderCell>품명</CTableHeaderCell>
@@ -228,10 +228,18 @@ onMounted(() => {
       </CTable>
 
       <!-- 합계 요약 -->
-      <div class="d-flex justify-content-end align-items-center gap-3 p-2 bg-white border rounded">
-        <span class="text-muted">공급가액: <strong>{{ totalSupplyPrice.toLocaleString() }}</strong> 원</span>
-        <span class="text-muted">+ 부가세: <strong>{{ totalVat.toLocaleString() }}</strong> 원</span>
-        <span class="fs-5 fw-bold text-danger">= 총 합계: {{ totalAmount.toLocaleString() }} 원</span>
+      <div
+        class="d-flex justify-content-end align-items-center gap-3 p-2 bg-more-light border rounded"
+      >
+        <span class="text-muted">
+          공급가액: <strong>{{ totalSupplyPrice.toLocaleString() }}</strong> 원
+        </span>
+        <span class="text-muted">
+          + 부가세: <strong>{{ totalVat.toLocaleString() }}</strong> 원
+        </span>
+        <span class="fs-5 fw-bold text-danger">
+          = 총 합계: {{ totalAmount.toLocaleString() }} 원
+        </span>
       </div>
     </div>
   </div>

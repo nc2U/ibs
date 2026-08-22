@@ -35,8 +35,8 @@ const updateField = (key: string, val: any) => {
 
   // 총매출 또는 총사업비 변경 시 이익 및 수익률, 결재선용 amount 자동 반영
   if (key === 'total_revenue' || key === 'total_cost') {
-    const rev = key === 'total_revenue' ? (Number(val) || 0) : totalRevenue.value
-    const cst = key === 'total_cost' ? (Number(val) || 0) : totalCost.value
+    const rev = key === 'total_revenue' ? Number(val) || 0 : totalRevenue.value
+    const cst = key === 'total_cost' ? Number(val) || 0 : totalCost.value
     const np = rev - cst
     const pr = cst > 0 ? Number(((np / cst) * 100).toFixed(2)) : 0
 
@@ -80,7 +80,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="business-review-form p-3 border rounded bg-light mb-3">
+  <div class="business-review-form p-3 border rounded bg-more-light mb-3">
     <h6 class="fw-bold mb-3 text-info">
       <CIcon name="cilBuilding" class="me-1 text-primary" />
       사업 타당성 및 수지 검토
@@ -177,12 +177,19 @@ onMounted(() => {
                 class="text-end fw-bold text-primary"
                 :value="modelValue.total_revenue ?? 0"
                 required
-                @input="updateField('total_revenue', Number(($event.target as HTMLInputElement).value) || 0)"
+                @input="
+                  updateField(
+                    'total_revenue',
+                    Number(($event.target as HTMLInputElement).value) || 0,
+                  )
+                "
               />
               <CInputGroupText>원</CInputGroupText>
             </CInputGroup>
           </CCol>
-          <CFormLabel class="col-sm-2 col-form-label small required text-sm-end">총 사업비(지출)</CFormLabel>
+          <CFormLabel class="col-sm-2 col-form-label small required text-sm-end"
+            >총 사업비(지출)</CFormLabel
+          >
           <CCol sm="4">
             <CInputGroup size="sm">
               <CFormInput
@@ -192,7 +199,9 @@ onMounted(() => {
                 class="text-end fw-bold text-danger"
                 :value="modelValue.total_cost ?? 0"
                 required
-                @input="updateField('total_cost', Number(($event.target as HTMLInputElement).value) || 0)"
+                @input="
+                  updateField('total_cost', Number(($event.target as HTMLInputElement).value) || 0)
+                "
               />
               <CInputGroupText>원</CInputGroupText>
             </CInputGroup>
@@ -219,7 +228,7 @@ onMounted(() => {
               <CFormInput
                 type="number"
                 readonly
-                class="text-end fw-bold bg-light text-dark"
+                class="text-end fw-bold bg-light text-body"
                 :value="profitRate"
               />
               <CInputGroupText>%</CInputGroupText>
@@ -237,7 +246,12 @@ onMounted(() => {
                 step="10000000"
                 class="text-end"
                 :value="modelValue.required_equity ?? 0"
-                @input="updateField('required_equity', Number(($event.target as HTMLInputElement).value) || 0)"
+                @input="
+                  updateField(
+                    'required_equity',
+                    Number(($event.target as HTMLInputElement).value) || 0,
+                  )
+                "
               />
               <CInputGroupText>원</CInputGroupText>
             </CInputGroup>
@@ -251,7 +265,12 @@ onMounted(() => {
                 step="10000000"
                 class="text-end"
                 :value="modelValue.pf_loan_amount ?? 0"
-                @input="updateField('pf_loan_amount', Number(($event.target as HTMLInputElement).value) || 0)"
+                @input="
+                  updateField(
+                    'pf_loan_amount',
+                    Number(($event.target as HTMLInputElement).value) || 0,
+                  )
+                "
               />
               <CInputGroupText>원</CInputGroupText>
             </CInputGroup>
@@ -262,7 +281,7 @@ onMounted(() => {
 
     <!-- 사업 추진 일정 계획 -->
     <div class="card mb-3 border">
-      <div class="card-header bg-white py-2 fw-semibold small text-secondary">
+      <div class="card-header bg-more-white py-2 fw-semibold small text-secondary">
         <CIcon name="cilCalendar" class="me-1" />
         주요 사업 일정 계획
       </div>
@@ -283,7 +302,9 @@ onMounted(() => {
               type="date"
               size="sm"
               :value="modelValue.approval_target_date ?? ''"
-              @input="updateField('approval_target_date', ($event.target as HTMLInputElement).value)"
+              @input="
+                updateField('approval_target_date', ($event.target as HTMLInputElement).value)
+              "
             />
           </CCol>
           <CCol sm="3">

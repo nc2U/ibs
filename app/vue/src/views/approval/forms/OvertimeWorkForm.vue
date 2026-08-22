@@ -98,7 +98,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="overtime-work-form p-3 border rounded bg-light mb-3">
+  <div class="overtime-work-form p-3 border rounded bg-more-light mb-3">
     <h6 class="fw-bold mb-3 text-primary">
       <CIcon name="cilClock" class="me-1" />
       연장 / 휴일근무 신청 정보
@@ -159,7 +159,9 @@ onMounted(() => {
             min="0"
             step="0.5"
             :value="modelValue.break_hours ?? 0"
-            @input="updateField('break_hours', Number(($event.target as HTMLInputElement).value) || 0)"
+            @input="
+              updateField('break_hours', Number(($event.target as HTMLInputElement).value) || 0)
+            "
           />
           <CInputGroupText>시간</CInputGroupText>
         </CInputGroup>

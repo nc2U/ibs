@@ -113,7 +113,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="hr-appointment-form p-3 border rounded bg-light mb-3">
+  <div class="hr-appointment-form p-3 border rounded bg-more-light mb-3">
     <h6 class="fw-bold mb-3 text-primary">
       <CIcon name="cilUserFollow" class="me-1" />
       인사발령 기본 정보
@@ -160,8 +160,8 @@ onMounted(() => {
 
     <!-- 발령 대상자 목록 카드 -->
     <div class="card mb-3 border">
-      <div class="card-header d-flex justify-content-between align-items-center bg-white py-2">
-        <span class="fw-bold text-dark">
+      <div class="card-header d-flex justify-content-between align-items-center bg-more-white py-2">
+        <span class="fw-bold text-body">
           <CIcon name="cilPeople" class="me-1 text-primary" />
           발령 대상자 명단 (총 {{ targetsList.length }}명)
         </span>
@@ -201,7 +201,9 @@ onMounted(() => {
                     size="sm"
                     :value="item.current_dept"
                     placeholder="예: 개발기획팀"
-                    @input="updateTarget(idx, 'current_dept', ($event.target as HTMLInputElement).value)"
+                    @input="
+                      updateTarget(idx, 'current_dept', ($event.target as HTMLInputElement).value)
+                    "
                   />
                 </td>
                 <td>
@@ -209,7 +211,13 @@ onMounted(() => {
                     size="sm"
                     :value="item.current_position"
                     placeholder="예: 과장 / 팀원"
-                    @input="updateTarget(idx, 'current_position', ($event.target as HTMLInputElement).value)"
+                    @input="
+                      updateTarget(
+                        idx,
+                        'current_position',
+                        ($event.target as HTMLInputElement).value,
+                      )
+                    "
                   />
                 </td>
                 <td>
@@ -218,7 +226,9 @@ onMounted(() => {
                     class="border-primary"
                     :value="item.new_dept"
                     placeholder="예: 전략사업본부"
-                    @input="updateTarget(idx, 'new_dept', ($event.target as HTMLInputElement).value)"
+                    @input="
+                      updateTarget(idx, 'new_dept', ($event.target as HTMLInputElement).value)
+                    "
                   />
                 </td>
                 <td>
@@ -227,7 +237,9 @@ onMounted(() => {
                     class="border-primary"
                     :value="item.new_position"
                     placeholder="예: 차장 / 팀장"
-                    @input="updateTarget(idx, 'new_position', ($event.target as HTMLInputElement).value)"
+                    @input="
+                      updateTarget(idx, 'new_position', ($event.target as HTMLInputElement).value)
+                    "
                   />
                 </td>
                 <td>
@@ -235,7 +247,9 @@ onMounted(() => {
                     size="sm"
                     :value="item.type_desc"
                     placeholder="예: 승진/전보"
-                    @input="updateTarget(idx, 'type_desc', ($event.target as HTMLInputElement).value)"
+                    @input="
+                      updateTarget(idx, 'type_desc', ($event.target as HTMLInputElement).value)
+                    "
                   />
                 </td>
                 <td>

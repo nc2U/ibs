@@ -73,7 +73,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="leave-application-form p-3 border rounded bg-light mb-3">
+  <div class="leave-application-form p-3 border rounded bg-more-light mb-3">
     <h6 class="fw-bold mb-3 text-primary">
       <CIcon name="cilCalendar" class="me-1" />
       휴가 / 연차 신청 정보
@@ -106,7 +106,9 @@ onMounted(() => {
             required
             @input="updateField('start_date', ($event.target as HTMLInputElement).value)"
           />
-          <span v-if="modelValue.leave_type !== 'HALF_AM' && modelValue.leave_type !== 'HALF_PM'">~</span>
+          <span v-if="modelValue.leave_type !== 'HALF_AM' && modelValue.leave_type !== 'HALF_PM'"
+            >~</span
+          >
           <CFormInput
             v-if="modelValue.leave_type !== 'HALF_AM' && modelValue.leave_type !== 'HALF_PM'"
             type="date"

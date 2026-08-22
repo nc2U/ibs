@@ -438,7 +438,7 @@ onBeforeMount(async () => {
                 <div v-if="fileErrorMessage" class="text-danger small mb-2">
                   <v-icon icon="mdi-alert-circle" size="14" class="mr-1" />
                   {{ fileErrorMessage }}
-                  <span class="ml-2 font-weight-bold text-dark">
+                  <span class="ml-2 font-weight-bold text-body">
                     💡 대용량 파일은 아래 [외부 클라우드 링크] 섹션에 공유 링크(OneDrive, Google
                     Drive 등)를 직접 추가하여 공유할 수 있습니다.
                   </span>
