@@ -148,7 +148,13 @@ class _MainShellState extends ConsumerState<MainShell> {
         titleSpacing: 16,
         title: Row(
           children: [
-            SvgPicture.asset('assets/images/sygnet.svg', width: 26, height: 26),
+            SvgPicture.asset(
+              context.isDarkMode
+                  ? 'assets/images/sygnet.svg'
+                  : 'assets/images/sygnet_light.svg',
+              width: 26,
+              height: 26,
+            ),
             const SizedBox(width: 10),
             Text(
               'IBS 워크스페이스',

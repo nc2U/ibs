@@ -6,6 +6,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/router/app_router.dart';
+import '../../../core/theme/app_colors_extension.dart';
 import '../services/auth_service.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
@@ -71,7 +72,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               children: [
                 // 로고
                 Center(
-                  child: SvgPicture.asset('assets/images/sygnet.svg', width: 80, height: 80),
+                  child: SvgPicture.asset(
+                    context.isDarkMode
+                        ? 'assets/images/sygnet.svg'
+                        : 'assets/images/sygnet_light.svg',
+                    width: 80,
+                    height: 80,
+                  ),
                 ),
                 const SizedBox(height: 20),
                 Text('IBS 워크스페이스', textAlign: TextAlign.center, style: AppTextStyles.h1),
