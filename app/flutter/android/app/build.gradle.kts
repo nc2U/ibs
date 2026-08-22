@@ -16,7 +16,7 @@ android {
 
     defaultConfig {
         applicationId = "com.dyibs.mobileibs"
-        minSdk = 24
+        minSdk = 21
         targetSdk = 34
         versionCode = flutter.versionCode
         versionName = flutter.versionName
