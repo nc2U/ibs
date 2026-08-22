@@ -208,10 +208,10 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
 
                       if (!canCreate) return const SizedBox.shrink();
 
-                      // 회의: 틸/청록 에메랄드 (#0D9488), 업무: 선명한 로열 블루 (#2563EB)
+                      // 회의: 틸/청록 에메랄드 (#0D9488), 업무: 업무 테마색 (context.colors.accentWork)
                       final fabColor = isMeetingTab
                           ? const Color(0xFF0D9488)
-                          : const Color(0xFF2563EB);
+                          : context.colors.accentWork;
 
                       return FloatingActionButton.extended(
                         elevation: 4,

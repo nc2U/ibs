@@ -171,15 +171,23 @@ class _ApprovalMainScreenState extends ConsumerState<ApprovalMainScreen>
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: _goDraft,
+        elevation: 4,
+        highlightElevation: 8,
         backgroundColor: context.colors.accentApproval,
-        icon: const Icon(Icons.add_rounded, color: Colors.white),
-        label: const Text(
-          '새 기안',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+        foregroundColor: Colors.white,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.zero,
         ),
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        icon: const Icon(Icons.add_rounded, size: 20, color: Colors.white),
+        label: const Text(
+          '기안 작성',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+            letterSpacing: 0.2,
+          ),
+        ),
+        onPressed: _goDraft,
       ),
     );
   }

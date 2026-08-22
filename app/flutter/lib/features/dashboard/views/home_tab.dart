@@ -108,7 +108,7 @@ class HomeTab extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
 
-          // ── 03. 전자 결재 (Approval Core — Honey Amber) ─────────────────
+          // ── 03. 전자 결재 (Approval Core — Midnight Navy) ─────────────────
           _HeroCard(
             categoryNum: '03',
             title: '전자결재',
@@ -117,8 +117,8 @@ class HomeTab extends ConsumerWidget {
             icon: Icons.draw_rounded,
             accentColor: context.colors.accentApproval,
             gradientColors: isDark
-                ? const [Color(0xFF32281E), Color(0xFF261F17)]
-                : const [Color(0xFFFFFFFF), Color(0xFFFFFBEB)],
+                ? const [Color(0xFF1E2238), Color(0xFF171B2E)]
+                : const [Color(0xFFFFFFFF), Color(0xFFEFF6FF)],
             badgeText: pendingCount > 0 ? '미결 $pendingCount건' : '결재 시스템',
             onTap: () => context.go(AppRoutes.approval),
           ),
