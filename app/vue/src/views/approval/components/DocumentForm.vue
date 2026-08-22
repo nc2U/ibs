@@ -11,8 +11,7 @@ const route = useRoute()
 const router = useRouter()
 const store = useApproval()
 const accStore = useAccount()
-const { docCategoryList, forDraftDocTypeList, document, myAssignments, routePreview } =
-  storeToRefs(store)
+const { forDraftDocTypeList, document, myAssignments, routePreview } = storeToRefs(store)
 const { usersList } = storeToRefs(accStore)
 const {
   fetchDocCategoryList,
@@ -548,12 +547,7 @@ onMounted(async () => {
 
           <!-- 하단 버튼 -->
           <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
-            <v-btn
-              type="submit"
-              color="blue-grey-lighten-2"
-              :disabled="!!saving"
-              flat
-            >
+            <v-btn type="submit" color="blue-grey-lighten-2" :disabled="!!saving" flat>
               <CSpinner v-if="saving === 'draft'" size="sm" class="me-1" />
               임시저장
             </v-btn>
