@@ -27,6 +27,8 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
   final Color accentProjectDeep;
   final Color accentApproval;
   final Color accentApprovalDeep;
+  final Color accentChannel;
+  final Color accentChannelDeep;
   final Color accentCorp;
   final Color accentCorpDeep;
 
@@ -55,6 +57,8 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
     required this.accentProjectDeep,
     required this.accentApproval,
     required this.accentApprovalDeep,
+    required this.accentChannel,
+    required this.accentChannelDeep,
     required this.accentCorp,
     required this.accentCorpDeep,
     required this.success,
@@ -83,6 +87,8 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
     accentProjectDeep: Color(0xFF047857),
     accentApproval: Color(0xFF1E40AF), // Deep Midnight Navy (공식 결재/승인의 묵직한 긴장감)
     accentApprovalDeep: Color(0xFF172554), // Blue 950 (최고 권위의 잉크 네이비)
+    accentChannel: Color(0xFFC2410C), // Warm Terracotta / Cozy Mocha (따뜻한 소통과 릴렉스 라운지)
+    accentChannelDeep: Color(0xFF9A3412), // Terracotta Deep
     accentCorp: Color(0xFF0284C7), // Sky/Azure 600 (청량하고 세련된 청색)
     accentCorpDeep: Color(0xFF0369A1),
     success: Color(0xFF16A34A),
@@ -111,6 +117,8 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
     accentProjectDeep: Color(0xFF064E3B),
     accentApproval: Color(0xFF3B82F6), // Solid Blue 500
     accentApprovalDeep: Color(0xFF60A5FA), // Blue 400
+    accentChannel: Color(0xFFFB923C), // Warm Orange/Terracotta 400 (릴렉스 & 포근한 소통)
+    accentChannelDeep: Color(0xFFEA580C), // Orange 600
     accentCorp: Color(0xFF38BDF8), // Crisp Luminous Azure 400 (청량하고 세련된 청색)
     accentCorpDeep: Color(0xFF0369A1),
     success: Color(0xFF22C55E),
@@ -139,6 +147,8 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
     Color? accentProjectDeep,
     Color? accentApproval,
     Color? accentApprovalDeep,
+    Color? accentChannel,
+    Color? accentChannelDeep,
     Color? accentCorp,
     Color? accentCorpDeep,
     Color? success,
@@ -165,6 +175,8 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
       accentProjectDeep: accentProjectDeep ?? this.accentProjectDeep,
       accentApproval: accentApproval ?? this.accentApproval,
       accentApprovalDeep: accentApprovalDeep ?? this.accentApprovalDeep,
+      accentChannel: accentChannel ?? this.accentChannel,
+      accentChannelDeep: accentChannelDeep ?? this.accentChannelDeep,
       accentCorp: accentCorp ?? this.accentCorp,
       accentCorpDeep: accentCorpDeep ?? this.accentCorpDeep,
       success: success ?? this.success,
@@ -196,6 +208,8 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
       accentProjectDeep: Color.lerp(accentProjectDeep, other.accentProjectDeep, t)!,
       accentApproval: Color.lerp(accentApproval, other.accentApproval, t)!,
       accentApprovalDeep: Color.lerp(accentApprovalDeep, other.accentApprovalDeep, t)!,
+      accentChannel: Color.lerp(accentChannel, other.accentChannel, t)!,
+      accentChannelDeep: Color.lerp(accentChannelDeep, other.accentChannelDeep, t)!,
       accentCorp: Color.lerp(accentCorp, other.accentCorp, t)!,
       accentCorpDeep: Color.lerp(accentCorpDeep, other.accentCorpDeep, t)!,
       success: Color.lerp(success, other.success, t)!,

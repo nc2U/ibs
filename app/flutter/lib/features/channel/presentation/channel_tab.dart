@@ -184,7 +184,7 @@ class _ChannelTabState extends ConsumerState<ChannelTab>
                 icon,
                 size: 14,
                 color: isSelected
-                    ? context.colors.accentWork
+                    ? context.colors.accentChannel
                     : context.colors.textMuted,
               ),
               const SizedBox(width: 6),
@@ -228,7 +228,7 @@ class _ChannelTabState extends ConsumerState<ChannelTab>
               color: context.colors.bgCard,
               border: Border(
                 bottom: BorderSide(
-                  color: context.colors.accentWork,
+                  color: context.colors.accentChannel,
                   width: 3.0,
                 ),
               ),
@@ -248,7 +248,7 @@ class _ChannelTabState extends ConsumerState<ChannelTab>
                       Icons.campaign_rounded,
                       size: 18,
                       color: _commTabController.index == 0
-                          ? context.colors.accentWork
+                          ? context.colors.accentChannel
                           : context.colors.textMuted,
                     ),
                     const SizedBox(width: 6),
@@ -264,7 +264,7 @@ class _ChannelTabState extends ConsumerState<ChannelTab>
                       Icons.forum_outlined,
                       size: 18,
                       color: _commTabController.index == 1
-                          ? context.colors.accentWork
+                          ? context.colors.accentChannel
                           : context.colors.textMuted,
                     ),
                     const SizedBox(width: 6),
@@ -420,7 +420,7 @@ class _ChannelTabState extends ConsumerState<ChannelTab>
         },
         elevation: 4,
         highlightElevation: 8,
-        backgroundColor: context.colors.accentWork,
+        backgroundColor: context.colors.accentChannel,
         foregroundColor: Colors.white,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         icon: const Icon(Icons.add_rounded, size: 20),
@@ -442,7 +442,7 @@ class _ChannelTabState extends ConsumerState<ChannelTab>
         },
         elevation: 4,
         highlightElevation: 8,
-        backgroundColor: context.colors.accentWork,
+        backgroundColor: context.colors.accentChannel,
         foregroundColor: Colors.white,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         icon: const Icon(Icons.edit_rounded, size: 20),
