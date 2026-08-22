@@ -23,14 +23,23 @@ class ApprovalMainScreen extends ConsumerStatefulWidget {
 }
 
 class _ApprovalMainScreenState extends ConsumerState<ApprovalMainScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late TabController _tabController;
   int _completedSubTab = 0; // 0: 승인완료, 1: 참조/공람
+  bool _lastIsSuperuser = false;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this, initialIndex: widget.initialTabIndex);
+    _lastIsSuperuser = false;
+    _initTabController(false);
+  }
+
+  void _initTabController(bool isSuperuser) {
+    _lastIsSuperuser = isSuperuser;
+    final tabCount = isSuperuser ? 4 : 3;
+    final initialIdx = widget.initialTabIndex < tabCount ? widget.initialTabIndex : 0;
+    _tabController = TabController(length: tabCount, vsync: this, initialIndex: initialIdx);
     _tabController.addListener(() {
       if (mounted) setState(() {});
     });
@@ -63,6 +72,11 @@ class _ApprovalMainScreenState extends ConsumerState<ApprovalMainScreen>
     final user = ref.watch(currentUserProvider).valueOrNull;
     final isSuperuser = user?.isSuperuser ?? false;
 
+    if (isSuperuser != _lastIsSuperuser) {
+      _tabController.dispose();
+      _initTabController(isSuperuser);
+    }
+
     return Scaffold(
       backgroundColor: context.colors.bgPrimary,
       appBar: AppBar(
@@ -80,6 +94,7 @@ class _ApprovalMainScreenState extends ConsumerState<ApprovalMainScreen>
           preferredSize: const Size.fromHeight(44),
           child: Container(
             decoration: BoxDecoration(
+              color: context.colors.bgSurface,
               border: Border(
                 bottom: BorderSide(color: context.colors.border, width: 0.8),
               ),
@@ -87,12 +102,21 @@ class _ApprovalMainScreenState extends ConsumerState<ApprovalMainScreen>
             child: TabBar(
               controller: _tabController,
               isScrollable: false,
-              labelColor: context.colors.accentApproval,
+              indicatorSize: TabBarIndicatorSize.tab,
+              indicator: BoxDecoration(
+                color: context.colors.bgCard,
+                border: Border(
+                  bottom: BorderSide(
+                    color: context.colors.accentApproval,
+                    width: 3.0,
+                  ),
+                ),
+              ),
+              labelColor: context.colors.textPrimary,
               unselectedLabelColor: context.colors.textMuted,
-              indicatorColor: context.colors.accentApproval,
-              indicatorWeight: 2.5,
-              labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-              unselectedLabelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+              labelStyle: AppTextStyles.titleSm.copyWith(fontWeight: FontWeight.w700),
+              unselectedLabelStyle: AppTextStyles.bodyMd,
+              dividerColor: Colors.transparent,
               tabs: [
                 Tab(
                   child: Row(
@@ -122,18 +146,7 @@ class _ApprovalMainScreenState extends ConsumerState<ApprovalMainScreen>
                 ),
                 const Tab(text: '기안함'),
                 const Tab(text: '문서함'),
-                Tab(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text('전체'),
-                      if (!isSuperuser) ...[
-                        const SizedBox(width: 2),
-                        Icon(Icons.lock_outline_rounded, size: 12, color: context.colors.textMuted),
-                      ],
-                    ],
-                  ),
-                ),
+                if (isSuperuser) const Tab(text: '전체'),
               ],
             ),
           ),
@@ -158,16 +171,8 @@ class _ApprovalMainScreenState extends ConsumerState<ApprovalMainScreen>
           // ── 2. 결재 문서함 (완료 / 참조) ───────────────────────────
           _buildApprovedTab(),
 
-          // ── 3. 전체 문서함 (관리자) ─────────────────────────────────
-          isSuperuser
-              ? _buildAllDocumentsTab()
-              : const Center(
-                  child: ErrorView(
-                    icon: Icons.lock_outline_rounded,
-                    message: '접근 권한이 없습니다.',
-                    subMessage: '전체 결재 문서는 관리자(Superuser)만 열람할 수 있습니다.',
-                  ),
-                ),
+          // ── 3. 전체 문서함 (최고 관리자 전용) ────────────────────────
+          if (isSuperuser) _buildAllDocumentsTab(),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
