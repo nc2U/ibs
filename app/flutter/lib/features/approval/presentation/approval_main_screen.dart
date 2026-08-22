@@ -79,101 +79,118 @@ class _ApprovalMainScreenState extends ConsumerState<ApprovalMainScreen>
 
     return Scaffold(
       backgroundColor: context.colors.bgPrimary,
-      appBar: AppBar(
-        title: Text(
-          '전자결재',
-          style: AppTextStyles.titleMd.copyWith(
-            fontWeight: FontWeight.w800,
-            color: context.colors.textPrimary,
-          ),
-        ),
-        centerTitle: false,
-        backgroundColor: context.colors.bgCard,
-        elevation: 0,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(44),
-          child: Container(
-            decoration: BoxDecoration(
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            // ── 상단 고정 헤더 바 (업무 탭의 워크스페이스 바와 동일한 색상/구분선 패턴) ──
+            Container(
               color: context.colors.bgSurface,
-              border: Border(
-                bottom: BorderSide(color: context.colors.border, width: 0.8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.draw_rounded,
+                    size: 18,
+                    color: context.colors.accentApproval,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '전자결재',
+                    style: AppTextStyles.titleSm.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: context.colors.textPrimary,
+                    ),
+                  ),
+                ],
               ),
             ),
-            child: TabBar(
-              controller: _tabController,
-              isScrollable: false,
-              indicatorSize: TabBarIndicatorSize.tab,
-              indicator: BoxDecoration(
-                color: context.colors.bgCard,
+            Divider(color: context.colors.border, height: 1),
+
+            // ── 상단 탭바 (대기함 | 기안함 | 문서함 | [전체]) ───────────────
+            Container(
+              decoration: BoxDecoration(
+                color: context.colors.bgSurface,
                 border: Border(
                   bottom: BorderSide(
-                    color: context.colors.accentApproval,
-                    width: 3.0,
+                    color: context.colors.border,
+                    width: 0.8,
                   ),
                 ),
               ),
-              labelColor: context.colors.textPrimary,
-              unselectedLabelColor: context.colors.textMuted,
-              labelStyle: AppTextStyles.titleSm.copyWith(fontWeight: FontWeight.w700),
-              unselectedLabelStyle: AppTextStyles.bodyMd,
-              dividerColor: Colors.transparent,
-              tabs: [
-                Tab(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text('대기함'),
-                      if (pendingCount > 0) ...[
-                        const SizedBox(width: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                          decoration: BoxDecoration(
-                            color: context.colors.error,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            '$pendingCount',
-                            style: const TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
+              child: TabBar(
+                controller: _tabController,
+                isScrollable: false,
+                indicatorSize: TabBarIndicatorSize.tab,
+                indicator: BoxDecoration(
+                  color: context.colors.bgCard,
+                  border: Border(
+                    bottom: BorderSide(
+                      color: context.colors.accentApproval,
+                      width: 3.0,
+                    ),
                   ),
                 ),
-                const Tab(text: '기안함'),
-                const Tab(text: '문서함'),
-                if (isSuperuser) const Tab(text: '전체'),
-              ],
+                labelColor: context.colors.textPrimary,
+                unselectedLabelColor: context.colors.textMuted,
+                labelStyle: AppTextStyles.titleSm.copyWith(fontWeight: FontWeight.w700),
+                unselectedLabelStyle: AppTextStyles.bodyMd,
+                dividerColor: Colors.transparent,
+                tabs: [
+                  Tab(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text('대기함'),
+                        if (pendingCount > 0) ...[
+                          const SizedBox(width: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: context.colors.error,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              '$pendingCount',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const Tab(text: '기안함'),
+                  const Tab(text: '문서함'),
+                  if (isSuperuser) const Tab(text: '전체'),
+                ],
+              ),
             ),
-          ),
+
+            // ── 탭 뷰 본문 ─────────────────────────────────────────────
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  // ── 0. 결재 대기함 ──────────────────────────────────────────
+                  _buildPendingTab(),
+
+                  // ── 1. 내 기안함 ──────────────────────────────────────────
+                  _buildDraftedTab(),
+
+                  // ── 2. 결재 문서함 (완료 / 참조) ───────────────────────────
+                  _buildApprovedTab(),
+
+                  // ── 3. 전체 문서함 (최고 관리자 전용) ────────────────────────
+                  if (isSuperuser) _buildAllDocumentsTab(),
+                ],
+              ),
+            ),
+          ],
         ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.edit_document, color: context.colors.accentApproval),
-            tooltip: '새 기안 작성',
-            onPressed: _goDraft,
-          ),
-        ],
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          // ── 0. 결재 대기함 ──────────────────────────────────────────
-          _buildPendingTab(),
-
-          // ── 1. 내 기안함 ──────────────────────────────────────────
-          _buildDraftedTab(),
-
-          // ── 2. 결재 문서함 (완료 / 참조) ───────────────────────────
-          _buildApprovedTab(),
-
-          // ── 3. 전체 문서함 (최고 관리자 전용) ────────────────────────
-          if (isSuperuser) _buildAllDocumentsTab(),
-        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         elevation: 4,
