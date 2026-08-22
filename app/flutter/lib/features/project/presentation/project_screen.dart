@@ -52,7 +52,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final selectedProject = ref.watch(selectedProjectProvider);
+    final selectedProject = ref.watch(selectedRealEstateProjectProvider);
     final isRealEstateProject =
         selectedProject != null && selectedProject.type == '2';
 
@@ -91,7 +91,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
             WorkspaceSelectorBar(
               onlyRealEstate: true,
               onProjectChanged: () {
-                final updatedProj = ref.read(selectedProjectProvider);
+                final updatedProj = ref.read(selectedRealEstateProjectProvider);
                 if (updatedProj != null &&
                     _activeModule == ProjectActiveModule.docs) {
                   ref.read(docsContextProvider.notifier).state =

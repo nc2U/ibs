@@ -28,7 +28,9 @@ class _ProjectSelectorContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final selectedProject = ref.watch(selectedProjectProvider);
+    final selectedProj = ref.watch(
+      onlyRealEstate ? selectedRealEstateProjectProvider : selectedWorkspaceProvider,
+    );
     final projectsAsync = ref.watch(
         onlyRealEstate ? realEstateProjectsProvider : activeWorkspaceListProvider);
 
@@ -92,9 +94,9 @@ class _ProjectSelectorContent extends ConsumerWidget {
                   if (!onlyRealEstate) ...[
                     _ProjectTile(
                       title: '🏢 전체 워크스페이스',
-                      isSelected: selectedProject == null,
+                      isSelected: selectedProj == null,
                       onTap: () {
-                        selectProject(ref, null);
+                        selectWorkspace(ref, null);
                         _refreshProviders(ref);
                         Navigator.pop(context);
                       },
@@ -107,10 +109,14 @@ class _ProjectSelectorContent extends ConsumerWidget {
                     (p) => _ProjectTile(
                       title: p.indentedLabel,
                       subtitle: p.type == '2' ? '부동산개발 · ${p.slug}' : p.slug,
-                      isSelected: selectedProject?.pk == p.pk,
+                      isSelected: selectedProj?.pk == p.pk,
                       onTap: () {
-                        selectProject(ref, p);
-                        _refreshProviders(ref);
+                        if (onlyRealEstate) {
+                          selectRealEstateProject(ref, p);
+                        } else {
+                          selectWorkspace(ref, p);
+                          _refreshProviders(ref);
+                        }
                         Navigator.pop(context);
                       },
                     ),
@@ -125,18 +131,18 @@ class _ProjectSelectorContent extends ConsumerWidget {
   }
 
   void _refreshProviders(WidgetRef ref) {
-    final project = ref.read(selectedProjectProvider);
+    final ws = ref.read(selectedWorkspaceProvider);
 
     final issueFilter = ref.read(issueFilterProvider);
     ref.read(issueFilterProvider.notifier).state = issueFilter.copyWith(
-      projectSlug: project?.slug,
-      clearProjectSlug: project == null,
+      projectSlug: ws?.slug,
+      clearProjectSlug: ws == null,
     );
 
     final meetingFilter = ref.read(meetingFilterProvider);
     ref.read(meetingFilterProvider.notifier).state = meetingFilter.copyWith(
-      projectSlug: project?.slug,
-      clearProjectSlug: project == null,
+      projectSlug: ws?.slug,
+      clearProjectSlug: ws == null,
     );
   }
 }

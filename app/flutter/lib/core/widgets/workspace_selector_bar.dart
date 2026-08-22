@@ -26,12 +26,11 @@ class WorkspaceSelectorBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final selectedProject = ref.watch(selectedProjectProvider);
-    final projectName = ref.watch(selectedProjectNameProvider);
+    final projectName = ref.watch(
+      onlyRealEstate ? selectedRealEstateProjectNameProvider : selectedWorkspaceNameProvider,
+    );
 
-    final displayName = onlyRealEstate
-        ? (selectedProject?.name ?? '프로젝트를 선택하세요')
-        : projectName;
+    final displayName = projectName;
 
     return InkWell(
       onTap: () {

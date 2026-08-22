@@ -143,13 +143,13 @@ final realEstateProjectsProvider = FutureProvider<List<ProjectModel>>((ref) asyn
   return myProjects.where((p) => p.type == '2' && p.status == '1' && p.visible).toList();
 });
 
-// ── 프로젝트 선택 조작 헬퍼 ────────────────────────────────────────────────────────
+// ── 워크스페이스 / 프로젝트 선택 조작 헬퍼 ──────────────────────────────────────────
 
-void selectProject(WidgetRef ref, ProjectModel? project) {
+void selectWorkspace(WidgetRef ref, ProjectModel? project) {
   if (project == null) {
-    ref.read(selectedProjectProvider.notifier).state = null;
+    ref.read(selectedWorkspaceProvider.notifier).state = null;
   } else {
-    ref.read(selectedProjectProvider.notifier).state = SelectedProject(
+    ref.read(selectedWorkspaceProvider.notifier).state = SelectedProject(
       pk: project.pk,
       name: project.name,
       slug: project.slug,
@@ -160,5 +160,31 @@ void selectProject(WidgetRef ref, ProjectModel? project) {
       myPerms: project.myPerms,
       module: project.module,
     );
+  }
+}
+
+void selectRealEstateProject(WidgetRef ref, ProjectModel? project) {
+  if (project == null) {
+    ref.read(selectedRealEstateProjectProvider.notifier).state = null;
+  } else {
+    ref.read(selectedRealEstateProjectProvider.notifier).state = SelectedProject(
+      pk: project.pk,
+      name: project.name,
+      slug: project.slug,
+      description: project.description,
+      type: project.type,
+      status: project.status,
+      isPublic: project.isPublic,
+      myPerms: project.myPerms,
+      module: project.module,
+    );
+  }
+}
+
+void selectProject(WidgetRef ref, ProjectModel? project, {bool onlyRealEstate = false}) {
+  if (onlyRealEstate) {
+    selectRealEstateProject(ref, project);
+  } else {
+    selectWorkspace(ref, project);
   }
 }
