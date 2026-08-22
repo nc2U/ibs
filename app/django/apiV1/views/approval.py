@@ -17,7 +17,7 @@ from approval.models import (
     DocCategory, DocumentType, ApprovalDocument, ApprovalStep, ApprovalAction, ApprovalAttachment
 )
 from approval.services import build_dynamic_approval_route
-from approval.tasks import notify_approvers_task, notify_drafter_task, generate_approval_pdf_task
+from approval.tasks import notify_approvers_task, notify_drafter_task, notify_cancel_task, generate_approval_pdf_task
 from company.models import Staff, StaffAssignment
 
 
@@ -392,15 +392,43 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
     # ── POST /approval-document/{id}/cancel/ ─────────────────
     @action(detail=True, methods=['post'])
     def cancel(self, request, pk=None):
-        """기안자가 결재를 취소"""
+        """기안자가 결재를 회수 (임시저장 상태로 복귀하여 수정 및 재상신 가능)"""
         document = self.get_object()
         if document.drafter != request.user and not request.user.is_superuser:
-            return Response({'detail': '기안자만 취소할 수 있습니다.'}, status=status.HTTP_403_FORBIDDEN)
+            return Response({'detail': '기안자만 회수할 수 있습니다.'}, status=status.HTTP_403_FORBIDDEN)
         if document.status == ApprovalDocument.STATUS_APPROVED:
-            return Response({'detail': '최종 승인된 문서는 취소할 수 없습니다.'}, status=status.HTTP_400_BAD_REQUEST)
-        document.status = ApprovalDocument.STATUS_CANCELLED
+            return Response({'detail': '최종 승인된 문서는 회수할 수 없습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+        if document.status != ApprovalDocument.STATUS_PENDING:
+            return Response({'detail': '결재 진행 중인 문서만 회수할 수 있습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 1차 결재자가 이미 승인한 경우 회수 제한
+        first_step = document.steps.filter(step_order=1).first()
+        if first_step and first_step.actions.filter(action=ApprovalAction.ACTION_APPROVED).exists():
+            return Response(
+                {'detail': '1차 결재자가 이미 승인을 완료하여 결재가 진행 중인 문서는 회수할 수 없습니다. 결재자에게 반려를 요청해 주세요.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 1차 결재자 및 결재선 결재자 ID 추출 (회수 알림 및 이전 알림 정리용)
+        approver_ids = list(
+            ApprovalStep.objects.filter(document=document).values_list('approvers__id', flat=True)
+        )
+
+        # 상태를 임시저장(DRAFT)으로 되돌리고 기존 결재선 단계 초기화
+        document.status = ApprovalDocument.STATUS_DRAFT
+        document.current_step = 0
+        document.submitted_at = None
+        document.steps.all().delete()
         document.save()
-        return Response({'detail': '결재가 취소되었습니다.'})
+
+        # 결재자들에게 회수 알림 비동기 발송
+        if approver_ids:
+            try:
+                notify_cancel_task.delay(document.pk, approver_ids)
+            except Exception:
+                notify_cancel_task(document.pk, approver_ids)
+
+        return Response({'detail': '기안 문서가 성공적으로 회수되었습니다. 내용을 수정하여 다시 상신할 수 있습니다.'})
 
     # ── GET /approval-document/my_pending/ ───────────────────
     @action(detail=False, methods=['get'])

@@ -80,6 +80,43 @@ def notify_drafter_task(document_pk, action, comment=''):
 
 
 @shared_task
+def notify_cancel_task(document_pk, approver_ids):
+    """결재 회수 알림: 1차 결재자들에게 기안 회수 푸시 + 인앱 알림 발송 및 이전 요청 알림 정리"""
+    from approval.models import ApprovalDocument
+    from accounts.models import Notification
+    try:
+        document = ApprovalDocument.objects.select_related('doc_type', 'drafter__profile').get(pk=document_pk)
+        if not approver_ids:
+            return
+
+        profile = getattr(document.drafter, 'profile', None)
+        drafter_name = profile.name if profile and profile.name else document.drafter.username
+
+        push_title = f'[결재 회수] {document.doc_type.name}'
+        push_body = f'{drafter_name}님이 "{document.title}" 결재를 회수(취소)하였습니다.'
+
+        # 기존 해당 문서의 [결재 요청] 알림들을 읽음 처리하여 배지 카운트 감소 및 혼선 방지
+        Notification.objects.filter(
+            user_id__in=approver_ids,
+            target_type='approval_document',
+            target_id=str(document_pk),
+            is_read=False,
+        ).update(is_read=True)
+
+        # 결재자들에게 회수 안내 알림 발송
+        send_push_notification(
+            user_ids=approver_ids,
+            title=push_title,
+            body=push_body,
+            category='approval',
+            target_type='approval_document',
+            target_id=str(document_pk),
+        )
+    except Exception as e:
+        print(f'❌ notify_cancel_task failed: {e}')
+
+
+@shared_task
 def generate_approval_pdf_task(document_pk):
     """결재 최종 승인 후 PDF 생성 및 스토리지 저장"""
     from approval.models import ApprovalDocument, ApprovalStep, ApprovalAction

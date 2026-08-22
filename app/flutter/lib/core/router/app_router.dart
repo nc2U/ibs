@@ -188,7 +188,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: 'draft',
-                builder: (ctx, state) => const ApprovalDraftScreen(),
+                builder: (ctx, state) {
+                  final editDoc = state.extra as ApprovalDocumentModel?;
+                  return ApprovalDraftScreen(editDoc: editDoc);
+                },
               ),
               GoRoute(
                 path: ':docId',

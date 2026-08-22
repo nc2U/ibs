@@ -10,7 +10,9 @@ import '../data/models/approval_model.dart';
 import '../providers/approval_providers.dart';
 
 class ApprovalDraftScreen extends ConsumerStatefulWidget {
-  const ApprovalDraftScreen({super.key});
+  final ApprovalDocumentModel? editDoc;
+
+  const ApprovalDraftScreen({super.key, this.editDoc});
 
   @override
   ConsumerState<ApprovalDraftScreen> createState() => _ApprovalDraftScreenState();
@@ -200,6 +202,62 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
   // 실시간 결재선 미리보기 상태
   List<RoutePreviewStepModel> _previewSteps = [];
   bool _isPreviewLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.editDoc != null) {
+      _initFromEditDoc(widget.editDoc!);
+    }
+  }
+
+  void _initFromEditDoc(ApprovalDocumentModel doc) {
+    _titleController.text = doc.title;
+    final c = doc.content;
+
+    // 1. 휴가
+    if (c['leave_type'] != null) _leaveType = c['leave_type'].toString();
+    if (c['start_date'] != null) _startDate = DateTime.tryParse(c['start_date'].toString());
+    if (c['end_date'] != null) _endDate = DateTime.tryParse(c['end_date'].toString());
+    if (c['days_count'] != null) _leaveDaysController.text = c['days_count'].toString();
+    if (c['reason'] != null) _leaveReasonController.text = c['reason'].toString();
+    if (c['substitute_worker'] != null) _substituteWorkerController.text = c['substitute_worker'].toString();
+    if (c['emergency_contact'] != null) _emergencyContactController.text = c['emergency_contact'].toString();
+
+    // 2. 지출/일반품의
+    final amt = c['budget'] ?? c['amount'] ?? c['requested_amount'] ?? c['cost'] ?? c['total_cost'];
+    if (amt != null) _amountController.text = amt.toString();
+    if (c['purpose'] != null) _purposeController.text = c['purpose'].toString();
+    if (c['content'] != null || c['body'] != null) _generalContentController.text = (c['content'] ?? c['body']).toString();
+    if (c['schedule'] != null) _scheduleController.text = c['schedule'].toString();
+    if (c['budget_account'] != null) _budgetAccount = c['budget_account'].toString();
+    if (c['expected_effect'] != null) _expectedEffectController.text = c['expected_effect'].toString();
+    if (c['note'] != null) _noteController.text = c['note'].toString();
+
+    // 3. 공문
+    if (c['receiver'] != null) _receiverController.text = c['receiver'].toString();
+    if (c['refer_to'] != null) _referToController.text = c['refer_to'].toString();
+    if (c['sender_name'] != null) _senderNameController.text = c['sender_name'].toString();
+    if (c['doc_number_external'] != null) _docNumberExtController.text = c['doc_number_external'].toString();
+    if (c['letter_subject'] != null) _letterSubjectController.text = c['letter_subject'].toString();
+    if (c['letter_body'] != null) _letterBodyController.text = c['letter_body'].toString();
+    if (c['enclosed_files_desc'] != null) _enclosedFilesController.text = c['enclosed_files_desc'].toString();
+    if (c['send_method'] != null) _sendMethod = c['send_method'].toString();
+    if (c['send_due_date'] != null) _sendDueDate = DateTime.tryParse(c['send_due_date'].toString());
+    if (c['seal_type'] != null) _sealType = c['seal_type'].toString();
+    if (c['seal_count'] != null) _sealCountController.text = c['seal_count'].toString();
+
+    // 4. 출장
+    if (c['destination'] != null) _destinationController.text = c['destination'].toString();
+    if (c['companion'] != null) _companionController.text = c['companion'].toString();
+    if (c['itinerary'] != null) _itineraryController.text = c['itinerary'].toString();
+
+    // 5. 연장근무
+    if (c['work_type'] != null) _overtimeType = c['work_type'].toString();
+    if (c['start_time'] != null) _startTimeController.text = c['start_time'].toString();
+    if (c['end_time'] != null) _endTimeController.text = c['end_time'].toString();
+    if (c['total_hours'] != null) _totalHoursController.text = c['total_hours'].toString();
+  }
 
   @override
   void dispose() {
@@ -712,10 +770,15 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
         'content': content,
       };
 
-      final doc = await repo.createDocument(
-        payload,
-        filePaths: _attachedFilePaths.isNotEmpty ? _attachedFilePaths : null,
-      );
+      final ApprovalDocumentModel doc;
+      if (widget.editDoc != null) {
+        doc = await repo.updateDocument(widget.editDoc!.id, payload);
+      } else {
+        doc = await repo.createDocument(
+          payload,
+          filePaths: _attachedFilePaths.isNotEmpty ? _attachedFilePaths : null,
+        );
+      }
 
       if (isDirectSubmit) {
         await repo.submitDocument(doc.id);
@@ -725,11 +788,18 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
       ref.invalidate(draftedApprovalsProvider);
       ref.invalidate(approvedApprovalsProvider);
       ref.invalidate(allApprovalsProvider);
+      if (widget.editDoc != null) {
+        ref.invalidate(approvalDetailProvider(widget.editDoc!.id));
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(isDirectSubmit ? '결재가 성공적으로 상신되었습니다.' : '문서가 임시저장되었습니다.'),
+            content: Text(
+              isDirectSubmit
+                  ? (widget.editDoc != null ? '결재가 성공적으로 재상신되었습니다.' : '결재가 성공적으로 상신되었습니다.')
+                  : (widget.editDoc != null ? '문서 수정 내용이 저장되었습니다.' : '문서가 임시저장되었습니다.'),
+            ),
             backgroundColor: context.colors.success,
           ),
         );
@@ -753,7 +823,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
       backgroundColor: context.colors.bgPrimary,
       appBar: AppBar(
         title: Text(
-          '새 결재 기안',
+          widget.editDoc != null ? '결재 문서 수정' : '새 결재 기안',
           style: AppTextStyles.titleMd.copyWith(
             fontWeight: FontWeight.w800,
             color: context.colors.textPrimary,
@@ -824,7 +894,10 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
 
   Widget _buildForm(BuildContext context, List<StaffAssignmentItemModel> assignments) {
     if (_selectedAssignment == null && assignments.isNotEmpty) {
-      _selectedAssignment = assignments.where((a) => a.isPrimary).firstOrNull ?? assignments.first;
+      if (widget.editDoc?.drafterAssignment != null) {
+        _selectedAssignment = assignments.where((a) => a.id == widget.editDoc!.drafterAssignment).firstOrNull;
+      }
+      _selectedAssignment ??= assignments.where((a) => a.isPrimary).firstOrNull ?? assignments.first;
     }
 
     final docTypesAsync = ref.watch(forDraftDocTypesProvider(_selectedAssignment?.id));
@@ -868,6 +941,9 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
               icon: Icons.category_outlined,
               child: docTypesAsync.when(
                 data: (docTypes) {
+                  if (_selectedDocType == null && widget.editDoc != null) {
+                    _selectedDocType = docTypes.where((dt) => dt.id == widget.editDoc!.docType).firstOrNull;
+                  }
                   return DropdownButtonFormField<DocumentTypeModel>(
                     value: _selectedDocType,
                     decoration: _inputDecoration(context, '문서 유형 선택'),

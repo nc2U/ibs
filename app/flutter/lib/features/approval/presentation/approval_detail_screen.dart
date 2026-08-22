@@ -107,6 +107,30 @@ class ApprovalDetailScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // ── 회수/임시저장 안내 배너 (결재자가 과거 알림/링크로 유입된 경우) ──
+          if (doc.status == 'draft' && doc.drafter.pk != currentUserId) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                color: Colors.amber.withAlpha(25),
+                border: Border.all(color: Colors.amber.withAlpha(120), width: 0.8),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline_rounded, color: Colors.amber, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      '이 문서는 기안자가 내용을 수정/보완하기 위해 회수한 상태(임시저장)입니다. 기안자가 재상신하면 결재를 진행하실 수 있습니다.',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.colors.textPrimary),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
           // ── 1. 문서 기본 정보 카드 ─────────────────────────────────
           Container(
             padding: const EdgeInsets.all(16),
@@ -1620,37 +1644,71 @@ class ApprovalDetailScreen extends ConsumerWidget {
           border: Border(top: BorderSide(color: context.colors.border, width: 0.8)),
         ),
         child: SafeArea(
-          child: SizedBox(
-            height: 44,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                ApprovalActionBottomSheet.show(
-                  context,
-                  type: ApprovalActionModalType.submit,
-                  title: doc.title,
-                  onConfirm: (_) => ref
-                      .read(approvalActionControllerProvider.notifier)
-                      .submit(doc.id),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: context.colors.accentApproval,
-                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-                elevation: 0,
+          child: Row(
+            children: [
+              // 1. 내용 수정 버튼
+              Expanded(
+                flex: 4,
+                child: SizedBox(
+                  height: 44,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      context.push('/approval/draft', extra: doc);
+                    },
+                    style: OutlinedButton.styleFrom(
+                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                      side: BorderSide(color: context.colors.accentApprovalDeep),
+                    ),
+                    icon: Icon(Icons.edit_document, color: context.colors.accentApprovalDeep, size: 18),
+                    label: Text(
+                      '내용 수정',
+                      style: TextStyle(color: context.colors.accentApprovalDeep, fontWeight: FontWeight.w700, fontSize: 13.5),
+                    ),
+                  ),
+                ),
               ),
-              icon: const Icon(Icons.send_rounded, color: Colors.white, size: 18),
-              label: Text(
-                isRejected ? '결재 재상신하기' : '결재 상신하기',
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14),
+              const SizedBox(width: 10),
+
+              // 2. 상신하기 버튼
+              Expanded(
+                flex: 6,
+                child: SizedBox(
+                  height: 44,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      ApprovalActionBottomSheet.show(
+                        context,
+                        type: ApprovalActionModalType.submit,
+                        title: doc.title,
+                        onConfirm: (_) => ref
+                            .read(approvalActionControllerProvider.notifier)
+                            .submit(doc.id),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: context.colors.accentApproval,
+                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                      elevation: 0,
+                    ),
+                    icon: const Icon(Icons.send_rounded, color: Colors.white, size: 18),
+                    label: Text(
+                      isRejected ? '결재 재상신' : '결재 상신',
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14),
+                    ),
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
         ),
       );
     }
 
-    // 내가 기안자이고 결재 진행 중인 경우 -> 회수 버튼
-    if (isMyDraft && doc.status == 'pending') {
+    // 내가 기안자이고 결재 진행 중이며, 1차 결재자가 아직 승인하지 않은 경우 -> 회수 버튼
+    final firstStep = doc.steps?.where((s) => s.stepOrder == 1).firstOrNull;
+    final isFirstStepApproved = firstStep?.actions.any((a) => a.action == 'approved') ?? false;
+
+    if (isMyDraft && doc.status == 'pending' && !isFirstStepApproved) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(

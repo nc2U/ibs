@@ -19,7 +19,7 @@ const approvalStore = useApproval()
 const accountStore = useAccount()
 
 const { document } = storeToRefs(approvalStore)
-const { fetchDocument, submitDocument, actDocument } = approvalStore
+const { fetchDocument, submitDocument, actDocument, cancelDocument } = approvalStore
 const myUser = computed(() => accountStore.userInfo)
 
 const docId = computed(() => Number(route.params.docId))
@@ -28,12 +28,19 @@ const canSubmit = computed(
   () =>
     isMyDoc.value && (document.value?.status === 'draft' || document.value?.status === 'rejected'),
 )
+const canCancel = computed(() => {
+  if (!isMyDoc.value || document.value?.status !== 'pending') return false
+  const firstStep = document.value?.steps?.find(s => s.step_order === 1)
+  const isFirstStepApproved = firstStep?.actions?.some(a => a.action === 'approved')
+  return !isFirstStepApproved
+})
 
 const showModal = ref(false)
 const pendingAction = ref<ApprovalActionType>('approved')
 const actComment = ref('')
 const acting = ref(false)
 const submitting = ref(false)
+const cancelling = ref(false)
 
 const fmtDatetime = (d: string | null) => {
   if (!d) return '-'
@@ -111,6 +118,14 @@ const confirmSubmit = async () => {
   await submitDocument(docId.value)
   await fetchDocument(docId.value)
   submitting.value = false
+}
+
+const confirmCancel = async () => {
+  if (!confirm('결재 진행 중인 기안 문서를 회수(취소)하시겠습니까?')) return
+  cancelling.value = true
+  await cancelDocument(docId.value)
+  await fetchDocument(docId.value)
+  cancelling.value = false
 }
 
 // 결재선 진행률 계산
@@ -201,8 +216,39 @@ onMounted(() => fetchDocument(docId.value))
             <CSpinner v-if="submitting" size="sm" class="me-1" />
             상신
           </v-btn>
+          <v-btn
+            v-if="canCancel"
+            color="error"
+            variant="outlined"
+            size="small"
+            :disabled="cancelling"
+            @click="confirmCancel"
+          >
+            <CSpinner v-if="cancelling" size="sm" class="me-1" />
+            <v-icon icon="mdi-undo" size="small" class="me-1" />
+            기안 회수
+          </v-btn>
         </div>
       </CCardHeader>
+
+      <!-- 회수/임시저장 알림 배너 (결재자가 과거 알림/링크로 유입된 경우) -->
+      <div v-if="document.status === 'draft' && !isMyDoc" class="px-3 pt-3">
+        <CAlert color="warning" class="d-flex align-items-center mb-0 py-2 px-3">
+          <CIcon name="cilInfo" class="flex-shrink-0 me-2 text-warning" size="lg" />
+          <div class="small">
+            <strong>기안 회수 문서 안내:</strong> 이 문서는 기안자가 내용을 수정/보완하기 위해 <strong>회수한 상태(임시저장)</strong>입니다. 기안자가 수정 후 재상신하면 결재를 진행하실 수 있습니다.
+          </div>
+        </CAlert>
+      </div>
+
+      <div v-else-if="document.status === 'cancelled'" class="px-3 pt-3">
+        <CAlert color="secondary" class="d-flex align-items-center mb-0 py-2 px-3">
+          <CIcon name="cilInfo" class="flex-shrink-0 me-2" size="lg" />
+          <div class="small">
+            이 문서는 기안자에 의해 <strong>취소(회수)</strong>되었습니다.
+          </div>
+        </CAlert>
+      </div>
 
       <!-- 기본 정보 -->
       <CCardBody class="pb-2">
