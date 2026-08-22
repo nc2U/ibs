@@ -31,15 +31,8 @@ class _ApprovalMainScreenState extends ConsumerState<ApprovalMainScreen>
   @override
   void initState() {
     super.initState();
-    _lastIsSuperuser = false;
-    _initTabController(false);
-  }
-
-  void _initTabController(bool isSuperuser) {
-    _lastIsSuperuser = isSuperuser;
-    final tabCount = isSuperuser ? 4 : 3;
-    final initialIdx = widget.initialTabIndex < tabCount ? widget.initialTabIndex : 0;
-    _tabController = TabController(length: tabCount, vsync: this, initialIndex: initialIdx);
+    final initialIdx = widget.initialTabIndex < 4 ? widget.initialTabIndex : 0;
+    _tabController = TabController(length: 4, vsync: this, initialIndex: initialIdx);
     _tabController.addListener(() {
       if (mounted) setState(() {});
     });
@@ -69,13 +62,6 @@ class _ApprovalMainScreenState extends ConsumerState<ApprovalMainScreen>
   @override
   Widget build(BuildContext context) {
     final pendingCount = ref.watch(pendingApprovalCountProvider);
-    final user = ref.watch(currentUserProvider).valueOrNull;
-    final isSuperuser = user?.isSuperuser ?? false;
-
-    if (isSuperuser != _lastIsSuperuser) {
-      _tabController.dispose();
-      _initTabController(isSuperuser);
-    }
 
     return Scaffold(
       backgroundColor: context.colors.bgPrimary,
@@ -165,7 +151,7 @@ class _ApprovalMainScreenState extends ConsumerState<ApprovalMainScreen>
                   ),
                   const Tab(text: '기안함'),
                   const Tab(text: '문서함'),
-                  if (isSuperuser) const Tab(text: '전체'),
+                  const Tab(text: '전체'),
                 ],
               ),
             ),
@@ -184,8 +170,8 @@ class _ApprovalMainScreenState extends ConsumerState<ApprovalMainScreen>
                   // ── 2. 결재 문서함 (완료 / 참조) ───────────────────────────
                   _buildApprovedTab(),
 
-                  // ── 3. 전체 문서함 (최고 관리자 전용) ────────────────────────
-                  if (isSuperuser) _buildAllDocumentsTab(),
+                  // ── 3. 전체 문서함 (보안등급 필터링 적용) ───────────────────
+                  _buildAllDocumentsTab(),
                 ],
               ),
             ),

@@ -17,12 +17,7 @@ import ComAuthGuard from '@/components/AuthGuard/ComAuthGuard.vue'
 const route = useRoute()
 const accStore = useAccount()
 
-const navMenu = computed(() => {
-  if (accStore.superAuth) {
-    return defaultNavMenu
-  }
-  return defaultNavMenu.filter(m => m !== '전체 문서함')
-})
+const navMenu = computed(() => defaultNavMenu)
 
 const comSelect = async (target: number | null) => {
   if (!!target) {

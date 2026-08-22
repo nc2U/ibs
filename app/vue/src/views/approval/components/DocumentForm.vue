@@ -138,6 +138,18 @@ watch(
   },
 )
 
+watch(
+  () => form.value.doc_type,
+  newVal => {
+    if (newVal) {
+      const dt = forDraftDocTypeList.value.find(d => d.id === Number(newVal))
+      if (dt?.default_security_level && !isEdit.value) {
+        form.value.security_level = dt.default_security_level
+      }
+    }
+  },
+)
+
 const updateRoutePreview = async () => {
   if (!form.value.doc_type) return
   await fetchRoutePreview(
@@ -352,36 +364,32 @@ onMounted(async () => {
               공개 등급 <span class="text-danger">*</span>
             </CFormLabel>
             <CCol sm="9">
-              <div class="d-flex gap-3 flex-wrap align-items-center pt-1">
-                <CFormCheck
-                  type="radio"
-                  name="security_level"
-                  id="sec_1"
+              <v-radio-group
+                v-model="form.security_level"
+                inline
+                hide-details
+                density="compact"
+                class="pt-0"
+              >
+                <v-radio
                   value="1"
-                  :checked="form.security_level === '1'"
-                  @change="form.security_level = '1'"
+                  color="error"
                   label="🔒 1등급 (비공개: 기안자/결재선/참조자)"
+                  class="me-3"
                 />
-                <CFormCheck
-                  type="radio"
-                  name="security_level"
-                  id="sec_2"
+                <v-radio
                   value="2"
-                  :checked="form.security_level === '2'"
-                  @change="form.security_level = '2'"
+                  color="primary"
                   label="👥 2등급 (부서공개: 소속 부서 공유)"
+                  class="me-3"
                 />
-                <CFormCheck
-                  type="radio"
-                  name="security_level"
-                  id="sec_3"
+                <v-radio
                   value="3"
-                  :checked="form.security_level === '3'"
-                  @change="form.security_level = '3'"
+                  color="success"
                   label="🌐 3등급 (전사공개: 회사 전체 공유)"
                 />
-              </div>
-              <div class="form-text text-muted">
+              </v-radio-group>
+              <div class="form-text text-muted mt-1">
                 문서 유형별 기본 등급이 자동 지정되며, 필요 시 기안자가 등급을 변경할 수 있습니다.
               </div>
             </CCol>

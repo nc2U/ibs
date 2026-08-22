@@ -221,7 +221,6 @@ const approval = {
       component: 'CNavItem',
       name: '전체 문서함',
       to: '/approval/all',
-      auth: 'isSuperuser',
     },
   ],
 }
