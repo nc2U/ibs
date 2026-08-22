@@ -35,3 +35,4 @@ tablib[xlsx]
 WeasyPrint
 XlsxWriter
 xlwt
+firebase-admin

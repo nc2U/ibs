@@ -207,4 +207,34 @@ class FcmService {
       debugPrint('❌ [FCM] 기기 토큰 등록 오류: $e');
     }
   }
+
+  /// 클라이언트 자체 알림 채널 및 뱃지 자가 진단용 로컬 알림 발송
+  static Future<void> showTestLocalNotification() async {
+    await kLocalNotificationsPlugin.show(
+      9999,
+      '[IBS 웍스] 알림 시스템 자가 진단',
+      '알림 채널(ibs_high_importance_channel) 및 배지 연동이 정상 작동합니다.',
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          kAndroidNotificationChannel.id,
+          kAndroidNotificationChannel.name,
+          channelDescription: kAndroidNotificationChannel.description,
+          importance: Importance.max,
+          priority: Priority.high,
+          icon: '@mipmap/ic_launcher',
+          playSound: true,
+          enableVibration: true,
+          number: 1,
+        ),
+        iOS: const DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+          badgeNumber: 1,
+        ),
+      ),
+    );
+    await AppBadgeService.updateBadgeCount(1);
+    debugPrint('🧪 [FCM] 자가 진단 로컬 알림 및 배지(1) 테스트 완료');
+  }
 }
