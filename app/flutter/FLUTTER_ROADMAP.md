@@ -225,6 +225,55 @@ color: context.colors.accentCorp     // 전사정보 액센트 (Dark: #38BDF8 / 
 * Firebase Cloud Messaging (FCM) 기반 백그라운드 푸시 알림
 * 새 채팅 메시지, 업무 할당/댓글, 결재 요청 즉시 스마트폰 푸시 전달
 
+## 🔔 6. 모바일 푸시 알림 및 배지 시스템 아키텍처 (FCM Push & Badge Architecture)
+
+IBS 모바일 앱은 **이동 중에도 지체 없이 업무를 인지하고 결재/회의/업무를 즉시 처리**할 수 있도록 엔드투엔드 실시간 푸시 알림 및 런처 배지 동기화 파이프라인을 갖추고 있습니다.
+
+### 🏗️ 1) 푸시 알림 기술 스택 및 구조
+* **안드로이드 공식 알림 채널**: `ibs_high_importance_channel` (Importance Max, Sound, Vibration, 런처 배지 허용)
+* **포그라운드 & 백그라운드 완벽 대응**:
+  * 포그라운드(앱 실행 중): `flutter_local_notifications` 헤드업 팝업 배너 및 상태바 알림 생성 ➔ OS 앱 아이콘 배지 실시간 갱신
+  * 백그라운드 / 앱 종료: `@pragma('vm:entry-point') firebaseMessagingBackgroundHandler` 글로벌 최상위 수신 및 OS 시스템 트레이 등록
+* **앱 아이콘 배지 동기화**: `unreadNotificationCount` + `pendingApprovalCount` 합산 실시간 런처 배지 반영
+* **백엔드 발송 엔진**: Django Celery 비동기 워커 + Firebase Admin SDK (`_utils/push_service.py`)
+
+---
+
+### 📋 2) 현재 구현된 알림 전송 케이스 전수 목록 (Trigger Matrix)
+
+| 도메인 | 트리거 이벤트 (발생 시점) | 수신 대상자 | 알림 타이틀 예시 | 알림 내용 및 동작 | 백엔드 태스크 |
+|:---|:---|:---|:---|:---|:---|
+| **전자결재** | **기안 상신 (임시저장 ➔ 상신)** | 1단계 결재자 전원 (`step.approvers`) | `[결재 요청] {문서유형}` | `{기안자명}님이 결재를 요청했습니다: {문서제목}` | `notify_approvers_task` |
+| **전자결재** | **중간 단계 결재 승인 (다음 단계 진행)** | 다음 단계 결재자 전원 (`next_step.approvers`) | `[결재 요청] {문서유형}` | `{기안자명}님이 결재를 요청했습니다: {문서제목}` | `notify_approvers_task` |
+| **전자결재** | **결재 최종 승인 완료** | 기안자 (`drafter`) | `[결재 완료] {문서유형}` | `"{문서제목}" 결재가 최종 승인되었습니다.` | `notify_drafter_task` |
+| **전자결재** | **결재 최종 승인 (공람)** | 참조자 전원 (`observers`) | `[결재 공람] {문서유형}` | `"{문서제목}" 결재가 최종 승인되어 공람되었습니다.` | `notify_drafter_task` |
+| **전자결재** | **결재 반려** | 기안자 (`drafter`) | `[결재 반려] {문서유형}` | `"{문서제목}" 결재가 반려되었습니다. (사유: {반려사유})` | `notify_drafter_task` |
+| **전자결재** | **결재 의견 등록** | 기안자 (`drafter`) | `[결재 의견 등록] {문서유형}` | `"{문서제목}" 결재에 새로운 의견이 등록되었습니다.` | `notify_drafter_task` |
+| **업무 (Issue)** | **신규 업무 생성 (담당자 지정)** | 지정된 담당자 (`assigned_to`) | `[업무 할당] {워크스페이스}` | `[#{업무번호}] {업무제목}` (프로필 자동 모니터링 연동) | `send_issue_mail_task` |
+| **업무 (Issue)** | **신규 업무 생성 (담당자 미지정)** | 생성자 본인 (`creator`) | `[새 업무] {워크스페이스}` | `[#{업무번호}] {업무제목}` (프로필 자동 모니터링 연동) | `send_issue_mail_task` |
+| **업무 (Issue)** | **지켜보는 업무 상태 변경** | 해당 업무의 모든 지켜보는 사람 (`watchers`) | `[업무 진행] {워크스페이스}` | `[#{업무번호}] 상태가 "{상태명}"(으)로 변경되었습니다.` | `send_issue_mail_task` |
+| **업무 (Issue)** | **지켜보는 업무 담당자 변경** | 해당 업무의 모든 지켜보는 사람 (`watchers`) | `[담당자 변경] {워크스페이스}` | `[#{업무번호}] 담당자가 "{새담당자}"(으)로 변경되었습니다.` | `send_issue_mail_task` |
+| **회의록 (Meeting)** | **신규 회의록 등록** | 작성자 + 지정된 참석자 전원 (`attendees`) | `[회의 등록] {워크스페이스}` | `새 회의록이 등록되었습니다: "{회의제목}"` | `send_meeting_mail_task` |
+| **회의록 (Meeting)** | **회의록 내용 확정 (Confirm)** | 작성자 + 지정된 참석자 전원 (`attendees`) | `[회의 확정] {워크스페이스}` | `회의록이 확정되었습니다: "{회의제목}"` | `send_meeting_mail_task` |
+| **공지 / 게시판** | 중요 공지 및 게시물 등록 | 워크스페이스 참여 멤버 (피드 동기화 완료 / 푸시 확장 대상) | `[공지] {워크스페이스}` | 채널 피드 실시간 스트림 반영 중 (필요 시 FCM 발송 확장 연동) | - |
+
+---
+
+### 🧪 3) 푸시 알림 파이프라인 자동 진단 및 테스트 방법
+* **백엔드 관리 명령 점검**:
+  ```bash
+  # 1. Firebase Admin SDK 및 등록 기기 점검
+  dkce web python manage.py test_fcm_push --check-only
+  # 2. 특정 사용자에게 즉시 테스트 푸시 발송
+  dkce web python manage.py test_fcm_push --user=<username>
+  ```
+* **백엔드 단위 자동화 테스트**:
+  ```bash
+  dkce web python manage.py test approval.tests.test_push_notifications
+  ```
+* **모바일 클라이언트 자가 진단**:
+  * `FcmService.showTestLocalNotification()` 호출 시 시스템 채널 권한 및 런처 배지 즉각 자가 점검 가능
+
 ---
 
 ## 💻 7. 다른 PC (집/사무실)에서 이어 개발할 때 가이드
