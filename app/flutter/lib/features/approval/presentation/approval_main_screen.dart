@@ -42,8 +42,15 @@ class _ApprovalMainScreenState extends ConsumerState<ApprovalMainScreen>
     super.dispose();
   }
 
-  void _goDetail(int docId) {
-    context.push('${AppRoutes.approval}/$docId');
+  Future<void> _goDetail(int docId) async {
+    await context.push('${AppRoutes.approval}/$docId');
+    if (mounted) {
+      ref.invalidate(pendingApprovalsProvider);
+      ref.invalidate(draftedApprovalsProvider);
+      ref.invalidate(approvedApprovalsProvider);
+      ref.invalidate(observedApprovalsProvider);
+      ref.invalidate(allApprovalsProvider);
+    }
   }
 
   void _goDraft() {

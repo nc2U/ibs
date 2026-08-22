@@ -133,14 +133,21 @@ class ApprovalActionController extends StateNotifier<AsyncValue<void>> {
 
   ApprovalActionController(this._repo, this._ref) : super(const AsyncValue.data(null));
 
+  void _invalidateAllLists(int docId) {
+    _ref.invalidate(pendingApprovalsProvider);
+    _ref.invalidate(draftedApprovalsProvider);
+    _ref.invalidate(approvedApprovalsProvider);
+    _ref.invalidate(observedApprovalsProvider);
+    _ref.invalidate(allApprovalsProvider);
+    _ref.invalidate(approvalDetailProvider(docId));
+  }
+
   /// 결재 상신 (Draft -> Pending)
   Future<ApprovalDocumentModel?> submit(int docId) async {
     state = const AsyncValue.loading();
     try {
       final doc = await _repo.submitDocument(docId);
-      _ref.invalidate(pendingApprovalsProvider);
-      _ref.invalidate(draftedApprovalsProvider);
-      _ref.invalidate(approvalDetailProvider(docId));
+      _invalidateAllLists(docId);
       state = const AsyncValue.data(null);
       return doc;
     } catch (e, st) {
@@ -154,10 +161,7 @@ class ApprovalActionController extends StateNotifier<AsyncValue<void>> {
     state = const AsyncValue.loading();
     try {
       final msg = await _repo.actDocument(docId, action: 'approved', comment: comment);
-      _ref.invalidate(pendingApprovalsProvider);
-      _ref.invalidate(approvedApprovalsProvider);
-      _ref.invalidate(allApprovalsProvider);
-      _ref.invalidate(approvalDetailProvider(docId));
+      _invalidateAllLists(docId);
       state = const AsyncValue.data(null);
       return msg;
     } catch (e, st) {
@@ -171,10 +175,7 @@ class ApprovalActionController extends StateNotifier<AsyncValue<void>> {
     state = const AsyncValue.loading();
     try {
       final msg = await _repo.actDocument(docId, action: 'rejected', comment: comment);
-      _ref.invalidate(pendingApprovalsProvider);
-      _ref.invalidate(draftedApprovalsProvider);
-      _ref.invalidate(allApprovalsProvider);
-      _ref.invalidate(approvalDetailProvider(docId));
+      _invalidateAllLists(docId);
       state = const AsyncValue.data(null);
       return msg;
     } catch (e, st) {
@@ -202,9 +203,7 @@ class ApprovalActionController extends StateNotifier<AsyncValue<void>> {
     state = const AsyncValue.loading();
     try {
       final msg = await _repo.cancelDocument(docId);
-      _ref.invalidate(pendingApprovalsProvider);
-      _ref.invalidate(draftedApprovalsProvider);
-      _ref.invalidate(approvalDetailProvider(docId));
+      _invalidateAllLists(docId);
       state = const AsyncValue.data(null);
       return msg;
     } catch (e, st) {
