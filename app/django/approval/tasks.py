@@ -11,12 +11,14 @@ def notify_approvers_task(document_pk, step_pk):
     """결재 요청 알림: 다음 결재 단계 결재자들에게 푸시 + 인앱 알림 발송"""
     from approval.models import ApprovalDocument, ApprovalStep
     try:
-        document = ApprovalDocument.objects.select_related('doc_type', 'drafter').get(pk=document_pk)
+        document = ApprovalDocument.objects.select_related('doc_type', 'drafter__profile').get(pk=document_pk)
         step = ApprovalStep.objects.prefetch_related('approvers').get(pk=step_pk)
         approver_ids = list(step.approvers.values_list('id', flat=True))
 
         push_title = f'[결재 요청] {document.doc_type.name}'
-        push_body = f'{document.drafter.get_full_name() or document.drafter.username}님이 결재를 요청했습니다: {document.title}'
+        profile = getattr(document.drafter, 'profile', None)
+        drafter_name = profile.name if profile and profile.name else document.drafter.username
+        push_body = f'{drafter_name}님이 결재를 요청했습니다: {document.title}'
 
         send_push_notification(
             user_ids=approver_ids,
