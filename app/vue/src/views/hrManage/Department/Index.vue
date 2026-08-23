@@ -27,7 +27,6 @@ const dataFilter = ref<DepFilter>({
 })
 
 const comStore = useCompany()
-const getPkDeparts = computed(() => comStore.getPkDeparts)
 const company = computed(() => (comStore.company as Company)?.pk)
 const comName = computed(() => (comStore.company as Company)?.name || undefined)
 
@@ -79,6 +78,7 @@ const pageSelect = (num: number) => {
 const dataSetup = (pk: number) => {
   fetchAllDepartList(pk)
   fetchDepartmentList({ com: pk })
+  comStore.fetchAllStaffList(pk)
 }
 
 const dataReset = () => {

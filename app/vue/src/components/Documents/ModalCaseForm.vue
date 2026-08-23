@@ -7,7 +7,7 @@ import MultiSelect from '@/components/MultiSelect/index.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
-defineProps({ getSuitCase: { type: Object, default: null } })
+defineProps({ getSuitCase: { type: Array, default: () => [] } })
 
 const refConfirmModal = ref()
 const refCaseForm = ref()

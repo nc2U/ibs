@@ -547,8 +547,7 @@ export const useCompany = defineStore('company', () => {
   const executive = ref<Executive | null>(null)
   const executivesCount = ref<number>(0)
 
-  const executivePages = (itemsPerPage: number) =>
-    Math.ceil(executivesCount.value / itemsPerPage)
+  const executivePages = (itemsPerPage: number) => Math.ceil(executivesCount.value / itemsPerPage)
 
   const fetchExecutiveList = async (payload: ComFilter) => {
     const { page = 1, com = 1, q = '' } = payload
@@ -684,7 +683,9 @@ export const useCompany = defineStore('company', () => {
   const staffEvaluationPages = (itemsPerPage: number) =>
     Math.ceil(staffEvaluationsCount.value / itemsPerPage)
 
-  const fetchStaffEvaluationList = async (payload: ComFilter & { staff?: number; year?: number }) => {
+  const fetchStaffEvaluationList = async (
+    payload: ComFilter & { staff?: number; year?: number },
+  ) => {
     const { page = 1, com = 1, q = '', staff: staffId, year } = payload
     let queryStr = `?limit=10&page=${page}&company=${com}&search=${q}`
     if (staffId) queryStr += `&staff=${staffId}`
@@ -756,7 +757,9 @@ export const useCompany = defineStore('company', () => {
   const promotionCandidatePages = (itemsPerPage: number) =>
     Math.ceil(promotionCandidatesCount.value / itemsPerPage)
 
-  const fetchPromotionCandidateList = async (payload: ComFilter & { year?: number; status?: string }) => {
+  const fetchPromotionCandidateList = async (
+    payload: ComFilter & { year?: number; status?: string },
+  ) => {
     const { page = 1, com = 1, q = '', year, status: candStatus } = payload
     let queryStr = `?limit=10&page=${page}&company=${com}&search=${q}`
     if (year) queryStr += `&eval_year=${year}`
@@ -823,6 +826,13 @@ export const useCompany = defineStore('company', () => {
   const allStaffList = ref<Staff[]>([])
   const staff = ref<Staff | null>(null)
   const staffsCount = ref<number>(0)
+
+  const getAllStaffs = computed(() =>
+    allStaffList.value.map(s => ({
+      value: s.pk,
+      label: s.name,
+    })),
+  )
 
   // actions
   const staffPages = (itemsPerPage: number) => Math.ceil(staffsCount.value / itemsPerPage)
@@ -1031,6 +1041,7 @@ export const useCompany = defineStore('company', () => {
     allStaffList,
     staff,
     staffsCount,
+    getAllStaffs,
     staffPages,
     fetchStaffList,
     fetchAllStaffList,

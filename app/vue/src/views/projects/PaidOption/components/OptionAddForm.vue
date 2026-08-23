@@ -72,9 +72,8 @@ const resetForm = () => {
           <CCol lg="12" xl="7" class="mb-2">
             <Multiselect
               v-model="form.types"
-              :options="getTypes"
+              :options="getTypes as any[]"
               placeholder="타입구분"
-              :classes="{ search: 'form-control multiselect-search' }"
               required
               :disabled="disabled"
             />

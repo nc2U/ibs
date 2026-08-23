@@ -11,7 +11,7 @@ import { usePerms } from '@/composables/usePerms.ts'
 
 const props = defineProps({
   sortName: { type: String, default: '[본사]' },
-  getSuitCase: { type: Object, required: true },
+  getSuitCase: { type: Array, required: true },
   suitcase: { type: Object as PropType<SuitCase | null>, default: null },
   viewRoute: { type: String, required: true },
 })

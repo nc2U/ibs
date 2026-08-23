@@ -5,7 +5,7 @@ import { usePerms } from '@/composables/usePerms.ts'
 import { useCompany } from '@/store/pinia/company'
 import { useAccount } from '@/store/pinia/account.ts'
 import { type Department } from '@/store/types/company'
-import Multiselect from '@vueform/multiselect'
+import MultiSelect from '@/components/MultiSelect/index.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
@@ -42,6 +42,7 @@ const form = ref<Department>({
   upper_depart: null,
   level: 1,
   name: '',
+  manager: null,
   task: '',
 })
 
@@ -49,14 +50,16 @@ const formsCheck = computed(() => {
   if (props.department) {
     const a = form.value.upper_depart === props.department.upper_depart
     const b = form.value.name === props.department.name
-    const c = form.value.task === props.department.task
+    const c = form.value.manager === props.department.manager
+    const d = form.value.task === props.department.task
 
-    return a && b && c
+    return a && b && c && d
   } else return false
 })
 
 const comStore = useCompany()
 const getPkDeparts = computed(() => comStore.getPkDeparts)
+const allStaffs = computed(() => comStore.getAllStaffs)
 
 const onSubmit = (event: Event) => {
   if (isValidate(event)) {
@@ -90,6 +93,7 @@ const formDataSetup = () => {
     form.value.upper_depart = props.department.upper_depart
     form.value.level = props.department.level
     form.value.name = props.department.name
+    form.value.manager = props.department.manager
     form.value.task = props.department.task
   } else form.value.company = props.company
 }
@@ -106,13 +110,10 @@ onBeforeMount(() => formDataSetup())
             <CRow>
               <CFormLabel class="col-sm-2 col-form-label">상위부서</CFormLabel>
               <CCol sm="10">
-                <Multiselect
+                <MultiSelect
                   v-model.number="form.upper_depart"
+                  mode="single"
                   :options="getPkDeparts"
-                  autocomplete="label"
-                  :classes="{ search: 'form-control multiselect-search' }"
-                  :add-option-on="['enter', 'tab']"
-                  searchable
                   placeholder="상위부서"
                 />
               </CCol>
@@ -131,12 +132,28 @@ onBeforeMount(() => formDataSetup())
           </CCol>
         </CRow>
 
-        <CRow>
+        <CRow class="mb-3">
           <CCol sm="12">
             <CRow>
               <CFormLabel class="col-sm-2 col-form-label">주요업무</CFormLabel>
               <CCol sm="10">
                 <CFormInput v-model="form.task" placeholder="주요업무" />
+              </CCol>
+            </CRow>
+          </CCol>
+        </CRow>
+
+        <CRow class="mb-3">
+          <CCol sm="12">
+            <CRow>
+              <CFormLabel class="col-sm-2 col-form-label">책임자</CFormLabel>
+              <CCol sm="10">
+                <MultiSelect
+                  v-model="form.manager"
+                  mode="single"
+                  :options="allStaffs"
+                  placeholder="책임자"
+                />
               </CCol>
             </CRow>
           </CCol>
