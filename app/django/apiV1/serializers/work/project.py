@@ -372,10 +372,17 @@ class RoleSerializer(serializers.ModelSerializer):
         permissions = attrs.get('permissions')
         if permissions is not None:
             for perm in permissions:
-                perm_category = perm.category if perm.category else 'work_space'
-                if perm_category != category and perm_category != 'shared':
+                is_valid = False
+                if category == 'work_space' and perm.is_for_workspace:
+                    is_valid = True
+                elif category == 'ibs_hq_manage' and perm.is_for_hq:
+                    is_valid = True
+                elif category == 'ibs_pr_manage' and perm.is_for_project:
+                    is_valid = True
+
+                if not is_valid:
                     raise serializers.ValidationError({
-                        'permissions': f"역할 카테고리({category})와 불일치하는 권한({perm.name} - {perm_category})을 매핑할 수 없습니다."
+                        'permissions': f"역할 구분({category})에 허용되지 않은 권한({perm.name} - {perm.code})입니다."
                     })
         return attrs
 
@@ -389,7 +396,7 @@ class RoleSerializer(serializers.ModelSerializer):
 class PermissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Permission
-        fields = ('pk', 'module', 'category', 'code', 'name', 'description')
+        fields = ('pk', 'module', 'is_for_workspace', 'is_for_hq', 'is_for_project', 'code', 'name', 'description')
 
 
 class MemberSerializer(serializers.ModelSerializer):

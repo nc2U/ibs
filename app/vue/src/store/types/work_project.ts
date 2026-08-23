@@ -152,7 +152,9 @@ export interface Permission {
     | 'ledger'
     | 'site'
     | 'hr_work'
-  category?: 'work_space' | 'ibs_hq_manage' | 'ibs_pr_manage' | 'shared'
+  is_for_workspace?: boolean
+  is_for_hq?: boolean
+  is_for_project?: boolean
   code: string
   name: string
   description: string

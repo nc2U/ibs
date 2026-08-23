@@ -297,13 +297,9 @@ class Permission(models.Model):
                       ('contract', '계약 관리'), ('payment', '수납 관리'), ('notice', '고지 관리'),
                       ('ledger', '자금/원장 관리'), ('site', '사업 부지 관리'), ('hr_work', '인사 관리'))
     module = models.CharField('모듈', max_length=10, choices=MODULE_CHOICES, db_index=True)
-    CATEGORY_CHOICES = (
-        ('work_space', '워크스페이스'),
-        ('ibs_hq_manage', '본사 관리'),
-        ('ibs_pr_manage', '프로젝트 관리'),
-        ('shared', '공통 모듈'),
-    )
-    category = models.CharField('구분', max_length=20, choices=CATEGORY_CHOICES, default='work_space')
+    is_for_workspace = models.BooleanField('워크스페이스 적용', default=True)
+    is_for_hq = models.BooleanField('본사 관리 적용', default=False)
+    is_for_project = models.BooleanField('프로젝트 관리 적용', default=False)
     code = models.CharField('코드', max_length=30, unique=True)
     name = models.CharField('이름', max_length=20)
     is_default = models.BooleanField('기본 활성여부', default=False)

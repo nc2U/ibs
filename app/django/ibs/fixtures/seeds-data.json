@@ -10203,11 +10203,7 @@
         72,
         73,
         74,
-        75,
-        76,
-        77,
-        78,
-        79
+        75
       ]
     }
   },
@@ -10292,11 +10288,6 @@
         42,
         43,
         44,
-        54,
-        60,
-        61,
-        62,
-        63,
         64,
         65,
         66,
@@ -10304,8 +10295,7 @@
         68,
         69,
         70,
-        71,
-        72
+        71
       ]
     }
   },
@@ -10356,11 +10346,8 @@
         42,
         43,
         44,
-        54,
-        60,
         64,
         68,
-        72,
         76,
         77,
         78,
@@ -10373,11 +10360,13 @@
     "pk": 1,
     "fields": {
       "module": "project",
-      "category": "shared",
       "code": "project.create",
       "name": "프로젝트생성",
       "is_default": false,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10385,11 +10374,13 @@
     "pk": 2,
     "fields": {
       "module": "project",
-      "category": "shared",
       "code": "project.update",
       "name": "프로젝트 편집",
       "is_default": false,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10397,11 +10388,13 @@
     "pk": 3,
     "fields": {
       "module": "project",
-      "category": "shared",
       "code": "project.close",
       "name": "프로젝트 닫기/열기",
       "is_default": false,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10409,11 +10402,13 @@
     "pk": 4,
     "fields": {
       "module": "project",
-      "category": "shared",
       "code": "project.delete",
       "name": "프로젝트 삭제",
       "is_default": false,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10421,11 +10416,13 @@
     "pk": 5,
     "fields": {
       "module": "project",
-      "category": "shared",
       "code": "project.public",
       "name": "프로젝트 공개/비공개 설정",
       "is_default": false,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10433,11 +10430,13 @@
     "pk": 6,
     "fields": {
       "module": "project",
-      "category": "shared",
       "code": "project.module",
       "name": "프로젝트 모듈 선택",
       "is_default": false,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10445,11 +10444,13 @@
     "pk": 7,
     "fields": {
       "module": "project",
-      "category": "shared",
       "code": "project.member",
       "name": "구성원 관리",
       "is_default": false,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10457,11 +10458,13 @@
     "pk": 8,
     "fields": {
       "module": "project",
-      "category": "shared",
       "code": "project.version",
       "name": "버전 관리",
       "is_default": false,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10469,11 +10472,13 @@
     "pk": 9,
     "fields": {
       "module": "project",
-      "category": "shared",
       "code": "project.create_sub",
       "name": "하위 프로젝트 생성",
       "is_default": false,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10481,11 +10486,13 @@
     "pk": 10,
     "fields": {
       "module": "project",
-      "category": "shared",
       "code": "project.pub_query",
       "name": "공용 검색 양식 관리",
       "is_default": false,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10493,11 +10500,13 @@
     "pk": 11,
     "fields": {
       "module": "project",
-      "category": "shared",
       "code": "project.save_query",
       "name": "검색 양식 저장",
       "is_default": true,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10505,11 +10514,13 @@
     "pk": 12,
     "fields": {
       "module": "meeting",
-      "category": "work_space",
       "code": "meeting.read",
       "name": "회의록 보기",
       "is_default": true,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10517,11 +10528,13 @@
     "pk": 13,
     "fields": {
       "module": "meeting",
-      "category": "work_space",
       "code": "meeting.create",
       "name": "회의록 추가",
       "is_default": false,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10529,11 +10542,13 @@
     "pk": 14,
     "fields": {
       "module": "meeting",
-      "category": "work_space",
       "code": "meeting.update",
       "name": "회의록 편집",
       "is_default": false,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10541,11 +10556,13 @@
     "pk": 15,
     "fields": {
       "module": "meeting",
-      "category": "work_space",
       "code": "meeting.own_update",
       "name": "내 회의록 편집",
       "is_default": true,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10553,11 +10570,13 @@
     "pk": 16,
     "fields": {
       "module": "meeting",
-      "category": "work_space",
       "code": "meeting.edit_confirmed",
       "name": "확정된 회의록 편집",
       "is_default": false,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10565,11 +10584,13 @@
     "pk": 17,
     "fields": {
       "module": "meeting",
-      "category": "work_space",
       "code": "meeting.delete",
       "name": "회의록 삭제",
       "is_default": false,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10577,11 +10598,13 @@
     "pk": 18,
     "fields": {
       "module": "meeting",
-      "category": "work_space",
       "code": "meeting.confirm",
       "name": "회의록 확정 승인",
       "is_default": false,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10589,11 +10612,13 @@
     "pk": 19,
     "fields": {
       "module": "issue",
-      "category": "work_space",
       "code": "issue.read",
       "name": "업무 보기",
       "is_default": true,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10601,11 +10626,13 @@
     "pk": 20,
     "fields": {
       "module": "issue",
-      "category": "work_space",
       "code": "issue.create",
       "name": "업무 추가",
       "is_default": true,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10613,11 +10640,13 @@
     "pk": 21,
     "fields": {
       "module": "issue",
-      "category": "work_space",
       "code": "issue.update",
       "name": "업무 편집",
       "is_default": false,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10625,11 +10654,13 @@
     "pk": 22,
     "fields": {
       "module": "issue",
-      "category": "work_space",
       "code": "issue.own_update",
       "name": "내 업무 편집",
       "is_default": true,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10637,11 +10668,13 @@
     "pk": 23,
     "fields": {
       "module": "issue",
-      "category": "work_space",
       "code": "issue.copy",
       "name": "업무 복사",
       "is_default": false,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10649,11 +10682,13 @@
     "pk": 24,
     "fields": {
       "module": "issue",
-      "category": "work_space",
       "code": "issue.rel_manage",
       "name": "업무 관계 관리",
       "is_default": true,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10661,11 +10696,13 @@
     "pk": 25,
     "fields": {
       "module": "issue",
-      "category": "work_space",
       "code": "issue.sub_manage",
       "name": "하위 업무 관리",
       "is_default": true,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10673,11 +10710,13 @@
     "pk": 26,
     "fields": {
       "module": "issue",
-      "category": "work_space",
       "code": "issue.public",
       "name": "업무 공개/비공개 설정",
       "is_default": false,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10685,11 +10724,13 @@
     "pk": 27,
     "fields": {
       "module": "issue",
-      "category": "work_space",
       "code": "issue.own_public",
       "name": "내 업무 공개/비공개 설정",
       "is_default": true,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10697,11 +10738,13 @@
     "pk": 28,
     "fields": {
       "module": "issue",
-      "category": "work_space",
       "code": "issue.comment_create",
       "name": "댓글 추가",
       "is_default": true,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10709,11 +10752,13 @@
     "pk": 29,
     "fields": {
       "module": "issue",
-      "category": "work_space",
       "code": "issue.comment_update",
       "name": "댓글 편집",
       "is_default": false,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10721,11 +10766,13 @@
     "pk": 30,
     "fields": {
       "module": "issue",
-      "category": "work_space",
       "code": "issue.comment_own_update",
       "name": "내 댓글 편집(비공개 설정)",
       "is_default": true,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10733,11 +10780,13 @@
     "pk": 31,
     "fields": {
       "module": "issue",
-      "category": "work_space",
       "code": "issue.private_comment_read",
       "name": "비공개 댓글 보기",
       "is_default": false,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10745,11 +10794,13 @@
     "pk": 32,
     "fields": {
       "module": "issue",
-      "category": "work_space",
       "code": "issue.private_comment_set",
       "name": "비공개 댓글 설정",
       "is_default": false,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10757,11 +10808,13 @@
     "pk": 33,
     "fields": {
       "module": "issue",
-      "category": "work_space",
       "code": "issue.delete",
       "name": "업무 삭제",
       "is_default": false,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10769,11 +10822,13 @@
     "pk": 34,
     "fields": {
       "module": "issue",
-      "category": "work_space",
       "code": "issue.watcher_read",
       "name": "업무 관람자 보기",
       "is_default": false,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10781,11 +10836,13 @@
     "pk": 35,
     "fields": {
       "module": "issue",
-      "category": "work_space",
       "code": "issue.watcher_create",
       "name": "업무 관람자 추가",
       "is_default": false,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10793,11 +10850,13 @@
     "pk": 36,
     "fields": {
       "module": "issue",
-      "category": "work_space",
       "code": "issue.watcher_delete",
       "name": "업무 관람자 삭제",
       "is_default": false,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10805,11 +10864,13 @@
     "pk": 37,
     "fields": {
       "module": "issue",
-      "category": "work_space",
       "code": "issue.import",
       "name": "업무 가져 오기",
       "is_default": false,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10817,11 +10878,13 @@
     "pk": 38,
     "fields": {
       "module": "issue",
-      "category": "work_space",
       "code": "issue.category_manage",
       "name": "업무 범주 관리",
       "is_default": false,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10829,11 +10892,13 @@
     "pk": 39,
     "fields": {
       "module": "news",
-      "category": "work_space",
       "code": "news.read",
       "name": "공지 보기",
       "is_default": true,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10841,11 +10906,13 @@
     "pk": 40,
     "fields": {
       "module": "news",
-      "category": "work_space",
       "code": "news.manage",
       "name": "공지 관리",
       "is_default": false,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10853,11 +10920,13 @@
     "pk": 41,
     "fields": {
       "module": "news",
-      "category": "work_space",
       "code": "news.comment",
       "name": "공지 댓글 달기",
       "is_default": true,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10865,11 +10934,13 @@
     "pk": 42,
     "fields": {
       "module": "docs",
-      "category": "shared",
       "code": "docs.read",
       "name": "문서 보기",
       "is_default": true,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10877,11 +10948,13 @@
     "pk": 43,
     "fields": {
       "module": "docs",
-      "category": "shared",
       "code": "docs.create",
       "name": "문서 추가",
       "is_default": false,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10889,11 +10962,13 @@
     "pk": 44,
     "fields": {
       "module": "docs",
-      "category": "shared",
       "code": "docs.update",
       "name": "문서 편집",
       "is_default": false,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10901,11 +10976,13 @@
     "pk": 45,
     "fields": {
       "module": "docs",
-      "category": "shared",
       "code": "docs.delete",
       "name": "문서 삭제",
       "is_default": false,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10913,11 +10990,13 @@
     "pk": 46,
     "fields": {
       "module": "forum",
-      "category": "work_space",
       "code": "forum.read",
       "name": "게시물 보기",
       "is_default": true,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10925,11 +11004,13 @@
     "pk": 47,
     "fields": {
       "module": "forum",
-      "category": "work_space",
       "code": "forum.create",
       "name": "게시물 추가",
       "is_default": true,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10937,11 +11018,13 @@
     "pk": 48,
     "fields": {
       "module": "forum",
-      "category": "work_space",
       "code": "forum.update",
       "name": "게시물 편집",
       "is_default": false,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10949,11 +11032,13 @@
     "pk": 49,
     "fields": {
       "module": "forum",
-      "category": "work_space",
       "code": "forum.own_update",
       "name": "내 게시물 편집",
       "is_default": true,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10961,11 +11046,13 @@
     "pk": 50,
     "fields": {
       "module": "forum",
-      "category": "work_space",
       "code": "forum.delete",
       "name": "게시물 삭제",
       "is_default": false,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10973,11 +11060,13 @@
     "pk": 51,
     "fields": {
       "module": "forum",
-      "category": "work_space",
       "code": "forum.own_delete",
       "name": "내 게시물 삭제",
       "is_default": false,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10985,11 +11074,13 @@
     "pk": 52,
     "fields": {
       "module": "forum",
-      "category": "work_space",
       "code": "forum.manage",
       "name": "게시판 관리",
       "is_default": false,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -10997,11 +11088,13 @@
     "pk": 53,
     "fields": {
       "module": "calendar",
-      "category": "work_space",
       "code": "calendar.read",
       "name": "캘린더 보기",
       "is_default": true,
-      "description": ""
+      "description": "",
+      "is_for_workspace": true,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -11009,11 +11102,13 @@
     "pk": 54,
     "fields": {
       "module": "contract",
-      "category": "ibs_pr_manage",
       "code": "contract.read",
       "name": "계약 조회",
       "is_default": false,
-      "description": "계약 목록/상세/현황 조회"
+      "description": "계약 목록/상세/현황 조회",
+      "is_for_workspace": false,
+      "is_for_hq": false,
+      "is_for_project": true
     }
   },
   {
@@ -11021,11 +11116,13 @@
     "pk": 55,
     "fields": {
       "module": "contract",
-      "category": "ibs_pr_manage",
       "code": "contract.create",
       "name": "계약 등록",
       "is_default": false,
-      "description": "신규 계약 생성"
+      "description": "신규 계약 생성",
+      "is_for_workspace": false,
+      "is_for_hq": false,
+      "is_for_project": true
     }
   },
   {
@@ -11033,11 +11130,13 @@
     "pk": 56,
     "fields": {
       "module": "contract",
-      "category": "ibs_pr_manage",
       "code": "contract.update",
       "name": "계약 수정",
       "is_default": false,
-      "description": "계약 정보 수정"
+      "description": "계약 정보 수정",
+      "is_for_workspace": false,
+      "is_for_hq": false,
+      "is_for_project": true
     }
   },
   {
@@ -11045,11 +11144,13 @@
     "pk": 57,
     "fields": {
       "module": "contract",
-      "category": "ibs_pr_manage",
       "code": "contract.delete",
       "name": "계약 삭제",
       "is_default": false,
-      "description": "계약 삭제"
+      "description": "계약 삭제",
+      "is_for_workspace": false,
+      "is_for_hq": false,
+      "is_for_project": true
     }
   },
   {
@@ -11057,11 +11158,13 @@
     "pk": 58,
     "fields": {
       "module": "contract",
-      "category": "ibs_pr_manage",
       "code": "contract.succession",
       "name": "계약 승계 처리",
       "is_default": false,
-      "description": "승계 신청~완료 처리"
+      "description": "승계 신청~완료 처리",
+      "is_for_workspace": false,
+      "is_for_hq": false,
+      "is_for_project": true
     }
   },
   {
@@ -11069,11 +11172,13 @@
     "pk": 59,
     "fields": {
       "module": "contract",
-      "category": "ibs_pr_manage",
       "code": "contract.release",
       "name": "계약 해지 처리",
       "is_default": false,
-      "description": "해지 신청~확정 처리"
+      "description": "해지 신청~확정 처리",
+      "is_for_workspace": false,
+      "is_for_hq": false,
+      "is_for_project": true
     }
   },
   {
@@ -11081,11 +11186,13 @@
     "pk": 60,
     "fields": {
       "module": "payment",
-      "category": "ibs_pr_manage",
       "code": "payment.read",
       "name": "수납 조회",
       "is_default": false,
-      "description": "수납 내역 조회"
+      "description": "수납 내역 조회",
+      "is_for_workspace": false,
+      "is_for_hq": false,
+      "is_for_project": true
     }
   },
   {
@@ -11093,11 +11200,13 @@
     "pk": 61,
     "fields": {
       "module": "payment",
-      "category": "ibs_pr_manage",
       "code": "payment.create",
       "name": "수납 등록",
       "is_default": false,
-      "description": "수납 등록"
+      "description": "수납 등록",
+      "is_for_workspace": false,
+      "is_for_hq": false,
+      "is_for_project": true
     }
   },
   {
@@ -11105,11 +11214,13 @@
     "pk": 62,
     "fields": {
       "module": "payment",
-      "category": "ibs_pr_manage",
       "code": "payment.update",
       "name": "수납 수정",
       "is_default": false,
-      "description": "수납 정보 수정"
+      "description": "수납 정보 수정",
+      "is_for_workspace": false,
+      "is_for_hq": false,
+      "is_for_project": true
     }
   },
   {
@@ -11117,11 +11228,13 @@
     "pk": 63,
     "fields": {
       "module": "payment",
-      "category": "ibs_pr_manage",
       "code": "payment.delete",
       "name": "수납 삭제",
       "is_default": false,
-      "description": "수납 삭제"
+      "description": "수납 삭제",
+      "is_for_workspace": false,
+      "is_for_hq": false,
+      "is_for_project": true
     }
   },
   {
@@ -11129,11 +11242,13 @@
     "pk": 64,
     "fields": {
       "module": "notice",
-      "category": "ibs_pr_manage",
       "code": "notice.read",
       "name": "고지 조회",
       "is_default": false,
-      "description": "고지 내역 조회"
+      "description": "고지 내역 조회",
+      "is_for_workspace": false,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -11141,11 +11256,13 @@
     "pk": 65,
     "fields": {
       "module": "notice",
-      "category": "ibs_pr_manage",
       "code": "notice.create",
       "name": "고지 발송",
       "is_default": false,
-      "description": "고지서 발송/라벨/SMS"
+      "description": "고지서 발송/라벨/SMS",
+      "is_for_workspace": false,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -11153,11 +11270,13 @@
     "pk": 66,
     "fields": {
       "module": "notice",
-      "category": "ibs_pr_manage",
       "code": "notice.update",
       "name": "고지 수정",
       "is_default": false,
-      "description": "발송 내역 수정"
+      "description": "발송 내역 수정",
+      "is_for_workspace": false,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -11165,11 +11284,13 @@
     "pk": 67,
     "fields": {
       "module": "notice",
-      "category": "ibs_pr_manage",
       "code": "notice.delete",
       "name": "고지 삭제",
       "is_default": false,
-      "description": "발송 내역 삭제"
+      "description": "발송 내역 삭제",
+      "is_for_workspace": false,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -11177,11 +11298,13 @@
     "pk": 68,
     "fields": {
       "module": "ledger",
-      "category": "shared",
       "code": "ledger.read",
       "name": "원장 조회",
       "is_default": false,
-      "description": "자금 현황 조회"
+      "description": "자금 현황 조회",
+      "is_for_workspace": false,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -11189,11 +11312,13 @@
     "pk": 69,
     "fields": {
       "module": "ledger",
-      "category": "shared",
       "code": "ledger.create",
       "name": "원장 등록",
       "is_default": false,
-      "description": "회계 분개 생성"
+      "description": "회계 분개 생성",
+      "is_for_workspace": false,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -11201,11 +11326,13 @@
     "pk": 70,
     "fields": {
       "module": "ledger",
-      "category": "shared",
       "code": "ledger.update",
       "name": "원장 수정",
       "is_default": false,
-      "description": "회계 분개 수정"
+      "description": "회계 분개 수정",
+      "is_for_workspace": false,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -11213,11 +11340,13 @@
     "pk": 71,
     "fields": {
       "module": "ledger",
-      "category": "shared",
       "code": "ledger.delete",
       "name": "원장 삭제",
       "is_default": false,
-      "description": "회계 분개 삭제"
+      "description": "회계 분개 삭제",
+      "is_for_workspace": false,
+      "is_for_hq": true,
+      "is_for_project": true
     }
   },
   {
@@ -11225,11 +11354,13 @@
     "pk": 72,
     "fields": {
       "module": "site",
-      "category": "ibs_pr_manage",
       "code": "site.read",
       "name": "부지 조회",
       "is_default": false,
-      "description": "부지/소유자/계약 조회"
+      "description": "부지/소유자/계약 조회",
+      "is_for_workspace": false,
+      "is_for_hq": false,
+      "is_for_project": true
     }
   },
   {
@@ -11237,11 +11368,13 @@
     "pk": 73,
     "fields": {
       "module": "site",
-      "category": "ibs_pr_manage",
       "code": "site.create",
       "name": "부지 등록",
       "is_default": false,
-      "description": "부지 정보 등록"
+      "description": "부지 정보 등록",
+      "is_for_workspace": false,
+      "is_for_hq": false,
+      "is_for_project": true
     }
   },
   {
@@ -11249,11 +11382,13 @@
     "pk": 74,
     "fields": {
       "module": "site",
-      "category": "ibs_pr_manage",
       "code": "site.update",
       "name": "부지 수정",
       "is_default": false,
-      "description": "부지 정보 수정"
+      "description": "부지 정보 수정",
+      "is_for_workspace": false,
+      "is_for_hq": false,
+      "is_for_project": true
     }
   },
   {
@@ -11261,11 +11396,13 @@
     "pk": 75,
     "fields": {
       "module": "site",
-      "category": "ibs_pr_manage",
       "code": "site.delete",
       "name": "부지 삭제",
       "is_default": false,
-      "description": "부지 정보 삭제"
+      "description": "부지 정보 삭제",
+      "is_for_workspace": false,
+      "is_for_hq": false,
+      "is_for_project": true
     }
   },
   {
@@ -11273,11 +11410,13 @@
     "pk": 76,
     "fields": {
       "module": "hr_work",
-      "category": "ibs_hq_manage",
       "code": "hr_work.read",
       "name": "인사 조회",
       "is_default": false,
-      "description": "직원/부서/직급 조회"
+      "description": "직원/부서/직급 조회",
+      "is_for_workspace": false,
+      "is_for_hq": true,
+      "is_for_project": false
     }
   },
   {
@@ -11285,11 +11424,13 @@
     "pk": 77,
     "fields": {
       "module": "hr_work",
-      "category": "ibs_hq_manage",
       "code": "hr_work.create",
       "name": "인사 등록",
       "is_default": false,
-      "description": "직원/부서 등록"
+      "description": "직원/부서 등록",
+      "is_for_workspace": false,
+      "is_for_hq": true,
+      "is_for_project": false
     }
   },
   {
@@ -11297,11 +11438,13 @@
     "pk": 78,
     "fields": {
       "module": "hr_work",
-      "category": "ibs_hq_manage",
       "code": "hr_work.update",
       "name": "인사 수정",
       "is_default": false,
-      "description": "직원/부서 수정"
+      "description": "직원/부서 수정",
+      "is_for_workspace": false,
+      "is_for_hq": true,
+      "is_for_project": false
     }
   },
   {
@@ -11309,11 +11452,13 @@
     "pk": 79,
     "fields": {
       "module": "hr_work",
-      "category": "ibs_hq_manage",
       "code": "hr_work.delete",
       "name": "인사 삭제",
       "is_default": false,
-      "description": "직원/부서 삭제"
+      "description": "직원/부서 삭제",
+      "is_for_workspace": false,
+      "is_for_hq": true,
+      "is_for_project": false
     }
   },
   {

@@ -288,34 +288,30 @@ class PermissionViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = PermissionSerializer
     permission_classes = (permissions.IsAuthenticated,)
     pagination_class = PageNumberPaginationOneHundred
-    filterset_fields = ('category',)
+    filterset_fields = ('is_for_workspace', 'is_for_hq', 'is_for_project', 'module')
 
     @action(detail=False, methods=['get'])
     def grouped(self, request, slug=None):
         """
-        카테고리와 모듈별로 그룹화된 권한 목록 반환
+        도메인(워크스페이스 / 본사 / 프로젝트)과 모듈별로 그룹화된 권한 목록 반환
         """
         queryset = self.get_queryset()
         data = {'work_space': {}, 'ibs_hq_manage': {}, 'ibs_pr_manage': {}}
 
         for perm in queryset:
-            # 'shared' 일 경우 모든 카테고리에 추가, 아니면 해당 카테고리만
-            if perm.category == 'shared':
-                categories = ['work_space', 'ibs_hq_manage', 'ibs_pr_manage']
-            elif perm.category in ('ibs_global', 'ibs_pm_manage'):
-                categories = ['ibs_pr_manage']  # 레거시 호환
-            elif perm.category == 'work_core':
-                categories = ['work_space']  # 레거시 호환
-            else:
-                categories = [perm.category or 'work_space']
-
-            for cate in categories:
-                if cate not in data:
-                    data[cate] = {}
-                if perm.module not in data[cate]:
-                    data[cate][perm.module] = []
-                # 시리얼라이저를 사용하여 데이터 직렬화
-                data[cate][perm.module].append(PermissionSerializer(perm).data)
+            serialized = PermissionSerializer(perm).data
+            if perm.is_for_workspace:
+                if perm.module not in data['work_space']:
+                    data['work_space'][perm.module] = []
+                data['work_space'][perm.module].append(serialized)
+            if perm.is_for_hq:
+                if perm.module not in data['ibs_hq_manage']:
+                    data['ibs_hq_manage'][perm.module] = []
+                data['ibs_hq_manage'][perm.module].append(serialized)
+            if perm.is_for_project:
+                if perm.module not in data['ibs_pr_manage']:
+                    data['ibs_pr_manage'][perm.module] = []
+                data['ibs_pr_manage'][perm.module].append(serialized)
         return Response(data)
 
 

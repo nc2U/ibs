@@ -73,9 +73,10 @@ class ModuleAdmin(admin.ModelAdmin):
 
 @admin.register(Role)
 class RoleAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('pk', 'name', 'category', 'issue_visible', 'user_visible', 'order')
+    list_display = ('pk', 'name', 'category', 'is_confidential', 'issue_visible', 'user_visible', 'order')
     list_display_links = ('name',)
-    list_editable = ('category', 'order',)
+    list_editable = ('category', 'is_confidential', 'order')
+    list_filter = ('category', 'is_confidential', 'issue_visible', 'user_visible')
     filter_horizontal = ('permissions',)  # ✅ 이렇게 하면 UI에서 다중 선택 가능
 
     def get_form(self, request, obj=None, **kwargs):
@@ -94,10 +95,10 @@ class RoleAdmin(ImportExportMixin, admin.ModelAdmin):
 
 @admin.register(Permission)
 class PermissionAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('pk', 'module', 'category', 'code', 'name', 'is_default', 'description')
+    list_display = ('pk', 'module', 'is_for_workspace', 'is_for_hq', 'is_for_project', 'code', 'name', 'is_default')
     list_display_links = ('pk', 'module')
-    list_editable = ('code', 'name', 'category', 'is_default', 'description')
-    list_filter = ('module', 'is_default',)
+    list_editable = ('is_for_workspace', 'is_for_hq', 'is_for_project', 'code', 'name', 'is_default')
+    list_filter = ('module', 'is_for_workspace', 'is_for_hq', 'is_for_project', 'is_default')
     search_fields = ('code', 'name')
 
 
