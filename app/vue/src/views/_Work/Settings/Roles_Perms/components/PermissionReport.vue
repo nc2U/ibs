@@ -12,16 +12,16 @@ const workStore = useWork()
 
 const categoryLabel = (cat: string) => {
   const labels: Record<string, string> = {
-    work_core: '업무 관리 관련 권한 (work_core)',
+    work_space: '워크스페이스 관련 권한 (work_space)',
     ibs_hq_manage: '본사 관리 관련 권한 (ibs_hq_manage)',
-    ibs_pm_manage: '프로젝트 관리 관련 권한 (ibs_pm_manage)',
+    ibs_pr_manage: '프로젝트 관리 관련 권한 (ibs_pr_manage)',
   }
   return labels[cat] || cat
 }
 
 const getRolesByCategory = (category: string) => {
   return props.roleList.filter(r => {
-    return (r.category || 'work_core') === category
+    return (r.category || 'work_space') === category
   })
 }
 
@@ -62,11 +62,11 @@ const togglePermission = async (role: Role, permissionPk: number) => {
 
 <template>
   <div class="space-y-5">
-    <!-- 1. 협업 및 업무 관리 권한 (work_core) 테이블 -->
+    <!-- 1. 워크스페이스 관리 권한 (work_space) 테이블 -->
     <div class="pt-4 mb-5">
       <h6 class="fw-bold text-success mb-3">
         <v-icon icon="mdi-account-group-outline" size="small" class="mr-2" />
-        {{ categoryLabel('work_core') }}
+        {{ categoryLabel('work_space') }}
       </h6>
       <div class="table-responsive">
         <table class="table table-bordered table-hover align-middle">
@@ -74,7 +74,7 @@ const togglePermission = async (role: Role, permissionPk: number) => {
             <tr>
               <th scope="col" class="sticky-col-header" style="min-width: 200px">권한</th>
               <th
-                v-for="role in getRolesByCategory('work_core')"
+                v-for="role in getRolesByCategory('work_space')"
                 :key="role.pk"
                 scope="col"
                 class="text-center"
@@ -85,10 +85,10 @@ const togglePermission = async (role: Role, permissionPk: number) => {
             </tr>
           </thead>
           <tbody>
-            <template v-for="(perms, sort) in groupedPermissions?.work_core" :key="sort">
+            <template v-for="(perms, sort) in groupedPermissions?.work_space" :key="sort">
               <tr class="table-secondary">
                 <td
-                  :colspan="getRolesByCategory('work_core').length + 1"
+                  :colspan="getRolesByCategory('work_space').length + 1"
                   class="fw-bold ps-3"
                 >
                   {{ sortLabel(sort as string) }}
@@ -100,7 +100,7 @@ const togglePermission = async (role: Role, permissionPk: number) => {
                   <small class="text-muted">{{ perm.description }}</small>
                 </td>
                 <td
-                  v-for="role in getRolesByCategory('work_core')"
+                  v-for="role in getRolesByCategory('work_space')"
                   :key="role.pk"
                   class="text-center"
                 >
@@ -175,11 +175,11 @@ const togglePermission = async (role: Role, permissionPk: number) => {
       </div>
     </div>
 
-    <!-- 3. 프로젝트 관리 권한 (ibs_pm_manage) 테이블 -->
+    <!-- 3. 프로젝트 관리 권한 (ibs_pr_manage) 테이블 -->
     <div>
       <h6 class="fw-bold text-primary mb-3">
         <v-icon icon="mdi-database-outline" size="small" class="mr-2" />
-        {{ categoryLabel('ibs_pm_manage') }}
+        {{ categoryLabel('ibs_pr_manage') }}
       </h6>
       <div class="table-responsive">
         <table class="table table-bordered table-hover align-middle">
@@ -187,7 +187,7 @@ const togglePermission = async (role: Role, permissionPk: number) => {
             <tr>
               <th scope="col" class="sticky-col-header" style="min-width: 200px">권한</th>
               <th
-                v-for="role in getRolesByCategory('ibs_pm_manage')"
+                v-for="role in getRolesByCategory('ibs_pr_manage')"
                 :key="role.pk"
                 scope="col"
                 class="text-center"
@@ -198,10 +198,10 @@ const togglePermission = async (role: Role, permissionPk: number) => {
             </tr>
           </thead>
           <tbody>
-            <template v-for="(perms, sort) in groupedPermissions?.ibs_pm_manage" :key="sort">
+            <template v-for="(perms, sort) in groupedPermissions?.ibs_pr_manage" :key="sort">
               <tr class="table-secondary">
                 <td
-                  :colspan="getRolesByCategory('ibs_pm_manage').length + 1"
+                  :colspan="getRolesByCategory('ibs_pr_manage').length + 1"
                   class="fw-bold ps-3"
                 >
                   {{ sortLabel(sort as string) }}
@@ -213,7 +213,7 @@ const togglePermission = async (role: Role, permissionPk: number) => {
                   <small class="text-muted">{{ perm.description }}</small>
                 </td>
                 <td
-                  v-for="role in getRolesByCategory('ibs_pm_manage')"
+                  v-for="role in getRolesByCategory('ibs_pr_manage')"
                   :key="role.pk"
                   class="text-center"
                 >

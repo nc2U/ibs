@@ -128,14 +128,14 @@ pnpm type-check
 
 | 구분                  | 백엔드 모델                         | 비즈니스 도메인 범위                                    | 클라이언트(Vue / Flutter) UI 표출 용어 |
 |:----------------------|:------------------------------------|:--------------------------------------------------------|:---------------------------------------|
-| **Work Core**         | `work.IssueProject`                 | 본사관리(1) / 부동산개발(2) / 기타(3) 통합 협업 공간    | **`워크스페이스` (Workspace)**         |
+| **Work Space**        | `work.Role/Permission` (`category='work_space'`)   | 본사관리(1) / 부동산개발(2) / 기타(3) 통합 협업 공간    | **`워크스페이스` (Workspace)**         |
 | **IBS HQ Manage**     | `work.Role/Permission` (`category='ibs_hq_manage'`) | 본사 회계/자금, 인사/조직, 법무, 감사 등 본사 경영 직무 (보안 격리 지원) | **`본사 관리` (HQ Manage)**            |
-| **IBS PM Manage**     | `project.IssueProject` (`type='2'`) | 분양, 수납, 사업부지, 사업비 등 부동산 개발 전용 사업지 | **`프로젝트` (Project)**               |
+| **IBS PR Manage**     | `work.Role/Permission` (`category='ibs_pr_manage'`) | 분양, 수납, 사업부지, 사업비 등 부동산 개발 전용 사업지 | **`프로젝트` (Project)**               |
 
 - **'현장' 용어 사용 엄금**: 전체 프로젝트 코드베이스 및 문서에서 '현장'이라는 용어 대신 '워크스페이스' 또는 '프로젝트'를 사용합니다.
-- **워크스페이스 (`work_core`)**: 업무 (Issue), 회의록 (Meeting), 로드맵, 공지사항 등 본사/프로젝트/기타 전반의 협업을 수행하는 공간 단위.
+- **워크스페이스 (`work_space`)**: 업무 (Issue), 회의록 (Meeting), 로드맵, 공지사항 등 본사/프로젝트/기타 전반의 협업을 수행하는 공간 단위.
 - **본사 관리 (`ibs_hq_manage`)**: 본사 경영지원, 재경, 인사, 법무 등 본사 경영 직무를 전담하며 슈퍼유저 전용 보안 격리(`is_confidential`)를 지원하는 역할/권한 영역.
-- **프로젝트 (`ibs_pm_manage`)**: 부동산 개발 (`type='2'`)에 한정되어 계약 (Contract), 수납 (Payment), 재무 (Ledger), 부지 (Site)를 관리하는 사업지 단위.
+- **프로젝트 (`ibs_pr_manage`)**: 부동산 개발 (`type='2'`)에 한정되어 계약 (Contract), 수납 (Payment), 재무 (Ledger), 부지 (Site)를 관리하는 사업지 단위.
 
 ## 업무 관리 시스템 (work 앱) 아키텍처
 

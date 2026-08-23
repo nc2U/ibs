@@ -29,7 +29,7 @@ const copyRole = (role: Role) => {
             :class="
               role.category === 'ibs_hq_manage'
                 ? 'text-warning'
-                : role.category === 'ibs_pm_manage'
+                : role.category === 'ibs_pr_manage'
                   ? 'text-primary'
                   : 'text-success'
             "
@@ -38,7 +38,7 @@ const copyRole = (role: Role) => {
               :icon="
                 role.category === 'ibs_hq_manage'
                   ? 'mdi-domain'
-                  : role.category === 'ibs_pm_manage'
+                  : role.category === 'ibs_pr_manage'
                     ? 'mdi-database-outline'
                     : 'mdi-account-group-outline'
               "
@@ -48,9 +48,9 @@ const copyRole = (role: Role) => {
             {{
               role.category === 'ibs_hq_manage'
                 ? '본사'
-                : role.category === 'ibs_pm_manage'
+                : role.category === 'ibs_pr_manage'
                   ? '프로젝트'
-                  : '업무관리'
+                  : '워크스페이스'
             }}
           </span>
         </CTableDataCell>

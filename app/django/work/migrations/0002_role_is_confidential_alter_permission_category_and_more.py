@@ -18,11 +18,11 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='permission',
             name='category',
-            field=models.CharField(choices=[('work_core', '업무 관리'), ('ibs_pm_manage', '프로젝트 관리'), ('ibs_hq_manage', '본사 관리'), ('shared', '공통 모듈')], default='work_core', max_length=20, verbose_name='구분'),
+            field=models.CharField(choices=[('work_space', '워크스페이스'), ('ibs_hq_manage', '본사 관리'), ('ibs_pr_manage', '프로젝트 관리'), ('shared', '공통 모듈')], default='work_space', max_length=20, verbose_name='구분'),
         ),
         migrations.AlterField(
             model_name='role',
             name='category',
-            field=models.CharField(choices=[('work_core', '업무 관리'), ('ibs_pm_manage', '프로젝트 관리'), ('ibs_hq_manage', '본사 관리')], default='work_core', max_length=20, verbose_name='구분'),
+            field=models.CharField(choices=[('work_space', '워크스페이스'), ('ibs_hq_manage', '본사 관리'), ('ibs_pr_manage', '프로젝트 관리')], default='work_space', max_length=20, verbose_name='구분'),
         ),
     ]

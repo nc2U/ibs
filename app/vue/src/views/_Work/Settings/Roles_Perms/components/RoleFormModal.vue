@@ -24,7 +24,7 @@ const form = ref({
   assignable: true,
   issue_visible: 'PUB' as 'ALL' | 'PUB' | 'PRI' | 'NOP',
   user_visible: 'ALL' as 'ALL' | 'PRJ' | 'NOP',
-  category: 'work_core' as 'work_core' | 'ibs_pm_manage' | 'ibs_hq_manage',
+  category: 'work_space' as 'work_space' | 'ibs_hq_manage' | 'ibs_pr_manage',
   is_confidential: false,
   order: 1,
   permissions: [] as number[],
@@ -41,7 +41,7 @@ watch(
           assignable: props.role.assignable,
           issue_visible: props.role.issue_visible,
           user_visible: props.role.user_visible,
-          category: props.role.category || 'work_core',
+          category: props.role.category || 'work_space',
           is_confidential: props.role.is_confidential || false,
           order: props.role.order,
           permissions: props.role.permissions || [],
@@ -53,7 +53,7 @@ watch(
           assignable: true,
           issue_visible: 'PUB',
           user_visible: 'ALL',
-          category: 'work_core',
+          category: 'work_space',
           is_confidential: false,
           order: props.maxOrder + 1,
           permissions: [],
@@ -111,9 +111,9 @@ const saveRole = async (event: Event) => {
         <div class="mb-3">
           <CFormLabel>권한 구분(카테고리)</CFormLabel>
           <CFormSelect v-model="form.category">
-            <option value="work_core">협업 및 업무 관리 권한 (work_core)</option>
+            <option value="work_space">워크스페이스 권한 (work_space)</option>
             <option value="ibs_hq_manage">본사 관리 권한 (ibs_hq_manage)</option>
-            <option value="ibs_pm_manage">프로젝트 관리 권한 (ibs_pm_manage)</option>
+            <option value="ibs_pr_manage">프로젝트 관리 권한 (ibs_pr_manage)</option>
           </CFormSelect>
         </div>
         <div class="mt-4">

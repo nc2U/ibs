@@ -296,16 +296,18 @@ class PermissionViewSet(viewsets.ReadOnlyModelViewSet):
         카테고리와 모듈별로 그룹화된 권한 목록 반환
         """
         queryset = self.get_queryset()
-        data = {'work_core': {}, 'ibs_pm_manage': {}, 'ibs_hq_manage': {}}
+        data = {'work_space': {}, 'ibs_hq_manage': {}, 'ibs_pr_manage': {}}
 
         for perm in queryset:
             # 'shared' 일 경우 모든 카테고리에 추가, 아니면 해당 카테고리만
             if perm.category == 'shared':
-                categories = ['work_core', 'ibs_pm_manage', 'ibs_hq_manage']
-            elif perm.category == 'ibs_global':
-                categories = ['ibs_pm_manage']  # 레거시 호환
+                categories = ['work_space', 'ibs_hq_manage', 'ibs_pr_manage']
+            elif perm.category in ('ibs_global', 'ibs_pm_manage'):
+                categories = ['ibs_pr_manage']  # 레거시 호환
+            elif perm.category == 'work_core':
+                categories = ['work_space']  # 레거시 호환
             else:
-                categories = [perm.category or 'work_core']
+                categories = [perm.category or 'work_space']
 
             for cate in categories:
                 if cate not in data:
