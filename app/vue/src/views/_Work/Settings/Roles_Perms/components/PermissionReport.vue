@@ -61,175 +61,182 @@ const togglePermission = async (role: Role, permissionPk: number) => {
 </script>
 
 <template>
-  <div class="space-y-5">
-    <!-- 1. 워크스페이스 관리 권한 (work_space) 테이블 -->
-    <div class="pt-4 mb-5">
-      <h6 class="fw-bold text-success mb-3">
-        <v-icon icon="mdi-account-group-outline" size="small" class="mr-2" />
-        {{ categoryLabel('work_space') }}
-      </h6>
-      <div class="table-responsive">
-        <table class="table table-bordered table-hover align-middle">
-          <thead class="table-light">
-            <tr>
-              <th scope="col" class="sticky-col-header" style="min-width: 200px">권한</th>
-              <th
-                v-for="role in getRolesByCategory('work_space')"
-                :key="role.pk"
-                scope="col"
-                class="text-center"
-                style="min-width: 100px"
-              >
-                {{ role.name }}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <template v-for="(perms, sort) in groupedPermissions?.work_space" :key="sort">
-              <tr class="table-secondary">
-                <td
-                  :colspan="getRolesByCategory('work_space').length + 1"
-                  class="fw-bold ps-3"
-                >
-                  {{ sortLabel(sort as string) }}
-                </td>
-              </tr>
-              <tr v-for="perm in perms" :key="perm.pk">
-                <td class="ps-4">
-                  <div class="fw-semibold">{{ perm.name }}</div>
-                  <small class="text-muted">{{ perm.description }}</small>
-                </td>
-                <td
-                  v-for="role in getRolesByCategory('work_space')"
-                  :key="role.pk"
-                  class="text-center"
-                >
-                  <CFormCheck
-                    :id="`perm-${role.pk}-${perm.pk}`"
-                    :checked="hasPermission(role, perm.pk)"
-                    :disabled="!workManager"
-                    @change="togglePermission(role, perm.pk)"
-                  />
-                </td>
-              </tr>
-            </template>
-          </tbody>
-        </table>
-      </div>
-    </div>
+  <div class="space-y-4">
+    <CAccordion :active-item-key="1" class="shadow-sm mb-4">
+      <!-- 1. 워크스페이스 관리 권한 (work_space) 아코디언 -->
+      <CAccordionItem :item-key="1">
+        <CAccordionHeader>
+          <span class="fw-bold text-info">
+            <v-icon icon="mdi-account-group-outline" size="small" class="mr-2" />
+            {{ categoryLabel('work_space') }}
+          </span>
+        </CAccordionHeader>
+        <CAccordionBody class="p-3">
+          <div class="table-responsive">
+            <table class="table table-bordered table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th scope="col" class="sticky-col-header" style="min-width: 200px">권한</th>
+                  <th
+                    v-for="role in getRolesByCategory('work_space')"
+                    :key="role.pk"
+                    scope="col"
+                    class="text-center"
+                    style="min-width: 100px"
+                  >
+                    {{ role.name }}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <template v-for="(perms, sort) in groupedPermissions?.work_space" :key="sort">
+                  <tr class="table-secondary">
+                    <td :colspan="getRolesByCategory('work_space').length + 1" class="fw-bold ps-3">
+                      {{ sortLabel(sort as string) }}
+                    </td>
+                  </tr>
+                  <tr v-for="perm in perms" :key="perm.pk">
+                    <td class="ps-4">
+                      <div class="fw-semibold">{{ perm.name }}</div>
+                      <small class="text-muted">{{ perm.description }}</small>
+                    </td>
+                    <td
+                      v-for="role in getRolesByCategory('work_space')"
+                      :key="role.pk"
+                      class="text-center"
+                    >
+                      <CFormCheck
+                        :id="`perm-${role.pk}-${perm.pk}`"
+                        :checked="hasPermission(role, perm.pk)"
+                        :disabled="!workManager"
+                        @change="togglePermission(role, perm.pk)"
+                      />
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </CAccordionBody>
+      </CAccordionItem>
 
-    <!-- 2. 본사 관리 권한 (ibs_hq_manage) 테이블 -->
-    <div v-if="getRolesByCategory('ibs_hq_manage').length > 0" class="mb-5">
-      <h6 class="fw-bold text-warning mb-3">
-        <v-icon icon="mdi-domain" size="small" class="mr-2" />
-        {{ categoryLabel('ibs_hq_manage') }}
-      </h6>
-      <div class="table-responsive">
-        <table class="table table-bordered table-hover align-middle">
-          <thead class="table-light">
-            <tr>
-              <th scope="col" class="sticky-col-header" style="min-width: 200px">권한</th>
-              <th
-                v-for="role in getRolesByCategory('ibs_hq_manage')"
-                :key="role.pk"
-                scope="col"
-                class="text-center"
-                style="min-width: 100px"
-              >
-                {{ role.name }}
-                <v-chip v-if="role.is_confidential" color="danger" size="x-small" class="ms-1">보안</v-chip>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <template v-for="(perms, sort) in groupedPermissions?.ibs_hq_manage" :key="sort">
-              <tr class="table-secondary">
-                <td
-                  :colspan="getRolesByCategory('ibs_hq_manage').length + 1"
-                  class="fw-bold ps-3"
-                >
-                  {{ sortLabel(sort as string) }}
-                </td>
-              </tr>
-              <tr v-for="perm in perms" :key="perm.pk">
-                <td class="ps-4">
-                  <div class="fw-semibold">{{ perm.name }}</div>
-                  <small class="text-muted">{{ perm.description }}</small>
-                </td>
-                <td
-                  v-for="role in getRolesByCategory('ibs_hq_manage')"
-                  :key="role.pk"
-                  class="text-center"
-                >
-                  <CFormCheck
-                    :id="`perm-${role.pk}-${perm.pk}`"
-                    :checked="hasPermission(role, perm.pk)"
-                    :disabled="!workManager"
-                    @change="togglePermission(role, perm.pk)"
-                  />
-                </td>
-              </tr>
-            </template>
-          </tbody>
-        </table>
-      </div>
-    </div>
+      <!-- 2. 본사 관리 권한 (ibs_hq_manage) 아코디언 -->
+      <CAccordionItem v-if="getRolesByCategory('ibs_hq_manage').length > 0" :item-key="2">
+        <CAccordionHeader>
+          <span class="fw-bold text-primary">
+            <v-icon icon="mdi-domain" size="small" class="mr-2" />
+            {{ categoryLabel('ibs_hq_manage') }}
+          </span>
+        </CAccordionHeader>
+        <CAccordionBody class="p-3">
+          <div class="table-responsive">
+            <table class="table table-bordered table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th scope="col" class="sticky-col-header" style="min-width: 200px">권한</th>
+                  <th
+                    v-for="role in getRolesByCategory('ibs_hq_manage')"
+                    :key="role.pk"
+                    scope="col"
+                    class="text-center"
+                    style="min-width: 100px"
+                  >
+                    {{ role.name }}
+                    <v-chip v-if="role.is_confidential" color="danger" size="x-small" class="ms-1"
+                      >보안</v-chip
+                    >
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <template v-for="(perms, sort) in groupedPermissions?.ibs_hq_manage" :key="sort">
+                  <tr class="table-secondary">
+                    <td :colspan="getRolesByCategory('ibs_hq_manage').length + 1" class="fw-bold ps-3">
+                      {{ sortLabel(sort as string) }}
+                    </td>
+                  </tr>
+                  <tr v-for="perm in perms" :key="perm.pk">
+                    <td class="ps-4">
+                      <div class="fw-semibold">{{ perm.name }}</div>
+                      <small class="text-muted">{{ perm.description }}</small>
+                    </td>
+                    <td
+                      v-for="role in getRolesByCategory('ibs_hq_manage')"
+                      :key="role.pk"
+                      class="text-center"
+                    >
+                      <CFormCheck
+                        :id="`perm-${role.pk}-${perm.pk}`"
+                        :checked="hasPermission(role, perm.pk)"
+                        :disabled="!workManager"
+                        @change="togglePermission(role, perm.pk)"
+                      />
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </CAccordionBody>
+      </CAccordionItem>
 
-    <!-- 3. 프로젝트 관리 권한 (ibs_pr_manage) 테이블 -->
-    <div>
-      <h6 class="fw-bold text-primary mb-3">
-        <v-icon icon="mdi-database-outline" size="small" class="mr-2" />
-        {{ categoryLabel('ibs_pr_manage') }}
-      </h6>
-      <div class="table-responsive">
-        <table class="table table-bordered table-hover align-middle">
-          <thead class="table-light">
-            <tr>
-              <th scope="col" class="sticky-col-header" style="min-width: 200px">권한</th>
-              <th
-                v-for="role in getRolesByCategory('ibs_pr_manage')"
-                :key="role.pk"
-                scope="col"
-                class="text-center"
-                style="min-width: 100px"
-              >
-                {{ role.name }}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <template v-for="(perms, sort) in groupedPermissions?.ibs_pr_manage" :key="sort">
-              <tr class="table-secondary">
-                <td
-                  :colspan="getRolesByCategory('ibs_pr_manage').length + 1"
-                  class="fw-bold ps-3"
-                >
-                  {{ sortLabel(sort as string) }}
-                </td>
-              </tr>
-              <tr v-for="perm in perms" :key="perm.pk">
-                <td class="ps-4">
-                  <div class="fw-semibold">{{ perm.name }}</div>
-                  <small class="text-muted">{{ perm.description }}</small>
-                </td>
-                <td
-                  v-for="role in getRolesByCategory('ibs_pr_manage')"
-                  :key="role.pk"
-                  class="text-center"
-                >
-                  <CFormCheck
-                    :id="`perm-${role.pk}-${perm.pk}`"
-                    :checked="hasPermission(role, perm.pk)"
-                    :disabled="!workManager"
-                    @change="togglePermission(role, perm.pk)"
-                  />
-                </td>
-              </tr>
-            </template>
-          </tbody>
-        </table>
-      </div>
-    </div>
+      <!-- 3. 프로젝트 관리 권한 (ibs_pr_manage) 아코디언 -->
+      <CAccordionItem :item-key="3">
+        <CAccordionHeader>
+          <span class="fw-bold text-success">
+            <v-icon icon="mdi-database-outline" size="small" class="mr-2" />
+            {{ categoryLabel('ibs_pr_manage') }}
+          </span>
+        </CAccordionHeader>
+        <CAccordionBody class="p-3">
+          <div class="table-responsive">
+            <table class="table table-bordered table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th scope="col" class="sticky-col-header" style="min-width: 200px">권한</th>
+                  <th
+                    v-for="role in getRolesByCategory('ibs_pr_manage')"
+                    :key="role.pk"
+                    scope="col"
+                    class="text-center"
+                    style="min-width: 100px"
+                  >
+                    {{ role.name }}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <template v-for="(perms, sort) in groupedPermissions?.ibs_pr_manage" :key="sort">
+                  <tr class="table-secondary">
+                    <td :colspan="getRolesByCategory('ibs_pr_manage').length + 1" class="fw-bold ps-3">
+                      {{ sortLabel(sort as string) }}
+                    </td>
+                  </tr>
+                  <tr v-for="perm in perms" :key="perm.pk">
+                    <td class="ps-4">
+                      <div class="fw-semibold">{{ perm.name }}</div>
+                      <small class="text-muted">{{ perm.description }}</small>
+                    </td>
+                    <td
+                      v-for="role in getRolesByCategory('ibs_pr_manage')"
+                      :key="role.pk"
+                      class="text-center"
+                    >
+                      <CFormCheck
+                        :id="`perm-${role.pk}-${perm.pk}`"
+                        :checked="hasPermission(role, perm.pk)"
+                        :disabled="!workManager"
+                        @change="togglePermission(role, perm.pk)"
+                      />
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </CAccordionBody>
+      </CAccordionItem>
+    </CAccordion>
   </div>
 </template>
 

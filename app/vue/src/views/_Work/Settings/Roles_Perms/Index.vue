@@ -41,10 +41,10 @@ const maxOrder = computed(() => {
 
 const sortedRoleList = computed(() => {
   return [...roleList.value].sort((a, b) => {
-    const catA = a.category || 'work_core'
-    const catB = b.category || 'work_core'
+    const catA = a.category || 'work_space'
+    const catB = b.category || 'work_space'
     if (catA !== catB) {
-      return catA === 'work_core' ? -1 : 1
+      return catA === 'work_space' ? -1 : 1
     }
     return a.order - b.order
   })

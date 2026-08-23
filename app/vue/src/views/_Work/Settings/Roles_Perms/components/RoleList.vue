@@ -28,10 +28,10 @@ const copyRole = (role: Role) => {
           <span
             :class="
               role.category === 'ibs_hq_manage'
-                ? 'text-warning'
+                ? 'text-primary'
                 : role.category === 'ibs_pr_manage'
-                  ? 'text-primary'
-                  : 'text-success'
+                  ? 'text-success'
+                  : 'text-info'
             "
           >
             <v-icon
