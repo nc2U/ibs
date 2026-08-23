@@ -84,7 +84,7 @@ onBeforeMount(() => account.fetchTodoList())
         class="new-todo"
         autofocus
         autocomplete="off"
-        placeholder="해야 할 일이 있나요?"
+        placeholder="여기에 할 일을 메모 하세요."
         @keyup.enter="addTodo"
       />
     </header>

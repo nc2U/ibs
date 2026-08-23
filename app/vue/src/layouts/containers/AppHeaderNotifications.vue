@@ -128,9 +128,9 @@ const openTodo = () => {
     <!-- 3. 담당 업무 알림 -->
     <v-chip
       size="small"
-      variant="tonal"
-      :color="assignedIssueCount > 0 ? 'primary' : 'secondary'"
-      class="cursor-pointer font-weight-medium px-3"
+      variant="text"
+      :color="assignedIssueCount > 0 ? 'success' : 'secondary'"
+      class="cursor-pointer font-weight-medium px-2"
       @click="goIssue"
     >
       <v-icon icon="mdi-clipboard-text-clock-outline" start size="small" />
@@ -138,7 +138,7 @@ const openTodo = () => {
       <v-badge
         v-if="assignedIssueCount > 0"
         :content="assignedIssueCount"
-        color="primary"
+        color="success"
         inline
         class="ms-1"
       />
@@ -155,14 +155,14 @@ const openTodo = () => {
     <!-- 4. 오늘의 할일 알림 -->
     <v-chip
       size="small"
-      variant="tonal"
-      :color="todoCount > 0 ? 'success' : 'secondary'"
-      class="cursor-pointer font-weight-medium px-3"
+      variant="text"
+      :color="todoCount > 0 ? 'info' : 'secondary'"
+      class="cursor-pointer font-weight-medium px-2"
       @click="openTodo"
     >
       <v-icon icon="mdi-calendar-check-outline" start size="small" />
       할일
-      <v-badge v-if="todoCount > 0" :content="todoCount" color="success" inline class="ms-1" />
+      <v-badge v-if="todoCount > 0" :content="todoCount" color="info" inline class="ms-1" />
       <span v-else class="text-caption ms-1 text-disabled">0</span>
       <v-tooltip activator="parent" location="bottom">
         {{ todoCount > 0 ? `남은 할일 ${todoCount}건 (클릭하여 열기)` : '등록된 할일이 없습니다' }}
