@@ -76,16 +76,21 @@ const { selectedColumns } = useTableColumns('global-issue-table-columns', ALL_IS
 
 const loading = ref<boolean>(true)
 onBeforeMount(async () => {
-  await Promise.all([
-    workStore.fetchMemberList(),
-    workStore.fetchVersionList(),
-    issueStore.fetchTrackerList(),
-    issueStore.fetchStatusList(),
-    issueStore.fetchPriorityList(),
-    issueStore.fetchCategoryList(),
-    issueStore.fetchAllIssueList(),
-  ])
-  loading.value = false
+  try {
+    await Promise.all([
+      workStore.fetchMemberList(),
+      workStore.fetchVersionList(),
+      issueStore.fetchTrackerList(),
+      issueStore.fetchStatusList(),
+      issueStore.fetchPriorityList(),
+      issueStore.fetchCategoryList(),
+      issueStore.fetchAllIssueList(),
+    ])
+  } catch (err) {
+    console.error('Failed to load issues list data:', err)
+  } finally {
+    loading.value = false
+  }
 })
 </script>
 

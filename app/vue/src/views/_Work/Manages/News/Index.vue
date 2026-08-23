@@ -63,8 +63,13 @@ const pageSelect = (p: number) => {
 
 const loading = ref<boolean>(true)
 onBeforeMount(async () => {
-  await infStore.fetchNewsList({ page: page.value })
-  loading.value = false
+  try {
+    await infStore.fetchNewsList({ page: page.value })
+  } catch (err) {
+    console.error('Failed to load news data:', err)
+  } finally {
+    loading.value = false
+  }
 })
 </script>
 

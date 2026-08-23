@@ -57,13 +57,18 @@ watch(route, nVal => {
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  if (route.params.userId) {
-    await accStore.fetchUser(Number(route.params.userId))
-    await fetchIssueByMember(route.params.userId as string)
-    await fetchIssueProjectList({ member: Number(route.params.userId) })
-    await fetchActivityLogList({ creator: route.params.userId as string, limit: 10 })
+  try {
+    if (route.params.userId) {
+      await accStore.fetchUser(Number(route.params.userId))
+      await fetchIssueByMember(route.params.userId as string)
+      await fetchIssueProjectList({ member: Number(route.params.userId) })
+      await fetchActivityLogList({ creator: route.params.userId as string, limit: 10 })
+    }
+  } catch (err) {
+    console.error('Failed to load user settings data:', err)
+  } finally {
+    loading.value = false
   }
-  loading.value = false
 })
 </script>
 

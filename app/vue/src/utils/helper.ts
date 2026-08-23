@@ -26,8 +26,8 @@ export const message = (
 }
 
 export const errorHandle = (err: any) => {
-  // Handle different error response structures
-  const errorData = err?.data || err
+  // Handle different error response structures safely
+  const errorData = err?.response?.data || err?.data || err
 
   if (errorData?.code === 'token_not_valid') {
     console.log('token_not_valid')

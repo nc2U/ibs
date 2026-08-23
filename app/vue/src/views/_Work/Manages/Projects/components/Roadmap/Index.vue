@@ -39,8 +39,13 @@ watch(
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  await workStore.fetchVersionList({ project: route.params.projId as string, exclude: '3' })
-  loading.value = false
+  try {
+    await workStore.fetchVersionList({ project: route.params.projId as string, exclude: '3' })
+  } catch (err) {
+    console.error('Failed to load roadmap data:', err)
+  } finally {
+    loading.value = false
+  }
 })
 </script>
 

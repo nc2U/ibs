@@ -83,11 +83,16 @@ const deleteProject = async (slug: string) => {
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  if (currentProject.value) {
-    await issueStore.fetchTrackerSummary(currentProject.value?.pk)
-    await infStore.fetchNewsList({ project: currentProject.value.slug })
+  try {
+    if (currentProject.value) {
+      await issueStore.fetchTrackerSummary(currentProject.value?.pk)
+      await infStore.fetchNewsList({ project: currentProject.value.slug })
+    }
+  } catch (err) {
+    console.error('Failed to load project overview data:', err)
+  } finally {
+    loading.value = false
   }
-  loading.value = false
 })
 </script>
 

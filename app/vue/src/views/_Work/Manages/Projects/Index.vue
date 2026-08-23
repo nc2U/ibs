@@ -104,8 +104,13 @@ onBeforeRouteUpdate(async (to, from) => {
 
 const loading = ref<boolean>(true)
 onBeforeMount(async () => {
-  if (route.params.projId) await workStore.fetchIssueProject(route.params.projId as string)
-  loading.value = false
+  try {
+    if (route.params.projId) await workStore.fetchIssueProject(route.params.projId as string)
+  } catch (err) {
+    console.error('Failed to load issue project data:', err)
+  } finally {
+    loading.value = false
+  }
 })
 </script>
 

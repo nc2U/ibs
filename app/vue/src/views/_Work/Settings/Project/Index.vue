@@ -43,8 +43,13 @@ const filterSubmit = (payload: ProjectFilter) => {
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  await workStore.fetchIssueProjectList({ status: '1' })
-  loading.value = false
+  try {
+    await workStore.fetchIssueProjectList({ status: '1' })
+  } catch (err) {
+    console.error('Failed to load issue project list:', err)
+  } finally {
+    loading.value = false
+  }
 })
 </script>
 

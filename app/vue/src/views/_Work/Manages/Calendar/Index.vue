@@ -71,9 +71,14 @@ const onResetQuery = () => {
 
 const loading = ref(true)
 onBeforeMount(async () => {
-  await workStore.fetchMemberList()
-  await meetingStore.fetchCategoryList()
-  loading.value = false
+  try {
+    await workStore.fetchMemberList()
+    await meetingStore.fetchCategoryList()
+  } catch (err) {
+    console.error('Failed to load calendar data:', err)
+  } finally {
+    loading.value = false
+  }
 })
 
 const summary = computed(() => {

@@ -100,9 +100,14 @@ watch(
 
 const loading = ref<boolean>(true)
 onBeforeMount(async () => {
-  if (route.query.viewForm) viewForm.value = true
-  await dataSetup()
-  loading.value = false
+  try {
+    if (route.query.viewForm) viewForm.value = true
+    await dataSetup()
+  } catch (err) {
+    console.error('Failed to load project news data:', err)
+  } finally {
+    loading.value = false
+  }
 })
 </script>
 

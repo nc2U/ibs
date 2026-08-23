@@ -157,9 +157,14 @@ watch(
   async nVal => {
     if (nVal) {
       loading.value = true
-      await issueStore.fetchIssue(Number(nVal))
-      await logStore.fetchIssueLogList({ issue: Number(nVal) })
-      loading.value = false
+      try {
+        await issueStore.fetchIssue(Number(nVal))
+        await logStore.fetchIssueLogList({ issue: Number(nVal) })
+      } catch (err) {
+        console.error('Failed to load issue detail:', err)
+      } finally {
+        loading.value = false
+      }
     } else issueStore.removeIssue()
   },
   { deep: true },
@@ -175,23 +180,28 @@ const { selectedColumns } = useTableColumns(
 
 const loading = ref<boolean>(true)
 onBeforeMount(async () => {
-  await workStore.fetchIssueProject(projId.value)
+  try {
+    await workStore.fetchIssueProject(projId.value)
 
-  if (issueId.value) {
-    await issueStore.fetchIssue(Number(issueId.value))
-    await logStore.fetchIssueLogList({ issue: Number(issueId.value) })
+    if (issueId.value) {
+      await issueStore.fetchIssue(Number(issueId.value))
+      await logStore.fetchIssueLogList({ issue: Number(issueId.value) })
+    }
+
+    await Promise.all([
+      workStore.fetchMemberList(),
+      issueStore.fetchTrackerList(),
+      issueStore.fetchStatusList(),
+      issueStore.fetchPriorityList(),
+      issueStore.fetchCategoryList(projId.value), // 프로젝트 카테고리(범주) 목록 로드
+      workStore.fetchVersionList({ project: projId.value }),
+      issueStore.fetchAllIssueList(projId.value),
+    ])
+  } catch (err) {
+    console.error('Failed to load project issues data:', err)
+  } finally {
+    loading.value = false
   }
-
-  await Promise.all([
-    workStore.fetchMemberList(),
-    issueStore.fetchTrackerList(),
-    issueStore.fetchStatusList(),
-    issueStore.fetchPriorityList(),
-    issueStore.fetchCategoryList(projId.value), // 프로젝트 카테고리(범주) 목록 로드
-    workStore.fetchVersionList({ project: projId.value }),
-    issueStore.fetchAllIssueList(projId.value),
-  ])
-  loading.value = false
 })
 </script>
 

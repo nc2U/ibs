@@ -84,23 +84,28 @@ const onBlamePost = (pk: number) => forumStore.patchPostBlame(pk)
 
 const dataSetup = async () => {
   loading.value = true
-  const projId = route.params.projId as string
-  const forumId = route.params.forumId ? Number(route.params.forumId) : null
-  const postId = route.params.postId ? Number(route.params.postId) : null
+  try {
+    const projId = route.params.projId as string
+    const forumId = route.params.forumId ? Number(route.params.forumId) : null
+    const postId = route.params.postId ? Number(route.params.postId) : null
 
-  if (projId) {
-    await forumStore.fetchForumList({ project: projId })
-    if (forumId) {
-      await forumStore.fetchForum(forumId)
-      await forumStore.fetchCategoryList(forumId)
-      if (postId) {
-        await fetchPostData(postId)
-      } else {
-        await forumStore.fetchPostList({ forum: forumId, page: page.value })
+    if (projId) {
+      await forumStore.fetchForumList({ project: projId })
+      if (forumId) {
+        await forumStore.fetchForum(forumId)
+        await forumStore.fetchCategoryList(forumId)
+        if (postId) {
+          await fetchPostData(postId)
+        } else {
+          await forumStore.fetchPostList({ forum: forumId, page: page.value })
+        }
       }
     }
+  } catch (err) {
+    console.error('Failed to load forum data:', err)
+  } finally {
+    loading.value = false
   }
-  loading.value = false
 }
 
 const onPageSelect = (p: number) => {
@@ -118,20 +123,25 @@ watch(
     } else if (newParams.forumId !== oldParams?.forumId || newParams.postId !== oldParams?.postId) {
       if (newParams.forumId) {
         loading.value = true
-        if (newParams.forumId !== oldParams?.forumId) {
-          page.value = 1
-          await forumStore.fetchForum(Number(newParams.forumId))
-          await forumStore.fetchCategoryList(Number(newParams.forumId))
-        }
+        try {
+          if (newParams.forumId !== oldParams?.forumId) {
+            page.value = 1
+            await forumStore.fetchForum(Number(newParams.forumId))
+            await forumStore.fetchCategoryList(Number(newParams.forumId))
+          }
 
-        if (newParams.postId) {
-          forumStore.removePost() // Clear old post data
-          await fetchPostData(Number(newParams.postId))
-        } else {
-          forumStore.removePost()
-          await forumStore.fetchPostList({ forum: Number(newParams.forumId), page: page.value })
+          if (newParams.postId) {
+            forumStore.removePost() // Clear old post data
+            await fetchPostData(Number(newParams.postId))
+          } else {
+            forumStore.removePost()
+            await forumStore.fetchPostList({ forum: Number(newParams.forumId), page: page.value })
+          }
+        } catch (err) {
+          console.error('Failed to switch forum/post:', err)
+        } finally {
+          loading.value = false
         }
-        loading.value = false
       }
     }
   },

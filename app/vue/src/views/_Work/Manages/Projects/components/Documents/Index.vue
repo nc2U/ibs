@@ -140,9 +140,14 @@ const dataSetup = async (projId: string, docId?: string | string[]) => {
 
 const loading = ref<boolean>(true)
 onBeforeMount(async () => {
-  if (route.query.viewForm) viewForm.value = true
-  await dataSetup(projId.value as string, docId.value)
-  loading.value = false
+  try {
+    if (route.query.viewForm) viewForm.value = true
+    await dataSetup(projId.value as string, docId.value)
+  } catch (err) {
+    console.error('Failed to load project documents data:', err)
+  } finally {
+    loading.value = false
+  }
 })
 </script>
 

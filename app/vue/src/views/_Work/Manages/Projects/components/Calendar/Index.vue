@@ -66,11 +66,16 @@ const loading = ref(true)
 const combinedLoading = computed(() => loading.value || calendarStore.loading)
 
 onBeforeMount(async () => {
-  if (route.params.projId) {
-    await issueStore.fetchIssueList({ project: route.params.projId as string })
-    await meetingStore.fetchCategoryList(route.params.projId as string)
+  try {
+    if (route.params.projId) {
+      await issueStore.fetchIssueList({ project: route.params.projId as string })
+      await meetingStore.fetchCategoryList(route.params.projId as string)
+    }
+  } catch (err) {
+    console.error('Failed to load project calendar data:', err)
+  } finally {
+    loading.value = false
   }
-  loading.value = false
 })
 </script>
 

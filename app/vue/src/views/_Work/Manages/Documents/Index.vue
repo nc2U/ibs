@@ -85,10 +85,15 @@ const pageSelect = (page: number) => {
 const loading = ref<boolean>(true)
 const initData = async () => {
   loading.value = true
-  await workStore.fetchAllProjectList()
-  await fetchCategoryList(typeNumber.value)
-  await fetchDocsList(docsFilter.value)
-  loading.value = false
+  try {
+    await workStore.fetchAllProjectList()
+    await fetchCategoryList(typeNumber.value)
+    await fetchDocsList(docsFilter.value)
+  } catch (err) {
+    console.error('Failed to load documents data:', err)
+  } finally {
+    loading.value = false
+  }
 }
 
 onBeforeMount(initData)

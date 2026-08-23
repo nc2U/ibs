@@ -87,9 +87,14 @@ const loading = ref<boolean>(true)
 
 const initData = async () => {
   loading.value = true
-  await meetingStore.fetchMeetingList({ page: page.value })
-  await meetingStore.fetchCategoryList()
-  loading.value = false
+  try {
+    await meetingStore.fetchMeetingList({ page: page.value })
+    await meetingStore.fetchCategoryList()
+  } catch (err) {
+    console.error('Failed to load meetings data:', err)
+  } finally {
+    loading.value = false
+  }
 }
 
 onBeforeMount(initData)
