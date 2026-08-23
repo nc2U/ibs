@@ -94,7 +94,7 @@ if [ "$IS_LOCAL" = "true" ]; then
   echo ""
   echo "🚀 Streaming pg_dump directly to local PC file (${LOCAL_DUMP_PATH})..."
   kubectl exec -n "$NAMESPACE" "$PRIMARY_POD" -c postgres -- \
-    pg_dump -U postgres -d "$DB_NAME" -n ibs --data-only --exclude-table=ibs.django_migrations --column-inserts -Fc > "$LOCAL_DUMP_PATH"
+    pg_dump -U postgres -d "$DB_NAME" -n ibs --data-only --exclude-table=ibs.django_migrations -Fc > "$LOCAL_DUMP_PATH"
   chmod 644 "$LOCAL_DUMP_PATH" 2>/dev/null || true
 
   echo ""
@@ -180,7 +180,6 @@ spec:
                 -n "\$POSTGRES_SCHEMA" \\
                 --data-only \\
                 --exclude-table="\${POSTGRES_SCHEMA}.django_migrations" \\
-                --column-inserts \\
                 -Fc \\
                 -f "\$DUMP_FILE"
 
