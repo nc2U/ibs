@@ -12,8 +12,15 @@ export default withMermaid(
       [
         'link',
         {
+          rel: 'icon',
+          href: '/favicon.ico',
+        },
+      ],
+      [
+        'link',
+        {
           rel: 'shortcut icon',
-          href: 'https://github.com/nc2U/ibs/blob/master/app/vue/docs/favicon.png?raw=true',
+          href: '/favicon.ico',
         },
       ],
       [
@@ -32,9 +39,13 @@ export default withMermaid(
         target: 'ESNext',
       },
       optimizeDeps: {
+        include: ['mermaid', 'dayjs'],
         esbuildOptions: {
           target: 'ESNext',
         },
+      },
+      ssr: {
+        noExternal: ['mermaid', 'vitepress-plugin-mermaid', 'dayjs'],
       },
     },
     lastUpdated: true,
@@ -95,6 +106,37 @@ export default withMermaid(
               items: [
                 { text: '사용자', link: '/work-setting/user' },
                 { text: '역할 및 권한', link: '/work-setting/roll-perm' },
+              ],
+            },
+          ],
+        },
+        {
+          text: '전자결재 시스템',
+          items: [
+            { text: '전자결재 개요', link: '/approval/' },
+            {
+              text: '문서 기안 및 작성',
+              collapsed: false,
+              items: [
+                { text: '기안서 작성 및 상신', link: '/approval/draft' },
+                { text: '기안 양식 안내 (17종)', link: '/approval/forms' },
+              ],
+            },
+            {
+              text: '결재 진행 및 처리',
+              collapsed: false,
+              items: [
+                { text: '자동 결재선 및 전결 규칙', link: '/approval/route' },
+                { text: '승인 / 반려 / 상신 회수', link: '/approval/action' },
+                { text: '결재 위임 (대결 관리)', link: '/approval/delegation' },
+              ],
+            },
+            {
+              text: '문서함 및 출력',
+              collapsed: false,
+              items: [
+                { text: '문서함 구분 및 검색', link: '/approval/boxes' },
+                { text: '공람 및 PDF 출력', link: '/approval/pdf-print' },
               ],
             },
           ],
