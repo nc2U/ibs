@@ -256,6 +256,24 @@ spec:
       secret:
         name: postgres-app
 ${RECOVERY_TARGET_YAML}
+  backup:
+    barmanObjectStore:
+      destinationPath: "${S3_DESTINATION}"
+      serverName: "${SOURCE_SERVER_NAME}"
+      endpointURL: "https://s3.dyibs.com"
+      s3Credentials:
+        accessKeyId:
+          name: "${SECRET_NAME}"
+          key: "${KEY_ACCESS}"
+        secretAccessKey:
+          name: "${SECRET_NAME}"
+          key: "${KEY_SECRET}"
+      wal:
+        compression: "gzip"
+        maxParallel: 2
+      data:
+        compression: "gzip"
+        jobs: 2
   externalClusters:
     - name: postgres-s3
       barmanObjectStore:
@@ -295,6 +313,24 @@ spec:
       owner: "${DB_USER}"
       secret:
         name: postgres-app
+  backup:
+    barmanObjectStore:
+      destinationPath: "${S3_DESTINATION}"
+      serverName: "${SOURCE_SERVER_NAME}"
+      endpointURL: "https://s3.dyibs.com"
+      s3Credentials:
+        accessKeyId:
+          name: "${SECRET_NAME}"
+          key: "${KEY_ACCESS}"
+        secretAccessKey:
+          name: "${SECRET_NAME}"
+          key: "${KEY_SECRET}"
+      wal:
+        compression: "gzip"
+        maxParallel: 2
+      data:
+        compression: "gzip"
+        jobs: 2
   externalClusters:
     - name: postgres-s3
       barmanObjectStore:
