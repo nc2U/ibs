@@ -222,6 +222,11 @@ const approval = {
       name: '전체 문서함',
       to: '/approval/all',
     },
+    {
+      component: 'CNavItem',
+      name: '결재 위임 관리',
+      to: '/approval/delegation',
+    },
   ],
 }
 
