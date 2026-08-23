@@ -154,15 +154,21 @@ MASTER_HOST = DATABASE_HOST_OVERRIDE or (
     f'{DATABASE_TYPE}-rw.{NAMESPACE}.svc.cluster.local'
     if KUBERNETES_SERVICE_HOST else DATABASE_TYPE
 )
-DEFAULT_OPTIONS = {'connect_timeout': 10, 'options': f'-c search_path={DATABASE_NAME},public'} \
-    if DATABASE_TYPE == 'postgres' else {
+DATABASE_CONN_MAX_AGE = config('DATABASE_CONN_MAX_AGE', default=60, cast=int)
+
+DEFAULT_OPTIONS = {
+    'connect_timeout': 10,
+    'options': f'-c search_path={DATABASE_NAME},public -c statement_timeout=30000ms -c idle_in_transaction_session_timeout=60000ms',
+} if DATABASE_TYPE == 'postgres' else {
     'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",  # 초기 명령어 설정
     'charset': 'utf8mb4',  # 캐릭터셋 설정
     'connect_timeout': 10,  # 연결 타임아웃 설정
 }
 
-REPLICA_OPTIONS = {'connect_timeout': 10, 'options': f'-c search_path={DATABASE_NAME},public'} \
-    if DATABASE_TYPE == 'postgres' else {'charset': 'utf8mb4', 'connect_timeout': 10, }
+REPLICA_OPTIONS = {
+    'connect_timeout': 10,
+    'options': f'-c search_path={DATABASE_NAME},public -c statement_timeout=30000ms -c idle_in_transaction_session_timeout=60000ms',
+} if DATABASE_TYPE == 'postgres' else {'charset': 'utf8mb4', 'connect_timeout': 10, }
 
 DATABASES = {
     'default': {
@@ -175,6 +181,7 @@ DATABASES = {
         'PORT': config('POSTGRES_PRIMARY_SERVICE_PORT', default='5432') \
             if DATABASE_TYPE == 'postgres' \
             else config('MARIADB_PRIMARY_SERVICE_PORT_MYSQL', default='3306'),
+        'CONN_MAX_AGE': DATABASE_CONN_MAX_AGE,
         'OPTIONS': DEFAULT_OPTIONS,
     },
     'replica': {
@@ -188,6 +195,7 @@ DATABASES = {
         'PORT': config('POSTGRES_READ_SERVICE_PORT', default='5432') \
             if DATABASE_TYPE == 'postgres' \
             else config('MARIADB_READ_SERVICE_PORT_MYSQL', default='3306'),
+        'CONN_MAX_AGE': DATABASE_CONN_MAX_AGE,
         'OPTIONS': REPLICA_OPTIONS,
     }
 }
