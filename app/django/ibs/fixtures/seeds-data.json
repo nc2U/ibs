@@ -11044,10 +11044,10 @@
     "fields": {
       "module": "contract",
       "category": "ibs_global",
-      "code": "contract.release",
-      "name": "계약 해지 처리",
+      "code": "contract.succession",
+      "name": "계약 승계 처리",
       "is_default": false,
-      "description": "해지 신청~확정 처리"
+      "description": "승계 신청~완료 처리"
     }
   },
   {
@@ -11056,10 +11056,10 @@
     "fields": {
       "module": "contract",
       "category": "ibs_global",
-      "code": "contract.succession",
-      "name": "계약 승계 처리",
+      "code": "contract.release",
+      "name": "계약 해지 처리",
       "is_default": false,
-      "description": "승계 신청~완료 처리"
+      "description": "해지 신청~확정 처리"
     }
   },
   {
@@ -11558,6 +11558,401 @@
     }
   },
   {
+    "model": "approval.doccategory",
+    "pk": 1,
+    "fields": {
+      "name": "대외·공통",
+      "code": "COMMON",
+      "description": "일반 업무 품의 및 보고서",
+      "order": 1,
+      "is_active": true
+    }
+  },
+  {
+    "model": "approval.doccategory",
+    "pk": 2,
+    "fields": {
+      "name": "인사·근태",
+      "code": "HR",
+      "description": "휴가, 근태, 출장, 경조사, 인사 관련",
+      "order": 1,
+      "is_active": true
+    }
+  },
+  {
+    "model": "approval.doccategory",
+    "pk": 3,
+    "fields": {
+      "name": "회계·자금",
+      "code": "FINANCE",
+      "description": "지출결의, 법인카드, 가지급금 등",
+      "order": 1,
+      "is_active": true
+    }
+  },
+  {
+    "model": "approval.doccategory",
+    "pk": 4,
+    "fields": {
+      "name": "계약·법무",
+      "code": "CONTRACT",
+      "description": "용역 및 구매 계약, 법무 검토",
+      "order": 1,
+      "is_active": true
+    }
+  },
+  {
+    "model": "approval.doccategory",
+    "pk": 5,
+    "fields": {
+      "name": "사업·프로젝트",
+      "code": "PROJECT",
+      "description": "개발사업성 검토, 현장 공무, 설계변경 등",
+      "order": 1,
+      "is_active": true
+    }
+  },
+  {
+    "model": "approval.documenttype",
+    "pk": 1,
+    "fields": {
+      "category": 1,
+      "name": "공문 발신",
+      "code": "OFFICIAL_LETTER",
+      "description": "회사 명의의 대외 공문 발신을 승인",
+      "route_type": "organization",
+      "final_approval_duty": null,
+      "final_dept_level": null,
+      "form_template_key": "OFFICIAL_LETTER",
+      "default_security_level": "3",
+      "is_active": true,
+      "created_at": "2026-08-19T17:08:54.997Z",
+      "allowed_departments": [],
+      "allowed_duties": [],
+      "allowed_positions": []
+    }
+  },
+  {
+    "model": "approval.documenttype",
+    "pk": 2,
+    "fields": {
+      "category": 1,
+      "name": "일반품의",
+      "code": "GENERAL",
+      "description": "표준 결재유형으로 분류하기 어려운 일반적인 업무 안건의 승인",
+      "route_type": "organization",
+      "final_approval_duty": null,
+      "final_dept_level": null,
+      "form_template_key": "",
+      "default_security_level": "2",
+      "is_active": true,
+      "created_at": "2026-08-19T17:09:34.657Z",
+      "allowed_departments": [],
+      "allowed_duties": [],
+      "allowed_positions": []
+    }
+  },
+  {
+    "model": "approval.documenttype",
+    "pk": 3,
+    "fields": {
+      "category": 2,
+      "name": "휴가/연차 신청",
+      "code": "LEAVE",
+      "description": "연차·반차·기타 휴가의 사용을 신청",
+      "route_type": "organization",
+      "final_approval_duty": null,
+      "final_dept_level": null,
+      "form_template_key": "LEAVE",
+      "default_security_level": "1",
+      "is_active": true,
+      "created_at": "2026-08-19T17:10:44.095Z",
+      "allowed_departments": [],
+      "allowed_duties": [],
+      "allowed_positions": []
+    }
+  },
+  {
+    "model": "approval.documenttype",
+    "pk": 4,
+    "fields": {
+      "category": 2,
+      "name": "출장 신청",
+      "code": "BUSINESS_TRIP",
+      "description": "국내·외 출장 계획 및 승인을 신청",
+      "route_type": "organization",
+      "final_approval_duty": null,
+      "final_dept_level": null,
+      "form_template_key": "BUSINESS_TRIP",
+      "default_security_level": "2",
+      "is_active": true,
+      "created_at": "2026-08-19T17:11:28.208Z",
+      "allowed_departments": [],
+      "allowed_duties": [],
+      "allowed_positions": []
+    }
+  },
+  {
+    "model": "approval.documenttype",
+    "pk": 5,
+    "fields": {
+      "category": 2,
+      "name": "연장/휴일근무 신청",
+      "code": "OVERTIME",
+      "description": "연장근무 또는 휴일근무를 사전 신청",
+      "route_type": "organization",
+      "final_approval_duty": null,
+      "final_dept_level": null,
+      "form_template_key": "OVERTIME",
+      "default_security_level": "2",
+      "is_active": true,
+      "created_at": "2026-08-19T17:12:11.991Z",
+      "allowed_departments": [],
+      "allowed_duties": [],
+      "allowed_positions": []
+    }
+  },
+  {
+    "model": "approval.documenttype",
+    "pk": 6,
+    "fields": {
+      "category": 2,
+      "name": "인사발령",
+      "code": "HR_APPOINTMENT",
+      "description": "입사·퇴사·전보·승진·직책 변경 등 인사 조치를 승인",
+      "route_type": "organization",
+      "final_approval_duty": null,
+      "final_dept_level": null,
+      "form_template_key": "HR_APPOINTMENT",
+      "default_security_level": "1",
+      "is_active": true,
+      "created_at": "2026-08-19T17:12:50.727Z",
+      "allowed_departments": [],
+      "allowed_duties": [],
+      "allowed_positions": []
+    }
+  },
+  {
+    "model": "approval.documenttype",
+    "pk": 7,
+    "fields": {
+      "category": 2,
+      "name": "인사 관련 신청",
+      "code": "HR_REQUEST",
+      "description": "재직증명 등 일반적인 인사 관련 신청",
+      "route_type": "organization",
+      "final_approval_duty": null,
+      "final_dept_level": null,
+      "form_template_key": "HR_REQUEST",
+      "default_security_level": "1",
+      "is_active": true,
+      "created_at": "2026-08-19T17:13:50.452Z",
+      "allowed_departments": [],
+      "allowed_duties": [],
+      "allowed_positions": []
+    }
+  },
+  {
+    "model": "approval.documenttype",
+    "pk": 8,
+    "fields": {
+      "category": 3,
+      "name": "구매품의",
+      "code": "PURCHASE",
+      "description": "물품·용역 등의 구매 및 비용 발생을 사전 승인",
+      "route_type": "organization",
+      "final_approval_duty": null,
+      "final_dept_level": null,
+      "form_template_key": "PURCHASE",
+      "default_security_level": "2",
+      "is_active": true,
+      "created_at": "2026-08-19T17:15:27.553Z",
+      "allowed_departments": [],
+      "allowed_duties": [],
+      "allowed_positions": []
+    }
+  },
+  {
+    "model": "approval.documenttype",
+    "pk": 9,
+    "fields": {
+      "category": 3,
+      "name": "지출결의",
+      "code": "EXPENSE",
+      "description": "회사 비용의 집행 및 지급을 승인",
+      "route_type": "organization",
+      "final_approval_duty": null,
+      "final_dept_level": null,
+      "form_template_key": "EXPENSE_REPORT",
+      "default_security_level": "2",
+      "is_active": true,
+      "created_at": "2026-08-19T17:16:05.250Z",
+      "allowed_departments": [],
+      "allowed_duties": [],
+      "allowed_positions": []
+    }
+  },
+  {
+    "model": "approval.documenttype",
+    "pk": 10,
+    "fields": {
+      "category": 3,
+      "name": "경비 정산",
+      "code": "EXPENSE_SETTLEMENT",
+      "description": "출장·업무 수행 등에 사용한 비용을 정산",
+      "route_type": "organization",
+      "final_approval_duty": null,
+      "final_dept_level": null,
+      "form_template_key": "EXPENSE_SETTLEMENT",
+      "default_security_level": "2",
+      "is_active": true,
+      "created_at": "2026-08-19T17:16:45.566Z",
+      "allowed_departments": [],
+      "allowed_duties": [],
+      "allowed_positions": []
+    }
+  },
+  {
+    "model": "approval.documenttype",
+    "pk": 11,
+    "fields": {
+      "category": 3,
+      "name": "선급금/가지급금 신청",
+      "code": "ADVANCE",
+      "description": "업무 수행에 필요한 선급금 또는 가지급금 지급을 신청",
+      "route_type": "organization",
+      "final_approval_duty": null,
+      "final_dept_level": null,
+      "form_template_key": "ADVANCE",
+      "default_security_level": "2",
+      "is_active": true,
+      "created_at": "2026-08-19T17:18:06.378Z",
+      "allowed_departments": [],
+      "allowed_duties": [],
+      "allowed_positions": []
+    }
+  },
+  {
+    "model": "approval.documenttype",
+    "pk": 12,
+    "fields": {
+      "category": 4,
+      "name": "계약품의",
+      "code": "CONTRACT",
+      "description": "회사의 계약 체결을 사전 승인",
+      "route_type": "organization",
+      "final_approval_duty": null,
+      "final_dept_level": null,
+      "form_template_key": "CONTRACT",
+      "default_security_level": "1",
+      "is_active": true,
+      "created_at": "2026-08-19T17:18:45.570Z",
+      "allowed_departments": [],
+      "allowed_duties": [],
+      "allowed_positions": []
+    }
+  },
+  {
+    "model": "approval.documenttype",
+    "pk": 13,
+    "fields": {
+      "category": 4,
+      "name": "계약 변경/해지",
+      "code": "CONTRACT_CHANGE",
+      "description": "기존 계약의 변경·연장·해지 등을 승인",
+      "route_type": "organization",
+      "final_approval_duty": null,
+      "final_dept_level": null,
+      "form_template_key": "CONTRACT_CHANGE",
+      "default_security_level": "1",
+      "is_active": true,
+      "created_at": "2026-08-19T17:19:28.317Z",
+      "allowed_departments": [],
+      "allowed_duties": [],
+      "allowed_positions": []
+    }
+  },
+  {
+    "model": "approval.documenttype",
+    "pk": 14,
+    "fields": {
+      "category": 4,
+      "name": "법무 검토",
+      "code": "LEGAL_REVIEW",
+      "description": "계약·사업·분쟁 등 법률적 검토가 필요한 사항을 요청",
+      "route_type": "organization",
+      "final_approval_duty": null,
+      "final_dept_level": null,
+      "form_template_key": "LEGAL_REVIEW",
+      "default_security_level": "1",
+      "is_active": true,
+      "created_at": "2026-08-19T17:20:37.861Z",
+      "allowed_departments": [],
+      "allowed_duties": [],
+      "allowed_positions": []
+    }
+  },
+  {
+    "model": "approval.documenttype",
+    "pk": 15,
+    "fields": {
+      "category": 5,
+      "name": "사업검토",
+      "code": "BUSINESS_REVIEW",
+      "description": "신규 사업 또는 주요 사업 안건의 타당성을 검토",
+      "route_type": "organization",
+      "final_approval_duty": null,
+      "final_dept_level": null,
+      "form_template_key": "BUSINESS_REVIEW",
+      "default_security_level": "2",
+      "is_active": true,
+      "created_at": "2026-08-19T17:21:15.752Z",
+      "allowed_departments": [],
+      "allowed_duties": [],
+      "allowed_positions": []
+    }
+  },
+  {
+    "model": "approval.documenttype",
+    "pk": 16,
+    "fields": {
+      "category": 5,
+      "name": "사업추진 승인",
+      "code": "BUSINESS_APPROVAL",
+      "description": "검토 완료된 사업의 실제 추진 여부를 승인",
+      "route_type": "organization",
+      "final_approval_duty": null,
+      "final_dept_level": null,
+      "form_template_key": "BUSINESS_APPROVAL",
+      "default_security_level": "2",
+      "is_active": true,
+      "created_at": "2026-08-19T17:21:58.577Z",
+      "allowed_departments": [],
+      "allowed_duties": [],
+      "allowed_positions": []
+    }
+  },
+  {
+    "model": "approval.documenttype",
+    "pk": 17,
+    "fields": {
+      "category": 5,
+      "name": "프로젝트 주요 의사결정",
+      "code": "PROJECT_DECISION",
+      "description": "진행 중인 프로젝트의 주요 사항에 대한 의사결정",
+      "route_type": "organization",
+      "final_approval_duty": null,
+      "final_dept_level": null,
+      "form_template_key": "PROJECT_DECISION",
+      "default_security_level": "2",
+      "is_active": true,
+      "created_at": "2026-08-19T17:22:33.506Z",
+      "allowed_departments": [],
+      "allowed_duties": [],
+      "allowed_positions": []
+    }
+  },
+  {
     "model": "work.customquery",
     "pk": 1,
     "fields": {
@@ -11581,8 +11976,8 @@
     "model": "work.customquery",
     "pk": 2,
     "fields": {
-      "name": "내 프로젝트",
-      "description": "내가 참여 중인 프로젝트 조회",
+      "name": "내 워크스페이스",
+      "description": "내가 참여 중인 워크스페이스 조회",
       "target_type": "project",
       "project": null,
       "user": 1,
@@ -11594,7 +11989,7 @@
       "sort_criteria": [],
       "group_by": "",
       "created": "2026-07-16T10:40:00Z",
-      "updated": "2026-07-16T10:40:00Z"
+      "updated": "2026-08-12T15:35:53.050Z"
     }
   },
   {

@@ -7,6 +7,7 @@ python ../../manage.py dumpdata \
     ibs.accountsort ibs.accountsubd1 ibs.accountsubd2 ibs.accountsubd3 \
     ibs.projectaccountd2 ibs.projectaccountd3 ibs.wisesaying \
     work.role work.permission work.tracker work.issuestatus work.codeissuepriority \
+    approval.doccategory approval.documenttype approval.approvalpolicyrule approval.routetemplate \
     --indent 2 --output seeds-data.json
 
 # 2. work.CustomQuery 모델의 pk 1, 2번 데이터만 임시 파일로 덤프
