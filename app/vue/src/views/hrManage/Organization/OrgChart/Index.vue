@@ -212,8 +212,7 @@ onMounted(async () => {
               <span
                 class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1"
               >
-                임직원 <strong>{{ totalStaffsCount }}</strong
-                >명
+                임직원 <strong>{{ totalStaffsCount }} </strong>명
               </span>
             </div>
           </div>
@@ -342,7 +341,7 @@ onMounted(async () => {
                     <v-icon icon="mdi-account-tie" size="x-small" class="me-1 text-primary" />
                     책임자: <strong>{{ dept.manager_name || '미지정' }}</strong>
                   </span>
-                  <span class="badge bg-light text-dark border">
+                  <span class="badge bg-light text-dark border text-body">
                     {{ getDeptMembers(dept).length }}명
                   </span>
                 </div>
