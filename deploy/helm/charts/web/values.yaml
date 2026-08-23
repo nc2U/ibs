@@ -6,16 +6,16 @@ replicaCount: 1
 
 # Celery worker configuration
 celery:
-  replicaCount: 2
-  concurrency: 4
-  maxTasksPerChild: 1000
+  replicaCount: 1
+  concurrency: 2
+  maxTasksPerChild: 50
   resources:
     requests:
-      cpu: 200m
-      memory: 512Mi
+      cpu: 100m
+      memory: 256Mi
     limits:
       cpu: 1000m
-      memory: 1Gi
+      memory: 600Mi
 
 image:
   repository: nc2u/django
@@ -105,7 +105,7 @@ resources:
 autoscaling:
   enabled: true
   minReplicas: 1
-  maxReplicas: 100
+  maxReplicas: 3
   targetCPUUtilizationPercentage: 80
   # targetMemoryUtilizationPercentage: 80
 
