@@ -67,27 +67,64 @@ CloudNativePG (CNPG) In-tree Barman Cloud를 활용한 MinIO S3 오브젝트 스
 
 ### ⚠️ 마이그레이션 디렉터리 리셋 절차 (Django Migrations Reset Workflow - 정석 지침)
 
-Django `migrations` 디렉터리를 0001_initial로 리셋한 후 배포 및 DB 복원을 수행하는 **정석 절차**입니다. (Helm 프리훅 마이그레이션 충돌 방지)
+Django `migrations` 디렉터리를 0001_initial로 리셋한 후 배포 및 DB 복원을 수행하는 **가장 깔끔하고 안전한 정석 절차**입니다. (Helm 프리훅 마이그레이션 충돌 및 수동
+`--fake` 작업 완전 배제)
 
-1. **언인스톨 및 기존 DB 클러스터 선제 삭제**:
-   - 기존 DB와 마이그레이션 훅 충돌을 막기 위해 Helm 언인스톨 및 DB 클러스터를 삭제합니다:
-     ```bash
-     helm uninstall ibs -n ibs-prod   # 또는 ibs-dev
-     kubectl delete cluster postgres -n ibs-prod
-     ```
-2. **새 마이그레이션 코드 배포 (GitHub Actions / Git Push)**:
-   - 로컬에서 리셋된 `migrations/0001_initial.py` 코드를 Git에 커밋/푸시하여 서버에 배포합니다.
-3. **S3 수동 복구 & 마이그레이션 족보 동기화**:
-   - S3 백업 데이터 기반으로 DB 복원 및 Django 마이그레이션 이력을 동기화합니다:
-     ```bash
-     ./manual-s3-restore.sh prod
-     kubectl exec -it $(kubectl get pod -l app.kubernetes.io/name=web -n ibs-prod -o name | head -1) -n ibs-prod -- sh migrate.sh -r
-     ```
-4. **📌 [필수] S3 기준점 백업 생성 (Post-Migration Baseline S3 Backup)**:
-   - 복원 및 마이그레이션 족보 동기화가 완료된 즉시 **새로운 S3 수동 백업을 생성하여 최신 마이그레이션 상태로 S3 아카이브 기준점을 재설정**합니다:
-     ```bash
-     ./manual-s3-backup.sh prod   # 또는 dev
-     ```
+1. **기존 DB 순수 비즈니스 데이터 선제 백업 (`manual-backup.sh`)**:
+    - `django_migrations` 테이블을 제외한 순수 업무 데이터만 덤프합니다:
+      ```bash
+      ./manual-backup.sh prod   # 또는 dev
+      ```
+2. **기존 릴리즈 및 DB 클러스터 언인스톨**:
+    - 기존 DB를 완전히 정리하여 충돌 요소를 제거합니다:
+      ```bash
+      helm uninstall ibs -n ibs-prod   # 또는 ibs-dev
+      kubectl delete cluster postgres -n ibs-prod
+      ```
+3. **새 마이그레이션 코드 배포 (`prod-deploy.sh` 또는 Git Push)**:
+    - 로컬에서 리셋된 `migrations/0001_initial.py` 코드를 배포합니다. 빈 DB 상태에서 기동되므로 신규 `0001_initial` 마이그레이션이 충돌 없이 **100% 클린 적용
+      (Clean Apply)**됩니다:
+      ```bash
+      ./prod-deploy.sh   # 또는 dev-deploy.sh
+      ```
+4. **순수 비즈니스 데이터 복원 (`manual-restore.sh`)**:
+    - 새로 생성된 최신 스키마 테이블에 1단계에서 백업한 순수 비즈니스 데이터를 복원합니다:
+      ```bash
+      ./manual-restore.sh prod --auto   # 또는 dev
+      ```
+5. **📌 [필수] S3 버킷 비우기 & 신규 기준점 S3 백업 생성 (`manual-s3-backup.sh`)**:
+    - 신규 클러스터의 시스템 식별자 (System Identifier) 및 WAL 타임라인 충돌을 방지하기 위해 **S3 버킷 (`postgres-backup` 또는 `postgres-backup-dev`)을
+      먼저 비운 후**, 최신 상태로 S3 기준점 백업을 생성합니다:
+
+      **[NAS 서버 SSH 접속 시 MinIO S3 백업 비우기 정석 절차]**
+      ```bash
+      # 1) MinIO 관리자(Root) 권한으로 mc 별칭(alias) 등록
+      #    형식: mc alias set <별칭이름> <엔드포인트URL> <ACCESS_KEY> <SECRET_KEY>
+      mc alias set myminio https://s3.dyibs.com minioadmin 
+      Enter Secret Key: minioadmin_password
+      
+      # 2) 연결 및 버킷 목록 확인
+      mc ls myminio
+      
+      # 3) 버킷 내부 데이터 일괄 강제 삭제 (버킷 자체는 유지)
+      mc rm --recursive --force myminio/postgres-backup/       # 운영 환경 (prod)
+      mc rm --recursive --force myminio/postgres-backup-dev/   # 개발 환경 (dev)
+      
+      # 4) 삭제 확인 (아무것도 안 나오면 완료)
+      mc ls myminio/postgres-backup/       # prod
+      mc ls myminio/postgres-backup-dev/   # dev
+      
+      # ----------------------------------------------------
+      # (대안) NAS 파일시스템에서 직접 삭제할 경우 (sudo 권한 필요)
+      # sudo rm -rf /volume1/docker/minio/data/postgres-backup/*
+      # sudo rm -rf /volume1/docker/minio/data/postgres-backup-dev/*
+      # ----------------------------------------------------
+      ```
+
+      **[신규 S3 Base Backup 실행]** (마스터 서버)
+      ```bash
+      ./manual-s3-backup.sh prod   # 또는 dev
+      ```
 
 ### 3️⃣ kubectl로 직접 실행 (고급)
 
