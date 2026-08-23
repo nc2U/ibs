@@ -116,7 +116,7 @@ export default withMermaid(
             { text: '전자결재 개요', link: '/approval/' },
             {
               text: '문서 기안 및 작성',
-              collapsed: false,
+              collapsed: true,
               items: [
                 { text: '기안서 작성 및 상신', link: '/approval/draft' },
                 { text: '기안 양식 안내 (17종)', link: '/approval/forms' },
@@ -124,7 +124,7 @@ export default withMermaid(
             },
             {
               text: '결재 진행 및 처리',
-              collapsed: false,
+              collapsed: true,
               items: [
                 { text: '자동 결재선 및 전결 규칙', link: '/approval/route' },
                 { text: '승인 / 반려 / 상신 회수', link: '/approval/action' },
@@ -133,7 +133,7 @@ export default withMermaid(
             },
             {
               text: '문서함 및 출력',
-              collapsed: false,
+              collapsed: true,
               items: [
                 { text: '문서함 구분 및 검색', link: '/approval/boxes' },
                 { text: '공람 및 PDF 출력', link: '/approval/pdf-print' },
