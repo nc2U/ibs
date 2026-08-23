@@ -268,8 +268,16 @@ class RoleViewSet(viewsets.ModelViewSet):
     serializer_class = RoleSerializer
     permission_classes = (permissions.IsAuthenticated, IsWorkManagerReadOnly)
     pagination_class = PageNumberPaginationTwenty
-    filterset_fields = ('category',)
+    filterset_fields = ('category', 'is_confidential')
     search_fields = ('id',)
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = super().get_queryset()
+        # 슈퍼유저가 아닌 경우 보안 격리 역할(is_confidential=True)은 은닉
+        if not user.is_superuser:
+            queryset = queryset.filter(is_confidential=False)
+        return queryset
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
@@ -288,11 +296,16 @@ class PermissionViewSet(viewsets.ReadOnlyModelViewSet):
         카테고리와 모듈별로 그룹화된 권한 목록 반환
         """
         queryset = self.get_queryset()
-        data = {'work_core': {}, 'ibs_global': {}}
+        data = {'work_core': {}, 'ibs_pm_manage': {}, 'ibs_hq_manage': {}}
 
         for perm in queryset:
-            # 'shared' 일 경우 두 카테고리 모두에 추가, 아니면 해당 카테고리만
-            categories = ['work_core', 'ibs_global'] if perm.category == 'shared' else [perm.category or 'work_core']
+            # 'shared' 일 경우 모든 카테고리에 추가, 아니면 해당 카테고리만
+            if perm.category == 'shared':
+                categories = ['work_core', 'ibs_pm_manage', 'ibs_hq_manage']
+            elif perm.category == 'ibs_global':
+                categories = ['ibs_pm_manage']  # 레거시 호환
+            else:
+                categories = [perm.category or 'work_core']
 
             for cate in categories:
                 if cate not in data:

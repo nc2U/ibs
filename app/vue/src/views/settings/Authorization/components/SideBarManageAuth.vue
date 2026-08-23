@@ -15,8 +15,10 @@ const canManageProjectMember = computed(() => can(PERM.PROJECT_MEMBER))
 const workStore = useWork()
 const roleList = computed<Role[]>(() => workStore.roleList)
 
-// ibs_global 카테고리의 역할 목록 필터링
-const ibsRoles = computed(() => roleList.value.filter(r => r.category === 'ibs_global'))
+// 프로젝트 비즈니스 데이터 관리(ibs_pm_manage) 역할 목록 필터링
+const ibsRoles = computed(() =>
+  roleList.value.filter(r => r.category === 'ibs_pm_manage'),
+)
 
 // 사용 가능한 전체 부동산 개발 (type='2', status='1') 프로젝트 목록
 const allDevProjects = computed(() =>
@@ -169,7 +171,7 @@ onMounted(() => {
             <CCardBody>
               <CRow>
                 <CCol v-if="ibsRoles.length === 0" class="text-muted small">
-                  시스템에 등록된 비즈니스 데이터 관련 역할([ibs_global] 카테고리)이 없습니다.
+                  시스템에 등록된 프로젝트 관리 관련 역할([ibs_pm_manage] 카테고리)이 없습니다.
                 </CCol>
                 <template v-else>
                   <CCol v-for="role in ibsRoles" :key="role.pk" xs="12" sm="6" md="4" class="py-1">

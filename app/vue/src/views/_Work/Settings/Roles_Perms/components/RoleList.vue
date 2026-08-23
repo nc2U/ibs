@@ -25,17 +25,33 @@ const copyRole = (role: Role) => {
     <CTableBody>
       <CTableRow v-for="role in roleList" :key="role.pk">
         <CTableDataCell>
-          <span :class="role.category === 'ibs_global' ? 'text-primary' : 'text-success'">
+          <span
+            :class="
+              role.category === 'ibs_hq_manage'
+                ? 'text-warning'
+                : role.category === 'ibs_pm_manage'
+                  ? 'text-primary'
+                  : 'text-success'
+            "
+          >
             <v-icon
               :icon="
-                role.category === 'ibs_global'
-                  ? 'mdi-database-outline'
-                  : 'mdi-account-group-outline'
+                role.category === 'ibs_hq_manage'
+                  ? 'mdi-domain'
+                  : role.category === 'ibs_pm_manage'
+                    ? 'mdi-database-outline'
+                    : 'mdi-account-group-outline'
               "
               size="small"
               class="mr-1"
             />
-            {{ role.category === 'ibs_global' ? '비즈니스' : '업무관리' }}
+            {{
+              role.category === 'ibs_hq_manage'
+                ? '본사'
+                : role.category === 'ibs_pm_manage'
+                  ? '프로젝트'
+                  : '업무관리'
+            }}
           </span>
         </CTableDataCell>
         <CTableHeaderCell scope="row">
@@ -46,6 +62,7 @@ const copyRole = (role: Role) => {
           >
             {{ role.name }}
           </a>
+          <v-chip v-if="role.is_confidential" color="danger" size="x-small" class="ms-1">보안</v-chip>
         </CTableHeaderCell>
         <CTableDataCell class="text-center">
           <CIcon v-if="role.assignable" name="cil-check" class="text-success" />

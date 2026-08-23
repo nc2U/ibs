@@ -9841,6 +9841,7 @@
     "fields": {
       "name": "기획담당",
       "category": "work_core",
+      "is_confidential": false,
       "assignable": true,
       "issue_visible": "ALL",
       "user_visible": "ALL",
@@ -9911,6 +9912,7 @@
     "fields": {
       "name": "개발담당",
       "category": "work_core",
+      "is_confidential": false,
       "assignable": true,
       "issue_visible": "PUB",
       "user_visible": "PRJ",
@@ -9959,6 +9961,7 @@
     "fields": {
       "name": "지원담당",
       "category": "work_core",
+      "is_confidential": false,
       "assignable": true,
       "issue_visible": "PUB",
       "user_visible": "PRJ",
@@ -10003,6 +10006,7 @@
     "fields": {
       "name": "프로젝트 관리자",
       "category": "work_core",
+      "is_confidential": false,
       "assignable": true,
       "issue_visible": "ALL",
       "user_visible": "ALL",
@@ -10073,6 +10077,7 @@
     "fields": {
       "name": "프로젝트 스태프",
       "category": "work_core",
+      "is_confidential": false,
       "assignable": true,
       "issue_visible": "PUB",
       "user_visible": "PRJ",
@@ -10121,6 +10126,7 @@
     "fields": {
       "name": "프로젝트 관계자",
       "category": "work_core",
+      "is_confidential": false,
       "assignable": false,
       "issue_visible": "PUB",
       "user_visible": "PRJ",
@@ -10131,6 +10137,8 @@
       "permissions": [
         11,
         12,
+        13,
+        15,
         19,
         28,
         30,
@@ -10151,7 +10159,8 @@
     "pk": 7,
     "fields": {
       "name": "PM 관리자",
-      "category": "ibs_global",
+      "category": "ibs_pm_manage",
+      "is_confidential": false,
       "assignable": true,
       "issue_visible": "ALL",
       "user_visible": "ALL",
@@ -10207,7 +10216,8 @@
     "pk": 8,
     "fields": {
       "name": "계약담당자",
-      "category": "ibs_global",
+      "category": "ibs_pm_manage",
+      "is_confidential": false,
       "assignable": true,
       "issue_visible": "PUB",
       "user_visible": "PRJ",
@@ -10237,7 +10247,8 @@
     "pk": 9,
     "fields": {
       "name": "수납담당자",
-      "category": "ibs_global",
+      "category": "ibs_pm_manage",
+      "is_confidential": false,
       "assignable": true,
       "issue_visible": "PUB",
       "user_visible": "PRJ",
@@ -10267,8 +10278,9 @@
     "model": "work.role",
     "pk": 10,
     "fields": {
-      "name": "회계담당자",
-      "category": "ibs_global",
+      "name": "본사 회계담당",
+      "category": "ibs_hq_manage",
+      "is_confidential": true,
       "assignable": true,
       "issue_visible": "PUB",
       "user_visible": "PRJ",
@@ -10302,7 +10314,8 @@
     "pk": 11,
     "fields": {
       "name": "부지담당자",
-      "category": "ibs_global",
+      "category": "ibs_pm_manage",
+      "is_confidential": false,
       "assignable": true,
       "issue_visible": "PUB",
       "user_visible": "PRJ",
@@ -10329,8 +10342,9 @@
     "model": "work.role",
     "pk": 12,
     "fields": {
-      "name": "인사담당자",
-      "category": "ibs_global",
+      "name": "본사 인사담당",
+      "category": "ibs_hq_manage",
+      "is_confidential": true,
       "assignable": true,
       "issue_visible": "PUB",
       "user_visible": "PRJ",
@@ -10995,7 +11009,7 @@
     "pk": 54,
     "fields": {
       "module": "contract",
-      "category": "ibs_global",
+      "category": "ibs_pm_manage",
       "code": "contract.read",
       "name": "계약 조회",
       "is_default": false,
@@ -11007,7 +11021,7 @@
     "pk": 55,
     "fields": {
       "module": "contract",
-      "category": "ibs_global",
+      "category": "ibs_pm_manage",
       "code": "contract.create",
       "name": "계약 등록",
       "is_default": false,
@@ -11019,7 +11033,7 @@
     "pk": 56,
     "fields": {
       "module": "contract",
-      "category": "ibs_global",
+      "category": "ibs_pm_manage",
       "code": "contract.update",
       "name": "계약 수정",
       "is_default": false,
@@ -11031,7 +11045,7 @@
     "pk": 57,
     "fields": {
       "module": "contract",
-      "category": "ibs_global",
+      "category": "ibs_pm_manage",
       "code": "contract.delete",
       "name": "계약 삭제",
       "is_default": false,
@@ -11043,7 +11057,7 @@
     "pk": 58,
     "fields": {
       "module": "contract",
-      "category": "ibs_global",
+      "category": "ibs_pm_manage",
       "code": "contract.succession",
       "name": "계약 승계 처리",
       "is_default": false,
@@ -11055,7 +11069,7 @@
     "pk": 59,
     "fields": {
       "module": "contract",
-      "category": "ibs_global",
+      "category": "ibs_pm_manage",
       "code": "contract.release",
       "name": "계약 해지 처리",
       "is_default": false,
@@ -11067,7 +11081,7 @@
     "pk": 60,
     "fields": {
       "module": "payment",
-      "category": "ibs_global",
+      "category": "ibs_pm_manage",
       "code": "payment.read",
       "name": "수납 조회",
       "is_default": false,
@@ -11079,7 +11093,7 @@
     "pk": 61,
     "fields": {
       "module": "payment",
-      "category": "ibs_global",
+      "category": "ibs_pm_manage",
       "code": "payment.create",
       "name": "수납 등록",
       "is_default": false,
@@ -11091,7 +11105,7 @@
     "pk": 62,
     "fields": {
       "module": "payment",
-      "category": "ibs_global",
+      "category": "ibs_pm_manage",
       "code": "payment.update",
       "name": "수납 수정",
       "is_default": false,
@@ -11103,7 +11117,7 @@
     "pk": 63,
     "fields": {
       "module": "payment",
-      "category": "ibs_global",
+      "category": "ibs_pm_manage",
       "code": "payment.delete",
       "name": "수납 삭제",
       "is_default": false,
@@ -11115,7 +11129,7 @@
     "pk": 64,
     "fields": {
       "module": "notice",
-      "category": "ibs_global",
+      "category": "ibs_pm_manage",
       "code": "notice.read",
       "name": "고지 조회",
       "is_default": false,
@@ -11127,7 +11141,7 @@
     "pk": 65,
     "fields": {
       "module": "notice",
-      "category": "ibs_global",
+      "category": "ibs_pm_manage",
       "code": "notice.create",
       "name": "고지 발송",
       "is_default": false,
@@ -11139,7 +11153,7 @@
     "pk": 66,
     "fields": {
       "module": "notice",
-      "category": "ibs_global",
+      "category": "ibs_pm_manage",
       "code": "notice.update",
       "name": "고지 수정",
       "is_default": false,
@@ -11151,7 +11165,7 @@
     "pk": 67,
     "fields": {
       "module": "notice",
-      "category": "ibs_global",
+      "category": "ibs_pm_manage",
       "code": "notice.delete",
       "name": "고지 삭제",
       "is_default": false,
@@ -11163,7 +11177,7 @@
     "pk": 68,
     "fields": {
       "module": "ledger",
-      "category": "ibs_global",
+      "category": "shared",
       "code": "ledger.read",
       "name": "원장 조회",
       "is_default": false,
@@ -11175,7 +11189,7 @@
     "pk": 69,
     "fields": {
       "module": "ledger",
-      "category": "ibs_global",
+      "category": "shared",
       "code": "ledger.create",
       "name": "원장 등록",
       "is_default": false,
@@ -11187,7 +11201,7 @@
     "pk": 70,
     "fields": {
       "module": "ledger",
-      "category": "ibs_global",
+      "category": "shared",
       "code": "ledger.update",
       "name": "원장 수정",
       "is_default": false,
@@ -11199,7 +11213,7 @@
     "pk": 71,
     "fields": {
       "module": "ledger",
-      "category": "ibs_global",
+      "category": "shared",
       "code": "ledger.delete",
       "name": "원장 삭제",
       "is_default": false,
@@ -11211,7 +11225,7 @@
     "pk": 72,
     "fields": {
       "module": "site",
-      "category": "ibs_global",
+      "category": "ibs_pm_manage",
       "code": "site.read",
       "name": "부지 조회",
       "is_default": false,
@@ -11223,7 +11237,7 @@
     "pk": 73,
     "fields": {
       "module": "site",
-      "category": "ibs_global",
+      "category": "ibs_pm_manage",
       "code": "site.create",
       "name": "부지 등록",
       "is_default": false,
@@ -11235,7 +11249,7 @@
     "pk": 74,
     "fields": {
       "module": "site",
-      "category": "ibs_global",
+      "category": "ibs_pm_manage",
       "code": "site.update",
       "name": "부지 수정",
       "is_default": false,
@@ -11247,7 +11261,7 @@
     "pk": 75,
     "fields": {
       "module": "site",
-      "category": "ibs_global",
+      "category": "ibs_pm_manage",
       "code": "site.delete",
       "name": "부지 삭제",
       "is_default": false,
@@ -11259,7 +11273,7 @@
     "pk": 76,
     "fields": {
       "module": "hr_work",
-      "category": "ibs_global",
+      "category": "ibs_hq_manage",
       "code": "hr_work.read",
       "name": "인사 조회",
       "is_default": false,
@@ -11271,7 +11285,7 @@
     "pk": 77,
     "fields": {
       "module": "hr_work",
-      "category": "ibs_global",
+      "category": "ibs_hq_manage",
       "code": "hr_work.create",
       "name": "인사 등록",
       "is_default": false,
@@ -11283,7 +11297,7 @@
     "pk": 78,
     "fields": {
       "module": "hr_work",
-      "category": "ibs_global",
+      "category": "ibs_hq_manage",
       "code": "hr_work.update",
       "name": "인사 수정",
       "is_default": false,
@@ -11295,7 +11309,7 @@
     "pk": 79,
     "fields": {
       "module": "hr_work",
-      "category": "ibs_global",
+      "category": "ibs_hq_manage",
       "code": "hr_work.delete",
       "name": "인사 삭제",
       "is_default": false,

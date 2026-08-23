@@ -362,7 +362,7 @@ export const useWork = defineStore('work', () => {
       .then(res => (role.value = res.data))
       .catch(err => errorHandle(err.response.data))
 
-  const fetchRoleList = (category?: 'work_core' | 'ibs_global') => {
+  const fetchRoleList = (category?: 'work_core' | 'ibs_pm_manage' | 'ibs_hq_manage') => {
     const url = category ? `/role/?category=${category}` : `/role/`
     return api
       .get(url)
@@ -405,7 +405,7 @@ export const useWork = defineStore('work', () => {
   const permissionList = ref<Permission[]>([])
   const groupedPermissions = ref<GroupedPermissions | null>(null)
 
-  const fetchPermissionList = async (category?: 'work_core' | 'ibs_global') => {
+  const fetchPermissionList = async (category?: 'work_core' | 'ibs_pm_manage' | 'ibs_hq_manage') => {
     const url = category ? `/permission/?category=${category}` : `/permission/`
     try {
       const res = await api.get(url)

@@ -24,7 +24,8 @@ const form = ref({
   assignable: true,
   issue_visible: 'PUB' as 'ALL' | 'PUB' | 'PRI' | 'NOP',
   user_visible: 'ALL' as 'ALL' | 'PRJ' | 'NOP',
-  category: 'work_core' as 'work_core' | 'ibs_global',
+  category: 'work_core' as 'work_core' | 'ibs_pm_manage' | 'ibs_hq_manage',
+  is_confidential: false,
   order: 1,
   permissions: [] as number[],
 })
@@ -41,6 +42,7 @@ watch(
           issue_visible: props.role.issue_visible,
           user_visible: props.role.user_visible,
           category: props.role.category || 'work_core',
+          is_confidential: props.role.is_confidential || false,
           order: props.role.order,
           permissions: props.role.permissions || [],
         }
@@ -52,6 +54,7 @@ watch(
           issue_visible: 'PUB',
           user_visible: 'ALL',
           category: 'work_core',
+          is_confidential: false,
           order: props.maxOrder + 1,
           permissions: [],
         }
@@ -86,6 +89,9 @@ const saveRole = async (event: Event) => {
           <CFormCheck id="assignable" v-model="form.assignable" label="업무 할당 가능 여부" />
         </div>
         <div class="mb-3">
+          <CFormCheck id="is_confidential" v-model="form.is_confidential" label="보안 격리 역할 (슈퍼유저 전용)" />
+        </div>
+        <div class="mb-3">
           <CFormLabel>업무 보기 권한</CFormLabel>
           <CFormSelect v-model="form.issue_visible">
             <option value="ALL">모든 업무</option>
@@ -106,7 +112,8 @@ const saveRole = async (event: Event) => {
           <CFormLabel>권한 구분(카테고리)</CFormLabel>
           <CFormSelect v-model="form.category">
             <option value="work_core">협업 및 업무 관리 권한 (work_core)</option>
-            <option value="ibs_global">비즈니스 데이터 관리 권한 (ibs_global)</option>
+            <option value="ibs_hq_manage">본사 관리 권한 (ibs_hq_manage)</option>
+            <option value="ibs_pm_manage">프로젝트 관리 권한 (ibs_pm_manage)</option>
           </CFormSelect>
         </div>
         <div class="mt-4">

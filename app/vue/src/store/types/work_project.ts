@@ -128,7 +128,8 @@ export interface Role {
   user_visible: 'ALL' | 'PRJ' | 'NOP'
   user_visible_desc: string
   permissions: number[]
-  category?: 'work_core' | 'ibs_global'
+  category?: 'work_core' | 'ibs_pm_manage' | 'ibs_hq_manage'
+  is_confidential?: boolean
   order: number
   creator: number
   created: string
@@ -151,7 +152,7 @@ export interface Permission {
     | 'ledger'
     | 'site'
     | 'hr_work'
-  category?: 'work_core' | 'ibs_global' | 'shared'
+  category?: 'work_core' | 'ibs_pm_manage' | 'ibs_hq_manage' | 'shared'
   code: string
   name: string
   description: string
@@ -161,7 +162,8 @@ export type ModulePermissionMap = Record<string, Permission[]>
 
 export interface GroupedPermissions {
   work_core: ModulePermissionMap
-  ibs_global: ModulePermissionMap
+  ibs_pm_manage: ModulePermissionMap
+  ibs_hq_manage: ModulePermissionMap
 }
 
 export interface Member {

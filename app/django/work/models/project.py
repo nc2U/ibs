@@ -260,8 +260,17 @@ class Module(models.Model):
 
 class Role(models.Model):
     name = models.CharField('이름', max_length=20, db_index=True)
-    CATEGORY_CHOICES = (('work_core', '업무 관리'), ('ibs_global', '개발 사업'))
-    category = models.CharField('구분', max_length=15, choices=CATEGORY_CHOICES, default='work_core')
+    CATEGORY_CHOICES = (
+        ('work_core', '업무 관리'),
+        ('ibs_pm_manage', '프로젝트 관리'),
+        ('ibs_hq_manage', '본사 관리'),
+    )
+    category = models.CharField('구분', max_length=20, choices=CATEGORY_CHOICES, default='work_core')
+    is_confidential = models.BooleanField(
+        '보안 격리 역할',
+        default=False,
+        help_text='체크 시 슈퍼유저(최고관리자)에게만 노출/부여되며 일반 관리자에게는 역할 목록 및 권한 설정이 은닉됩니다.'
+    )
     assignable = models.BooleanField('업무할당 가능 여부', default=True)
     ISSUE_VIEW_PERM = (('ALL', '모든 업무'), ('PUB', '비공개 업무 제외'), ('PRI', '직접 생성 또는 담당한 업무'), ('NOP', '없음'))
     issue_visible = models.CharField('업무 보기 권한', max_length=3, choices=ISSUE_VIEW_PERM, default='PUB')
@@ -288,8 +297,13 @@ class Permission(models.Model):
                       ('contract', '계약 관리'), ('payment', '수납 관리'), ('notice', '고지 관리'),
                       ('ledger', '자금/원장 관리'), ('site', '사업 부지 관리'), ('hr_work', '인사 관리'))
     module = models.CharField('모듈', max_length=10, choices=MODULE_CHOICES, db_index=True)
-    CATEGORY_CHOICES = (('work_core', '업무 관리'), ('ibs_global', '개발 사업'), ('shared', '공통 모듈'))
-    category = models.CharField('구분', max_length=15, choices=CATEGORY_CHOICES, default='work_core')
+    CATEGORY_CHOICES = (
+        ('work_core', '업무 관리'),
+        ('ibs_pm_manage', '프로젝트 관리'),
+        ('ibs_hq_manage', '본사 관리'),
+        ('shared', '공통 모듈'),
+    )
+    category = models.CharField('구분', max_length=20, choices=CATEGORY_CHOICES, default='work_core')
     code = models.CharField('코드', max_length=30, unique=True)
     name = models.CharField('이름', max_length=20)
     is_default = models.BooleanField('기본 활성여부', default=False)
