@@ -1,6 +1,6 @@
 from django.test import TestCase
 from django.contrib.auth import get_user_model
-from company.models import Company, Department, Staff, StaffAssignment, Duty, Position
+from company.models import Company, Department, Staff, StaffAssignment, DutyTitle, Position
 from approval.models import DocCategory, DocumentType
 from approval.services.route_builder import build_dynamic_approval_route
 
@@ -13,13 +13,13 @@ class ApprovalRouteBuilderTestCase(TestCase):
     def setUp(self):
         # 1. 회사 및 직급/직책 생성
         self.company = Company.objects.create(name='(주)대영아이비에스', is_default=True)
-        self.pos_staff = Position.objects.create(company=self.company, name='사원', rank=1)
-        self.pos_manager = Position.objects.create(company=self.company, name='팀장', rank=3)
-        self.pos_ceo = Position.objects.create(company=self.company, name='대표이사', rank=10)
+        self.pos_staff = Position.objects.create(company=self.company, name='사원')
+        self.pos_manager = Position.objects.create(company=self.company, name='팀장')
+        self.pos_ceo = Position.objects.create(company=self.company, name='대표이사')
 
-        self.duty_team_leader = Duty.objects.create(company=self.company, name='팀장', code='TL')
-        self.duty_division_head = Duty.objects.create(company=self.company, name='본부장', code='DH')
-        self.duty_ceo = Duty.objects.create(company=self.company, name='대표이사', code='CEO')
+        self.duty_team_leader = DutyTitle.objects.create(company=self.company, name='팀장', code='TL')
+        self.duty_division_head = DutyTitle.objects.create(company=self.company, name='본부장', code='DH')
+        self.duty_ceo = DutyTitle.objects.create(company=self.company, name='대표이사', code='CEO')
 
         # 2. 상위 부서(본부) 및 하위 부서(팀) 생성
         self.dept_division = Department.objects.create(
@@ -32,31 +32,39 @@ class ApprovalRouteBuilderTestCase(TestCase):
         # 3. 사용자 및 직원 생성
         # 기안자 (팀원)
         self.user_drafter = User.objects.create_user(username='drafter', email='drafter@example.com')
-        self.staff_drafter = Staff.objects.create(company=self.company, user=self.user_drafter, name='김사원', status='1')
+        self.staff_drafter = Staff.objects.create(
+            company=self.company, user=self.user_drafter, name='김사원',
+            position=self.pos_staff, id_number='900101-1234567', personal_phone='010-1111-2222',
+            date_join='2025-01-01', status='1'
+        )
         self.assign_drafter = StaffAssignment.objects.create(
             staff=self.staff_drafter, company=self.company, department=self.dept_team,
-            position=self.pos_staff, is_primary=True
+            is_primary=True
         )
 
         # 대표이사 (경영지원팀장 겸직)
         self.user_ceo = User.objects.create_user(username='ceo', email='ceo@example.com')
-        self.staff_ceo = Staff.objects.create(company=self.company, user=self.user_ceo, name='홍대표', status='1')
+        self.staff_ceo = Staff.objects.create(
+            company=self.company, user=self.user_ceo, name='홍대표',
+            position=self.pos_ceo, id_number='750101-1234567', personal_phone='010-3333-4444',
+            date_join='2020-01-01', status='1'
+        )
         # 대표이사 주보직
         StaffAssignment.objects.create(
-            staff=self.staff_ceo, company=self.company, department=None,
-            position=self.pos_ceo, duty=self.duty_ceo, is_primary=True
+            staff=self.staff_ceo, company=self.company, department=self.dept_division,
+            duty=self.duty_ceo, is_primary=True
         )
         # 경영지원팀장 겸직
         StaffAssignment.objects.create(
             staff=self.staff_ceo, company=self.company, department=self.dept_team,
-            position=self.pos_manager, duty=self.duty_team_leader, is_primary=False
+            duty=self.duty_team_leader, is_primary=False
         )
 
         # 4. 문서 유형 생성 (대표이사 최종 승인 방식)
-        self.category = DocCategory.objects.create(name='일반품의')
+        self.category = DocCategory.objects.create(name='일반품의', code='COMMON')
         self.doc_type = DocumentType.objects.create(
             category=self.category, name='업무품의서', code='BIZ_APPROVAL',
-            route_type=DocumentType.ROUTE_DYNAMIC
+            route_type=DocumentType.ROUTE_ORGANIZATION
         )
 
     def test_ceo_concurrent_position_promotes_role_label(self):

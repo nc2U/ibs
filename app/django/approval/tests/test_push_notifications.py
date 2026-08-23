@@ -44,7 +44,7 @@ class ApprovalPushNotificationTestCase(TestCase):
         )
 
         # 3. 문서 카테고리 및 유형 생성
-        self.category = DocCategory.objects.create(name='인사/총무')
+        self.category = DocCategory.objects.create(name='인사/총무', code='HR')
         self.doc_type = DocumentType.objects.create(
             category=self.category,
             name='휴가신청서',
@@ -105,7 +105,7 @@ class ApprovalPushNotificationTestCase(TestCase):
             self.assertIn(self.device1.registration_id, multicast_arg.tokens)
             self.assertEqual(multicast_arg.android.notification.channel_id, 'ibs_high_importance_channel')
 
-    @patch('_utils.push_service.send_push_notification')
+    @patch('approval.tasks.send_push_notification')
     def test_notify_approvers_task_execution(self, mock_send_push):
         """2. Celery notify_approvers_task 비동기 작업 실행 시 올바른 파라미터로 푸시 발송을 트리거하는지 검증"""
         notify_approvers_task(self.document.pk, self.step1.pk)
@@ -119,7 +119,7 @@ class ApprovalPushNotificationTestCase(TestCase):
         self.assertEqual(call_kwargs['category'], 'approval')
         self.assertEqual(call_kwargs['target_id'], str(self.document.pk))
 
-    @patch('_utils.push_service.send_push_notification')
+    @patch('approval.tasks.send_push_notification')
     def test_notify_drafter_task_on_approved(self, mock_send_push):
         """3. 결재 최종 승인 시 기안자에게 알림이 정상 발송되는지 검증"""
         notify_drafter_task(self.document.pk, action='approved')
