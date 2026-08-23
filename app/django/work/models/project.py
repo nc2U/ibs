@@ -262,8 +262,8 @@ class Role(models.Model):
     name = models.CharField('이름', max_length=20, db_index=True)
     CATEGORY_CHOICES = (
         ('work_core', '업무 관리'),
-        ('ibs_pm_manage', '프로젝트 관리'),
         ('ibs_hq_manage', '본사 관리'),
+        ('ibs_pm_manage', '프로젝트 관리'),
     )
     category = models.CharField('구분', max_length=20, choices=CATEGORY_CHOICES, default='work_core')
     is_confidential = models.BooleanField(
