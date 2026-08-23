@@ -603,14 +603,14 @@ class IssueCountByMemberView(APIView):
         user_param = request.query_params.get('user', None)
         user = user_param if user_param else request.user
 
-        # Count issues assigned to the user
-        issues_in_charge = Issue.objects.filter(assigned_to=user).exclude(project__status='9')
+        # Count issues assigned to the user (사용중인 프로젝트 project__status='1' 기준)
+        issues_in_charge = Issue.objects.filter(assigned_to=user, project__status='1')
         open_charged = issues_in_charge.filter(status__closed=False).count()
         closed_charged = issues_in_charge.filter(status__closed=True).count()
         all_charged = open_charged + closed_charged
 
-        # Count issues created by the user
-        issues_in_created = Issue.objects.filter(creator=user).exclude(project__status='9')
+        # Count issues created by the user (사용중인 프로젝트 project__status='1' 기준)
+        issues_in_created = Issue.objects.filter(creator=user, project__status='1')
         open_created = issues_in_created.filter(status__closed=False).count()
         closed_created = issues_in_created.filter(status__closed=True).count()
         all_created = open_created + closed_created
