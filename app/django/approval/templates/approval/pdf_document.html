@@ -384,7 +384,7 @@
 <!-- 4. 결재 상세 내용 (양식별 서식화 렌더링) -->
 <div class="section-header">1. 상세 품의 내용</div>
 <div class="main-content-box">
-  <!-- A. 휴가 신청서 (LEAVE) 양식인 경우 -->
+  <!-- A. 휴가/연차 (LEAVE) 양식인 경우 -->
   {% if document.content.leave_type or document.doc_type.form_template_key == 'LEAVE' %}
     <table class="formatted-table">
       <tr>
@@ -395,7 +395,7 @@
       </tr>
       <tr>
         <th>휴가 기간</th>
-        <td colspan="3">{{ document.content.start_date }} ~ {{ document.content.end_date }}</td>
+        <td colspan="3">{{ document.content.start_date|default:"-" }} ~ {{ document.content.end_date|default:"-" }}</td>
       </tr>
       <tr>
         <th>업무 대행자</th>
@@ -405,7 +405,7 @@
       </tr>
       <tr>
         <th>휴가 사유</th>
-        <td colspan="3" style="min-height:20mm; padding:8px;">{{ document.content.reason|default:document.content.body|linebreaks }}</td>
+        <td colspan="3" style="min-height:20mm; padding:8px;">{{ document.content.reason|default:document.title|linebreaks }}</td>
       </tr>
     </table>
 
@@ -415,7 +415,7 @@
       <tr>
         <th style="width:18%;">청구(집행)금액</th>
         <td style="width:32%; font-size:10.5pt; font-weight:700; color:#c62828;">
-          {{ document.content.amount|default:document.content.budget }} 원
+          {{ document.content.amount|default:"0" }} 원
         </td>
         <th style="width:18%;">예산/비목과목</th>
         <td style="width:32%;">{{ document.content.budget_account|default:"일반관리비" }}</td>
@@ -424,7 +424,7 @@
       <tr>
         <th>입금 계좌</th>
         <td colspan="3">
-          {{ document.content.bank_name }} {{ document.content.account_number }} (예금주: {{ document.content.account_holder }})
+          {{ document.content.bank_name|default:"" }} {{ document.content.account_number|default:"" }} (예금주: {{ document.content.account_holder|default:"-" }})
         </td>
       </tr>
       {% endif %}
@@ -434,7 +434,7 @@
       </tr>
       <tr>
         <th>상세 내역</th>
-        <td colspan="3" style="min-height:30mm; padding:8px;">{{ document.content.content|default:document.content.body|linebreaks }}</td>
+        <td colspan="3" style="min-height:30mm; padding:8px;">{{ document.content.body|default:document.title|linebreaks }}</td>
       </tr>
     </table>
 
@@ -449,7 +449,7 @@
         <th>계약 상대방</th>
         <td>{{ document.content.contractor_ceo|default:"-" }} (사업자번호: {{ document.content.contractor_reg_number|default:"-" }})</td>
         <th>계약 금액</th>
-        <td style="font-weight:700; color:#1565c0;">{{ document.content.contract_amount|default:document.content.amount }} 원</td>
+        <td style="font-weight:700; color:#1565c0;">{{ document.content.contract_amount|default:"0" }} 원</td>
       </tr>
       <tr>
         <th>대금 지급조건</th>
@@ -461,7 +461,7 @@
       </tr>
       <tr>
         <th>특약 및 주요내용</th>
-        <td colspan="3" style="min-height:30mm; padding:8px;">{{ document.content.content|default:document.content.body|linebreaks }}</td>
+        <td colspan="3" style="min-height:30mm; padding:8px;">{{ document.content.body|default:document.title|linebreaks }}</td>
       </tr>
     </table>
 
@@ -475,9 +475,9 @@
         <td style="width:32%;">{{ document.content.refer_to|default:"-" }}</td>
       </tr>
       <tr>
-        <th>발 신 자</th>
+        <th>발신 명의</th>
         <td>{{ document.content.sender_name|default:"대표이사" }}</td>
-        <th>시행/발송기한</th>
+        <th>시행 일자</th>
         <td>{{ document.content.send_due_date|default:"승인 즉시 시행" }}</td>
       </tr>
       <tr>
@@ -487,7 +487,7 @@
       <tr>
         <th>공문 본문</th>
         <td colspan="3" style="min-height:40mm; padding:10px; line-height:1.8;">
-          {{ document.content.letter_body|default:document.content.body|linebreaks }}
+          {{ document.content.letter_body|default:document.title|linebreaks }}
         </td>
       </tr>
     </table>
@@ -495,20 +495,8 @@
   <!-- E. 일반 품의서 및 기타 서식 -->
   {% else %}
     <div style="padding:4px 0 8px;">
-      {{ document.content.body|default:document.content.content|linebreaks }}
+      {{ document.content.body|default:document.title|linebreaks }}
     </div>
-    {% if document.content.items %}
-      <table class="formatted-table">
-        {% for k, v in document.content.items %}
-          {% if k != 'body' and k != 'content' %}
-          <tr>
-            <th style="width:25%;">{{ k }}</th>
-            <td>{{ v }}</td>
-          </tr>
-          {% endif %}
-        {% endfor %}
-      </table>
-    {% endif %}
   {% endif %}
 </div>
 

@@ -127,21 +127,20 @@ def notify_cancel_task(document_pk, approver_ids):
         print(f'❌ notify_cancel_task failed: {e}')
 
 
-@shared_task
-def generate_approval_pdf_task(document_pk):
-    """결재 최종 승인 후 PDF 생성 및 스토리지 저장"""
-    from approval.models import ApprovalDocument, ApprovalStep, ApprovalAction
-    import io
+def render_and_save_approval_pdf(document_pk):
+    """결재 최종 승인 PDF 생성 및 스토리지 저장 (동기/비동기 공용 함수)"""
+    from approval.models import ApprovalDocument
+    from django.core.files.base import ContentFile
+    from django.template.loader import render_to_string
     try:
         from weasyprint import HTML
     except ImportError:
         print('⚠️ WeasyPrint is not installed. PDF generation skipped.')
-        return
+        return None
 
     try:
-        from django.template.loader import render_to_string
         document = ApprovalDocument.objects.select_related(
-            'doc_type', 'drafter'
+            'doc_type', 'drafter', 'drafter_assignment__department', 'drafter_assignment__duty'
         ).prefetch_related(
             'steps__approvers', 'steps__actions__approver'
         ).get(pk=document_pk)
@@ -153,10 +152,22 @@ def generate_approval_pdf_task(document_pk):
         })
 
         pdf_bytes = HTML(string=html_string, base_url=settings.DOMAIN_HOST).write_pdf()
-        filename = f'approval/pdf/{document.doc_type.code}-{document_pk}.pdf'
+        filename = f'{document.doc_type.code}-{document_pk}.pdf'
 
-        from django.core.files.base import ContentFile
+        # 기존 중복 파일명이 겹치지 않도록 깔끔하게 저장 (upload_to='approval/pdf/%Y/%m/' 적용)
         document.pdf_file.save(filename, ContentFile(pdf_bytes), save=True)
-        print(f'✅ PDF generated and saved: {filename}')
+        print(f'✅ PDF generated and saved to S3: {document.pdf_file.name}')
+        return document.pdf_file.url if document.pdf_file else None
+    except Exception as e:
+        print(f'❌ render_and_save_approval_pdf failed for doc {document_pk}: {e}')
+        raise e
+
+
+@shared_task
+def generate_approval_pdf_task(document_pk):
+    """결재 최종 승인 후 PDF 생성 비동기 Celery 태스크"""
+    try:
+        return render_and_save_approval_pdf(document_pk)
     except Exception as e:
         print(f'❌ generate_approval_pdf_task failed: {e}')
+        return None
