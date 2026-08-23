@@ -41,39 +41,6 @@ const companyLedger = {
   ],
 }
 
-const companyDocs = {
-  component: 'CNavGroup',
-  name: '본사 문서 관리',
-  to: '/docs/general',
-  auth: 'isComDocs',
-  icon: 'cil-cloud-download',
-  items: [
-    {
-      component: 'CNavItem',
-      name: '본사 일반 문서',
-      to: '/docs/general/docs',
-    },
-    {
-      component: 'CNavItem',
-      name: '본사 소송 문서',
-      to: '/docs/lawsuit/docs',
-    },
-    {
-      component: 'CNavItem',
-      name: '본사 소송 사건',
-      to: '/docs/lawsuit/case',
-    },
-    {
-      component: 'CNavItem',
-      name: '본사 공문 발송',
-      to: '/docs/official/letters',
-      badge: {
-        color: 'warning',
-        text: 'ing..',
-      },
-    },
-  ],
-}
 
 const humanResource = {
   component: 'CNavGroup',
@@ -91,7 +58,6 @@ const humanResource = {
         {
           component: 'CNavItem',
           name: '부서 관리',
-          auth: 'isStaff',
           to: '/hr-manage/department',
         },
         {
@@ -543,7 +509,6 @@ const nav = [
     auth: 'isStaff',
   },
   companyLedger,
-  companyDocs,
   humanResource,
   approval,
   {

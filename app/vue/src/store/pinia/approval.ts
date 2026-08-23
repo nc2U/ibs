@@ -30,7 +30,9 @@ export const useApproval = defineStore('approval', () => {
     api
       .get('/approval-doc-category/')
       .then(res => (docCategoryList.value = res.data.results ?? res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => {
+        console.warn('fetchDocCategoryList failed:', err?.message || err)
+      })
 
   // ── 문서 유형 ─────────────────────────────────────────
   const docTypeList = ref<DocumentType[]>([])
@@ -42,7 +44,9 @@ export const useApproval = defineStore('approval', () => {
     return api
       .get(`/approval-doc-type/?${params}`)
       .then(res => (docTypeList.value = res.data.results ?? res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => {
+        console.warn('fetchDocTypeList failed:', err?.message || err)
+      })
   }
 
   const fetchForDraftDocTypeList = (assignmentId?: number | null) => {
@@ -51,7 +55,9 @@ export const useApproval = defineStore('approval', () => {
     return api
       .get(`/approval-doc-type/for_draft/?${params}`)
       .then(res => (forDraftDocTypeList.value = res.data.results ?? res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => {
+        console.warn('fetchForDraftDocTypeList failed:', err?.message || err)
+      })
   }
 
   // ── 기안자의 보직 목록 ─────────────────────────────────
@@ -61,7 +67,9 @@ export const useApproval = defineStore('approval', () => {
     api
       .get('/approval-document/my_assignments/')
       .then(res => (myAssignments.value = res.data.results ?? res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => {
+        console.warn('fetchMyAssignments failed:', err?.message || err)
+      })
 
   // ── 동적 결재선 미리보기 ───────────────────────────────
   const routePreview = ref<RoutePreviewStep[]>([])
@@ -156,13 +164,17 @@ export const useApproval = defineStore('approval', () => {
     api
       .get('/approval-document/my_pending/')
       .then(res => (pendingList.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => {
+        console.warn('fetchMyPending failed:', err?.message || err)
+      })
 
   const fetchMyDrafted = () =>
     api
       .get('/approval-document/my_drafted/')
       .then(res => (draftedList.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => {
+        console.warn('fetchMyDrafted failed:', err?.message || err)
+      })
 
   // ── 결재 완료(승인) 문서 목록 ─────────────────────────
   const approvedList = ref<ApprovalDocument[]>([])
@@ -171,7 +183,9 @@ export const useApproval = defineStore('approval', () => {
     api
       .get('/approval-document/my_approved/')
       .then(res => (approvedList.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => {
+        console.warn('fetchMyApproved failed:', err?.message || err)
+      })
 
   // ── 내가 참조된 문서 목록 ─────────────────────────────
   const observedList = ref<ApprovalDocument[]>([])
@@ -180,7 +194,9 @@ export const useApproval = defineStore('approval', () => {
     api
       .get('/approval-document/my_observed/')
       .then(res => (observedList.value = res.data))
-      .catch(err => errorHandle(err.response.data))
+      .catch(err => {
+        console.warn('fetchMyObserved failed:', err?.message || err)
+      })
 
   // ── 전사 결재 문서 (관리자 전용) ─────────────────────
   const allDocumentList = ref<ApprovalDocumentListItem[]>([])
