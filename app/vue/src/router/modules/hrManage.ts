@@ -13,7 +13,7 @@ const hrManage = {
     {
       path: 'department',
       name: '부서 관리',
-      component: () => import('@/views/hrManage/Department/Index.vue'),
+      component: () => import('@/views/hrManage/Organization/Department/Index.vue'),
       meta: {
         title: '부서 관리',
         auth: true,
@@ -22,7 +22,7 @@ const hrManage = {
     {
       path: 'grade',
       name: '직급 관리',
-      component: () => import('@/views/hrManage/Grade/Index.vue'),
+      component: () => import('@/views/hrManage/Organization/Grade/Index.vue'),
       meta: {
         title: '직급 관리',
         auth: true,
@@ -31,7 +31,7 @@ const hrManage = {
     {
       path: 'position',
       name: '직위 관리',
-      component: () => import('@/views/hrManage/Position/Index.vue'),
+      component: () => import('@/views/hrManage/Organization/Position/Index.vue'),
       meta: {
         title: '직위 관리',
         auth: true,
@@ -40,7 +40,7 @@ const hrManage = {
     {
       path: 'duty',
       name: '직책 관리',
-      component: () => import('@/views/hrManage/Duty/Index.vue'),
+      component: () => import('@/views/hrManage/Organization/Duty/Index.vue'),
       meta: {
         title: '직책 관리',
         auth: true,
@@ -49,7 +49,7 @@ const hrManage = {
     {
       path: 'org-chart',
       name: '조 직 도',
-      component: () => import('@/views/hrManage/OrgChart/Index.vue'),
+      component: () => import('@/views/hrManage/Organization/OrgChart/Index.vue'),
       meta: {
         title: '조 직 도',
         auth: true,
@@ -58,7 +58,7 @@ const hrManage = {
     {
       path: 'staff',
       name: '직원 정보',
-      component: () => import('@/views/hrManage/Staff/Index.vue'),
+      component: () => import('@/views/hrManage/HRManage/Staff/Index.vue'),
       meta: {
         title: '직원 정보',
         auth: true,
@@ -67,7 +67,7 @@ const hrManage = {
     {
       path: 'attendance',
       name: '근태 현황',
-      component: () => import('@/views/hrManage/Attendance/Index.vue'),
+      component: () => import('@/views/hrManage/HRManage/Attendance/Index.vue'),
       meta: {
         title: '근태 현황',
         auth: true,
@@ -76,7 +76,7 @@ const hrManage = {
     {
       path: 'leave',
       name: '휴가 연차',
-      component: () => import('@/views/hrManage/Leave/Index.vue'),
+      component: () => import('@/views/hrManage/HRManage/Leave/Index.vue'),
       meta: {
         title: '휴가 연차',
         auth: true,
@@ -85,7 +85,7 @@ const hrManage = {
     {
       path: 'appointments',
       name: '인사 발령',
-      component: () => import('@/views/hrManage/Appointment/Index.vue'),
+      component: () => import('@/views/hrManage/HRManage/Appointment/Index.vue'),
       meta: {
         title: '인사 발령',
         auth: true,
@@ -94,7 +94,7 @@ const hrManage = {
     {
       path: 'records',
       name: '인사 기록',
-      component: () => import('@/views/hrManage/Record/Index.vue'),
+      component: () => import('@/views/hrManage/HRManage/Record/Index.vue'),
       meta: {
         title: '인사 기록',
         auth: true,
