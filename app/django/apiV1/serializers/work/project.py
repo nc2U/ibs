@@ -371,6 +371,7 @@ class RoleSerializer(serializers.ModelSerializer):
 
         permissions = attrs.get('permissions')
         if permissions is not None:
+            valid_permissions = []
             for perm in permissions:
                 is_valid = False
                 if category == 'work_space' and perm.is_for_workspace:
@@ -380,10 +381,10 @@ class RoleSerializer(serializers.ModelSerializer):
                 elif category == 'ibs_pr_manage' and perm.is_for_project:
                     is_valid = True
 
-                if not is_valid:
-                    raise serializers.ValidationError({
-                        'permissions': f"역할 구분({category})에 허용되지 않은 권한({perm.name} - {perm.code})입니다."
-                    })
+                if is_valid:
+                    valid_permissions.append(perm)
+
+            attrs['permissions'] = valid_permissions
         return attrs
 
     class Meta:
