@@ -291,7 +291,7 @@ class PermissionViewSet(viewsets.ReadOnlyModelViewSet):
     filterset_fields = ('is_for_workspace', 'is_for_hq', 'is_for_project', 'module')
 
     @action(detail=False, methods=['get'])
-    def grouped(self, request, slug=None):
+    def grouped(self, request, *args, **kwargs):
         """
         도메인(워크스페이스 / 본사 / 프로젝트)과 모듈별로 그룹화된 권한 목록 반환
         """
