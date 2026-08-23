@@ -6,7 +6,6 @@ import { type RouteRecordRaw } from 'vue-router'
 import workProject from '@/router/modules/workProject'
 import workSetting from '@/router/modules/workSetting'
 import comLedger from '@/router/modules/comLedger.ts'
-import comDocs from '@/router/modules/comDocs'
 import hrManage from '@/router/modules/hrManage'
 import approval from '@/router/modules/approval'
 import contracts from '@/router/modules/contracts'
@@ -39,7 +38,6 @@ const routes: Array<RouteRecordRaw> = [
       workProject as RouteRecordRaw,
       workSetting as RouteRecordRaw,
       comLedger as unknown as RouteRecordRaw,
-      comDocs as unknown as RouteRecordRaw,
       hrManage,
       approval,
       contracts,
