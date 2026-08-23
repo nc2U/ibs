@@ -605,14 +605,14 @@ class IssueCountByMemberView(APIView):
 
         # Count issues assigned to the user
         issues_in_charge = Issue.objects.filter(assigned_to=user).exclude(project__status='9')
-        open_charged = issues_in_charge.filter(closed__isnull=True).count()
-        closed_charged = issues_in_charge.filter(closed__isnull=False).count()
+        open_charged = issues_in_charge.filter(status__closed=False).count()
+        closed_charged = issues_in_charge.filter(status__closed=True).count()
         all_charged = open_charged + closed_charged
 
         # Count issues created by the user
         issues_in_created = Issue.objects.filter(creator=user).exclude(project__status='9')
-        open_created = issues_in_created.filter(closed__isnull=True).count()
-        closed_created = issues_in_created.filter(closed__isnull=False).count()
+        open_created = issues_in_created.filter(status__closed=False).count()
+        closed_created = issues_in_created.filter(status__closed=True).count()
         all_created = open_created + closed_created
 
         summary_data = {

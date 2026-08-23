@@ -215,6 +215,7 @@ export const useIssue = defineStore('issue', () => {
         await fetchIssue(res.data.pk)
         await fetchIssueList(issueFilter.value)
         await logStore.fetchIssueLogList({ issue: res.data.pk })
+        await fetchIssueByMember()
         message()
         return res.data
       })
@@ -228,6 +229,7 @@ export const useIssue = defineStore('issue', () => {
         await fetchIssue(pk)
         await fetchIssueList(issueFilter.value)
         await logStore.fetchIssueLogList({ issue: pk })
+        await fetchIssueByMember()
         message()
       })
       .catch(err => errorHandle(err.response.data))
@@ -240,6 +242,7 @@ export const useIssue = defineStore('issue', () => {
         await fetchIssue(pk)
         await fetchIssueList(issueFilter.value)
         await logStore.fetchIssueLogList({ issue: pk })
+        await fetchIssueByMember()
         message()
       })
       .catch(err => errorHandle(err.response.data))
@@ -261,6 +264,7 @@ export const useIssue = defineStore('issue', () => {
       .then(async () => {
         cachedProject.value = ''
         await fetchIssueList(issueFilter.value)
+        await fetchIssueByMember()
         message('warning', '알림!', '해당 오브젝트가 삭제되었습니다.')
       })
       .catch(err => errorHandle(err.response.data))
