@@ -77,7 +77,6 @@ export default withMermaid(
           items: [
             { text: 'IBS란?', link: '/' },
             { text: '시작하기', link: '/intro/getting-started' },
-            { text: '권한 및 공개 정책', link: '/intro/security-policy' },
             { text: '대시보드', link: '/intro/dashboard' },
           ],
         },
@@ -106,6 +105,7 @@ export default withMermaid(
               items: [
                 { text: '사용자', link: '/work-setting/user' },
                 { text: '역할 및 권한', link: '/work-setting/roll-perm' },
+                { text: '권한 및 공개 정책', link: '/work-setting/security-policy' },
               ],
             },
           ],
