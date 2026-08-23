@@ -1,35 +1,20 @@
 <script setup lang="ts">
-import { onMounted, ref, computed, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useApproval } from '@/store/pinia/approval'
 import { useCompany } from '@/store/pinia/company'
 import { TableSecondary } from '@/utils/cssMixins'
-import Pagination from '@/components/Pagination'
 import type { DocumentStatus } from '@/store/types/approval'
-import {
-  CRow,
-  CCol,
-  CCard,
-  CCardBody,
-  CFormSelect,
-  CFormInput,
-  CInputGroup,
-  CButton,
-  CBadge,
-  CTable,
-  CTableHead,
-  CTableRow,
-  CTableHeaderCell,
-  CTableBody,
-  CTableDataCell,
-} from '@coreui/vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
+import Pagination from '@/components/Pagination'
 
 const router = useRouter()
 const approvalStore = useApproval()
 const companyStore = useCompany()
 
-const { allDocumentList, allDocumentsCount, docCategoryList, docTypeList } = storeToRefs(approvalStore)
+const { allDocumentList, allDocumentsCount, docCategoryList, docTypeList } =
+  storeToRefs(approvalStore)
 const { allDepartList } = storeToRefs(companyStore)
 
 // 필터 상태
@@ -125,89 +110,109 @@ onMounted(async () => {
 <template>
   <div class="all-documents-container">
     <!-- 검색 및 필터 패널 -->
-    <CCard class="mb-4 bg-light border-0 shadow-sm">
-      <CCardBody class="p-3">
-        <CRow class="g-2 mb-2 align-items-center">
-          <!-- 카테고리 -->
-          <CCol xs="12" sm="6" md="2">
-            <CFormSelect v-model="filterCategory" size="sm" @change="onSearch">
-              <option value="">전체 카테고리</option>
-              <option v-for="cat in docCategoryList" :key="cat.id" :value="String(cat.id)">
-                {{ cat.name }}
-              </option>
-            </CFormSelect>
-          </CCol>
+    <CCallout class="mb-4 border-0 shadow-sm bg-light">
+      <CRow>
+        <CCol xl="7">
+          <CRow class="g-2 align-items-center">
+            <CCol lg="5">
+              <CRow>
+                <!-- 카테고리 -->
+                <CCol xs="12" sm="6" class="mb-2">
+                  <CFormSelect v-model="filterCategory" @change="onSearch">
+                    <option value="">전체 카테고리</option>
+                    <option v-for="cat in docCategoryList" :key="cat.id" :value="String(cat.id)">
+                      {{ cat.name }}
+                    </option>
+                  </CFormSelect>
+                </CCol>
 
-          <!-- 문서 유형 -->
-          <CCol xs="12" sm="6" md="3">
-            <CFormSelect v-model="filterDocType" size="sm" @change="onSearch">
-              <option value="">전체 문서유형</option>
-              <option v-for="dt in filteredDocTypes" :key="dt.id" :value="String(dt.id)">
-                {{ dt.name }}
-              </option>
-            </CFormSelect>
-          </CCol>
+                <!-- 문서 유형 -->
+                <CCol xs="12" sm="6" class="mb-2">
+                  <CFormSelect v-model="filterDocType" @change="onSearch">
+                    <option value="">전체 문서유형</option>
+                    <option v-for="dt in filteredDocTypes" :key="dt.id" :value="String(dt.id)">
+                      {{ dt.name }}
+                    </option>
+                  </CFormSelect>
+                </CCol>
+              </CRow>
+            </CCol>
 
-          <!-- 공개 등급 -->
-          <CCol xs="12" sm="6" md="2">
-            <CFormSelect v-model="filterSecurityLevel" size="sm" @change="onSearch">
-              <option value="">전체 공개등급</option>
-              <option value="1">🔒 1등급 (비공개)</option>
-              <option value="2">👥 2등급 (부서공개)</option>
-              <option value="3">🌐 3등급 (전사공개)</option>
-            </CFormSelect>
-          </CCol>
+            <CCol lg="7">
+              <CRow>
+                <!-- 공개 등급 -->
+                <CCol xs="12" sm="6" lg="4" class="mb-2">
+                  <CFormSelect v-model="filterSecurityLevel" @change="onSearch">
+                    <option value="">전체 공개등급</option>
+                    <option value="1">🔒 1등급 (비공개)</option>
+                    <option value="2">👥 2등급 (부서공개)</option>
+                    <option value="3">🌐 3등급 (전사공개)</option>
+                  </CFormSelect>
+                </CCol>
 
-          <!-- 결재 상태 -->
-          <CCol xs="12" sm="6" md="2">
-            <CFormSelect v-model="filterStatus" size="sm" @change="onSearch">
-              <option value="">전체 상태</option>
-              <option value="pending">결재중</option>
-              <option value="approved">승인완료</option>
-              <option value="rejected">반려</option>
-              <option value="cancelled">취소</option>
-              <option value="draft">임시저장</option>
-            </CFormSelect>
-          </CCol>
+                <!-- 결재 상태 -->
+                <CCol xs="12" sm="6" lg="4" class="mb-2">
+                  <CFormSelect v-model="filterStatus" @change="onSearch">
+                    <option value="">전체 상태</option>
+                    <option value="pending">결재중</option>
+                    <option value="approved">승인완료</option>
+                    <option value="rejected">반려</option>
+                    <option value="cancelled">취소</option>
+                    <option value="draft">임시저장</option>
+                  </CFormSelect>
+                </CCol>
 
-          <!-- 기안 부서 -->
-          <CCol xs="12" sm="6" md="3">
-            <CFormSelect v-model="filterDepartment" size="sm" @change="onSearch">
-              <option value="">전체 부서</option>
-              <option v-for="dept in allDepartList" :key="dept.pk" :value="String(dept.pk)">
-                {{ dept.name }}
-              </option>
-            </CFormSelect>
-          </CCol>
-        </CRow>
+                <!-- 기안 부서 -->
+                <CCol xs="12" sm="6" lg="4" class="mb-2">
+                  <CFormSelect v-model="filterDepartment" @change="onSearch">
+                    <option value="">전체 부서</option>
+                    <option v-for="dept in allDepartList" :key="dept.pk" :value="String(dept.pk)">
+                      {{ dept.name }}
+                    </option>
+                  </CFormSelect>
+                </CCol>
+              </CRow>
+            </CCol>
+          </CRow>
+        </CCol>
+        <CCol xl="5">
+          <CRow class="g-2 align-items-center">
+            <!-- 기안일자 기간 -->
+            <CCol xs="12" lg="6" class="d-flex align-items-center gap-1">
+              <DatePicker v-model="filterStartDate" @change="onSearch" />
+              <span class="text-muted">~</span>
+              <DatePicker v-model="filterEndDate" @change="onSearch" />
+            </CCol>
 
-        <CRow class="g-2 align-items-center">
-          <!-- 기안일자 기간 -->
-          <CCol xs="12" sm="6" md="4" class="d-flex align-items-center gap-1">
-            <CFormInput v-model="filterStartDate" type="date" size="sm" @change="onSearch" />
-            <span class="text-muted">~</span>
-            <CFormInput v-model="filterEndDate" type="date" size="sm" @change="onSearch" />
-          </CCol>
+            <!-- 검색어 + 버튼 -->
+            <CCol xs="12" lg="6">
+              <CInputGroup>
+                <CFormInput
+                  v-model="searchText"
+                  placeholder="문서번호, 제목, 기안자 검색..."
+                  @keyup.enter="onSearch"
+                />
+                <CInputGroupText @click="onSearch">
+                  <v-icon icon="mdi-magnify" size="x-small" /> 검색
+                </CInputGroupText>
+                <CInputGroupText @click="resetFilter">
+                  <v-icon icon="mdi-refresh" size="x-small" /> 초기화
+                </CInputGroupText>
+              </CInputGroup>
+            </CCol>
+          </CRow>
+        </CCol>
+      </CRow>
 
-          <!-- 검색어 + 버튼 -->
-          <CCol xs="12" sm="6" md="8">
-            <CInputGroup size="sm">
-              <CFormInput
-                v-model="searchText"
-                placeholder="문서번호, 제목, 기안자 검색..."
-                @keyup.enter="onSearch"
-              />
-              <CButton color="primary" type="button" @click="onSearch">
-                <v-icon icon="mdi-magnify" size="x-small" /> 검색
-              </CButton>
-              <CButton color="secondary" variant="outline" type="button" @click="resetFilter">
-                <v-icon icon="mdi-refresh" size="x-small" /> 초기화
-              </CButton>
-            </CInputGroup>
-          </CCol>
-        </CRow>
-      </CCardBody>
-    </CCard>
+      <CRow>
+        <!--        <CCol color="warning" class="p-2 pl-3">-->
+        <!--          <strong> 문서 건수 조회 결과 : {{ numFormat(docsCount, 0, 0) }} 건 </strong>-->
+        <!--        </CCol>-->
+        <!--        <CCol v-if="!formsCheck" class="text-right mb-0">-->
+        <!--          <v-btn color="info" size="small" @click="resetForm"> 검색조건 초기화</v-btn>-->
+        <!--        </CCol>-->
+      </CRow>
+    </CCallout>
 
     <!-- 문서 현황 바 -->
     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -222,11 +227,12 @@ onMounted(async () => {
       <colgroup>
         <col style="width: 6%" />
         <col style="width: 14%" />
-        <col style="width: 14%" />
-        <col style="width: 12%" />
-        <col style="width: 10%" />
-        <col style="width: 26%" />
         <col style="width: 8%" />
+        <col style="width: 10%" />
+        <col style="width: 10%" />
+        <col style="width: 10%" />
+        <col style="width: 22%" />
+        <col style="width: 10%" />
         <col style="width: 10%" />
       </colgroup>
 
@@ -271,18 +277,30 @@ onMounted(async () => {
           <!-- 공개등급 -->
           <CTableDataCell class="text-center">
             <CBadge
-              :color="doc.security_level === '1' ? 'danger' : doc.security_level === '2' ? 'primary' : 'success'"
+              :color="
+                doc.security_level === '1'
+                  ? 'danger'
+                  : doc.security_level === '2'
+                    ? 'primary'
+                    : 'success'
+              "
               variant="outline"
               class="small"
             >
-              {{ doc.security_level === '1' ? '🔒 1등급' : doc.security_level === '2' ? '👥 2등급' : '🌐 3등급' }}
+              {{
+                doc.security_level === '1'
+                  ? '🔒 1등급'
+                  : doc.security_level === '2'
+                    ? '👥 2등급'
+                    : '🌐 3등급'
+              }}
             </CBadge>
           </CTableDataCell>
 
           <!-- 카테고리 / 문서유형 -->
           <CTableDataCell>
-            <div class="small text-muted">{{ doc.category_name || '일반' }}</div>
-            <div class="fw-semibold">{{ doc.doc_type_name }}</div>
+            <span class="small text-muted mr-2">{{ doc.category_name || '일반' }}</span>
+            <span class="fw-semibold">{{ doc.doc_type_name }}</span>
           </CTableDataCell>
 
           <!-- 기안 부서 / 직책 -->
@@ -326,7 +344,7 @@ onMounted(async () => {
           </CTableDataCell>
 
           <!-- 기안일시 -->
-          <CTableDataCell class="text-center text-muted small">
+          <CTableDataCell class="text-center text-muted">
             {{ fmtDate(doc.submitted_at || doc.created_at) }}
           </CTableDataCell>
         </CTableRow>

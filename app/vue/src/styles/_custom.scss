@@ -286,6 +286,10 @@ a.page-link,
   color: #0f192a;
 }
 
+.bg-light {
+  background-color: #EBEDEF !important;
+}
+
 .bg-more-white {
   background-color: #ffffff !important;
 }
@@ -328,6 +332,12 @@ a.page-link,
 
   .title {
     color: #cfd8dc;
+  }
+
+  .card {
+    .bg-light {
+      background-color: #20212C !important;
+    }
   }
 
   .bg-more-white {

@@ -201,20 +201,37 @@ onMounted(() => fetchDocument(docId.value))
             v-if="document.security_level"
             variant="tonal"
             size="x-small"
-            :color="document.security_level === '1' ? 'error' : document.security_level === '2' ? 'primary' : 'success'"
+            :color="
+              document.security_level === '1'
+                ? 'error'
+                : document.security_level === '2'
+                  ? 'primary'
+                  : 'success'
+            "
             class="me-2"
           >
             <v-icon
               start
               size="x-small"
-              :icon="document.security_level === '1' ? 'mdi-lock' : document.security_level === '2' ? 'mdi-account-group' : 'mdi-earth'"
+              :icon="
+                document.security_level === '1'
+                  ? 'mdi-lock'
+                  : document.security_level === '2'
+                    ? 'mdi-account-group'
+                    : 'mdi-earth'
+              "
             />
-            {{ document.security_level === '1' ? '1등급 (비공개)' : document.security_level === '2' ? '2등급 (부서공개)' : '3등급 (전사공개)' }}
+            {{
+              document.security_level === '1'
+                ? '1등급 (비공개)'
+                : document.security_level === '2'
+                  ? '2등급 (부서공개)'
+                  : '3등급 (전사공개)'
+            }}
           </v-chip>
           <span class="fw-semibold fs-5">{{ document.title }}</span>
         </div>
         <div class="d-flex gap-2 flex-wrap">
-          <v-btn color="light" size="small" @click="toList" flat> 목록 </v-btn>
           <v-btn
             v-if="document.pdf_url"
             color="light"
@@ -264,7 +281,9 @@ onMounted(() => fetchDocument(docId.value))
         <CAlert color="warning" class="d-flex align-items-center mb-0 py-2 px-3">
           <CIcon name="cilInfo" class="flex-shrink-0 me-2 text-warning" size="lg" />
           <div class="small">
-            <strong>기안 회수 문서 안내:</strong> 이 문서는 기안자가 내용을 수정/보완하기 위해 <strong>회수한 상태(임시저장)</strong>입니다. 기안자가 수정 후 재상신하면 결재를 진행하실 수 있습니다.
+            <strong>기안 회수 문서 안내:</strong> 이 문서는 기안자가 내용을 수정/보완하기 위해
+            <strong>회수한 상태(임시저장)</strong>입니다. 기안자가 수정 후 재상신하면 결재를
+            진행하실 수 있습니다.
           </div>
         </CAlert>
       </div>
@@ -272,9 +291,7 @@ onMounted(() => fetchDocument(docId.value))
       <div v-else-if="document.status === 'cancelled'" class="px-3 pt-3">
         <CAlert color="secondary" class="d-flex align-items-center mb-0 py-2 px-3">
           <CIcon name="cilInfo" class="flex-shrink-0 me-2" size="lg" />
-          <div class="small">
-            이 문서는 기안자에 의해 <strong>취소(회수)</strong>되었습니다.
-          </div>
+          <div class="small">이 문서는 기안자에 의해 <strong>취소(회수)</strong>되었습니다.</div>
         </CAlert>
       </div>
 
@@ -2250,9 +2267,7 @@ onMounted(() => fetchDocument(docId.value))
                 </CTableDataCell>
               </CTableRow>
               <CTableRow v-if="docContent.budget !== undefined || docContent.amount !== undefined">
-                <CTableHeaderCell class="text-center bg-more-light">
-                  소요 예산
-                </CTableHeaderCell>
+                <CTableHeaderCell class="text-center bg-more-light"> 소요 예산 </CTableHeaderCell>
                 <CTableDataCell colspan="3" class="pl-3 fw-bold text-danger fs-6">
                   {{ (Number(docContent.budget ?? docContent.amount) || 0).toLocaleString() }} 원
                 </CTableDataCell>
@@ -2261,14 +2276,16 @@ onMounted(() => fetchDocument(docId.value))
                 <CTableHeaderCell class="text-center bg-more-light">
                   세부 품의 내용
                 </CTableHeaderCell>
-                <CTableDataCell colspan="3" class="pl-3" style="white-space: pre-wrap; line-height: 1.6">
+                <CTableDataCell
+                  colspan="3"
+                  class="pl-3"
+                  style="white-space: pre-wrap; line-height: 1.6"
+                >
                   {{ docContent.content || docContent.body || docContent.description || '-' }}
                 </CTableDataCell>
               </CTableRow>
               <CTableRow v-if="docContent.expected_effect">
-                <CTableHeaderCell class="text-center bg-more-light">
-                  기대 효과
-                </CTableHeaderCell>
+                <CTableHeaderCell class="text-center bg-more-light"> 기대 효과 </CTableHeaderCell>
                 <CTableDataCell colspan="3" class="pl-3" style="white-space: pre-wrap">
                   {{ docContent.expected_effect }}
                 </CTableDataCell>
@@ -2298,7 +2315,11 @@ onMounted(() => fetchDocument(docId.value))
 
           <!-- 기타 다중 key-value 필드가 있는 경우 테이블로 렌더링 -->
           <CTable
-            v-if="Object.keys(docContent).some(k => !['body', 'content', 'description'].includes(String(k)))"
+            v-if="
+              Object.keys(docContent).some(
+                k => !['body', 'content', 'description'].includes(String(k)),
+              )
+            "
             small
             bordered
             responsive
@@ -2320,10 +2341,7 @@ onMounted(() => fetchDocument(docId.value))
             </CTableBody>
           </CTable>
 
-          <div
-            v-if="!Object.keys(docContent).length"
-            class="text-center text-muted py-3"
-          >
+          <div v-if="!Object.keys(docContent).length" class="text-center text-muted py-3">
             등록된 상세 품의 내용이 없습니다.
           </div>
         </template>
@@ -2483,7 +2501,9 @@ onMounted(() => fetchDocument(docId.value))
                         getAction(step, approver.id)!.action === 'approved' ? 'success' : 'danger'
                       "
                     >
-                      {{ getAction(step, approver.id)!.action === 'approved' ? '✓ 승인' : '✗ 반려' }}
+                      {{
+                        getAction(step, approver.id)!.action === 'approved' ? '✓ 승인' : '✗ 반려'
+                      }}
                     </CBadge>
                     <CBadge
                       v-if="getAction(step, approver.id)!.is_delegated"
@@ -2535,6 +2555,12 @@ onMounted(() => fetchDocument(docId.value))
         </div>
       </CCardBody>
     </CCard>
+
+    <CRow>
+      <CCol class="text-right">
+        <v-btn color="light" class="text-body" @click="toList" flat> 목록으로 </v-btn>
+      </CCol>
+    </CRow>
   </template>
 
   <!-- 결재 처리 모달 -->

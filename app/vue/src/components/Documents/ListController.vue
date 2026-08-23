@@ -1,10 +1,8 @@
 <script lang="ts" setup>
-import { computed, inject, nextTick, onBeforeMount, type PropType, ref } from 'vue'
+import { computed, nextTick, onBeforeMount, type PropType, ref } from 'vue'
 import { type DocsFilter, useDocs } from '@/store/pinia/docs'
 import { numFormat } from '@/utils/baseMixins'
-import { bgLight } from '@/utils/cssMixins'
 import Multiselect from '@vueform/multiselect'
-import { CCallout } from '@coreui/vue'
 
 const props = defineProps({
   comFrom: { type: Boolean, default: false },
@@ -83,7 +81,7 @@ onBeforeMount(async () => {
 </script>
 
 <template>
-  <CCallout :color="comFrom ? 'primary' : 'success'" class="pb-0 mb-4" :class="bgLight">
+  <CCallout :color="comFrom ? 'primary' : 'success'" class="pb-0 mb-4 bg-light">
     <CRow>
       <CCol lg="6">
         <CRow>
