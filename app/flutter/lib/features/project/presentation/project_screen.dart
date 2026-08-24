@@ -11,6 +11,7 @@ import '../../contract/presentation/contract_list_screen.dart';
 import '../../docs/presentation/docs_screen.dart';
 import '../../ledger/presentation/ledger_screen.dart';
 import '../../payment/presentation/payment_list_screen.dart';
+import '../providers/project_provider.dart';
 import 'project_settings_screen.dart';
 import 'site_screen.dart';
 
@@ -50,11 +51,38 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
     });
   }
 
+  void _handleDisabledModuleTap(String moduleTitle) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          '$moduleTitle을(를) 확인하려면 먼저 프로젝트를 선택해 주세요.',
+          style: const TextStyle(fontSize: 13),
+        ),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+    showProjectSelectorBottomSheet(context, onlyRealEstate: true);
+  }
+
   @override
   Widget build(BuildContext context) {
     final selectedProject = ref.watch(selectedRealEstateProjectProvider);
     final isRealEstateProject =
         selectedProject != null && selectedProject.type == '2';
+
+    final realEstateProjectsAsync = ref.watch(realEstateProjectsProvider);
+    final realEstateProjects = realEstateProjectsAsync.valueOrNull ?? [];
+
+    // ── 스마트 자동 선택: 소속된 부동산 개발 프로젝트가 1개만 있을 경우 즉시 자동 선택 ──
+    if (selectedProject == null && realEstateProjects.length == 1) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (ref.read(selectedRealEstateProjectProvider) == null && mounted) {
+          selectRealEstateProject(ref, realEstateProjects.first);
+        }
+      });
+    }
 
     // ── 서브 모듈 내부 뷰 모드 (1줄 콤팩트 바 뷰) ──────────────────────
     if (_activeModule != ProjectActiveModule.none && selectedProject != null) {
@@ -150,128 +178,109 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // ── 1. 메인 프로젝트 히어로 셀렉터 카드 (radius = 0) ───────────────────
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: context.colors.bgCard,
-                borderRadius: BorderRadius.zero,
-                border: Border.all(
-                  color: isRealEstateProject
-                      ? context.colors.accentProject.withAlpha(80)
-                      : context.colors.warning.withAlpha(100),
-                  width: 1,
+            if (isRealEstateProject)
+              // (1) 프로젝트가 선택된 상태
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: context.colors.bgCard,
+                  borderRadius: BorderRadius.zero,
+                  border: Border.all(
+                    color: context.colors.accentProject.withAlpha(80),
+                    width: 1,
+                  ),
                 ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // ── 상단 행: 프로젝트 이름 + 프로젝트 전환 버튼 ─────────────
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Row(
-                          children: [
-                            Icon(
-                              isRealEstateProject
-                                  ? Icons.business_rounded
-                                  : Icons.warning_amber_rounded,
-                              size: 18,
-                              color: isRealEstateProject
-                                  ? context.colors.accentProject
-                                  : context.colors.warning,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                isRealEstateProject
-                                    ? selectedProject.name
-                                    : '관리 대상 프로젝트를 선택해 주세요',
-                                style: AppTextStyles.titleLg.copyWith(
-                                  color: context.colors.textPrimary,
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: -0.3,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 상단 행: 프로젝트 이름 + 프로젝트 전환 버튼
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.business_rounded,
+                                size: 18,
+                                color: context.colors.accentProject,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  selectedProject.name,
+                                  style: AppTextStyles.titleLg.copyWith(
+                                    color: context.colors.textPrimary,
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: -0.3,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Material(
+                          color: context.colors.accentProject.withAlpha(20),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.zero,
+                            side: BorderSide(
+                              color: context.colors.accentProject.withAlpha(80),
+                              width: 0.8,
+                            ),
+                          ),
+                          child: InkWell(
+                            onTap: () => showProjectSelectorBottomSheet(
+                              context,
+                              onlyRealEstate: true,
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 5),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.swap_horiz_rounded,
+                                    size: 14,
+                                    color: context.colors.accentProject,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '전환',
+                                    style: AppTextStyles.label.copyWith(
+                                      color: context.colors.accentProject,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 11.5,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Material(
-                        color: isRealEstateProject
-                            ? context.colors.accentProject.withAlpha(20)
-                            : context.colors.warning.withAlpha(25),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.zero,
-                          side: BorderSide(
-                            color: isRealEstateProject
-                                ? context.colors.accentProject.withAlpha(80)
-                                : context.colors.warning.withAlpha(90),
-                            width: 0.8,
                           ),
                         ),
-                        child: InkWell(
-                          onTap: () => showProjectSelectorBottomSheet(
-                            context,
-                            onlyRealEstate: true,
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 5),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.swap_horiz_rounded,
-                                  size: 14,
-                                  color: isRealEstateProject
-                                      ? context.colors.accentProject
-                                      : context.colors.warning,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  isRealEstateProject ? '전환' : '선택',
-                                  style: AppTextStyles.label.copyWith(
-                                    color: isRealEstateProject
-                                        ? context.colors.accentProject
-                                        : context.colors.warning,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 11.5,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-
-                  // ── 프로젝트 설명 ──────────────────────────────────
-                  Text(
-                    isRealEstateProject
-                        ? (selectedProject.description != null &&
-                                selectedProject.description!.isNotEmpty
-                            ? selectedProject.description!
-                            : '계약 정보, 대금 수납, 회계 자금(캐시플로우), 부지 정보 및 문서 통합 관리 사업지입니다.')
-                        : '계약 정보, 대금 수납, 회계 자금, 부지 정보 모듈은 부동산 개발 사업 프로젝트 전용 기능입니다.',
-                    style: AppTextStyles.bodySecond.copyWith(
-                      color: isRealEstateProject
-                          ? context.colors.textSecond
-                          : context.colors.textMuted,
-                      fontSize: 12.5,
-                      height: 1.4,
+                      ],
                     ),
-                  ),
+                    const SizedBox(height: 8),
 
-                  // ── 하단 행: [⚙️ 프로젝트 설정] + [📂 프로젝트 문서함] 퀵 액션 ────────
-                  if (isRealEstateProject) ...[
+                    // 프로젝트 설명
+                    Text(
+                      selectedProject.description != null &&
+                              selectedProject.description!.isNotEmpty
+                          ? selectedProject.description!
+                          : '계약 정보, 대금 수납, 회계 자금(캐시플로우), 부지 정보 및 문서 통합 관리 사업지입니다.',
+                      style: AppTextStyles.bodySecond.copyWith(
+                        color: context.colors.textSecond,
+                        fontSize: 12.5,
+                        height: 1.4,
+                      ),
+                    ),
+
+                    // 하단 행: [⚙️ 프로젝트 설정] + [📂 프로젝트 문서함] 퀵 액션
                     const SizedBox(height: 12),
                     Divider(color: context.colors.border, height: 1),
                     const SizedBox(height: 10),
@@ -279,7 +288,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
                       children: [
                         // 좌측: 프로젝트 설정 바로가기
                         Material(
-                          color: const Color(0xFF00796B).withAlpha(25),
+                          color: const Color(0xFF00695C),
                           shape: const RoundedRectangleBorder(
                             borderRadius: BorderRadius.zero,
                             side: BorderSide(
@@ -293,20 +302,20 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
                             ),
                             child: Padding(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 4.5),
+                                  horizontal: 10, vertical: 5),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   const Icon(
                                     Icons.settings_outlined,
                                     size: 13,
-                                    color: Color(0xFF00897B),
+                                    color: Colors.white,
                                   ),
                                   const SizedBox(width: 5),
                                   Text(
                                     '프로젝트 설정',
                                     style: AppTextStyles.label.copyWith(
-                                      color: const Color(0xFF00796B),
+                                      color: Colors.white,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 11.5,
                                     ),
@@ -320,11 +329,11 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
 
                         // 우측: 프로젝트 문서함 바로가기
                         Material(
-                          color: const Color(0xFF8E24AA).withAlpha(25),
+                          color: const Color(0xFF6A1B9A),
                           shape: const RoundedRectangleBorder(
                             borderRadius: BorderRadius.zero,
                             side: BorderSide(
-                              color: Color(0xFFBA68C8),
+                              color: Color(0xFFAB47BC),
                               width: 0.8,
                             ),
                           ),
@@ -335,20 +344,20 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
                             ),
                             child: Padding(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 4.5),
+                                  horizontal: 10, vertical: 5),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   const Icon(
                                     Icons.folder_shared_outlined,
                                     size: 13,
-                                    color: Color(0xFF8E24AA),
+                                    color: Colors.white,
                                   ),
                                   const SizedBox(width: 5),
                                   Text(
                                     '프로젝트 문서함',
                                     style: AppTextStyles.label.copyWith(
-                                      color: const Color(0xFF8E24AA),
+                                      color: Colors.white,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 11.5,
                                     ),
@@ -357,7 +366,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
                                   const Icon(
                                     Icons.arrow_forward_rounded,
                                     size: 12,
-                                    color: Color(0xFF8E24AA),
+                                    color: Colors.white,
                                   ),
                                 ],
                               ),
@@ -367,9 +376,280 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
                       ],
                     ),
                   ],
-                ],
+                ),
+              )
+            else
+              // (2) 프로젝트가 선택되지 않은 상태
+              realEstateProjectsAsync.when(
+                loading: () => Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: context.colors.bgCard,
+                    borderRadius: BorderRadius.zero,
+                    border: Border.all(color: context.colors.border),
+                  ),
+                  child: Center(
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: context.colors.accentProject,
+                      ),
+                    ),
+                  ),
+                ),
+                error: (err, _) => Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: context.colors.bgCard,
+                    borderRadius: BorderRadius.zero,
+                    border: Border.all(color: context.colors.error.withAlpha(80)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.error_outline_rounded,
+                          size: 18, color: context.colors.error),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '프로젝트 목록 로드 실패: $err',
+                          style: AppTextStyles.caption.copyWith(color: context.colors.error),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                data: (projects) {
+                  // 소속된 프로젝트가 0개인 경우 (권한 없음 안내 뷰)
+                  if (projects.isEmpty) {
+                    return Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: context.colors.bgCard,
+                        borderRadius: BorderRadius.zero,
+                        border: Border.all(
+                          color: context.colors.border,
+                          width: 1,
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.domain_disabled_rounded,
+                            size: 32,
+                            color: context.colors.textMuted,
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            '소속된 부동산 개발 프로젝트가 없습니다',
+                            style: AppTextStyles.titleSm.copyWith(
+                              color: context.colors.textPrimary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            '계약, 수납, 회계자금, 부지 관리 기능은 부동산 개발(type: 2) 사업지 멤버 전용 기능입니다.\n관리자에게 프로젝트 멤버 등록을 요청해 주세요.',
+                            textAlign: TextAlign.center,
+                            style: AppTextStyles.caption.copyWith(
+                              color: context.colors.textMuted,
+                              height: 1.4,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: context.colors.textPrimary,
+                              side: BorderSide(color: context.colors.border),
+                              shape: const RoundedRectangleBorder(
+                                borderRadius: BorderRadius.zero,
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 8),
+                            ),
+                            onPressed: () => ref.invalidate(myProjectsProvider),
+                            icon: const Icon(Icons.refresh_rounded, size: 14),
+                            label: const Text('새로고침', style: TextStyle(fontSize: 12)),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  // 1개 이상의 프로젝트가 있는 경우 (빠른 선택 바 + 안내)
+                  return Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: context.colors.bgCard,
+                      borderRadius: BorderRadius.zero,
+                      border: Border.all(
+                        color: context.colors.accentProject.withAlpha(70),
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // 상단 행: 타이틀 + 전체 선택 버튼
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.domain_rounded,
+                              size: 18,
+                              color: context.colors.accentProject,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                '부동산 개발 프로젝트 선택',
+                                style: AppTextStyles.titleLg.copyWith(
+                                  color: context.colors.textPrimary,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: -0.3,
+                                ),
+                              ),
+                            ),
+                            Material(
+                              color: context.colors.accentProject.withAlpha(20),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.zero,
+                                side: BorderSide(
+                                  color: context.colors.accentProject.withAlpha(80),
+                                  width: 0.8,
+                                ),
+                              ),
+                              child: InkWell(
+                                onTap: () => showProjectSelectorBottomSheet(
+                                  context,
+                                  onlyRealEstate: true,
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 5),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.list_alt_rounded,
+                                        size: 13,
+                                        color: context.colors.accentProject,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        '전체 목록 ▾',
+                                        style: AppTextStyles.label.copyWith(
+                                          color: context.colors.accentProject,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 11.5,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          '관리할 프로젝트를 선택하면 계약·수납·자금·부지 데이터가 활성화됩니다.',
+                          style: AppTextStyles.caption.copyWith(
+                            color: context.colors.textSecond,
+                            height: 1.35,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Divider(color: context.colors.border, height: 1),
+                        const SizedBox(height: 10),
+
+                        // 빠른 프로젝트 선택 칩 (가로 스크롤)
+                        Row(
+                          children: [
+                            Text(
+                              '빠른 선택',
+                              style: AppTextStyles.caption.copyWith(
+                                color: context.colors.textMuted,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 11,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 5, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: context.colors.accentProject.withAlpha(15),
+                                borderRadius: BorderRadius.zero,
+                              ),
+                              child: Text(
+                                '${projects.length}',
+                                style: AppTextStyles.caption.copyWith(
+                                  color: context.colors.accentProject,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: projects.map((p) {
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 8),
+                                child: Material(
+                                  color: context.colors.bgSurface,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    side: BorderSide(
+                                      color: context.colors.border,
+                                      width: 0.8,
+                                    ),
+                                  ),
+                                  child: InkWell(
+                                    onTap: () => selectRealEstateProject(ref, p),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 10, vertical: 6),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.apartment_rounded,
+                                            size: 13,
+                                            color: context.colors.accentProject,
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            p.name,
+                                            style: AppTextStyles.bodySecond.copyWith(
+                                              color: context.colors.textPrimary,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
-            ),
             const SizedBox(height: 20),
 
             // ── 2. 프로젝트 전용 4대 핵심 모듈 접근 섹션 (radius = 0) ───────────
@@ -411,6 +691,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
               accentColor: const Color(0xFF38BDF8), // Sky Blue
               isEnabled: isRealEstateProject,
               onTap: () => _openSubModule(ProjectActiveModule.contract),
+              onDisabledTap: () => _handleDisabledModuleTap('계약 정보 관리'),
             ),
             const SizedBox(height: 12),
 
@@ -424,6 +705,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
               accentColor: const Color(0xFF34D399), // Emerald
               isEnabled: isRealEstateProject,
               onTap: () => _openSubModule(ProjectActiveModule.payment),
+              onDisabledTap: () => _handleDisabledModuleTap('대금 수납 관리'),
             ),
             const SizedBox(height: 12),
 
@@ -437,6 +719,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
               accentColor: const Color(0xFFFBBF24), // Amber Gold
               isEnabled: isRealEstateProject,
               onTap: () => _openSubModule(ProjectActiveModule.ledger),
+              onDisabledTap: () => _handleDisabledModuleTap('회계 자금 관리'),
             ),
             const SizedBox(height: 12),
 
@@ -450,6 +733,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
               accentColor: const Color(0xFF0D9488), // Teal Green
               isEnabled: isRealEstateProject,
               onTap: () => _openSubModule(ProjectActiveModule.site),
+              onDisabledTap: () => _handleDisabledModuleTap('부지 정보 관리'),
             ),
 
             const SizedBox(height: 32),
@@ -470,6 +754,7 @@ class _ModuleCard extends StatelessWidget {
   final Color accentColor;
   final bool isEnabled;
   final VoidCallback onTap;
+  final VoidCallback? onDisabledTap;
 
   const _ModuleCard({
     required this.title,
@@ -480,6 +765,7 @@ class _ModuleCard extends StatelessWidget {
     required this.accentColor,
     required this.isEnabled,
     required this.onTap,
+    this.onDisabledTap,
   });
 
   @override
@@ -500,7 +786,7 @@ class _ModuleCard extends StatelessWidget {
         color: Colors.transparent,
         borderRadius: BorderRadius.zero,
         child: InkWell(
-          onTap: isEnabled ? onTap : null,
+          onTap: isEnabled ? onTap : onDisabledTap,
           borderRadius: BorderRadius.zero,
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -630,3 +916,4 @@ class _ModuleCard extends StatelessWidget {
     );
   }
 }
+

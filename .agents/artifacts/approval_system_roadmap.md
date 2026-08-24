@@ -1,7 +1,7 @@
 # 전자결재 시스템 (Electronic Approval System) — 구현 현황 및 개선 로드맵
 
 > 최초 작성: 2026-08-18
-> **최종 업데이트: 2026-08-21 (17종 전용 폼 완성 + STATIC 단일 아키텍처 리팩토링 + Flutter 앱 기안 기능)**
+> **최종 업데이트: 2026-08-25 (자동결재선 생성 엔진 세부 알고리즘 및 테스트 현황 문서화)**
 > 작성자: Antigravity AI
 
 ---
@@ -125,18 +125,18 @@
 
 ## 3. 자동 결재선 생성 엔진 (Route Builder)
 
-`app/django/approval/services/route_builder.py` — 기안자 보직, 금액, 전결 정책, 임원 정보를 종합하여 실시간으로 최적 결재 단계를 자동 생성합니다.
+`app/django/approval/services/route_builder.py` — 기안자 보직, 금액, 전결 정책, 임원 정보를 종합하여 실시간으로 최적 결재 단계를 동적으로 생성합니다.
 
 ```mermaid
 flowchart TD
     Start([기안 상신 / 결재선 미리보기]) --> A[1. 기안 보직 및 회사 확정]
     A --> B[2. 금액 추출 및 조건부 전결 규칙 평가]
-    B --> C[3. 기안 부서 직속 부서장 확인]
+    B --> C[3. 기안 부서 직속 부서장 탐색]
     C --> D{부서장 존재 & 기안자 제외?}
-    D -- Yes --> E[결재 단계 추가]
+    D -- Yes --> E[겸직 시 최상위 직함 승격 판정 및 결재 단계 추가]
     D -- No --> G[상위 부서로 이동]
     E --> F{전결 조건 도달?}
-    F -- "직책/레벨 일치" --> FinalReached[전결 완료]
+    F -- "대표이사 / 직책 / 레벨 일치" --> FinalReached[전결 완료]
     F -- "미도달" --> G
     G --> H{상위 부서 존재?}
     H -- Yes --> C
@@ -150,6 +150,48 @@ flowchart TD
     M --> Output
     I -- "완료" --> Output
 ```
+
+### 3-1. 결재선 생성 방식 판별
+* **수동 고정 템플릿 (`ROUTE_TEMPLATE`)**: 문서 유형(`DocumentType`)에 사전 정의된 `RouteTemplate`의 `step_order` 순서, 지정 결재자(`approvers`), 결재 조건(`AND`/`OR`)을 그대로 로드합니다.
+* **조직도 기반 동적 자동 결재선 (`ROUTE_ORGANIZATION`)**: 아래의 5단계 동적 알고리즘을 거쳐 결재선을 자동 구성합니다.
+
+### 3-2. 세부 자동 결재선 결정 알고리즘 (`build_dynamic_approval_route`)
+
+1. **기안자 보직 및 회사 확정**
+   - 기안자(`drafter_user`)의 주보직(`StaffAssignment`, `is_primary=True`) 또는 첫 번째 보직에서 소속 부서(`department`)와 회사(`company`)를 식별합니다.
+   - 기안자 본인은 결재선에서 자동 제외되도록 `added_user_ids`에 등록합니다.
+
+2. **금액 추출 및 조건부 전결 정책(`ApprovalPolicyRule`) 평가**
+   - `extract_amount_from_content(content)`로 본문 내용에서 금액 필드(`amount`, `estimated_amount`, `total_amount`, `cost`, `expense_amount`, `payment_amount` 등)를 자동 파싱합니다.
+   - 문서 유형에 등록된 `ApprovalPolicyRule`을 우선순위(`priority`) 순으로 순회하여 금액 구간에 매칭되는 **전결 직책(`final_approval_duty`)** 또는 **전결 부서 레벨(`final_dept_level`)**을 도출합니다. (매칭 규칙이 없으면 문서 유형 기본값 적용)
+
+3. **부서 조직도 상향 순회 (Bottom-Up 탐색 및 직함 승격)**
+   - 기안자 소속 부서부터 시작하여 상위 부서(`upper_depart`)로 트리를 거슬러 올라가며 결재자를 지정합니다.
+   - **부서 책임자 탐색 (`_get_department_manager`)**:
+     1) `Department.manager` 명시 직원 우선 조회
+     2) 해당 부서에 직책(`DutyTitle`)을 보유한 재직 직원(`StaffAssignment`, `staff.status='1'`) 탐색 (팀장, 부서장, 본부장 등)
+   - **겸직 시 최상위 직함 승격 (Highest Role Promotion, `_find_highest_role_label`)**:
+     - 동일인이 하위 직책(예: 팀장)과 상위 직책(예: 대표이사 또는 본부장)을 겸직하는 경우, 결재선 단계 라벨을 최상위 공식 직함(예: `경영지원팀 팀장` 대신 `대표이사 최종 승인` 또는 `경영지원본부 본부장`)으로 자동 승격 표기하고 중복 단계를 단축합니다.
+   - **전결(조기 종료) 조건 검사**:
+     - 탐색된 책임자가 대표이사인 경우 $\to$ 최종 승인 도달로 간주하고 탐색 종료
+     - 결재자의 직책이 전결 직책(`effective_final_duty`)과 일치하는 경우 $\to$ 전결 완료 후 탐색 종료
+     - 해당 부서 레벨이 전결 부서 레벨(`effective_final_level`)에 도달한 경우 (예: 1레벨 본부장 전결) $\to$ 전결 완료 후 탐색 종료
+
+4. **대표이사 최종 결재 단계 추가 (`_get_company_ceos`)**
+   - 전결로 조기 종료되지 않았고 결재선에 대표이사가 아직 포함되지 않은 경우, 회사 대표이사를 조회하여 최종 단계로 추가합니다.
+   - **대표이사 탐색 다각화**:
+     1) 직책(Duty) 코드가 `CEO`이거나 명칭에 `대표이사`/`대표`가 포함된 직원
+     2) `Executive` 등기 임원 중 대표권(`sole`, `joint`, `each`) 보유 직원
+     3) `Company.ceo` 대표자명과 일치하는 직원 (Fallback)
+   - **공동대표(`joint`) 처리**: 공동대표가 2인 이상이면 결재 조건 `AND` (전원 승인 필요, `공동대표 최종 승인`), 단독/각자대표이면 `OR` (1인 승인, `대표이사 최종 승인`).
+
+5. **자가 결재선 예외 처리**
+   - 기안자가 최고 결재권자(대표이사 등)이거나 상위 결재자가 없어 결재 단계가 비어 있는 경우, 기안자 본인의 1단계(`대표이사 승인`, `OR`) 결재선을 자동 생성합니다.
+
+### 3-3. 단위 및 통합 테스트 현황
+* [`approval/tests/test_route_builder.py`](file:///Users/austinkho/Git/Pro/ibs/app/django/approval/tests/test_route_builder.py): 동일인 겸직(팀장 겸 대표이사) 시 최상위 직함 승격(`Highest Role Promotion`) 및 1단계 결재선 단축 검증 단위 테스트.
+* [`approval/tests/test_workflow_api.py`](file:///Users/austinkho/Git/Pro/ibs/app/django/approval/tests/test_workflow_api.py): 상신 시 동적 결재선 생성, 단계별 승인/최종 승인/채번, 비인가자 차단, 반려, 기안 취소, 대결(Delegation), 보안등급별 열람 제어 API 통합 테스트.
+* [`approval/tests/test_push_notifications.py`](file:///Users/austinkho/Git/Pro/ibs/app/django/approval/tests/test_push_notifications.py): 결재선 단계별 승인/반려 시 푸시 알림 발송 검증.
 
 ---
 
