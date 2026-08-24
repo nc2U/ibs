@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, onMounted, onUpdated, type PropType, reactive, ref } from 'vue'
+import { computed, onBeforeMount, onMounted, onUpdated, type PropType, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
 import { useStore } from '@/store'
@@ -53,8 +53,8 @@ const form = reactive({
   is_public: true,
   parent: null as number | null,
   is_inherit_members: false,
-  allowed_roles: [6, 7, 8],
-  trackers: [4, 5, 6, 7, 8],
+  allowed_roles: [] as number[],
+  trackers: [] as number[],
   slack_notifications_enabled: false,
 })
 
@@ -177,6 +177,32 @@ const onSubmit = async (event: Event) => {
   }
 }
 
+const setDefaultRolesAndTrackers = () => {
+  if (props.project) return
+
+  if (form.type === '2') {
+    // 부동산개발 프로젝트(type='2'): is_for_dev_project 플래그가 true인 항목들을 기본 할당
+    const devRoles = workStore.roleList.filter(r => r.is_for_dev_project).map(r => r.pk)
+    form.allowed_roles = devRoles.length > 0 ? devRoles : workStore.roleList.map(r => r.pk)
+
+    const devTrackers = issueStore.trackerList.filter(t => t.is_for_dev_project).map(t => t.pk)
+    form.trackers = devTrackers.length > 0 ? devTrackers : issueStore.trackerList.map(t => t.pk)
+  } else {
+    // 본사관리(1) 또는 기타 워크스페이스(3): 전체 역할 및 업무유형 기본 할당
+    form.allowed_roles = workStore.roleList.map(r => r.pk)
+    form.trackers = issueStore.trackerList.map(t => t.pk)
+  }
+}
+
+watch(
+  () => form.type,
+  () => {
+    if (!props.project) {
+      setDefaultRolesAndTrackers()
+    }
+  },
+)
+
 const dataSetup = () => {
   if (props.project) {
     form.pk = props.project.pk
@@ -200,6 +226,10 @@ const dataSetup = () => {
     module.document = !!props.project.module?.document
     module.forum = !!props.project.module?.forum
     module.calendar = !!props.project.module?.calendar
+  } else {
+    if (form.allowed_roles.length === 0 && form.trackers.length === 0) {
+      setDefaultRolesAndTrackers()
+    }
   }
 }
 
@@ -212,11 +242,13 @@ const types = ref([
 onMounted(() => dataSetup())
 onUpdated(() => dataSetup())
 
-onBeforeMount(() => {
+onBeforeMount(async () => {
   if (!!route.query.parent) form.parent = Number(route.query.parent)
   comStore.fetchCompanyList()
-  workStore.fetchRoleList()
-  issueStore.fetchTrackerList()
+  await Promise.all([workStore.fetchRoleList(), issueStore.fetchTrackerList()])
+  if (!props.project) {
+    setDefaultRolesAndTrackers()
+  }
 })
 </script>
 
