@@ -9839,15 +9839,16 @@
     "model": "work.role",
     "pk": 1,
     "fields": {
-      "name": "[WC] 기획담당",
+      "name": "[WS] 기획담당",
       "category": "work_space",
       "is_confidential": false,
+      "is_for_dev_project": false,
       "assignable": true,
       "issue_visible": "ALL",
       "user_visible": "ALL",
       "order": 1,
       "created": "2024-02-29T03:46:04Z",
-      "updated": "2026-08-23T16:50:13.174Z",
+      "updated": "2026-08-24T15:31:31.847Z",
       "creator": 1,
       "permissions": [
         1,
@@ -9903,23 +9904,23 @@
         51,
         52,
         53
-      ],
-      "is_for_dev_project": false
+      ]
     }
   },
   {
     "model": "work.role",
     "pk": 2,
     "fields": {
-      "name": "[WC] 개발담당",
+      "name": "[WS] 개발담당",
       "category": "work_space",
       "is_confidential": false,
+      "is_for_dev_project": false,
       "assignable": true,
       "issue_visible": "PUB",
       "user_visible": "PRJ",
       "order": 1,
       "created": "2024-02-29T03:47:14Z",
-      "updated": "2026-08-23T16:50:16.493Z",
+      "updated": "2026-08-24T15:31:37.436Z",
       "creator": 1,
       "permissions": [
         7,
@@ -9953,23 +9954,23 @@
         51,
         52,
         53
-      ],
-      "is_for_dev_project": false
+      ]
     }
   },
   {
     "model": "work.role",
     "pk": 3,
     "fields": {
-      "name": "[WC] 지원담당",
+      "name": "[WS] 지원담당",
       "category": "work_space",
       "is_confidential": false,
+      "is_for_dev_project": false,
       "assignable": true,
       "issue_visible": "PUB",
       "user_visible": "PRJ",
       "order": 1,
       "created": "2024-02-29T03:48:04Z",
-      "updated": "2026-08-23T16:50:19.824Z",
+      "updated": "2026-08-24T15:31:43.700Z",
       "creator": 1,
       "permissions": [
         11,
@@ -9999,8 +10000,7 @@
         49,
         51,
         53
-      ],
-      "is_for_dev_project": false
+      ]
     }
   },
   {
@@ -10010,12 +10010,13 @@
       "name": "[PR] 관리자",
       "category": "work_space",
       "is_confidential": false,
+      "is_for_dev_project": true,
       "assignable": true,
       "issue_visible": "ALL",
       "user_visible": "ALL",
       "order": 1,
       "created": "2024-02-29T03:59:14Z",
-      "updated": "2026-08-23T16:50:24.136Z",
+      "updated": "2026-08-24T11:07:21.533Z",
       "creator": 1,
       "permissions": [
         1,
@@ -10071,8 +10072,7 @@
         51,
         52,
         53
-      ],
-      "is_for_dev_project": true
+      ]
     }
   },
   {
@@ -10082,12 +10082,13 @@
       "name": "[PR] 스태프",
       "category": "work_space",
       "is_confidential": false,
+      "is_for_dev_project": true,
       "assignable": true,
       "issue_visible": "PUB",
       "user_visible": "PRJ",
       "order": 1,
       "created": "2024-02-29T03:59:24Z",
-      "updated": "2026-08-23T16:50:27.585Z",
+      "updated": "2026-08-24T11:07:21.539Z",
       "creator": 1,
       "permissions": [
         7,
@@ -10121,8 +10122,7 @@
         51,
         52,
         53
-      ],
-      "is_for_dev_project": true
+      ]
     }
   },
   {
@@ -10132,12 +10132,13 @@
       "name": "[PR] 관계자",
       "category": "work_space",
       "is_confidential": false,
+      "is_for_dev_project": true,
       "assignable": false,
       "issue_visible": "PUB",
       "user_visible": "PRJ",
       "order": 1,
       "created": "2024-05-07T06:50:23Z",
-      "updated": "2026-08-23T16:50:31.396Z",
+      "updated": "2026-08-24T11:07:21.540Z",
       "creator": 1,
       "permissions": [
         11,
@@ -10156,8 +10157,7 @@
         49,
         51,
         53
-      ],
-      "is_for_dev_project": true
+      ]
     }
   },
   {
@@ -10167,6 +10167,7 @@
       "name": "[HQ] 회계담당",
       "category": "ibs_hq_manage",
       "is_confidential": true,
+      "is_for_dev_project": false,
       "assignable": true,
       "issue_visible": "PUB",
       "user_visible": "ALL",
@@ -10182,8 +10183,7 @@
         69,
         70,
         71
-      ],
-      "is_for_dev_project": false
+      ]
     }
   },
   {
@@ -10193,6 +10193,7 @@
       "name": "[HQ] 인사담당",
       "category": "ibs_hq_manage",
       "is_confidential": true,
+      "is_for_dev_project": false,
       "assignable": true,
       "issue_visible": "PUB",
       "user_visible": "ALL",
@@ -10208,23 +10209,23 @@
         77,
         78,
         79
-      ],
-      "is_for_dev_project": false
+      ]
     }
   },
   {
     "model": "work.role",
     "pk": 9,
     "fields": {
-      "name": "[HQ] 일반관리자",
+      "name": "[HQ] PM관리자",
       "category": "ibs_hq_manage",
       "is_confidential": false,
+      "is_for_dev_project": false,
       "assignable": true,
       "issue_visible": "PUB",
       "user_visible": "ALL",
       "order": 2,
       "created": "2026-07-23T17:09:02.168Z",
-      "updated": "2026-08-23T18:36:47.635Z",
+      "updated": "2026-08-24T15:34:00.055Z",
       "creator": 1,
       "permissions": [
         1,
@@ -10262,23 +10263,23 @@
         77,
         78,
         79
-      ],
-      "is_for_dev_project": false
+      ]
     }
   },
   {
     "model": "work.role",
     "pk": 10,
     "fields": {
-      "name": "[HQ] PM관리자",
-      "category": "ibs_hq_manage",
+      "name": "[PM] PM관리자",
+      "category": "ibs_pr_manage",
       "is_confidential": false,
+      "is_for_dev_project": false,
       "assignable": true,
       "issue_visible": "PUB",
       "user_visible": "ALL",
       "order": 3,
       "created": "2026-07-23T17:10:33.447Z",
-      "updated": "2026-08-23T18:36:41.061Z",
+      "updated": "2026-08-24T15:34:27.710Z",
       "creator": 1,
       "permissions": [
         1,
@@ -10312,8 +10313,7 @@
         73,
         74,
         75
-      ],
-      "is_for_dev_project": false
+      ]
     }
   },
   {
@@ -10323,12 +10323,13 @@
       "name": "[PR] 계약담당",
       "category": "ibs_pr_manage",
       "is_confidential": false,
+      "is_for_dev_project": true,
       "assignable": true,
       "issue_visible": "PUB",
       "user_visible": "PRJ",
       "order": 4,
       "created": "2026-07-23T17:24:27.264Z",
-      "updated": "2026-08-23T18:38:02.323Z",
+      "updated": "2026-08-24T11:07:21.541Z",
       "creator": 1,
       "permissions": [
         42,
@@ -10344,8 +10345,7 @@
         65,
         66,
         67
-      ],
-      "is_for_dev_project": true
+      ]
     }
   },
   {
@@ -10355,12 +10355,13 @@
       "name": "[PR] 수납담당",
       "category": "ibs_pr_manage",
       "is_confidential": false,
+      "is_for_dev_project": true,
       "assignable": true,
       "issue_visible": "PUB",
       "user_visible": "PRJ",
       "order": 5,
       "created": "2026-07-23T17:27:25.976Z",
-      "updated": "2026-08-23T18:37:47.730Z",
+      "updated": "2026-08-24T11:07:21.541Z",
       "creator": 1,
       "permissions": [
         42,
@@ -10374,8 +10375,7 @@
         65,
         66,
         67
-      ],
-      "is_for_dev_project": true
+      ]
     }
   },
   {
@@ -10385,12 +10385,13 @@
       "name": "[PR] 회계담당",
       "category": "ibs_pr_manage",
       "is_confidential": false,
+      "is_for_dev_project": true,
       "assignable": true,
       "issue_visible": "PUB",
       "user_visible": "PRJ",
       "order": 6,
       "created": "2026-08-23T15:41:04.082Z",
-      "updated": "2026-08-23T18:37:58.442Z",
+      "updated": "2026-08-24T11:07:21.542Z",
       "creator": 1,
       "permissions": [
         42,
@@ -10404,8 +10405,7 @@
         69,
         70,
         71
-      ],
-      "is_for_dev_project": true
+      ]
     }
   },
   {
@@ -10415,12 +10415,13 @@
       "name": "[PR] 부지담당",
       "category": "ibs_pr_manage",
       "is_confidential": false,
+      "is_for_dev_project": true,
       "assignable": true,
       "issue_visible": "PUB",
       "user_visible": "PRJ",
       "order": 7,
       "created": "2026-08-23T18:05:04.246Z",
-      "updated": "2026-08-23T18:37:57.307Z",
+      "updated": "2026-08-24T11:07:21.542Z",
       "creator": 1,
       "permissions": [
         42,
@@ -10430,8 +10431,7 @@
         73,
         74,
         75
-      ],
-      "is_for_dev_project": true
+      ]
     }
   },
   {
@@ -11547,12 +11547,12 @@
       "name": "결함",
       "description": "프로그램 오류, 버그 수정",
       "is_in_roadmap": true,
+      "is_for_dev_project": false,
       "default_status": 1,
       "order": 1,
       "created": "2024-07-10T03:51:24.582Z",
       "updated": "2024-07-10T03:51:24.582Z",
-      "creator": 1,
-      "is_for_dev_project": false
+      "creator": 1
     }
   },
   {
@@ -11562,12 +11562,12 @@
       "name": "기능",
       "description": "기능 개선 및 신규 기능 추가",
       "is_in_roadmap": true,
+      "is_for_dev_project": false,
       "default_status": 1,
       "order": 1,
       "created": "2024-07-10T03:51:24.584Z",
       "updated": "2024-07-10T03:51:24.584Z",
-      "creator": 1,
-      "is_for_dev_project": false
+      "creator": 1
     }
   },
   {
@@ -11577,12 +11577,12 @@
       "name": "지원",
       "description": "QA 테스트, 오류보고 및 검증",
       "is_in_roadmap": true,
+      "is_for_dev_project": false,
       "default_status": 1,
       "order": 1,
       "created": "2024-07-10T03:51:24.587Z",
       "updated": "2024-07-10T03:51:24.587Z",
-      "creator": 1,
-      "is_for_dev_project": false
+      "creator": 1
     }
   },
   {
@@ -11592,12 +11592,12 @@
       "name": "기획일반",
       "description": "내부회의, 의사결정, 프로젝트 계획, 보고서 작성, 사업성 검토",
       "is_in_roadmap": true,
+      "is_for_dev_project": true,
       "default_status": 1,
       "order": 1,
       "created": "2024-07-10T03:51:24.590Z",
-      "updated": "2026-06-07T04:37:33.890Z",
-      "creator": 1,
-      "is_for_dev_project": true
+      "updated": "2026-08-24T11:07:36.042Z",
+      "creator": 1
     }
   },
   {
@@ -11607,12 +11607,12 @@
       "name": "고객업무",
       "description": "분양/마케팅, 수납/고지, 민원, 정보공개, 고객 행사지원 업무",
       "is_in_roadmap": true,
+      "is_for_dev_project": true,
       "default_status": 1,
       "order": 1,
       "created": "2024-07-10T03:51:24.593Z",
-      "updated": "2026-06-07T07:44:42.603Z",
-      "creator": 1,
-      "is_for_dev_project": true
+      "updated": "2026-08-24T11:07:36.051Z",
+      "creator": 1
     }
   },
   {
@@ -11622,12 +11622,12 @@
       "name": "대관업무",
       "description": "인허가 관련 행정 협의, 심의, 신고, 공문 대응 등 대관업무",
       "is_in_roadmap": true,
+      "is_for_dev_project": true,
       "default_status": 1,
       "order": 1,
       "created": "2024-07-10T03:51:24.595Z",
-      "updated": "2026-07-19T15:56:46.636Z",
-      "creator": 1,
-      "is_for_dev_project": true
+      "updated": "2026-08-24T11:07:36.052Z",
+      "creator": 1
     }
   },
   {
@@ -11637,12 +11637,12 @@
       "name": "협력업체",
       "description": "외부 민간 파트너(금융/시공/신탁/설계/기타) 협력 업무",
       "is_in_roadmap": true,
+      "is_for_dev_project": true,
       "default_status": 1,
       "order": 1,
       "created": "2024-12-23T02:08:33.472Z",
-      "updated": "2026-07-19T15:53:14.092Z",
-      "creator": 1,
-      "is_for_dev_project": true
+      "updated": "2026-08-24T11:07:36.053Z",
+      "creator": 1
     }
   },
   {
@@ -11652,12 +11652,12 @@
       "name": "지원업무",
       "description": "회계, 총무, 인사, 법무, IT 시스템, 기타 운영 지원 업무",
       "is_in_roadmap": true,
+      "is_for_dev_project": true,
       "default_status": 1,
       "order": 1,
       "created": "2026-06-07T04:41:28.236Z",
-      "updated": "2026-07-19T16:00:55.688Z",
-      "creator": 1,
-      "is_for_dev_project": true
+      "updated": "2026-08-24T11:07:36.054Z",
+      "creator": 1
     }
   },
   {
