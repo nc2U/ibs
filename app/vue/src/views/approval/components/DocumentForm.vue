@@ -395,11 +395,7 @@ onMounted(async () => {
                   label="👥 2등급 (부서공개: 소속 부서 공유)"
                   class="me-3"
                 />
-                <v-radio
-                  value="3"
-                  color="success"
-                  label="🌐 3등급 (전사공개: 회사 전체 공유)"
-                />
+                <v-radio value="3" color="success" label="🌐 3등급 (전사공개: 회사 전체 공유)" />
               </v-radio-group>
               <div class="form-text text-muted mt-1">
                 문서 유형별 기본 등급이 자동 지정되며, 필요 시 기안자가 등급을 변경할 수 있습니다.
