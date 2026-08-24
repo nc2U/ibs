@@ -46,7 +46,15 @@ const currentThemeLabel = computed(() => {
 })
 
 const toggleSidebar = () => store.toggleSidebar()
-const toggleTheme = (theme: 'default' | 'dark' | 'auto') => store.toggleTheme(theme)
+const cycleTheme = () => {
+  if (theme.value === 'default') {
+    store.toggleTheme('dark')
+  } else if (theme.value === 'dark') {
+    store.toggleTheme('auto')
+  } else {
+    store.toggleTheme('default')
+  }
+}
 const toggleAside = () => store.toggleAside()
 </script>
 
@@ -74,48 +82,13 @@ const toggleAside = () => store.toggleAside()
           </v-tooltip>
         </CHeaderToggler>
 
-        <!-- 테마 전환 단일 동적 아이콘 드롭다운 -->
-        <CDropdown variant="dropdown" placement="bottom-end" class="mr-1">
-          <CDropdownToggle
-            :caret="false"
-            color="link"
-            class="py-1 px-2 border-0 bg-transparent cursor-pointer"
-          >
-            <CIcon :icon="currentThemeIcon" size="lg" class="text-50 mt-1" />
-            <v-tooltip activator="parent" location="bottom">
-              테마: {{ currentThemeLabel }}
-            </v-tooltip>
-          </CDropdownToggle>
-          <CDropdownMenu>
-            <CDropdownItem
-              :active="theme === 'default'"
-              component="button"
-              class="d-flex align-items-center cursor-pointer"
-              @click="toggleTheme('default')"
-            >
-              <CIcon icon="cil-sun" class="me-2" />
-              라이트 모드
-            </CDropdownItem>
-            <CDropdownItem
-              :active="theme === 'dark'"
-              component="button"
-              class="d-flex align-items-center cursor-pointer"
-              @click="toggleTheme('dark')"
-            >
-              <CIcon icon="cil-moon" class="me-2" />
-              다크 모드
-            </CDropdownItem>
-            <CDropdownItem
-              :active="theme === 'auto'"
-              component="button"
-              class="d-flex align-items-center cursor-pointer"
-              @click="toggleTheme('auto')"
-            >
-              <CIcon icon="cil-screen-desktop" class="me-2" />
-              기기 설정 (자동)
-            </CDropdownItem>
-          </CDropdownMenu>
-        </CDropdown>
+        <!-- 테마 전환 토글 버튼 (라이트 -> 다크 -> 기기설정 로테이션) -->
+        <CHeaderToggler class="mr-1" @click="cycleTheme">
+          <CIcon :icon="currentThemeIcon" size="lg" class="text-50 mt-1" />
+          <v-tooltip activator="parent" location="bottom">
+            테마: {{ currentThemeLabel }}
+          </v-tooltip>
+        </CHeaderToggler>
       </CHeaderNav>
 
       <!-- 상단 헤더 실시간 알림 섹션 (결재 대기 / 담당 업무 / 할일) -->
