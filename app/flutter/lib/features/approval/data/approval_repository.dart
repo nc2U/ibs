@@ -203,7 +203,7 @@ class ApprovalRepository {
   Future<String> downloadDocumentPdf(int docId, String title, {String? pdfUrl}) async {
     final downloadUrl = (pdfUrl != null && pdfUrl.isNotEmpty)
         ? pdfUrl
-        : '/pdf/approval/document/$docId/';
+        : ApiEndpoints.resolve(ApiEndpoints.approvalPrintPdf, {'id': docId});
 
     final res = await _dio.get(
       downloadUrl,

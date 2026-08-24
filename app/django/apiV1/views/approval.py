@@ -414,7 +414,10 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
             try:
                 notify_drafter_task.delay(document.pk, 'commented', act_data.get('comment', ''))
             except Exception:
-                notify_drafter_task(document.pk, 'commented', act_data.get('comment', ''))
+                try:
+                    notify_drafter_task(document.pk, 'commented', act_data.get('comment', ''))
+                except Exception:
+                    pass
             return Response({'detail': '결재 의견이 성공적으로 등록되었습니다.'})
 
         # AND/OR 조건 처리
@@ -438,7 +441,10 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
             try:
                 notify_drafter_task.delay(document.pk, 'rejected', act_data.get('comment', ''))
             except Exception:
-                notify_drafter_task(document.pk, 'rejected', act_data.get('comment', ''))
+                try:
+                    notify_drafter_task(document.pk, 'rejected', act_data.get('comment', ''))
+                except Exception:
+                    pass
             return Response({'detail': '반려 처리되었습니다.'})
 
         # 단계 승인
@@ -452,7 +458,10 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
             try:
                 notify_approvers_task.delay(document.pk, next_step.pk)
             except Exception:
-                notify_approvers_task(document.pk, next_step.pk)
+                try:
+                    notify_approvers_task(document.pk, next_step.pk)
+                except Exception:
+                    pass
             return Response({'detail': f'{next_step.role_label} 결재자에게 요청이 전달되었습니다.'})
 
         # 최종 승인
@@ -470,12 +479,18 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
         try:
             notify_drafter_task.delay(document.pk, 'approved')
         except Exception:
-            notify_drafter_task(document.pk, 'approved')
+            try:
+                notify_drafter_task(document.pk, 'approved')
+            except Exception:
+                pass
         try:
             generate_approval_pdf_task.delay(document.pk)
         except Exception:
-            generate_approval_pdf_task(document.pk)
-        return Response({'detail': '최종 승인되었습니다. PDF가 생성됩니다.'})
+            try:
+                generate_approval_pdf_task(document.pk)
+            except Exception:
+                pass
+        return Response({'detail': '최종 승인되었습니다.'})
 
     # ── POST /approval-document/{id}/cancel/ ─────────────────
     @action(detail=True, methods=['post'])
@@ -514,7 +529,10 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
             try:
                 notify_cancel_task.delay(document.pk, approver_ids)
             except Exception:
-                notify_cancel_task(document.pk, approver_ids)
+                try:
+                    notify_cancel_task(document.pk, approver_ids)
+                except Exception:
+                    pass
 
         return Response({'detail': '기안 문서가 성공적으로 회수되었습니다. 내용을 수정하여 다시 상신할 수 있습니다.'})
 
@@ -522,21 +540,32 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'])
     def print_pdf(self, request, pk=None):
         """결재 문서 공식 PDF 렌더링 및 다운로드/미리보기"""
-        from django.http import HttpResponse
+        from django.conf import settings
+        from django.http import HttpResponse, FileResponse
         from django.template.loader import render_to_string
         from urllib.parse import quote
+
+        document = self.get_object()
+
+        # 이미 생성되어 저장된 PDF 파일이 있으면 바로 반환
+        if document.pdf_file:
+            try:
+                return FileResponse(document.pdf_file.open('rb'), content_type='application/pdf')
+            except Exception:
+                pass
+
         try:
             from weasyprint import HTML
         except ImportError:
             return Response({'detail': 'WeasyPrint PDF 렌더러가 설정되지 않았습니다.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        document = self.get_object()
         html_string = render_to_string('approval/pdf_document.html', {
             'document': document,
             'steps': document.steps.all().prefetch_related('actions__approver__profile', 'approvers__profile'),
             'settings': settings,
         })
-        pdf_bytes = HTML(string=html_string, base_url=settings.DOMAIN_HOST).write_pdf()
+        base_url = getattr(settings, 'DOMAIN_HOST', 'http://localhost')
+        pdf_bytes = HTML(string=html_string, base_url=base_url).write_pdf()
 
         filename = f'전자결재_{document.doc_type.name}_{document.doc_number or document.pk}.pdf'
         encoded_filename = quote(filename.encode('utf-8'))

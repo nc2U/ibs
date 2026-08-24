@@ -54,6 +54,7 @@ abstract class ApiEndpoints {
   static const String approvalSubmit           = '/api/v1/approval-document/{id}/submit/';
   static const String approvalAct              = '/api/v1/approval-document/{id}/act/';
   static const String approvalCancel           = '/api/v1/approval-document/{id}/cancel/';
+  static const String approvalPrintPdf         = '/api/v1/approval-document/{id}/print_pdf/';
   static const String approvalAttachments      = '/api/v1/approval-attachment/';
   static const String approvalDelegations      = '/api/v1/approval-delegation/';
   static const String approvalDelegationDetail = '/api/v1/approval-delegation/{id}/';
