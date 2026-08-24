@@ -8,6 +8,8 @@ class TokenStorage {
 
   static const _accessTokenKey = 'ACCESS_TOKEN';
   static const _refreshTokenKey = 'REFRESH_TOKEN';
+  static const _biometricRefreshTokenKey = 'BIOMETRIC_REFRESH_TOKEN';
+  static const _savedEmailKey = 'SAVED_EMAIL';
 
   // Access Token 저장/읽기/삭제
   Future<void> saveAccessToken(String token) async {
@@ -27,6 +29,7 @@ class TokenStorage {
   Future<void> saveRefreshToken(String token) async {
     _cachedRefreshToken = token;
     await _storage.write(key: _refreshTokenKey, value: token);
+    await _storage.write(key: _biometricRefreshTokenKey, value: token);
   }
 
   Future<String?> getRefreshToken() async {
@@ -35,6 +38,23 @@ class TokenStorage {
     }
     _cachedRefreshToken = await _storage.read(key: _refreshTokenKey);
     return _cachedRefreshToken;
+  }
+
+  Future<String?> getBiometricRefreshToken() async {
+    return await _storage.read(key: _biometricRefreshTokenKey);
+  }
+
+  Future<void> clearBiometricRefreshToken() async {
+    await _storage.delete(key: _biometricRefreshTokenKey);
+  }
+
+  // 저장된 이메일
+  Future<void> saveSavedEmail(String email) async {
+    await _storage.write(key: _savedEmailKey, value: email);
+  }
+
+  Future<String?> getSavedEmail() async {
+    return await _storage.read(key: _savedEmailKey);
   }
 
   // 모든 토큰 삭제 (로그아웃 시)

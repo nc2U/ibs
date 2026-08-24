@@ -79,7 +79,7 @@ class _FaqSupportTabViewState extends ConsumerState<FaqSupportTabView> {
                         selected: isSelected,
                         onSelected: (_) =>
                             setState(() => _selectedCategory = idx),
-                        selectedColor: context.colors.accentApproval,
+                        selectedColor: context.colors.accentTech,
                         backgroundColor: context.colors.bgSurface,
                         labelStyle: TextStyle(
                           color: isSelected
@@ -94,7 +94,7 @@ class _FaqSupportTabViewState extends ConsumerState<FaqSupportTabView> {
                           borderRadius: BorderRadius.circular(20),
                           side: BorderSide(
                             color: isSelected
-                                ? context.colors.accentApproval
+                                ? context.colors.accentTech
                                 : context.colors.border,
                             width: 0.8,
                           ),
@@ -157,14 +157,14 @@ class _FaqSupportTabViewState extends ConsumerState<FaqSupportTabView> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                color: context.colors.accentApproval
+                                color: context.colors.accentTech
                                     .withAlpha(30),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
                                 'Q',
                                 style: TextStyle(
-                                  color: context.colors.accentApproval,
+                                  color: context.colors.accentTech,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 13,
                                 ),
@@ -293,7 +293,7 @@ class _FaqSupportTabViewState extends ConsumerState<FaqSupportTabView> {
           height: 44,
           child: ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
-              backgroundColor: context.colors.accentApproval,
+              backgroundColor: context.colors.accentTech,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8)),
@@ -351,14 +351,14 @@ class _FaqSupportTabViewState extends ConsumerState<FaqSupportTabView> {
           ),
           OutlinedButton(
             style: OutlinedButton.styleFrom(
-              side: BorderSide(color: context.colors.accentApproval),
+              side: BorderSide(color: context.colors.accentTech),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(6)),
             ),
             onPressed: () => setState(() => _selectedCategory = 4),
             child: Text('문의하기',
                 style: TextStyle(
-                    color: context.colors.accentApproval,
+                    color: context.colors.accentTech,
                     fontWeight: FontWeight.bold,
                     fontSize: 12)),
           ),

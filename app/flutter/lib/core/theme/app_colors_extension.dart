@@ -31,6 +31,8 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
   final Color accentChannelDeep;
   final Color accentCorp;
   final Color accentCorpDeep;
+  final Color accentTech;
+  final Color accentTechDeep;
 
   // ── 상태 ──────────────────────────────────────────
   final Color success;
@@ -61,6 +63,8 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
     required this.accentChannelDeep,
     required this.accentCorp,
     required this.accentCorpDeep,
+    required this.accentTech,
+    required this.accentTechDeep,
     required this.success,
     required this.warning,
     required this.error,
@@ -89,8 +93,10 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
     accentApprovalDeep: Color(0xFF172554), // Blue 950 (최고 권위의 잉크 네이비)
     accentChannel: Color(0xFFC2410C), // Warm Terracotta / Cozy Mocha (따뜻한 소통과 릴렉스 라운지)
     accentChannelDeep: Color(0xFF9A3412), // Terracotta Deep
-    accentCorp: Color(0xFF0284C7), // Sky/Azure 600 (청량하고 세련된 청색)
-    accentCorpDeep: Color(0xFF0369A1),
+    accentCorp: Color(0xFF3F7CFF), // Vibrant Royal Blue (#3F7CFF) - 맑고 선명하며 신뢰감 넘치는 세련된 청색
+    accentCorpDeep: Color(0xFF2563EB),
+    accentTech: Color(0xFF7C3AED), // Modern Violet 600 (#7C3AED) - 세련된 FAQ & IT 기술지원
+    accentTechDeep: Color(0xFF6D28D9),
     success: Color(0xFF16A34A),
     warning: Color(0xFFD97706),
     error: Color(0xFFDC2626),
@@ -119,8 +125,10 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
     accentApprovalDeep: Color(0xFF60A5FA), // Blue 400
     accentChannel: Color(0xFFFB923C), // Warm Orange/Terracotta 400 (릴렉스 & 포근한 소통)
     accentChannelDeep: Color(0xFFEA580C), // Orange 600
-    accentCorp: Color(0xFF38BDF8), // Crisp Luminous Azure 400 (청량하고 세련된 청색)
-    accentCorpDeep: Color(0xFF0369A1),
+    accentCorp: Color(0xFF5B8EFF), // Luminous Royal Blue (#5B8EFF)
+    accentCorpDeep: Color(0xFF3F7CFF),
+    accentTech: Color(0xFFA78BFA), // Luminous Violet 400 (#A78BFA)
+    accentTechDeep: Color(0xFF7C3AED),
     success: Color(0xFF22C55E),
     warning: Color(0xFFF59E0B),
     error: Color(0xFFEF4444),
@@ -151,6 +159,8 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
     Color? accentChannelDeep,
     Color? accentCorp,
     Color? accentCorpDeep,
+    Color? accentTech,
+    Color? accentTechDeep,
     Color? success,
     Color? warning,
     Color? error,
@@ -179,6 +189,8 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
       accentChannelDeep: accentChannelDeep ?? this.accentChannelDeep,
       accentCorp: accentCorp ?? this.accentCorp,
       accentCorpDeep: accentCorpDeep ?? this.accentCorpDeep,
+      accentTech: accentTech ?? this.accentTech,
+      accentTechDeep: accentTechDeep ?? this.accentTechDeep,
       success: success ?? this.success,
       warning: warning ?? this.warning,
       error: error ?? this.error,
@@ -212,6 +224,8 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
       accentChannelDeep: Color.lerp(accentChannelDeep, other.accentChannelDeep, t)!,
       accentCorp: Color.lerp(accentCorp, other.accentCorp, t)!,
       accentCorpDeep: Color.lerp(accentCorpDeep, other.accentCorpDeep, t)!,
+      accentTech: Color.lerp(accentTech, other.accentTech, t)!,
+      accentTechDeep: Color.lerp(accentTechDeep, other.accentTechDeep, t)!,
       success: Color.lerp(success, other.success, t)!,
       warning: Color.lerp(warning, other.warning, t)!,
       error: Color.lerp(error, other.error, t)!,

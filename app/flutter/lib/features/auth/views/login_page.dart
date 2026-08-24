@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/router/app_router.dart';
+import '../../../core/services/biometric_service.dart';
 import '../../../core/theme/app_colors_extension.dart';
 import '../services/auth_service.dart';
 
@@ -22,7 +23,34 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   bool _isLoading = false;
   bool _obscurePassword = true;
+  bool _canUseBiometrics = false;
+  String _biometricLabel = 'Face ID';
   String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initAuthInfo();
+    });
+  }
+
+  Future<void> _initAuthInfo() async {
+    final authService = ref.read(authServiceProvider);
+    final savedEmail = await authService.getSavedEmail();
+    if (savedEmail != null && savedEmail.isNotEmpty && mounted) {
+      _emailController.text = savedEmail;
+    }
+
+    final canBio = await authService.canBiometricLogin();
+    final label = await BiometricService.getBiometricLabel();
+    if (mounted) {
+      setState(() {
+        _canUseBiometrics = canBio;
+        _biometricLabel = label;
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -54,6 +82,26 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       if (mounted) context.go(AppRoutes.home);
     } else {
       setState(() => _errorMessage = result['message'] ?? '로그인 실패');
+    }
+  }
+
+  Future<void> _handleBiometricLogin() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    final authService = ref.read(authServiceProvider);
+    final result = await authService.loginWithBiometrics();
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (result['success'] == true) {
+      ref.read(authProvider.notifier).setAuthenticated(result['access'] as String);
+      if (mounted) context.go(AppRoutes.home);
+    } else {
+      setState(() => _errorMessage = result['message'] ?? '$_biometricLabel 로그인 실패');
     }
   }
 
@@ -192,6 +240,34 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                 )
                               : Text('로그인', style: AppTextStyles.titleMd.copyWith(color: Colors.white)),
                         ),
+
+                        // 생체 인증(Face ID / 지문) 간편 로그인 버튼
+                        if (_canUseBiometrics) ...[
+                          const SizedBox(height: 14),
+                          OutlinedButton.icon(
+                            onPressed: _isLoading ? null : _handleBiometricLogin,
+                            icon: Icon(
+                              _biometricLabel == 'Face ID' ? Icons.face : Icons.fingerprint,
+                              color: isDark ? context.colors.accentWorkDeep : context.colors.accentWork,
+                              size: 22,
+                            ),
+                            label: Text(
+                              '$_biometricLabel 간편 로그인',
+                              style: AppTextStyles.bodyMd.copyWith(
+                                color: context.colors.textPrimary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              side: BorderSide(
+                                color: (isDark ? context.colors.accentWorkDeep : context.colors.accentWork).withOpacity(0.5),
+                                width: 1.2,
+                              ),
+                              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
