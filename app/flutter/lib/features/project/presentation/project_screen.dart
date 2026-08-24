@@ -506,7 +506,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                '부동산 개발 프로젝트 선택',
+                                '프로젝트 선택',
                                 style: AppTextStyles.titleLg.copyWith(
                                   color: context.colors.textPrimary,
                                   fontSize: 16,
