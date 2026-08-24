@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useWork } from '@/store/pinia/work_project.ts'
 import {
   ALL_PROJECT_COLUMNS,
@@ -35,9 +35,13 @@ const rollList = computed(() => workStore.roleList)
 const viewMode = ref<'board' | 'list'>(
   (localStorage.getItem('project-view-mode') as 'board' | 'list') || 'board',
 )
+
+watch(viewMode, mode => {
+  if (mode) localStorage.setItem('project-view-mode', mode)
+})
+
 const onChangeViewMode = (mode: 'board' | 'list') => {
   viewMode.value = mode
-  localStorage.setItem('project-view-mode', mode)
 }
 
 // Columns Selector Start
