@@ -1,6 +1,6 @@
 import logging
 
-from django.db import transaction
+from django.db import models, transaction
 from rest_framework import serializers
 
 logger = logging.getLogger(__name__)
@@ -14,7 +14,7 @@ from notice.models import SalesBillIssue
 from project.models import (Project, ProjectIncBudget, ProjectOutBudget, Site, SiteInfoFile,
                             SiteOwner, SiteOwnshipRelationship, SiteContract,
                             SiteContractFile, PROJECT_KIND_CHOICES)
-from work.models.project import IssueProject, Module
+from work.models import IssueProject, Module, Role, Tracker
 
 
 # Project --------------------------------------------------------------------------
@@ -211,9 +211,19 @@ class ProjectSerializer(serializers.ModelSerializer):
                 slack_notifications_enabled=slack_notifications_enabled,
                 creator=creator
             )
-            # role & tracker model - is_dev_project 플래그 설치 후 해당 데이터로 가져올 것.
-            issue_project.allowed_roles.set([4, 5, 6, 7, 8, 9, 10, 11, 12])
-            issue_project.trackers.set([4, 5, 6, 7, 8])
+            # 부동산개발 프로젝트 기본 역할 및 트래커 동적 할당
+            dev_roles = Role.objects.filter(is_for_dev_project=True)
+            if not dev_roles.exists():
+                dev_roles = Role.objects.filter(
+                    models.Q(category='ibs_pr_manage') |
+                    models.Q(category='work_space', name__startswith='[PR]')
+                )
+            issue_project.allowed_roles.set(dev_roles)
+
+            dev_trackers = Tracker.objects.filter(is_for_dev_project=True)
+            if not dev_trackers.exists():
+                dev_trackers = Tracker.objects.filter(pk__in=[4, 5, 6, 7, 8])
+            issue_project.trackers.set(dev_trackers)
 
             # 기본 모듈(Module) 객체 연계 생성
             Module.objects.create(project=issue_project)

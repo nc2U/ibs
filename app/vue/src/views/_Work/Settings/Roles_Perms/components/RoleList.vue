@@ -62,6 +62,7 @@ const copyRole = (role: Role) => {
           >
             {{ role.name }}
           </a>
+          <v-chip v-if="role.is_for_dev_project" color="success" variant="outlined" size="x-small" class="ms-1">개발 기본</v-chip>
           <v-chip v-if="role.is_confidential" color="danger" size="x-small" class="ms-1">보안</v-chip>
         </CTableHeaderCell>
         <CTableDataCell class="text-center">

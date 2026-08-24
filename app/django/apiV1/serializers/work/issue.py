@@ -562,7 +562,7 @@ class TrackerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Tracker
-        fields = ('pk', 'name', 'description', 'is_in_roadmap', 'default_status',
+        fields = ('pk', 'name', 'description', 'is_for_dev_project', 'is_in_roadmap', 'default_status',
                   'projects', 'order', 'creator', 'created', 'updated')
 
 

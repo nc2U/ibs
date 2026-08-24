@@ -9903,7 +9903,8 @@
         51,
         52,
         53
-      ]
+      ],
+      "is_for_dev_project": false
     }
   },
   {
@@ -9952,7 +9953,8 @@
         51,
         52,
         53
-      ]
+      ],
+      "is_for_dev_project": false
     }
   },
   {
@@ -9997,7 +9999,8 @@
         49,
         51,
         53
-      ]
+      ],
+      "is_for_dev_project": false
     }
   },
   {
@@ -10068,7 +10071,8 @@
         51,
         52,
         53
-      ]
+      ],
+      "is_for_dev_project": true
     }
   },
   {
@@ -10117,7 +10121,8 @@
         51,
         52,
         53
-      ]
+      ],
+      "is_for_dev_project": true
     }
   },
   {
@@ -10151,7 +10156,8 @@
         49,
         51,
         53
-      ]
+      ],
+      "is_for_dev_project": true
     }
   },
   {
@@ -10176,7 +10182,8 @@
         69,
         70,
         71
-      ]
+      ],
+      "is_for_dev_project": false
     }
   },
   {
@@ -10201,7 +10208,8 @@
         77,
         78,
         79
-      ]
+      ],
+      "is_for_dev_project": false
     }
   },
   {
@@ -10254,7 +10262,8 @@
         77,
         78,
         79
-      ]
+      ],
+      "is_for_dev_project": false
     }
   },
   {
@@ -10303,7 +10312,8 @@
         73,
         74,
         75
-      ]
+      ],
+      "is_for_dev_project": false
     }
   },
   {
@@ -10334,7 +10344,8 @@
         65,
         66,
         67
-      ]
+      ],
+      "is_for_dev_project": true
     }
   },
   {
@@ -10363,7 +10374,8 @@
         65,
         66,
         67
-      ]
+      ],
+      "is_for_dev_project": true
     }
   },
   {
@@ -10392,7 +10404,8 @@
         69,
         70,
         71
-      ]
+      ],
+      "is_for_dev_project": true
     }
   },
   {
@@ -10417,7 +10430,8 @@
         73,
         74,
         75
-      ]
+      ],
+      "is_for_dev_project": true
     }
   },
   {
@@ -11537,7 +11551,8 @@
       "order": 1,
       "created": "2024-07-10T03:51:24.582Z",
       "updated": "2024-07-10T03:51:24.582Z",
-      "creator": 1
+      "creator": 1,
+      "is_for_dev_project": false
     }
   },
   {
@@ -11551,7 +11566,8 @@
       "order": 1,
       "created": "2024-07-10T03:51:24.584Z",
       "updated": "2024-07-10T03:51:24.584Z",
-      "creator": 1
+      "creator": 1,
+      "is_for_dev_project": false
     }
   },
   {
@@ -11565,7 +11581,8 @@
       "order": 1,
       "created": "2024-07-10T03:51:24.587Z",
       "updated": "2024-07-10T03:51:24.587Z",
-      "creator": 1
+      "creator": 1,
+      "is_for_dev_project": false
     }
   },
   {
@@ -11579,7 +11596,8 @@
       "order": 1,
       "created": "2024-07-10T03:51:24.590Z",
       "updated": "2026-06-07T04:37:33.890Z",
-      "creator": 1
+      "creator": 1,
+      "is_for_dev_project": true
     }
   },
   {
@@ -11593,7 +11611,8 @@
       "order": 1,
       "created": "2024-07-10T03:51:24.593Z",
       "updated": "2026-06-07T07:44:42.603Z",
-      "creator": 1
+      "creator": 1,
+      "is_for_dev_project": true
     }
   },
   {
@@ -11607,7 +11626,8 @@
       "order": 1,
       "created": "2024-07-10T03:51:24.595Z",
       "updated": "2026-07-19T15:56:46.636Z",
-      "creator": 1
+      "creator": 1,
+      "is_for_dev_project": true
     }
   },
   {
@@ -11621,7 +11641,8 @@
       "order": 1,
       "created": "2024-12-23T02:08:33.472Z",
       "updated": "2026-07-19T15:53:14.092Z",
-      "creator": 1
+      "creator": 1,
+      "is_for_dev_project": true
     }
   },
   {
@@ -11635,7 +11656,8 @@
       "order": 1,
       "created": "2026-06-07T04:41:28.236Z",
       "updated": "2026-07-19T16:00:55.688Z",
-      "creator": 1
+      "creator": 1,
+      "is_for_dev_project": true
     }
   },
   {

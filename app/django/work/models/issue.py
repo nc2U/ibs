@@ -149,6 +149,11 @@ class Tracker(models.Model):
     name = models.CharField('이름', max_length=100, db_index=True)
     description = models.CharField('설명', max_length=255, blank=True, default='')
     is_in_roadmap = models.BooleanField('로드맵에 표시', default=True)
+    is_for_dev_project = models.BooleanField(
+        '부동산개발 프로젝트 기본 적용',
+        default=False,
+        help_text='체크 시 신규 부동산 개발 프로젝트(type=2) 생성 시 trackers에 기본 포함됩니다.'
+    )
     default_status = models.ForeignKey('IssueStatus', on_delete=models.PROTECT, verbose_name='초기 상태')
     order = models.PositiveSmallIntegerField('정렬', default=1)
     created = models.DateTimeField('등록일', auto_now_add=True)

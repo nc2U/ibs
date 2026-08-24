@@ -44,10 +44,10 @@ class IssueAdmin(ImportExportMixin, admin.ModelAdmin):
 
 @admin.register(Tracker)
 class TrackerAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('pk', 'name', 'is_in_roadmap', 'default_status', 'description', 'order')
+    list_display = ('pk', 'name', 'is_for_dev_project', 'is_in_roadmap', 'default_status', 'description', 'order')
     list_display_links = ('name',)
-    list_editable = ('is_in_roadmap', 'default_status', 'description', 'order')
-    list_filter = ('default_status',)
+    list_editable = ('is_for_dev_project', 'is_in_roadmap', 'default_status', 'description', 'order')
+    list_filter = ('is_for_dev_project', 'default_status',)
 
 
 @admin.register(IssueCategory)

@@ -33,6 +33,7 @@ export interface Tracker {
   pk: number
   name: string
   description: string
+  is_for_dev_project?: boolean
   is_in_roadmap: boolean
   default_status: number
   projects: SimpleProject[]

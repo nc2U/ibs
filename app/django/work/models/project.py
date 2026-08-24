@@ -271,6 +271,11 @@ class Role(models.Model):
         default=False,
         help_text='체크 시 슈퍼유저(최고관리자)에게만 노출/부여되며 일반 관리자에게는 역할 목록 및 권한 설정이 은닉됩니다.'
     )
+    is_for_dev_project = models.BooleanField(
+        '부동산개발 프로젝트 기본 적용',
+        default=False,
+        help_text='체크 시 신규 부동산 개발 프로젝트(type=2) 생성 시 allowed_roles에 기본 포함됩니다.'
+    )
     assignable = models.BooleanField('업무할당 가능 여부', default=True)
     ISSUE_VIEW_PERM = (('ALL', '모든 업무'), ('PUB', '비공개 업무 제외'), ('PRI', '직접 생성 또는 담당한 업무'), ('NOP', '없음'))
     issue_visible = models.CharField('업무 보기 권한', max_length=3, choices=ISSUE_VIEW_PERM, default='PUB')

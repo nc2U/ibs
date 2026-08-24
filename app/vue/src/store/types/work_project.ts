@@ -129,6 +129,7 @@ export interface Role {
   user_visible_desc: string
   permissions: number[]
   category?: 'work_space' | 'ibs_hq_manage' | 'ibs_pr_manage'
+  is_for_dev_project?: boolean
   is_confidential?: boolean
   order: number
   creator: number
