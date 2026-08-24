@@ -71,12 +71,12 @@ class _CompanyIntroTabViewState extends ConsumerState<CompanyIntroTabView> {
             ),
             const SizedBox(width: 8),
             Text(
-              '·  기업 목적',
+              '·  목적',
               style: TextStyle(
-                fontSize: 11.5,
-                fontWeight: FontWeight.w500,
-                letterSpacing: -0.2,
-                color: context.colors.textMuted,
+                fontSize: 13.5,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.3,
+                color: context.colors.textPrimary,
               ),
             ),
           ],
@@ -138,15 +138,15 @@ class _CompanyIntroTabViewState extends ConsumerState<CompanyIntroTabView> {
               Text(
                 '·  사명 (BHAG)',
                 style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  letterSpacing: -0.2,
-                  color: context.colors.textMuted,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.3,
+                  color: context.colors.textPrimary,
                 ),
               ),
               const Spacer(),
               Text(
-                'BHAG',
+                '목표',
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
@@ -251,10 +251,10 @@ class _CompanyIntroTabViewState extends ConsumerState<CompanyIntroTabView> {
             Text(
               '·  5대 핵심 가치관',
               style: TextStyle(
-                fontSize: 11.5,
-                fontWeight: FontWeight.w500,
-                letterSpacing: -0.2,
-                color: context.colors.textMuted,
+                fontSize: 13.5,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.3,
+                color: context.colors.textPrimary,
               ),
             ),
           ],
@@ -270,39 +270,40 @@ class _CompanyIntroTabViewState extends ConsumerState<CompanyIntroTabView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 1. 넘버링 & 영문 태그 & 한글 핵심 가치 키워드 (D6EBFF 아이스 청백 강조)
+                // 1. 넘버링 & 한글 핵심 가치 키워드 & 대문자 영문 서브 슬로건 (01   존중  ·  HUMAN EXPERIENCE FIRST)
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(
                       v['no']!,
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 14,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 1.0,
                         color: context.colors.accentCorp,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '·  ${v['en']!}  ·',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 1.2,
-                        color: context.colors.textMuted,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 14),
                     Text(
                       v['title']!,
                       style: TextStyle(
-                        fontSize: 13.5,
+                        fontSize: 14,
                         fontWeight: FontWeight.w800,
                         letterSpacing: -0.3,
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? const Color(0xFFBFE0FF)
-                            : const Color(0xFF0284C7),
+                        color: context.colors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '·  ${(v['sub'] ?? v['en']!).toUpperCase()}',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.8,
+                          color: context.colors.textMuted,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -388,7 +389,7 @@ class _CompanyIntroTabViewState extends ConsumerState<CompanyIntroTabView> {
       {'name': '사업개발본부', 'role': '신규 사업지 발굴 및 시행 인허가', 'badge': '기획/전략'},
       {'name': '사업운영본부', 'role': '현장, PMO, 운영·데이터·지원 총괄', 'badge': '시행/운영'},
       {'name': '분양·마케팅팀', 'role': '분양 계약, 고객·상품·프로세스 관리', 'badge': '영업/전략'},
-      {'name': '경영지원본부', 'role': '자금, 세무회계, 인사·총무, IT지원', 'badge': '본사관리'},
+      {'name': '경영지원팀', 'role': '자금, 세무회계, 인사·총무, IT지원', 'badge': '본사관리'},
     ];
 
     return Column(
@@ -415,10 +416,10 @@ class _CompanyIntroTabViewState extends ConsumerState<CompanyIntroTabView> {
             Text(
               '·  조직도 및 부서',
               style: TextStyle(
-                fontSize: 11.5,
-                fontWeight: FontWeight.w500,
-                letterSpacing: -0.2,
-                color: context.colors.textMuted,
+                fontSize: 13.5,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.3,
+                color: context.colors.textPrimary,
               ),
             ),
           ],
@@ -538,10 +539,10 @@ class _CompanyIntroTabViewState extends ConsumerState<CompanyIntroTabView> {
             Text(
               '·  사내 공식 규정집',
               style: TextStyle(
-                fontSize: 11.5,
-                fontWeight: FontWeight.w500,
-                letterSpacing: -0.2,
-                color: context.colors.textMuted,
+                fontSize: 13.5,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.3,
+                color: context.colors.textPrimary,
               ),
             ),
           ],
