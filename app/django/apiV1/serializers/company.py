@@ -3,6 +3,7 @@ from rest_framework import serializers
 from company.models import (
     Company, Logo, Department, JobGrade, Position, DutyTitle,
     ExecutiveRank, Executive, Staff, StaffAssignment,
+    PersonnelOrder, StaffCareer, StaffCertificate, StaffRewardPunishment,
     PromotionPolicy, StaffEvaluation, PromotionCandidate
 )
 from work.models.project import IssueProject
@@ -120,7 +121,7 @@ class ExecutiveSerializer(serializers.ModelSerializer):
                   'appointed_date', 'note')
 
 
-# Staff ----------------------------------------------------------------------------
+# Staff & Details ------------------------------------------------------------------
 class StaffAssignmentSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(source='pk', read_only=True)
     company_name = serializers.CharField(source='company.name', read_only=True)
@@ -135,10 +136,71 @@ class StaffAssignmentSerializer(serializers.ModelSerializer):
                   'duty', 'duty_name', 'position_name', 'is_primary', 'assigned_tasks')
 
 
+class PersonnelOrderSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(source='pk', read_only=True)
+    company_name = serializers.CharField(source='company.name', read_only=True)
+    company = serializers.SlugRelatedField(queryset=Company.objects.all(), slug_field='name')
+    staff_name = serializers.CharField(source='staff.name', read_only=True)
+    order_type_desc = serializers.CharField(source='get_order_type_display', read_only=True)
+    prev_department_name = serializers.CharField(source='prev_department.name', read_only=True, allow_null=True)
+    prev_grade_code = serializers.CharField(source='prev_grade.code', read_only=True, allow_null=True)
+    prev_position_name = serializers.CharField(source='prev_position.name', read_only=True, allow_null=True)
+    prev_duty_name = serializers.CharField(source='prev_duty.name', read_only=True, allow_null=True)
+    new_department_name = serializers.CharField(source='new_department.name', read_only=True, allow_null=True)
+    new_grade_code = serializers.CharField(source='new_grade.code', read_only=True, allow_null=True)
+    new_position_name = serializers.CharField(source='new_position.name', read_only=True, allow_null=True)
+    new_duty_name = serializers.CharField(source='new_duty.name', read_only=True, allow_null=True)
+
+    class Meta:
+        model = PersonnelOrder
+        fields = ('id', 'pk', 'company', 'company_name', 'staff', 'staff_name', 'order_type', 'order_type_desc',
+                  'order_date', 'effective_end_date', 'order_no',
+                  'prev_department', 'prev_department_name', 'prev_grade', 'prev_grade_code',
+                  'prev_position', 'prev_position_name', 'prev_duty', 'prev_duty_name',
+                  'new_department', 'new_department_name', 'new_grade', 'new_grade_code',
+                  'new_position', 'new_position_name', 'new_duty', 'new_duty_name',
+                  'description', 'is_processed')
+
+
+class StaffCareerSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(source='pk', read_only=True)
+    company = serializers.SlugRelatedField(queryset=Company.objects.all(), slug_field='name')
+    staff_name = serializers.CharField(source='staff.name', read_only=True)
+
+    class Meta:
+        model = StaffCareer
+        fields = ('id', 'pk', 'company', 'staff', 'staff_name', 'company_name', 'department_name',
+                  'position_title', 'assigned_tasks', 'start_date', 'end_date', 'recognized_ratio', 'note')
+
+
+class StaffCertificateSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(source='pk', read_only=True)
+    company = serializers.SlugRelatedField(queryset=Company.objects.all(), slug_field='name')
+    staff_name = serializers.CharField(source='staff.name', read_only=True)
+
+    class Meta:
+        model = StaffCertificate
+        fields = ('id', 'pk', 'company', 'staff', 'staff_name', 'name', 'grade',
+                  'cert_number', 'issuer', 'acquired_date', 'expire_date', 'has_allowance', 'note')
+
+
+class StaffRewardPunishmentSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(source='pk', read_only=True)
+    company = serializers.SlugRelatedField(queryset=Company.objects.all(), slug_field='name')
+    staff_name = serializers.CharField(source='staff.name', read_only=True)
+    sort_desc = serializers.CharField(source='get_sort_display', read_only=True)
+
+    class Meta:
+        model = StaffRewardPunishment
+        fields = ('id', 'pk', 'company', 'staff', 'staff_name', 'sort', 'sort_desc',
+                  'type_name', 'action_date', 'expire_date', 'reason', 'organization', 'note')
+
+
 class StaffSerializer(serializers.ModelSerializer):
     company = serializers.SlugRelatedField(queryset=Company.objects.all(), slug_field='name')
     sort = serializers.ChoiceField(choices=Staff.SORT_CHOICES)
     sort_desc = serializers.CharField(source='get_sort_display', read_only=True)
+    employment_type_desc = serializers.CharField(source='get_employment_type_display', read_only=True)
     department = serializers.CharField(source='department.name', read_only=True, allow_null=True)
     position = serializers.SlugRelatedField(queryset=Position.objects.all(), slug_field='name', allow_null=True, required=False)
     duty = serializers.CharField(source='duty.name', read_only=True, allow_null=True)
@@ -153,7 +215,9 @@ class StaffSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Staff
-        fields = ('pk', 'company', 'sort', 'sort_desc', 'name', 'id_number', 'personal_phone',
+        fields = ('pk', 'company', 'sort', 'sort_desc', 'employment_type', 'employment_type_desc',
+                  'contract_end_date', 'probation_end_date',
+                  'name', 'id_number', 'personal_phone',
                   'email', 'department', 'position', 'duty', 'department_name', 'position_name', 'duty_name',
                   'grade', 'date_join', 'status', 'status_desc', 'date_leave', 'user',
                   'is_hq_financial_officer', 'is_hq_hr_officer', 'assignments', 'executive')
@@ -255,3 +319,4 @@ class PromotionCandidateSerializer(serializers.ModelSerializer):
         fields = ('pk', 'company', 'policy', 'staff', 'staff_name', 'current_grade_code', 'target_grade_code',
                   'eval_year', 'tenure_years', 'avg_eval_score', 'status', 'status_desc',
                   'committee_review', 'promoted_date')
+

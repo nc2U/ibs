@@ -4,6 +4,7 @@ from rest_framework import viewsets
 from company.models import (
     Company, Logo, Department, JobGrade, Position, DutyTitle,
     ExecutiveRank, Executive, Staff, StaffAssignment,
+    PersonnelOrder, StaffCareer, StaffCertificate, StaffRewardPunishment,
     PromotionPolicy, StaffEvaluation, PromotionCandidate
 )
 from ..pagination import PageNumberPaginationOneThousand
@@ -14,6 +15,7 @@ from ..serializers.company import (
     JobGradeSerializer, PositionSerializer, DutyTitleSerializer,
     ExecutiveRankSerializer, ExecutiveSerializer,
     StaffSerializer, StaffAssignmentSerializer,
+    PersonnelOrderSerializer, StaffCareerSerializer, StaffCertificateSerializer, StaffRewardPunishmentSerializer,
     PromotionPolicySerializer, StaffEvaluationSerializer, PromotionCandidateSerializer,
 )
 
@@ -116,7 +118,7 @@ class StaffFilter(FilterSet):
 
     class Meta:
         model = Staff
-        fields = ('company', 'sort', 'department', 'position', 'duty', 'user', 'status')
+        fields = ('company', 'sort', 'employment_type', 'department', 'position', 'duty', 'user', 'status')
 
 
 class StaffViewSet(viewsets.ModelViewSet):
@@ -145,6 +147,61 @@ class StaffAssignmentViewSet(viewsets.ModelViewSet):
     pagination_class = PageNumberPaginationOneThousand
     filterset_fields = ('company', 'staff', 'department', 'duty', 'is_primary')
     search_fields = ('staff__name', 'department__name', 'assigned_tasks')
+
+    @property
+    def required_permission(self):
+        return 'hr_work.read' if self.action in ('list', 'retrieve') else 'hr_work.create' if self.action == 'create' else 'hr_work.update' if self.action in ('update', 'partial_update') else 'hr_work.delete' if self.action == 'destroy' else 'hr_work.read'
+
+
+class PersonnelOrderViewSet(viewsets.ModelViewSet):
+    queryset = PersonnelOrder.objects.all().select_related(
+        'company', 'staff', 'prev_department', 'prev_grade', 'prev_position', 'prev_duty',
+        'new_department', 'new_grade', 'new_position', 'new_duty'
+    )
+    serializer_class = PersonnelOrderSerializer
+    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly, IbsModulePermission)
+    pagination_class = PageNumberPaginationOneThousand
+    filterset_fields = ('company', 'staff', 'order_type', 'is_processed', 'new_department')
+    search_fields = ('staff__name', 'order_no', 'description')
+
+    @property
+    def required_permission(self):
+        return 'hr_work.read' if self.action in ('list', 'retrieve') else 'hr_work.create' if self.action == 'create' else 'hr_work.update' if self.action in ('update', 'partial_update') else 'hr_work.delete' if self.action == 'destroy' else 'hr_work.read'
+
+
+class StaffCareerViewSet(viewsets.ModelViewSet):
+    queryset = StaffCareer.objects.all().select_related('company', 'staff')
+    serializer_class = StaffCareerSerializer
+    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly, IbsModulePermission)
+    pagination_class = PageNumberPaginationOneThousand
+    filterset_fields = ('company', 'staff')
+    search_fields = ('staff__name', 'company_name', 'assigned_tasks')
+
+    @property
+    def required_permission(self):
+        return 'hr_work.read' if self.action in ('list', 'retrieve') else 'hr_work.create' if self.action == 'create' else 'hr_work.update' if self.action in ('update', 'partial_update') else 'hr_work.delete' if self.action == 'destroy' else 'hr_work.read'
+
+
+class StaffCertificateViewSet(viewsets.ModelViewSet):
+    queryset = StaffCertificate.objects.all().select_related('company', 'staff')
+    serializer_class = StaffCertificateSerializer
+    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly, IbsModulePermission)
+    pagination_class = PageNumberPaginationOneThousand
+    filterset_fields = ('company', 'staff', 'has_allowance')
+    search_fields = ('staff__name', 'name', 'grade', 'cert_number', 'issuer')
+
+    @property
+    def required_permission(self):
+        return 'hr_work.read' if self.action in ('list', 'retrieve') else 'hr_work.create' if self.action == 'create' else 'hr_work.update' if self.action in ('update', 'partial_update') else 'hr_work.delete' if self.action == 'destroy' else 'hr_work.read'
+
+
+class StaffRewardPunishmentViewSet(viewsets.ModelViewSet):
+    queryset = StaffRewardPunishment.objects.all().select_related('company', 'staff')
+    serializer_class = StaffRewardPunishmentSerializer
+    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly, IbsModulePermission)
+    pagination_class = PageNumberPaginationOneThousand
+    filterset_fields = ('company', 'staff', 'sort')
+    search_fields = ('staff__name', 'type_name', 'reason', 'organization')
 
     @property
     def required_permission(self):
@@ -195,3 +252,4 @@ class PromotionCandidateViewSet(viewsets.ModelViewSet):
     @property
     def required_permission(self):
         return 'hr_work.read' if self.action in ('list', 'retrieve') else 'hr_work.create' if self.action == 'create' else 'hr_work.update' if self.action in ('update', 'partial_update') else 'hr_work.delete' if self.action == 'destroy' else 'hr_work.read'
+

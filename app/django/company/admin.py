@@ -4,6 +4,7 @@ from import_export.admin import ImportExportMixin
 from .models import (
     Company, Logo, Department, JobGrade, Position, DutyTitle,
     ExecutiveRank, Executive, Staff, StaffAssignment,
+    PersonnelOrder, StaffCareer, StaffCertificate, StaffRewardPunishment,
     PromotionPolicy, StaffEvaluation, PromotionCandidate
 )
 
@@ -11,6 +12,28 @@ from .models import (
 class StaffAssignmentInline(admin.TabularInline):
     model = StaffAssignment
     extra = 1
+
+
+class PersonnelOrderInline(admin.TabularInline):
+    model = PersonnelOrder
+    fk_name = 'staff'
+    extra = 0
+    fields = ('order_date', 'order_type', 'new_department', 'new_grade', 'new_position', 'new_duty', 'description')
+
+
+class StaffCareerInline(admin.TabularInline):
+    model = StaffCareer
+    extra = 0
+
+
+class StaffCertificateInline(admin.TabularInline):
+    model = StaffCertificate
+    extra = 0
+
+
+class StaffRewardPunishmentInline(admin.TabularInline):
+    model = StaffRewardPunishment
+    extra = 0
 
 
 class ExecutiveInline(admin.StackedInline):
@@ -81,11 +104,13 @@ class ExecutiveAdmin(ImportExportMixin, admin.ModelAdmin):
 
 
 class StaffAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('id', 'company', 'name', 'sort', 'get_executive_rank', 'grade', 'position',
-                    'get_department', 'get_duty', 'email', 'status', 'date_join', 'date_leave')
+    list_display = ('id', 'company', 'name', 'sort', 'get_executive_rank', 'employment_type',
+                    'grade', 'position', 'get_department', 'get_duty', 'email', 'status',
+                    'date_join', 'contract_end_date', 'date_leave')
     list_display_links = ('name', 'email')
-    list_filter = ('company', 'sort', 'grade', 'position', 'status')
-    inlines = (StaffAssignmentInline, ExecutiveInline)
+    list_filter = ('company', 'sort', 'employment_type', 'grade', 'position', 'status')
+    inlines = (StaffAssignmentInline, ExecutiveInline, PersonnelOrderInline,
+               StaffCareerInline, StaffCertificateInline, StaffRewardPunishmentInline)
 
     @admin.display(description='임원 직위')
     def get_executive_rank(self, obj):
@@ -106,6 +131,37 @@ class StaffAssignmentAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display_links = ('staff',)
     list_filter = ('company', 'department', 'is_primary', 'duty')
     search_fields = ('staff__name', 'department__name', 'assigned_tasks')
+
+
+class PersonnelOrderAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_display = ('id', 'company', 'order_date', 'order_no', 'staff', 'order_type',
+                    'new_department', 'new_grade', 'new_position', 'new_duty', 'is_processed')
+    list_display_links = ('order_date', 'staff')
+    list_filter = ('company', 'order_type', 'is_processed', 'new_department')
+    search_fields = ('staff__name', 'order_no', 'description')
+
+
+class StaffCareerAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_display = ('id', 'company', 'staff', 'company_name', 'department_name', 'position_title',
+                    'start_date', 'end_date', 'recognized_ratio')
+    list_display_links = ('company_name', 'staff')
+    list_filter = ('company',)
+    search_fields = ('staff__name', 'company_name', 'assigned_tasks')
+
+
+class StaffCertificateAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_display = ('id', 'company', 'staff', 'name', 'grade', 'cert_number', 'issuer',
+                    'acquired_date', 'expire_date', 'has_allowance')
+    list_display_links = ('name', 'staff')
+    list_filter = ('company', 'has_allowance')
+    search_fields = ('staff__name', 'name', 'grade', 'cert_number', 'issuer')
+
+
+class StaffRewardPunishmentAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_display = ('id', 'company', 'staff', 'sort', 'type_name', 'action_date', 'expire_date', 'organization')
+    list_display_links = ('type_name', 'staff')
+    list_filter = ('company', 'sort')
+    search_fields = ('staff__name', 'type_name', 'reason', 'organization')
 
 
 class PromotionPolicyAdmin(ImportExportMixin, admin.ModelAdmin):
@@ -142,6 +198,11 @@ admin.site.register(ExecutiveRank, ExecutiveRankAdmin)
 admin.site.register(Executive, ExecutiveAdmin)
 admin.site.register(Staff, StaffAdmin)
 admin.site.register(StaffAssignment, StaffAssignmentAdmin)
+admin.site.register(PersonnelOrder, PersonnelOrderAdmin)
+admin.site.register(StaffCareer, StaffCareerAdmin)
+admin.site.register(StaffCertificate, StaffCertificateAdmin)
+admin.site.register(StaffRewardPunishment, StaffRewardPunishmentAdmin)
 admin.site.register(PromotionPolicy, PromotionPolicyAdmin)
 admin.site.register(StaffEvaluation, StaffEvaluationAdmin)
 admin.site.register(PromotionCandidate, PromotionCandidateAdmin)
+
