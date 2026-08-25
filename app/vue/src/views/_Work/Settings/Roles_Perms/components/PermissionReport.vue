@@ -97,7 +97,7 @@ const togglePermission = async (role: Role, permissionPk: number) => {
                   </tr>
                   <tr v-for="perm in perms" :key="perm.pk">
                     <td class="ps-4">
-                      <div class="fw-semibold">{{ perm.name }}</div>
+                      <span class="fw-semibold mr-3">{{ perm.name }}</span>
                       <small class="text-muted">{{ perm.description }}</small>
                     </td>
                     <td
@@ -151,13 +151,16 @@ const togglePermission = async (role: Role, permissionPk: number) => {
               <tbody>
                 <template v-for="(perms, sort) in groupedPermissions?.ibs_hq_manage" :key="sort">
                   <tr class="table-secondary">
-                    <td :colspan="getRolesByCategory('ibs_hq_manage').length + 1" class="fw-bold ps-3">
+                    <td
+                      :colspan="getRolesByCategory('ibs_hq_manage').length + 1"
+                      class="fw-bold ps-3"
+                    >
                       {{ sortLabel(sort as string) }}
                     </td>
                   </tr>
                   <tr v-for="perm in perms" :key="perm.pk">
                     <td class="ps-4">
-                      <div class="fw-semibold">{{ perm.name }}</div>
+                      <span class="fw-semibold mr-3">{{ perm.name }}</span>
                       <small class="text-muted">{{ perm.description }}</small>
                     </td>
                     <td
@@ -208,13 +211,16 @@ const togglePermission = async (role: Role, permissionPk: number) => {
               <tbody>
                 <template v-for="(perms, sort) in groupedPermissions?.ibs_pr_manage" :key="sort">
                   <tr class="table-secondary">
-                    <td :colspan="getRolesByCategory('ibs_pr_manage').length + 1" class="fw-bold ps-3">
+                    <td
+                      :colspan="getRolesByCategory('ibs_pr_manage').length + 1"
+                      class="fw-bold ps-3"
+                    >
                       {{ sortLabel(sort as string) }}
                     </td>
                   </tr>
                   <tr v-for="perm in perms" :key="perm.pk">
                     <td class="ps-4">
-                      <div class="fw-semibold">{{ perm.name }}</div>
+                      <span class="fw-semibold mr-3">{{ perm.name }}</span>
                       <small class="text-muted">{{ perm.description }}</small>
                     </td>
                     <td
