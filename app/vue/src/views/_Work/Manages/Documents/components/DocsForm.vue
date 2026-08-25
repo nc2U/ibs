@@ -54,8 +54,7 @@ const getInitialForm = (): Docs => ({
   description: '',
   device: '',
   is_pinned: false,
-  is_secret: false,
-  password: '',
+  security_level: '3' as '1' | '2' | '3' | '4',
   is_blind: false,
   files: [],
   links: [],
@@ -156,8 +155,7 @@ const dataSetup = () => {
     form.value.description = props.docs.description
     form.value.device = props.docs.device
     form.value.is_pinned = props.docs.is_pinned
-    form.value.is_secret = props.docs.is_secret
-    form.value.password = props.docs.password
+    form.value.security_level = props.docs.security_level ?? '3'
     form.value.is_blind = props.docs.is_blind
   } else form.value.doc_type = props.typeNumber
 }
@@ -207,7 +205,6 @@ onBeforeMount(() => dataSetup())
             </CCol>
             <CCol class="pt-2">
               <CFormCheck v-model="form.is_pinned" id="is_pinned" label="상단고정" inline />
-              <CFormCheck v-model="form.is_secret" id="is_secret" label="비밀문서" inline />
               <CFormCheck
                 v-if="workManager"
                 v-model="form.is_blind"
@@ -215,6 +212,14 @@ onBeforeMount(() => dataSetup())
                 label="숨김 [관리자 기능]"
                 inline
               />
+            </CCol>
+            <CCol class="col-sm-10 col-md-4 col-lg-3 col-xl-2 pt-1">
+              <CFormSelect v-model="form.security_level" size="sm">
+                <option value="4">4등급 전사 공개</option>
+                <option value="3">3등급 프로젝트 공개</option>
+                <option value="2">2등급 팀 공개</option>
+                <option value="1">1등급 비공개</option>
+              </CFormSelect>
             </CCol>
           </CRow>
 

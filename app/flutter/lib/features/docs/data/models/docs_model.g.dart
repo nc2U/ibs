@@ -103,7 +103,13 @@ _$DocumentModelImpl _$$DocumentModelImplFromJson(Map<String, dynamic> json) =>
       description: json['description'] as String? ?? '',
       hit: (json['hit'] as num?)?.toInt() ?? 0,
       isPinned: json['is_pinned'] as bool? ?? false,
-      isSecret: json['is_secret'] as bool? ?? false,
+      securityLevel: json['security_level'] as String? ?? '3',
+      securityLevelDesc: json['security_level_desc'] as String?,
+      allowedUsers:
+          (json['allowed_users'] as List<dynamic>?)
+              ?.map((e) => (e as num).toInt())
+              .toList() ??
+          const [],
       isBlind: json['is_blind'] as bool? ?? false,
       files:
           (json['files'] as List<dynamic>?)
@@ -143,7 +149,9 @@ Map<String, dynamic> _$$DocumentModelImplToJson(_$DocumentModelImpl instance) =>
       'description': instance.description,
       'hit': instance.hit,
       'is_pinned': instance.isPinned,
-      'is_secret': instance.isSecret,
+      'security_level': instance.securityLevel,
+      'security_level_desc': instance.securityLevelDesc,
+      'allowed_users': instance.allowedUsers,
       'is_blind': instance.isBlind,
       'files': instance.files,
       'links': instance.links,

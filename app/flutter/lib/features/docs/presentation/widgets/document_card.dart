@@ -91,7 +91,7 @@ class DocumentCard extends StatelessWidget {
                           size: 15, color: context.colors.accentWork),
                       const SizedBox(width: 4),
                     ],
-                    if (doc.isSecret)
+                    if (doc.securityLevel == '1')
                       Icon(Icons.lock_rounded,
                           size: 15, color: context.colors.warning),
                   ],

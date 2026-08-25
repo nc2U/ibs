@@ -74,7 +74,10 @@ class DocumentModel with _$DocumentModel {
     @Default('') String description,
     @Default(0) int hit,
     @Default(false) bool isPinned,
-    @Default(false) bool isSecret,
+    /// 보안 등급: '1'=비공개 / '2'=팀공개 / '3'=프로젝트공개(기본) / '4'=전사공개
+    @Default('3') String securityLevel,
+    String? securityLevelDesc,
+    @Default([]) List<int> allowedUsers,
     @Default(false) bool isBlind,
     @Default([]) List<DocFileModel> files,
     @Default([]) List<DocLinkModel> links,

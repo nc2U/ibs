@@ -173,13 +173,30 @@ class DocumentViewSet(viewsets.ModelViewSet):
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset
 
+        from company.models import StaffAssignment
+        # 작성자의 부서 기반 팀공개(2등급) 판단을 위한 사용자 소속 부서 ID 목록
+        user_dept_ids = StaffAssignment.objects.filter(
+            staff__user=user, department__isnull=False
+        ).values_list('department_id', flat=True)
+
         accessible_projects = IssueProject.objects.filter(members__user=user)
 
         return queryset.filter(
             issue_project__in=accessible_projects
         ).filter(
-            Q(is_secret=False) | Q(creator=user)
-        ).filter(is_blind=False)
+            # 4등급(전사공개): 모든 인증 사용자 허용
+            Q(security_level=Document.SECURITY_COMPANY)
+            # 3등급(프로젝트공개): 해당 워크스페이스 멤버
+            | Q(security_level=Document.SECURITY_PROJECT)
+            # 2등급(팀공개): 작성자 소속 부서와 일치하는 구성원
+            | (Q(security_level=Document.SECURITY_TEAM)
+               & Q(creator__staffassignment__department_id__in=user_dept_ids))
+            # 1등급(비공개): 작성자 본인
+            | Q(creator=user)
+            # 명시적 허가자
+            | Q(allowed_users=user)
+        ).filter(is_blind=False).distinct()
+
 
     @action(detail=True, methods=['post'], url_path='hit')
     def hit(self, request, *args, **kwargs):
@@ -273,13 +290,22 @@ class LinkViewSet(viewsets.ModelViewSet):
             return queryset
 
         from work.models import IssueProject
+        from company.models import StaffAssignment
         accessible_projects = IssueProject.objects.filter(members__user=user)
+        user_dept_ids = StaffAssignment.objects.filter(
+            staff__user=user, department__isnull=False
+        ).values_list('department_id', flat=True)
 
         return queryset.filter(
             docs__issue_project__in=accessible_projects
         ).filter(
-            Q(docs__is_secret=False) | Q(docs__creator=user)
-        ).filter(docs__is_blind=False)
+            Q(docs__security_level=Document.SECURITY_COMPANY)
+            | Q(docs__security_level=Document.SECURITY_PROJECT)
+            | (Q(docs__security_level=Document.SECURITY_TEAM)
+               & Q(docs__creator__staffassignment__department_id__in=user_dept_ids))
+            | Q(docs__creator=user)
+            | Q(docs__allowed_users=user)
+        ).filter(docs__is_blind=False).distinct()
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
@@ -314,13 +340,22 @@ class FileViewSet(viewsets.ModelViewSet):
             return queryset
 
         from work.models import IssueProject
+        from company.models import StaffAssignment
         accessible_projects = IssueProject.objects.filter(members__user=user)
+        user_dept_ids = StaffAssignment.objects.filter(
+            staff__user=user, department__isnull=False
+        ).values_list('department_id', flat=True)
 
         return queryset.filter(
             docs__issue_project__in=accessible_projects
         ).filter(
-            Q(docs__is_secret=False) | Q(docs__creator=user)
-        ).filter(docs__is_blind=False)
+            Q(docs__security_level=Document.SECURITY_COMPANY)
+            | Q(docs__security_level=Document.SECURITY_PROJECT)
+            | (Q(docs__security_level=Document.SECURITY_TEAM)
+               & Q(docs__creator__staffassignment__department_id__in=user_dept_ids))
+            | Q(docs__creator=user)
+            | Q(docs__allowed_users=user)
+        ).filter(docs__is_blind=False).distinct()
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
@@ -350,13 +385,22 @@ class ImageViewSet(viewsets.ModelViewSet):
             return queryset
 
         from work.models import IssueProject
+        from company.models import StaffAssignment
         accessible_projects = IssueProject.objects.filter(members__user=user)
+        user_dept_ids = StaffAssignment.objects.filter(
+            staff__user=user, department__isnull=False
+        ).values_list('department_id', flat=True)
 
         return queryset.filter(
             docs__issue_project__in=accessible_projects
         ).filter(
-            Q(docs__is_secret=False) | Q(docs__creator=user)
-        ).filter(docs__is_blind=False)
+            Q(docs__security_level=Document.SECURITY_COMPANY)
+            | Q(docs__security_level=Document.SECURITY_PROJECT)
+            | (Q(docs__security_level=Document.SECURITY_TEAM)
+               & Q(docs__creator__staffassignment__department_id__in=user_dept_ids))
+            | Q(docs__creator=user)
+            | Q(docs__allowed_users=user)
+        ).filter(docs__is_blind=False).distinct()
 
 
 class DocsInTrashViewSet(DocumentViewSet):
@@ -375,17 +419,20 @@ class DocsInTrashViewSet(DocumentViewSet):
         return queryset.filter(
             issue_project__in=accessible_projects
         ).filter(
-            Q(is_secret=False) | Q(creator=user)
-        )
+            Q(security_level=Document.SECURITY_COMPANY)
+            | Q(security_level=Document.SECURITY_PROJECT)
+            | Q(creator=user)
+            | Q(allowed_users=user)
+        ).distinct()
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         user = request.user
         is_admin = user.is_superuser or getattr(user, 'work_manager', False)
 
-        if instance.is_secret and not is_admin and instance.creator != user:
+        if not is_admin and not instance.is_visible_to(user):
             return Response(
-                {'detail': 'You do not have permission to delete this secret document.'},
+                {'detail': '이 문서를 삭제할 권한이 없습니다.'},
                 status=status.HTTP_403_FORBIDDEN,
             )
 

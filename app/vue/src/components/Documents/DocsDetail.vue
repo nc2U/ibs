@@ -141,7 +141,7 @@ const toManage = (fn: number, el?: { nType?: number; nProj?: number; nCate?: num
     }
   } else {
     if (fn === 4)
-      state = props.docs?.is_secret ?? false // is_secret
+      state = props.docs?.security_level === '1' // 1등급(비공개) 여부
     else if (fn === 7)
       state = props.docs?.is_blind ?? false // is_blind
     else if (fn === 8)

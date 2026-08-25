@@ -49,22 +49,22 @@ onMounted(() => {
             고정
           </v-chip>
           <v-tooltip
-            v-if="docs.is_secret || docs.is_blind"
+            v-if="docs.security_level === '1' || docs.is_blind"
             location="right"
-            :text="docs.is_secret ? '비밀 문서' : '숨김 문서'"
+            :text="docs.is_blind ? '숨김 문서' : `${docs.security_level_desc ?? '비공개 문서'}`"
           >
             <template #activator="{ props: tooltipProps }">
               <v-chip
                 v-bind="tooltipProps"
                 label
                 size="small"
-                :color="docs.is_secret ? 'warning' : 'error'"
+                :color="docs.is_blind ? 'error' : 'warning'"
                 variant="tonal"
                 class="ml-2"
                 style="vertical-align: middle"
               >
-                <v-icon start :icon="docs.is_secret ? 'mdi-lock' : 'mdi-eye-off'" size="small" />
-                {{ docs.is_secret ? 'SECRET' : 'BLIND' }}
+                <v-icon start :icon="docs.is_blind ? 'mdi-eye-off' : 'mdi-lock'" size="small" />
+                {{ docs.is_blind ? 'BLIND' : 'PRIVATE' }}
               </v-chip>
             </template>
           </v-tooltip>
@@ -85,15 +85,15 @@ onMounted(() => {
     <v-divider class="my-2" />
 
     <v-alert
-      v-if="docs.is_secret || docs.is_blind"
-      :type="docs.is_secret ? 'warning' : 'error'"
+      v-if="docs.security_level === '1' || docs.is_blind"
+      :type="docs.is_blind ? 'error' : 'warning'"
       variant="tonal"
       density="compact"
       class="mb-4"
-      :icon="docs.is_secret ? 'mdi-lock' : 'mdi-eye-off'"
+      :icon="docs.is_blind ? 'mdi-eye-off' : 'mdi-lock'"
     >
       <span>
-        이 문서는 <strong>{{ docs.is_secret ? '비밀' : '숨김' }} 문서</strong> 입니다.
+        이 문서는 <strong>{{ docs.is_blind ? '숨김' : '비공개' }} 문서</strong> 입니다.
         <span v-if="!workManager">열람 권한이 없어 일부 내용이 제한됩니다.</span>
       </span>
     </v-alert>
@@ -124,9 +124,9 @@ onMounted(() => {
       <CRow class="mb-3 pt-4">
         <CCol>
           <h6 class="mb-2">첨부 파일</h6>
-          <p v-if="!workManager && (docs.is_secret || docs.is_blind)" class="text-muted small">
+          <p v-if="!workManager && (docs.security_level === '1' || docs.is_blind)" class="text-muted small">
             <v-icon icon="mdi-lock" size="x-small" class="mr-1" />
-            {{ docs.is_secret ? '비밀' : '숨김' }}
+            {{ docs.is_blind ? '숨김' : '비공개' }}
             문서의 첨부 파일은 열람이 제한됩니다.
           </p>
           <template v-else-if="docs.files && docs.files.length">
@@ -140,9 +140,9 @@ onMounted(() => {
       <CRow class="mb-3">
         <CCol>
           <h6 class="mb-2">관련 링크</h6>
-          <p v-if="!workManager && (docs.is_secret || docs.is_blind)" class="text-muted small">
+          <p v-if="!workManager && (docs.security_level === '1' || docs.is_blind)" class="text-muted small">
             <v-icon icon="mdi-lock" size="x-small" class="mr-1" />
-            {{ docs.is_secret ? '비밀' : '숨김' }} 문서의 관련 링크는 열람이 제한됩니다.
+            {{ docs.is_blind ? '숨김' : '비공개' }} 문서의 관련 링크는 열람이 제한됩니다.
           </p>
           <template v-else-if="docs.links && docs.links.length">
             <PostedLink :docs="docs.pk as number" btn-direction="right" :links="docs.links" />

@@ -44,7 +44,7 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
   int? _selectedCategory;
   int? _selectedLawsuit;
   late String _selectedDocType;
-  bool _isSecret = false;
+  String _securityLevel = '3';
   bool _isSubmitting = false;
 
   // 신규 첨부 목록
@@ -69,7 +69,7 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
     _selectedCategory = widget.doc?.category;
     _selectedLawsuit = widget.doc?.lawsuit;
     _selectedDocType = widget.doc?.docType ?? ref.read(docTypeFilterProvider) ?? '1';
-    _isSecret = widget.doc?.isSecret ?? false;
+    _securityLevel = widget.doc?.securityLevel ?? '3';
 
     if (widget.initialFiles != null) {
       _newFiles.addAll(widget.initialFiles!);
@@ -393,7 +393,7 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
           lawsuitId: _selectedDocType == '2' ? _selectedLawsuit : null,
           executionDate: _dateController.text.trim(),
           description: _descController.text.trim(),
-          isSecret: _isSecret,
+          securityLevel: _securityLevel,
           newFiles: _newFiles.isNotEmpty ? _newFiles : null,
           newLinks: _newLinks.isNotEmpty ? _newLinks : null,
         );
@@ -405,7 +405,7 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
           lawsuitId: _selectedDocType == '2' ? _selectedLawsuit : null,
           executionDate: _dateController.text.trim(),
           description: _descController.text.trim(),
-          isSecret: _isSecret,
+          securityLevel: _securityLevel,
           newFiles: _newFiles.isNotEmpty ? _newFiles : null,
           newLinks: _newLinks.isNotEmpty ? _newLinks : null,
           deleteFilePks: _deleteFilePks.isNotEmpty ? _deleteFilePks : null,
@@ -1322,31 +1322,50 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                 decoration: BoxDecoration(
                   color: context.colors.bgSurface,
                   border: Border.all(
-                    color: _isSecret ? context.colors.warning.withAlpha(120) : context.colors.border,
+                    color: _securityLevel == '1' ? context.colors.warning.withAlpha(120) : context.colors.border,
                   ),
                 ),
                 child: Row(
                   children: [
                     Icon(
-                      _isSecret ? Icons.lock_rounded : Icons.lock_open_rounded,
+                      _securityLevel == '1' ? Icons.lock_rounded : Icons.lock_open_rounded,
                       size: 20,
-                      color: _isSecret ? context.colors.warning : context.colors.textMuted,
+                      color: _securityLevel == '1' ? context.colors.warning : context.colors.textMuted,
                     ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('비밀글 설정', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
-                          Text('작성자 및 관리자만 조회 가능',
-                              style: AppTextStyles.caption.copyWith(color: context.colors.textMuted)),
+                          Text('보안 등급', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
+                          Text(
+                            _securityLevel == '1'
+                                ? '1등급: 비공개 (작성자/허가자)'
+                                : _securityLevel == '2'
+                                    ? '2등급: 팀 공개'
+                                    : _securityLevel == '3'
+                                        ? '3등급: 프로젝트 공개'
+                                        : '4등급: 전사 공개',
+                            style: AppTextStyles.caption.copyWith(color: context.colors.textMuted),
+                          ),
                         ],
                       ),
                     ),
-                    Switch(
-                      value: _isSecret,
-                      onChanged: (v) => setState(() => _isSecret = v),
-                      activeThumbColor: context.colors.warning,
+                    DropdownButton<String>(
+                      value: _securityLevel,
+                      underline: const SizedBox(),
+                      dropdownColor: context.colors.bgSurface,
+                      items: const [
+                        DropdownMenuItem(value: '4', child: Text('4등급 전사')),
+                        DropdownMenuItem(value: '3', child: Text('3등급 프로젝트')),
+                        DropdownMenuItem(value: '2', child: Text('2등급 팀')),
+                        DropdownMenuItem(value: '1', child: Text('1등급 비공개')),
+                      ],
+                      onChanged: (v) {
+                        if (v != null) {
+                          setState(() => _securityLevel = v);
+                        }
+                      },
                     ),
                   ],
                 ),

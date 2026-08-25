@@ -66,8 +66,33 @@ class Document(BaseModel):
     ip = models.GenericIPAddressField('아이피', null=True, blank=True)
     device = models.CharField('등록기기', max_length=255, blank=True, default='')
     is_pinned = models.BooleanField('상단 고정', default=False)
-    is_secret = models.BooleanField('비밀글', default=False)
-    password = models.CharField('패스워드', max_length=255, blank=True, default='')
+
+    # ── 보안 등급 (4단계) ──────────────────────────────────────────────
+    SECURITY_PRIVATE = '1'   # 비공개: 작성자 + 명시적 허가자만
+    SECURITY_TEAM    = '2'   # 팀 공개: 작성자의 소속 부서원
+    SECURITY_PROJECT = '3'   # 프로젝트 공개: 해당 워크스페이스 멤버
+    SECURITY_COMPANY = '4'   # 전사 공개: 로그인한 모든 직원
+    SECURITY_LEVEL_CHOICES = (
+        (SECURITY_PRIVATE, '1등급 비공개 (작성자/허가자)'),
+        (SECURITY_TEAM,    '2등급 팀 공개 (소속 부서)'),
+        (SECURITY_PROJECT, '3등급 프로젝트 공개 (워크스페이스 멤버)'),
+        (SECURITY_COMPANY, '4등급 전사 공개'),
+    )
+    security_level = models.CharField(
+        '보안 등급', max_length=1,
+        choices=SECURITY_LEVEL_CHOICES, default=SECURITY_PROJECT,
+        db_index=True,
+        help_text='1:비공개 / 2:팀공개 / 3:프로젝트공개 / 4:전사공개',
+    )
+
+    # ── 명시적 열람 허가자 (등급 초월) ────────────────────────────────
+    allowed_users = models.ManyToManyField(
+        settings.AUTH_USER_MODEL, blank=True,
+        related_name='granted_documents',
+        verbose_name='개별 열람 허가자',
+        help_text='보안 등급과 무관하게 열람을 허가할 사용자',
+    )
+
     is_blind = models.BooleanField('숨김', default=False)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='등록자')
     updator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
@@ -85,6 +110,45 @@ class Document(BaseModel):
     def is_new(self):
         return timezone.now() < self.created + timedelta(days=3)
 
+    def is_visible_to(self, user) -> bool:
+        """
+        사용자의 이 문서 열람 가능 여부를 판단합니다.
+
+        판단 순서:
+        1. 슈퍼유저 / work_manager → 전체 허용
+        2. is_blind → 위 관리자만 허용 (일반 사용자 차단)
+        3. 작성자 본인 → 허용
+        4. allowed_users(명시적 허가자) → 허용
+        5. security_level별 조건 판단
+        """
+        if not user or not user.is_authenticated:
+            return False
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return True
+        if self.is_blind:
+            return False
+        if self.creator_id and self.creator_id == user.pk:
+            return True
+        if self.allowed_users.filter(pk=user.pk).exists():
+            return True
+
+        level = self.security_level
+        if level == self.SECURITY_COMPANY:
+            return True
+        if level == self.SECURITY_PROJECT:
+            return self.issue_project.members.filter(user=user).exists()
+        if level == self.SECURITY_TEAM:
+            from company.models import StaffAssignment
+            creator_dept_ids = StaffAssignment.objects.filter(
+                staff__user_id=self.creator_id
+            ).values_list('department_id', flat=True)
+            return StaffAssignment.objects.filter(
+                staff__user=user,
+                department_id__in=creator_dept_ids,
+            ).exists()
+        # SECURITY_PRIVATE (1등급): 위 조건 모두 불충족
+        return False
+
     class Meta:
         ordering = ['-is_pinned', '-created']
         verbose_name = '02. 문서'
@@ -93,6 +157,7 @@ class Document(BaseModel):
             GinIndex(fields=['title'], opclasses=['gin_trgm_ops'], name='docs_document_title_trgm'),
             GinIndex(fields=['description'], opclasses=['gin_trgm_ops'], name='docs_document_desc_trgm'),
         ]
+
 
 
 class Link(models.Model):

@@ -222,7 +222,7 @@ class DocumentDetailSheet extends ConsumerWidget {
                   ),
                 ),
               ),
-              if (doc.isSecret) ...[
+              if (doc.securityLevel == '1') ...[
                 const SizedBox(width: 8),
                 Container(
                   padding:
@@ -236,7 +236,7 @@ class DocumentDetailSheet extends ConsumerWidget {
                       Icon(Icons.lock_rounded,
                           size: 13, color: context.colors.warning),
                       const SizedBox(width: 4),
-                      Text('비밀글',
+                      Text('비공개',
                           style: AppTextStyles.caption
                               .copyWith(color: context.colors.warning)),
                     ],

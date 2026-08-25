@@ -94,8 +94,10 @@ export type Docs = {
   ip?: string | null
   device: string
   is_pinned: boolean
-  is_secret: boolean
-  password: string
+  /** 보안 등급: 1=비공개 / 2=팀공개 / 3=프로젝트공개(기본) / 4=전사공개 */
+  security_level: '1' | '2' | '3' | '4'
+  security_level_desc?: string
+  allowed_users?: number[]
   is_blind: boolean
   deleted?: string | null
   links?: Link[]
@@ -171,8 +173,8 @@ export interface PatchDocs {
   description?: string
   hit?: number
   scrape?: number
-  is_secret?: boolean
-  password?: string
+  security_level?: '1' | '2' | '3' | '4'
+  allowed_users?: number[]
   is_blind?: boolean
   deleted?: string | null
 }

@@ -610,12 +610,10 @@ class DocumentPermission(ProjectPermission):
         if request.method in permissions.SAFE_METHODS:
             return True
 
-        # 3. 연관된 문서(docs)가 기밀 상태인 경우 소유자 및 관리자만 수정/삭제 허용
+        # 3. 연관된 문서(docs)가 있는 경우(링크/파일) 열람 가능 여부 검증
         docs = getattr(obj, 'docs', None)
-        if docs and docs.is_secret:
-            user = request.user
-            is_admin = user.is_superuser or getattr(user, 'work_manager', False)
-            if not is_admin and docs.creator != user:
+        if docs:
+            if not docs.is_visible_to(request.user):
                 return False
 
         return True

@@ -107,7 +107,7 @@ class DocsRepository {
     int? lawsuitId,
     String? executionDate,
     String? description,
-    bool isSecret = false,
+    String securityLevel = '3',
     List<PlatformFile>? newFiles,
     List<String>? newLinks,
   }) async {
@@ -115,7 +115,7 @@ class DocsRepository {
       final formData = FormData();
       formData.fields.add(MapEntry('issue_project', issueProjectId.toString()));
       formData.fields.add(MapEntry('title', title));
-      formData.fields.add(MapEntry('is_secret', isSecret.toString()));
+      formData.fields.add(MapEntry('security_level', securityLevel));
       if (categoryId != null) {
         formData.fields.add(MapEntry('category', categoryId.toString()));
       }
@@ -174,7 +174,7 @@ class DocsRepository {
     int? lawsuitId,
     String? executionDate,
     String? description,
-    bool? isSecret,
+    String? securityLevel,
     List<PlatformFile>? newFiles,
     List<String>? newLinks,
     List<int>? deleteFilePks,
@@ -195,8 +195,8 @@ class DocsRepository {
       if (description != null) {
         formData.fields.add(MapEntry('description', description));
       }
-      if (isSecret != null) {
-        formData.fields.add(MapEntry('is_secret', isSecret.toString()));
+      if (securityLevel != null) {
+        formData.fields.add(MapEntry('security_level', securityLevel));
       }
 
       // 새 링크 목록

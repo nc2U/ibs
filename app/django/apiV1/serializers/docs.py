@@ -2,6 +2,7 @@ import json
 from urllib.parse import urlparse
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.db import transaction
 from rest_framework import serializers
 
@@ -9,6 +10,8 @@ from _utils.file_service import FileService
 from apiV1.serializers.accounts import SimpleUserSerializer
 from apiV1.serializers.work import SimpleIssueProjectSerializer
 from docs.models import Category, LawsuitCase, Document, Link, File, Image, OfficialLetter
+
+User = get_user_model()
 
 
 # DocsItem --------------------------------------------------------------------------
@@ -142,6 +145,12 @@ class DocumentSerializer(serializers.ModelSerializer):
     updator = SimpleUserSerializer(read_only=True)
     scrape = serializers.SerializerMethodField(read_only=True)
     my_scrape = serializers.SerializerMethodField(read_only=True)
+    security_level_desc = serializers.CharField(source='get_security_level_display', read_only=True)
+    allowed_users = serializers.PrimaryKeyRelatedField(
+        many=True, read_only=False,
+        queryset=User.objects.all(),
+        required=False,
+    )
     prev_pk = serializers.SerializerMethodField(read_only=True)
     next_pk = serializers.SerializerMethodField(read_only=True)
 
@@ -150,37 +159,27 @@ class DocumentSerializer(serializers.ModelSerializer):
         fields = ('pk', 'project', 'proj_type', 'doc_type', 'type_name',
                   'category', 'cate_name', 'cate_color', 'lawsuit', 'lawsuit_name', 'title',
                   'execution_date', 'description', 'hit', 'scrape', 'my_scrape', 'ip', 'device',
-                  'is_pinned', 'is_secret', 'password', 'is_blind', 'deleted', 'links', 'files',
+                  'is_pinned', 'security_level', 'security_level_desc', 'allowed_users',
+                  'is_blind', 'deleted', 'links', 'files',
                   'creator', 'updator', 'created', 'updated', 'is_new', 'prev_pk', 'next_pk')
         read_only_fields = ('ip',)
-        extra_kwargs = {'password': {'write_only': True}}
 
     def _is_visible_to_user(self, obj) -> bool:
-        """비밀글 및 블라인드글 노출 제어 헬퍼"""
+        """모델의 is_visible_to() 메서드 위임"""
         request = self.context.get('request')
         if not request:
             return False
-        user = request.user
-        if not user or not user.is_authenticated:
-            return False
-        # 1. 블라인드글인 경우 관리자(workManager)만 노출
-        if obj.is_blind:
-            return user.is_superuser or getattr(user, 'work_manager', False)
-        # 2. 비밀글인 경우 관리자(workManager) 또는 작성자 본인만 노출
-        if obj.is_secret:
-            return user.is_superuser or getattr(user, 'work_manager', False) or obj.creator == user
-        # 3. 일반 글인 경우 모든 유저 노출
-        return True
+        return obj.is_visible_to(request.user)
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        # 블라인드/비밀 문서의 경우 제목과 본문을 마스킹
+        # 블라인드/비공개 문서의 경우 제목과 본문을 마스킹
         if not self._is_visible_to_user(instance):
             if instance.is_blind:
                 data['title'] = '[HIDDEN DOCUMENT]'
                 data['description'] = '이 문서는 관리자에 의해 숨김처리 되었습니다.'
             else:
-                data['description'] = '비밀 문서입니다.'
+                data['description'] = '열람 권한이 없는 문서입니다.'
         return data
 
     @staticmethod

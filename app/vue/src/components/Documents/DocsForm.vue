@@ -51,8 +51,7 @@ const form = reactive<Docs & { issue_project: number | null }>({
   description: '',
   device: '',
   is_pinned: false,
-  is_secret: false,
-  password: '',
+  security_level: '3' as '1' | '2' | '3' | '4',
   is_blind: false,
   files: [],
   newFiles: [],
@@ -151,8 +150,7 @@ const dataSetup = () => {
     form.description = props.docs.description
     form.device = props.docs.device
     form.is_pinned = props.docs.is_pinned
-    form.is_secret = props.docs.is_secret
-    form.password = props.docs.password
+    form.security_level = props.docs.security_level ?? '3'
     form.is_blind = props.docs.is_blind
     form.files = props.docs.files
     form.links = props.docs.links
