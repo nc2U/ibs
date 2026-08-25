@@ -10,6 +10,23 @@ class TokenStorage {
   static const _refreshTokenKey = 'REFRESH_TOKEN';
   static const _biometricRefreshTokenKey = 'BIOMETRIC_REFRESH_TOKEN';
   static const _savedEmailKey = 'SAVED_EMAIL';
+  static const _cachedUserKey = 'CACHED_USER_DATA';
+
+  String? _inMemoryUserData;
+
+  // Cached User Data (JSON string)
+  Future<void> saveUserData(String userJson) async {
+    _inMemoryUserData = userJson;
+    await _storage.write(key: _cachedUserKey, value: userJson);
+  }
+
+  Future<String?> getUserData() async {
+    if (_inMemoryUserData != null && _inMemoryUserData!.isNotEmpty) {
+      return _inMemoryUserData;
+    }
+    _inMemoryUserData = await _storage.read(key: _cachedUserKey);
+    return _inMemoryUserData;
+  }
 
   // Access Token 저장/읽기/삭제
   Future<void> saveAccessToken(String token) async {
@@ -61,7 +78,9 @@ class TokenStorage {
   Future<void> clearTokens() async {
     _cachedAccessToken = null;
     _cachedRefreshToken = null;
+    _inMemoryUserData = null;
     await _storage.delete(key: _accessTokenKey);
     await _storage.delete(key: _refreshTokenKey);
+    await _storage.delete(key: _cachedUserKey);
   }
 }

@@ -1,10 +1,11 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../api/api_client.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_text_styles.dart';
 import '../models/user_model.dart';
 
-/// 공용 사용자 아바타 위젯 (이미지 URL 지원 + fallback 이니셜)
+/// 공용 사용자 아바타 위젯 (CachedNetworkImage + fallback 이니셜 지원)
 class UserAvatar extends StatelessWidget {
   final UserModel? user;
   final String? imageUrl;
@@ -50,38 +51,33 @@ class UserAvatar extends StatelessWidget {
         radius: radius,
         backgroundColor: bgColor,
         child: ClipOval(
-          child: Image.network(
-            fullUrl,
+          child: CachedNetworkImage(
+            imageUrl: fullUrl,
             width: radius * 2,
             height: radius * 2,
             fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Center(
+            fadeInDuration: const Duration(milliseconds: 150),
+            fadeOutDuration: const Duration(milliseconds: 150),
+            placeholder: (ctx, url) => Center(
               child: Text(
                 initial,
                 style: AppTextStyles.label.copyWith(
                   color: fgColor,
-                  fontSize: radius * 0.9,
+                  fontSize: radius * 0.85,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ),
-            loadingBuilder: (ctx, child, progress) {
-              if (progress == null) return child;
-              return Center(
-                child: SizedBox(
-                  width: radius,
-                  height: radius,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 1.5,
-                    value: progress.expectedTotalBytes != null
-                        ? progress.cumulativeBytesLoaded /
-                            progress.expectedTotalBytes!
-                        : null,
-                    color: fgColor,
-                  ),
+            errorWidget: (ctx, url, error) => Center(
+              child: Text(
+                initial,
+                style: AppTextStyles.label.copyWith(
+                  color: fgColor,
+                  fontSize: radius * 0.85,
+                  fontWeight: FontWeight.bold,
                 ),
-              );
-            },
+              ),
+            ),
           ),
         ),
       );
@@ -94,7 +90,7 @@ class UserAvatar extends StatelessWidget {
         initial,
         style: AppTextStyles.label.copyWith(
           color: fgColor,
-          fontSize: radius * 0.9,
+          fontSize: radius * 0.85,
           fontWeight: FontWeight.bold,
         ),
       ),

@@ -23,6 +23,16 @@ class ProfileModel {
       image: json['image'] as String?,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'pk': pk,
+      'name': name,
+      'birth_date': birthDate,
+      'cell_phone': cellPhone,
+      'image': image,
+    };
+  }
 }
 
 /// 사용자 상세 모델 (로그인 사용자 정보 및 권한)
@@ -88,5 +98,17 @@ class UserModel {
       workManager: json['work_manager'] as bool? ?? false,
       profile: profileObj,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'pk': pk,
+      'username': username,
+      'email': email,
+      'is_superuser': isSuperuser,
+      'is_staff': isStaff,
+      'work_manager': workManager,
+      'profile': profile?.toJson(),
+    };
   }
 }

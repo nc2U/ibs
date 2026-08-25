@@ -53,7 +53,7 @@ final isAuthenticatedProvider = Provider<bool>((ref) {
   );
 });
 
-/// 현재 로그인 사용자 정보 프로바이더 (JWT payload의 user_id 파싱 후 /api/v1/user/{id}/ 조회)
+/// 현재 로그인 사용자 정보 프로바이더 (로컬 캐시 즉시 반환 + 백그라운드 API 동기화)
 final currentUserProvider = FutureProvider<UserModel?>((ref) async {
   final authState = ref.watch(authProvider).valueOrNull;
   if (authState == null) return null;
@@ -64,8 +64,20 @@ final currentUserProvider = FutureProvider<UserModel?>((ref) async {
   );
   if (token == null || token.isEmpty) return null;
 
+  final tokenStorage = ref.read(tokenStorageProvider);
+
   try {
-    // JWT base64 payload 디코딩 (user_id 추출)
+    // 1. 로컬 캐시된 프로필이 있다면 캐시 데이터 로드 준비
+    UserModel? cachedUser;
+    final cachedJsonStr = await tokenStorage.getUserData();
+    if (cachedJsonStr != null && cachedJsonStr.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(cachedJsonStr) as Map<String, dynamic>;
+        cachedUser = UserModel.fromJson(decoded);
+      } catch (_) {}
+    }
+
+    // 2. JWT base64 payload 디코딩 (user_id 추출)
     final parts = token.split('.');
     if (parts.length >= 2) {
       final normalized = base64Url.normalize(parts[1]);
@@ -75,10 +87,27 @@ final currentUserProvider = FutureProvider<UserModel?>((ref) async {
 
       if (userId != null) {
         final dio = ref.watch(dioProvider);
-        final res = await dio.get('/api/v1/user/$userId/');
-        return UserModel.fromJson(res.data as Map<String, dynamic>);
+        try {
+          final res = await dio.get('/api/v1/user/$userId/');
+          final user = UserModel.fromJson(res.data as Map<String, dynamic>);
+          // 최신 사용자 정보 캐싱
+          await tokenStorage.saveUserData(jsonEncode(user.toJson()));
+          return user;
+        } catch (_) {
+          // 네트워크 실패/오프라인 시 캐시된 정보 반환
+          if (cachedUser != null) return cachedUser;
+          // 캐시도 없으면 JWT 페이로드 기반 최소 UserModel 생성
+          final jwtUsername = payload['username'] as String? ?? '';
+          if (jwtUsername.isNotEmpty) {
+            return UserModel(
+              pk: userId is int ? userId : int.tryParse('$userId') ?? 0,
+              username: jwtUsername,
+            );
+          }
+        }
       }
     }
+    return cachedUser;
   } catch (_) {}
   return null;
 });
