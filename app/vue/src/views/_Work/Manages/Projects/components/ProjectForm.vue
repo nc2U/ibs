@@ -1,5 +1,14 @@
 <script lang="ts" setup>
-import { computed, onBeforeMount, onMounted, onUpdated, type PropType, reactive, ref, watch } from 'vue'
+import {
+  computed,
+  onBeforeMount,
+  onMounted,
+  onUpdated,
+  type PropType,
+  reactive,
+  ref,
+  watch,
+} from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
 import { useStore } from '@/store'
@@ -180,7 +189,11 @@ const onSubmit = async (event: Event) => {
 const setDefaultRolesAndTrackers = () => {
   if (props.project) return
 
-  if (form.type === '2') {
+  if (form.type === '1') {
+    // 본사관리(1): 전체 역할 및 업무유형 기본 할당
+    form.allowed_roles = workStore.roleList.filter(r => ![1, 2, 3].includes(r.pk)).map(r => r.pk)
+    form.trackers = issueStore.trackerList.filter(r => ![1, 2, 3].includes(r.pk)).map(t => t.pk)
+  } else if (form.type === '2') {
     // 부동산개발 프로젝트(type='2'): is_for_dev_project 플래그가 true인 항목들을 기본 할당
     const devRoles = workStore.roleList.filter(r => r.is_for_dev_project).map(r => r.pk)
     form.allowed_roles = devRoles.length > 0 ? devRoles : workStore.roleList.map(r => r.pk)
@@ -188,9 +201,9 @@ const setDefaultRolesAndTrackers = () => {
     const devTrackers = issueStore.trackerList.filter(t => t.is_for_dev_project).map(t => t.pk)
     form.trackers = devTrackers.length > 0 ? devTrackers : issueStore.trackerList.map(t => t.pk)
   } else {
-    // 본사관리(1) 또는 기타 워크스페이스(3): 전체 역할 및 업무유형 기본 할당
-    form.allowed_roles = workStore.roleList.map(r => r.pk)
-    form.trackers = issueStore.trackerList.map(t => t.pk)
+    // 기타 워크스페이스(3): 전체 역할 및 업무유형 기본 할당
+    form.allowed_roles = workStore.roleList.filter(r => [1, 2, 3].includes(r.pk)).map(r => r.pk)
+    form.trackers = issueStore.trackerList.filter(r => [1, 2, 3].includes(r.pk)).map(t => t.pk)
   }
 }
 
