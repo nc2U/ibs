@@ -5,6 +5,7 @@ import { useAccount } from '@/store/pinia/account'
 import LoginForm from './components/LoginForm.vue'
 import FindPassword from '@/views/_Accounts/components/FindPassword.vue'
 import SocialLogin from '@/views/_Accounts/components/SocialLogin.vue'
+import ThemeSwitcher from '@/components/ThemeSwitcher/Index.vue'
 
 const formName = ref('login')
 const accStore = useAccount()
@@ -26,11 +27,15 @@ const passwordReset = (payload: { email: string }) => {
 </script>
 
 <template>
-  <div class="bg-light min-vh-100 d-flex flex-row align-items-center">
+  <div class="bg-more-light min-vh-100 d-flex flex-row align-items-center">
+    <div class="position-fixed top-0 end-0 p-3" style="z-index: 1050;">
+      <ThemeSwitcher size="lg" tooltip-location="bottom" />
+    </div>
+
     <CContainer>
       <CRow class="justify-content-center">
         <CCol md="8" lg="6" xl="4">
-          <CCard class="p-4">
+          <CCard class="p-4 position-relative">
             <CCardBody class="text-body">
               <LoginForm
                 v-if="formName === 'login'"

@@ -10,6 +10,7 @@ import AppBreadcrumb from './AppBreadcrumb.vue'
 import AppHeaderDropdown from './AppHeaderDropdown.vue'
 import AppHeaderNotifications from './AppHeaderNotifications.vue'
 import TagsView from '@/layouts/containers/TagsView.vue'
+import ThemeSwitcher from '@/components/ThemeSwitcher/Index.vue'
 
 const router = useRouter()
 
@@ -33,28 +34,7 @@ const isAuthorized = computed(() => accountStore.isAuthorized)
 const isVisible = computed(() => store.sidebarVisible)
 const theme = computed(() => store.theme)
 
-const currentThemeIcon = computed(() => {
-  if (theme.value === 'dark') return 'cil-moon'
-  if (theme.value === 'auto') return 'cil-screen-desktop'
-  return 'cil-sun'
-})
-
-const currentThemeLabel = computed(() => {
-  if (theme.value === 'dark') return '다크 모드'
-  if (theme.value === 'auto') return '기기 설정'
-  return '라이트 모드'
-})
-
 const toggleSidebar = () => store.toggleSidebar()
-const cycleTheme = () => {
-  if (theme.value === 'default') {
-    store.toggleTheme('dark')
-  } else if (theme.value === 'dark') {
-    store.toggleTheme('auto')
-  } else {
-    store.toggleTheme('default')
-  }
-}
 const toggleAside = () => store.toggleAside()
 </script>
 
@@ -83,12 +63,7 @@ const toggleAside = () => store.toggleAside()
         </CHeaderToggler>
 
         <!-- 테마 전환 토글 버튼 (라이트 -> 다크 -> 기기설정 로테이션) -->
-        <CHeaderToggler class="mr-1" @click="cycleTheme">
-          <CIcon :icon="currentThemeIcon" size="lg" class="text-50 mt-1" />
-          <v-tooltip activator="parent" location="bottom">
-            테마: {{ currentThemeLabel }}
-          </v-tooltip>
-        </CHeaderToggler>
+        <ThemeSwitcher custom-class="mr-1" />
       </CHeaderNav>
 
       <!-- 상단 헤더 실시간 알림 섹션 (결재 대기 / 담당 업무 / 할일) -->
