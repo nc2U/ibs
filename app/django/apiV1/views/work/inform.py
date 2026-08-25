@@ -339,12 +339,22 @@ class SearchViewSet(viewsets.ModelViewSet):
         # 소프트 딜리트 필터: deleted=None (SoftDeleteManager가 적용되어 있으므로 기본 objects 사용 가능)
         qs = Document.objects.filter(q_expr, issue_project__status='1').select_related('issue_project', 'creator')
 
-        # 권한 제어: 사용자가 관리자가 아닌 경우 멤버십 프로젝트 문서만 허용 (비밀글/블라인드글 제외)
+        # 권한 제어: 사용자가 관리자가 아닌 경우 보안 등급별 열람 조건 적용
         if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            from company.models import StaffAssignment
+            user_dept_ids = StaffAssignment.objects.filter(
+                staff__user=user, department__isnull=False
+            ).values_list('department_id', flat=True)
+
             qs = qs.filter(
                 issue_project__members__user=user
             ).filter(
-                Q(is_secret=False) | Q(creator=user)
+                Q(security_level=Document.SECURITY_COMPANY)
+                | Q(security_level=Document.SECURITY_PROJECT)
+                | (Q(security_level=Document.SECURITY_TEAM)
+                   & Q(creator__staffassignment__department_id__in=user_dept_ids))
+                | Q(creator=user)
+                | Q(allowed_users=user)
             ).filter(is_blind=False).distinct()
 
         if scope == 'project' and slug:

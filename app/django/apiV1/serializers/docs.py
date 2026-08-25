@@ -146,6 +146,7 @@ class DocumentSerializer(serializers.ModelSerializer):
     scrape = serializers.SerializerMethodField(read_only=True)
     my_scrape = serializers.SerializerMethodField(read_only=True)
     security_level_desc = serializers.CharField(source='get_security_level_display', read_only=True)
+    creator_dept_name = serializers.SerializerMethodField(read_only=True)
     allowed_users = serializers.PrimaryKeyRelatedField(
         many=True, read_only=False,
         queryset=User.objects.all(),
@@ -159,17 +160,45 @@ class DocumentSerializer(serializers.ModelSerializer):
         fields = ('pk', 'project', 'proj_type', 'doc_type', 'type_name',
                   'category', 'cate_name', 'cate_color', 'lawsuit', 'lawsuit_name', 'title',
                   'execution_date', 'description', 'hit', 'scrape', 'my_scrape', 'ip', 'device',
-                  'is_pinned', 'security_level', 'security_level_desc', 'allowed_users',
+                  'is_pinned', 'security_level', 'security_level_desc', 'creator_dept_name', 'allowed_users',
                   'is_blind', 'deleted', 'links', 'files',
                   'creator', 'updator', 'created', 'updated', 'is_new', 'prev_pk', 'next_pk')
         read_only_fields = ('ip',)
 
     def _is_visible_to_user(self, obj) -> bool:
-        """모델의 is_visible_to() 메서드 위임"""
+        """
+        문서 열람 권한 판정 (메모리 캐싱 및 list 액션 최적화)
+        """
+        if hasattr(obj, '_is_visible_cached'):
+            return obj._is_visible_cached
+
         request = self.context.get('request')
         if not request:
+            obj._is_visible_cached = False
             return False
-        return obj.is_visible_to(request.user)
+
+        user = request.user
+        if not user or not user.is_authenticated:
+            obj._is_visible_cached = False
+            return False
+
+        # 슈퍼유저 또는 work_manager는 항상 열람 가능
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            obj._is_visible_cached = True
+            return True
+
+        if obj.is_blind:
+            obj._is_visible_cached = False
+            return False
+
+        view = self.context.get('view')
+        # list 액션은 get_queryset()에서 이미 접근 권한(security_level/allowed_users 등) 필터링을 거쳤으므로 True
+        if view and view.action == 'list':
+            obj._is_visible_cached = True
+            return True
+
+        obj._is_visible_cached = obj.is_visible_to(user)
+        return obj._is_visible_cached
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -195,13 +224,35 @@ class DocumentSerializer(serializers.ModelSerializer):
         return obj.category.color if obj.category else None
 
     @staticmethod
+    def get_creator_dept_name(obj):
+        """작성자의 소속 부서명(주 부서 우선) 추출"""
+        if not obj.creator_id:
+            return None
+        try:
+            staff = getattr(obj.creator, 'staff', None)
+            if staff:
+                assignments = staff.assignments.all()
+                primary = next((a for a in assignments if a.is_primary), None) or (assignments[0] if assignments else None)
+                if primary and primary.department:
+                    return primary.department.name
+        except Exception:
+            pass
+        return None
+
+    @staticmethod
     def get_scrape(obj):
+        """prefetch_related 캐시를 사용하여 DB 쿼리 없이 개수 산출"""
+        if hasattr(obj, '_prefetched_objects_cache') and 'docscrape_set' in obj._prefetched_objects_cache:
+            return len(obj.docscrape_set.all())
         return obj.docscrape_set.count()
 
     def get_my_scrape(self, obj):
-        user = self.context['request'].user
+        """prefetch_related 캐시를 사용하여 DB 쿼리 없이 내 스크랩 여부 산출"""
+        user = self.context.get('request') and self.context['request'].user
         if not user or not user.is_authenticated:
             return False
+        if hasattr(obj, '_prefetched_objects_cache') and 'docscrape_set' in obj._prefetched_objects_cache:
+            return any(s.user_id == user.pk for s in obj.docscrape_set.all())
         return obj.docscrape_set.filter(user=user).exists()
 
     def get_links(self, obj):
@@ -235,8 +286,9 @@ class DocumentSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         user = request.user
 
-        if 'issue_project' in self.initial_data:
-            validated_data['issue_project_id'] = self.initial_data.get('issue_project')
+        issue_project = self.initial_data.get('issue_project')
+        if issue_project and str(issue_project).isdigit():
+            validated_data['issue_project_id'] = int(issue_project)
 
         validated_data['ip'] = request.META.get('REMOTE_ADDR')
         validated_data['device'] = request.META.get('HTTP_USER_AGENT')
@@ -259,8 +311,9 @@ class DocumentSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         user = request.user
 
-        if 'issue_project' in self.initial_data:
-            validated_data['issue_project_id'] = self.initial_data.get('issue_project')
+        issue_project = self.initial_data.get('issue_project')
+        if issue_project and str(issue_project).isdigit():
+            validated_data['issue_project_id'] = int(issue_project)
 
         validated_data['ip'] = request.META.get('REMOTE_ADDR')
         validated_data['device'] = request.META.get('HTTP_USER_AGENT')

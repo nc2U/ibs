@@ -484,8 +484,8 @@ class SlackMessageBuilder:
         doc_type = instance.get_doc_type_display()
         title = f"📄 {instance.issue_project.name}-[{doc_type}]-{instance.title}"
 
-        # 보안 문서 표시
-        if instance.is_secret:
+        # 보안 문서 표시 (1등급 비공개)
+        if getattr(instance, 'security_level', None) == '1':
             title = f"🔒 {title}"
 
         # 편집 시 updator와 creator 정보 표시

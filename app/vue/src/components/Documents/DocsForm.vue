@@ -237,17 +237,19 @@ onBeforeUpdate(() => dataSetup())
       </CCol>
 
       <CFormLabel
-        for="inputPassword"
+        for="security_level"
         class="col-sm-2 col-form-label text-right"
         :class="{ 'col-lg-1': typeNum === 2 }"
       >
-        문서 발행일자
+        보안등급
       </CFormLabel>
       <CCol :md="typeNum === 2 ? 2 : 3">
-        <DatePicker v-model="form.execution_date" placeholder="문서 발행일자" />
-      </CCol>
-      <CCol v-if="typeNum !== 2">
-        <v-checkbox-btn v-model="form.is_secret" label="비밀글" />
+        <CFormSelect id="security_level" v-model="form.security_level">
+          <option value="4">4등급 전사 공개</option>
+          <option value="3">3등급 프로젝트 공개</option>
+          <option value="2">2등급 팀 공개</option>
+          <option value="1">1등급 비공개</option>
+        </CFormSelect>
       </CCol>
     </CRow>
 

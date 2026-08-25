@@ -144,7 +144,10 @@ class DocumentFilterSet(FilterSet):
 class DocumentViewSet(viewsets.ModelViewSet):
     queryset = Document.objects.select_related(
         'issue_project', 'category', 'lawsuit', 'creator', 'updator'
-    ).prefetch_related('links', 'files', 'docscrape_set')
+    ).prefetch_related(
+        'links__creator', 'files__creator', 'allowed_users', 'docscrape_set',
+        'creator__staff__assignments__department'
+    )
     serializer_class = DocumentSerializer
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, DocumentPermission)
     pagination_class = PageNumberPaginationOneHundred

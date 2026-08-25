@@ -38,15 +38,16 @@ const canDocsRead = computed(() => can(PERM.DOCS_READ))
             size="small"
           />
           <v-tooltip
-            v-if="docs.is_secret || docs.is_blind"
+            v-if="docs.security_level === '1' || docs.is_blind"
             location="top"
-            :text="docs.is_secret ? '비밀 문서' : '숨김 문서'"
+            :text="docs.is_blind ? '숨김 문서' : '1등급 비공개 문서'"
           >
             <template #activator="{ props: tooltipProps }">
               <v-icon
                 v-bind="tooltipProps"
-                :icon="docs.is_secret ? 'mdi-lock' : 'mdi-eye-off'"
-                :color="docs.is_secret ? 'warning' : 'error'"
+                :icon="docs.is_blind ? 'mdi-eye-off' : 'mdi-lock-outline'"
+                :color="docs.is_blind ? 'error' : 'warning'"
+                size="small"
                 class="mr-2"
               />
             </template>
@@ -75,14 +76,14 @@ const canDocsRead = computed(() => can(PERM.DOCS_READ))
             고정
           </v-chip>
           <v-chip
-            v-if="docs.is_secret || docs.is_blind"
+            v-if="docs.security_level === '1' || docs.is_blind"
             label
             size="x-small"
-            :color="docs.is_secret ? 'warning' : 'error'"
+            :color="docs.is_blind ? 'error' : 'warning'"
             variant="tonal"
             class="ml-2"
           >
-            {{ docs.is_secret ? 'SECRET' : 'BLIND' }}
+            {{ docs.is_blind ? 'BLIND' : '비공개' }}
           </v-chip>
         </CCol>
         <CCol sm="4" class="text-right text-grey small">

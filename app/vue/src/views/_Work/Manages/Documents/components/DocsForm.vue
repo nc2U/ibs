@@ -120,8 +120,12 @@ const onSubmit = async (payload: Docs & Attatches) => {
         })
       } else (getData[key] as any[]).forEach(val => form.append(key, val as string | Blob))
     } else {
-      const formValue = getData[key] === null ? '' : getData[key]
-      form.append(key, formValue as string)
+      const val = getData[key]
+      if (val !== undefined && val !== null && val !== 'undefined') {
+        form.append(key, String(val))
+      } else if (val === null) {
+        form.append(key, '')
+      }
     }
   }
 
@@ -146,7 +150,8 @@ const dataSetup = () => {
   if (props.projectPk) form.value.issue_project = props.projectPk
   if (props.docs) {
     form.value.pk = props.docs.pk
-    form.value.issue_project = props.docs.issue_project
+    form.value.issue_project =
+      props.docs.project?.pk ?? props.docs.issue_project ?? props.projectPk ?? null
     form.value.doc_type = props.docs.doc_type
     form.value.category = props.docs.category
     form.value.lawsuit = props.docs.lawsuit

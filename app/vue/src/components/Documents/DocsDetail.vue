@@ -50,8 +50,12 @@ const isContentVisible = computed(() => {
   if (props.docs?.is_blind) {
     return accStore.workManager
   }
-  if (props.docs?.is_secret) {
-    return accStore.workManager || props.docs?.creator?.pk === userInfo?.value?.pk
+  if (props.docs?.security_level === '1') {
+    return (
+      accStore.workManager ||
+      props.docs?.creator?.pk === userInfo?.value?.pk ||
+      (props.docs?.allowed_users?.includes(userInfo?.value?.pk ?? 0) ?? false)
+    )
   }
   return can(PERM.DOCS_READ)
 })
@@ -241,6 +245,20 @@ onMounted(() => {
         <h5>
           <v-icon v-if="docs.is_notice" icon="mdi-bullhorn" size="sm" color="blue-grey-darken-1" />
           {{ docs.title }}
+          <v-chip
+            v-if="docs.security_level"
+            label
+            size="x-small"
+            :color="docs.security_level === '1' ? 'warning' : 'grey-darken-1'"
+            :variant="docs.security_level === '1' ? 'tonal' : 'outlined'"
+            class="ml-2"
+          >
+            {{
+              docs.security_level === '2' && docs.creator_dept_name
+                ? `2등급 (${docs.creator_dept_name})`
+                : (docs.security_level_desc ?? (docs.security_level === '1' ? '비공개' : `${docs.security_level}등급`))
+            }}
+          </v-chip>
         </h5>
       </CCol>
       <CCol v-if="docs.cate_name" class="pt-1 text-right">
@@ -251,14 +269,6 @@ onMounted(() => {
     <v-divider />
 
     <PostInfo :docs="docs" />
-
-    <CRow v-if="docs.is_secret">
-      <CCol>
-        <CAlert color="info">
-          이 글은 비밀글입니다. 작성자 본인과 관리자만 열람할 수 있습니다.
-        </CAlert>
-      </CCol>
-    </CRow>
 
     <CRow v-if="docs.is_blind">
       <CCol>

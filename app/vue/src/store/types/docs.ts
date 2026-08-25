@@ -97,6 +97,7 @@ export type Docs = {
   /** 보안 등급: 1=비공개 / 2=팀공개 / 3=프로젝트공개(기본) / 4=전사공개 */
   security_level: '1' | '2' | '3' | '4'
   security_level_desc?: string
+  creator_dept_name?: string
   allowed_users?: number[]
   is_blind: boolean
   deleted?: string | null

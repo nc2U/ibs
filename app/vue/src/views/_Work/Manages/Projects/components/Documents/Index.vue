@@ -124,30 +124,36 @@ const docsDelConfirm = async () => {
 }
 
 const dataSetup = async (projId: string, docId?: string | string[]) => {
-  if (projId) await workStore.fetchIssueProject(projId as string)
-
-  if (currentProject.value?.type === '3') typeNumber.value = 3
-  else if (typeNumber.value === 3) typeNumber.value = 1
-
-  docsFilter.value.doc_type = typeNumber.value
-
-  docsFilter.value.issue_project = (currentProject.value as IssueProject)?.pk
-  await fetchCategoryList(typeNumber.value)
-  await fetchDocsList(docsFilter.value)
-  await fetchAllSuitCaseList({ issue_project: docsFilter.value.issue_project })
-  if (docId) await fetchDocs(Number(docId))
-}
-
-const loading = ref<boolean>(true)
-onBeforeMount(async () => {
+  loading.value = true
   try {
-    if (route.query.viewForm) viewForm.value = true
-    await dataSetup(projId.value as string, docId.value)
+    if (projId && (!currentProject.value || currentProject.value.slug !== projId)) {
+      await workStore.fetchIssueProject(projId as string)
+    }
+
+    if (currentProject.value?.type === '3') typeNumber.value = 3
+    else if (typeNumber.value === 3) typeNumber.value = 1
+
+    docsFilter.value.doc_type = typeNumber.value
+    docsFilter.value.issue_project = (currentProject.value as IssueProject)?.pk
+
+    const tasks: Promise<any>[] = [
+      fetchCategoryList(typeNumber.value),
+      fetchDocsList(docsFilter.value),
+      fetchAllSuitCaseList({ issue_project: docsFilter.value.issue_project }),
+    ]
+    if (docId) tasks.push(fetchDocs(Number(docId)))
+    await Promise.all(tasks)
   } catch (err) {
     console.error('Failed to load project documents data:', err)
   } finally {
     loading.value = false
   }
+}
+
+const loading = ref<boolean>(true)
+onBeforeMount(async () => {
+  if (route.query.viewForm) viewForm.value = true
+  await dataSetup(projId.value as string, docId.value)
 })
 </script>
 
