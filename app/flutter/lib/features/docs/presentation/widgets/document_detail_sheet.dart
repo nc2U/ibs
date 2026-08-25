@@ -166,6 +166,22 @@ class DocumentDetailSheet extends ConsumerWidget {
     }
   }
 
+  String _getSecurityLevelLabel(DocumentModel doc) {
+    switch (doc.securityLevel) {
+      case '1':
+        return '1등급 (비공개)';
+      case '2':
+        final dept = doc.creatorDeptName;
+        return dept != null && dept.isNotEmpty ? '2등급 (팀 공개 - $dept)' : '2등급 (팀 공개)';
+      case '3':
+        return '3등급 (프로젝트 공개)';
+      case '4':
+        return '4등급 (전사 공개)';
+      default:
+        return doc.securityLevelDesc ?? '${doc.securityLevel}등급';
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isRealEstate = doc.projType == '2';
@@ -242,6 +258,30 @@ class DocumentDetailSheet extends ConsumerWidget {
                     ],
                   ),
                 ),
+              ] else if (doc.securityLevel == '2') ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: context.colors.textMuted.withAlpha(25),
+                    borderRadius: BorderRadius.zero,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.group_outlined,
+                          size: 13, color: context.colors.textSecond),
+                      const SizedBox(width: 4),
+                      Text(
+                        doc.creatorDeptName != null && doc.creatorDeptName!.isNotEmpty
+                            ? '팀공개 (${doc.creatorDeptName})'
+                            : '팀공개',
+                        style: AppTextStyles.caption
+                            .copyWith(color: context.colors.textSecond),
+                      ),
+                    ],
+                  ),
+                ),
               ],
               const Spacer(),
               if (ref.can(Perm.docsUpdate))
@@ -283,6 +323,8 @@ class DocumentDetailSheet extends ConsumerWidget {
             child: Column(
               children: [
                 _InfoRow(label: '카테고리', value: doc.cateName ?? '미지정'),
+                const SizedBox(height: 6),
+                _InfoRow(label: '보안등급', value: _getSecurityLevelLabel(doc)),
                 if (doc.executionDate != null &&
                     doc.executionDate!.isNotEmpty) ...[
                   const SizedBox(height: 6),

@@ -1014,6 +1014,7 @@ mixin _$DocumentModel {
   /// 보안 등급: '1'=비공개 / '2'=팀공개 / '3'=프로젝트공개(기본) / '4'=전사공개
   String get securityLevel => throw _privateConstructorUsedError;
   String? get securityLevelDesc => throw _privateConstructorUsedError;
+  String? get creatorDeptName => throw _privateConstructorUsedError;
   List<int> get allowedUsers => throw _privateConstructorUsedError;
   bool get isBlind => throw _privateConstructorUsedError;
   List<DocFileModel> get files => throw _privateConstructorUsedError;
@@ -1059,6 +1060,7 @@ abstract class $DocumentModelCopyWith<$Res> {
     bool isPinned,
     String securityLevel,
     String? securityLevelDesc,
+    String? creatorDeptName,
     List<int> allowedUsers,
     bool isBlind,
     List<DocFileModel> files,
@@ -1107,6 +1109,7 @@ class _$DocumentModelCopyWithImpl<$Res, $Val extends DocumentModel>
     Object? isPinned = null,
     Object? securityLevel = null,
     Object? securityLevelDesc = freezed,
+    Object? creatorDeptName = freezed,
     Object? allowedUsers = null,
     Object? isBlind = null,
     Object? files = null,
@@ -1186,6 +1189,10 @@ class _$DocumentModelCopyWithImpl<$Res, $Val extends DocumentModel>
             securityLevelDesc: freezed == securityLevelDesc
                 ? _value.securityLevelDesc
                 : securityLevelDesc // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            creatorDeptName: freezed == creatorDeptName
+                ? _value.creatorDeptName
+                : creatorDeptName // ignore: cast_nullable_to_non_nullable
                       as String?,
             allowedUsers: null == allowedUsers
                 ? _value.allowedUsers
@@ -1298,6 +1305,7 @@ abstract class _$$DocumentModelImplCopyWith<$Res>
     bool isPinned,
     String securityLevel,
     String? securityLevelDesc,
+    String? creatorDeptName,
     List<int> allowedUsers,
     bool isBlind,
     List<DocFileModel> files,
@@ -1348,6 +1356,7 @@ class __$$DocumentModelImplCopyWithImpl<$Res>
     Object? isPinned = null,
     Object? securityLevel = null,
     Object? securityLevelDesc = freezed,
+    Object? creatorDeptName = freezed,
     Object? allowedUsers = null,
     Object? isBlind = null,
     Object? files = null,
@@ -1428,6 +1437,10 @@ class __$$DocumentModelImplCopyWithImpl<$Res>
             ? _value.securityLevelDesc
             : securityLevelDesc // ignore: cast_nullable_to_non_nullable
                   as String?,
+        creatorDeptName: freezed == creatorDeptName
+            ? _value.creatorDeptName
+            : creatorDeptName // ignore: cast_nullable_to_non_nullable
+                  as String?,
         allowedUsers: null == allowedUsers
             ? _value._allowedUsers
             : allowedUsers // ignore: cast_nullable_to_non_nullable
@@ -1490,6 +1503,7 @@ class _$DocumentModelImpl implements _DocumentModel {
     this.isPinned = false,
     this.securityLevel = '3',
     this.securityLevelDesc,
+    this.creatorDeptName,
     final List<int> allowedUsers = const [],
     this.isBlind = false,
     final List<DocFileModel> files = const [],
@@ -1546,6 +1560,8 @@ class _$DocumentModelImpl implements _DocumentModel {
   final String securityLevel;
   @override
   final String? securityLevelDesc;
+  @override
+  final String? creatorDeptName;
   final List<int> _allowedUsers;
   @override
   @JsonKey()
@@ -1590,7 +1606,7 @@ class _$DocumentModelImpl implements _DocumentModel {
 
   @override
   String toString() {
-    return 'DocumentModel(pk: $pk, project: $project, projType: $projType, docType: $docType, typeName: $typeName, category: $category, cateName: $cateName, cateColor: $cateColor, lawsuit: $lawsuit, lawsuitName: $lawsuitName, title: $title, executionDate: $executionDate, description: $description, hit: $hit, isPinned: $isPinned, securityLevel: $securityLevel, securityLevelDesc: $securityLevelDesc, allowedUsers: $allowedUsers, isBlind: $isBlind, files: $files, links: $links, creator: $creator, updator: $updator, created: $created, updated: $updated, isNew: $isNew)';
+    return 'DocumentModel(pk: $pk, project: $project, projType: $projType, docType: $docType, typeName: $typeName, category: $category, cateName: $cateName, cateColor: $cateColor, lawsuit: $lawsuit, lawsuitName: $lawsuitName, title: $title, executionDate: $executionDate, description: $description, hit: $hit, isPinned: $isPinned, securityLevel: $securityLevel, securityLevelDesc: $securityLevelDesc, creatorDeptName: $creatorDeptName, allowedUsers: $allowedUsers, isBlind: $isBlind, files: $files, links: $links, creator: $creator, updator: $updator, created: $created, updated: $updated, isNew: $isNew)';
   }
 
   @override
@@ -1626,6 +1642,8 @@ class _$DocumentModelImpl implements _DocumentModel {
                 other.securityLevel == securityLevel) &&
             (identical(other.securityLevelDesc, securityLevelDesc) ||
                 other.securityLevelDesc == securityLevelDesc) &&
+            (identical(other.creatorDeptName, creatorDeptName) ||
+                other.creatorDeptName == creatorDeptName) &&
             const DeepCollectionEquality().equals(
               other._allowedUsers,
               _allowedUsers,
@@ -1661,6 +1679,7 @@ class _$DocumentModelImpl implements _DocumentModel {
     isPinned,
     securityLevel,
     securityLevelDesc,
+    creatorDeptName,
     const DeepCollectionEquality().hash(_allowedUsers),
     isBlind,
     const DeepCollectionEquality().hash(_files),
@@ -1705,6 +1724,7 @@ abstract class _DocumentModel implements DocumentModel {
     final bool isPinned,
     final String securityLevel,
     final String? securityLevelDesc,
+    final String? creatorDeptName,
     final List<int> allowedUsers,
     final bool isBlind,
     final List<DocFileModel> files,
@@ -1755,6 +1775,8 @@ abstract class _DocumentModel implements DocumentModel {
   String get securityLevel;
   @override
   String? get securityLevelDesc;
+  @override
+  String? get creatorDeptName;
   @override
   List<int> get allowedUsers;
   @override
