@@ -66,6 +66,26 @@ export const PERM = {
   // Calendar permissions
   CALENDAR_READ: 'calendar.read',
 
+  // HR Work permissions
+  HR_WORK_READ: 'hr_work.read',
+  HR_WORK_CREATE: 'hr_work.create',
+  HR_WORK_UPDATE: 'hr_work.update',
+  HR_WORK_DELETE: 'hr_work.delete',
+
+  // Company Ledger permissions
+  LEDGER_COM_READ: 'ledger.com_read',
+  LEDGER_COM_CREATE: 'ledger.com_create',
+  LEDGER_COM_UPDATE: 'ledger.com_update',
+  LEDGER_COM_DELETE: 'ledger.com_delete',
+  LEDGER_COM_MANAGE: 'ledger.com_manage',
+
+  // Ledger permissions
+  LEDGER_READ: 'ledger.read',
+  LEDGER_CREATE: 'ledger.create',
+  LEDGER_UPDATE: 'ledger.update',
+  LEDGER_DELETE: 'ledger.delete',
+  LEDGER_MANAGE: 'ledger.manage',
+
   // Contract permissions
   CONTRACT_READ: 'contract.read',
   CONTRACT_CREATE: 'contract.create',
@@ -86,23 +106,11 @@ export const PERM = {
   NOTICE_UPDATE: 'notice.update',
   NOTICE_DELETE: 'notice.delete',
 
-  // Ledger permissions
-  LEDGER_READ: 'ledger.read',
-  LEDGER_CREATE: 'ledger.create',
-  LEDGER_UPDATE: 'ledger.update',
-  LEDGER_DELETE: 'ledger.delete',
-
   // Site permissions
   SITE_READ: 'site.read',
   SITE_CREATE: 'site.create',
   SITE_UPDATE: 'site.update',
   SITE_DELETE: 'site.delete',
-
-  // HR Work permissions
-  HR_WORK_READ: 'hr_work.read',
-  HR_WORK_CREATE: 'hr_work.create',
-  HR_WORK_UPDATE: 'hr_work.update',
-  HR_WORK_DELETE: 'hr_work.delete',
 } as const
 
 export type PermissionCode = (typeof PERM)[keyof typeof PERM]
