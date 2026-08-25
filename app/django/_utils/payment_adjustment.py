@@ -97,51 +97,84 @@ def calculate_all_installments_payment_allocation(contract, as_of_date: Optional
                     status['is_fully_paid'] = True
                     status['fully_paid_date'] = payment_date
 
-    # 지연 가산금 계산
+    # 지연 가산금 및 선납 할인 계산
     for inst_id, status in installment_status.items():
         due_date = status['due_date']
         inst = status['installment_order']
-        if not due_date or not inst.is_late_penalty or not inst.late_penalty_ratio: continue
 
         total_penalty = 0
-        details = []
-        max_days = 0
+        penalty_details = []
+        max_late_days = 0
+
+        total_discount = 0
+        discount_details = []
+        max_discount_days = 0
+
+        # 선납 할인 기준일 결정 (prep_ref_date 우선, 없으면 due_date)
+        prep_date = inst.prep_ref_date or due_date
 
         for source in status['payment_sources']:
-            if source['payment_date'] > due_date:
-                days = (source['payment_date'] - due_date).days
-                penalty = calculate_daily_interest(source['allocated_amount'], inst.late_penalty_ratio, days)
-                details.append({
-                    'payment_id': source['payment_id'],
-                    'payment_date': source['payment_date'],
-                    'payment_amount': source['allocated_amount'],
-                    'late_days': days,
-                    'late_penalty': penalty,
-                    'type': 'paid_late'
-                })
-                total_penalty += penalty
-                max_days = max(max_days, days)
-                status['is_late'] = True
+            payment_date = source['payment_date']
+            allocated_amount = source['allocated_amount']
 
+            # 1. 연체 가산금 계산 (납부일 > 약정납부일)
+            if due_date and inst.is_late_penalty and inst.late_penalty_ratio:
+                if payment_date > due_date:
+                    days = (payment_date - due_date).days
+                    penalty = calculate_daily_interest(allocated_amount, inst.late_penalty_ratio, days)
+                    penalty_details.append({
+                        'payment_id': source['payment_id'],
+                        'payment_date': payment_date,
+                        'payment_amount': allocated_amount,
+                        'late_days': days,
+                        'late_penalty': penalty,
+                        'type': 'paid_late'
+                    })
+                    total_penalty += penalty
+                    max_late_days = max(max_late_days, days)
+                    status['is_late'] = True
+
+            # 2. 선납 할인 계산 (납부일 < 선납기준일)
+            if prep_date and inst.is_prep_discount and inst.prep_discount_ratio:
+                if payment_date < prep_date:
+                    days = (prep_date - payment_date).days
+                    discount = calculate_daily_interest(allocated_amount, inst.prep_discount_ratio, days)
+                    discount_details.append({
+                        'payment_id': source['payment_id'],
+                        'payment_date': payment_date,
+                        'payment_amount': allocated_amount,
+                        'discount_days': days,
+                        'discount_amount': discount,
+                        'type': 'prepaid'
+                    })
+                    total_discount += discount
+                    max_discount_days = max(max_discount_days, days)
+
+        # 미납 잔액에 대한 기준일 시점 연체료 계산
         if not status['is_fully_paid'] and status['remaining_amount'] > 0:
-            if as_of_date > due_date:
-                days = (as_of_date - due_date).days
-                penalty = calculate_daily_interest(status['remaining_amount'], inst.late_penalty_ratio, days)
-                details.append({
-                    'payment_date': None,
-                    'payment_amount': status['remaining_amount'],
-                    'late_days': days,
-                    'late_penalty': penalty,
-                    'type': 'unpaid'
-                })
-                total_penalty += penalty
-                max_days = max(max_days, days)
-                status['is_late'] = True
+            if due_date and inst.is_late_penalty and inst.late_penalty_ratio:
+                if as_of_date > due_date:
+                    days = (as_of_date - due_date).days
+                    penalty = calculate_daily_interest(status['remaining_amount'], inst.late_penalty_ratio, days)
+                    penalty_details.append({
+                        'payment_date': None,
+                        'payment_amount': status['remaining_amount'],
+                        'late_days': days,
+                        'late_penalty': penalty,
+                        'type': 'unpaid'
+                    })
+                    total_penalty += penalty
+                    max_late_days = max(max_late_days, days)
+                    status['is_late'] = True
 
-        status['late_days'] = max_days
+        status['late_days'] = max_late_days
         status['late_payment_amount'] = total_penalty
-        status['late_payment_details'] = details
+        status['late_payment_details'] = penalty_details
         status['total_late_penalty'] = total_penalty
+
+        status['discount_days'] = max_discount_days
+        status['prepayment_discount_details'] = discount_details
+        status['total_discount'] = total_discount
 
     return installment_status
 
@@ -152,10 +185,13 @@ def get_installment_adjustment_summary(contract, installment_order, as_of_date: 
     status = all_status.get(installment_order.id, {})
     return {
         'total_penalty': status.get('total_late_penalty', 0),
-        'total_discount': 0, # TODO: 선납 할인 로직 통합 필요 시 추가
+        'total_discount': status.get('total_discount', 0),
         'is_fully_paid': status.get('is_fully_paid', False),
         'late_days': status.get('late_days', 0),
-        'remaining_amount': status.get('remaining_amount', 0)
+        'discount_days': status.get('discount_days', 0),
+        'remaining_amount': status.get('remaining_amount', 0),
+        'late_payment_details': status.get('late_payment_details', []),
+        'prepayment_discount_details': status.get('prepayment_discount_details', [])
     }
 
 

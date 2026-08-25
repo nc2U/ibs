@@ -193,8 +193,9 @@ class PdfExportLedgerPayment(View):
             late_payment_details = status.get('late_payment_details', [])
             total_late_penalty = status.get('total_late_penalty', 0)
 
-            # 선납 할인 조회
-            adj_summary = get_installment_adjustment_summary(contract, inst)
+            # 선납 할인 세부 내역 및 총액 조회
+            discount_payment_details = status.get('prepayment_discount_details', [])
+            total_discount = status.get('total_discount', 0)
 
             # 실제 납부 내역 확인 (Ledger 기반)
             payments = paid_payments.filter(installment_order=inst)
@@ -207,13 +208,16 @@ class PdfExportLedgerPayment(View):
 
                     # 해당 납부건의 지연 상세 정보 찾기 (waterfall 결과에서 추출)
                     p_detail = next((d for d in late_payment_details if d.get('payment_id') == p.id), None)
+                    # 해당 납부건의 선납 상세 정보 찾기
+                    d_detail = next((d for d in discount_payment_details if d.get('payment_id') == p.id), None)
 
                     penalty = p_detail['late_penalty'] if p_detail and is_calc else 0
-                    days = p_detail['late_days'] if p_detail and is_calc else 0
-                    diff = p_detail['payment_amount'] if p_detail and is_calc else 0
+                    penalty_days = p_detail['late_days'] if p_detail and is_calc else 0
+                    diff = p_detail['payment_amount'] if p_detail and is_calc else (d_detail['payment_amount'] if d_detail and is_calc else 0)
 
-                    # is_calc=True일 때만 할인료 적용
-                    discount_value = adj_summary['total_discount'] if is_calc and p == payments.last() else 0
+                    discount_value = d_detail['discount_amount'] if d_detail and is_calc else 0
+                    discount_days = d_detail['discount_days'] if d_detail and is_calc else 0
+                    days = penalty_days if penalty > 0 else (discount_days if discount_value > 0 else 0)
 
                     result.append({
                         'paid': p,
@@ -231,8 +235,7 @@ class PdfExportLedgerPayment(View):
                     })
 
                 penalty_total += (total_late_penalty if is_calc else 0)
-                if is_calc:
-                    discount_total += adj_summary['total_discount']
+                discount_total += (total_discount if is_calc else 0)
 
                 # 일부납부 시 미납 잔액 추가 (기준일 시점)
                 if not is_paid and remaining > 0:
