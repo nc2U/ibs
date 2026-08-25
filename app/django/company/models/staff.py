@@ -79,8 +79,8 @@ class StaffAssignment(models.Model):
 
     class Meta:
         ordering = ['-is_primary', 'id']
-        verbose_name = '09. 직원 보직/겸직 정보'
-        verbose_name_plural = '09. 직원 보직/겸직 목록'
+        verbose_name = '08. 직원 보직/겸직 정보'
+        verbose_name_plural = '08. 직원 보직/겸직 목록'
         unique_together = ('staff', 'department', 'duty')
 
     def __str__(self):
@@ -140,7 +140,7 @@ class PersonnelOrder(models.Model):
 
     description = models.CharField('발령 사유/세부 내용', max_length=255, blank=True)
     is_processed = models.BooleanField('현상태 자동반영 여부', default=True,
-                                      help_text='발령 저장 시 Staff 및 StaffAssignment 현재 상태 자동 갱신 여부')
+                                       help_text='발령 저장 시 Staff 및 StaffAssignment 현재 상태 자동 갱신 여부')
 
     class Meta:
         ordering = ['-order_date', '-id']
@@ -245,7 +245,8 @@ class StaffRewardPunishment(models.Model):
         ('reward', '포상/표창'),
         ('punish', '징계/문책'),
     )
-    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='staff_rewards_punishments', verbose_name='회사')
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='staff_rewards_punishments',
+                                verbose_name='회사')
     staff = models.ForeignKey(Staff, on_delete=models.CASCADE, related_name='rewards_punishments', verbose_name='직원')
     sort = models.CharField('구분', max_length=10, choices=SORT_CHOICES, default='reward')
     type_name = models.CharField('포상/징계 항목명', max_length=50, help_text='예: 우수사원상, 견책, 감봉, 정직 등')
@@ -350,4 +351,3 @@ class StaffLeaveUsage(models.Model):
     def __str__(self):
         cancel_str = ' [취소됨]' if self.is_cancelled else ''
         return f'{self.staff.name} - {self.get_leave_type_display()} ({self.start_date}~{self.end_date}, -{self.deduction_days}일){cancel_str}'
-

@@ -58,5 +58,5 @@ class Executive(models.Model):
 
     class Meta:
         ordering = ['rank__rank_order', 'staff__date_join', 'id']
-        verbose_name = '08. 임원 등기/재임 정보'
-        verbose_name_plural = '08. 임원 등기/재임 정보'
+        verbose_name = '09. 임원 등기/재임 정보'
+        verbose_name_plural = '09. 임원 등기/재임 정보'
