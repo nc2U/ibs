@@ -32,9 +32,9 @@ abstract class AppColors {
   static const Color accentApproval     = Color(0xFF3B82F6);
   static const Color accentApprovalDeep = Color(0xFF60A5FA);
 
-  /// 소통 채널 — Warm Terracotta / Relaxing Mocha (사내 소통 & 힐링 라운지)
-  static const Color accentChannel     = Color(0xFFFB923C);
-  static const Color accentChannelDeep = Color(0xFFEA580C);
+  /// 소통 채널 — Teal / Mint (사내 소통 & 릴렉스 라운지)
+  static const Color accentChannel     = Color(0xFF2DD4BF);
+  static const Color accentChannelDeep = Color(0xFF0F766E);
 
   /// 전사정보 — Corporate Blue
   static const Color accentCorp     = Color(0xFF60A5FA);

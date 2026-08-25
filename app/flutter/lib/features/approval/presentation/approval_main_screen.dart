@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_text_styles.dart';
-import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors_extension.dart';
 import '../../../../core/widgets/error_view.dart';
@@ -26,7 +25,6 @@ class _ApprovalMainScreenState extends ConsumerState<ApprovalMainScreen>
     with TickerProviderStateMixin {
   late TabController _tabController;
   int _completedSubTab = 0; // 0: 승인완료, 1: 참조/공람
-  bool _lastIsSuperuser = false;
 
   @override
   void initState() {

@@ -91,8 +91,8 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
     accentProjectDeep: Color(0xFF047857),
     accentApproval: Color(0xFF1E40AF), // Deep Midnight Navy (공식 결재/승인의 묵직한 긴장감)
     accentApprovalDeep: Color(0xFF172554), // Blue 950 (최고 권위의 잉크 네이비)
-    accentChannel: Color(0xFFC2410C), // Warm Terracotta / Cozy Mocha (따뜻한 소통과 릴렉스 라운지)
-    accentChannelDeep: Color(0xFF9A3412), // Terracotta Deep
+    accentChannel: Color(0xFF0D9488), // Crisp Teal 600 (#0D9488) - 차분하고 신선한 소통 채널
+    accentChannelDeep: Color(0xFF115E59), // Deep Teal 800 (#115E59)
     accentCorp: Color(0xFF3F7CFF), // Vibrant Royal Blue (#3F7CFF) - 맑고 선명하며 신뢰감 넘치는 세련된 청색
     accentCorpDeep: Color(0xFF2563EB),
     accentTech: Color(0xFF7C3AED), // Modern Violet 600 (#7C3AED) - 세련된 FAQ & IT 기술지원
@@ -123,8 +123,8 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
     accentProjectDeep: Color(0xFF064E3B),
     accentApproval: Color(0xFF3B82F6), // Solid Blue 500
     accentApprovalDeep: Color(0xFF60A5FA), // Blue 400
-    accentChannel: Color(0xFFFB923C), // Warm Orange/Terracotta 400 (릴렉스 & 포근한 소통)
-    accentChannelDeep: Color(0xFFEA580C), // Orange 600
+    accentChannel: Color(0xFF2DD4BF), // Luminous Mint Teal 400 (#2DD4BF) - 릴렉스 & 편안한 소통
+    accentChannelDeep: Color(0xFF0F766E), // Teal 700 (#0F766E)
     accentCorp: Color(0xFF5B8EFF), // Luminous Royal Blue (#5B8EFF)
     accentCorpDeep: Color(0xFF3F7CFF),
     accentTech: Color(0xFFA78BFA), // Luminous Violet 400 (#A78BFA)
