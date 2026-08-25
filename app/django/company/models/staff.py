@@ -262,3 +262,92 @@ class StaffRewardPunishment(models.Model):
 
     def __str__(self):
         return f'[{self.get_sort_display()}] {self.staff.name} - {self.type_name} ({self.action_date})'
+
+
+# 직원 연차 부여 및 잔여 관리 모델
+class StaffLeaveQuota(models.Model):
+    """직원 연도별 연차 발생/부여 및 잔여 관리 마스터"""
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='leave_quotas', verbose_name='회사')
+    staff = models.ForeignKey(Staff, on_delete=models.CASCADE, related_name='leave_quotas', verbose_name='직원')
+    year = models.PositiveSmallIntegerField('대상 연도', db_index=True)
+    granted_days = models.DecimalField('기본 발생 연차', max_digits=4, decimal_places=2, default=15.00,
+                                       help_text='근로기준법 기준 연차 발생 일수')
+    carry_over_days = models.DecimalField('이월/조정 연차', max_digits=4, decimal_places=2, default=0.00,
+                                          help_text='전년도 이월 또는 수동 조정 일수')
+    reward_days = models.DecimalField('포상/가산 연차', max_digits=4, decimal_places=2, default=0.00,
+                                      help_text='장기근속 가산 또는 포상 부여 일수')
+    valid_start = models.DateField('사용 가능 시작일')
+    valid_end = models.DateField('사용 가능 만료일')
+    note = models.CharField('비고', max_length=255, blank=True)
+
+    class Meta:
+        ordering = ['-year', 'staff']
+        verbose_name = '14. 직원 연차 부여/잔여'
+        verbose_name_plural = '14. 직원 연차 부여/잔여'
+        unique_together = ('staff', 'year')
+
+    def __str__(self):
+        return f'{self.staff.name} - {self.year}년 연차 ({self.remaining_days}/{self.total_granted_days}일 잔여)'
+
+    @property
+    def total_granted_days(self):
+        """총 부여 일수 = 기본 + 이월 + 포상"""
+        return (self.granted_days or 0) + (self.carry_over_days or 0) + (self.reward_days or 0)
+
+    @property
+    def used_days(self):
+        """해당 유효 기간 내 실제 차감된 연차 사용 일수 합계"""
+        usages = self.staff.leave_usages.filter(
+            start_date__gte=self.valid_start,
+            start_date__lte=self.valid_end,
+            is_cancelled=False,
+            deduction_days__gt=0,
+        )
+        return sum(u.deduction_days for u in usages)
+
+    @property
+    def remaining_days(self):
+        """잔여 연차 일수"""
+        return self.total_granted_days - self.used_days
+
+
+# 직원 휴가/연차 사용 상세 이력 모델
+class StaffLeaveUsage(models.Model):
+    """직원 휴가/연차 사용 상세 기록 (전자결재 승인 시 자동 연동)"""
+    LEAVE_TYPE_CHOICES = (
+        ('annual', '연차 (1일)'),
+        ('half_am', '오전 반차 (0.5일)'),
+        ('half_pm', '오후 반차 (0.5일)'),
+        ('quarter', '반반차 (0.25일)'),
+        ('official', '공가/예비군 (차감 없음)'),
+        ('sick', '병가'),
+        ('condolence', '경조 휴가 (차감 없음)'),
+        ('reward', '포상 휴가'),
+        ('substitute', '대체 휴가'),
+        ('other', '기타 휴가'),
+    )
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='leave_usages', verbose_name='회사')
+    staff = models.ForeignKey(Staff, on_delete=models.CASCADE, related_name='leave_usages', verbose_name='직원')
+    leave_type = models.CharField('휴가 구분', max_length=20, choices=LEAVE_TYPE_CHOICES, default='annual')
+    start_date = models.DateField('시작일')
+    end_date = models.DateField('종료일')
+    deduction_days = models.DecimalField('차감 일수', max_digits=4, decimal_places=2, default=1.00,
+                                         help_text='연차에서 실제 차감되는 일수 (예: 1.0, 0.5, 0.25, 0.0)')
+    approval_doc = models.ForeignKey(
+        'approval.ApprovalDocument', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='leave_usages',
+        verbose_name='연관 전자결재 문서'
+    )
+    reason = models.CharField('휴가 사유', max_length=255, blank=True)
+    is_cancelled = models.BooleanField('취소 여부', default=False, help_text='결재 취소/반려 시 차감 복구용')
+    created = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-start_date', '-id']
+        verbose_name = '15. 직원 휴가/연차 사용 기록'
+        verbose_name_plural = '15. 직원 휴가/연차 사용 기록'
+
+    def __str__(self):
+        cancel_str = ' [취소됨]' if self.is_cancelled else ''
+        return f'{self.staff.name} - {self.get_leave_type_display()} ({self.start_date}~{self.end_date}, -{self.deduction_days}일){cancel_str}'
+

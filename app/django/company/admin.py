@@ -5,6 +5,7 @@ from .models import (
     Company, Logo, Department, JobGrade, Position, DutyTitle,
     ExecutiveRank, Executive, Staff, StaffAssignment,
     PersonnelOrder, StaffCareer, StaffCertificate, StaffRewardPunishment,
+    StaffLeaveQuota, StaffLeaveUsage,
     PromotionPolicy, StaffEvaluation, PromotionCandidate
 )
 
@@ -189,6 +190,34 @@ class PromotionCandidateAdmin(ImportExportMixin, admin.ModelAdmin):
     search_fields = ('staff__name', 'committee_review')
 
 
+class StaffLeaveQuotaAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_display = ('id', 'company', 'year', 'staff', 'granted_days', 'carry_over_days', 'reward_days',
+                    'get_total_granted', 'get_used_days', 'get_remaining_days', 'valid_start', 'valid_end')
+    list_display_links = ('year', 'staff')
+    list_filter = ('company', 'year')
+    search_fields = ('staff__name', 'note')
+
+    @admin.display(description='총 부여(일)')
+    def get_total_granted(self, obj):
+        return obj.total_granted_days
+
+    @admin.display(description='사용(일)')
+    def get_used_days(self, obj):
+        return obj.used_days
+
+    @admin.display(description='잔여(일)')
+    def get_remaining_days(self, obj):
+        return obj.remaining_days
+
+
+class StaffLeaveUsageAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_display = ('id', 'company', 'staff', 'leave_type', 'start_date', 'end_date',
+                    'deduction_days', 'approval_doc', 'is_cancelled', 'created')
+    list_display_links = ('staff', 'leave_type')
+    list_filter = ('company', 'leave_type', 'is_cancelled', 'start_date')
+    search_fields = ('staff__name', 'reason', 'approval_doc__title', 'approval_doc__doc_number')
+
+
 admin.site.register(Company, CompanyAdmin)
 admin.site.register(Department, DepartmentAdmin)
 admin.site.register(JobGrade, JobGradeAdmin)
@@ -202,6 +231,8 @@ admin.site.register(PersonnelOrder, PersonnelOrderAdmin)
 admin.site.register(StaffCareer, StaffCareerAdmin)
 admin.site.register(StaffCertificate, StaffCertificateAdmin)
 admin.site.register(StaffRewardPunishment, StaffRewardPunishmentAdmin)
+admin.site.register(StaffLeaveQuota, StaffLeaveQuotaAdmin)
+admin.site.register(StaffLeaveUsage, StaffLeaveUsageAdmin)
 admin.site.register(PromotionPolicy, PromotionPolicyAdmin)
 admin.site.register(StaffEvaluation, StaffEvaluationAdmin)
 admin.site.register(PromotionCandidate, PromotionCandidateAdmin)
