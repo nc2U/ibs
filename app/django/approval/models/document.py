@@ -7,7 +7,7 @@ from django.db import models
 
 from _utils.file_cleanup import file_cleanup_signals
 from _utils.file_upload import get_approval_file_path, populate_file_meta
-from .document_type import DocumentType, RouteTemplate
+from .document_type import DocumentType
 
 
 class ApprovalDocument(models.Model):
@@ -31,8 +31,9 @@ class ApprovalDocument(models.Model):
         related_name='documents', verbose_name='문서 유형'
     )
     doc_number = models.CharField(
-        '문서 번호', max_length=30, unique=True, blank=True, null=True, default=None,
-        help_text='승인 후 자동 채번 (예: BIZ-2026-0001)'
+        '문서 번호', max_length=30,
+        blank=True, null=True, default=None,
+        help_text='승인 후 자동 채번 (예: BIZ-2026-0001). DocNumberSequence를 통해 원자적으로 발급.'
     )
     title = models.CharField('제목', max_length=255)
     content = models.JSONField(
@@ -106,19 +107,33 @@ class ApprovalDocument(models.Model):
         return hashlib.sha256(payload.encode('utf-8')).hexdigest()
 
     def generate_doc_number(self):
-        """최종 승인 시 문서 번호 자동 채번 (예: BIZ-2026-0001)"""
-        code = self.doc_type.code
-        year = self.completed_at.year if self.completed_at else self.created_at.year
-        count = ApprovalDocument.objects.filter(
-            doc_type=self.doc_type,
-            status=self.STATUS_APPROVED,
-            completed_at__year=year,
-        ).count()
-        return f'{code}-{year}-{str(count).zfill(4)}'
+        """
+        최종 승인 시 문서 번호 원자적 채번 (예: BIZ-2026-0001).
+
+        DocNumberSequence.next_number()를 통해 select_for_update 기반의
+        트랜잭션 안전한 시퀀스 채번을 수행합니다.
+        """
+        from .document_number import DocNumberSequence
+        year = (self.completed_at or self.created_at).year
+        seq = DocNumberSequence.next_number(self.doc_type, year)
+        return f'{self.doc_type.code}-{year}-{seq:04d}'
 
     def save(self, *args, **kwargs):
+        # 1. 보안등급 기본값: doc_type.default_security_level 자동 적용
         if not self.security_level and self.doc_type_id:
             self.security_level = self.doc_type.default_security_level
+
+        # 2. 임시저장(draft) → 상신(pending) 전환 시 content_hash 자동 갱신
+        #    (view 레이어에서 명시적 호출 없이 누락되는 경우를 모델 레벨에서 방어)
+        if self.pk:
+            try:
+                prev_status = ApprovalDocument.objects.filter(pk=self.pk).values_list('status', flat=True).first()
+                if prev_status == self.STATUS_DRAFT and self.status == self.STATUS_PENDING:
+                    if not self.content_hash:
+                        self.content_hash = self.compute_hash()
+            except Exception:
+                pass
+
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -128,6 +143,15 @@ class ApprovalDocument(models.Model):
         ordering = ['-created_at']
         verbose_name = '03. 결재 문서'
         verbose_name_plural = '03. 결재 문서 목록'
+        constraints = [
+            # doc_number는 null이 아닌 경우에만 unique 보장
+            # (PostgreSQL: null 복수 허용 / SQLite 등 이식성 문제 방어)
+            models.UniqueConstraint(
+                fields=['doc_number'],
+                condition=models.Q(doc_number__isnull=False),
+                name='unique_doc_number_when_not_null',
+            )
+        ]
 
 
 class ApprovalStep(models.Model):

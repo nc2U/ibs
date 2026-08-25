@@ -1,5 +1,6 @@
 from .document_type import DocCategory, DocumentType, ApprovalPolicyRule, RouteTemplate
 from .document import ApprovalDocument, ApprovalStep, ApprovalAction, ApprovalDelegation, ApprovalAttachment
+from .document_number import DocNumberSequence
 
 __all__ = [
     'DocCategory',
@@ -11,4 +12,5 @@ __all__ = [
     'ApprovalAction',
     'ApprovalDelegation',
     'ApprovalAttachment',
+    'DocNumberSequence',
 ]

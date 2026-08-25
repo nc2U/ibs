@@ -1,7 +1,8 @@
 from django.contrib import admin
 from approval.models import (
     DocCategory, DocumentType, ApprovalPolicyRule,
-    RouteTemplate, ApprovalDocument, ApprovalStep, ApprovalAction, ApprovalDelegation, ApprovalAttachment
+    RouteTemplate, ApprovalDocument, ApprovalStep, ApprovalAction, ApprovalDelegation, ApprovalAttachment,
+    DocNumberSequence,
 )
 
 
@@ -121,3 +122,19 @@ class ApprovalAttachmentAdmin(admin.ModelAdmin):
     list_display = ('id', 'document', 'file_name', 'file_type', 'file_size', 'creator', 'created_at')
     list_filter = ('created_at',)
     search_fields = ('file_name', 'document__title', 'document__doc_number')
+
+
+@admin.register(DocNumberSequence)
+class DocNumberSequenceAdmin(admin.ModelAdmin):
+    """채번 시퀀스 현황 조회 (읽기 전용 모니터링용)"""
+    list_display = ('doc_type', 'year', 'last_number')
+    list_filter = ('doc_type', 'year')
+    readonly_fields = ('doc_type', 'year', 'last_number')
+    ordering = ('doc_type', '-year')
+
+    def has_add_permission(self, request):
+        return False  # 시퀀스는 코드에서 자동 생성, 수동 추가 불가
+
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser  # 슈퍼유저만 삭제 가능 (초기화 목적)
+

@@ -5,7 +5,8 @@ from django.db import models
 class DocCategory(models.Model):
     """결재 문서 카테고리 (예: 인사/근태, 회계/자금, 계약/법무, 사업/프로젝트, 공통/일반)"""
     name = models.CharField('카테고리명', max_length=50, unique=True)
-    code = models.CharField('코드', max_length=30, unique=True, help_text='영문 대문자 (예: HR, FINANCE, CONTRACT, PROJECT, COMMON)')
+    code = models.CharField('코드', max_length=30, unique=True,
+                            help_text='영문 대문자 (예: HR, FINANCE, CONTRACT, PROJECT, COMMON)')
     description = models.CharField('설명', max_length=255, blank=True)
     order = models.PositiveSmallIntegerField('정렬 순서', default=1)
     is_active = models.BooleanField('사용 여부', default=True)
@@ -55,15 +56,12 @@ class DocumentType(models.Model):
         ('GENERAL', '일반 업무 품의서 (GENERAL)'),
         ('OFFICIAL_LETTER', '공문 발신 / 대외 발송 (OFFICIAL_LETTER)'),
         ('LEAVE', '휴가 / 연차 신청서 (LEAVE)'),
-        ('LEAVE_APPLICATION', '휴가 / 연차 신청서 (LEAVE_APPLICATION)'),
         ('BUSINESS_TRIP', '출장 신청서 (BUSINESS_TRIP)'),
         ('OVERTIME', '연장 / 휴일근무 신청서 (OVERTIME)'),
         ('HR_APPOINTMENT', '인사발령 품의서 (HR_APPOINTMENT)'),
         ('HR_REQUEST', '인사 제반 신청서 (HR_REQUEST)'),
         ('PURCHASE', '구매 / 자재 품의서 (PURCHASE)'),
-        ('PURCHASE_ORDER', '구매 / 자재 품의서 (PURCHASE_ORDER)'),
         ('EXPENSE', '지출 결의서 (EXPENSE)'),
-        ('EXPENSE_REPORT', '지출 결의서 (EXPENSE_REPORT)'),
         ('EXPENSE_SETTLEMENT', '경비 정산서 (EXPENSE_SETTLEMENT)'),
         ('ADVANCE', '선급금 / 가지급금 신청서 (ADVANCE)'),
         ('CONTRACT', '계약 체결 품의서 (CONTRACT)'),
@@ -128,8 +126,10 @@ class ApprovalPolicyRule(models.Model):
         related_name='policy_rules', verbose_name='문서 유형'
     )
     name = models.CharField('정책명', max_length=50, help_text='예: 500만원 이하 (팀장 전결), 5,000만원 초과 (대표이사 결재)')
-    min_amount = models.DecimalField('최소 금액', max_digits=15, decimal_places=0, null=True, blank=True, help_text='이상 (미입력 시 제한 없음)')
-    max_amount = models.DecimalField('최대 금액', max_digits=15, decimal_places=0, null=True, blank=True, help_text='이하 (미입력 시 제한 없음)')
+    min_amount = models.DecimalField('최소 금액', max_digits=15, decimal_places=0, null=True, blank=True,
+                                     help_text='이상 (미입력 시 제한 없음)')
+    max_amount = models.DecimalField('최대 금액', max_digits=15, decimal_places=0, null=True, blank=True,
+                                     help_text='이하 (미입력 시 제한 없음)')
     final_approval_duty = models.ForeignKey(
         'company.DutyTitle', on_delete=models.SET_NULL, null=True, blank=True,
         verbose_name='전결 직책', help_text='해당 금액 구간의 전결 직책'

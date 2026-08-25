@@ -1,1 +1,2 @@
 from .route_builder import build_dynamic_approval_route
+from .document_service import submit_document, finalize_approval

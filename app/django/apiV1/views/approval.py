@@ -17,7 +17,7 @@ from apiV1.serializers.company import StaffAssignmentSerializer
 from approval.models import (
     DocCategory, DocumentType, ApprovalDocument, ApprovalStep, ApprovalAction, ApprovalDelegation, ApprovalAttachment
 )
-from approval.services import build_dynamic_approval_route
+from approval.services import build_dynamic_approval_route, submit_document, finalize_approval
 from approval.tasks import notify_approvers_task, notify_drafter_task, notify_cancel_task, generate_approval_pdf_task
 from company.models import Staff, StaffAssignment
 
@@ -311,43 +311,26 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
                 is_ceo = True
 
             if is_ceo:
-                # 대표이사 본인 기안인 경우 -> 즉시 최종 승인 처리
+                # 대표이사 본인 기안인 경우 → 즉시 최종 승인 처리
                 document.status = ApprovalDocument.STATUS_APPROVED
                 document.completed_at = timezone.now()
-                document.doc_number = document.generate_doc_number()
                 document.content_hash = document.compute_hash()
                 document.submitted_at = timezone.now()
                 document.save()
+                document.doc_number = document.generate_doc_number()
+                document.save(update_fields=['doc_number'])
                 generate_approval_pdf_task.delay(document.pk)
                 serializer = ApprovalDocumentSerializer(document, context={'request': request})
                 return Response(serializer.data)
             else:
-                # 일반 직원의 결재선이 0단계로 나온 경우 (조직도/부서장/대표이사 계정 미연동) -> 상신 차단
+                # 일반 직원의 결재선이 0단계로 나온 경우 (조직도/부서장/대표이사 계정 미연동) → 상신 차단
                 return Response(
                     {'detail': '지정된 결재선이 없습니다. 소속 부서의 책임자(부서장) 또는 대표이사 계정 연동 상태를 확인해 주세요.'},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-        # 재상신 시 기존 단계 초기화
-        document.steps.all().delete()
-
-        # 결재선 단계 인스턴스 복사 생성
-        for step_data in route_steps:
-            step = ApprovalStep.objects.create(
-                document=document,
-                step_order=step_data['step_order'],
-                role_label=step_data['role_label'],
-                condition=step_data['condition'],
-                status=ApprovalStep.STATUS_PENDING,
-            )
-            step.approvers.set(step_data['approvers'])
-
-        # 문서 해시 + 상태 갱신
-        document.content_hash = document.compute_hash()
-        document.status = ApprovalDocument.STATUS_PENDING
-        document.current_step = 1
-        document.submitted_at = timezone.now()
-        document.save()
+        # 서비스 레이어로 위임: 결재선 생성 + content_hash + 상태 전이 원자적 처리
+        submit_document(document, route_steps)
 
         # 1단계 결재자에게 알림
         first_step = document.steps.order_by('step_order').first()
@@ -464,11 +447,8 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
                     pass
             return Response({'detail': f'{next_step.role_label} 결재자에게 요청이 전달되었습니다.'})
 
-        # 최종 승인
-        document.status = ApprovalDocument.STATUS_APPROVED
-        document.completed_at = timezone.now()
-        document.doc_number = document.generate_doc_number()
-        document.save()
+        # 최종 승인 — finalize_approval 서비스로 위임 (원자적 채번 + 상태 전이)
+        finalize_approval(document)
 
         # 연동된 공문(OfficialLetter) 상태 동기화
         official_letter_id = (document.content or {}).get('official_letter_id')
