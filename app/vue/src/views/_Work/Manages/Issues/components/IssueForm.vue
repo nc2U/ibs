@@ -67,16 +67,18 @@ const removeLink = (index: number) => {
   newLinks.value.splice(index, 1)
 }
 
+const isCreator = computed(() => props.issue.creator.pk === userInfo?.value?.pk)
+const isAssignee = computed(() => props.issue.assigned_to?.pk === userInfo?.value?.pk)
+
 const { can, PERM } = usePerms()
 const canIssueCreate = computed(() => can(PERM.ISSUE_CREATE))
 
 const canEditIssue = computed(() => {
   if (!props.issue) return true // 신규 생성 시
 
-  const isCreator = props.issue.creator.pk === userInfo?.value?.pk
-  const isAssignee = props.issue.assigned_to?.pk === userInfo?.value?.pk
-
-  return can(PERM.ISSUE_UPDATE) || (can(PERM.ISSUE_OWN_UPDATE) && (isCreator || isAssignee))
+  return (
+    can(PERM.ISSUE_UPDATE) || (can(PERM.ISSUE_OWN_UPDATE) && (isCreator.value || isAssignee.value))
+  )
 })
 
 const canSetPrivate = computed(() => {
@@ -84,10 +86,10 @@ const canSetPrivate = computed(() => {
     return can(PERM.ISSUE_PRIVATE) || can(PERM.ISSUE_OWN_PRIVATE)
   }
 
-  const isCreator = props.issue.creator.pk === userInfo?.value?.pk
-  const isAssignee = props.issue.assigned_to?.pk === userInfo?.value?.pk
-
-  return can(PERM.ISSUE_PRIVATE) || (can(PERM.ISSUE_OWN_PRIVATE) && (isCreator || isAssignee))
+  return (
+    can(PERM.ISSUE_PRIVATE) ||
+    (can(PERM.ISSUE_OWN_PRIVATE) && (isCreator.value || isAssignee.value))
+  )
 })
 
 const assignedToMe = () => (form.value.assigned_to = userInfo?.value?.pk as number)
