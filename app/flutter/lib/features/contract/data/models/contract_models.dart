@@ -299,3 +299,142 @@ class ContractItemModel {
 
   double get paymentRate => price > 0 ? (totalPaid / price) * 100 : 0.0;
 }
+
+/// ── 권리의무 승계 데이터 모델 (Succession Model) ─────────────────────────
+class SuccessionItemModel {
+  final int pk;
+  final int? contractId;
+  final String? serialNumber;
+  final String sellerName;
+  final String buyerName;
+  final String? buyerBirthDate;
+  final String? buyerCellPhone;
+  final String applyDate;
+  final String? tradingDate;
+  final String status; // '1': 신청접수, '2': 변경인가대기, '3': 변경인가완료(승계완료), '9': 승계취소
+  final String? approvalDate;
+  final String? note;
+
+  SuccessionItemModel({
+    required this.pk,
+    this.contractId,
+    this.serialNumber,
+    required this.sellerName,
+    required this.buyerName,
+    this.buyerBirthDate,
+    this.buyerCellPhone,
+    required this.applyDate,
+    this.tradingDate,
+    required this.status,
+    this.approvalDate,
+    this.note,
+  });
+
+  factory SuccessionItemModel.fromJson(Map<String, dynamic> json) {
+    final contract = json['contract'];
+    final seller = json['seller'];
+    final buyer = json['buyer'];
+    final buyerContact = buyer != null ? buyer['contractorcontact'] : null;
+
+    return SuccessionItemModel(
+      pk: json['pk'] ?? 0,
+      contractId: contract != null ? contract['pk'] : null,
+      serialNumber: contract != null ? contract['serial_number'] : null,
+      sellerName: seller != null ? (seller['name'] ?? '') : '',
+      buyerName: buyer != null ? (buyer['name'] ?? '') : '',
+      buyerBirthDate: buyer != null ? buyer['birth_date'] : null,
+      buyerCellPhone: buyerContact != null ? buyerContact['cell_phone'] : null,
+      applyDate: json['apply_date'] ?? '',
+      tradingDate: json['trading_date'],
+      status: json['status']?.toString() ?? '1',
+      approvalDate: json['approval_date'],
+      note: json['note'],
+    );
+  }
+
+  String get statusDisplay {
+    switch (status) {
+      case '1':
+        return '신청접수';
+      case '2':
+        return '변경인가대기';
+      case '3':
+        return '승계완료';
+      case '9':
+        return '승계취소';
+      default:
+        return '처리중';
+    }
+  }
+}
+
+/// ── 계약 해약 관리 데이터 모델 (ContractorRelease Model) ──────────────────
+class ContractorReleaseItemModel {
+  final int pk;
+  final int project;
+  final int contractorId;
+  final String contractorName;
+  final String requestDate;
+  final String releaseType;
+  final String status; // '0': 신청취소, '1': 해지신청, '2': 정산완료, '3': 환불완료, '4': 해지확정
+  final int? refundAmount;
+  final String? refundAccountBank;
+  final String? refundAccountNumber;
+  final String? refundAccountDepositor;
+  final String? refundCompletionDate;
+  final String? completionDate;
+  final String? note;
+
+  ContractorReleaseItemModel({
+    required this.pk,
+    required this.project,
+    required this.contractorId,
+    required this.contractorName,
+    required this.requestDate,
+    required this.releaseType,
+    required this.status,
+    this.refundAmount,
+    this.refundAccountBank,
+    this.refundAccountNumber,
+    this.refundAccountDepositor,
+    this.refundCompletionDate,
+    this.completionDate,
+    this.note,
+  });
+
+  factory ContractorReleaseItemModel.fromJson(Map<String, dynamic> json) {
+    return ContractorReleaseItemModel(
+      pk: json['pk'] ?? 0,
+      project: json['project'] ?? 0,
+      contractorId: json['contractor'] is int ? json['contractor'] : 0,
+      contractorName: json['__str__'] ?? '',
+      requestDate: json['request_date'] ?? '',
+      releaseType: json['release_type']?.toString() ?? '1',
+      status: json['status']?.toString() ?? '1',
+      refundAmount: json['refund_amount'],
+      refundAccountBank: json['refund_account_bank'],
+      refundAccountNumber: json['refund_account_number'],
+      refundAccountDepositor: json['refund_account_depositor'],
+      refundCompletionDate: json['refund_completion_date'],
+      completionDate: json['completion_date'],
+      note: json['note'],
+    );
+  }
+
+  String get statusDisplay {
+    switch (status) {
+      case '0':
+        return '신청취소';
+      case '1':
+        return '해지신청';
+      case '2':
+        return '정산완료';
+      case '3':
+        return '환불완료';
+      case '4':
+        return '해지확정';
+      default:
+        return '처리중';
+    }
+  }
+}

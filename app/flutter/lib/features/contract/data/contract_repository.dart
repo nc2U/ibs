@@ -28,24 +28,22 @@ class ContractRepository {
     }
   }
 
-  /// 2. 프로젝트 계약 목록 조회 (/api/v1/contract-set/?project={projectId}&search={search})
+  /// 2. 유효 계약 목록 조회 (/api/v1/contract-set/?project={projectId}&is_active=true&is_contract=true)
   Future<List<ContractItemModel>> fetchContracts({
     required int projectId,
     String? search,
-    String? status,
     int? orderGroup,
     int? unitType,
   }) async {
     try {
       final queryParams = <String, dynamic>{
         'project': projectId,
-        'limit': 100, // 모바일 목록 100건 우선 로드
+        'is_active': true,
+        'is_contract': true, // 계약자('2') 및 변경처리중('3') 유효 계약만 조회
+        'limit': 100,
       };
       if (search != null && search.trim().isNotEmpty) {
         queryParams['search'] = search.trim();
-      }
-      if (status != null && status.isNotEmpty) {
-        queryParams['contractor__status'] = status;
       }
       if (orderGroup != null) {
         queryParams['order_group'] = orderGroup;
@@ -65,6 +63,68 @@ class ContractRepository {
               : (response.data is List ? response.data : []);
 
       return results.map((json) => ContractItemModel.fromJson(json)).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// 3. 권리의무 승계 목록 조회 (/api/v1/succession/?contract__project={projectId})
+  Future<List<SuccessionItemModel>> fetchSuccessions({
+    required int projectId,
+    String? search,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{
+        'contract__project': projectId,
+        'limit': 100,
+      };
+      if (search != null && search.trim().isNotEmpty) {
+        queryParams['search'] = search.trim();
+      }
+
+      final response = await dio.get(
+        '/api/v1/succession/',
+        queryParameters: queryParams,
+      );
+
+      final List<dynamic> results =
+          response.data is Map && response.data.containsKey('results')
+              ? response.data['results']
+              : (response.data is List ? response.data : []);
+
+      return results.map((json) => SuccessionItemModel.fromJson(json)).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// 4. 계약 해약/해지 목록 조회 (/api/v1/contractor-release/?project={projectId})
+  Future<List<ContractorReleaseItemModel>> fetchReleases({
+    required int projectId,
+    String? search,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{
+        'project': projectId,
+        'limit': 100,
+      };
+      if (search != null && search.trim().isNotEmpty) {
+        queryParams['search'] = search.trim();
+      }
+
+      final response = await dio.get(
+        '/api/v1/contractor-release/',
+        queryParameters: queryParams,
+      );
+
+      final List<dynamic> results =
+          response.data is Map && response.data.containsKey('results')
+              ? response.data['results']
+              : (response.data is List ? response.data : []);
+
+      return results
+          .map((json) => ContractorReleaseItemModel.fromJson(json))
+          .toList();
     } catch (e) {
       return [];
     }
