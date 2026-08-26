@@ -156,6 +156,7 @@ export interface Permission {
   is_for_workspace?: boolean
   is_for_hq?: boolean
   is_for_project?: boolean
+  is_confidential?: boolean
   code: string
   name: string
   description: string

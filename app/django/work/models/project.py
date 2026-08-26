@@ -305,6 +305,11 @@ class Permission(models.Model):
     is_for_workspace = models.BooleanField('워크스페이스 적용', default=True)
     is_for_hq = models.BooleanField('본사 관리 적용', default=False)
     is_for_project = models.BooleanField('프로젝트 관리 적용', default=False)
+    is_confidential = models.BooleanField(
+        '보안 격리 권한',
+        default=False,
+        help_text='체크 시 슈퍼유저(최고관리자)에게만 노출되며 일반 관리자에게는 권한 목록 및 권한 설정이 은닉됩니다.'
+    )
     code = models.CharField('코드', max_length=30, unique=True)
     name = models.CharField('이름', max_length=20)
     is_default = models.BooleanField('기본 활성여부', default=False)

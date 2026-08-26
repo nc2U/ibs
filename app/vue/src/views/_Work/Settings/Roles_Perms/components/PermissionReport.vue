@@ -34,12 +34,12 @@ const sortLabel = (sort: string) => {
     docs: '문서',
     forum: '게시판',
     calendar: '캘린더',
+    hr_work: '인사 관리',
+    ledger: '자금/원장 관리',
     contract: '계약 관리',
     payment: '수납 관리',
     notice: '고지 관리',
-    ledger: '자금/원장 관리',
     site: '사업 부지 관리',
-    hr_work: '인사 관리',
   }
   return labels[sort] || sort
 }
@@ -160,7 +160,8 @@ const togglePermission = async (role: Role, permissionPk: number) => {
                   </tr>
                   <tr v-for="perm in perms" :key="perm.pk">
                     <td class="ps-4">
-                      <span class="fw-semibold mr-3">{{ perm.name }}</span>
+                      <span class="fw-semibold mr-2">{{ perm.name }}</span>
+                      <v-chip v-if="perm.is_confidential" color="danger" size="x-small" class="me-2">보안</v-chip>
                       <small class="text-muted">{{ perm.description }}</small>
                     </td>
                     <td

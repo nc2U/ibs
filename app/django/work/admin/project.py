@@ -73,7 +73,8 @@ class ModuleAdmin(admin.ModelAdmin):
 
 @admin.register(Role)
 class RoleAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('pk', 'name', 'category', 'is_for_dev_project', 'is_confidential', 'issue_visible', 'user_visible', 'order')
+    list_display = ('pk', 'name', 'category', 'is_for_dev_project', 'is_confidential', 'issue_visible', 'user_visible',
+                    'order')
     list_display_links = ('name',)
     list_editable = ('category', 'is_for_dev_project', 'is_confidential', 'order')
     list_filter = ('category', 'is_for_dev_project', 'is_confidential', 'issue_visible', 'user_visible')
@@ -95,9 +96,11 @@ class RoleAdmin(ImportExportMixin, admin.ModelAdmin):
 
 @admin.register(Permission)
 class PermissionAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('pk', 'module', 'is_for_workspace', 'is_for_hq', 'is_for_project', 'code', 'name', 'is_default')
+    list_display = ('pk', 'module', 'is_for_workspace', 'is_for_hq', 'is_for_project',
+                    'is_confidential', 'code', 'name', 'is_default')
     list_display_links = ('pk', 'module')
-    list_editable = ('is_for_workspace', 'is_for_hq', 'is_for_project', 'code', 'name', 'is_default')
+    list_editable = ('is_for_workspace', 'is_for_hq', 'is_for_project',
+                     'is_confidential', 'code', 'name', 'is_default')
     list_filter = ('module', 'is_for_workspace', 'is_for_hq', 'is_for_project', 'is_default')
     search_fields = ('code', 'name')
 

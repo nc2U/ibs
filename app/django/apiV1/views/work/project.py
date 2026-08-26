@@ -288,7 +288,15 @@ class PermissionViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = PermissionSerializer
     permission_classes = (permissions.IsAuthenticated,)
     pagination_class = PageNumberPaginationOneHundred
-    filterset_fields = ('is_for_workspace', 'is_for_hq', 'is_for_project', 'module')
+    filterset_fields = ('is_for_workspace', 'is_for_hq', 'is_for_project', 'is_confidential', 'module')
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = super().get_queryset()
+        # 슈퍼유저가 아닌 경우 보안 격리 권한(is_confidential=True)은 은닉
+        if not user.is_superuser:
+            queryset = queryset.filter(is_confidential=False)
+        return queryset
 
     @action(detail=False, methods=['get'])
     def grouped(self, request, *args, **kwargs):
