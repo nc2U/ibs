@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -32,6 +33,7 @@ class _ContractListScreenState extends ConsumerState<ContractListScreen> {
   final ScrollController _contractsScrollController = ScrollController();
   final ScrollController _successionsScrollController = ScrollController();
   final ScrollController _releasesScrollController = ScrollController();
+  Timer? _debounceTimer;
 
   @override
   void initState() {
@@ -43,6 +45,7 @@ class _ContractListScreenState extends ConsumerState<ContractListScreen> {
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _searchController.dispose();
     _contractsScrollController.dispose();
     _successionsScrollController.dispose();
@@ -72,13 +75,18 @@ class _ContractListScreenState extends ConsumerState<ContractListScreen> {
   }
 
   void _onSearchChanged(String value) {
-    ref.read(contractSearchQueryProvider.notifier).state = value;
-    ref.read(validContractListProvider.notifier).fetchInitial();
-    ref.read(successionListProvider.notifier).fetchInitial();
-    ref.read(contractorReleaseListProvider.notifier).fetchInitial();
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 350), () {
+      if (!mounted) return;
+      ref.read(contractSearchQueryProvider.notifier).state = value;
+      ref.read(validContractListProvider.notifier).fetchInitial();
+      ref.read(successionListProvider.notifier).fetchInitial();
+      ref.read(contractorReleaseListProvider.notifier).fetchInitial();
+    });
   }
 
   void _onClearSearch() {
+    _debounceTimer?.cancel();
     _searchController.clear();
     ref.read(contractSearchQueryProvider.notifier).state = '';
     ref.read(validContractListProvider.notifier).fetchInitial();
@@ -473,46 +481,6 @@ class _ContractListScreenState extends ConsumerState<ContractListScreen> {
                       isScrollControlled: true,
                       backgroundColor: Colors.transparent,
                       builder: (addressCtx) => ContractorAddressBottomSheet(contract: contract),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.swap_horiz_rounded, size: 20, color: Color(0xFF8B5CF6)),
-                  title: const Text('권리의무 승계 (명의변경) 내역 / 관리', style: TextStyle(fontSize: 13.5)),
-                  subtitle: const Text('양도·양수 승계 심사 및 변경인가 프로세스', style: TextStyle(fontSize: 11.5)),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    // 1. 검색창에 계약자명 자동 주입
-                    _searchController.text = contractorName;
-                    ref.read(contractSearchQueryProvider.notifier).state = contractorName;
-                    // 2. 권리의무 승계 탭으로 전환
-                    ref.read(contractCurrentSubTabProvider.notifier).state = ContractSubTab.successions;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('[$contractorName] 계약자의 권리의무 승계 탭으로 이동했습니다.'),
-                        behavior: SnackBarBehavior.floating,
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.cancel_outlined, size: 20, color: Color(0xFFEF4444)),
-                  title: const Text('계약 해약·해지 신청 / 정산 내역', style: TextStyle(fontSize: 13.5)),
-                  subtitle: const Text('계약종결, 환불 정산금 및 계좌 관리', style: TextStyle(fontSize: 11.5)),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    // 1. 검색창에 계약자명 자동 주입
-                    _searchController.text = contractorName;
-                    ref.read(contractSearchQueryProvider.notifier).state = contractorName;
-                    // 2. 계약 해약 탭으로 전환
-                    ref.read(contractCurrentSubTabProvider.notifier).state = ContractSubTab.releases;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('[$contractorName] 계약자의 계약 해약 탭으로 이동했습니다.'),
-                        behavior: SnackBarBehavior.floating,
-                        duration: const Duration(seconds: 2),
-                      ),
                     );
                   },
                 ),
