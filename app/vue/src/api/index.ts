@@ -17,7 +17,10 @@ if (token) {
 // 요청 인터셉터
 api.interceptors.request.use(
   config => {
-    start() // 진행바 시작
+    // hideProgress 옵션이 없거나 false일 때만 NProgress 시작
+    if (!(config as any).hideProgress) {
+      start()
+    }
     return config
   },
   error => {
@@ -29,7 +32,10 @@ api.interceptors.request.use(
 // 응답 인터셉터
 api.interceptors.response.use(
   async response => {
-    close() // 정상 응답 시 진행바 닫기
+    // hideProgress 옵션이 없거나 false일 때만 NProgress 닫기
+    if (!(response.config as any).hideProgress) {
+      close()
+    }
 
     // validateStatus 때문에 401이 success로 처리되므로 여기서 체크
     if (response.status === 401) {
@@ -47,6 +53,11 @@ api.interceptors.response.use(
   },
   async error => {
     close() // 에러 발생 시 진행바 닫기
+
+    // 폴링 등 특정 요청에서 에러 처리를 건너뛰도록 설정된 경우
+    if (error.config && error.config.skipErrorInterceptor) {
+      return Promise.reject(error)
+    }
 
     if (error.response) {
       if (error.response.status === 401) {
