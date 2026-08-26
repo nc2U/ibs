@@ -480,6 +480,19 @@ class ContractorReleaseItemModel {
     );
   }
 
+  String get displayContractorName {
+    // 1. '-terminated-...' 등의 장문 suffix가 포함되어 있으면 깔끔하게 정돈
+    String name = contractorName;
+    if (name.contains('-terminated')) {
+      name = name.replaceAll(RegExp(r'-terminated.*$'), ')');
+    }
+    // 2. 최대 20자 제한 처리
+    if (name.length > 20) {
+      return '${name.substring(0, 20)}...';
+    }
+    return name;
+  }
+
   String get statusDisplay {
     switch (status) {
       case '0':

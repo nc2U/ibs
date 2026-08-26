@@ -1441,15 +1441,19 @@ class _ReleaseCard extends StatelessWidget {
               children: [
                 Icon(Icons.cancel_outlined, size: 16, color: context.colors.error),
                 const SizedBox(width: 8),
-                Text(
-                  release.contractorName,
-                  style: AppTextStyles.titleSm.copyWith(
-                    color: context.colors.textPrimary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13.5,
+                Expanded(
+                  child: Text(
+                    release.displayContractorName,
+                    style: AppTextStyles.titleSm.copyWith(
+                      color: context.colors.textPrimary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13.5,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const Spacer(),
+                const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
