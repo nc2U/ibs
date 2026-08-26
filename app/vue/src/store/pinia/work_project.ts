@@ -689,6 +689,14 @@ export const useWork = defineStore('work', () => {
     fetchPermissionList,
     fetchGroupedPermissions,
 
+    reset: () => {
+      permissionList.value = []
+      groupedPermissions.value = null
+      member.value = null
+      memberList.value = []
+      projectMembers.value = []
+    },
+
     member,
     memberList,
     projectMembers,

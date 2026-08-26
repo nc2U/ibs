@@ -3,6 +3,7 @@ import Cookies from 'js-cookie'
 import { Buffer } from 'buffer'
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
+import { useWork } from '@/store/pinia/work_project'
 import { errorHandle, message } from '@/utils/helper'
 import { useDocs } from '@/store/pinia/docs'
 import type { LocationQueryValue } from 'vue-router'
@@ -146,6 +147,8 @@ export const useAccount = defineStore('account', () => {
   }
 
   const logout = () => {
+    const workStore = useWork()
+    workStore.reset()
     userInfo.value = null
     profile.value = null
     todoList.value = []
