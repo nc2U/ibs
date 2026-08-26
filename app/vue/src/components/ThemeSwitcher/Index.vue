@@ -22,7 +22,7 @@ const theme = computed(() => store.theme)
 
 const currentThemeIcon = computed(() => {
   if (theme.value === 'dark') return 'cil-moon'
-  if (theme.value === 'auto') return 'cil-screen-desktop'
+  if (theme.value === 'auto') return 'cil-contrast'
   return 'cil-sun'
 })
 
@@ -67,7 +67,9 @@ const cycleTheme = () => {
   padding: 0.375rem;
   border-radius: 0.375rem;
   color: inherit;
-  transition: background-color 0.15s ease-in-out, opacity 0.15s ease-in-out;
+  transition:
+    background-color 0.15s ease-in-out,
+    opacity 0.15s ease-in-out;
 }
 
 .theme-switcher-btn:hover {
