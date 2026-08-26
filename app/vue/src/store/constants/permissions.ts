@@ -1,5 +1,6 @@
-// Project permissions
 export const PERM = {
+  // WORK_SPACE PERMISSION ---------------------
+  // Project permissions
   PROJECT_CREATE: 'project.create',
   PROJECT_UPDATE: 'project.update',
   PROJECT_CLOSE: 'project.close',
@@ -65,7 +66,9 @@ export const PERM = {
 
   // Calendar permissions
   CALENDAR_READ: 'calendar.read',
+  // WORK_SPACE PERMISSION ---------------------
 
+  // HQ PERMISSION -----------------------------
   // HR Work permissions
   HR_WORK_READ: 'hr_work.read',
   HR_WORK_CREATE: 'hr_work.create',
@@ -78,7 +81,9 @@ export const PERM = {
   LEDGER_COM_UPDATE: 'ledger.com_update',
   LEDGER_COM_DELETE: 'ledger.com_delete',
   LEDGER_COM_MANAGE: 'ledger.com_manage',
+  // HQ PERMISSION -----------------------------
 
+  // PROJECT PERMISSION ------------------------
   // Ledger permissions
   LEDGER_READ: 'ledger.read',
   LEDGER_CREATE: 'ledger.create',
@@ -111,6 +116,7 @@ export const PERM = {
   SITE_CREATE: 'site.create',
   SITE_UPDATE: 'site.update',
   SITE_DELETE: 'site.delete',
+  // PROJECT PERMISSION ------------------------
 } as const
 
 export type PermissionCode = (typeof PERM)[keyof typeof PERM]

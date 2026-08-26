@@ -11,12 +11,12 @@ import {
   resolveComponent,
   watch,
 } from 'vue'
+import { CIcon } from '@coreui/icons-vue'
+import { CBadge, CNavGroup, CSidebarNav } from '@coreui/vue'
 import { useAccount } from '@/store/pinia/account'
 import { useApproval } from '@/store/pinia/approval'
 import { usePerms } from '@/composables/usePerms.ts'
 import { type RouteLocationNormalized, RouterLink, useRoute } from 'vue-router'
-import { CBadge, CNavGroup, CSidebarNav } from '@coreui/vue'
-import { CIcon } from '@coreui/icons-vue'
 import nav from '@/layouts/_nav'
 
 type Badge = { color?: string; text?: string }
@@ -82,17 +82,14 @@ const AppSidebarNav = defineComponent({
     // Pinia store
     const account = useAccount()
     const approvalStore = useApproval()
-    const superAuth = computed(() => !!account.superAuth)
     const isStaff = computed(() => account.isStaff)
-    const isFinancial = computed(() => account.isFinancial)
-    const isHrManager = computed(() => account.isHrManager)
 
     // 결재 대기 문서 목록 로드 및 60초 주기 갱신
     watch(
       isStaff,
-      val => {
+      async val => {
         if (val) {
-          approvalStore.fetchMyPending()
+          await approvalStore.fetchMyPending()
         }
       },
       { immediate: true },
@@ -100,9 +97,9 @@ const AppSidebarNav = defineComponent({
 
     let pollingTimer: ReturnType<typeof setInterval> | null = null
     onMounted(() => {
-      pollingTimer = setInterval(() => {
+      pollingTimer = setInterval(async () => {
         if (isStaff.value) {
-          approvalStore.fetchMyPending()
+          await approvalStore.fetchMyPending()
         }
       }, 60000)
     })
@@ -111,31 +108,35 @@ const AppSidebarNav = defineComponent({
     })
 
     const { canGlobal, PERM } = usePerms()
-    const docsRead = computed(() => canGlobal(PERM.DOCS_READ))
+    const comLedgerRead = computed(() => canGlobal(PERM.LEDGER_COM_READ))
     const hrWorkRead = computed(() => canGlobal(PERM.HR_WORK_READ))
+
     const contractRead = computed(() => canGlobal(PERM.CONTRACT_READ))
     const paymentRead = computed(() => canGlobal(PERM.PAYMENT_READ))
     const noticeRead = computed(() => canGlobal(PERM.NOTICE_READ))
     const ledgerRead = computed(() => canGlobal(PERM.LEDGER_READ))
-    const pjtMan = computed(() => canGlobal(PERM.PROJECT_CREATE) && canGlobal(PERM.PROJECT_UPDATE))
-    const comManage = computed(() => isStaff.value && pjtMan.value)
+    const docsRead = computed(() => canGlobal(PERM.DOCS_READ))
+    const prManage = computed(
+      () => canGlobal(PERM.PROJECT_CREATE) || canGlobal(PERM.PROJECT_UPDATE),
+    )
+    const siteRead = computed(() => canGlobal(PERM.SITE_READ))
+
+    const comManage = computed(() => isStaff.value && prManage.value)
     const authManage = computed(() => isStaff.value && canGlobal(PERM.PROJECT_MEMBER))
 
     const predicates = computed(() => {
       // 권한 키별 접근 제어 매핑
       const authMap: Record<string, boolean> = {
-        isSuperuser: superAuth.value,
         isStaff: isStaff.value,
-        isFinancial: isFinancial.value,
-        isHrManager: isHrManager.value,
-        isComHrWork: isStaff.value && hrWorkRead.value,
-
-        isContract: contractRead.value,
-        isPayment: paymentRead.value,
-        isNotice: noticeRead.value,
-        isLedger: ledgerRead.value,
-        isDocument: docsRead.value,
-
+        isCLManager: comLedgerRead.value,
+        isHrManager: hrWorkRead.value,
+        isContManager: contractRead.value,
+        isPayManager: paymentRead.value,
+        isNotiManager: noticeRead.value,
+        isLedgerManager: ledgerRead.value,
+        isDocsManager: docsRead.value,
+        isProjManager: prManage.value,
+        isSiteManager: siteRead.value,
         isSetMenu: comManage.value || authManage.value,
         isCompany: comManage.value,
         isAuthor: authManage.value,

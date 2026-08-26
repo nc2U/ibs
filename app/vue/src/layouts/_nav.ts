@@ -25,7 +25,7 @@ const companyLedger = {
   component: 'CNavGroup',
   name: '본사 회계 관리',
   to: '/ledger',
-  auth: 'isFinancial',
+  auth: 'isCLManager',
   icon: 'cil-laptop',
   items: [
     {
@@ -40,7 +40,6 @@ const companyLedger = {
     },
   ],
 }
-
 
 const humanResource = {
   component: 'CNavGroup',
@@ -201,7 +200,7 @@ const contract = {
   name: '계약 정보 관리',
   to: '/contracts',
   icon: 'cil-spreadsheet',
-  auth: 'isContract',
+  auth: 'isContManager',
   items: [
     {
       component: 'CNavItem',
@@ -236,7 +235,7 @@ const payment = {
   name: '대금 수납 관리',
   to: '/payment',
   icon: 'cil-calculator',
-  auth: 'isPayment',
+  auth: 'isPayManager',
   items: [
     {
       component: 'CNavItem',
@@ -261,7 +260,7 @@ const notice = {
   name: '고객 고지 관리',
   to: '/notices',
   icon: 'cil-envelope-letter',
-  auth: 'isNotice',
+  auth: 'isNotiManager',
   items: [
     {
       component: 'CNavItem',
@@ -308,7 +307,7 @@ const projectLedger = {
   name: '회계 자금 관리',
   to: '/project-ledger',
   icon: 'cil-money',
-  auth: 'isLedger',
+  auth: 'isLedgerManager',
   items: [
     {
       component: 'CNavItem',
@@ -333,7 +332,7 @@ const projectDocs = {
   name: '문서 소송 관리',
   to: '/project-docs',
   icon: 'cil-library',
-  auth: 'isDocument',
+  auth: 'isDocsManager',
   items: [
     {
       component: 'CNavItem',
@@ -368,6 +367,7 @@ const project = {
       component: 'CNavGroup',
       name: '차수 타입 설정',
       icon: 'cil-list-numbered',
+      auth: 'isProjManager',
       items: [
         {
           component: 'CNavItem',
@@ -390,6 +390,7 @@ const project = {
       component: 'CNavGroup',
       name: '유닛 정보 설정',
       icon: 'cil-room',
+      auth: 'isProjManager',
       items: [
         {
           component: 'CNavItem',
@@ -407,6 +408,7 @@ const project = {
       component: 'CNavGroup',
       name: '예산 정보 설정',
       icon: 'cil-exposure',
+      auth: 'isProjManager',
       items: [
         {
           component: 'CNavItem',
@@ -424,6 +426,7 @@ const project = {
       component: 'CNavGroup',
       name: '분양 조건 설정',
       icon: 'cil-cog',
+      auth: 'isProjManager',
       items: [
         {
           component: 'CNavItem',
@@ -456,6 +459,7 @@ const project = {
       component: 'CNavGroup',
       name: '부지 정보 관리',
       icon: 'cil-location-pin',
+      auth: 'isSiteManager',
       items: [
         {
           component: 'CNavItem',
