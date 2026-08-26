@@ -16,7 +16,7 @@ import { CBadge, CNavGroup, CSidebarNav } from '@coreui/vue'
 import { useAccount } from '@/store/pinia/account'
 import { useApproval } from '@/store/pinia/approval'
 import { usePerms } from '@/composables/usePerms'
-import { type RouteLocationNormalized, type RouterLinkSlotProps, RouterLink, useRoute } from 'vue-router'
+import { type RouteLocationNormalized, RouterLink, useRoute } from 'vue-router'
 import nav from '@/layouts/_nav'
 
 type Badge = { color?: string; text?: string }
@@ -213,7 +213,7 @@ const AppSidebarNav = defineComponent({
           RouterLink,
           { to: item.to, custom: true },
           {
-            default: (props: RouterLinkSlotProps) => {
+            default: (props: any) => {
               const component =
                 typeof item.component === 'string'
                   ? resolveComponent(item.component)
