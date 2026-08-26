@@ -15,8 +15,8 @@ import { CIcon } from '@coreui/icons-vue'
 import { CBadge, CNavGroup, CSidebarNav } from '@coreui/vue'
 import { useAccount } from '@/store/pinia/account'
 import { useApproval } from '@/store/pinia/approval'
-import { usePerms } from '@/composables/usePerms.ts'
-import { type RouteLocationNormalized, RouterLink, useRoute } from 'vue-router'
+import { usePerms } from '@/composables/usePerms'
+import { type RouteLocationNormalized, type RouterLinkSlotProps, RouterLink, useRoute } from 'vue-router'
 import nav from '@/layouts/_nav'
 
 type Badge = { color?: string; text?: string }
@@ -30,7 +30,6 @@ type Item = {
   name?: string
   to?: string
   visible?: boolean
-  manuallyToggled?: boolean
 }
 
 const normalizePath = (path = '') =>
@@ -56,28 +55,25 @@ const isActiveItem = (route: RouteLocationNormalized, item: Item): boolean => {
 const filterNavItems = (items: Item[], predicates: ((it: Item) => boolean)[]): Item[] => {
   const passAllPredicates = (it: Item) => predicates.every(p => p(it))
 
-  return (
-    items
-      // 1. 먼저 현재 아이템(부모)이 권한을 통과하는지 확인
-      .filter(it => passAllPredicates(it))
-      // 2. 통과한 경우에만 자식들을 필터링
-      .map(it => ({
-        ...it,
-        items: it.items ? filterNavItems(it.items, predicates) : undefined,
-      }))
-      // 3. 자식이 있거나, CNavItem인 경우만 유지
-      .filter(
-        it => it.component !== 'CNavGroup' || (Array.isArray(it.items) && it.items.length > 0),
-      )
-  )
+  return items
+    .filter(it => passAllPredicates(it))
+    .map(it => ({
+      ...it,
+      items: it.items ? filterNavItems(it.items, predicates) : undefined,
+    }))
+    .filter(
+      it => it.component !== 'CNavGroup' || (Array.isArray(it.items) && it.items.length > 0),
+    )
 }
 
 const AppSidebarNav = defineComponent({
   name: 'AppSidebarNav',
   setup() {
     const route = useRoute()
-    const userClickedSidebar = reactive({ value: false })
-    const sidebarKey = ref(0)
+    const userClickedSidebar = ref(false)
+
+    // 메뉴 그룹의 열림 상태를 고유 Key(to 또는 name) 기반으로 관리할 반응형 맵 객체
+    const openStates = reactive<Record<string, boolean>>({})
 
     // Pinia store
     const account = useAccount()
@@ -157,13 +153,18 @@ const AppSidebarNav = defineComponent({
     )
 
     // ---------------------------
-    // 활성 메뉴 자동 열기/닫기
+    // 활성 메뉴 자동 열기/닫기 (openStates 상태를 갱신하도록 설계)
     // ---------------------------
     const openActiveMenu = (items: Item[]) => {
       items.forEach(item => {
         if (Array.isArray(item.items) && item.items.length > 0) {
-          item.visible = item.items.some(child => isActiveItem(route, child))
-          item.manuallyToggled = false
+          const key = item.to || item.name || ''
+          if (key) {
+            const hasActiveChild = item.items.some(child => isActiveItem(route, child))
+            if (hasActiveChild) {
+              openStates[key] = true
+            }
+          }
           openActiveMenu(item.items)
         }
       })
@@ -177,22 +178,27 @@ const AppSidebarNav = defineComponent({
       if (item.icon) children.push(h(CIcon, { customClassName: 'nav-icon', name: item.icon }))
       if (item.name) children.push(item.name)
       const badge = typeof item.badge === 'function' ? item.badge() : item.badge
-      if (badge && badge.text)
+      if (badge && badge.text) {
         children.push(
-          h(CBadge, { class: 'ms-auto', color: badge.color || 'primary' }, () => badge.text),
+          h(CBadge, { class: 'ms-auto', color: badge.color || 'primary' }, { default: () => badge.text! }),
         )
+      }
       return children
     }
 
     const renderItem = (item: Item) => {
       if (Array.isArray(item.items) && item.items.length > 0) {
+        const key = item.to || item.name || ''
+        const isOpen = key ? !!openStates[key] : false
+
         return h(
           CNavGroup,
           {
-            visible: !!item.visible,
+            visible: isOpen,
             onToggle: (visible: boolean) => {
-              item.manuallyToggled = true
-              item.visible = visible
+              if (key) {
+                openStates[key] = visible
+              }
             },
           },
           {
@@ -207,7 +213,7 @@ const AppSidebarNav = defineComponent({
           RouterLink,
           { to: item.to, custom: true },
           {
-            default: (props: any) => {
+            default: (props: RouterLinkSlotProps) => {
               const component =
                 typeof item.component === 'string'
                   ? resolveComponent(item.component)
@@ -235,10 +241,10 @@ const AppSidebarNav = defineComponent({
     }
 
     // ---------------------------
-    // 라우트 변경 감지 (사이드바 클릭 제외)
+    // 라우트 변경 및 메뉴 데이터 로드 감지 (사이드바 클릭 제외)
     // ---------------------------
     watch(
-      () => route.fullPath,
+      [() => route.fullPath, () => reactiveNav.value],
       async () => {
         if (userClickedSidebar.value) {
           userClickedSidebar.value = false
@@ -246,7 +252,6 @@ const AppSidebarNav = defineComponent({
         }
         await nextTick()
         openActiveMenu(reactiveNav.value)
-        sidebarKey.value++ // 강제 재렌더링
       },
       { immediate: true },
     )
@@ -254,7 +259,7 @@ const AppSidebarNav = defineComponent({
     return () =>
       h(
         CSidebarNav,
-        { key: sidebarKey.value },
+        {},
         { default: () => reactiveNav.value.map(renderItem) },
       )
   },
