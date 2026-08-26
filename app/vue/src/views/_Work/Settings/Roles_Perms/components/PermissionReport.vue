@@ -76,12 +76,18 @@ const togglePermission = async (role: Role, permissionPk: number) => {
             <table class="table table-bordered table-hover align-middle mb-0">
               <thead class="table-light">
                 <tr>
-                  <th scope="col" class="sticky-col-header" style="min-width: 200px">권한</th>
+                  <th
+                    scope="col"
+                    class="sticky-col-header bg-more-white border"
+                    style="min-width: 200px"
+                  >
+                    권한
+                  </th>
                   <th
                     v-for="role in getRolesByCategory('work_space')"
                     :key="role.pk"
                     scope="col"
-                    class="text-center"
+                    class="text-center bg-more-light border"
                     style="min-width: 100px"
                   >
                     {{ role.name }}
@@ -133,12 +139,18 @@ const togglePermission = async (role: Role, permissionPk: number) => {
             <table class="table table-bordered table-hover align-middle mb-0">
               <thead class="table-light">
                 <tr>
-                  <th scope="col" class="sticky-col-header" style="min-width: 200px">권한</th>
+                  <th
+                    scope="col"
+                    class="sticky-col-header bg-more-white border"
+                    style="min-width: 200px"
+                  >
+                    권한
+                  </th>
                   <th
                     v-for="role in getRolesByCategory('ibs_hq_manage')"
                     :key="role.pk"
                     scope="col"
-                    class="text-center"
+                    class="text-center bg-more-light border"
                     style="min-width: 100px"
                   >
                     {{ role.name }}
@@ -161,7 +173,9 @@ const togglePermission = async (role: Role, permissionPk: number) => {
                   <tr v-for="perm in perms" :key="perm.pk">
                     <td class="ps-4">
                       <span class="fw-semibold mr-2">{{ perm.name }}</span>
-                      <v-chip v-if="perm.is_confidential" color="danger" size="x-small" class="me-2">보안</v-chip>
+                      <v-chip v-if="perm.is_confidential" color="danger" size="x-small" class="me-2"
+                        >보안</v-chip
+                      >
                       <small class="text-muted">{{ perm.description }}</small>
                     </td>
                     <td
@@ -197,12 +211,18 @@ const togglePermission = async (role: Role, permissionPk: number) => {
             <table class="table table-bordered table-hover align-middle mb-0">
               <thead class="table-light">
                 <tr>
-                  <th scope="col" class="sticky-col-header" style="min-width: 200px">권한</th>
+                  <th
+                    scope="col"
+                    class="sticky-col-header bg-more-white border"
+                    style="min-width: 200px"
+                  >
+                    권한
+                  </th>
                   <th
                     v-for="role in getRolesByCategory('ibs_pr_manage')"
                     :key="role.pk"
                     scope="col"
-                    class="text-center"
+                    class="text-center bg-more-light border"
                     style="min-width: 100px"
                   >
                     {{ role.name }}
