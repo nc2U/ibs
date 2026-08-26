@@ -1,4 +1,8 @@
 /// 계약 관리 데이터 모델 (Contract Models)
+library;
+
+import 'package:flutter/material.dart';
+
 
 class ContractAggregateModel {
   final int totalUnits;
@@ -104,6 +108,8 @@ class ContractorAddressModel {
   final String? dmAddress1;
   final String? dmAddress2;
   final String? dmAddress3;
+  final bool isCurrent;
+  final String? created;
 
   ContractorAddressModel({
     this.pk,
@@ -115,6 +121,8 @@ class ContractorAddressModel {
     this.dmAddress1,
     this.dmAddress2,
     this.dmAddress3,
+    this.isCurrent = true,
+    this.created,
   });
 
   factory ContractorAddressModel.fromJson(Map<String, dynamic> json) {
@@ -128,7 +136,27 @@ class ContractorAddressModel {
       dmAddress1: json['dm_address1'],
       dmAddress2: json['dm_address2'],
       dmAddress3: json['dm_address3'],
+      isCurrent: json['is_current'] as bool? ?? true,
+      created: json['created'],
     );
+  }
+
+  String get fullIdAddress {
+    final parts = [idAddress1, idAddress2, idAddress3].where((p) => p != null && p.trim().isNotEmpty).toList();
+    final addr = parts.join(' ');
+    if (idZipcode != null && idZipcode!.isNotEmpty) {
+      return '($idZipcode) $addr';
+    }
+    return addr.isNotEmpty ? addr : '-';
+  }
+
+  String get fullDmAddress {
+    final parts = [dmAddress1, dmAddress2, dmAddress3].where((p) => p != null && p.trim().isNotEmpty).toList();
+    final addr = parts.join(' ');
+    if (dmZipcode != null && dmZipcode!.isNotEmpty) {
+      return '($dmZipcode) $addr';
+    }
+    return addr.isNotEmpty ? addr : '-';
   }
 }
 
@@ -298,6 +326,37 @@ class ContractItemModel {
   int get remainingAmount => price > totalPaid ? price - totalPaid : 0;
 
   double get paymentRate => price > 0 ? (totalPaid / price) * 100 : 0.0;
+
+  /// API에서 제공하는 unitTypeColor (#RRGGBB) 파싱 Color
+  Color get parsedTypeColor {
+    if (unitTypeColor == null || unitTypeColor!.isEmpty) {
+      return const Color(0xFFE2E8F0); // 기본 슬레이트 배경
+    }
+    try {
+      final cleanHex = unitTypeColor!.replaceAll('#', '').trim();
+      if (cleanHex.length == 6) {
+        return Color(int.parse('0xFF$cleanHex'));
+      } else if (cleanHex.length == 8) {
+        return Color(int.parse('0x$cleanHex'));
+      }
+    } catch (_) {}
+    return const Color(0xFFE2E8F0);
+  }
+
+  /// 뱃지 배경 휘도(밝기)에 따른 최적의 텍스트 색상 (밝은 배경 -> 진한 텍스트, 어두운 배경 -> 흰색)
+  Color get typeTextColor {
+    // computeLuminance() > 0.5 이면 밝은 색상이므로 어두운 텍스트 반환
+    return parsedTypeColor.computeLuminance() > 0.5
+        ? const Color(0xFF1E293B) // 짙은 슬레이트 차콜
+        : Colors.white;
+  }
+
+  /// 뱃지 테두리 색상 (배경보다 살짝 진하게 명확한 윤곽선 제공)
+  Color get typeBorderColor {
+    return parsedTypeColor.computeLuminance() > 0.5
+        ? Colors.black.withAlpha(40)
+        : Colors.white.withAlpha(60);
+  }
 }
 
 /// ── 권리의무 승계 데이터 모델 (Succession Model) ─────────────────────────
@@ -434,7 +493,124 @@ class ContractorReleaseItemModel {
       case '4':
         return '해지확정';
       default:
-        return '처리중';
+        return '신청';
+    }
+  }
+}
+
+/// ── 계약자 민원 및 상담 이력 데이터 모델 (ContractorConsultationLog Model) ──
+class ContractorConsultationLogModel {
+  final int pk;
+  final int contractor;
+  final String consultationDate;
+  final String channel; // visit, phone, email, sms, kakao, other
+  final String? channelDisplay;
+  final String category; // payment, contract, change, complaint, question, succession, release, document, etc
+  final String? categoryDisplay;
+  final String title;
+  final String content;
+  final String status; // '1': 처리대기, '2': 처리중, '3': 처리완료, '4': 보류
+  final String? statusDisplay;
+  final String priority; // low, normal, high, urgent
+  final String? priorityDisplay;
+  final String? consultantName;
+  final bool followUpRequired;
+  final String? followUpNote;
+  final String? completionDate;
+  final bool isImportant;
+  final String? created;
+
+  ContractorConsultationLogModel({
+    required this.pk,
+    required this.contractor,
+    required this.consultationDate,
+    required this.channel,
+    this.channelDisplay,
+    required this.category,
+    this.categoryDisplay,
+    required this.title,
+    required this.content,
+    required this.status,
+    this.statusDisplay,
+    required this.priority,
+    this.priorityDisplay,
+    this.consultantName,
+    this.followUpRequired = false,
+    this.followUpNote,
+    this.completionDate,
+    this.isImportant = false,
+    this.created,
+  });
+
+  factory ContractorConsultationLogModel.fromJson(Map<String, dynamic> json) {
+    final consultant = json['consultant'];
+    String? consultantName;
+    if (consultant is Map) {
+      consultantName = consultant['username']?.toString();
+    }
+
+    return ContractorConsultationLogModel(
+      pk: json['pk'] ?? 0,
+      contractor: json['contractor'] is int ? json['contractor'] : 0,
+      consultationDate: json['consultation_date'] ?? '',
+      channel: json['channel'] ?? 'phone',
+      channelDisplay: json['channel_display'],
+      category: json['category'] ?? 'etc',
+      categoryDisplay: json['category_display'],
+      title: json['title'] ?? '',
+      content: json['content'] ?? '',
+      status: json['status']?.toString() ?? '1',
+      statusDisplay: json['status_display'],
+      priority: json['priority'] ?? 'normal',
+      priorityDisplay: json['priority_display'],
+      consultantName: consultantName,
+      followUpRequired: json['follow_up_required'] as bool? ?? false,
+      followUpNote: json['follow_up_note'],
+      completionDate: json['completion_date'],
+      isImportant: json['is_important'] as bool? ?? false,
+      created: json['created'],
+    );
+  }
+
+  String get channelKorean {
+    if (channelDisplay != null && channelDisplay!.isNotEmpty) return channelDisplay!;
+    switch (channel) {
+      case 'phone':
+        return '전화';
+      case 'visit':
+        return '방문';
+      case 'kakao':
+        return '카카오톡';
+      case 'sms':
+        return '문자';
+      case 'email':
+        return '이메일';
+      default:
+        return '기타';
+    }
+  }
+
+  String get categoryKorean {
+    if (categoryDisplay != null && categoryDisplay!.isNotEmpty) return categoryDisplay!;
+    switch (category) {
+      case 'payment':
+        return '납부상담';
+      case 'contract':
+        return '계약상담';
+      case 'complaint':
+        return '민원/불만';
+      case 'succession':
+        return '승계상담';
+      case 'release':
+        return '해지상담';
+      case 'change':
+        return '변경상담';
+      case 'document':
+        return '서류관련';
+      case 'question':
+        return '단순문의';
+      default:
+        return '기타상담';
     }
   }
 }

@@ -4,6 +4,7 @@ import '../../features/project/data/models/project_model.dart';
 // ── 선택된 프로젝트 모델 (경량) ────────────────────────────────────────────────────
 class SelectedProject {
   final int pk;
+  final int? projectId; // 실제 부동산 개발 프로젝트 (Project) PK
   final String name;
   final String slug;
   final String? description;
@@ -15,6 +16,7 @@ class SelectedProject {
 
   const SelectedProject({
     required this.pk,
+    this.projectId,
     required this.name,
     required this.slug,
     this.description,
@@ -24,6 +26,9 @@ class SelectedProject {
     this.myPerms = const [],
     this.module,
   });
+
+  /// 계약, 수납, 자금 등 부동산 도메인 API 호출 시 사용할 실제 Project PK
+  int get realProjectId => projectId ?? pk;
 }
 
 // ── 전역 워크스페이스 / 프로젝트 선택 상태 ──────────────────────────────────────────

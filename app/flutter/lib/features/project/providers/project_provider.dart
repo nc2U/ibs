@@ -151,6 +151,7 @@ void selectWorkspace(WidgetRef ref, ProjectModel? project) {
   } else {
     ref.read(selectedWorkspaceProvider.notifier).state = SelectedProject(
       pk: project.pk,
+      projectId: project.projectId,
       name: project.name,
       slug: project.slug,
       description: project.description,
@@ -169,6 +170,7 @@ void selectRealEstateProject(WidgetRef ref, ProjectModel? project) {
   } else {
     ref.read(selectedRealEstateProjectProvider.notifier).state = SelectedProject(
       pk: project.pk,
+      projectId: project.projectId,
       name: project.name,
       slug: project.slug,
       description: project.description,

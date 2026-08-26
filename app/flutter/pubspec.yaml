@@ -48,6 +48,10 @@ dependencies:
   shimmer: ^3.0.0
   cached_network_image: ^3.4.1
 
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.2
+
   # Image / file picker
   image_picker: ^1.1.2
   file_picker: ^10.3.3

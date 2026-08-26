@@ -112,6 +112,7 @@ class ProjectCategoryModel {
 
 class ProjectModel {
   final int pk;
+  final int? projectId; // 실제 부동산 개발 프로젝트(Project) PK
   final String name;
   final String slug;
   final String description;
@@ -133,6 +134,7 @@ class ProjectModel {
 
   const ProjectModel({
     required this.pk,
+    this.projectId,
     this.name = '',
     this.slug = '',
     this.description = '',
@@ -163,6 +165,7 @@ class ProjectModel {
 
   ProjectModel copyWith({
     int? pk,
+    int? projectId,
     String? name,
     String? slug,
     String? description,
@@ -184,6 +187,7 @@ class ProjectModel {
   }) {
     return ProjectModel(
       pk: pk ?? this.pk,
+      projectId: projectId ?? this.projectId,
       name: name ?? this.name,
       slug: slug ?? this.slug,
       description: description ?? this.description,
@@ -209,6 +213,7 @@ class ProjectModel {
     final memberList = (json['all_members'] ?? json['members']) as List<dynamic>?;
     return ProjectModel(
       pk: json['pk'] as int? ?? 0,
+      projectId: json['project'] as int?,
       name: json['name']?.toString() ?? '',
       slug: json['slug']?.toString() ?? '',
       description: json['description']?.toString() ?? '',

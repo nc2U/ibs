@@ -31,50 +31,284 @@ final contractAggregateProvider =
   }
 
   final repository = ref.watch(contractRepositoryProvider);
-  return repository.fetchContractAggregate(selectedProject.pk);
+  return repository.fetchContractAggregate(selectedProject.realProjectId);
 });
 
-/// 유효 계약 목록 프로바이더 (is_active=true, is_contract=true)
+/// ── 무한 스크롤 (Pagination) 상태 모델 ───────────────────────────
+class ContractPaginationState<T> {
+  final List<T> items;
+  final int page;
+  final bool isLoading;
+  final bool isFetchingNextPage;
+  final bool hasMore;
+  final String? error;
+
+  const ContractPaginationState({
+    this.items = const [],
+    this.page = 1,
+    this.isLoading = false,
+    this.isFetchingNextPage = false,
+    this.hasMore = true,
+    this.error,
+  });
+
+  ContractPaginationState<T> copyWith({
+    List<T>? items,
+    int? page,
+    bool? isLoading,
+    bool? isFetchingNextPage,
+    bool? hasMore,
+    String? error,
+  }) {
+    return ContractPaginationState<T>(
+      items: items ?? this.items,
+      page: page ?? this.page,
+      isLoading: isLoading ?? this.isLoading,
+      isFetchingNextPage: isFetchingNextPage ?? this.isFetchingNextPage,
+      hasMore: hasMore ?? this.hasMore,
+      error: error,
+    );
+  }
+}
+
+/// 1. 유효 계약 목록 무한 스크롤 Notifier
+class ValidContractListNotifier extends StateNotifier<ContractPaginationState<ContractItemModel>> {
+  final Ref ref;
+
+  ValidContractListNotifier(this.ref) : super(const ContractPaginationState()) {
+    fetchInitial();
+  }
+
+  Future<void> fetchInitial() async {
+    final selectedProject = ref.read(selectedRealEstateProjectProvider);
+    if (selectedProject == null) {
+      state = const ContractPaginationState(items: [], hasMore: false);
+      return;
+    }
+
+    state = state.copyWith(isLoading: true, page: 1, items: [], hasMore: true, error: null);
+
+    final search = ref.read(contractSearchQueryProvider);
+    final repository = ref.read(contractRepositoryProvider);
+
+    try {
+      final items = await repository.fetchContracts(
+        projectId: selectedProject.realProjectId,
+        search: search,
+        page: 1,
+        limit: 10,
+      );
+
+      state = state.copyWith(
+        isLoading: false,
+        items: items,
+        page: 1,
+        hasMore: items.length >= 10,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  Future<void> fetchNextPage() async {
+    if (state.isLoading || state.isFetchingNextPage || !state.hasMore) return;
+
+    final selectedProject = ref.read(selectedRealEstateProjectProvider);
+    if (selectedProject == null) return;
+
+    state = state.copyWith(isFetchingNextPage: true);
+
+    final nextPage = state.page + 1;
+    final search = ref.read(contractSearchQueryProvider);
+    final repository = ref.read(contractRepositoryProvider);
+
+    try {
+      final newItems = await repository.fetchContracts(
+        projectId: selectedProject.realProjectId,
+        search: search,
+        page: nextPage,
+        limit: 10,
+      );
+
+      state = state.copyWith(
+        isFetchingNextPage: false,
+        items: [...state.items, ...newItems],
+        page: nextPage,
+        hasMore: newItems.length >= 10,
+      );
+    } catch (e) {
+      state = state.copyWith(isFetchingNextPage: false);
+    }
+  }
+}
+
+/// 2. 권리의무 승계 무한 스크롤 Notifier
+class SuccessionListNotifier extends StateNotifier<ContractPaginationState<SuccessionItemModel>> {
+  final Ref ref;
+
+  SuccessionListNotifier(this.ref) : super(const ContractPaginationState()) {
+    fetchInitial();
+  }
+
+  Future<void> fetchInitial() async {
+    final selectedProject = ref.read(selectedRealEstateProjectProvider);
+    if (selectedProject == null) {
+      state = const ContractPaginationState(items: [], hasMore: false);
+      return;
+    }
+
+    state = state.copyWith(isLoading: true, page: 1, items: [], hasMore: true, error: null);
+
+    final search = ref.read(contractSearchQueryProvider);
+    final repository = ref.read(contractRepositoryProvider);
+
+    try {
+      final items = await repository.fetchSuccessions(
+        projectId: selectedProject.realProjectId,
+        search: search,
+        page: 1,
+        limit: 10,
+      );
+
+      state = state.copyWith(
+        isLoading: false,
+        items: items,
+        page: 1,
+        hasMore: items.length >= 10,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  Future<void> fetchNextPage() async {
+    if (state.isLoading || state.isFetchingNextPage || !state.hasMore) return;
+
+    final selectedProject = ref.read(selectedRealEstateProjectProvider);
+    if (selectedProject == null) return;
+
+    state = state.copyWith(isFetchingNextPage: true);
+
+    final nextPage = state.page + 1;
+    final search = ref.read(contractSearchQueryProvider);
+    final repository = ref.read(contractRepositoryProvider);
+
+    try {
+      final newItems = await repository.fetchSuccessions(
+        projectId: selectedProject.realProjectId,
+        search: search,
+        page: nextPage,
+        limit: 10,
+      );
+
+      state = state.copyWith(
+        isFetchingNextPage: false,
+        items: [...state.items, ...newItems],
+        page: nextPage,
+        hasMore: newItems.length >= 10,
+      );
+    } catch (e) {
+      state = state.copyWith(isFetchingNextPage: false);
+    }
+  }
+}
+
+/// 3. 계약 해약/해지 무한 스크롤 Notifier
+class ContractorReleaseListNotifier extends StateNotifier<ContractPaginationState<ContractorReleaseItemModel>> {
+  final Ref ref;
+
+  ContractorReleaseListNotifier(this.ref) : super(const ContractPaginationState()) {
+    fetchInitial();
+  }
+
+  Future<void> fetchInitial() async {
+    final selectedProject = ref.read(selectedRealEstateProjectProvider);
+    if (selectedProject == null) {
+      state = const ContractPaginationState(items: [], hasMore: false);
+      return;
+    }
+
+    state = state.copyWith(isLoading: true, page: 1, items: [], hasMore: true, error: null);
+
+    final search = ref.read(contractSearchQueryProvider);
+    final repository = ref.read(contractRepositoryProvider);
+
+    try {
+      final items = await repository.fetchReleases(
+        projectId: selectedProject.realProjectId,
+        search: search,
+        page: 1,
+        limit: 10,
+      );
+
+      state = state.copyWith(
+        isLoading: false,
+        items: items,
+        page: 1,
+        hasMore: items.length >= 10,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  Future<void> fetchNextPage() async {
+    if (state.isLoading || state.isFetchingNextPage || !state.hasMore) return;
+
+    final selectedProject = ref.read(selectedRealEstateProjectProvider);
+    if (selectedProject == null) return;
+
+    state = state.copyWith(isFetchingNextPage: true);
+
+    final nextPage = state.page + 1;
+    final search = ref.read(contractSearchQueryProvider);
+    final repository = ref.read(contractRepositoryProvider);
+
+    try {
+      final newItems = await repository.fetchReleases(
+        projectId: selectedProject.realProjectId,
+        search: search,
+        page: nextPage,
+        limit: 10,
+      );
+
+      state = state.copyWith(
+        isFetchingNextPage: false,
+        items: [...state.items, ...newItems],
+        page: nextPage,
+        hasMore: newItems.length >= 10,
+      );
+    } catch (e) {
+      state = state.copyWith(isFetchingNextPage: false);
+    }
+  }
+}
+
+/// 유효 계약 목록 프로바이더 (StateNotifierProvider)
 final validContractListProvider =
-    FutureProvider<List<ContractItemModel>>((ref) async {
-  final selectedProject = ref.watch(selectedRealEstateProjectProvider);
-  if (selectedProject == null) return [];
+    StateNotifierProvider<ValidContractListNotifier, ContractPaginationState<ContractItemModel>>(
+        (ref) => ValidContractListNotifier(ref));
 
-  final search = ref.watch(contractSearchQueryProvider);
-  final repository = ref.watch(contractRepositoryProvider);
-
-  return repository.fetchContracts(
-    projectId: selectedProject.pk,
-    search: search,
-  );
-});
-
-/// 권리의무 승계 목록 프로바이더
+/// 권리의무 승계 목록 프로바이더 (StateNotifierProvider)
 final successionListProvider =
-    FutureProvider<List<SuccessionItemModel>>((ref) async {
-  final selectedProject = ref.watch(selectedRealEstateProjectProvider);
-  if (selectedProject == null) return [];
+    StateNotifierProvider<SuccessionListNotifier, ContractPaginationState<SuccessionItemModel>>(
+        (ref) => SuccessionListNotifier(ref));
 
-  final search = ref.watch(contractSearchQueryProvider);
+/// 계약 해약/해지 목록 프로바이더 (StateNotifierProvider)
+final contractorReleaseListProvider =
+    StateNotifierProvider<ContractorReleaseListNotifier, ContractPaginationState<ContractorReleaseItemModel>>(
+        (ref) => ContractorReleaseListNotifier(ref));
+
+/// 계약자별 민원 및 상담 이력 목록 프로바이더 (Family)
+final contractorConsultationLogsProvider =
+    FutureProvider.family<List<ContractorConsultationLogModel>, int>((ref, contractorId) async {
   final repository = ref.watch(contractRepositoryProvider);
-
-  return repository.fetchSuccessions(
-    projectId: selectedProject.pk,
-    search: search,
-  );
+  return repository.fetchConsultationLogs(contractorId: contractorId);
 });
 
-/// 계약 해약/해지 목록 프로바이더
-final contractorReleaseListProvider =
-    FutureProvider<List<ContractorReleaseItemModel>>((ref) async {
-  final selectedProject = ref.watch(selectedRealEstateProjectProvider);
-  if (selectedProject == null) return [];
-
-  final search = ref.watch(contractSearchQueryProvider);
+/// 계약자별 주소 변경 이력 목록 프로바이더 (Family)
+final contractorAddressHistoryProvider =
+    FutureProvider.family<List<ContractorAddressModel>, int>((ref, contractorId) async {
   final repository = ref.watch(contractRepositoryProvider);
-
-  return repository.fetchReleases(
-    projectId: selectedProject.pk,
-    search: search,
-  );
+  return repository.fetchAddressHistory(contractorId: contractorId);
 });

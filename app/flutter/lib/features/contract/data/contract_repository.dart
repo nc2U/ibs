@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/providers/dio_provider.dart';
@@ -13,10 +14,10 @@ class ContractRepository {
 
   ContractRepository({required this.dio});
 
-  /// 1. 프로젝트 계약 집계 현황 조회 (/api/v1/contract-aggregate/{projectId}/)
+  /// 1. 프로젝트 계약 집계 현황 조회 (/api/v1/cont-aggregate/{projectId}/)
   Future<ContractAggregateModel> fetchContractAggregate(int projectId) async {
     try {
-      final response = await dio.get('/api/v1/contract-aggregate/$projectId/');
+      final response = await dio.get('/api/v1/cont-aggregate/$projectId/');
       return ContractAggregateModel.fromJson(response.data);
     } catch (e) {
       return ContractAggregateModel(
@@ -34,13 +35,16 @@ class ContractRepository {
     String? search,
     int? orderGroup,
     int? unitType,
+    int page = 1,
+    int limit = 10,
   }) async {
     try {
       final queryParams = <String, dynamic>{
         'project': projectId,
         'is_active': true,
         'is_contract': true, // 계약자('2') 및 변경처리중('3') 유효 계약만 조회
-        'limit': 100,
+        'page': page,
+        'limit': limit,
       };
       if (search != null && search.trim().isNotEmpty) {
         queryParams['search'] = search.trim();
@@ -72,11 +76,14 @@ class ContractRepository {
   Future<List<SuccessionItemModel>> fetchSuccessions({
     required int projectId,
     String? search,
+    int page = 1,
+    int limit = 10,
   }) async {
     try {
       final queryParams = <String, dynamic>{
         'contract__project': projectId,
-        'limit': 100,
+        'page': page,
+        'limit': limit,
       };
       if (search != null && search.trim().isNotEmpty) {
         queryParams['search'] = search.trim();
@@ -102,11 +109,14 @@ class ContractRepository {
   Future<List<ContractorReleaseItemModel>> fetchReleases({
     required int projectId,
     String? search,
+    int page = 1,
+    int limit = 10,
   }) async {
     try {
       final queryParams = <String, dynamic>{
         'project': projectId,
-        'limit': 100,
+        'page': page,
+        'limit': limit,
       };
       if (search != null && search.trim().isNotEmpty) {
         queryParams['search'] = search.trim();
@@ -127,6 +137,174 @@ class ContractRepository {
           .toList();
     } catch (e) {
       return [];
+    }
+  }
+
+  /// 5. 분양대금 납부확인서 PDF 다운로드 (/pdf/ledger/payment/?contract={contractId}&pub_date={date}&is_calc=1)
+  Future<Uint8List?> downloadPaymentCertPdf({
+    required int contractId,
+    String? pubDate,
+    bool isCalc = true,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{
+        'contract': contractId,
+        'is_calc': isCalc ? '1' : '',
+      };
+      if (pubDate != null && pubDate.isNotEmpty) {
+        queryParams['pub_date'] = pubDate;
+      }
+
+      final response = await dio.get(
+        '/pdf/ledger/payment/',
+        queryParameters: queryParams,
+        options: Options(
+          responseType: ResponseType.bytes,
+        ),
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+        if (response.data is Uint8List) {
+          return response.data as Uint8List;
+        } else if (response.data is List<int>) {
+          return Uint8List.fromList(response.data as List<int>);
+        } else if (response.data is List) {
+          return Uint8List.fromList((response.data as List).cast<int>());
+        }
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// 6. 계약자별 상담/민원 이력 목록 조회 (/api/v1/contractor-consultations/?contractor={contractorId})
+  Future<List<ContractorConsultationLogModel>> fetchConsultationLogs({
+    required int contractorId,
+  }) async {
+    try {
+      final response = await dio.get(
+        '/api/v1/contractor-consultations/',
+        queryParameters: {
+          'contractor': contractorId,
+        },
+      );
+
+      final List<dynamic> results =
+          response.data is Map && response.data.containsKey('results')
+              ? response.data['results']
+              : (response.data is List ? response.data : []);
+
+      return results
+          .map((json) => ContractorConsultationLogModel.fromJson(json))
+          .toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// 7. 계약자 상담/민원 기록 신규 등록 (/api/v1/contractor-consultations/)
+  Future<bool> createConsultationLog({
+    required int contractorId,
+    required String consultationDate,
+    required String channel,
+    required String category,
+    required String title,
+    required String content,
+    String status = '1',
+    String priority = 'normal',
+    bool followUpRequired = false,
+    String? followUpNote,
+    bool isImportant = false,
+  }) async {
+    try {
+      final payload = <String, dynamic>{
+        'contractor': contractorId,
+        'consultation_date': consultationDate,
+        'channel': channel,
+        'category': category,
+        'title': title,
+        'content': content,
+        'status': status,
+        'priority': priority,
+        'follow_up_required': followUpRequired,
+        'is_important': isImportant,
+      };
+      if (followUpNote != null && followUpNote.trim().isNotEmpty) {
+        payload['follow_up_note'] = followUpNote.trim();
+      }
+
+      final response = await dio.post(
+        '/api/v1/contractor-consultations/',
+        data: payload,
+      );
+
+      return response.statusCode == 201 || response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// 8. 계약자 주소 변경 이력 목록 조회 (/api/v1/contractor-address/?contractor={contractorId})
+  Future<List<ContractorAddressModel>> fetchAddressHistory({
+    required int contractorId,
+  }) async {
+    try {
+      final response = await dio.get(
+        '/api/v1/contractor-address/',
+        queryParameters: {
+          'contractor': contractorId,
+        },
+      );
+
+      final List<dynamic> results =
+          response.data is Map && response.data.containsKey('results')
+              ? response.data['results']
+              : (response.data is List ? response.data : []);
+
+      return results
+          .map((json) => ContractorAddressModel.fromJson(json))
+          .toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// 9. 계약자 변경 주소 신규 등록 (/api/v1/contractor-address/)
+  /// (백엔드 Serializer에서 생성 시 기존 주소를 자동으로 is_current=False 처리함)
+  Future<bool> createAddress({
+    required int contractorId,
+    required String idZipcode,
+    required String idAddress1,
+    String? idAddress2,
+    String? idAddress3,
+    required String dmZipcode,
+    required String dmAddress1,
+    String? dmAddress2,
+    String? dmAddress3,
+  }) async {
+    try {
+      final payload = <String, dynamic>{
+        'contractor': contractorId,
+        'id_zipcode': idZipcode.trim(),
+        'id_address1': idAddress1.trim(),
+        'id_address2': (idAddress2 ?? '').trim(),
+        'id_address3': (idAddress3 ?? '').trim(),
+        'dm_zipcode': dmZipcode.trim(),
+        'dm_address1': dmAddress1.trim(),
+        'dm_address2': (dmAddress2 ?? '').trim(),
+        'dm_address3': (dmAddress3 ?? '').trim(),
+        'is_current': true,
+      };
+
+      final response = await dio.post(
+        '/api/v1/contractor-address/',
+        data: payload,
+      );
+
+      return response.statusCode == 201 || response.statusCode == 200;
+    } catch (e) {
+      return false;
     }
   }
 }
