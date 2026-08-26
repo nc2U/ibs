@@ -154,9 +154,9 @@ const togglePermission = async (role: Role, permissionPk: number) => {
                     style="min-width: 100px"
                   >
                     {{ role.name }}
-                    <v-chip v-if="role.is_confidential" color="danger" size="x-small" class="ms-1"
-                      >보안</v-chip
-                    >
+                    <v-chip v-if="role.is_confidential" color="danger" size="x-small" class="ms-1">
+                      보안
+                    </v-chip>
                   </th>
                 </tr>
               </thead>
@@ -173,9 +173,14 @@ const togglePermission = async (role: Role, permissionPk: number) => {
                   <tr v-for="perm in perms" :key="perm.pk">
                     <td class="ps-4">
                       <span class="fw-semibold mr-2">{{ perm.name }}</span>
-                      <v-chip v-if="perm.is_confidential" color="danger" size="x-small" class="me-2"
-                        >보안</v-chip
+                      <v-chip
+                        v-if="perm.is_confidential"
+                        color="danger"
+                        size="x-small"
+                        class="me-2"
                       >
+                        보안
+                      </v-chip>
                       <small class="text-muted">{{ perm.description }}</small>
                     </td>
                     <td

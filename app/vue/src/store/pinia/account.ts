@@ -97,7 +97,12 @@ export const useAccount = defineStore('account', () => {
   const setUser = (user: User) => {
     userInfo.value = user
 
-    fetchTodoList().then(() => fetchProfile())
+    const workStore = useWork()
+    Promise.all([
+      fetchTodoList(),
+      workStore.fetchMyProjectsList(),
+      workStore.fetchGroupedPermissions(),
+    ]).then(() => fetchProfile())
   }
 
   const login = async (payload: { email: string; password: string; redirect: string }) => {

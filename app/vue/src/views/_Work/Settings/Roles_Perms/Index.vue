@@ -72,7 +72,7 @@ const roleDelete = async () => {
   }
 }
 
-onBeforeMount(() => {
+onBeforeMount(async () => {
   loading.value = false
 })
 </script>
