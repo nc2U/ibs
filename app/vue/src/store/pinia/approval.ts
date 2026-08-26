@@ -38,10 +38,10 @@ export const useApproval = defineStore('approval', () => {
   const docTypeList = ref<DocumentType[]>([])
   const forDraftDocTypeList = ref<DocumentType[]>([])
 
-  const fetchDocTypeList = (categoryId?: number | null) => {
+  const fetchDocTypeList = async (categoryId?: number | null) => {
     const params = new URLSearchParams()
     if (categoryId) params.append('category_id', String(categoryId))
-    return api
+    return await api
       .get(`/approval-doc-type/?${params}`)
       .then(res => (docTypeList.value = res.data.results ?? res.data))
       .catch(err => {
@@ -49,10 +49,10 @@ export const useApproval = defineStore('approval', () => {
       })
   }
 
-  const fetchForDraftDocTypeList = (assignmentId?: number | null) => {
+  const fetchForDraftDocTypeList = async (assignmentId?: number | null) => {
     const params = new URLSearchParams()
     if (assignmentId) params.append('assignment', String(assignmentId))
-    return api
+    return await api
       .get(`/approval-doc-type/for_draft/?${params}`)
       .then(res => (forDraftDocTypeList.value = res.data.results ?? res.data))
       .catch(err => {
@@ -74,11 +74,16 @@ export const useApproval = defineStore('approval', () => {
   // ── 동적 결재선 미리보기 ───────────────────────────────
   const routePreview = ref<RoutePreviewStep[]>([])
 
-  const fetchRoutePreview = (docTypeId: number, assignmentId?: number | null, amount?: number | string | null) => {
+  const fetchRoutePreview = async (
+    docTypeId: number,
+    assignmentId?: number | null,
+    amount?: number | string | null,
+  ) => {
     const params = new URLSearchParams({ doc_type: String(docTypeId) })
     if (assignmentId) params.append('assignment', String(assignmentId))
-    if (amount !== undefined && amount !== null && amount !== '') params.append('amount', String(amount))
-    return api
+    if (amount !== undefined && amount !== null && amount !== '')
+      params.append('amount', String(amount))
+    return await api
       .get(`/approval-document/preview_route/?${params}`)
       .then(res => (routePreview.value = res.data))
       .catch(err => errorHandle(err.response.data))
@@ -89,12 +94,12 @@ export const useApproval = defineStore('approval', () => {
   const documentList = ref<ApprovalDocument[]>([])
   const documentCount = ref(0)
 
-  const fetchDocumentList = (payload: DocFilter = {}) => {
+  const fetchDocumentList = async (payload: DocFilter = {}) => {
     const params = new URLSearchParams()
     Object.entries(payload).forEach(([k, v]) => {
       if (v !== undefined && v !== '') params.append(k, String(v))
     })
-    return api
+    return await api
       .get(`/approval-document/?${params}`)
       .then(res => {
         documentList.value = res.data.results ?? res.data
@@ -111,7 +116,8 @@ export const useApproval = defineStore('approval', () => {
 
   const createDocument = async (payload: PatchApprovalDocument | FormData) => {
     try {
-      const headers = payload instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : undefined
+      const headers =
+        payload instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : undefined
       const res = await api.post('/approval-document/', payload, { headers })
       document.value = res.data
       await fetchMyDrafted()
@@ -124,7 +130,8 @@ export const useApproval = defineStore('approval', () => {
 
   const updateDocument = async (pk: number, payload: PatchApprovalDocument | FormData) => {
     try {
-      const headers = payload instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : undefined
+      const headers =
+        payload instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : undefined
       const res = await api.patch(`/approval-document/${pk}/`, payload, { headers })
       document.value = res.data
       message()
@@ -175,6 +182,23 @@ export const useApproval = defineStore('approval', () => {
       .catch(err => {
         console.warn('fetchMyDrafted failed:', err?.message || err)
       })
+
+  // ── 60초 주기 자동 갱신 (Polling) ─────────────────────
+  let pollingTimer: ReturnType<typeof setInterval> | null = null
+
+  const startPollingMyPending = () => {
+    if (pollingTimer) return
+    pollingTimer = setInterval(async () => {
+      await fetchMyPending()
+    }, 60000)
+  }
+
+  const stopPollingMyPending = () => {
+    if (pollingTimer) {
+      clearInterval(pollingTimer)
+      pollingTimer = null
+    }
+  }
 
   // ── 결재 완료(승인) 문서 목록 ─────────────────────────
   const approvedList = ref<ApprovalDocument[]>([])
@@ -266,27 +290,27 @@ export const useApproval = defineStore('approval', () => {
   const createDelegation = (payload: Partial<ApprovalDelegation>) =>
     api
       .post('/approval-delegation/', payload)
-      .then(() => {
+      .then(async () => {
         message()
-        fetchDelegationList()
+        await fetchDelegationList()
       })
       .catch(err => errorHandle(err.response.data))
 
   const updateDelegation = (id: number, payload: Partial<ApprovalDelegation>) =>
     api
       .patch(`/approval-delegation/${id}/`, payload)
-      .then(() => {
+      .then(async () => {
         message()
-        fetchDelegationList()
+        await fetchDelegationList()
       })
       .catch(err => errorHandle(err.response.data))
 
   const deleteDelegation = (id: number) =>
     api
       .delete(`/approval-delegation/${id}/`)
-      .then(() => {
+      .then(async () => {
         message()
-        fetchDelegationList()
+        await fetchDelegationList()
       })
       .catch(err => errorHandle(err.response.data))
 
@@ -332,5 +356,8 @@ export const useApproval = defineStore('approval', () => {
     createDelegation,
     updateDelegation,
     deleteDelegation,
+    // polling
+    startPollingMyPending,
+    stopPollingMyPending,
   }
 })

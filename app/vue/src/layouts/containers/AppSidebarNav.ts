@@ -10,6 +10,7 @@ import {
   ref,
   resolveComponent,
   watch,
+  type VNode,
 } from 'vue'
 import { CIcon } from '@coreui/icons-vue'
 import { CBadge, CNavGroup, CSidebarNav } from '@coreui/vue'
@@ -66,6 +67,37 @@ const filterNavItems = (items: Item[], predicates: ((it: Item) => boolean)[]): I
     )
 }
 
+const getAuthMap = (
+  isStaff: boolean,
+  permissions: {
+    comLedgerRead: boolean
+    hrWorkRead: boolean
+    contractRead: boolean
+    paymentRead: boolean
+    noticeRead: boolean
+    ledgerRead: boolean
+    docsRead: boolean
+    prManage: boolean
+    siteRead: boolean
+    comManage: boolean
+    authManage: boolean
+  },
+) => ({
+  isStaff,
+  isCLManager: permissions.comLedgerRead,
+  isHrManager: permissions.hrWorkRead,
+  isContManager: permissions.contractRead,
+  isPayManager: permissions.paymentRead,
+  isNotiManager: permissions.noticeRead,
+  isLedgerManager: permissions.ledgerRead,
+  isDocsManager: permissions.docsRead,
+  isProjManager: permissions.prManage,
+  isSiteManager: permissions.siteRead,
+  isSetMenu: permissions.comManage || permissions.authManage,
+  isCompany: permissions.comManage,
+  isAuthor: permissions.authManage,
+})
+
 const AppSidebarNav = defineComponent({
   name: 'AppSidebarNav',
   setup() {
@@ -80,69 +112,45 @@ const AppSidebarNav = defineComponent({
     const approvalStore = useApproval()
     const isStaff = computed(() => account.isStaff)
 
-    // 결재 대기 문서 목록 로드 및 60초 주기 갱신
+    // 결재 대기 문서 로드 및 폴링
     watch(
       isStaff,
-      async val => {
+      val => {
         if (val) {
-          await approvalStore.fetchMyPending()
+          approvalStore.fetchMyPending()
+          approvalStore.startPollingMyPending()
+        } else {
+          approvalStore.stopPollingMyPending()
         }
       },
       { immediate: true },
     )
 
-    let pollingTimer: ReturnType<typeof setInterval> | null = null
-    onMounted(() => {
-      pollingTimer = setInterval(async () => {
-        if (isStaff.value) {
-          await approvalStore.fetchMyPending()
-        }
-      }, 60000)
-    })
     onUnmounted(() => {
-      if (pollingTimer) clearInterval(pollingTimer)
+      approvalStore.stopPollingMyPending()
     })
 
     const { canGlobal, PERM } = usePerms()
-    const comLedgerRead = computed(() => canGlobal(PERM.LEDGER_COM_READ))
-    const hrWorkRead = computed(() => canGlobal(PERM.HR_WORK_READ))
-
-    const contractRead = computed(() => canGlobal(PERM.CONTRACT_READ))
-    const paymentRead = computed(() => canGlobal(PERM.PAYMENT_READ))
-    const noticeRead = computed(() => canGlobal(PERM.NOTICE_READ))
-    const ledgerRead = computed(() => canGlobal(PERM.LEDGER_READ))
-    const docsRead = computed(() => canGlobal(PERM.DOCS_READ))
-    const prManage = computed(
-      () => canGlobal(PERM.PROJECT_CREATE) || canGlobal(PERM.PROJECT_UPDATE),
-    )
-    const siteRead = computed(() => canGlobal(PERM.SITE_READ))
-
-    const comManage = computed(() => isStaff.value && prManage.value)
-    const authManage = computed(() => isStaff.value && canGlobal(PERM.PROJECT_MEMBER))
+    const permissions = computed(() => ({
+      comLedgerRead: canGlobal(PERM.LEDGER_COM_READ),
+      hrWorkRead: canGlobal(PERM.HR_WORK_READ),
+      contractRead: canGlobal(PERM.CONTRACT_READ),
+      paymentRead: canGlobal(PERM.PAYMENT_READ),
+      noticeRead: canGlobal(PERM.NOTICE_READ),
+      ledgerRead: canGlobal(PERM.LEDGER_READ),
+      docsRead: canGlobal(PERM.DOCS_READ),
+      prManage: canGlobal(PERM.PROJECT_CREATE) || canGlobal(PERM.PROJECT_UPDATE),
+      siteRead: canGlobal(PERM.SITE_READ),
+      comManage: isStaff.value && (canGlobal(PERM.PROJECT_CREATE) || canGlobal(PERM.PROJECT_UPDATE)),
+      authManage: isStaff.value && canGlobal(PERM.PROJECT_MEMBER),
+    }))
 
     const predicates = computed(() => {
-      // 권한 키별 접근 제어 매핑
-      const authMap: Record<string, boolean> = {
-        isStaff: isStaff.value,
-        isCLManager: comLedgerRead.value,
-        isHrManager: hrWorkRead.value,
-        isContManager: contractRead.value,
-        isPayManager: paymentRead.value,
-        isNotiManager: noticeRead.value,
-        isLedgerManager: ledgerRead.value,
-        isDocsManager: docsRead.value,
-        isProjManager: prManage.value,
-        isSiteManager: siteRead.value,
-        isSetMenu: comManage.value || authManage.value,
-        isCompany: comManage.value,
-        isAuthor: authManage.value,
-      }
+      const authMap = getAuthMap(isStaff.value, permissions.value)
 
       return [
         (it: Item) => {
-          // 만약 현재 아이템에 auth가 설정되어 있다면, 권한 체크를 반드시 통과해야 함
           if (it.auth) return authMap[it.auth] ?? false
-          // auth가 설정되어 있지 않으면 표시
           return true
         },
       ]
@@ -153,7 +161,7 @@ const AppSidebarNav = defineComponent({
     )
 
     // ---------------------------
-    // 활성 메뉴 자동 열기/닫기 (openStates 상태를 갱신하도록 설계)
+    // 활성 메뉴 자동 열기/닫기
     // ---------------------------
     const openActiveMenu = (items: Item[]) => {
       items.forEach(item => {
@@ -173,20 +181,20 @@ const AppSidebarNav = defineComponent({
     // ---------------------------
     // 렌더 헬퍼
     // ---------------------------
-    const renderContent = (item: Item) => {
-      const children: any[] = []
+    const renderContent = (item: Item): VNode[] => {
+      const children: VNode[] = []
       if (item.icon) children.push(h(CIcon, { customClassName: 'nav-icon', name: item.icon }))
-      if (item.name) children.push(item.name)
+      if (item.name) children.push(h('span', {}, item.name))
       const badge = typeof item.badge === 'function' ? item.badge() : item.badge
       if (badge && badge.text) {
         children.push(
-          h(CBadge, { class: 'ms-auto', color: badge.color || 'primary' }, { default: () => badge.text! }),
+          h(CBadge, { class: 'ms-auto', color: badge.color || 'primary' }, { default: () => badge.text }),
         )
       }
       return children
     }
 
-    const renderItem = (item: Item) => {
+    const renderItem = (item: Item): VNode => {
       if (Array.isArray(item.items) && item.items.length > 0) {
         const key = item.to || item.name || ''
         const isOpen = key ? !!openStates[key] : false
@@ -241,7 +249,7 @@ const AppSidebarNav = defineComponent({
     }
 
     // ---------------------------
-    // 라우트 변경 및 메뉴 데이터 로드 감지 (사이드바 클릭 제외)
+    // 라우트 변경 및 메뉴 데이터 로드 감지
     // ---------------------------
     watch(
       [() => route.fullPath, () => reactiveNav.value],
