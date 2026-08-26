@@ -9848,7 +9848,7 @@
       "user_visible": "ALL",
       "order": 1,
       "created": "2024-02-29T03:46:04Z",
-      "updated": "2026-08-24T15:31:31.847Z",
+      "updated": "2026-08-25T14:09:27.228Z",
       "creator": 1,
       "permissions": [
         1,
@@ -9920,7 +9920,7 @@
       "user_visible": "PRJ",
       "order": 1,
       "created": "2024-02-29T03:47:14Z",
-      "updated": "2026-08-24T15:31:37.436Z",
+      "updated": "2026-08-25T14:13:37.094Z",
       "creator": 1,
       "permissions": [
         7,
@@ -9970,7 +9970,7 @@
       "user_visible": "PRJ",
       "order": 1,
       "created": "2024-02-29T03:48:04Z",
-      "updated": "2026-08-24T15:31:43.700Z",
+      "updated": "2026-08-25T14:13:58.318Z",
       "creator": 1,
       "permissions": [
         11,
@@ -9999,6 +9999,7 @@
         47,
         49,
         51,
+        52,
         53
       ]
     }
@@ -10007,7 +10008,7 @@
     "model": "work.role",
     "pk": 4,
     "fields": {
-      "name": "[PR] 관리자",
+      "name": "[WS] 관리자",
       "category": "work_space",
       "is_confidential": false,
       "is_for_dev_project": true,
@@ -10016,11 +10017,10 @@
       "user_visible": "ALL",
       "order": 1,
       "created": "2024-02-29T03:59:14Z",
-      "updated": "2026-08-24T11:07:21.533Z",
+      "updated": "2026-08-25T14:14:10.553Z",
       "creator": 1,
       "permissions": [
         1,
-        2,
         3,
         4,
         5,
@@ -10079,7 +10079,7 @@
     "model": "work.role",
     "pk": 5,
     "fields": {
-      "name": "[PR] 스태프",
+      "name": "[WS] 스태프",
       "category": "work_space",
       "is_confidential": false,
       "is_for_dev_project": true,
@@ -10088,7 +10088,7 @@
       "user_visible": "PRJ",
       "order": 1,
       "created": "2024-02-29T03:59:24Z",
-      "updated": "2026-08-24T11:07:21.539Z",
+      "updated": "2026-08-25T14:14:24.900Z",
       "creator": 1,
       "permissions": [
         7,
@@ -10129,7 +10129,7 @@
     "model": "work.role",
     "pk": 6,
     "fields": {
-      "name": "[PR] 관계자",
+      "name": "[WS] 관계자",
       "category": "work_space",
       "is_confidential": false,
       "is_for_dev_project": true,
@@ -10138,13 +10138,11 @@
       "user_visible": "PRJ",
       "order": 1,
       "created": "2024-05-07T06:50:23Z",
-      "updated": "2026-08-24T11:07:21.540Z",
+      "updated": "2026-08-25T14:14:43.475Z",
       "creator": 1,
       "permissions": [
         11,
         12,
-        13,
-        15,
         19,
         28,
         30,
@@ -10173,16 +10171,21 @@
       "user_visible": "ALL",
       "order": 1,
       "created": "2024-07-14T00:09:41.184Z",
-      "updated": "2026-08-23T18:18:42.191Z",
+      "updated": "2026-08-25T14:15:17.062Z",
       "creator": 1,
       "permissions": [
         42,
         43,
         44,
-        68,
-        69,
-        70,
-        71
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        65,
+        66,
+        67
       ]
     }
   },
@@ -10199,16 +10202,16 @@
       "user_visible": "ALL",
       "order": 1,
       "created": "2024-07-14T00:09:41.189Z",
-      "updated": "2026-08-23T18:18:44.081Z",
+      "updated": "2026-08-25T14:15:27.729Z",
       "creator": 1,
       "permissions": [
         42,
         43,
         44,
-        76,
-        77,
-        78,
-        79
+        54,
+        55,
+        56,
+        57
       ]
     }
   },
@@ -10225,7 +10228,7 @@
       "user_visible": "ALL",
       "order": 2,
       "created": "2026-07-23T17:09:02.168Z",
-      "updated": "2026-08-24T15:34:00.055Z",
+      "updated": "2026-08-25T14:16:07.190Z",
       "creator": 1,
       "permissions": [
         1,
@@ -10237,15 +10240,6 @@
         43,
         44,
         45,
-        54,
-        55,
-        56,
-        57,
-        58,
-        59,
-        60,
-        61,
-        62,
         63,
         64,
         65,
@@ -10262,7 +10256,13 @@
         76,
         77,
         78,
-        79
+        79,
+        80,
+        81,
+        82,
+        83,
+        84,
+        85
       ]
     }
   },
@@ -10270,16 +10270,16 @@
     "model": "work.role",
     "pk": 10,
     "fields": {
-      "name": "[PM] PM관리자",
+      "name": "[PR] PM관리자",
       "category": "ibs_pr_manage",
       "is_confidential": false,
-      "is_for_dev_project": false,
+      "is_for_dev_project": true,
       "assignable": true,
       "issue_visible": "PUB",
       "user_visible": "ALL",
       "order": 3,
       "created": "2026-07-23T17:10:33.447Z",
-      "updated": "2026-08-24T15:34:27.710Z",
+      "updated": "2026-08-25T14:16:45.934Z",
       "creator": 1,
       "permissions": [
         1,
@@ -10291,15 +10291,6 @@
         43,
         44,
         45,
-        54,
-        55,
-        56,
-        57,
-        58,
-        59,
-        60,
-        61,
-        62,
         63,
         64,
         65,
@@ -10312,7 +10303,17 @@
         72,
         73,
         74,
-        75
+        75,
+        76,
+        77,
+        78,
+        79,
+        80,
+        81,
+        82,
+        83,
+        84,
+        85
       ]
     }
   },
@@ -10329,22 +10330,22 @@
       "user_visible": "PRJ",
       "order": 4,
       "created": "2026-07-23T17:24:27.264Z",
-      "updated": "2026-08-24T11:07:21.541Z",
+      "updated": "2026-08-25T14:17:10.152Z",
       "creator": 1,
       "permissions": [
         42,
         43,
         44,
-        54,
-        55,
-        56,
-        57,
-        58,
-        59,
-        64,
-        65,
-        66,
-        67
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        78,
+        79,
+        80,
+        81
       ]
     }
   },
@@ -10361,20 +10362,20 @@
       "user_visible": "PRJ",
       "order": 5,
       "created": "2026-07-23T17:27:25.976Z",
-      "updated": "2026-08-24T11:07:21.541Z",
+      "updated": "2026-08-25T14:17:34.432Z",
       "creator": 1,
       "permissions": [
         42,
         43,
         44,
-        60,
-        61,
-        62,
-        63,
-        64,
-        65,
-        66,
-        67
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80,
+        81
       ]
     }
   },
@@ -10391,20 +10392,25 @@
       "user_visible": "PRJ",
       "order": 6,
       "created": "2026-08-23T15:41:04.082Z",
-      "updated": "2026-08-24T11:07:21.542Z",
+      "updated": "2026-08-25T14:18:11.172Z",
       "creator": 1,
       "permissions": [
         42,
         43,
         44,
+        63,
         64,
         65,
         66,
         67,
-        68,
-        69,
-        70,
-        71
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80,
+        81
       ]
     }
   },
@@ -10421,16 +10427,15 @@
       "user_visible": "PRJ",
       "order": 7,
       "created": "2026-08-23T18:05:04.246Z",
-      "updated": "2026-08-24T11:07:21.542Z",
+      "updated": "2026-08-25T14:18:38.326Z",
       "creator": 1,
       "permissions": [
         42,
-        43,
-        44,
-        72,
-        73,
-        74,
-        75
+        78,
+        82,
+        83,
+        84,
+        85
       ]
     }
   },
@@ -10442,6 +10447,7 @@
       "is_for_workspace": true,
       "is_for_hq": true,
       "is_for_project": true,
+      "is_confidential": false,
       "code": "project.create",
       "name": "프로젝트생성",
       "is_default": false,
@@ -10456,6 +10462,7 @@
       "is_for_workspace": true,
       "is_for_hq": true,
       "is_for_project": true,
+      "is_confidential": false,
       "code": "project.update",
       "name": "프로젝트 편집",
       "is_default": false,
@@ -10470,6 +10477,7 @@
       "is_for_workspace": true,
       "is_for_hq": true,
       "is_for_project": true,
+      "is_confidential": false,
       "code": "project.close",
       "name": "프로젝트 닫기/열기",
       "is_default": false,
@@ -10484,6 +10492,7 @@
       "is_for_workspace": true,
       "is_for_hq": false,
       "is_for_project": false,
+      "is_confidential": false,
       "code": "project.delete",
       "name": "프로젝트 삭제",
       "is_default": false,
@@ -10498,6 +10507,7 @@
       "is_for_workspace": true,
       "is_for_hq": true,
       "is_for_project": true,
+      "is_confidential": false,
       "code": "project.public",
       "name": "프로젝트 공개/비공개 설정",
       "is_default": false,
@@ -10512,6 +10522,7 @@
       "is_for_workspace": true,
       "is_for_hq": false,
       "is_for_project": false,
+      "is_confidential": false,
       "code": "project.module",
       "name": "프로젝트 모듈 선택",
       "is_default": false,
@@ -10526,6 +10537,7 @@
       "is_for_workspace": true,
       "is_for_hq": true,
       "is_for_project": true,
+      "is_confidential": false,
       "code": "project.member",
       "name": "구성원 관리",
       "is_default": false,
@@ -10540,6 +10552,7 @@
       "is_for_workspace": true,
       "is_for_hq": false,
       "is_for_project": false,
+      "is_confidential": false,
       "code": "project.version",
       "name": "버전 관리",
       "is_default": false,
@@ -10554,6 +10567,7 @@
       "is_for_workspace": true,
       "is_for_hq": false,
       "is_for_project": false,
+      "is_confidential": false,
       "code": "project.create_sub",
       "name": "하위 프로젝트 생성",
       "is_default": false,
@@ -10568,6 +10582,7 @@
       "is_for_workspace": true,
       "is_for_hq": false,
       "is_for_project": false,
+      "is_confidential": false,
       "code": "project.pub_query",
       "name": "공용 검색 양식 관리",
       "is_default": false,
@@ -10582,6 +10597,7 @@
       "is_for_workspace": true,
       "is_for_hq": false,
       "is_for_project": false,
+      "is_confidential": false,
       "code": "project.save_query",
       "name": "검색 양식 저장",
       "is_default": true,
@@ -10596,6 +10612,7 @@
       "is_for_workspace": true,
       "is_for_hq": false,
       "is_for_project": false,
+      "is_confidential": false,
       "code": "meeting.read",
       "name": "회의록 보기",
       "is_default": true,
@@ -10610,6 +10627,7 @@
       "is_for_workspace": true,
       "is_for_hq": false,
       "is_for_project": false,
+      "is_confidential": false,
       "code": "meeting.create",
       "name": "회의록 추가",
       "is_default": false,
@@ -10624,6 +10642,7 @@
       "is_for_workspace": true,
       "is_for_hq": false,
       "is_for_project": false,
+      "is_confidential": false,
       "code": "meeting.update",
       "name": "회의록 편집",
       "is_default": false,
@@ -10638,6 +10657,7 @@
       "is_for_workspace": true,
       "is_for_hq": false,
       "is_for_project": false,
+      "is_confidential": false,
       "code": "meeting.own_update",
       "name": "내 회의록 편집",
       "is_default": true,
@@ -10652,6 +10672,7 @@
       "is_for_workspace": true,
       "is_for_hq": false,
       "is_for_project": false,
+      "is_confidential": false,
       "code": "meeting.edit_confirmed",
       "name": "확정된 회의록 편집",
       "is_default": false,
@@ -10666,6 +10687,7 @@
       "is_for_workspace": true,
       "is_for_hq": false,
       "is_for_project": false,
+      "is_confidential": false,
       "code": "meeting.delete",
       "name": "회의록 삭제",
       "is_default": false,
@@ -10680,6 +10702,7 @@
       "is_for_workspace": true,
       "is_for_hq": false,
       "is_for_project": false,
+      "is_confidential": false,
       "code": "meeting.confirm",
       "name": "회의록 확정 승인",
       "is_default": false,
@@ -10694,6 +10717,7 @@
       "is_for_workspace": true,
       "is_for_hq": false,
       "is_for_project": false,
+      "is_confidential": false,
       "code": "issue.read",
       "name": "업무 보기",
       "is_default": true,
@@ -10708,6 +10732,7 @@
       "is_for_workspace": true,
       "is_for_hq": false,
       "is_for_project": false,
+      "is_confidential": false,
       "code": "issue.create",
       "name": "업무 추가",
       "is_default": true,
@@ -10722,6 +10747,7 @@
       "is_for_workspace": true,
       "is_for_hq": false,
       "is_for_project": false,
+      "is_confidential": false,
       "code": "issue.update",
       "name": "업무 편집",
       "is_default": false,
@@ -10736,6 +10762,7 @@
       "is_for_workspace": true,
       "is_for_hq": false,
       "is_for_project": false,
+      "is_confidential": false,
       "code": "issue.own_update",
       "name": "내 업무 편집",
       "is_default": true,
@@ -10750,6 +10777,7 @@
       "is_for_workspace": true,
       "is_for_hq": false,
       "is_for_project": false,
+      "is_confidential": false,
       "code": "issue.copy",
       "name": "업무 복사",
       "is_default": false,
@@ -10764,6 +10792,7 @@
       "is_for_workspace": true,
       "is_for_hq": false,
       "is_for_project": false,
+      "is_confidential": false,
       "code": "issue.rel_manage",
       "name": "업무 관계 관리",
       "is_default": true,
@@ -10778,6 +10807,7 @@
       "is_for_workspace": true,
       "is_for_hq": false,
       "is_for_project": false,
+      "is_confidential": false,
       "code": "issue.sub_manage",
       "name": "하위 업무 관리",
       "is_default": true,
@@ -10792,7 +10822,8 @@
       "is_for_workspace": true,
       "is_for_hq": false,
       "is_for_project": false,
-      "code": "issue.public",
+      "is_confidential": false,
+      "code": "issue.private",
       "name": "업무 공개/비공개 설정",
       "is_default": false,
       "description": ""
@@ -10806,7 +10837,8 @@
       "is_for_workspace": true,
       "is_for_hq": false,
       "is_for_project": false,
-      "code": "issue.own_public",
+      "is_confidential": false,
+      "code": "issue.own_private",
       "name": "내 업무 공개/비공개 설정",
       "is_default": true,
       "description": ""
@@ -10820,6 +10852,7 @@
       "is_for_workspace": true,
       "is_for_hq": false,
       "is_for_project": false,
+      "is_confidential": false,
       "code": "issue.comment_create",
       "name": "댓글 추가",
       "is_default": true,
@@ -10834,6 +10867,7 @@
       "is_for_workspace": true,
       "is_for_hq": false,
       "is_for_project": false,
+      "is_confidential": false,
       "code": "issue.comment_update",
       "name": "댓글 편집",
       "is_default": false,
@@ -10848,6 +10882,7 @@
       "is_for_workspace": true,
       "is_for_hq": false,
       "is_for_project": false,
+      "is_confidential": false,
       "code": "issue.comment_own_update",
       "name": "내 댓글 편집(비공개 설정)",
       "is_default": true,
@@ -10862,6 +10897,7 @@
       "is_for_workspace": true,
       "is_for_hq": false,
       "is_for_project": false,
+      "is_confidential": false,
       "code": "issue.private_comment_read",
       "name": "비공개 댓글 보기",
       "is_default": false,
@@ -10876,6 +10912,7 @@
       "is_for_workspace": true,
       "is_for_hq": false,
       "is_for_project": false,
+      "is_confidential": false,
       "code": "issue.private_comment_set",
       "name": "비공개 댓글 설정",
       "is_default": false,
@@ -10890,6 +10927,7 @@
       "is_for_workspace": true,
       "is_for_hq": false,
       "is_for_project": false,
+      "is_confidential": false,
       "code": "issue.delete",
       "name": "업무 삭제",
       "is_default": false,
@@ -10904,6 +10942,7 @@
       "is_for_workspace": true,
       "is_for_hq": false,
       "is_for_project": false,
+      "is_confidential": false,
       "code": "issue.watcher_read",
       "name": "업무 관람자 보기",
       "is_default": false,
@@ -10918,6 +10957,7 @@
       "is_for_workspace": true,
       "is_for_hq": false,
       "is_for_project": false,
+      "is_confidential": false,
       "code": "issue.watcher_create",
       "name": "업무 관람자 추가",
       "is_default": false,
@@ -10932,6 +10972,7 @@
       "is_for_workspace": true,
       "is_for_hq": false,
       "is_for_project": false,
+      "is_confidential": false,
       "code": "issue.watcher_delete",
       "name": "업무 관람자 삭제",
       "is_default": false,
@@ -10946,6 +10987,7 @@
       "is_for_workspace": true,
       "is_for_hq": false,
       "is_for_project": false,
+      "is_confidential": false,
       "code": "issue.import",
       "name": "업무 가져 오기",
       "is_default": false,
@@ -10960,6 +11002,7 @@
       "is_for_workspace": true,
       "is_for_hq": false,
       "is_for_project": false,
+      "is_confidential": false,
       "code": "issue.category_manage",
       "name": "업무 범주 관리",
       "is_default": false,
@@ -10974,6 +11017,7 @@
       "is_for_workspace": true,
       "is_for_hq": false,
       "is_for_project": false,
+      "is_confidential": false,
       "code": "news.read",
       "name": "공지 보기",
       "is_default": true,
@@ -10988,6 +11032,7 @@
       "is_for_workspace": true,
       "is_for_hq": false,
       "is_for_project": false,
+      "is_confidential": false,
       "code": "news.manage",
       "name": "공지 관리",
       "is_default": false,
@@ -11002,6 +11047,7 @@
       "is_for_workspace": true,
       "is_for_hq": false,
       "is_for_project": false,
+      "is_confidential": false,
       "code": "news.comment",
       "name": "공지 댓글 달기",
       "is_default": true,
@@ -11016,6 +11062,7 @@
       "is_for_workspace": true,
       "is_for_hq": true,
       "is_for_project": true,
+      "is_confidential": false,
       "code": "docs.read",
       "name": "문서 보기",
       "is_default": true,
@@ -11030,6 +11077,7 @@
       "is_for_workspace": true,
       "is_for_hq": true,
       "is_for_project": true,
+      "is_confidential": false,
       "code": "docs.create",
       "name": "문서 추가",
       "is_default": false,
@@ -11044,6 +11092,7 @@
       "is_for_workspace": true,
       "is_for_hq": true,
       "is_for_project": true,
+      "is_confidential": false,
       "code": "docs.update",
       "name": "문서 편집",
       "is_default": false,
@@ -11058,6 +11107,7 @@
       "is_for_workspace": true,
       "is_for_hq": true,
       "is_for_project": true,
+      "is_confidential": false,
       "code": "docs.delete",
       "name": "문서 삭제",
       "is_default": false,
@@ -11072,6 +11122,7 @@
       "is_for_workspace": true,
       "is_for_hq": false,
       "is_for_project": false,
+      "is_confidential": false,
       "code": "forum.read",
       "name": "게시물 보기",
       "is_default": true,
@@ -11086,6 +11137,7 @@
       "is_for_workspace": true,
       "is_for_hq": false,
       "is_for_project": false,
+      "is_confidential": false,
       "code": "forum.create",
       "name": "게시물 추가",
       "is_default": true,
@@ -11100,6 +11152,7 @@
       "is_for_workspace": true,
       "is_for_hq": false,
       "is_for_project": false,
+      "is_confidential": false,
       "code": "forum.update",
       "name": "게시물 편집",
       "is_default": false,
@@ -11114,6 +11167,7 @@
       "is_for_workspace": true,
       "is_for_hq": false,
       "is_for_project": false,
+      "is_confidential": false,
       "code": "forum.own_update",
       "name": "내 게시물 편집",
       "is_default": true,
@@ -11128,6 +11182,7 @@
       "is_for_workspace": true,
       "is_for_hq": false,
       "is_for_project": false,
+      "is_confidential": false,
       "code": "forum.delete",
       "name": "게시물 삭제",
       "is_default": false,
@@ -11142,6 +11197,7 @@
       "is_for_workspace": true,
       "is_for_hq": false,
       "is_for_project": false,
+      "is_confidential": false,
       "code": "forum.own_delete",
       "name": "내 게시물 삭제",
       "is_default": false,
@@ -11156,6 +11212,7 @@
       "is_for_workspace": true,
       "is_for_hq": false,
       "is_for_project": false,
+      "is_confidential": false,
       "code": "forum.manage",
       "name": "게시판 관리",
       "is_default": false,
@@ -11170,6 +11227,7 @@
       "is_for_workspace": true,
       "is_for_hq": false,
       "is_for_project": false,
+      "is_confidential": false,
       "code": "calendar.read",
       "name": "캘린더 보기",
       "is_default": true,
@@ -11180,206 +11238,146 @@
     "model": "work.permission",
     "pk": 54,
     "fields": {
-      "module": "contract",
+      "module": "hr_work",
       "is_for_workspace": false,
       "is_for_hq": true,
-      "is_for_project": true,
-      "code": "contract.read",
-      "name": "계약 조회",
+      "is_for_project": false,
+      "is_confidential": true,
+      "code": "hr_work.read",
+      "name": "본사 인사 조회",
       "is_default": false,
-      "description": "계약 목록/상세/현황 조회"
+      "description": "직원/부서/직급 조회"
     }
   },
   {
     "model": "work.permission",
     "pk": 55,
     "fields": {
-      "module": "contract",
+      "module": "hr_work",
       "is_for_workspace": false,
       "is_for_hq": true,
-      "is_for_project": true,
-      "code": "contract.create",
-      "name": "계약 등록",
+      "is_for_project": false,
+      "is_confidential": true,
+      "code": "hr_work.create",
+      "name": "본사 인사 등록",
       "is_default": false,
-      "description": "신규 계약 생성"
+      "description": "직원/부서 등록"
     }
   },
   {
     "model": "work.permission",
     "pk": 56,
     "fields": {
-      "module": "contract",
+      "module": "hr_work",
       "is_for_workspace": false,
       "is_for_hq": true,
-      "is_for_project": true,
-      "code": "contract.update",
-      "name": "계약 수정",
+      "is_for_project": false,
+      "is_confidential": true,
+      "code": "hr_work.update",
+      "name": "본사 인사 수정",
       "is_default": false,
-      "description": "계약 정보 수정"
+      "description": "직원/부서 수정"
     }
   },
   {
     "model": "work.permission",
     "pk": 57,
     "fields": {
-      "module": "contract",
+      "module": "hr_work",
       "is_for_workspace": false,
       "is_for_hq": true,
-      "is_for_project": true,
-      "code": "contract.delete",
-      "name": "계약 삭제",
+      "is_for_project": false,
+      "is_confidential": true,
+      "code": "hr_work.delete",
+      "name": "본사 인사 삭제",
       "is_default": false,
-      "description": "계약 삭제"
+      "description": "직원/부서 삭제"
     }
   },
   {
     "model": "work.permission",
     "pk": 58,
     "fields": {
-      "module": "contract",
+      "module": "ledger",
       "is_for_workspace": false,
       "is_for_hq": true,
-      "is_for_project": true,
-      "code": "contract.succession",
-      "name": "계약 승계 처리",
+      "is_for_project": false,
+      "is_confidential": true,
+      "code": "ledger.com_read",
+      "name": "본사 원장 조회",
       "is_default": false,
-      "description": "승계 신청~완료 처리"
+      "description": "본사 자금 현황 조회"
     }
   },
   {
     "model": "work.permission",
     "pk": 59,
     "fields": {
-      "module": "contract",
+      "module": "ledger",
       "is_for_workspace": false,
       "is_for_hq": true,
-      "is_for_project": true,
-      "code": "contract.release",
-      "name": "계약 해지 처리",
+      "is_for_project": false,
+      "is_confidential": true,
+      "code": "ledger.com_create",
+      "name": "본사 원장 등록",
       "is_default": false,
-      "description": "해지 신청~확정 처리"
+      "description": "본사 회계 분개 생성"
     }
   },
   {
     "model": "work.permission",
     "pk": 60,
     "fields": {
-      "module": "payment",
+      "module": "ledger",
       "is_for_workspace": false,
       "is_for_hq": true,
-      "is_for_project": true,
-      "code": "payment.read",
-      "name": "수납 조회",
+      "is_for_project": false,
+      "is_confidential": true,
+      "code": "ledger.com_update",
+      "name": "본사 원장 수정",
       "is_default": false,
-      "description": "수납 내역 조회"
+      "description": "본사 회계 분개 수정"
     }
   },
   {
     "model": "work.permission",
     "pk": 61,
     "fields": {
-      "module": "payment",
+      "module": "ledger",
       "is_for_workspace": false,
       "is_for_hq": true,
-      "is_for_project": true,
-      "code": "payment.create",
-      "name": "수납 등록",
+      "is_for_project": false,
+      "is_confidential": true,
+      "code": "ledger.com_delete",
+      "name": "본사 원장 삭제",
       "is_default": false,
-      "description": "수납 등록"
+      "description": "본사 회계 분개 삭제"
     }
   },
   {
     "model": "work.permission",
     "pk": 62,
     "fields": {
-      "module": "payment",
+      "module": "ledger",
       "is_for_workspace": false,
       "is_for_hq": true,
-      "is_for_project": true,
-      "code": "payment.update",
-      "name": "수납 수정",
+      "is_for_project": false,
+      "is_confidential": true,
+      "code": "ledger.com_manage",
+      "name": "본사 마감 원장 관리",
       "is_default": false,
-      "description": "수납 정보 수정"
+      "description": "본사 마감 회계 관리"
     }
   },
   {
     "model": "work.permission",
     "pk": 63,
     "fields": {
-      "module": "payment",
-      "is_for_workspace": false,
-      "is_for_hq": true,
-      "is_for_project": true,
-      "code": "payment.delete",
-      "name": "수납 삭제",
-      "is_default": false,
-      "description": "수납 삭제"
-    }
-  },
-  {
-    "model": "work.permission",
-    "pk": 64,
-    "fields": {
-      "module": "notice",
-      "is_for_workspace": false,
-      "is_for_hq": true,
-      "is_for_project": true,
-      "code": "notice.read",
-      "name": "고지 조회",
-      "is_default": false,
-      "description": "고지 내역 조회"
-    }
-  },
-  {
-    "model": "work.permission",
-    "pk": 65,
-    "fields": {
-      "module": "notice",
-      "is_for_workspace": false,
-      "is_for_hq": true,
-      "is_for_project": true,
-      "code": "notice.create",
-      "name": "고지 발송",
-      "is_default": false,
-      "description": "고지서 발송/라벨/SMS"
-    }
-  },
-  {
-    "model": "work.permission",
-    "pk": 66,
-    "fields": {
-      "module": "notice",
-      "is_for_workspace": false,
-      "is_for_hq": true,
-      "is_for_project": true,
-      "code": "notice.update",
-      "name": "고지 수정",
-      "is_default": false,
-      "description": "발송 내역 수정"
-    }
-  },
-  {
-    "model": "work.permission",
-    "pk": 67,
-    "fields": {
-      "module": "notice",
-      "is_for_workspace": false,
-      "is_for_hq": true,
-      "is_for_project": true,
-      "code": "notice.delete",
-      "name": "고지 삭제",
-      "is_default": false,
-      "description": "발송 내역 삭제"
-    }
-  },
-  {
-    "model": "work.permission",
-    "pk": 68,
-    "fields": {
       "module": "ledger",
       "is_for_workspace": false,
       "is_for_hq": true,
       "is_for_project": true,
+      "is_confidential": false,
       "code": "ledger.read",
       "name": "원장 조회",
       "is_default": false,
@@ -11388,12 +11386,13 @@
   },
   {
     "model": "work.permission",
-    "pk": 69,
+    "pk": 64,
     "fields": {
       "module": "ledger",
       "is_for_workspace": false,
       "is_for_hq": true,
       "is_for_project": true,
+      "is_confidential": false,
       "code": "ledger.create",
       "name": "원장 등록",
       "is_default": false,
@@ -11402,12 +11401,13 @@
   },
   {
     "model": "work.permission",
-    "pk": 70,
+    "pk": 65,
     "fields": {
       "module": "ledger",
       "is_for_workspace": false,
       "is_for_hq": true,
       "is_for_project": true,
+      "is_confidential": false,
       "code": "ledger.update",
       "name": "원장 수정",
       "is_default": false,
@@ -11416,12 +11416,13 @@
   },
   {
     "model": "work.permission",
-    "pk": 71,
+    "pk": 66,
     "fields": {
       "module": "ledger",
       "is_for_workspace": false,
       "is_for_hq": true,
       "is_for_project": true,
+      "is_confidential": false,
       "code": "ledger.delete",
       "name": "원장 삭제",
       "is_default": false,
@@ -11430,12 +11431,238 @@
   },
   {
     "model": "work.permission",
+    "pk": 67,
+    "fields": {
+      "module": "ledger",
+      "is_for_workspace": false,
+      "is_for_hq": true,
+      "is_for_project": true,
+      "is_confidential": false,
+      "code": "ledger.manage",
+      "name": "마감 원장 관리",
+      "is_default": false,
+      "description": "마감 회계 관리"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 68,
+    "fields": {
+      "module": "contract",
+      "is_for_workspace": false,
+      "is_for_hq": true,
+      "is_for_project": true,
+      "is_confidential": false,
+      "code": "contract.read",
+      "name": "계약 조회",
+      "is_default": false,
+      "description": "계약 목록/상세/현황 조회"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 69,
+    "fields": {
+      "module": "contract",
+      "is_for_workspace": false,
+      "is_for_hq": true,
+      "is_for_project": true,
+      "is_confidential": false,
+      "code": "contract.create",
+      "name": "계약 등록",
+      "is_default": false,
+      "description": "신규 계약 생성"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 70,
+    "fields": {
+      "module": "contract",
+      "is_for_workspace": false,
+      "is_for_hq": true,
+      "is_for_project": true,
+      "is_confidential": false,
+      "code": "contract.update",
+      "name": "계약 수정",
+      "is_default": false,
+      "description": "계약 정보 수정"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 71,
+    "fields": {
+      "module": "contract",
+      "is_for_workspace": false,
+      "is_for_hq": true,
+      "is_for_project": true,
+      "is_confidential": false,
+      "code": "contract.delete",
+      "name": "계약 삭제",
+      "is_default": false,
+      "description": "계약 삭제"
+    }
+  },
+  {
+    "model": "work.permission",
     "pk": 72,
+    "fields": {
+      "module": "contract",
+      "is_for_workspace": false,
+      "is_for_hq": true,
+      "is_for_project": true,
+      "is_confidential": false,
+      "code": "contract.succession",
+      "name": "계약 승계 처리",
+      "is_default": false,
+      "description": "승계 신청~완료 처리"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 73,
+    "fields": {
+      "module": "contract",
+      "is_for_workspace": false,
+      "is_for_hq": true,
+      "is_for_project": true,
+      "is_confidential": false,
+      "code": "contract.release",
+      "name": "계약 해지 처리",
+      "is_default": false,
+      "description": "해지 신청~확정 처리"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 74,
+    "fields": {
+      "module": "payment",
+      "is_for_workspace": false,
+      "is_for_hq": true,
+      "is_for_project": true,
+      "is_confidential": false,
+      "code": "payment.read",
+      "name": "수납 조회",
+      "is_default": false,
+      "description": "수납 내역 조회"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 75,
+    "fields": {
+      "module": "payment",
+      "is_for_workspace": false,
+      "is_for_hq": true,
+      "is_for_project": true,
+      "is_confidential": false,
+      "code": "payment.create",
+      "name": "수납 등록",
+      "is_default": false,
+      "description": "수납 등록"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 76,
+    "fields": {
+      "module": "payment",
+      "is_for_workspace": false,
+      "is_for_hq": true,
+      "is_for_project": true,
+      "is_confidential": false,
+      "code": "payment.update",
+      "name": "수납 수정",
+      "is_default": false,
+      "description": "수납 정보 수정"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 77,
+    "fields": {
+      "module": "payment",
+      "is_for_workspace": false,
+      "is_for_hq": true,
+      "is_for_project": true,
+      "is_confidential": false,
+      "code": "payment.delete",
+      "name": "수납 삭제",
+      "is_default": false,
+      "description": "수납 삭제"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 78,
+    "fields": {
+      "module": "notice",
+      "is_for_workspace": false,
+      "is_for_hq": true,
+      "is_for_project": true,
+      "is_confidential": false,
+      "code": "notice.read",
+      "name": "고지 조회",
+      "is_default": false,
+      "description": "고지 내역 조회"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 79,
+    "fields": {
+      "module": "notice",
+      "is_for_workspace": false,
+      "is_for_hq": true,
+      "is_for_project": true,
+      "is_confidential": false,
+      "code": "notice.create",
+      "name": "고지 발송",
+      "is_default": false,
+      "description": "고지서 발송/라벨/SMS"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 80,
+    "fields": {
+      "module": "notice",
+      "is_for_workspace": false,
+      "is_for_hq": true,
+      "is_for_project": true,
+      "is_confidential": false,
+      "code": "notice.update",
+      "name": "고지 수정",
+      "is_default": false,
+      "description": "발송 내역 수정"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 81,
+    "fields": {
+      "module": "notice",
+      "is_for_workspace": false,
+      "is_for_hq": true,
+      "is_for_project": true,
+      "is_confidential": false,
+      "code": "notice.delete",
+      "name": "고지 삭제",
+      "is_default": false,
+      "description": "발송 내역 삭제"
+    }
+  },
+  {
+    "model": "work.permission",
+    "pk": 82,
     "fields": {
       "module": "site",
       "is_for_workspace": false,
       "is_for_hq": true,
       "is_for_project": true,
+      "is_confidential": false,
       "code": "site.read",
       "name": "부지 조회",
       "is_default": false,
@@ -11444,12 +11671,13 @@
   },
   {
     "model": "work.permission",
-    "pk": 73,
+    "pk": 83,
     "fields": {
       "module": "site",
       "is_for_workspace": false,
       "is_for_hq": true,
       "is_for_project": true,
+      "is_confidential": false,
       "code": "site.create",
       "name": "부지 등록",
       "is_default": false,
@@ -11458,12 +11686,13 @@
   },
   {
     "model": "work.permission",
-    "pk": 74,
+    "pk": 84,
     "fields": {
       "module": "site",
       "is_for_workspace": false,
       "is_for_hq": true,
       "is_for_project": true,
+      "is_confidential": false,
       "code": "site.update",
       "name": "부지 수정",
       "is_default": false,
@@ -11472,72 +11701,17 @@
   },
   {
     "model": "work.permission",
-    "pk": 75,
+    "pk": 85,
     "fields": {
       "module": "site",
       "is_for_workspace": false,
       "is_for_hq": true,
       "is_for_project": true,
+      "is_confidential": false,
       "code": "site.delete",
       "name": "부지 삭제",
       "is_default": false,
       "description": "부지 정보 삭제"
-    }
-  },
-  {
-    "model": "work.permission",
-    "pk": 76,
-    "fields": {
-      "module": "hr_work",
-      "is_for_workspace": false,
-      "is_for_hq": true,
-      "is_for_project": false,
-      "code": "hr_work.read",
-      "name": "인사 조회",
-      "is_default": false,
-      "description": "직원/부서/직급 조회"
-    }
-  },
-  {
-    "model": "work.permission",
-    "pk": 77,
-    "fields": {
-      "module": "hr_work",
-      "is_for_workspace": false,
-      "is_for_hq": true,
-      "is_for_project": false,
-      "code": "hr_work.create",
-      "name": "인사 등록",
-      "is_default": false,
-      "description": "직원/부서 등록"
-    }
-  },
-  {
-    "model": "work.permission",
-    "pk": 78,
-    "fields": {
-      "module": "hr_work",
-      "is_for_workspace": false,
-      "is_for_hq": true,
-      "is_for_project": false,
-      "code": "hr_work.update",
-      "name": "인사 수정",
-      "is_default": false,
-      "description": "직원/부서 수정"
-    }
-  },
-  {
-    "model": "work.permission",
-    "pk": 79,
-    "fields": {
-      "module": "hr_work",
-      "is_for_workspace": false,
-      "is_for_hq": true,
-      "is_for_project": false,
-      "code": "hr_work.delete",
-      "name": "인사 삭제",
-      "is_default": false,
-      "description": "직원/부서 삭제"
     }
   },
   {
@@ -11889,7 +12063,7 @@
       "route_type": "organization",
       "final_approval_duty": null,
       "final_dept_level": null,
-      "form_template_key": "GENERAL",
+      "form_template_key": "",
       "default_security_level": "2",
       "is_active": true,
       "created_at": "2026-08-19T17:09:34.657Z",
@@ -12029,7 +12203,7 @@
       "route_type": "organization",
       "final_approval_duty": null,
       "final_dept_level": null,
-      "form_template_key": "EXPENSE",
+      "form_template_key": "EXPENSE_REPORT",
       "default_security_level": "2",
       "is_active": true,
       "created_at": "2026-08-19T17:16:05.250Z",
