@@ -4,13 +4,12 @@ import {
   defineComponent,
   h,
   nextTick,
-  onMounted,
   onUnmounted,
   reactive,
   ref,
   resolveComponent,
-  watch,
   type VNode,
+  watch,
 } from 'vue'
 import { CIcon } from '@coreui/icons-vue'
 import { CBadge, CNavGroup, CSidebarNav } from '@coreui/vue'
@@ -62,9 +61,7 @@ const filterNavItems = (items: Item[], predicates: ((it: Item) => boolean)[]): I
       ...it,
       items: it.items ? filterNavItems(it.items, predicates) : undefined,
     }))
-    .filter(
-      it => it.component !== 'CNavGroup' || (Array.isArray(it.items) && it.items.length > 0),
-    )
+    .filter(it => it.component !== 'CNavGroup' || (Array.isArray(it.items) && it.items.length > 0))
 }
 
 const getAuthMap = (
@@ -141,16 +138,18 @@ const AppSidebarNav = defineComponent({
       docsRead: canGlobal(PERM.DOCS_READ),
       prManage: canGlobal(PERM.PROJECT_CREATE) || canGlobal(PERM.PROJECT_UPDATE),
       siteRead: canGlobal(PERM.SITE_READ),
-      comManage: isStaff.value && (canGlobal(PERM.PROJECT_CREATE) || canGlobal(PERM.PROJECT_UPDATE)),
+      comManage:
+        isStaff.value && (canGlobal(PERM.PROJECT_CREATE) || canGlobal(PERM.PROJECT_UPDATE)),
       authManage: isStaff.value && canGlobal(PERM.PROJECT_MEMBER),
     }))
 
     const predicates = computed(() => {
       const authMap = getAuthMap(isStaff.value, permissions.value)
+      type AuthKey = keyof typeof authMap
 
       return [
         (it: Item) => {
-          if (it.auth) return authMap[it.auth] ?? false
+          if (it.auth) return authMap[it.auth as AuthKey] ?? false
           return true
         },
       ]
@@ -188,7 +187,11 @@ const AppSidebarNav = defineComponent({
       const badge = typeof item.badge === 'function' ? item.badge() : item.badge
       if (badge && badge.text) {
         children.push(
-          h(CBadge, { class: 'ms-auto', color: badge.color || 'primary' }, { default: () => badge.text }),
+          h(
+            CBadge,
+            { class: 'ms-auto', color: badge.color || 'primary' },
+            { default: () => badge.text },
+          ),
         )
       }
       return children
@@ -197,7 +200,7 @@ const AppSidebarNav = defineComponent({
     const renderItem = (item: Item): VNode => {
       if (Array.isArray(item.items) && item.items.length > 0) {
         const key = item.to || item.name || ''
-        const isOpen = key ? !!openStates[key] : false
+        const isOpen = key ? openStates[key] : false
 
         return h(
           CNavGroup,
@@ -264,12 +267,7 @@ const AppSidebarNav = defineComponent({
       { immediate: true },
     )
 
-    return () =>
-      h(
-        CSidebarNav,
-        {},
-        { default: () => reactiveNav.value.map(renderItem) },
-      )
+    return () => h(CSidebarNav, {}, { default: () => reactiveNav.value.map(renderItem) })
   },
 })
 
