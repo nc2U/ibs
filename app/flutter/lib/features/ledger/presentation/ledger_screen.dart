@@ -371,21 +371,21 @@ class _LedgerScreenState extends ConsumerState<LedgerScreen> {
                     ),
                     _divider(),
                     _KpiItem(
-                      label: '총 수입 누계',
-                      value: _formatToBillion(aggregate.totalIncome),
+                      label: '당월 입금',
+                      value: _formatToBillion(aggregate.monthIncome),
                       color: const Color(0xFF10B981),
                     ),
                     _divider(),
                     _KpiItem(
-                      label: '총 지출 누계',
-                      value: _formatToBillion(aggregate.totalExpense),
+                      label: '당월 지출',
+                      value: _formatToBillion(aggregate.monthExpense),
                       color: const Color(0xFFEF4444),
                     ),
                     _divider(),
                     _KpiItem(
-                      label: '자금 수지차',
-                      value: _formatToBillion(aggregate.currentBalance),
-                      color: aggregate.currentBalance >= 0
+                      label: '당월 수지차',
+                      value: _formatToBillion(aggregate.monthBalance),
+                      color: aggregate.monthBalance >= 0
                           ? const Color(0xFF10B981)
                           : const Color(0xFFEF4444),
                     ),

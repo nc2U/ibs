@@ -132,30 +132,45 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
                   );
                 }
               },
-              trailing: InkWell(
-                onTap: _closeSubModule,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: context.colors.accentProject.withAlpha(20),
-                    borderRadius: BorderRadius.zero,
-                    border: Border.all(
-                        color: context.colors.accentProject.withAlpha(60),
-                        width: 0.8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.arrow_back_rounded,
-                          size: 13, color: context.colors.accentProject),
-                      const SizedBox(width: 4),
-                      Text('메인으로',
-                          style: AppTextStyles.label.copyWith(
-                            color: context.colors.accentProject,
-                            fontSize: 11,
-                          )),
-                    ],
+              trailing: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: _closeSubModule,
+                  borderRadius: BorderRadius.circular(4),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: context.colors.accentProject,
+                      borderRadius: BorderRadius.circular(4),
+                      boxShadow: [
+                        BoxShadow(
+                          color: context.colors.accentProject.withAlpha(50),
+                          offset: const Offset(0, 2),
+                          blurRadius: 4,
+                        ),
+                      ],
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.arrow_back_rounded,
+                          size: 14,
+                          color: Colors.white,
+                        ),
+                        SizedBox(width: 4),
+                        Text(
+                          '메인으로',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

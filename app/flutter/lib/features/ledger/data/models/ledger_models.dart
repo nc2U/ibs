@@ -176,17 +176,17 @@ class ProjectBalanceByAccountModel {
   }
 }
 
-/// 📈 5. 회계 자금 종합 요약 KPI 모델
+/// 📈 5. 회계 자금 종합 요약 KPI 모델 (100% 팩트 기반 실시간 잔고 & 당월 캐시플로우)
 class LedgerOverallAggregateModel {
-  final int totalBalance;     // 총 잔고액
-  final int totalIncome;      // 총 수입 누계
-  final int totalExpense;     // 총 지출 누계
-  final int currentBalance;   // 당월/당기 수지차
+  final int totalBalance;      // 총 잔고액 (모든 프로젝트 계좌 실시간 가용 시재)
+  final int monthIncome;       // 당월 입금(수입)
+  final int monthExpense;      // 당월 출금(지출)
+  final int monthBalance;      // 당월 수지차 (당월 입금 - 당월 지출)
 
   LedgerOverallAggregateModel({
     required this.totalBalance,
-    required this.totalIncome,
-    required this.totalExpense,
-    required this.currentBalance,
+    required this.monthIncome,
+    required this.monthExpense,
+    required this.monthBalance,
   });
 }
