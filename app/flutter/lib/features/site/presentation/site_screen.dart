@@ -508,6 +508,180 @@ class _SiteScreenState extends ConsumerState<SiteScreen> {
     }
   }
 
+  /// 매매계약서 PDF 다운로드 및 모바일 열람/공유
+  Future<void> _downloadAndShareContractPdf(SiteContractItemModel item) async {
+    if (!item.hasContractFile) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('등록된 매매계약서 파일이 없습니다.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    final contFile = item.siteContFiles.first;
+    BuildContext? progressDialogContext;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (pCtx) {
+        progressDialogContext = pCtx;
+        return Dialog(
+          backgroundColor: context.colors.bgCard,
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    color: Color(0xFFF59E0B),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Text(
+                  '매매계약서 다운로드 중...',
+                  style: AppTextStyles.bodyMd.copyWith(
+                    color: context.colors.textPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    try {
+      final repository = ref.read(siteRepositoryProvider);
+      final fileBytes = await repository.downloadSiteRegisterFile(contFile.file);
+
+      if (progressDialogContext != null && progressDialogContext!.mounted) {
+        Navigator.of(progressDialogContext!).pop();
+        progressDialogContext = null;
+      }
+
+      if (fileBytes == null || fileBytes.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('매매계약서 파일을 다운로드할 수 없습니다.'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        return;
+      }
+
+      final tempDir = await getTemporaryDirectory();
+      final ext = contFile.fileName.contains('.') ? contFile.fileName.split('.').last : 'pdf';
+      final cleanOwner = item.ownerName.replaceAll(RegExp(r'[^a-zA-Z0-9가-힣]'), '_');
+      final fileName = '매매계약서_$cleanOwner.$ext';
+      final file = File('${tempDir.path}/$fileName');
+      await file.writeAsBytes(fileBytes);
+
+      if (!mounted) return;
+
+      showModalBottomSheet(
+        context: context,
+        backgroundColor: context.colors.bgCard,
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        builder: (dialogCtx) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF59E0B).withAlpha(25),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.description_outlined,
+                        color: Color(0xFFF59E0B),
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '매매계약서 다운로드 완료',
+                            style: AppTextStyles.titleSm.copyWith(
+                              color: context.colors.textPrimary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            '매도인: ${item.ownerName} ($fileName)',
+                            style: AppTextStyles.caption.copyWith(color: context.colors.textMuted),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Divider(color: context.colors.border, height: 1),
+                ListTile(
+                  leading: const Icon(Icons.visibility_outlined, color: Color(0xFFF59E0B)),
+                  title: const Text('매매계약서 바로 열기 (PDF 뷰어)'),
+                  subtitle: const Text('기기 내 뷰어 앱으로 계약서 내용 직접 확인', style: TextStyle(fontSize: 11.5)),
+                  onTap: () async {
+                    Navigator.pop(dialogCtx);
+                    await OpenFilex.open(file.path);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.share_outlined, color: Color(0xFF38BDF8)),
+                  title: const Text('계약서 파일 공유 (카카오톡, 메일)'),
+                  subtitle: const Text('팀원이나 법무사/세무사에게 계약서 전송', style: TextStyle(fontSize: 11.5)),
+                  onTap: () async {
+                    Navigator.pop(dialogCtx);
+                    // ignore: deprecated_member_use
+                    await Share.shareXFiles(
+                      [XFile(file.path, mimeType: 'application/pdf')],
+                      text: '[매매계약서] 매도인: ${item.ownerName} (${item.contractDate} 계약, ${NumberFormat('#,###').format(item.totalPrice)}원)',
+                      subject: '토지 매매계약서 - ${item.ownerName}',
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    } catch (e) {
+      if (progressDialogContext != null && progressDialogContext!.mounted) {
+        Navigator.of(progressDialogContext!).pop();
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('매매계약서 열기 실패: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
   // ── 1. 필지 상세 바텀시트 ──────────────────────────────────────────
   void _showSiteDetailBottomSheet(SiteItemModel item) {
     final numFormat = NumberFormat('#,###');
@@ -1077,29 +1251,84 @@ class _SiteScreenState extends ConsumerState<SiteScreen> {
                 Divider(color: context.colors.border, height: 1),
                 const SizedBox(height: 10),
 
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: context.colors.textPrimary,
-                      side: BorderSide(color: context.colors.border),
-                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                    ),
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      Clipboard.setData(ClipboardData(
-                          text: '매도인: ${item.ownerName}, 총 매매대금: ${numFormat.format(item.totalPrice)}원 (${item.contractArea}㎡)'));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('계약 정보가 복사되었습니다.'),
-                          behavior: SnackBarBehavior.floating,
+                // 하단 액션 버튼 영역 (매매계약서 열기/공유 버튼 상시 노출)
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: item.hasContractFile
+                              ? const Color(0xFFF59E0B)
+                              : context.colors.bgSurface,
+                          foregroundColor: item.hasContractFile
+                              ? Colors.white
+                              : context.colors.textMuted,
+                          elevation: item.hasContractFile ? 1 : 0,
+                          side: BorderSide(
+                            color: item.hasContractFile
+                                ? const Color(0xFFF59E0B)
+                                : context.colors.border,
+                            width: 0.8,
+                          ),
+                          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
                         ),
-                      );
-                    },
-                    icon: const Icon(Icons.copy_rounded, size: 16),
-                    label: const Text('계약 정보 복사', style: TextStyle(fontSize: 12.5)),
-                  ),
+                        onPressed: () {
+                          if (item.hasContractFile) {
+                            Navigator.pop(ctx);
+                            _downloadAndShareContractPdf(item);
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('해당 계약건의 매매계약서 파일이 아직 등록되지 않았습니다.'),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        },
+                        icon: Icon(
+                          item.hasContractFile
+                              ? Icons.description_outlined
+                              : Icons.description_outlined,
+                          size: 16,
+                          color: item.hasContractFile
+                              ? Colors.white
+                              : context.colors.textMuted,
+                        ),
+                        label: Text(
+                          item.hasContractFile ? '계약서 열기/공유' : '계약서 미등록',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: item.hasContractFile ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: context.colors.textPrimary,
+                          side: BorderSide(color: context.colors.border),
+                          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                        ),
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          Clipboard.setData(ClipboardData(
+                              text: '매도인: ${item.ownerName}, 총 매매대금: ${numFormat.format(item.totalPrice)}원 (${item.contractArea}㎡)'));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('계약 정보가 복사되었습니다.'),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.copy_rounded, size: 16),
+                        label: const Text('계약 정보 복사', style: TextStyle(fontSize: 12)),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -1986,6 +2215,50 @@ class _SiteScreenState extends ConsumerState<SiteScreen> {
                               fontWeight: FontWeight.bold,
                               color: item.ownershipCompletion ? const Color(0xFF10B981) : const Color(0xFF38BDF8),
                             ),
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        // 📑 매매계약서 등록 상태 배지 (상시 노출)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                          decoration: BoxDecoration(
+                            color: item.hasContractFile
+                                ? const Color(0xFFF59E0B).withAlpha(20)
+                                : context.colors.border.withAlpha(40),
+                            border: Border.all(
+                              color: item.hasContractFile
+                                  ? const Color(0xFFF59E0B).withAlpha(80)
+                                  : context.colors.border.withAlpha(80),
+                              width: 0.6,
+                            ),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                item.hasContractFile
+                                    ? Icons.description
+                                    : Icons.description_outlined,
+                                size: 11,
+                                color: item.hasContractFile
+                                    ? const Color(0xFFF59E0B)
+                                    : context.colors.textMuted,
+                              ),
+                              const SizedBox(width: 2.5),
+                              Text(
+                                item.hasContractFile ? '계약서' : '미등록',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: item.hasContractFile
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                  color: item.hasContractFile
+                                      ? const Color(0xFFF59E0B)
+                                      : context.colors.textMuted,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],

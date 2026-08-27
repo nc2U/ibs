@@ -310,6 +310,7 @@ class SiteContractItemModel {
   final String accBank;               // 수령 은행
   final String accNumber;             // 계좌번호
   final String accOwner;              // 예금주
+  final List<SiteInfoFileModel> siteContFiles; // 매매계약서 첨부파일
   final String note;                  // 특이사항
 
   SiteContractItemModel({
@@ -339,6 +340,7 @@ class SiteContractItemModel {
     required this.accBank,
     required this.accNumber,
     required this.accOwner,
+    this.siteContFiles = const [],
     required this.note,
   });
 
@@ -349,6 +351,12 @@ class SiteContractItemModel {
     } else if (json['owner'] != null) {
       parsedOwnerName = json['owner'].toString();
     }
+
+    final rawFiles = json['site_cont_files'] as List<dynamic>? ?? [];
+    final filesList = rawFiles
+        .whereType<Map<String, dynamic>>()
+        .map((e) => SiteInfoFileModel.fromJson(e))
+        .toList();
 
     return SiteContractItemModel(
       pk: json['pk'] ?? json['id'] ?? 0,
@@ -377,6 +385,7 @@ class SiteContractItemModel {
       accBank: json['acc_bank']?.toString() ?? '',
       accNumber: json['acc_number']?.toString() ?? '',
       accOwner: json['acc_owner']?.toString() ?? '',
+      siteContFiles: filesList,
       note: json['note']?.toString() ?? '',
     );
   }
@@ -409,4 +418,7 @@ class SiteContractItemModel {
     if (totalPrice <= 0) return 0.0;
     return (totalPaidAmount / totalPrice) * 100;
   }
+
+  /// 매매계약서 파일 보유 여부
+  bool get hasContractFile => siteContFiles.isNotEmpty && siteContFiles.first.file.isNotEmpty;
 }
