@@ -272,6 +272,70 @@ class SiteRepository {
     }
   }
 
+  /// 7. 토지 소유자 상담 기록 목록 조회 (/api/v1/site-owner-consultations/?site_owner={ownerId})
+  Future<List<SiteOwnerConsultationLogModel>> fetchOwnerConsultationLogs({
+    required int siteOwnerId,
+  }) async {
+    try {
+      final response = await dio.get(
+        '/api/v1/site-owner-consultations/',
+        queryParameters: {'site_owner': siteOwnerId},
+      );
+
+      final List<dynamic> results = response.data is Map && response.data.containsKey('results')
+          ? response.data['results']
+          : (response.data is List ? response.data : []);
+
+      return results
+          .map((json) => SiteOwnerConsultationLogModel.fromJson(json))
+          .toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// 8. 토지 소유자 상담/협의 기록 신규 등록 (/api/v1/site-owner-consultations/)
+  Future<String?> createOwnerConsultationLog({
+    required int siteOwnerId,
+    required String consultationDate,
+    required String channel,
+    required String title,
+    required String content,
+    bool followUpRequired = false,
+    String? followUpNote,
+  }) async {
+    try {
+      final payload = <String, dynamic>{
+        'site_owner': siteOwnerId,
+        'consultation_date': consultationDate,
+        'channel': channel,
+        'title': title,
+        'content': content,
+        'follow_up_required': followUpRequired,
+      };
+      if (followUpNote != null && followUpNote.trim().isNotEmpty) {
+        payload['follow_up_note'] = followUpNote.trim();
+      }
+
+      final response = await dio.post(
+        '/api/v1/site-owner-consultations/',
+        data: payload,
+      );
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return null; // 성공 (에러 없음)
+      }
+      return '서버 응답 오류: ${response.statusCode}';
+    } on DioException catch (e) {
+      if (e.response?.data is Map) {
+        final map = e.response!.data as Map;
+        return map.entries.map((entry) => '${entry.key}: ${entry.value}').join('\n');
+      }
+      return e.message ?? '상담일지 등록에 실패했습니다.';
+    } catch (e) {
+      return e.toString();
+    }
+  }
+
   /// 7. 토지 등기부등본(등기사항전부증명서) 파일 다운로드
   Future<List<int>?> downloadSiteRegisterFile(String fileUrl) async {
     try {

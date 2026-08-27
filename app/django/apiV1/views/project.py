@@ -12,14 +12,15 @@ from apiV1.permissions.auth_perms import permissions, IsProjectStaffOrReadOnly
 from apiV1.permissions.ibs_perms import IbsModulePermission
 from ledger.models import ProjectAccountingEntry, ProjectBankTransaction
 from project.models import Project, ProjectIncBudget, ProjectOutBudget, Site, SiteOwner, \
-    SiteOwnshipRelationship, SiteContract
+    SiteOwnshipRelationship, SiteContract, SiteOwnerConsultationLogs
 from work.models import IssueProject
 from ..pagination import PageNumberPaginationFifty, PageNumberPaginationOneHundred, \
     PageNumberPaginationOneThousand
 from ..serializers.project import ProjectSerializer, ProjectIncBudgetSerializer, ProjectOutBudgetSerializer, \
     StatusOutBudgetSerializer, LedgerExecAmountToBudgetSerializer, TotalSiteAreaSerializer, SiteSerializer, \
     AllSiteSerializer, TotalOwnerAreaSerializer, SiteOwnerSerializer, AllOwnerSerializer, \
-    SiteOwnshipRelationshipSerializer, TotalContractedAreaSerializer, SiteContractSerializer
+    SiteOwnshipRelationshipSerializer, TotalContractedAreaSerializer, SiteContractSerializer, \
+    SiteOwnerConsultationLogsSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -338,3 +339,19 @@ class SiteContractViewSet(FindPageMixin, viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         serializer.save(updator=self.request.user)
+
+
+class SiteOwnerConsultationLogsViewSet(viewsets.ModelViewSet):
+    """토지 소유자 상담 내역 관리 ViewSet"""
+    queryset = SiteOwnerConsultationLogs.objects.select_related('consultant').all()
+    serializer_class = SiteOwnerConsultationLogsSerializer
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    filterset_fields = ('site_owner', 'channel')
+    ordering = ['-consultation_date', '-created']
+
+    def perform_create(self, serializer):
+        serializer.save(creator=self.request.user, consultant=self.request.user)
+
+    def perform_update(self, serializer):
+        serializer.save(updator=self.request.user)
+

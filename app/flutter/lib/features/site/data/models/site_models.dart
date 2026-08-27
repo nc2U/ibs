@@ -192,6 +192,7 @@ class SiteOwnerItemModel {
   final String ownSort;               // '1': 개인, '2': 법인, '3': 국공유지
   final String? ownSortDesc;          // 소유구분 명칭
   final List<RelationsInSiteOwnerModel> sites; // 소유 필지 목록
+  final List<SiteOwnerConsultationLogModel> consultationLogs; // 상담 기록 목록
   final String note;                  // 특이사항
 
   SiteOwnerItemModel({
@@ -209,6 +210,7 @@ class SiteOwnerItemModel {
     required this.ownSort,
     this.ownSortDesc,
     this.sites = const [],
+    this.consultationLogs = const [],
     required this.note,
   });
 
@@ -217,6 +219,12 @@ class SiteOwnerItemModel {
     final sitesList = rawSites
         .whereType<Map<String, dynamic>>()
         .map((e) => RelationsInSiteOwnerModel.fromJson(e))
+        .toList();
+
+    final rawLogs = json['consultation_logs'] as List<dynamic>? ?? [];
+    final logsList = rawLogs
+        .whereType<Map<String, dynamic>>()
+        .map((e) => SiteOwnerConsultationLogModel.fromJson(e))
         .toList();
 
     return SiteOwnerItemModel(
@@ -234,6 +242,7 @@ class SiteOwnerItemModel {
       ownSort: json['own_sort']?.toString() ?? '1',
       ownSortDesc: json['own_sort_desc']?.toString(),
       sites: sitesList,
+      consultationLogs: logsList,
       note: json['note']?.toString() ?? '',
     );
   }
@@ -249,6 +258,78 @@ class SiteOwnerItemModel {
   /// 소유 총 면적 합산 (㎡)
   double get totalOwnedArea {
     return sites.fold(0.0, (sum, s) => sum + (s.ownedArea ?? 0.0));
+  }
+}
+
+/// 💬 토지 소유자 상담/협의 기록 모델 (/api/v1/site-owner-consultations/)
+class SiteOwnerConsultationLogModel {
+  final int pk;
+  final int siteOwner;
+  final String consultationDate;
+  final String channel;               // 'phone', 'visit', 'kakao', 'sms', 'email', 'other'
+  final String? channelDisplay;
+  final String title;
+  final String content;
+  final String? consultantName;
+  final bool followUpRequired;
+  final String? followUpNote;
+  final String? completionDate;
+  final String? created;
+
+  SiteOwnerConsultationLogModel({
+    required this.pk,
+    required this.siteOwner,
+    required this.consultationDate,
+    required this.channel,
+    this.channelDisplay,
+    required this.title,
+    required this.content,
+    this.consultantName,
+    this.followUpRequired = false,
+    this.followUpNote,
+    this.completionDate,
+    this.created,
+  });
+
+  factory SiteOwnerConsultationLogModel.fromJson(Map<String, dynamic> json) {
+    final consultant = json['consultant'];
+    String? consultantName;
+    if (consultant is Map) {
+      consultantName = consultant['username']?.toString();
+    }
+
+    return SiteOwnerConsultationLogModel(
+      pk: json['pk'] ?? json['id'] ?? 0,
+      siteOwner: json['site_owner'] is int ? json['site_owner'] : 0,
+      consultationDate: json['consultation_date']?.toString() ?? '',
+      channel: json['channel']?.toString() ?? 'phone',
+      channelDisplay: json['channel_display']?.toString(),
+      title: json['title']?.toString() ?? '',
+      content: json['content']?.toString() ?? '',
+      consultantName: consultantName,
+      followUpRequired: json['follow_up_required'] == true,
+      followUpNote: json['follow_up_note']?.toString(),
+      completionDate: json['completion_date']?.toString(),
+      created: json['created']?.toString(),
+    );
+  }
+
+  String get channelKorean {
+    if (channelDisplay != null && channelDisplay!.isNotEmpty) return channelDisplay!;
+    switch (channel) {
+      case 'phone':
+        return '전화';
+      case 'visit':
+        return '방문';
+      case 'kakao':
+        return '카카오톡';
+      case 'sms':
+        return '문자';
+      case 'email':
+        return '이메일';
+      default:
+        return '기타';
+    }
   }
 }
 

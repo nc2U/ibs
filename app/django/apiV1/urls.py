@@ -108,6 +108,7 @@ router.register(r'site', project.SiteViewSet)
 router.register(r'all-site', project.AllSiteViewSet, basename='all-site')  # only list
 router.register(r'sites-total', project.TotalSiteAreaViewSet, basename='sites-total')  # only list
 router.register(r'site-owner', project.SiteOwnerViewSet)
+router.register(r'site-owner-consultations', project.SiteOwnerConsultationLogsViewSet)
 router.register(r'all-owner', project.AllOwnerViewSet, basename='all-owner')  # only list
 router.register(r'owners-total', project.TotalOwnerAreaViewSet, basename='owners-total')  # only list
 router.register(r'site-relation', project.SiteRelationViewSet)

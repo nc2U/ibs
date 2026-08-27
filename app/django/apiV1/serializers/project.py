@@ -13,7 +13,7 @@ from ledger.models import ProjectAccount
 from notice.models import SalesBillIssue
 from project.models import (Project, ProjectIncBudget, ProjectOutBudget, Site, SiteInfoFile,
                             SiteOwner, SiteOwnshipRelationship, SiteContract,
-                            SiteContractFile, PROJECT_KIND_CHOICES)
+                            SiteContractFile, SiteOwnerConsultationLogs, PROJECT_KIND_CHOICES)
 from work.models import IssueProject, Module, Role, Tracker
 
 
@@ -457,6 +457,19 @@ class RelationsInSiteOwnerSerializer(serializers.ModelSerializer):
         fields = ('pk', 'site', '__str__', 'ownership_ratio', 'owned_area', 'acquisition_date')
 
 
+class SiteOwnerConsultationLogsSerializer(serializers.ModelSerializer):
+    """토지 소유자 상담 내역 Serializer"""
+    consultant = SimpleUserSerializer(read_only=True)
+    channel_display = serializers.CharField(source='get_channel_display', read_only=True)
+
+    class Meta:
+        model = SiteOwnerConsultationLogs
+        fields = ('pk', 'site_owner', 'consultation_date', 'channel', 'channel_display',
+                  'title', 'content', 'consultant', 'follow_up_required', 'follow_up_note',
+                  'completion_date', 'created', 'updated')
+        read_only_fields = ('created', 'updated')
+
+
 class SiteOwnerSerializer(serializers.ModelSerializer):
     date_of_birth = serializers.DateField(
         input_formats=["%Y-%m-%d"],  # 허용할 날짜 형식
@@ -468,6 +481,7 @@ class SiteOwnerSerializer(serializers.ModelSerializer):
     )
     own_sort_desc = serializers.CharField(source='get_own_sort_display', read_only=True)
     sites = RelationsInSiteOwnerSerializer(source='relations', many=True, read_only=True)
+    consultation_logs = SiteOwnerConsultationLogsSerializer(many=True, read_only=True)
     creator = SimpleUserSerializer(read_only=True)
     updator = SimpleUserSerializer(read_only=True)
 
@@ -475,7 +489,7 @@ class SiteOwnerSerializer(serializers.ModelSerializer):
         model = SiteOwner
         fields = ('pk', 'project', 'owner', 'use_consent', 'date_of_birth', 'phone1',
                   'phone2', 'zipcode', 'address1', 'address2', 'address3',
-                  'own_sort', 'own_sort_desc', 'sites', 'note',
+                  'own_sort', 'own_sort_desc', 'sites', 'consultation_logs', 'note',
                   'creator', 'updator', 'created', 'updated')
 
     @transaction.atomic
