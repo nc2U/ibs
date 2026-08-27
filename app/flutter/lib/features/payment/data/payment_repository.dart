@@ -133,6 +133,35 @@ class PaymentRepository {
     }
   }
 
+  /// 3-1. 특정 계약건의 전체 수납 내역 조회 (/api/v1/ledger/payment/?project={projectId}&contract={contractId}&ordering=deal_date&limit=100)
+  Future<List<PaymentTransactionItemModel>> fetchPaymentsByContract({
+    required int projectId,
+    required int contractId,
+  }) async {
+    try {
+      final response = await dio.get(
+        '/api/v1/ledger/payment/',
+        queryParameters: {
+          'project': projectId,
+          'contract': contractId,
+          'ordering': 'deal_date',
+          'limit': 100,
+        },
+      );
+
+      final List<dynamic> results =
+          response.data is Map && response.data.containsKey('results')
+              ? response.data['results']
+              : (response.data is List ? response.data : []);
+
+      return results
+          .map((json) => PaymentTransactionItemModel.fromJson(json))
+          .toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
   /// 4. 유효 계약건 실시간 검색 (/api/v1/contract-set/?project={projectId}&search={query}&is_active=true&is_contract=true)
   Future<List<Map<String, dynamic>>> searchContracts({
     required int projectId,

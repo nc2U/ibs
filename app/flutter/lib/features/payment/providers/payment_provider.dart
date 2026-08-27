@@ -1,4 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../contract/data/models/contract_models.dart';
+import '../../contract/providers/contract_provider.dart';
 import '../../../../core/providers/project_provider.dart';
 import '../data/models/payment_models.dart';
 import '../data/payment_repository.dart';
@@ -27,6 +29,27 @@ enum PaymentMatchFilter {
 /// 현재 선택된 매칭 필터 프로바이더
 final paymentMatchFilterProvider =
     StateProvider<PaymentMatchFilter>((ref) => PaymentMatchFilter.all);
+
+/// 계약건별 납부 탭에서 현재 선택된 계약건 프로바이더
+final selectedContractForPaymentProvider =
+    StateProvider<ContractItemModel?>((ref) => null);
+
+/// 선택된 계약건의 전체 수납 내역 조회 프로바이더
+final paymentsByContractProvider =
+    FutureProvider.autoDispose<List<PaymentTransactionItemModel>>((ref) async {
+  final selectedProject = ref.watch(selectedRealEstateProjectProvider);
+  final selectedContract = ref.watch(selectedContractForPaymentProvider);
+
+  if (selectedProject == null || selectedContract == null) {
+    return [];
+  }
+
+  final repository = ref.watch(paymentRepositoryProvider);
+  return repository.fetchPaymentsByContract(
+    projectId: selectedProject.realProjectId,
+    contractId: selectedContract.pk,
+  );
+});
 
 /// 수납 총괄 KPI 집계 프로바이더
 final paymentOverallAggregateProvider =
@@ -172,6 +195,8 @@ class PaymentTransactionsNotifier extends StateNotifier<PaymentTransactionsState
       fetchInitial();
       ref.invalidate(paymentOverallAggregateProvider);
       ref.invalidate(installmentStatusListProvider);
+      ref.invalidate(paymentsByContractProvider);
+      ref.invalidate(validContractListProvider);
     }
     return success;
   }
