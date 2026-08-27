@@ -9,6 +9,10 @@ class PaymentTransactionItemModel {
   final String? unitTypeName;
   final String? unitTypeColor;
   final int? contractId;
+  final int? installmentOrderId;
+  final int? accountingEntryId;
+  final int? bankTransactionId;
+  final bool isPaymentMismatch;
   final String? payName;
   final int amount;
   final String dealDate;
@@ -24,6 +28,10 @@ class PaymentTransactionItemModel {
     this.unitTypeName,
     this.unitTypeColor,
     this.contractId,
+    this.installmentOrderId,
+    this.accountingEntryId,
+    this.bankTransactionId,
+    this.isPaymentMismatch = false,
     this.payName,
     required this.amount,
     required this.dealDate,
@@ -33,15 +41,26 @@ class PaymentTransactionItemModel {
   });
 
   factory PaymentTransactionItemModel.fromJson(Map<String, dynamic> json) {
-    // contract 객체 파싱
-    final contract = json['contract'] is Map ? json['contract'] : null;
+    // contract 객체/ID 파싱
+    final contractRaw = json['contract'];
+    final contract = contractRaw is Map ? contractRaw : null;
+    final int? parsedContractId = contract != null ? (contract['pk'] ?? contract['id']) : (contractRaw is int ? contractRaw : json['contract_id']);
+
     final contractor = contract != null && contract['contractor'] is Map ? contract['contractor'] : null;
     final unitType = contract != null && contract['unit_type'] is Map ? contract['unit_type'] : null;
     final keyUnit = contract != null && contract['key_unit'] is Map ? contract['key_unit'] : null;
     final houseunit = keyUnit != null && keyUnit['houseunit'] is Map ? keyUnit['houseunit'] : null;
 
-    // installment_order 객체 파싱
-    final installmentOrder = json['installment_order'] is Map ? json['installment_order'] : null;
+    // installment_order 객체/ID 파싱
+    final installRaw = json['installment_order'];
+    final installmentOrder = installRaw is Map ? installRaw : null;
+    final int? parsedInstallOrderId = installmentOrder != null
+        ? (installmentOrder['pk'] ?? installmentOrder['id'])
+        : (installRaw is int ? installRaw : json['installment_order_id']);
+
+    // accounting_entry 파싱
+    final entryRaw = json['accounting_entry'];
+    final int? parsedEntryId = entryRaw is Map ? (entryRaw['pk'] ?? entryRaw['id']) : (entryRaw is int ? entryRaw : null);
 
     // bank_account 파싱
     final bankAcc = json['bank_account'] is Map ? json['bank_account'] : null;
@@ -59,11 +78,15 @@ class PaymentTransactionItemModel {
       pk: json['pk'] ?? json['id'] ?? 0,
       dealId: json['deal_id'],
       contractorName: contractor != null ? contractor['name'] : (json['contractor_name'] ?? json['trader']),
-      unitStr: parsedUnit ?? (json['unit_desc'] ?? '-'),
+      unitStr: parsedUnit ?? (json['unit_desc'] ?? (parsedContractId == null ? '계약 미매칭' : '-')),
       unitTypeName: unitType != null ? unitType['name'] : json['unit_type_name'],
       unitTypeColor: unitType != null ? unitType['color'] : json['unit_type_color'],
-      contractId: contract != null ? contract['pk'] : json['contract_id'],
-      payName: installmentOrder != null ? installmentOrder['pay_name'] : (json['pay_name'] ?? '-'),
+      contractId: parsedContractId,
+      installmentOrderId: parsedInstallOrderId,
+      accountingEntryId: parsedEntryId,
+      bankTransactionId: json['bank_transaction_id'] ?? json['bank_transaction']?['pk'],
+      isPaymentMismatch: json['is_payment_mismatch'] ?? false,
+      payName: installmentOrder != null ? installmentOrder['pay_name'] : (json['pay_name'] ?? (parsedInstallOrderId == null ? null : '-')),
       amount: (json['income'] ?? json['amount'] ?? 0) as int,
       dealDate: json['deal_date']?.toString() ?? '',
       bankAccountName: bankAcc != null ? (bankAcc['alias_name'] ?? bankAcc['bank_name']) : json['bank_account_name'],
@@ -72,19 +95,17 @@ class PaymentTransactionItemModel {
     );
   }
 
-  Color get parsedTypeColor {
-    if (unitTypeColor == null || unitTypeColor!.isEmpty) {
-      return const Color(0xFF64748B).withAlpha(30);
-    }
-    try {
-      final hex = unitTypeColor!.replaceAll('#', '');
-      return Color(int.parse('FF$hex', radix: 16)).withAlpha(35);
-    } catch (_) {
-      return const Color(0xFF64748B).withAlpha(30);
-    }
-  }
+  /// 계약 미매칭 여부
+  bool get isContractUnmatched => contractId == null;
 
-  Color get typeTextColor {
+  /// 회차 미매칭 여부 (계약은 있으나 납부 회차가 없음)
+  bool get isInstallmentUnmatched => contractId != null && installmentOrderId == null;
+
+  /// 정상 매칭 완료 여부
+  bool get isFullyMatched => contractId != null && installmentOrderId != null;
+
+  /// 배지 배경색: 타입 원색 그대로 사용 (불투명)
+  Color get typeBadgeBgColor {
     if (unitTypeColor == null || unitTypeColor!.isEmpty) {
       return const Color(0xFF64748B);
     }
@@ -94,6 +115,14 @@ class PaymentTransactionItemModel {
     } catch (_) {
       return const Color(0xFF64748B);
     }
+  }
+
+  /// 배지 텍스트색: 배경 밝기에 따라 흰색 또는 다크 자동 선택
+  Color get typeBadgeTextColor {
+    final bg = typeBadgeBgColor;
+    // 상대 휘도 기준 (W3C WCAG): 0.179 임계값
+    final luminance = bg.computeLuminance();
+    return luminance > 0.179 ? const Color(0xFF1E293B) : Colors.white;
   }
 }
 
@@ -176,34 +205,42 @@ class InstallmentStatusItemModel {
 
 /// 📈 3. 수납 종합 집계 KPI 모델
 class PaymentOverallAggregateModel {
-  final int totalSalesPrice;      // 총 분양 공급가 (매출예산)
-  final int totalPaidAmount;      // 기수납 총액
-  final int totalUnpaidAmount;    // 미수납 총액
+  final int totalBudget;          // 총 매출예산 (A) — 전체 공급 가능 금액
+  final int totalContractAmount;  // 총 분양금액 (B) — 계약된 금액 합계
+  final int totalPaidAmount;      // 총 수납금액 (C) — 실제 수납된 금액
+  final int totalUnpaidAmount;    // 미수납금액 (B-C) — 계약됐으나 미납
+  final int unsoldAmount;         // 미분양금액 (A-B) — 미계약 공급가
   final double paymentRate;       // 전체 수납률 (%)
   final int totalUnits;           // 총 세대수
   final int contractedUnits;      // 계약 세대수
 
   PaymentOverallAggregateModel({
-    required this.totalSalesPrice,
+    required this.totalBudget,
+    required this.totalContractAmount,
     required this.totalPaidAmount,
     required this.totalUnpaidAmount,
+    required this.unsoldAmount,
     required this.paymentRate,
     required this.totalUnits,
     required this.contractedUnits,
   });
 
   factory PaymentOverallAggregateModel.fromJson(Map<String, dynamic> json) {
-    final salesPrice = (json['total_sales_price'] ?? json['total_budget'] ?? 0) as int;
-    final totalPaid = (json['total_paid'] ?? json['total_collected'] ?? 0) as int;
-    final unpaid = (json['total_unpaid'] ?? (salesPrice > totalPaid ? salesPrice - totalPaid : 0)) as int;
+    final budget = (json['total_budget'] ?? json['total_sales_price'] ?? 0) as int;
+    final contractAmt = (json['total_contract_amount'] ?? 0) as int;
+    final totalPaid = (json['total_paid_amount'] ?? json['total_paid'] ?? json['total_collected'] ?? 0) as int;
+    final unpaid = (json['unpaid_amount'] ?? (contractAmt > totalPaid ? contractAmt - totalPaid : 0)) as int;
+    final unsold = (json['unsold_amount'] ?? (budget > contractAmt ? budget - contractAmt : 0)) as int;
     final rate = (json['payment_rate'] is num)
         ? (json['payment_rate'] as num).toDouble()
-        : (salesPrice > 0 ? (totalPaid / salesPrice) * 100 : 0.0);
+        : (contractAmt > 0 ? (totalPaid / contractAmt) * 100 : 0.0);
 
     return PaymentOverallAggregateModel(
-      totalSalesPrice: salesPrice,
+      totalBudget: budget,
+      totalContractAmount: contractAmt,
       totalPaidAmount: totalPaid,
       totalUnpaidAmount: unpaid,
+      unsoldAmount: unsold,
       paymentRate: rate,
       totalUnits: json['total_units'] ?? 0,
       contractedUnits: json['conts_num'] ?? 0,

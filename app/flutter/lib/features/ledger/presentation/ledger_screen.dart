@@ -284,12 +284,35 @@ class _LedgerScreenState extends ConsumerState<LedgerScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        '회계 자금 관리 (Ledger)',
-                        style: AppTextStyles.titleSm.copyWith(
-                          color: context.colors.textPrimary,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            '회계 자금 관리',
+                            style: AppTextStyles.titleSm.copyWith(
+                              color: context.colors.textPrimary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF59E0B).withAlpha(20),
+                              border: Border.all(color: const Color(0xFFF59E0B).withAlpha(120), width: 0.8),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                            child: const Text(
+                              'LEDGER',
+                              style: TextStyle(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFFF59E0B),
+                                letterSpacing: 0.6,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 2),
                       Text(

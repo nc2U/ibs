@@ -17,6 +17,17 @@ final paymentCurrentSubTabProvider =
 /// 검색어 상태 프로바이더
 final paymentSearchQueryProvider = StateProvider<String>((ref) => '');
 
+/// 매칭 상태 필터 enum (전체, 계약 미매칭, 회차 미매칭)
+enum PaymentMatchFilter {
+  all,          // 전체
+  noContract,   // 계약 미매칭
+  noInstall,    // 회차 미매칭
+}
+
+/// 현재 선택된 매칭 필터 프로바이더
+final paymentMatchFilterProvider =
+    StateProvider<PaymentMatchFilter>((ref) => PaymentMatchFilter.all);
+
 /// 수납 총괄 KPI 집계 프로바이더
 final paymentOverallAggregateProvider =
     FutureProvider<PaymentOverallAggregateModel?>((ref) async {
@@ -81,12 +92,15 @@ class PaymentTransactionsNotifier extends StateNotifier<PaymentTransactionsState
     state = state.copyWith(isLoading: true, page: 1, items: [], hasMore: true, error: null);
 
     final search = ref.read(paymentSearchQueryProvider);
+    final matchFilter = ref.read(paymentMatchFilterProvider);
     final repository = ref.read(paymentRepositoryProvider);
 
     try {
       final items = await repository.fetchPaymentTransactions(
         projectId: selectedProject.realProjectId,
         search: search,
+        noContract: matchFilter == PaymentMatchFilter.noContract ? true : null,
+        noInstall: matchFilter == PaymentMatchFilter.noInstall ? true : null,
         page: 1,
         limit: 10,
       );
@@ -112,12 +126,15 @@ class PaymentTransactionsNotifier extends StateNotifier<PaymentTransactionsState
 
     final nextPage = state.page + 1;
     final search = ref.read(paymentSearchQueryProvider);
+    final matchFilter = ref.read(paymentMatchFilterProvider);
     final repository = ref.read(paymentRepositoryProvider);
 
     try {
       final newItems = await repository.fetchPaymentTransactions(
         projectId: selectedProject.realProjectId,
         search: search,
+        noContract: matchFilter == PaymentMatchFilter.noContract ? true : null,
+        noInstall: matchFilter == PaymentMatchFilter.noInstall ? true : null,
         page: nextPage,
         limit: 10,
       );
@@ -131,6 +148,32 @@ class PaymentTransactionsNotifier extends StateNotifier<PaymentTransactionsState
     } catch (e) {
       state = state.copyWith(isFetchingNextPage: false);
     }
+  }
+
+  /// 계약/회차 매칭 실행 후 목록 새로고침
+  Future<bool> matchPayment({
+    required int paymentPk,
+    int? contractId,
+    int? installmentOrderId,
+    int? bankTransactionId,
+    int? accountingEntryId,
+  }) async {
+    final repository = ref.read(paymentRepositoryProvider);
+    final success = await repository.updateContractPayment(
+      paymentPk: paymentPk,
+      contractId: contractId,
+      installmentOrderId: installmentOrderId,
+      bankTransactionId: bankTransactionId,
+      accountingEntryId: accountingEntryId,
+    );
+
+    if (success) {
+      // 목록 및 집계 갱신
+      fetchInitial();
+      ref.invalidate(paymentOverallAggregateProvider);
+      ref.invalidate(installmentStatusListProvider);
+    }
+    return success;
   }
 }
 

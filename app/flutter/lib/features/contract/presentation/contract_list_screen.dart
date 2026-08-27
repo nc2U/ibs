@@ -527,12 +527,31 @@ class _ContractListScreenState extends ConsumerState<ContractListScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Text(
-                            '계약 정보 관리 (Contract)',
+                            '계약 정보 관리',
                             style: AppTextStyles.titleSm.copyWith(
                               color: context.colors.textPrimary,
                               fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF38BDF8).withAlpha(20),
+                              border: Border.all(color: const Color(0xFF38BDF8).withAlpha(120), width: 0.8),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                            child: const Text(
+                              'CONTRACT',
+                              style: TextStyle(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF38BDF8),
+                                letterSpacing: 0.6,
+                              ),
                             ),
                           ),
                         ],

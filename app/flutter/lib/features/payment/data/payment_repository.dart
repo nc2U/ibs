@@ -24,24 +24,39 @@ class PaymentRepository {
 
       if (response.data is List) {
         final List<dynamic> list = response.data;
-        int totalSales = 0;
+        int totalBudget = 0;
+        int totalContractAmt = 0;
         int totalPaid = 0;
         int totalUnpaid = 0;
+        int totalUnsold = 0;
 
         for (final item in list) {
           if (item is Map) {
-            totalSales += (item['total_budget'] ?? 0) as int;
+            totalBudget += (item['total_budget'] ?? 0) as int;
+            totalContractAmt += (item['total_contract_amount'] ?? 0) as int;
             totalPaid += (item['total_paid_amount'] ?? 0) as int;
             totalUnpaid += (item['unpaid_amount'] ?? 0) as int;
+            totalUnsold += (item['unsold_amount'] ?? 0) as int;
           }
         }
 
-        final rate = totalSales > 0 ? (totalPaid / totalSales) * 100 : 0.0;
+        // unsold_amount가 API에 없을 경우 보정
+        if (totalUnsold == 0 && totalBudget > totalContractAmt) {
+          totalUnsold = totalBudget - totalContractAmt;
+        }
+        // unpaid_amount가 API에 없을 경우 보정
+        if (totalUnpaid == 0 && totalContractAmt > totalPaid) {
+          totalUnpaid = totalContractAmt - totalPaid;
+        }
+
+        final rate = totalContractAmt > 0 ? (totalPaid / totalContractAmt) * 100 : 0.0;
 
         return PaymentOverallAggregateModel(
-          totalSalesPrice: totalSales,
+          totalBudget: totalBudget,
+          totalContractAmount: totalContractAmt,
           totalPaidAmount: totalPaid,
           totalUnpaidAmount: totalUnpaid,
+          unsoldAmount: totalUnsold,
           paymentRate: rate,
           totalUnits: 0,
           contractedUnits: 0,
@@ -58,6 +73,8 @@ class PaymentRepository {
     required int projectId,
     String? search,
     int? installmentOrder,
+    bool? noContract,
+    bool? noInstall,
     int page = 1,
     int limit = 10,
   }) async {
@@ -72,6 +89,12 @@ class PaymentRepository {
       }
       if (installmentOrder != null) {
         queryParams['installment_order'] = installmentOrder;
+      }
+      if (noContract == true) {
+        queryParams['no_contract'] = 'true';
+      }
+      if (noInstall == true) {
+        queryParams['no_install'] = 'true';
       }
 
       final response = await dio.get(
@@ -107,6 +130,80 @@ class PaymentRepository {
       return [];
     } catch (e) {
       return [];
+    }
+  }
+
+  /// 4. 유효 계약건 실시간 검색 (/api/v1/contract-set/?project={projectId}&search={query}&is_active=true&is_contract=true)
+  Future<List<Map<String, dynamic>>> searchContracts({
+    required int projectId,
+    required String query,
+    int limit = 20,
+  }) async {
+    try {
+      final response = await dio.get(
+        '/api/v1/contract-set/',
+        queryParameters: {
+          'project': projectId,
+          'search': query.trim(),
+          'is_active': true,
+          'is_contract': true,
+          'limit': limit,
+        },
+      );
+
+      final List<dynamic> results =
+          response.data is Map && response.data.containsKey('results')
+              ? response.data['results']
+              : (response.data is List ? response.data : []);
+
+      return results.cast<Map<String, dynamic>>();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// 5. 계약 및 납부회차 매칭 업데이트 (PATCH /api/v1/ledger/payment/{paymentPk}/)
+  Future<bool> updateContractPayment({
+    required int paymentPk,
+    int? contractId,
+    int? installmentOrderId,
+    int? bankTransactionId,
+    int? accountingEntryId,
+  }) async {
+    try {
+      // 1순위: 복합 거래 수정이 필요한 경우 (bankTransactionId + accountingEntryId가 있을 때 웹 방식과 완벽 호환)
+      if (bankTransactionId != null && accountingEntryId != null) {
+        final patchData = <String, dynamic>{
+          'accounting_entries': [
+            {
+              'pk': accountingEntryId,
+              if (contractId != null) 'contract': contractId,
+              if (installmentOrderId != null) 'installment_order': installmentOrderId,
+            }
+          ]
+        };
+        await dio.patch(
+          '/api/v1/ledger/project-composite-transaction/$bankTransactionId/',
+          data: patchData,
+        );
+        return true;
+      }
+
+      // 2순위: ContractPayment 직접 PATCH
+      final data = <String, dynamic>{};
+      if (contractId != null) data['contract'] = contractId;
+      if (installmentOrderId != null) data['installment_order'] = installmentOrderId;
+
+      if (data.isNotEmpty) {
+        await dio.patch(
+          '/api/v1/ledger/payment/$paymentPk/',
+          data: data,
+        );
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
     }
   }
 }
