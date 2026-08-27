@@ -952,19 +952,33 @@ class _LedgerScreenState extends ConsumerState<LedgerScreen> {
                       ),
                       const Spacer(),
 
-                      // 계좌 선택 드롭다운
+                      // 계좌 선택 드롭다운 (고정 폭 및 말줄임표 처리로 오버플로우 방지)
                       bankAccountsAsync.when(
                         data: (banks) {
                           if (banks.isEmpty) return const SizedBox.shrink();
+                          final selectedAlias = selectedBankAcc == null
+                              ? '계좌 전체'
+                              : banks
+                                  .firstWhere((b) => b.pk == selectedBankAcc,
+                                      orElse: () => banks.first)
+                                  .aliasName;
+
                           return PopupMenuButton<int>(
                             initialValue: selectedBankAcc ?? 0,
+                            tooltip: selectedAlias,
                             onSelected: (val) {
-                              ref.read(ledgerSelectedBankAccFilterProvider.notifier).state =
-                                  val == 0 ? null : val;
-                              ref.read(projectTransactionsProvider.notifier).fetchInitial();
+                              ref
+                                  .read(
+                                      ledgerSelectedBankAccFilterProvider.notifier)
+                                  .state = val == 0 ? null : val;
+                              ref
+                                  .read(projectTransactionsProvider.notifier)
+                                  .fetchInitial();
                             },
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              constraints: const BoxConstraints(maxWidth: 130),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
                                 color: selectedBankAcc != null
                                     ? context.colors.accentProject.withAlpha(20)
@@ -987,20 +1001,25 @@ class _LedgerScreenState extends ConsumerState<LedgerScreen> {
                                         : context.colors.textMuted,
                                   ),
                                   const SizedBox(width: 4),
-                                  Text(
-                                    selectedBankAcc == null
-                                        ? '계좌 전체'
-                                        : banks.firstWhere((b) => b.pk == selectedBankAcc, orElse: () => banks.first).aliasName,
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: selectedBankAcc != null ? FontWeight.bold : FontWeight.normal,
-                                      color: selectedBankAcc != null
-                                          ? context.colors.accentProject
-                                          : context.colors.textPrimary,
+                                  Flexible(
+                                    child: Text(
+                                      selectedAlias,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: selectedBankAcc != null
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
+                                        color: selectedBankAcc != null
+                                            ? context.colors.accentProject
+                                            : context.colors.textPrimary,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                   const SizedBox(width: 2),
-                                  Icon(Icons.arrow_drop_down, size: 14, color: context.colors.textMuted),
+                                  Icon(Icons.arrow_drop_down,
+                                      size: 14, color: context.colors.textMuted),
                                 ],
                               ),
                             ),
