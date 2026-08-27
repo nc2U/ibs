@@ -350,6 +350,14 @@ class FileInSiteDataSerializer(serializers.ModelSerializer):
     creator = SimpleUserSerializer(read_only=True)
 
     class Meta:
+        model = SiteInfoFile
+        fields = ('pk', 'file', 'file_name', 'file_size', 'created', 'creator')
+
+
+class FileInSiteContDataSerializer(serializers.ModelSerializer):
+    creator = SimpleUserSerializer(read_only=True)
+
+    class Meta:
         model = SiteContractFile
         fields = ('pk', 'file', 'file_name', 'file_size', 'created', 'creator')
 
@@ -539,7 +547,7 @@ class TotalContractedAreaSerializer(serializers.ModelSerializer):
 
 class SiteContractSerializer(serializers.ModelSerializer):
     owner_desc = SiteOwnerInSiteSerializer(source='owner', read_only=True)
-    site_cont_files = FileInSiteDataSerializer(many=True, read_only=True)
+    site_cont_files = FileInSiteContDataSerializer(many=True, read_only=True)
     creator = SimpleUserSerializer(read_only=True)
     updator = SimpleUserSerializer(read_only=True)
 
