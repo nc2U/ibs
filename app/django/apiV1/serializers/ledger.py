@@ -212,11 +212,12 @@ class ProjectAccountingEntrySerializer(serializers.ModelSerializer):
     contractor_display = serializers.SerializerMethodField(read_only=True)
     evidence_type_display = serializers.CharField(source='get_evidence_type_display', read_only=True)
     contract_payment = serializers.SerializerMethodField(read_only=True)
+    is_payment = serializers.BooleanField(source='account.is_payment', read_only=True)
 
     class Meta:
         model = ProjectAccountingEntry
         fields = ('pk', 'transaction_id', 'project', 'project_name', 'sort', 'sort_name',
-                  'account', 'account_name', 'account_code', 'account_full_path', 'contract',
+                  'account', 'account_name', 'account_code', 'account_full_path', 'is_payment', 'contract',
                   'contract_display', 'contractor', 'contractor_display', 'amount', 'trader',
                   'evidence_type', 'evidence_type_display', 'contract_payment', 'created_at', 'updated_at')
         read_only_fields = ('created_at', 'updated_at')

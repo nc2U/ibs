@@ -107,6 +107,52 @@ class ProjectTransactionItemModel {
   bool get isExpense => sort == '2';
   bool get isTransfer => sort == '3';
 
+  /// 계정과목 표출 텍스트 (예: '복리후생비', '소방 공사비 외 2건')
+  String get displayAccountName {
+    final validAccounts = accountingEntries
+        .map((e) => e.accountName?.trim())
+        .where((name) => name != null && name.isNotEmpty)
+        .map((name) => name!)
+        .toSet() // 동일한 계정과목 중복 제거
+        .toList();
+
+    if (validAccounts.isEmpty) {
+      if (accountName != null && accountName!.isNotEmpty) {
+        return accountName!;
+      }
+      return '계정과목 미지정';
+    }
+
+    final firstName = validAccounts.first;
+    final otherCount = validAccounts.length - 1;
+
+    if (otherCount > 0) {
+      return '$firstName 외 $otherCount건';
+    }
+    return firstName;
+  }
+
+  /// 거래처 표출 텍스트 (예: '스타벅스', '스타벅스 외 2곳')
+  String? get displayTraderName {
+    final validTraders = accountingEntries
+        .map((e) => e.trader?.trim())
+        .where((t) => t != null && t.isNotEmpty)
+        .map((t) => t!)
+        .toList();
+
+    if (validTraders.isEmpty) {
+      return trader;
+    }
+
+    final firstTrader = validTraders.first;
+    final otherCount = validTraders.length - 1;
+
+    if (otherCount > 0) {
+      return '$firstTrader 외 $otherCount곳';
+    }
+    return firstTrader;
+  }
+
   Color get sortColor {
     if (isIncome) return const Color(0xFF10B981); // 수입 (초록)
     if (isExpense) return const Color(0xFFEF4444); // 지출 (빨강)
@@ -114,6 +160,16 @@ class ProjectTransactionItemModel {
   }
 
   String get sortSign => isIncome ? '+' : (isExpense ? '-' : '');
+
+  /// 순수 분양대금(분담금, ProjectAccount.is_payment=true) 수납 분개 항목 조회
+  ProjectAccountingEntryModel? get paymentContractEntry {
+    for (final entry in accountingEntries) {
+      if (entry.isPayment && entry.contractId != null) {
+        return entry;
+      }
+    }
+    return null;
+  }
 }
 
 /// 📑 3. 회계 분개 항목 모델 (복식부기 항목)
@@ -123,6 +179,10 @@ class ProjectAccountingEntryModel {
   final String? accountName;
   final int amount;
   final String? trader;
+  final bool isPayment;
+  final int? contractId;
+  final String? contractDisplay;
+  final String? contractorDisplay;
 
   ProjectAccountingEntryModel({
     required this.pk,
@@ -130,15 +190,23 @@ class ProjectAccountingEntryModel {
     this.accountName,
     required this.amount,
     this.trader,
+    this.isPayment = false,
+    this.contractId,
+    this.contractDisplay,
+    this.contractorDisplay,
   });
 
   factory ProjectAccountingEntryModel.fromJson(Map<String, dynamic> json) {
     return ProjectAccountingEntryModel(
       pk: json['pk'] ?? json['id'] ?? 0,
       accountId: json['account'] is int ? json['account'] : (json['account'] is Map ? json['account']['pk'] : null),
-      accountName: json['account_desc'] ?? (json['account'] is Map ? json['account']['name'] : null),
+      accountName: json['account_name'] ?? json['account_desc'] ?? (json['account'] is Map ? json['account']['name'] : null),
       amount: (json['amount'] ?? 0) as int,
       trader: json['trader']?.toString(),
+      isPayment: json['is_payment'] == true,
+      contractId: json['contract'] is int ? json['contract'] : (json['contract'] is Map ? json['contract']['pk'] : null),
+      contractDisplay: json['contract_display']?.toString(),
+      contractorDisplay: json['contractor_display']?.toString(),
     );
   }
 }

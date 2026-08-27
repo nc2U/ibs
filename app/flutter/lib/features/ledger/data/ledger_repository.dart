@@ -30,12 +30,35 @@ class LedgerRepository {
     }
   }
 
+  /// 1-2. 프로젝트 거래 전표 적요 및 비고(현장 메모) 수정 (PATCH)
+  Future<bool> updateTransactionNoteAndContent({
+    required int pk,
+    String? content,
+    String? note,
+  }) async {
+    try {
+      final data = <String, dynamic>{};
+      if (content != null) data['content'] = content;
+      if (note != null) data['note'] = note;
+
+      final response = await dio.patch(
+        '/api/v1/ledger/project-transaction/$pk/',
+        data: data,
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
   /// 2. 프로젝트 거래 전표 목록 조회 (/api/v1/ledger/project-transaction/?project={projectId}&page={page})
   Future<List<ProjectTransactionItemModel>> fetchProjectTransactions({
     required int projectId,
     String? search,
     String? sort,
     int? bankAccount,
+    String? fromDate,
+    String? toDate,
     int page = 1,
     int limit = 10,
   }) async {
@@ -53,6 +76,12 @@ class LedgerRepository {
       }
       if (bankAccount != null) {
         queryParams['bank_account'] = bankAccount;
+      }
+      if (fromDate != null && fromDate.isNotEmpty) {
+        queryParams['from_date'] = fromDate;
+      }
+      if (toDate != null && toDate.isNotEmpty) {
+        queryParams['to_date'] = toDate;
       }
 
       final response = await dio.get(

@@ -20,6 +20,27 @@ final ledgerSearchQueryProvider = StateProvider<String>((ref) => '');
 /// 거래 구분 필터 (전체 '', '1': 수입, '2': 지출, '3': 대체)
 final ledgerSortFilterProvider = StateProvider<String>((ref) => '');
 
+/// 날짜 범위 프리셋 (전체, 오늘, 이번달, 지난달, 최근3개월, 올해, 직접입력)
+enum LedgerDatePreset {
+  all,         // 전체 기간
+  today,       // 오늘
+  thisMonth,   // 이번 달
+  lastMonth,   // 지난 달
+  last3Months, // 최근 3개월
+  thisYear,    // 올해
+  custom,      // 직접 지정
+}
+
+/// 날짜 프리셋 상태
+final ledgerDatePresetProvider =
+    StateProvider<LedgerDatePreset>((ref) => LedgerDatePreset.all);
+
+/// 시작일자 필터 (YYYY-MM-DD)
+final ledgerFromDateFilterProvider = StateProvider<String?>((ref) => null);
+
+/// 종료일자 필터 (YYYY-MM-DD)
+final ledgerToDateFilterProvider = StateProvider<String?>((ref) => null);
+
 /// 계좌 필터 (선택된 계좌 ID)
 final ledgerSelectedBankAccFilterProvider = StateProvider<int?>((ref) => null);
 
@@ -112,6 +133,8 @@ class ProjectTransactionsNotifier
     final search = ref.read(ledgerSearchQueryProvider);
     final sort = ref.read(ledgerSortFilterProvider);
     final bankAcc = ref.read(ledgerSelectedBankAccFilterProvider);
+    final fromDate = ref.read(ledgerFromDateFilterProvider);
+    final toDate = ref.read(ledgerToDateFilterProvider);
     final repository = ref.read(ledgerRepositoryProvider);
 
     try {
@@ -120,6 +143,8 @@ class ProjectTransactionsNotifier
         search: search,
         sort: sort,
         bankAccount: bankAcc,
+        fromDate: fromDate,
+        toDate: toDate,
         page: 1,
         limit: 10,
       );
@@ -147,6 +172,8 @@ class ProjectTransactionsNotifier
     final search = ref.read(ledgerSearchQueryProvider);
     final sort = ref.read(ledgerSortFilterProvider);
     final bankAcc = ref.read(ledgerSelectedBankAccFilterProvider);
+    final fromDate = ref.read(ledgerFromDateFilterProvider);
+    final toDate = ref.read(ledgerToDateFilterProvider);
     final repository = ref.read(ledgerRepositoryProvider);
 
     try {
@@ -155,6 +182,8 @@ class ProjectTransactionsNotifier
         search: search,
         sort: sort,
         bankAccount: bankAcc,
+        fromDate: fromDate,
+        toDate: toDate,
         page: nextPage,
         limit: 10,
       );

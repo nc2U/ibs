@@ -18,6 +18,10 @@ import 'site_screen.dart';
 /// 활성화된 서브 모듈 구분
 enum ProjectActiveModule { none, docs, contract, payment, ledger, site, settings }
 
+/// 전역 서브 모듈 활성화 상태 프로바이더
+final projectActiveModuleProvider =
+    StateProvider<ProjectActiveModule>((ref) => ProjectActiveModule.none);
+
 /// 프로젝트 관리 탭 메인 화면 (IBS Global - type == '2' 부동산 개발 프로젝트 전용)
 /// 계약(Contract) / 수납(Payment) / 자금(Ledger) / 부지(Site) 4대 모듈 접근 UI (radius = 0)
 class ProjectScreen extends ConsumerStatefulWidget {
@@ -28,8 +32,6 @@ class ProjectScreen extends ConsumerStatefulWidget {
 }
 
 class _ProjectScreenState extends ConsumerState<ProjectScreen> {
-  ProjectActiveModule _activeModule = ProjectActiveModule.none;
-
   void _openSubModule(ProjectActiveModule module, [SelectedProject? project]) {
     if (module == ProjectActiveModule.docs && project != null) {
       ref.read(docsContextProvider.notifier).state = DocsContext.project(
@@ -40,15 +42,12 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
         ),
       );
     }
-    setState(() {
-      _activeModule = module;
-    });
+    ref.read(projectActiveModuleProvider.notifier).state = module;
   }
 
   void _closeSubModule() {
-    setState(() {
-      _activeModule = ProjectActiveModule.none;
-    });
+    ref.read(projectActiveModuleProvider.notifier).state =
+        ProjectActiveModule.none;
   }
 
   void _handleDisabledModuleTap(String moduleTitle) {
@@ -85,9 +84,10 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
     }
 
     // ── 서브 모듈 내부 뷰 모드 (1줄 콤팩트 바 뷰) ──────────────────────
-    if (_activeModule != ProjectActiveModule.none && selectedProject != null) {
+    final activeModule = ref.watch(projectActiveModuleProvider);
+    if (activeModule != ProjectActiveModule.none && selectedProject != null) {
       Widget contentWidget;
-      switch (_activeModule) {
+      switch (activeModule) {
         case ProjectActiveModule.docs:
           contentWidget = const DocsScreen();
           break;
@@ -121,7 +121,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
               onProjectChanged: () {
                 final updatedProj = ref.read(selectedRealEstateProjectProvider);
                 if (updatedProj != null &&
-                    _activeModule == ProjectActiveModule.docs) {
+                    activeModule == ProjectActiveModule.docs) {
                   ref.read(docsContextProvider.notifier).state =
                       DocsContext.project(
                     SimpleProjectModel(

@@ -72,6 +72,19 @@ class ContractRepository {
     }
   }
 
+  /// 2-2. 계약 단건 상세 조회 (/api/v1/contract-set/{contractId}/)
+  Future<ContractItemModel?> fetchContractDetail(int contractId) async {
+    try {
+      final response = await dio.get('/api/v1/contract-set/$contractId/');
+      if (response.data is Map<String, dynamic>) {
+        return ContractItemModel.fromJson(response.data as Map<String, dynamic>);
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
   /// 3. 권리의무 승계 목록 조회 (/api/v1/succession/?contract__project={projectId})
   Future<List<SuccessionItemModel>> fetchSuccessions({
     required int projectId,
