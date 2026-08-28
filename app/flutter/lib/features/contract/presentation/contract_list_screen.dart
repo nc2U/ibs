@@ -495,6 +495,16 @@ class _ContractListScreenState extends ConsumerState<ContractListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ── 🔄 프로젝트 변경 감지 리스너: 프로젝트가 변경되면 3대 탭 목록 및 종합 집계를 즉시 자동 갱신 ──
+    ref.listen(selectedRealEstateProjectProvider, (previous, next) {
+      if (previous?.realProjectId != next?.realProjectId) {
+        ref.invalidate(contractAggregateProvider);
+        ref.read(validContractListProvider.notifier).fetchInitial();
+        ref.read(successionListProvider.notifier).fetchInitial();
+        ref.read(contractorReleaseListProvider.notifier).fetchInitial();
+      }
+    });
+
     final selectedProject = ref.watch(selectedRealEstateProjectProvider);
     final aggregateAsync = ref.watch(contractAggregateProvider);
     final currentTab = ref.watch(contractCurrentSubTabProvider);

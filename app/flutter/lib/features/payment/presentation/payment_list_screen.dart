@@ -37,6 +37,17 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
     super.initState();
     _transactionsScrollController.addListener(_onTransactionsScroll);
     _contractsScrollController.addListener(_onContractsScroll);
+
+    // ── 화면 진입 시 현재 선택된 프로젝트 기준으로 최신 데이터 동기화 ──
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref.invalidate(paymentOverallAggregateProvider);
+        ref.invalidate(installmentStatusListProvider);
+        ref.read(selectedContractForPaymentProvider.notifier).state = null;
+        ref.read(paymentTransactionsProvider.notifier).fetchInitial();
+        ref.read(validContractListProvider.notifier).fetchInitial();
+      }
+    });
   }
 
   @override
@@ -405,6 +416,17 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ── 🔄 프로젝트 변경 감지 리스너: 프로젝트가 변경되면 3대 탭 목록 및 종합 집계를 즉시 자동 갱신 ──
+    ref.listen(selectedRealEstateProjectProvider, (previous, next) {
+      if (previous?.realProjectId != next?.realProjectId) {
+        ref.invalidate(paymentOverallAggregateProvider);
+        ref.invalidate(installmentStatusListProvider);
+        ref.read(selectedContractForPaymentProvider.notifier).state = null;
+        ref.read(paymentTransactionsProvider.notifier).fetchInitial();
+        ref.read(validContractListProvider.notifier).fetchInitial();
+      }
+    });
+
     final selectedProject = ref.watch(selectedRealEstateProjectProvider);
     final aggregateAsync = ref.watch(paymentOverallAggregateProvider);
     final currentTab = ref.watch(paymentCurrentSubTabProvider);
