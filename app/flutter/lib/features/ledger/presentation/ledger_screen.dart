@@ -37,6 +37,16 @@ class _LedgerScreenState extends ConsumerState<LedgerScreen> {
   void initState() {
     super.initState();
     _transactionsScrollController.addListener(_onTransactionsScroll);
+
+    // ── 화면 진입 시 현재 선택된 프로젝트 기준으로 최신 데이터 동기화 ──
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref.invalidate(ledgerOverallAggregateProvider);
+        ref.invalidate(projectBankAccountsProvider);
+        ref.invalidate(ledgerBalanceByAccountProvider);
+        ref.read(projectTransactionsProvider.notifier).fetchInitial();
+      }
+    });
   }
 
   @override
@@ -583,6 +593,17 @@ class _LedgerScreenState extends ConsumerState<LedgerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ── 🔄 프로젝트 변경 감지 리스너: 프로젝트가 변경되면 출납 내역 및 자금 집계, 계좌 목록을 즉시 자동 갱신 ──
+    ref.listen(selectedRealEstateProjectProvider, (previous, next) {
+      if (previous?.realProjectId != next?.realProjectId) {
+        ref.invalidate(ledgerOverallAggregateProvider);
+        ref.invalidate(projectBankAccountsProvider);
+        ref.invalidate(ledgerBalanceByAccountProvider);
+        ref.read(ledgerSelectedBankAccFilterProvider.notifier).state = null;
+        ref.read(projectTransactionsProvider.notifier).fetchInitial();
+      }
+    });
+
     final selectedProject = ref.watch(selectedRealEstateProjectProvider);
     final aggregateAsync = ref.watch(ledgerOverallAggregateProvider);
     final currentTab = ref.watch(ledgerCurrentSubTabProvider);
