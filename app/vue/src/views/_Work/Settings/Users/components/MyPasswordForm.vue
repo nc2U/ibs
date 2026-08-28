@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useAccount } from '@/store/pinia/account'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
+import { CModal } from '@coreui/vue'
 
 const refAlertModal = ref()
 
@@ -20,6 +21,29 @@ const form = reactive({
   new_password: '',
   confirm_password: '',
 })
+
+const isResetModalOpen = ref(false)
+const resetEmail = ref('')
+const isSendingReset = ref(false)
+
+const openResetModal = () => {
+  resetEmail.value = userInfo.value?.email || ''
+  isResetModalOpen.value = true
+}
+
+const handleSendResetEmail = async () => {
+  if (!resetEmail.value || !resetEmail.value.includes('@')) {
+    refAlertModal.value.callModal('', '유효한 이메일 주소를 입력해주세요.')
+    return
+  }
+  isSendingReset.value = true
+  try {
+    await accStore.passReset({ email: resetEmail.value.trim() })
+    isResetModalOpen.value = false
+  } finally {
+    isSendingReset.value = false
+  }
+}
 
 const onSubmit = async (event: Event) => {
   const e = event.currentTarget as HTMLInputElement
@@ -75,7 +99,7 @@ const onSubmit = async (event: Event) => {
             </CRow>
 
             <CRow class="pl-4 my-3">
-              <CFormLabel class="col-sm-4 col-lg-2 col-form-label">현재 비밀번호</CFormLabel>
+              <CFormLabel class="col-sm-4 col-lg-2 col-form-label"> 현재 비밀번호 </CFormLabel>
               <CCol sm="6" lg="4" xl="3">
                 <CInputGroup>
                   <CFormInput
@@ -96,6 +120,16 @@ const onSubmit = async (event: Event) => {
                   </v-btn>
                   <CFormFeedback invalid>현재 비밀번호를 입력하세요.</CFormFeedback>
                 </CInputGroup>
+                <div class="mt-1 text-right">
+                  <a
+                    href="javascript:void(0)"
+                    class="text-decoration-none small text-primary"
+                    @click="openResetModal"
+                  >
+                    <v-icon icon="mdi-help-circle-outline" size="14" class="mr-1" />
+                    비밀번호를 잊으셨나요?
+                  </a>
+                </div>
               </CCol>
             </CRow>
             <CRow class="pl-4 my-3">
@@ -158,6 +192,36 @@ const onSubmit = async (event: Event) => {
       </CCol>
     </CForm>
   </CRow>
+
+  <!-- 비밀번호 재설정 이메일 발송 모달 -->
+  <CModal :visible="isResetModalOpen" @close="isResetModalOpen = false" alignment="center">
+    <CModalHeader>
+      <CModalTitle>
+        <v-icon icon="mdi-email-lock-outline" class="mr-1" color="primary" />
+        비밀번호 재설정 링크 발송
+      </CModalTitle>
+    </CModalHeader>
+    <CModalBody>
+      <p class="text-medium-emphasis small mb-3">
+        가입된 이메일 주소로 비밀번호 재설정 링크가 포함된 메일을 발송합니다.<br />
+        메일 수신 후 안내 링크를 통해 새로운 비밀번호를 설정하실 수 있습니다.
+      </p>
+      <CFormLabel class="font-weight-bold">이메일 주소</CFormLabel>
+      <CFormInput
+        v-model="resetEmail"
+        type="email"
+        placeholder="이메일 주소 입력"
+        :disabled="isSendingReset"
+      />
+    </CModalBody>
+    <CModalFooter>
+      <CButton color="secondary" variant="ghost" @click="isResetModalOpen = false"> 취소 </CButton>
+      <CButton color="primary" :disabled="isSendingReset" @click="handleSendResetEmail">
+        <CSpinner v-if="isSendingReset" size="sm" class="mr-1" />
+        발송하기
+      </CButton>
+    </CModalFooter>
+  </CModal>
 
   <AlertModal ref="refAlertModal" />
 </template>
