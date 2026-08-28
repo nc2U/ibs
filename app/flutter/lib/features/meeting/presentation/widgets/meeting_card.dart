@@ -111,11 +111,11 @@ class MeetingCard extends StatelessWidget {
                 const Spacer(),
                 if (onExportPdf != null)
                   Material(
-                    color: context.colors.accentWork.withAlpha(20),
+                    color: Colors.transparent,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.zero,
                       side: BorderSide(
-                        color: context.colors.accentWork.withAlpha(70),
+                        color: context.colors.border,
                         width: 0.8,
                       ),
                     ),
@@ -123,21 +123,21 @@ class MeetingCard extends StatelessWidget {
                       onTap: onExportPdf,
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 3),
+                            horizontal: 8, vertical: 3.5),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             const Icon(
-                              Icons.picture_as_pdf_outlined,
-                              size: 13,
-                              color: Color(0xFFEF5350),
+                              Icons.picture_as_pdf_rounded,
+                              size: 13.5,
+                              color: Color(0xFFEF4444),
                             ),
                             const SizedBox(width: 4),
                             Text(
                               'PDF',
                               style: AppTextStyles.caption.copyWith(
-                                color: context.colors.accentWork,
-                                fontWeight: FontWeight.w600,
+                                color: context.colors.textPrimary,
+                                fontWeight: FontWeight.bold,
                                 fontSize: 11,
                                 letterSpacing: 0.3,
                               ),

@@ -1614,9 +1614,10 @@ class _SiteScreenState extends ConsumerState<SiteScreen> {
           ),
           Divider(color: context.colors.border, height: 1),
 
-          // ── 3. 3대 서브 탭 바 ──────────────────────────────────────────
+          // ── 3. 3대 서브 탭 바 (지번별 토지 / 소유자별 / 매입 계약) ────────────────
           Container(
             color: context.colors.bgSurface,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             child: Row(
               children: [
                 _SubTabButton(
@@ -1627,6 +1628,7 @@ class _SiteScreenState extends ConsumerState<SiteScreen> {
                     ref.read(siteCurrentSubTabProvider.notifier).state = SiteSubTab.sites;
                   },
                 ),
+                const SizedBox(width: 6),
                 _SubTabButton(
                   title: '소유자별',
                   icon: Icons.person_outline_rounded,
@@ -1635,6 +1637,7 @@ class _SiteScreenState extends ConsumerState<SiteScreen> {
                     ref.read(siteCurrentSubTabProvider.notifier).state = SiteSubTab.owners;
                   },
                 ),
+                const SizedBox(width: 6),
                 _SubTabButton(
                   title: '매입 계약',
                   icon: Icons.receipt_long_outlined,
@@ -2426,7 +2429,7 @@ class _SiteScreenState extends ConsumerState<SiteScreen> {
   Widget _divider() => Container(width: 1, height: 26, color: context.colors.border);
 }
 
-/// ── 서브 탭 버튼 ───────────────────────────────────────────────
+/// ── 서브 탭 버튼 위젯 (선택 시 명확한 테두리 및 액센트 배경 대비 적용) ─────────
 class _SubTabButton extends StatelessWidget {
   final String title;
   final IconData icon;
@@ -2442,37 +2445,44 @@ class _SubTabButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const activeColor = Color(0xFF0D9488); // Teal 브랜드 컬러
+
     return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 9),
-          decoration: BoxDecoration(
-            border: Border(
-              bottom: BorderSide(
-                color: isSelected ? const Color(0xFF0D9488) : Colors.transparent,
-                width: 2.2,
-              ),
-            ),
+      child: Material(
+        color: isSelected ? activeColor.withAlpha(28) : context.colors.bgCard,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.zero,
+          side: BorderSide(
+            color: isSelected ? activeColor : context.colors.border,
+            width: isSelected ? 1.4 : 0.8,
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                size: 14,
-                color: isSelected ? const Color(0xFF0D9488) : context.colors.textMuted,
-              ),
-              const SizedBox(width: 5),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  color: isSelected ? const Color(0xFF0D9488) : context.colors.textMuted,
+        ),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.zero,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.5),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  size: 15,
+                  color: isSelected ? activeColor : context.colors.textMuted,
                 ),
-              ),
-            ],
+                const SizedBox(width: 5),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    color: isSelected ? activeColor : context.colors.textSecond,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ),
         ),
       ),
