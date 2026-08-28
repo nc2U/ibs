@@ -26,12 +26,25 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _isBiometricSupported = false;
   bool _biometricEnabled = false;
   String _biometricLabel = '생체 인증';
+  late final AppLifecycleListener _lifecycleListener;
 
   @override
   void initState() {
     super.initState();
     _loadBiometricSettings();
     _loadPushSettings();
+
+    // iOS/Android 시스템 설정 화면에서 알림 허용 후 앱으로 돌아왔을 때 상태 자동 갱신
+    _lifecycleListener = AppLifecycleListener(
+      onResume: _loadPushSettings,
+      onShow: _loadPushSettings,
+    );
+  }
+
+  @override
+  void dispose() {
+    _lifecycleListener.dispose();
+    super.dispose();
   }
 
   Future<void> _loadPushSettings() async {
@@ -47,19 +60,34 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     if (mounted) {
       setState(() => _pushNotif = value && success);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            value && success
-                ? '모바일 푸시 알림이 활성화되었습니다.'
-                : (value && !success
-                    ? '기기 설정에서 알림 권한을 허용해주세요.'
-                    : '모바일 푸시 알림이 비활성화되었습니다.'),
+      if (value && !success) {
+        // iOS/Android에서 시스템 알림 권한이 거부되어 있는 경우
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('기기 설정에서 IBS 웍스의 알림 권한을 허용해주세요.'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: context.colors.error,
+            duration: const Duration(seconds: 5),
+            action: SnackBarAction(
+              label: '설정 열기',
+              textColor: Colors.white,
+              onPressed: () => FcmService.openNotificationSettings(),
+            ),
           ),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: (value && success) ? const Color(0xFF10B981) : context.colors.textPrimary,
-        ),
-      );
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              value
+                  ? '모바일 푸시 알림이 활성화되었습니다.'
+                  : '모바일 푸시 알림이 비활성화되었습니다.',
+            ),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: value ? const Color(0xFF10B981) : context.colors.textPrimary,
+          ),
+        );
+      }
     }
   }
 

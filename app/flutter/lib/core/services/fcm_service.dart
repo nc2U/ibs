@@ -5,6 +5,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'app_badge_service.dart';
 
 /// 백엔드(_utils/push_service.py)와 일치하는 중요 알림 채널 ID
@@ -49,6 +50,20 @@ class FcmService {
   static const _pushEnabledKey = 'PUSH_NOTIFICATION_ENABLED';
   static bool _isInitialized = false;
 
+  /// OS 기기 설정 화면으로 바로 이동 (알림 권한 거부 상태 시 사용)
+  static Future<void> openNotificationSettings() async {
+    try {
+      if (Platform.isIOS) {
+        final uri = Uri.parse('app-settings:');
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri);
+        }
+      }
+    } catch (e) {
+      debugPrint('⚠️ [FCM] 앱 설정 열기 실패: $e');
+    }
+  }
+
   /// 푸시 알림 활성화 여부 확인 (기본값: false - 최초 권한 유도 전까지 꺼짐 상태 유지)
   static Future<bool> isPushEnabled() async {
     final value = await _storage.read(key: _pushEnabledKey);
@@ -64,45 +79,70 @@ class FcmService {
 
   /// 푸시 알림 설정 변경 및 서버 동기화
   static Future<bool> setPushEnabled(Dio dio, bool enabled) async {
-    await _storage.write(key: _pushEnabledKey, value: enabled.toString());
+    try {
+      // 1. 사용자 선택 상태 로컬 저장소에 즉시 기록
+      await _storage.write(key: _pushEnabledKey, value: enabled.toString());
 
-    if (enabled) {
-      // 켤 때는 OS 권한 요청 및 토큰 등록 진행
-      final settings = await _messaging.requestPermission(
-        alert: true,
-        announcement: false,
-        badge: true,
-        carPlay: false,
-        criticalAlert: false,
-        provisional: false,
-        sound: true,
-      );
-
-      final isAuthorized = settings.authorizationStatus == AuthorizationStatus.authorized ||
-          settings.authorizationStatus == AuthorizationStatus.provisional;
-
-      if (isAuthorized) {
-        String? fcmToken = await _messaging.getToken();
-        if (fcmToken != null && fcmToken.isNotEmpty) {
-          await _registerTokenToServer(dio, fcmToken, isActive: true);
+      if (enabled) {
+        // 2. Firebase 앱 초기화 확인
+        if (Firebase.apps.isEmpty) {
+          await Firebase.initializeApp();
         }
+
+        // 3. iOS/Android 시스템 알림 권한 요청 (팝업 허용 유도)
+        try {
+          if (Platform.isIOS) {
+            final iosPlugin = kLocalNotificationsPlugin
+                .resolvePlatformSpecificImplementation<
+                    IOSFlutterLocalNotificationsPlugin>();
+            if (iosPlugin != null) {
+              await iosPlugin.requestPermissions(alert: true, badge: true, sound: true);
+            }
+          }
+          await _messaging.requestPermission(
+            alert: true,
+            badge: true,
+            sound: true,
+          );
+        } catch (e) {
+          debugPrint('⚠️ [FCM setPushEnabled] 권한 요청 예외 무시: $e');
+        }
+
+        // 4. 백엔드 토큰 등록 시도 (실패하더라도 로컬 켜짐 상태 유지)
+        try {
+          String? fcmToken = await _messaging.getToken();
+          if (fcmToken != null && fcmToken.isNotEmpty) {
+            debugPrint('🔑 [FCM setPushEnabled] FCM Token: $fcmToken');
+            await _registerTokenToServer(dio, fcmToken, isActive: true);
+          }
+        } catch (e) {
+          debugPrint('⚠️ [FCM setPushEnabled] FCM Token 등록 건너뜀 (로컬 알림 모드): $e');
+        }
+
+        // 5. 백그라운드 리스너 초기화
+        try {
+          _isInitialized = false;
+          await initialize(dio);
+        } catch (e) {
+          debugPrint('⚠️ [FCM setPushEnabled] initialize 오류 무시: $e');
+        }
+
         return true;
       } else {
-        // OS 권한이 거부된 경우 false 저장
-        await _storage.write(key: _pushEnabledKey, value: 'false');
-        return false;
-      }
-    } else {
-      // 끌 때는 백엔드 기기 토큰을 is_active = false 로 업데이트
-      try {
-        String? fcmToken = await _messaging.getToken();
-        if (fcmToken != null && fcmToken.isNotEmpty) {
-          await _registerTokenToServer(dio, fcmToken, isActive: false);
+        // 끌 때는 백엔드 기기 토큰을 is_active = false 로 업데이트
+        try {
+          String? fcmToken = await _messaging.getToken();
+          if (fcmToken != null && fcmToken.isNotEmpty) {
+            await _registerTokenToServer(dio, fcmToken, isActive: false);
+          }
+        } catch (e) {
+          debugPrint('⚠️ [FCM] 토큰 비활성화 실패: $e');
         }
-      } catch (e) {
-        debugPrint('⚠️ [FCM] 토큰 비활성화 실패: $e');
+        return true;
       }
-      return true;
+    } catch (e) {
+      debugPrint('❌ [FCM setPushEnabled] 오류 발생: $e');
+      return true; // 사용자 UI 스위치는 켜진 상태 유지
     }
   }
 
@@ -116,12 +156,12 @@ class FcmService {
         await Firebase.initializeApp();
       }
 
-      // 2. 안드로이드 로컬 알림 플러그인 초기화 및 Notification Channel 등록
+      // 2. 안드로이드/iOS 로컬 알림 플러그인 초기화 및 Notification Channel 등록
       const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
       const iosInit = DarwinInitializationSettings(
-        requestAlertPermission: true,
-        requestBadgePermission: true,
-        requestSoundPermission: true,
+        requestAlertPermission: false,
+        requestBadgePermission: false,
+        requestSoundPermission: false,
       );
       const initSettings = InitializationSettings(android: androidInit, iOS: iosInit);
 
@@ -179,12 +219,16 @@ class FcmService {
         }
 
         // 5. 기기 고유 FCM 토큰 발급
-        String? fcmToken = await _messaging.getToken();
-        if (fcmToken != null && fcmToken.isNotEmpty) {
-          debugPrint('🔑 [FCM] Device Token: $fcmToken');
-          await _registerTokenToServer(dio, fcmToken);
-        } else {
-          debugPrint('⚠️ [FCM] FCM Token 발급 실패 (null 또는 empty)');
+        try {
+          String? fcmToken = await _messaging.getToken();
+          if (fcmToken != null && fcmToken.isNotEmpty) {
+            debugPrint('🔑 [FCM] Device Token: $fcmToken');
+            await _registerTokenToServer(dio, fcmToken);
+          } else {
+            debugPrint('⚠️ [FCM] FCM Token 발급 실패 (null 또는 empty)');
+          }
+        } catch (e) {
+          debugPrint('⚠️ [FCM] FCM Token 발급 예외: $e');
         }
 
         // 6. 토큰 갱신 이벤트 리스너
