@@ -67,6 +67,24 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ── 🔄 프로젝트 변경 감지 리스너: 문서함 서브모듈 활성 상태에서 프로젝트가 변경되면 문서 컨텍스트 즉시 동기화 ──
+    ref.listen(selectedRealEstateProjectProvider, (previous, next) {
+      final activeModule = ref.read(projectActiveModuleProvider);
+      if (activeModule == ProjectActiveModule.docs) {
+        if (next != null) {
+          ref.read(docsContextProvider.notifier).state = DocsContext.project(
+            SimpleProjectModel(
+              pk: next.pk,
+              name: next.name,
+              slug: next.slug,
+            ),
+          );
+        } else {
+          ref.read(docsContextProvider.notifier).state = DocsContext.all();
+        }
+      }
+    });
+
     final selectedProject = ref.watch(selectedRealEstateProjectProvider);
     final isRealEstateProject =
         selectedProject != null && selectedProject.type == '2';
@@ -118,20 +136,6 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
             // ── 서브모듈 전용 1줄 고정 프로젝트 선택 바 (공용 컴포넌트) ─────────
             WorkspaceSelectorBar(
               onlyRealEstate: true,
-              onProjectChanged: () {
-                final updatedProj = ref.read(selectedRealEstateProjectProvider);
-                if (updatedProj != null &&
-                    activeModule == ProjectActiveModule.docs) {
-                  ref.read(docsContextProvider.notifier).state =
-                      DocsContext.project(
-                    SimpleProjectModel(
-                      pk: updatedProj.pk,
-                      name: updatedProj.name,
-                      slug: updatedProj.slug,
-                    ),
-                  );
-                }
-              },
               trailing: Material(
                 color: Colors.transparent,
                 child: InkWell(

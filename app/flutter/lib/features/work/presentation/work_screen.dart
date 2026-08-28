@@ -50,25 +50,25 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
     });
   }
 
-  void _syncDocsContextIfNeeded() {
-    if (_isDocsView) {
-      final currentWs = ref.read(selectedProjectProvider);
-      if (currentWs != null) {
-        ref.read(docsContextProvider.notifier).state = DocsContext.workspace(
-          SimpleProjectModel(
-            pk: currentWs.pk,
-            name: currentWs.name,
-            slug: currentWs.slug,
-          ),
-        );
-      } else {
-        ref.read(docsContextProvider.notifier).state = DocsContext.all();
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    // ── 🔄 워크스페이스 변경 감지 리스너: 문서함 뷰(_isDocsView) 활성 상태에서 워크스페이스가 변경되면 문서 컨텍스트 즉시 동기화 ──
+    ref.listen(selectedWorkspaceProvider, (previous, next) {
+      if (_isDocsView) {
+        if (next != null) {
+          ref.read(docsContextProvider.notifier).state = DocsContext.workspace(
+            SimpleProjectModel(
+              pk: next.pk,
+              name: next.name,
+              slug: next.slug,
+            ),
+          );
+        } else {
+          ref.read(docsContextProvider.notifier).state = DocsContext.all();
+        }
+      }
+    });
+
     return DefaultTabController(
       length: 2,
       initialIndex: widget.initialIndex,
@@ -78,7 +78,6 @@ class _WorkScreenState extends ConsumerState<WorkScreen> {
           children: [
             // ── 워크스페이스 고정 선택 바 (공용 컴포넌트) ─────────────────────
             WorkspaceSelectorBar(
-              onProjectChanged: _syncDocsContextIfNeeded,
               trailing: ref.can(Perm.docsRead)
                   ? InkWell(
                       onTap: _isDocsView ? _closeDocsView : _openDocsView,
