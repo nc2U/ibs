@@ -10,6 +10,7 @@ import '../../../core/services/biometric_service.dart';
 import '../../../core/services/fcm_service.dart';
 import '../../../core/theme/app_colors_extension.dart';
 import '../../../core/widgets/user_avatar.dart';
+import 'change_password_screen.dart';
 import 'delegation_settings_screen.dart';
 import 'email_notification_settings_screen.dart';
 
@@ -401,10 +402,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               leading: Icon(Icons.lock_outline_rounded,
                   color: context.colors.textSecond, size: 22),
               title: '비밀번호 변경',
-              subtitle: '준비 중',
+              subtitle: '현재 비밀번호 확인 후 새 비밀번호로 변경',
               trailing: Icon(Icons.chevron_right_rounded,
                   color: context.colors.textDisabled),
-              onTap: null,
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const ChangePasswordScreen()),
+                );
+              },
             ),
             const _Divider(),
             _SettingTile(

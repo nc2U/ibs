@@ -2,12 +2,13 @@
 /// Django _config/urls.py 기준
 abstract class ApiEndpoints {
   // ── Auth & Users ──────────────────────────────────
-  static const String jwtCreate  = '/api/v1/token/';
-  static const String jwtRefresh = '/api/v1/token/refresh/';
-  static const String jwtVerify  = '/api/v1/token/verify/';
-  static const String me         = '/api/v1/accounts/users/me/';
-  static const String users      = '/api/v1/user/';
-  static const String fcmToken   = '/api/v1/accounts/fcm-token/';
+  static const String jwtCreate      = '/api/v1/token/';
+  static const String jwtRefresh     = '/api/v1/token/refresh/';
+  static const String jwtVerify      = '/api/v1/token/verify/';
+  static const String me             = '/api/v1/accounts/users/me/';
+  static const String users          = '/api/v1/user/';
+  static const String fcmToken       = '/api/v1/accounts/fcm-token/';
+  static const String changePassword = '/api/v1/change-password/';
 
   // ── Project ──────────────────────────────────────
   static const String projects           = '/api/v1/issue-project/';
