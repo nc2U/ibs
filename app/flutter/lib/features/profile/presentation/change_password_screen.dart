@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/api_endpoints.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/dio_provider.dart';
 import '../../../../core/theme/app_colors_extension.dart';
 
@@ -103,6 +104,170 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
     }
   }
 
+  /// 현재 비밀번호를 잊은 사용자를 위한 이메일 재설정 링크 요청 모달
+  Future<void> _showPasswordResetDialog() async {
+    final user = ref.read(currentUserProvider).valueOrNull;
+    final emailController = TextEditingController(text: user?.email ?? '');
+    bool isSending = false;
+
+    await showDialog(
+      context: context,
+      builder: (dialogCtx) {
+        return StatefulBuilder(
+          builder: (dialogCtx, setDialogState) {
+            return AlertDialog(
+              backgroundColor: context.colors.bgCard,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              title: Row(
+                children: [
+                  Icon(Icons.mark_email_read_outlined, color: context.colors.accentWork, size: 22),
+                  const SizedBox(width: 8),
+                  Text(
+                    '비밀번호 재설정 링크 발송',
+                    style: AppTextStyles.titleMd.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: context.colors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '가입된 이메일 주소로 비밀번호 재설정 링크가 포함된 메일을 발송합니다. 메일 수신 후 안내 링크를 통해 새로운 비밀번호를 설정하실 수 있습니다.',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: context.colors.textSecond,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    '이메일 주소',
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                      color: context.colors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: InputDecoration(
+                      hintText: '이메일 주소 입력',
+                      hintStyle: TextStyle(color: context.colors.textMuted, fontSize: 13),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      filled: true,
+                      fillColor: context.colors.bgInput,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(6),
+                        borderSide: BorderSide(color: context.colors.border),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(6),
+                        borderSide: BorderSide(color: context.colors.border),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isSending ? null : () => Navigator.pop(dialogCtx),
+                  child: Text('취소', style: TextStyle(color: context.colors.textMuted)),
+                ),
+                ElevatedButton(
+                  onPressed: isSending
+                      ? null
+                      : () async {
+                          final email = emailController.text.trim();
+                          if (email.isEmpty || !email.contains('@')) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('유효한 이메일 주소를 입력해주세요.'),
+                                behavior: SnackBarBehavior.floating,
+                                backgroundColor: Colors.redAccent,
+                              ),
+                            );
+                            return;
+                          }
+
+                          setDialogState(() => isSending = true);
+
+                          try {
+                            final dio = ref.read(dioProvider);
+                            final res = await dio.post(
+                              ApiEndpoints.passwordReset,
+                              data: {'email': email},
+                            );
+
+                            if (dialogCtx.mounted) Navigator.pop(dialogCtx);
+
+                            if (mounted) {
+                              final msg = (res.data is Map && res.data['detail'] != null)
+                                  ? res.data['detail'].toString()
+                                  : '비밀번호 재설정 이메일이 발송되었습니다.';
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(msg),
+                                  backgroundColor: context.colors.success,
+                                  behavior: SnackBarBehavior.floating,
+                                  duration: const Duration(seconds: 4),
+                                ),
+                              );
+                            }
+                          } on DioException catch (e) {
+                            setDialogState(() => isSending = false);
+                            String errorMsg = '이메일 발송에 실패했습니다.';
+                            if (e.response?.data is Map && e.response!.data['detail'] != null) {
+                              errorMsg = e.response!.data['detail'].toString();
+                            }
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(errorMsg),
+                                  backgroundColor: context.colors.error,
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            setDialogState(() => isSending = false);
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('오류가 발생했습니다: $e'),
+                                  backgroundColor: context.colors.error,
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: context.colors.accentWork,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                  ),
+                  child: isSending
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Text('발송하기', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -168,15 +333,36 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
               const SizedBox(height: 24),
 
               // ── 1. 현재 비밀번호 ─────────────────────────────────────────────
-              Text(
-                '현재 비밀번호',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: context.colors.textPrimary,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '현재 비밀번호',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: context.colors.textPrimary,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: _showPasswordResetDialog,
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(50, 30),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: Text(
+                      '비밀번호를 잊으셨나요?',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: context.colors.accentWork,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               TextFormField(
                 controller: _oldPasswordController,
                 obscureText: _obscureOldPassword,

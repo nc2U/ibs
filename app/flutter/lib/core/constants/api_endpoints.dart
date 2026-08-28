@@ -9,6 +9,7 @@ abstract class ApiEndpoints {
   static const String users          = '/api/v1/user/';
   static const String fcmToken       = '/api/v1/accounts/fcm-token/';
   static const String changePassword = '/api/v1/change-password/';
+  static const String passwordReset  = '/api/v1/password-reset/';
 
   // ── Project ──────────────────────────────────────
   static const String projects           = '/api/v1/issue-project/';
