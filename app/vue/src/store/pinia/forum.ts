@@ -18,6 +18,7 @@ export type PostFilter = {
   project?: number | ''
   category?: number | ''
   is_notice?: boolean | ''
+  is_faq?: boolean | ''
   is_blind?: boolean | ''
   user?: number | ''
   ordering?: string
@@ -44,7 +45,7 @@ export const useForum = defineStore('forum', () => {
 
   const createForum = (payload: Forum, projId: string) =>
     api
-      .post(`/forum/`, { ...payload })
+      .post(`/forum/`, payload)
       .then(async res => {
         forum.value = res.data
         await fetchForumList({ project: projId })
@@ -132,6 +133,12 @@ export const useForum = defineStore('forum', () => {
     if (payload.project) url += `&forum_project=${payload.project}`
     if (payload.category) url += `&category=${payload.category}`
     if (payload.is_notice) url += `&is_notice=${payload.is_notice}`
+    if (payload.is_faq !== undefined && payload.is_faq !== '') {
+      url += `&is_faq=${payload.is_faq}`
+    } else {
+      // 일반 게시판 기본값: is_faq=false 인 일반 게시물만 조회
+      url += `&is_faq=false`
+    }
     if (payload.is_blind) url += `&is_blind=${payload.is_blind}`
     if (payload.user) url += `&creator=${payload.user}`
     if (payload.ordering) url += `&ordering=${payload.ordering}`

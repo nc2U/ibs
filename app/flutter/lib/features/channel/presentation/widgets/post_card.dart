@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors_extension.dart';
-import '../../../../core/widgets/user_avatar.dart';
 import '../../data/models/forum_model.dart';
 
-/// 게시판 소셜 피드 카드 (Social Feed Post Card)
-/// - 상단: 작성자 프로필 아바타 + 이름 + 등록 시간 (상대 시간) + 카테고리 태그 칩
-/// - 본문: 제목 + 텍스트 미리보기
-/// - 하단: 인터랙션 바 (게시판 위치 태그 + 좋아요 ❤️ + 댓글 💬 + 첨부파일 📎 + 조회수)
+/// 표준 업무용 게시판 카드 (Clean Standard Post Card)
+/// - 상단: [공지 / 카테고리 태그] + [등록일자 / N 표시]
+/// - 본문: 제목 (가장 강조) + 본문 미리보기
+/// - 하단: 작성자 + 인터랙션 (댓글 💬 / 좋아요 ❤️ / 첨부파일 📎 / 조회수 👁️)
 class PostCard extends StatelessWidget {
   final PostModel post;
   final bool showWorkspaceBadge;
@@ -34,100 +33,35 @@ class PostCard extends StatelessWidget {
         : context.colors.bgCard;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
         color: cardBg,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(4),
         border: Border.all(
           color: post.isNotice ? _noticeAccent.withAlpha(isDark ? 90 : 130) : context.colors.border,
-          width: post.isNotice ? 1.0 : 0.8,
+          width: 0.8,
         ),
-        boxShadow: isDark
-            ? null
-            : [
-                BoxShadow(
-                  color: Colors.black.withAlpha(6),
-                  blurRadius: 4,
-                  offset: const Offset(0, 1.5),
-                ),
-              ],
       ),
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(4),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(4),
           child: Padding(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ── 1. 상단 작성자 프로필 헤더 (글쓴이는 상단 1회만 노출) + 카테고리 태그 ───
+                // ── 1. 상단 라인: [카테고리 / 공지 / 비밀글] + [등록일자 / N] ──────
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // 작성자 아바타
-                    UserAvatar(
-                      fallbackText: post.creator?.username ?? 'U',
-                      radius: 15,
-                    ),
-                    const SizedBox(width: 9),
-
-                    // 작성자 이름 & 상대 시간
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Text(
-                                post.creator?.username ?? '익명',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  color: context.colors.textPrimary,
-                                  fontSize: 13,
-                                ),
-                              ),
-                              if (post.isNew) ...[
-                                const SizedBox(width: 5),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0.5),
-                                  decoration: BoxDecoration(
-                                    color: context.colors.warning.withAlpha(30),
-                                    borderRadius: BorderRadius.circular(2),
-                                  ),
-                                  child: Text(
-                                    'N',
-                                    style: TextStyle(
-                                      color: context.colors.warning,
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.w900,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                          const SizedBox(height: 1),
-                          Text(
-                            _formatRelativeTime(post.created ?? ''),
-                            style: TextStyle(
-                              color: context.colors.textMuted,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // 공지 / 카테고리 태그 칩
                     if (post.isNotice) ...[
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
                           color: _noticeAccent.withAlpha(25),
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(3),
                           border: Border.all(color: _noticeAccent.withAlpha(90), width: 0.8),
                         ),
                         child: const Text(
@@ -139,15 +73,15 @@ class PostCard extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 5),
+                      const SizedBox(width: 6),
                     ],
 
                     if (post.cateName != null && post.cateName!.isNotEmpty) ...[
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
                           color: context.colors.accentChannel.withAlpha(18),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(3),
                           border: Border.all(color: context.colors.accentChannel.withAlpha(60), width: 0.8),
                         ),
                         child: Text(
@@ -159,19 +93,50 @@ class PostCard extends StatelessWidget {
                           ),
                         ),
                       ),
+                      const SizedBox(width: 6),
                     ],
 
                     if (post.isSecret) ...[
-                      const SizedBox(width: 4),
-                      Icon(Icons.lock_rounded, size: 14, color: context.colors.warning),
+                      const Icon(Icons.lock_rounded, size: 13, color: Color(0xFFD97706)),
+                      const SizedBox(width: 6),
                     ],
+
+                    if (post.isNew) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 4.5, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: context.colors.warning.withAlpha(30),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                        child: Text(
+                          'N',
+                          style: TextStyle(
+                            color: context.colors.warning,
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ],
+
+                    const Spacer(),
+
+                    // 등록일
+                    if (post.created != null)
+                      Text(
+                        _formatDate(post.created!),
+                        style: TextStyle(
+                          color: context.colors.textMuted,
+                          fontSize: 11.5,
+                        ),
+                      ),
                   ],
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
 
-                // ── 2. 게시글 제목 ──────────────────────────────────────────
+                // ── 2. 게시글 제목 (가장 명확하고 또렷하게 노출) ───────────────────
                 Text(
-                  post.title,
+                  post.title.isNotEmpty ? post.title : '제목 없음',
                   style: TextStyle(
                     color: context.colors.textPrimary,
                     fontWeight: post.isNotice ? FontWeight.w800 : FontWeight.w700,
@@ -184,126 +149,114 @@ class PostCard extends StatelessWidget {
 
                 // ── 3. 본문 텍스트 프리뷰 ──────────────────────────────────
                 if (plainContent.isNotEmpty) ...[
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 5),
                   Text(
                     plainContent,
                     style: TextStyle(
                       color: context.colors.textSecond,
-                      height: 1.38,
+                      height: 1.35,
                       fontSize: 12.5,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
 
-                // ── 4. 하단 소셜 인터랙션 바 (좋아요 + 댓글 + 파일 + 조회수) ───────────
-                Container(
-                  padding: const EdgeInsets.only(top: 10),
-                  decoration: BoxDecoration(
-                    border: Border(top: BorderSide(color: context.colors.border.withAlpha(70), width: 0.8)),
-                  ),
-                  child: Row(
-                    children: [
-                      // 게시판명 (다중 게시판 워크스페이스인 경우)
-                      if (post.forumName.isNotEmpty) ...[
-                        Icon(Icons.forum_outlined, size: 12.5, color: context.colors.textMuted),
-                        const SizedBox(width: 3.5),
-                        Text(
-                          post.forumName,
-                          style: TextStyle(
-                            color: context.colors.textMuted,
-                            fontSize: 11,
-                          ),
-                        ),
-                        const Spacer(),
-                      ] else ...[
-                        const Spacer(),
-                      ],
-
-                      // 좋아요 인터랙션
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            post.myLike ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                            size: 14,
-                            color: post.myLike
-                                ? Colors.redAccent
-                                : (hasLikes ? Colors.redAccent.withAlpha(180) : context.colors.textMuted),
-                          ),
-                          const SizedBox(width: 3),
-                          Text(
-                            '${post.like}',
-                            style: TextStyle(
-                              color: hasLikes ? Colors.redAccent : context.colors.textMuted,
-                              fontWeight: hasLikes ? FontWeight.w700 : FontWeight.normal,
-                              fontSize: 11.5,
-                            ),
-                          ),
-                        ],
+                // ── 4. 하단 메타정보 라인: [작성자] + [인터랙션/카운트 정보] ────────
+                Row(
+                  children: [
+                    Icon(Icons.person_outline_rounded, size: 13.5, color: context.colors.textMuted),
+                    const SizedBox(width: 4),
+                    Text(
+                      post.creator?.username ?? '익명',
+                      style: TextStyle(
+                        color: context.colors.textSecond,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 11.5,
                       ),
-                      const SizedBox(width: 14),
+                    ),
+                    const Spacer(),
 
-                      // 댓글 인터랙션
+                    // 댓글 카운트
+                    if (hasComments) ...[
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
-                            Icons.chat_bubble_outline_rounded,
-                            size: 13.5,
-                            color: hasComments ? context.colors.accentChannel : context.colors.textMuted,
-                          ),
-                          const SizedBox(width: 3.5),
+                          Icon(Icons.chat_bubble_outline_rounded, size: 12, color: context.colors.accentChannel),
+                          const SizedBox(width: 3),
                           Text(
                             '${post.comments.length}',
                             style: TextStyle(
-                              color: hasComments ? context.colors.accentChannel : context.colors.textMuted,
-                              fontWeight: hasComments ? FontWeight.w700 : FontWeight.normal,
-                              fontSize: 11.5,
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      // 첨부파일
-                      if (hasFiles) ...[
-                        const SizedBox(width: 14),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.attach_file_rounded, size: 13.5, color: context.colors.textMuted),
-                            const SizedBox(width: 2),
-                            Text(
-                              '${post.files.length}',
-                              style: TextStyle(
-                                color: context.colors.textMuted,
-                                fontSize: 11,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-
-                      const SizedBox(width: 14),
-                      // 조회수
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.visibility_outlined, size: 13, color: context.colors.textMuted),
-                          const SizedBox(width: 3),
-                          Text(
-                            '${post.hit}',
-                            style: TextStyle(
-                              color: context.colors.textMuted,
+                              color: context.colors.accentChannel,
+                              fontWeight: FontWeight.bold,
                               fontSize: 11,
                             ),
                           ),
                         ],
                       ),
+                      const SizedBox(width: 10),
                     ],
-                  ),
+
+                    // 좋아요 카운트
+                    if (hasLikes) ...[
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            post.myLike ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                            size: 13,
+                            color: Colors.redAccent,
+                          ),
+                          const SizedBox(width: 2.5),
+                          Text(
+                            '${post.like}',
+                            style: const TextStyle(
+                              color: Colors.redAccent,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(width: 10),
+                    ],
+
+                    // 첨부파일
+                    if (hasFiles) ...[
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.attach_file_rounded, size: 13.5, color: context.colors.textMuted),
+                          const SizedBox(width: 2),
+                          Text(
+                            '${post.files.length}',
+                            style: TextStyle(
+                              color: context.colors.textSecond,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(width: 10),
+                    ],
+
+                    // 조회수
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.visibility_outlined, size: 13, color: context.colors.textMuted),
+                        const SizedBox(width: 3),
+                        Text(
+                          '${post.hit}',
+                          style: TextStyle(
+                            color: context.colors.textMuted,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -313,21 +266,11 @@ class PostCard extends StatelessWidget {
     );
   }
 
-  String _formatRelativeTime(String raw) {
-    if (raw.isEmpty) return '';
-    try {
-      final dt = DateTime.parse(raw);
-      final now = DateTime.now();
-      final diff = now.difference(dt);
-
-      if (diff.inMinutes < 1) return '방금 전';
-      if (diff.inMinutes < 60) return '${diff.inMinutes}분 전';
-      if (diff.inHours < 24) return '${diff.inHours}시간 전';
-      if (diff.inDays < 7) return '${diff.inDays}일 전';
+  String _formatDate(String raw) {
+    if (raw.length >= 10) {
       return raw.substring(0, 10);
-    } catch (_) {
-      return raw.length >= 10 ? raw.substring(0, 10) : raw;
     }
+    return raw;
   }
 
   String _stripHtml(String html) {

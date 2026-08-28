@@ -54,6 +54,7 @@ class PostListNotifier extends AsyncNotifier<PostListResponse> {
       categoryId: selectedCategoryId,
       projectId: selectedProject?.pk,
       projectSlug: selectedProject?.slug,
+      isFaq: false,
       search: search,
       page: _currentPage,
     );
@@ -81,6 +82,7 @@ class PostListNotifier extends AsyncNotifier<PostListResponse> {
         categoryId: selectedCategoryId,
         projectId: selectedProject?.pk,
         projectSlug: selectedProject?.slug,
+        isFaq: false,
         search: search,
         page: nextPage,
       );
