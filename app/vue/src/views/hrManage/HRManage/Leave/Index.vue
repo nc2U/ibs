@@ -3,13 +3,20 @@ import { computed, onBeforeMount, ref } from 'vue'
 import { pageTitle, navMenu1, navMenu2 } from '@/views/hrManage/_menu/headermixin2.ts'
 import { useCompany } from '@/store/pinia/company.ts'
 import { useAccount } from '@/store/pinia/account.ts'
+import { usePerms } from '@/composables/usePerms'
 import ComHrAuthGuard from '@/components/AuthGuard/ComHrAuthGuard.vue'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 
 const accStore = useAccount()
-const isHrManager = computed(() => accStore.isHrManager)
+const { canGlobal, PERM } = usePerms()
+const isHrManager = computed(
+  () =>
+    accStore.workManager ||
+    canGlobal(PERM.HR_WORK_UPDATE) ||
+    canGlobal(PERM.HR_WORK_CREATE),
+)
 
 const navMenu = computed(() => (!isHrManager.value ? navMenu1 : navMenu2))
 

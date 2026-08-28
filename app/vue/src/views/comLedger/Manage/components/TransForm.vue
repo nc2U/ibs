@@ -29,8 +29,15 @@ watch(
   },
 )
 
-const accountStore = useAccount()
-const isFinancial = computed(() => accountStore.isFinancial)
+import { usePerms } from '@/composables/usePerms'
+
+const { canGlobal, PERM } = usePerms()
+const canComLedgerCreate = computed(() => canGlobal(PERM.LEDGER_COM_CREATE))
+const canComLedgerUpdate = computed(() => canGlobal(PERM.LEDGER_COM_UPDATE))
+const canComLedgerDelete = computed(() => canGlobal(PERM.LEDGER_COM_DELETE))
+const canComLedgerEdit = computed(() =>
+  isCreateMode.value ? canComLedgerCreate.value : canComLedgerUpdate.value,
+)
 
 const confirmModal = ref()
 const refAccountManage = ref()
@@ -782,13 +789,13 @@ onBeforeRouteLeave((to, from, next) => {
         <col style="width: 12%" />
         <col style="width: 8%" />
         <col style="width: 11%" />
-        <col v-if="isFinancial" style="width: 3%" />
+        <col v-if="canComLedgerEdit" style="width: 3%" />
       </colgroup>
 
       <CTableHead class="sticky-table-head">
         <CTableRow :color="TableSecondary" class="sticky-header-row-1">
           <CTableHeaderCell class="pl-3" colspan="5">은행거래내역</CTableHeaderCell>
-          <CTableHeaderCell class="pl-0" :colspan="isFinancial ? 4 : 3">
+          <CTableHeaderCell class="pl-0" :colspan="canComLedgerEdit ? 4 : 3">
             <span class="text-grey mr-2">|</span> 분류 내역
           </CTableHeaderCell>
           <CTableHeaderCell class="px-0">
@@ -845,7 +852,7 @@ onBeforeRouteLeave((to, from, next) => {
           <CTableHeaderCell scope="col">거래처</CTableHeaderCell>
           <CTableHeaderCell scope="col">분류 금액</CTableHeaderCell>
           <CTableHeaderCell scope="col">지출증빙</CTableHeaderCell>
-          <CTableHeaderCell v-if="isFinancial" scope="col"></CTableHeaderCell>
+          <CTableHeaderCell v-if="canComLedgerEdit" scope="col"></CTableHeaderCell>
         </CTableRow>
       </CTableHead>
 
@@ -954,7 +961,7 @@ onBeforeRouteLeave((to, from, next) => {
           color="warning"
           size="small"
           @click="confirmModal.callModal()"
-          :disabled="!isFinancial"
+          :disabled="!canComLedgerDelete"
         >
           삭제
         </v-btn>

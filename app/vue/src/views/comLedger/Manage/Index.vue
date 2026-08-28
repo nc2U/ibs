@@ -12,6 +12,7 @@ import { useAccount } from '@/store/pinia/account.ts'
 import { message } from '@/utils/helper.ts'
 import type { Company } from '@/store/types/settings.ts'
 import { type DataFilter as Filter, useComLedger } from '@/store/pinia/comLedger'
+import { usePerms } from '@/composables/usePerms'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
@@ -22,8 +23,8 @@ import TableTitleRow from '@/components/TableTitleRow.vue'
 import TransactionList from './components/TransactionList.vue'
 import TransForm from './components/TransForm.vue'
 
-const accountStore = useAccount()
-const isFinancial = computed(() => accountStore.isFinancial)
+const { canGlobal, PERM } = usePerms()
+const canComLedgerCreate = computed(() => canGlobal(PERM.LEDGER_COM_CREATE))
 
 const listControl = ref()
 const [route, router] = [useRoute() as Loaded & { name: string }, useRouter()]
@@ -226,7 +227,7 @@ onBeforeRouteLeave(() => {
             @list-filtering="listFiltering"
           />
 
-          <AddTransaction v-if="isFinancial" :company="company as number" />
+          <AddTransaction v-if="canComLedgerCreate" :company="company as number" />
 
           <TableTitleRow
             title="본사 입출금 관리"

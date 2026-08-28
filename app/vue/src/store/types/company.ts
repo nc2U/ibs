@@ -29,8 +29,6 @@ export interface Staff {
   user: number | null
   assignments?: StaffAssignment[]
   executive?: Executive | null
-  is_hq_financial_officer?: boolean
-  is_hq_hr_officer?: boolean
 }
 
 export type StaffFilter = {

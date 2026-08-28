@@ -40,14 +40,12 @@ class UserSerializer(serializers.ModelSerializer):
     )
     profile = ProfileInUserSerializer(read_only=True)
     is_hq_staff = serializers.SerializerMethodField(read_only=True)
-    is_hq_financial_officer = serializers.SerializerMethodField(read_only=True)
-    is_hq_hr_officer = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = User
         fields = ('pk', 'email', 'username', 'is_active', 'is_superuser', 'is_staff',
                   'work_manager', 'date_joined', 'password', 'profile', 'last_login',
-                  'is_hq_staff', 'is_hq_financial_officer', 'is_hq_hr_officer')
+                  'is_hq_staff')
         read_only_fields = ('date_joined', 'last_login')
 
     @staticmethod
@@ -55,24 +53,6 @@ class UserSerializer(serializers.ModelSerializer):
         if obj.is_superuser:
             return True
         return obj.member_set.filter(project__type='1').exists()
-
-    @staticmethod
-    def get_is_hq_financial_officer(obj):
-        if obj.is_superuser:
-            return True
-        try:
-            return getattr(obj.staff, 'is_hq_financial_officer', False)
-        except AttributeError:
-            return False
-
-    @staticmethod
-    def get_is_hq_hr_officer(obj):
-        if obj.is_superuser:
-            return True
-        try:
-            return getattr(obj.staff, 'is_hq_hr_officer', False)
-        except AttributeError:
-            return False
 
     def create(self, validated_data):
         user = User(email=validated_data['email'],

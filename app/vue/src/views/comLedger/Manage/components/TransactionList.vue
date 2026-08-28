@@ -14,13 +14,19 @@ const props = defineProps({
   currentPage: { type: Number, default: 1 },
 })
 
+import { usePerms } from '@/composables/usePerms'
+
 const emit = defineEmits(['page-select'])
 
 const refAccountManage = ref()
 const refBankAcc = ref()
 
-const accountStore = useAccount()
-const isFinancial = computed(() => accountStore.isFinancial)
+const { canGlobal, PERM } = usePerms()
+const canComLedgerUpdate = computed(() => canGlobal(PERM.LEDGER_COM_UPDATE))
+const canComLedgerManage = computed(() => canGlobal(PERM.LEDGER_COM_MANAGE))
+const canComLedgerEdit = computed(
+  () => canComLedgerUpdate.value || canComLedgerManage.value,
+)
 
 const ledgerStore = useComLedger()
 const transPages = computed(() => ledgerStore.transPages)
@@ -49,13 +55,13 @@ const accCallModal = () => {
       <col style="width: 13%" />
       <col style="width: 8%" />
       <col style="width: 12%" />
-      <col v-if="isFinancial" style="width: 3%" />
+      <col v-if="canComLedgerEdit" style="width: 3%" />
     </colgroup>
 
     <CTableHead>
       <CTableRow :color="TableSecondary">
         <CTableHeaderCell class="pl-3" colspan="6">은행거래내역</CTableHeaderCell>
-        <CTableHeaderCell class="pl-0" :colspan="isFinancial ? 6 : 5">
+        <CTableHeaderCell class="pl-0" :colspan="canComLedgerEdit ? 6 : 5">
           <span class="text-grey mr-2">|</span> 분류 내역
         </CTableHeaderCell>
       </CTableRow>
@@ -81,7 +87,7 @@ const accCallModal = () => {
         <CTableHeaderCell scope="col">거래처</CTableHeaderCell>
         <CTableHeaderCell scope="col">분류 금액</CTableHeaderCell>
         <CTableHeaderCell scope="col">지출증빙</CTableHeaderCell>
-        <CTableHeaderCell v-if="isFinancial" scope="col"></CTableHeaderCell>
+        <CTableHeaderCell v-if="canComLedgerEdit" scope="col"></CTableHeaderCell>
       </CTableRow>
     </CTableHead>
 

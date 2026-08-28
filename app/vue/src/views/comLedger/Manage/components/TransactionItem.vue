@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { cutString, diffDate, numFormat } from '@/utils/baseMixins'
 import { useAccount } from '@/store/pinia/account.ts'
 import { useComLedger } from '@/store/pinia/comLedger.ts'
+import { usePerms } from '@/composables/usePerms.ts'
 import type { AccountingEntry, AccountPicker, BankTransaction } from '@/store/types/comLedger'
 import LedgerAccountPicker from '@/components/LedgerAccount/Picker.vue'
 import AffiliateSelectModal from './AffiliateSelectModal.vue'
@@ -14,6 +15,14 @@ const props = defineProps({
   isHighlighted: { type: Boolean, default: false },
 })
 
+const { can, canGlobal, PERM } = usePerms()
+const canComLedgerManage = computed(
+  () => can(PERM.LEDGER_COM_MANAGE) || canGlobal(PERM.LEDGER_COM_MANAGE),
+)
+const canComLedgerUpdate = computed(
+  () => can(PERM.LEDGER_COM_UPDATE) || canGlobal(PERM.LEDGER_COM_UPDATE),
+)
+
 const router = useRouter()
 const ledgerStore = useComLedger()
 
@@ -21,11 +30,11 @@ const rowColor = computed(() => (props.isHighlighted ? 'warning' : ''))
 
 const accStore = useAccount()
 const superAuth = computed(() => accStore.superAuth)
-const isFinancial = computed(() => accStore.isFinancial)
 const allowedPeriod = computed(
   () =>
     (superAuth as any).value ||
-    (isFinancial &&
+    canComLedgerManage.value ||
+    (canComLedgerUpdate.value &&
       diffDate(props.transaction?.deal_date as string, new Date(props.calculated)) <= 10),
 )
 
@@ -511,7 +520,7 @@ const collapseAll = () => {
             <col style="width: 26%" />
             <col style="width: 16%" />
             <col style="width: 24%" />
-            <col v-if="isFinancial" style="width: 6%" />
+            <col v-if="canComLedgerUpdate" style="width: 6%" />
           </colgroup>
           <CTableRow v-for="entry in visibleEntries" :key="entry.pk" class="bg-yellow-lighten-5">
             <CTableDataCell
@@ -646,7 +655,7 @@ const collapseAll = () => {
             <CTableDataCell class="pl-3">
               {{ cutString(entry.evidence_type_display, 10) }}
             </CTableDataCell>
-            <CTableDataCell v-if="isFinancial" class="text-right pr-2">
+            <CTableDataCell v-if="canComLedgerUpdate" class="text-right pr-2">
               <v-icon
                 v-if="allowedPeriod"
                 icon="mdi-pencil"

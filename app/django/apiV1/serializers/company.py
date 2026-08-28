@@ -220,7 +220,7 @@ class StaffSerializer(serializers.ModelSerializer):
                   'name', 'id_number', 'personal_phone',
                   'email', 'department', 'position', 'duty', 'department_name', 'position_name', 'duty_name',
                   'grade', 'date_join', 'status', 'status_desc', 'date_leave', 'user',
-                  'is_hq_financial_officer', 'is_hq_hr_officer', 'assignments', 'executive')
+                  'assignments', 'executive')
 
     def create(self, validated_data):
         dept_name = validated_data.pop('department_name', None) or self.initial_data.get('department')

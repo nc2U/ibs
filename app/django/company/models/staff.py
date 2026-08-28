@@ -31,10 +31,6 @@ class Staff(models.Model):
     employment_type = models.CharField('고용 형태', max_length=20, choices=EMPLOYMENT_CHOICES, default='regular')
     contract_end_date = models.DateField('계약 만료일', null=True, blank=True, help_text='계약직/파견직/위촉직의 계약 만료 예정일')
     probation_end_date = models.DateField('수습 만료일', null=True, blank=True)
-    is_hq_financial_officer = models.BooleanField('본사 금융 관리 권한', default=False,
-                                                  help_text='본사 프로젝트의 상세 자금 흐름을 열람할 수 있는 권한입니다. Django Admin 에서만 제어 합니다.')
-    is_hq_hr_officer = models.BooleanField('본사 인사 관리 권한', default=False,
-                                           help_text='본사 프로젝트의 인사 관리 흐름을 열람할 수 있는 권한입니다. Django Admin 에서만 제어 합니다.')
 
     @property
     def primary_assignment(self):

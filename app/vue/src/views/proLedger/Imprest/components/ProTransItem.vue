@@ -15,8 +15,9 @@ const props = defineProps({
   isHighlighted: { type: Boolean, default: false },
 })
 
-const { can, PERM } = usePerms()
+const { can, canGlobal, PERM } = usePerms()
 const canLedgerUpdate = computed(() => can(PERM.LEDGER_UPDATE))
+const canLedgerManage = computed(() => can(PERM.LEDGER_MANAGE) || canGlobal(PERM.LEDGER_MANAGE))
 
 const router = useRouter()
 const proLedgerStore = useProLedger()
@@ -25,8 +26,9 @@ const rowColor = computed(() => (props.isHighlighted ? 'warning' : ''))
 
 const allowedPeriod = computed(
   () =>
-    canLedgerUpdate &&
-    diffDate(props.proTrans?.deal_date as string, new Date(props.calculated)) <= 10,
+    canLedgerManage.value ||
+    (canLedgerUpdate.value &&
+      diffDate(props.proTrans?.deal_date as string, new Date(props.calculated)) <= 10),
 )
 
 const proAccounts = inject<ComputedRef<AccountPicker[]>>('proAccounts')

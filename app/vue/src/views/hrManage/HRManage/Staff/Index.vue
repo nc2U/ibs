@@ -15,9 +15,15 @@ import AddStaff from './components/AddStaff.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import StaffList from './components/StaffList.vue'
 
+const accStore = useAccount()
+const { can, canGlobal, PERM } = usePerms()
+const isHrManager = computed(
+  () =>
+    accStore.workManager ||
+    canGlobal(PERM.HR_WORK_UPDATE) ||
+    canGlobal(PERM.HR_WORK_CREATE),
+)
 const navMenu = computed(() => (!isHrManager.value ? navMenu1 : navMenu2))
-
-const { can, PERM } = usePerms()
 const canHrWorkCreate = computed(() => accStore.isStaff && can(PERM.HR_WORK_CREATE))
 
 const dataFilter = ref<StaffFilter>({
@@ -50,8 +56,6 @@ const excelUrl = computed(() => {
   return `${url}${query}`
 })
 
-const accStore = useAccount()
-const isHrManager = computed(() => accStore.isHrManager)
 const fetchUsersList = () => accStore.fetchUsersList()
 
 const listFiltering = (payload: StaffFilter) => {

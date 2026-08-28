@@ -13,11 +13,13 @@ const props = defineProps({
   bankAcc: { type: Object as PropType<CompanyBank>, default: () => null },
 })
 
+import { usePerms } from '@/composables/usePerms'
+
 const refAlertModal = ref()
 const refConfirmModal = ref()
 
-const accountStore = useAccount()
-const isFinancial = computed(() => accountStore.isFinancial)
+const { canGlobal, PERM } = usePerms()
+const canComLedgerManage = computed(() => canGlobal(PERM.LEDGER_COM_MANAGE))
 
 const validated = ref(false)
 
@@ -62,7 +64,7 @@ const onSubmit = (event: Event) => {
   if (isValidate(event)) {
     validated.value = true
   } else {
-    if (isFinancial.value) {
+    if (canComLedgerManage.value) {
       refConfirmModal.value.callModal()
     } else refAlertModal.value.callModal()
     validated.value = false

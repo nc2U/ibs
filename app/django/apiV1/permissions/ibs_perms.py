@@ -5,60 +5,18 @@ from apiV1.permissions._utils import (get_project_pk_from_request, resolve_issue
 from apiV1.permissions.work_perms import ProjectPermission
 
 
-class HqFinancialOfficerPermission(permissions.BasePermission):
-    """
-    본사 자금 전용 권한 클래스.
-
-    is_hq_financial_officer=True 인 직원과 슈퍼유저만
-    모든 액션을 허용하며, 그 외에는 전면 차단합니다.
-
-    사용 대상:
-        LedgerCompanyBankAccountViewSet
-        CompanyAccountViewSet
-        AffiliateViewSet
-        CompanyBankTransactionViewSet
-        CompanyAccountingEntryViewSet
-        CompanyCompositeTransactionViewSet
-        CompanyLedgerCalculationViewSet
-        CompanyLedgerLastDealDateViewSet
-
-    ViewSet에 required_permission 선언 불필요.
-    """
-
-    @staticmethod
-    def _is_hq_financial_officer(user) -> bool:
-        """슈퍼유저 또는 Staff.is_hq_financial_officer 값을 안전하게 반환합니다."""
-        if user.is_superuser:
-            return True
-        try:
-            return bool(getattr(user.staff, 'is_hq_financial_officer', False))
-        except AttributeError:
-            return False
-
-    def has_permission(self, request, view) -> bool:
-        if not request.user or not request.user.is_authenticated:
-            return False
-        return self._is_hq_financial_officer(request.user)
-
-    def has_object_permission(self, request, view, obj) -> bool:
-        if not request.user or not request.user.is_authenticated:
-            return False
-        return self._is_hq_financial_officer(request.user)
-
-
 class HqProjectModulePermission(permissions.BasePermission):
     """
     본사 업무 워크스페이스(IssueProject type='1') 전용 권한 클래스.
 
-    자금/회계(ledger) 는 HqFinancialOfficerPermission이 담당하며, 이 클래스는
-    본사 IssueProject에 연결된 문서(docs), 인사관리(hr_work) 등 일반 업무 권한을
-    IssueProject.get_user_permissions() 메커니즘을 통해 검사합니다.
+    본사 IssueProject에 연결된 문서(docs), 자금/회계(ledger.com_*), 인사관리(hr_work) 등
+    본사 관리(ibs_hq_manage) 권한을 IssueProject.get_user_permissions() 메커니즘을 통해 검사합니다.
 
     IssueProject.type='1' 은 project.Project 레코드를 갖지 않으므로,
     IssueProject를 직접 조회하여 사용합니다.
 
     ViewSet 에서 아래와 같이 선언합니다:
-        permission_classes = (IsAuthenticated, HqProjectPermission)
+        permission_classes = (IsAuthenticated, HqProjectModulePermission)
 
         @property
         def required_permission(self):
@@ -71,10 +29,11 @@ class HqProjectModulePermission(permissions.BasePermission):
                 'destroy': 'hr_work.delete',
             }.get(self.action, 'hr_work.read')
 
-    사용 대상 (예시):
+    사용 대상:
         DepartmentViewSet, JobGradeViewSet, PositionViewSet,
         DutyTitleViewSet, StaffViewSet  (company.py)
         본사 문서 관련 ViewSet (docs.py 중 type='1' 컨텍스트)
+        본사 회계/자금 관련 ViewSet (ledger.py 중 Company* ViewSets)
     """
 
     @classmethod
@@ -94,13 +53,42 @@ class HqProjectModulePermission(permissions.BasePermission):
         if not request.user or not request.user.is_authenticated:
             return False
 
-        issue_project = None
+        # 2. 슈퍼유저 전체 허용
+        if request.user.is_superuser:
+            return True
+
+        # 3. work_manager 전체 허용
+        if getattr(request.user, 'work_manager', False):
+            return True
+
         project_pk = get_project_pk_from_request(request, view)
-        if project_pk:
-            issue_project = resolve_issue_project(project_pk, request)
+        issue_project = resolve_issue_project(project_pk, request) if project_pk else None
+        if issue_project:
             # 1-A. 잠금보관(9) 워크스페이스는 슈퍼유저를 포함하여 비즈니스 데이터 접근 전면 차단
             if is_project_locked(issue_project):
                 return False
+            # 1-B. 닫힘(2) 워크스페이스 — 읽기만 허용
+            if is_project_closed(issue_project) and request.method not in permissions.SAFE_METHODS:
+                return False
+
+        required_perm = getattr(view, 'required_permission', None)
+
+        # 4. required_permission 미선언 ViewSet은 인증만 확인
+        if not required_perm:
+            return True
+
+        # 5. 권한 코드 검사
+        if issue_project:
+            user_perms = set(issue_project.get_user_permissions(request.user))
+        else:
+            user_perms = self._get_all_hq_user_permissions(request.user)
+
+        return required_perm in user_perms
+
+    def has_object_permission(self, request, view, obj) -> bool:
+        # 1. 미인증 요청 차단
+        if not request.user or not request.user.is_authenticated:
+            return False
 
         # 2. 슈퍼유저 전체 허용
         if request.user.is_superuser:
@@ -110,57 +98,26 @@ class HqProjectModulePermission(permissions.BasePermission):
         if getattr(request.user, 'work_manager', False):
             return True
 
-        required_perm = getattr(view, 'required_permission', None)
-
-        # 4. required_permission 미선언 ViewSet은 인증만 확인
-        if not required_perm:
-            return True
-
-        # 5. 본사 IssueProject가 없으면 차단
-        if not issue_project:
-            return False
-
-        # 6. 닫힘(2) 워크스페이스 — 읽기만 허용
-        if is_project_closed(issue_project) and request.method not in permissions.SAFE_METHODS:
-            return False
-
-        # 7. list/SAFE 메서드 — project 미지정 시 Row-Level Security 에서 필터링
-        user_perms = self._get_all_hq_user_permissions(request.user)
-        return required_perm in user_perms
-
-    def has_object_permission(self, request, view, obj) -> bool:
-        # 1. 미인증 요청 차단
-        if not request.user or not request.user.is_authenticated:
-            return False
-
         project_pk = get_project_pk_from_request(request, view)
         issue_project = resolve_issue_project(project_pk, request) if project_pk else None
 
-        # 1-A. 잠금보관(9) 워크스페이스는 슈퍼유저를 포함하여 비즈니스 데이터 접근 전면 차단
-        if is_project_locked(issue_project):
-            return False
-
-        # 3. 슈퍼유저 전체 허용
-        if request.user.is_superuser:
-            return True
-
-        # 4. work_manager 전체 허용
-        if getattr(request.user, 'work_manager', False):
-            return True
-
-        # 5. 본사 IssueProject가 없으면 차단
-        if not issue_project:
-            return False
-
-        # 6. 닫힘(2) — 읽기 전용
-        if is_project_closed(issue_project) and request.method not in permissions.SAFE_METHODS:
-            return False
+        if issue_project:
+            # 1-A. 잠금보관(9) 워크스페이스는 슈퍼유저를 포함하여 비즈니스 데이터 접근 전면 차단
+            if is_project_locked(issue_project):
+                return False
+            # 1-B. 닫힘(2) — 읽기 전용
+            if is_project_closed(issue_project) and request.method not in permissions.SAFE_METHODS:
+                return False
 
         required_perm = getattr(view, 'required_permission', None)
         if not required_perm:
             return request.method in permissions.SAFE_METHODS
 
-        user_perms = self._get_all_hq_user_permissions(request.user)
+        if issue_project:
+            user_perms = set(issue_project.get_user_permissions(request.user))
+        else:
+            user_perms = self._get_all_hq_user_permissions(request.user)
+
         return required_perm in user_perms
 
 
