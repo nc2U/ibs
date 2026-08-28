@@ -252,8 +252,8 @@ class _ForumTabViewState extends ConsumerState<ForumTabView> {
               ),
             ),
 
-            // ── 3. 서브 카테고리 칩 바 (게시판 선택 시 노출, 가로 스크롤 레일) ────
-            if (selectedForumId != null)
+            // ── 3. 서브 카테고리 칩 바 (기술지원 게시판 제외, 일반 게시판 선택 시 노출) ────
+            if (selectedForumId != null && selectedForumId != kTechSupportForumId)
               categoriesAsync.maybeWhen(
                 data: (categories) {
                   if (categories.isEmpty) return const SizedBox.shrink();
