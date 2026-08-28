@@ -48,6 +48,8 @@ class ForumRepository {
     int? categoryId,
     int? projectId,
     String? projectSlug,
+    bool? isFaq,
+    bool? isNotice,
     String? search,
     int page = 1,
   }) async {
@@ -65,6 +67,12 @@ class ForumRepository {
         queryParams['forum__project'] = projectId;
       } else if (projectSlug != null && projectSlug.isNotEmpty) {
         queryParams['forum__project__slug'] = projectSlug;
+      }
+      if (isFaq != null) {
+        queryParams['is_faq'] = isFaq.toString();
+      }
+      if (isNotice != null) {
+        queryParams['is_notice'] = isNotice.toString();
       }
       if (search != null && search.trim().isNotEmpty) {
         queryParams['search'] = search.trim();

@@ -112,3 +112,34 @@ final postCommentsProvider =
   final repo = ref.watch(forumRepositoryProvider);
   return repo.fetchComments(postId: postId);
 });
+
+/// ── FAQ & 기술지원 전용 프로바이더 (본사 1번 포럼 연동) ────────────────────
+const int kTechSupportForumId = 1;
+
+/// FAQ 1번 포럼의 카테고리 목록
+final faqCategoriesProvider = FutureProvider<List<PostCategoryModel>>((ref) async {
+  final repo = ref.watch(forumRepositoryProvider);
+  return repo.fetchCategories(kTechSupportForumId);
+});
+
+/// FAQ 1번 포럼의 is_faq=true 게시글 전체 목록
+final faqPostsProvider = FutureProvider<List<PostModel>>((ref) async {
+  final repo = ref.watch(forumRepositoryProvider);
+  final response = await repo.fetchPosts(
+    forumId: kTechSupportForumId,
+    isFaq: true,
+    page: 1,
+  );
+  return response.results;
+});
+
+/// FAQ 1번 포럼의 공지글 (이용 안내 등) 목록
+final faqNoticesProvider = FutureProvider<List<PostModel>>((ref) async {
+  final repo = ref.watch(forumRepositoryProvider);
+  final response = await repo.fetchPosts(
+    forumId: kTechSupportForumId,
+    isNotice: true,
+    page: 1,
+  );
+  return response.results;
+});
