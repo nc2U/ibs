@@ -24,6 +24,7 @@ const canForumRead = computed(() => can(PERM.FORUM_READ))
     <v-chip v-if="post.is_faq" variant="elevated" color="success" size="x-small" class="mr-2">
       FAQ
     </v-chip>
+    <span v-if="post.cate_name" class="mr-2">[{{ post.cate_name }}]</span>
     <router-link
       v-if="canForumRead"
       :to="{
