@@ -23,7 +23,6 @@ class _FaqSupportTabViewState extends ConsumerState<FaqSupportTabView> {
 
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
-  int? _selectedSupportCategory;
   bool _isSubmitting = false;
 
   @override
@@ -65,7 +64,7 @@ class _FaqSupportTabViewState extends ConsumerState<FaqSupportTabView> {
         forumId: kTechSupportForumId,
         title: title,
         content: content,
-        categoryId: _selectedSupportCategory,
+        categoryId: null, // 기술지원 문의는 별도 카테고리 없이 category=null로 등록
       );
 
       _titleController.clear();
@@ -180,7 +179,6 @@ class _FaqSupportTabViewState extends ConsumerState<FaqSupportTabView> {
                     // 🛠️ 기술지원 / IT 헬프데스크 전용 폼 & 안내 (공지글이 있으면 상단에 렌더링)
                     _buildTechSupportSection(
                       context,
-                      categoriesAsync.valueOrNull ?? [],
                       faqNoticesAsync.valueOrNull ?? [],
                     ),
                   ] else ...[
@@ -363,7 +361,6 @@ class _FaqSupportTabViewState extends ConsumerState<FaqSupportTabView> {
   /// 🛠️ 기술지원 / IT 헬프데스크 접수 폼 (공지사항이 있을 경우 상단 안내 배너로 렌더링)
   Widget _buildTechSupportSection(
     BuildContext context,
-    List<PostCategoryModel> categories,
     List<PostModel> notices,
   ) {
     return Column(
@@ -454,38 +451,13 @@ class _FaqSupportTabViewState extends ConsumerState<FaqSupportTabView> {
           ),
         const SizedBox(height: 16),
         Text(
-          '문의 작성하기 (게시판 연동)',
+          '문의 작성하기 (기술지원 게시판 접수)',
           style: AppTextStyles.titleMd.copyWith(
             fontWeight: FontWeight.bold,
             color: context.colors.textPrimary,
           ),
         ),
         const SizedBox(height: 10),
-
-        if (categories.isNotEmpty) ...[
-          DropdownButtonFormField<int>(
-            initialValue: _selectedSupportCategory,
-            decoration: InputDecoration(
-              hintText: '문의 분류 선택 (선택 사항)',
-              hintStyle: TextStyle(color: context.colors.textMuted, fontSize: 13),
-              filled: true,
-              fillColor: context.colors.bgCard,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: context.colors.border),
-              ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            ),
-            items: categories.map((c) {
-              return DropdownMenuItem<int>(
-                value: c.pk,
-                child: Text(c.name, style: TextStyle(fontSize: 13, color: context.colors.textPrimary)),
-              );
-            }).toList(),
-            onChanged: (val) => setState(() => _selectedSupportCategory = val),
-          ),
-          const SizedBox(height: 10),
-        ],
 
         TextField(
           controller: _titleController,
