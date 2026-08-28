@@ -1,10 +1,14 @@
-/// 프로필 모델 (실명, 연락처, 아바타 이미지 등)
+/// 프로필 모델 (실명, 연락처, 아바타 이미지 및 업무/알림 설정)
 class ProfileModel {
   final int? pk;
   final String? name;
   final String? birthDate;
   final String? cellPhone;
   final String? image;
+  final bool autoWatchCreated;
+  final bool autoWatchAssigned;
+  final bool meetingCreatedNotification;
+  final bool meetingConfirmedNotification;
 
   const ProfileModel({
     this.pk,
@@ -12,6 +16,10 @@ class ProfileModel {
     this.birthDate,
     this.cellPhone,
     this.image,
+    this.autoWatchCreated = true,
+    this.autoWatchAssigned = true,
+    this.meetingCreatedNotification = true,
+    this.meetingConfirmedNotification = true,
   });
 
   factory ProfileModel.fromJson(Map<String, dynamic> json) {
@@ -21,6 +29,10 @@ class ProfileModel {
       birthDate: json['birth_date'] as String?,
       cellPhone: json['cell_phone'] as String?,
       image: json['image'] as String?,
+      autoWatchCreated: json['auto_watch_created'] as bool? ?? true,
+      autoWatchAssigned: json['auto_watch_assigned'] as bool? ?? true,
+      meetingCreatedNotification: json['meeting_created_notification'] as bool? ?? true,
+      meetingConfirmedNotification: json['meeting_confirmed_notification'] as bool? ?? true,
     );
   }
 
@@ -31,7 +43,35 @@ class ProfileModel {
       'birth_date': birthDate,
       'cell_phone': cellPhone,
       'image': image,
+      'auto_watch_created': autoWatchCreated,
+      'auto_watch_assigned': autoWatchAssigned,
+      'meeting_created_notification': meetingCreatedNotification,
+      'meeting_confirmed_notification': meetingConfirmedNotification,
     };
+  }
+
+  ProfileModel copyWith({
+    int? pk,
+    String? name,
+    String? birthDate,
+    String? cellPhone,
+    String? image,
+    bool? autoWatchCreated,
+    bool? autoWatchAssigned,
+    bool? meetingCreatedNotification,
+    bool? meetingConfirmedNotification,
+  }) {
+    return ProfileModel(
+      pk: pk ?? this.pk,
+      name: name ?? this.name,
+      birthDate: birthDate ?? this.birthDate,
+      cellPhone: cellPhone ?? this.cellPhone,
+      image: image ?? this.image,
+      autoWatchCreated: autoWatchCreated ?? this.autoWatchCreated,
+      autoWatchAssigned: autoWatchAssigned ?? this.autoWatchAssigned,
+      meetingCreatedNotification: meetingCreatedNotification ?? this.meetingCreatedNotification,
+      meetingConfirmedNotification: meetingConfirmedNotification ?? this.meetingConfirmedNotification,
+    );
   }
 }
 

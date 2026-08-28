@@ -11,6 +11,7 @@ import '../../../core/services/fcm_service.dart';
 import '../../../core/theme/app_colors_extension.dart';
 import '../../../core/widgets/user_avatar.dart';
 import 'delegation_settings_screen.dart';
+import 'email_notification_settings_screen.dart';
 
 /// 내 설정 화면 — 프로필 / 알림 / 계정 관리
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -21,7 +22,6 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
-  bool _emailNotif = false;
   bool _pushNotif = false;
   bool _isBiometricSupported = false;
   bool _biometricEnabled = false;
@@ -298,16 +298,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             // ── 알림 설정 섹션 ────────────────────────────────────────────────
             const _SectionLabel(title: '알림 설정'),
             _SettingTile(
-              leading: Icon(Icons.email_outlined,
-                  color: context.colors.textSecond, size: 22),
-              title: '이메일 알림',
-              subtitle: '업무 및 결재 이메일 알림',
-              trailing: Switch(
-                value: _emailNotif,
-                onChanged: (v) => setState(() => _emailNotif = v),
-                activeTrackColor: context.colors.accentWork,
-                activeThumbColor: Colors.white,
-              ),
+              leading: Icon(Icons.mark_email_read_outlined,
+                  color: context.colors.accentWork, size: 22),
+              title: '업무 및 이메일 알림 설정',
+              subtitle: '회의 알림, 업무 자동 지켜보기, 구독 프로젝트',
+              trailing: Icon(Icons.chevron_right_rounded,
+                  color: context.colors.textDisabled),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const EmailNotificationSettingsScreen(),
+                  ),
+                );
+              },
             ),
             const _Divider(),
             _SettingTile(

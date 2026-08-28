@@ -94,6 +94,7 @@ dev_dependencies:
 dependency_overrides:
   receive_sharing_intent: 1.8.1
   sqflite_android: 2.4.0
+  video_player_android: 2.12.0
 
 flutter_launcher_icons:
   android: true

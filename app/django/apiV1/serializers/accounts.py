@@ -21,7 +21,9 @@ class ProfileInUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Profile
-        fields = ('pk', 'name', 'birth_date', 'cell_phone', 'image')
+        fields = ('pk', 'name', 'birth_date', 'cell_phone', 'image',
+                  'auto_watch_created', 'auto_watch_assigned',
+                  'meeting_created_notification', 'meeting_confirmed_notification')
 
 
 class IssueProjectInUserSerializer(serializers.ModelSerializer):
