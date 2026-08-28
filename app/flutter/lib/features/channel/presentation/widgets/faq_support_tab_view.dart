@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/theme/app_colors_extension.dart';
 import '../../../../core/widgets/error_view.dart';
@@ -176,20 +177,18 @@ class _FaqSupportTabViewState extends ConsumerState<FaqSupportTabView> {
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
                   if (_selectedCategoryId == -1) ...[
-                    // 🛠️ 기술지원 / IT 헬프데스크 전용 폼 & 안내
-                    _buildTechSupportSection(context, categoriesAsync.valueOrNull ?? []),
-                  ] else ...[
-                    // 📢 공지글 (이용 안내 등)이 있는 경우 상단 카드 표출
-                    ...faqNoticesAsync.maybeWhen(
-                      data: (notices) => notices.map((notice) => _buildNoticeCard(context, notice)),
-                      orElse: () => <Widget>[],
+                    // 🛠️ 기술지원 / IT 헬프데스크 전용 폼 & 안내 (공지글이 있으면 상단에 렌더링)
+                    _buildTechSupportSection(
+                      context,
+                      categoriesAsync.valueOrNull ?? [],
+                      faqNoticesAsync.valueOrNull ?? [],
                     ),
-
-                    // ❓ FAQ 아코디언 리스트 (is_faq=true API 데이터 기반)
+                  ] else ...[
+                    // ❓ FAQ 아코디언 리스트 (is_faq=true API 데이터 기반 - 순수 FAQ 아코디언만 렌더링)
                     faqPostsAsync.when(
                       loading: () => const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 24),
-                        child: LoadingShimmer(itemHeight: 70, itemCount: 4),
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        child: LoadingShimmer(itemHeight: 92, itemCount: 4),
                       ),
                       error: (err, _) => ErrorView(
                         message: 'FAQ 목록을 불러오지 못했습니다.',
@@ -207,7 +206,7 @@ class _FaqSupportTabViewState extends ConsumerState<FaqSupportTabView> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  '자주 묻는 질문 (FAQ)',
+                                  '신입사원 자주 묻는 질문 (FAQ)',
                                   style: AppTextStyles.titleMd.copyWith(
                                     fontWeight: FontWeight.bold,
                                     color: context.colors.textPrimary,
@@ -264,53 +263,7 @@ class _FaqSupportTabViewState extends ConsumerState<FaqSupportTabView> {
     );
   }
 
-  /// 공지글 안내 카드
-  Widget _buildNoticeCard(BuildContext context, PostModel notice) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: context.colors.accentTech.withAlpha(15),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: context.colors.accentTech.withAlpha(60), width: 0.8),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.campaign_rounded, color: context.colors.accentTech, size: 22),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  notice.title,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: context.colors.accentTechDeep,
-                    fontSize: 13.5,
-                  ),
-                ),
-                if (notice.content.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    notice.content,
-                    style: TextStyle(
-                      color: context.colors.textSecond,
-                      fontSize: 12.5,
-                      height: 1.4,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 개별 FAQ 아코디언 아이템
+  /// 개별 FAQ 아코디언 아이템 (HTML 렌더링 지원)
   Widget _buildFaqItem(BuildContext context, PostModel faq) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -360,13 +313,29 @@ class _FaqSupportTabViewState extends ConsumerState<FaqSupportTabView> {
                 color: context.colors.bgSurface,
                 borderRadius: BorderRadius.circular(6),
               ),
-              child: Text(
-                faq.content.isNotEmpty ? faq.content : '내용이 없습니다.',
-                style: AppTextStyles.bodySecond.copyWith(
-                  color: context.colors.textSecond,
-                  height: 1.45,
-                ),
-              ),
+              child: faq.content.isNotEmpty
+                  ? HtmlWidget(
+                      faq.content,
+                      textStyle: AppTextStyles.bodySecond.copyWith(
+                        color: context.colors.textSecond,
+                        height: 1.45,
+                      ),
+                      customStylesBuilder: (element) {
+                        if (element.localName == 'p') {
+                          return {'margin': '0 0 4px 0', 'padding': '0'};
+                        }
+                        if (element.localName == 'a') {
+                          return {'color': '#0ea5e9', 'text-decoration': 'none'};
+                        }
+                        return null;
+                      },
+                    )
+                  : Text(
+                      '내용이 없습니다.',
+                      style: AppTextStyles.bodySecond.copyWith(
+                        color: context.colors.textMuted,
+                      ),
+                    ),
             ),
           ],
         ),
@@ -391,46 +360,98 @@ class _FaqSupportTabViewState extends ConsumerState<FaqSupportTabView> {
     );
   }
 
-  /// 🛠️ 기술지원 / IT 헬프데스크 접수 폼
-  Widget _buildTechSupportSection(BuildContext context, List<PostCategoryModel> categories) {
+  /// 🛠️ 기술지원 / IT 헬프데스크 접수 폼 (공지사항이 있을 경우 상단 안내 배너로 렌더링)
+  Widget _buildTechSupportSection(
+    BuildContext context,
+    List<PostCategoryModel> categories,
+    List<PostModel> notices,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: context.colors.bgCard,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: context.colors.border, width: 0.8),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.support_agent_rounded, color: Colors.deepOrangeAccent, size: 24),
-                  const SizedBox(width: 8),
-                  Text(
-                    'IT 기술지원 & 전산 문의 접수',
-                    style: AppTextStyles.titleSm.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: context.colors.textPrimary,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'IBS 시스템 오류, 권한 요청, 사내 네트워크 및 PC 장비 관련 문의를 남겨주시면 전산팀에서 신속하게 처리해 드립니다.',
-                style: AppTextStyles.caption.copyWith(
-                  color: context.colors.textMuted,
-                  height: 1.35,
+        // 📢 기술지원 이용안내 공지글이 있으면 동적으로 상단 배너 표시, 없으면 기본 안내 카드 표시
+        if (notices.isNotEmpty)
+          ...notices.map((notice) => Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: context.colors.bgCard,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: context.colors.accentTech.withAlpha(60), width: 0.8),
                 ),
-              ),
-            ],
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.campaign_rounded, color: context.colors.accentTech, size: 22),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            notice.title,
+                            style: AppTextStyles.titleSm.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: context.colors.textPrimary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (notice.content.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      HtmlWidget(
+                        notice.content,
+                        textStyle: AppTextStyles.caption.copyWith(
+                          color: context.colors.textSecond,
+                          height: 1.45,
+                        ),
+                        customStylesBuilder: (element) {
+                          if (element.localName == 'p') {
+                            return {'margin': '0 0 4px 0', 'padding': '0'};
+                          }
+                          return null;
+                        },
+                      ),
+                    ],
+                  ],
+                ),
+              ))
+        else
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: context.colors.bgCard,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: context.colors.border, width: 0.8),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.support_agent_rounded, color: Colors.deepOrangeAccent, size: 24),
+                    const SizedBox(width: 8),
+                    Text(
+                      'IT 기술지원 & 전산 문의 접수',
+                      style: AppTextStyles.titleSm.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: context.colors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'IBS 시스템 오류, 권한 요청, 사내 네트워크 및 PC 장비 관련 문의를 남겨주시면 전산팀에서 신속하게 처리해 드립니다.',
+                  style: AppTextStyles.caption.copyWith(
+                    color: context.colors.textMuted,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
         const SizedBox(height: 16),
         Text(
           '문의 작성하기 (게시판 연동)',

@@ -143,7 +143,9 @@ const userInfo = computed(() => accStore.userInfo)
         <v-icon icon="mdi-trash-can-outline" size="small" class="mr-1" />
         삭제
       </v-btn>
-      <v-btn color="light" class="mr-2" @click="router.back()" flat> 목록으로 </v-btn>
+      <v-btn color="light" class="mr-2" @click="router.push({ name: '(게시판) - 보기' })" flat>
+        목록으로
+      </v-btn>
     </div>
 
     <Comment :post="post.pk as number" :comments="comments" />

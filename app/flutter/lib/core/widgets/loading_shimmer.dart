@@ -45,82 +45,88 @@ class LoadingShimmer extends StatelessWidget {
         child: Shimmer.fromColors(
           baseColor: baseColor,
           highlightColor: highlightColor,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // 1. 상단 뱃지 라인
-              Row(
+          child: SingleChildScrollView(
+            physics: const NeverScrollableScrollPhysics(),
+            child: SizedBox(
+              height: itemHeight - 28 > 0 ? itemHeight - 28 : itemHeight,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  // 1. 상단 뱃지 라인
+                  Row(
+                    children: [
+                      Container(
+                        width: 50,
+                        height: 18,
+                        decoration: BoxDecoration(
+                          color: baseColor,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Container(
+                        width: 42,
+                        height: 18,
+                        decoration: BoxDecoration(
+                          color: baseColor,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      const Spacer(),
+                      Container(
+                        width: 55,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          color: baseColor,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ],
+                  ),
+                  // 2. 제목 라인
                   Container(
-                    width: 50,
-                    height: 18,
+                    width: double.infinity,
+                    height: 16,
                     decoration: BoxDecoration(
                       color: baseColor,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
-                  const SizedBox(width: 6),
-                  Container(
-                    width: 42,
-                    height: 18,
-                    decoration: BoxDecoration(
-                      color: baseColor,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  const Spacer(),
-                  Container(
-                    width: 55,
-                    height: 14,
-                    decoration: BoxDecoration(
-                      color: baseColor,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
+                  // 3. 하단 정보 라인
+                  Row(
+                    children: [
+                      Container(
+                        width: 70,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          color: baseColor,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
+                        width: 60,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          color: baseColor,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      const Spacer(),
+                      Container(
+                        width: 40,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          color: baseColor,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-              // 2. 제목 라인
-              Container(
-                width: double.infinity,
-                height: 16,
-                decoration: BoxDecoration(
-                  color: baseColor,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              // 3. 하단 정보 라인
-              Row(
-                children: [
-                  Container(
-                    width: 70,
-                    height: 14,
-                    decoration: BoxDecoration(
-                      color: baseColor,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Container(
-                    width: 60,
-                    height: 14,
-                    decoration: BoxDecoration(
-                      color: baseColor,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  const Spacer(),
-                  Container(
-                    width: 40,
-                    height: 14,
-                    decoration: BoxDecoration(
-                      color: baseColor,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -144,9 +150,12 @@ class ShimmerBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = context.isDarkMode;
-    final baseColor = isDark ? context.colors.bgCard : const Color(0xFFE2E8F0);
-    final highlightColor =
-        isDark ? context.colors.border : const Color(0xFFF8FAFC);
+    final baseColor = isDark
+        ? context.colors.bgCard
+        : const Color(0xFFE2E8F0);
+    final highlightColor = isDark
+        ? context.colors.border
+        : const Color(0xFFF8FAFC);
 
     return Shimmer.fromColors(
       baseColor: baseColor,
@@ -156,9 +165,7 @@ class ShimmerBox extends StatelessWidget {
         height: height,
         decoration: BoxDecoration(
           color: baseColor,
-          borderRadius: borderRadius != null
-              ? BorderRadius.circular(borderRadius!)
-              : BorderRadius.zero,
+          borderRadius: BorderRadius.circular(borderRadius ?? 4),
         ),
       ),
     );
