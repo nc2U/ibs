@@ -43,7 +43,9 @@ const form = ref({
 
 const availableUsers = computed(() =>
   usersList.value
-    .filter(u => u.pk !== userInfo.value?.pk)
+    .filter(
+      u => u.pk !== userInfo.value?.pk && u.is_active && (u.has_staff || u.is_superuser),
+    )
     .map(u => ({
       value: u.pk,
       title: u.profile?.name ? `${u.profile.name} (${u.username})` : u.username,

@@ -42,12 +42,13 @@ class UserSerializer(serializers.ModelSerializer):
     )
     profile = ProfileInUserSerializer(read_only=True)
     is_hq_staff = serializers.SerializerMethodField(read_only=True)
+    has_staff = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = User
         fields = ('pk', 'email', 'username', 'is_active', 'is_superuser', 'is_staff',
                   'work_manager', 'date_joined', 'password', 'profile', 'last_login',
-                  'is_hq_staff')
+                  'is_hq_staff', 'has_staff')
         read_only_fields = ('date_joined', 'last_login')
 
     @staticmethod
@@ -55,6 +56,12 @@ class UserSerializer(serializers.ModelSerializer):
         if obj.is_superuser:
             return True
         return obj.member_set.filter(project__type='1').exists()
+
+    @staticmethod
+    def get_has_staff(obj):
+        if obj.is_superuser:
+            return True
+        return hasattr(obj, 'staff') and obj.staff is not None
 
     def create(self, validated_data):
         user = User(email=validated_data['email'],

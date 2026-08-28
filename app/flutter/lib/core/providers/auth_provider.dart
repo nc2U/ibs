@@ -137,3 +137,13 @@ final currentUserIdProvider = Provider<int?>((ref) {
   } catch (_) {}
   return null;
 });
+
+/// 전체 사용자/직원 목록 프로바이더 (대결자 지정, 업무 담당자 지정 등)
+final usersListProvider = FutureProvider<List<UserModel>>((ref) async {
+  final dio = ref.watch(dioProvider);
+  final res = await dio.get('/api/v1/user/');
+  final list = (res.data is List)
+      ? res.data as List
+      : ((res.data as Map<String, dynamic>)['results'] as List? ?? []);
+  return list.map((e) => UserModel.fromJson(e as Map<String, dynamic>)).toList();
+});

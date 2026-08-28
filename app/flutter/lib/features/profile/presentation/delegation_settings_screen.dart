@@ -32,6 +32,12 @@ class _DelegationSettingsScreenState extends ConsumerState<DelegationSettingsScr
     // 직원/사용자 목록 로드
     int? selectedDelegateeId = editItem?.delegatee?.pk;
     bool isSaving = false;
+    final allUsers = ref.read(usersListProvider).valueOrNull ?? [];
+    final myUser = ref.read(currentUserProvider).valueOrNull;
+    // 1. 활성 계정(is_active=True), 2. 실제 임직원(has_staff=True 또는 is_superuser=True), 3. 본인 제외 필터링
+    final eligibleUsers = allUsers
+        .where((u) => u.pk != myUser?.pk && u.isActive && (u.hasStaff || u.isSuperuser))
+        .toList();
 
     await showModalBottomSheet(
       context: context,
@@ -73,14 +79,182 @@ class _DelegationSettingsScreenState extends ConsumerState<DelegationSettingsScr
                     ),
                     const SizedBox(height: 16),
 
-                    // 위임 기간 선택
-                    Text(
-                      '위임 기간',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: context.colors.textPrimary,
-                      ),
+                    // ── 1. 대결자(위임받을 직원) 선택 ──────────────────────────
+                    Row(
+                      children: [
+                        Text(
+                          '대결자 (위임받을 직원)',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: context.colors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Text('*', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Builder(
+                      builder: (builderCtx) {
+                        final currentSelectedUser = allUsers
+                            .where((u) => u.pk == selectedDelegateeId)
+                            .firstOrNull;
+
+                        return InkWell(
+                          onTap: () async {
+                            final picked = await showModalBottomSheet<int>(
+                              context: ctx,
+                              isScrollControlled: true,
+                              backgroundColor: context.colors.bgCard,
+                              shape: const RoundedRectangleBorder(
+                                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                              ),
+                              builder: (sheetCtx) {
+                                return SafeArea(
+                                  child: Container(
+                                    constraints: BoxConstraints(
+                                      maxHeight: MediaQuery.of(sheetCtx).size.height * 0.6,
+                                    ),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Padding(
+                                          padding: const EdgeInsets.fromLTRB(20, 18, 20, 12),
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(
+                                                '대결자 (위임받을 직원) 선택',
+                                                style: AppTextStyles.titleMd.copyWith(
+                                                  fontWeight: FontWeight.w800,
+                                                  color: context.colors.textPrimary,
+                                                ),
+                                              ),
+                                              IconButton(
+                                                icon: const Icon(Icons.close),
+                                                onPressed: () => Navigator.pop(sheetCtx),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const Divider(height: 1),
+                                        if (eligibleUsers.isEmpty)
+                                          Padding(
+                                            padding: const EdgeInsets.all(32),
+                                            child: Center(
+                                              child: Text(
+                                                '선택 가능한 임직원이 없습니다.',
+                                                style: TextStyle(color: context.colors.textMuted),
+                                              ),
+                                            ),
+                                          )
+                                        else
+                                          Expanded(
+                                            child: ListView.separated(
+                                              padding: const EdgeInsets.symmetric(vertical: 8),
+                                              itemCount: eligibleUsers.length,
+                                              separatorBuilder: (_, __) => const Divider(height: 1, indent: 16, endIndent: 16),
+                                              itemBuilder: (_, idx) {
+                                                final u = eligibleUsers[idx];
+                                                final isSelected = u.pk == selectedDelegateeId;
+                                                return ListTile(
+                                                  leading: CircleAvatar(
+                                                    radius: 18,
+                                                    backgroundColor: isSelected
+                                                        ? context.colors.accentApproval
+                                                        : context.colors.bgSurface,
+                                                    child: Text(
+                                                      u.initial,
+                                                      style: TextStyle(
+                                                        color: isSelected ? Colors.white : context.colors.textPrimary,
+                                                        fontWeight: FontWeight.bold,
+                                                        fontSize: 13,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  title: Text(
+                                                    u.displayName,
+                                                    style: TextStyle(
+                                                      fontSize: 14,
+                                                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                                      color: isSelected
+                                                          ? context.colors.accentApproval
+                                                          : context.colors.textPrimary,
+                                                    ),
+                                                  ),
+                                                  subtitle: u.email != null
+                                                      ? Text(u.email!, style: TextStyle(fontSize: 12, color: context.colors.textMuted))
+                                                      : null,
+                                                  trailing: isSelected
+                                                      ? Icon(Icons.check_circle_rounded, color: context.colors.accentApproval)
+                                                      : null,
+                                                  onTap: () => Navigator.pop(sheetCtx, u.pk),
+                                                );
+                                              },
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            );
+                            if (picked != null) {
+                              setModalState(() => selectedDelegateeId = picked);
+                            }
+                          },
+                          borderRadius: BorderRadius.circular(4),
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                            decoration: BoxDecoration(
+                              color: context.colors.bgInput,
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(color: context.colors.border),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.person_outline_rounded, size: 20, color: context.colors.accentApproval),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    currentSelectedUser != null
+                                        ? currentSelectedUser.displayName
+                                        : '대결 권한을 위임할 직원을 선택하세요',
+                                    style: TextStyle(
+                                      fontSize: 13.5,
+                                      color: currentSelectedUser != null
+                                          ? context.colors.textPrimary
+                                          : context.colors.textMuted,
+                                      fontWeight: currentSelectedUser != null ? FontWeight.w600 : FontWeight.normal,
+                                    ),
+                                  ),
+                                ),
+                                Icon(Icons.keyboard_arrow_down_rounded, color: context.colors.textMuted),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // ── 2. 위임 기간 선택 ────────────────────────────────────
+                    Row(
+                      children: [
+                        Text(
+                          '위임 기간',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: context.colors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Text('*', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                      ],
                     ),
                     const SizedBox(height: 8),
                     Row(
@@ -133,7 +307,7 @@ class _DelegationSettingsScreenState extends ConsumerState<DelegationSettingsScr
                     ),
                     const SizedBox(height: 16),
 
-                    // 대결 사유
+                    // ── 3. 대결 사유 ──────────────────────────────────────────
                     Text(
                       '부재 및 위임 사유',
                       style: TextStyle(
@@ -156,7 +330,7 @@ class _DelegationSettingsScreenState extends ConsumerState<DelegationSettingsScr
                     ),
                     const SizedBox(height: 16),
 
-                    // 활성화 토글
+                    // ── 4. 활성화 토글 ────────────────────────────────────────
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
                       title: const Text('대결 권한 즉시 활성화', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600)),
@@ -165,7 +339,7 @@ class _DelegationSettingsScreenState extends ConsumerState<DelegationSettingsScr
                     ),
                     const SizedBox(height: 20),
 
-                    // 저장 버튼
+                    // ── 5. 저장 버튼 ──────────────────────────────────────────
                     SizedBox(
                       width: double.infinity,
                       height: 48,
@@ -173,6 +347,17 @@ class _DelegationSettingsScreenState extends ConsumerState<DelegationSettingsScr
                         onPressed: isSaving
                             ? null
                             : () async {
+                                if (selectedDelegateeId == null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('대결 권한을 위임할 직원을 선택해주세요.'),
+                                      behavior: SnackBarBehavior.floating,
+                                      backgroundColor: Colors.redAccent,
+                                    ),
+                                  );
+                                  return;
+                                }
+
                                 setModalState(() => isSaving = true);
                                 try {
                                   final startStr = '${startDate.year}-${startDate.month.toString().padLeft(2, '0')}-${startDate.day.toString().padLeft(2, '0')}';
@@ -180,19 +365,15 @@ class _DelegationSettingsScreenState extends ConsumerState<DelegationSettingsScr
 
                                   if (editItem != null) {
                                     await repo.updateDelegation(editItem.id, {
+                                      'delegatee_id': selectedDelegateeId,
                                       'start_date': startStr,
                                       'end_date': endStr,
                                       'reason': reasonController.text.trim(),
                                       'is_active': isActive,
                                     });
                                   } else {
-                                    // 신규 등록
-                                    if (selectedDelegateeId == null) {
-                                      // 기본으로 상사 또는 지정 대결자 처리
-                                      // (필요 시 사용자 선택 팝업 추가)
-                                    }
                                     await repo.createDelegation({
-                                      if (selectedDelegateeId != null) 'delegatee_id': selectedDelegateeId,
+                                      'delegatee_id': selectedDelegateeId,
                                       'start_date': startStr,
                                       'end_date': endStr,
                                       'reason': reasonController.text.trim(),
@@ -245,6 +426,7 @@ class _DelegationSettingsScreenState extends ConsumerState<DelegationSettingsScr
   Widget build(BuildContext context) {
     final delegationsAsync = ref.watch(delegationsProvider);
     final myUser = ref.watch(currentUserProvider).valueOrNull;
+    ref.watch(usersListProvider); // 대결자 선택 드롭다운용 사용자 목록 사전 로드
 
     return Scaffold(
       backgroundColor: context.colors.bgPrimary,

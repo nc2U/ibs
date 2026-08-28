@@ -43,10 +43,12 @@ const selectedFiles = ref<File[]>([])
 const fileInputRef = ref<HTMLInputElement | null>(null)
 
 const availableUsers = computed(() =>
-  usersList.value.map(u => ({
-    value: u.pk,
-    title: u.profile?.name ? `${u.profile.name} (${u.username})` : u.username,
-  })),
+  usersList.value
+    .filter(u => u.is_active && (u.has_staff || u.is_superuser))
+    .map(u => ({
+      value: u.pk,
+      title: u.profile?.name ? `${u.profile.name} (${u.username})` : u.username,
+    })),
 )
 
 const existingAttachments = computed(() => document.value?.attachments || [])

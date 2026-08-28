@@ -80,8 +80,10 @@ class UserModel {
   final int pk;
   final String username;
   final String? email;
+  final bool isActive;
   final bool isSuperuser;
   final bool isStaff;
+  final bool hasStaff;
   final bool workManager;
   final ProfileModel? profile;
 
@@ -89,8 +91,10 @@ class UserModel {
     required this.pk,
     required this.username,
     this.email,
+    this.isActive = true,
     this.isSuperuser = false,
     this.isStaff = false,
+    this.hasStaff = false,
     this.workManager = false,
     this.profile,
   });
@@ -133,8 +137,10 @@ class UserModel {
       pk: json['pk'] as int,
       username: json['username'] as String? ?? '',
       email: json['email'] as String?,
+      isActive: json['is_active'] as bool? ?? true,
       isSuperuser: json['is_superuser'] as bool? ?? false,
       isStaff: json['is_staff'] as bool? ?? false,
+      hasStaff: json['has_staff'] as bool? ?? false,
       workManager: json['work_manager'] as bool? ?? false,
       profile: profileObj,
     );
@@ -145,8 +151,10 @@ class UserModel {
       'pk': pk,
       'username': username,
       'email': email,
+      'is_active': isActive,
       'is_superuser': isSuperuser,
       'is_staff': isStaff,
+      'has_staff': hasStaff,
       'work_manager': workManager,
       'profile': profile?.toJson(),
     };
