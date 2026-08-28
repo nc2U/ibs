@@ -353,29 +353,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 activeThumbColor: Colors.white,
               ),
             ),
-            if (_pushNotif) ...[
-              const _Divider(),
-              _SettingTile(
-                leading: Icon(Icons.science_outlined,
-                    color: context.colors.textSecond, size: 22),
-                title: '알림 및 뱃지 자가 진단',
-                subtitle: '테스트 알림을 즉시 발송하여 수신 확인',
-                trailing: Icon(Icons.send_rounded,
-                    size: 18, color: context.colors.accentWork),
-                onTap: () async {
-                  await FcmService.showTestLocalNotification();
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('테스트 알림이 발송되었습니다. 상단 알림 배너를 확인하세요.'),
-                        behavior: SnackBarBehavior.floating,
-                        backgroundColor: Color(0xFF10B981),
-                      ),
-                    );
-                  }
-                },
-              ),
-            ],
             const SizedBox(height: 16),
 
             // ── 보안 및 인증 섹션 ────────────────────────────────────────────
