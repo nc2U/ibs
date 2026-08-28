@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/providers/dio_provider.dart';
 import '../../../core/providers/theme_provider.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/services/biometric_service.dart';
+import '../../../core/services/fcm_service.dart';
 import '../../../core/theme/app_colors_extension.dart';
 import '../../../core/widgets/user_avatar.dart';
 import 'delegation_settings_screen.dart';
@@ -29,6 +31,36 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   void initState() {
     super.initState();
     _loadBiometricSettings();
+    _loadPushSettings();
+  }
+
+  Future<void> _loadPushSettings() async {
+    final isEnabled = await FcmService.isPushEnabled();
+    if (mounted) {
+      setState(() => _pushNotif = isEnabled);
+    }
+  }
+
+  Future<void> _togglePushNotification(bool value) async {
+    final dio = ref.read(dioProvider);
+    final success = await FcmService.setPushEnabled(dio, value);
+
+    if (mounted) {
+      setState(() => _pushNotif = value && success);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            value && success
+                ? '모바일 푸시 알림이 활성화되었습니다.'
+                : (value && !success
+                    ? '기기 설정에서 알림 권한을 허용해주세요.'
+                    : '모바일 푸시 알림이 비활성화되었습니다.'),
+          ),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: (value && success) ? const Color(0xFF10B981) : context.colors.textPrimary,
+        ),
+      );
+    }
   }
 
   Future<void> _loadBiometricSettings() async {
@@ -282,14 +314,37 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               leading: Icon(Icons.notifications_active_outlined,
                   color: context.colors.textSecond, size: 22),
               title: '푸시 알림',
-              subtitle: '모바일 푸시 알림 수신',
+              subtitle: _pushNotif ? '실시간 모바일 푸시 알림 수신 중' : '모바일 푸시 알림 꺼짐',
               trailing: Switch(
                 value: _pushNotif,
-                onChanged: (v) => setState(() => _pushNotif = v),
+                onChanged: _togglePushNotification,
                 activeTrackColor: context.colors.accentWork,
                 activeThumbColor: Colors.white,
               ),
             ),
+            if (_pushNotif) ...[
+              const _Divider(),
+              _SettingTile(
+                leading: Icon(Icons.science_outlined,
+                    color: context.colors.textSecond, size: 22),
+                title: '알림 및 뱃지 자가 진단',
+                subtitle: '테스트 알림을 즉시 발송하여 수신 확인',
+                trailing: Icon(Icons.send_rounded,
+                    size: 18, color: context.colors.accentWork),
+                onTap: () async {
+                  await FcmService.showTestLocalNotification();
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('테스트 알림이 발송되었습니다. 상단 알림 배너를 확인하세요.'),
+                        behavior: SnackBarBehavior.floating,
+                        backgroundColor: Color(0xFF10B981),
+                      ),
+                    );
+                  }
+                },
+              ),
+            ],
             const SizedBox(height: 16),
 
             // ── 보안 및 인증 섹션 ────────────────────────────────────────────

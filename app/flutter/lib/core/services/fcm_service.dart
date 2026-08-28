@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'app_badge_service.dart';
 
 /// 백엔드(_utils/push_service.py)와 일치하는 중요 알림 채널 ID
@@ -44,7 +45,66 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 /// Firebase Cloud Messaging (FCM) 푸시 알림 및 로컬 알림 서비스
 class FcmService {
   static final FirebaseMessaging _messaging = FirebaseMessaging.instance;
+  static const _storage = FlutterSecureStorage();
+  static const _pushEnabledKey = 'PUSH_NOTIFICATION_ENABLED';
   static bool _isInitialized = false;
+
+  /// 푸시 알림 활성화 여부 확인 (기본값: false - 최초 권한 유도 전까지 꺼짐 상태 유지)
+  static Future<bool> isPushEnabled() async {
+    final value = await _storage.read(key: _pushEnabledKey);
+    if (value == null) {
+      // 최초 사용 시 OS 권한 상태 확인
+      final settings = await _messaging.getNotificationSettings();
+      final hasOsPermission = settings.authorizationStatus == AuthorizationStatus.authorized ||
+          settings.authorizationStatus == AuthorizationStatus.provisional;
+      return hasOsPermission;
+    }
+    return value == 'true';
+  }
+
+  /// 푸시 알림 설정 변경 및 서버 동기화
+  static Future<bool> setPushEnabled(Dio dio, bool enabled) async {
+    await _storage.write(key: _pushEnabledKey, value: enabled.toString());
+
+    if (enabled) {
+      // 켤 때는 OS 권한 요청 및 토큰 등록 진행
+      final settings = await _messaging.requestPermission(
+        alert: true,
+        announcement: false,
+        badge: true,
+        carPlay: false,
+        criticalAlert: false,
+        provisional: false,
+        sound: true,
+      );
+
+      final isAuthorized = settings.authorizationStatus == AuthorizationStatus.authorized ||
+          settings.authorizationStatus == AuthorizationStatus.provisional;
+
+      if (isAuthorized) {
+        String? fcmToken = await _messaging.getToken();
+        if (fcmToken != null && fcmToken.isNotEmpty) {
+          await _registerTokenToServer(dio, fcmToken, isActive: true);
+        }
+        return true;
+      } else {
+        // OS 권한이 거부된 경우 false 저장
+        await _storage.write(key: _pushEnabledKey, value: 'false');
+        return false;
+      }
+    } else {
+      // 끌 때는 백엔드 기기 토큰을 is_active = false 로 업데이트
+      try {
+        String? fcmToken = await _messaging.getToken();
+        if (fcmToken != null && fcmToken.isNotEmpty) {
+          await _registerTokenToServer(dio, fcmToken, isActive: false);
+        }
+      } catch (e) {
+        debugPrint('⚠️ [FCM] 토큰 비활성화 실패: $e');
+      }
+      return true;
+    }
+  }
 
   /// FCM 초기화, 알림 채널 등록 및 백엔드 기기 토큰 등록
   static Future<void> initialize(Dio dio) async {
@@ -79,6 +139,14 @@ class FcmService {
       if (androidImplementation != null) {
         await androidImplementation.createNotificationChannel(kAndroidNotificationChannel);
         debugPrint('📢 [FCM] Android Notification Channel 등록 완료 ($kHighImportanceChannelId)');
+      }
+
+      // 3. 사용자 설정 확인
+      final enabled = await isPushEnabled();
+      if (!enabled) {
+        debugPrint('ℹ️ [FCM] 사용자가 푸시 알림을 비활성화했거나 아직 켜지 않았습니다.');
+        _isInitialized = true;
+        return;
       }
 
       // 3. 푸시 알림 수신 권한 요청 (Android 13+ 및 iOS)
@@ -185,7 +253,7 @@ class FcmService {
   }
 
   /// 백엔드 (/api/v1/fcm-device/)에 기기 토큰 등록/갱신
-  static Future<void> _registerTokenToServer(Dio dio, String token) async {
+  static Future<void> _registerTokenToServer(Dio dio, String token, {bool isActive = true}) async {
     try {
       final deviceType = Platform.isIOS
           ? 'ios'
@@ -197,10 +265,10 @@ class FcmService {
           'registration_id': token,
           'platform': deviceType,
           'device_type': deviceType,
-          'is_active': true,
+          'is_active': isActive,
         },
       );
-      debugPrint('✅ [FCM] 백엔드에 기기 토큰 등록 성공 ($deviceType)');
+      debugPrint('✅ [FCM] 백엔드에 기기 토큰 등록 성공 ($deviceType, is_active: $isActive)');
     } on DioException catch (e) {
       debugPrint('❌ [FCM] 기기 토큰 백엔드 등록 실패: ${e.response?.statusCode} ${e.response?.data}');
     } catch (e) {

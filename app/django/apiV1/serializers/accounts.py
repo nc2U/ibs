@@ -3,7 +3,7 @@ from django.core.mail import send_mail
 from django.db import transaction
 from rest_framework import serializers
 
-from accounts.models import User, Profile, Todo, DocScrape, PasswordResetToken, PostScrape
+from accounts.models import User, Profile, Todo, DocScrape, PasswordResetToken, PostScrape, FCMDevice, Notification
 from forum.models import Post
 from docs.models import Document
 from work.models.project import IssueProject
@@ -216,7 +216,6 @@ class AdminCreateUserSerializer(serializers.Serializer):
 
 class FCMDeviceSerializer(serializers.ModelSerializer):
     class Meta:
-        from accounts.models import FCMDevice
         model = FCMDevice
         fields = ('pk', 'registration_id', 'device_id', 'platform', 'is_active', 'created_at', 'updated_at')
         read_only_fields = ('created_at', 'updated_at')
@@ -224,7 +223,6 @@ class FCMDeviceSerializer(serializers.ModelSerializer):
 
 class NotificationSerializer(serializers.ModelSerializer):
     class Meta:
-        from accounts.models import Notification
         model = Notification
         fields = ('pk', 'user', 'title', 'body', 'category', 'target_type', 'target_id', 'data', 'is_read',
                   'created_at')

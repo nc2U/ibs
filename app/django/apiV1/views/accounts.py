@@ -5,20 +5,22 @@ from django.conf import settings
 from django.contrib.auth import authenticate, update_session_auth_hash
 from django.contrib.auth.hashers import check_password
 from django.core.mail import send_mail
+from django.db import transaction
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from rest_framework import viewsets, status
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.db import transaction
 
-from accounts.models import User, Profile, DocScrape, PostScrape, Todo, PasswordResetToken
-from apiV1.permissions.auth_perms import IsStaffOrReadOnly, IsOwnerOnly, IsWorkManagerOnly
+from accounts.models import User, Profile, DocScrape, PostScrape, Todo, PasswordResetToken, FCMDevice, Notification
+from apiV1.permissions.auth_perms import IsOwnerOnly, IsWorkManagerOnly
 from ..pagination import PageNumberPaginationThreeThousand, PageNumberPaginationFifty
 from ..serializers.accounts import UserSerializer, ProfileSerializer, \
     DocScrapeSerializer, PostScrapeSerializer, TodoSerializer, ChangePasswordSerializer, \
-    PasswordResetSerializer, PasswordResetTokenSerializer, AdminCreateUserSerializer
+    PasswordResetSerializer, PasswordResetTokenSerializer, AdminCreateUserSerializer, \
+    FCMDeviceSerializer, NotificationSerializer
 
 
 # Accounts --------------------------------------------------------------------------
@@ -81,7 +83,6 @@ class UserViewSet(viewsets.ModelViewSet):
             return queryset.filter(pk=user.pk)
 
         return queryset.none()
-
 
 
 class ProfileViewSet(viewsets.ModelViewSet):
@@ -484,19 +485,15 @@ IBS 워크스페이스'''
 
 class FCMDeviceViewSet(viewsets.ModelViewSet):
     """모바일 FCM 기기 등록 및 토큰 관리"""
+    queryset = FCMDevice.objects.all()
+    serializer_class = FCMDeviceSerializer
     permission_classes = (IsAuthenticated,)
     pagination_class = None
 
-    def get_serializer_class(self):
-        from ..serializers.accounts import FCMDeviceSerializer
-        return FCMDeviceSerializer
-
     def get_queryset(self):
-        from accounts.models import FCMDevice
         return FCMDevice.objects.filter(user=self.request.user)
 
     def create(self, request, *args, **kwargs):
-        from accounts.models import FCMDevice
         registration_id = request.data.get('registration_id')
         if not registration_id:
             return Response({'detail': 'registration_id is required.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -520,18 +517,13 @@ class FCMDeviceViewSet(viewsets.ModelViewSet):
 
 class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
     """사용자 인앱 알림 목록 및 읽음 처리"""
+    queryset = Notification.objects.all()
+    serializer_class = NotificationSerializer
     permission_classes = (IsAuthenticated,)
     pagination_class = PageNumberPaginationFifty
 
-    def get_serializer_class(self):
-        from ..serializers.accounts import NotificationSerializer
-        return NotificationSerializer
-
     def get_queryset(self):
-        from accounts.models import Notification
         return Notification.objects.filter(user=self.request.user)
-
-    from rest_framework.decorators import action
 
     @action(detail=True, methods=['post'], url_path='read')
     def mark_as_read(self, request, pk=None):
@@ -542,13 +534,10 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=False, methods=['post'], url_path='read-all')
     def mark_all_as_read(self, request):
-        from accounts.models import Notification
         updated_count = Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
         return Response({'status': 'all_read', 'updated_count': updated_count})
 
     @action(detail=False, methods=['get'], url_path='unread-count')
     def unread_count(self, request):
-        from accounts.models import Notification
         count = Notification.objects.filter(user=request.user, is_read=False).count()
         return Response({'unread_count': count})
-
