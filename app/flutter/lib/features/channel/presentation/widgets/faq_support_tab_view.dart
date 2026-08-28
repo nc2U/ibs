@@ -70,6 +70,9 @@ class _FaqSupportTabViewState extends ConsumerState<FaqSupportTabView> {
       _titleController.clear();
       _contentController.clear();
 
+      // 기술지원 게시판 목록 상태 즉시 무효화 (게시판 탭 이동 시 최신 글 즉시 반영)
+      ref.invalidate(postListProvider);
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
