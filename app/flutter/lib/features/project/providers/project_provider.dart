@@ -143,6 +143,14 @@ final realEstateProjectsProvider = FutureProvider<List<ProjectModel>>((ref) asyn
   return myProjects.where((p) => p.type == '2' && p.status == '1' && p.visible).toList();
 });
 
+/// 🏢 현재 선택된 부동산 개발 프로젝트의 상세 개요 및 설정 정보 프로바이더
+final realEstateProjectDetailProvider = FutureProvider<RealEstateProjectDetailModel?>((ref) async {
+  final selected = ref.watch(selectedRealEstateProjectProvider);
+  if (selected == null) return null;
+  final repo = ref.watch(projectRepositoryProvider);
+  return repo.fetchRealEstateProjectDetail(selected.realProjectId);
+});
+
 // ── 워크스페이스 / 프로젝트 선택 조작 헬퍼 ──────────────────────────────────────────
 
 void selectWorkspace(WidgetRef ref, ProjectModel? project) {
