@@ -15,7 +15,7 @@ import ExcelUploadDialog from '@/components/LedgerAccount/ExcelUploadDialog.vue'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AccountManage from './AccountManage.vue'
-import JournalRow from './JournalRow.vue'
+import ProAccountEntry from './ProAccountEntry.vue'
 import BankAcc from './BankAcc.vue'
 
 const props = defineProps({
@@ -932,7 +932,7 @@ onBeforeMount(async () => {
             </CTableDataCell>
 
             <CTableDataCell colspan="7" class="p-0">
-              <JournalRow
+              <ProAccountEntry
                 :sort="bankForm.sort"
                 :display-rows="displayRows"
                 :trans-amount="bankForm.amount"

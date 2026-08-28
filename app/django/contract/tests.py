@@ -346,6 +346,58 @@ class SuccessionAndReleaseAPITests(APITestCase):
         self.assertEqual(buyer.status, '4')
         self.assertFalse(buyer.is_active)
 
+    def test_update_succession_to_completed_swaps_contractor(self):
+        """변경인가대기(status='2') 또는 신청(1)에서 승계완료(status='3')로 변경 시 contract 소유권 정상 이전 및 Unique 제약 충돌 없는지 검증"""
+        buyer = Contractor.objects.create(name='양수인', status='3', change_type='3', is_active=False)
+        ContractorAddress.objects.create(contractor=buyer, id_zipcode='12345', id_address1='서울시 강남구', id_address2='101호', id_address3='')
+        ContractorContact.objects.create(contractor=buyer, cell_phone='010-1234-5678')
+
+        succession = Succession.objects.create(
+            contract=self.contract,
+            seller=self.seller,
+            buyer=buyer,
+            apply_date='2026-02-01',
+            trading_date='2026-02-01',
+            status='2'  # 변경인가대기
+        )
+
+        url = f'/api/v1/succession/{succession.pk}/'
+        data = {
+            'contract': self.contract.pk,
+            'seller': self.seller.pk,
+            'buyer': buyer.pk,
+            'name': '양수인',
+            'gender': 'M',
+            'id_zipcode': '12345',
+            'id_address1': '서울시 강남구',
+            'id_address2': '101호',
+            'id_address3': '',
+            'cell_phone': '010-1234-5678',
+            'apply_date': '2026-02-01',
+            'trading_date': '2026-02-01',
+            'status': '3'  # 승계완료
+        }
+        response = self.client.put(url, data, format='json')
+        self.assertEqual(response.status_code, http_status.HTTP_200_OK)
+
+        # 1. seller (양도인) 검증: contract 해제, prev_contract 지정, status='4', is_active=False
+        self.seller.refresh_from_db()
+        self.assertIsNone(self.seller.contract)
+        self.assertEqual(self.seller.prev_contract, self.contract)
+        self.assertEqual(self.seller.status, '4')
+        self.assertFalse(self.seller.is_active)
+
+        # 2. buyer (양수인) 검증: contract 획득, status='2', is_active=True
+        buyer.refresh_from_db()
+        self.assertEqual(buyer.contract, self.contract)
+        self.assertIsNone(buyer.prev_contract)
+        self.assertEqual(buyer.status, '2')
+        self.assertTrue(buyer.is_active)
+
+        # 3. succession status 검증
+        succession.refresh_from_db()
+        self.assertEqual(succession.status, '3')
+
     def test_destroy_ongoing_contractor_release_restores_contractor(self):
         """해지 신청건 삭제 시 contractor 상태가 원래 상태로 복구되고 release 레코드만 삭제되는지 검증"""
         self.seller.status = '3'

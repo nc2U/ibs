@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed, type ComputedRef, inject, provide, reactive, watch } from 'vue'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
-import JournalRow from './JournalRow.vue'
+import ProAccountEntry from './ProAccountEntry.vue'
 
 // 은행 거래 폼 데이터
 interface BankForm {
@@ -269,7 +269,7 @@ watch(
 
     <!-- 분류 내역 (JournalRow) -->
     <CTableDataCell colspan="7" class="p-0">
-      <JournalRow
+      <ProAccountEntry
         :sort="localBankForm.sort"
         :display-rows="displayRows"
         :trans-amount="localBankForm.amount"

@@ -45,7 +45,7 @@ const onDelete = (pk: number) => emit('on-delete', pk)
     </colgroup>
 
     <CTableHead :color="TableSecondary">
-      <CTableRow class="text-center">
+      <CTableRow class="text-center border-top">
         <CTableHeaderCell>수납일자</CTableHeaderCell>
         <CTableHeaderCell>납부회차</CTableHeaderCell>
         <CTableHeaderCell>수납금액</CTableHeaderCell>

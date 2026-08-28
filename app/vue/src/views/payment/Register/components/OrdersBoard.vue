@@ -128,7 +128,7 @@ const getDueDateFromAPI = (payTime: number | undefined) => {
       <col style="width: 20%" />
     </colgroup>
 
-    <CTableHead :color="TableSecondary" class="text-center">
+    <CTableHead :color="TableSecondary" class="text-center border-top">
       <CTableRow>
         <CTableHeaderCell>납부기일</CTableHeaderCell>
         <CTableHeaderCell>구분</CTableHeaderCell>

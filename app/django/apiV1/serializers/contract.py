@@ -678,8 +678,9 @@ class SuccessionSerializer(serializers.ModelSerializer):
         buyer.birth_date = self.initial_data.get('birth_date')
         buyer.gender = self.initial_data.get('gender')
         buyer.contract_date = validated_data.get('apply_date')  # 승계신청일을 계약일자로 기록
-        buyer.note = f"{buyer.note + '\n' if buyer.note else ''}{validated_data.get('note')}"
-        buyer.save()
+        note = validated_data.get('note')
+        if note and note not in (buyer.note or ''):
+            buyer.note = f"{buyer.note + '\n' if buyer.note else ''}{note}"
 
         # 주소 정보 업데이트 (없으면 생성)
         buyer_addr, _ = ContractorAddress.objects.get_or_create(contractor=buyer)
@@ -753,8 +754,13 @@ class SuccessionSerializer(serializers.ModelSerializer):
             buyer.is_active = False
             buyer.qualification = qua_false
 
-        buyer.save()
-        seller.save()
+        # OneToOneField unique 제약조건 충돌 방지를 위해 contract를 None으로 설정하는 모델을 먼저 저장
+        if seller.contract is None:
+            seller.save()
+            buyer.save()
+        else:
+            buyer.save()
+            seller.save()
 
         return instance
 
