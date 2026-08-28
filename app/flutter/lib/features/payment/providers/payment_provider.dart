@@ -61,6 +61,14 @@ final paymentOverallAggregateProvider =
   return repository.fetchOverallAggregate(selectedProject.realProjectId);
 });
 
+/// 📑 프로젝트 고지서 발행 설정 프로바이더
+final salesBillIssueProvider = FutureProvider.autoDispose<SalesBillIssueModel?>((ref) async {
+  final selectedProject = ref.watch(selectedRealEstateProjectProvider);
+  if (selectedProject == null) return null;
+  final repository = ref.watch(paymentRepositoryProvider);
+  return repository.fetchSalesBillIssue(selectedProject.realProjectId);
+});
+
 /// ── 1. 개별 납부 거래 내역 무한 스크롤 상태 Notifier ──────────────────────
 class PaymentTransactionsState {
   final List<PaymentTransactionItemModel> items;

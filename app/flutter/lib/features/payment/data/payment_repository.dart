@@ -235,4 +235,76 @@ class PaymentRepository {
       return false;
     }
   }
+
+  /// 6. 분양대금 납부 고지서 PDF 다운로드 (/pdf/bill/?project={projectId}&seq={contractId}&date={date}&np={np}&nl={nl})
+  Future<dynamic> downloadPaymentBillPdf({
+    required int projectId,
+    required int contractId,
+    String? pubDate,
+    bool noPrice = false,
+    bool noLate = false,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{
+        'project': projectId,
+        'seq': contractId.toString(),
+        if (pubDate != null && pubDate.isNotEmpty) 'date': pubDate,
+        if (noPrice) 'np': '1',
+        if (noLate) 'nl': '1',
+      };
+
+      final response = await dio.get(
+        '/pdf/bill/',
+        queryParameters: queryParams,
+        options: Options(
+          responseType: ResponseType.bytes,
+        ),
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+        return response.data;
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// 7. 프로젝트 고지서 발행 설정 조회 (/api/v1/sales-bill-issue/?project={projectId})
+  Future<SalesBillIssueModel?> fetchSalesBillIssue(int projectId) async {
+    try {
+      final response = await dio.get(
+        '/api/v1/sales-bill-issue/',
+        queryParameters: {'project': projectId},
+      );
+
+      final List<dynamic> results =
+          response.data is Map && response.data.containsKey('results')
+              ? response.data['results']
+              : (response.data is List ? response.data : []);
+
+      if (results.isNotEmpty) {
+        return SalesBillIssueModel.fromJson(results.first as Map<String, dynamic>);
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// 8. 현재 발행 기준 회차(now_payment_order) 수정 (PATCH /api/v1/sales-bill-issue/{id}/)
+  Future<bool> updateNowPaymentOrder({
+    required int billIssueId,
+    required int? nowPaymentOrderId,
+  }) async {
+    try {
+      final response = await dio.patch(
+        '/api/v1/sales-bill-issue/$billIssueId/',
+        data: {'now_payment_order': nowPaymentOrderId},
+      );
+      return response.statusCode == 200 || response.statusCode == 204;
+    } catch (e) {
+      return false;
+    }
+  }
 }

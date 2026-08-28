@@ -247,3 +247,75 @@ class PaymentOverallAggregateModel {
     );
   }
 }
+
+/// 📑 4. 프로젝트 고지서 발행 기본 설정 모델 (/api/v1/sales-bill-issue/)
+class SalesBillIssueModel {
+  final int pk;
+  final int project;
+  final int? nowPaymentOrder; // 현재 발행(도래) 기준 회차 PK
+  final String hostName;
+  final String hostTel;
+  final String? agency;
+  final String? agencyTel;
+  final String bankAccount1;
+  final String bankNumber1;
+  final String bankHost1;
+  final String? bankAccount2;
+  final String? bankNumber2;
+  final String? bankHost2;
+  final String zipcode;
+  final String address1;
+  final String? address2;
+  final String? address3;
+  final String title;
+  final String content;
+  final String? updated;
+
+  SalesBillIssueModel({
+    required this.pk,
+    required this.project,
+    this.nowPaymentOrder,
+    required this.hostName,
+    required this.hostTel,
+    this.agency,
+    this.agencyTel,
+    required this.bankAccount1,
+    required this.bankNumber1,
+    required this.bankHost1,
+    this.bankAccount2,
+    this.bankNumber2,
+    this.bankHost2,
+    required this.zipcode,
+    required this.address1,
+    this.address2,
+    this.address3,
+    required this.title,
+    required this.content,
+    this.updated,
+  });
+
+  factory SalesBillIssueModel.fromJson(Map<String, dynamic> json) {
+    return SalesBillIssueModel(
+      pk: json['pk'] as int? ?? json['id'] as int? ?? 0,
+      project: json['project'] as int? ?? 0,
+      nowPaymentOrder: json['now_payment_order'] as int?,
+      hostName: json['host_name']?.toString() ?? '',
+      hostTel: json['host_tel']?.toString() ?? '',
+      agency: json['agency']?.toString(),
+      agencyTel: json['agency_tel']?.toString(),
+      bankAccount1: json['bank_account1']?.toString() ?? '',
+      bankNumber1: json['bank_number1']?.toString() ?? '',
+      bankHost1: json['bank_host1']?.toString() ?? '',
+      bankAccount2: json['bank_account2']?.toString(),
+      bankNumber2: json['bank_number2']?.toString(),
+      bankHost2: json['bank_host2']?.toString(),
+      zipcode: json['zipcode']?.toString() ?? '',
+      address1: json['address1']?.toString() ?? '',
+      address2: json['address2']?.toString(),
+      address3: json['address3']?.toString(),
+      title: json['title']?.toString() ?? '',
+      content: json['content']?.toString() ?? '',
+      updated: json['updated']?.toString(),
+    );
+  }
+}
