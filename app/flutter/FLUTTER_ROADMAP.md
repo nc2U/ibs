@@ -120,7 +120,20 @@
     - 승인/반려/의견/회수 바텀시트 모달 (`ApprovalActionBottomSheet`)
     - WeasyPrint PDF 네이티브 뷰어/외부 공유 (`approval_pdf_helper.dart`)
   - **홈 대시보드 연동**: `HomeTab` 실시간 미결 건수 배지 및 `AppRoutes.approval` 라우터 연결
-- [ ] **Step 10**: Phase 2 - 프로젝트별 계약 관리 (`Contract`) 및 수납/입출금 상세 조회 모듈 연동 (다음 진행 예정)
+- [x] **Step 10**: Phase 2 - **프로젝트 핵심 사업 모듈 (`IBS Global - type='2'`) 전면 구현 완료**
+  - **계약 관리 (`Contract`)**: 분양 계약 목록, 계약자 상세, 동호수/타입 배치도 조회 연동 완료
+  - **수납 관리 (`Payment`)**: 차수별 약정/수납 내역, 미납금 계산, 수납 청구서 공유/출력 완비
+  - **자금 / 재무 관리 (`Ledger`)**: 프로젝트 계좌별 거래 내역, 입출금 이력 및 실시간 캐시플로우 연동
+  - **문서 / 소송 관리 (`Docs`)**: 프로젝트 인허가/공용문서/소송 사건 뷰어 및 다운로드 연동
+  - **사업부지 관리 (`Site`)**: 지번 목록, 소유권 확보율 및 매입비 현황 연동
+  - **프로젝트 설정 (`Settings`)**: 프로젝트 기본정보, 차수/유닛배치, 예산 현황 조회
+- [x] **Step 13**: **채널 & 전사 라운지 (`Channel & Corporate Lounge`) 실시간 연동 및 UI 분리 완료**
+  - **공지사항 (`Notice`)**: 공식 브리프 카드 UI (인디케이터 바, 발신처/첨부문서), 상세 바텀시트
+  - **게시판 (`Forum`)**: 표준 업무 게시판 카드 UI (카테고리 칩, 작성자, 소셜 인터랙션 바)
+  - **전사 라운지 (`Corporate Lounge`)**: 1번 포럼(`is_faq=true`) 실시간 Q&A 아코디언 파싱(HtmlWidget) 및 원클릭 기술지원 1:1 접수 폼 구축
+- [x] **Step 14**: **내 설정 & 보안 관리 (`Profile & Security`) 완비**
+  - 프로필 정보 수정 및 3-Way 테마/생체인증 결재 설정
+  - 비밀번호 변경 (`/api/v1/change-password/`) 및 이메일 재설정 링크 발송 (`/api/v1/password-reset/`) 풀스택 구축
 - [ ] **Step 11**: Phase 3-1 - 실시간 워크스페이스 메신저 (Real-Time Chat & Direct Message) 시스템 구축
 
 ---
