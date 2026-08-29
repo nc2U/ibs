@@ -172,7 +172,7 @@ onBeforeMount(async () => {
             icon="mdi-pencil-plus"
             :to="{
               name: '(게시판) - 게시물 작성',
-              params: { projId: $route.params.projId, forumId: forum?.pk },
+              params: { forumId: forum?.pk },
             }"
           />
         </CCol>

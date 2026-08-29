@@ -25,16 +25,17 @@ class ForumSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_post_count(obj):
-        return obj.post_set.count()
+        return obj.post_set.filter(deleted=None, is_faq=False).count()
 
     @staticmethod
     def get_all_post_count(obj):
-        comment_count = Comment.objects.filter(post__forum=obj).count()
-        return obj.post_set.count() + comment_count
+        post_count = obj.post_set.filter(deleted=None, is_faq=False).count()
+        comment_count = Comment.objects.filter(post__forum=obj, post__deleted=None, post__is_faq=False).count()
+        return post_count + comment_count
 
     @staticmethod
     def get_last_post(obj):
-        last_post = obj.post_set.select_related('creator').order_by('-created').first()
+        last_post = obj.post_set.filter(deleted=None, is_faq=False).select_related('creator').order_by('-created').first()
         if last_post:
             return {
                 'pk': last_post.pk,
