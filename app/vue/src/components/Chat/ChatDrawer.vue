@@ -122,6 +122,17 @@ const startDmWithUser = async (user: any) => {
   } catch (_) {}
 }
 
+const confirmLeaveRoom = async (room: ChatRoom) => {
+  const name = getRoomDisplayName(room)
+  if (confirm(`'${name}' 대화방을 나가시겠습니까?\n(대화 목록에서 숨겨지며, 상대방이 메시지를 보내거나 다시 대화를 걸면 목록에 다시 나타납니다.)`)) {
+    try {
+      await chatStore.exitAndHideRoom(room.id)
+    } catch (e) {
+      alert('대화방 나가기에 실패했습니다.')
+    }
+  }
+}
+
 const fileInputRef = ref<HTMLInputElement | null>(null)
 const isUploading = ref(false)
 const isDragging = ref(false)
@@ -358,6 +369,18 @@ const formatTime = (dateStr: string) => {
               <v-icon v-else icon="mdi-account-group-outline" size="small" />
             </v-btn>
 
+            <!-- 1:1 대화방일 때: 대화방 나가기 버튼 -->
+            <v-btn
+              v-if="currentRoom && currentRoom.room_type === 'direct'"
+              icon="mdi-exit-to-app"
+              variant="text"
+              size="small"
+              color="secondary"
+              class="mr-1"
+              title="대화방 나가기 (목록에서 숨김)"
+              @click="confirmLeaveRoom(currentRoom)"
+            />
+
             <!-- 목록 화면: 새 1:1 대화 버튼 -->
             <v-btn
               v-if="!currentRoom"
@@ -489,16 +512,27 @@ const formatTime = (dateStr: string) => {
                     {{ room.last_message?.content || '대화를 시작해보세요' }}
                   </v-list-item-subtitle>
                   <template #append>
-                    <div class="text-right">
-                      <div class="text-xs timestamp-text">
-                        {{ formatTime(room.last_message?.created || room.updated) }}
+                    <div class="d-flex align-items-center">
+                      <div class="text-right mr-2">
+                        <div class="text-xs timestamp-text">
+                          {{ formatTime(room.last_message?.created || room.updated) }}
+                        </div>
+                        <v-badge
+                          v-if="room.unread_count > 0"
+                          :content="room.unread_count"
+                          color="error"
+                          inline
+                          class="mt-1"
+                        />
                       </div>
-                      <v-badge
-                        v-if="room.unread_count > 0"
-                        :content="room.unread_count"
-                        color="error"
-                        inline
-                        class="mt-1"
+                      <v-btn
+                        icon="mdi-close"
+                        variant="text"
+                        size="x-small"
+                        color="secondary"
+                        class="leave-dm-btn"
+                        title="대화방 나가기 (목록에서 숨김)"
+                        @click.stop="confirmLeaveRoom(room)"
                       />
                     </div>
                   </template>

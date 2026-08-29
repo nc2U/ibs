@@ -65,6 +65,7 @@ class ChatRoomMember(models.Model):
     is_admin = models.BooleanField('방장/관리자', default=False)
     is_pinned = models.BooleanField('상단 고정', default=False)
     is_muted = models.BooleanField('알림 끄기', default=False)
+    is_hidden = models.BooleanField('목록에서 숨김(나가기)', default=False)
     joined_at = models.DateTimeField('참여일시', auto_now_add=True)
     last_read_message_id = models.PositiveBigIntegerField('마지막 읽은 메시지 ID', default=0)
 

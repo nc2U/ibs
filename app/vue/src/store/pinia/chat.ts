@@ -121,6 +121,19 @@ export const useChat = defineStore('chat', () => {
     messages.value = []
   }
 
+  const exitAndHideRoom = async (roomId: number) => {
+    try {
+      await api.post(`/chat-room/${roomId}/leave/`, {})
+      if (currentRoom.value?.id === roomId) {
+        leaveRoom()
+      }
+      await fetchRooms()
+      await fetchTotalUnread()
+    } catch (e) {
+      throw e
+    }
+  }
+
   const connectWebSocket = (roomId: number) => {
     if (ws) ws.close()
 
@@ -250,6 +263,7 @@ export const useChat = defineStore('chat', () => {
     getOrCreateDm,
     enterRoom,
     leaveRoom,
+    exitAndHideRoom,
     sendMessage,
     uploadFile,
   }

@@ -174,10 +174,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
         )
         room.save(update_fields=['updated'])
 
-        # 발신자의 last_read_message_id를 본인 메시지 ID로 자동 갱신
+        # 발신자의 last_read_message_id를 본인 메시지 ID로 자동 갱신 및 숨김 해제
         membership, _ = ChatRoomMember.objects.get_or_create(room=room, user=user)
         membership.last_read_message_id = msg.id
-        membership.save(update_fields=['last_read_message_id'])
+        membership.is_hidden = False
+        membership.save(update_fields=['last_read_message_id', 'is_hidden'])
+
+        # 모든 참여 멤버의 숨김(is_hidden) 상태 자동 해제 (새 메시지 도착 시 목록 복원)
+        room.memberships.filter(is_hidden=True).update(is_hidden=False)
 
         reply_to_detail = None
         if reply_to_id:

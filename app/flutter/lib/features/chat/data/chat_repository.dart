@@ -97,4 +97,9 @@ class ChatRepository {
     final response = await _dio.post('/api/v1/chat-message/', data: formData);
     return ChatMessageModel.fromJson(response.data as Map<String, dynamic>);
   }
+
+  /// 7. 대화방 나가기 / 목록에서 숨기기
+  Future<void> leaveRoom(int roomId) async {
+    await _dio.post('/api/v1/chat-room/$roomId/leave/');
+  }
 }

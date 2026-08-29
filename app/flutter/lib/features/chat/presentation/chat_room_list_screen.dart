@@ -7,6 +7,7 @@ import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/theme/app_colors_extension.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/loading_shimmer.dart';
+import '../data/chat_repository.dart';
 import '../data/models/chat_model.dart';
 import '../providers/chat_provider.dart';
 import 'widgets/user_select_sheet.dart';
@@ -238,6 +239,9 @@ class _ChatRoomListScreenState extends ConsumerState<ChatRoomListScreen>
               ref.invalidate(totalUnreadChatCountProvider);
             });
           },
+          onLongPress: !isChannel
+              ? () => _showLeaveRoomDialog(context, room, displayName)
+              : null,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
@@ -350,6 +354,51 @@ class _ChatRoomListScreenState extends ConsumerState<ChatRoomListScreen>
           ),
         );
       },
+    );
+  }
+
+  void _showLeaveRoomDialog(BuildContext context, ChatRoomModel room, String displayName) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('대화방 나가기'),
+        content: Text(
+          "'$displayName' 대화방을 나가시겠습니까?\n\n(대화 목록에서 숨겨지며, 상대방이 메시지를 보내거나 다시 대화를 걸면 목록에 다시 나타납니다.)",
+          style: const TextStyle(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('취소'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                await ref.read(chatRepositoryProvider).leaveRoom(room.id);
+                ref.invalidate(chatRoomsProvider);
+                ref.invalidate(totalUnreadChatCountProvider);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('대화방을 나갔습니다.')),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('대화방 나가기 실패: $e')),
+                  );
+                }
+              }
+            },
+            child: const Text('나가기'),
+          ),
+        ],
+      ),
     );
   }
 

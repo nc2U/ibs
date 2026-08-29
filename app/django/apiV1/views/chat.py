@@ -58,10 +58,10 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
         if user.is_superuser:
             return ChatRoom.objects.all().distinct()
 
-        # 1) 내가 멤버로 속해 있는 방 (1:1 DM, 그룹방)
+        # 1) 내가 멤버로 속해 있고 숨김 처리하지 않은 방 (1:1 DM, 그룹방)
         # 2) 또는 내가 멤버로 소속되어 있고 공용 채널이 켜진 워크스페이스 채널
         return ChatRoom.objects.filter(
-            Q(members=user) |
+            (Q(members=user) & ~Q(memberships__user=user, memberships__is_hidden=True)) |
             Q(room_type='channel', project_id__in=my_project_ids, project__chat_channel_enabled=True)
         ).distinct()
 
@@ -92,6 +92,8 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
 
         if existing_rooms.exists():
             room = existing_rooms.first()
+            # 숨김(나가기) 상태였다면 다시 목록에 보이도록 복구
+            room.memberships.filter(user=request.user, is_hidden=True).update(is_hidden=False)
             serializer = ChatRoomListSerializer(room, context={'request': request})
             return Response(serializer.data)
 
@@ -105,6 +107,31 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
 
         serializer = ChatRoomListSerializer(room, context={'request': request})
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['post'], url_path='leave')
+    def leave_room(self, request, pk=None):
+        """
+        대화방 나가기 / 내 목록에서 숨기기
+        - 1:1 DM: 내 멤버십을 is_hidden = True 처리하여 목록에서 숨김 (상대방 기록은 유지)
+        - 비공개 그룹방: 멤버십 삭제
+        """
+        room = self.get_object()
+        if room.room_type == 'channel':
+            return Response({'error': '워크스페이스 공용 채널은 나갈 수 없습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        membership = room.memberships.filter(user=request.user).first()
+        if not membership:
+            return Response({'error': '해당 대화방의 참여 멤버가 아닙니다.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if room.room_type == 'direct':
+            # 1:1 DM은 is_hidden=True 로 숨김
+            membership.is_hidden = True
+            membership.save(update_fields=['is_hidden'])
+        else:
+            # 그룹방은 멤버십 삭제
+            membership.delete()
+
+        return Response({'success': True, 'message': '대화방을 나갔습니다.'})
 
     @action(detail=True, methods=['post'], url_path='read')
     def mark_as_read(self, request, pk=None):
