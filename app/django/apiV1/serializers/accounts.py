@@ -11,11 +11,22 @@ from work.models.project import IssueProject
 
 # Accounts --------------------------------------------------------------------------
 class SimpleUserSerializer(serializers.ModelSerializer):
-    name = serializers.CharField(source='profile.name', read_only=True, default='')
+    name = serializers.SerializerMethodField(read_only=True)
+    email = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = User
         fields = ('pk', 'username', 'name', 'email')
+
+    def get_name(self, obj):
+        if isinstance(obj, dict):
+            return obj.get('name', '')
+        return getattr(getattr(obj, 'profile', None), 'name', '') or ''
+
+    def get_email(self, obj):
+        if isinstance(obj, dict):
+            return obj.get('email', '')
+        return getattr(obj, 'email', '') or ''
 
 
 class ProfileInUserSerializer(serializers.ModelSerializer):
