@@ -170,6 +170,7 @@ class ChatMessageViewSet(viewsets.ModelViewSet):
     """
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = ChatMessageSerializer
+    pagination_class = None
 
     def get_queryset(self):
         room_id = self.request.query_params.get('room')

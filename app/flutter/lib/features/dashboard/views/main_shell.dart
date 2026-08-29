@@ -66,6 +66,8 @@ class _MainShellState extends ConsumerState<MainShell> {
     if (!mounted) return;
     ref.read(notificationListProvider.notifier).fetchNotifications();
     ref.invalidate(pendingApprovalsProvider);
+    ref.invalidate(totalUnreadChatCountProvider);
+    ref.invalidate(chatRoomsProvider);
   }
 
   @override

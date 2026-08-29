@@ -973,8 +973,9 @@ const formatTime = (dateStr: string) => {
 }
 
 .my-bubble {
-  background-color: #3b82f6; /* 눈이 편안하고 화사한 모던 소프트 블루 */
-  color: #ffffff;
+  background-color: #e2eefc; /* 눈이 아주 편안하고 세련된 소프트 파스텔 연청색 */
+  color: #0f2e5c; /* 시인성이 뛰어난 딥 네이비 텍스트 */
+  border: 1px solid #c7defa;
   border-radius: 14px 14px 2px 14px;
 }
 .other-bubble {
@@ -997,22 +998,22 @@ const formatTime = (dateStr: string) => {
   padding: 6px 9px;
 }
 .my-bubble .ref-card {
-  background-color: rgba(255, 255, 255, 0.16);
-  border-color: rgba(255, 255, 255, 0.3);
-  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.7);
+  border-color: #c7defa;
+  color: #0f2e5c;
 }
 .ref-card-title {
   color: #2563eb;
   font-weight: 600;
 }
 .my-bubble .ref-card-title {
-  color: #ffffff;
+  color: #1d4ed8;
 }
 .ref-card-sub {
   color: #64748b;
 }
 .my-bubble .ref-card-sub {
-  color: #e2e8f0;
+  color: #475569;
 }
 
 /* 라이트모드 첨부파일 카드 */

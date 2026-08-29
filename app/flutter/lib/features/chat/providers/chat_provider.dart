@@ -56,6 +56,18 @@ class ChatRoomNotifier extends StateNotifier<AsyncValue<List<ChatMessageModel>>>
     }
   }
 
+  Future<void> refreshMessages() async {
+    try {
+      final messages = await _repo.fetchMessages(roomId);
+      state = AsyncValue.data(messages);
+      if (messages.isNotEmpty) {
+        await _repo.markAsRead(roomId, lastMessageId: messages.last.id);
+        _ref.invalidate(totalUnreadChatCountProvider);
+        _ref.invalidate(chatRoomsProvider);
+      }
+    } catch (_) {}
+  }
+
   Future<void> _connectWebSocket() async {
     final tokenStorage = _ref.read(tokenStorageProvider);
     final token = await tokenStorage.getAccessToken();
@@ -97,10 +109,17 @@ class ChatRoomNotifier extends StateNotifier<AsyncValue<List<ChatMessageModel>>>
           return [...msgs, newMsg];
         });
 
-        // 수신 즉시 읽음 처리
-        _repo.markAsRead(roomId, lastMessageId: newMsg.id);
-        _ref.invalidate(totalUnreadChatCountProvider);
-        _ref.invalidate(chatRoomsProvider);
+        // 수신 즉시 REST 및 WebSocket 양방향 읽음 처리
+        _repo.markAsRead(roomId, lastMessageId: newMsg.id).then((_) {
+          _ref.invalidate(totalUnreadChatCountProvider);
+          _ref.invalidate(chatRoomsProvider);
+        });
+        if (_channel != null) {
+          _channel!.sink.add(jsonEncode({
+            'type': 'read',
+            'last_message_id': newMsg.id,
+          }));
+        }
       }
     } catch (_) {}
   }
@@ -136,10 +155,35 @@ class ChatRoomNotifier extends StateNotifier<AsyncValue<List<ChatMessageModel>>>
       'ref_id': refId,
       'ref_title': refTitle ?? '',
       'ref_sub': refSub ?? '',
+      'reply_to': replyToId,
       'reply_to_id': replyToId,
     };
 
     _channel!.sink.add(jsonEncode(payload));
+  }
+
+  /// 📎 사진 / 파일 전송 후 로컬 상태 즉시 추가
+  Future<void> sendFile({
+    required dynamic file, // File
+    required String messageType,
+    String? content,
+    int? replyToId,
+  }) async {
+    try {
+      final newMsg = await _repo.sendFileMessage(
+        roomId: roomId,
+        file: file,
+        messageType: messageType,
+        content: content,
+      );
+      state = state.whenData((msgs) {
+        if (msgs.any((m) => m.id == newMsg.id)) return msgs;
+        return [...msgs, newMsg];
+      });
+      _ref.invalidate(chatRoomsProvider);
+    } catch (e) {
+      rethrow;
+    }
   }
 
   /// ✍️ 타이핑 인디케이터 전송

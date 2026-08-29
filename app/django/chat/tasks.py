@@ -30,7 +30,8 @@ def send_chat_push_notification(self, message_id):
             # 워크스페이스 채널인 경우 워크스페이스 소속 멤버들 중 발신자 제외
             if room.project:
                 # 워크스페이스 전체 멤버 ID (하위 상속 포함)
-                pjt_member_ids = list(room.project.all_members().values_list('user_id', flat=True))
+                all_mems = room.project.all_members()
+                pjt_member_ids = [m['user']['pk'] for m in all_mems]
                 # 알림 끈 멤버 제외
                 muted_user_ids = list(room.memberships.filter(is_muted=True).values_list('user_id', flat=True))
                 target_user_ids = [uid for uid in set(pjt_member_ids) if uid != (sender.pk if sender else 0) and uid not in muted_user_ids]
@@ -67,7 +68,8 @@ def send_chat_push_notification(self, message_id):
                 'room_id': str(room.id),
                 'room_type': room.room_type,
                 'message_id': str(msg.id),
-            }
+            },
+            create_notification_record=False,
         )
         return f"Chat push sent for message #{message_id} to {len(target_user_ids)} users"
     except ChatMessage.DoesNotExist:

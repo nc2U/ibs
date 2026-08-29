@@ -48,7 +48,14 @@ class _NotificationSheetState extends ConsumerState<NotificationSheet> {
     // 3. 딥링크 라우팅
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!context.mounted) return;
-      if (n.targetType == 'issue' && n.targetId.isNotEmpty) {
+      if (n.category == 'chat' || n.targetType == 'chat_room') {
+        final roomId = int.tryParse(n.targetId) ?? 0;
+        if (roomId > 0) {
+          context.push('/chat/$roomId');
+        } else {
+          context.go('/chat');
+        }
+      } else if (n.targetType == 'issue' && n.targetId.isNotEmpty) {
         context.push('/work/issues/${n.targetId}');
       } else if (n.targetType == 'meeting' && n.targetId.isNotEmpty) {
         context.push('/work/meetings/${n.targetId}');
@@ -68,6 +75,8 @@ class _NotificationSheetState extends ConsumerState<NotificationSheet> {
 
   Color _getCategoryColor(String category, BuildContext context) {
     switch (category) {
+      case 'chat':
+        return context.colors.accentCorp; // Blue
       case 'work':
         return context.colors.accentWork;
       case 'meeting':
@@ -83,6 +92,8 @@ class _NotificationSheetState extends ConsumerState<NotificationSheet> {
 
   IconData _getCategoryIcon(String category, String targetType) {
     switch (category) {
+      case 'chat':
+        return Icons.chat_bubble_outline_rounded;
       case 'work':
         return Icons.task_alt_rounded;
       case 'meeting':

@@ -516,14 +516,14 @@ class FCMDeviceViewSet(viewsets.ModelViewSet):
 
 
 class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
-    """사용자 인앱 알림 목록 및 읽음 처리"""
+    """사용자 인앱 알림 목록 및 읽음 처리 (채팅 알림은 알림 센터에서 제외)"""
     queryset = Notification.objects.all()
     serializer_class = NotificationSerializer
     permission_classes = (IsAuthenticated,)
     pagination_class = PageNumberPaginationFifty
 
     def get_queryset(self):
-        return Notification.objects.filter(user=self.request.user)
+        return Notification.objects.filter(user=self.request.user).exclude(category='chat')
 
     @action(detail=True, methods=['post'], url_path='read')
     def mark_as_read(self, request, pk=None):
@@ -534,10 +534,10 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=False, methods=['post'], url_path='read-all')
     def mark_all_as_read(self, request):
-        updated_count = Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+        updated_count = Notification.objects.filter(user=request.user, is_read=False).exclude(category='chat').update(is_read=True)
         return Response({'status': 'all_read', 'updated_count': updated_count})
 
     @action(detail=False, methods=['get'], url_path='unread-count')
     def unread_count(self, request):
-        count = Notification.objects.filter(user=request.user, is_read=False).count()
+        count = Notification.objects.filter(user=request.user, is_read=False).exclude(category='chat').count()
         return Response({'unread_count': count})

@@ -109,6 +109,12 @@ class SseNotificationService {
 
       if (eventType == 'notification' || (dataStr != null && dataStr.isNotEmpty && eventType != 'connected')) {
         debugPrint('🔔 [SSE] 실시간 알림 수신: $dataStr');
+
+        // 채팅(chat) 관련 SSE 이벤트는 알림 센터 갱신에서 제외
+        if (dataStr != null && dataStr.contains('"category":"chat"')) {
+          return;
+        }
+
         // 1. 알림 목록 및 미확인 배지 즉시 갱신
         _ref.read(notificationListProvider.notifier).fetchNotifications();
 

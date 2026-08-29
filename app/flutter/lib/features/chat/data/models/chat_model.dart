@@ -136,6 +136,30 @@ class ChatLastMessage {
   }
 }
 
+/// 답장 원본 요약 모델
+class ChatReplyDetail {
+  final int id;
+  final String senderName;
+  final String content;
+  final String messageType;
+
+  ChatReplyDetail({
+    required this.id,
+    required this.senderName,
+    required this.content,
+    required this.messageType,
+  });
+
+  factory ChatReplyDetail.fromJson(Map<String, dynamic> json) {
+    return ChatReplyDetail(
+      id: json['id'] as int,
+      senderName: json['sender_name'] as String? ?? '알 수 없음',
+      content: json['content'] as String? ?? '',
+      messageType: json['message_type'] as String? ?? 'text',
+    );
+  }
+}
+
 /// 개별 채팅 메시지 모델
 class ChatMessageModel {
   final int id;
@@ -150,6 +174,7 @@ class ChatMessageModel {
   final String refTitle;
   final String refSub;
   final int? replyTo;
+  final ChatReplyDetail? replyToDetail;
   final DateTime created;
 
   ChatMessageModel({
@@ -165,6 +190,7 @@ class ChatMessageModel {
     required this.refTitle,
     required this.refSub,
     this.replyTo,
+    this.replyToDetail,
     required this.created,
   });
 
@@ -203,6 +229,9 @@ class ChatMessageModel {
       refTitle: json['ref_title'] as String? ?? '',
       refSub: json['ref_sub'] as String? ?? '',
       replyTo: json['reply_to'] as int?,
+      replyToDetail: json['reply_to_detail'] != null
+          ? ChatReplyDetail.fromJson(json['reply_to_detail'] as Map<String, dynamic>)
+          : null,
       created: DateTime.parse(json['created'] as String),
     );
   }

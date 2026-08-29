@@ -53,6 +53,7 @@ def send_push_notification(
     target_type='',
     target_id='',
     extra_data=None,
+    create_notification_record=True,
 ):
     """
     1. 대상 사용자들의 DB Notification 레코드 생성
@@ -64,23 +65,26 @@ def send_push_notification(
     if extra_data is None:
         extra_data = {}
 
-    # 1. DB 알림 레코드 벌크 생성
-    notifications_to_create = [
-        Notification(
-            user_id=uid,
-            title=title,
-            body=body,
-            category=category,
-            target_type=target_type,
-            target_id=str(target_id) if target_id else '',
-            data=extra_data,
-        )
-        for uid in user_ids
-    ]
-    try:
-        Notification.objects.bulk_create(notifications_to_create)
-    except Exception as e:
-        logger.error(f"Failed to create Notification records: {e}")
+    # 1. DB 알림 레코드 벌크 생성 (옵션)
+    notifications_count = 0
+    if create_notification_record:
+        notifications_to_create = [
+            Notification(
+                user_id=uid,
+                title=title,
+                body=body,
+                category=category,
+                target_type=target_type,
+                target_id=str(target_id) if target_id else '',
+                data=extra_data,
+            )
+            for uid in user_ids
+        ]
+        try:
+            Notification.objects.bulk_create(notifications_to_create)
+            notifications_count = len(notifications_to_create)
+        except Exception as e:
+            logger.error(f"Failed to create Notification records: {e}")
 
     # 2. 활성 FCM 기기 토큰 조회
     devices = FCMDevice.objects.filter(user_id__in=user_ids, is_active=True)
@@ -147,22 +151,23 @@ def send_push_notification(
     else:
         logger.debug(f"FCM simulation: Push would be sent to {len(tokens)} tokens -> {title}: {body}")
 
-    # 4. Redis Pub/Sub을 통한 웹 브라우저 실시간 스트림(SSE) 브로드캐스팅
-    try:
-        import redis
-        redis_url = getattr(settings, 'REDIS_URL', 'redis://localhost:6379/1')
-        r = redis.Redis.from_url(redis_url)
-        sse_payload = json.dumps({
-            'category': str(category),
-            'title': str(title),
-            'body': str(body),
-            'target_type': str(target_type),
-            'target_id': str(target_id),
-            'extra': extra_data,
-        })
-        for uid in user_ids:
-            r.publish(f'user_notify_{uid}', sse_payload)
-    except Exception as e:
-        logger.warning(f"Redis SSE Publish error: {e}")
+    # 4. Redis Pub/Sub을 통한 웹 브라우저 실시간 스트림(SSE) 브로드캐스팅 (채팅 알림은 SSE 제외)
+    if category != 'chat':
+        try:
+            import redis
+            redis_url = getattr(settings, 'REDIS_URL', 'redis://localhost:6379/1')
+            r = redis.Redis.from_url(redis_url)
+            sse_payload = json.dumps({
+                'category': str(category),
+                'title': str(title),
+                'body': str(body),
+                'target_type': str(target_type),
+                'target_id': str(target_id),
+                'extra': extra_data,
+            })
+            for uid in user_ids:
+                r.publish(f'user_notify_{uid}', sse_payload)
+        except Exception as e:
+            logger.warning(f"Redis SSE Publish error: {e}")
 
     return len(notifications_to_create)

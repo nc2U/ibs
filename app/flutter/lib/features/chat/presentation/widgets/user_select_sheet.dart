@@ -12,16 +12,10 @@ import '../../../../core/widgets/user_avatar.dart';
 import '../../data/chat_repository.dart';
 import '../../providers/chat_provider.dart';
 
-/// 전체 활성 재직 임직원 목록 프로바이더 (1:1 DM 생성용: is_active=true & staff__status=1)
+/// 1:1 DM 가능 대상자 목록 프로바이더 (본사 재직 스태프 + 활성 워크스페이스 멤버 전체)
 final allMembersProvider = FutureProvider.autoDispose<List<UserModel>>((ref) async {
   final dio = ref.watch(dioProvider);
-  final res = await dio.get(
-    '/api/v1/user/',
-    queryParameters: {
-      'is_active': true,
-      'staff__status': '1', // 재직 중인 임직원만 조회
-    },
-  );
+  final res = await dio.get('/api/v1/chat-room/available-users/');
   final dynamic data = res.data;
 
   List<dynamic> list = [];
@@ -33,7 +27,6 @@ final allMembersProvider = FutureProvider.autoDispose<List<UserModel>>((ref) asy
 
   return list
       .map((json) => UserModel.fromJson(json as Map<String, dynamic>))
-      .where((u) => u.isActive && (u.hasStaff || u.isSuperuser))
       .toList();
 });
 

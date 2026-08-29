@@ -70,17 +70,79 @@ class _ChatRoomListScreenState extends ConsumerState<ChatRoomListScreen>
             decoration: BoxDecoration(
               border: Border(bottom: BorderSide(color: context.colors.border, width: 0.8)),
             ),
-            child: TabBar(
-              controller: _tabController,
-              indicatorColor: context.colors.accentWork,
-              indicatorWeight: 2.5,
-              labelColor: context.colors.accentWork,
-              unselectedLabelColor: context.colors.textMuted,
-              labelStyle: AppTextStyles.titleSm.copyWith(fontWeight: FontWeight.bold),
-              tabs: const [
-                Tab(text: '🏢 워크스페이스 채널'),
-                Tab(text: '🔒 1:1 다이렉트 (DM)'),
-              ],
+            child: Builder(
+              builder: (context) {
+                final rooms = chatRoomsAsync.valueOrNull ?? [];
+                final channelUnread = rooms
+                    .where((r) => r.roomType == ChatRoomType.channel)
+                    .fold<int>(0, (sum, r) => sum + r.unreadCount);
+                final directUnread = rooms
+                    .where((r) => r.roomType != ChatRoomType.channel)
+                    .fold<int>(0, (sum, r) => sum + r.unreadCount);
+
+                return TabBar(
+                  controller: _tabController,
+                  indicatorColor: context.colors.accentWork,
+                  indicatorWeight: 2.5,
+                  labelColor: context.colors.accentWork,
+                  unselectedLabelColor: context.colors.textMuted,
+                  labelStyle: AppTextStyles.titleSm.copyWith(fontWeight: FontWeight.bold),
+                  tabs: [
+                    Tab(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text('🏢 워크스페이스 채널'),
+                          if (channelUnread > 0) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.redAccent,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                '$channelUnread',
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    Tab(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text('🔒 1:1 다이렉트 (DM)'),
+                          if (directUnread > 0) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.redAccent,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                '$directUnread',
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ),
