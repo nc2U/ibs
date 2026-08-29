@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useAccount } from '@/store/pinia/account'
 import { useApproval } from '@/store/pinia/approval'
 import { useIssue } from '@/store/pinia/work_issue'
+import { useChat } from '@/store/pinia/chat'
 import { playNotificationSound } from '@/utils/sound'
 import TodoModal from '@/components/Modals/TodoModal.vue'
 
@@ -11,6 +12,7 @@ const router = useRouter()
 const accountStore = useAccount()
 const approvalStore = useApproval()
 const issueStore = useIssue()
+const chatStore = useChat()
 
 const refsTodoModal = ref()
 let isInitial = true
@@ -25,6 +27,7 @@ const inProgressDraftCount = computed(
 )
 const assignedIssueCount = computed(() => issueStore.issueNumByMember.open_charged || 0)
 const todoCount = computed(() => accountStore.myTodos.length)
+const unreadChatCount = computed(() => chatStore.totalUnreadCount)
 
 // 결재 대기 건수 증가 시 알림 사운드 재생
 watch(pendingCount, (newVal, oldVal) => {
@@ -41,6 +44,7 @@ const fetchAllCounts = () => {
     }
     issueStore.fetchIssueByMember(userPk.value ? String(userPk.value) : undefined)
     accountStore.fetchTodoList()
+    chatStore.fetchTotalUnread()
   }
 }
 
@@ -166,6 +170,23 @@ const openTodo = () => {
       <span v-else class="text-caption ms-1 text-disabled">0</span>
       <v-tooltip activator="parent" location="bottom">
         {{ todoCount > 0 ? `남은 할일 ${todoCount}건 (클릭하여 열기)` : '등록된 할일이 없습니다' }}
+      </v-tooltip>
+    </v-chip>
+
+    <!-- 5. 실시간 사내 메신저 알림 & 토글 -->
+    <v-chip
+      size="small"
+      variant="text"
+      :color="unreadChatCount > 0 ? 'primary' : 'secondary'"
+      class="cursor-pointer font-weight-medium px-2"
+      @click="chatStore.toggleDrawer"
+    >
+      <v-icon icon="mdi-chat-processing-outline" start size="small" />
+      메신저
+      <v-badge v-if="unreadChatCount > 0" :content="unreadChatCount" color="error" inline class="ms-1" />
+      <span v-else class="text-caption ms-1 text-disabled">0</span>
+      <v-tooltip activator="parent" location="bottom">
+        {{ unreadChatCount > 0 ? `미확인 메시지 ${unreadChatCount}건 (클릭하여 메신저 열기)` : '실시간 메신저 열기' }}
       </v-tooltip>
     </v-chip>
 

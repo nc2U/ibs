@@ -5,6 +5,7 @@ import AppHeader from '@/layouts/containers/AppHeader.vue'
 import AppFooter from '@/layouts/containers/AppFooter.vue'
 import AppAside from '@/layouts/containers/AppAside.vue'
 import BackToTop from '@/components/BackToTop/index.vue'
+import ChatDrawer from '@/components/Chat/ChatDrawer.vue'
 import { useSSE } from '@/composables/useSSE'
 
 const { connect, disconnect } = useSSE()
@@ -31,4 +32,5 @@ onUnmounted(() => {
   </div>
   <AppAside />
   <BackToTop />
+  <ChatDrawer />
 </template>

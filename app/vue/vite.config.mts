@@ -58,6 +58,11 @@ export default defineConfig({
         target: 'http://localhost',
         changeOrigin: true,
       },
+      '/ws': {
+        target: 'http://localhost',
+        ws: true,
+        changeOrigin: true,
+      },
       '/static': {
         target: 'http://localhost',
         changeOrigin: true,
