@@ -39,6 +39,6 @@ RUN git config --global --add safe.directory '*'
 
 EXPOSE 8000
 
-# ENTRYPOINT + CMD
-ENTRYPOINT ["gunicorn"]
-CMD ["_config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "9", "--threads", "2", "--timeout", "180", "--graceful-timeout", "30", "--max-requests", "1000", "--max-requests-jitter", "100", "--access-logfile", "-", "--error-logfile", "-" ]
+# ASGI Server (Daphne: HTTP + WebSocket Channels 동시 완벽 지원)
+ENTRYPOINT ["daphne"]
+CMD ["-b", "0.0.0.0", "-p", "8000", "_config.asgi:application"]

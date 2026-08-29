@@ -1,9 +1,8 @@
 <script lang="ts" setup>
-import { ref, computed, nextTick, watch, onMounted } from 'vue'
+import { ref, computed, nextTick, watch } from 'vue'
 import { useChat } from '@/store/pinia/chat'
 import { useAccount } from '@/store/pinia/account'
-import api from '@/api'
-import type { ChatRoom, ChatUser } from '@/store/types/chat'
+import type { ChatRoom } from '@/store/types/chat'
 
 const chatStore = useChat()
 const accountStore = useAccount()
@@ -12,6 +11,8 @@ const currentUserId = computed(() => accountStore.userInfo?.pk ?? 0)
 const isDrawerOpen = computed(() => chatStore.isDrawerOpen)
 const currentRoom = computed(() => chatStore.currentRoom)
 const messages = computed(() => chatStore.messages)
+const allUsers = computed(() => chatStore.usersList)
+const isLoadingUsers = computed(() => chatStore.isLoadingUsers)
 
 const activeTab = ref<'channel' | 'direct'>('channel')
 const inputMessage = ref('')
@@ -20,8 +21,6 @@ const messageContainer = ref<HTMLElement | null>(null)
 // 1:1 대화 상대 선택 모달 상태
 const isUserSelectModalOpen = ref(false)
 const userSearchQuery = ref('')
-const allUsers = ref<any[]>([])
-const isLoadingUsers = ref(false)
 
 const getRoomDisplayName = (room: ChatRoom) => {
   if (room.room_type === 'direct') {
@@ -68,21 +67,11 @@ const handleBackToList = () => {
   chatStore.fetchRooms()
 }
 
-// 1:1 상대 선택 모달 열기
+// 1:1 상대 선택 모달 열기 (Pinia store 액션 호출)
 const openUserSelectModal = async () => {
   isUserSelectModalOpen.value = true
   userSearchQuery.value = ''
-  isLoadingUsers.value = true
-  try {
-    const res = await api.get('/user/', {
-      params: { is_active: true, staff__status: '1' },
-      hideProgress: true,
-    } as any)
-    allUsers.value = res.data.results || res.data
-  } catch (_) {
-  } finally {
-    isLoadingUsers.value = false
-  }
+  await chatStore.fetchUsers()
 }
 
 const filteredUsers = computed(() => {
@@ -117,12 +106,14 @@ const formatTime = (dateStr: string) => {
       v-model="chatStore.isDrawerOpen"
       location="right"
       temporary
-      width="380"
+      width="520"
       class="chat-drawer shadow-lg"
     >
       <div class="d-flex flex-column h-100 bg-surface">
         <!-- ── 헤더 ────────────────────────────────────────────── -->
-        <div class="chat-header p-3 border-bottom d-flex align-items-center justify-content-between flex-shrink-0 bg-surface">
+        <div
+          class="chat-header p-3 border-bottom d-flex align-items-center justify-content-between flex-shrink-0 bg-surface"
+        >
           <div class="d-flex align-items-center">
             <v-btn
               v-if="currentRoom"
@@ -133,12 +124,18 @@ const formatTime = (dateStr: string) => {
               @click="handleBackToList"
             />
             <v-icon
-              :icon="currentRoom ? (currentRoom.room_type === 'channel' ? 'mdi-pound' : 'mdi-account') : 'mdi-chat-processing-outline'"
+              :icon="
+                currentRoom
+                  ? currentRoom.room_type === 'channel'
+                    ? 'mdi-pound'
+                    : 'mdi-account'
+                  : 'mdi-chat-processing-outline'
+              "
               size="small"
               color="primary"
               class="mr-2"
             />
-            <span class="font-weight-bold text-truncate" style="max-width: 220px;">
+            <span class="font-weight-bold text-truncate" style="max-width: 300px">
               {{ currentRoom ? getRoomDisplayName(currentRoom) : '실시간 사내 메신저' }}
             </span>
           </div>
@@ -158,7 +155,10 @@ const formatTime = (dateStr: string) => {
         </div>
 
         <!-- ── 1. 대화방 목록 뷰 ────────────────────────────────── -->
-        <div v-if="!currentRoom" class="chat-list-body d-flex flex-column flex-grow-1 overflow-hidden">
+        <div
+          v-if="!currentRoom"
+          class="chat-list-body d-flex flex-column flex-grow-1 overflow-hidden"
+        >
           <!-- 탭 바 -->
           <div class="px-3 pt-2 border-bottom bg-surface flex-shrink-0">
             <v-tabs v-model="activeTab" density="compact" color="primary" grow>
@@ -171,7 +171,10 @@ const formatTime = (dateStr: string) => {
           <div class="flex-grow-1 overflow-y-auto p-2">
             <!-- 채널 목록 -->
             <div v-if="activeTab === 'channel'">
-              <div v-if="chatStore.channelRooms.length === 0" class="text-center text-muted py-8 text-sm">
+              <div
+                v-if="chatStore.channelRooms.length === 0"
+                class="text-center text-muted py-8 text-sm"
+              >
                 <v-icon icon="mdi-pound-box-outline" size="large" class="mb-2 opacity-50" /><br />
                 참여 중인 워크스페이스 채널이 없습니다.
               </div>
@@ -213,7 +216,10 @@ const formatTime = (dateStr: string) => {
 
             <!-- 1:1 DM 목록 -->
             <div v-else>
-              <div v-if="chatStore.directRooms.length === 0" class="text-center text-muted py-8 text-sm">
+              <div
+                v-if="chatStore.directRooms.length === 0"
+                class="text-center text-muted py-8 text-sm"
+              >
                 <v-icon icon="mdi-message-outline" size="large" class="mb-2 opacity-50" /><br />
                 진행 중인 1:1 대화가 없습니다.<br />
                 <v-btn
@@ -292,7 +298,7 @@ const formatTime = (dateStr: string) => {
               </v-avatar>
 
               <!-- 말풍선 -->
-              <div style="max-width: 78%;">
+              <div style="max-width: 78%">
                 <div
                   v-if="msg.sender?.pk !== currentUserId && currentRoom?.room_type === 'channel'"
                   class="text-xs text-muted mb-1 ml-1"
@@ -306,7 +312,7 @@ const formatTime = (dateStr: string) => {
                       ? 'bg-primary text-white ml-auto'
                       : 'bg-light text-dark border'
                   "
-                  style="word-break: break-word; white-space: pre-wrap;"
+                  style="word-break: break-word; white-space: pre-wrap"
                 >
                   <!-- 리치 카드 (업무/회의/결재) -->
                   <div v-if="msg.ref_id" class="p-2 mb-1 rounded bg-white text-dark border text-xs">
@@ -327,8 +333,8 @@ const formatTime = (dateStr: string) => {
             </div>
           </div>
 
-          <!-- 메시지 입력창 (하단 고정) -->
-          <div class="p-2 border-top bg-surface d-flex align-items-center flex-shrink-0">
+          <!-- 메시지 입력창 (하단 고정 & 넉넉한 바닥 여백) -->
+          <div class="px-3 pt-3 pb-4 border-top bg-surface d-flex align-items-center flex-shrink-0">
             <v-text-field
               v-model="inputMessage"
               placeholder="메시지를 입력하세요 (Enter)"
@@ -354,9 +360,16 @@ const formatTime = (dateStr: string) => {
     <!-- ── 1:1 대화 상대 선택 모달 ────────────────────────────── -->
     <v-dialog v-model="isUserSelectModalOpen" max-width="420">
       <v-card class="rounded-lg">
-        <v-card-title class="font-weight-bold text-md border-bottom d-flex justify-content-between align-items-center p-3">
+        <v-card-title
+          class="font-weight-bold text-md border-bottom d-flex justify-content-between align-items-center p-3"
+        >
           <span>1:1 대화 상대 선택</span>
-          <v-btn icon="mdi-close" variant="text" size="small" @click="isUserSelectModalOpen = false" />
+          <v-btn
+            icon="mdi-close"
+            variant="text"
+            size="small"
+            @click="isUserSelectModalOpen = false"
+          />
         </v-card-title>
         <v-card-text class="p-3">
           <v-text-field
@@ -368,7 +381,7 @@ const formatTime = (dateStr: string) => {
             hide-details
             class="mb-3 text-sm"
           />
-          <div style="max-height: 320px; overflow-y: auto;">
+          <div style="max-height: 320px; overflow-y: auto">
             <div v-if="isLoadingUsers" class="text-center py-4">
               <v-progress-circular indeterminate size="24" color="primary" />
             </div>
@@ -383,7 +396,11 @@ const formatTime = (dateStr: string) => {
                 @click="startDmWithUser(u)"
               >
                 <template #prepend>
-                  <v-avatar color="primary" size="32" class="mr-2 text-xs font-weight-bold text-white">
+                  <v-avatar
+                    color="primary"
+                    size="32"
+                    class="mr-2 text-xs font-weight-bold text-white"
+                  >
                     {{ u.profile?.name?.[0] || u.username[0] }}
                   </v-avatar>
                 </template>

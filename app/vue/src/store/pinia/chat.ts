@@ -11,6 +11,8 @@ export const useChat = defineStore('chat', () => {
   const messages = ref<ChatMessage[]>([])
   const totalUnreadCount = ref(0)
   const isConnecting = ref(false)
+  const usersList = ref<any[]>([])
+  const isLoadingUsers = ref(false)
 
   let ws: WebSocket | null = null
 
@@ -41,6 +43,20 @@ export const useChat = defineStore('chat', () => {
       const res = await api.get('/chat-room/', { hideProgress: true } as any)
       rooms.value = res.data.results || res.data
     } catch (_) {}
+  }
+
+  const fetchUsers = async () => {
+    isLoadingUsers.value = true
+    try {
+      const res = await api.get('/user/', {
+        params: { is_active: true, staff__status: '1' },
+        hideProgress: true,
+      } as any)
+      usersList.value = res.data.results || res.data
+    } catch (_) {
+    } finally {
+      isLoadingUsers.value = false
+    }
   }
 
   const fetchTotalUnread = async () => {
@@ -177,10 +193,13 @@ export const useChat = defineStore('chat', () => {
     messages,
     totalUnreadCount,
     isConnecting,
+    usersList,
+    isLoadingUsers,
     toggleDrawer,
     openDrawer,
     closeDrawer,
     fetchRooms,
+    fetchUsers,
     fetchTotalUnread,
     getOrCreateDm,
     enterRoom,
