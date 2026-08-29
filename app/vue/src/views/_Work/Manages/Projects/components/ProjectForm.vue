@@ -64,6 +64,7 @@ const form = reactive({
   is_inherit_members: false,
   allowed_roles: [] as number[],
   trackers: [] as number[],
+  chat_channel_enabled: true,
   slack_notifications_enabled: false,
 })
 
@@ -115,10 +116,11 @@ const formsCheck = computed(() => {
       // eslint-disable-next-line vue/no-side-effects-in-computed-properties
       JSON.stringify(form.trackers.sort((a, b) => a - b)) ===
       JSON.stringify(props.project.trackers?.map(t => t.pk).sort((a, b) => a - b))
-    const q = form.slack_notifications_enabled === props.project.slack_notifications_enabled
+    const q = form.chat_channel_enabled === (props.project.chat_channel_enabled ?? true)
+    const r = form.slack_notifications_enabled === props.project.slack_notifications_enabled
 
     const first = a && b && c && d && e && f && g && h && i
-    const second = j && k && l && m && n && o && p && q
+    const second = j && k && l && m && n && o && p && q && r
 
     // 3. 권한은 있지만 변경 사항이 없으면 비활성화
     return first && second
@@ -230,6 +232,7 @@ const dataSetup = () => {
     form.is_inherit_members = props.project.is_inherit_members
     form.allowed_roles = props.project.allowed_roles?.map(r => r.pk) ?? []
     form.trackers = props.project.trackers?.map(t => t.pk) ?? []
+    form.chat_channel_enabled = props.project.chat_channel_enabled ?? true
     form.slack_notifications_enabled = props.project.slack_notifications_enabled
 
     module.meeting =
@@ -415,6 +418,20 @@ onBeforeMount(async () => {
               :options="allTrackers"
               placeholder="허용 유형 항목 선택"
             />
+          </CCol>
+        </CRow>
+
+        <CRow class="mb-3">
+          <CFormLabel class="col-form-label text-right col-2">공용 대화방</CFormLabel>
+          <CCol style="padding-top: 5px">
+            <CFormSwitch
+              v-model="form.chat_channel_enabled"
+              id="chat_channel_enabled"
+              label="실시간 메신저 공용 대화방(#채널) 개설 여부"
+            />
+            <span class="form-text">
+              활성화 시 이 워크스페이스 소속 구성원들을 위한 실시간 메신저 공용 채널이 개설됩니다.
+            </span>
           </CCol>
         </CRow>
 

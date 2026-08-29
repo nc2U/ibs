@@ -124,6 +124,7 @@ class ProjectModel {
   final int depth;
   final bool parentVisible;
   final int? parent;
+  final bool chatChannelEnabled;
   final List<ProjectModel> subProjects;
   final ProjectModuleModel? module;
   final List<String> myPerms;
@@ -146,6 +147,7 @@ class ProjectModel {
     this.depth = 0,
     this.parentVisible = false,
     this.parent,
+    this.chatChannelEnabled = true,
     this.subProjects = const [],
     this.module,
     this.myPerms = const [],
@@ -177,6 +179,7 @@ class ProjectModel {
     int? depth,
     bool? parentVisible,
     int? parent,
+    bool? chatChannelEnabled,
     List<ProjectModel>? subProjects,
     ProjectModuleModel? module,
     List<String>? myPerms,
@@ -199,6 +202,7 @@ class ProjectModel {
       depth: depth ?? this.depth,
       parentVisible: parentVisible ?? this.parentVisible,
       parent: parent ?? this.parent,
+      chatChannelEnabled: chatChannelEnabled ?? this.chatChannelEnabled,
       subProjects: subProjects ?? List.from(this.subProjects),
       module: module ?? this.module,
       myPerms: myPerms ?? this.myPerms,
@@ -225,6 +229,7 @@ class ProjectModel {
       depth: json['depth'] as int? ?? 0,
       parentVisible: json['parent_visible'] as bool? ?? false,
       parent: json['parent'] as int?,
+      chatChannelEnabled: json['chat_channel_enabled'] as bool? ?? true,
       subProjects: const [],
       module: json['module'] != null
           ? ProjectModuleModel.fromJson(json['module'] as Map<String, dynamic>)

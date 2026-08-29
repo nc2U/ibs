@@ -36,7 +36,7 @@ class ChatRoomListSerializer(serializers.ModelSerializer):
     last_message = serializers.SerializerMethodField(read_only=True)
     unread_count = serializers.SerializerMethodField(read_only=True)
     member_count = serializers.SerializerMethodField(read_only=True)
-    members = SimpleUserSerializer(many=True, read_only=True)
+    members = serializers.SerializerMethodField(read_only=True)
     is_pinned = serializers.SerializerMethodField(read_only=True)
     is_muted = serializers.SerializerMethodField(read_only=True)
 
@@ -68,7 +68,16 @@ class ChatRoomListSerializer(serializers.ModelSerializer):
         last_read_id = membership.last_read_message_id if membership else 0
         return obj.messages.filter(id__gt=last_read_id).exclude(sender=request.user).count()
 
+    def get_members(self, obj):
+        if obj.room_type == 'channel' and obj.project:
+            # 워크스페이스 공용 채널인 경우 워크스페이스 구성원 자동 연동
+            all_mems = obj.project.all_members()
+            return [m['user'] for m in all_mems]
+        return SimpleUserSerializer(obj.members.all(), many=True).data
+
     def get_member_count(self, obj):
+        if obj.room_type == 'channel' and obj.project:
+            return len(obj.project.all_members())
         return obj.members.count()
 
     def get_is_pinned(self, obj):

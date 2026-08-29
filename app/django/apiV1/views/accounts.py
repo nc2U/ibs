@@ -29,7 +29,7 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     pagination_class = PageNumberPaginationThreeThousand
     permission_classes = (AllowAny,)
-    filterset_fields = ('is_staff', 'is_active',)
+    filterset_fields = ('is_staff', 'is_active', 'staff__status')
 
     def get_queryset(self):
         from django.db.models import Q

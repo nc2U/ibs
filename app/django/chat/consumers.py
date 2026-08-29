@@ -149,9 +149,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
         if not room:
             return False
         if room.room_type == 'channel':
-            if not room.project or room.project.is_public:
-                return True
-            return room.project.members.filter(user=user).exists()
+            if not room.project:
+                return False
+            # 공용 채널이 꺼져있으면 접속 불가
+            if not room.project.chat_channel_enabled:
+                return False
+            # 사용자가 소속된 워크스페이스(상속 포함)인지 검증
+            my_pjt_ids = list(user.member_project_ids()) if hasattr(user, 'member_project_ids') else []
+            return room.project_id in my_pjt_ids
         return room.members.filter(pk=user.pk).exists()
 
     @database_sync_to_async

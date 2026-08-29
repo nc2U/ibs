@@ -177,8 +177,9 @@ class IssueProjectListSerializer(ProjectPermissionMixin, serializers.ModelSerial
         model = IssueProject
         fields = ('pk', 'company', 'project', 'type', 'name', 'slug', 'description', 'is_public',
                   'parent', 'parent_name', 'allowed_roles', 'status', 'status_display', 'sub_projects',
-                  'slack_notifications_enabled', 'created', 'updated', 'creator', 'depth', 'module',
-                  'my_role', 'my_perms', 'all_members', 'visible', 'parent_visible', 'is_bookmarked')
+                  'chat_channel_enabled', 'slack_notifications_enabled', 'created', 'updated', 'creator',
+                  'depth', 'module', 'my_role', 'my_perms', 'all_members', 'visible', 'parent_visible',
+                  'is_bookmarked')
 
     @staticmethod
     def get_parent_name(obj):

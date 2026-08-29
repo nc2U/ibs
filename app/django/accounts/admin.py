@@ -6,15 +6,14 @@ from django.utils.translation import gettext_lazy as _
 from import_export.admin import ImportExportMixin
 
 from .forms import UserCreationForm, UserChangeForm
-from .models import User, DocScrape  # , PostScrape
+from .models import User, Profile, DocScrape, Todo, PasswordResetToken, FCMDevice, Notification
 
 
-# class ProfileInline(admin.StackedInline):
-#     model = Profile
-
-
-# class TodosInline(admin.StackedInline):
-#     model = Todo
+@admin.register(Profile)
+class ProfileAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_display = ('pk', 'user', 'name', 'cell_phone', 'birth_date')
+    list_display_links = ('pk', 'user', 'name')
+    search_fields = ('name', 'user__username', 'cell_phone')
 
 
 @admin.register(User)
@@ -46,8 +45,9 @@ class UserAdmin(ImportExportMixin, BaseUserAdmin):
     # The fields to be used in displaying the User model.
     # These override the definitions on the base UserAdmin
     # that reference specific fields on auth.User.
-    list_display = ('username', 'email', 'is_active', 'is_superuser',
+    list_display = ('id', 'username', 'email', 'is_active', 'is_superuser',
                     'is_staff', 'work_manager', 'last_login', 'date_joined')
+    list_display_links = ('id', 'username')
     list_filter = ('is_superuser', 'is_active',)
     search_fields = ('email', 'username')
     ordering = ('-date_joined',)
@@ -74,9 +74,35 @@ class UserAdmin(ImportExportMixin, BaseUserAdmin):
 @admin.register(DocScrape)
 class DocScrapeAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('pk', 'user', 'docs', 'title', 'created')
-    list_display_links = ('user', 'docs')
+    list_display_links = ('pk', 'user', 'docs')
 
-# @admin.register(PostScrape)
-# class DocScrapeAdmin(ImportExportMixin, admin.ModelAdmin):
-#     list_display = ('pk', 'user', 'post', 'title', 'created')
-#     list_display_links = ('user', 'post')
+
+@admin.register(Todo)
+class TodoAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_display = ('pk', 'user', 'title', 'completed', 'soft_deleted', 'created', 'updated')
+    list_display_links = ('pk', 'user', 'title')
+    list_filter = ('completed', 'soft_deleted')
+    search_fields = ('title', 'user__username')
+
+
+@admin.register(PasswordResetToken)
+class PasswordResetTokenAdmin(admin.ModelAdmin):
+    list_display = ('pk', 'user', 'token', 'expired', 'created', 'updated')
+    list_display_links = ('pk', 'user', 'token')
+    search_fields = ('user__username', 'token')
+
+
+@admin.register(FCMDevice)
+class FCMDeviceAdmin(admin.ModelAdmin):
+    list_display = ('pk', 'user', 'platform', 'is_active', 'created_at', 'updated_at')
+    list_display_links = ('pk', 'user')
+    list_filter = ('platform', 'is_active')
+    search_fields = ('user__username', 'device_id')
+
+
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ('pk', 'user', 'category', 'title', 'is_read', 'created_at')
+    list_display_links = ('pk', 'user', 'title')
+    list_filter = ('category', 'is_read')
+    search_fields = ('title', 'body', 'user__username')

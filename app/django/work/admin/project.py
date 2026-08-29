@@ -28,11 +28,11 @@ class IssueCategoryInline(admin.TabularInline):
 @admin.register(IssueProject)
 class IssueProjectAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('pk', 'company', 'type', 'name', 'homepage', 'is_public', 'parent', 'slug', 'status',
-                    'slack_notifications_enabled', 'order')
+                    'chat_channel_enabled', 'slack_notifications_enabled', 'order')
     list_display_links = ('name',)
-    list_editable = ('company', 'type', 'slack_notifications_enabled', 'order')
+    list_editable = ('company', 'type', 'chat_channel_enabled', 'slack_notifications_enabled', 'order')
     inlines = (ModuleInline, MemberInline, VersionInline, IssueCategoryInline)
-    list_filter = ('company', 'type', 'is_public', 'status', 'slack_notifications_enabled')
+    list_filter = ('company', 'type', 'is_public', 'status', 'chat_channel_enabled', 'slack_notifications_enabled')
 
     fieldsets = (
         ('기본 정보', {
@@ -42,11 +42,11 @@ class IssueProjectAdmin(ImportExportMixin, admin.ModelAdmin):
         ('프로젝트 설정', {
             'fields': ('default_version', 'allowed_roles', 'trackers', 'status', 'order')
         }),
-        ('Slack 알림 설정', {
-            'fields': ('slack_notifications_enabled', 'slack_webhook_url'),
+        ('메신저 및 알림 설정', {
+            'fields': ('chat_channel_enabled', 'slack_notifications_enabled', 'slack_webhook_url'),
             'description': '''
-            이 프로젝트의 데이터 변동을 실시간으로 Slack에 알림받을 수 있습니다.
-            웹훅 URL을 지정하면 해당 Slack 채널로 알림이 전송되며, 미입력 시 시스템 기본 웹훅 URL이 사용됩니다.
+            - 메신저 공용 채널: 활성화 시 이 워크스페이스 전용 실시간 공용 대화방(#채널)이 생성됩니다.
+            - Slack 알림: 데이터 변동을 실시간으로 Slack 채널에 알림 전송합니다.
             '''
         }),
         ('생성 정보', {

@@ -31,16 +31,37 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
         if not user.is_authenticated:
             return ChatRoom.objects.none()
 
+        # 내가 실제로 멤버(직접 소속 및 상속 소속)로 참여 중인 워크스페이스 ID 목록
+        my_project_ids = list(user.member_project_ids()) if hasattr(user, 'member_project_ids') else []
+
+        # 내 활성 워크스페이스 중 메신저 공용 채널이 활성화된(chat_channel_enabled=True) 곳의 대화방 자동 생성
+        from work.models import IssueProject
+        my_projects = IssueProject.objects.filter(
+            pk__in=my_project_ids,
+            status='1',
+            chat_channel_enabled=True
+        )
+
+        for pjt in my_projects:
+            ChatRoom.objects.get_or_create(
+                project=pjt,
+                room_type='channel',
+                defaults={
+                    'title': pjt.name,
+                    'description': f'{pjt.name} 공용 대화방',
+                    'created_by': user,
+                }
+            )
+
         # 슈퍼유저는 전체 대화방 조회 가능
         if user.is_superuser:
             return ChatRoom.objects.all().distinct()
 
-        # 1) 내가 멤버로 속해 있는 방
-        # 2) 또는 내가 소속된 워크스페이스의 공용 채널(channel)
+        # 1) 내가 멤버로 속해 있는 방 (1:1 DM, 그룹방)
+        # 2) 또는 내가 멤버로 소속되어 있고 공용 채널이 켜진 워크스페이스 채널
         return ChatRoom.objects.filter(
             Q(members=user) |
-            Q(room_type='channel', project__members__user=user) |
-            Q(room_type='channel', project__is_public=True)
+            Q(room_type='channel', project_id__in=my_project_ids, project__chat_channel_enabled=True)
         ).distinct()
 
     def perform_create(self, serializer):

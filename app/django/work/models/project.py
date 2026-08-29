@@ -41,6 +41,11 @@ class IssueProject(models.Model):
         default='',
         help_text='Slack Incoming Webhook URL (미입력 시 본사/기본 알림 URL을 사용합니다).'
     )
+    chat_channel_enabled = models.BooleanField(
+        '메신저 공용 채널 개설',
+        default=True,
+        help_text='체크 시 이 워크스페이스 소속 멤버들을 위한 실시간 메신저 공용 대화방(#채널)을 개설합니다.'
+    )
     created = models.DateTimeField('등록일', auto_now_add=True)
     updated = models.DateTimeField('수정일', auto_now=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name='작성자')

@@ -9,6 +9,7 @@ import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/loading_shimmer.dart';
 import '../data/models/chat_model.dart';
 import '../providers/chat_provider.dart';
+import 'widgets/user_select_sheet.dart';
 
 /// 메신저 대화방 목록 화면
 class ChatRoomListScreen extends ConsumerStatefulWidget {
@@ -56,6 +57,13 @@ class _ChatRoomListScreenState extends ConsumerState<ChatRoomListScreen>
             color: context.colors.textPrimary,
           ),
         ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.person_add_alt_1_rounded, color: context.colors.accentWork, size: 22),
+            tooltip: '새 대화 상대 선택',
+            onPressed: () => UserSelectSheet.show(context),
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
           child: Container(
@@ -76,6 +84,12 @@ class _ChatRoomListScreenState extends ConsumerState<ChatRoomListScreen>
             ),
           ),
         ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => UserSelectSheet.show(context),
+        backgroundColor: context.colors.accentWork,
+        icon: const Icon(Icons.chat_bubble_outline_rounded, color: Colors.white, size: 18),
+        label: const Text('1:1 대화 시작', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
       ),
       body: RefreshIndicator(
         onRefresh: () async => ref.invalidate(chatRoomsProvider),
@@ -113,20 +127,35 @@ class _ChatRoomListScreenState extends ConsumerState<ChatRoomListScreen>
   }) {
     if (rooms.isEmpty) {
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              isChannel ? Icons.tag_rounded : Icons.forum_outlined,
-              size: 48,
-              color: context.colors.textMuted.withAlpha(120),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              isChannel ? '참여 중인 워크스페이스 채널이 없습니다.' : '진행 중인 1:1 대화가 없습니다.',
-              style: AppTextStyles.bodyMd.copyWith(color: context.colors.textMuted),
-            ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                isChannel ? Icons.tag_rounded : Icons.forum_outlined,
+                size: 48,
+                color: context.colors.textMuted.withAlpha(120),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                isChannel ? '참여 중인 워크스페이스 채널이 없습니다.' : '진행 중인 1:1 대화가 없습니다.',
+                style: AppTextStyles.bodyMd.copyWith(color: context.colors.textMuted),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () => UserSelectSheet.show(context),
+                icon: const Icon(Icons.person_add_alt_1_rounded, size: 18),
+                label: const Text('대화 상대 선택하기'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: context.colors.accentWork,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
