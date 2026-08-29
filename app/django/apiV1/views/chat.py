@@ -125,6 +125,32 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
 
         return Response({'success': True, 'last_read_message_id': membership.last_read_message_id})
 
+    @action(detail=False, methods=['get'], url_path='available-users')
+    def available_users(self, request):
+        """
+        1:1 대화 개설이 가능한 협업 대상자 목록:
+        1. 활성 본사 임직원 (staff__status='1' & is_active=True)
+        2. 활성 워크스페이스에 1개 이상 멤버(Member)로 참여 중인 사용자
+        """
+        from accounts.models import User
+        from work.models.project import Member
+        from apiV1.serializers.accounts import UserSerializer
+
+        # 활성 워크스페이스에 속한 멤버의 user_id 목록
+        active_member_user_ids = Member.objects.filter(
+            project__status='1'
+        ).values_list('user_id', flat=True)
+
+        users = User.objects.filter(
+            Q(is_active=True) & (
+                Q(staff__status='1') |
+                Q(pk__in=active_member_user_ids)
+            )
+        ).distinct().select_related('profile', 'staff').order_by('profile__name', 'username')
+
+        serializer = UserSerializer(users, many=True, context={'request': request})
+        return Response(serializer.data)
+
     @action(detail=False, methods=['get'], url_path='total-unread')
     def total_unread(self, request):
         """전체 대화방의 안 읽은 메시지 총 합계 (앱바 배지용)"""
@@ -149,7 +175,9 @@ class ChatMessageViewSet(viewsets.ModelViewSet):
         room_id = self.request.query_params.get('room')
         if not room_id:
             return ChatMessage.objects.none()
-        return ChatMessage.objects.filter(room_id=room_id).select_related('sender').order_by('created')
+        return ChatMessage.objects.filter(room_id=room_id).select_related(
+            'sender', 'reply_to', 'reply_to__sender', 'reply_to__sender__profile'
+        ).order_by('created')
 
     def perform_create(self, serializer):
         msg = serializer.save(sender=self.request.user)

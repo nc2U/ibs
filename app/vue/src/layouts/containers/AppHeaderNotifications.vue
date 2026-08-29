@@ -48,11 +48,21 @@ const fetchAllCounts = () => {
   }
 }
 
+let pollTimer: any = null
+
 onMounted(() => {
   fetchAllCounts()
   setTimeout(() => {
     isInitial = false
   }, 2000)
+
+  // 15초 주기로 헤더 알림 & 메신저 미확인 배지 자동 갱신
+  pollTimer = setInterval(() => {
+    if (isAuthorized.value && !document.hidden) {
+      chatStore.fetchRooms()
+      chatStore.fetchTotalUnread()
+    }
+  }, 15000)
 })
 
 watch(

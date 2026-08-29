@@ -46,5 +46,11 @@ export interface ChatMessage {
   ref_title?: string
   ref_sub?: string
   reply_to?: number | null
+  reply_to_detail?: {
+    id: number
+    sender_name: string
+    content: string
+    message_type: ChatMessageType
+  } | null
   created: string
 }

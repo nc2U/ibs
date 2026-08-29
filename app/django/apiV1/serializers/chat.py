@@ -18,6 +18,7 @@ class ChatRoomMemberSerializer(serializers.ModelSerializer):
 
 class ChatMessageSerializer(serializers.ModelSerializer):
     sender = SimpleUserSerializer(read_only=True)
+    reply_to_detail = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = ChatMessage
@@ -25,9 +26,20 @@ class ChatMessageSerializer(serializers.ModelSerializer):
             'id', 'room', 'sender', 'message_type', 'content',
             'file', 'file_name', 'file_size',
             'ref_id', 'ref_title', 'ref_sub',
-            'reply_to', 'created'
+            'reply_to', 'reply_to_detail', 'created'
         )
         read_only_fields = ('created',)
+
+    def get_reply_to_detail(self, obj):
+        if not obj.reply_to:
+            return None
+        target = obj.reply_to
+        return {
+            'id': target.id,
+            'sender_name': target.sender.profile.name if (target.sender and hasattr(target.sender, 'profile') and target.sender.profile.name) else (target.sender.username if target.sender else '알 수 없음'),
+            'content': target.content[:60] if target.content else (f"[파일] {target.file_name}" if target.file_name else '[첨부]'),
+            'message_type': target.message_type,
+        }
 
 
 class ChatRoomListSerializer(serializers.ModelSerializer):

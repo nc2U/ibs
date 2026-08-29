@@ -63,7 +63,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             ref_id = data.get('ref_id')
             ref_title = data.get('ref_title', '')
             ref_sub = data.get('ref_sub', '')
-            reply_to_id = data.get('reply_to_id')
+            reply_to_id = data.get('reply_to_id') or data.get('reply_to')
 
             if not content and message_type == 'text':
                 return
@@ -179,6 +179,20 @@ class ChatConsumer(AsyncWebsocketConsumer):
         membership.last_read_message_id = msg.id
         membership.save(update_fields=['last_read_message_id'])
 
+        reply_to_detail = None
+        if reply_to_id:
+            try:
+                target = ChatMessage.objects.select_related('sender__profile').get(pk=reply_to_id)
+                target_sender_name = target.sender.profile.name if (target.sender and hasattr(target.sender, 'profile') and target.sender.profile.name) else (target.sender.username if target.sender else '알 수 없음')
+                reply_to_detail = {
+                    'id': target.id,
+                    'sender_name': target_sender_name,
+                    'content': target.content[:60] if target.content else (f"[파일] {target.file_name}" if target.file_name else '[첨부]'),
+                    'message_type': target.message_type,
+                }
+            except ChatMessage.DoesNotExist:
+                pass
+
         return {
             'id': msg.id,
             'room_id': room.id,
@@ -195,6 +209,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'ref_title': msg.ref_title,
             'ref_sub': msg.ref_sub,
             'reply_to': msg.reply_to_id,
+            'reply_to_detail': reply_to_detail,
             'created': msg.created.isoformat(),
         }
 

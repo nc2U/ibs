@@ -19,6 +19,14 @@ export const useChat = defineStore('chat', () => {
   const channelRooms = computed(() => rooms.value.filter(r => r.room_type === 'channel'))
   const directRooms = computed(() => rooms.value.filter(r => r.room_type !== 'channel'))
 
+  // 각 탭별 안 읽은 메시지 수 합계
+  const channelUnreadCount = computed(() =>
+    channelRooms.value.reduce((acc, r) => acc + (r.unread_count || 0), 0),
+  )
+  const directUnreadCount = computed(() =>
+    directRooms.value.reduce((acc, r) => acc + (r.unread_count || 0), 0),
+  )
+
   const toggleDrawer = () => {
     isDrawerOpen.value = !isDrawerOpen.value
     if (isDrawerOpen.value) {
@@ -42,14 +50,18 @@ export const useChat = defineStore('chat', () => {
     try {
       const res = await api.get('/chat-room/', { hideProgress: true } as any)
       rooms.value = res.data.results || res.data
+      // rooms 목록의 unread_count를 기반으로 실시간 즉각 합산 반영
+      const sum = rooms.value.reduce((acc, r) => acc + (r.unread_count || 0), 0)
+      if (sum > 0 || totalUnreadCount.value === 0) {
+        totalUnreadCount.value = sum
+      }
     } catch (_) {}
   }
 
   const fetchUsers = async () => {
     isLoadingUsers.value = true
     try {
-      const res = await api.get('/user/', {
-        params: { is_active: true, staff__status: '1' },
+      const res = await api.get('/chat-room/available-users/', {
         hideProgress: true,
       } as any)
       usersList.value = res.data.results || res.data
@@ -88,7 +100,8 @@ export const useChat = defineStore('chat', () => {
         params: { room: room.id },
         hideProgress: true,
       } as any)
-      messages.value = (res.data.results || res.data).reverse()
+      // 백엔드에서 order_by('created')로 오래된 순 -> 최신 순 정렬되어 오므로 그대로 할당
+      messages.value = res.data.results || res.data
 
       // 읽음 처리
       await api.post(`/chat-room/${room.id}/read/`, {}, { hideProgress: true } as any)
@@ -125,15 +138,17 @@ export const useChat = defineStore('chat', () => {
 
     ws.onmessage = event => {
       try {
-        const data = JSON.parse(event.data)
-        if (data.type === 'chat_message' && data.message) {
-          const msg = data.message
-          // 이미 추가된 메시지가 아닌 경우에만 push
-          if (!messages.value.some(m => m.id === msg.id)) {
-            messages.value.push(msg)
-          }
-          if (currentRoom.value && currentRoom.value.id === roomId) {
-            api.post(`/chat-room/${roomId}/read/`, {}, { hideProgress: true } as any)
+        const payload = JSON.parse(event.data)
+        if (payload.type === 'chat_message') {
+          const msg = payload.data || payload.message
+          if (msg) {
+            // 이미 추가된 메시지가 아닌 경우에만 push
+            if (!messages.value.some(m => m.id === msg.id)) {
+              messages.value.push(msg)
+            }
+            if (currentRoom.value && currentRoom.value.id === roomId) {
+              api.post(`/chat-room/${roomId}/read/`, {}, { hideProgress: true } as any)
+            }
           }
         }
       } catch (_) {}
@@ -168,7 +183,7 @@ export const useChat = defineStore('chat', () => {
       return
     }
 
-    // 2. 웹소켓 미연결/프록시 환경 시 REST API로 전송 폴백 (신뢰성 100% 보장)
+    // 2. 웹소켓 미연결 시 REST API로 즉시 전송 및 화면에 실시간 추가
     try {
       const res = await api.post('/chat-message/', {
         room: roomId,
@@ -180,8 +195,37 @@ export const useChat = defineStore('chat', () => {
         reply_to: extra.reply_to || null,
       })
       const savedMsg = res.data
-      messages.value.push(savedMsg)
+      if (!messages.value.some(m => m.id === savedMsg.id)) {
+        messages.value.push(savedMsg)
+      }
     } catch (_) {}
+  }
+
+  const uploadFile = async (file: File, comment = '') => {
+    if (!currentRoom.value) return
+
+    const isImg = file.type.startsWith('image/')
+    const formData = new FormData()
+    formData.append('room', String(currentRoom.value.id))
+    formData.append('message_type', isImg ? 'image' : 'file')
+    formData.append('content', comment || file.name)
+    formData.append('file', file)
+    formData.append('file_name', file.name)
+    formData.append('file_size', String(file.size))
+
+    try {
+      const res = await api.post('/chat-message/', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        hideProgress: true,
+      } as any)
+      const savedMsg = res.data
+      if (!messages.value.some(m => m.id === savedMsg.id)) {
+        messages.value.push(savedMsg)
+      }
+      return savedMsg
+    } catch (e) {
+      throw e
+    }
   }
 
   return {
@@ -189,6 +233,8 @@ export const useChat = defineStore('chat', () => {
     rooms,
     channelRooms,
     directRooms,
+    channelUnreadCount,
+    directUnreadCount,
     currentRoom,
     messages,
     totalUnreadCount,
@@ -205,5 +251,6 @@ export const useChat = defineStore('chat', () => {
     enterRoom,
     leaveRoom,
     sendMessage,
+    uploadFile,
   }
 })
