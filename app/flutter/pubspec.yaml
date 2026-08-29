@@ -30,6 +30,7 @@ dependencies:
 
   # Networking
   dio: ^5.11.0
+  web_socket_channel: ^3.0.1
 
   # State management
   flutter_riverpod: ^2.6.1

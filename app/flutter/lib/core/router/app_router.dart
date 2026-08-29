@@ -22,6 +22,9 @@ import '../../features/approval/data/models/approval_model.dart';
 import '../../features/approval/presentation/approval_main_screen.dart';
 import '../../features/approval/presentation/approval_detail_screen.dart';
 import '../../features/approval/presentation/approval_draft_screen.dart';
+import '../../features/chat/data/models/chat_model.dart';
+import '../../features/chat/presentation/chat_room_list_screen.dart';
+import '../../features/chat/presentation/chat_room_screen.dart';
 
 // ── Route 이름 상수 ─────────────────────────────────────────────────────────────
 abstract class AppRoutes {
@@ -37,6 +40,8 @@ abstract class AppRoutes {
   static const docs         = '/docs';
   static const search       = '/search';
   static const channel      = '/channel';
+  static const chat         = '/chat';
+  static const chatRoom     = '/chat/:roomId';
   static const profile      = '/profile';
 }
 
@@ -214,6 +219,22 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.search,
             builder: (ctx, state) => const SearchResultsScreen(),
+          ),
+
+          // 메신저 대화방 목록
+          GoRoute(
+            path: AppRoutes.chat,
+            builder: (ctx, state) => const ChatRoomListScreen(),
+          ),
+
+          // 개별 대화방 (채팅창)
+          GoRoute(
+            path: AppRoutes.chatRoom,
+            builder: (ctx, state) {
+              final roomId = int.tryParse(state.pathParameters['roomId'] ?? '') ?? 0;
+              final initialRoom = state.extra as ChatRoomModel?;
+              return ChatRoomScreen(roomId: roomId, initialRoom: initialRoom);
+            },
           ),
         ],
       ),

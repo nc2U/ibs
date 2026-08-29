@@ -36,3 +36,6 @@ WeasyPrint
 XlsxWriter
 xlwt
 firebase-admin
+channels
+channels-redis
+daphne

@@ -56,6 +56,7 @@ AUTH_USER_MODEL = 'accounts.User'
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',  # ASGI 웹소켓 서버를 위해 반드시 django.contrib.staticfiles 앞에 위치
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -80,6 +81,7 @@ INSTALLED_APPS += [  # plugin
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
+    'channels',
     'django_filters',
     'crispy_forms',
     'crispy_bootstrap4',
@@ -88,6 +90,7 @@ INSTALLED_APPS += [  # plugin
 INSTALLED_APPS += [  # app
     'apiV1.apps.ApiV1Config',
     'accounts.apps.AccountsConfig',
+    'chat.apps.ChatConfig',
     'book.apps.BookConfig',
     'approval.apps.ApprovalConfig',
     'forum.apps.ForumConfig',
@@ -135,6 +138,17 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = '_config.wsgi.application'
+ASGI_APPLICATION = '_config.asgi.application'
+
+# Channel Layers Configuration (Redis 7 인메모리 Pub/Sub)
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [config('REDIS_CHANNEL_URL', default=config('REDIS_URL', default='redis://localhost:6379/1'))],
+        },
+    },
+}
 
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases

@@ -3,6 +3,7 @@ from rest_framework.routers import DefaultRouter
 
 from .views import accounts
 from .views import approval
+from .views import chat
 from .views import company
 from .views import contract
 from .views import docs
@@ -55,6 +56,10 @@ router.register(r'approval-doc-type', approval.DocumentTypeViewSet, basename='ap
 router.register(r'approval-document', approval.ApprovalDocumentViewSet, basename='approval-document')
 router.register(r'approval-attachment', approval.ApprovalAttachmentViewSet, basename='approval-attachment')
 router.register(r'approval-delegation', approval.ApprovalDelegationViewSet, basename='approval-delegation')
+
+# chat (실시간 메신저)
+router.register(r'chat-room', chat.ChatRoomViewSet, basename='chat-room')
+router.register(r'chat-message', chat.ChatMessageViewSet, basename='chat-message')
 
 # ibs
 router.register(r'schedule', ibs.CalendarScheduleViewSet)

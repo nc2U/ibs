@@ -18,6 +18,7 @@ import '../../../core/services/sse_notification_service.dart';
 import '../../../core/widgets/notification_sheet.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../../approval/providers/approval_providers.dart';
+import '../../chat/providers/chat_provider.dart';
 import '../../docs/presentation/widgets/document_form_sheet.dart';
 
 import 'dart:async';
@@ -166,6 +167,55 @@ class _MainShellState extends ConsumerState<MainShell> {
           ],
         ),
         actions: [
+          // ── 💬 실시간 메신저 바로가기 및 미확인 메시지 배지 ───────────────────
+          Consumer(
+            builder: (ctx, ref, _) {
+              final unreadChatCount = ref.watch(totalUnreadChatCountProvider).valueOrNull ?? 0;
+              return Stack(
+                alignment: Alignment.center,
+                children: [
+                  IconButton(
+                    icon: Icon(
+                      unreadChatCount > 0 ? Icons.chat_rounded : Icons.chat_outlined,
+                      size: 22,
+                      color: unreadChatCount > 0
+                          ? context.colors.accentWork
+                          : context.colors.textMuted,
+                    ),
+                    tooltip: '실시간 메신저',
+                    onPressed: () {
+                      ref.invalidate(chatRoomsProvider);
+                      ref.invalidate(totalUnreadChatCountProvider);
+                      context.push(AppRoutes.chat);
+                    },
+                  ),
+                  if (unreadChatCount > 0)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(3.5),
+                        decoration: const BoxDecoration(
+                          color: Colors.redAccent,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Text(
+                          unreadChatCount > 99 ? '99+' : '$unreadChatCount',
+                          style: const TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            height: 1,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+
+          // ── 🔔 알림 센터 ──────────────────────────────────────────
           Stack(
             alignment: Alignment.center,
             children: [
