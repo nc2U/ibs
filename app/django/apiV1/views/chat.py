@@ -20,6 +20,7 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
     - read: 대화방 읽음 처리 (last_read_message_id 갱신)
     """
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = None
 
     def get_serializer_class(self):
         if self.action in ['retrieve']:
