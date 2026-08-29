@@ -11,9 +11,11 @@ from work.models.project import IssueProject
 
 # Accounts --------------------------------------------------------------------------
 class SimpleUserSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(source='profile.name', read_only=True, default='')
+
     class Meta:
         model = User
-        fields = ('pk', 'username')
+        fields = ('pk', 'username', 'name', 'email')
 
 
 class ProfileInUserSerializer(serializers.ModelSerializer):

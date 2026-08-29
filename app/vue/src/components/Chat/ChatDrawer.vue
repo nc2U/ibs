@@ -25,10 +25,15 @@ const messageContainer = ref<HTMLElement | null>(null)
 const isUserSelectModalOpen = ref(false)
 const userSearchQuery = ref('')
 
+const isMembersDrawerOpen = ref(false)
+
 const getRoomDisplayName = (room: ChatRoom) => {
-  if (room.room_type === 'direct') {
+  if (room.room_type === 'direct' && room.members?.length) {
     const other = room.members.find(m => m.pk !== currentUserId.value)
-    return other ? other.username : '1:1 대화'
+    if (other) {
+      return (other as any).name ? `${(other as any).name} (${other.username})` : other.username
+    }
+    return '1:1 대화'
   }
   if (room.title) return room.title
   if (room.room_type === 'channel') return `#${room.project_name || '공용 채널'}`
@@ -319,11 +324,41 @@ const formatTime = (dateStr: string) => {
               color="primary"
               class="mr-2"
             />
-            <span class="font-weight-bold text-truncate room-header-title" style="max-width: 300px">
+            <span class="font-weight-bold text-truncate room-header-title" style="max-width: 260px">
               {{ currentRoom ? getRoomDisplayName(currentRoom) : '실시간 사내 메신저' }}
+            </span>
+            <span
+              v-if="currentRoom?.project_name"
+              class="text-xs text-muted ml-2 text-truncate"
+              style="max-width: 120px"
+            >
+              {{ currentRoom.project_name }}
             </span>
           </div>
           <div class="d-flex align-items-center">
+            <!-- 대화방 진입 시: 참여 멤버 목록 버튼 -->
+            <v-btn
+              v-if="currentRoom"
+              icon="mdi-account-group-outline"
+              variant="text"
+              size="small"
+              color="primary"
+              class="mr-1"
+              title="참여 멤버 목록"
+              @click="isMembersDrawerOpen = !isMembersDrawerOpen"
+            >
+              <v-badge
+                v-if="(currentRoom.members?.length || 0) > 0"
+                :content="currentRoom.members.length"
+                color="primary"
+                inline
+              >
+                <v-icon icon="mdi-account-group-outline" size="small" />
+              </v-badge>
+              <v-icon v-else icon="mdi-account-group-outline" size="small" />
+            </v-btn>
+
+            <!-- 목록 화면: 새 1:1 대화 버튼 -->
             <v-btn
               v-if="!currentRoom"
               icon="mdi-account-plus-outline"
@@ -803,6 +838,86 @@ const formatTime = (dateStr: string) => {
                 <v-list-item-title class="text-xs font-weight-bold">
                   {{ getRoomDisplayName(room) }}
                 </v-list-item-title>
+              </v-list-item>
+            </v-list>
+          </div>
+        </v-card-text>
+      </v-card>
+    </v-dialog>
+
+    <!-- ── 3. 대화방 참여 멤버 목록 모달 ────────────────────────── -->
+    <v-dialog v-model="isMembersDrawerOpen" max-width="400">
+      <v-card class="rounded-lg user-select-modal-card">
+        <v-card-title
+          class="font-weight-bold text-md border-bottom d-flex justify-content-between align-items-center p-3"
+        >
+          <div class="d-flex align-items-center">
+            <v-icon
+              :icon="currentRoom?.room_type === 'channel' ? 'mdi-account-group' : 'mdi-account-multiple'"
+              color="primary"
+              size="small"
+              class="mr-2"
+            />
+            <span>{{ currentRoom?.room_type === 'channel' ? '채널 참여 멤버' : '대화방 참여자' }}</span>
+            <v-chip size="x-small" color="primary" class="ml-2 font-weight-bold">
+              {{ currentRoom?.members?.length || 0 }}명
+            </v-chip>
+          </div>
+          <v-btn
+            icon="mdi-close"
+            variant="text"
+            size="small"
+            @click="isMembersDrawerOpen = false"
+          />
+        </v-card-title>
+        <v-card-text class="p-3">
+          <div v-if="!currentRoom?.members?.length" class="text-center py-4 text-xs empty-state-text">
+            참여 멤버 정보를 불러오는 중입니다.
+          </div>
+          <div v-else style="max-height: 360px; overflow-y: auto">
+            <v-list density="compact" class="bg-transparent py-0">
+              <v-list-item
+                v-for="m in currentRoom.members"
+                :key="m.pk"
+                class="rounded mb-1 user-list-item"
+              >
+                <template #prepend>
+                  <v-avatar
+                    :color="m.pk === currentUserId ? 'primary' : 'success'"
+                    variant="tonal"
+                    size="32"
+                    class="mr-2 text-xs font-weight-bold"
+                  >
+                    {{ (m as any).name?.[0] || m.username[0] }}
+                  </v-avatar>
+                </template>
+                <v-list-item-title class="text-xs font-weight-bold d-flex align-items-center">
+                  <span>{{ (m as any).name ? `${(m as any).name} (${m.username})` : m.username }}</span>
+                  <v-chip
+                    v-if="m.pk === currentUserId"
+                    size="x-small"
+                    color="primary"
+                    variant="flat"
+                    class="ml-1.5 px-1 font-weight-bold"
+                    style="height: 16px; font-size: 9px"
+                  >
+                    나
+                  </v-chip>
+                </v-list-item-title>
+                <v-list-item-subtitle v-if="(m as any).email" class="text-xs text-muted">
+                  {{ (m as any).email }}
+                </v-list-item-subtitle>
+                <template #append>
+                  <v-btn
+                    v-if="m.pk !== currentUserId"
+                    icon="mdi-message-outline"
+                    variant="text"
+                    size="x-small"
+                    color="primary"
+                    title="1:1 대화 시작"
+                    @click="isMembersDrawerOpen = false; chatStore.getOrCreateDm(m.pk)"
+                  />
+                </template>
               </v-list-item>
             </v-list>
           </div>

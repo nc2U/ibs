@@ -11,6 +11,7 @@ _$SimpleUserModelImpl _$$SimpleUserModelImplFromJson(
 ) => _$SimpleUserModelImpl(
   pk: (_readPk(json, 'pk') as num).toInt(),
   username: json['username'] as String? ?? '',
+  name: json['name'] as String? ?? '',
   email: json['email'] as String?,
   fullName: json['full_name'] as String?,
 );
@@ -20,6 +21,7 @@ Map<String, dynamic> _$$SimpleUserModelImplToJson(
 ) => <String, dynamic>{
   'pk': instance.pk,
   'username': instance.username,
+  'name': instance.name,
   'email': instance.email,
   'full_name': instance.fullName,
 };

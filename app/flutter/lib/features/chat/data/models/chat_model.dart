@@ -99,7 +99,7 @@ class ChatRoomModel {
             ? members.first
             : const SimpleUserModel(pk: 0, username: '대화 상대'),
       );
-      return other.username;
+      return other.name.isNotEmpty ? '${other.name} (${other.username})' : other.username;
     }
     if (title.isNotEmpty) return title;
     if (roomType == ChatRoomType.channel) {

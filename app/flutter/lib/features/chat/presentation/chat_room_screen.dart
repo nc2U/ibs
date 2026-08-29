@@ -64,6 +64,144 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
     super.dispose();
   }
 
+  @override
+  Widget build(BuildContext context) {
+    final messagesAsync = ref.watch(chatRoomNotifierProvider(widget.roomId));
+    final currentUser = ref.watch(currentUserProvider).valueOrNull;
+    final currentUserId = currentUser?.pk ?? 0;
+    final currentUsername = currentUser?.username ?? '';
+
+    final roomTitle = widget.initialRoom?.getDisplayName(currentUserId) ?? '대화방 #${widget.roomId}';
+
+    return Scaffold(
+      backgroundColor: context.colors.bgPrimary,
+      appBar: AppBar(
+        backgroundColor: context.colors.bgSurface,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: context.colors.textPrimary, size: 20),
+          onPressed: () => context.pop(),
+        ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              roomTitle,
+              style: AppTextStyles.titleSm.copyWith(
+                fontWeight: FontWeight.bold,
+                color: context.colors.textPrimary,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            if (widget.initialRoom?.projectName != null)
+              Text(
+                widget.initialRoom!.projectName!,
+                style: AppTextStyles.caption.copyWith(color: context.colors.textMuted),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+          ],
+        ),
+        actions: [
+          IconButton(
+            icon: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(Icons.people_alt_outlined, color: context.colors.textPrimary, size: 22),
+                if ((widget.initialRoom?.members.length ?? 0) > 0)
+                  Positioned(
+                    top: -4,
+                    right: -6,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: context.colors.accentWork,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '${widget.initialRoom!.members.length}',
+                        style: const TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          height: 1.1,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            tooltip: '참여자 목록',
+            onPressed: () => _showMembersSheet(widget.initialRoom, currentUserId),
+          ),
+          const SizedBox(width: 4),
+        ],
+      ),
+      body: Column(
+        children: [
+          // ── 1. 메시지 목록 ─────────────────────────────────────────
+          Expanded(
+            child: messagesAsync.when(
+              loading: () => const Padding(
+                padding: EdgeInsets.all(16),
+                child: LoadingShimmer(itemHeight: 60, itemCount: 6),
+              ),
+              error: (err, _) => ErrorView(
+                message: '메시지를 불러오지 못했습니다.',
+                onRetry: () => ref.invalidate(chatRoomNotifierProvider(widget.roomId)),
+              ),
+              data: (messages) {
+                WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+
+                if (messages.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.chat_bubble_outline_rounded, size: 48, color: context.colors.textMuted.withAlpha(120)),
+                        const SizedBox(height: 12),
+                        Text(
+                          '첫 메시지를 보내 대화를 시작해보세요.',
+                          style: AppTextStyles.bodyMd.copyWith(color: context.colors.textMuted),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  itemCount: messages.length,
+                  itemBuilder: (context, index) {
+                    final msg = messages[index];
+                    final isMe = (msg.sender != null && currentUserId > 0 && msg.sender!.pk == currentUserId) ||
+                                 (msg.sender != null && currentUsername.isNotEmpty && msg.sender!.username == currentUsername);
+                    final showSender = !isMe && (index == 0 || messages[index - 1].sender?.pk != msg.sender?.pk);
+
+                    return _buildMessageItem(context, msg, isMe, showSender);
+                  },
+                );
+              },
+            ),
+          ),
+
+          // ── 2. 업로드 인디케이터 ─────────────────────────────────────
+          if (_isUploading)
+            LinearProgressIndicator(color: context.colors.accentWork, minHeight: 2),
+
+          // ── 3. 답장 대상 프리뷰 바 ──────────────────────────────────
+          if (_replyTarget != null) _buildReplyTargetBar(context),
+
+          // ── 4. 메시지 입력창 ────────────────────────────────────────
+          _buildInputBar(context),
+        ],
+      ),
+    );
+  }
+
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
@@ -324,106 +462,176 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final messagesAsync = ref.watch(chatRoomNotifierProvider(widget.roomId));
-    final currentUser = ref.watch(currentUserProvider).valueOrNull;
-    final currentUserId = currentUser?.pk ?? 0;
-    final currentUsername = currentUser?.username ?? '';
+  // 👥 참여 멤버 목록 바텀시트
+  void _showMembersSheet(ChatRoomModel? room, int currentUserId) {
+    final members = room?.members ?? [];
+    final isChannel = room?.roomType == ChatRoomType.channel;
 
-    final roomTitle = widget.initialRoom?.getDisplayName(currentUserId) ?? '대화방 #${widget.roomId}';
-
-    return Scaffold(
-      backgroundColor: context.colors.bgPrimary,
-      appBar: AppBar(
-        backgroundColor: context.colors.bgSurface,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded, color: context.colors.textPrimary, size: 20),
-          onPressed: () => context.pop(),
-        ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              roomTitle,
-              style: AppTextStyles.titleSm.copyWith(
-                fontWeight: FontWeight.bold,
-                color: context.colors.textPrimary,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            if (widget.initialRoom?.projectName != null)
-              Text(
-                widget.initialRoom!.projectName!,
-                style: AppTextStyles.caption.copyWith(color: context.colors.textMuted),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-          ],
-        ),
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: context.colors.bgSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      body: Column(
-        children: [
-          // ── 1. 메시지 목록 ─────────────────────────────────────────
-          Expanded(
-            child: messagesAsync.when(
-              loading: () => const Padding(
-                padding: EdgeInsets.all(16),
-                child: LoadingShimmer(itemHeight: 60, itemCount: 6),
-              ),
-              error: (err, _) => ErrorView(
-                message: '메시지를 불러오지 못했습니다.',
-                onRetry: () => ref.invalidate(chatRoomNotifierProvider(widget.roomId)),
-              ),
-              data: (messages) {
-                WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
-
-                if (messages.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── 헤더 ─────────────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
                       children: [
-                        Icon(Icons.chat_bubble_outline_rounded, size: 48, color: context.colors.textMuted.withAlpha(120)),
-                        const SizedBox(height: 12),
+                        Icon(
+                          isChannel ? Icons.group_rounded : Icons.people_alt_rounded,
+                          color: context.colors.accentWork,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
                         Text(
-                          '첫 메시지를 보내 대화를 시작해보세요.',
-                          style: AppTextStyles.bodyMd.copyWith(color: context.colors.textMuted),
+                          isChannel ? '채널 참여 멤버' : '대화방 참여자',
+                          style: AppTextStyles.titleSm.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: context.colors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: context.colors.accentWork.withAlpha(30),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            '${members.length}명',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: context.colors.accentWork,
+                            ),
+                          ),
                         ),
                       ],
                     ),
-                  );
-                }
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, size: 20),
+                      onPressed: () => Navigator.pop(ctx),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
 
-                return ListView.builder(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  itemCount: messages.length,
-                  itemBuilder: (context, index) {
-                    final msg = messages[index];
-                    final isMe = (msg.sender != null && currentUserId > 0 && msg.sender!.pk == currentUserId) ||
-                                 (msg.sender != null && currentUsername.isNotEmpty && msg.sender!.username == currentUsername);
-                    final showSender = !isMe && (index == 0 || messages[index - 1].sender?.pk != msg.sender?.pk);
+              // ── 멤버 리스트 ─────────────────────────────────────────
+              if (members.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Center(
+                    child: Text(
+                      '참여 멤버 정보를 불러오는 중입니다.',
+                      style: TextStyle(color: context.colors.textMuted),
+                    ),
+                  ),
+                )
+              else
+                Flexible(
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: members.length,
+                    separatorBuilder: (_, __) => Divider(color: context.colors.border, height: 1, indent: 64),
+                    itemBuilder: (context, index) {
+                      final member = members[index];
+                      final isMe = member.pk == currentUserId;
+                      final displayName = member.name.isNotEmpty
+                          ? '${member.name} (${member.username})'
+                          : member.username;
 
-                    return _buildMessageItem(context, msg, isMe, showSender);
-                  },
-                );
-              },
-            ),
+                      return ListTile(
+                        leading: CircleAvatar(
+                          radius: 18,
+                          backgroundColor: isMe
+                              ? context.colors.accentWork.withAlpha(40)
+                              : context.colors.accentCorp.withAlpha(40),
+                          child: Text(
+                            (member.name.isNotEmpty ? member.name : member.username).substring(0, 1).toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: isMe ? context.colors.accentWork : context.colors.accentCorp,
+                            ),
+                          ),
+                        ),
+                        title: Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                displayName,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: isMe ? FontWeight.bold : FontWeight.w500,
+                                  color: context.colors.textPrimary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (isMe) ...[
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                decoration: BoxDecoration(
+                                  color: Colors.blueAccent.withAlpha(30),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Text(
+                                  '나',
+                                  style: TextStyle(fontSize: 10, color: Colors.blueAccent, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        subtitle: member.email != null && member.email!.isNotEmpty
+                            ? Text(
+                                member.email!,
+                                style: TextStyle(fontSize: 11.5, color: context.colors.textMuted),
+                              )
+                            : null,
+                        trailing: (!isMe)
+                            ? IconButton(
+                                icon: const Icon(Icons.chat_outlined, size: 18),
+                                color: context.colors.accentWork,
+                                tooltip: '1:1 대화하기',
+                                onPressed: () async {
+                                  Navigator.pop(ctx);
+                                  try {
+                                    final newRoom = await ref.read(chatRepositoryProvider).getOrCreateDm(member.pk);
+                                    ref.invalidate(chatRoomsProvider);
+                                    if (!mounted) return;
+                                    context.push('/chat/${newRoom.id}', extra: newRoom);
+                                  } catch (e) {
+                                    if (!mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text('대화방 생성 실패: $e')),
+                                    );
+                                  }
+                                },
+                              )
+                            : null,
+                      );
+                    },
+                  ),
+                ),
+            ],
           ),
-
-          // ── 2. 업로드 인디케이터 ─────────────────────────────────────
-          if (_isUploading)
-            LinearProgressIndicator(color: context.colors.accentWork, minHeight: 2),
-
-          // ── 3. 답장 대상 프리뷰 바 ──────────────────────────────────
-          if (_replyTarget != null) _buildReplyTargetBar(context),
-
-          // ── 4. 메시지 입력창 ────────────────────────────────────────
-          _buildInputBar(context),
-        ],
+        ),
       ),
     );
   }

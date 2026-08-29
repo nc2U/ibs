@@ -15,12 +15,17 @@ class SimpleUserModel with _$SimpleUserModel {
   const factory SimpleUserModel({
     @JsonKey(readValue: _readPk) required int pk,
     @Default('') String username,
+    @Default('') String name,
     String? email,
     String? fullName,
   }) = _SimpleUserModel;
 
   factory SimpleUserModel.fromJson(Map<String, dynamic> json) =>
       _$SimpleUserModelFromJson(json);
+}
+
+extension SimpleUserModelX on SimpleUserModel {
+  String get displayName => name.isNotEmpty ? '$name ($username)' : username;
 }
 
 @freezed
