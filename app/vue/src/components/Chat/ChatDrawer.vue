@@ -4,19 +4,18 @@ import { useChat } from '@/store/pinia/chat'
 import { useAccount } from '@/store/pinia/account'
 import { useStore } from '@/store'
 import type { ChatRoom, ChatMessage } from '@/store/types/chat'
-
+1
 const chatStore = useChat()
 const accountStore = useAccount()
 const store = useStore()
 
 const isDark = computed(() => store.isDark)
 const currentUserId = computed(() => accountStore.userInfo?.pk ?? 0)
-const isDrawerOpen = computed(() => chatStore.isDrawerOpen)
 const currentRoom = computed(() => chatStore.currentRoom)
 const messages = computed(() => chatStore.messages)
 const allUsers = computed(() => chatStore.usersList)
 const isLoadingUsers = computed(() => chatStore.isLoadingUsers)
-
+1
 const activeTab = ref<'channel' | 'direct'>('channel')
 const inputMessage = ref('')
 const messageContainer = ref<HTMLElement | null>(null)
@@ -124,7 +123,11 @@ const startDmWithUser = async (user: any) => {
 
 const confirmLeaveRoom = async (room: ChatRoom) => {
   const name = getRoomDisplayName(room)
-  if (confirm(`'${name}' 대화방을 나가시겠습니까?\n(대화 목록에서 숨겨지며, 상대방이 메시지를 보내거나 다시 대화를 걸면 목록에 다시 나타납니다.)`)) {
+  if (
+    confirm(
+      `'${name}' 대화방을 나가시겠습니까?\n(대화 목록에서 숨겨지며, 상대방이 메시지를 보내거나 다시 대화를 걸면 목록에 다시 나타납니다.)`,
+    )
+  ) {
     try {
       await chatStore.exitAndHideRoom(room.id)
     } catch (e) {
@@ -229,7 +232,11 @@ const showCopyNotice = (text = '클립보드에 복사되었습니다.') => {
 const copyMessageContent = async (msg: ChatMessage) => {
   try {
     if (msg.message_type === 'image' || msg.message_type === 'file') {
-      const fileUrl = msg.file ? (msg.file.startsWith('http') ? msg.file : window.location.origin + msg.file) : ''
+      const fileUrl = msg.file
+        ? msg.file.startsWith('http')
+          ? msg.file
+          : window.location.origin + msg.file
+        : ''
       await navigator.clipboard.writeText(fileUrl || msg.content)
       showCopyNotice('파일/이미지 링크가 복사되었습니다.')
     } else {
@@ -258,10 +265,13 @@ const handleForwardToRoom = async (room: ChatRoom) => {
     // 2. 메시지 유형에 따라 전달 전송
     if (msg.message_type === 'image' || msg.message_type === 'file') {
       // 첨부파일 공유인 경우 파일 링크 및 메시지 전달
-      await chatStore.sendMessage(msg.content || (msg.file_name ? `[공유 파일] ${msg.file_name}` : '[공유 첨부]'), {
-        message_type: msg.message_type,
-        ref_title: msg.file_name ? `공유 파일: ${msg.file_name}` : '전달된 항목',
-      })
+      await chatStore.sendMessage(
+        msg.content || (msg.file_name ? `[공유 파일] ${msg.file_name}` : '[공유 첨부]'),
+        {
+          message_type: msg.message_type,
+          ref_title: msg.file_name ? `공유 파일: ${msg.file_name}` : '전달된 항목',
+        },
+      )
     } else {
       await chatStore.sendMessage(msg.content, {
         message_type: msg.message_type,
@@ -293,12 +303,7 @@ const formatTime = (dateStr: string) => {
 <template>
   <div>
     <!-- 숨김 파일 인풋 -->
-    <input
-      ref="fileInputRef"
-      type="file"
-      class="d-none"
-      @change="handleFileSelected"
-    />
+    <input ref="fileInputRef" type="file" class="d-none" @change="handleFileSelected" />
 
     <!-- 슬라이드 드로어 사이드바 -->
     <v-navigation-drawer
@@ -557,8 +562,15 @@ const formatTime = (dateStr: string) => {
             v-if="isDragging"
             class="drag-drop-overlay d-flex flex-column align-items-center justify-content-center"
           >
-            <v-icon icon="mdi-cloud-upload-outline" size="48" color="primary" class="mb-2 animate-bounce" />
-            <div class="font-weight-bold text-sm text-primary">파일을 여기에 놓으면 바로 전송됩니다</div>
+            <v-icon
+              icon="mdi-cloud-upload-outline"
+              size="48"
+              color="primary"
+              class="mb-2 animate-bounce"
+            />
+            <div class="font-weight-bold text-sm text-primary">
+              파일을 여기에 놓으면 바로 전송됩니다
+            </div>
             <div class="text-xs text-muted mt-1">도면, 문서, 사진 등 모든 파일 지원</div>
           </div>
 
@@ -630,10 +642,7 @@ const formatTime = (dateStr: string) => {
                   </div>
 
                   <!-- 0. 답장(댓글) 대상 메시지 인용 표시 -->
-                  <div
-                    v-if="msg.reply_to_detail"
-                    class="p-2 mb-2 rounded reply-quote-box text-xs"
-                  >
+                  <div v-if="msg.reply_to_detail" class="p-2 mb-2 rounded reply-quote-box text-xs">
                     <div class="font-weight-bold reply-quote-sender mb-0.5">
                       <v-icon icon="mdi-reply" size="x-small" class="mr-1" />
                       {{ msg.reply_to_detail.sender_name }}님에게 답장
@@ -652,7 +661,10 @@ const formatTime = (dateStr: string) => {
                   </div>
 
                   <!-- 2. 이미지 첨부파일 -->
-                  <div v-if="msg.message_type === 'image' && msg.file" class="chat-image-preview mb-1">
+                  <div
+                    v-if="msg.message_type === 'image' && msg.file"
+                    class="chat-image-preview mb-1"
+                  >
                     <a :href="msg.file" target="_blank" rel="noopener">
                       <img
                         :src="msg.file"
@@ -749,7 +761,9 @@ const formatTime = (dateStr: string) => {
               />
               <v-text-field
                 v-model="inputMessage"
-                :placeholder="replyingTo ? '답장 메시지를 입력하세요...' : '메시지를 입력하세요 (Enter)'"
+                :placeholder="
+                  replyingTo ? '답장 메시지를 입력하세요...' : '메시지를 입력하세요 (Enter)'
+                "
                 density="compact"
                 variant="outlined"
                 hide-details
@@ -798,7 +812,10 @@ const formatTime = (dateStr: string) => {
             <div v-if="isLoadingUsers" class="text-center py-4">
               <v-progress-circular indeterminate size="24" color="primary" />
             </div>
-            <div v-else-if="filteredUsers.length === 0" class="text-center py-4 text-xs empty-state-text">
+            <div
+              v-else-if="filteredUsers.length === 0"
+              class="text-center py-4 text-xs empty-state-text"
+            >
               검색된 직원이 없습니다.
             </div>
             <v-list v-else density="compact" class="bg-transparent">
@@ -838,12 +855,7 @@ const formatTime = (dateStr: string) => {
           class="font-weight-bold text-md border-bottom d-flex justify-content-between align-items-center p-3"
         >
           <span>다른 대화방으로 전달/공유</span>
-          <v-btn
-            icon="mdi-close"
-            variant="text"
-            size="small"
-            @click="isForwardModalOpen = false"
-          />
+          <v-btn icon="mdi-close" variant="text" size="small" @click="isForwardModalOpen = false" />
         </v-card-title>
         <v-card-text class="p-3">
           <div v-if="forwardTargetMsg" class="p-2 mb-3 rounded border text-xs bg-light">
@@ -866,7 +878,10 @@ const formatTime = (dateStr: string) => {
                     size="28"
                     class="mr-2"
                   >
-                    <v-icon :icon="room.room_type === 'channel' ? 'mdi-pound' : 'mdi-account'" size="x-small" />
+                    <v-icon
+                      :icon="room.room_type === 'channel' ? 'mdi-pound' : 'mdi-account'"
+                      size="x-small"
+                    />
                   </v-avatar>
                 </template>
                 <v-list-item-title class="text-xs font-weight-bold">
@@ -887,12 +902,16 @@ const formatTime = (dateStr: string) => {
         >
           <div class="d-flex align-items-center">
             <v-icon
-              :icon="currentRoom?.room_type === 'channel' ? 'mdi-account-group' : 'mdi-account-multiple'"
+              :icon="
+                currentRoom?.room_type === 'channel' ? 'mdi-account-group' : 'mdi-account-multiple'
+              "
               color="primary"
               size="small"
               class="mr-2"
             />
-            <span>{{ currentRoom?.room_type === 'channel' ? '채널 참여 멤버' : '대화방 참여자' }}</span>
+            <span>{{
+              currentRoom?.room_type === 'channel' ? '채널 참여 멤버' : '대화방 참여자'
+            }}</span>
             <v-chip size="x-small" color="primary" class="ml-2 font-weight-bold">
               {{ currentRoom?.members?.length || 0 }}명
             </v-chip>
@@ -905,7 +924,10 @@ const formatTime = (dateStr: string) => {
           />
         </v-card-title>
         <v-card-text class="p-3">
-          <div v-if="!currentRoom?.members?.length" class="text-center py-4 text-xs empty-state-text">
+          <div
+            v-if="!currentRoom?.members?.length"
+            class="text-center py-4 text-xs empty-state-text"
+          >
             참여 멤버 정보를 불러오는 중입니다.
           </div>
           <div v-else style="max-height: 360px; overflow-y: auto">
@@ -926,7 +948,9 @@ const formatTime = (dateStr: string) => {
                   </v-avatar>
                 </template>
                 <v-list-item-title class="text-xs font-weight-bold d-flex align-items-center">
-                  <span>{{ (m as any).name ? `${(m as any).name} (${m.username})` : m.username }}</span>
+                  <span>{{
+                    (m as any).name ? `${(m as any).name} (${m.username})` : m.username
+                  }}</span>
                   <v-chip
                     v-if="m.pk === currentUserId"
                     size="x-small"
@@ -949,7 +973,12 @@ const formatTime = (dateStr: string) => {
                     size="x-small"
                     color="primary"
                     title="1:1 대화 시작"
-                    @click="isMembersDrawerOpen = false; chatStore.getOrCreateDm(m.pk)"
+                    @click="
+                      () => {
+                        isMembersDrawerOpen = false
+                        chatStore.getOrCreateDm(m.pk)
+                      }
+                    "
                   />
                 </template>
               </v-list-item>
@@ -1036,7 +1065,9 @@ const formatTime = (dateStr: string) => {
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.15s ease-in-out, visibility 0.15s;
+  transition:
+    opacity 0.15s ease-in-out,
+    visibility 0.15s;
   z-index: 20;
 }
 .msg-action-toolbar .v-btn {
