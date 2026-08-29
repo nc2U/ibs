@@ -54,9 +54,11 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
                 }
             )
 
-        # 슈퍼유저는 전체 대화방 조회 가능
+        # 슈퍼유저도 본인이 숨김(is_hidden) 처리한 대화방은 내 목록에서 제외
         if user.is_superuser:
-            return ChatRoom.objects.all().distinct()
+            return ChatRoom.objects.filter(
+                ~Q(memberships__user=user, memberships__is_hidden=True)
+            ).distinct()
 
         # 1) 내가 멤버로 속해 있고 숨김 처리하지 않은 방 (1:1 DM, 그룹방)
         # 2) 또는 내가 멤버로 소속되어 있고 공용 채널이 켜진 워크스페이스 채널
