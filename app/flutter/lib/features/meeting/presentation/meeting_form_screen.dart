@@ -26,6 +26,7 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _titleController;
   late TextEditingController _meetingDateController;
+  late TextEditingController _locationController;
   late TextEditingController _otherAttendeesController;
   late TextEditingController _agendaController;
   late TextEditingController _contentController;
@@ -44,6 +45,7 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
     super.initState();
     final m = widget.initialMeeting;
     _titleController = TextEditingController(text: m?.title ?? '');
+    _locationController = TextEditingController(text: m?.location ?? '');
 
     String initialDateStr = '';
     if (m?.meetingDate != null && m!.meetingDate.isNotEmpty) {
@@ -85,6 +87,7 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
   void dispose() {
     _titleController.dispose();
     _meetingDateController.dispose();
+    _locationController.dispose();
     _otherAttendeesController.dispose();
     _agendaController.dispose();
     _contentController.dispose();
@@ -232,6 +235,7 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
       'status': _status,
       'is_confirmed': _isConfirmed,
       'category': _selectedCategoryPk,
+      'location': _locationController.text.trim(),
       'attendees': _selectedAttendeePks,
       'other_attendees': _otherAttendeesController.text.trim(),
       'agenda': _agendaController.text.trim(),
@@ -440,6 +444,16 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 14),
+
+              // 회의 장소 (선택 입력)
+              Text('회의 장소', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
+              const SizedBox(height: 6),
+              TextFormField(
+                controller: _locationController,
+                style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
+                decoration: _inputDecoration('회의 장소 입력 (예: 본사 대회의실, 구청 미팅룸, Zoom)'),
               ),
               const SizedBox(height: 14),
 

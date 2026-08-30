@@ -122,6 +122,7 @@ _$MeetingModelImpl _$$MeetingModelImplFromJson(Map<String, dynamic> json) =>
       decisions: json['decisions'] as String? ?? '',
       actionItems: json['action_items'] as String? ?? '',
       meetingDate: json['meeting_date'] as String,
+      location: json['location'] as String? ?? '',
       attendees:
           (json['attendees'] as List<dynamic>?)
               ?.map((e) => (e as num).toInt())
@@ -176,6 +177,7 @@ Map<String, dynamic> _$$MeetingModelImplToJson(_$MeetingModelImpl instance) =>
       'decisions': instance.decisions,
       'action_items': instance.actionItems,
       'meeting_date': instance.meetingDate,
+      'location': instance.location,
       'attendees': instance.attendees,
       'attendees_desc': instance.attendeesDesc,
       'other_attendees': instance.otherAttendees,

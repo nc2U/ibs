@@ -60,7 +60,7 @@ class MeetingSerializer(serializers.ModelSerializer):
         model = Meeting
         fields = ('pk', 'project', 'project_desc', 'title', 'category', 'category_desc',
                   'status', 'status_display', 'is_confirmed', 'agenda', 'content', 'decisions',
-                  'action_items', 'meeting_date', 'attendees', 'attendees_desc', 'other_attendees',
+                  'action_items', 'meeting_date', 'location', 'attendees', 'attendees_desc', 'other_attendees',
                   'files', 'links', 'issues', 'created', 'updated', 'creator', 'updater')
 
     def validate(self, attrs):

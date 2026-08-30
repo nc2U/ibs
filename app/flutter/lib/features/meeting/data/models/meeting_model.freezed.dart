@@ -1184,6 +1184,7 @@ mixin _$MeetingModel {
   String get decisions => throw _privateConstructorUsedError;
   String get actionItems => throw _privateConstructorUsedError;
   String get meetingDate => throw _privateConstructorUsedError;
+  String get location => throw _privateConstructorUsedError;
   List<int> get attendees => throw _privateConstructorUsedError;
   List<SimpleUserModel> get attendeesDesc => throw _privateConstructorUsedError;
   String get otherAttendees => throw _privateConstructorUsedError;
@@ -1227,6 +1228,7 @@ abstract class $MeetingModelCopyWith<$Res> {
     String decisions,
     String actionItems,
     String meetingDate,
+    String location,
     List<int> attendees,
     List<SimpleUserModel> attendeesDesc,
     String otherAttendees,
@@ -1274,6 +1276,7 @@ class _$MeetingModelCopyWithImpl<$Res, $Val extends MeetingModel>
     Object? decisions = null,
     Object? actionItems = null,
     Object? meetingDate = null,
+    Object? location = null,
     Object? attendees = null,
     Object? attendeesDesc = null,
     Object? otherAttendees = null,
@@ -1342,6 +1345,10 @@ class _$MeetingModelCopyWithImpl<$Res, $Val extends MeetingModel>
             meetingDate: null == meetingDate
                 ? _value.meetingDate
                 : meetingDate // ignore: cast_nullable_to_non_nullable
+                      as String,
+            location: null == location
+                ? _value.location
+                : location // ignore: cast_nullable_to_non_nullable
                       as String,
             attendees: null == attendees
                 ? _value.attendees
@@ -1465,6 +1472,7 @@ abstract class _$$MeetingModelImplCopyWith<$Res>
     String decisions,
     String actionItems,
     String meetingDate,
+    String location,
     List<int> attendees,
     List<SimpleUserModel> attendeesDesc,
     String otherAttendees,
@@ -1515,6 +1523,7 @@ class __$$MeetingModelImplCopyWithImpl<$Res>
     Object? decisions = null,
     Object? actionItems = null,
     Object? meetingDate = null,
+    Object? location = null,
     Object? attendees = null,
     Object? attendeesDesc = null,
     Object? otherAttendees = null,
@@ -1584,6 +1593,10 @@ class __$$MeetingModelImplCopyWithImpl<$Res>
             ? _value.meetingDate
             : meetingDate // ignore: cast_nullable_to_non_nullable
                   as String,
+        location: null == location
+            ? _value.location
+            : location // ignore: cast_nullable_to_non_nullable
+                  as String,
         attendees: null == attendees
             ? _value._attendees
             : attendees // ignore: cast_nullable_to_non_nullable
@@ -1648,6 +1661,7 @@ class _$MeetingModelImpl implements _MeetingModel {
     this.decisions = '',
     this.actionItems = '',
     required this.meetingDate,
+    this.location = '',
     final List<int> attendees = const [],
     final List<SimpleUserModel> attendeesDesc = const [],
     this.otherAttendees = '',
@@ -1702,6 +1716,9 @@ class _$MeetingModelImpl implements _MeetingModel {
   final String actionItems;
   @override
   final String meetingDate;
+  @override
+  @JsonKey()
+  final String location;
   final List<int> _attendees;
   @override
   @JsonKey()
@@ -1761,7 +1778,7 @@ class _$MeetingModelImpl implements _MeetingModel {
 
   @override
   String toString() {
-    return 'MeetingModel(pk: $pk, project: $project, projectDesc: $projectDesc, title: $title, category: $category, categoryDesc: $categoryDesc, status: $status, statusDisplay: $statusDisplay, isConfirmed: $isConfirmed, agenda: $agenda, content: $content, decisions: $decisions, actionItems: $actionItems, meetingDate: $meetingDate, attendees: $attendees, attendeesDesc: $attendeesDesc, otherAttendees: $otherAttendees, files: $files, links: $links, issues: $issues, creator: $creator, updater: $updater, created: $created, updated: $updated)';
+    return 'MeetingModel(pk: $pk, project: $project, projectDesc: $projectDesc, title: $title, category: $category, categoryDesc: $categoryDesc, status: $status, statusDisplay: $statusDisplay, isConfirmed: $isConfirmed, agenda: $agenda, content: $content, decisions: $decisions, actionItems: $actionItems, meetingDate: $meetingDate, location: $location, attendees: $attendees, attendeesDesc: $attendeesDesc, otherAttendees: $otherAttendees, files: $files, links: $links, issues: $issues, creator: $creator, updater: $updater, created: $created, updated: $updated)';
   }
 
   @override
@@ -1791,6 +1808,8 @@ class _$MeetingModelImpl implements _MeetingModel {
                 other.actionItems == actionItems) &&
             (identical(other.meetingDate, meetingDate) ||
                 other.meetingDate == meetingDate) &&
+            (identical(other.location, location) ||
+                other.location == location) &&
             const DeepCollectionEquality().equals(
               other._attendees,
               _attendees,
@@ -1828,6 +1847,7 @@ class _$MeetingModelImpl implements _MeetingModel {
     decisions,
     actionItems,
     meetingDate,
+    location,
     const DeepCollectionEquality().hash(_attendees),
     const DeepCollectionEquality().hash(_attendeesDesc),
     otherAttendees,
@@ -1870,6 +1890,7 @@ abstract class _MeetingModel implements MeetingModel {
     final String decisions,
     final String actionItems,
     required final String meetingDate,
+    final String location,
     final List<int> attendees,
     final List<SimpleUserModel> attendeesDesc,
     final String otherAttendees,
@@ -1913,6 +1934,8 @@ abstract class _MeetingModel implements MeetingModel {
   String get actionItems;
   @override
   String get meetingDate;
+  @override
+  String get location;
   @override
   List<int> get attendees;
   @override

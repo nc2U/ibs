@@ -46,6 +46,7 @@ const form = ref({
   decisions: '',
   action_items: '',
   meeting_date: timeFormat(new Date(), 'min'),
+  location: '',
   attendees: [] as number[],
   other_attendees: '',
   links: [] as any[],
@@ -262,6 +263,7 @@ const fetchMeeting = async (pk: number) => {
       decisions: meeting.value.decisions,
       action_items: meeting.value.action_items,
       meeting_date: meeting.value.meeting_date ? timeFormat(meeting.value.meeting_date, 'min') : '',
+      location: meeting.value.location ?? '',
       attendees: meeting.value.attendees,
       other_attendees: meeting.value.other_attendees,
       links: meeting.value.links ? JSON.parse(JSON.stringify(meeting.value.links)) : [],
@@ -674,6 +676,19 @@ onBeforeMount(async () => {
                   id="meeting_date"
                   required
                   placeholder="회의 일시 선택"
+                />
+              </CCol>
+            </CRow>
+
+            <CRow class="mb-3">
+              <CFormLabel for="location" class="col-sm-4 col-form-label text-right">
+                회의장소
+              </CFormLabel>
+              <CCol sm="8">
+                <CFormInput
+                  v-model="form.location"
+                  id="location"
+                  placeholder="회의 장소 또는 링크"
                 />
               </CCol>
             </CRow>

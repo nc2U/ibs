@@ -32,6 +32,7 @@ export interface Meeting {
   decisions: string
   action_items: string
   meeting_date: string | null
+  location: string
   attendees: number[]
   attendees_desc: SimpleUser[]
   other_attendees: string

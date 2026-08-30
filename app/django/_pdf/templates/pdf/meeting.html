@@ -137,7 +137,7 @@
                 <td class="label">일 시</td>
                 <td>{{ meeting.meeting_date|date:"Y-m-d H:i" }}</td>
                 <td class="label">회의 장소</td>
-                <td>{{ meeting.project.name|default:"본사" }}</td>
+                <td>{{ meeting.location|default:meeting.project.name|default:"-" }}</td>
             </tr>
             <tr>
                 <td class="label">작성자</td>

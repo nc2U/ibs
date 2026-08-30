@@ -302,6 +302,12 @@ const refConfirmModal = ref()
               </CCol>
             </CRow>
             <CRow class="mb-2">
+              <CCol class="title" sm="4">회의 장소 :</CCol>
+              <CCol sm="8">
+                {{ meeting.location }}
+              </CCol>
+            </CRow>
+            <CRow class="mb-2">
               <CCol class="title" sm="4">참 석 자 :</CCol>
               <CCol sm="8">
                 <v-chip

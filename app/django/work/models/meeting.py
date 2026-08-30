@@ -42,6 +42,8 @@ class Meeting(models.Model):
     action_items = models.TextField('후속 조치 사항', blank=True, default='',
                                     help_text='누가, 언제까지, 무엇을 할 것인가?')
     meeting_date = models.DateTimeField('회의 일시', null=True, blank=True)
+    location = models.CharField('회의 장소', max_length=255, blank=True, default='',
+                                help_text='회의가 진행된 장소 (예: 본사 대회의실, 구청 미팅룸, Zoom 링크 등)')
     attendees = models.ManyToManyField(settings.AUTH_USER_MODEL, verbose_name='참석자', related_name='meetings_attended',
                                        blank=True)
     other_attendees = models.CharField('기타 참석자', max_length=255, blank=True, default='',
