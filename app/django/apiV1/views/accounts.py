@@ -31,7 +31,7 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     pagination_class = PageNumberPaginationThreeThousand
     permission_classes = (AllowAny,)
-    filterset_fields = ('is_staff', 'is_active', 'staff__status')
+    filterset_fields = ('is_staff', 'is_active', 'is_system', 'staff__status')
 
     def get_queryset(self):
         user = self.request.user
@@ -40,16 +40,26 @@ class UserViewSet(viewsets.ModelViewSet):
         if not user or not user.is_authenticated:
             return User.objects.none()
 
-        # 기본값: 활성 사용자(is_active=True)만 조회 (인사/관리자용 명시적 파라미터 지원)
-        is_active_param = self.request.query_params.get('is_active')
-        if is_active_param is None:
-            queryset = User.objects.filter(is_active=True)
-        elif is_active_param.lower() in ('true', '1'):
-            queryset = User.objects.filter(is_active=True)
-        elif is_active_param.lower() in ('false', '0'):
-            queryset = User.objects.filter(is_active=False)
+        # 1. 기본값: 일반 계정(is_system=False)만 조회 (명시적 ?is_system=true 또는 all 파라미터 지원)
+        is_system_param = self.request.query_params.get('is_system')
+        if is_system_param is None:
+            queryset = User.objects.filter(is_system=False)
+        elif is_system_param.lower() in ('true', '1'):
+            queryset = User.objects.filter(is_system=True)
+        elif is_system_param.lower() in ('false', '0'):
+            queryset = User.objects.filter(is_system=False)
         else:  # 'all' 등
             queryset = User.objects.all()
+
+        # 2. 기본값: 활성 사용자(is_active=True)만 조회 (인사/관리자용 명시적 파라미터 지원)
+        is_active_param = self.request.query_params.get('is_active')
+        if is_active_param is None:
+            queryset = queryset.filter(is_active=True)
+        elif is_active_param.lower() in ('true', '1'):
+            queryset = queryset.filter(is_active=True)
+        elif is_active_param.lower() in ('false', '0'):
+            queryset = queryset.filter(is_active=False)
+        # 'all'인 경우 filter 생략
 
         # 슈퍼유저나 work_manager는 전체 사용자 조회 가능
         if user.is_superuser or getattr(user, 'work_manager', False):

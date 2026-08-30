@@ -24,6 +24,7 @@ class UserAdmin(ImportExportMixin, BaseUserAdmin):
         (None, {'fields': ('email', 'password')}),
         (_('Personal info'), {'fields': ('username',)}),
         (_('Permissions'), {'fields': ('is_active',
+                                       'is_system',
                                        'is_superuser',
                                        'is_staff',
                                        'work_manager',
@@ -45,10 +46,10 @@ class UserAdmin(ImportExportMixin, BaseUserAdmin):
     # The fields to be used in displaying the User model.
     # These override the definitions on the base UserAdmin
     # that reference specific fields on auth.User.
-    list_display = ('id', 'username', 'email', 'is_active', 'is_superuser',
+    list_display = ('id', 'username', 'email', 'is_active', 'is_system', 'is_superuser',
                     'is_staff', 'work_manager', 'last_login', 'date_joined')
     list_display_links = ('id', 'username')
-    list_filter = ('is_superuser', 'is_active',)
+    list_filter = ('is_superuser', 'is_active', 'is_system')
     search_fields = ('email', 'username')
     ordering = ('-date_joined',)
     filter_horizontal = ('groups', 'user_permissions',)

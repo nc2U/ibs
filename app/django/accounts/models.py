@@ -30,6 +30,8 @@ class User(AbstractBaseUser, PermissionsMixin):
                                                 'Unselect this instead of deleting accounts.'))
     is_staff = models.BooleanField(_('staff status'), default=False,
                                    help_text=_('Designates whether the user can log into this admin site.'))
+    is_system = models.BooleanField(_('시스템 계정'), default=False,
+                                    help_text=_('시스템 공지/알림/봇 전용 계정 여부. 일반 구성원 선택 목록에서 제외됩니다.'))
     work_manager = models.BooleanField(_('업무시스템 관리자'), default=False,
                                        help_text=_('업무(redmine) 시스템 관리자인지 여부.'))
     date_joined = models.DateTimeField(_('date joined'), default=timezone.now)
