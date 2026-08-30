@@ -6,6 +6,7 @@ from django.contrib.auth import authenticate, update_session_auth_hash
 from django.contrib.auth.hashers import check_password
 from django.core.mail import send_mail
 from django.db import transaction
+from django.db.models import Q
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from rest_framework import viewsets, status
@@ -16,6 +17,7 @@ from rest_framework.views import APIView
 
 from accounts.models import User, Profile, DocScrape, PostScrape, Todo, PasswordResetToken, FCMDevice, Notification
 from apiV1.permissions.auth_perms import IsOwnerOnly, IsWorkManagerOnly
+from work.models.project import Role, Member
 from ..pagination import PageNumberPaginationThreeThousand, PageNumberPaginationFifty
 from ..serializers.accounts import UserSerializer, ProfileSerializer, \
     DocScrapeSerializer, PostScrapeSerializer, TodoSerializer, ChangePasswordSerializer, \
@@ -32,13 +34,22 @@ class UserViewSet(viewsets.ModelViewSet):
     filterset_fields = ('is_staff', 'is_active', 'staff__status')
 
     def get_queryset(self):
-        from django.db.models import Q
-        queryset = User.objects.all()
         user = self.request.user
 
         # 로그인하지 않은 경우 목록 노출 방지
         if not user or not user.is_authenticated:
-            return queryset.none()
+            return User.objects.none()
+
+        # 기본값: 활성 사용자(is_active=True)만 조회 (인사/관리자용 명시적 파라미터 지원)
+        is_active_param = self.request.query_params.get('is_active')
+        if is_active_param is None:
+            queryset = User.objects.filter(is_active=True)
+        elif is_active_param.lower() in ('true', '1'):
+            queryset = User.objects.filter(is_active=True)
+        elif is_active_param.lower() in ('false', '0'):
+            queryset = User.objects.filter(is_active=False)
+        else:  # 'all' 등
+            queryset = User.objects.all()
 
         # 슈퍼유저나 work_manager는 전체 사용자 조회 가능
         if user.is_superuser or getattr(user, 'work_manager', False):
@@ -48,7 +59,6 @@ class UserViewSet(viewsets.ModelViewSet):
             return queryset
 
         # 1. 사용자의 프로젝트별 user_visible 권한 수준 판별
-        from work.models.project import Member
         user_members = Member.objects.filter(user=user).prefetch_related('roles')
 
         user_visibility_order = {'ALL': 2, 'PRJ': 1, 'NOP': 0}
@@ -60,7 +70,6 @@ class UserViewSet(viewsets.ModelViewSet):
                     best_user_visible = role.user_visible
 
         # 비회원 역할 pk=2 참고
-        from work.models.project import Role
         try:
             non_member_role = Role.objects.get(pk=2)
             non_member_user_visible = non_member_role.user_visible
@@ -534,7 +543,8 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=False, methods=['post'], url_path='read-all')
     def mark_all_as_read(self, request):
-        updated_count = Notification.objects.filter(user=request.user, is_read=False).exclude(category='chat').update(is_read=True)
+        updated_count = Notification.objects.filter(user=request.user, is_read=False).exclude(category='chat').update(
+            is_read=True)
         return Response({'status': 'all_read', 'updated_count': updated_count})
 
     @action(detail=False, methods=['get'], url_path='unread-count')
