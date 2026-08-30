@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/api/api_client.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/project_provider.dart';
@@ -203,9 +204,10 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
       }
     } catch (e) {
       if (mounted) {
+        final errorMsg = getDioErrorMessage(e);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('저장 실패: $e'),
+            content: Text('저장 실패: $errorMsg'),
             backgroundColor: context.colors.error,
           ),
         );
@@ -277,32 +279,47 @@ class _IssueFormScreenState extends ConsumerState<IssueFormScreen> {
                   ),
                   error: (e, _) => Text('프로젝트 목록을 불러올 수 없습니다.',
                       style: AppTextStyles.bodyMuted.copyWith(color: context.colors.textMuted)),
-                  data: (projects) => DropdownButtonFormField<String>(
-                    value: _selectedProjectSlug ??
-                        (projects.isNotEmpty ? projects.first.slug : null),
-                    isExpanded: true,
-                    style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
-                    dropdownColor: context.colors.bgCard,
-                    decoration: _inputDecoration('프로젝트 선택'),
-                    items: projects
-                        .map((p) => DropdownMenuItem(
-                              value: p.slug,
-                              child: Text(p.indentedLabel,
-                                  overflow: TextOverflow.ellipsis),
-                            ))
-                        .toList(),
-                    onChanged: (v) {
-                      setState(() {
-                        _selectedProjectSlug = v;
-                        _assignedToId = null;
-                        _parentIssueId = null;
-                        _fixedVersionId = null;
-                        _categoryId = null;
+                  data: (projects) {
+                    final validSlug = (_selectedProjectSlug != null &&
+                            projects.any((p) => p.slug == _selectedProjectSlug))
+                        ? _selectedProjectSlug
+                        : (projects.isNotEmpty ? projects.first.slug : null);
+
+                    // 만약 _selectedProjectSlug가 설정되지 않았고 유효한 프로젝트가 존재하면 상태 변수에 명시적으로 바인딩
+                    if (_selectedProjectSlug == null && validSlug != null) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted && _selectedProjectSlug == null) {
+                          setState(() => _selectedProjectSlug = validSlug);
+                        }
                       });
-                    },
-                    validator: (v) =>
-                        (v == null || v.isEmpty) ? '프로젝트를 선택해 주세요.' : null,
-                  ),
+                    }
+
+                    return DropdownButtonFormField<String>(
+                      value: validSlug,
+                      isExpanded: true,
+                      style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
+                      dropdownColor: context.colors.bgCard,
+                      decoration: _inputDecoration('프로젝트 선택'),
+                      items: projects
+                          .map((p) => DropdownMenuItem(
+                                value: p.slug,
+                                child: Text(p.indentedLabel,
+                                    overflow: TextOverflow.ellipsis),
+                              ))
+                          .toList(),
+                      onChanged: (v) {
+                        setState(() {
+                          _selectedProjectSlug = v;
+                          _assignedToId = null;
+                          _parentIssueId = null;
+                          _fixedVersionId = null;
+                          _categoryId = null;
+                        });
+                      },
+                      validator: (v) =>
+                          (v == null || v.isEmpty) ? '프로젝트를 선택해 주세요.' : null,
+                    );
+                  },
                 ),
                 const SizedBox(height: 16),
               ],
