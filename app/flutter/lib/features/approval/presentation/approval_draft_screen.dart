@@ -750,6 +750,12 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
   }
 
   Future<void> _handleSave({required bool isDirectSubmit}) async {
+    if (_selectedAssignment == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('기안자의 소속 보직 정보가 없어 문서를 기안할 수 없습니다.')),
+      );
+      return;
+    }
     if (!_formKey.currentState!.validate()) return;
     if (_selectedDocType == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -766,7 +772,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
       final payload = <String, dynamic>{
         'title': _titleController.text.trim(),
         'doc_type': _selectedDocType!.id,
-        if (_selectedAssignment != null) 'drafter_assignment': _selectedAssignment!.id,
+        'drafter_assignment': _selectedAssignment!.id,
         'content': content,
       };
 
@@ -809,7 +815,10 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
       if (mounted) {
         setState(() => _isSubmitting = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('처리 중 오류가 발생했습니다: $e'), backgroundColor: context.colors.error),
+          SnackBar(
+            content: Text('저장 실패: $e'),
+            backgroundColor: context.colors.error,
+          ),
         );
       }
     }
@@ -818,6 +827,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
   @override
   Widget build(BuildContext context) {
     final assignmentsAsync = ref.watch(myAssignmentsProvider);
+    final hasValidAssignment = _selectedAssignment != null;
 
     return Scaffold(
       backgroundColor: context.colors.bgPrimary,
@@ -833,7 +843,37 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
         elevation: 0,
       ),
       body: assignmentsAsync.when(
-        data: (assignments) => _buildForm(context, assignments),
+        data: (assignments) {
+          if (assignments.isEmpty) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.badge_outlined, size: 56, color: context.colors.textDisabled),
+                    const SizedBox(height: 16),
+                    Text(
+                      '기안 가능한 보직 정보가 없습니다.',
+                      style: AppTextStyles.titleMd.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: context.colors.textPrimary,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '전자결재 문서를 기안하려면 임직원(Staff) 및 소속 부서 보직이 먼저 등록되어 있어야 합니다.\n관리자에게 문의해 주세요.',
+                      style: AppTextStyles.bodySm.copyWith(color: context.colors.textMuted),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+          return _buildForm(context, assignments);
+        },
         loading: () => const LoadingShimmer(itemCount: 5, itemHeight: 80),
         error: (e, _) => Center(child: Text('보직 정보를 불러올 수 없습니다: $e')),
       ),
@@ -850,7 +890,9 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
                 child: SizedBox(
                   height: 46,
                   child: OutlinedButton(
-                    onPressed: _isSubmitting ? null : () => _handleSave(isDirectSubmit: false),
+                    onPressed: (_isSubmitting || !hasValidAssignment)
+                        ? null
+                        : () => _handleSave(isDirectSubmit: false),
                     style: OutlinedButton.styleFrom(
                       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                       side: BorderSide(color: context.colors.border),
@@ -865,9 +907,12 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
                 child: SizedBox(
                   height: 46,
                   child: ElevatedButton.icon(
-                    onPressed: _isSubmitting ? null : () => _handleSave(isDirectSubmit: true),
+                    onPressed: (_isSubmitting || !hasValidAssignment)
+                        ? null
+                        : () => _handleSave(isDirectSubmit: true),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: context.colors.accentApproval,
+                      disabledBackgroundColor: context.colors.border,
                       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                       elevation: 0,
                     ),

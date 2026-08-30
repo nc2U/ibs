@@ -255,6 +255,27 @@ class ApprovalDocumentSerializer(serializers.ModelSerializer):
 
         return super().to_internal_value(mutable_data)
 
+    def validate(self, attrs):
+        request = self.context.get('request')
+        user = request.user if request else None
+
+        # 신규 생성(POST) 시 기안자의 보직(drafter_assignment) 존재 여부 엄격 검증
+        if not self.instance and user:
+            assignment = attrs.get('drafter_assignment')
+            if not assignment:
+                assignment = StaffAssignment.objects.filter(
+                    staff__user=user, is_primary=True
+                ).first() or StaffAssignment.objects.filter(
+                    staff__user=user
+                ).first()
+                if assignment:
+                    attrs['drafter_assignment'] = assignment
+                else:
+                    raise serializers.ValidationError(
+                        {'drafter_assignment': '임직원(Staff) 보직 정보가 등록되지 않은 사용자는 전자결재 문서를 기안할 수 없습니다.'}
+                    )
+        return attrs
+
     def create(self, validated_data):
         request = self.context.get('request')
         observers_data = validated_data.pop('observers', None)

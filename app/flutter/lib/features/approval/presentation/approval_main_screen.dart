@@ -176,25 +176,29 @@ class _ApprovalMainScreenState extends ConsumerState<ApprovalMainScreen>
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        elevation: 4,
-        highlightElevation: 8,
-        backgroundColor: context.colors.accentApproval,
-        foregroundColor: Colors.white,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.zero,
-        ),
-        icon: const Icon(Icons.add_rounded, size: 20, color: Colors.white),
-        label: const Text(
-          '기안 작성',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-            letterSpacing: 0.2,
-          ),
-        ),
-        onPressed: _goDraft,
-      ),
+      floatingActionButton: (ref.watch(currentUserProvider).valueOrNull?.hasStaff == true ||
+              ref.watch(currentUserProvider).valueOrNull?.isStaff == true ||
+              ref.watch(currentUserProvider).valueOrNull?.isSuperuser == true)
+          ? FloatingActionButton.extended(
+              elevation: 4,
+              highlightElevation: 8,
+              backgroundColor: context.colors.accentApproval,
+              foregroundColor: Colors.white,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.zero,
+              ),
+              icon: const Icon(Icons.add_rounded, size: 20, color: Colors.white),
+              label: const Text(
+                '기안 작성',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  letterSpacing: 0.2,
+                ),
+              ),
+              onPressed: _goDraft,
+            )
+          : null,
     );
   }
 
