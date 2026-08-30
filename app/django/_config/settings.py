@@ -488,7 +488,4 @@ LOGGING = {
 
 # Firebase Admin SDK Configuration (FCM Push)
 FIREBASE_CREDENTIALS_BASE64 = config('FIREBASE_CREDENTIALS_BASE64', default='')
-FIREBASE_CREDENTIALS_PATH = config(
-    'FIREBASE_CREDENTIALS_PATH',
-    default=str(BASE_DIR / '_config' / 'mobile-ibs-f66d7-firebase-adminsdk-fbsvc-8e79781955.json')
-)
+FIREBASE_CREDENTIALS_PATH = config('FIREBASE_CREDENTIALS_PATH', default='')
