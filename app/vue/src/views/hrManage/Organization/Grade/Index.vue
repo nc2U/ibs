@@ -17,7 +17,7 @@ import GradeList from './components/GradeList.vue'
 
 const { can, PERM } = usePerms()
 const accStore = useAccount()
-const canHrWorkCreate = computed(() => accStore.isStaff && can(PERM.HR_WORK_CREATE))
+const canHrWorkCreate = computed(() => accStore.isStaff && can(PERM.HQ_HR_WORK_CREATE))
 
 const dataFilter = ref<ComFilter>({
   page: 1,

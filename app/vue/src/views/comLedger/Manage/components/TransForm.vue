@@ -32,9 +32,9 @@ watch(
 import { usePerms } from '@/composables/usePerms'
 
 const { canGlobal, PERM } = usePerms()
-const canComLedgerCreate = computed(() => canGlobal(PERM.LEDGER_COM_CREATE))
-const canComLedgerUpdate = computed(() => canGlobal(PERM.LEDGER_COM_UPDATE))
-const canComLedgerDelete = computed(() => canGlobal(PERM.LEDGER_COM_DELETE))
+const canComLedgerCreate = computed(() => canGlobal(PERM.HQ_LEDGER_CREATE))
+const canComLedgerUpdate = computed(() => canGlobal(PERM.HQ_LEDGER_UPDATE))
+const canComLedgerDelete = computed(() => canGlobal(PERM.HQ_LEDGER_DELETE))
 const canComLedgerEdit = computed(() =>
   isCreateMode.value ? canComLedgerCreate.value : canComLedgerUpdate.value,
 )

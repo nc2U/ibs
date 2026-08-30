@@ -17,10 +17,10 @@ const props = defineProps({
 
 const { can, canGlobal, PERM } = usePerms()
 const canComLedgerManage = computed(
-  () => can(PERM.LEDGER_COM_MANAGE) || canGlobal(PERM.LEDGER_COM_MANAGE),
+  () => can(PERM.HQ_LEDGER_MANAGE) || canGlobal(PERM.HQ_LEDGER_MANAGE),
 )
 const canComLedgerUpdate = computed(
-  () => can(PERM.LEDGER_COM_UPDATE) || canGlobal(PERM.LEDGER_COM_UPDATE),
+  () => can(PERM.HQ_LEDGER_UPDATE) || canGlobal(PERM.HQ_LEDGER_UPDATE),
 )
 
 const router = useRouter()

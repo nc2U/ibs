@@ -13,7 +13,7 @@ const emit = defineEmits(['page-select', 'multi-submit', 'on-delete'])
 const { can, PERM } = usePerms()
 const accStore = useAccount()
 const canHrWorkManage = computed(
-  () => accStore.isStaff && (can(PERM.HR_WORK_CREATE) || can(PERM.HR_WORK_UPDATE)),
+  () => accStore.isStaff && (can(PERM.HQ_HR_WORK_CREATE) || can(PERM.HQ_HR_WORK_UPDATE)),
 )
 
 const companyStore = useCompany()

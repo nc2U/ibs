@@ -14,8 +14,8 @@ const { canGlobal, PERM } = usePerms()
 const isHrManager = computed(
   () =>
     accStore.workManager ||
-    canGlobal(PERM.HR_WORK_UPDATE) ||
-    canGlobal(PERM.HR_WORK_CREATE),
+    canGlobal(PERM.HQ_HR_WORK_UPDATE) ||
+    canGlobal(PERM.HQ_HR_WORK_CREATE),
 )
 
 const navMenu = computed(() => (!isHrManager.value ? navMenu1 : navMenu2))

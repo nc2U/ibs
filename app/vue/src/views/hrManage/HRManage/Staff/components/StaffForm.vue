@@ -19,9 +19,9 @@ const props = defineProps({
 const emit = defineEmits(['multi-submit', 'on-delete', 'close'])
 
 const { can, PERM } = usePerms()
-const canHrWorkCreate = computed(() => accStore.isStaff && can(PERM.HR_WORK_CREATE))
-const canHrWorkUpdate = computed(() => accStore.isStaff && can(PERM.HR_WORK_UPDATE))
-const canHrWorkDelete = computed(() => accStore.isStaff && can(PERM.HR_WORK_DELETE))
+const canHrWorkCreate = computed(() => accStore.isStaff && can(PERM.HQ_HR_WORK_CREATE))
+const canHrWorkUpdate = computed(() => accStore.isStaff && can(PERM.HQ_HR_WORK_UPDATE))
+const canHrWorkDelete = computed(() => accStore.isStaff && can(PERM.HQ_HR_WORK_DELETE))
 
 const refDelModal = ref()
 const refAlertModal = ref()

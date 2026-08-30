@@ -20,11 +20,11 @@ const { can, canGlobal, PERM } = usePerms()
 const isHrManager = computed(
   () =>
     accStore.workManager ||
-    canGlobal(PERM.HR_WORK_UPDATE) ||
-    canGlobal(PERM.HR_WORK_CREATE),
+    canGlobal(PERM.HQ_HR_WORK_UPDATE) ||
+    canGlobal(PERM.HQ_HR_WORK_CREATE),
 )
 const navMenu = computed(() => (!isHrManager.value ? navMenu1 : navMenu2))
-const canHrWorkCreate = computed(() => accStore.isStaff && can(PERM.HR_WORK_CREATE))
+const canHrWorkCreate = computed(() => accStore.isStaff && can(PERM.HQ_HR_WORK_CREATE))
 
 const dataFilter = ref<StaffFilter>({
   page: 1,

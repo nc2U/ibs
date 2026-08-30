@@ -19,7 +19,7 @@ const refAlertModal = ref()
 const refConfirmModal = ref()
 
 const { canGlobal, PERM } = usePerms()
-const canComLedgerManage = computed(() => canGlobal(PERM.LEDGER_COM_MANAGE))
+const canComLedgerManage = computed(() => canGlobal(PERM.HQ_LEDGER_MANAGE))
 
 const validated = ref(false)
 

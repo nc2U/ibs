@@ -15,7 +15,7 @@ const refAlertModal = ref()
 
 const { can, PERM } = usePerms()
 const accStore = useAccount()
-const canHrWorkCreate = computed(() => accStore.isStaff && can(PERM.HR_WORK_CREATE))
+const canHrWorkCreate = computed(() => accStore.isStaff && can(PERM.HQ_HR_WORK_CREATE))
 
 const createConfirm = () => {
   if (canHrWorkCreate.value) refFormModal.value.callModal()

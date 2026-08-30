@@ -22,8 +22,8 @@ const refAccountManage = ref()
 const refBankAcc = ref()
 
 const { canGlobal, PERM } = usePerms()
-const canComLedgerUpdate = computed(() => canGlobal(PERM.LEDGER_COM_UPDATE))
-const canComLedgerManage = computed(() => canGlobal(PERM.LEDGER_COM_MANAGE))
+const canComLedgerUpdate = computed(() => canGlobal(PERM.HQ_LEDGER_UPDATE))
+const canComLedgerManage = computed(() => canGlobal(PERM.HQ_LEDGER_MANAGE))
 const canComLedgerEdit = computed(
   () => canComLedgerUpdate.value || canComLedgerManage.value,
 )

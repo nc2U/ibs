@@ -17,7 +17,7 @@ import DepartmentList from './components/DepartmentList.vue'
 
 const { can, PERM } = usePerms()
 const accStore = useAccount()
-const canHrWorkCreate = computed(() => accStore.isStaff && can(PERM.HR_WORK_CREATE))
+const canHrWorkCreate = computed(() => accStore.isStaff && can(PERM.HQ_HR_WORK_CREATE))
 
 const dataFilter = ref<DepFilter>({
   page: 1,

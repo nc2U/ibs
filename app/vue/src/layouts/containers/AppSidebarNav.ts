@@ -129,8 +129,8 @@ const AppSidebarNav = defineComponent({
 
     const { canGlobal, PERM } = usePerms()
     const permissions = computed(() => ({
-      comLedgerRead: canGlobal(PERM.LEDGER_COM_READ),
-      hrWorkRead: canGlobal(PERM.HR_WORK_READ),
+      comLedgerRead: canGlobal(PERM.HQ_LEDGER_READ),
+      hrWorkRead: canGlobal(PERM.HQ_HR_WORK_READ),
       contractRead: canGlobal(PERM.CONTRACT_READ),
       paymentRead: canGlobal(PERM.PAYMENT_READ),
       noticeRead: canGlobal(PERM.NOTICE_READ),

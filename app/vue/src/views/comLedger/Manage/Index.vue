@@ -24,7 +24,7 @@ import TransactionList from './components/TransactionList.vue'
 import TransForm from './components/TransForm.vue'
 
 const { canGlobal, PERM } = usePerms()
-const canComLedgerCreate = computed(() => canGlobal(PERM.LEDGER_COM_CREATE))
+const canComLedgerCreate = computed(() => canGlobal(PERM.HQ_LEDGER_CREATE))
 
 const listControl = ref()
 const [route, router] = [useRoute() as Loaded & { name: string }, useRouter()]

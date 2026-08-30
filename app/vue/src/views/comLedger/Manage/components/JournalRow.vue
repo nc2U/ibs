@@ -56,7 +56,7 @@ const emit = defineEmits<Emits>()
 
 const { canGlobal, PERM } = usePerms()
 const canComLedgerUpdate = computed(
-  () => canGlobal(PERM.LEDGER_COM_UPDATE) || canGlobal(PERM.LEDGER_COM_CREATE),
+  () => canGlobal(PERM.HQ_LEDGER_UPDATE) || canGlobal(PERM.HQ_LEDGER_CREATE),
 )
 
 const affiliates = inject<ComputedRef<{ value: number; label: string }[]>>('affiliates')

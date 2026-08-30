@@ -13,7 +13,7 @@ const emit = defineEmits(['multi-submit'])
 
 const { can, PERM } = usePerms()
 const accStore = useAccount()
-const canHrWorkCreate = computed(() => accStore.isStaff && can(PERM.HR_WORK_CREATE))
+const canHrWorkCreate = computed(() => accStore.isStaff && can(PERM.HQ_HR_WORK_CREATE))
 
 const refFormModal = ref()
 const refAlertModal = ref()

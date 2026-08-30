@@ -101,16 +101,16 @@ abstract class Perm {
 
   // HQ PERMISSION -----------------------------
   // HR Work permissions
-  static const String hrWorkRead   = 'hq.hr_work.read';
-  static const String hrWorkCreate = 'hq.hr_work.create';
-  static const String hrWorkUpdate = 'hq.hr_work.update';
-  static const String hrWorkDelete = 'hq.hr_work.delete';
+  static const String hqHrWorkRead   = 'hq.hr_work.read';
+  static const String hqHrWorkCreate = 'hq.hr_work.create';
+  static const String hqHrWorkUpdate = 'hq.hr_work.update';
+  static const String hqHrWorkDelete = 'hq.hr_work.delete';
 
   // Company Ledger permissions
-  static const String ledgerComRead   = 'hq.ledger.read';
-  static const String ledgerComCreate = 'hq.ledger.create';
-  static const String ledgerComUpdate = 'hq.ledger.update';
-  static const String ledgerComDelete = 'hq.ledger.delete';
-  static const String ledgerComManage = 'hq.ledger.manage';
+  static const String hqLedgerRead   = 'hq.ledger.read';
+  static const String hqLedgerCreate = 'hq.ledger.create';
+  static const String hqLedgerUpdate = 'hq.ledger.update';
+  static const String hqLedgerDelete = 'hq.ledger.delete';
+  static const String hqLedgerManage = 'hq.ledger.manage';
   // HQ PERMISSION -----------------------------
 }

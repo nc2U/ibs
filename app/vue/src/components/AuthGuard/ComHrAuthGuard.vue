@@ -9,7 +9,7 @@ const account = useAccount()
 const isLoading = computed(() => !account.userInfo)
 
 const { can, PERM } = usePerms()
-const canComHrRead = computed(() => account.isStaff && can(PERM.HR_WORK_READ))
+const canComHrRead = computed(() => account.isStaff && can(PERM.HQ_HR_WORK_READ))
 </script>
 
 <template>
