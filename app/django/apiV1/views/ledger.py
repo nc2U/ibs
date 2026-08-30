@@ -61,7 +61,7 @@ class LedgerCompanyBankAccountViewSet(viewsets.ModelViewSet):
 
     @property
     def required_permission(self):
-        return 'ledger.com_read' if self.action in ('list', 'retrieve') else 'ledger.com_manage'
+        return 'hq.ledger.read' if self.action in ('list', 'retrieve') else 'hq.ledger.manage'
 
 
 def get_accessible_project_ids(user):
@@ -115,7 +115,7 @@ class CompanyAccountViewSet(viewsets.ModelViewSet):
 
     @property
     def required_permission(self):
-        return 'ledger.com_read' if self.action in ('list', 'retrieve', 'search_with_parents') else 'ledger.com_manage'
+        return 'hq.ledger.read' if self.action in ('list', 'retrieve', 'search_with_parents') else 'hq.ledger.manage'
 
     @action(detail=False, methods=['get'])
     def search_with_parents(self, request):
@@ -397,7 +397,7 @@ class AffiliateViewSet(viewsets.ModelViewSet):
 
     @property
     def required_permission(self):
-        return 'ledger.com_read' if self.action in ('list', 'retrieve') else 'ledger.com_manage'
+        return 'hq.ledger.read' if self.action in ('list', 'retrieve') else 'hq.ledger.manage'
 
 
 # ============================================
@@ -415,13 +415,13 @@ class CompanyBankTransactionViewSet(viewsets.ModelViewSet):
     @property
     def required_permission(self):
         return {
-            'list': 'ledger.com_read',
-            'retrieve': 'ledger.com_read',
-            'create': 'ledger.com_create',
-            'update': 'ledger.com_update',
-            'partial_update': 'ledger.com_update',
-            'destroy': 'ledger.com_delete',
-        }.get(self.action, 'ledger.com_read')
+            'list': 'hq.ledger.read',
+            'retrieve': 'hq.ledger.read',
+            'create': 'hq.ledger.create',
+            'update': 'hq.ledger.update',
+            'partial_update': 'hq.ledger.update',
+            'destroy': 'hq.ledger.delete',
+        }.get(self.action, 'hq.ledger.read')
 
     def get_queryset(self):
         """
@@ -793,13 +793,13 @@ class CompanyAccountingEntryViewSet(BankTransactionPreloadMixin, viewsets.ModelV
     @property
     def required_permission(self):
         return {
-            'list': 'ledger.com_read',
-            'retrieve': 'ledger.com_read',
-            'create': 'ledger.com_create',
-            'update': 'ledger.com_update',
-            'partial_update': 'ledger.com_update',
-            'destroy': 'ledger.com_delete',
-        }.get(self.action, 'ledger.com_read')
+            'list': 'hq.ledger.read',
+            'retrieve': 'hq.ledger.read',
+            'create': 'hq.ledger.create',
+            'update': 'hq.ledger.update',
+            'partial_update': 'hq.ledger.update',
+            'destroy': 'hq.ledger.delete',
+        }.get(self.action, 'hq.ledger.read')
 
 
 class ProjectAccountingEntryFilterSet(FilterSet):
@@ -841,11 +841,11 @@ class CompanyCompositeTransactionViewSet(viewsets.ViewSet):
     @property
     def required_permission(self):
         return {
-            'create': 'ledger.com_create',
-            'update': 'ledger.com_update',
-            'partial_update': 'ledger.com_update',
-            'destroy': 'ledger.com_delete',
-        }.get(self.action, 'ledger.com_read')
+            'create': 'hq.ledger.create',
+            'update': 'hq.ledger.update',
+            'partial_update': 'hq.ledger.update',
+            'destroy': 'hq.ledger.delete',
+        }.get(self.action, 'hq.ledger.read')
 
     def create(self, request):
         """본사 거래 생성 (은행거래 + 회계분개)"""
@@ -924,7 +924,7 @@ class CompanyCompositeTransactionViewSet(viewsets.ViewSet):
                 if not has_manage_perm:
                     from apiV1.permissions.ibs_perms import HqProjectModulePermission
                     user_perms = HqProjectModulePermission._get_all_hq_user_permissions(user)
-                    if 'ledger.com_manage' in user_perms:
+                    if 'hq.ledger.manage' in user_perms:
                         has_manage_perm = True
 
                 if not has_manage_perm:
@@ -1099,7 +1099,7 @@ class CompanyLedgerCalculationViewSet(viewsets.ModelViewSet):
 
     @property
     def required_permission(self):
-        return 'ledger.com_read' if self.action in ('list', 'retrieve') else 'ledger.com_manage'
+        return 'hq.ledger.read' if self.action in ('list', 'retrieve') else 'hq.ledger.manage'
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
@@ -1112,7 +1112,7 @@ class CompanyLedgerLastDealDateViewSet(viewsets.ModelViewSet):
 
     @property
     def required_permission(self):
-        return 'ledger.com_read'
+        return 'hq.ledger.read'
 
     def get_queryset(self):
         company = self.request.query_params.get('company')

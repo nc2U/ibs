@@ -10,7 +10,7 @@ const { canGlobal, PERM } = usePerms()
 const isLoading = computed(() => !account.userInfo)
 
 const canComLedgerRead = computed(
-  () => account.workManager || canGlobal(PERM.LEDGER_COM_READ),
+  () => canGlobal(PERM.LEDGER_COM_READ),
 )
 </script>
 

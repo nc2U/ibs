@@ -43,7 +43,7 @@ class DepartmentViewSet(viewsets.ModelViewSet):
 
     @property
     def required_permission(self):
-        return 'hr_work.read' if self.action in ('list', 'retrieve') else 'hr_work.create' if self.action == 'create' else 'hr_work.update' if self.action in ('update', 'partial_update') else 'hr_work.delete' if self.action == 'destroy' else 'hr_work.read'
+        return 'hq.hr_work.read' if self.action in ('list', 'retrieve') else 'hq.hr_work.create' if self.action == 'create' else 'hq.hr_work.update' if self.action in ('update', 'partial_update') else 'hq.hr_work.delete' if self.action == 'destroy' else 'hq.hr_work.read'
 
 
 class JobGradeViewSet(viewsets.ModelViewSet):
@@ -56,7 +56,7 @@ class JobGradeViewSet(viewsets.ModelViewSet):
 
     @property
     def required_permission(self):
-        return 'hr_work.read' if self.action in ('list', 'retrieve') else 'hr_work.create' if self.action == 'create' else 'hr_work.update' if self.action in ('update', 'partial_update') else 'hr_work.delete' if self.action == 'destroy' else 'hr_work.read'
+        return 'hq.hr_work.read' if self.action in ('list', 'retrieve') else 'hq.hr_work.create' if self.action == 'create' else 'hq.hr_work.update' if self.action in ('update', 'partial_update') else 'hq.hr_work.delete' if self.action == 'destroy' else 'hq.hr_work.read'
 
 
 class PositionViewSet(viewsets.ModelViewSet):
@@ -69,7 +69,7 @@ class PositionViewSet(viewsets.ModelViewSet):
 
     @property
     def required_permission(self):
-        return 'hr_work.read' if self.action in ('list', 'retrieve') else 'hr_work.create' if self.action == 'create' else 'hr_work.update' if self.action in ('update', 'partial_update') else 'hr_work.delete' if self.action == 'destroy' else 'hr_work.read'
+        return 'hq.hr_work.read' if self.action in ('list', 'retrieve') else 'hq.hr_work.create' if self.action == 'create' else 'hq.hr_work.update' if self.action in ('update', 'partial_update') else 'hq.hr_work.delete' if self.action == 'destroy' else 'hq.hr_work.read'
 
 
 class DutyTitleViewSet(viewsets.ModelViewSet):
@@ -82,7 +82,7 @@ class DutyTitleViewSet(viewsets.ModelViewSet):
 
     @property
     def required_permission(self):
-        return 'hr_work.read' if self.action in ('list', 'retrieve') else 'hr_work.create' if self.action == 'create' else 'hr_work.update' if self.action in ('update', 'partial_update') else 'hr_work.delete' if self.action == 'destroy' else 'hr_work.read'
+        return 'hq.hr_work.read' if self.action in ('list', 'retrieve') else 'hq.hr_work.create' if self.action == 'create' else 'hq.hr_work.update' if self.action in ('update', 'partial_update') else 'hq.hr_work.delete' if self.action == 'destroy' else 'hq.hr_work.read'
 
 
 class ExecutiveRankViewSet(viewsets.ModelViewSet):
@@ -95,7 +95,7 @@ class ExecutiveRankViewSet(viewsets.ModelViewSet):
 
     @property
     def required_permission(self):
-        return 'hr_work.read' if self.action in ('list', 'retrieve') else 'hr_work.create' if self.action == 'create' else 'hr_work.update' if self.action in ('update', 'partial_update') else 'hr_work.delete' if self.action == 'destroy' else 'hr_work.read'
+        return 'hq.hr_work.read' if self.action in ('list', 'retrieve') else 'hq.hr_work.create' if self.action == 'create' else 'hq.hr_work.update' if self.action in ('update', 'partial_update') else 'hq.hr_work.delete' if self.action == 'destroy' else 'hq.hr_work.read'
 
 
 class ExecutiveViewSet(viewsets.ModelViewSet):
@@ -108,7 +108,7 @@ class ExecutiveViewSet(viewsets.ModelViewSet):
 
     @property
     def required_permission(self):
-        return 'hr_work.read' if self.action in ('list', 'retrieve') else 'hr_work.create' if self.action == 'create' else 'hr_work.update' if self.action in ('update', 'partial_update') else 'hr_work.delete' if self.action == 'destroy' else 'hr_work.read'
+        return 'hq.hr_work.read' if self.action in ('list', 'retrieve') else 'hq.hr_work.create' if self.action == 'create' else 'hq.hr_work.update' if self.action in ('update', 'partial_update') else 'hq.hr_work.delete' if self.action == 'destroy' else 'hq.hr_work.read'
 
 
 class StaffFilter(FilterSet):
@@ -135,7 +135,7 @@ class StaffViewSet(viewsets.ModelViewSet):
 
     @property
     def required_permission(self):
-        return 'hr_work.read' if self.action in ('list', 'retrieve') else 'hr_work.create' if self.action == 'create' else 'hr_work.update' if self.action in ('update', 'partial_update') else 'hr_work.delete' if self.action == 'destroy' else 'hr_work.read'
+        return 'hq.hr_work.read' if self.action in ('list', 'retrieve') else 'hq.hr_work.create' if self.action == 'create' else 'hq.hr_work.update' if self.action in ('update', 'partial_update') else 'hq.hr_work.delete' if self.action == 'destroy' else 'hq.hr_work.read'
 
 
 class StaffAssignmentViewSet(viewsets.ModelViewSet):
@@ -150,7 +150,7 @@ class StaffAssignmentViewSet(viewsets.ModelViewSet):
 
     @property
     def required_permission(self):
-        return 'hr_work.read' if self.action in ('list', 'retrieve') else 'hr_work.create' if self.action == 'create' else 'hr_work.update' if self.action in ('update', 'partial_update') else 'hr_work.delete' if self.action == 'destroy' else 'hr_work.read'
+        return 'hq.hr_work.read' if self.action in ('list', 'retrieve') else 'hq.hr_work.create' if self.action == 'create' else 'hq.hr_work.update' if self.action in ('update', 'partial_update') else 'hq.hr_work.delete' if self.action == 'destroy' else 'hq.hr_work.read'
 
 
 class PersonnelOrderViewSet(viewsets.ModelViewSet):
@@ -166,7 +166,7 @@ class PersonnelOrderViewSet(viewsets.ModelViewSet):
 
     @property
     def required_permission(self):
-        return 'hr_work.read' if self.action in ('list', 'retrieve') else 'hr_work.create' if self.action == 'create' else 'hr_work.update' if self.action in ('update', 'partial_update') else 'hr_work.delete' if self.action == 'destroy' else 'hr_work.read'
+        return 'hq.hr_work.read' if self.action in ('list', 'retrieve') else 'hq.hr_work.create' if self.action == 'create' else 'hq.hr_work.update' if self.action in ('update', 'partial_update') else 'hq.hr_work.delete' if self.action == 'destroy' else 'hq.hr_work.read'
 
 
 class StaffCareerViewSet(viewsets.ModelViewSet):
@@ -179,7 +179,7 @@ class StaffCareerViewSet(viewsets.ModelViewSet):
 
     @property
     def required_permission(self):
-        return 'hr_work.read' if self.action in ('list', 'retrieve') else 'hr_work.create' if self.action == 'create' else 'hr_work.update' if self.action in ('update', 'partial_update') else 'hr_work.delete' if self.action == 'destroy' else 'hr_work.read'
+        return 'hq.hr_work.read' if self.action in ('list', 'retrieve') else 'hq.hr_work.create' if self.action == 'create' else 'hq.hr_work.update' if self.action in ('update', 'partial_update') else 'hq.hr_work.delete' if self.action == 'destroy' else 'hq.hr_work.read'
 
 
 class StaffCertificateViewSet(viewsets.ModelViewSet):
@@ -192,7 +192,7 @@ class StaffCertificateViewSet(viewsets.ModelViewSet):
 
     @property
     def required_permission(self):
-        return 'hr_work.read' if self.action in ('list', 'retrieve') else 'hr_work.create' if self.action == 'create' else 'hr_work.update' if self.action in ('update', 'partial_update') else 'hr_work.delete' if self.action == 'destroy' else 'hr_work.read'
+        return 'hq.hr_work.read' if self.action in ('list', 'retrieve') else 'hq.hr_work.create' if self.action == 'create' else 'hq.hr_work.update' if self.action in ('update', 'partial_update') else 'hq.hr_work.delete' if self.action == 'destroy' else 'hq.hr_work.read'
 
 
 class StaffRewardPunishmentViewSet(viewsets.ModelViewSet):
@@ -205,7 +205,7 @@ class StaffRewardPunishmentViewSet(viewsets.ModelViewSet):
 
     @property
     def required_permission(self):
-        return 'hr_work.read' if self.action in ('list', 'retrieve') else 'hr_work.create' if self.action == 'create' else 'hr_work.update' if self.action in ('update', 'partial_update') else 'hr_work.delete' if self.action == 'destroy' else 'hr_work.read'
+        return 'hq.hr_work.read' if self.action in ('list', 'retrieve') else 'hq.hr_work.create' if self.action == 'create' else 'hq.hr_work.update' if self.action in ('update', 'partial_update') else 'hq.hr_work.delete' if self.action == 'destroy' else 'hq.hr_work.read'
 
 
 # Promotion & Evaluation -----------------------------------------------------------
@@ -221,7 +221,7 @@ class PromotionPolicyViewSet(viewsets.ModelViewSet):
 
     @property
     def required_permission(self):
-        return 'hr_work.read' if self.action in ('list', 'retrieve') else 'hr_work.create' if self.action == 'create' else 'hr_work.update' if self.action in ('update', 'partial_update') else 'hr_work.delete' if self.action == 'destroy' else 'hr_work.read'
+        return 'hq.hr_work.read' if self.action in ('list', 'retrieve') else 'hq.hr_work.create' if self.action == 'create' else 'hq.hr_work.update' if self.action in ('update', 'partial_update') else 'hq.hr_work.delete' if self.action == 'destroy' else 'hq.hr_work.read'
 
 
 class StaffEvaluationViewSet(viewsets.ModelViewSet):
@@ -236,7 +236,7 @@ class StaffEvaluationViewSet(viewsets.ModelViewSet):
 
     @property
     def required_permission(self):
-        return 'hr_work.read' if self.action in ('list', 'retrieve') else 'hr_work.create' if self.action == 'create' else 'hr_work.update' if self.action in ('update', 'partial_update') else 'hr_work.delete' if self.action == 'destroy' else 'hr_work.read'
+        return 'hq.hr_work.read' if self.action in ('list', 'retrieve') else 'hq.hr_work.create' if self.action == 'create' else 'hq.hr_work.update' if self.action in ('update', 'partial_update') else 'hq.hr_work.delete' if self.action == 'destroy' else 'hq.hr_work.read'
 
 
 class PromotionCandidateViewSet(viewsets.ModelViewSet):
@@ -251,5 +251,5 @@ class PromotionCandidateViewSet(viewsets.ModelViewSet):
 
     @property
     def required_permission(self):
-        return 'hr_work.read' if self.action in ('list', 'retrieve') else 'hr_work.create' if self.action == 'create' else 'hr_work.update' if self.action in ('update', 'partial_update') else 'hr_work.delete' if self.action == 'destroy' else 'hr_work.read'
+        return 'hq.hr_work.read' if self.action in ('list', 'retrieve') else 'hq.hr_work.create' if self.action == 'create' else 'hq.hr_work.update' if self.action in ('update', 'partial_update') else 'hq.hr_work.delete' if self.action == 'destroy' else 'hq.hr_work.read'
 

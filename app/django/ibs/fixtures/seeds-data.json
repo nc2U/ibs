@@ -11243,7 +11243,7 @@
       "is_for_hq": true,
       "is_for_project": false,
       "is_confidential": true,
-      "code": "hr_work.read",
+      "code": "hq.hr_work.read",
       "name": "본사 인사 조회",
       "is_default": false,
       "description": "직원/부서/직급 조회"
@@ -11258,7 +11258,7 @@
       "is_for_hq": true,
       "is_for_project": false,
       "is_confidential": true,
-      "code": "hr_work.create",
+      "code": "hq.hr_work.create",
       "name": "본사 인사 등록",
       "is_default": false,
       "description": "직원/부서 등록"
@@ -11273,7 +11273,7 @@
       "is_for_hq": true,
       "is_for_project": false,
       "is_confidential": true,
-      "code": "hr_work.update",
+      "code": "hq.hr_work.update",
       "name": "본사 인사 수정",
       "is_default": false,
       "description": "직원/부서 수정"
@@ -11288,7 +11288,7 @@
       "is_for_hq": true,
       "is_for_project": false,
       "is_confidential": true,
-      "code": "hr_work.delete",
+      "code": "hq.hr_work.delete",
       "name": "본사 인사 삭제",
       "is_default": false,
       "description": "직원/부서 삭제"
@@ -11303,7 +11303,7 @@
       "is_for_hq": true,
       "is_for_project": false,
       "is_confidential": true,
-      "code": "ledger.com_read",
+      "code": "hq.ledger.read",
       "name": "본사 원장 조회",
       "is_default": false,
       "description": "본사 자금 현황 조회"
@@ -11318,7 +11318,7 @@
       "is_for_hq": true,
       "is_for_project": false,
       "is_confidential": true,
-      "code": "ledger.com_create",
+      "code": "hq.ledger.create",
       "name": "본사 원장 등록",
       "is_default": false,
       "description": "본사 회계 분개 생성"
@@ -11333,7 +11333,7 @@
       "is_for_hq": true,
       "is_for_project": false,
       "is_confidential": true,
-      "code": "ledger.com_update",
+      "code": "hq.ledger.update",
       "name": "본사 원장 수정",
       "is_default": false,
       "description": "본사 회계 분개 수정"
@@ -11348,7 +11348,7 @@
       "is_for_hq": true,
       "is_for_project": false,
       "is_confidential": true,
-      "code": "ledger.com_delete",
+      "code": "hq.ledger.delete",
       "name": "본사 원장 삭제",
       "is_default": false,
       "description": "본사 회계 분개 삭제"
@@ -11363,7 +11363,7 @@
       "is_for_hq": true,
       "is_for_project": false,
       "is_confidential": true,
-      "code": "ledger.com_manage",
+      "code": "hq.ledger.manage",
       "name": "본사 마감 원장 관리",
       "is_default": false,
       "description": "본사 마감 회계 관리"

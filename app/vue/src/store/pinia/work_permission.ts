@@ -133,6 +133,11 @@ export const usePermission = defineStore('permission', () => {
     )
   }
 
+  // 본사 관리(HQ Manage) 보안 권한 여부 확인 (hq.* 프리픽스 기준: workManager보다 우선하여 실제 권한 검증 필수)
+  const isHqPerm = (c: PermissionCode) => {
+    return c.startsWith('hq.')
+  }
+
   // 권한 체크 로직
   const can = (code: PermissionCode | PermissionCode[], projectIdentifier?: number | string) => {
     const check = (c: PermissionCode) => {
@@ -153,8 +158,11 @@ export const usePermission = defineStore('permission', () => {
         return false
       }
 
-      // 1. 업무 관리자(workManager)인 경우 허용 (단, 닫힘/잠금보관 프로젝트의 쓰기 제한은 상단에서 적용)
-      if (accountStore.workManager) return true
+      // 슈퍼유저는 전체 권한 허용
+      if (accountStore.superAuth) return true
+
+      // 1. 업무 관리자(workManager)인 경우: 일반 워크스페이스/프로젝트 권한은 허용하되, 본사 관리(HQ) 권한은 제외
+      if (accountStore.workManager && !isHqPerm(c)) return true
 
       // 공개 프로젝트(is_public=true)의 읽기 권한(*.read)은 비멤버도 기본 열람 허용 (work_core 영역)
       if (targetProj?.is_public && (c.endsWith('.read') || c === PERM.NEWS_READ)) {
@@ -180,11 +188,24 @@ export const usePermission = defineStore('permission', () => {
   }
 
   // 전역 권한 체크
-  // 주의: 기존 checkGlobal의 Path 2(익명/로그인 사용자 역할 pk=2 기반 체크)는 해당 역할 개념 폐지로 제거됨.
-  // 현재 pk=2는 일반 프로젝트 역할('개발담당')이며, 로그인 사용자 전체에 권한을 부여하는 용도가 아님.
   // canGlobal: globalPermSet(내가 멤버인 모든 프로젝트의 권한 합집합)만으로 판정
+  // 본사 관리(HQ) 권한(hr_work.*, ledger.com_*)은 workManager보다 우선하여 실제 보유 권한으로만 판정
   const canGlobal = (code: PermissionCode | PermissionCode[]) => {
-    if (accountStore.workManager) return true
+    if (accountStore.superAuth) return true
+
+    if (accountStore.workManager) {
+      if (Array.isArray(code)) {
+        if (code.some(c => isHqPerm(c))) {
+          return code.every(c => globalPermSet.value.has(c))
+        }
+        return true
+      }
+      if (isHqPerm(code)) {
+        return globalPermSet.value.has(code)
+      }
+      return true
+    }
+
     if (Array.isArray(code)) return code.every(c => globalPermSet.value.has(c))
     return globalPermSet.value.has(code)
   }

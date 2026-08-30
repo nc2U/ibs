@@ -57,10 +57,6 @@ class HqProjectModulePermission(permissions.BasePermission):
         if request.user.is_superuser:
             return True
 
-        # 3. work_manager 전체 허용
-        if getattr(request.user, 'work_manager', False):
-            return True
-
         project_pk = get_project_pk_from_request(request, view)
         issue_project = resolve_issue_project(project_pk, request) if project_pk else None
         if issue_project:
@@ -92,10 +88,6 @@ class HqProjectModulePermission(permissions.BasePermission):
 
         # 2. 슈퍼유저 전체 허용
         if request.user.is_superuser:
-            return True
-
-        # 3. work_manager 전체 허용
-        if getattr(request.user, 'work_manager', False):
             return True
 
         project_pk = get_project_pk_from_request(request, view)

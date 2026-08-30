@@ -70,17 +70,17 @@ export const PERM = {
 
   // HQ PERMISSION -----------------------------
   // HR Work permissions
-  HR_WORK_READ: 'hr_work.read',
-  HR_WORK_CREATE: 'hr_work.create',
-  HR_WORK_UPDATE: 'hr_work.update',
-  HR_WORK_DELETE: 'hr_work.delete',
+  HR_WORK_READ: 'hq.hr_work.read',
+  HR_WORK_CREATE: 'hq.hr_work.create',
+  HR_WORK_UPDATE: 'hq.hr_work.update',
+  HR_WORK_DELETE: 'hq.hr_work.delete',
 
   // Company Ledger permissions
-  LEDGER_COM_READ: 'ledger.com_read',
-  LEDGER_COM_CREATE: 'ledger.com_create',
-  LEDGER_COM_UPDATE: 'ledger.com_update',
-  LEDGER_COM_DELETE: 'ledger.com_delete',
-  LEDGER_COM_MANAGE: 'ledger.com_manage',
+  LEDGER_COM_READ: 'hq.ledger.read',
+  LEDGER_COM_CREATE: 'hq.ledger.create',
+  LEDGER_COM_UPDATE: 'hq.ledger.update',
+  LEDGER_COM_DELETE: 'hq.ledger.delete',
+  LEDGER_COM_MANAGE: 'hq.ledger.manage',
   // HQ PERMISSION -----------------------------
 
   // PROJECT PERMISSION ------------------------
