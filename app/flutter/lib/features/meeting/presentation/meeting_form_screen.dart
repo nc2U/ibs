@@ -133,7 +133,13 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
     final createdCategory = await showDialog<MeetingCategoryModel?>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('새 회의 카테고리 추가'),
+        title: Text(
+          '새 회의 카테고리 추가',
+          style: AppTextStyles.titleSm.copyWith(
+            fontWeight: FontWeight.bold,
+            color: context.colors.textPrimary,
+          ),
+        ),
         content: Form(
           key: formKey,
           child: Column(
@@ -144,7 +150,7 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                 _selectedProjectPk != null
                     ? '현재 워크스페이스 전용 카테고리로 등록됩니다.'
                     : '전체 공용 카테고리로 등록됩니다.',
-                style: TextStyle(fontSize: 12, color: context.colors.textMuted),
+                style: TextStyle(fontSize: 11, color: context.colors.textMuted),
               ),
               const SizedBox(height: 12),
               TextFormField(
