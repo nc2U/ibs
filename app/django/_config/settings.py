@@ -445,7 +445,8 @@ APP_ORDER = [
     'payment',
     'notice',
     'docs',
-    'board',
+    'forum',
+    'chat',
     'book',
     'accounts',
 ]
