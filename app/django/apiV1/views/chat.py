@@ -203,9 +203,24 @@ class ChatMessageViewSet(viewsets.ModelViewSet):
     pagination_class = None
 
     def get_queryset(self):
+        user = self.request.user
         room_id = self.request.query_params.get('room')
-        if not room_id:
+        if not room_id or not user.is_authenticated:
             return ChatMessage.objects.none()
+
+        # 방 접근 권한 검증: 1) 내가 멤버인 방 또는 2) 내 워크스페이스 공용 채널
+        room = ChatRoom.objects.filter(pk=room_id).first()
+        if not room:
+            return ChatMessage.objects.none()
+
+        if room.room_type == 'channel':
+            my_project_ids = list(user.member_project_ids()) if hasattr(user, 'member_project_ids') else []
+            if room.project_id not in my_project_ids and not user.is_superuser:
+                return ChatMessage.objects.none()
+        else:
+            if not room.members.filter(pk=user.pk).exists() and not user.is_superuser:
+                return ChatMessage.objects.none()
+
         return ChatMessage.objects.filter(room_id=room_id).select_related(
             'sender', 'reply_to', 'reply_to__sender', 'reply_to__sender__profile'
         ).order_by('created')
