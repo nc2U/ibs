@@ -28,7 +28,11 @@ const isMembersDrawerOpen = ref(false)
 
 const getRoomDisplayName = (room: ChatRoom) => {
   if (room.room_type === 'direct' && room.members?.length) {
-    const other = room.members.find(m => m.pk !== currentUserId.value)
+    // 1:1 DM인 경우: 현재 사용자가 아니며, 시스템 계정이 아닌 상대방을 우선 탐색
+    const other =
+      room.members.find(m => m.pk !== currentUserId.value && !(m as any).is_system) ||
+      room.members.find(m => m.pk !== currentUserId.value)
+
     if (other) {
       return (other as any).name ? `${(other as any).name} (${other.username})` : other.username
     }

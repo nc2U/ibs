@@ -3,13 +3,16 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from chat.models import ChatRoom, ChatRoomMember, ChatMessage
+from accounts.models import User
+from apiV1.serializers.accounts import UserSerializer
 from apiV1.serializers.chat import (
     ChatRoomListSerializer,
     ChatRoomDetailSerializer,
     ChatMessageSerializer,
-    ChatRoomMemberSerializer,
 )
+from chat.models import ChatRoom, ChatRoomMember, ChatMessage
+from work.models import IssueProject
+from work.models.project import Member
 
 
 class ChatRoomViewSet(viewsets.ModelViewSet):
@@ -36,7 +39,6 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
         my_project_ids = list(user.member_project_ids()) if hasattr(user, 'member_project_ids') else []
 
         # 내 활성 워크스페이스 중 메신저 공용 채널이 활성화된(chat_channel_enabled=True) 곳의 대화방 자동 생성
-        from work.models import IssueProject
         my_projects = IssueProject.objects.filter(
             pk__in=my_project_ids,
             status='1',
@@ -54,10 +56,11 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
                 }
             )
 
-        # 슈퍼유저도 본인이 숨김(is_hidden) 처리한 대화방은 내 목록에서 제외
+        # 슈퍼유저도 1:1 DM 및 그룹방은 본인이 참여한 방만 조회되어야 하며(사생활 격리), 공용 채널만 전체 열람 가능
         if user.is_superuser:
             return ChatRoom.objects.filter(
-                ~Q(memberships__user=user, memberships__is_hidden=True)
+                (Q(members=user) & ~Q(memberships__user=user, memberships__is_hidden=True)) |
+                Q(room_type='channel')
             ).distinct()
 
         # 1) 내가 멤버로 속해 있고 숨김 처리하지 않은 방 (1:1 DM, 그룹방)
@@ -79,6 +82,9 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'], url_path='get-or-create-dm')
     def get_or_create_dm(self, request):
         """특정 사용자와의 1:1 DM 대화방 조회 또는 자동 생성"""
+        from django.db.models import Count
+        from accounts.models import User
+
         target_user_id = request.data.get('target_user_id')
         if not target_user_id:
             return Response({'error': 'target_user_id가 필요합니다.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -86,11 +92,16 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
         if int(target_user_id) == request.user.pk:
             return Response({'error': '자기 자신과의 DM은 지원하지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # 이미 두 사람만 존재하는 DM이 있는지 검색
-        existing_rooms = ChatRoom.objects.filter(
+        target_user = User.objects.filter(pk=target_user_id, is_active=True, is_system=False).first()
+        if not target_user:
+            return Response({'error': '대화할 수 없는 사용자이거나 시스템 계정입니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 정확히 나와 대상자 2명만 존재하는 1:1 DM 검색
+        existing_rooms = ChatRoom.objects.annotate(member_cnt=Count('members')).filter(
             room_type='direct',
+            member_cnt=2,
             members=request.user
-        ).filter(members__pk=target_user_id)
+        ).filter(members=target_user)
 
         if existing_rooms.exists():
             room = existing_rooms.first()
@@ -105,7 +116,7 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
             created_by=request.user
         )
         ChatRoomMember.objects.create(room=room, user=request.user, is_admin=True)
-        ChatRoomMember.objects.create(room=room, user_id=target_user_id, is_admin=False)
+        ChatRoomMember.objects.create(room=room, user=target_user, is_admin=False)
 
         serializer = ChatRoomListSerializer(room, context={'request': request})
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -159,12 +170,9 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
     def available_users(self, request):
         """
         1:1 대화 개설이 가능한 협업 대상자 목록:
-        1. 활성 본사 임직원 (staff__status='1' & is_active=True)
-        2. 활성 워크스페이스에 1개 이상 멤버(Member)로 참여 중인 사용자
+        1. 활성 본사 임직원 (staff__status='1' & is_active=True & is_system=False)
+        2. 활성 워크스페이스에 1개 이상 멤버(Member)로 참여 중인 사용자 (is_system=False)
         """
-        from accounts.models import User
-        from work.models.project import Member
-        from apiV1.serializers.accounts import UserSerializer
 
         # 활성 워크스페이스에 속한 멤버의 user_id 목록
         active_member_user_ids = Member.objects.filter(
@@ -172,9 +180,9 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
         ).values_list('user_id', flat=True)
 
         users = User.objects.filter(
-            Q(is_active=True) & (
-                Q(staff__status='1') |
-                Q(pk__in=active_member_user_ids)
+            Q(is_active=True, is_system=False) & (
+                    Q(staff__status='1') |
+                    Q(pk__in=active_member_user_ids)
             )
         ).distinct().select_related('profile', 'staff').order_by('profile__name', 'username')
 
