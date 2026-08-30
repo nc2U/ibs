@@ -455,11 +455,10 @@ class _InfoCard extends StatelessWidget {
               label: '회의 일시',
               value: _formatDateTime(meeting.meetingDate),
               icon: Icons.calendar_today_outlined),
-          if (meeting.location.isNotEmpty)
-            _Row(
-                label: '회의 장소',
-                value: meeting.location,
-                icon: Icons.location_on_outlined),
+          _Row(
+              label: '회의 장소',
+              value: meeting.location.isNotEmpty ? meeting.location : '-',
+              icon: Icons.location_on_outlined),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 5),
             child: Row(
