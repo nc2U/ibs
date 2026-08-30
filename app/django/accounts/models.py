@@ -41,8 +41,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     REQUIRED_FIELDS = ['username']
 
     class Meta:
-        verbose_name = _('user')
-        verbose_name_plural = _('users')
+        verbose_name = _('01. 사용자')
+        verbose_name_plural = _('01. 사용자')
         ordering = ('-date_joined',)
 
     def __str__(self):
@@ -104,8 +104,8 @@ class Profile(models.Model):
 
     class Meta:
         ordering = ('-id',)
-        verbose_name = '사용자 프로필'
-        verbose_name_plural = '사용자 프로필'
+        verbose_name = '02. 사용자 프로필'
+        verbose_name_plural = '02. 사용자 프로필'
 
 
 file_cleanup_signals(Profile)  # 첨부파일 삭제
@@ -121,8 +121,8 @@ class DocScrape(models.Model):
         return self.title if self.title else self.docs.title
 
     class Meta:
-        verbose_name = '문서 스크랩'
-        verbose_name_plural = '문서 스크랩'
+        verbose_name = '03. 문서 스크랩'
+        verbose_name_plural = '03. 문서 스크랩'
 
 
 class PostScrape(models.Model):
@@ -135,8 +135,8 @@ class PostScrape(models.Model):
         return self.title if self.title else self.post.title
 
     class Meta:
-        verbose_name = '게시글 스크랩'
-        verbose_name_plural = '게시글 스크랩'
+        verbose_name = '04. 게시글 스크랩'
+        verbose_name_plural = '04. 게시글 스크랩'
 
 
 class Todo(models.Model):
@@ -152,6 +152,8 @@ class Todo(models.Model):
 
     class Meta:
         ordering = ('id',)
+        verbose_name = '05. 할일 목록'
+        verbose_name_plural = '05. 할일 목록'
 
 
 class PasswordResetToken(models.Model):
@@ -165,6 +167,11 @@ class PasswordResetToken(models.Model):
         # Check if 10 minutes have passed since creation
         time_diff = timezone.localtime() - self.created
         return time_diff.total_seconds() >= self.expired
+
+    class Meta:
+        ordering = ('-updated',)
+        verbose_name = '06. 패스워드 리셋토큰'
+        verbose_name_plural = '06. 패스워드 리셋토큰'
 
 
 class FCMDevice(models.Model):
@@ -187,8 +194,8 @@ class FCMDevice(models.Model):
 
     class Meta:
         ordering = ('-updated_at',)
-        verbose_name = 'FCM 기기 토큰'
-        verbose_name_plural = 'FCM 기기 토큰 목록'
+        verbose_name = '07. FCM 기기 토큰'
+        verbose_name_plural = '07. FCM 기기 토큰 목록'
 
 
 class Notification(models.Model):
@@ -216,6 +223,5 @@ class Notification(models.Model):
 
     class Meta:
         ordering = ('-created_at',)
-        verbose_name = '사용자 알림'
-        verbose_name_plural = '사용자 알림 목록'
-
+        verbose_name = '08. 사용자 알림'
+        verbose_name_plural = '08. 사용자 알림 목록'
