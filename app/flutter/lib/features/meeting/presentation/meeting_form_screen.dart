@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/api/api_client.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/models/common_models.dart';
 import '../../../core/providers/project_provider.dart';
@@ -125,6 +126,85 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
     _meetingDateController.text = '$y-$mo-$d $h:$mi';
   }
 
+  Future<void> _showAddCategoryDialog() async {
+    final textController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    final createdCategory = await showDialog<MeetingCategoryModel?>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('새 회의 카테고리 추가'),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _selectedProjectPk != null
+                    ? '현재 워크스페이스 전용 카테고리로 등록됩니다.'
+                    : '전체 공용 카테고리로 등록됩니다.',
+                style: TextStyle(fontSize: 12, color: context.colors.textMuted),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: textController,
+                autofocus: true,
+                style: TextStyle(color: context.colors.textPrimary),
+                decoration: _inputDecoration('카테고리명 입력 (예: 설계/인허가, 분양)'),
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? '카테고리명을 입력해 주세요.' : null,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('취소'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: context.colors.accentWork,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () async {
+              if (!formKey.currentState!.validate()) return;
+              try {
+                final newCat = await ref.read(meetingRepositoryProvider).createCategory(
+                  name: textController.text.trim(),
+                  projectPk: _selectedProjectPk,
+                );
+                if (ctx.mounted) Navigator.pop(ctx, newCat);
+              } catch (e) {
+                if (ctx.mounted) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    SnackBar(
+                      content: Text('카테고리 생성 실패: ${getDioErrorMessage(e)}'),
+                      backgroundColor: Colors.redAccent,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text('추가'),
+          ),
+        ],
+      ),
+    );
+
+    if (createdCategory != null && mounted) {
+      ref.invalidate(meetingCategoriesProvider(_selectedProjectPk));
+      setState(() => _selectedCategoryPk = createdCategory.pk);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("'${createdCategory.name}' 카테고리가 추가되어 선택되었습니다."),
+          backgroundColor: context.colors.success,
+        ),
+      );
+    }
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -140,9 +220,9 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
 
     setState(() => _isSaving = true);
 
+    final meetingDateText = _meetingDateController.text.trim();
     final payload = <String, dynamic>{
       'title': _titleController.text.trim(),
-      'meeting_date': _meetingDateController.text.trim(),
       'status': _status,
       'is_confirmed': _isConfirmed,
       'category': _selectedCategoryPk,
@@ -153,6 +233,12 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
       'decisions': _decisionsController.text.trim(),
       'action_items': _actionItemsController.text.trim(),
     };
+    if (meetingDateText.isNotEmpty) {
+      payload['meeting_date'] = meetingDateText;
+    } else {
+      payload['meeting_date'] = null;
+    }
+
     if (widget.initialMeeting == null && _selectedProjectPk != null) {
       payload['project'] = _selectedProjectPk;
     }
@@ -181,9 +267,10 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
       }
     } catch (e) {
       if (mounted) {
+        final errorMsg = getDioErrorMessage(e);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('저장 실패: $e'),
+            content: Text('저장 실패: $errorMsg'),
             backgroundColor: context.colors.error,
           ),
         );
@@ -249,6 +336,15 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                             projects.any((p) => p.pk == _selectedProjectPk))
                         ? _selectedProjectPk
                         : (projects.isNotEmpty ? projects.first.pk : null);
+
+                    // 만약 _selectedProjectPk가 설정되지 않았고 유효한 프로젝트가 존재하면 상태 변수에 명시적으로 바인딩
+                    if (_selectedProjectPk == null && validProjectPk != null) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted && _selectedProjectPk == null) {
+                          setState(() => _selectedProjectPk = validProjectPk);
+                        }
+                      });
+                    }
 
                     return DropdownButtonFormField<int>(
                       value: validProjectPk,
@@ -341,15 +437,50 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
               ),
               const SizedBox(height: 14),
 
-              // 카테고리 (100% 전체 폭)
-              Text('카테고리', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
+              // 카테고리 헤더 (+ 추가 버튼 포함)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('카테고리 *', style: AppTextStyles.titleSm.copyWith(color: context.colors.textPrimary)),
+                  InkWell(
+                    onTap: _showAddCategoryDialog,
+                    borderRadius: BorderRadius.circular(4),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.add_circle_outline_rounded, size: 14, color: context.colors.accentWork),
+                          const SizedBox(width: 4),
+                          Text(
+                            '카테고리 추가',
+                            style: AppTextStyles.caption.copyWith(
+                              color: context.colors.accentWork,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: 6),
               ref.watch(meetingCategoriesProvider(_selectedProjectPk)).when(
                     data: (categories) {
                       final validCategoryPk = (_selectedCategoryPk != null &&
                               categories.any((c) => c.pk == _selectedCategoryPk))
                           ? _selectedCategoryPk
-                          : null;
+                          : (categories.isNotEmpty ? categories.first.pk : null);
+
+                      // 만약 _selectedCategoryPk가 비어있고 카테고리가 존재하면 첫 번째 카테고리로 자동 지정
+                      if (_selectedCategoryPk == null && validCategoryPk != null) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (mounted && _selectedCategoryPk == null) {
+                            setState(() => _selectedCategoryPk = validCategoryPk);
+                          }
+                        });
+                      }
 
                       return DropdownButtonFormField<int?>(
                         value: validCategoryPk,
@@ -357,17 +488,14 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                         style: AppTextStyles.bodyMd.copyWith(color: context.colors.textPrimary),
                         dropdownColor: context.colors.bgCard,
                         decoration: _inputDecoration('카테고리 선택'),
-                        items: [
-                          const DropdownMenuItem<int?>(
-                            value: null,
-                            child: Text('선택 안 함'),
-                          ),
-                          ...categories.map((c) => DropdownMenuItem<int?>(
-                                value: c.pk,
-                                child: Text(c.name,
-                                    overflow: TextOverflow.ellipsis),
-                              )),
-                        ],
+                        validator: (v) => v == null ? '카테고리를 선택해 주세요.' : null,
+                        items: categories
+                            .map((c) => DropdownMenuItem<int?>(
+                                  value: c.pk,
+                                  child: Text(c.name,
+                                      overflow: TextOverflow.ellipsis),
+                                ))
+                            .toList(),
                         onChanged: (v) =>
                             setState(() => _selectedCategoryPk = v),
                       );
@@ -375,12 +503,12 @@ class _MeetingFormScreenState extends ConsumerState<MeetingFormScreen> {
                     loading: () => DropdownButtonFormField<int?>(
                       items: const [],
                       onChanged: null,
-                      decoration: _inputDecoration('로딩 중...'),
+                      decoration: _inputDecoration('카테고리 불러오는 중...'),
                     ),
                     error: (_, __) => DropdownButtonFormField<int?>(
                       items: const [],
                       onChanged: null,
-                      decoration: _inputDecoration('선택 안 함'),
+                      decoration: _inputDecoration('카테고리 없음'),
                     ),
                   ),
               const SizedBox(height: 24),

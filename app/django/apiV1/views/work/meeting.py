@@ -31,18 +31,28 @@ class MeetingCategoryViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         queryset = super().get_queryset()
+        project_param = self.request.query_params.get('project')
 
-        # 1. 슈퍼유저나 work_manager는 전체 조회 가능
+        # 1. 슈퍼유저나 work_manager는 전체 조회 가능 (단, 특정 프로젝트 파라미터가 오면 공용 + 해당 프로젝트 반환)
         if user.is_superuser or getattr(user, 'work_manager', False):
-            base_qs = queryset
+            if project_param:
+                base_qs = queryset.filter(Q(project__isnull=True) | Q(project_id=project_param))
+            else:
+                base_qs = queryset
         else:
-            # 2. 공개 프로젝트 OR 사용자가 멤버인 프로젝트의 카테고리만 조회
-            base_qs = queryset.filter(
-                Q(project__is_public=True) | Q(project__members__user=user)
-            ).distinct()
+            # 2. 일반 사용자: 공용 카테고리 OR 공개 프로젝트 OR 사용자가 멤버인 프로젝트 카테고리
+            if project_param:
+                base_qs = queryset.filter(
+                    Q(project__isnull=True) |
+                    (Q(project_id=project_param) & (Q(project__is_public=True) | Q(project__members__user=user)))
+                ).distinct()
+            else:
+                base_qs = queryset.filter(
+                    Q(project__isnull=True) | Q(project__is_public=True) | Q(project__members__user=user)
+                ).distinct()
 
         # 3. 성능 최적화
-        return base_qs.select_related('project')
+        return base_qs.select_related('project').order_by('order', 'id')
 
 
 class MeetingFilter(FilterSet):

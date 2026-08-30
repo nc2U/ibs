@@ -8,8 +8,9 @@ from work.models.project import IssueProject
 
 
 class MeetingCategory(models.Model):
-    project = models.ForeignKey(IssueProject, on_delete=models.CASCADE, verbose_name='프로젝트',
-                                related_name='meeting_categories')
+    project = models.ForeignKey(IssueProject, on_delete=models.CASCADE, verbose_name='워크스페이스',
+                                related_name='meeting_categories', null=True, blank=True,
+                                help_text='미지정 시 전체 워크스페이스 공용 카테고리로 사용')
     name = models.CharField('카테고리명', max_length=100)
     description = models.CharField('설명', max_length=255, blank=True, default='')
     color = models.CharField('색상', max_length=20, blank=True, default='')
@@ -25,11 +26,11 @@ class MeetingCategory(models.Model):
 
 
 class Meeting(models.Model):
-    project = models.ForeignKey(IssueProject, on_delete=models.PROTECT, verbose_name='프로젝트',
+    project = models.ForeignKey(IssueProject, on_delete=models.PROTECT, verbose_name='워크스페이스',
                                 related_name='meetings')
     title = models.CharField('회의 제목', max_length=255)
-    category = models.ForeignKey(MeetingCategory, on_delete=models.PROTECT, verbose_name='카테고리',
-                                 related_name='meetings')
+    category = models.ForeignKey(MeetingCategory, on_delete=models.SET_NULL, null=True, blank=True,
+                                 verbose_name='카테고리', related_name='meetings')
     MEETING_STATUS_CHOICES = (('1', '준비'), ('2', '종료'), ('3', '취소'))
     status = models.CharField('회의 상태', max_length=1, choices=MEETING_STATUS_CHOICES, default='1')
     is_confirmed = models.BooleanField('확정 여부', default=False)

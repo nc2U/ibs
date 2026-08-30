@@ -76,6 +76,19 @@ class MeetingRepository {
         .toList();
   }
 
+  /// 신규 카테고리 생성 (POST /api/v1/meeting-category/)
+  Future<MeetingCategoryModel> createCategory({required String name, int? projectPk, String? color}) async {
+    final payload = <String, dynamic>{
+      'name': name.trim(),
+      'color': color ?? '#fffdbd',
+    };
+    if (projectPk != null) {
+      payload['project'] = projectPk;
+    }
+    final response = await _dio.post(ApiEndpoints.meetingCategories, data: payload);
+    return MeetingCategoryModel.fromJson(response.data as Map<String, dynamic>);
+  }
+
   /// 시스템 전체 사용자 목록 조회 (중복 제거)
   Future<List<SimpleUserModel>> fetchMembers({int? projectPk}) async {
     final response = await _dio.get(ApiEndpoints.users);

@@ -122,3 +122,46 @@ class AuthInterceptor extends QueuedInterceptorsWrapper {
     return false;
   }
 }
+
+/// DioException 또는 일반 예외로부터 서버가 전달한 한국어 상세 에러 메시지를 추출
+String getDioErrorMessage(Object error) {
+  if (error is DioException) {
+    final response = error.response;
+    if (response?.data != null) {
+      final dynamic data = response!.data;
+      if (data is Map<String, dynamic>) {
+        if (data.containsKey('detail')) {
+          return data['detail'].toString();
+        }
+        if (data.containsKey('message')) {
+          return data['message'].toString();
+        }
+        if (data.containsKey('error')) {
+          return data['error'].toString();
+        }
+        // 필드별 유효성 검사 에러 (예: {'category': ['이 필드는 null일 수 없습니다.']})
+        final messages = <String>[];
+        data.forEach((key, val) {
+          if (val is List && val.isNotEmpty) {
+            messages.add('$key: ${val.first}');
+          } else if (val is String) {
+            messages.add('$key: $val');
+          }
+        });
+        if (messages.isNotEmpty) {
+          return messages.join('\n');
+        }
+      } else if (data is String && data.isNotEmpty) {
+        return data;
+      }
+    }
+    if (error.type == DioExceptionType.connectionTimeout ||
+        error.type == DioExceptionType.receiveTimeout) {
+      return '서버 응답 시간이 초과되었습니다.';
+    }
+    if (error.type == DioExceptionType.connectionError) {
+      return '서버에 연결할 수 없습니다. 네트워크를 확인해 주세요.';
+    }
+  }
+  return error.toString();
+}
