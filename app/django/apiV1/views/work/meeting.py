@@ -12,11 +12,27 @@ from apiV1.serializers.work.meeting import MeetingCategorySerializer, MeetingSer
 from work.models.meeting import MeetingCategory, Meeting, MeetingFile
 
 
+class MeetingCategoryFilter(FilterSet):
+    project = CharFilter(method='filter_project', label='프로젝트 PK 또는 슬러그')
+    project__slug = CharFilter(method='filter_project', label='프로젝트 슬러그')
+
+    class Meta:
+        model = MeetingCategory
+        fields = ('project', 'project__slug')
+
+    def filter_project(self, queryset, name, value):
+        if not value:
+            return queryset
+        if str(value).isdigit():
+            return queryset.filter(Q(project__isnull=True) | Q(project_id=int(value)))
+        return queryset.filter(Q(project__isnull=True) | Q(project__slug=value))
+
+
 class MeetingCategoryViewSet(viewsets.ModelViewSet):
     queryset = MeetingCategory.objects.all()
     serializer_class = MeetingCategorySerializer
     permission_classes = (permissions.IsAuthenticated, ProjectPermission)
-    filterset_fields = ('project',)
+    filterset_class = MeetingCategoryFilter
 
     @property
     def required_permission(self):
@@ -31,27 +47,17 @@ class MeetingCategoryViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         queryset = super().get_queryset()
-        project_param = self.request.query_params.get('project')
 
-        # 1. 슈퍼유저나 work_manager는 전체 조회 가능 (단, 특정 프로젝트 파라미터가 오면 공용 + 해당 프로젝트 반환)
+        # 1. 슈퍼유저나 work_manager는 전체 조회 가능 (FilterSet에서 공용 + 해당 워크스페이스로 필터링)
         if user.is_superuser or getattr(user, 'work_manager', False):
-            if project_param:
-                base_qs = queryset.filter(Q(project__isnull=True) | Q(project_id=project_param))
-            else:
-                base_qs = queryset
+            base_qs = queryset
         else:
             # 2. 일반 사용자: 공용 카테고리 OR 공개 프로젝트 OR 사용자가 멤버인 프로젝트 카테고리
-            if project_param:
-                base_qs = queryset.filter(
-                    Q(project__isnull=True) |
-                    (Q(project_id=project_param) & (Q(project__is_public=True) | Q(project__members__user=user)))
-                ).distinct()
-            else:
-                base_qs = queryset.filter(
-                    Q(project__isnull=True) | Q(project__is_public=True) | Q(project__members__user=user)
-                ).distinct()
+            base_qs = queryset.filter(
+                Q(project__isnull=True) | Q(project__is_public=True) | Q(project__members__user=user)
+            ).distinct()
 
-        # 3. 성능 최적화
+        # 3. 정렬 및 최적화
         return base_qs.select_related('project').order_by('order', 'id')
 
 
