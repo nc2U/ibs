@@ -222,11 +222,46 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         ),
                         const SizedBox(height: 28),
 
-                        // 로그인 버튼
+                        // 생체 인증(Face ID / 지문) 간편 로그인 버튼 (Teal 솔리드)
+                        if (_canUseBiometrics) ...[
+                          ElevatedButton.icon(
+                            onPressed: _isLoading ? null : _handleBiometricLogin,
+                            icon: Icon(
+                              _biometricLabel == 'Face ID' ? Icons.face : Icons.fingerprint,
+                              color: Colors.white,
+                              size: 22,
+                            ),
+                            label: Text(
+                              '$_biometricLabel 간편 로그인',
+                              style: AppTextStyles.titleMd.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              // 다크모드일 때 더 깊고 진한 딥 틸(#115E59), 라이트모드일 때 크리스프 틸(#0D9488)
+                              backgroundColor: isDark ? const Color(0xFF115E59) : context.colors.accentChannel,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              side: BorderSide(
+                                color: isDark
+                                    ? const Color(0xFF2DD4BF).withValues(alpha: 0.5) // 다크모드: 밝은 민트 틸 테두리
+                                    : const Color(0xFF0F766E).withValues(alpha: 0.7), // 라이트모드: 또렷한 딥 틸 테두리
+                                width: 1.2,
+                              ),
+                              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                              elevation: isDark ? 4 : 2,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+
+                        // 일반 로그인 버튼 (Sky Blue 솔리드)
                         ElevatedButton(
                           onPressed: _isLoading ? null : _handleLogin,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: isDark ? context.colors.accentWorkDeep : context.colors.accentWork,
+                            // 다크모드일 때 더 묵직하고 진한 딥 네이비 블루(#1E3A8A / #0369A1), 라이트모드일 때 스카이 블루(#0284C7)
+                            backgroundColor: isDark ? const Color(0xFF075985) : context.colors.accentWork,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
@@ -240,34 +275,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                 )
                               : Text('로그인', style: AppTextStyles.titleMd.copyWith(color: Colors.white)),
                         ),
-
-                        // 생체 인증(Face ID / 지문) 간편 로그인 버튼
-                        if (_canUseBiometrics) ...[
-                          const SizedBox(height: 14),
-                          OutlinedButton.icon(
-                            onPressed: _isLoading ? null : _handleBiometricLogin,
-                            icon: Icon(
-                              _biometricLabel == 'Face ID' ? Icons.face : Icons.fingerprint,
-                              color: isDark ? context.colors.accentWorkDeep : context.colors.accentWork,
-                              size: 22,
-                            ),
-                            label: Text(
-                              '$_biometricLabel 간편 로그인',
-                              style: AppTextStyles.bodyMd.copyWith(
-                                color: context.colors.textPrimary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              side: BorderSide(
-                                color: (isDark ? context.colors.accentWorkDeep : context.colors.accentWork).withOpacity(0.5),
-                                width: 1.2,
-                              ),
-                              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-                            ),
-                          ),
-                        ],
                       ],
                     ),
                   ),
