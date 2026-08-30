@@ -81,3 +81,78 @@ class ApprovalRouteBuilderTestCase(TestCase):
         self.assertEqual(step1['approver_ids'], [self.user_ceo.id])
         # 🌟 핵심 검증: 라벨이 '경영지원팀 팀장' 대신 '대표이사 최종 승인'으로 승격되었는지 확인
         self.assertEqual(step1['role_label'], '대표이사 최종 승인')
+
+    def test_self_approval_prevention_promotes_to_higher_authority(self):
+        """전결권자(팀장) 본인이 기안 시, 셀프 승인을 방지하고 상위 대표이사로 상향 승격되는지 검증"""
+        # 팀장 본인을 기안자로 지정
+        user_leader = User.objects.create_user(username='leader', email='leader@example.com')
+        staff_leader = Staff.objects.create(
+            company=self.company, user=user_leader, name='박팀장',
+            position=self.pos_manager, id_number='800101-1234567', personal_phone='010-9999-8888',
+            date_join='2021-01-01', status='1'
+        )
+        assign_leader = StaffAssignment.objects.create(
+            staff=staff_leader, company=self.company, department=self.dept_team,
+            duty=self.duty_team_leader, is_primary=True
+        )
+
+        # 팀장 전결 문서 유형 생성
+        doc_type_tl = DocumentType.objects.create(
+            category=self.category, name='팀장전결문서', code='TL_DOC',
+            route_type=DocumentType.ROUTE_ORGANIZATION,
+            final_approval_duty=self.duty_team_leader
+        )
+
+        # 팀장이 기안한 경우
+        routes = build_dynamic_approval_route(
+            doc_type=doc_type_tl,
+            drafter_user=user_leader,
+            drafter_assignment=assign_leader,
+        )
+
+        # 셀프 승인되지 않고 상위 대표이사 결재선으로 상향 승격되어야 함
+        self.assertEqual(len(routes), 1)
+        self.assertEqual(routes[0]['approver_ids'], [self.user_ceo.id])
+
+    def test_ceo_drafter_returns_empty_routes_for_instant_approval(self):
+        """단독/각자 대표이사가 직접 기안하는 경우 상신 즉시 완료를 위해 route_steps가 빈 리스트(0개)로 반환되는지 검증"""
+        routes = build_dynamic_approval_route(
+            doc_type=self.doc_type,
+            drafter_user=self.user_ceo,
+        )
+        self.assertEqual(len(routes), 0)
+
+    def test_joint_ceo_drafter_generates_and_step_for_other_ceos(self):
+        """공동대표 체제에서 대표이사 A가 기안하는 경우, 기안자 본인은 제외되고 다른 공동대표 B가 AND 결재선으로 형성되는지 검증"""
+        from company.models import Executive
+        # 홍대표(ceo1)를 공동대표로 등록
+        Executive.objects.create(
+            company=self.company, staff=self.staff_ceo, represent_type='joint'
+        )
+
+        # 제2의 공동대표(ceo2) 등록
+        user_ceo2 = User.objects.create_user(username='ceo2', email='ceo2@example.com')
+        staff_ceo2 = Staff.objects.create(
+            company=self.company, user=user_ceo2, name='이공동',
+            position=self.pos_ceo, id_number='760101-1234567', personal_phone='010-7777-8888',
+            date_join='2020-01-01', status='1'
+        )
+        StaffAssignment.objects.create(
+            staff=staff_ceo2, company=self.company, department=self.dept_division,
+            duty=self.duty_ceo, is_primary=True
+        )
+        Executive.objects.create(
+            company=self.company, staff=staff_ceo2, represent_type='joint'
+        )
+
+        # 홍대표(ceo1)가 기안한 경우
+        routes = build_dynamic_approval_route(
+            doc_type=self.doc_type,
+            drafter_user=self.user_ceo,
+        )
+
+        # 홍대표는 자동 승인되고, 이공동(ceo2)만 AND 최종 승인자로 결재선에 포함되어야 함
+        self.assertEqual(len(routes), 1)
+        self.assertEqual(routes[0]['approver_ids'], [user_ceo2.id])
+        self.assertEqual(routes[0]['condition'], 'AND')
+        self.assertEqual(routes[0]['role_label'], '공동대표 최종 승인')

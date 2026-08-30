@@ -18,6 +18,7 @@ from approval.models import (
     DocCategory, DocumentType, ApprovalDocument, ApprovalStep, ApprovalAction, ApprovalDelegation, ApprovalAttachment
 )
 from approval.services import build_dynamic_approval_route, submit_document, finalize_approval
+from approval.services.route_builder import _get_company_ceos
 from approval.tasks import notify_approvers_task, notify_drafter_task, notify_cancel_task, generate_approval_pdf_task
 from company.models import Staff, StaffAssignment
 
@@ -300,18 +301,32 @@ class ApprovalDocumentViewSet(viewsets.ModelViewSet):
         )
 
         if not route_steps:
-            # 기안자가 대표이사 본인인지 확인
-            is_ceo = False
-            if assignment and assignment.duty and (assignment.duty.code == 'CEO' or assignment.duty.name == '대표이사'):
-                is_ceo = True
-            elif StaffAssignment.objects.filter(
-                Q(duty__code='CEO') | Q(duty__name='대표이사'),
-                staff__user=request.user
-            ).exists():
-                is_ceo = True
+            # 기안자가 대표이사 본인인지 확인 (_get_company_ceos 기준)
+            company = assignment.company if assignment else None
+            ceo_users = _get_company_ceos(company, set()) if company else []
+            is_ceo = request.user in ceo_users or any(u.id == request.user.id for u in ceo_users)
+
+            if not is_ceo:
+                if assignment and assignment.duty and (assignment.duty.code == 'CEO' or '대표' in assignment.duty.name):
+                    is_ceo = True
+                elif StaffAssignment.objects.filter(
+                    Q(duty__code='CEO') | Q(duty__name__icontains='대표'),
+                    staff__user=request.user
+                ).exists():
+                    is_ceo = True
 
             if is_ceo:
-                # 대표이사 본인 기안인 경우 → 즉시 최종 승인 처리
+                # 단독/각자 대표이사 본인 기안인 경우 → 승인된 Step 생성 후 즉시 최종 승인 처리
+                document.steps.all().delete()
+                step = ApprovalStep.objects.create(
+                    document=document,
+                    step_order=1,
+                    role_label='대표이사 승인',
+                    condition='OR',
+                    status=ApprovalStep.STATUS_APPROVED,
+                )
+                step.approvers.set([request.user])
+
                 document.status = ApprovalDocument.STATUS_APPROVED
                 document.completed_at = timezone.now()
                 document.content_hash = document.compute_hash()

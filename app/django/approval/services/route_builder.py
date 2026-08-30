@@ -32,11 +32,13 @@ def _get_department_manager(dept: Department, added_user_ids: set):
         duty = dept_assignment.duty if dept_assignment and dept_assignment.duty else manager_staff.duty
         return manager_staff.user, duty
 
-    # 2. StaffAssignment에서 해당 부서의 직책 보유자 탐색 (재직 직원 한정)
+    # 2. StaffAssignment에서 해당 부서의 '관리자' 직책 보유자 탐색 (재직 직원 한정, 팀원/MEMBER 제외)
     dept_assignments = StaffAssignment.objects.filter(
         department=dept,
         duty__isnull=False,
         staff__status='1',
+    ).exclude(
+        Q(duty__code__iexact='MEMBER') | Q(duty__name__icontains='팀원')
     ).select_related('staff__user', 'duty')
 
     for a in dept_assignments:
@@ -194,7 +196,36 @@ def build_dynamic_approval_route(doc_type: DocumentType, drafter_user, drafter_a
                     effective_final_level = rule.final_dept_level
                 break
 
-    # (1) 부서 트리 상향 순회 (직속 부서장 → 상위 부서장 → ...)
+    # 기안자의 직책(Duty) 확인 (셀프 승인 방지용)
+    drafter_duty = assignment.duty if assignment and assignment.duty else (
+        drafter_user.staff.duty if hasattr(drafter_user, 'staff') and drafter_user.staff else None
+    )
+
+    # 🌟 기안자가 대표이사(CEO)인 경우:
+    # 대표이사보다 상위 부서 결재선은 존재하지 않으므로, 부서 순회를 생략하고 다른 공동대표 유무만 확인
+    ceo_users = _get_company_ceos(company, set()) if company else []
+    is_drafter_ceo = drafter_user in ceo_users or any(u.id == drafter_user.id for u in ceo_users) if drafter_user else False
+
+    if is_drafter_ceo:
+        other_ceos = [u for u in ceo_users if u.id != drafter_user.id]
+        if other_ceos:
+            # 다른 공동대표들이 존재하는 경우 (공동대표 체제)
+            is_joint = any(
+                hasattr(u, 'staff') and hasattr(u.staff, 'executive') and
+                u.staff.executive and u.staff.executive.represent_type == 'joint'
+                for u in other_ceos
+            )
+            return [{
+                'step_order': 1,
+                'role_label': '공동대표 최종 승인' if is_joint else '대표이사 최종 승인',
+                'approvers': other_ceos,
+                'approver_ids': [u.id for u in other_ceos],
+                'condition': 'AND' if is_joint else 'OR',
+            }]
+        # 단독/각자 대표이사인 경우: 결재선 0개 반환 (상신 즉시 자동 승인 처리)
+        return []
+
+    # (1) 일반/중간관리자 기안 시 부서 트리 상향 순회 (직속 부서장 → 상위 부서장 → ...)
     if assignment and assignment.department:
         current_dept = assignment.department
         visited_dept_ids = set()
@@ -202,7 +233,7 @@ def build_dynamic_approval_route(doc_type: DocumentType, drafter_user, drafter_a
             visited_dept_ids.add(current_dept.id)
             manager_user, manager_duty = _get_department_manager(current_dept, added_user_ids)
 
-            # 부서 책임자가 존재하고 기안자 본인이 아닌 경우
+            # 부서 책임자가 존재하고 기안자 본인이 아닌 경우에만 결재 단계 추가 (셀프 승인 방지)
             if manager_user and manager_user.id not in added_user_ids:
                 added_user_ids.add(manager_user.id)
 
@@ -230,9 +261,11 @@ def build_dynamic_approval_route(doc_type: DocumentType, drafter_user, drafter_a
                     break
 
                 # 전결 규정 체크: 직책 전결 (예: 팀장 전결, 본부장 전결)
+                # ⚠️ 기안자 본인의 직책과 동일한 전결권인 경우, 셀프 승인 방지를 위해 종결하지 않고 상위로 계속 순회
                 if effective_final_duty and manager_duty and manager_duty.id == effective_final_duty.id:
-                    reached_final = True
-                    break
+                    if not drafter_duty or drafter_duty.id != effective_final_duty.id:
+                        reached_final = True
+                        break
 
                 # 전결 규정 체크: 부서 레벨 전결 (예: 1레벨(본부) 부서장까지만 승인)
                 if effective_final_level and current_dept.level <= effective_final_level:
@@ -246,14 +279,14 @@ def build_dynamic_approval_route(doc_type: DocumentType, drafter_user, drafter_a
         ceo_users = _get_company_ceos(company, added_user_ids)
 
         if ceo_users:
-            # 공동대표 여부 검사
+            # 기안자를 제외한 다른 대표이사들이 존재하는 경우 (공동대표 또는 기안자가 대표가 아닌 경우)
             is_joint = any(
                 hasattr(u, 'staff') and hasattr(u.staff, 'executive') and
                 u.staff.executive and u.staff.executive.represent_type == 'joint'
                 for u in ceo_users
             )
-            condition = 'AND' if (is_joint and len(ceo_users) > 1) else 'OR'
-            label = '공동대표 최종 승인' if is_joint and len(ceo_users) > 1 else '대표이사 최종 승인'
+            condition = 'AND' if is_joint else 'OR'
+            label = '공동대표 최종 승인' if is_joint else '대표이사 최종 승인'
 
             steps.append({
                 'step_order': step_order,
@@ -262,15 +295,5 @@ def build_dynamic_approval_route(doc_type: DocumentType, drafter_user, drafter_a
                 'approver_ids': [u.id for u in ceo_users],
                 'condition': condition,
             })
-
-    # (3) 기안자가 최고 결재권자(대표이사 등)이거나 상위 결재자가 없어 결재선이 빈 경우 (자가 결재선 생성)
-    if not steps and drafter_user:
-        steps.append({
-            'step_order': 1,
-            'role_label': '대표이사 승인',
-            'approvers': [drafter_user],
-            'approver_ids': [drafter_user.id],
-            'condition': 'OR',
-        })
 
     return steps

@@ -173,6 +173,29 @@ class ApprovalWorkflowAPITestCase(APITestCase):
         self.assertGreaterEqual(doc.steps.count(), 1)
         self.assertTrue(mock_notify.called)
 
+    @patch('approval.tasks.generate_approval_pdf_task.delay')
+    def test_submit_document_by_ceo_auto_approves_instantly(self, mock_pdf):
+        """대표이사 본인이 기안 및 상신 시 즉시 최종 승인(STATUS_APPROVED) 및 채번 완료되는지 검증"""
+        doc = ApprovalDocument.objects.create(
+            doc_type=self.doc_type,
+            title='대표이사 직접 기안 문서',
+            content={'purpose': '전사 경영 방침 지시'},
+            drafter=self.user_ceo,
+            drafter_assignment=self.assign_ceo,
+            status=ApprovalDocument.STATUS_DRAFT,
+        )
+
+        self.client.force_authenticate(user=self.user_ceo)
+        response = self.client.post(f'/api/v1/approval-document/{doc.id}/submit/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        doc.refresh_from_db()
+        self.assertEqual(doc.status, ApprovalDocument.STATUS_APPROVED)
+        self.assertIsNotNone(doc.doc_number)  # 즉시 정식 문서번호 채번 완료
+        self.assertEqual(doc.steps.count(), 1)  # 승인된 1단계 기록 생성
+        self.assertEqual(doc.steps.first().status, ApprovalStep.STATUS_APPROVED)
+        self.assertEqual(doc.steps.first().role_label, '대표이사 승인')
+
     def test_submit_by_non_drafter_forbidden(self):
         """기안자가 아닌 타인이 상신 API를 호출하면 차단(403 또는 404)되는지 검증"""
         doc = ApprovalDocument.objects.create(
