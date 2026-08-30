@@ -7,6 +7,7 @@ export const ALL_MEETING_COLUMNS: ColumnOption[] = [
   { key: 'category', label: '카테고리' },
   { key: 'status', label: '상태' },
   { key: 'meeting_date', label: '회의 일시' },
+  { key: 'location', label: '회의 장소' },
   { key: 'creator', label: '작성자' },
   { key: 'attendees', label: '참석' },
   { key: 'created', label: '등록일' },

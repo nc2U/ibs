@@ -110,6 +110,11 @@ const downloadPdf = (event: Event) => {
       {{ timeFormat(meeting.meeting_date as string, 'min') }}
     </CTableDataCell>
 
+    <!-- 회의 장소-->
+    <CTableDataCell v-else-if="colKey === 'location'">
+      {{ meeting.location }}
+    </CTableDataCell>
+
     <!-- 작성자 -->
     <CTableDataCell v-else-if="colKey === 'creator'">
       {{ meeting.creator.username }}

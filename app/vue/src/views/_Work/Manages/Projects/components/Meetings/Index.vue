@@ -172,6 +172,7 @@ onBeforeMount(fetchMeetings)
           ref="meetingListRef"
           :meeting-list="meetingList"
           :categories="categories"
+          :columns="selectedColumns"
           :search-projects="allReadableProjects"
           :page="page"
           @filter-submit="onFilterSubmit"
