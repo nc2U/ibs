@@ -5,9 +5,11 @@ import { storeToRefs } from 'pinia'
 import { useApproval } from '@/store/pinia/approval'
 import { useCompany } from '@/store/pinia/company'
 import { TableSecondary } from '@/utils/cssMixins'
-import type { DocumentStatus } from '@/store/types/approval'
+import type { DocumentStatus, SecurityLevel } from '@/store/types/approval'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import Pagination from '@/components/Pagination'
+
+const ITEMS_PER_PAGE = 10
 
 const router = useRouter()
 const approvalStore = useApproval()
@@ -15,13 +17,16 @@ const companyStore = useCompany()
 
 const { allDocumentList, allDocumentsCount, docCategoryList, docTypeList } =
   storeToRefs(approvalStore)
-const { allDepartList } = storeToRefs(companyStore)
+const { allDepartList, company } = storeToRefs(companyStore)
+
+// 로딩 상태
+const loading = ref(false)
 
 // 필터 상태
 const filterCategory = ref<string>('')
 const filterDocType = ref<string>('')
 const filterStatus = ref<DocumentStatus | ''>('')
-const filterSecurityLevel = ref<string>('')
+const filterSecurityLevel = ref<SecurityLevel | ''>('')
 const filterDepartment = ref<string>('')
 const filterStartDate = ref('')
 const filterEndDate = ref('')
@@ -34,10 +39,11 @@ const filteredDocTypes = computed(() => {
   return docTypeList.value.filter(dt => String(dt.category) === filterCategory.value)
 })
 
-watch(filterCategory, () => {
+// 카테고리 변경 시 문서유형 초기화 및 재조회
+const onCategoryChange = () => {
   filterDocType.value = ''
   onSearch()
-})
+}
 
 const STATUS_LABEL: Record<DocumentStatus, string> = {
   draft: '임시저장',
@@ -61,23 +67,45 @@ const fmtDate = (d: string | null) => {
 }
 
 const fetchList = async (page = 1) => {
+  loading.value = true
   currentPage.value = page
-  await approvalStore.fetchAllDocuments({
-    page,
-    category: filterCategory.value ? Number(filterCategory.value) : null,
-    doc_type: filterDocType.value ? Number(filterDocType.value) : null,
-    status: filterStatus.value || undefined,
-    security_level: filterSecurityLevel.value || undefined,
-    department: filterDepartment.value ? Number(filterDepartment.value) : null,
-    start_date: filterStartDate.value || undefined,
-    end_date: filterEndDate.value || undefined,
-    search: searchText.value || undefined,
-  })
+  try {
+    await approvalStore.fetchAllDocuments({
+      page,
+      category: filterCategory.value ? Number(filterCategory.value) : null,
+      doc_type: filterDocType.value ? Number(filterDocType.value) : null,
+      status: filterStatus.value || undefined,
+      security_level: filterSecurityLevel.value || undefined,
+      department: filterDepartment.value ? Number(filterDepartment.value) : null,
+      start_date: filterStartDate.value || undefined,
+      end_date: filterEndDate.value || undefined,
+      search: searchText.value.trim() || undefined,
+    })
+  } finally {
+    loading.value = false
+  }
 }
 
 const onSearch = () => {
   fetchList(1)
 }
+
+// 기간 선택 변경 감지
+watch([filterStartDate, filterEndDate], () => {
+  onSearch()
+})
+
+// 회사 변경 시 부서 목록 갱신 및 재조회
+watch(
+  () => company.value?.pk,
+  async newComId => {
+    if (newComId) {
+      filterDepartment.value = ''
+      await companyStore.fetchAllDepartList(newComId)
+      await fetchList(1)
+    }
+  },
+)
 
 const resetFilter = () => {
   filterCategory.value = ''
@@ -95,13 +123,14 @@ const goDetail = (id: number) => {
   router.push({ name: '전체 문서함 - 보기', params: { docId: id } })
 }
 
-const totalPages = computed(() => approvalStore.allDocumentPages(10))
+const totalPages = computed(() => approvalStore.allDocumentPages(ITEMS_PER_PAGE))
 
 onMounted(async () => {
+  const comId = company.value?.pk || companyStore.initComId || 1
   await Promise.all([
     approvalStore.fetchDocCategoryList(),
     approvalStore.fetchDocTypeList(),
-    companyStore.fetchAllDepartList(1),
+    companyStore.fetchAllDepartList(comId),
   ])
   await fetchList(1)
 })
@@ -118,7 +147,7 @@ onMounted(async () => {
               <CRow>
                 <!-- 카테고리 -->
                 <CCol xs="12" sm="6" class="mb-2">
-                  <CFormSelect v-model="filterCategory" @change="onSearch">
+                  <CFormSelect v-model="filterCategory" @change="onCategoryChange">
                     <option value="">전체 카테고리</option>
                     <option v-for="cat in docCategoryList" :key="cat.id" :value="String(cat.id)">
                       {{ cat.name }}
@@ -179,9 +208,9 @@ onMounted(async () => {
           <CRow class="g-2 align-items-center">
             <!-- 기안일자 기간 -->
             <CCol xs="12" lg="6" class="d-flex align-items-center gap-1">
-              <DatePicker v-model="filterStartDate" @change="onSearch" />
+              <DatePicker v-model="filterStartDate" placeholder="시작일" />
               <span class="text-muted">~</span>
-              <DatePicker v-model="filterEndDate" @change="onSearch" />
+              <DatePicker v-model="filterEndDate" placeholder="종료일" />
             </CCol>
 
             <!-- 검색어 + 버튼 -->
@@ -192,25 +221,16 @@ onMounted(async () => {
                   placeholder="문서번호, 제목, 기안자 검색..."
                   @keyup.enter="onSearch"
                 />
-                <CInputGroupText @click="onSearch">
+                <CButton type="button" color="primary" variant="outline" @click="onSearch">
                   <v-icon icon="mdi-magnify" size="x-small" /> 검색
-                </CInputGroupText>
-                <CInputGroupText @click="resetFilter">
+                </CButton>
+                <CButton type="button" color="secondary" variant="outline" @click="resetFilter">
                   <v-icon icon="mdi-refresh" size="x-small" /> 초기화
-                </CInputGroupText>
+                </CButton>
               </CInputGroup>
             </CCol>
           </CRow>
         </CCol>
-      </CRow>
-
-      <CRow>
-        <!--        <CCol color="warning" class="p-2 pl-3">-->
-        <!--          <strong> 문서 건수 조회 결과 : {{ numFormat(docsCount, 0, 0) }} 건 </strong>-->
-        <!--        </CCol>-->
-        <!--        <CCol v-if="!formsCheck" class="text-right mb-0">-->
-        <!--          <v-btn color="info" size="small" @click="resetForm"> 검색조건 초기화</v-btn>-->
-        <!--        </CCol>-->
       </CRow>
     </CCallout>
 
@@ -251,7 +271,14 @@ onMounted(async () => {
       </CTableHead>
 
       <CTableBody>
-        <CTableRow v-if="allDocumentList.length === 0">
+        <CTableRow v-if="loading">
+          <CTableDataCell colspan="9" class="text-center py-5 text-muted">
+            <CSpinner size="sm" color="primary" class="me-2" />
+            문서를 불러오는 중입니다...
+          </CTableDataCell>
+        </CTableRow>
+
+        <CTableRow v-else-if="allDocumentList.length === 0">
           <CTableDataCell colspan="9" class="text-center py-5 text-muted">
             <v-icon icon="mdi-file-document-outline" size="large" class="mb-2" />
             <div>조회된 결재 문서가 없습니다.</div>
@@ -260,13 +287,14 @@ onMounted(async () => {
 
         <CTableRow
           v-for="(doc, idx) in allDocumentList"
+          v-else
           :key="doc.id"
           class="cursor-pointer"
           @click="goDetail(doc.id)"
         >
           <!-- No -->
           <CTableDataCell class="text-center text-muted">
-            {{ allDocumentsCount - (currentPage - 1) * 10 - idx }}
+            {{ allDocumentsCount - (currentPage - 1) * ITEMS_PER_PAGE - idx }}
           </CTableDataCell>
 
           <!-- 문서번호 -->
@@ -299,7 +327,7 @@ onMounted(async () => {
 
           <!-- 카테고리 / 문서유형 -->
           <CTableDataCell>
-            <span class="small text-muted mr-2">{{ doc.category_name || '일반' }}</span>
+            <span class="small text-muted me-2">{{ doc.category_name || '일반' }}</span>
             <span class="fw-semibold">{{ doc.doc_type_name }}</span>
           </CTableDataCell>
 
@@ -310,26 +338,26 @@ onMounted(async () => {
 
           <!-- 기안자 -->
           <CTableDataCell class="text-center">
-            {{ doc.drafter_name || doc.drafter?.username }}
+            {{ doc.drafter_name || doc.drafter?.full_name || doc.drafter?.username }}
           </CTableDataCell>
 
           <!-- 제목 -->
           <CTableDataCell>
             <div class="d-flex align-items-center gap-1">
-              <span class="fw-semibold text-primary text-decoration-none">
+              <span class="fw-semibold text-primary text-decoration-none text-truncate">
                 {{ doc.title }}
               </span>
               <v-icon
                 v-if="doc.attachment_count && doc.attachment_count > 0"
                 icon="mdi-paperclip"
                 size="x-small"
-                class="text-muted"
+                class="text-muted flex-shrink-0"
               />
               <CBadge
                 v-if="doc.observer_count && doc.observer_count > 0"
                 color="light"
                 text-color="dark"
-                class="border small py-0 px-1"
+                class="border small py-0 px-1 flex-shrink-0"
               >
                 참조 {{ doc.observer_count }}
               </CBadge>
@@ -353,7 +381,7 @@ onMounted(async () => {
 
     <!-- 페이지네이션 -->
     <Pagination
-      v-if="allDocumentsCount > 10"
+      v-if="allDocumentsCount > ITEMS_PER_PAGE"
       :active-page="currentPage"
       :limit="8"
       :pages="totalPages"
@@ -371,3 +399,4 @@ onMounted(async () => {
   background-color: rgba(var(--v-theme-primary), 0.04);
 }
 </style>
+
