@@ -19,7 +19,7 @@ const emit = defineEmits(['select-cate', 'update:filter', 'search'])
 <template>
   <CRow v-if="$route.name === '문서'" class="mb-4 pr-2 mr-2">
     <CCol>
-      <h6 class="text-subtitle-1 mb-2">프로젝트 선택</h6>
+      <h6 class="text-subtitle-1 mb-2">워크스페이스 선택</h6>
       <v-divider class="mt-0" />
       <IssueProjectSelector
         :model-value="filter.issue_project"
