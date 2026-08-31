@@ -9,13 +9,12 @@ import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 
-const accStore = useAccount()
 const { canGlobal, PERM } = usePerms()
 const isHrManager = computed(
   () =>
-    accStore.workManager ||
-    canGlobal(PERM.HQ_HR_WORK_UPDATE) ||
-    canGlobal(PERM.HQ_HR_WORK_CREATE),
+    canGlobal(PERM.HQ_HR_WORK_READ) ||
+    canGlobal(PERM.HQ_HR_WORK_CREATE) ||
+    canGlobal(PERM.HQ_HR_WORK_UPDATE),
 )
 
 const navMenu = computed(() => (!isHrManager.value ? navMenu1 : navMenu2))

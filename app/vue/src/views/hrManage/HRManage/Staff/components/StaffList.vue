@@ -10,10 +10,9 @@ import Staff from './Staff.vue'
 
 const emit = defineEmits(['page-select', 'multi-submit', 'on-delete'])
 
-const { can, PERM } = usePerms()
-const accStore = useAccount()
+const { canGlobal, PERM } = usePerms()
 const canHrWorkManage = computed(
-  () => accStore.isStaff && (can(PERM.HQ_HR_WORK_CREATE) || can(PERM.HQ_HR_WORK_UPDATE)),
+  () => canGlobal(PERM.HQ_HR_WORK_CREATE) || canGlobal(PERM.HQ_HR_WORK_UPDATE),
 )
 
 const companyStore = useCompany()
