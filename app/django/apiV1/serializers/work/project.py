@@ -50,8 +50,14 @@ class ProjectPermissionMixin:
                 return []
             if obj.status == '2':
                 # 닫힌 워크스페이스는 읽기 전용 (단, 프로젝트 자체 관리 project.* 권한은 허용)
-                all_perms = list(Permission.objects.values_list('code', flat=True)) if (
-                        user.is_superuser or getattr(user, 'work_manager', False)) else obj.get_user_permissions(user)
+                if user.is_superuser:
+                    all_perms = list(Permission.objects.values_list('code', flat=True))
+                elif getattr(user, 'work_manager', False):
+                    hq_perms = [p for p in obj.get_user_permissions(user) if p.startswith('hq.')]
+                    non_confidential_perms = list(Permission.objects.filter(is_confidential=False).values_list('code', flat=True))
+                    all_perms = list(set(non_confidential_perms) | set(hq_perms))
+                else:
+                    all_perms = obj.get_user_permissions(user)
                 return [p for p in all_perms if
                         p.endswith('.read') or '.view' in p or '.download' in p or p.startswith('project.')]
             elif obj.status == '9':
@@ -59,8 +65,14 @@ class ProjectPermissionMixin:
                     return [p for p in Permission.objects.values_list('code', flat=True) if p.startswith('project.')]
                 return []
 
-            if user.is_superuser or getattr(user, 'work_manager', False):
+            if user.is_superuser:
                 return list(Permission.objects.values_list('code', flat=True))
+            if getattr(user, 'work_manager', False):
+                # work_manager는 보안 격리 권한(is_confidential=True, 즉 hq.*)을 제외한 모든 일반 워크스페이스 및 프로젝트 권한(약 76개)을 획득하며,
+                # 본사 관리(hq.*) 권한은 해당 워크스페이스의 실제 멤버 역할(Role)에 부여된 권한으로만 획득
+                hq_perms = [p for p in obj.get_user_permissions(user) if p.startswith('hq.')]
+                non_confidential_perms = list(Permission.objects.filter(is_confidential=False).values_list('code', flat=True))
+                return list(set(non_confidential_perms) | set(hq_perms))
             return obj.get_user_permissions(user)
         return []
 
