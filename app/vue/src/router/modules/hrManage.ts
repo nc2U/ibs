@@ -3,7 +3,7 @@ import { h, resolveComponent } from 'vue'
 const hrManage = {
   path: 'hr-manage',
   name: '인사 조직 관리',
-  redirect: '/hr-manage/org-chart',
+  redirect: '/hr-manage/department',
   component: {
     render() {
       return h(resolveComponent('router-view'))
@@ -12,37 +12,46 @@ const hrManage = {
   children: [
     {
       path: 'department',
-      name: '부서 관리',
+      name: '부서 정보 관리',
       component: () => import('@/views/hrManage/Organization/Department/Index.vue'),
       meta: {
-        title: '부서 관리',
+        title: '부서 정보 관리',
         auth: true,
       },
     },
     {
       path: 'grade',
-      name: '직급 관리',
+      name: '직급 정보 관리',
       component: () => import('@/views/hrManage/Organization/Grade/Index.vue'),
       meta: {
-        title: '직급 관리',
+        title: '직급 정보 관리',
         auth: true,
       },
     },
     {
       path: 'position',
-      name: '직위 관리',
+      name: '직위 정보 관리',
       component: () => import('@/views/hrManage/Organization/Position/Index.vue'),
       meta: {
-        title: '직위 관리',
+        title: '직위 정보 관리',
         auth: true,
       },
     },
     {
       path: 'duty',
-      name: '직책 관리',
+      name: '직책 정보 관리',
       component: () => import('@/views/hrManage/Organization/Duty/Index.vue'),
       meta: {
-        title: '직책 관리',
+        title: '직책 정보 관리',
+        auth: true,
+      },
+    },
+    {
+      path: 'executive-rank',
+      name: '임원 직위 관리',
+      component: () => import('@/views/hrManage/Organization/ExecutiveRank/Index.vue'),
+      meta: {
+        title: '임원 직위 관리',
         auth: true,
       },
     },

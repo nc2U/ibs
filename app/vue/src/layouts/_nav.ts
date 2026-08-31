@@ -50,29 +50,34 @@ const humanResource = {
   items: [
     {
       component: 'CNavGroup',
-      name: '조직 관리',
+      name: '조직 체계 관리',
       icon: 'cilGraph',
       auth: 'isStaff',
       items: [
         {
           component: 'CNavItem',
-          name: '부서 관리',
+          name: '부서 정보 관리',
           to: '/hr-manage/department',
         },
         {
           component: 'CNavItem',
-          name: '직급 관리',
+          name: '직급 정보 관리',
           to: '/hr-manage/grade',
         },
         {
           component: 'CNavItem',
-          name: '직위 관리',
+          name: '직위 정보 관리',
           to: '/hr-manage/position',
         },
         {
           component: 'CNavItem',
-          name: '직책 관리',
+          name: '직책 정보 관리',
           to: '/hr-manage/duty',
+        },
+        {
+          component: 'CNavItem',
+          name: '임원 직위 관리',
+          to: '/hr-manage/executive-rank',
         },
         {
           component: 'CNavItem',
@@ -83,36 +88,23 @@ const humanResource = {
     },
     {
       component: 'CNavGroup',
-      name: '인사 관리',
+      name: '직원 인사 관리',
       icon: 'cilAddressBook',
       auth: 'isStaff',
       items: [
         {
           component: 'CNavItem',
-          name: '직원 정보',
+          name: '직원 정보 관리',
           to: '/hr-manage/staff',
         },
         {
           component: 'CNavItem',
-          name: '근태 현황',
-          to: '/hr-manage/attendance',
-          badge: {
-            color: 'info',
-            text: '준비중',
-          },
+          name: '임원 재임 관리',
+          to: '/hr-manage/executives',
         },
         {
           component: 'CNavItem',
-          name: '휴가 연차',
-          to: '/hr-manage/leave',
-          badge: {
-            color: 'info',
-            text: '준비중',
-          },
-        },
-        {
-          component: 'CNavItem',
-          name: '인사 발령',
+          name: '인사 발령 관리',
           to: '/hr-manage/appointments',
           auth: 'isHrManager',
           badge: {
@@ -122,7 +114,7 @@ const humanResource = {
         },
         {
           component: 'CNavItem',
-          name: '인사 기록',
+          name: '인사 이력 관리',
           to: '/hr-manage/records',
           auth: 'isHrManager',
           badge: {
@@ -134,14 +126,67 @@ const humanResource = {
     },
     {
       component: 'CNavGroup',
-      name: '설정 관리',
+      name: '근태 휴가 관리',
+      icon: 'cilAddressBook',
+      auth: 'isStaff',
+      items: [
+        {
+          component: 'CNavItem',
+          name: '연차 부여 관리',
+          to: '/hr-manage/leave-quota',
+          badge: {
+            color: 'info',
+            text: '준비중',
+          },
+        },
+        {
+          component: 'CNavItem',
+          name: '휴가 사용 내역',
+          to: '/hr-manage/leave-usage',
+          badge: {
+            color: 'info',
+            text: '준비중',
+          },
+        },
+        {
+          component: 'CNavItem',
+          name: '근태 현황 관리',
+          to: '/hr-manage/attendance',
+          badge: {
+            color: 'info',
+            text: '준비중',
+          },
+        },
+      ],
+    },
+    {
+      component: 'CNavGroup',
+      name: '인사 승진 평가',
       icon: 'cil-user-follow',
       auth: 'isHrManager',
       items: [
         {
           component: 'CNavItem',
-          name: '기타 설정',
-          to: '/hr-manage/other-settings',
+          name: '인사 업적 평가',
+          to: '/hr-manage/evaluations',
+          badge: {
+            color: 'info',
+            text: '준비중',
+          },
+        },
+        {
+          component: 'CNavItem',
+          name: '승진 심사 대상',
+          to: '/hr-manage/promotions',
+          badge: {
+            color: 'info',
+            text: '준비중',
+          },
+        },
+        {
+          component: 'CNavItem',
+          name: '승급 정책 설정',
+          to: '/hr-manage/promotion-policy',
           badge: {
             color: 'info',
             text: '준비중',
