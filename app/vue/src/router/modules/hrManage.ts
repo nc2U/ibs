@@ -66,55 +66,91 @@ const hrManage = {
     },
     {
       path: 'staff',
-      name: '직원 정보',
+      name: '직원 정보 관리',
       component: () => import('@/views/hrManage/HRManage/Staff/Index.vue'),
       meta: {
-        title: '직원 정보',
+        title: '직원 정보 관리',
         auth: true,
       },
     },
     {
-      path: 'attendance',
-      name: '근태 현황',
-      component: () => import('@/views/hrManage/HRManage/Attendance/Index.vue'),
+      path: 'executives',
+      name: '임원 재임 관리',
+      component: () => import('@/views/hrManage/HRManage/Staff/Index.vue'),
       meta: {
-        title: '근태 현황',
-        auth: true,
-      },
-    },
-    {
-      path: 'leave',
-      name: '휴가 연차',
-      component: () => import('@/views/hrManage/HRManage/Leave/Index.vue'),
-      meta: {
-        title: '휴가 연차',
+        title: '임원 재임 관리',
         auth: true,
       },
     },
     {
       path: 'appointments',
-      name: '인사 발령',
+      name: '인사 발령 관리',
       component: () => import('@/views/hrManage/HRManage/Appointment/Index.vue'),
       meta: {
-        title: '인사 발령',
+        title: '인사 발령 관리',
         auth: true,
       },
     },
     {
       path: 'records',
-      name: '인사 기록',
+      name: '인사 이력 관리',
       component: () => import('@/views/hrManage/HRManage/Record/Index.vue'),
       meta: {
-        title: '인사 기록',
+        title: '인사 이력 관리',
         auth: true,
       },
     },
     {
-      path: 'other-settings',
-      name: '기타 설정',
+      path: 'leave-quota',
+      name: '연차 부여 관리',
+      component: () => import('@/views/hrManage/HRManage/Leave/Index.vue'),
+      meta: {
+        title: '연차 부여 관리',
+        auth: true,
+      },
+    },
+    {
+      path: 'leave-usage',
+      name: '휴가 사용 내역',
+      component: () => import('@/views/hrManage/HRManage/Leave/Index.vue'),
+      meta: {
+        title: '휴가 사용 내역',
+        auth: true,
+      },
+    },
+    {
+      path: 'attendance',
+      name: '근태 현황 관리',
+      component: () => import('@/views/hrManage/HRManage/Attendance/Index.vue'),
+      meta: {
+        title: '근태 현황 관리',
+        auth: true,
+      },
+    },
+    {
+      path: 'evaluations',
+      name: '인사 업적 평가',
       component: () => import('@/views/hrManage/Settings/Index.vue'),
       meta: {
-        title: '기타 설정',
+        title: '인사 업적 평가',
+        auth: true,
+      },
+    },
+    {
+      path: 'promotions',
+      name: '승진 심사 대상',
+      component: () => import('@/views/hrManage/Settings/Index.vue'),
+      meta: {
+        title: '승진 심사 대상',
+        auth: true,
+      },
+    },
+    {
+      path: 'promotion-policy',
+      name: '승급 정책 설정',
+      component: () => import('@/views/hrManage/Settings/Index.vue'),
+      meta: {
+        title: '승급 정책 설정',
         auth: true,
       },
     },
