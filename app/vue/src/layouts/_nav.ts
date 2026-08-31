@@ -51,7 +51,7 @@ const humanResource = {
     {
       component: 'CNavGroup',
       name: '조직 체계 관리',
-      icon: 'cilGraph',
+      icon: 'cilLan',
       items: [
         {
           component: 'CNavItem',
@@ -134,7 +134,7 @@ const humanResource = {
     {
       component: 'CNavGroup',
       name: '근태 휴가 관리',
-      icon: 'cilAddressBook',
+      icon: 'cilLifeRing',
       auth: 'isStaff',
       items: [
         {
