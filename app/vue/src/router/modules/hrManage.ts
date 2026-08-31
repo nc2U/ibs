@@ -76,7 +76,7 @@ const hrManage = {
     {
       path: 'executives',
       name: '임원 재임 관리',
-      component: () => import('@/views/hrManage/HRManage/Staff/Index.vue'),
+      component: () => import('@/views/hrManage/HRManage/Appointment/Index.vue'),
       meta: {
         title: '임원 재임 관리',
         auth: true,
@@ -103,7 +103,7 @@ const hrManage = {
     {
       path: 'leave-quota',
       name: '연차 부여 관리',
-      component: () => import('@/views/hrManage/HRManage/Leave/Index.vue'),
+      component: () => import('@/views/hrManage/Attendance/Index.vue'),
       meta: {
         title: '연차 부여 관리',
         auth: true,
@@ -112,7 +112,7 @@ const hrManage = {
     {
       path: 'leave-usage',
       name: '휴가 사용 내역',
-      component: () => import('@/views/hrManage/HRManage/Leave/Index.vue'),
+      component: () => import('@/views/hrManage/Attendance/Index.vue'),
       meta: {
         title: '휴가 사용 내역',
         auth: true,
@@ -121,7 +121,7 @@ const hrManage = {
     {
       path: 'attendance',
       name: '근태 현황 관리',
-      component: () => import('@/views/hrManage/HRManage/Attendance/Index.vue'),
+      component: () => import('@/views/hrManage/Attendance/Index.vue'),
       meta: {
         title: '근태 현황 관리',
         auth: true,
@@ -130,7 +130,7 @@ const hrManage = {
     {
       path: 'evaluations',
       name: '인사 업적 평가',
-      component: () => import('@/views/hrManage/Settings/Index.vue'),
+      component: () => import('@/views/hrManage/Promotion/Index.vue'),
       meta: {
         title: '인사 업적 평가',
         auth: true,
@@ -139,7 +139,7 @@ const hrManage = {
     {
       path: 'promotions',
       name: '승진 심사 대상',
-      component: () => import('@/views/hrManage/Settings/Index.vue'),
+      component: () => import('@/views/hrManage/Promotion/Index.vue'),
       meta: {
         title: '승진 심사 대상',
         auth: true,
@@ -148,7 +148,7 @@ const hrManage = {
     {
       path: 'promotion-policy',
       name: '승급 정책 설정',
-      component: () => import('@/views/hrManage/Settings/Index.vue'),
+      component: () => import('@/views/hrManage/Promotion/Index.vue'),
       meta: {
         title: '승급 정책 설정',
         auth: true,
