@@ -76,7 +76,7 @@ const hrManage = {
     {
       path: 'executives',
       name: '임원 재임 관리',
-      component: () => import('@/views/hrManage/HRManage/Appointment/Index.vue'),
+      component: () => import('@/views/hrManage/HRManage/Executive/Index.vue'),
       meta: {
         title: '임원 재임 관리',
         auth: true,

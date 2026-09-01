@@ -1,8 +1,7 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, ref } from 'vue'
-import { pageTitle, navMenu1, navMenu2 } from '@/views/hrManage/_menu/headermixin2.ts'
+import { navMenu1, navMenu2, pageTitle } from '@/views/hrManage/_menu/headermixin2.ts'
 import { useCompany } from '@/store/pinia/company.ts'
-import { useAccount } from '@/store/pinia/account.ts'
 import { usePerms } from '@/composables/usePerms'
 import ComHrAuthGuard from '@/components/AuthGuard/ComHrAuthGuard.vue'
 import Loading from '@/components/Loading/Index.vue'
@@ -44,7 +43,7 @@ onBeforeMount(() => {
 
     <ContentBody>
       <CCardBody>
-        <h3>휴가 / 연차</h3>
+        <h3>임원 재임 관리</h3>
 
         <h6>준비중...</h6>
       </CCardBody>
