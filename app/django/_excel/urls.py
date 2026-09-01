@@ -1,7 +1,7 @@
 from django.urls import path
 
-# 앱별 내보내기 모듈에서 가져오기
-from company.exports import ExportStaffs, ExportDeparts, ExportPositions, ExportDuties, ExportGrades
+from company.exports import (ExportStaffs, ExportDeparts, ExportPositions, ExportDuties, ExportGrades,
+                             ExportExecutiveRanks)
 from contract.exports import ExportContracts, ExportSuccessions, ExportReleases, ExportUnitStatus
 from docs.exports import ExportSuitCases, ExportSuitCase
 from ledger.exports import (ExportLedgerBalanceByAcc, ExportLedgerDateCashbook, export_com_transaction_xls,
@@ -20,6 +20,7 @@ urlpatterns = [
     path('positions/', ExportPositions.as_view(), name='positions'),
     path('duties/', ExportDuties.as_view(), name='duties'),
     path('grades/', ExportGrades.as_view(), name='grades'),
+    path('executive-ranks/', ExportExecutiveRanks.as_view(), name='executive-ranks'),
 
     # Project - site 관련 (새 모듈)
     path('sites/', ExportSites.as_view(), name='sites'),

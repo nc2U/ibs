@@ -77,10 +77,6 @@ const humanResource = {
           component: 'CNavItem',
           name: '임원 직위 관리',
           to: '/hr-manage/executive-rank',
-          badge: {
-            color: 'info',
-            text: '준비중',
-          },
         },
         {
           component: 'CNavItem',

@@ -10,7 +10,7 @@ from django.core import serializers
 from django.db.models import Q
 
 from _excel.mixins import ExcelExportMixin
-from company.models import Company, Staff, Department, JobGrade, Position, DutyTitle
+from company.models import Company, Staff, Department, JobGrade, Position, DutyTitle, ExecutiveRank
 from contract.models import Contract
 from project.models import Project
 
@@ -547,7 +547,8 @@ class ExportGrades(ExcelExportMixin):
         # Write body
         for i, row in enumerate(data):
             row_num += 1
-            row_data = [row['num'], row['code'], row['role'], row['min_promotion_years'], row['positions'], row['promotion_criteria']]
+            row_data = [row['num'], row['code'], row['role'], row['min_promotion_years'], row['positions'],
+                        row['promotion_criteria']]
 
             for col_num, cell_data in enumerate(row_data):
                 if type(cell_data) == list:
@@ -563,6 +564,95 @@ class ExportGrades(ExcelExportMixin):
 
         # Close the workbook before sending the data.
         filename = request.GET.get('filename') or 'grades'
+        filename = f'{filename}-{TODAY}'
+        return self.create_response(output, workbook, filename)
+
+
+class ExportExecutiveRanks(ExcelExportMixin):
+    """임원 직위 목록"""
+
+    def get(self, request):
+        # 워크북 생성
+        output, workbook, worksheet = self.create_workbook('임원_직위_정보')
+
+        # data start --------------------------------------------- #
+        company = Company.objects.get(pk=request.GET.get('company'))
+        com_name = company.name.replace('주식회사 ', '(주)')
+
+        # 포맷 생성
+        title_format = self.create_title_format(workbook)
+        h_format = self.create_header_format(workbook)
+
+        # title_list
+        header_src = [[],
+                      ['서열 순서', 'rank_order', 12],
+                      ['직위 코드', 'code', 15],
+                      ['임원 직위명', 'name', 20],
+                      ['역할/관장 설명', 'role_desc', 45]]
+        titles = ['No']  # header titles
+        params = []  # ORM 추출 field
+        widths = [7]  # No. 컬럼 넓이
+
+        for el in header_src:
+            if el:
+                titles.append(el[0])
+                params.append(el[1])
+                widths.append(el[2])
+
+        # 1. Title
+        row_num = 0
+        worksheet.set_row(row_num, 50)
+        worksheet.merge_range(row_num, 0, row_num, len(header_src) - 1, com_name + ' 임원 직위 정보 목록', title_format)
+
+        # 2. Pre Header - Date
+        row_num = 1
+        worksheet.set_row(row_num, 18)
+        worksheet.write(row_num, len(header_src) - 1, TODAY + ' 현재', workbook.add_format({'align': 'right'}))
+
+        # 3. Header - 1
+        row_num = 2
+        worksheet.set_row(row_num, 20, workbook.add_format({'bold': True}))
+
+        # Adjust the column width.
+        for i, col_width in enumerate(widths):
+            worksheet.set_column(i, i, col_width)
+
+        # Write header - 1
+        for col_num, title in enumerate(titles):
+            worksheet.write(row_num, col_num, title, h_format)
+
+        # 4. Body
+        # Get some data to write to the spreadsheet.
+        search = request.GET.get('search')
+        obj_list = ExecutiveRank.objects.filter(company=company)
+        obj_list = obj_list.filter(
+            Q(code__icontains=search) | Q(name__icontains=search) | Q(role_desc__icontains=search)
+        ) if search else obj_list
+
+        data = obj_list.values_list(*params)
+
+        body_format = {
+            'border': True,
+            'valign': 'vcenter',
+            'num_format': '#,##0'
+        }
+
+        # Write body
+        for i, row in enumerate(data):
+            row = list(row)
+            row_num += 1
+            row.insert(0, i + 1)
+            for col_num, cell_data in enumerate(row):
+                if col_num in (3, 4):
+                    body_format['align'] = 'left'
+                else:
+                    body_format['align'] = 'center'
+                bformat = workbook.add_format(body_format)
+                worksheet.write(row_num, col_num, cell_data, bformat)
+        # data finish -------------------------------------------- #
+
+        # Close the workbook before sending the data.
+        filename = request.GET.get('filename') or 'executive-ranks'
         filename = f'{filename}-{TODAY}'
         return self.create_response(output, workbook, filename)
 
