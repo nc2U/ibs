@@ -149,28 +149,16 @@ const humanResource = {
           component: 'CNavItem',
           name: '인사 업적 평가',
           to: '/hr-manage/evaluations',
-          badge: {
-            color: 'info',
-            text: '준비중',
-          },
         },
         {
           component: 'CNavItem',
           name: '승진 심사 대상',
           to: '/hr-manage/promotions',
-          badge: {
-            color: 'info',
-            text: '준비중',
-          },
         },
         {
           component: 'CNavItem',
           name: '승급 정책 설정',
           to: '/hr-manage/promotion-policy',
-          badge: {
-            color: 'info',
-            text: '준비중',
-          },
         },
       ],
     },

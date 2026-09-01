@@ -252,6 +252,16 @@ export type ExecutiveFilter = {
   q?: string
 }
 
+export type StaffEvaluationFilter = {
+  page?: number
+  com?: number
+  eval_year?: number | string
+  eval_period?: string
+  grade?: string
+  staff?: number | string
+  q?: string
+}
+
 export interface StaffCareer {
   id?: number
   pk?: number

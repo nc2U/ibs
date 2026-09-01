@@ -12,7 +12,7 @@ from django.db.models import Q
 from _excel.mixins import ExcelExportMixin
 from company.models import (Company, Staff, Department, JobGrade, Position, DutyTitle,
                             ExecutiveRank, Executive, PersonnelOrder, StaffCareer, StaffCertificate,
-                            StaffRewardPunishment, StaffLeaveQuota, StaffLeaveUsage)
+                            StaffRewardPunishment, StaffLeaveQuota, StaffLeaveUsage, StaffEvaluation)
 from contract.models import Contract
 from project.models import Project
 
@@ -1493,6 +1493,116 @@ class ExportStaffAttendanceStatus(ExcelExportMixin):
                 worksheet.write(row_num, col_num, cell_data, bformat)
 
         filename = request.GET.get('filename') or 'staff-attendance-status'
+        filename = f'{filename}-{TODAY}'
+        return self.create_response(output, workbook, filename)
+
+
+class ExportStaffEvaluations(ExcelExportMixin):
+    """직원 인사/업적 평가 목록"""
+
+    def get(self, request):
+        output, workbook, worksheet = self.create_workbook('인사_평가_목록')
+        company = Company.objects.get(pk=request.GET.get('company'))
+        com_name = company.name.replace('주식회사 ', '(주)')
+
+        title_format = self.create_title_format(workbook)
+        h_format = self.create_header_format(workbook)
+
+        header_src = [[],
+                      ['평가연도', 'eval_year', 10],
+                      ['평가주기', 'eval_period', 10],
+                      ['피평가자', 'staff__name', 12],
+                      ['부서', 'staff__department__name', 14],
+                      ['직급/직위', 'staff__position__name', 12],
+                      ['평가등급', 'grade', 10],
+                      ['환산점수', 'score', 11],
+                      ['1차 평가자', 'evaluator__name', 12],
+                      ['2차 확인자', 'reviewer__name', 12],
+                      ['주요 업적 요약', 'achievement_summary', 30],
+                      ['종합의견', 'notes', 25]]
+        titles = ['No']
+        widths = [7]
+
+        for el in header_src:
+            if el:
+                titles.append(el[0])
+                widths.append(el[2])
+
+        row_num = 0
+        worksheet.set_row(row_num, 50)
+        worksheet.merge_range(row_num, 0, row_num, len(header_src) - 1, com_name + ' 임직원 인사/업적 평가 목록', title_format)
+
+        row_num = 1
+        worksheet.set_row(row_num, 18)
+        worksheet.write(row_num, len(header_src) - 1, TODAY + ' 현재', workbook.add_format({'align': 'right'}))
+
+        row_num = 2
+        worksheet.set_row(row_num, 20, workbook.add_format({'bold': True}))
+
+        for i, col_width in enumerate(widths):
+            worksheet.set_column(i, i, col_width)
+
+        for col_num, title in enumerate(titles):
+            worksheet.write(row_num, col_num, title, h_format)
+
+        obj_list = StaffEvaluation.objects.filter(company=company).select_related(
+            'staff', 'staff__department', 'staff__position', 'staff__grade', 'evaluator', 'reviewer'
+        )
+        eval_year = request.GET.get('eval_year')
+        eval_period = request.GET.get('eval_period')
+        grade = request.GET.get('grade')
+        staff = request.GET.get('staff')
+        search = request.GET.get('search')
+
+        if eval_year:
+            obj_list = obj_list.filter(eval_year=eval_year)
+        if eval_period:
+            obj_list = obj_list.filter(eval_period=eval_period)
+        if grade:
+            obj_list = obj_list.filter(grade=grade)
+        if staff:
+            obj_list = obj_list.filter(staff_id=staff)
+        if search:
+            obj_list = obj_list.filter(
+                Q(staff__name__icontains=search) |
+                Q(achievement_summary__icontains=search) |
+                Q(notes__icontains=search)
+            )
+
+        body_format = {'border': True, 'align': 'center', 'valign': 'vcenter', 'num_format': '@'}
+
+        for i, item in enumerate(obj_list):
+            row_num += 1
+            pos_title = item.staff.position.name if (item.staff and item.staff.position) else (item.staff.grade.code if (item.staff and item.staff.grade) else '-')
+            dept_title = item.staff.department.name if (item.staff and item.staff.department) else '-'
+            row_data = [
+                i + 1,
+                f'{item.eval_year}년',
+                item.get_eval_period_display(),
+                item.staff.name if item.staff else '',
+                dept_title,
+                pos_title,
+                item.grade,
+                float(item.score) if item.score is not None else '',
+                item.evaluator.name if item.evaluator else '-',
+                item.reviewer.name if item.reviewer else '-',
+                item.achievement_summary or '',
+                item.notes or '',
+            ]
+            for col_num, cell_data in enumerate(row_data):
+                if col_num == 7 and cell_data != '':
+                    body_format['num_format'] = '#,##0.00'
+                    body_format['align'] = 'right'
+                elif col_num in (10, 11):
+                    body_format['num_format'] = '@'
+                    body_format['align'] = 'left'
+                else:
+                    body_format['num_format'] = '@'
+                    body_format['align'] = 'center'
+                bformat = workbook.add_format(body_format)
+                worksheet.write(row_num, col_num, cell_data, bformat)
+
+        filename = request.GET.get('filename') or 'staff-evaluations'
         filename = f'{filename}-{TODAY}'
         return self.create_response(output, workbook, filename)
 

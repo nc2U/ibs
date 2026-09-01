@@ -17,6 +17,7 @@ import {
   type ExecutiveFilter,
   type PromotionPolicy,
   type StaffEvaluation,
+  type StaffEvaluationFilter,
   type PromotionCandidate,
   type PersonnelOrder,
   type PersonnelOrderFilter,
@@ -709,13 +710,21 @@ export const useCompany = defineStore('company', () => {
   const staffEvaluationPages = (itemsPerPage: number) =>
     Math.ceil(staffEvaluationsCount.value / itemsPerPage)
 
-  const fetchStaffEvaluationList = async (
-    payload: ComFilter & { staff?: number; year?: number },
-  ) => {
-    const { page = 1, com = 1, q = '', staff: staffId, year } = payload
+  const fetchStaffEvaluationList = async (payload: StaffEvaluationFilter) => {
+    const {
+      page = 1,
+      com = 1,
+      eval_year = '',
+      eval_period = '',
+      grade = '',
+      staff: staffId = '',
+      q = '',
+    } = payload
     let queryStr = `?limit=10&page=${page}&company=${com}&search=${q}`
     if (staffId) queryStr += `&staff=${staffId}`
-    if (year) queryStr += `&eval_year=${year}`
+    if (eval_year) queryStr += `&eval_year=${eval_year}`
+    if (eval_period) queryStr += `&eval_period=${eval_period}`
+    if (grade) queryStr += `&grade=${grade}`
     return await api
       .get(`/staff-evaluation/${queryStr}`)
       .then(res => {
