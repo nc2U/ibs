@@ -13,6 +13,9 @@ import SaveQueryModal from '@/views/_Work/components/SaveQueryModal.vue'
 import { useRoute } from 'vue-router'
 import { useAccount } from '@/store/pinia/account'
 
+import { storeToRefs } from 'pinia'
+import { useCalendarFilter } from '@/store/pinia/work_calendar_filter.ts'
+
 const route = useRoute()
 const { can, PERM } = usePerms()
 const accStore = useAccount()
@@ -42,11 +45,8 @@ const openSaveModal = () => {
 // ----- 표시 상태 -----
 const condVisible = ref(true)
 
-// ----- 이벤트 종류 선택 (업무 / 회의 표시 토글) -----
-const eventTypes = ref<('issue' | 'meeting')[]>(['issue', 'meeting'])
-
-// ----- 검색조건 추가 (태그 기반 동적 추가 조건) -----
-const searchCond = ref<string[]>(['issue_status'])
+const calendarFilterStore = useCalendarFilter()
+const { eventTypes, searchCond, enabledFields, cond, form } = storeToRefs(calendarFilterStore)
 
 // searchOptions 에서 고정(disabled) 항목들은 언제나 표시됨
 // 'issue_status' 는 고정 조건 (is_status)
@@ -84,76 +84,6 @@ const searchOptions = reactive([
     ],
   },
 ])
-
-// ----- 각 조건의 연산자 상태 -----
-const cond = ref<Record<string, any>>({
-  issue_status: 'open' as 'open' | 'is' | 'exclude' | 'closed' | 'any',
-  project: 'is' as 'is' | 'exclude',
-  tracker: 'is' as 'is' | 'exclude',
-  priority: 'is' as 'is' | 'exclude',
-  assignee: 'is' as 'is' | 'exclude',
-  author: 'is' as 'is' | 'exclude',
-  issue_subject: 'contains' as 'contains' | 'exclude',
-  start_date: 'gte' as 'is' | 'gte' | 'lte' | 'between',
-  due_date: 'lte' as 'is' | 'gte' | 'lte' | 'between',
-  meeting_status: 'is' as 'is' | 'exclude',
-  meeting_category: 'is' as 'is' | 'exclude',
-  meeting_attendees: 'is' as 'is' | 'exclude',
-  meeting_creator: 'is' as 'is' | 'exclude',
-  meeting_title: 'contains' as 'contains' | 'exclude',
-  meeting_date: 'between' as 'is' | 'gte' | 'lte' | 'between',
-})
-
-// ----- 폼 값 상태 -----
-const form = ref<Record<string, any>>({
-  // 공통
-  project: '',
-
-  // 업무 조건
-  issue_status: null,
-  issue_status__exclude: null,
-  tracker: null,
-  tracker__exclude: null,
-  priority: null,
-  priority__exclude: null,
-  assignee: null,
-  assignee__exclude: null,
-  author: null,
-  author__exclude: null,
-  issue_subject: '',
-  issue_subject__exclude: '',
-  start_date: '',
-  start_date__gte: '',
-  start_date__lte: '',
-  start_date__between_min: '',
-  start_date__between_max: '',
-  due_date: '',
-  due_date__gte: '',
-  due_date__lte: '',
-  due_date__between_min: '',
-  due_date__between_max: '',
-
-  // 회의 조건
-  meeting_status: '1',
-  meeting_status__exclude: null,
-  meeting_category: null,
-  meeting_category__exclude: null,
-  meeting_attendees: null,
-  meeting_attendees__exclude: null,
-  meeting_creator: null,
-  meeting_creator__exclude: null,
-  meeting_title: '',
-  meeting_date: '',
-  meeting_date__gte: '',
-  meeting_date__lte: '',
-  meeting_date__between_min: '',
-  meeting_date__between_max: '',
-})
-
-// ----- 활성화된 필터 키 관리 (체크박스로 ON/OFF 가능) -----
-// searchCond: 드롭다운 목록에 추가되어 폼에 렌더링된 항목들
-// enabledFields: 그 중 체크박스가 [v] 선택되어 실제 검색 조건에 반영되는 항목들
-const enabledFields = ref<string[]>(['issue_status'])
 
 // searchCond 에 새 항목 추가 시 enabledFields 에도 자동 추가
 watch(searchCond, newVal => {
@@ -340,137 +270,14 @@ const activeFields = computed(() =>
 
 // ----- filterSubmit: 통합 필터 객체 emit -----
 const filterSubmit = () => {
-  const payload: Record<string, any> = {
-    event_type: eventTypes.value.length === 2 ? 'all' : (eventTypes.value[0] ?? 'all'),
-  }
-
-  // 프로젝트 (체크 박스 활성화시에만 적용)
-  if (enabledFields.value.includes('project')) {
-    if (form.value.project === '') {
-      if (cond.value.project === 'is') payload.project__my_project = true
-      else if (cond.value.project === 'exclude') payload.project__my_project = false
-    } else if (form.value.project === 'bookmark') {
-      if (cond.value.project === 'is') payload.project__bookmark = true
-      else if (cond.value.project === 'exclude') payload.project__bookmark = false
-    } else if (form.value.project === 'closed') {
-      if (cond.value.project === 'is') payload.project_status = '2'
-      else if (cond.value.project === 'exclude') payload.project_status__exclude = '2'
-    } else if (form.value.project) {
-      if (cond.value.project === 'is') payload.project = form.value.project
-      else if (cond.value.project === 'exclude') payload.project__exclude = form.value.project
-    }
-  }
-
-  // ===== 업무(Issue) 필터 =====
-  // 업무 상태 (체크 박스 활성화시에만 적용)
-  if (enabledFields.value.includes('issue_status')) {
-    if (cond.value.issue_status === 'open') {
-      payload.status__closed = '0'
-    } else if (cond.value.issue_status === 'closed') {
-      payload.status__closed = '1'
-    } else if (cond.value.issue_status === 'any') {
-      payload.status__closed = ''
-    } else if (cond.value.issue_status === 'is' && form.value.issue_status) {
-      payload.status = form.value.issue_status
-      payload.status__closed = ''
-    } else if (cond.value.issue_status === 'exclude' && form.value.issue_status__exclude) {
-      payload.status__exclude = form.value.issue_status__exclude
-      payload.status__closed = ''
-    }
-  }
-
-  // 동적 조건 순회 (enabledFields 에 활성화된 키만 검색 파라미터에 반영)
-  enabledFields.value.forEach(key => {
-    if (key === 'issue_status' || key === 'project') return
-
-    const op = cond.value[key]
-
-    // 업무 필터
-    if (key === 'tracker') {
-      if (op === 'is' && form.value.tracker) payload.tracker = form.value.tracker
-      else if (op === 'exclude' && form.value.tracker) payload.tracker__exclude = form.value.tracker
-    } else if (key === 'priority') {
-      if (op === 'is' && form.value.priority) payload.priority = form.value.priority
-      else if (op === 'exclude' && form.value.priority)
-        payload.priority__exclude = form.value.priority
-    } else if (key === 'assignee') {
-      if (op === 'is' && form.value.assignee) payload.assigned_to = form.value.assignee
-      else if (op === 'exclude' && form.value.assignee)
-        payload.assigned_to__exclude = form.value.assignee
-    } else if (key === 'author') {
-      if (op === 'is' && form.value.author) payload.creator = form.value.author
-      else if (op === 'exclude' && form.value.author) payload.creator__exclude = form.value.author
-    } else if (key === 'issue_subject') {
-      if (op === 'contains' && form.value.issue_subject) payload.subject = form.value.issue_subject
-      else if (op === 'exclude' && form.value.issue_subject__exclude)
-        payload.subject__exclude = form.value.issue_subject__exclude
-    } else if (key === 'start_date') {
-      _applyDateFilter(payload, 'start_date', op)
-    } else if (key === 'due_date') {
-      _applyDateFilter(payload, 'due_date', op)
-
-      // ===== 회의(Meeting) 필터 =====
-    } else if (key === 'meeting_status') {
-      if (op === 'is' && form.value.meeting_status)
-        payload.meeting_status = form.value.meeting_status
-      else if (op === 'exclude' && form.value.meeting_status)
-        payload.meeting_status__exclude = form.value.meeting_status
-    } else if (key === 'meeting_category') {
-      if (op === 'is' && form.value.meeting_category)
-        payload.meeting_category = form.value.meeting_category
-      else if (op === 'exclude' && form.value.meeting_category)
-        payload.meeting_category__exclude = form.value.meeting_category
-    } else if (key === 'meeting_attendees') {
-      if (op === 'is' && form.value.meeting_attendees)
-        payload.meeting_attendees = form.value.meeting_attendees
-      else if (op === 'exclude' && form.value.meeting_attendees)
-        payload.meeting_attendees__exclude = form.value.meeting_attendees
-    } else if (key === 'meeting_creator') {
-      if (op === 'is' && form.value.meeting_creator)
-        payload.meeting_creator = form.value.meeting_creator
-      else if (op === 'exclude' && form.value.meeting_creator)
-        payload.meeting_creator__exclude = form.value.meeting_creator
-    } else if (key === 'meeting_title') {
-      if (op === 'contains' && form.value.meeting_title)
-        payload.meeting_search = form.value.meeting_title
-      else if (op === 'exclude' && form.value.meeting_title__exclude)
-        payload.meeting_search__exclude = form.value.meeting_title__exclude
-    } else if (key === 'meeting_date') {
-      _applyDateFilter(payload, 'meeting_date', op)
-    }
-  })
-
+  const payload = calendarFilterStore.buildFilterPayload()
   emit('filter-submit', payload)
-}
-
-// 날짜 필터 공통 헬퍼
-const _applyDateFilter = (payload: Record<string, any>, key: string, op: string) => {
-  if (op === 'is' && form.value[key]) {
-    payload[key] = form.value[key]
-  } else if (op === 'gte' && form.value[`${key}__gte`]) {
-    payload[`${key}__gte`] = form.value[`${key}__gte`]
-  } else if (op === 'lte' && form.value[`${key}__lte`]) {
-    payload[`${key}__lte`] = form.value[`${key}__lte`]
-  } else if (op === 'between') {
-    if (form.value[`${key}__between_min`])
-      payload[`${key}__gte`] = form.value[`${key}__between_min`]
-    if (form.value[`${key}__between_max`])
-      payload[`${key}__lte`] = form.value[`${key}__between_max`]
-  }
 }
 
 // ----- 초기화 -----
 const resetFilter = () => {
-  eventTypes.value = ['issue', 'meeting']
-  searchCond.value = ['issue_status']
-  enabledFields.value = ['issue_status']
-  cond.value.issue_status = 'open'
-  Object.keys(form.value).forEach(k => {
-    if (typeof form.value[k] === 'string') form.value[k] = ''
-    else form.value[k] = null
-  })
-  form.value.meeting_status = '1'
-  filterSubmit()
+  const payload = calendarFilterStore.resetFilter()
+  emit('filter-submit', payload)
 }
 
 // 업무 상태 변경 시 즉시 제출
@@ -510,55 +317,13 @@ watch(
 
 // ----- 저장된 검색양식 복원 (Apply Query) -----
 const applyQuery = (query: any) => {
-  if (query && query.filters) {
-    const f = query.filters
-
-    // 이전 상태 초기화
-    searchCond.value = ['issue_status']
-    enabledFields.value = ['issue_status']
-
-    if (f.searchCond) {
-      searchCond.value = [...f.searchCond]
-      enabledFields.value = [...f.searchCond]
-    }
-    if (f.cond) cond.value = { ...cond.value, ...f.cond }
-    if (f.form) {
-      form.value = { ...form.value, ...f.form }
-    } else {
-      const myId = currentUserId.value ?? props.getUsers[0]?.value
-
-      if (f.assignee !== undefined || f.assigned_to !== undefined) {
-        const val = f.assignee ?? f.assigned_to
-        if (!searchCond.value.includes('assignee')) searchCond.value.push('assignee')
-        if (!enabledFields.value.includes('assignee')) enabledFields.value.push('assignee')
-        cond.value.assignee = 'is'
-        form.value.assignee = val === 'me' ? myId : val
-      }
-      if (f.author !== undefined || f.creator !== undefined) {
-        const val = f.author ?? f.creator
-        if (!searchCond.value.includes('author')) searchCond.value.push('author')
-        if (!enabledFields.value.includes('author')) enabledFields.value.push('author')
-        cond.value.author = 'is'
-        form.value.author = val === 'me' ? myId : val
-      }
-      if (f.meeting_attendees !== undefined) {
-        if (!searchCond.value.includes('meeting_attendees'))
-          searchCond.value.push('meeting_attendees')
-        if (!enabledFields.value.includes('meeting_attendees'))
-          enabledFields.value.push('meeting_attendees')
-        cond.value.meeting_attendees = 'is'
-        form.value.meeting_attendees = f.meeting_attendees === 'me' ? myId : f.meeting_attendees
-      }
-      if (f.meeting_creator !== undefined) {
-        if (!searchCond.value.includes('meeting_creator')) searchCond.value.push('meeting_creator')
-        if (!enabledFields.value.includes('meeting_creator'))
-          enabledFields.value.push('meeting_creator')
-        cond.value.meeting_creator = 'is'
-        form.value.meeting_creator = f.meeting_creator === 'me' ? myId : f.meeting_creator
-      }
-    }
-
-    filterSubmit()
+  const payload = calendarFilterStore.applySavedQuery(
+    query,
+    currentUserId.value,
+    props.getUsers[0]?.value,
+  )
+  if (payload) {
+    emit('filter-submit', payload)
   }
 }
 
