@@ -146,6 +146,15 @@ export interface PromotionPolicy {
   is_active: boolean
 }
 
+export type PromotionPolicyFilter = {
+  page?: number
+  com?: number
+  current_grade?: number | string
+  target_grade?: number | string
+  is_active?: boolean | string
+  q?: string
+}
+
 export interface StaffEvaluation {
   pk?: number
   company?: string

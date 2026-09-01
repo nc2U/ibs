@@ -16,6 +16,7 @@ import {
   type Executive,
   type ExecutiveFilter,
   type PromotionPolicy,
+  type PromotionPolicyFilter,
   type StaffEvaluation,
   type StaffEvaluationFilter,
   type PromotionCandidate,
@@ -644,9 +645,20 @@ export const useCompany = defineStore('company', () => {
   const promotionPolicyPages = (itemsPerPage: number) =>
     Math.ceil(promotionPoliciesCount.value / itemsPerPage)
 
-  const fetchPromotionPolicyList = async (payload: ComFilter) => {
-    const { page = 1, com = 1, q = '' } = payload
-    const queryStr = `?limit=10&page=${page}&company=${com}&search=${q}`
+  const fetchPromotionPolicyList = async (payload: PromotionPolicyFilter) => {
+    const {
+      page = 1,
+      com = 1,
+      current_grade = '',
+      target_grade = '',
+      is_active = '',
+      q = '',
+    } = payload
+    let queryStr = `?limit=10&page=${page}&company=${com}&search=${q}`
+    if (current_grade) queryStr += `&current_grade=${current_grade}`
+    if (target_grade) queryStr += `&target_grade=${target_grade}`
+    if (is_active !== '') queryStr += `&is_active=${is_active}`
+
     return await api
       .get(`/promotion-policy/${queryStr}`)
       .then(res => {

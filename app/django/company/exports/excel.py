@@ -13,7 +13,7 @@ from _excel.mixins import ExcelExportMixin
 from company.models import (Company, Staff, Department, JobGrade, Position, DutyTitle,
                             ExecutiveRank, Executive, PersonnelOrder, StaffCareer, StaffCertificate,
                             StaffRewardPunishment, StaffLeaveQuota, StaffLeaveUsage, StaffEvaluation,
-                            PromotionCandidate)
+                            PromotionPolicy, PromotionCandidate)
 from contract.models import Contract
 from project.models import Project
 
@@ -1712,6 +1712,107 @@ class ExportPromotionCandidates(ExcelExportMixin):
                 worksheet.write(row_num, col_num, cell_data, bformat)
 
         filename = request.GET.get('filename') or 'promotion-candidates'
+        filename = f'{filename}-{TODAY}'
+        return self.create_response(output, workbook, filename)
+
+
+class ExportPromotionPolicies(ExcelExportMixin):
+    """직급별 승급 기준 및 정책 목록"""
+
+    def get(self, request):
+        output, workbook, worksheet = self.create_workbook('승급_정책_목록')
+        company = Company.objects.get(pk=request.GET.get('company'))
+        com_name = company.name.replace('주식회사 ', '(주)')
+
+        title_format = self.create_title_format(workbook)
+        h_format = self.create_header_format(workbook)
+
+        header_src = [[],
+                      ['현재직급', 'current_grade__code', 12],
+                      ['승급대상직급', 'target_grade__code', 12],
+                      ['최소 체류기간', 'min_years', 13],
+                      ['최소 평가평점', 'min_avg_grade_point', 13],
+                      ['최소 평가등급 요건', 'required_eval_grade', 16],
+                      ['필수 역량/자격 요건', 'required_credentials', 25],
+                      ['승급 결격 사유', 'disqualification_conditions', 25],
+                      ['세부 기준 설명', 'description', 30],
+                      ['사용여부', 'is_active', 10]]
+        titles = ['No']
+        widths = [7]
+
+        for el in header_src:
+            if el:
+                titles.append(el[0])
+                widths.append(el[2])
+
+        row_num = 0
+        worksheet.set_row(row_num, 50)
+        worksheet.merge_range(row_num, 0, row_num, len(header_src) - 1, com_name + ' 직급별 승급 기준 및 정책 목록', title_format)
+
+        row_num = 1
+        worksheet.set_row(row_num, 18)
+        worksheet.write(row_num, len(header_src) - 1, TODAY + ' 현재', workbook.add_format({'align': 'right'}))
+
+        row_num = 2
+        worksheet.set_row(row_num, 20, workbook.add_format({'bold': True}))
+
+        for i, col_width in enumerate(widths):
+            worksheet.set_column(i, i, col_width)
+
+        for col_num, title in enumerate(titles):
+            worksheet.write(row_num, col_num, title, h_format)
+
+        obj_list = PromotionPolicy.objects.filter(company=company).select_related('current_grade', 'target_grade')
+        current_grade = request.GET.get('current_grade')
+        target_grade = request.GET.get('target_grade')
+        is_active = request.GET.get('is_active')
+        search = request.GET.get('search')
+
+        if current_grade:
+            obj_list = obj_list.filter(current_grade_id=current_grade)
+        if target_grade:
+            obj_list = obj_list.filter(target_grade_id=target_grade)
+        if is_active != '' and is_active is not None:
+            obj_list = obj_list.filter(is_active=is_active == 'true' or is_active is True)
+        if search:
+            obj_list = obj_list.filter(
+                Q(current_grade__code__icontains=search) |
+                Q(target_grade__code__icontains=search) |
+                Q(required_credentials__icontains=search) |
+                Q(disqualification_conditions__icontains=search) |
+                Q(description__icontains=search)
+            )
+
+        body_format = {'border': True, 'align': 'center', 'valign': 'vcenter', 'num_format': '@'}
+
+        for i, item in enumerate(obj_list):
+            row_num += 1
+            row_data = [
+                i + 1,
+                item.current_grade.code if item.current_grade else '-',
+                item.target_grade.code if item.target_grade else '-',
+                f'{item.min_years}년',
+                float(item.min_avg_grade_point) if item.min_avg_grade_point is not None else '-',
+                item.required_eval_grade or '-',
+                item.required_credentials or '-',
+                item.disqualification_conditions or '-',
+                item.description or '',
+                '사용' if item.is_active else '미사용',
+            ]
+            for col_num, cell_data in enumerate(row_data):
+                if col_num == 4 and cell_data != '-':
+                    body_format['num_format'] = '#,##0.00'
+                    body_format['align'] = 'right'
+                elif col_num in (5, 6, 7, 8):
+                    body_format['num_format'] = '@'
+                    body_format['align'] = 'left'
+                else:
+                    body_format['num_format'] = '@'
+                    body_format['align'] = 'center'
+                bformat = workbook.add_format(body_format)
+                worksheet.write(row_num, col_num, cell_data, bformat)
+
+        filename = request.GET.get('filename') or 'promotion-policies'
         filename = f'{filename}-{TODAY}'
         return self.create_response(output, workbook, filename)
 

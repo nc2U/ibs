@@ -3,7 +3,7 @@ from company.exports import (ExportStaffs, ExportDeparts, ExportPositions, Expor
                              ExportExecutiveRanks, ExportExecutives, ExportAppointments,
                              ExportStaffCareers, ExportStaffCertificates, ExportStaffRewards,
                              ExportStaffLeaveQuotas, ExportStaffLeaveUsages, ExportStaffAttendanceStatus,
-                             ExportStaffEvaluations, ExportPromotionCandidates)
+                             ExportStaffEvaluations, ExportPromotionCandidates, ExportPromotionPolicies)
 from contract.exports import ExportContracts, ExportSuccessions, ExportReleases, ExportUnitStatus
 from docs.exports import ExportSuitCases, ExportSuitCase
 from ledger.exports import (ExportLedgerBalanceByAcc, ExportLedgerDateCashbook, export_com_transaction_xls,
@@ -33,6 +33,7 @@ urlpatterns = [
     path('staff-attendance-status/', ExportStaffAttendanceStatus.as_view(), name='staff-attendance-status'),
     path('staff-evaluations/', ExportStaffEvaluations.as_view(), name='staff-evaluations'),
     path('staff-promotion-candidates/', ExportPromotionCandidates.as_view(), name='staff-promotion-candidates'),
+    path('staff-promotion-policies/', ExportPromotionPolicies.as_view(), name='staff-promotion-policies'),
 
     # Project - site 관련 (새 모듈)
     path('sites/', ExportSites.as_view(), name='sites'),
