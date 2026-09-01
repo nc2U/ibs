@@ -1,16 +1,15 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, onMounted, type PropType, reactive, ref, watch } from 'vue'
+import { storeToRefs } from 'pinia'
 import { usePerms } from '@/composables/usePerms'
 import { useInform } from '@/store/pinia/work_inform.ts'
-import type { ProjectFilter, selectProject } from '@/store/types/work_project.ts'
+import { useProjectFilter } from '@/store/pinia/work_project_filter.ts'
+import type { selectProject } from '@/store/types/work_project.ts'
 import Multiselect from '@vueform/multiselect'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import IssueProjectSelector from '@/views/_Work/components/atomics/IssueProjectSelector.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 import SaveQueryModal from '@/views/_Work/components/SaveQueryModal.vue'
-
-import { storeToRefs } from 'pinia'
-import { useProjectFilter } from '@/store/pinia/work_project_filter.ts'
 
 const props = defineProps({
   allReadableProjects: { type: Array as PropType<selectProject[]>, default: () => [] },
