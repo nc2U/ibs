@@ -1,7 +1,6 @@
 <script lang="ts" setup>
-import { ref, onMounted, computed } from 'vue'
-import { pageTitle, navMenu1, navMenu2 } from '@/views/hrManage/_menu/headermixin2.ts'
-import { useAccount } from '@/store/pinia/account.ts'
+import { computed, onMounted, ref } from 'vue'
+import { navMenu1, navMenu2, pageTitle } from '@/views/hrManage/_menu/headermixin2.ts'
 import { useCompany } from '@/store/pinia/company.ts'
 import type { Company } from '@/store/types/settings.ts'
 import { type Executive, type ExecutiveFilter } from '@/store/types/company.ts'
@@ -15,7 +14,6 @@ import AddExecutive from './components/AddExecutive.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import ExecutiveList from './components/ExecutiveList.vue'
 
-const accStore = useAccount()
 const { canGlobal, PERM } = usePerms()
 const isHrManager = computed(
   () =>
