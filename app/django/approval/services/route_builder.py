@@ -23,6 +23,8 @@ def _get_department_manager(dept: Department, added_user_ids: set):
     부서의 책임자를 다각도로 탐색:
     1. Department.manager 지정 직원
     2. 해당 부서의 직책(Duty) 보유 StaffAssignment (팀장, 본부장, 실장, 부서장 등)
+
+    added_user_ids: 이미 결재선에 추가된 사용자 ID 집합 (읽기 전용 참조 — 내부에서 갱신하지 않음)
     """
     # 1. Department.manager 명시된 경우
     if dept.manager and dept.manager.user and dept.manager.user.id not in added_user_ids:
@@ -53,7 +55,9 @@ def _get_company_ceos(company, added_user_ids: set):
     회사의 대표이사(CEO) 사용자 목록을 다각도로 조회:
     1. StaffAssignment (duty.code='CEO' 또는 duty.name에 '대표이사'/'대표' 포함)
     2. Executive (임원 등기 정보에서 represent_type이 sole, joint, each인 경우)
-    3. Company.ceo 대표자명과 일치하는 재직 Staff
+    3. Company.ceo 대표자명과 일치하는 재직 Staff (fallback)
+
+    added_user_ids에 포함된 사용자는 결과에서 제외됩니다.
     """
     ceo_users = []
     seen_ids = set(added_user_ids)
@@ -81,7 +85,7 @@ def _get_company_ceos(company, added_user_ids: set):
             ceo_users.append(ex.staff.user)
             seen_ids.add(ex.staff.user.id)
 
-    # 3. Company.ceo 이름 일치 기준 (fallback)
+    # 3. Company.ceo 이름 일치 기준 (fallback: StaffAssignment/Executive 로 탐색 실패 시에만 사용)
     if not ceo_users and company and company.ceo:
         matched_staffs = Staff.objects.filter(
             company=company,
@@ -96,43 +100,49 @@ def _get_company_ceos(company, added_user_ids: set):
     return ceo_users
 
 
-def _find_highest_role_label(user, current_dept_label: str, company, current_dept=None):
+def _find_highest_role_label(user, current_dept_label: str, company, current_dept=None, ceo_users: list = None):
     """
     동일 결재자가 하위 직책(팀장 등)과 상위 직책(본부장, 대표이사 등)을 겸직하고 있는 경우,
     결재선 및 문서에 표기될 최상위 공식 직함 라벨을 산출합니다.
-    (예: 경영지원팀장 + 대표이사 -> '대표이사 최종 승인')
-    (예: 프로젝트1팀장 + 사업운영본부장 -> '사업운영본부 본부장')
+    (예: 경영지원팀장 + 대표이사 → '대표이사 최종 승인')
+    (예: 프로젝트1팀장 + 사업운영본부장 → '사업운영본부 본부장')
+
+    ceo_users: 호출 측에서 이미 조회한 CEO 목록을 재사용하여 중복 쿼리 방지 (None이면 내부 조회)
     """
     if not user:
         return current_dept_label
 
     # 1. 대표이사(CEO) 겸직 여부 확인 (최우선)
     if company:
-        ceo_users = _get_company_ceos(company, set())
-        if user in ceo_users or any(u.id == user.id for u in ceo_users):
+        # 호출 측 CEO 목록을 재사용; 없으면 새로 조회
+        _ceo_users = ceo_users if ceo_users is not None else _get_company_ceos(company, set())
+        if any(u.id == user.id for u in _ceo_users):
             is_joint = any(
-                hasattr(u, 'staff') and hasattr(u.staff, 'executive') and
-                u.staff.executive and u.staff.executive.represent_type == 'joint'
-                for u in ceo_users if u.id == user.id
+                getattr(getattr(u, 'staff', None), 'executive', None) is not None and
+                u.staff.executive.represent_type == 'joint'
+                for u in _ceo_users if u.id == user.id
             )
             return '공동대표 최종 승인' if is_joint else '대표이사 최종 승인'
 
     # 2. 상위 부서(본부장, 실장 등) 겸직 여부 확인
     if current_dept and company:
-        # 상향 트리 순회하면서 이 사용자가 책임자로 있는 가장 상위 부서 탐색
-        highest_dept = current_dept
+        # 탐색 시작 부서를 기억해 두어 "승격이 실제로 발생했는지" 판단 기준으로 사용
+        initial_dept = current_dept
+        highest_dept = None
         highest_duty_str = None
 
         search_dept = current_dept
         while search_dept:
             mgr_user, mgr_duty = _get_department_manager(search_dept, set())
             if mgr_user and mgr_user.id == user.id:
+                # 이 사용자가 책임자인 가장 상위 부서를 누적 갱신
                 highest_dept = search_dept
                 if mgr_duty:
                     highest_duty_str = mgr_duty.name
             search_dept = search_dept.upper_depart
 
-        if highest_dept and highest_dept != current_dept:
+        # 탐색 시작 부서보다 높은 부서에서 책임자로 확인된 경우에만 라벨 승격
+        if highest_dept and highest_dept.id != initial_dept.id:
             duty_name = highest_duty_str or '책임자'
             return f'{highest_dept.name} {duty_name}'
 
@@ -182,14 +192,16 @@ def build_dynamic_approval_route(doc_type: DocumentType, drafter_user, drafter_a
     company = assignment.company if assignment else Company.objects.filter(is_default=True).first()
 
     # 조건부 전결 정책(ApprovalPolicyRule) 적용 검사
+    # priority 오름차순 정렬을 명시하여 복수 규칙 매칭 시 우선순위를 보장
     amount = extract_amount_from_content(content)
     effective_final_duty = doc_type.final_approval_duty
     effective_final_level = doc_type.final_dept_level
 
-    policy_rules = doc_type.policy_rules.all()
-    if policy_rules.exists() and amount is not None:
-        for rule in policy_rules:
+    if amount is not None:
+        for rule in doc_type.policy_rules.order_by('priority'):
             if rule.is_matched(amount):
+                # 금액 구간에 매칭되는 첫 번째 규칙(최고 우선순위)을 적용하고 탐색 종료
+                # 매칭 규칙이 일부 필드만 지정한 경우 나머지는 doc_type 기본값 유지
                 if rule.final_approval_duty:
                     effective_final_duty = rule.final_approval_duty
                 if rule.final_dept_level:
@@ -197,22 +209,26 @@ def build_dynamic_approval_route(doc_type: DocumentType, drafter_user, drafter_a
                 break
 
     # 기안자의 직책(Duty) 확인 (셀프 승인 방지용)
-    drafter_duty = assignment.duty if assignment and assignment.duty else (
-        drafter_user.staff.duty if hasattr(drafter_user, 'staff') and drafter_user.staff else None
+    # hasattr 단독 검사는 OneToOne 역참조 DoesNotExist를 잡지 못하므로 getattr 방어 패턴 사용
+    _drafter_staff = getattr(drafter_user, 'staff', None) if drafter_user else None
+    drafter_duty = (
+        assignment.duty if assignment and assignment.duty
+        else getattr(_drafter_staff, 'duty', None)
     )
 
     # 🌟 기안자가 대표이사(CEO)인 경우:
-    # 대표이사보다 상위 부서 결재선은 존재하지 않으므로, 부서 순회를 생략하고 다른 공동대표 유무만 확인
-    ceo_users = _get_company_ceos(company, set()) if company else []
-    is_drafter_ceo = drafter_user in ceo_users or any(u.id == drafter_user.id for u in ceo_users) if drafter_user else False
+    # 대표이사보다 상위 부서 결재선은 존재하지 않으므로, 부서 순회를 생략하고 다른 공동대표 유무만 확인.
+    # 이후 부서 순회 루프에서도 재사용하도록 미리 조회해 둠 (중복 쿼리 방지)
+    all_ceo_users = _get_company_ceos(company, set()) if company else []
+    is_drafter_ceo = bool(drafter_user) and any(u.id == drafter_user.id for u in all_ceo_users)
 
     if is_drafter_ceo:
-        other_ceos = [u for u in ceo_users if u.id != drafter_user.id]
+        other_ceos = [u for u in all_ceo_users if u.id != drafter_user.id]
         if other_ceos:
             # 다른 공동대표들이 존재하는 경우 (공동대표 체제)
             is_joint = any(
-                hasattr(u, 'staff') and hasattr(u.staff, 'executive') and
-                u.staff.executive and u.staff.executive.represent_type == 'joint'
+                getattr(getattr(u, 'staff', None), 'executive', None) is not None and
+                u.staff.executive.represent_type == 'joint'
                 for u in other_ceos
             )
             return [{
@@ -241,8 +257,10 @@ def build_dynamic_approval_route(doc_type: DocumentType, drafter_user, drafter_a
                 base_label = f'{current_dept.name} {duty_str}'
 
                 # 🌟 겸직 시 최상위 직함(대표이사 / 상위 본부장)으로 라벨 승격 판정
+                # all_ceo_users를 전달해 루프 내 중복 CEO 쿼리 방지
                 promoted_label = _find_highest_role_label(
-                    manager_user, base_label, company, current_dept=current_dept
+                    manager_user, base_label, company,
+                    current_dept=current_dept, ceo_users=all_ceo_users,
                 )
 
                 steps.append({
@@ -254,9 +272,9 @@ def build_dynamic_approval_route(doc_type: DocumentType, drafter_user, drafter_a
                 })
                 step_order += 1
 
-                # 만약 해당 책임자가 대표이사라면 이미 회사 최종 결재에 도달한 것이므로 전결 처리
-                ceo_users = _get_company_ceos(company, set()) if company else []
-                if manager_user in ceo_users or any(u.id == manager_user.id for u in ceo_users):
+                # 해당 책임자가 대표이사라면 회사 최종 결재에 도달한 것 → 전결 처리
+                # 루프 초기에 조회한 all_ceo_users를 재사용 (추가 쿼리 없음)
+                if any(u.id == manager_user.id for u in all_ceo_users):
                     reached_final = True
                     break
 
@@ -267,22 +285,23 @@ def build_dynamic_approval_route(doc_type: DocumentType, drafter_user, drafter_a
                         reached_final = True
                         break
 
-                # 전결 규정 체크: 부서 레벨 전결 (예: 1레벨(본부) 부서장까지만 승인)
+                # 전결 규정 체크: 부서 레벨 전결
+                # level이 낮을수록 상위 부서 (예: 1=본부, 2=팀). final_dept_level=1이면 본부장까지만 승인.
                 if effective_final_level and current_dept.level <= effective_final_level:
                     reached_final = True
                     break
 
             current_dept = current_dept.upper_depart
 
-    # (2) 대표이사 최종 결재 단계 (전결 규정에 도달하지 않았거나 아직 대표이사가 결재선에 포함되지 않은 경우)
+    # (2) 대표이사 최종 결재 단계 (전결 규정에 도달하지 않았거나 아직 대표이사가 결재선에 미포함된 경우)
     if not reached_final and company:
+        # added_user_ids 기준으로 이미 결재선에 포함된 사용자를 제외하고 CEO 재조회
         ceo_users = _get_company_ceos(company, added_user_ids)
 
         if ceo_users:
-            # 기안자를 제외한 다른 대표이사들이 존재하는 경우 (공동대표 또는 기안자가 대표가 아닌 경우)
             is_joint = any(
-                hasattr(u, 'staff') and hasattr(u.staff, 'executive') and
-                u.staff.executive and u.staff.executive.represent_type == 'joint'
+                getattr(getattr(u, 'staff', None), 'executive', None) is not None and
+                u.staff.executive.represent_type == 'joint'
                 for u in ceo_users
             )
             condition = 'AND' if is_joint else 'OR'
