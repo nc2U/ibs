@@ -139,7 +139,7 @@ const hrManage = {
     {
       path: 'promotions',
       name: '승진 심사 대상',
-      component: () => import('@/views/hrManage/Promotion/Candidates/Index.vue'),
+      component: () => import('@/views/hrManage/Promotion/Candidate/Index.vue'),
       meta: {
         title: '승진 심사 대상',
         auth: true,
