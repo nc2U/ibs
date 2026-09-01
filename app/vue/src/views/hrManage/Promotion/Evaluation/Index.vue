@@ -1,7 +1,6 @@
 <script lang="ts" setup>
-import { ref, onMounted, computed } from 'vue'
-import { pageTitle, navMenu } from '@/views/hrManage/_menu/headermixin4'
-import { useAccount } from '@/store/pinia/account.ts'
+import { computed, onMounted, ref } from 'vue'
+import { navMenu, pageTitle } from '@/views/hrManage/_menu/headermixin4'
 import { useCompany } from '@/store/pinia/company.ts'
 import type { Company } from '@/store/types/settings.ts'
 import { type StaffEvaluation, type StaffEvaluationFilter } from '@/store/types/company.ts'
@@ -17,7 +16,6 @@ import EvaluationList from './components/EvaluationList.vue'
 
 const currentYear = new Date().getFullYear()
 
-const accStore = useAccount()
 const { canGlobal, PERM } = usePerms()
 const canHrWorkCreate = computed(() => canGlobal(PERM.HQ_HR_WORK_CREATE))
 
@@ -69,8 +67,7 @@ const createStaffEvaluation = (payload: StaffEvaluation, p?: number, c?: number)
   comStore.createStaffEvaluation(payload, p, c)
 const updateStaffEvaluation = (payload: StaffEvaluation, p?: number, c?: number) =>
   comStore.updateStaffEvaluation(payload, p, c)
-const deleteStaffEvaluation = (pk: number, com: number) =>
-  comStore.deleteStaffEvaluation(pk, com)
+const deleteStaffEvaluation = (pk: number, com: number) => comStore.deleteStaffEvaluation(pk, com)
 
 const multiSubmit = (payload: StaffEvaluation) => {
   const { page } = dataFilter.value
@@ -124,11 +121,7 @@ onMounted(async () => {
     <ContentBody>
       <CCardBody>
         <ListController @list-filtering="listFiltering" />
-        <AddEvaluation
-          v-if="canHrWorkCreate"
-          :company="comName"
-          @multi-submit="multiSubmit"
-        />
+        <AddEvaluation v-if="canHrWorkCreate" :company="comName" @multi-submit="multiSubmit" />
         <TableTitleRow
           title="인사/업적 평가 목록"
           excel
