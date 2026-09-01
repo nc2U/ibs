@@ -1395,6 +1395,108 @@ class ExportStaffLeaveUsages(ExcelExportMixin):
         return self.create_response(output, workbook, filename)
 
 
+class ExportStaffAttendanceStatus(ExcelExportMixin):
+    """직원 연차 및 근태 현황 종합 목록"""
+
+    def get(self, request):
+        output, workbook, worksheet = self.create_workbook('근태_현황_종합')
+        company = Company.objects.get(pk=request.GET.get('company'))
+        com_name = company.name.replace('주식회사 ', '(주)')
+        year = int(request.GET.get('year') or datetime.date.today().year)
+
+        title_format = self.create_title_format(workbook)
+        h_format = self.create_header_format(workbook)
+
+        header_src = [[],
+                      ['부서', 'department', 14],
+                      ['직급/직위', 'position', 12],
+                      ['성명', 'name', 12],
+                      ['입사일', 'date_join', 12],
+                      ['총 부여일수', 'total_granted_days', 12],
+                      ['사용일수', 'used_days', 11],
+                      ['잔여일수', 'remaining_days', 11],
+                      ['연차 사용률', 'usage_rate', 12],
+                      ['상태', 'status', 10]]
+        titles = ['No']
+        widths = [7]
+
+        for el in header_src:
+            if el:
+                titles.append(el[0])
+                widths.append(el[2])
+
+        row_num = 0
+        worksheet.set_row(row_num, 50)
+        worksheet.merge_range(row_num, 0, row_num, len(header_src) - 1, f'{com_name} {year}년도 연차 및 근태 종합 현황', title_format)
+
+        row_num = 1
+        worksheet.set_row(row_num, 18)
+        worksheet.write(row_num, len(header_src) - 1, TODAY + ' 현재', workbook.add_format({'align': 'right'}))
+
+        row_num = 2
+        worksheet.set_row(row_num, 20, workbook.add_format({'bold': True}))
+
+        for i, col_width in enumerate(widths):
+            worksheet.set_column(i, i, col_width)
+
+        for col_num, title in enumerate(titles):
+            worksheet.write(row_num, col_num, title, h_format)
+
+        staff_list = Staff.objects.filter(company=company).select_related('department', 'position', 'grade')
+        department = request.GET.get('department')
+        status = request.GET.get('status')
+        search = request.GET.get('search')
+
+        if department:
+            staff_list = staff_list.filter(department_id=department)
+        if status:
+            staff_list = staff_list.filter(status=status)
+        if search:
+            staff_list = staff_list.filter(Q(name__icontains=search) | Q(personal_phone__icontains=search))
+
+        body_format = {'border': True, 'align': 'center', 'valign': 'vcenter', 'num_format': '@'}
+
+        for i, s in enumerate(staff_list):
+            quota = StaffLeaveQuota.objects.filter(company=company, staff=s, year=year).first()
+            tot = float(quota.total_granted_days) if quota else 0.0
+            used = float(quota.used_days) if quota else 0.0
+            rem = float(quota.remaining_days) if quota else 0.0
+            rate_str = f'{(used / tot * 100):.1f}%' if tot > 0 else '0.0%'
+
+            row_num += 1
+            row_data = [
+                i + 1,
+                s.department.name if s.department else '-',
+                s.position.name if s.position else (s.grade.code if s.grade else '-'),
+                s.name,
+                s.date_join.strftime('%Y-%m-%d') if s.date_join else '-',
+                tot,
+                used,
+                rem,
+                rate_str,
+                s.get_status_display(),
+            ]
+            for col_num, cell_data in enumerate(row_data):
+                if col_num in (5, 6, 7):
+                    body_format['num_format'] = '#,##0.00'
+                    body_format['align'] = 'right'
+                elif col_num == 8:
+                    body_format['num_format'] = '@'
+                    body_format['align'] = 'right'
+                elif col_num == 4:
+                    body_format['num_format'] = 'yyyy-mm-dd'
+                    body_format['align'] = 'center'
+                else:
+                    body_format['num_format'] = '@'
+                    body_format['align'] = 'center'
+                bformat = workbook.add_format(body_format)
+                worksheet.write(row_num, col_num, cell_data, bformat)
+
+        filename = request.GET.get('filename') or 'staff-attendance-status'
+        filename = f'{filename}-{TODAY}'
+        return self.create_response(output, workbook, filename)
+
+
 class ExportExamples(ExcelExportMixin):
     """Examples"""
 
