@@ -1,8 +1,10 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, type PropType, reactive, ref, watch } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useRoute } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
 import { useAccount } from '@/store/pinia/account'
+import { useMeetingFilter } from '@/store/pinia/work_meeting_filter.ts'
 import type { selectProject } from '@/store/types/work_project.ts'
 import type { MeetingCategory, MeetingFilter } from '@/store/types/work_meeting.ts'
 import IssueProjectSelector from '@/views/_Work/components/atomics/IssueProjectSelector.vue'
@@ -34,7 +36,8 @@ const getUsers = computed(() => accStore.getUsers)
 const { can, PERM } = usePerms()
 const canSaveQuery = computed(() => can(PERM.PROJECT_SAVE_QUERY))
 
-const searchCond = ref<string[]>(['status'])
+const meetingFilterStore = useMeetingFilter()
+const { searchCond, enabledFields, cond, form } = storeToRefs(meetingFilterStore)
 
 const refQuerySaveModal = ref()
 
@@ -51,76 +54,22 @@ const openSaveQueryModal = () => {
 const currentUserId = computed(() => accStore.userInfo?.pk)
 
 const applyQuery = (query: any) => {
-  if (query && query.filters) {
-    const f = query.filters
-    if (f.searchCond) {
-      searchCond.value = [...f.searchCond]
-      enabledFields.value = [...f.searchCond]
-    }
-    if (f.cond) Object.assign(cond, f.cond)
-    if (f.form) {
-      const myId = currentUserId.value ?? getUsers.value[0]?.value
-      const formPayload = { ...f.form }
-      if (formPayload.creator === 'me') formPayload.creator = myId
-      if (formPayload.attendees === 'me') formPayload.attendees = myId
-
-      Object.assign(form, formPayload)
-
-      if (formPayload.project && !searchCond.value.includes('project')) {
-        searchCond.value.push('project')
-        if (!enabledFields.value.includes('project')) {
-          enabledFields.value.push('project')
-        }
-      }
-    } else {
-      const myId = currentUserId.value ?? getUsers.value[0]?.value
-      if (f.creator !== undefined || f.author !== undefined) {
-        const creatorVal = f.creator ?? f.author
-        if (!searchCond.value.includes('creator')) searchCond.value.push('creator')
-        if (!enabledFields.value.includes('creator')) enabledFields.value.push('creator')
-        cond.creator = 'is'
-        form.creator = creatorVal === 'me' ? myId : creatorVal
-      }
-      if (f.attendees !== undefined) {
-        if (!searchCond.value.includes('attendees')) searchCond.value.push('attendees')
-        if (!enabledFields.value.includes('attendees')) enabledFields.value.push('attendees')
-        cond.attendees = 'is'
-        form.attendees = f.attendees === 'me' ? myId : f.attendees
-      }
-    }
-    filterSubmit()
+  const currentProjSlug = (route.params.projId as string) || ''
+  const payload = meetingFilterStore.applySavedQuery(
+    query,
+    currentUserId.value,
+    getUsers.value[0]?.value,
+    currentProjSlug,
+  )
+  if (payload) {
+    emit('filter-submit', payload)
   }
 }
 
 const resetFilter = () => {
-  searchCond.value = ['status']
-  form.status = '1'
-  form.is_confirmed = ''
-  form.category = undefined
-  form.creator = null
-  form.attendees = null
-  form.meeting_date_after = ''
-  form.meeting_date_before = ''
-  form.created_after = ''
-  form.created_before = ''
-  form.title = ''
-  form.agenda = ''
-  form.content = ''
-  form.decisions = ''
-
-  cond.status = 'any'
-  cond.is_confirmed = 'is'
-  cond.category = 'is'
-  cond.creator = 'is'
-  cond.attendees = 'is'
-  cond.meeting_date = 'between'
-  cond.created = 'between'
-  cond.title = 'contains'
-  cond.agenda = 'contains'
-  cond.content = 'contains'
-  cond.decisions = 'contains'
-
-  filterSubmit()
+  const currentProjSlug = (route.params.projId as string) || ''
+  const payload = meetingFilterStore.resetFilter(currentProjSlug)
+  emit('filter-submit', payload)
 }
 
 interface OptionItem {
@@ -161,56 +110,6 @@ const searchOptions = reactive<SearchOptionGroup[]>([
     ],
   },
 ])
-
-const cond = reactive<Record<string, string>>({
-  status: 'any',
-  project: 'is',
-  is_confirmed: 'is',
-  category: 'is',
-  creator: 'is',
-  attendees: 'is',
-  meeting_date: 'between',
-  created: 'between',
-  title: 'contains',
-  agenda: 'contains',
-  content: 'contains',
-  decisions: 'contains',
-})
-
-interface FilterForm {
-  project: string
-  status: string
-  is_confirmed: string
-  category: number | undefined
-  creator: number | null
-  attendees: number | null
-  meeting_date_after: string
-  meeting_date_before: string
-  created_after: string
-  created_before: string
-  title: string
-  agenda: string
-  content: string
-  decisions: string
-  [key: string]: any
-}
-
-const form = reactive<FilterForm>({
-  project: (route.params.projId as string) ?? '',
-  status: '1',
-  is_confirmed: '',
-  category: undefined,
-  creator: null,
-  attendees: null,
-  meeting_date_after: '',
-  meeting_date_before: '',
-  created_after: '',
-  created_before: '',
-  title: '',
-  agenda: '',
-  content: '',
-  decisions: '',
-})
 
 // 동적 필드 정보 계산
 const activeFields = computed(() => {
@@ -334,9 +233,6 @@ const activeFields = computed(() => {
   return fields
 })
 
-// ----- 활성화된 필터 키 관리 (체크박스로 ON/OFF 가능) -----
-const enabledFields = ref<string[]>(['status'])
-
 const toggleField = (key: string, e: Event) => {
   const target = e.target as HTMLInputElement
   if (target.checked) {
@@ -348,116 +244,8 @@ const toggleField = (key: string, e: Event) => {
 }
 
 const filterSubmit = () => {
-  const payload: MeetingFilter = { page: 1 }
-
-  if (route.params.projId) {
-    payload.project = route.params.projId as string
-  } else if (enabledFields.value.includes('project')) {
-    if (form.project === '') {
-      if (cond.project === 'is') payload.project__my_project = true
-      else if (cond.project === 'exclude') payload.project__my_project = false
-    } else if (form.project === 'bookmark') {
-      if (cond.project === 'is') payload.project__bookmark = true
-      else if (cond.project === 'exclude') payload.project__bookmark = false
-    } else if (form.project === 'closed') {
-      if (cond.project === 'is') payload.project_status = '2'
-      else if (cond.project === 'exclude') payload.project_status__exclude = '2'
-    } else if (form.project) {
-      if (cond.project === 'is') payload.project = form.project
-      else if (cond.project === 'exclude') payload.project = form.project // backend serializer or filter
-    }
-  }
-
-  // 상태 처리 (enabledFields에 'status'가 포함되어 있을 때만 적용)
-  if (enabledFields.value.includes('status')) {
-    if (cond.status === 'open') {
-      payload.status = '1' // 준비중
-    } else if (cond.status === 'closed') {
-      payload.status = '2' // 종료
-    } else if (cond.status === 'is') {
-      payload.status = form.status || '1'
-    } else if (cond.status === 'exclude') {
-      payload.status__exclude = form.status || '1'
-    } else if (cond.status === 'any') {
-      delete payload.status
-    }
-  } else {
-    delete payload.status
-  }
-
-  // 확정 여부
-  if (enabledFields.value.includes('is_confirmed')) {
-    const val = form.is_confirmed || 'true'
-    const isTrue = val === 'true'
-    if (cond.is_confirmed === 'is') {
-      payload.is_confirmed = isTrue
-    } else if (cond.is_confirmed === 'exclude') {
-      payload.is_confirmed = !isTrue
-    }
-  }
-
-  // 카테고리
-  if (enabledFields.value.includes('category') && form.category !== undefined) {
-    if (cond.category === 'is') {
-      payload.category = form.category
-    } else if (cond.category === 'exclude') {
-      payload.category__exclude = form.category
-    }
-  }
-
-  // 작성자
-  if (enabledFields.value.includes('creator') && form.creator !== null) {
-    if (cond.creator === 'is') {
-      payload.creator = form.creator
-    } else if (cond.creator === 'exclude') {
-      payload.creator__exclude = form.creator
-    }
-  }
-
-  // 참석자
-  if (enabledFields.value.includes('attendees') && form.attendees !== null) {
-    if (cond.attendees === 'is') {
-      payload.attendees = form.attendees
-    } else if (cond.attendees === 'exclude') {
-      payload.attendees__exclude = form.attendees
-    }
-  }
-
-  // 회의 일시 범위
-  if (enabledFields.value.includes('meeting_date')) {
-    if (cond.meeting_date === 'between') {
-      if (form.meeting_date_after) payload.meeting_date_after = form.meeting_date_after
-      if (form.meeting_date_before) payload.meeting_date_before = form.meeting_date_before
-    } else if (cond.meeting_date === 'gte' && form.meeting_date_after) {
-      payload.meeting_date_after = form.meeting_date_after
-    } else if (cond.meeting_date === 'lte' && form.meeting_date_before) {
-      payload.meeting_date_before = form.meeting_date_before
-    }
-  }
-
-  // 등록일 범위
-  if (enabledFields.value.includes('created')) {
-    if (cond.created === 'between') {
-      if (form.created_after) payload.created_after = form.created_after
-      if (form.created_before) payload.created_before = form.created_before
-    } else if (cond.created === 'gte' && form.created_after) {
-      payload.created_after = form.created_after
-    } else if (cond.created === 'lte' && form.created_before) {
-      payload.created_before = form.created_before
-    }
-  }
-
-  // 문자열 검색
-  const searchTerms: string[] = []
-  if (enabledFields.value.includes('title') && form.title) searchTerms.push(form.title)
-  if (enabledFields.value.includes('agenda') && form.agenda) searchTerms.push(form.agenda)
-  if (enabledFields.value.includes('content') && form.content) searchTerms.push(form.content)
-  if (enabledFields.value.includes('decisions') && form.decisions) searchTerms.push(form.decisions)
-
-  if (searchTerms.length) {
-    payload.search = searchTerms.join(' ')
-  }
-
+  const currentProjSlug = (route.params.projId as string) || ''
+  const payload = meetingFilterStore.buildFilterPayload(currentProjSlug)
   emit('filter-submit', payload)
 }
 
@@ -471,17 +259,17 @@ watch(
     })
     enabledFields.value = enabledFields.value.filter(k => newVal.includes(k))
 
-    if (newVal.includes('is_confirmed') && !form.is_confirmed) {
-      form.is_confirmed = 'true'
+    if (newVal.includes('is_confirmed') && !form.value.is_confirmed) {
+      form.value.is_confirmed = 'true'
     }
-    if (newVal.includes('category') && !form.category && props.categories.length) {
-      form.category = props.categories[0].pk
+    if (newVal.includes('category') && !form.value.category && props.categories.length) {
+      form.value.category = props.categories[0].pk
     }
-    if (newVal.includes('creator') && !form.creator && getUsers.value.length) {
-      form.creator = currentUserId.value ?? getUsers.value[0].value
+    if (newVal.includes('creator') && !form.value.creator && getUsers.value.length) {
+      form.value.creator = currentUserId.value ?? getUsers.value[0].value
     }
-    if (newVal.includes('attendees') && !form.attendees && getUsers.value.length) {
-      form.attendees = currentUserId.value ?? getUsers.value[0].value
+    if (newVal.includes('attendees') && !form.value.attendees && getUsers.value.length) {
+      form.value.attendees = currentUserId.value ?? getUsers.value[0].value
     }
   },
   { deep: true },
