@@ -10,12 +10,14 @@ import {
   watch,
 } from 'vue'
 import type { selectProject } from '@/store/types/work_project.ts'
-import type { IssueFilter, IssueStatus, Tracker } from '@/store/types/work_issue.ts'
+import type { IssueStatus, Tracker } from '@/store/types/work_issue.ts'
 import Multiselect from '@vueform/multiselect'
+import { storeToRefs } from 'pinia'
 import { useRoute } from 'vue-router'
 import { usePerms } from '@/composables/usePerms'
 import { useWork } from '@/store/pinia/work_project'
 import { useAccount } from '@/store/pinia/account'
+import { useIssueFilter } from '@/store/pinia/work_issue_filter.ts'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import IssueProjectSelector from '@/views/_Work/components/atomics/IssueProjectSelector.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
@@ -44,6 +46,9 @@ const route = useRoute()
 const workStore = useWork()
 const roleList = computed(() => workStore.roleList.filter(r => ![1, 2].includes(r.pk)))
 
+const issueFilterStore = useIssueFilter()
+const { searchCond, enabledFields, cond, form } = storeToRefs(issueFilterStore)
+
 const refQuerySaveModal = ref()
 const openSaveModal = () => {
   refQuerySaveModal.value?.callModal()
@@ -54,10 +59,10 @@ const emit = defineEmits(['filter-submit'])
 const condVisible = ref(true)
 const optVisible = ref(false)
 
-const searchCond = ref(['status'])
 const resetFilter = () => {
-  searchCond.value = ['status']
-  filterSubmit()
+  const currentProj = (route.params.projId as string) ?? ''
+  const payload = issueFilterStore.resetFilter(currentProj)
+  emit('filter-submit', payload)
 }
 
 interface OptionItem {
@@ -143,153 +148,6 @@ const searchOptions = reactive<SearchOptionGroup[]>([
     ],
   },
 ])
-
-const cond = ref<Record<string, any>>({
-  status: 'open' as 'open' | 'is' | 'exclude' | 'closed' | 'any',
-  project: 'is' as 'is' | 'exclude',
-  tracker: 'is' as 'is' | 'exclude',
-  priority: 'is' as 'is' | 'exclude',
-  author: 'is' as 'is' | 'exclude',
-  assignee: 'is' as 'is' | 'exclude' | 'none' | 'any',
-  version: 'is' as 'is' | 'exclude' | 'none' | 'any',
-  category: 'is' as 'is' | 'exclude' | 'none' | 'any',
-  done_ratio: 'is' as 'is' | 'gte' | 'lte' | 'between' | 'none' | 'any',
-  is_private: 'is' as 'is' | 'exclude',
-  watcher: 'is' as 'is' | 'exclude',
-  updater: 'is' as 'is' | 'exclude',
-  last_updater: 'is' as 'is' | 'exclude',
-  version_status: 'is' as 'is' | 'exclude',
-  project_status: 'is' as 'is' | 'exclude',
-  sub_project: 'any' as 'any' | 'none' | 'is' | 'exclude',
-  issue: 'is' as 'is' | 'gte' | 'lte' | 'between',
-  subject: 'contains' as 'contains' | 'exclude',
-  description: 'contains' as 'contains' | 'exclude',
-  comment: 'contains' as 'contains' | 'exclude',
-  any_searchable: 'contains' as 'contains' | 'exclude',
-  created: 'is' as 'is' | 'gte' | 'lte' | 'between' | 'none' | 'any',
-  updated: 'is' as 'is' | 'gte' | 'lte' | 'between' | 'none' | 'any',
-  start_date: 'is' as 'is' | 'gte' | 'lte' | 'between' | 'none' | 'any',
-  due_date: 'is' as 'is' | 'gte' | 'lte' | 'between' | 'none' | 'any',
-  file: 'contains' as 'contains' | 'exclude',
-  file_desc: 'contains' as 'contains' | 'exclude',
-  creator_role: 'is' as 'is' | 'exclude',
-  assignee_role: 'is' as 'is' | 'exclude',
-  version_date: 'is' as 'is' | 'lte' | 'gte' | 'between' | 'none' | 'any',
-  follows_issue: 'is' as 'is' | 'exclude' | 'none' | 'any',
-  precedes_issue: 'is' as 'is' | 'exclude' | 'none' | 'any',
-  parent_issue: 'is' as 'is' | 'exclude' | 'contains' | 'none' | 'any',
-  parent: 'is' as 'is' | 'exclude' | 'contains' | 'none' | 'any',
-})
-
-const form = ref<IssueFilter & Record<string, any>>({
-  status__closed: '',
-  status: null,
-  status__exclude: null,
-  project: (route.params.projId as string) ?? '',
-  project__search: '',
-  project__exclude: '',
-  tracker: null,
-  tracker__exclude: null,
-  priority: null,
-  priority__exclude: null,
-  category: null,
-  category__exclude: null,
-  category__isnull: '0',
-  is_private: null as boolean | null,
-  watcher: null,
-  watcher__exclude: null,
-  done_ratio: null,
-  done_ratio__gte: null,
-  done_ratio__lte: null,
-  done_ratio__between: '',
-  done_ratio__between_min: null,
-  done_ratio__between_max: null,
-  done_ratio__isnull: '0',
-  author: null,
-  author__exclude: null,
-  updater: null,
-  updater__exclude: null,
-  last_updater: null,
-  last_updater__exclude: null,
-  assignee: null,
-  assignee__exclude: null,
-  version: null,
-  version__exclude: null,
-  version__isnull: '0',
-  id: null,
-  id__gte: null,
-  id__lte: null,
-  id__between: '',
-  id__between_min: null,
-  id__between_max: null,
-  id__any: '',
-  subject: '',
-  subject__exclude: '',
-  description: '',
-  description__exclude: '',
-  comment: '',
-  comment__exclude: '',
-  any_searchable: '',
-  any_searchable__exclude: '',
-  file: '',
-  file__exclude: '',
-  file_desc: '',
-  file_desc__exclude: '',
-  parent_issue: null, // 상위업무
-  parent_issue__exclude: null,
-  parent_issue__contains: '',
-  parent_issue__isnull: '0',
-  parent: null, // 하위업무
-  parent__exclude: null,
-  parent__contains: '',
-  parent__isnull: '0',
-  follows_issue: null, // 선행업무
-  follows_issue__exclude: null,
-  follows_issue__isnull: '0',
-  precedes_issue: null, // 후속업무
-  precedes_issue__exclude: null,
-  precedes_issue__isnull: '0',
-  project__my_project: undefined,
-  project__bookmark: undefined,
-  created: '',
-  created__gte: '',
-  created__lte: '',
-  created__between_min: '',
-  created__between_max: '',
-  updated: '',
-  updated__gte: '',
-  updated__lte: '',
-  updated__between_min: '',
-  updated__between_max: '',
-  start_date: '',
-  start_date__gte: '',
-  start_date__lte: '',
-  start_date__between_min: '',
-  start_date__between_max: '',
-  due_date: '',
-  due_date__gte: '',
-  due_date__lte: '',
-  due_date__between_min: '',
-  due_date__between_max: '',
-  due_date__isnull: '0',
-  creator_role: null,
-  creator_role__exclude: null,
-  assignee_role: null,
-  assignee_role__exclude: null,
-  version_date: '',
-  version_date__gte: '',
-  version_date__lte: '',
-  version_date__between_min: '',
-  version_date__between_max: '',
-  version_date__isnull: '0',
-  version_status: '',
-  version_status__exclude: '',
-  project_status: '',
-  project_status__exclude: '',
-  sub_project: null,
-  sub_project__exclude: null,
-  sub_project__isnull: '0',
-})
 
 const subProjects = computed(() => workStore.currentProject?.sub_projects || [])
 const hasSubProjects = computed(() => subProjects.value.length > 0)
@@ -680,130 +538,7 @@ const activeFields = computed(() => {
 })
 
 const filterSubmit = () => {
-  const filterData = {
-    status__closed: '0',
-    project_status: '1',
-  } as IssueFilter & Record<string, any>
-
-  // 기본 프로젝트 조회 (project__slug) 세팅
-  if (form.value.project) {
-    filterData.project__slug = form.value.project
-  }
-
-  // 1. 상태 필터링 처리 (enabledFields에 'status'가 포함되어 있을 때만 적용)
-  if (enabledFields.value.includes('status')) {
-    if (cond.value.status === 'open') {
-      filterData.status__closed = '0'
-      filterData.status = null
-      filterData.status__exclude = null
-    } else if (cond.value.status === 'is') {
-      filterData.status = form.value.status
-      filterData.status__closed = ''
-      filterData.status__exclude = null
-    } else if (cond.value.status === 'exclude') {
-      filterData.status__exclude = form.value.status
-      filterData.status = null
-      filterData.status__closed = ''
-    } else if (cond.value.status === 'closed') {
-      filterData.status__closed = '1'
-      filterData.status = null
-      filterData.status__exclude = null
-    } else if (cond.value.status === 'any') {
-      filterData.status__closed = ''
-      filterData.status = null
-      filterData.status__exclude = null
-    }
-  } else {
-    // status가 해제된 경우 백엔드 기본 status__closed=0 필터를 비활성화
-    filterData.status__closed = ''
-  }
-
-  // 2. 활성화된(enabledFields) 검색 필드들에 대해 dynamic payload 빌드
-  enabledFields.value.forEach(key => {
-    // status는 특수 처리했으므로 제외
-    if (key === 'status') return
-
-    // sub_issue는 form/cond 내부 키가 parent임
-    const fieldKey = key === 'sub_issue' ? 'parent' : key
-    const operator = cond.value[fieldKey]
-    const val = form.value[fieldKey]
-
-    // 단순 필드 및 예외/isnull 공통 매핑
-    if (operator === 'is') {
-      if (key === 'project') {
-        if (form.value.project === '') {
-          filterData.project__my_project = true
-          delete filterData.project__slug
-        } else if (form.value.project === 'bookmark') {
-          filterData.project__bookmark = true
-          delete filterData.project__slug
-        } else if (form.value.project === 'closed') {
-          filterData.project_status = '2'
-          delete filterData.project__slug
-        } else {
-          filterData.project__search = form.value.project
-        }
-      } else if (key === 'is_private') {
-        filterData.is_private = true
-      } else {
-        filterData[fieldKey] = val
-      }
-    } else if (operator === 'exclude') {
-      if (key === 'project') {
-        if (form.value.project === '') {
-          filterData.project__my_project = false
-          delete filterData.project__slug
-        } else if (form.value.project === 'bookmark') {
-          filterData.project__bookmark = false
-          delete filterData.project__slug
-        } else if (form.value.project === 'closed') {
-          filterData.project_status__exclude = '2'
-          delete filterData.project__slug
-        } else {
-          filterData.project__exclude = form.value.project
-          delete filterData.project__slug
-        }
-      } else if (key === 'is_private') {
-        filterData.is_private = false
-      } else {
-        filterData[`${fieldKey}__exclude`] = val
-      }
-    } else if (operator === 'none') {
-      filterData[`${fieldKey}__isnull`] = '1'
-    } else if (operator === 'any') {
-      filterData[`${fieldKey}__isnull`] = '0'
-    } else if (operator === 'contains') {
-      filterData[fieldKey] = val
-    } else if (operator === 'gte') {
-      if (key === 'issue') filterData.id__gte = form.value.id__gte
-      else filterData[`${fieldKey}__gte`] = form.value[`${fieldKey}__gte`]
-    } else if (operator === 'lte') {
-      if (key === 'issue') filterData.id__lte = form.value.id__lte
-      else filterData[`${fieldKey}__lte`] = form.value[`${fieldKey}__lte`]
-    } else if (operator === 'between') {
-      let min = ''
-      let max = ''
-      if (key === 'issue') {
-        min = form.value.id__between_min !== null ? String(form.value.id__between_min) : ''
-        max = form.value.id__between_max !== null ? String(form.value.id__between_max) : ''
-        if (min || max) filterData.id__between = `${min},${max}`
-      } else {
-        min = form.value[`${fieldKey}__between_min`] || ''
-        max = form.value[`${fieldKey}__between_max`] || ''
-        if (min || max) filterData[`${fieldKey}__between`] = `${min},${max}`
-      }
-    }
-  })
-
-  // my project 또는 bookmark project 강제 덮어쓰기가 있을 경우
-  if (form.value.project__my_project !== undefined) {
-    filterData.project__my_project = form.value.project__my_project
-  }
-  if (form.value.project__bookmark !== undefined) {
-    filterData.project__bookmark = form.value.project__bookmark
-  }
-
-  console.log(filterData)
+  const filterData = issueFilterStore.buildFilterPayload()
   emit('filter-submit', filterData)
 }
 
@@ -826,9 +561,6 @@ watch(
   { immediate: true },
 )
 
-// ----- 활성화된 필터 키 관리 (체크박스로 ON/OFF 가능) -----
-const enabledFields = ref<string[]>(['status'])
-
 watch(searchCond, newVal => {
   newVal.forEach(key => {
     if (!enabledFields.value.includes(key)) {
@@ -837,7 +569,7 @@ watch(searchCond, newVal => {
   })
   enabledFields.value = enabledFields.value.filter(k => newVal.includes(k))
 
-  if (newVal.includes('project')) form.value.project = ''
+  if (newVal.includes('project') && form.value.project === undefined) form.value.project = ''
   if (newVal.includes('tracker') && !form.value.tracker)
     form.value.tracker = props.trackerList[0]?.pk
   if (newVal.includes('priority') && !form.value.priority)
@@ -892,7 +624,7 @@ watch(
 )
 
 onBeforeMount(async () => {
-  if (!!props.statusList.length) form.value.status = props.statusList[0]?.pk
+  if (!!props.statusList.length && !form.value.status) form.value.status = props.statusList[0]?.pk
 
   // 프로젝트 환경인지 체크하여 범주(category) 옵션 제어
   if (route.params.projId) {
@@ -966,68 +698,13 @@ onBeforeMount(async () => {
 
 // ----- 저장된 검색양식 복원 (Apply Query) -----
 const applyQuery = (query: any) => {
-  if (query && query.filters) {
-    const f = query.filters
-
-    // 이전 상태 초기화
-    searchCond.value = ['status']
-    enabledFields.value = ['status']
-
-    if (f.searchCond) {
-      searchCond.value = [...f.searchCond]
-      enabledFields.value = [...f.searchCond]
-    }
-    if (f.cond) cond.value = { ...cond.value, ...f.cond }
-    if (f.form) {
-      const myId = currentUserId.value ?? props.getUsers[0]?.value
-      const formPayload = { ...f.form }
-      if (formPayload.watcher === 'me') formPayload.watcher = myId
-      if (formPayload.author === 'me' || formPayload.creator === 'me') formPayload.author = myId
-      if (formPayload.updater === 'me') formPayload.updater = myId
-      if (formPayload.assignee === 'me' || formPayload.assigned_to === 'me')
-        formPayload.assignee = myId
-
-      form.value = { ...form.value, ...formPayload }
-
-      if (formPayload.project && !searchCond.value.includes('project')) {
-        searchCond.value.push('project')
-        if (!enabledFields.value.includes('project')) {
-          enabledFields.value.push('project')
-        }
-      }
-    } else {
-      // 기본 시드 데이터 및 이전 방식의 평면 필터(flat filters) 처리
-      const myId = currentUserId.value ?? props.getUsers[0]?.value
-
-      if (f.watcher !== undefined) {
-        if (!searchCond.value.includes('watcher')) searchCond.value.push('watcher')
-        if (!enabledFields.value.includes('watcher')) enabledFields.value.push('watcher')
-        cond.value.watcher = 'is'
-        form.value.watcher = f.watcher === 'me' ? myId : f.watcher
-      }
-      if (f.creator !== undefined || f.author !== undefined) {
-        const creatorVal = f.creator ?? f.author
-        if (!searchCond.value.includes('author')) searchCond.value.push('author')
-        if (!enabledFields.value.includes('author')) enabledFields.value.push('author')
-        cond.value.author = 'is'
-        form.value.author = creatorVal === 'me' ? myId : creatorVal
-      }
-      if (f.updater !== undefined) {
-        if (!searchCond.value.includes('updater')) searchCond.value.push('updater')
-        if (!enabledFields.value.includes('updater')) enabledFields.value.push('updater')
-        cond.value.updater = 'is'
-        form.value.updater = f.updater === 'me' ? myId : f.updater
-      }
-      if (f.assigned_to !== undefined || f.assignee !== undefined) {
-        const assigneeVal = f.assigned_to ?? f.assignee
-        if (!searchCond.value.includes('assignee')) searchCond.value.push('assignee')
-        if (!enabledFields.value.includes('assignee')) enabledFields.value.push('assignee')
-        cond.value.assignee = 'is'
-        form.value.assignee = assigneeVal === 'me' ? myId : assigneeVal
-      }
-    }
-
-    filterSubmit()
+  const payload = issueFilterStore.applySavedQuery(
+    query,
+    currentUserId.value,
+    props.getUsers[0]?.value,
+  )
+  if (payload) {
+    emit('filter-submit', payload)
   }
 }
 
