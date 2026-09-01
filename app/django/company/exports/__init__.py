@@ -11,7 +11,8 @@ from .excel import (
     ExportDuties,
     ExportGrades,
     ExportExecutiveRanks,
-    ExportExecutives
+    ExportExecutives,
+    ExportAppointments
 )
 
 __all__ = [
@@ -21,5 +22,6 @@ __all__ = [
     'ExportDuties',
     'ExportGrades',
     'ExportExecutiveRanks',
-    'ExportExecutives'
+    'ExportExecutives',
+    'ExportAppointments'
 ]

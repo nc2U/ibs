@@ -10,7 +10,7 @@ from django.core import serializers
 from django.db.models import Q
 
 from _excel.mixins import ExcelExportMixin
-from company.models import Company, Staff, Department, JobGrade, Position, DutyTitle, ExecutiveRank, Executive
+from company.models import Company, Staff, Department, JobGrade, Position, DutyTitle, ExecutiveRank, Executive, PersonnelOrder
 from contract.models import Contract
 from project.models import Project
 
@@ -785,6 +785,132 @@ class ExportExecutives(ExcelExportMixin):
 
         # data finish -------------------------------------------- #
         filename = request.GET.get('filename') or 'executives'
+        filename = f'{filename}-{TODAY}'
+        return self.create_response(output, workbook, filename)
+
+
+class ExportAppointments(ExcelExportMixin):
+    """인사 발령 이력 목록"""
+
+    def get(self, request):
+        # 워크북 생성
+        output, workbook, worksheet = self.create_workbook('인사_발령_이력')
+
+        # data start --------------------------------------------- #
+        company = Company.objects.get(pk=request.GET.get('company'))
+        com_name = company.name.replace('주식회사 ', '(주)')
+
+        # 포맷 생성
+        title_format = self.create_title_format(workbook)
+        h_format = self.create_header_format(workbook)
+
+        # title_list
+        header_src = [[],
+                      ['발령일자', 'order_date', 13],
+                      ['발령구분', 'order_type', 13],
+                      ['문서번호', 'order_no', 15],
+                      ['대상직원', 'staff__name', 12],
+                      ['발령전 부서', 'prev_department__name', 14],
+                      ['발령전 직위', 'prev_position__name', 13],
+                      ['발령전 직책', 'prev_duty__name', 13],
+                      ['발령후 부서', 'new_department__name', 14],
+                      ['발령후 직위', 'new_position__name', 13],
+                      ['발령후 직책', 'new_duty__name', 13],
+                      ['발령 사유 및 세부내용', 'description', 30],
+                      ['종료예정일', 'effective_end_date', 13]]
+        titles = ['No']
+        widths = [7]
+
+        for el in header_src:
+            if el:
+                titles.append(el[0])
+                widths.append(el[2])
+
+        # 1. Title
+        row_num = 0
+        worksheet.set_row(row_num, 50)
+        worksheet.merge_range(row_num, 0, row_num, len(header_src) - 1, com_name + ' 인사 발령 이력 목록', title_format)
+
+        # 2. Pre Header - Date
+        row_num = 1
+        worksheet.set_row(row_num, 18)
+        worksheet.write(row_num, len(header_src) - 1, TODAY + ' 현재', workbook.add_format({'align': 'right'}))
+
+        # 3. Header - 1
+        row_num = 2
+        worksheet.set_row(row_num, 20, workbook.add_format({'bold': True}))
+
+        for i, col_width in enumerate(widths):
+            worksheet.set_column(i, i, col_width)
+
+        for col_num, title in enumerate(titles):
+            worksheet.write(row_num, col_num, title, h_format)
+
+        # 4. Body
+        obj_list = PersonnelOrder.objects.filter(company=company).select_related(
+            'staff', 'prev_department', 'prev_grade', 'prev_position', 'prev_duty',
+            'new_department', 'new_grade', 'new_position', 'new_duty'
+        )
+
+        staff = request.GET.get('staff')
+        order_type = request.GET.get('order_type')
+        department = request.GET.get('department')
+        search = request.GET.get('search')
+
+        if staff:
+            obj_list = obj_list.filter(staff_id=staff)
+        if order_type:
+            obj_list = obj_list.filter(order_type=order_type)
+        if department:
+            obj_list = obj_list.filter(new_department_id=department)
+        if search:
+            obj_list = obj_list.filter(
+                Q(staff__name__icontains=search) |
+                Q(order_no__icontains=search) |
+                Q(description__icontains=search)
+            )
+
+        body_format = {
+            'border': True,
+            'align': 'center',
+            'valign': 'vcenter',
+            'num_format': '@'
+        }
+
+        order_type_map = dict(PersonnelOrder.ORDER_TYPE_CHOICES)
+
+        for i, order in enumerate(obj_list):
+            row_num += 1
+            row_data = [
+                i + 1,
+                order.order_date or '',
+                order_type_map.get(order.order_type, order.order_type),
+                order.order_no or '',
+                order.staff.name if order.staff else '',
+                order.prev_department.name if order.prev_department else '-',
+                order.prev_position.name if order.prev_position else '-',
+                order.prev_duty.name if order.prev_duty else '-',
+                order.new_department.name if order.new_department else '-',
+                order.new_position.name if order.new_position else '-',
+                order.new_duty.name if order.new_duty else '-',
+                order.description or '',
+                order.effective_end_date or '',
+            ]
+
+            for col_num, cell_data in enumerate(row_data):
+                if col_num in (1, 12) and cell_data:
+                    body_format['num_format'] = 'yyyy-mm-dd'
+                else:
+                    body_format['num_format'] = '@'
+                if col_num in (3, 11):
+                    body_format['align'] = 'left'
+                else:
+                    body_format['align'] = 'center'
+                bformat = workbook.add_format(body_format)
+                worksheet.write(row_num, col_num, cell_data, bformat)
+
+        # data finish -------------------------------------------- #
+        filename = request.GET.get('filename') or 'personnel-orders'
         filename = f'{filename}-{TODAY}'
         return self.create_response(output, workbook, filename)
 

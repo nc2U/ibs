@@ -181,6 +181,60 @@ export interface PromotionCandidate {
   promoted_date?: string | null
 }
 
+export type OrderType =
+  | '10' // 채용/신규입사
+  | '20' // 승진/승급
+  | '30' // 부서이동(전보)
+  | '40' // 보직임면/겸직
+  | '50' // 휴직
+  | '51' // 복직
+  | '60' // 파견/전적
+  | '70' // 포상/표창
+  | '80' // 징계/문책
+  | '90' // 퇴사/면직
+
+export interface PersonnelOrder {
+  id?: number
+  pk?: number
+  company?: string
+  company_name?: string
+  staff: number
+  staff_name?: string
+  order_type: OrderType
+  order_type_desc?: string
+  order_date: string
+  effective_end_date?: string | null
+  order_no?: string
+  prev_department?: number | null
+  prev_department_name?: string | null
+  prev_grade?: number | null
+  prev_grade_code?: string | null
+  prev_position?: number | null
+  prev_position_name?: string | null
+  prev_duty?: number | null
+  prev_duty_name?: string | null
+  new_department?: number | null
+  new_department_name?: string | null
+  new_grade?: number | null
+  new_grade_code?: string | null
+  new_position?: number | null
+  new_position_name?: string | null
+  new_duty?: number | null
+  new_duty_name?: string | null
+  description?: string
+  is_processed: boolean
+}
+
+export type PersonnelOrderFilter = {
+  page?: number
+  com?: number
+  staff?: number | string
+  order_type?: string
+  department?: number | string
+  is_processed?: boolean | string
+  q?: string
+}
+
 export type ComFilter = {
   page?: number
   com?: number

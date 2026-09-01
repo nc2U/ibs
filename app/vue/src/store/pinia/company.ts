@@ -18,6 +18,8 @@ import {
   type PromotionPolicy,
   type StaffEvaluation,
   type PromotionCandidate,
+  type PersonnelOrder,
+  type PersonnelOrderFilter,
   type ComFilter,
 } from '@/store/types/company'
 
@@ -916,6 +918,89 @@ export const useCompany = defineStore('company', () => {
       )
       .catch(err => errorHandle(err.response.data))
 
+  // PersonnelOrder ---------------------------------------------------
+  const personnelOrderList = ref<PersonnelOrder[]>([])
+  const allPersonnelOrderList = ref<PersonnelOrder[]>([])
+  const personnelOrder = ref<PersonnelOrder | null>(null)
+  const personnelOrdersCount = ref<number>(0)
+
+  const personnelOrderPages = (itemsPerPage: number) =>
+    Math.ceil(personnelOrdersCount.value / itemsPerPage)
+
+  const fetchPersonnelOrderList = async (payload: PersonnelOrderFilter) => {
+    const {
+      page = 1,
+      com = 1,
+      staff: staffId = '',
+      order_type = '',
+      department = '',
+      is_processed = '',
+      q = '',
+    } = payload
+    let queryStr = `?limit=10&page=${page}&company=${com}&search=${q}`
+    if (staffId) queryStr += `&staff=${staffId}`
+    if (order_type) queryStr += `&order_type=${order_type}`
+    if (department) queryStr += `&new_department=${department}`
+    if (is_processed !== '') queryStr += `&is_processed=${is_processed}`
+
+    return await api
+      .get(`/personnel-order/${queryStr}`)
+      .then(res => {
+        personnelOrderList.value = res.data.results
+        personnelOrdersCount.value = res.data.count
+      })
+      .catch(err => errorHandle(err.response.data))
+  }
+
+  const fetchAllPersonnelOrderList = (com = 1) =>
+    api
+      .get(`/personnel-order/?company=${com}&limit=500`)
+      .then(res => {
+        allPersonnelOrderList.value = res.data.results ?? res.data
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const fetchPersonnelOrder = (pk: number) =>
+    api
+      .get(`/personnel-order/${pk}/`)
+      .then(res => (personnelOrder.value = res.data))
+      .catch(err => errorHandle(err.response.data))
+
+  const createPersonnelOrder = (payload: PersonnelOrder, page = 1, com = 1) =>
+    api
+      .post(`/personnel-order/`, payload)
+      .then(async res => {
+        await fetchAllPersonnelOrderList(com)
+        await fetchPersonnelOrderList({ page, com })
+        await fetchPersonnelOrder(res.data.pk)
+        // 직원 상태가 자동 반영될 수 있으므로 직원 목록도 갱신
+        await fetchAllStaffList(com)
+        message()
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const updatePersonnelOrder = (payload: PersonnelOrder, page = 1, com = 1) =>
+    api
+      .put(`/personnel-order/${payload.pk}/`, payload)
+      .then(async res => {
+        await fetchAllPersonnelOrderList(com)
+        await fetchPersonnelOrderList({ page, com })
+        await fetchPersonnelOrder(res.data.pk)
+        await fetchAllStaffList(com)
+        message()
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const deletePersonnelOrder = (pk: number, com = 1) =>
+    api
+      .delete(`/personnel-order/${pk}/`)
+      .then(async () => {
+        await fetchAllPersonnelOrderList(com)
+        await fetchPersonnelOrderList({ com })
+        message('warning', '', '해당 오브젝트가 삭제되었습니다.')
+      })
+      .catch(err => errorHandle(err.response.data))
+
   return {
     companyList,
     company,
@@ -1065,5 +1150,17 @@ export const useCompany = defineStore('company', () => {
     createStaff,
     updateStaff,
     deleteStaff,
+
+    personnelOrderList,
+    allPersonnelOrderList,
+    personnelOrder,
+    personnelOrdersCount,
+    personnelOrderPages,
+    fetchPersonnelOrderList,
+    fetchAllPersonnelOrderList,
+    fetchPersonnelOrder,
+    createPersonnelOrder,
+    updatePersonnelOrder,
+    deletePersonnelOrder,
   }
 })
