@@ -106,20 +106,12 @@ const humanResource = {
           name: '인사 발령 관리',
           to: '/hr-manage/appointments',
           auth: 'isHrManager',
-          badge: {
-            color: 'info',
-            text: '준비중',
-          },
         },
         {
           component: 'CNavItem',
           name: '인사 이력 관리',
           to: '/hr-manage/records',
           auth: 'isHrManager',
-          badge: {
-            color: 'info',
-            text: '준비중',
-          },
         },
       ],
     },

@@ -10,7 +10,9 @@ from django.core import serializers
 from django.db.models import Q
 
 from _excel.mixins import ExcelExportMixin
-from company.models import Company, Staff, Department, JobGrade, Position, DutyTitle, ExecutiveRank, Executive, PersonnelOrder
+from company.models import (Company, Staff, Department, JobGrade, Position, DutyTitle,
+                            ExecutiveRank, Executive, PersonnelOrder, StaffCareer, StaffCertificate,
+                            StaffRewardPunishment)
 from contract.models import Contract
 from project.models import Project
 
@@ -911,6 +913,280 @@ class ExportAppointments(ExcelExportMixin):
 
         # data finish -------------------------------------------- #
         filename = request.GET.get('filename') or 'personnel-orders'
+        filename = f'{filename}-{TODAY}'
+        return self.create_response(output, workbook, filename)
+
+
+class ExportStaffCareers(ExcelExportMixin):
+    """직원 이전 경력 이력 목록"""
+
+    def get(self, request):
+        output, workbook, worksheet = self.create_workbook('직원_경력_이력')
+        company = Company.objects.get(pk=request.GET.get('company'))
+        com_name = company.name.replace('주식회사 ', '(주)')
+
+        title_format = self.create_title_format(workbook)
+        h_format = self.create_header_format(workbook)
+
+        header_src = [[],
+                      ['대상직원', 'staff__name', 12],
+                      ['근무처/기관명', 'company_name', 20],
+                      ['부서/조직명', 'department_name', 16],
+                      ['직위/직급', 'position_title', 14],
+                      ['담당 업무', 'assigned_tasks', 25],
+                      ['시작일', 'start_date', 13],
+                      ['종료일', 'end_date', 13],
+                      ['인정률(%)', 'recognized_ratio', 10],
+                      ['비고/퇴사사유', 'note', 25]]
+        titles = ['No']
+        widths = [7]
+
+        for el in header_src:
+            if el:
+                titles.append(el[0])
+                widths.append(el[2])
+
+        row_num = 0
+        worksheet.set_row(row_num, 50)
+        worksheet.merge_range(row_num, 0, row_num, len(header_src) - 1, com_name + ' 직원 경력 사항 목록', title_format)
+
+        row_num = 1
+        worksheet.set_row(row_num, 18)
+        worksheet.write(row_num, len(header_src) - 1, TODAY + ' 현재', workbook.add_format({'align': 'right'}))
+
+        row_num = 2
+        worksheet.set_row(row_num, 20, workbook.add_format({'bold': True}))
+
+        for i, col_width in enumerate(widths):
+            worksheet.set_column(i, i, col_width)
+
+        for col_num, title in enumerate(titles):
+            worksheet.write(row_num, col_num, title, h_format)
+
+        obj_list = StaffCareer.objects.filter(company=company).select_related('staff')
+        staff = request.GET.get('staff')
+        search = request.GET.get('search')
+        if staff:
+            obj_list = obj_list.filter(staff_id=staff)
+        if search:
+            obj_list = obj_list.filter(
+                Q(staff__name__icontains=search) |
+                Q(company_name__icontains=search) |
+                Q(assigned_tasks__icontains=search)
+            )
+
+        body_format = {'border': True, 'align': 'center', 'valign': 'vcenter', 'num_format': '@'}
+
+        for i, item in enumerate(obj_list):
+            row_num += 1
+            row_data = [
+                i + 1,
+                item.staff.name if item.staff else '',
+                item.company_name,
+                item.department_name or '',
+                item.position_title or '',
+                item.assigned_tasks or '',
+                item.start_date or '',
+                item.end_date or '',
+                f'{item.recognized_ratio}%',
+                item.note or '',
+            ]
+            for col_num, cell_data in enumerate(row_data):
+                if col_num in (6, 7) and cell_data:
+                    body_format['num_format'] = 'yyyy-mm-dd'
+                else:
+                    body_format['num_format'] = '@'
+                if col_num in (2, 5, 9):
+                    body_format['align'] = 'left'
+                else:
+                    body_format['align'] = 'center'
+                bformat = workbook.add_format(body_format)
+                worksheet.write(row_num, col_num, cell_data, bformat)
+
+        filename = request.GET.get('filename') or 'staff-careers'
+        filename = f'{filename}-{TODAY}'
+        return self.create_response(output, workbook, filename)
+
+
+class ExportStaffCertificates(ExcelExportMixin):
+    """직원 자격 및 면허 목록"""
+
+    def get(self, request):
+        output, workbook, worksheet = self.create_workbook('직원_자격면허')
+        company = Company.objects.get(pk=request.GET.get('company'))
+        com_name = company.name.replace('주식회사 ', '(주)')
+
+        title_format = self.create_title_format(workbook)
+        h_format = self.create_header_format(workbook)
+
+        header_src = [[],
+                      ['대상직원', 'staff__name', 12],
+                      ['자격/면허명', 'name', 20],
+                      ['등급/급수', 'grade', 15],
+                      ['자격/등록 번호', 'cert_number', 18],
+                      ['발급 기관', 'issuer', 18],
+                      ['취득일자', 'acquired_date', 13],
+                      ['만료/갱신일자', 'expire_date', 13],
+                      ['수당지급', 'has_allowance', 10],
+                      ['비고', 'note', 25]]
+        titles = ['No']
+        widths = [7]
+
+        for el in header_src:
+            if el:
+                titles.append(el[0])
+                widths.append(el[2])
+
+        row_num = 0
+        worksheet.set_row(row_num, 50)
+        worksheet.merge_range(row_num, 0, row_num, len(header_src) - 1, com_name + ' 직원 자격/면허 목록', title_format)
+
+        row_num = 1
+        worksheet.set_row(row_num, 18)
+        worksheet.write(row_num, len(header_src) - 1, TODAY + ' 현재', workbook.add_format({'align': 'right'}))
+
+        row_num = 2
+        worksheet.set_row(row_num, 20, workbook.add_format({'bold': True}))
+
+        for i, col_width in enumerate(widths):
+            worksheet.set_column(i, i, col_width)
+
+        for col_num, title in enumerate(titles):
+            worksheet.write(row_num, col_num, title, h_format)
+
+        obj_list = StaffCertificate.objects.filter(company=company).select_related('staff')
+        staff = request.GET.get('staff')
+        search = request.GET.get('search')
+        if staff:
+            obj_list = obj_list.filter(staff_id=staff)
+        if search:
+            obj_list = obj_list.filter(
+                Q(staff__name__icontains=search) |
+                Q(name__icontains=search) |
+                Q(issuer__icontains=search)
+            )
+
+        body_format = {'border': True, 'align': 'center', 'valign': 'vcenter', 'num_format': '@'}
+
+        for i, item in enumerate(obj_list):
+            row_num += 1
+            row_data = [
+                i + 1,
+                item.staff.name if item.staff else '',
+                item.name,
+                item.grade or '',
+                item.cert_number or '',
+                item.issuer or '',
+                item.acquired_date or '',
+                item.expire_date or '',
+                '지급' if item.has_allowance else '미지급',
+                item.note or '',
+            ]
+            for col_num, cell_data in enumerate(row_data):
+                if col_num in (6, 7) and cell_data:
+                    body_format['num_format'] = 'yyyy-mm-dd'
+                else:
+                    body_format['num_format'] = '@'
+                if col_num in (2, 8):
+                    body_format['align'] = 'left'
+                else:
+                    body_format['align'] = 'center'
+                bformat = workbook.add_format(body_format)
+                worksheet.write(row_num, col_num, cell_data, bformat)
+
+        filename = request.GET.get('filename') or 'staff-certificates'
+        filename = f'{filename}-{TODAY}'
+        return self.create_response(output, workbook, filename)
+
+
+class ExportStaffRewards(ExcelExportMixin):
+    """직원 상벌 이력 목록"""
+
+    def get(self, request):
+        output, workbook, worksheet = self.create_workbook('직원_상벌이력')
+        company = Company.objects.get(pk=request.GET.get('company'))
+        com_name = company.name.replace('주식회사 ', '(주)')
+
+        title_format = self.create_title_format(workbook)
+        h_format = self.create_header_format(workbook)
+
+        header_src = [[],
+                      ['대상직원', 'staff__name', 12],
+                      ['구분', 'sort', 10],
+                      ['항목명', 'type_name', 18],
+                      ['처분/수여일자', 'action_date', 13],
+                      ['효력만료일', 'expire_date', 13],
+                      ['수여/처분 기관', 'organization', 18],
+                      ['사유/근거', 'reason', 30],
+                      ['비고', 'note', 20]]
+        titles = ['No']
+        widths = [7]
+
+        for el in header_src:
+            if el:
+                titles.append(el[0])
+                widths.append(el[2])
+
+        row_num = 0
+        worksheet.set_row(row_num, 50)
+        worksheet.merge_range(row_num, 0, row_num, len(header_src) - 1, com_name + ' 직원 상벌 이력 목록', title_format)
+
+        row_num = 1
+        worksheet.set_row(row_num, 18)
+        worksheet.write(row_num, len(header_src) - 1, TODAY + ' 현재', workbook.add_format({'align': 'right'}))
+
+        row_num = 2
+        worksheet.set_row(row_num, 20, workbook.add_format({'bold': True}))
+
+        for i, col_width in enumerate(widths):
+            worksheet.set_column(i, i, col_width)
+
+        for col_num, title in enumerate(titles):
+            worksheet.write(row_num, col_num, title, h_format)
+
+        obj_list = StaffRewardPunishment.objects.filter(company=company).select_related('staff')
+        staff = request.GET.get('staff')
+        sort = request.GET.get('sort')
+        search = request.GET.get('search')
+        if staff:
+            obj_list = obj_list.filter(staff_id=staff)
+        if sort:
+            obj_list = obj_list.filter(sort=sort)
+        if search:
+            obj_list = obj_list.filter(
+                Q(staff__name__icontains=search) |
+                Q(type_name__icontains=search) |
+                Q(reason__icontains=search)
+            )
+
+        body_format = {'border': True, 'align': 'center', 'valign': 'vcenter', 'num_format': '@'}
+
+        for i, item in enumerate(obj_list):
+            row_num += 1
+            row_data = [
+                i + 1,
+                item.staff.name if item.staff else '',
+                item.get_sort_display(),
+                item.type_name,
+                item.action_date or '',
+                item.expire_date or '',
+                item.organization or '',
+                item.reason or '',
+                item.note or '',
+            ]
+            for col_num, cell_data in enumerate(row_data):
+                if col_num in (4, 5) and cell_data:
+                    body_format['num_format'] = 'yyyy-mm-dd'
+                else:
+                    body_format['num_format'] = '@'
+                if col_num in (3, 7, 8):
+                    body_format['align'] = 'left'
+                else:
+                    body_format['align'] = 'center'
+                bformat = workbook.add_format(body_format)
+                worksheet.write(row_num, col_num, cell_data, bformat)
+
+        filename = request.GET.get('filename') or 'staff-rewards'
         filename = f'{filename}-{TODAY}'
         return self.create_response(output, workbook, filename)
 

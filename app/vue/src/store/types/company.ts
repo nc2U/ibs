@@ -252,3 +252,60 @@ export type ExecutiveFilter = {
   q?: string
 }
 
+export interface StaffCareer {
+  id?: number
+  pk?: number
+  company?: string
+  staff: number
+  staff_name?: string
+  company_name: string
+  department_name?: string
+  position_title?: string
+  assigned_tasks?: string
+  start_date: string
+  end_date?: string | null
+  recognized_ratio: number
+  note?: string
+}
+
+export interface StaffCertificate {
+  id?: number
+  pk?: number
+  company?: string
+  staff: number
+  staff_name?: string
+  name: string
+  grade?: string
+  cert_number?: string
+  issuer?: string
+  acquired_date: string
+  expire_date?: string | null
+  has_allowance: boolean
+  note?: string
+}
+
+export interface StaffRewardPunishment {
+  id?: number
+  pk?: number
+  company?: string
+  staff: number
+  staff_name?: string
+  sort: 'reward' | 'punish'
+  sort_desc?: string
+  type_name: string
+  action_date: string
+  expire_date?: string | null
+  reason: string
+  organization?: string
+  note?: string
+}
+
+export type StaffRecordFilter = {
+  page?: number
+  com?: number
+  staff?: number | string
+  sort?: string
+  q?: string
+}
+
+

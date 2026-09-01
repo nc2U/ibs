@@ -20,6 +20,10 @@ import {
   type PromotionCandidate,
   type PersonnelOrder,
   type PersonnelOrderFilter,
+  type StaffCareer,
+  type StaffCertificate,
+  type StaffRewardPunishment,
+  type StaffRecordFilter,
   type ComFilter,
 } from '@/store/types/company'
 
@@ -1001,6 +1005,224 @@ export const useCompany = defineStore('company', () => {
       })
       .catch(err => errorHandle(err.response.data))
 
+  // StaffCareer ------------------------------------------------------
+  const staffCareerList = ref<StaffCareer[]>([])
+  const allStaffCareerList = ref<StaffCareer[]>([])
+  const staffCareer = ref<StaffCareer | null>(null)
+  const staffCareersCount = ref<number>(0)
+
+  const staffCareerPages = (itemsPerPage: number) =>
+    Math.ceil(staffCareersCount.value / itemsPerPage)
+
+  const fetchStaffCareerList = async (payload: StaffRecordFilter) => {
+    const { page = 1, com = 1, staff: staffId = '', q = '' } = payload
+    let queryStr = `?limit=10&page=${page}&company=${com}&search=${q}`
+    if (staffId) queryStr += `&staff=${staffId}`
+
+    return await api
+      .get(`/staff-career/${queryStr}`)
+      .then(res => {
+        staffCareerList.value = res.data.results
+        staffCareersCount.value = res.data.count
+      })
+      .catch(err => errorHandle(err.response.data))
+  }
+
+  const fetchAllStaffCareerList = (com = 1, staffId?: number) => {
+    let queryStr = `?company=${com}&limit=500`
+    if (staffId) queryStr += `&staff=${staffId}`
+    return api
+      .get(`/staff-career/${queryStr}`)
+      .then(res => {
+        allStaffCareerList.value = res.data.results ?? res.data
+      })
+      .catch(err => errorHandle(err.response.data))
+  }
+
+  const fetchStaffCareer = (pk: number) =>
+    api
+      .get(`/staff-career/${pk}/`)
+      .then(res => (staffCareer.value = res.data))
+      .catch(err => errorHandle(err.response.data))
+
+  const createStaffCareer = (payload: StaffCareer, page = 1, com = 1) =>
+    api
+      .post(`/staff-career/`, payload)
+      .then(async res => {
+        await fetchAllStaffCareerList(com)
+        await fetchStaffCareerList({ page, com })
+        await fetchStaffCareer(res.data.pk)
+        message()
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const updateStaffCareer = (payload: StaffCareer, page = 1, com = 1) =>
+    api
+      .put(`/staff-career/${payload.pk}/`, payload)
+      .then(async res => {
+        await fetchAllStaffCareerList(com)
+        await fetchStaffCareerList({ page, com })
+        await fetchStaffCareer(res.data.pk)
+        message()
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const deleteStaffCareer = (pk: number, com = 1) =>
+    api
+      .delete(`/staff-career/${pk}/`)
+      .then(async () => {
+        await fetchAllStaffCareerList(com)
+        await fetchStaffCareerList({ com })
+        message('warning', '', '해당 오브젝트가 삭제되었습니다.')
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  // StaffCertificate -------------------------------------------------
+  const staffCertificateList = ref<StaffCertificate[]>([])
+  const allStaffCertificateList = ref<StaffCertificate[]>([])
+  const staffCertificate = ref<StaffCertificate | null>(null)
+  const staffCertificatesCount = ref<number>(0)
+
+  const staffCertificatePages = (itemsPerPage: number) =>
+    Math.ceil(staffCertificatesCount.value / itemsPerPage)
+
+  const fetchStaffCertificateList = async (payload: StaffRecordFilter) => {
+    const { page = 1, com = 1, staff: staffId = '', q = '' } = payload
+    let queryStr = `?limit=10&page=${page}&company=${com}&search=${q}`
+    if (staffId) queryStr += `&staff=${staffId}`
+
+    return await api
+      .get(`/staff-certificate/${queryStr}`)
+      .then(res => {
+        staffCertificateList.value = res.data.results
+        staffCertificatesCount.value = res.data.count
+      })
+      .catch(err => errorHandle(err.response.data))
+  }
+
+  const fetchAllStaffCertificateList = (com = 1, staffId?: number) => {
+    let queryStr = `?company=${com}&limit=500`
+    if (staffId) queryStr += `&staff=${staffId}`
+    return api
+      .get(`/staff-certificate/${queryStr}`)
+      .then(res => {
+        allStaffCertificateList.value = res.data.results ?? res.data
+      })
+      .catch(err => errorHandle(err.response.data))
+  }
+
+  const fetchStaffCertificate = (pk: number) =>
+    api
+      .get(`/staff-certificate/${pk}/`)
+      .then(res => (staffCertificate.value = res.data))
+      .catch(err => errorHandle(err.response.data))
+
+  const createStaffCertificate = (payload: StaffCertificate, page = 1, com = 1) =>
+    api
+      .post(`/staff-certificate/`, payload)
+      .then(async res => {
+        await fetchAllStaffCertificateList(com)
+        await fetchStaffCertificateList({ page, com })
+        await fetchStaffCertificate(res.data.pk)
+        message()
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const updateStaffCertificate = (payload: StaffCertificate, page = 1, com = 1) =>
+    api
+      .put(`/staff-certificate/${payload.pk}/`, payload)
+      .then(async res => {
+        await fetchAllStaffCertificateList(com)
+        await fetchStaffCertificateList({ page, com })
+        await fetchStaffCertificate(res.data.pk)
+        message()
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const deleteStaffCertificate = (pk: number, com = 1) =>
+    api
+      .delete(`/staff-certificate/${pk}/`)
+      .then(async () => {
+        await fetchAllStaffCertificateList(com)
+        await fetchStaffCertificateList({ com })
+        message('warning', '', '해당 오브젝트가 삭제되었습니다.')
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  // StaffRewardPunishment --------------------------------------------
+  const staffRewardPunishmentList = ref<StaffRewardPunishment[]>([])
+  const allStaffRewardPunishmentList = ref<StaffRewardPunishment[]>([])
+  const staffRewardPunishment = ref<StaffRewardPunishment | null>(null)
+  const staffRewardPunishmentsCount = ref<number>(0)
+
+  const staffRewardPunishmentPages = (itemsPerPage: number) =>
+    Math.ceil(staffRewardPunishmentsCount.value / itemsPerPage)
+
+  const fetchStaffRewardPunishmentList = async (payload: StaffRecordFilter) => {
+    const { page = 1, com = 1, staff: staffId = '', sort = '', q = '' } = payload
+    let queryStr = `?limit=10&page=${page}&company=${com}&search=${q}`
+    if (staffId) queryStr += `&staff=${staffId}`
+    if (sort) queryStr += `&sort=${sort}`
+
+    return await api
+      .get(`/staff-reward-punishment/${queryStr}`)
+      .then(res => {
+        staffRewardPunishmentList.value = res.data.results
+        staffRewardPunishmentsCount.value = res.data.count
+      })
+      .catch(err => errorHandle(err.response.data))
+  }
+
+  const fetchAllStaffRewardPunishmentList = (com = 1, staffId?: number) => {
+    let queryStr = `?company=${com}&limit=500`
+    if (staffId) queryStr += `&staff=${staffId}`
+    return api
+      .get(`/staff-reward-punishment/${queryStr}`)
+      .then(res => {
+        allStaffRewardPunishmentList.value = res.data.results ?? res.data
+      })
+      .catch(err => errorHandle(err.response.data))
+  }
+
+  const fetchStaffRewardPunishment = (pk: number) =>
+    api
+      .get(`/staff-reward-punishment/${pk}/`)
+      .then(res => (staffRewardPunishment.value = res.data))
+      .catch(err => errorHandle(err.response.data))
+
+  const createStaffRewardPunishment = (payload: StaffRewardPunishment, page = 1, com = 1) =>
+    api
+      .post(`/staff-reward-punishment/`, payload)
+      .then(async res => {
+        await fetchAllStaffRewardPunishmentList(com)
+        await fetchStaffRewardPunishmentList({ page, com })
+        await fetchStaffRewardPunishment(res.data.pk)
+        message()
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const updateStaffRewardPunishment = (payload: StaffRewardPunishment, page = 1, com = 1) =>
+    api
+      .put(`/staff-reward-punishment/${payload.pk}/`, payload)
+      .then(async res => {
+        await fetchAllStaffRewardPunishmentList(com)
+        await fetchStaffRewardPunishmentList({ page, com })
+        await fetchStaffRewardPunishment(res.data.pk)
+        message()
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const deleteStaffRewardPunishment = (pk: number, com = 1) =>
+    api
+      .delete(`/staff-reward-punishment/${pk}/`)
+      .then(async () => {
+        await fetchAllStaffRewardPunishmentList(com)
+        await fetchStaffRewardPunishmentList({ com })
+        message('warning', '', '해당 오브젝트가 삭제되었습니다.')
+      })
+      .catch(err => errorHandle(err.response.data))
+
+
   return {
     companyList,
     company,
@@ -1162,5 +1384,44 @@ export const useCompany = defineStore('company', () => {
     createPersonnelOrder,
     updatePersonnelOrder,
     deletePersonnelOrder,
+
+    // StaffCareer
+    staffCareerList,
+    allStaffCareerList,
+    staffCareer,
+    staffCareersCount,
+    staffCareerPages,
+    fetchStaffCareerList,
+    fetchAllStaffCareerList,
+    fetchStaffCareer,
+    createStaffCareer,
+    updateStaffCareer,
+    deleteStaffCareer,
+
+    // StaffCertificate
+    staffCertificateList,
+    allStaffCertificateList,
+    staffCertificate,
+    staffCertificatesCount,
+    staffCertificatePages,
+    fetchStaffCertificateList,
+    fetchAllStaffCertificateList,
+    fetchStaffCertificate,
+    createStaffCertificate,
+    updateStaffCertificate,
+    deleteStaffCertificate,
+
+    // StaffRewardPunishment
+    staffRewardPunishmentList,
+    allStaffRewardPunishmentList,
+    staffRewardPunishment,
+    staffRewardPunishmentsCount,
+    staffRewardPunishmentPages,
+    fetchStaffRewardPunishmentList,
+    fetchAllStaffRewardPunishmentList,
+    fetchStaffRewardPunishment,
+    createStaffRewardPunishment,
+    updateStaffRewardPunishment,
+    deleteStaffRewardPunishment,
   }
 })
