@@ -334,5 +334,46 @@ export type StaffLeaveQuotaFilter = {
   q?: string
 }
 
+export type LeaveType =
+  | 'annual'
+  | 'half_am'
+  | 'half_pm'
+  | 'quarter'
+  | 'official'
+  | 'sick'
+  | 'condolence'
+  | 'reward'
+  | 'substitute'
+  | 'other'
+
+export interface StaffLeaveUsage {
+  id?: number
+  pk?: number
+  company?: string
+  staff: number
+  staff_name?: string
+  leave_type: LeaveType
+  leave_type_desc?: string
+  start_date: string
+  end_date: string
+  deduction_days: number
+  approval_doc?: number | null
+  reason?: string
+  is_cancelled: boolean
+  created?: string
+}
+
+export type StaffLeaveUsageFilter = {
+  page?: number
+  com?: number
+  staff?: number | string
+  leave_type?: string
+  start_date?: string
+  end_date?: string
+  is_cancelled?: string | boolean
+  q?: string
+}
+
+
 
 

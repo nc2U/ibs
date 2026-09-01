@@ -1292,6 +1292,109 @@ class ExportStaffLeaveQuotas(ExcelExportMixin):
         return self.create_response(output, workbook, filename)
 
 
+class ExportStaffLeaveUsages(ExcelExportMixin):
+    """직원 휴가/연차 사용 내역 목록"""
+
+    def get(self, request):
+        output, workbook, worksheet = self.create_workbook('휴가_사용_내역')
+        company = Company.objects.get(pk=request.GET.get('company'))
+        com_name = company.name.replace('주식회사 ', '(주)')
+
+        title_format = self.create_title_format(workbook)
+        h_format = self.create_header_format(workbook)
+
+        header_src = [[],
+                      ['대상직원', 'staff__name', 12],
+                      ['휴가구분', 'leave_type', 14],
+                      ['시작일', 'start_date', 13],
+                      ['종료일', 'end_date', 13],
+                      ['차감일수', 'deduction_days', 11],
+                      ['휴가사유', 'reason', 25],
+                      ['취소여부', 'is_cancelled', 10],
+                      ['신청/등록일', 'created', 14]]
+        titles = ['No']
+        widths = [7]
+
+        for el in header_src:
+            if el:
+                titles.append(el[0])
+                widths.append(el[2])
+
+        row_num = 0
+        worksheet.set_row(row_num, 50)
+        worksheet.merge_range(row_num, 0, row_num, len(header_src) - 1, com_name + ' 휴가 사용 내역', title_format)
+
+        row_num = 1
+        worksheet.set_row(row_num, 18)
+        worksheet.write(row_num, len(header_src) - 1, TODAY + ' 현재', workbook.add_format({'align': 'right'}))
+
+        row_num = 2
+        worksheet.set_row(row_num, 20, workbook.add_format({'bold': True}))
+
+        for i, col_width in enumerate(widths):
+            worksheet.set_column(i, i, col_width)
+
+        for col_num, title in enumerate(titles):
+            worksheet.write(row_num, col_num, title, h_format)
+
+        obj_list = StaffLeaveUsage.objects.filter(company=company).select_related('staff')
+        staff = request.GET.get('staff')
+        leave_type = request.GET.get('leave_type')
+        start_date = request.GET.get('start_date')
+        end_date = request.GET.get('end_date')
+        search = request.GET.get('search')
+
+        if staff:
+            obj_list = obj_list.filter(staff_id=staff)
+        if leave_type:
+            obj_list = obj_list.filter(leave_type=leave_type)
+        if start_date:
+            obj_list = obj_list.filter(start_date__gte=start_date)
+        if end_date:
+            obj_list = obj_list.filter(end_date__lte=end_date)
+        if search:
+            obj_list = obj_list.filter(
+                Q(staff__name__icontains=search) |
+                Q(reason__icontains=search)
+            )
+
+        body_format = {'border': True, 'align': 'center', 'valign': 'vcenter', 'num_format': '@'}
+
+        for i, item in enumerate(obj_list):
+            row_num += 1
+            cancel_str = '취소됨' if item.is_cancelled else '정상'
+            row_data = [
+                i + 1,
+                item.staff.name if item.staff else '',
+                item.get_leave_type_display(),
+                item.start_date.strftime('%Y-%m-%d') if item.start_date else '',
+                item.end_date.strftime('%Y-%m-%d') if item.end_date else '',
+                float(item.deduction_days or 0),
+                item.reason or '',
+                cancel_str,
+                item.created.strftime('%Y-%m-%d') if item.created else '',
+            ]
+            for col_num, cell_data in enumerate(row_data):
+                if col_num == 5:
+                    body_format['num_format'] = '#,##0.00'
+                    body_format['align'] = 'right'
+                elif col_num in (3, 4, 8):
+                    body_format['num_format'] = 'yyyy-mm-dd'
+                    body_format['align'] = 'center'
+                elif col_num == 6:
+                    body_format['num_format'] = '@'
+                    body_format['align'] = 'left'
+                else:
+                    body_format['num_format'] = '@'
+                    body_format['align'] = 'center'
+                bformat = workbook.add_format(body_format)
+                worksheet.write(row_num, col_num, cell_data, bformat)
+
+        filename = request.GET.get('filename') or 'staff-leave-usages'
+        filename = f'{filename}-{TODAY}'
+        return self.create_response(output, workbook, filename)
+
+
 class ExportExamples(ExcelExportMixin):
     """Examples"""
 

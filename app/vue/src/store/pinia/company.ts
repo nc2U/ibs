@@ -26,6 +26,8 @@ import {
   type StaffRecordFilter,
   type StaffLeaveQuota,
   type StaffLeaveQuotaFilter,
+  type StaffLeaveUsage,
+  type StaffLeaveUsageFilter,
   type ComFilter,
 } from '@/store/types/company'
 
@@ -1297,6 +1299,100 @@ export const useCompany = defineStore('company', () => {
       })
       .catch(err => errorHandle(err.response.data))
 
+  // StaffLeaveUsage --------------------------------------------------
+  const staffLeaveUsageList = ref<StaffLeaveUsage[]>([])
+  const allStaffLeaveUsageList = ref<StaffLeaveUsage[]>([])
+  const staffLeaveUsage = ref<StaffLeaveUsage | null>(null)
+  const staffLeaveUsagesCount = ref<number>(0)
+
+  const staffLeaveUsagePages = (itemsPerPage: number) =>
+    Math.ceil(staffLeaveUsagesCount.value / itemsPerPage)
+
+  const fetchStaffLeaveUsageList = async (payload: StaffLeaveUsageFilter) => {
+    const {
+      page = 1,
+      com = 1,
+      staff: staffId = '',
+      leave_type = '',
+      start_date = '',
+      end_date = '',
+      is_cancelled = '',
+      q = '',
+    } = payload
+    let queryStr = `?limit=10&page=${page}&company=${com}&search=${q}`
+    if (staffId) queryStr += `&staff=${staffId}`
+    if (leave_type) queryStr += `&leave_type=${leave_type}`
+    if (start_date) queryStr += `&start_date=${start_date}`
+    if (end_date) queryStr += `&end_date=${end_date}`
+    if (is_cancelled !== '') queryStr += `&is_cancelled=${is_cancelled}`
+
+    return await api
+      .get(`/staff-leave-usage/${queryStr}`)
+      .then(res => {
+        staffLeaveUsageList.value = res.data.results
+        staffLeaveUsagesCount.value = res.data.count
+      })
+      .catch(err => errorHandle(err.response.data))
+  }
+
+  const fetchAllStaffLeaveUsageList = (com = 1, staffId?: number) => {
+    let queryStr = `?company=${com}&limit=500`
+    if (staffId) queryStr += `&staff=${staffId}`
+    return api
+      .get(`/staff-leave-usage/${queryStr}`)
+      .then(res => {
+        allStaffLeaveUsageList.value = res.data.results ?? res.data
+      })
+      .catch(err => errorHandle(err.response.data))
+  }
+
+  const fetchStaffLeaveUsage = (pk: number) =>
+    api
+      .get(`/staff-leave-usage/${pk}/`)
+      .then(res => (staffLeaveUsage.value = res.data))
+      .catch(err => errorHandle(err.response.data))
+
+  const createStaffLeaveUsage = (payload: StaffLeaveUsage, page = 1, com = 1) =>
+    api
+      .post(`/staff-leave-usage/`, payload)
+      .then(async res => {
+        await fetchAllStaffLeaveUsageList(com)
+        await fetchStaffLeaveUsageList({ page, com })
+        await fetchStaffLeaveUsage(res.data.pk)
+        // 연차 잔여일수 갱신을 위해 Quota 목록도 재조회
+        await fetchAllStaffLeaveQuotaList(com)
+        await fetchStaffLeaveQuotaList({ com })
+        message()
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const updateStaffLeaveUsage = (payload: StaffLeaveUsage, page = 1, com = 1) =>
+    api
+      .put(`/staff-leave-usage/${payload.pk}/`, payload)
+      .then(async res => {
+        await fetchAllStaffLeaveUsageList(com)
+        await fetchStaffLeaveUsageList({ page, com })
+        await fetchStaffLeaveUsage(res.data.pk)
+        // 연차 잔여일수 갱신을 위해 Quota 목록도 재조회
+        await fetchAllStaffLeaveQuotaList(com)
+        await fetchStaffLeaveQuotaList({ com })
+        message()
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const deleteStaffLeaveUsage = (pk: number, com = 1) =>
+    api
+      .delete(`/staff-leave-usage/${pk}/`)
+      .then(async () => {
+        await fetchAllStaffLeaveUsageList(com)
+        await fetchStaffLeaveUsageList({ com })
+        // 연차 잔여일수 갱신을 위해 Quota 목록도 재조회
+        await fetchAllStaffLeaveQuotaList(com)
+        await fetchStaffLeaveQuotaList({ com })
+        message('warning', '', '해당 오브젝트가 삭제되었습니다.')
+      })
+      .catch(err => errorHandle(err.response.data))
+
 
   return {
     companyList,
@@ -1511,5 +1607,18 @@ export const useCompany = defineStore('company', () => {
     createStaffLeaveQuota,
     updateStaffLeaveQuota,
     deleteStaffLeaveQuota,
+
+    // StaffLeaveUsage
+    staffLeaveUsageList,
+    allStaffLeaveUsageList,
+    staffLeaveUsage,
+    staffLeaveUsagesCount,
+    staffLeaveUsagePages,
+    fetchStaffLeaveUsageList,
+    fetchAllStaffLeaveUsageList,
+    fetchStaffLeaveUsage,
+    createStaffLeaveUsage,
+    updateStaffLeaveUsage,
+    deleteStaffLeaveUsage,
   }
 })

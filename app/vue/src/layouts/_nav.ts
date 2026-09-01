@@ -125,29 +125,17 @@ const humanResource = {
           component: 'CNavItem',
           name: '연차 부여 관리',
           to: '/hr-manage/leave-quota',
-          badge: {
-            color: 'info',
-            text: '준비중',
-          },
         },
         {
           component: 'CNavItem',
           name: '휴가 사용 내역',
           to: '/hr-manage/leave-usage',
-          badge: {
-            color: 'info',
-            text: '준비중',
-          },
         },
         {
           component: 'CNavItem',
           name: '근태 현황 관리',
           to: '/hr-manage/attendance',
           auth: 'isHrManager',
-          badge: {
-            color: 'info',
-            text: '준비중',
-          },
         },
       ],
     },

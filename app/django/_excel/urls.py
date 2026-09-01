@@ -2,7 +2,7 @@ from django.urls import path
 from company.exports import (ExportStaffs, ExportDeparts, ExportPositions, ExportDuties, ExportGrades,
                              ExportExecutiveRanks, ExportExecutives, ExportAppointments,
                              ExportStaffCareers, ExportStaffCertificates, ExportStaffRewards,
-                             ExportStaffLeaveQuotas)
+                             ExportStaffLeaveQuotas, ExportStaffLeaveUsages)
 from contract.exports import ExportContracts, ExportSuccessions, ExportReleases, ExportUnitStatus
 from docs.exports import ExportSuitCases, ExportSuitCase
 from ledger.exports import (ExportLedgerBalanceByAcc, ExportLedgerDateCashbook, export_com_transaction_xls,
@@ -28,6 +28,7 @@ urlpatterns = [
     path('staff-certificates/', ExportStaffCertificates.as_view(), name='staff-certificates'),
     path('staff-rewards/', ExportStaffRewards.as_view(), name='staff-rewards'),
     path('staff-leave-quotas/', ExportStaffLeaveQuotas.as_view(), name='staff-leave-quotas'),
+    path('staff-leave-usages/', ExportStaffLeaveUsages.as_view(), name='staff-leave-usages'),
 
     # Project - site 관련 (새 모듈)
     path('sites/', ExportSites.as_view(), name='sites'),
