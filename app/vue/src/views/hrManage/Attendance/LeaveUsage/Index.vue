@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed, onMounted, ref } from 'vue'
-import { navMenu, pageTitle } from '@/views/hrManage/_menu/headermixin3'
+import { pageTitle, navMenu1, navMenu2 } from '@/views/hrManage/_menu/headermixin3'
 import { useCompany } from '@/store/pinia/company.ts'
 import type { Company } from '@/store/types/settings.ts'
 import type { StaffLeaveUsage, StaffLeaveUsageFilter } from '@/store/types/company.ts'
@@ -16,6 +16,13 @@ import LeaveUsageList from './components/LeaveUsageList.vue'
 
 const { canGlobal, PERM } = usePerms()
 const canHrWorkCreate = computed(() => canGlobal(PERM.HQ_HR_WORK_CREATE))
+const isHrManager = computed(
+  () =>
+    canGlobal(PERM.HQ_HR_WORK_READ) ||
+    canGlobal(PERM.HQ_HR_WORK_CREATE) ||
+    canGlobal(PERM.HQ_HR_WORK_UPDATE),
+)
+const navMenu = computed(() => (!isHrManager.value ? navMenu1 : navMenu2))
 
 const dataFilter = ref<StaffLeaveUsageFilter>({
   page: 1,

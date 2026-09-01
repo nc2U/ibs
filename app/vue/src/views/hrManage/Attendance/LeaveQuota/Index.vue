@@ -1,7 +1,6 @@
 <script lang="ts" setup>
 import { ref, onMounted, computed } from 'vue'
-import { pageTitle, navMenu } from '@/views/hrManage/_menu/headermixin3'
-import { useAccount } from '@/store/pinia/account.ts'
+import { pageTitle, navMenu1, navMenu2 } from '@/views/hrManage/_menu/headermixin3'
 import { useCompany } from '@/store/pinia/company.ts'
 import type { Company } from '@/store/types/settings.ts'
 import { type StaffLeaveQuota, type StaffLeaveQuotaFilter } from '@/store/types/company.ts'
@@ -17,9 +16,15 @@ import LeaveQuotaList from './components/LeaveQuotaList.vue'
 
 const currentYear = new Date().getFullYear()
 
-const accStore = useAccount()
 const { canGlobal, PERM } = usePerms()
 const canHrWorkCreate = computed(() => canGlobal(PERM.HQ_HR_WORK_CREATE))
+const isHrManager = computed(
+  () =>
+    canGlobal(PERM.HQ_HR_WORK_READ) ||
+    canGlobal(PERM.HQ_HR_WORK_CREATE) ||
+    canGlobal(PERM.HQ_HR_WORK_UPDATE),
+)
+const navMenu = computed(() => (!isHrManager.value ? navMenu1 : navMenu2))
 
 const dataFilter = ref<StaffLeaveQuotaFilter>({
   page: 1,
@@ -63,8 +68,7 @@ const createStaffLeaveQuota = (payload: StaffLeaveQuota, p?: number, c?: number)
   comStore.createStaffLeaveQuota(payload, p, c)
 const updateStaffLeaveQuota = (payload: StaffLeaveQuota, p?: number, c?: number) =>
   comStore.updateStaffLeaveQuota(payload, p, c)
-const deleteStaffLeaveQuota = (pk: number, com: number) =>
-  comStore.deleteStaffLeaveQuota(pk, com)
+const deleteStaffLeaveQuota = (pk: number, com: number) => comStore.deleteStaffLeaveQuota(pk, com)
 
 const multiSubmit = (payload: StaffLeaveQuota) => {
   const { page } = dataFilter.value
@@ -118,11 +122,7 @@ onMounted(async () => {
     <ContentBody>
       <CCardBody>
         <ListController @list-filtering="listFiltering" />
-        <AddLeaveQuota
-          v-if="canHrWorkCreate"
-          :company="comName"
-          @multi-submit="multiSubmit"
-        />
+        <AddLeaveQuota v-if="canHrWorkCreate" :company="comName" @multi-submit="multiSubmit" />
         <TableTitleRow
           title="연차 부여 및 잔여 현황"
           excel

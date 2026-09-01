@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { ref, onMounted, computed } from 'vue'
-import { pageTitle, navMenu } from '@/views/hrManage/_menu/headermixin3'
+import { pageTitle, navMenu2 } from '@/views/hrManage/_menu/headermixin3'
 import { useCompany } from '@/store/pinia/company.ts'
 import type { Company } from '@/store/types/settings.ts'
 import Loading from '@/components/Loading/Index.vue'
@@ -35,7 +35,10 @@ const filteredStaffList = computed(() => {
   if (filter.value.department) {
     list = list.filter(s => {
       // department가 매칭되는지 확인 (문자열 또는 부서 ID 등)
-      return s.department === filter.value.department || String((s as any).department_id) === String(filter.value.department)
+      return (
+        s.department === filter.value.department ||
+        String((s as any).department_id) === String(filter.value.department)
+      )
     })
   }
   if (filter.value.search) {
@@ -101,7 +104,7 @@ onMounted(async () => {
     <Loading v-model:active="loading" />
     <ContentHeader
       :page-title="pageTitle"
-      :nav-menu="navMenu"
+      :nav-menu="navMenu2"
       selector="CompanySelect"
       @com-select="comSelect"
     />
