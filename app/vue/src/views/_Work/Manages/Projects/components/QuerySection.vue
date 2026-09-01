@@ -9,6 +9,9 @@ import IssueProjectSelector from '@/views/_Work/components/atomics/IssueProjectS
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 import SaveQueryModal from '@/views/_Work/components/SaveQueryModal.vue'
 
+import { storeToRefs } from 'pinia'
+import { useProjectFilter } from '@/store/pinia/work_project_filter.ts'
+
 const props = defineProps({
   allReadableProjects: { type: Array as PropType<selectProject[]>, default: () => [] },
   targetType: {
@@ -25,39 +28,16 @@ const refQuerySaveModal = ref()
 const { can, PERM } = usePerms()
 const informStore = useInform()
 
+const projectFilterStore = useProjectFilter()
+const { searchCond, enabledFields, cond, form, selectedProjectVal, selectedParentVal } =
+  storeToRefs(projectFilterStore)
+
 const condVisible = ref(true)
 const optVisible = ref(false)
 
-const searchCond = ref(['status'])
 const resetFilter = () => {
-  searchCond.value = ['status']
-  cond.value = {
-    status: 'is',
-    project: 'is',
-    parent: 'all',
-    is_public: 'is',
-    created: 'is',
-    updated: 'is',
-    name: 'contains',
-    description: 'contains',
-  }
-  form.value = {
-    status: '1',
-    is_public: '1',
-    created_date: '',
-    created_date2: '',
-    updated_date: '',
-    updated_date2: '',
-    name: '',
-    description: '',
-    bookmark: undefined,
-    my_project: undefined,
-  }
-  selectedProjectVal.value = ''
-  if (props.allReadableProjects.length) {
-    selectedParentVal.value = props.allReadableProjects[0]?.value
-  }
-  filterSubmit()
+  const payload = projectFilterStore.resetFilter(props.allReadableProjects)
+  emit('filter-submit', payload)
 }
 
 const searchOptions = reactive([
@@ -84,37 +64,6 @@ const searchOptions = reactive([
     ],
   },
 ])
-
-const cond = ref<Record<string, any>>({
-  status: 'is' as 'is' | 'exclude',
-  project: 'is' as 'is' | 'exclude',
-  parent: 'all' as 'all' | 'none' | 'is' | 'exclude',
-  is_public: 'is' as 'is' | 'exclude',
-  created: 'is' as 'is' | 'gte' | 'lte' | 'between',
-  updated: 'is' as 'is' | 'gte' | 'lte' | 'between',
-
-  name: 'contains',
-  description: 'contains',
-})
-
-const form = ref<ProjectFilter & Record<string, any>>({
-  status: '1',
-  is_public: '1',
-
-  created_date: '',
-  created_date2: '',
-  updated_date: '',
-  updated_date2: '',
-
-  name: '',
-  description: '',
-
-  bookmark: undefined,
-  my_project: undefined,
-})
-
-const selectedProjectVal = ref<number | string>('')
-const selectedParentVal = ref<number | string>('')
 
 const filterFieldsConfig = computed(() => [
   {
@@ -206,9 +155,6 @@ const activeFields = computed(() => {
   return filterFieldsConfig.value.filter(field => searchCond.value.includes(field.key))
 })
 
-// ----- 활성화된 필터 키 관리 (체크박스로 ON/OFF 가능) -----
-const enabledFields = ref<string[]>(['status'])
-
 watch(searchCond, newVal => {
   newVal.forEach(key => {
     if (!enabledFields.value.includes(key)) {
@@ -229,106 +175,13 @@ const toggleField = (key: string, e: Event) => {
 }
 
 const filterSubmit = () => {
-  const filterData = {} as ProjectFilter & Record<string, any>
-
-  if (enabledFields.value.includes('status')) {
-    if (cond.value.status === 'is') filterData.status = form.value.status
-    else if (cond.value.status === 'exclude') filterData.status__exclude = form.value.status
-  }
-
-  enabledFields.value.forEach(key => {
-    if (key === 'status') return
-
-    const operator = cond.value[key]
-    const val = form.value[key]
-
-    if (key === 'project') {
-      if (selectedProjectVal.value === '') {
-        if (operator === 'is') filterData.my_project = true
-        else if (operator === 'exclude') filterData.my_project = false
-      } else if (selectedProjectVal.value === 'bookmark') {
-        delete filterData.status
-        delete filterData.status__exclude
-        if (operator === 'is') filterData.bookmark = true
-        else if (operator === 'exclude') filterData.bookmark = false
-      } else if (selectedProjectVal.value === 'closed') {
-        delete filterData.status
-        delete filterData.status__exclude
-        if (operator === 'is') filterData.status = '2'
-        else if (operator === 'exclude') filterData.status__exclude = '2'
-      } else {
-        delete filterData.status
-        delete filterData.status__exclude
-        const selectedProj = props.allReadableProjects.find(
-          p => p.value === Number(selectedProjectVal.value),
-        )
-        const projectVal = selectedProj ? selectedProj.slug : String(selectedProjectVal.value)
-        if (operator === 'is') filterData.project = projectVal
-        else if (operator === 'exclude') filterData.project__exclude = projectVal
-      }
-    } else if (key === 'parent') {
-      if (operator === 'all') {
-        filterData.parent__isnull = false
-      } else if (operator === 'none') {
-        filterData.parent__isnull = true
-      } else if (operator === 'is') {
-        const selectedParent = props.allReadableProjects.find(
-          p => p.value === Number(selectedParentVal.value),
-        )
-        filterData.parent = selectedParent ? selectedParent.slug : String(selectedParentVal.value)
-      } else if (operator === 'exclude') {
-        const selectedParent = props.allReadableProjects.find(
-          p => p.value === Number(selectedParentVal.value),
-        )
-        filterData.parent__exclude = selectedParent
-          ? selectedParent.slug
-          : String(selectedParentVal.value)
-      }
-    } else if (key === 'is_public') {
-      if (operator === 'is') filterData.is_public = form.value.is_public
-      else if (operator === 'exclude') filterData.is_public__exclude = form.value.is_public
-    } else if (key === 'name' || key === 'description') {
-      if (operator === 'none') {
-        filterData[`${key}__isnull`] = true
-      } else if (operator === 'any') {
-        filterData[`${key}__isnull`] = false
-      } else if (val) {
-        if (operator === 'contains') filterData[key] = val
-        else if (operator === 'exclude') filterData[`${key}__exclude`] = val
-        else if (operator === 'startswith') filterData[`${key}__startswith`] = val
-        else if (operator === 'endswith') filterData[`${key}__endswith`] = val
-      }
-    } else if (key === 'created' || key === 'updated') {
-      const fieldPrefix = key === 'created' ? 'created' : 'updated'
-      const minVal = form.value[`${fieldPrefix}_date`]
-      const maxVal = form.value[`${fieldPrefix}_date2`]
-      const targetFrom = key === 'created' ? 'from_created' : 'from_updated'
-      const targetTo = key === 'created' ? 'to_created' : 'to_updated'
-
-      if (operator === 'is' && minVal) {
-        filterData[targetFrom] = minVal
-        filterData[targetTo] = minVal
-      } else if (operator === 'gte' && minVal) {
-        filterData[targetFrom] = minVal
-      } else if (operator === 'lte' && minVal) {
-        filterData[targetTo] = minVal
-      } else if (operator === 'between' && minVal && maxVal) {
-        filterData[targetFrom] = minVal
-        filterData[targetTo] = maxVal
-      }
-    }
-  })
-
-  // 검색 양식 필터(bookmark, my_project)를 직접 필터데이터에 매핑
-  if (form.value.bookmark !== undefined) filterData.bookmark = form.value.bookmark
-  if (form.value.my_project !== undefined) filterData.my_project = form.value.my_project
-
+  const filterData = projectFilterStore.buildFilterPayload(props.allReadableProjects)
   emit('filter-submit', filterData)
 }
 
 onBeforeMount(() => {
-  selectedProjectVal.value = ''
-  if (props.allReadableProjects.length) {
+  if (selectedProjectVal.value === undefined) selectedProjectVal.value = ''
+  if (!selectedParentVal.value && props.allReadableProjects.length) {
     selectedParentVal.value = props.allReadableProjects[0]?.value
   }
 })
@@ -355,70 +208,9 @@ const openSaveModal = () => {
 }
 
 const applyQuery = (query: any) => {
-  if (query && query.filters) {
-    const f = query.filters
-
-    // 이전 필터 상태 완전 초기화
-    searchCond.value = ['status']
-    enabledFields.value = ['status']
-    cond.value = {
-      status: 'is',
-      project: 'is',
-      parent: 'all',
-      is_public: 'is',
-      created: 'is',
-      updated: 'is',
-      name: 'contains',
-      description: 'contains',
-    }
-    form.value = {
-      status: '1',
-      is_public: '1',
-      created_date: '',
-      created_date2: '',
-      updated_date: '',
-      updated_date2: '',
-      name: '',
-      description: '',
-      bookmark: undefined,
-      my_project: undefined,
-    }
-    selectedProjectVal.value = ''
-    if (props.allReadableProjects.length) {
-      selectedParentVal.value = props.allReadableProjects[0]?.value
-    }
-
-    if (f.searchCond) {
-      searchCond.value = [...f.searchCond]
-      enabledFields.value = [...f.searchCond]
-    }
-    if (f.cond) cond.value = { ...cond.value, ...f.cond }
-    if (f.form) {
-      form.value = { ...form.value, ...f.form }
-      if (f.form.project !== undefined) selectedProjectVal.value = f.form.project
-      if (f.form.parent !== undefined) selectedParentVal.value = f.form.parent
-    } else {
-      if (f.bookmark !== undefined) {
-        form.value.bookmark = f.bookmark
-        if (f.bookmark) {
-          if (!searchCond.value.includes('project')) searchCond.value.push('project')
-          if (!enabledFields.value.includes('project')) enabledFields.value.push('project')
-          cond.value.project = 'is'
-          selectedProjectVal.value = 'bookmark'
-        }
-      }
-      if (f.my_project !== undefined) {
-        form.value.my_project = f.my_project
-        if (f.my_project) {
-          if (!searchCond.value.includes('project')) searchCond.value.push('project')
-          if (!enabledFields.value.includes('project')) enabledFields.value.push('project')
-          cond.value.project = 'is'
-          selectedProjectVal.value = ''
-        }
-      }
-    }
-
-    filterSubmit()
+  const payload = projectFilterStore.applySavedQuery(query, props.allReadableProjects)
+  if (payload) {
+    emit('filter-submit', payload)
   }
 }
 
