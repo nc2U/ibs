@@ -6,7 +6,10 @@ import type { Version } from '@/store/types/work_project.ts'
 import RoadmapItem from './RoadmapItem.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 
-defineProps({ versionList: { type: Array as PropType<Version[]>, default: () => [] } })
+defineProps({
+  versionList: { type: Array as PropType<Version[]>, default: () => [] },
+  selectedVersionId: { type: Number as PropType<number | null>, default: null },
+})
 
 const { can, PERM } = usePerms()
 const [route, router] = [useRoute(), useRouter()]
@@ -52,5 +55,10 @@ const [route, router] = [useRoute(), useRouter()]
     </CCol>
   </CRow>
 
-  <RoadmapItem v-for="ver in versionList" :key="ver.pk" :version="ver" />
+  <RoadmapItem
+    v-for="ver in versionList"
+    :key="ver.pk"
+    :version="ver"
+    :is-selected="selectedVersionId === ver.pk"
+  />
 </template>

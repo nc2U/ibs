@@ -5,7 +5,10 @@ import { usePerms } from '@/composables/usePerms.ts'
 import type { Version } from '@/store/types/work_project.ts'
 import VersionIssuesTable from './automics/VersionIssuesTable.vue'
 
-const props = defineProps({ version: { type: Object as PropType<Version>, required: true } })
+const props = defineProps({
+  version: { type: Object as PropType<Version>, required: true },
+  isSelected: { type: Boolean, default: false },
+})
 
 const { can, PERM } = usePerms()
 
@@ -35,9 +38,12 @@ const done_ratio = computed(() => {
 </script>
 
 <template>
-  <CCol>
-    <CRow class="mb-3">
-      <CCol>
+  <CCol :id="`version-${version.pk}`" class="roadmap-version-item mb-4">
+    <CRow
+      class="mb-3 py-1 px-2 rounded version-header-row"
+      :class="{ 'selected-version': isSelected }"
+    >
+      <CCol class="d-flex align-items-center">
         <v-icon icon="mdi-star-box-multiple" color="amber" class="mr-2" />
         <span class="mr-2 bold" style="font-size: large">
           <router-link :to="{ name: '(로드맵) - 보기', params: { projId, verId: version.pk } }">
@@ -125,3 +131,24 @@ const done_ratio = computed(() => {
     </template>
   </CCol>
 </template>
+
+<style scoped>
+.roadmap-version-item {
+  scroll-margin-top: 100px;
+}
+
+.version-header-row {
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+  border: 1px solid transparent;
+}
+
+.version-header-row.selected-version {
+  background-color: #e8f4fd !important;
+  border: 1px solid #b6d4fe !important;
+}
+
+:global(body.dark-theme) .version-header-row.selected-version {
+  background-color: rgba(13, 110, 253, 0.18) !important;
+  border: 1px solid rgba(13, 110, 253, 0.4) !important;
+}
+</style>
