@@ -12,7 +12,7 @@ from django.db.models import Q
 from _excel.mixins import ExcelExportMixin
 from company.models import (Company, Staff, Department, JobGrade, Position, DutyTitle,
                             ExecutiveRank, Executive, PersonnelOrder, StaffCareer, StaffCertificate,
-                            StaffRewardPunishment)
+                            StaffRewardPunishment, StaffLeaveQuota, StaffLeaveUsage)
 from contract.models import Contract
 from project.models import Project
 
@@ -1187,6 +1187,107 @@ class ExportStaffRewards(ExcelExportMixin):
                 worksheet.write(row_num, col_num, cell_data, bformat)
 
         filename = request.GET.get('filename') or 'staff-rewards'
+        filename = f'{filename}-{TODAY}'
+        return self.create_response(output, workbook, filename)
+
+
+class ExportStaffLeaveQuotas(ExcelExportMixin):
+    """직원 연차 부여 및 잔여 현황 목록"""
+
+    def get(self, request):
+        output, workbook, worksheet = self.create_workbook('연차_부여_잔여')
+        company = Company.objects.get(pk=request.GET.get('company'))
+        com_name = company.name.replace('주식회사 ', '(주)')
+
+        title_format = self.create_title_format(workbook)
+        h_format = self.create_header_format(workbook)
+
+        header_src = [[],
+                      ['대상직원', 'staff__name', 12],
+                      ['대상연도', 'year', 10],
+                      ['기본발생', 'granted_days', 11],
+                      ['이월/조정', 'carry_over_days', 11],
+                      ['포상/가산', 'reward_days', 11],
+                      ['총 부여일수', 'total_granted_days', 12],
+                      ['사용일수', 'used_days', 11],
+                      ['잔여일수', 'remaining_days', 11],
+                      ['사용가능 시작일', 'valid_start', 14],
+                      ['사용가능 만료일', 'valid_end', 14],
+                      ['비고', 'note', 25]]
+        titles = ['No']
+        widths = [7]
+
+        for el in header_src:
+            if el:
+                titles.append(el[0])
+                widths.append(el[2])
+
+        row_num = 0
+        worksheet.set_row(row_num, 50)
+        worksheet.merge_range(row_num, 0, row_num, len(header_src) - 1, com_name + ' 연차 부여 및 잔여 현황', title_format)
+
+        row_num = 1
+        worksheet.set_row(row_num, 18)
+        worksheet.write(row_num, len(header_src) - 1, TODAY + ' 현재', workbook.add_format({'align': 'right'}))
+
+        row_num = 2
+        worksheet.set_row(row_num, 20, workbook.add_format({'bold': True}))
+
+        for i, col_width in enumerate(widths):
+            worksheet.set_column(i, i, col_width)
+
+        for col_num, title in enumerate(titles):
+            worksheet.write(row_num, col_num, title, h_format)
+
+        obj_list = StaffLeaveQuota.objects.filter(company=company).select_related('staff')
+        staff = request.GET.get('staff')
+        year = request.GET.get('year')
+        search = request.GET.get('search')
+        if staff:
+            obj_list = obj_list.filter(staff_id=staff)
+        if year:
+            obj_list = obj_list.filter(year=year)
+        if search:
+            obj_list = obj_list.filter(
+                Q(staff__name__icontains=search) |
+                Q(note__icontains=search)
+            )
+
+        body_format = {'border': True, 'align': 'center', 'valign': 'vcenter', 'num_format': '#,##0.00'}
+
+        for i, item in enumerate(obj_list):
+            row_num += 1
+            row_data = [
+                i + 1,
+                item.staff.name if item.staff else '',
+                f'{item.year}년',
+                float(item.granted_days or 0),
+                float(item.carry_over_days or 0),
+                float(item.reward_days or 0),
+                float(item.total_granted_days or 0),
+                float(item.used_days or 0),
+                float(item.remaining_days or 0),
+                item.valid_start or '',
+                item.valid_end or '',
+                item.note or '',
+            ]
+            for col_num, cell_data in enumerate(row_data):
+                if col_num in (3, 4, 5, 6, 7, 8):
+                    body_format['num_format'] = '#,##0.00'
+                    body_format['align'] = 'right'
+                elif col_num in (9, 10) and cell_data:
+                    body_format['num_format'] = 'yyyy-mm-dd'
+                    body_format['align'] = 'center'
+                elif col_num == 11:
+                    body_format['num_format'] = '@'
+                    body_format['align'] = 'left'
+                else:
+                    body_format['num_format'] = '@'
+                    body_format['align'] = 'center'
+                bformat = workbook.add_format(body_format)
+                worksheet.write(row_num, col_num, cell_data, bformat)
+
+        filename = request.GET.get('filename') or 'staff-leave-quotas'
         filename = f'{filename}-{TODAY}'
         return self.create_response(output, workbook, filename)
 

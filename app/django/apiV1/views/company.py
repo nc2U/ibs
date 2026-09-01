@@ -5,6 +5,7 @@ from company.models import (
     Company, Logo, Department, JobGrade, Position, DutyTitle,
     ExecutiveRank, Executive, Staff, StaffAssignment,
     PersonnelOrder, StaffCareer, StaffCertificate, StaffRewardPunishment,
+    StaffLeaveQuota, StaffLeaveUsage,
     PromotionPolicy, StaffEvaluation, PromotionCandidate
 )
 from ..pagination import PageNumberPaginationOneThousand
@@ -16,6 +17,7 @@ from ..serializers.company import (
     ExecutiveRankSerializer, ExecutiveSerializer,
     StaffSerializer, StaffAssignmentSerializer,
     PersonnelOrderSerializer, StaffCareerSerializer, StaffCertificateSerializer, StaffRewardPunishmentSerializer,
+    StaffLeaveQuotaSerializer, StaffLeaveUsageSerializer,
     PromotionPolicySerializer, StaffEvaluationSerializer, PromotionCandidateSerializer,
 )
 
@@ -202,6 +204,32 @@ class StaffRewardPunishmentViewSet(viewsets.ModelViewSet):
     pagination_class = PageNumberPaginationOneThousand
     filterset_fields = ('company', 'staff', 'sort')
     search_fields = ('staff__name', 'type_name', 'reason', 'organization')
+
+    @property
+    def required_permission(self):
+        return 'hq.hr_work.read' if self.action in ('list', 'retrieve') else 'hq.hr_work.create' if self.action == 'create' else 'hq.hr_work.update' if self.action in ('update', 'partial_update') else 'hq.hr_work.delete' if self.action == 'destroy' else 'hq.hr_work.read'
+
+
+class StaffLeaveQuotaViewSet(viewsets.ModelViewSet):
+    queryset = StaffLeaveQuota.objects.all().select_related('company', 'staff')
+    serializer_class = StaffLeaveQuotaSerializer
+    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly, IbsModulePermission)
+    pagination_class = PageNumberPaginationOneThousand
+    filterset_fields = ('company', 'staff', 'year')
+    search_fields = ('staff__name', 'note')
+
+    @property
+    def required_permission(self):
+        return 'hq.hr_work.read' if self.action in ('list', 'retrieve') else 'hq.hr_work.create' if self.action == 'create' else 'hq.hr_work.update' if self.action in ('update', 'partial_update') else 'hq.hr_work.delete' if self.action == 'destroy' else 'hq.hr_work.read'
+
+
+class StaffLeaveUsageViewSet(viewsets.ModelViewSet):
+    queryset = StaffLeaveUsage.objects.all().select_related('company', 'staff', 'approval_doc')
+    serializer_class = StaffLeaveUsageSerializer
+    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly, IbsModulePermission)
+    pagination_class = PageNumberPaginationOneThousand
+    filterset_fields = ('company', 'staff', 'leave_type', 'is_cancelled')
+    search_fields = ('staff__name', 'reason')
 
     @property
     def required_permission(self):

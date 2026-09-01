@@ -308,4 +308,31 @@ export type StaffRecordFilter = {
   q?: string
 }
 
+export interface StaffLeaveQuota {
+  id?: number
+  pk?: number
+  company?: string
+  staff: number
+  staff_name?: string
+  year: number
+  granted_days: number
+  carry_over_days: number
+  reward_days: number
+  total_granted_days?: number
+  used_days?: number
+  remaining_days?: number
+  valid_start: string
+  valid_end: string
+  note?: string
+}
+
+export type StaffLeaveQuotaFilter = {
+  page?: number
+  com?: number
+  staff?: number | string
+  year?: number | string
+  q?: string
+}
+
+
 

@@ -49,6 +49,8 @@ router.register(r'personnel-order', company.PersonnelOrderViewSet)
 router.register(r'staff-career', company.StaffCareerViewSet)
 router.register(r'staff-certificate', company.StaffCertificateViewSet)
 router.register(r'staff-reward-punishment', company.StaffRewardPunishmentViewSet)
+router.register(r'staff-leave-quota', company.StaffLeaveQuotaViewSet)
+router.register(r'staff-leave-usage', company.StaffLeaveUsageViewSet)
 
 # approval (전자결재)
 router.register(r'approval-doc-category', approval.DocCategoryViewSet, basename='approval-doc-category')

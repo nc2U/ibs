@@ -24,6 +24,8 @@ import {
   type StaffCertificate,
   type StaffRewardPunishment,
   type StaffRecordFilter,
+  type StaffLeaveQuota,
+  type StaffLeaveQuotaFilter,
   type ComFilter,
 } from '@/store/types/company'
 
@@ -1222,6 +1224,79 @@ export const useCompany = defineStore('company', () => {
       })
       .catch(err => errorHandle(err.response.data))
 
+  // StaffLeaveQuota --------------------------------------------------
+  const staffLeaveQuotaList = ref<StaffLeaveQuota[]>([])
+  const allStaffLeaveQuotaList = ref<StaffLeaveQuota[]>([])
+  const staffLeaveQuota = ref<StaffLeaveQuota | null>(null)
+  const staffLeaveQuotasCount = ref<number>(0)
+
+  const staffLeaveQuotaPages = (itemsPerPage: number) =>
+    Math.ceil(staffLeaveQuotasCount.value / itemsPerPage)
+
+  const fetchStaffLeaveQuotaList = async (payload: StaffLeaveQuotaFilter) => {
+    const { page = 1, com = 1, staff: staffId = '', year = '', q = '' } = payload
+    let queryStr = `?limit=10&page=${page}&company=${com}&search=${q}`
+    if (staffId) queryStr += `&staff=${staffId}`
+    if (year) queryStr += `&year=${year}`
+
+    return await api
+      .get(`/staff-leave-quota/${queryStr}`)
+      .then(res => {
+        staffLeaveQuotaList.value = res.data.results
+        staffLeaveQuotasCount.value = res.data.count
+      })
+      .catch(err => errorHandle(err.response.data))
+  }
+
+  const fetchAllStaffLeaveQuotaList = (com = 1, year?: number) => {
+    let queryStr = `?company=${com}&limit=500`
+    if (year) queryStr += `&year=${year}`
+    return api
+      .get(`/staff-leave-quota/${queryStr}`)
+      .then(res => {
+        allStaffLeaveQuotaList.value = res.data.results ?? res.data
+      })
+      .catch(err => errorHandle(err.response.data))
+  }
+
+  const fetchStaffLeaveQuota = (pk: number) =>
+    api
+      .get(`/staff-leave-quota/${pk}/`)
+      .then(res => (staffLeaveQuota.value = res.data))
+      .catch(err => errorHandle(err.response.data))
+
+  const createStaffLeaveQuota = (payload: StaffLeaveQuota, page = 1, com = 1) =>
+    api
+      .post(`/staff-leave-quota/`, payload)
+      .then(async res => {
+        await fetchAllStaffLeaveQuotaList(com)
+        await fetchStaffLeaveQuotaList({ page, com })
+        await fetchStaffLeaveQuota(res.data.pk)
+        message()
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const updateStaffLeaveQuota = (payload: StaffLeaveQuota, page = 1, com = 1) =>
+    api
+      .put(`/staff-leave-quota/${payload.pk}/`, payload)
+      .then(async res => {
+        await fetchAllStaffLeaveQuotaList(com)
+        await fetchStaffLeaveQuotaList({ page, com })
+        await fetchStaffLeaveQuota(res.data.pk)
+        message()
+      })
+      .catch(err => errorHandle(err.response.data))
+
+  const deleteStaffLeaveQuota = (pk: number, com = 1) =>
+    api
+      .delete(`/staff-leave-quota/${pk}/`)
+      .then(async () => {
+        await fetchAllStaffLeaveQuotaList(com)
+        await fetchStaffLeaveQuotaList({ com })
+        message('warning', '', '해당 오브젝트가 삭제되었습니다.')
+      })
+      .catch(err => errorHandle(err.response.data))
+
 
   return {
     companyList,
@@ -1423,5 +1498,18 @@ export const useCompany = defineStore('company', () => {
     createStaffRewardPunishment,
     updateStaffRewardPunishment,
     deleteStaffRewardPunishment,
+
+    // StaffLeaveQuota
+    staffLeaveQuotaList,
+    allStaffLeaveQuotaList,
+    staffLeaveQuota,
+    staffLeaveQuotasCount,
+    staffLeaveQuotaPages,
+    fetchStaffLeaveQuotaList,
+    fetchAllStaffLeaveQuotaList,
+    fetchStaffLeaveQuota,
+    createStaffLeaveQuota,
+    updateStaffLeaveQuota,
+    deleteStaffLeaveQuota,
   }
 })

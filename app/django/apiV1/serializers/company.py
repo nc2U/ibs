@@ -4,6 +4,7 @@ from company.models import (
     Company, Logo, Department, JobGrade, Position, DutyTitle,
     ExecutiveRank, Executive, Staff, StaffAssignment,
     PersonnelOrder, StaffCareer, StaffCertificate, StaffRewardPunishment,
+    StaffLeaveQuota, StaffLeaveUsage,
     PromotionPolicy, StaffEvaluation, PromotionCandidate
 )
 from work.models.project import IssueProject
@@ -194,6 +195,36 @@ class StaffRewardPunishmentSerializer(serializers.ModelSerializer):
         model = StaffRewardPunishment
         fields = ('id', 'pk', 'company', 'staff', 'staff_name', 'sort', 'sort_desc',
                   'type_name', 'action_date', 'expire_date', 'reason', 'organization', 'note')
+
+
+class StaffLeaveQuotaSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(source='pk', read_only=True)
+    company = serializers.SlugRelatedField(queryset=Company.objects.all(), slug_field='name')
+    staff_name = serializers.CharField(source='staff.name', read_only=True)
+    total_granted_days = serializers.DecimalField(max_digits=4, decimal_places=2, read_only=True)
+    used_days = serializers.DecimalField(max_digits=4, decimal_places=2, read_only=True)
+    remaining_days = serializers.DecimalField(max_digits=4, decimal_places=2, read_only=True)
+
+    class Meta:
+        model = StaffLeaveQuota
+        fields = ('id', 'pk', 'company', 'staff', 'staff_name', 'year',
+                  'granted_days', 'carry_over_days', 'reward_days',
+                  'total_granted_days', 'used_days', 'remaining_days',
+                  'valid_start', 'valid_end', 'note')
+
+
+class StaffLeaveUsageSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(source='pk', read_only=True)
+    company = serializers.SlugRelatedField(queryset=Company.objects.all(), slug_field='name')
+    staff_name = serializers.CharField(source='staff.name', read_only=True)
+    leave_type_desc = serializers.CharField(source='get_leave_type_display', read_only=True)
+
+    class Meta:
+        model = StaffLeaveUsage
+        fields = ('id', 'pk', 'company', 'staff', 'staff_name', 'leave_type', 'leave_type_desc',
+                  'start_date', 'end_date', 'deduction_days', 'approval_doc', 'reason',
+                  'is_cancelled', 'created')
+
 
 
 class StaffSerializer(serializers.ModelSerializer):
