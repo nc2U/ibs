@@ -12,7 +12,8 @@ from django.db.models import Q
 from _excel.mixins import ExcelExportMixin
 from company.models import (Company, Staff, Department, JobGrade, Position, DutyTitle,
                             ExecutiveRank, Executive, PersonnelOrder, StaffCareer, StaffCertificate,
-                            StaffRewardPunishment, StaffLeaveQuota, StaffLeaveUsage, StaffEvaluation)
+                            StaffRewardPunishment, StaffLeaveQuota, StaffLeaveUsage, StaffEvaluation,
+                            PromotionCandidate)
 from contract.models import Contract
 from project.models import Project
 
@@ -1603,6 +1604,114 @@ class ExportStaffEvaluations(ExcelExportMixin):
                 worksheet.write(row_num, col_num, cell_data, bformat)
 
         filename = request.GET.get('filename') or 'staff-evaluations'
+        filename = f'{filename}-{TODAY}'
+        return self.create_response(output, workbook, filename)
+
+
+class ExportPromotionCandidates(ExcelExportMixin):
+    """승급 심사 대상 및 발령 목록"""
+
+    def get(self, request):
+        output, workbook, worksheet = self.create_workbook('승급_심사_목록')
+        company = Company.objects.get(pk=request.GET.get('company'))
+        com_name = company.name.replace('주식회사 ', '(주)')
+
+        title_format = self.create_title_format(workbook)
+        h_format = self.create_header_format(workbook)
+
+        header_src = [[],
+                      ['심사연도', 'eval_year', 10],
+                      ['대상직원', 'staff__name', 12],
+                      ['부서', 'staff__department__name', 14],
+                      ['현재직급', 'policy__current_grade__code', 12],
+                      ['승급대상직급', 'policy__target_grade__code', 12],
+                      ['현직급 체류년수', 'tenure_years', 14],
+                      ['평가 평균점수', 'avg_eval_score', 13],
+                      ['심사상태', 'status', 12],
+                      ['승진발령일', 'promoted_date', 13],
+                      ['인사위원회 심의의견', 'committee_review', 30]]
+        titles = ['No']
+        widths = [7]
+
+        for el in header_src:
+            if el:
+                titles.append(el[0])
+                widths.append(el[2])
+
+        row_num = 0
+        worksheet.set_row(row_num, 50)
+        worksheet.merge_range(row_num, 0, row_num, len(header_src) - 1, com_name + ' 승급 심사 대상 및 발령 목록', title_format)
+
+        row_num = 1
+        worksheet.set_row(row_num, 18)
+        worksheet.write(row_num, len(header_src) - 1, TODAY + ' 현재', workbook.add_format({'align': 'right'}))
+
+        row_num = 2
+        worksheet.set_row(row_num, 20, workbook.add_format({'bold': True}))
+
+        for i, col_width in enumerate(widths):
+            worksheet.set_column(i, i, col_width)
+
+        for col_num, title in enumerate(titles):
+            worksheet.write(row_num, col_num, title, h_format)
+
+        obj_list = PromotionCandidate.objects.filter(company=company).select_related(
+            'staff', 'staff__department', 'policy', 'policy__current_grade', 'policy__target_grade'
+        )
+        eval_year = request.GET.get('eval_year')
+        status = request.GET.get('status')
+        staff = request.GET.get('staff')
+        search = request.GET.get('search')
+
+        if eval_year:
+            obj_list = obj_list.filter(eval_year=eval_year)
+        if status:
+            obj_list = obj_list.filter(status=status)
+        if staff:
+            obj_list = obj_list.filter(staff_id=staff)
+        if search:
+            obj_list = obj_list.filter(
+                Q(staff__name__icontains=search) |
+                Q(committee_review__icontains=search)
+            )
+
+        body_format = {'border': True, 'align': 'center', 'valign': 'vcenter', 'num_format': '@'}
+
+        for i, item in enumerate(obj_list):
+            row_num += 1
+            dept_title = item.staff.department.name if (item.staff and item.staff.department) else '-'
+            current_g = item.policy.current_grade.code if (item.policy and item.policy.current_grade) else '-'
+            target_g = item.policy.target_grade.code if (item.policy and item.policy.target_grade) else '-'
+            row_data = [
+                i + 1,
+                f'{item.eval_year}년',
+                item.staff.name if item.staff else '',
+                dept_title,
+                current_g,
+                target_g,
+                float(item.tenure_years or 0),
+                float(item.avg_eval_score) if item.avg_eval_score is not None else '',
+                item.get_status_display(),
+                item.promoted_date.strftime('%Y-%m-%d') if item.promoted_date else '-',
+                item.committee_review or '',
+            ]
+            for col_num, cell_data in enumerate(row_data):
+                if col_num in (6, 7) and cell_data != '':
+                    body_format['num_format'] = '#,##0.0'
+                    body_format['align'] = 'right'
+                elif col_num == 9 and cell_data != '-':
+                    body_format['num_format'] = 'yyyy-mm-dd'
+                    body_format['align'] = 'center'
+                elif col_num == 10:
+                    body_format['num_format'] = '@'
+                    body_format['align'] = 'left'
+                else:
+                    body_format['num_format'] = '@'
+                    body_format['align'] = 'center'
+                bformat = workbook.add_format(body_format)
+                worksheet.write(row_num, col_num, cell_data, bformat)
+
+        filename = request.GET.get('filename') or 'promotion-candidates'
         filename = f'{filename}-{TODAY}'
         return self.create_response(output, workbook, filename)
 

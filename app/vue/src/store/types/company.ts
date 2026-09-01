@@ -181,6 +181,16 @@ export interface PromotionCandidate {
   promoted_date?: string | null
 }
 
+export type PromotionCandidateFilter = {
+  page?: number
+  com?: number
+  eval_year?: number | string
+  status?: string
+  policy?: number | string
+  staff?: number | string
+  q?: string
+}
+
 export type OrderType =
   | '10' // 채용/신규입사
   | '20' // 승진/승급

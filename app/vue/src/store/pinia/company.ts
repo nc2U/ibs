@@ -19,6 +19,7 @@ import {
   type StaffEvaluation,
   type StaffEvaluationFilter,
   type PromotionCandidate,
+  type PromotionCandidateFilter,
   type PersonnelOrder,
   type PersonnelOrderFilter,
   type StaffCareer,
@@ -792,13 +793,22 @@ export const useCompany = defineStore('company', () => {
   const promotionCandidatePages = (itemsPerPage: number) =>
     Math.ceil(promotionCandidatesCount.value / itemsPerPage)
 
-  const fetchPromotionCandidateList = async (
-    payload: ComFilter & { year?: number; status?: string },
-  ) => {
-    const { page = 1, com = 1, q = '', year, status: candStatus } = payload
+  const fetchPromotionCandidateList = async (payload: PromotionCandidateFilter) => {
+    const {
+      page = 1,
+      com = 1,
+      eval_year = '',
+      status: candStatus = '',
+      policy = '',
+      staff: staffId = '',
+      q = '',
+    } = payload
     let queryStr = `?limit=10&page=${page}&company=${com}&search=${q}`
-    if (year) queryStr += `&eval_year=${year}`
+    if (eval_year) queryStr += `&eval_year=${eval_year}`
     if (candStatus) queryStr += `&status=${candStatus}`
+    if (policy) queryStr += `&policy=${policy}`
+    if (staffId) queryStr += `&staff=${staffId}`
+
     return await api
       .get(`/promotion-candidate/${queryStr}`)
       .then(res => {
