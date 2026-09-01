@@ -10,7 +10,7 @@ from django.core import serializers
 from django.db.models import Q
 
 from _excel.mixins import ExcelExportMixin
-from company.models import Company, Staff, Department, JobGrade, Position, DutyTitle, ExecutiveRank
+from company.models import Company, Staff, Department, JobGrade, Position, DutyTitle, ExecutiveRank, Executive
 from contract.models import Contract
 from project.models import Project
 
@@ -653,6 +653,138 @@ class ExportExecutiveRanks(ExcelExportMixin):
 
         # Close the workbook before sending the data.
         filename = request.GET.get('filename') or 'executive-ranks'
+        filename = f'{filename}-{TODAY}'
+        return self.create_response(output, workbook, filename)
+
+
+class ExportExecutives(ExcelExportMixin):
+    """임원 재임/등기 정보 목록"""
+
+    def get(self, request):
+        # 워크북 생성
+        output, workbook, worksheet = self.create_workbook('임원_재임_정보')
+
+        # data start --------------------------------------------- #
+        company = Company.objects.get(pk=request.GET.get('company'))
+        com_name = company.name.replace('주식회사 ', '(주)')
+
+        # 포맷 생성
+        title_format = self.create_title_format(workbook)
+        h_format = self.create_header_format(workbook)
+
+        # title_list
+        header_src = [[],
+                      ['성명', 'staff__name', 12],
+                      ['임원 직위', 'rank__name', 13],
+                      ['상법상 지위', 'director_type', 15],
+                      ['등기 여부', 'is_registered', 10],
+                      ['상근 여부', 'is_standing', 10],
+                      ['대표권 구분', 'represent_type', 12],
+                      ['취임일(임기시작)', 'term_start', 15],
+                      ['임기만료일', 'term_end', 15],
+                      ['최초선임일', 'appointed_date', 15],
+                      ['비고', 'note', 25]]
+        titles = ['No']  # header titles
+        widths = [7]  # No. 컬럼 넓이
+
+        for el in header_src:
+            if el:
+                titles.append(el[0])
+                widths.append(el[2])
+
+        # 1. Title
+        row_num = 0
+        worksheet.set_row(row_num, 50)
+        worksheet.merge_range(row_num, 0, row_num, len(header_src) - 1, com_name + ' 임원 재임 정보 목록', title_format)
+
+        # 2. Pre Header - Date
+        row_num = 1
+        worksheet.set_row(row_num, 18)
+        worksheet.write(row_num, len(header_src) - 1, TODAY + ' 현재', workbook.add_format({'align': 'right'}))
+
+        # 3. Header - 1
+        row_num = 2
+        worksheet.set_row(row_num, 20, workbook.add_format({'bold': True}))
+
+        # Adjust the column width.
+        for i, col_width in enumerate(widths):
+            worksheet.set_column(i, i, col_width)
+
+        # Write header - 1
+        for col_num, title in enumerate(titles):
+            worksheet.write(row_num, col_num, title, h_format)
+
+        # 4. Body
+        obj_list = Executive.objects.filter(company=company).select_related('staff', 'rank')
+
+        rank = request.GET.get('rank')
+        director_type = request.GET.get('director_type')
+        is_registered = request.GET.get('is_registered')
+        is_standing = request.GET.get('is_standing')
+        represent_type = request.GET.get('represent_type')
+        search = request.GET.get('search')
+
+        if rank:
+            obj_list = obj_list.filter(rank_id=rank)
+        if director_type:
+            obj_list = obj_list.filter(director_type=director_type)
+        if is_registered in ('true', 'True', '1', True):
+            obj_list = obj_list.filter(is_registered=True)
+        elif is_registered in ('false', 'False', '0', False):
+            obj_list = obj_list.filter(is_registered=False)
+        if is_standing in ('true', 'True', '1', True):
+            obj_list = obj_list.filter(is_standing=True)
+        elif is_standing in ('false', 'False', '0', False):
+            obj_list = obj_list.filter(is_standing=False)
+        if represent_type:
+            obj_list = obj_list.filter(represent_type=represent_type)
+        if search:
+            obj_list = obj_list.filter(
+                Q(staff__name__icontains=search) |
+                Q(rank__name__icontains=search) |
+                Q(note__icontains=search)
+            )
+
+        body_format = {
+            'border': True,
+            'align': 'center',
+            'valign': 'vcenter',
+            'num_format': '@'
+        }
+
+        director_map = dict(Executive.DIRECTOR_CHOICES)
+        represent_map = dict(Executive.REPRESENT_CHOICES)
+
+        for i, exec_item in enumerate(obj_list):
+            row_num += 1
+            row_data = [
+                i + 1,
+                exec_item.staff.name if exec_item.staff else '',
+                exec_item.rank.name if exec_item.rank else '',
+                director_map.get(exec_item.director_type, exec_item.director_type),
+                '등기' if exec_item.is_registered else '비등기',
+                '상근' if exec_item.is_standing else '비상근',
+                represent_map.get(exec_item.represent_type, exec_item.represent_type),
+                exec_item.term_start or '',
+                exec_item.term_end or '',
+                exec_item.appointed_date or '',
+                exec_item.note or '',
+            ]
+
+            for col_num, cell_data in enumerate(row_data):
+                if col_num in (7, 8, 9) and cell_data:
+                    body_format['num_format'] = 'yyyy-mm-dd'
+                else:
+                    body_format['num_format'] = '@'
+                if col_num == 10:
+                    body_format['align'] = 'left'
+                else:
+                    body_format['align'] = 'center'
+                bformat = workbook.add_format(body_format)
+                worksheet.write(row_num, col_num, cell_data, bformat)
+
+        # data finish -------------------------------------------- #
+        filename = request.GET.get('filename') or 'executives'
         filename = f'{filename}-{TODAY}'
         return self.create_response(output, workbook, filename)
 

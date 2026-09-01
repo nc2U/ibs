@@ -14,6 +14,7 @@ import {
   type Duty,
   type ExecutiveRank,
   type Executive,
+  type ExecutiveFilter,
   type PromotionPolicy,
   type StaffEvaluation,
   type PromotionCandidate,
@@ -549,9 +550,24 @@ export const useCompany = defineStore('company', () => {
 
   const executivePages = (itemsPerPage: number) => Math.ceil(executivesCount.value / itemsPerPage)
 
-  const fetchExecutiveList = async (payload: ComFilter) => {
-    const { page = 1, com = 1, q = '' } = payload
-    const queryStr = `?limit=10&page=${page}&company=${com}&search=${q}`
+  const fetchExecutiveList = async (payload: ExecutiveFilter) => {
+    const {
+      page = 1,
+      com = 1,
+      rank = '',
+      director_type = '',
+      is_registered = '',
+      is_standing = '',
+      represent_type = '',
+      q = '',
+    } = payload
+    let queryStr = `?limit=10&page=${page}&company=${com}&search=${q}`
+    if (rank) queryStr += `&rank=${rank}`
+    if (director_type) queryStr += `&director_type=${director_type}`
+    if (is_registered !== '') queryStr += `&is_registered=${is_registered}`
+    if (is_standing !== '') queryStr += `&is_standing=${is_standing}`
+    if (represent_type) queryStr += `&represent_type=${represent_type}`
+
     return await api
       .get(`/executive/${queryStr}`)
       .then(res => {

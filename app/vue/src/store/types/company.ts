@@ -186,3 +186,15 @@ export type ComFilter = {
   com?: number
   q?: string
 }
+
+export type ExecutiveFilter = {
+  page?: number
+  com?: number
+  rank?: number | string
+  director_type?: string
+  is_registered?: boolean | string
+  is_standing?: boolean | string
+  represent_type?: string
+  q?: string
+}
+
