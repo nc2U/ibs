@@ -15,8 +15,8 @@ import AddGrade from './components/AddGrade.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import GradeList from './components/GradeList.vue'
 
-const { can, PERM } = usePerms()
 const accStore = useAccount()
+const { can, PERM } = usePerms()
 const canHrWorkCreate = computed(() => accStore.isStaff && can(PERM.HQ_HR_WORK_CREATE))
 
 const dataFilter = ref<ComFilter>({

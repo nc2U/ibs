@@ -14,8 +14,8 @@ import AddExecutiveRank from './components/AddExecutiveRank.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import ExecutiveRankList from './components/ExecutiveRankList.vue'
 
-const { can, PERM } = usePerms()
 const accStore = useAccount()
+const { can, PERM } = usePerms()
 const canHrWorkCreate = computed(() => accStore.isStaff && can(PERM.HQ_HR_WORK_CREATE))
 
 const dataFilter = ref<ComFilter>({
@@ -92,11 +92,7 @@ onMounted(async () => {
     <ContentBody>
       <CCardBody>
         <ListController ref="listControl" @list-filtering="listFiltering" />
-        <AddExecutiveRank
-          v-if="canHrWorkCreate"
-          :company="comName"
-          @multi-submit="multiSubmit"
-        />
+        <AddExecutiveRank v-if="canHrWorkCreate" :company="comName" @multi-submit="multiSubmit" />
         <TableTitleRow
           title="임원 직위 목록"
           excel

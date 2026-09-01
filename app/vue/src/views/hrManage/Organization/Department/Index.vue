@@ -15,8 +15,8 @@ import AddDepartment from './components/AddDepartment.vue'
 import TableTitleRow from '@/components/TableTitleRow.vue'
 import DepartmentList from './components/DepartmentList.vue'
 
-const { can, PERM } = usePerms()
 const accStore = useAccount()
+const { can, PERM } = usePerms()
 const canHrWorkCreate = computed(() => accStore.isStaff && can(PERM.HQ_HR_WORK_CREATE))
 
 const dataFilter = ref<DepFilter>({

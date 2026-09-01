@@ -1,27 +1,24 @@
 <script lang="ts" setup>
-import { ref, onMounted, computed } from 'vue'
-import { pageTitle, navMenu1, navMenu2 } from '@/views/hrManage/_menu/headermixin2.ts'
-import { useAccount } from '@/store/pinia/account.ts'
+import { computed, onMounted, ref } from 'vue'
+import { navMenu1, navMenu2, pageTitle } from '@/views/hrManage/_menu/headermixin2.ts'
 import { useCompany } from '@/store/pinia/company.ts'
+import { usePerms } from '@/composables/usePerms.ts'
 import type { Company } from '@/store/types/settings.ts'
 import {
   type StaffCareer,
   type StaffCertificate,
-  type StaffRewardPunishment,
   type StaffRecordFilter,
+  type StaffRewardPunishment,
 } from '@/store/types/company.ts'
-import { usePerms } from '@/composables/usePerms.ts'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import ComHrAuthGuard from '@/components/AuthGuard/ComHrAuthGuard.vue'
 import ListController from './components/ListController.vue'
-import TableTitleRow from '@/components/TableTitleRow.vue'
 import StaffCareerSection from './components/StaffCareerSection.vue'
 import StaffCertificateSection from './components/StaffCertificateSection.vue'
 import StaffRewardSection from './components/StaffRewardSection.vue'
 
-const accStore = useAccount()
 const { canGlobal, PERM } = usePerms()
 const isHrManager = computed(
   () =>

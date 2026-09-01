@@ -1,11 +1,10 @@
 <script lang="ts" setup>
-import { ref, onMounted, computed } from 'vue'
-import { pageTitle, navMenu } from '@/views/hrManage/_menu/headermixin4'
-import { useAccount } from '@/store/pinia/account.ts'
+import { computed, onMounted, ref } from 'vue'
+import { navMenu, pageTitle } from '@/views/hrManage/_menu/headermixin4'
 import { useCompany } from '@/store/pinia/company.ts'
+import { usePerms } from '@/composables/usePerms.ts'
 import type { Company } from '@/store/types/settings.ts'
 import { type PromotionCandidate, type PromotionCandidateFilter } from '@/store/types/company.ts'
-import { usePerms } from '@/composables/usePerms.ts'
 import Loading from '@/components/Loading/Index.vue'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
@@ -17,7 +16,6 @@ import CandidateList from './components/CandidateList.vue'
 
 const currentYear = new Date().getFullYear()
 
-const accStore = useAccount()
 const { canGlobal, PERM } = usePerms()
 const canHrWorkCreate = computed(() => canGlobal(PERM.HQ_HR_WORK_CREATE))
 
@@ -127,11 +125,7 @@ onMounted(async () => {
     <ContentBody>
       <CCardBody>
         <ListController @list-filtering="listFiltering" />
-        <AddCandidate
-          v-if="canHrWorkCreate"
-          :company="comName"
-          @multi-submit="multiSubmit"
-        />
+        <AddCandidate v-if="canHrWorkCreate" :company="comName" @multi-submit="multiSubmit" />
         <TableTitleRow
           title="승급 심사 대상 및 발령 목록"
           excel
