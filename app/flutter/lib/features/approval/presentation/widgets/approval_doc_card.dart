@@ -7,11 +7,17 @@ import 'approval_status_chip.dart';
 class ApprovalDocCard extends StatelessWidget {
   final ApprovalDocumentModel document;
   final VoidCallback onTap;
+  final bool isSelectionMode;
+  final bool isSelected;
+  final ValueChanged<bool?>? onSelectChanged;
 
   const ApprovalDocCard({
     super.key,
     required this.document,
     required this.onTap,
+    this.isSelectionMode = false,
+    this.isSelected = false,
+    this.onSelectChanged,
   });
 
   String _formatDate(String? rawDate) {
@@ -32,20 +38,40 @@ class ApprovalDocCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: context.colors.bgCard,
+        color: isSelected
+            ? context.colors.accentApproval.withAlpha(25)
+            : context.colors.bgCard,
         borderRadius: BorderRadius.zero,
-        border: Border.all(color: context.colors.border, width: 0.8),
+        border: Border.all(
+          color: isSelected ? context.colors.accentApproval : context.colors.border,
+          width: isSelected ? 1.2 : 0.8,
+        ),
       ),
       child: InkWell(
-        onTap: onTap,
+        onTap: isSelectionMode ? () => onSelectChanged?.call(!isSelected) : onTap,
         child: Padding(
           padding: const EdgeInsets.all(14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── 상단 메타 바 (문서유형 / 문서번호 / 상태뱃지) ─────────────
+              // ── 상단 메타 바 (선택체크박스 / 문서유형 / 문서번호 / 상태뱃지) ─────────────
               Row(
                 children: [
+                  if (isSelectionMode) ...[
+                    SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: Checkbox(
+                        value: isSelected,
+                        activeColor: context.colors.accentApproval,
+                        checkColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
+                        side: BorderSide(color: context.colors.border, width: 1.2),
+                        onChanged: onSelectChanged,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
