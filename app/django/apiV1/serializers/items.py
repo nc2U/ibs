@@ -79,12 +79,19 @@ class ContractorInContractSerializer(serializers.ModelSerializer):
         fields = ('pk', 'name', 'status')
 
 
+class _ContPriceInKeyUnitSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ContractPrice
+        fields = ('pk', 'price', 'price_build', 'price_land', 'price_tax')
+
+
 class ContractInKeyUnitSerializer(serializers.ModelSerializer):
     contractor = ContractorInContractSerializer()
+    contractprice = _ContPriceInKeyUnitSerializer(read_only=True)
 
     class Meta:
         model = Contract
-        fields = ('pk', 'contractor')
+        fields = ('pk', 'serial_number', 'contractor', 'contractprice')
 
 
 class _SortCheckUnitTypeSerializer(serializers.ModelSerializer):

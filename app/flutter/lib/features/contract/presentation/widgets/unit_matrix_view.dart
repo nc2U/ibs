@@ -398,23 +398,48 @@ class UnitMatrixView extends ConsumerWidget {
                 ),
                 if (uType?.actualArea != null)
                   _buildInfoRow(context, '전용 / 공급면적', '${uType!.actualArea}㎡ / ${uType.supplyArea ?? '-'}㎡'),
-                if (uType?.averagePrice != null)
+
+                // ── 3. 미분양(분양 가능)인 경우: 기준/평균 분양가 표시 ──
+                if (!unit.isContracted && uType?.averagePrice != null)
                   _buildInfoRow(
                     context,
-                    '평균 분양가',
-                    '${(uType!.averagePrice! / 100000000).toStringAsFixed(2)} 억원',
+                    '기준 분양가',
+                    '${(uType!.averagePrice! / 100000000).toStringAsFixed(2)} 억원 (${NumberFormat('#,###').format(uType.averagePrice)}원)',
+                    color: const Color(0xFF38BDF8),
+                    isBold: true,
                   ),
 
-                // ── 3. 계약 정보 (계약된 경우) ──
+                // ── 4. 계약 정보 (계약된 경우): 계약자명, 공급가액, 계약번호 표시 ──
                 if (unit.isContracted) ...[
                   const SizedBox(height: 8),
                   Divider(color: context.colors.border, height: 1),
                   const SizedBox(height: 8),
                   _buildInfoRow(context, '계약자명', unit.contractorName ?? '계약자 정보 없음', isBold: true),
-                  _buildInfoRow(context, '계약 일련번호', 'CT-${unit.contractId}'),
+                  if (unit.contractTotalPrice != null)
+                    _buildInfoRow(
+                      context,
+                      '계약 공급가액',
+                      '${NumberFormat('#,###').format(unit.contractTotalPrice)} 원 (${(unit.contractTotalPrice! / 100000000).toStringAsFixed(2)}억원)',
+                      color: const Color(0xFF10B981),
+                      isBold: true,
+                    )
+                  else if (uType?.averagePrice != null)
+                    _buildInfoRow(
+                      context,
+                      '타입 기준 분양가',
+                      '${(uType!.averagePrice! / 100000000).toStringAsFixed(2)} 억원',
+                      color: context.colors.textSecond,
+                    ),
+                  _buildInfoRow(
+                    context,
+                    '계약 일련번호',
+                    unit.contractSerialNumber != null && unit.contractSerialNumber!.isNotEmpty
+                        ? unit.contractSerialNumber!
+                        : 'CT-${unit.contractId}',
+                  ),
                 ],
 
-                // ── 4. 홀딩 사유 (홀딩된 경우) ──
+                // ── 5. 홀딩 사유 (홀딩된 경우) ──
                 if (unit.isHold && unit.holdReason != null && unit.holdReason!.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   Divider(color: context.colors.border, height: 1),

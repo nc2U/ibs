@@ -697,8 +697,10 @@ class LayoutHouseUnitModel {
   final bool isHold;
   final String? holdReason;
   final int? contractId;
+  final String? contractSerialNumber;
   final String? contractorName;
   final String? contractorStatus;
+  final int? contractTotalPrice;
 
   LayoutHouseUnitModel({
     required this.pk,
@@ -711,8 +713,10 @@ class LayoutHouseUnitModel {
     this.isHold = false,
     this.holdReason,
     this.contractId,
+    this.contractSerialNumber,
     this.contractorName,
     this.contractorStatus,
+    this.contractTotalPrice,
   });
 
   factory LayoutHouseUnitModel.fromJson(Map<String, dynamic> json) {
@@ -725,18 +729,27 @@ class LayoutHouseUnitModel {
     }
 
     int? contId;
+    String? contSerial;
     String? contName;
     String? contStatus;
+    int? contPrice;
 
     final keyUnit = json['key_unit'];
     if (keyUnit is Map) {
       final contract = keyUnit['contract'];
       if (contract is Map) {
         contId = contract['pk'] ?? contract['id'];
+        contSerial = contract['serial_number']?.toString();
         final contractor = contract['contractor'];
         if (contractor is Map) {
           contName = contractor['name']?.toString();
           contStatus = contractor['status']?.toString();
+        }
+        final priceObj = contract['contractprice'];
+        if (priceObj is Map && priceObj['price'] != null) {
+          contPrice = priceObj['price'] is int
+              ? priceObj['price']
+              : int.tryParse(priceObj['price'].toString());
         }
       }
     }
@@ -752,8 +765,10 @@ class LayoutHouseUnitModel {
       isHold: json['is_hold'] as bool? ?? false,
       holdReason: json['hold_reason']?.toString(),
       contractId: contId,
+      contractSerialNumber: contSerial,
       contractorName: contName,
       contractorStatus: contStatus,
+      contractTotalPrice: contPrice,
     );
   }
 

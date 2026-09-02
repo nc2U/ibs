@@ -142,6 +142,7 @@ class AllHouseUnitViewSet(HouseUnitViewSet):
         queryset = HouseUnit.objects.select_related(
             'unit_type',
             'key_unit__contract__contractor',
+            'key_unit__contract__contractprice',
         ).all()
         if user.is_superuser or getattr(user, 'work_manager', False):
             return queryset
