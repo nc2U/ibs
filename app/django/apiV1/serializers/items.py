@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from contract.models import Contract, Contractor
+from contract.models import Contract, Contractor, ContractPrice
 from items.models import UnitType, UnitFloorType, KeyUnit, BuildingUnit, HouseUnit, OptionItem
 
 
