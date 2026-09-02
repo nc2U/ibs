@@ -14,6 +14,7 @@ import '../../project/presentation/project_screen.dart';
 import '../data/ledger_repository.dart';
 import '../data/models/ledger_models.dart';
 import '../providers/ledger_provider.dart';
+import 'widgets/cashflow_mini_chart_card.dart';
 
 /// 🪙 회계 자금 관리 (Ledger) 메인 화면
 class LedgerScreen extends ConsumerStatefulWidget {
@@ -749,6 +750,10 @@ class _LedgerScreenState extends ConsumerState<LedgerScreen> {
               );
             },
           ),
+          Divider(color: context.colors.border, height: 1),
+
+          // ── 2-2. 최근 6개월 캐시플로우 미니 차트 (월별 입출금 추이 시각화) ──
+          const CashflowMiniChartCard(),
           Divider(color: context.colors.border, height: 1),
 
           // ── 3. 3대 서브 탭 바 ──────────────────────────────────────────

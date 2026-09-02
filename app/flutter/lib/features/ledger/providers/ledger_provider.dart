@@ -204,3 +204,69 @@ final projectTransactionsProvider = StateNotifierProvider<
     ProjectTransactionsNotifier, ProjectTransactionsState>(
   (ref) => ProjectTransactionsNotifier(ref),
 );
+
+/// 📊 최근 6개월 월별 캐시플로우(수입/지출/수지차) 집계 프로바이더
+final monthlyCashflowChartProvider =
+    FutureProvider<List<MonthlyCashflowItemModel>>((ref) async {
+  final selectedProject = ref.watch(selectedRealEstateProjectProvider);
+  if (selectedProject == null) return [];
+
+  final repository = ref.watch(ledgerRepositoryProvider);
+  final now = DateTime.now();
+
+  // 최근 6개월 범위 계산 (현재 월 포함 6개월)
+  final sixMonthsAgo = DateTime(now.year, now.month - 5, 1);
+  final fromDate = '${sixMonthsAgo.year}-${sixMonthsAgo.month.toString().padLeft(2, '0')}-01';
+  final lastDayOfThisMonth = DateTime(now.year, now.month + 1, 0).day;
+  final toDate = '${now.year}-${now.month.toString().padLeft(2, '0')}-${lastDayOfThisMonth.toString().padLeft(2, '0')}';
+
+  // 최근 6개월 전체 거래 조회 (최대 500건)
+  final transactions = await repository.fetchProjectTransactions(
+    projectId: selectedProject.realProjectId,
+    fromDate: fromDate,
+    toDate: toDate,
+    limit: 500,
+  );
+
+  // 6개월 월별 버킷 초기화
+  final Map<String, MonthlyCashflowItemModel> monthlyMap = {};
+  for (int i = 5; i >= 0; i--) {
+    final d = DateTime(now.year, now.month - i, 1);
+    final ym = '${d.year}-${d.month.toString().padLeft(2, '0')}';
+    final label = '${d.month}월';
+    monthlyMap[ym] = MonthlyCashflowItemModel(
+      monthLabel: label,
+      yearMonth: ym,
+      income: 0,
+      expense: 0,
+      balance: 0,
+    );
+  }
+
+  // 거래 금액 누적
+  for (final tx in transactions) {
+    if (tx.dealDate.length >= 7) {
+      final ym = tx.dealDate.substring(0, 7);
+      if (monthlyMap.containsKey(ym)) {
+        final current = monthlyMap[ym]!;
+        int inc = current.income;
+        int exp = current.expense;
+        if (tx.sort == '1') {
+          inc += tx.amount;
+        } else if (tx.sort == '2') {
+          exp += tx.amount;
+        }
+        monthlyMap[ym] = MonthlyCashflowItemModel(
+          monthLabel: current.monthLabel,
+          yearMonth: ym,
+          income: inc,
+          expense: exp,
+          balance: inc - exp,
+        );
+      }
+    }
+  }
+
+  return monthlyMap.values.toList();
+});
+

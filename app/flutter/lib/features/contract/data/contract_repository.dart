@@ -320,4 +320,62 @@ class ContractRepository {
       return false;
     }
   }
+
+  /// 10. 프로젝트 동 목록 조회 (/api/v1/building-unit/?project={projectId})
+  Future<List<BuildingUnitModel>> fetchBuildingUnits(int projectId) async {
+    try {
+      final response = await dio.get(
+        '/api/v1/building-unit/',
+        queryParameters: {'project': projectId, 'limit': 100},
+      );
+      final List<dynamic> results =
+          response.data is Map && response.data.containsKey('results')
+              ? response.data['results']
+              : (response.data is List ? response.data : []);
+      return results.map((json) => BuildingUnitModel.fromJson(json)).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// 11. 프로젝트 유닛 타입 목록 조회 (/api/v1/unit-type/?project={projectId})
+  Future<List<UnitTypeItemModel>> fetchUnitTypes(int projectId) async {
+    try {
+      final response = await dio.get(
+        '/api/v1/unit-type/',
+        queryParameters: {'project': projectId, 'limit': 100},
+      );
+      final List<dynamic> results =
+          response.data is Map && response.data.containsKey('results')
+              ? response.data['results']
+              : (response.data is List ? response.data : []);
+      return results.map((json) => UnitTypeItemModel.fromJson(json)).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// 12. 프로젝트 전체 동호수 배치 목록 조회 (/api/v1/all-house-unit/?building_unit__project={projectId})
+  Future<List<LayoutHouseUnitModel>> fetchAllHouseUnits(int projectId, {int? buildingUnitId}) async {
+    try {
+      final queryParams = <String, dynamic>{
+        'building_unit__project': projectId,
+        'limit': 3000,
+      };
+      if (buildingUnitId != null) {
+        queryParams['building_unit'] = buildingUnitId;
+      }
+      final response = await dio.get(
+        '/api/v1/all-house-unit/',
+        queryParameters: queryParams,
+      );
+      final List<dynamic> results =
+          response.data is Map && response.data.containsKey('results')
+              ? response.data['results']
+              : (response.data is List ? response.data : []);
+      return results.map((json) => LayoutHouseUnitModel.fromJson(json)).toList();
+    } catch (e) {
+      return [];
+    }
+  }
 }

@@ -627,3 +627,137 @@ class ContractorConsultationLogModel {
     }
   }
 }
+
+/// 🏢 동(Building) 모델 (/api/v1/building-unit/?project={projectId})
+class BuildingUnitModel {
+  final int pk;
+  final int project;
+  final String name;
+
+  BuildingUnitModel({
+    required this.pk,
+    required this.project,
+    required this.name,
+  });
+
+  factory BuildingUnitModel.fromJson(Map<String, dynamic> json) {
+    return BuildingUnitModel(
+      pk: json['pk'] ?? json['id'] ?? 0,
+      project: json['project'] ?? 0,
+      name: json['name']?.toString() ?? '',
+    );
+  }
+}
+
+/// 🎨 유닛 타입(타입별 색상/면적) 모델 (/api/v1/unit-type/?project={projectId})
+class UnitTypeItemModel {
+  final int pk;
+  final int project;
+  final String name;
+  final String? color;
+  final String? actualArea;
+  final String? supplyArea;
+  final int? averagePrice;
+  final int? numUnit;
+
+  UnitTypeItemModel({
+    required this.pk,
+    required this.project,
+    required this.name,
+    this.color,
+    this.actualArea,
+    this.supplyArea,
+    this.averagePrice,
+    this.numUnit,
+  });
+
+  factory UnitTypeItemModel.fromJson(Map<String, dynamic> json) {
+    return UnitTypeItemModel(
+      pk: json['pk'] ?? json['id'] ?? 0,
+      project: json['project'] ?? 0,
+      name: json['name']?.toString() ?? '',
+      color: json['color']?.toString(),
+      actualArea: json['actual_area']?.toString(),
+      supplyArea: json['supply_area']?.toString(),
+      averagePrice: json['average_price'] as int?,
+      numUnit: json['num_unit'] as int?,
+    );
+  }
+}
+
+/// 🔲 동호수 배치도(HouseUnit) 상세 모델 (/api/v1/all-house-unit/?building_unit__project={projectId})
+class LayoutHouseUnitModel {
+  final int pk;
+  final int? unitTypeId;
+  final int? floorType;
+  final int buildingUnitId;
+  final String name;
+  final int bldgLine;
+  final int floorNo;
+  final bool isHold;
+  final String? holdReason;
+  final int? contractId;
+  final String? contractorName;
+  final String? contractorStatus;
+
+  LayoutHouseUnitModel({
+    required this.pk,
+    this.unitTypeId,
+    this.floorType,
+    required this.buildingUnitId,
+    required this.name,
+    required this.bldgLine,
+    required this.floorNo,
+    this.isHold = false,
+    this.holdReason,
+    this.contractId,
+    this.contractorName,
+    this.contractorStatus,
+  });
+
+  factory LayoutHouseUnitModel.fromJson(Map<String, dynamic> json) {
+    int? uTypeId;
+    final uType = json['unit_type'];
+    if (uType is Map) {
+      uTypeId = uType['pk'] ?? uType['id'];
+    } else if (uType is int) {
+      uTypeId = uType;
+    }
+
+    int? contId;
+    String? contName;
+    String? contStatus;
+
+    final keyUnit = json['key_unit'];
+    if (keyUnit is Map) {
+      final contract = keyUnit['contract'];
+      if (contract is Map) {
+        contId = contract['pk'] ?? contract['id'];
+        final contractor = contract['contractor'];
+        if (contractor is Map) {
+          contName = contractor['name']?.toString();
+          contStatus = contractor['status']?.toString();
+        }
+      }
+    }
+
+    return LayoutHouseUnitModel(
+      pk: json['pk'] ?? json['id'] ?? 0,
+      unitTypeId: uTypeId,
+      floorType: json['floor_type'] is int ? json['floor_type'] : null,
+      buildingUnitId: json['building_unit'] is int ? json['building_unit'] : 0,
+      name: json['name']?.toString() ?? '',
+      bldgLine: json['bldg_line'] ?? 0,
+      floorNo: json['floor_no'] ?? 0,
+      isHold: json['is_hold'] as bool? ?? false,
+      holdReason: json['hold_reason']?.toString(),
+      contractId: contId,
+      contractorName: contName,
+      contractorStatus: contStatus,
+    );
+  }
+
+  /// 계약 여부 (계약 완료: '2', 청약: '1', 변경진행: '3')
+  bool get isContracted => contractId != null;
+}
+

@@ -258,3 +258,21 @@ class LedgerOverallAggregateModel {
     required this.monthBalance,
   });
 }
+
+/// 📊 6. 월별 캐시플로우 데이터 모델 (월별 수입/지출/수지차)
+class MonthlyCashflowItemModel {
+  final String monthLabel; // 예: "3월", "26.03"
+  final String yearMonth;  // 예: "2026-03"
+  final int income;        // 입금(수입) 합계
+  final int expense;       // 출금(지출) 합계
+  final int balance;       // 수지차 (수입 - 지출)
+
+  MonthlyCashflowItemModel({
+    required this.monthLabel,
+    required this.yearMonth,
+    required this.income,
+    required this.expense,
+    required this.balance,
+  });
+}
+

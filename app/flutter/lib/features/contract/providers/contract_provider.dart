@@ -3,9 +3,10 @@ import '../../../../core/providers/project_provider.dart';
 import '../data/contract_repository.dart';
 import '../data/models/contract_models.dart';
 
-/// 3대 서브 탭 구분 enum (계약 목록, 권리의무 승계, 계약 해약)
+/// 4대 서브 탭 구분 enum (계약 목록, 동호수 배치도, 권리의무 승계, 계약 해약)
 enum ContractSubTab {
   contracts,   // 📋 유효 계약 목록
+  unitMatrix,  // 🏢 동호수 배치도 (매트릭스 뷰)
   successions, // 🔄 권리의무 승계
   releases,    // 🚫 계약 해약 관리
 }
@@ -312,3 +313,32 @@ final contractorAddressHistoryProvider =
   final repository = ref.watch(contractRepositoryProvider);
   return repository.fetchAddressHistory(contractorId: contractorId);
 });
+
+/// 🏢 프로젝트별 동 목록 프로바이더
+final buildingUnitsProvider = FutureProvider<List<BuildingUnitModel>>((ref) async {
+  final selectedProject = ref.watch(selectedRealEstateProjectProvider);
+  if (selectedProject == null) return [];
+  final repository = ref.watch(contractRepositoryProvider);
+  return repository.fetchBuildingUnits(selectedProject.realProjectId);
+});
+
+/// 🎨 프로젝트별 유닛 타입 목록 프로바이더
+final unitTypesProvider = FutureProvider<List<UnitTypeItemModel>>((ref) async {
+  final selectedProject = ref.watch(selectedRealEstateProjectProvider);
+  if (selectedProject == null) return [];
+  final repository = ref.watch(contractRepositoryProvider);
+  return repository.fetchUnitTypes(selectedProject.realProjectId);
+});
+
+/// 🔲 동호수 배치도 선택된 동 ID 상태 프로바이더
+final selectedBuildingUnitIdProvider = StateProvider<int?>((ref) => null);
+
+/// 🔲 프로젝트별 전체 동호수 배치 목록 프로바이더 (선택된 동 기준)
+final allHouseUnitsProvider = FutureProvider<List<LayoutHouseUnitModel>>((ref) async {
+  final selectedProject = ref.watch(selectedRealEstateProjectProvider);
+  if (selectedProject == null) return [];
+  final buildingId = ref.watch(selectedBuildingUnitIdProvider);
+  final repository = ref.watch(contractRepositoryProvider);
+  return repository.fetchAllHouseUnits(selectedProject.realProjectId, buildingUnitId: buildingId);
+});
+
