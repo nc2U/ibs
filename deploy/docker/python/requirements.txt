@@ -16,7 +16,7 @@ django-storages==1.14.6
 django-widget-tweaks==1.5.1
 django-tree-queries==0.24.0
 
-djangorestframework==3.17.1
+djangorestframework==3.17.2
 djangorestframework-simplejwt==5.5.1
 
 gunicorn>=21.2
