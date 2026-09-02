@@ -12,11 +12,17 @@ import '../data/models/issue_model.dart';
 import '../providers/issue_provider.dart';
 import 'widgets/done_ratio_bottom_sheet.dart';
 import 'widgets/issue_card.dart';
+import 'widgets/issue_calendar_view.dart';
+import 'widgets/issue_gantt_view.dart';
+
+/// 뷰 모드 열거형: 목록 뷰, 캘린더 뷰, 간트(타임라인) 뷰
+enum _ViewMode { list, calendar, gantt }
 
 /// 업무 목록 화면
 /// - 상단 필터 칩: 내 업무 / 전체 / 완료 포함
+/// - 상단 우측 뷰 모드 토글: [목록 뷰 ↔ 캘린더 뷰 ↔ 간트차트 뷰]
 /// - 프로젝트 선택 시 자동 project 필터 적용
-/// - 무한 스크롤 페이지네이션
+/// - 무한 스크롤 페이지네이션 (목록 뷰)
 class IssueListScreen extends ConsumerStatefulWidget {
   const IssueListScreen({super.key});
 
@@ -27,6 +33,7 @@ class IssueListScreen extends ConsumerStatefulWidget {
 class _IssueListScreenState extends ConsumerState<IssueListScreen> {
   final ScrollController _scrollController = ScrollController();
   _FilterMode _filterMode = _FilterMode.mine;
+  _ViewMode _viewMode = _ViewMode.list;
 
   @override
   void initState() {
@@ -43,8 +50,9 @@ class _IssueListScreenState extends ConsumerState<IssueListScreen> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200) {
+    if (_viewMode == _ViewMode.list &&
+        _scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 200) {
       ref.read(issueListProvider.notifier).loadMore();
     }
   }
@@ -89,6 +97,23 @@ class _IssueListScreenState extends ConsumerState<IssueListScreen> {
     _applyFilter();
   }
 
+  void _onViewModeChanged(_ViewMode mode) {
+    setState(() => _viewMode = mode);
+  }
+
+  void _navigateToDetail(IssueModel issue) {
+    context.push('/work/issues/${issue.pk}');
+  }
+
+  void _openDoneRatioSheet(IssueModel issue) {
+    showDoneRatioBottomSheet(
+      context: context,
+      ref: ref,
+      issueId: issue.pk,
+      currentRatio: issue.doneRatio,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen(selectedProjectProvider, (previous, next) {
@@ -112,34 +137,78 @@ class _IssueListScreenState extends ConsumerState<IssueListScreen> {
 
     return Column(
       children: [
-        // ── 필터 칩 바 ──────────────────────────────────────────────────────────
+        // ── 필터 칩 & 뷰 모드 토글 바 ──────────────────────────────────────────
         Container(
           color: context.colors.bgSurface,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           child: Row(
             children: [
-              _FilterChip(
-                label: '내 업무',
-                selected: _filterMode == _FilterMode.mine,
-                onTap: () => _onFilterChanged(_FilterMode.mine),
+              // 필터 칩 영역
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _FilterChip(
+                        label: '내 업무',
+                        selected: _filterMode == _FilterMode.mine,
+                        onTap: () => _onFilterChanged(_FilterMode.mine),
+                      ),
+                      const SizedBox(width: 6),
+                      _FilterChip(
+                        label: '전체 진행',
+                        selected: _filterMode == _FilterMode.inProgress,
+                        onTap: () => _onFilterChanged(_FilterMode.inProgress),
+                      ),
+                      const SizedBox(width: 6),
+                      _FilterChip(
+                        label: '전체 완료',
+                        selected: _filterMode == _FilterMode.completed,
+                        onTap: () => _onFilterChanged(_FilterMode.completed),
+                      ),
+                    ],
+                  ),
+                ),
               ),
               const SizedBox(width: 8),
-              _FilterChip(
-                label: '전체 진행',
-                selected: _filterMode == _FilterMode.inProgress,
-                onTap: () => _onFilterChanged(_FilterMode.inProgress),
-              ),
-              const SizedBox(width: 8),
-              _FilterChip(
-                label: '전체 완료',
-                selected: _filterMode == _FilterMode.completed,
-                onTap: () => _onFilterChanged(_FilterMode.completed),
+
+              // 뷰 모드 전환 버튼 그룹 (목록 / 캘린더 / 간트)
+              Container(
+                decoration: BoxDecoration(
+                  color: context.colors.bgCard,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: context.colors.border, width: 0.8),
+                ),
+                padding: const EdgeInsets.all(2),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _ViewModeButton(
+                      icon: Icons.view_list_rounded,
+                      tooltip: '목록 뷰',
+                      selected: _viewMode == _ViewMode.list,
+                      onTap: () => _onViewModeChanged(_ViewMode.list),
+                    ),
+                    _ViewModeButton(
+                      icon: Icons.calendar_month_rounded,
+                      tooltip: '캘린더 뷰',
+                      selected: _viewMode == _ViewMode.calendar,
+                      onTap: () => _onViewModeChanged(_ViewMode.calendar),
+                    ),
+                    _ViewModeButton(
+                      icon: Icons.waterfall_chart_rounded,
+                      tooltip: '간트 뷰',
+                      selected: _viewMode == _ViewMode.gantt,
+                      onTap: () => _onViewModeChanged(_ViewMode.gantt),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
         ),
 
-        // ── 업무 목록 ────────────────────────────────────────────────────────────
+        // ── 메인 뷰 영역 (목록 뷰 / 캘린더 뷰 / 간트 뷰) ───────────────────────────
         Expanded(
           child: issueState.when(
             loading: () => const LoadingShimmer(),
@@ -160,6 +229,25 @@ class _IssueListScreenState extends ConsumerState<IssueListScreen> {
                 );
               }
 
+              // 1) 캘린더 뷰
+              if (_viewMode == _ViewMode.calendar) {
+                return IssueCalendarView(
+                  issues: state.items,
+                  onIssueTap: _navigateToDetail,
+                  onDoneRatioTap: _openDoneRatioSheet,
+                );
+              }
+
+              // 2) 간트 타임라인 뷰
+              if (_viewMode == _ViewMode.gantt) {
+                return IssueGanttView(
+                  issues: state.items,
+                  onIssueTap: _navigateToDetail,
+                  onDoneRatioTap: _openDoneRatioSheet,
+                );
+              }
+
+              // 3) 기본 목록 뷰 (List View)
               return RefreshIndicator(
                 color: context.colors.accentWork,
                 backgroundColor: context.colors.bgCard,
@@ -185,15 +273,8 @@ class _IssueListScreenState extends ConsumerState<IssueListScreen> {
                     final issue = state.items[index];
                     return IssueCard(
                       issue: issue,
-                      onTap: () => context.push(
-                          '/work/issues/${issue.pk}'),
-                      onDoneRatioTap: () =>
-                          showDoneRatioBottomSheet(
-                        context: context,
-                        ref: ref,
-                        issueId: issue.pk,
-                        currentRatio: issue.doneRatio,
-                      ),
+                      onTap: () => _navigateToDetail(issue),
+                      onDoneRatioTap: () => _openDoneRatioSheet(issue),
                     );
                   },
                 ),
@@ -227,15 +308,15 @@ class _FilterChip extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: selected
               ? context.colors.accentWork.withAlpha(40)
               : context.colors.bgCard,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: selected ? context.colors.accentWork : context.colors.border,
-            width: selected ? 1.5 : 0.8,
+            width: selected ? 1.4 : 0.8,
           ),
         ),
         child: Text(
@@ -243,7 +324,45 @@ class _FilterChip extends StatelessWidget {
           style: AppTextStyles.label.copyWith(
             color: selected ? context.colors.accentWork : context.colors.textMuted,
             fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+            fontSize: 12,
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── 뷰 모드 전환 버튼 ─────────────────────────────────────────────────────────
+class _ViewModeButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _ViewModeButton({
+    required this.icon,
+    required this.tooltip,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(4),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+        decoration: BoxDecoration(
+          color: selected
+              ? context.colors.accentWork.withAlpha(40)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Icon(
+          icon,
+          size: 17,
+          color: selected ? context.colors.accentWork : context.colors.textMuted,
         ),
       ),
     );
