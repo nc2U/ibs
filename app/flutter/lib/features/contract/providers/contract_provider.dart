@@ -3,10 +3,9 @@ import '../../../../core/providers/project_provider.dart';
 import '../data/contract_repository.dart';
 import '../data/models/contract_models.dart';
 
-/// 4대 서브 탭 구분 enum (계약 목록, 동호수 배치도, 권리의무 승계, 계약 해약)
+/// 3대 서브 탭 구분 enum (계약 목록, 권리의무 승계, 계약 해약)
 enum ContractSubTab {
   contracts,   // 📋 유효 계약 목록
-  unitMatrix,  // 🏢 동호수 배치도 (매트릭스 뷰)
   successions, // 🔄 권리의무 승계
   releases,    // 🚫 계약 해약 관리
 }

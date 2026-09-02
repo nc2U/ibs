@@ -35,6 +35,7 @@ class _ContractListScreenState extends ConsumerState<ContractListScreen> {
   final ScrollController _successionsScrollController = ScrollController();
   final ScrollController _releasesScrollController = ScrollController();
   Timer? _debounceTimer;
+  bool _showUnitMatrix = false; // 🏢 동호수 배치도 뷰 토글 상태
 
   @override
   void initState() {
@@ -656,106 +657,156 @@ class _ContractListScreenState extends ConsumerState<ContractListScreen> {
           // ── 3. 3대 서브도메인 탭 (유효 계약 / 권리의무 승계 / 계약 해약) ────────
           Container(
             color: context.colors.bgSurface,
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _SubTabButton(
-                    title: '유효 계약',
-                    icon: Icons.assignment_outlined,
-                    isSelected: currentTab == ContractSubTab.contracts,
-                    onTap: () {
-                      ref.read(contractCurrentSubTabProvider.notifier).state =
-                          ContractSubTab.contracts;
-                    },
-                  ),
-                  const SizedBox(width: 8),
-                  _SubTabButton(
-                    title: '동호수 배치도',
-                    icon: Icons.grid_view_rounded,
-                    isSelected: currentTab == ContractSubTab.unitMatrix,
-                    onTap: () {
-                      ref.read(contractCurrentSubTabProvider.notifier).state =
-                          ContractSubTab.unitMatrix;
-                    },
-                  ),
-                  const SizedBox(width: 8),
-                  _SubTabButton(
-                    title: '권리의무 승계',
-                    icon: Icons.swap_horiz_rounded,
-                    isSelected: currentTab == ContractSubTab.successions,
-                    onTap: () {
-                      ref.read(contractCurrentSubTabProvider.notifier).state =
-                          ContractSubTab.successions;
-                    },
-                  ),
-                  const SizedBox(width: 8),
-                  _SubTabButton(
-                    title: '계약 해약',
-                    icon: Icons.cancel_outlined,
-                    isSelected: currentTab == ContractSubTab.releases,
-                    onTap: () {
-                      ref.read(contractCurrentSubTabProvider.notifier).state =
-                          ContractSubTab.releases;
-                    },
-                  ),
-                ],
-              ),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            child: Row(
+              children: [
+                _SubTabButton(
+                  title: '계약 목록',
+                  icon: Icons.assignment_outlined,
+                  isSelected: currentTab == ContractSubTab.contracts,
+                  onTap: () {
+                    ref.read(contractCurrentSubTabProvider.notifier).state =
+                        ContractSubTab.contracts;
+                  },
+                ),
+                const SizedBox(width: 6),
+                _SubTabButton(
+                  title: '권리 의무 승계',
+                  icon: Icons.swap_horiz_rounded,
+                  isSelected: currentTab == ContractSubTab.successions,
+                  onTap: () {
+                    ref.read(contractCurrentSubTabProvider.notifier).state =
+                        ContractSubTab.successions;
+                  },
+                ),
+                const SizedBox(width: 6),
+                _SubTabButton(
+                  title: '계약 해지',
+                  icon: Icons.cancel_outlined,
+                  isSelected: currentTab == ContractSubTab.releases,
+                  onTap: () {
+                    ref.read(contractCurrentSubTabProvider.notifier).state =
+                        ContractSubTab.releases;
+                  },
+                ),
+              ],
             ),
           ),
           Divider(color: context.colors.border, height: 1),
 
-          // ── 4. 검색창 (동호수 배치도 탭에서는 숨김) ──────────────────────
-          if (currentTab != ContractSubTab.unitMatrix) ...[
-            Container(
-              color: context.colors.bgCard,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Container(
-                height: 38,
-                decoration: BoxDecoration(
-                  color: context.colors.bgSurface,
-                  borderRadius: BorderRadius.zero,
-                  border: Border.all(color: context.colors.border, width: 0.8),
-                ),
-                child: TextField(
-                  controller: _searchController,
-                  onChanged: _onSearchChanged,
-                  style: AppTextStyles.bodySecond.copyWith(
-                    color: context.colors.textPrimary,
-                    fontSize: 13,
-                  ),
-                  decoration: InputDecoration(
-                    isDense: true,
-                    hintText: currentTab == ContractSubTab.contracts
-                        ? '계약자명, 동·호수, 연락처, 일련번호 검색...'
-                        : (currentTab == ContractSubTab.successions
-                            ? '양도인, 양수인, 일련번호 검색...'
-                            : '해약 신청자명 검색...'),
-                    hintStyle: AppTextStyles.bodySecond.copyWith(
-                      color: context.colors.textMuted,
-                      fontSize: 12.5,
+          // ── 4. 검색창 & 유효 계약 탭 전용 [동호수 배치도 / 목록형] 토글 버튼 ────
+          Container(
+            color: context.colors.bgCard,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                // 검색 입력 필드
+                Expanded(
+                  child: Container(
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: context.colors.bgSurface,
+                      borderRadius: BorderRadius.zero,
+                      border: Border.all(color: context.colors.border, width: 0.8),
                     ),
-                    prefixIcon: Icon(
-                      Icons.search_rounded,
-                      size: 18,
-                      color: context.colors.textMuted,
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: _onSearchChanged,
+                      style: AppTextStyles.bodySecond.copyWith(
+                        color: context.colors.textPrimary,
+                        fontSize: 13,
+                      ),
+                      decoration: InputDecoration(
+                        isDense: true,
+                        hintText: currentTab == ContractSubTab.contracts
+                            ? (_showUnitMatrix
+                                ? '동호수 배치도 보는 중...'
+                                : '계약자명, 동·호수, 연락처, 일련번호 검색...')
+                            : (currentTab == ContractSubTab.successions
+                                ? '양도인, 양수인, 일련번호 검색...'
+                                : '해약 신청자명 검색...'),
+                        hintStyle: AppTextStyles.bodySecond.copyWith(
+                          color: context.colors.textMuted,
+                          fontSize: 12.5,
+                        ),
+                        prefixIcon: Icon(
+                          Icons.search_rounded,
+                          size: 18,
+                          color: context.colors.textMuted,
+                        ),
+                        suffixIcon: _searchController.text.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear_rounded, size: 16),
+                                color: context.colors.textMuted,
+                                onPressed: _onClearSearch,
+                              )
+                            : null,
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 9),
+                      ),
                     ),
-                    suffixIcon: _searchController.text.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear_rounded, size: 16),
-                            color: context.colors.textMuted,
-                            onPressed: _onClearSearch,
-                          )
-                        : null,
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 9),
                   ),
                 ),
-              ),
+
+                // 🏢 유효 계약 탭일 때만 검색창 오른쪽에 '동호수 배치도' 토글 버튼 제공
+                if (currentTab == ContractSubTab.contracts) ...[
+                  const SizedBox(width: 8),
+                  Material(
+                    color: _showUnitMatrix
+                        ? context.colors.accentProject
+                        : context.colors.bgSurface,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.zero,
+                      side: BorderSide(
+                        color: _showUnitMatrix
+                            ? context.colors.accentProject
+                            : context.colors.border,
+                        width: 0.8,
+                      ),
+                    ),
+                    child: InkWell(
+                      onTap: () {
+                        setState(() {
+                          _showUnitMatrix = !_showUnitMatrix;
+                        });
+                      },
+                      borderRadius: BorderRadius.zero,
+                      child: Container(
+                        height: 38,
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _showUnitMatrix
+                                  ? Icons.view_list_rounded
+                                  : Icons.grid_view_rounded,
+                              size: 16,
+                              color: _showUnitMatrix
+                                  ? Colors.white
+                                  : context.colors.accentProject,
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              _showUnitMatrix ? '목록 보기' : '동호수 배치도',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: _showUnitMatrix
+                                    ? Colors.white
+                                    : context.colors.textPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
-            Divider(color: context.colors.border, height: 1),
-          ],
+          ),
+          Divider(color: context.colors.border, height: 1),
 
           // ── 5. 탭별 맞춤 리스트 ────────────────────────────────────────
           Expanded(
@@ -763,9 +814,9 @@ class _ContractListScreenState extends ConsumerState<ContractListScreen> {
               builder: (context) {
                 switch (currentTab) {
                   case ContractSubTab.contracts:
-                    return _buildContractsView();
-                  case ContractSubTab.unitMatrix:
-                    return const UnitMatrixView();
+                    return _showUnitMatrix
+                        ? const UnitMatrixView()
+                        : _buildContractsView();
                   case ContractSubTab.successions:
                     return _buildSuccessionsView();
                   case ContractSubTab.releases:
@@ -1002,45 +1053,48 @@ class _SubTabButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: isSelected
-          ? context.colors.accentProject.withAlpha(25)
-          : context.colors.bgCard,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.zero,
-        side: BorderSide(
-          color: isSelected ? context.colors.accentProject : context.colors.border,
-          width: isSelected ? 1 : 0.8,
+    return Expanded(
+      child: Material(
+        color: isSelected
+            ? context.colors.accentProject.withAlpha(25)
+            : context.colors.bgCard,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.zero,
+          side: BorderSide(
+            color: isSelected ? context.colors.accentProject : context.colors.border,
+            width: isSelected ? 1 : 0.8,
+          ),
         ),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.zero,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                size: 14,
-                color: isSelected
-                    ? context.colors.accentProject
-                    : context.colors.textSecond,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                title,
-                style: AppTextStyles.caption.copyWith(
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.zero,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  size: 14,
                   color: isSelected
                       ? context.colors.accentProject
                       : context.colors.textSecond,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  fontSize: 12,
                 ),
-              ),
-            ],
+                const SizedBox(width: 4),
+                Text(
+                  title,
+                  style: AppTextStyles.caption.copyWith(
+                    color: isSelected
+                        ? context.colors.accentProject
+                        : context.colors.textSecond,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    fontSize: 11.5,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -1985,9 +2039,75 @@ class _NewConsultationDialogState extends ConsumerState<_NewConsultationDialog> 
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Divider(color: context.colors.border, height: 1),
+              // 1. 상담일자 & 중요도(우선순위)
+              Row(
+                children: [
+                  Expanded(
+                    child: InkWell(
+                      onTap: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: _selectedDate,
+                          firstDate: DateTime(2015),
+                          lastDate: DateTime(2035),
+                          builder: (context, child) {
+                            return Theme(
+                              data: Theme.of(context).copyWith(
+                                colorScheme: ColorScheme.dark(
+                                  primary: context.colors.accentProject,
+                                  surface: context.colors.bgCard,
+                                ),
+                              ),
+                              child: child!,
+                            );
+                          },
+                        );
+                        if (picked != null) {
+                          setState(() => _selectedDate = picked);
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: context.colors.bgSurface,
+                          border: Border.all(color: context.colors.border, width: 0.8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.calendar_today_outlined, size: 14, color: context.colors.textMuted),
+                            const SizedBox(width: 6),
+                            Text(
+                              DateFormat('yyyy-MM-dd').format(_selectedDate),
+                              style: const TextStyle(fontSize: 12.5),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      initialValue: _priority,
+                      decoration: const InputDecoration(
+                        labelText: '중요도',
+                        isDense: true,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: 'low', child: Text('낮음')),
+                        DropdownMenuItem(value: 'normal', child: Text('보통')),
+                        DropdownMenuItem(value: 'high', child: Text('높음')),
+                        DropdownMenuItem(value: 'urgent', child: Text('긴급')),
+                      ],
+                      onChanged: (val) => setState(() => _priority = val ?? 'normal'),
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: 12),
 
-              // 1. 상담채널 & 상담유형
+              // 2. 상담채널 & 상담유형
               Row(
                 children: [
                   Expanded(

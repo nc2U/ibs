@@ -321,11 +321,11 @@ class ContractRepository {
     }
   }
 
-  /// 10. 프로젝트 동 목록 조회 (/api/v1/building-unit/?project={projectId})
+  /// 10. 프로젝트 동 목록 조회 (/api/v1/bldg/?project={projectId})
   Future<List<BuildingUnitModel>> fetchBuildingUnits(int projectId) async {
     try {
       final response = await dio.get(
-        '/api/v1/building-unit/',
+        '/api/v1/bldg/',
         queryParameters: {'project': projectId, 'limit': 100},
       );
       final List<dynamic> results =
@@ -338,11 +338,11 @@ class ContractRepository {
     }
   }
 
-  /// 11. 프로젝트 유닛 타입 목록 조회 (/api/v1/unit-type/?project={projectId})
+  /// 11. 프로젝트 유닛 타입 목록 조회 (/api/v1/type/?project={projectId})
   Future<List<UnitTypeItemModel>> fetchUnitTypes(int projectId) async {
     try {
       final response = await dio.get(
-        '/api/v1/unit-type/',
+        '/api/v1/type/',
         queryParameters: {'project': projectId, 'limit': 100},
       );
       final List<dynamic> results =
@@ -376,6 +376,38 @@ class ContractRepository {
       return results.map((json) => LayoutHouseUnitModel.fromJson(json)).toList();
     } catch (e) {
       return [];
+    }
+  }
+
+  /// 13. 동호수 현황표 엑셀 다운로드 (/excel/status/?project={projectId}&iscontor={true/false})
+  Future<Uint8List?> downloadUnitStatusExcel({
+    required int projectId,
+    required bool isContractor,
+  }) async {
+    try {
+      final response = await dio.get(
+        '/excel/status/',
+        queryParameters: {
+          'project': projectId,
+          'iscontor': isContractor ? 'true' : 'false',
+        },
+        options: Options(
+          responseType: ResponseType.bytes,
+        ),
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+        if (response.data is Uint8List) {
+          return response.data as Uint8List;
+        } else if (response.data is List<int>) {
+          return Uint8List.fromList(response.data as List<int>);
+        } else if (response.data is List) {
+          return Uint8List.fromList((response.data as List).cast<int>());
+        }
+      }
+      return null;
+    } catch (e) {
+      return null;
     }
   }
 }

@@ -1,7 +1,14 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/providers/project_provider.dart';
 import '../../../../core/theme/app_colors_extension.dart';
+import '../../data/contract_repository.dart';
 import '../../data/models/contract_models.dart';
 import '../../providers/contract_provider.dart';
 
@@ -11,6 +18,7 @@ import '../../providers/contract_provider.dart';
 /// - 웹 IBS의 ContractBoard/Building 구조와 100% 동일하게 동별 피로티/라인/층수 반영
 /// - 분양 상태별 컬러 코딩 (계약완료 / 청약 / 미분양 / 홀딩)
 /// - 유닛 터치 시 상세 정보 바텀시트 팝업
+/// - **동호수 현황표 엑셀 다운로드 및 모바일 공유 (계약자 표기 / 계약자 미표기)**
 class UnitMatrixView extends ConsumerWidget {
   final VoidCallback? onRefresh;
 
@@ -30,6 +38,266 @@ class UnitMatrixView extends ConsumerWidget {
       }
     } catch (_) {}
     return defaultColor;
+  }
+
+  Future<void> _downloadAndShareExcel(
+    BuildContext context,
+    WidgetRef ref, {
+    required bool isContractor,
+  }) async {
+    final selectedProject = ref.read(selectedRealEstateProjectProvider);
+    if (selectedProject == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('선택된 프로젝트가 없습니다.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    BuildContext? progressDialogContext;
+
+    // 로딩 인디케이터 표시
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black45,
+      useRootNavigator: true,
+      builder: (ctx) {
+        progressDialogContext = ctx;
+        return Center(
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              decoration: BoxDecoration(
+                color: context.colors.bgCard,
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: context.colors.border, width: 0.8),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(50),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: Color(0xFF10B981),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Text(
+                    isContractor ? '계약자 포함 엑셀 생성 중...' : '계약자 미포함 엑셀 생성 중...',
+                    style: AppTextStyles.bodyMd.copyWith(
+                      color: context.colors.textPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    try {
+      final repository = ref.read(contractRepositoryProvider);
+      final excelBytes = await repository.downloadUnitStatusExcel(
+        projectId: selectedProject.realProjectId,
+        isContractor: isContractor,
+      );
+
+      // 로딩 닫기
+      if (progressDialogContext != null && progressDialogContext!.mounted) {
+        Navigator.of(progressDialogContext!).pop();
+        progressDialogContext = null;
+      }
+
+      if (excelBytes == null || excelBytes.isEmpty) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('동호수 현황표 엑셀을 생성할 수 없습니다.'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        return;
+      }
+
+      // 임시 디렉토리에 파일 저장
+      final tempDir = await getTemporaryDirectory();
+      final nowStr = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+      final typeLabel = isContractor ? '계약자포함' : '계약자미포함';
+      final cleanProjName = selectedProject.name.replaceAll(RegExp(r'[^a-zA-Z0-9가-힣]'), '_');
+      final fileName = '동호수현황표_${cleanProjName}_${typeLabel}_$nowStr.xlsx';
+      final file = File('${tempDir.path}/$fileName');
+      await file.writeAsBytes(excelBytes);
+
+      if (!context.mounted) return;
+
+      // 액션 선택 다이얼로그 (바로 열람 vs 공유)
+      showModalBottomSheet(
+        context: context,
+        backgroundColor: context.colors.bgCard,
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        builder: (dialogCtx) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.table_view_rounded, size: 22, color: Color(0xFF10B981)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '동호수 현황표 ($typeLabel) 준비 완료',
+                        style: AppTextStyles.titleSm.copyWith(
+                          color: context.colors.textPrimary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  fileName,
+                  style: AppTextStyles.caption.copyWith(color: context.colors.textMuted),
+                ),
+                const SizedBox(height: 12),
+                Divider(color: context.colors.border, height: 1),
+                ListTile(
+                  leading: const Icon(Icons.open_in_new_rounded, color: Color(0xFF38BDF8)),
+                  title: const Text('엑셀 바로 열기 (뷰어 확인)'),
+                  subtitle: const Text('스마트폰 스프레드시트 앱으로 확인', style: TextStyle(fontSize: 11.5)),
+                  onTap: () async {
+                    Navigator.pop(dialogCtx);
+                    await OpenFilex.open(file.path);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.share_outlined, color: Color(0xFF34D399)),
+                  title: const Text('모바일 전송 / 공유 (카카오톡, 문자, 메일)'),
+                  subtitle: const Text('본사 보고 또는 관계자에게 파일 전송', style: TextStyle(fontSize: 11.5)),
+                  onTap: () async {
+                    Navigator.pop(dialogCtx);
+                    // ignore: deprecated_member_use
+                    await Share.shareXFiles(
+                      [XFile(file.path, mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')],
+                      text: '${selectedProject.name} 동호수 현황표 ($typeLabel) 파일입니다.',
+                      subject: '${selectedProject.name} 동호수 현황표 ($typeLabel)',
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    } catch (e) {
+      if (progressDialogContext != null && progressDialogContext!.mounted) {
+        Navigator.of(progressDialogContext!).pop();
+        progressDialogContext = null;
+      }
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('동호수 현황표 엑셀 다운로드 중 오류가 발생했습니다: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showExcelOptionDialog(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: context.colors.bgCard,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.table_chart_rounded, size: 20, color: Color(0xFF10B981)),
+                  const SizedBox(width: 8),
+                  Text(
+                    '동호수 현황표 엑셀 다운로드 / 공유',
+                    style: AppTextStyles.titleSm.copyWith(
+                      color: context.colors.textPrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                '다운로드 및 공유할 현황표 형식을 선택하세요.',
+                style: AppTextStyles.caption.copyWith(color: context.colors.textMuted),
+              ),
+              const SizedBox(height: 12),
+              Divider(color: context.colors.border, height: 1),
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF10B981).withAlpha(30),
+                    border: Border.all(color: const Color(0xFF10B981), width: 0.8),
+                  ),
+                  child: const Icon(Icons.person_rounded, size: 18, color: Color(0xFF10B981)),
+                ),
+                title: const Text('계약자 표시 버전', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
+                subtitle: const Text('각 호수별 계약자 성명이 표기된 현황표', style: TextStyle(fontSize: 11.5)),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _downloadAndShareExcel(context, ref, isContractor: true);
+                },
+              ),
+              Divider(color: context.colors.border, height: 1),
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF38BDF8).withAlpha(30),
+                    border: Border.all(color: const Color(0xFF38BDF8), width: 0.8),
+                  ),
+                  child: const Icon(Icons.grid_on_rounded, size: 18, color: Color(0xFF38BDF8)),
+                ),
+                title: const Text('계약자 미표시 버전 (대외 배포용)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
+                subtitle: const Text('계약자 성명 없이 분양/미분양 상태만 표기된 현황표', style: TextStyle(fontSize: 11.5)),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _downloadAndShareExcel(context, ref, isContractor: false);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _showUnitDetailBottomSheet(
@@ -95,7 +363,7 @@ class UnitMatrixView extends ConsumerWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      '${bldg?.name ?? ''} ${unit.name}호',
+                      '${bldg != null ? (bldg.name.endsWith('동') ? bldg.name : '${bldg.name}동') : ''} ${unit.name}호',
                       style: AppTextStyles.titleSm.copyWith(
                         color: context.colors.textPrimary,
                         fontWeight: FontWeight.bold,
@@ -116,7 +384,11 @@ class UnitMatrixView extends ConsumerWidget {
                 const SizedBox(height: 12),
 
                 // ── 2. 유닛 상세 스펙 그리드 ──
-                _buildInfoRow(context, '소속 동', '${bldg?.name ?? '-'} 동'),
+                _buildInfoRow(
+                  context,
+                  '소속 동',
+                  bldg != null ? (bldg.name.endsWith('동') ? bldg.name : '${bldg.name}동') : '-',
+                ),
                 _buildInfoRow(context, '층 / 라인', '${unit.floorNo}층 / ${unit.bldgLine}호 라인'),
                 _buildInfoRow(
                   context,
@@ -214,7 +486,7 @@ class UnitMatrixView extends ConsumerWidget {
                     ...buildings.map((b) => Padding(
                           padding: const EdgeInsets.only(left: 6),
                           child: _BuildingChip(
-                            label: '${b.name}동',
+                            label: b.name.endsWith('동') ? b.name : '${b.name}동',
                             selected: selectedBuildingId == b.pk,
                             onTap: () {
                               ref.read(selectedBuildingUnitIdProvider.notifier).state = b.pk;
@@ -229,17 +501,43 @@ class UnitMatrixView extends ConsumerWidget {
         ),
         Divider(color: context.colors.border, height: 1),
 
-        // ── 2. 상태 범례 바 (Legend) ─────────────────────────────────────
+        // ── 2. 상태 범례 및 엑셀 내보내기 액션 바 ──────────────────────────────
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
           color: context.colors.bgCard,
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
             children: [
+              // 엑셀 다운로드 / 공유 버튼
+              InkWell(
+                onTap: () => _showExcelOptionDialog(context, ref),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF10B981).withAlpha(20),
+                    border: Border.all(color: const Color(0xFF10B981).withAlpha(120), width: 0.8),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.file_download_outlined, size: 14, color: Color(0xFF10B981)),
+                      SizedBox(width: 4),
+                      Text(
+                        '엑셀 다운로드 / 공유',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF10B981),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const Spacer(),
               const _LegendItem(color: Color(0xFF10B981), label: '계약완료'),
-              const SizedBox(width: 10),
+              const SizedBox(width: 8),
               _LegendItem(color: context.colors.border, label: '미분양(분양가능)', isBorder: true),
-              const SizedBox(width: 10),
+              const SizedBox(width: 8),
               const _LegendItem(color: Colors.redAccent, label: '홀딩'),
             ],
           ),
@@ -399,7 +697,7 @@ class _BuildingMatrixCard extends StatelessWidget {
                 Icon(Icons.apartment_rounded, size: 15, color: context.colors.accentProject),
                 const SizedBox(width: 6),
                 Text(
-                  '$bldgName 동',
+                  bldgName.endsWith('동') ? bldgName : '$bldgName 동',
                   style: AppTextStyles.titleSm.copyWith(
                     fontWeight: FontWeight.bold,
                     color: context.colors.textPrimary,
@@ -565,7 +863,7 @@ class _BuildingMatrixCard extends StatelessWidget {
               border: Border(top: BorderSide(color: context.colors.border, width: 0.8)),
             ),
             child: Text(
-              '$bldgName 동 건물 기반',
+              bldgName.endsWith('동') ? '$bldgName 건물 기반' : '$bldgName 동 건물 기반',
               style: TextStyle(
                 fontSize: 10.5,
                 fontWeight: FontWeight.bold,
@@ -593,24 +891,40 @@ class _BuildingChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: selected ? const Color(0xFF38BDF8).withAlpha(40) : context.colors.bgCard,
-          borderRadius: BorderRadius.zero,
-          border: Border.all(
-            color: selected ? const Color(0xFF38BDF8) : context.colors.border,
-            width: selected ? 1.4 : 0.8,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: selected ? const Color(0xFF38BDF8).withAlpha(40) : context.colors.bgCard,
+            borderRadius: BorderRadius.zero,
+            border: Border.all(
+              color: selected ? const Color(0xFF38BDF8) : context.colors.border,
+              width: selected ? 1.4 : 0.8,
+            ),
           ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 11.5,
-            fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-            color: selected ? const Color(0xFF38BDF8) : context.colors.textSecond,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (selected) ...[
+                const Icon(
+                  Icons.check,
+                  size: 12,
+                  color: Color(0xFF38BDF8),
+                ),
+                const SizedBox(width: 4),
+              ],
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                  color: selected ? const Color(0xFF38BDF8) : context.colors.textSecond,
+                ),
+              ),
+            ],
           ),
         ),
       ),
