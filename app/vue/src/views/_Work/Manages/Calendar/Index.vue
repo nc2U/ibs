@@ -232,13 +232,15 @@ const summary = computed(() => {
   }
 }
 
+:global(body.dark-theme) :deep(.fc),
 :global(.dark-theme) :deep(.fc),
 :global(.dark-layout) :deep(.fc) {
   --fc-border-color: rgba(255, 255, 255, 0.1);
 
   .fc-col-header-cell {
-    background: rgba(0, 0, 0, 0.3) !important;
+    background: #252631 !important;
     color: #e5e7eb !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
   }
 
   .fc-col-header-cell-cushion {

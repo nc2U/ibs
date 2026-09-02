@@ -283,8 +283,38 @@ defineExpose({ calendarOptions, currentRange })
   }
 }
 
-.dark-theme :deep(.fc) {
+:global(body.dark-theme) :deep(.fc),
+:global(.dark-theme) :deep(.fc),
+:global(.dark-layout) :deep(.fc) {
   --fc-border-color: rgba(255, 255, 255, 0.1);
-  // ... rest of dark theme styles
+
+  .fc-col-header-cell {
+    background: #252631 !important;
+    color: #e5e7eb !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+  }
+
+  .fc-col-header-cell-cushion {
+    color: #e5e7eb !important;
+  }
+
+  .fc-daygrid-day-number {
+    color: #d1d5db !important;
+  }
+
+  .fc-day-sun {
+    .fc-col-header-cell-cushion,
+    .fc-daygrid-day-number {
+      color: #ef4444 !important;
+    }
+    background-color: rgba(239, 68, 68, 0.05);
+  }
+  .fc-day-sat {
+    .fc-col-header-cell-cushion,
+    .fc-daygrid-day-number {
+      color: #60a5fa !important;
+    }
+    background-color: rgba(96, 165, 250, 0.05);
+  }
 }
 </style>

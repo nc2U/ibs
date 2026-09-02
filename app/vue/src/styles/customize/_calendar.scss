@@ -25,3 +25,24 @@
   --fc-today-bg-color: rgba(255, 220, 40, 0.15);
   --fc-now-indicator-color: var(--cui-danger);
 }
+
+body.dark-theme,
+.dark-theme,
+.dark-layout {
+  .fc {
+    --fc-page-bg-color: #1c1d26;
+    --fc-neutral-bg-color: rgba(255, 255, 255, 0.05);
+    --fc-neutral-text-color: #a0aec0;
+    --fc-border-color: rgba(255, 255, 255, 0.1);
+
+    .fc-col-header-cell {
+      background-color: #252631 !important;
+      color: #e5e7eb !important;
+      border-color: rgba(255, 255, 255, 0.1) !important;
+    }
+
+    .fc-col-header-cell-cushion {
+      color: #e5e7eb !important;
+    }
+  }
+}
