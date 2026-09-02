@@ -739,13 +739,13 @@ class LayoutHouseUnitModel {
       final contract = keyUnit['contract'];
       if (contract is Map) {
         contId = contract['pk'] ?? contract['id'];
-        contSerial = contract['serial_number']?.toString();
+        contSerial = (contract['serial_number'] ?? contract['serialNumber'] ?? contract['serial_no'])?.toString();
         final contractor = contract['contractor'];
         if (contractor is Map) {
-          contName = contractor['name']?.toString();
+          contName = (contractor['name'] ?? contractor['contractor_name'])?.toString();
           contStatus = contractor['status']?.toString();
         }
-        final priceObj = contract['contractprice'];
+        final priceObj = contract['contractprice'] ?? contract['contract_price'];
         if (priceObj is Map && priceObj['price'] != null) {
           contPrice = priceObj['price'] is int
               ? priceObj['price']

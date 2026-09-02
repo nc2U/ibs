@@ -433,9 +433,9 @@ class UnitMatrixView extends ConsumerWidget {
                   _buildInfoRow(
                     context,
                     '계약 일련번호',
-                    unit.contractSerialNumber != null && unit.contractSerialNumber!.isNotEmpty
+                    (unit.contractSerialNumber != null && unit.contractSerialNumber!.isNotEmpty)
                         ? unit.contractSerialNumber!
-                        : 'CT-${unit.contractId}',
+                        : '-',
                   ),
                 ],
 
@@ -628,10 +628,18 @@ class UnitMatrixView extends ConsumerWidget {
                     : (buildingGroups.keys.toList()..sort());
               }
 
-              return SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              return RefreshIndicator(
+                onRefresh: () async {
+                  ref.invalidate(allHouseUnitsProvider);
+                  ref.invalidate(buildingUnitsProvider);
+                  ref.invalidate(unitTypesProvider);
+                },
+                color: const Color(0xFF38BDF8),
                 child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: targetBuildingIds.map((bldgId) {
@@ -660,7 +668,8 @@ class UnitMatrixView extends ConsumerWidget {
                     }).toList(),
                   ),
                 ),
-              );
+              ),
+            );
             },
           ),
         ),

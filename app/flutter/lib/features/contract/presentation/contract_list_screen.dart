@@ -596,6 +596,9 @@ class _ContractListScreenState extends ConsumerState<ContractListScreen> {
                 IconButton(
                   onPressed: () {
                     ref.invalidate(contractAggregateProvider);
+                    ref.invalidate(buildingUnitsProvider);
+                    ref.invalidate(unitTypesProvider);
+                    ref.invalidate(allHouseUnitsProvider);
                     ref.read(validContractListProvider.notifier).fetchInitial();
                     ref.read(successionListProvider.notifier).fetchInitial();
                     ref.read(contractorReleaseListProvider.notifier).fetchInitial();

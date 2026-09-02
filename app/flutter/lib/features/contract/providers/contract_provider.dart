@@ -314,7 +314,7 @@ final contractorAddressHistoryProvider =
 });
 
 /// 🏢 프로젝트별 동 목록 프로바이더
-final buildingUnitsProvider = FutureProvider<List<BuildingUnitModel>>((ref) async {
+final buildingUnitsProvider = FutureProvider.autoDispose<List<BuildingUnitModel>>((ref) async {
   final selectedProject = ref.watch(selectedRealEstateProjectProvider);
   if (selectedProject == null) return [];
   final repository = ref.watch(contractRepositoryProvider);
@@ -322,7 +322,7 @@ final buildingUnitsProvider = FutureProvider<List<BuildingUnitModel>>((ref) asyn
 });
 
 /// 🎨 프로젝트별 유닛 타입 목록 프로바이더
-final unitTypesProvider = FutureProvider<List<UnitTypeItemModel>>((ref) async {
+final unitTypesProvider = FutureProvider.autoDispose<List<UnitTypeItemModel>>((ref) async {
   final selectedProject = ref.watch(selectedRealEstateProjectProvider);
   if (selectedProject == null) return [];
   final repository = ref.watch(contractRepositoryProvider);
@@ -333,7 +333,7 @@ final unitTypesProvider = FutureProvider<List<UnitTypeItemModel>>((ref) async {
 final selectedBuildingUnitIdProvider = StateProvider<int?>((ref) => null);
 
 /// 🔲 프로젝트별 전체 동호수 배치 목록 프로바이더 (선택된 동 기준)
-final allHouseUnitsProvider = FutureProvider<List<LayoutHouseUnitModel>>((ref) async {
+final allHouseUnitsProvider = FutureProvider.autoDispose<List<LayoutHouseUnitModel>>((ref) async {
   final selectedProject = ref.watch(selectedRealEstateProjectProvider);
   if (selectedProject == null) return [];
   final buildingId = ref.watch(selectedBuildingUnitIdProvider);
