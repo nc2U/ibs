@@ -214,6 +214,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           FilledButton(
             style: FilledButton.styleFrom(
               backgroundColor: context.colors.error,
+              foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(6)),
             ),
