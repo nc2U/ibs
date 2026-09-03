@@ -97,9 +97,21 @@ END \$\$;
 # 백업 파일 복원
 echo "=== 백업 파일 복원 중: $DUMP_FILE ===" | tee -a "$LOG_FILE"
 PGPASSWORD="$PGPASSWORD" pg_restore -U "$PGUSER" -d "$PGDATABASE" --data-only --no-owner --no-privileges --disable-triggers --jobs=4 "$DUMP_FILE" >> "$LOG_FILE" 2>&1
+RESTORE_EXIT=$?
+if [ $RESTORE_EXIT -ne 0 ]; then
+    echo "⚠️  pg_restore exited with code $RESTORE_EXIT — checking for critical errors..." | tee -a "$LOG_FILE"
+    CRITICAL_ERRORS=$(grep -i "^pg_restore: error:" "$LOG_FILE" | grep -v "already exists" || true)
+    if [ -n "$CRITICAL_ERRORS" ]; then
+        echo "❌ Critical restore errors detected:" | tee -a "$LOG_FILE"
+        echo "$CRITICAL_ERRORS" | tee -a "$LOG_FILE"
+        exit 1
+    else
+        echo "ℹ️  Only non-critical warnings found (e.g. already exists). Continuing..." | tee -a "$LOG_FILE"
+    fi
+fi
 
 # 복원 결과 확인
-if [ $? -eq 0 ]; then
+if [ $RESTORE_EXIT -eq 0 ] || [ -z "$CRITICAL_ERRORS" ]; then
     # 시퀀스 조정
     echo "=== 시퀀스 조정 (id 컬럼 기준) 시작 ===" | tee -a "$LOG_FILE"
     PGPASSWORD="$PGPASSWORD" psql -U "$PGUSER" -d "$PGDATABASE" -c "
@@ -116,6 +128,21 @@ if [ $? -eq 0 ]; then
         END LOOP;
     END \$\$;
     " >> "$LOG_FILE" 2>&1
+
+    # 복원 검증: 주요 테이블 건수 확인
+    echo "=== 복원 검증: 주요 테이블 건수 확인 ===" | tee -a "$LOG_FILE"
+    PGPASSWORD="$PGPASSWORD" psql -U "$PGUSER" -d "$PGDATABASE" -c "
+    SELECT 'work_activitylogentry' AS table_name, COUNT(*) AS row_count FROM $SCHEMA.work_activitylogentry
+    UNION ALL
+    SELECT 'work_issuelogentry', COUNT(*) FROM $SCHEMA.work_issuelogentry
+    UNION ALL
+    SELECT 'work_issue', COUNT(*) FROM $SCHEMA.work_issue
+    UNION ALL
+    SELECT 'work_meeting', COUNT(*) FROM $SCHEMA.work_meeting
+    UNION ALL
+    SELECT 'accounts_user', COUNT(*) FROM $SCHEMA.accounts_user;
+    " | tee -a "$LOG_FILE"
+
     # 임시 파일 삭제
     echo "=== 덤프 파일 삭제 ===" | tee -a "$LOG_FILE"
     rm -f "${DUMP_FILE}"

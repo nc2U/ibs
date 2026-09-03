@@ -395,13 +395,38 @@ spec:
           " >> "\$LOG_FILE" 2>&1
 
           echo "=== 백업 파일 복원 중: \$DUMP_FILE ===" | tee -a "\$LOG_FILE"
-          PGPASSWORD="\$PGPASSWORD" pg_restore -h "\$PSQL_HOST" -U "\$PGUSER" -d "\$PGDATABASE" --data-only --no-owner --no-privileges --disable-triggers --jobs=4 "\$DUMP_FILE" >> "\$LOG_FILE" 2>&1 || true
+          PGPASSWORD="\$PGPASSWORD" pg_restore -h "\$PSQL_HOST" -U "\$PGUSER" -d "\$PGDATABASE" --data-only --no-owner --no-privileges --disable-triggers --jobs=4 "\$DUMP_FILE" >> "\$LOG_FILE" 2>&1
+          RESTORE_EXIT=\$?
+          if [ \$RESTORE_EXIT -ne 0 ]; then
+            echo "⚠️  pg_restore exited with code \$RESTORE_EXIT — checking for critical errors..." | tee -a "\$LOG_FILE"
+            CRITICAL_ERRORS=\$(grep -i "^pg_restore: error:" "\$LOG_FILE" | grep -v "already exists" || true)
+            if [ -n "\$CRITICAL_ERRORS" ]; then
+              echo "❌ Critical restore errors detected:" | tee -a "\$LOG_FILE"
+              echo "\$CRITICAL_ERRORS" | tee -a "\$LOG_FILE"
+              exit 1
+            else
+              echo "ℹ️  Only non-critical warnings found (e.g. already exists). Continuing..." | tee -a "\$LOG_FILE"
+            fi
+          fi
 
           echo "=== 시퀀스 조정 (id 컬럼 기준) 시작 ===" | tee -a "\$LOG_FILE"
           psql -h "\$PSQL_HOST" -U "\$PGUSER" -d "\$PGDATABASE" -c "
           SELECT concat('SELECT setval(pg_get_serial_sequence(''ibs.', tablename, ''', ''id''), COALESCE(MAX(id), 1)) FROM ibs.', tablename, ';')
           FROM pg_tables WHERE schemaname='ibs' AND tablename != 'django_migrations';
           " -t | psql -h "\$PSQL_HOST" -U "\$PGUSER" -d "\$PGDATABASE" >> "\$LOG_FILE" 2>&1 || true
+
+          echo "=== 복원 검증: 주요 테이블 건수 확인 ===" | tee -a "\$LOG_FILE"
+          psql -h "\$PSQL_HOST" -U "\$PGUSER" -d "\$PGDATABASE" -c "
+          SELECT 'work_activitylogentry' AS table_name, COUNT(*) AS row_count FROM ibs.work_activitylogentry
+          UNION ALL
+          SELECT 'work_issuelogentry', COUNT(*) FROM ibs.work_issuelogentry
+          UNION ALL
+          SELECT 'work_issue', COUNT(*) FROM ibs.work_issue
+          UNION ALL
+          SELECT 'work_meeting', COUNT(*) FROM ibs.work_meeting
+          UNION ALL
+          SELECT 'accounts_user', COUNT(*) FROM ibs.accounts_user;
+          " | tee -a "\$LOG_FILE"
 
           echo "🎉🎉🎉 데이터 복원 완료 및 시퀀스 초기화 완료! 🎉🎉🎉" | tee -a "\$LOG_FILE"
       volumeMounts:
