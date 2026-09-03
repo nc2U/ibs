@@ -6,6 +6,7 @@ import { useApproval } from '@/store/pinia/approval'
 import { useAccount } from '@/store/pinia/account'
 import type { DocumentType } from '@/store/types/approval'
 import { STATIC_FORM_REGISTRY } from '@/views/approval/forms'
+import { FORM_GUIDES, DEFAULT_GUIDE, type FormGuide } from '../data/formGuides'
 
 const route = useRoute()
 const router = useRouter()
@@ -87,6 +88,14 @@ const removeExistingAttachment = async (attachmentId: number) => {
 const selectedDocType = computed<DocumentType | null>(
   () => forDraftDocTypeList.value.find(d => d.id === Number(form.value.doc_type)) ?? null,
 )
+
+const currentGuide = computed<FormGuide>(() => {
+  const key = selectedDocType.value?.form_template_key || selectedDocType.value?.code
+  if (key && FORM_GUIDES[key]) {
+    return FORM_GUIDES[key]
+  }
+  return DEFAULT_GUIDE
+})
 
 // 카테고리별로 그룹화된 문서 유형 목록
 const groupedDocTypes = computed(() => {
@@ -278,10 +287,16 @@ onMounted(async () => {
       form.value.security_level = (document.value.security_level as '1' | '2' | '3') || '2'
       dynamicContent.value = { ...(document.value.content as Record<string, string>) }
       selectedObservers.value = (document.value.observers || []).map(o => o.id)
-      await updateRoutePreview()
+      updateRoutePreview()
     }
   }
 })
+
+const applyExampleTitle = (title: string) => {
+  if (!form.value.title || confirm('입력된 제목을 추천 예시 제목으로 변경하시겠습니까?')) {
+    form.value.title = title
+  }
+}
 </script>
 
 <template>
@@ -631,6 +646,100 @@ onMounted(async () => {
           </div>
         </CForm>
       </CCardBody>
+    </CCol>
+
+    <!-- 우측: PC 전용 작성 가이드 & 팁 (lg 이상에서만 표시) -->
+    <CCol lg="4" xl="5" class="d-none d-lg-block">
+      <div class="sticky-top" style="top: 80px; z-index: 10">
+        <CCard class="shadow-sm border-light">
+          <CCardHeader class="bg-light d-flex align-items-center justify-content-between py-2">
+            <div class="fw-semibold text-primary d-flex align-items-center">
+              <v-icon icon="mdi-lightbulb-on-outline" size="small" class="me-1 text-warning" />
+              {{ currentGuide.title }} 작성 가이드
+            </div>
+            <CBadge color="info" size="sm">{{ currentGuide.category }}</CBadge>
+          </CCardHeader>
+          <CCardBody class="p-3">
+            <!-- 1. 양식 요약 -->
+            <p class="small text-muted mb-3 border-bottom pb-2">
+              {{ currentGuide.summary }}
+            </p>
+
+            <!-- 2. 핵심 요령 (Tips) -->
+            <div class="mb-3">
+              <div class="small fw-bold text-body mb-2 d-flex align-items-center">
+                <v-icon icon="mdi-check-circle-outline" size="x-small" class="me-1 text-success" />
+                핵심 작성 요령 (Tips)
+              </div>
+              <ul class="list-unstyled mb-0 small text-secondary ps-1">
+                <li v-for="(tip, idx) in currentGuide.tips" :key="idx" class="mb-1 d-flex">
+                  <span class="text-primary me-2">•</span>
+                  <span>{{ tip }}</span>
+                </li>
+              </ul>
+            </div>
+
+            <!-- 3. 필수 첨부 체크리스트 -->
+            <div class="mb-3">
+              <div class="small fw-bold text-body mb-2 d-flex align-items-center">
+                <v-icon icon="mdi-paperclip" size="x-small" class="me-1 text-info" />
+                필수 첨부 서류 (Checklist)
+              </div>
+              <div class="bg-light p-2 rounded small border">
+                <div
+                  v-for="(att, idx) in currentGuide.requiredAttachments"
+                  :key="idx"
+                  class="mb-1 d-flex align-items-start"
+                >
+                  <v-icon
+                    icon="mdi-checkbox-marked-outline"
+                    size="x-small"
+                    class="me-1 text-primary mt-1 flex-shrink-0"
+                  />
+                  <span>{{ att }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 4. 모범 작성 예시 -->
+            <div v-if="currentGuide.example" class="mt-3 pt-2 border-top">
+              <div
+                class="small fw-bold text-body mb-2 d-flex align-items-center justify-content-between"
+              >
+                <div class="d-flex align-items-center">
+                  <v-icon
+                    icon="mdi-text-box-search-outline"
+                    size="x-small"
+                    class="me-1 text-dark"
+                  />
+                  모범 작성 예시
+                </div>
+                <CButton
+                  size="sm"
+                  color="primary"
+                  variant="ghost"
+                  class="p-0 text-decoration-none small"
+                  style="font-size: 0.75rem"
+                  @click="applyExampleTitle(currentGuide.example.title)"
+                >
+                  [제목 예시 적용]
+                </CButton>
+              </div>
+              <div class="bg-more-light p-2 rounded small border">
+                <div class="fw-semibold text-primary mb-1" style="font-size: 0.82rem">
+                  [제목] {{ currentGuide.example.title }}
+                </div>
+                <div
+                  class="text-muted"
+                  style="white-space: pre-wrap; font-size: 0.78rem; line-height: 1.5"
+                >
+                  {{ currentGuide.example.content }}
+                </div>
+              </div>
+            </div>
+          </CCardBody>
+        </CCard>
+      </div>
     </CCol>
   </CRow>
 </template>
