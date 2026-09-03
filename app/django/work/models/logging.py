@@ -8,21 +8,22 @@ from work.models.project import IssueProject
 
 class ActivityLogEntryManager(models.Manager):
     def get_queryset(self):
-        return super().get_queryset().select_related(
-            'project', 'issue', 'comment', 'meeting', 'news', 'document', 'post', 'creator'
-        )
+        return super().get_queryset().select_related('project', 'creator')
 
 
 class ActivityLogEntry(models.Model):
     SORT_CHOICES = (('1', '업무'), ('2', '댓글'), ('3', '회의'), ('4', '공지'), ('5', '문서'), ('6', '글'))
     sort = models.CharField('구분', max_length=1, choices=SORT_CHOICES, default='1')
     project = models.ForeignKey(IssueProject, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='프로젝트')
-    issue = models.ForeignKey(Issue, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='업무')
-    comment = models.ForeignKey(IssueComment, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='댓글')
-    meeting = models.ForeignKey('work.Meeting', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='회의')
-    news = models.ForeignKey(News, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='공지')
-    document = models.ForeignKey('docs.Document', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='문서')
-    post = models.ForeignKey('forum.Post', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='게시글')
+
+    # 단일 식별자 구조 (물리적/논리적 FK 없이 무결성 충돌 0% 보장)
+    target_id = models.PositiveIntegerField('대상 객체 PK', null=True, blank=True)
+    parent_id = models.PositiveIntegerField('상위 객체 PK(업무/포럼 등)', null=True, blank=True)
+
+    # 스냅샷 필드 (JOIN 없는 초고속 렌더링 및 원본 삭제 시 영구 보존)
+    title = models.CharField('제목 스냅샷', max_length=255, blank=True, default='')
+    summary = models.CharField('내용/의제 요약 스냅샷', max_length=255, blank=True, default='')
+
     status_log = models.CharField('상태 기록', max_length=30, blank=True, default='')
     act_date = models.DateField('로그 일자', auto_now_add=True)
     timestamp = models.DateTimeField('로그 시간', auto_now_add=True)

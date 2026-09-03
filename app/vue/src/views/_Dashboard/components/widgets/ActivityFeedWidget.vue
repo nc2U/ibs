@@ -56,32 +56,17 @@ const getActionText = (log: ActLogEntry) => {
 
 // 대상 텍스트 매핑
 const getTargetText = (log: ActLogEntry) => {
-  if (log.issue) {
-    return `${log.issue.tracker} #${log.issue.pk}: ${log.issue.subject}`
-  }
-  if (log.meeting) {
-    return log.meeting.title
-  }
-  if (log.news) {
-    return log.news.title
-  }
-  if (log.document) {
-    return log.document.title
-  }
-  if (log.post) {
-    return log.post.title
-  }
-  return ''
+  return log.title || log.summary || ''
 }
 
 // 아이콘 매핑
 const getLogIcon = (log: ActLogEntry) => {
-  if (log.sort === '2' || log.comment) return 'mdi-comment-text'
-  if (log.meeting) return 'mdi-calendar-plus'
-  if (log.issue) return 'mdi-clipboard-text-outline'
-  if (log.news) return 'mdi-bullhorn-variant-outline'
-  if (log.document) return 'mdi-file-upload'
-  if (log.post) return 'mdi-forum-outline'
+  if (log.sort === '1') return 'mdi-clipboard-text-outline'
+  if (log.sort === '2') return 'mdi-comment-text'
+  if (log.sort === '3') return 'mdi-calendar-plus'
+  if (log.sort === '4') return 'mdi-bullhorn-variant-outline'
+  if (log.sort === '5') return 'mdi-file-upload'
+  if (log.sort === '6') return 'mdi-forum-outline'
   return 'mdi-bell-outline'
 }
 
@@ -97,15 +82,38 @@ const getLogColor = (log: ActLogEntry) => {
 }
 
 const handleLogClick = (log: ActLogEntry) => {
-  if (log.issue) {
+  if (!log.project?.slug || !log.target_id) return
+  if (log.sort === '1') {
     router.push({
       name: '(업무) - 보기',
-      params: { projId: log.project.slug, issueId: log.issue.pk },
+      params: { projId: log.project.slug, issueId: log.target_id },
     })
-  } else if (log.meeting) {
+  } else if (log.sort === '2') {
+    router.push({
+      name: '(업무) - 보기',
+      params: { projId: log.project.slug, issueId: log.parent_id },
+      query: { tap: 2 },
+      hash: `#note-${log.target_id}`,
+    })
+  } else if (log.sort === '3') {
     router.push({
       name: '(회의) - 보기',
-      params: { projId: log.project.slug, meetingId: log.meeting.pk },
+      params: { projId: log.project.slug, meetingId: log.target_id },
+    })
+  } else if (log.sort === '4') {
+    router.push({
+      name: '(공지) - 보기',
+      params: { projId: log.project.slug, newsId: log.target_id },
+    })
+  } else if (log.sort === '5') {
+    router.push({
+      name: '(문서) - 보기',
+      params: { projId: log.project.slug, docId: log.target_id },
+    })
+  } else if (log.sort === '6') {
+    router.push({
+      name: '(게시판) - 게시물 보기',
+      params: { projId: log.project.slug, forumId: log.parent_id, postId: log.target_id },
     })
   }
 }

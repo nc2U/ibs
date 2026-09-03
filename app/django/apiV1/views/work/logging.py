@@ -80,13 +80,11 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
 
         # 1. 슈퍼유저/work_manager는 전체 활동 조회
         if user.is_superuser or getattr(user, 'work_manager', False):
-            return queryset.select_related('project', 'creator', 'issue', 'comment', 'meeting', 'news', 'document',
-                                           'post')
+            return queryset.select_related('project', 'creator')
 
         # 2. 일반 유저는 본인이 소속되었거나 공개 프로젝트의 활동만 조회 가능
         user_members = Member.objects.filter(user=user).prefetch_related('roles')
 
-        member_all_pids = []
         member_pub_pids = []
         member_pri_pids = []
         member_all_project_ids = []
@@ -100,46 +98,38 @@ class ActivityLogEntryViewSet(viewsets.ModelViewSet):
                 if visibility_order.get(role.issue_visible, 0) > visibility_order.get(best_issue_visible, 0):
                     best_issue_visible = role.issue_visible
 
-            if best_issue_visible == 'ALL':
-                member_all_pids.append(m.project_id)
-            elif best_issue_visible == 'PUB':
+            if best_issue_visible == 'PUB':
                 member_pub_pids.append(m.project_id)
             elif best_issue_visible == 'PRI':
                 member_pri_pids.append(m.project_id)
 
         base_filter = Q(project_id__in=member_all_project_ids)
 
-        # 업무 및 의견 로그에 대한 issue_visible 필터 적용
-        issue_filter = Q()
-
-        if member_all_pids:
-            issue_filter |= Q(project_id__in=member_all_pids)
-
+        # 업무 및 의견 로그에 대한 비공개 이슈 접근 제한
+        inaccessible_issue_ids = set()
         if member_pub_pids:
-            issue_filter |= Q(
-                project_id__in=member_pub_pids,
-                issue__isnull=False
-            ) & (
-                                    Q(issue__is_private=False) |
-                                    Q(issue__assigned_to=user) |
-                                    Q(issue__creator=user)
-                            )
-
+            from work.models.issue import Issue
+            inaccessible_issue_ids.update(
+                Issue.objects.filter(project_id__in=member_pub_pids, is_private=True)
+                .exclude(Q(assigned_to=user) | Q(creator=user))
+                .values_list('pk', flat=True)
+            )
         if member_pri_pids:
-            issue_filter |= Q(
-                project_id__in=member_pri_pids,
-                issue__isnull=False
-            ) & (
-                                    Q(issue__assigned_to=user) |
-                                    Q(issue__creator=user)
-                            )
+            from work.models.issue import Issue
+            inaccessible_issue_ids.update(
+                Issue.objects.filter(project_id__in=member_pri_pids)
+                .exclude(Q(assigned_to=user) | Q(creator=user))
+                .values_list('pk', flat=True)
+            )
 
+        final_qs = queryset.filter(base_filter)
+        if inaccessible_issue_ids:
+            final_qs = final_qs.exclude(
+                (Q(sort='1') & Q(target_id__in=inaccessible_issue_ids)) |
+                (Q(sort='2') & Q(parent_id__in=inaccessible_issue_ids))
+            )
 
-        final_qs = queryset.filter(base_filter).filter(
-            ~Q(sort__in=['1', '2']) | issue_filter
-        )
-
-        return final_qs.select_related('project', 'creator', 'issue', 'comment', 'meeting', 'news', 'document', 'post')
+        return final_qs.select_related('project', 'creator')
 
 
 class IssueLogEntryViewSet(viewsets.ModelViewSet):

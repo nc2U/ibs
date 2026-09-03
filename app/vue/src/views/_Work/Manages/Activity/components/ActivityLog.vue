@@ -25,6 +25,32 @@ const getIcon = (sort: string, progress: boolean) => {
   else if (sort === '6') return 'mdi-text-box-multiple'
   else return 'mdi-folder-plus'
 }
+
+const getTargetRoute = (act: ActLogEntry) => {
+  if (!act.project?.slug || !act.target_id) return null
+  if (act.sort === '1') {
+    return { name: '(업무) - 보기', params: { projId: act.project.slug, issueId: act.target_id } }
+  } else if (act.sort === '2') {
+    return {
+      name: '(업무) - 보기',
+      params: { projId: act.project.slug, issueId: act.parent_id },
+      query: { tap: 2 },
+      hash: `#note-${act.target_id}`,
+    }
+  } else if (act.sort === '3') {
+    return { name: '(회의) - 보기', params: { projId: act.project.slug, meetingId: act.target_id } }
+  } else if (act.sort === '4') {
+    return { name: '(공지) - 보기', params: { projId: act.project.slug, newsId: act.target_id } }
+  } else if (act.sort === '5') {
+    return { name: '(문서) - 보기', params: { projId: act.project.slug, docId: act.target_id } }
+  } else if (act.sort === '6') {
+    return {
+      name: '(게시판) - 게시물 보기',
+      params: { projId: act.project.slug, forumId: act.parent_id, postId: act.target_id },
+    }
+  }
+  return null
+}
 </script>
 
 <template>
@@ -55,183 +81,24 @@ const getIcon = (sort: string, progress: boolean) => {
             {{ act.project?.name || '회사 본사' }} -
           </span>
 
-          <span v-if="act.sort === '1'">
+          <router-link v-if="getTargetRoute(act)" :to="getTargetRoute(act)!">
+            {{ act.title }}
+          </router-link>
+          <span v-else>{{ act.title }}</span>
+
+          <div v-if="act.summary" class="ml-5 pl-4 fst-italic form-text">
+            <div v-html="markdownRender(cutString(act.summary, 113))" class="form-text" />
+          </div>
+
+          <div v-if="act.creator" class="form-text ml-5 pl-2">
             <router-link
-              :to="{
-                name: '(업무) - 보기',
-                params: { projId: act.project?.slug, issueId: act.issue?.pk },
-              }"
+              v-if="canViewUser(act.creator.pk)"
+              :to="{ name: '사용자 - 보기', params: { userId: act.creator.pk } }"
             >
-              [업무] {{ act.issue?.tracker }} #{{ act.issue?.pk }} ({{
-                act.status_log || act.issue?.status.name
-              }})
-              {{ act.issue?.subject }}
+              {{ act.creator.username }}
             </router-link>
-            <div class="ml-5 pl-4 fst-italic form-text">
-              <div
-                v-if="act.sort === '1' && !act.status_log"
-                v-html="markdownRender(cutString(act.issue?.description, 113))"
-                class="form-text"
-              />
-            </div>
-            <div v-if="act.creator" class="form-text ml-5 pl-2">
-              <router-link
-                v-if="canViewUser(act.creator.pk)"
-                :to="{ name: '사용자 - 보기', params: { userId: act.creator.pk } }"
-              >
-                {{ act.creator.username }}
-              </router-link>
-              <span v-else>{{ act.creator.username }}</span>
-            </div>
-          </span>
-
-          <span v-if="act.sort === '2'">
-            <router-link
-              :to="{
-                name: '(업무) - 보기',
-                params: { projId: act.project?.slug, issueId: act.issue?.pk },
-                query: { tap: 2 },
-                hash: `#note-${act.comment?.pk}`,
-              }"
-            >
-              [의견] {{ act.issue?.tracker }} #{{ act.issue?.pk }}
-              {{ act.issue?.subject }}
-            </router-link>
-
-            <div class="ml-5 pl-4 fst-italic">
-              <div
-                v-if="act.sort === '2'"
-                v-html="markdownRender(cutString(act.comment?.content, 113))"
-                class="form-text"
-              />
-            </div>
-          </span>
-
-          <span v-if="act.sort === '3'">
-            <router-link
-              v-if="act.project?.slug"
-              :to="{
-                name: '(회의) - 보기',
-                params: { projId: act.project?.slug, meetingId: act.meeting?.pk },
-              }"
-            >
-              [회의록] #{{ act.meeting?.pk }} ({{ act.status_log || '등록' }})
-              {{ act.meeting?.title }}
-            </router-link>
-            <span v-else>
-              [회의록] #{{ act.meeting?.pk }} ({{ act.status_log || '등록' }})
-              {{ act.meeting?.title }}
-            </span>
-
-            <div class="ml-5 pl-4 fst-italic">
-              <div
-                v-if="act.meeting?.agenda"
-                v-html="markdownRender(cutString(act.meeting.agenda, 113))"
-                class="form-text"
-              />
-            </div>
-
-            <div v-if="act.creator" class="form-text ml-5 pl-2">
-              <router-link
-                v-if="canViewUser(act.creator.pk)"
-                :to="{ name: '사용자 - 보기', params: { userId: act.creator.pk } }"
-              >
-                {{ act.creator.username }}
-              </router-link>
-              <span v-else>{{ act.creator.username }}</span>
-            </div>
-          </span>
-
-          <span v-if="act.sort === '4'">
-            <router-link
-              :to="{
-                name: '(공지) - 보기',
-                params: { projId: act.project?.slug, newsId: act.news?.pk },
-              }"
-            >
-              [공지] {{ act.news?.title }}
-            </router-link>
-
-            <div class="ml-5 pl-4 fst-italic">
-              <div
-                v-if="act.news?.summary"
-                v-html="markdownRender(cutString(act.news.summary, 113))"
-                class="form-text"
-              />
-            </div>
-
-            <div v-if="act.creator" class="form-text ml-5 pl-2">
-              <router-link
-                v-if="canViewUser(act.creator.pk)"
-                :to="{ name: '사용자 - 보기', params: { userId: act.creator.pk } }"
-              >
-                {{ act.creator.username }}
-              </router-link>
-              <span v-else>{{ act.creator.username }}</span>
-            </div>
-          </span>
-
-          <span v-if="act.sort === '5'">
-            <router-link
-              :to="{
-                name: '(문서) - 보기',
-                params: { projId: act.project?.slug, docId: act.document?.pk },
-              }"
-            >
-              [문서] {{ act.document?.title }}
-            </router-link>
-
-            <div class="ml-5 pl-4 fst-italic">
-              <div
-                v-if="act.document?.description"
-                v-html="markdownRender(cutString(act.document.description, 113))"
-                class="form-text"
-              />
-            </div>
-
-            <div v-if="act.creator" class="form-text ml-5 pl-2">
-              <router-link
-                v-if="canViewUser(act.creator.pk)"
-                :to="{ name: '사용자 - 보기', params: { userId: act.creator.pk } }"
-              >
-                {{ act.creator.username }}
-              </router-link>
-              <span v-else>{{ act.creator.username }}</span>
-            </div>
-          </span>
-
-          <span v-if="act.sort === '6'">
-            <router-link
-              :to="{
-                name: '(게시판) - 게시물 보기',
-                params: {
-                  projId: act.project?.slug,
-                  forumId: act.post?.forum,
-                  postId: act.post?.pk,
-                },
-              }"
-            >
-              [게시물] {{ act.post?.title }}
-            </router-link>
-
-            <div class="ml-5 pl-4 fst-italic">
-              <div
-                v-if="act.post?.content"
-                v-html="markdownRender(cutString(act.post.content, 113))"
-                class="form-text"
-              />
-            </div>
-
-            <div v-if="act.creator" class="form-text ml-5 pl-2">
-              <router-link
-                v-if="canViewUser(act.creator.pk)"
-                :to="{ name: '사용자 - 보기', params: { userId: act.creator.pk } }"
-              >
-                {{ act.creator.username }}
-              </router-link>
-              <span v-else>{{ act.creator.username }}</span>
-            </div>
-          </span>
+            <span v-else>{{ act.creator.username }}</span>
+          </div>
 
           <v-divider class="my-2" />
         </CCol>

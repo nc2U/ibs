@@ -4,18 +4,10 @@ export interface ActLogEntry {
   pk: number
   sort: '1' | '2' | '3' | '4' | '5' | '6'
   project: SimpleProject
-  issue: {
-    pk: number
-    tracker: string
-    status: { pk: number; name: string; closed: boolean }
-    subject: string
-    description: string
-  } | null
-  comment: { pk: number; content: string } | null
-  meeting: { pk: number; title: string; agenda: string } | null
-  news: { pk: number; title: string; summary: string } | null
-  document: { pk: number; title: string; description: string } | null
-  post: { pk: number; forum: string; title: string; content: string } | null
+  target_id: number | null
+  parent_id: number | null
+  title: string
+  summary: string
   status_log: string
   act_date: string
   timestamp: string

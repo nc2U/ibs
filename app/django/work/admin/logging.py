@@ -6,8 +6,8 @@ from work.models import ActivityLogEntry, IssueLogEntry
 
 @admin.register(ActivityLogEntry)
 class ActivityLogEntryAdmin(admin.ModelAdmin):
-    list_display = ('pk', 'sort', 'issue', 'project', 'act_date')
-    list_display_links = ('issue',)
+    list_display = ('pk', 'sort', 'title', 'project', 'act_date')
+    list_display_links = ('title',)
     list_filter = ('project', 'sort', ('act_date', DateRangeFilter))
 
 

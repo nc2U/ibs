@@ -91,11 +91,13 @@ def notify_document_delete(sender, instance, **kwargs):
 def document_log_changes(sender, instance, created, **kwargs):
     """Document 생성 시 ActivityLogEntry 생성"""
     if created and instance.issue_project and instance.issue_project.status == '1':
-        ActivityLogEntry.objects.create(sort='5', project=instance.issue_project,
-                                        document=instance, creator=instance.creator)
+        ActivityLogEntry.objects.create(
+            sort='5', project=instance.issue_project, target_id=instance.pk,
+            title=f"[문서] {instance.title}", summary=(instance.description or '')[:150], creator=instance.creator
+        )
 
 
 @receiver(pre_delete, sender=Document, dispatch_uid="document_activity_log_delete")
 def document_log_delete(sender, instance, **kwargs):
     """Document 삭제 전 ActivityLogEntry 제거"""
-    ActivityLogEntry.objects.filter(document=instance).delete()
+    ActivityLogEntry.objects.filter(sort='5', target_id=instance.pk).delete()

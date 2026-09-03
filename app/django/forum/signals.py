@@ -8,10 +8,12 @@ from work.models.logging import ActivityLogEntry
 def post_log_changes(sender, instance, created, **kwargs):
     project = instance.forum.project
     if created and project and project.status == '1':
-        ActivityLogEntry.objects.create(sort='6', project=project,
-                                        post=instance, creator=instance.creator)
+        ActivityLogEntry.objects.create(
+            sort='6', project=project, target_id=instance.pk, parent_id=instance.forum.pk,
+            title=f"[게시물] {instance.title}", summary=(instance.content or '')[:150], creator=instance.creator
+        )
 
 
 @receiver(pre_delete, sender=Post, dispatch_uid="post_activity_log_delete")
 def post_log_delete(sender, instance, **kwargs):
-    ActivityLogEntry.objects.filter(post=instance).delete()
+    ActivityLogEntry.objects.filter(sort='6', target_id=instance.pk).delete()

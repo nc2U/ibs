@@ -27,12 +27,19 @@ def meeting_log_changes(sender, instance, created, **kwargs):
     old_is_confirmed = getattr(instance, 'old_is_confirmed', None)
 
     if created:
-        ActivityLogEntry.objects.create(sort='3', project=instance.project,
-                                        meeting=instance, creator=instance.creator)
+        ActivityLogEntry.objects.create(
+            sort='3', project=instance.project, target_id=instance.pk,
+            title=f"[회의록] #{instance.pk} (등록) {instance.title}",
+            summary=(instance.agenda or '')[:150], creator=instance.creator
+        )
     elif hasattr(instance, 'old_status'):
-        ActivityLogEntry.objects.create(sort='3', project=instance.project,
-                                        meeting=instance, status_log=instance.get_status_display(),
-                                        creator=user)
+        status_name = instance.get_status_display()
+        ActivityLogEntry.objects.create(
+            sort='3', project=instance.project, target_id=instance.pk,
+            title=f"[회의록] #{instance.pk} ({status_name}) {instance.title}",
+            summary=(instance.agenda or '')[:150], status_log=status_name,
+            creator=user
+        )
 
     # 메일 알림 서비스 호출
     MeetingService.notify_meeting_changes(instance, created, user, old_is_confirmed)
@@ -40,7 +47,7 @@ def meeting_log_changes(sender, instance, created, **kwargs):
 
 @receiver(pre_delete, sender=Meeting)
 def meeting_log_delete(sender, instance, **kwargs):
-    ActivityLogEntry.objects.filter(meeting=instance).delete()
+    ActivityLogEntry.objects.filter(sort='3', target_id=instance.pk).delete()
 
 
 @receiver(pre_save, sender=Issue)
@@ -58,7 +65,8 @@ def issue_log_changes(sender, instance, created, **kwargs):
 @receiver(pre_delete, sender=Issue)
 def issue_log_delete(sender, instance, **kwargs):
     IssueLogEntry.objects.filter(issue=instance).delete()
-    ActivityLogEntry.objects.filter(issue=instance).delete()
+    ActivityLogEntry.objects.filter(sort='1', target_id=instance.pk).delete()
+    ActivityLogEntry.objects.filter(sort='2', parent_id=instance.pk).delete()
 
 
 @receiver(post_save, sender=IssueRelation)
@@ -82,23 +90,30 @@ def issue_relation_delete(sender, instance, **kwargs):
 def comment_log_changes(sender, instance, created, **kwargs):
     if created:
         IssueLogEntry.objects.create(issue=instance.issue, action='Comment', comment=instance, creator=instance.creator)
-        ActivityLogEntry.objects.create(sort='2', project=instance.issue.project, issue=instance.issue,
-                                        comment=instance, creator=instance.creator)
+        issue_info = f"#{instance.issue.pk} {instance.issue.subject}" if instance.issue else ''
+        ActivityLogEntry.objects.create(
+            sort='2', project=instance.issue.project if instance.issue else None,
+            target_id=instance.pk, parent_id=instance.issue.pk if instance.issue else None,
+            title=f"[의견] {issue_info}", summary=(instance.content or '')[:150], creator=instance.creator
+        )
 
 
 @receiver(pre_delete, sender=IssueComment)
 def comment_log_delete(sender, instance, **kwargs):
     IssueLogEntry.objects.filter(comment=instance).delete()
-    ActivityLogEntry.objects.filter(comment=instance).delete()
+    ActivityLogEntry.objects.filter(sort='2', target_id=instance.pk).delete()
 
 
 @receiver(post_save, sender=News)
 def news_log_changes(sender, instance, created, **kwargs):
     if created:
-        ActivityLogEntry.objects.create(sort='4', project=instance.project,
-                                        news=instance, creator=instance.author)
+        summary = (instance.summary or instance.content or '')[:150]
+        ActivityLogEntry.objects.create(
+            sort='4', project=instance.project, target_id=instance.pk,
+            title=f"[공지] {instance.title}", summary=summary, creator=instance.author
+        )
 
 
 @receiver(pre_delete, sender=News)
 def news_log_delete(sender, instance, **kwargs):
-    ActivityLogEntry.objects.filter(news=instance).delete()
+    ActivityLogEntry.objects.filter(sort='4', target_id=instance.pk).delete()

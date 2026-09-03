@@ -102,7 +102,14 @@ class IssueService:
 
         if created:
             # 생성 로그 및 알림
-            ActivityLogEntry.objects.create(sort='1', project=instance.project, issue=instance, creator=user)
+            tracker_name = str(instance.tracker) if instance.tracker else ''
+            status_name = instance.status.name if instance.status else ''
+            title = f"[{tracker_name}] #{instance.pk} ({status_name}) {instance.subject}"
+            summary = (instance.description or '')[:150]
+            ActivityLogEntry.objects.create(
+                sort='1', project=instance.project, target_id=instance.pk,
+                title=title, summary=summary, creator=user
+            )
             IssueService.send_issue_mail(instance, user, "create")
         else:
             # 워처 관리 로직 추가
@@ -141,8 +148,13 @@ class IssueService:
                                                  diff=diff, creator=user)
 
                 if hasattr(instance, 'old_status'):
-                    ActivityLogEntry.objects.create(sort='1', project=instance.project, issue=instance,
-                                                    status_log=status_log, creator=user)
+                    tracker_name = str(instance.tracker) if instance.tracker else ''
+                    title = f"[{tracker_name}] #{instance.pk} ({status_log}) {instance.subject}"
+                    summary = (instance.description or '')[:150]
+                    ActivityLogEntry.objects.create(
+                        sort='1', project=instance.project, target_id=instance.pk,
+                        title=title, summary=summary, status_log=status_log, creator=user
+                    )
                     IssueService.send_issue_mail(instance, user, "progress", instance.old_status.name)
 
                 if hasattr(instance, 'old_assigned_to'):
