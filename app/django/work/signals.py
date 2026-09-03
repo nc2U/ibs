@@ -1,3 +1,5 @@
+import html
+from django.utils.html import strip_tags
 from django.db.models.signals import pre_save, post_save, pre_delete
 from django.dispatch import receiver
 
@@ -91,10 +93,12 @@ def comment_log_changes(sender, instance, created, **kwargs):
     if created:
         IssueLogEntry.objects.create(issue=instance.issue, action='Comment', comment=instance, creator=instance.creator)
         issue_info = f"#{instance.issue.pk} {instance.issue.subject}" if instance.issue else ''
+        clean_summary = html.unescape(strip_tags(instance.content or ''))
+        clean_summary = ' '.join(clean_summary.split())
         ActivityLogEntry.objects.create(
             sort='2', project=instance.issue.project if instance.issue else None,
             target_id=instance.pk, parent_id=instance.issue.pk if instance.issue else None,
-            title=f"[의견] {issue_info}", summary=(instance.content or '')[:150], creator=instance.creator
+            title=f"[의견] {issue_info}", summary=clean_summary[:150], creator=instance.creator
         )
 
 
@@ -107,10 +111,12 @@ def comment_log_delete(sender, instance, **kwargs):
 @receiver(post_save, sender=News)
 def news_log_changes(sender, instance, created, **kwargs):
     if created:
-        summary = (instance.summary or instance.content or '')[:150]
+        raw_content = instance.summary or instance.content or ''
+        clean_summary = html.unescape(strip_tags(raw_content))
+        clean_summary = ' '.join(clean_summary.split())
         ActivityLogEntry.objects.create(
             sort='4', project=instance.project, target_id=instance.pk,
-            title=f"[공지] {instance.title}", summary=summary, creator=instance.author
+            title=f"[공지] {instance.title}", summary=clean_summary[:150], creator=instance.author
         )
 
 
