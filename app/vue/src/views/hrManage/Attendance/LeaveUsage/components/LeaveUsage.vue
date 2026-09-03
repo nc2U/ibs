@@ -26,7 +26,11 @@ const onDelete = (pk: number) => emit('on-delete', pk)
 </script>
 
 <template>
-  <CTableRow v-if="usage" class="text-center" :class="{ 'table-secondary opacity-75': usage.is_cancelled }">
+  <CTableRow
+    v-if="usage"
+    class="text-center"
+    :class="{ 'table-secondary opacity-75': usage.is_cancelled }"
+  >
     <CTableDataCell>
       <a href="javascript:void(0);" @click="showDetail">{{ usage.staff_name }}</a>
     </CTableDataCell>
@@ -37,7 +41,10 @@ const onDelete = (pk: number) => emit('on-delete', pk)
     </CTableDataCell>
     <CTableDataCell>{{ usage.start_date }}</CTableDataCell>
     <CTableDataCell>{{ usage.end_date }}</CTableDataCell>
-    <CTableDataCell class="text-right fw-bold" :class="usage.deduction_days > 0 ? 'text-danger' : 'text-muted'">
+    <CTableDataCell
+      class="text-right fw-bold"
+      :class="usage.deduction_days > 0 ? 'text-danger' : 'text-muted'"
+    >
       {{ Number(usage.deduction_days || 0).toFixed(2) }} 일
     </CTableDataCell>
     <CTableDataCell class="text-left small">{{ usage.reason || '-' }}</CTableDataCell>

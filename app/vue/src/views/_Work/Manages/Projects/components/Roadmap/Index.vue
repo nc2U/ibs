@@ -55,7 +55,11 @@ const loadRoadmapData = async () => {
   const projId = route.params.projId as string
   if (!projId) return
 
-  const payload: { project: string; status?: '' | '1' | '2' | '3'; exclude?: '' | '1' | '2' | '3' } = {
+  const payload: {
+    project: string
+    status?: '' | '1' | '2' | '3'
+    exclude?: '' | '1' | '2' | '3'
+  } = {
     project: projId,
   }
 

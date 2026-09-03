@@ -6,7 +6,8 @@ export type ThemeType = 'default' | 'dark' | 'auto'
 export const useStore = defineStore('store', () => {
   const asideVisible = ref(false)
   const sidebarVisible = ref(
-    !localStorage?.getItem?.('sidebarVisible') || localStorage?.getItem?.('sidebarVisible') === 'true',
+    !localStorage?.getItem?.('sidebarVisible') ||
+      localStorage?.getItem?.('sidebarVisible') === 'true',
   )
   const sidebarUnfoldable = ref(localStorage?.getItem?.('sidebarUnfoldable') === 'true')
   const theme = ref<ThemeType>((localStorage?.getItem?.('theme') as ThemeType) || 'default')

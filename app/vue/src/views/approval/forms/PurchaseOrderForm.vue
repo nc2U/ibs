@@ -133,10 +133,7 @@ onMounted(() => {
     <CRow class="mb-3">
       <CFormLabel class="col-sm-3 col-form-label">납품 희망일</CFormLabel>
       <CCol sm="3">
-        <DatePicker
-          v-model="deliveryDueDate"
-          placeholder="납품 희망일 선택"
-        />
+        <DatePicker v-model="deliveryDueDate" placeholder="납품 희망일 선택" />
       </CCol>
       <CFormLabel class="col-sm-2 col-form-label text-sm-end">납품 장소</CFormLabel>
       <CCol sm="4">

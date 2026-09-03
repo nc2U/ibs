@@ -173,9 +173,21 @@ onMounted(() => {
             v-if="doc.security_level"
             size="x-small"
             variant="tonal"
-            :color="doc.security_level === '1' ? 'error' : doc.security_level === '2' ? 'primary' : 'success'"
+            :color="
+              doc.security_level === '1'
+                ? 'error'
+                : doc.security_level === '2'
+                  ? 'primary'
+                  : 'success'
+            "
           >
-            {{ doc.security_level === '1' ? '🔒 1등급' : doc.security_level === '2' ? '👥 2등급' : '🌐 3등급' }}
+            {{
+              doc.security_level === '1'
+                ? '🔒 1등급'
+                : doc.security_level === '2'
+                  ? '👥 2등급'
+                  : '🌐 3등급'
+            }}
           </v-chip>
           <span v-else class="text-muted small">-</span>
         </CTableDataCell>

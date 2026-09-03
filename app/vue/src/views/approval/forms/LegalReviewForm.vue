@@ -131,10 +131,7 @@ onMounted(() => {
       </CCol>
       <CFormLabel class="col-sm-2 col-form-label text-sm-end">회신 희망일</CFormLabel>
       <CCol sm="4">
-        <DatePicker
-          v-model="reviewDueDate"
-          placeholder="회신 희망일 선택"
-        />
+        <DatePicker v-model="reviewDueDate" placeholder="회신 희망일 선택" />
       </CCol>
     </CRow>
 

@@ -138,7 +138,9 @@ const done_ratio = computed(() => {
 }
 
 .version-header-row {
-  transition: background-color 0.3s ease, border-color 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    border-color 0.3s ease;
   border: 1px solid transparent;
 }
 

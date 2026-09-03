@@ -31,9 +31,15 @@ const onDelete = (pk: number) => emit('on-delete', pk)
     <CTableDataCell>
       <a href="javascript:void(0);" @click="showDetail">{{ quota.staff_name }}</a>
     </CTableDataCell>
-    <CTableDataCell class="text-right">{{ Number(quota.granted_days || 0).toFixed(2) }}</CTableDataCell>
-    <CTableDataCell class="text-right">{{ Number(quota.carry_over_days || 0).toFixed(2) }}</CTableDataCell>
-    <CTableDataCell class="text-right">{{ Number(quota.reward_days || 0).toFixed(2) }}</CTableDataCell>
+    <CTableDataCell class="text-right">{{
+      Number(quota.granted_days || 0).toFixed(2)
+    }}</CTableDataCell>
+    <CTableDataCell class="text-right">{{
+      Number(quota.carry_over_days || 0).toFixed(2)
+    }}</CTableDataCell>
+    <CTableDataCell class="text-right">{{
+      Number(quota.reward_days || 0).toFixed(2)
+    }}</CTableDataCell>
     <CTableDataCell class="text-right fw-bold text-primary">
       {{ Number(quota.total_granted_days || 0).toFixed(2) }}
     </CTableDataCell>

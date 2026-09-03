@@ -27,9 +27,7 @@ const multiSubmit = (payload: StaffLeaveUsage) => emit('multi-submit', payload)
 
 <template>
   <CAlert :color="AlertSecondary" class="text-right">
-    <v-btn color="primary" :disabled="!company" @click="createConfirm">
-      휴가 사용 내역 등록
-    </v-btn>
+    <v-btn color="primary" :disabled="!company" @click="createConfirm"> 휴가 사용 내역 등록 </v-btn>
   </CAlert>
 
   <FormModal ref="refFormModal" size="lg">

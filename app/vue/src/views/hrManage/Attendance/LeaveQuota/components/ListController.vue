@@ -21,12 +21,7 @@ const form = reactive({
   q: '',
 })
 
-const formsCheck = computed(
-  () =>
-    form.staff === '' &&
-    form.year === currentYear &&
-    form.q === '',
-)
+const formsCheck = computed(() => form.staff === '' && form.year === currentYear && form.q === '')
 
 const comStore = useCompany()
 const staffLeaveQuotasCount = computed(() => comStore.staffLeaveQuotasCount)

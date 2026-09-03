@@ -17,16 +17,13 @@ const props = defineProps({
 
 const emit = defineEmits(['loading-start', 'loading-end', 'update:toDate'])
 
-watch(
-  [() => props.toDate, () => props.fromDate],
-  ([newTo, newFrom]) => {
-    if (newTo && newFrom) {
-      actFilter.to_act_date = dateFormat(newTo)
-      actFilter.from_act_date = dateFormat(newFrom)
-      filterActivity()
-    }
-  },
-)
+watch([() => props.toDate, () => props.fromDate], ([newTo, newFrom]) => {
+  if (newTo && newFrom) {
+    actFilter.to_act_date = dateFormat(newTo)
+    actFilter.from_act_date = dateFormat(newFrom)
+    filterActivity()
+  }
+})
 
 const actFilter = reactive<ActLogEntryFilter & { subProjects: boolean }>({
   project: '',

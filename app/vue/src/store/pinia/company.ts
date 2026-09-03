@@ -1424,7 +1424,6 @@ export const useCompany = defineStore('company', () => {
       })
       .catch(err => errorHandle(err.response.data))
 
-
   return {
     companyList,
     company,

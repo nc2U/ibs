@@ -9,9 +9,7 @@ const account = useAccount()
 const isLoading = computed(() => !account.userInfo)
 
 const { canGlobal, PERM } = usePerms()
-const canComHrRead = computed(
-  () => account.isStaff || canGlobal(PERM.HQ_HR_WORK_READ),
-)
+const canComHrRead = computed(() => account.isStaff || canGlobal(PERM.HQ_HR_WORK_READ))
 </script>
 
 <template>

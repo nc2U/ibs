@@ -27,9 +27,7 @@ const multiSubmit = (payload: StaffEvaluation) => emit('multi-submit', payload)
 
 <template>
   <CAlert :color="AlertSecondary" class="text-right">
-    <v-btn color="primary" :disabled="!company" @click="createConfirm">
-      인사 평가 기록 등록
-    </v-btn>
+    <v-btn color="primary" :disabled="!company" @click="createConfirm"> 인사 평가 기록 등록 </v-btn>
   </CAlert>
 
   <FormModal ref="refFormModal" size="lg">

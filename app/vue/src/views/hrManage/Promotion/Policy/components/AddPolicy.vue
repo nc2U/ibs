@@ -27,19 +27,13 @@ const multiSubmit = (payload: PromotionPolicy) => emit('multi-submit', payload)
 
 <template>
   <CAlert :color="AlertSecondary" class="text-right">
-    <v-btn color="primary" :disabled="!company" @click="createConfirm">
-      승급 정책 신규 등록
-    </v-btn>
+    <v-btn color="primary" :disabled="!company" @click="createConfirm"> 승급 정책 신규 등록 </v-btn>
   </CAlert>
 
   <FormModal ref="refFormModal" size="lg">
     <template #header>승급 정책 신규 등록</template>
     <template #default>
-      <PolicyForm
-        :company="company"
-        @multi-submit="multiSubmit"
-        @close="refFormModal.close()"
-      />
+      <PolicyForm :company="company" @multi-submit="multiSubmit" @close="refFormModal.close()" />
     </template>
   </FormModal>
 

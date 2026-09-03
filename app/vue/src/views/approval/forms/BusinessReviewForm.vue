@@ -310,31 +310,19 @@ onMounted(() => {
         <CRow>
           <CCol sm="3">
             <CFormLabel class="small mb-1">토지 확보/계약</CFormLabel>
-            <DatePicker
-              v-model="landSecureDate"
-              placeholder="토지계약일 선택"
-            />
+            <DatePicker v-model="landSecureDate" placeholder="토지계약일 선택" />
           </CCol>
           <CCol sm="3">
             <CFormLabel class="small mb-1">인허가/사업승인</CFormLabel>
-            <DatePicker
-              v-model="approvalTargetDate"
-              placeholder="사업승인일 선택"
-            />
+            <DatePicker v-model="approvalTargetDate" placeholder="사업승인일 선택" />
           </CCol>
           <CCol sm="3">
             <CFormLabel class="small mb-1">착공 및 분양</CFormLabel>
-            <DatePicker
-              v-model="startDate"
-              placeholder="착공/분양일 선택"
-            />
+            <DatePicker v-model="startDate" placeholder="착공/분양일 선택" />
           </CCol>
           <CCol sm="3">
             <CFormLabel class="small mb-1">준공 및 입주</CFormLabel>
-            <DatePicker
-              v-model="completionDate"
-              placeholder="준공/입주일 선택"
-            />
+            <DatePicker v-model="completionDate" placeholder="준공/입주일 선택" />
           </CCol>
         </CRow>
       </div>

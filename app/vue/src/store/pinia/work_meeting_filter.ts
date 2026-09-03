@@ -141,8 +141,10 @@ export const useMeetingFilter = defineStore('meetingFilter', () => {
     // 회의 일시 범위
     if (enabledFields.value.includes('meeting_date')) {
       if (cond.value.meeting_date === 'between') {
-        if (form.value.meeting_date_after) payload.meeting_date_after = form.value.meeting_date_after
-        if (form.value.meeting_date_before) payload.meeting_date_before = form.value.meeting_date_before
+        if (form.value.meeting_date_after)
+          payload.meeting_date_after = form.value.meeting_date_after
+        if (form.value.meeting_date_before)
+          payload.meeting_date_before = form.value.meeting_date_before
       } else if (cond.value.meeting_date === 'gte' && form.value.meeting_date_after) {
         payload.meeting_date_after = form.value.meeting_date_after
       } else if (cond.value.meeting_date === 'lte' && form.value.meeting_date_before) {
@@ -164,9 +166,12 @@ export const useMeetingFilter = defineStore('meetingFilter', () => {
 
     // 문자열 검색
     const searchTerms: string[] = []
-    if (enabledFields.value.includes('title') && form.value.title) searchTerms.push(form.value.title)
-    if (enabledFields.value.includes('agenda') && form.value.agenda) searchTerms.push(form.value.agenda)
-    if (enabledFields.value.includes('content') && form.value.content) searchTerms.push(form.value.content)
+    if (enabledFields.value.includes('title') && form.value.title)
+      searchTerms.push(form.value.title)
+    if (enabledFields.value.includes('agenda') && form.value.agenda)
+      searchTerms.push(form.value.agenda)
+    if (enabledFields.value.includes('content') && form.value.content)
+      searchTerms.push(form.value.content)
     if (enabledFields.value.includes('decisions') && form.value.decisions) {
       searchTerms.push(form.value.decisions)
     }

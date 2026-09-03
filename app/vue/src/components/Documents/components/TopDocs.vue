@@ -31,7 +31,12 @@ const sortColor = computed(() => (props.docs?.project ? 'success' : 'info'))
     </CTableDataCell>
     <CTableDataCell class="text-left">
       <v-icon v-if="docs.is_blind" icon="mdi-eye-off" size="sm" class="mr-1 text-danger" />
-      <v-icon v-if="docs.security_level === '1'" icon="mdi-lock-outline" size="sm" class="mr-1 text-warning" />
+      <v-icon
+        v-if="docs.security_level === '1'"
+        icon="mdi-lock-outline"
+        size="sm"
+        class="mr-1 text-warning"
+      />
       <router-link
         v-if="canDocsRead"
         :to="{ name: `${viewRoute} - 보기`, params: { docsId: docs.pk } }"

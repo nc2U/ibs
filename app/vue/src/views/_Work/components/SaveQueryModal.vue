@@ -97,14 +97,25 @@ defineExpose({ callModal, closeModal })
             양식 이름
           </CFormLabel>
           <CCol class="col-sm-9">
-            <CFormInput id="query-name" v-model="queryName" placeholder="검색양식 이름을 입력하세요" required />
+            <CFormInput
+              id="query-name"
+              v-model="queryName"
+              placeholder="검색양식 이름을 입력하세요"
+              required
+            />
           </CCol>
         </CRow>
 
         <CRow class="mb-3">
-          <CFormLabel for="query-desc" class="col-sm-3 col-form-label text-right"> 설명 </CFormLabel>
+          <CFormLabel for="query-desc" class="col-sm-3 col-form-label text-right">
+            설명
+          </CFormLabel>
           <CCol class="col-sm-9">
-            <CFormInput id="query-desc" v-model="queryDescription" placeholder="검색양식 설명을 입력하세요" />
+            <CFormInput
+              id="query-desc"
+              v-model="queryDescription"
+              placeholder="검색양식 설명을 입력하세요"
+            />
           </CCol>
         </CRow>
 

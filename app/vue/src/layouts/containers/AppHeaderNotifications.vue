@@ -193,10 +193,20 @@ const openTodo = () => {
     >
       <v-icon icon="mdi-chat-processing-outline" start size="small" />
       메신저
-      <v-badge v-if="unreadChatCount > 0" :content="unreadChatCount" color="error" inline class="ms-1" />
+      <v-badge
+        v-if="unreadChatCount > 0"
+        :content="unreadChatCount"
+        color="error"
+        inline
+        class="ms-1"
+      />
       <span v-else class="text-caption ms-1 text-disabled">0</span>
       <v-tooltip activator="parent" location="bottom">
-        {{ unreadChatCount > 0 ? `미확인 메시지 ${unreadChatCount}건 (클릭하여 메신저 열기)` : '실시간 메신저 열기' }}
+        {{
+          unreadChatCount > 0
+            ? `미확인 메시지 ${unreadChatCount}건 (클릭하여 메신저 열기)`
+            : '실시간 메신저 열기'
+        }}
       </v-tooltip>
     </v-chip>
 

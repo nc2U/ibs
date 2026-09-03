@@ -405,7 +405,9 @@ export const useWork = defineStore('work', () => {
   const permissionList = ref<Permission[]>([])
   const groupedPermissions = ref<GroupedPermissions | null>(null)
 
-  const fetchPermissionList = async (category?: 'work_space' | 'ibs_hq_manage' | 'ibs_pr_manage') => {
+  const fetchPermissionList = async (
+    category?: 'work_space' | 'ibs_hq_manage' | 'ibs_pr_manage',
+  ) => {
     const url = category ? `/permission/?category=${category}` : `/permission/`
     try {
       const res = await api.get(url)

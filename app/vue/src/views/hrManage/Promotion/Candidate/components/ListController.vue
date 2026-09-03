@@ -139,7 +139,9 @@ defineExpose({ listFiltering })
 
     <CRow>
       <CCol class="p-2 pl-3">
-        <strong> 승급 심사 대상 내역 조회 결과 : {{ numFormat(promotionCandidatesCount) }} 건 </strong>
+        <strong>
+          승급 심사 대상 내역 조회 결과 : {{ numFormat(promotionCandidatesCount) }} 건
+        </strong>
       </CCol>
       <CCol v-if="!formsCheck" class="text-right mb-0">
         <v-btn color="info" size="small" @click="resetForm"> 검색조건 초기화</v-btn>

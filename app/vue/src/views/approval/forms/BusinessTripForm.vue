@@ -147,17 +147,9 @@ onMounted(() => {
       <CFormLabel class="col-sm-2 col-form-label required">출장 기간</CFormLabel>
       <CCol sm="10">
         <div class="d-flex align-items-center gap-2 flex-wrap">
-          <DatePicker
-            v-model="startDate"
-            required
-            placeholder="출장 시작일"
-          />
+          <DatePicker v-model="startDate" required placeholder="출장 시작일" />
           <span>~</span>
-          <DatePicker
-            v-model="endDate"
-            required
-            placeholder="출장 종료일"
-          />
+          <DatePicker v-model="endDate" required placeholder="출장 종료일" />
           <CBadge color="primary" class="p-2 text-nowrap">
             {{ modelValue.nights_count ?? 0 }}박 {{ modelValue.days_count ?? 1 }}일
           </CBadge>

@@ -125,9 +125,7 @@ onBeforeMount(() => {
         </span>
         <span>
           <template v-if="progressNum > 0">
-            <router-link
-              :to="{ name: '(업무)', query: { status: 'open', version: version?.pk } }"
-            >
+            <router-link :to="{ name: '(업무)', query: { status: 'open', version: version?.pk } }">
               {{ progressStr }}
             </router-link>
           </template>

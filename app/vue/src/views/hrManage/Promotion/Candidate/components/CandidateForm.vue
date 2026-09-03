@@ -130,7 +130,10 @@ const formDataSetup = () => {
     form.value.staff = props.candidate.staff
     form.value.eval_year = props.candidate.eval_year
     form.value.tenure_years = Number(props.candidate.tenure_years || 0)
-    form.value.avg_eval_score = props.candidate.avg_eval_score !== null && props.candidate.avg_eval_score !== undefined ? Number(props.candidate.avg_eval_score) : null
+    form.value.avg_eval_score =
+      props.candidate.avg_eval_score !== null && props.candidate.avg_eval_score !== undefined
+        ? Number(props.candidate.avg_eval_score)
+        : null
     form.value.status = props.candidate.status
     form.value.committee_review = props.candidate.committee_review || ''
     form.value.promoted_date = props.candidate.promoted_date || null

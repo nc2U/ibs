@@ -103,11 +103,7 @@ onMounted(() => {
       </CCol>
       <CFormLabel class="col-sm-2 col-form-label required text-sm-end">지급 요청일</CFormLabel>
       <CCol sm="4">
-        <DatePicker
-          v-model="paymentDueDate"
-          required
-          placeholder="지급 요청일 선택"
-        />
+        <DatePicker v-model="paymentDueDate" required placeholder="지급 요청일 선택" />
       </CCol>
     </CRow>
 
@@ -133,11 +129,7 @@ onMounted(() => {
       </CCol>
       <CFormLabel class="col-sm-2 col-form-label required text-sm-end">정산 예정일</CFormLabel>
       <CCol sm="4">
-        <DatePicker
-          v-model="settlementDueDate"
-          required
-          placeholder="정산 예정일 선택"
-        />
+        <DatePicker v-model="settlementDueDate" required placeholder="정산 예정일 선택" />
       </CCol>
     </CRow>
 

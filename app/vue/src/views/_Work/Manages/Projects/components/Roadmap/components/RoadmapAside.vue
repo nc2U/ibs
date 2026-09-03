@@ -79,7 +79,10 @@ const scrollToVersion = (verId?: number) => {
             :checked="selectedTrackerIds.includes(tracker.pk)"
             @change="toggleTracker(tracker.pk)"
           />
-          <label :for="`tracker-filter-${tracker.pk}`" class="form-check-label text-caption pointer">
+          <label
+            :for="`tracker-filter-${tracker.pk}`"
+            class="form-check-label text-caption pointer"
+          >
             {{ tracker.name }}
           </label>
         </div>

@@ -189,10 +189,11 @@ export const useApproval = defineStore('approval', () => {
   const startPollingMyPending = () => {
     if (pollingTimer) return
     pollingTimer = setInterval(async () => {
-      await api.get('/approval-document/my_pending/', { 
-        skipErrorInterceptor: true, 
-        hideProgress: true 
-      } as any)
+      await api
+        .get('/approval-document/my_pending/', {
+          skipErrorInterceptor: true,
+          hideProgress: true,
+        } as any)
         .then(res => (pendingList.value = res.data))
         .catch(err => console.warn('Polling my_pending failed:', err?.message))
     }, 60000)

@@ -21,14 +21,7 @@ export type DataFilter = {
   to_date?: string
   sort?: 1 | 2 | null
   account_category?:
-    | 'asset'
-    | 'liability'
-    | 'equity'
-    | 'revenue'
-    | 'expense'
-    | 'transfer'
-    | 'cancel'
-    | ''
+    'asset' | 'liability' | 'equity' | 'revenue' | 'expense' | 'transfer' | 'cancel' | ''
   account?: number | null
   affiliate?: number | null | ''
   bank_account?: number | null

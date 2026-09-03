@@ -59,4 +59,3 @@ export interface CustomQuery {
   created: string
   updated: string
 }
-

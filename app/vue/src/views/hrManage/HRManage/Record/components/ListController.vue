@@ -15,12 +15,7 @@ const form = reactive({
   q: '',
 })
 
-const formsCheck = computed(
-  () =>
-    form.staff === '' &&
-    form.sort === '' &&
-    form.q === '',
-)
+const formsCheck = computed(() => form.staff === '' && form.sort === '' && form.q === '')
 
 const comStore = useCompany()
 const getAllStaffs = computed(() => comStore.getAllStaffs)

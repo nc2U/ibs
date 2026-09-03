@@ -38,12 +38,22 @@ const onDelete = (pk: number) => emit('on-delete', pk)
     </CTableDataCell>
     <CTableDataCell>{{ policy.min_years }}년</CTableDataCell>
     <CTableDataCell class="text-right">
-      {{ policy.min_avg_grade_point !== null && policy.min_avg_grade_point !== undefined ? Number(policy.min_avg_grade_point).toFixed(1) : '-' }}
+      {{
+        policy.min_avg_grade_point !== null && policy.min_avg_grade_point !== undefined
+          ? Number(policy.min_avg_grade_point).toFixed(1)
+          : '-'
+      }}
     </CTableDataCell>
     <CTableDataCell>{{ policy.required_eval_grade || '-' }}</CTableDataCell>
-    <CTableDataCell class="text-left small">{{ policy.required_credentials || '-' }}</CTableDataCell>
-    <CTableDataCell class="text-left small text-danger">{{ policy.disqualification_conditions || '-' }}</CTableDataCell>
-    <CTableDataCell class="text-left small text-muted">{{ policy.description || '-' }}</CTableDataCell>
+    <CTableDataCell class="text-left small">{{
+      policy.required_credentials || '-'
+    }}</CTableDataCell>
+    <CTableDataCell class="text-left small text-danger">{{
+      policy.disqualification_conditions || '-'
+    }}</CTableDataCell>
+    <CTableDataCell class="text-left small text-muted">{{
+      policy.description || '-'
+    }}</CTableDataCell>
     <CTableDataCell>
       <CBadge :color="policy.is_active ? 'success' : 'secondary'" shape="rounded-pill">
         {{ policy.is_active ? '사용' : '미사용' }}

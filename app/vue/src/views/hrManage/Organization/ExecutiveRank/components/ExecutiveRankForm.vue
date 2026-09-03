@@ -161,7 +161,13 @@ onBeforeMount(() => formDataSetup())
         >
           저장
         </v-btn>
-        <v-btn v-if="executiveRank" type="button" size="small" color="warning" @click="deleteConfirm">
+        <v-btn
+          v-if="executiveRank"
+          type="button"
+          size="small"
+          color="warning"
+          @click="deleteConfirm"
+        >
           삭제
         </v-btn>
         <v-btn type="button" size="small" color="light" @click="$emit('close')" flat> 닫기</v-btn>

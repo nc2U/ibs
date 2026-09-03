@@ -40,7 +40,7 @@ onBeforeMount(() => fetchResetTokenList(uid.value))
 
 <template>
   <div class="bg-light min-vh-100 d-flex flex-row align-items-center">
-    <div class="position-fixed top-0 end-0 p-3" style="z-index: 1050;">
+    <div class="position-fixed top-0 end-0 p-3" style="z-index: 1050">
       <ThemeSwitcher size="lg" tooltip-location="bottom" />
     </div>
     <CContainer>

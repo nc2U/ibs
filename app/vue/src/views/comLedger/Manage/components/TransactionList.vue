@@ -24,9 +24,7 @@ const refBankAcc = ref()
 const { canGlobal, PERM } = usePerms()
 const canComLedgerUpdate = computed(() => canGlobal(PERM.HQ_LEDGER_UPDATE))
 const canComLedgerManage = computed(() => canGlobal(PERM.HQ_LEDGER_MANAGE))
-const canComLedgerEdit = computed(
-  () => canComLedgerUpdate.value || canComLedgerManage.value,
-)
+const canComLedgerEdit = computed(() => canComLedgerUpdate.value || canComLedgerManage.value)
 
 const ledgerStore = useComLedger()
 const transPages = computed(() => ledgerStore.transPages)

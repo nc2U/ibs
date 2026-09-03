@@ -57,11 +57,17 @@ const getGradeBadge = (grade: string) => {
       </CBadge>
     </CTableDataCell>
     <CTableDataCell class="text-right fw-bold">
-      {{ evaluation.score !== null && evaluation.score !== undefined ? Number(evaluation.score).toFixed(1) : '-' }}
+      {{
+        evaluation.score !== null && evaluation.score !== undefined
+          ? Number(evaluation.score).toFixed(1)
+          : '-'
+      }}
     </CTableDataCell>
     <CTableDataCell>{{ evaluation.evaluator_name || '-' }}</CTableDataCell>
     <CTableDataCell>{{ evaluation.reviewer_name || '-' }}</CTableDataCell>
-    <CTableDataCell class="text-left small">{{ evaluation.achievement_summary || '-' }}</CTableDataCell>
+    <CTableDataCell class="text-left small">{{
+      evaluation.achievement_summary || '-'
+    }}</CTableDataCell>
     <CTableDataCell class="text-left small">{{ evaluation.notes || '-' }}</CTableDataCell>
     <CTableDataCell v-if="canHrWorkManage">
       <v-btn color="info" size="x-small" @click="showDetail">확인</v-btn>

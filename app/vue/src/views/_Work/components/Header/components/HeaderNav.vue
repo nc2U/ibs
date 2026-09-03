@@ -37,11 +37,19 @@ const toLocation = (menu: string) => {
     <CDropdown v-if="route.params['projId']">
       <CDropdownToggle :color="isDark ? 'dark' : 'light'" />
       <CDropdownMenu>
-        <CDropdownItem @click="router.push({ name: '(업무) - 추가', params: route.params })"> 새 업무 </CDropdownItem>
-        <CDropdownItem v-if="workManager" @click="router.push({ name: '(설정) - 범주추가', params: route.params })">
+        <CDropdownItem @click="router.push({ name: '(업무) - 추가', params: route.params })">
+          새 업무
+        </CDropdownItem>
+        <CDropdownItem
+          v-if="workManager"
+          @click="router.push({ name: '(설정) - 범주추가', params: route.params })"
+        >
           새 업무 범주
         </CDropdownItem>
-        <CDropdownItem v-if="workManager" @click="router.push({ name: '(로드맵) - 추가', params: route.params })">
+        <CDropdownItem
+          v-if="workManager"
+          @click="router.push({ name: '(로드맵) - 추가', params: route.params })"
+        >
           새 단계
         </CDropdownItem>
         <CDropdownItem

@@ -5,7 +5,8 @@ export interface ChatUser {
 }
 
 export type ChatRoomType = 'channel' | 'group' | 'direct'
-export type ChatMessageType = 'text' | 'image' | 'file' | 'issue' | 'meeting' | 'approval' | 'system'
+export type ChatMessageType =
+  'text' | 'image' | 'file' | 'issue' | 'meeting' | 'approval' | 'system'
 
 export interface ChatLastMessage {
   id: number

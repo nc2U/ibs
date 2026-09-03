@@ -177,11 +177,7 @@ onMounted(() => {
       </CCol>
       <CFormLabel class="col-sm-2 col-form-label required">발송 희망일</CFormLabel>
       <CCol sm="4">
-        <DatePicker
-          v-model="sendDueDate"
-          required
-          placeholder="발송 희망일 선택"
-        />
+        <DatePicker v-model="sendDueDate" required placeholder="발송 희망일 선택" />
       </CCol>
     </CRow>
 

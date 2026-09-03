@@ -4,7 +4,11 @@ import { isValidate } from '@/utils/helper.ts'
 import { usePerms } from '@/composables/usePerms.ts'
 import { useAccount } from '@/store/pinia/account.ts'
 import { useCompany } from '@/store/pinia/company.ts'
-import { type StaffEvaluation, type EvaluationGrade, type EvaluationPeriod } from '@/store/types/company.ts'
+import {
+  type StaffEvaluation,
+  type EvaluationGrade,
+  type EvaluationPeriod,
+} from '@/store/types/company.ts'
 import Multiselect from '@vueform/multiselect'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
@@ -120,7 +124,10 @@ const formDataSetup = () => {
     form.value.eval_year = props.evaluation.eval_year
     form.value.eval_period = props.evaluation.eval_period
     form.value.grade = props.evaluation.grade
-    form.value.score = props.evaluation.score !== null && props.evaluation.score !== undefined ? Number(props.evaluation.score) : null
+    form.value.score =
+      props.evaluation.score !== null && props.evaluation.score !== undefined
+        ? Number(props.evaluation.score)
+        : null
     form.value.achievement_summary = props.evaluation.achievement_summary || ''
     form.value.evaluator = props.evaluation.evaluator || null
     form.value.reviewer = props.evaluation.reviewer || null

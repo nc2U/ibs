@@ -148,8 +148,7 @@ export const useCalendarFilter = defineStore('calendarFilter', () => {
           payload.assigned_to__exclude = form.value.assignee
       } else if (key === 'author') {
         if (op === 'is' && form.value.author) payload.creator = form.value.author
-        else if (op === 'exclude' && form.value.author)
-          payload.creator__exclude = form.value.author
+        else if (op === 'exclude' && form.value.author) payload.creator__exclude = form.value.author
       } else if (key === 'issue_subject') {
         if (op === 'contains' && form.value.issue_subject)
           payload.subject = form.value.issue_subject

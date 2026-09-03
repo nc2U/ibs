@@ -111,11 +111,7 @@ onMounted(() => {
       <CFormLabel class="col-sm-3 col-form-label required">휴가 기간</CFormLabel>
       <CCol sm="9">
         <div class="d-flex align-items-center gap-2 flex-wrap">
-          <DatePicker
-            v-model="startDate"
-            required
-            placeholder="휴가 시작일"
-          />
+          <DatePicker v-model="startDate" required placeholder="휴가 시작일" />
           <span v-if="modelValue.leave_type !== 'HALF_AM' && modelValue.leave_type !== 'HALF_PM'"
             >~</span
           >

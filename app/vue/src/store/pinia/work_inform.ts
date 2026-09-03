@@ -19,7 +19,12 @@ export const useInform = defineStore('inform', () => {
       .then(res => (news.value = res.data))
       .catch(err => errorHandle(err.response.data))
 
-  const fetchNewsList = async (payload: { project?: string; author?: number; page?: number; project__status?: string }) => {
+  const fetchNewsList = async (payload: {
+    project?: string
+    author?: number
+    page?: number
+    project__status?: string
+  }) => {
     const { project, author, page = 1, project__status } = payload
     const params: Record<string, any> = { page }
     if (project) {

@@ -2,7 +2,6 @@
 import { computed, onBeforeMount, ref } from 'vue'
 import { navMenu as defaultNavMenu, pageTitle } from '@/views/approval/_menu/headermixin'
 import { useRoute } from 'vue-router'
-import { useAccount } from '@/store/pinia/account'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import PendingList from '@/views/approval/components/PendingList.vue'
@@ -15,7 +14,6 @@ import DocumentDetail from '@/views/approval/components/DocumentDetail.vue'
 import ComAuthGuard from '@/components/AuthGuard/ComAuthGuard.vue'
 
 const route = useRoute()
-const accStore = useAccount()
 
 const navMenu = computed(() => defaultNavMenu)
 
@@ -54,7 +52,9 @@ onBeforeMount(async () => {
 
         <DocumentDetail
           v-else-if="
-            /결재 대기함 - 보기|기안 문서함 - 보기|결재 문서함 - 보기|전체 문서함 - 보기/.test(route.name as string)
+            /결재 대기함 - 보기|기안 문서함 - 보기|결재 문서함 - 보기|전체 문서함 - 보기/.test(
+              route.name as string,
+            )
           "
         />
 

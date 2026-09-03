@@ -40,7 +40,9 @@ const securityLevelInfo = computed(() => {
         color: 'grey-darken-1',
         icon: 'mdi-account-group-outline',
         label: dept ? `2등급 팀 (${dept})` : '2등급 팀공개',
-        tooltip: dept ? `2등급: [${dept}] 부서원만 열람 가능` : '2등급: 작성자의 소속 부서원 열람 가능',
+        tooltip: dept
+          ? `2등급: [${dept}] 부서원만 열람 가능`
+          : '2등급: 작성자의 소속 부서원 열람 가능',
       }
     }
     case '3':
@@ -111,11 +113,7 @@ onMounted(() => {
           </v-tooltip>
 
           <!-- 관리자 숨김 뱃지 -->
-          <v-tooltip
-            v-if="docs.is_blind"
-            location="top"
-            text="관리자에 의해 숨김 처리된 문서"
-          >
+          <v-tooltip v-if="docs.is_blind" location="top" text="관리자에 의해 숨김 처리된 문서">
             <template #activator="{ props: tooltipProps }">
               <v-chip
                 v-bind="tooltipProps"
@@ -191,7 +189,10 @@ onMounted(() => {
       <CRow class="mb-3 pt-4">
         <CCol>
           <h6 class="mb-2">첨부 파일</h6>
-          <p v-if="!workManager && (docs.security_level === '1' || docs.is_blind)" class="text-muted small">
+          <p
+            v-if="!workManager && (docs.security_level === '1' || docs.is_blind)"
+            class="text-muted small"
+          >
             <v-icon icon="mdi-lock" size="x-small" class="mr-1" />
             {{ docs.is_blind ? '숨김' : '비공개' }}
             문서의 첨부 파일은 열람이 제한됩니다.
@@ -207,7 +208,10 @@ onMounted(() => {
       <CRow class="mb-3">
         <CCol>
           <h6 class="mb-2">관련 링크</h6>
-          <p v-if="!workManager && (docs.security_level === '1' || docs.is_blind)" class="text-muted small">
+          <p
+            v-if="!workManager && (docs.security_level === '1' || docs.is_blind)"
+            class="text-muted small"
+          >
             <v-icon icon="mdi-lock" size="x-small" class="mr-1" />
             {{ docs.is_blind ? '숨김' : '비공개' }} 문서의 관련 링크는 열람이 제한됩니다.
           </p>

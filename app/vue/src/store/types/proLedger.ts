@@ -120,14 +120,7 @@ export type DataFilter = {
   is_imprest?: 'true' | 'false' | 'all' | ''
   account?: number | null
   account_category?:
-    | 'asset'
-    | 'liability'
-    | 'equity'
-    | 'revenue'
-    | 'expense'
-    | 'transfer'
-    | 'cancel'
-    | ''
+    'asset' | 'liability' | 'equity' | 'revenue' | 'expense' | 'transfer' | 'cancel' | ''
   account_name?: string
   contract?: number | null
   search?: string

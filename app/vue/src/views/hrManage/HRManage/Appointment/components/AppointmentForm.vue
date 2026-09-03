@@ -283,11 +283,7 @@ watch(
             </CCol>
             <CCol sm="3">
               <CFormLabel class="small text-muted">이전 직책</CFormLabel>
-              <Multiselect
-                v-model="form.prev_duty"
-                :options="getPkDutys"
-                placeholder="이전 직책"
-              />
+              <Multiselect v-model="form.prev_duty" :options="getPkDutys" placeholder="이전 직책" />
             </CCol>
           </CRow>
         </CCallout>
@@ -322,11 +318,7 @@ watch(
             </CCol>
             <CCol sm="3">
               <CFormLabel class="small text-muted">새 발령 직책</CFormLabel>
-              <Multiselect
-                v-model="form.new_duty"
-                :options="getPkDutys"
-                placeholder="발령 직책"
-              />
+              <Multiselect v-model="form.new_duty" :options="getPkDutys" placeholder="발령 직책" />
             </CCol>
           </CRow>
         </CCallout>
@@ -371,9 +363,7 @@ watch(
       삭제한 데이터는 복구할 수 없습니다. 해당 발령 이력을 삭제하시겠습니까?
     </template>
     <template #footer>
-      <v-btn color="warning" size="small" @click="deleteObject(order.pk as number)">
-        삭제
-      </v-btn>
+      <v-btn color="warning" size="small" @click="deleteObject(order.pk as number)"> 삭제 </v-btn>
     </template>
   </ConfirmModal>
 

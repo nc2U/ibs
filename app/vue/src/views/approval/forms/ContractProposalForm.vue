@@ -224,19 +224,11 @@ onMounted(() => {
     <CRow class="mb-3">
       <CFormLabel class="col-sm-2 col-form-label required">계약 기간</CFormLabel>
       <CCol sm="4">
-        <DatePicker
-          v-model="contractStartDate"
-          required
-          placeholder="계약 시작일"
-        />
+        <DatePicker v-model="contractStartDate" required placeholder="계약 시작일" />
       </CCol>
       <CCol sm="1" class="text-center pt-2 fw-bold text-muted">~</CCol>
       <CCol sm="4">
-        <DatePicker
-          v-model="contractEndDate"
-          required
-          placeholder="계약 종료일"
-        />
+        <DatePicker v-model="contractEndDate" required placeholder="계약 종료일" />
       </CCol>
     </CRow>
 

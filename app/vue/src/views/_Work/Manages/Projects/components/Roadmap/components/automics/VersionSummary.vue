@@ -30,22 +30,50 @@ const groupedSummary = computed<SummaryItem[]>(() => {
 
     switch (selectedGroup.value) {
       case 'tracker':
-        key = issue.tracker && typeof issue.tracker === 'object' ? issue.tracker.name : (issue.tracker ? String(issue.tracker) : '미지정')
+        key =
+          issue.tracker && typeof issue.tracker === 'object'
+            ? issue.tracker.name
+            : issue.tracker
+              ? String(issue.tracker)
+              : '미지정'
         break
       case 'status':
-        key = issue.status && typeof issue.status === 'object' ? issue.status.name : (issue.status ? String(issue.status) : '미지정')
+        key =
+          issue.status && typeof issue.status === 'object'
+            ? issue.status.name
+            : issue.status
+              ? String(issue.status)
+              : '미지정'
         break
       case 'priority':
-        key = issue.priority && typeof issue.priority === 'object' ? issue.priority.name : (issue.priority ? String(issue.priority) : '미지정')
+        key =
+          issue.priority && typeof issue.priority === 'object'
+            ? issue.priority.name
+            : issue.priority
+              ? String(issue.priority)
+              : '미지정'
         break
       case 'creator':
-        key = issue.creator && typeof issue.creator === 'object' ? (issue.creator.username || issue.creator.name || '미지정') : (issue.creator ? String(issue.creator) : '미지정')
+        key =
+          issue.creator && typeof issue.creator === 'object'
+            ? issue.creator.username || issue.creator.name || '미지정'
+            : issue.creator
+              ? String(issue.creator)
+              : '미지정'
         break
       case 'assigned_to':
-        key = issue.assigned_to && typeof issue.assigned_to === 'object' ? (issue.assigned_to.username || issue.assigned_to.name || '미지정') : (issue.assigned_to ? String(issue.assigned_to) : '미지정')
+        key =
+          issue.assigned_to && typeof issue.assigned_to === 'object'
+            ? issue.assigned_to.username || issue.assigned_to.name || '미지정'
+            : issue.assigned_to
+              ? String(issue.assigned_to)
+              : '미지정'
         break
       case 'category':
-        key = issue.category && typeof issue.category === 'object' ? (issue.category.name || '미지정') : ((issue as any).category_name || '미지정')
+        key =
+          issue.category && typeof issue.category === 'object'
+            ? issue.category.name || '미지정'
+            : (issue as any).category_name || '미지정'
         break
     }
 
@@ -106,12 +134,7 @@ const groupedSummary = computed<SummaryItem[]>(() => {
               {{ item.name }}
             </CCol>
             <CCol class="col-5">
-              <CProgress
-                :value="item.ratio"
-                color="success"
-                height="14px"
-                class="rounded-pill"
-              />
+              <CProgress :value="item.ratio" color="success" height="14px" class="rounded-pill" />
             </CCol>
             <CCol class="col-3 small text-muted">
               {{ item.closedCount }}/{{ item.totalCount }}

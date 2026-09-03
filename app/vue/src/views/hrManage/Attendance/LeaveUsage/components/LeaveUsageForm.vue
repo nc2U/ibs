@@ -269,9 +269,7 @@ watch(
       삭제한 데이터는 복구할 수 없습니다. 해당 휴가 사용 내역을 삭제하시겠습니까?
     </template>
     <template #footer>
-      <v-btn color="warning" size="small" @click="deleteObject(usage.pk as number)">
-        삭제
-      </v-btn>
+      <v-btn color="warning" size="small" @click="deleteObject(usage.pk as number)"> 삭제 </v-btn>
     </template>
   </ConfirmModal>
 

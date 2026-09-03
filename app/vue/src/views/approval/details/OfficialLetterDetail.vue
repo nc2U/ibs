@@ -1,0 +1,78 @@
+<script setup lang="ts">
+import {
+  CTable,
+  CTableBody,
+  CTableRow,
+  CTableHeaderCell,
+  CTableDataCell,
+  CBadge,
+} from '@coreui/vue'
+
+defineProps<{
+  content: Record<string, any>
+  document?: any
+}>()
+</script>
+
+<template>
+  <CTable small bordered responsive class="mb-0">
+    <CTableBody>
+      <CTableRow>
+        <CTableHeaderCell class="text-center bg-more-light" style="width: 130px">
+          수신처
+        </CTableHeaderCell>
+        <CTableDataCell class="pl-3 fw-semibold text-primary">
+          {{ content.receiver || '-' }}
+        </CTableDataCell>
+        <CTableHeaderCell class="text-center bg-more-light" style="width: 130px">
+          참조처
+        </CTableHeaderCell>
+        <CTableDataCell class="pl-3">{{ content.refer_to || '-' }}</CTableDataCell>
+      </CTableRow>
+      <CTableRow>
+        <CTableHeaderCell class="text-center bg-more-light">발신 명의</CTableHeaderCell>
+        <CTableDataCell class="pl-3">{{ content.sender_name || '대표이사' }}</CTableDataCell>
+        <CTableHeaderCell class="text-center bg-more-light">대외 문서번호</CTableHeaderCell>
+        <CTableDataCell class="pl-3">{{ content.doc_number_external || '-' }}</CTableDataCell>
+      </CTableRow>
+      <CTableRow>
+        <CTableHeaderCell class="text-center bg-more-light">공문 제목</CTableHeaderCell>
+        <CTableDataCell colspan="3" class="pl-3 fw-bold">
+          {{ content.letter_subject || '-' }}
+        </CTableDataCell>
+      </CTableRow>
+      <CTableRow>
+        <CTableHeaderCell class="text-center bg-more-light">공문 본문(요지)</CTableHeaderCell>
+        <CTableDataCell
+          colspan="3"
+          class="pl-3 py-3"
+          style="white-space: pre-wrap; line-height: 1.6"
+        >
+          {{ content.letter_body || '-' }}
+        </CTableDataCell>
+      </CTableRow>
+      <CTableRow v-if="content.enclosed_files_desc">
+        <CTableHeaderCell class="text-center bg-more-light">붙임 서류 내역</CTableHeaderCell>
+        <CTableDataCell colspan="3" class="pl-3" style="white-space: pre-wrap">
+          {{ content.enclosed_files_desc }}
+        </CTableDataCell>
+      </CTableRow>
+      <CTableRow>
+        <CTableHeaderCell class="text-center bg-more-light">발송 방법</CTableHeaderCell>
+        <CTableDataCell class="pl-3">
+          <CBadge color="info">{{ content.send_method || '이메일' }}</CBadge>
+        </CTableDataCell>
+        <CTableHeaderCell class="text-center bg-more-light">발송 희망일</CTableHeaderCell>
+        <CTableDataCell class="pl-3">{{ content.send_due_date || '-' }}</CTableDataCell>
+      </CTableRow>
+      <CTableRow>
+        <CTableHeaderCell class="text-center bg-more-light">날인 인감</CTableHeaderCell>
+        <CTableDataCell class="pl-3">
+          <CBadge color="dark">{{ content.seal_type || '법인인감' }}</CBadge>
+        </CTableDataCell>
+        <CTableHeaderCell class="text-center bg-more-light">날인 부수</CTableHeaderCell>
+        <CTableDataCell class="pl-3">{{ content.seal_count ?? 1 }} 부</CTableDataCell>
+      </CTableRow>
+    </CTableBody>
+  </CTable>
+</template>

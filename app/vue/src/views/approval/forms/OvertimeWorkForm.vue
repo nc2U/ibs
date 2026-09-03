@@ -126,11 +126,7 @@ onMounted(() => {
       </CCol>
       <CFormLabel class="col-sm-2 col-form-label required text-sm-end">근무 일자</CFormLabel>
       <CCol sm="4">
-        <DatePicker
-          v-model="workDate"
-          required
-          placeholder="근무 일자 선택"
-        />
+        <DatePicker v-model="workDate" required placeholder="근무 일자 선택" />
       </CCol>
     </CRow>
 

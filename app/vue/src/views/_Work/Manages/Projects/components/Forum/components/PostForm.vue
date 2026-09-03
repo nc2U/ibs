@@ -202,7 +202,11 @@ watch(
               <CCol class="col-sm-10 col-md-6 col-lg-8 col-xl-6 d-flex align-center">
                 <CFormSelect v-if="availableCategories.length" v-model.number="form.category">
                   <option value="">---------</option>
-                  <option v-for="cate in availableCategories" :value="cate.pk" :key="cate.pk as number">
+                  <option
+                    v-for="cate in availableCategories"
+                    :value="cate.pk"
+                    :key="cate.pk as number"
+                  >
                     {{ cate.name }}
                   </option>
                 </CFormSelect>
@@ -342,7 +346,9 @@ watch(
             </CCol>
           </CRow>
           <CRow class="mb-3">
-            <CFormLabel for="cat-manager-only" class="col-sm-3 col-form-label">관리자 전용</CFormLabel>
+            <CFormLabel for="cat-manager-only" class="col-sm-3 col-form-label"
+              >관리자 전용</CFormLabel
+            >
             <CCol sm="9" class="pt-2">
               <CFormCheck
                 v-model="newCategory.is_manager_only"

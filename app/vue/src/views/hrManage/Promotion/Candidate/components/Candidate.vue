@@ -61,7 +61,11 @@ const getStatusBadge = (status: string) => {
       {{ Number(candidate.tenure_years || 0).toFixed(1) }} 년
     </CTableDataCell>
     <CTableDataCell class="text-right fw-bold">
-      {{ candidate.avg_eval_score !== null && candidate.avg_eval_score !== undefined ? Number(candidate.avg_eval_score).toFixed(1) : '-' }}
+      {{
+        candidate.avg_eval_score !== null && candidate.avg_eval_score !== undefined
+          ? Number(candidate.avg_eval_score).toFixed(1)
+          : '-'
+      }}
     </CTableDataCell>
     <CTableDataCell>
       <CBadge :color="getStatusBadge(candidate.status).color" shape="rounded-pill" class="px-2">

@@ -27,19 +27,13 @@ const multiSubmit = (payload: PromotionCandidate) => emit('multi-submit', payloa
 
 <template>
   <CAlert :color="AlertSecondary" class="text-right">
-    <v-btn color="primary" :disabled="!company" @click="createConfirm">
-      승급 심사 대상 등록
-    </v-btn>
+    <v-btn color="primary" :disabled="!company" @click="createConfirm"> 승급 심사 대상 등록 </v-btn>
   </CAlert>
 
   <FormModal ref="refFormModal" size="lg">
     <template #header>승급 심사 대상 등록</template>
     <template #default>
-      <CandidateForm
-        :company="company"
-        @multi-submit="multiSubmit"
-        @close="refFormModal.close()"
-      />
+      <CandidateForm :company="company" @multi-submit="multiSubmit" @close="refFormModal.close()" />
     </template>
   </FormModal>
 

@@ -39,7 +39,9 @@ const securityLevel = computed(() => docStore.docs?.security_level ?? '3')
 
 /** 1등급(비공개) 문서인지 여부 */
 const isPrivate = computed(() => securityLevel.value === '1')
-const securityTitle = computed(() => (isPrivate.value ? '비공개 해제 (3등급으로)' : '비공개로 (1등급)'))
+const securityTitle = computed(() =>
+  isPrivate.value ? '비공개 해제 (3등급으로)' : '비공개로 (1등급)',
+)
 const securityIcon = computed(() => (isPrivate.value ? 'lock-open-variant' : 'lock'))
 
 const is_blind = computed(() => docStore.docs?.is_blind)

@@ -399,4 +399,3 @@ onMounted(async () => {
   background-color: rgba(var(--v-theme-primary), 0.04);
 }
 </style>
-

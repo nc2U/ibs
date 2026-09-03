@@ -98,12 +98,7 @@ export interface ExecutiveRank {
 }
 
 export type DirectorType =
-  | 'inside'
-  | 'outside'
-  | 'non_standing_director'
-  | 'auditor'
-  | 'unregistered'
-  | 'advisor'
+  'inside' | 'outside' | 'non_standing_director' | 'auditor' | 'unregistered' | 'advisor'
 
 export type RepresentType = 'none' | 'sole' | 'joint' | 'each'
 
@@ -402,7 +397,3 @@ export type StaffLeaveUsageFilter = {
   is_cancelled?: string | boolean
   q?: string
 }
-
-
-
-

@@ -38,10 +38,7 @@ const isAllSelected = computed(() => {
 })
 
 const isIndeterminate = computed(() => {
-  return (
-    selectedDocIds.value.length > 0 &&
-    selectedDocIds.value.length < filteredList.value.length
-  )
+  return selectedDocIds.value.length > 0 && selectedDocIds.value.length < filteredList.value.length
 })
 
 const toggleSelectAll = () => {
@@ -163,7 +160,8 @@ onMounted(fetchMyPending)
         <strong class="text-danger ms-1">{{ filteredList.length }}</strong>
         건
         <template v-if="selectedDocIds.length">
-          (선택: <strong class="text-primary">{{ selectedDocIds.length }}</strong>건)
+          (선택: <strong class="text-primary">{{ selectedDocIds.length }}</strong
+          >건)
         </template>
       </span>
     </CCol>
@@ -317,7 +315,8 @@ onMounted(fetchMyPending)
     <CModalBody>
       <CAlert color="info" class="d-flex align-items-center mb-3 py-2">
         <div>
-          선택하신 <strong>{{ selectedDocIds.length }}건</strong>의 결재 대기 문서를 일괄 승인합니다.
+          선택하신 <strong>{{ selectedDocIds.length }}건</strong>의 결재 대기 문서를 일괄
+          승인합니다.
           <div class="small text-medium-emphasis mt-1">
             승인된 문서는 다음 결재 단계로 이동하거나 최종 승인 완료 처리됩니다.
           </div>
@@ -327,10 +326,7 @@ onMounted(fetchMyPending)
       <!-- 선택된 문서 목록 미리보기 -->
       <div class="mb-3">
         <label class="fw-semibold small text-muted mb-1">선택된 결재 대상 문서 목록:</label>
-        <div
-          class="border rounded p-2 bg-light"
-          style="max-height: 180px; overflow-y: auto;"
-        >
+        <div class="border rounded p-2 bg-light" style="max-height: 180px; overflow-y: auto">
           <div
             v-for="(doc, idx) in selectedDocuments"
             :key="doc.id"
@@ -352,7 +348,9 @@ onMounted(fetchMyPending)
       <div class="mb-3">
         <CFormLabel class="fw-semibold small">
           공통 결재 의견
-          <span class="text-muted fw-normal">(선택 사항, 입력 시 모든 문서의 결재 이력에 공통 기록됩니다)</span>
+          <span class="text-muted fw-normal"
+            >(선택 사항, 입력 시 모든 문서의 결재 이력에 공통 기록됩니다)</span
+          >
         </CFormLabel>
         <CFormTextarea
           v-model="batchComment"
@@ -402,4 +400,3 @@ onMounted(fetchMyPending)
   background-color: rgba(0, 0, 0, 0.02);
 }
 </style>
-

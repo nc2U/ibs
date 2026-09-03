@@ -25,20 +25,16 @@ const multiSubmit = (payload: PersonnelOrder) => emit('multi-submit', payload)
 const onDelete = (pk: number) => emit('on-delete', pk)
 
 const formatPrevState = (order: PersonnelOrder) => {
-  const parts = [
-    order.prev_department_name,
-    order.prev_position_name,
-    order.prev_duty_name,
-  ].filter(Boolean)
+  const parts = [order.prev_department_name, order.prev_position_name, order.prev_duty_name].filter(
+    Boolean,
+  )
   return parts.length ? parts.join(' / ') : '-'
 }
 
 const formatNewState = (order: PersonnelOrder) => {
-  const parts = [
-    order.new_department_name,
-    order.new_position_name,
-    order.new_duty_name,
-  ].filter(Boolean)
+  const parts = [order.new_department_name, order.new_position_name, order.new_duty_name].filter(
+    Boolean,
+  )
   return parts.length ? parts.join(' / ') : '-'
 }
 </script>

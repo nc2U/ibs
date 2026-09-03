@@ -256,7 +256,8 @@ onMounted(() => {
             {{
               docs.security_level === '2' && docs.creator_dept_name
                 ? `2등급 (${docs.creator_dept_name})`
-                : (docs.security_level_desc ?? (docs.security_level === '1' ? '비공개' : `${docs.security_level}등급`))
+                : (docs.security_level_desc ??
+                  (docs.security_level === '1' ? '비공개' : `${docs.security_level}등급`))
             }}
           </v-chip>
         </h5>

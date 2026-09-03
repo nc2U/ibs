@@ -154,17 +154,11 @@ onMounted(() => {
         <CRow class="mb-2">
           <CFormLabel class="col-sm-2 col-form-label small">원 계약 체결일</CFormLabel>
           <CCol sm="4">
-            <DatePicker
-              v-model="originalContractDate"
-              placeholder="체결일 선택"
-            />
+            <DatePicker v-model="originalContractDate" placeholder="체결일 선택" />
           </CCol>
           <CFormLabel class="col-sm-2 col-form-label small text-sm-end">원 계약 종료일</CFormLabel>
           <CCol sm="4">
-            <DatePicker
-              v-model="originalEndDate"
-              placeholder="종료일 선택"
-            />
+            <DatePicker v-model="originalEndDate" placeholder="종료일 선택" />
           </CCol>
         </CRow>
         <CRow>
@@ -249,10 +243,7 @@ onMounted(() => {
         <CRow>
           <CFormLabel class="col-sm-2 col-form-label small">변경 후 종료일</CFormLabel>
           <CCol sm="4">
-            <DatePicker
-              v-model="finalEndDate"
-              placeholder="변경 후 종료일 선택"
-            />
+            <DatePicker v-model="finalEndDate" placeholder="변경 후 종료일 선택" />
           </CCol>
           <CFormLabel class="col-sm-2 col-form-label small text-sm-end"
             >연장 / 단축 일수</CFormLabel
@@ -279,11 +270,7 @@ onMounted(() => {
         <CRow class="mb-2">
           <CFormLabel class="col-sm-2 col-form-label small required">해지 기준일</CFormLabel>
           <CCol sm="4">
-            <DatePicker
-              v-model="terminationDate"
-              required
-              placeholder="해지 기준일 선택"
-            />
+            <DatePicker v-model="terminationDate" required placeholder="해지 기준일 선택" />
           </CCol>
           <CFormLabel class="col-sm-2 col-form-label small required text-sm-end"
             >타절 정산금액</CFormLabel

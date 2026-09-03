@@ -261,11 +261,7 @@ onMounted(() => {
         </CCol>
         <CFormLabel class="col-sm-2 col-form-label text-sm-end required">경조 일자</CFormLabel>
         <CCol sm="4">
-          <DatePicker
-            v-model="eventDate"
-            required
-            placeholder="경조 일자 선택"
-          />
+          <DatePicker v-model="eventDate" required placeholder="경조 일자 선택" />
         </CCol>
       </CRow>
 
@@ -328,28 +324,16 @@ onMounted(() => {
         <CFormLabel class="col-sm-2 col-form-label required">휴직 예정 기간</CFormLabel>
         <CCol sm="10">
           <div class="d-flex align-items-center gap-2 flex-wrap">
-            <DatePicker
-              v-model="leaveStartDate"
-              required
-              placeholder="휴직 시작일"
-            />
+            <DatePicker v-model="leaveStartDate" required placeholder="휴직 시작일" />
             <span>~</span>
-            <DatePicker
-              v-model="leaveEndDate"
-              required
-              placeholder="휴직 종료일"
-            />
+            <DatePicker v-model="leaveEndDate" required placeholder="휴직 종료일" />
           </div>
         </CCol>
       </CRow>
       <CRow v-else class="mb-2">
         <CFormLabel class="col-sm-2 col-form-label required">복직 희망일</CFormLabel>
         <CCol sm="4">
-          <DatePicker
-            v-model="reinstatementDate"
-            required
-            placeholder="복직 희망일 선택"
-          />
+          <DatePicker v-model="reinstatementDate" required placeholder="복직 희망일 선택" />
         </CCol>
       </CRow>
     </div>

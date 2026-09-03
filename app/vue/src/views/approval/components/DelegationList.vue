@@ -43,9 +43,7 @@ const form = ref({
 
 const availableUsers = computed(() =>
   usersList.value
-    .filter(
-      u => u.pk !== userInfo.value?.pk && u.is_active && (u.has_staff || u.is_superuser),
-    )
+    .filter(u => u.pk !== userInfo.value?.pk && u.is_active && (u.has_staff || u.is_superuser))
     .map(u => ({
       value: u.pk,
       title: u.profile?.name ? `${u.profile.name} (${u.username})` : u.username,
@@ -131,8 +129,10 @@ const toggleActive = async (item: ApprovalDelegation) => {
       icon="mdi-account-switch"
     >
       <strong>부재 및 결재 위임(대결·代決) 안내:</strong><br />
-      출장, 휴가, 병가 등으로 결재 처리가 어려울 때 본인의 결재 권한을 특정 직원에게 지정된 기간 동안 위임할 수 있습니다.<br />
-      위임 기간 중에는 대결자가 대신 결재(승인/반려)를 수행하며, 모든 결재 내역에 대결 사실이 공식 기록됩니다.
+      출장, 휴가, 병가 등으로 결재 처리가 어려울 때 본인의 결재 권한을 특정 직원에게 지정된 기간
+      동안 위임할 수 있습니다.<br />
+      위임 기간 중에는 대결자가 대신 결재(승인/반려)를 수행하며, 모든 결재 내역에 대결 사실이 공식
+      기록됩니다.
     </v-alert>
 
     <CCard class="mb-4">
@@ -170,15 +170,25 @@ const toggleActive = async (item: ApprovalDelegation) => {
               <td class="text-center text-muted small">{{ idx + 1 }}</td>
               <td class="fw-semibold">
                 {{ item.delegator?.full_name ?? item.delegator?.username }}
-                <v-chip v-if="item.delegator?.id === userInfo?.pk" size="x-small" color="primary" class="ms-1">본인</v-chip>
+                <v-chip
+                  v-if="item.delegator?.id === userInfo?.pk"
+                  size="x-small"
+                  color="primary"
+                  class="ms-1"
+                  >본인</v-chip
+                >
               </td>
               <td class="fw-semibold text-primary">
                 {{ item.delegatee?.full_name ?? item.delegatee?.username }}
-                <v-chip v-if="item.delegatee?.id === userInfo?.pk" size="x-small" color="success" class="ms-1">수임(대결)</v-chip>
+                <v-chip
+                  v-if="item.delegatee?.id === userInfo?.pk"
+                  size="x-small"
+                  color="success"
+                  class="ms-1"
+                  >수임(대결)</v-chip
+                >
               </td>
-              <td class="text-center small">
-                {{ item.start_date }} ~ {{ item.end_date }}
-              </td>
+              <td class="text-center small">{{ item.start_date }} ~ {{ item.end_date }}</td>
               <td class="small text-truncate" style="max-width: 250px">
                 {{ item.reason || '-' }}
               </td>
@@ -235,7 +245,9 @@ const toggleActive = async (item: ApprovalDelegation) => {
         <CForm :validated="formValidated">
           <!-- 대결자 선택 -->
           <div class="mb-3">
-            <label class="form-label small fw-semibold">대결자 (수임자) 선택 <span class="text-danger">*</span></label>
+            <label class="form-label small fw-semibold"
+              >대결자 (수임자) 선택 <span class="text-danger">*</span></label
+            >
             <v-select
               v-model="form.delegatee_id"
               :items="availableUsers"
@@ -254,22 +266,16 @@ const toggleActive = async (item: ApprovalDelegation) => {
           <!-- 위임 기간 -->
           <div class="row g-2 mb-3">
             <div class="col-6">
-              <label class="form-label small fw-semibold">위임 시작일 <span class="text-danger">*</span></label>
-              <CFormInput
-                v-model="form.start_date"
-                type="date"
-                size="sm"
-                required
-              />
+              <label class="form-label small fw-semibold"
+                >위임 시작일 <span class="text-danger">*</span></label
+              >
+              <CFormInput v-model="form.start_date" type="date" size="sm" required />
             </div>
             <div class="col-6">
-              <label class="form-label small fw-semibold">위임 종료일 <span class="text-danger">*</span></label>
-              <CFormInput
-                v-model="form.end_date"
-                type="date"
-                size="sm"
-                required
-              />
+              <label class="form-label small fw-semibold"
+                >위임 종료일 <span class="text-danger">*</span></label
+              >
+              <CFormInput v-model="form.end_date" type="date" size="sm" required />
             </div>
           </div>
 
@@ -287,10 +293,7 @@ const toggleActive = async (item: ApprovalDelegation) => {
           <!-- 활성화 토글 -->
           <div class="d-flex align-items-center justify-content-between p-2 bg-light rounded">
             <span class="small fw-semibold">대결 권한 즉시 활성화</span>
-            <CFormSwitch
-              v-model="form.is_active"
-              id="delegationActiveSwitch"
-            />
+            <CFormSwitch v-model="form.is_active" id="delegationActiveSwitch" />
           </div>
         </CForm>
       </CModalBody>

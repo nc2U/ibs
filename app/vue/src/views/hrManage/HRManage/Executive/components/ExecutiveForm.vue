@@ -210,12 +210,7 @@ watch(
                   label="등기 임원"
                   inline
                 />
-                <CFormCheck
-                  id="is_standing"
-                  v-model="form.is_standing"
-                  label="상근"
-                  inline
-                />
+                <CFormCheck id="is_standing" v-model="form.is_standing" label="상근" inline />
               </CCol>
             </CRow>
           </CCol>

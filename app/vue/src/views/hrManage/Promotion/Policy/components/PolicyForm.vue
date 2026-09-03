@@ -92,7 +92,10 @@ const formDataSetup = () => {
     form.value.current_grade = props.policy.current_grade
     form.value.target_grade = props.policy.target_grade
     form.value.min_years = props.policy.min_years || 3
-    form.value.min_avg_grade_point = props.policy.min_avg_grade_point !== null && props.policy.min_avg_grade_point !== undefined ? Number(props.policy.min_avg_grade_point) : null
+    form.value.min_avg_grade_point =
+      props.policy.min_avg_grade_point !== null && props.policy.min_avg_grade_point !== undefined
+        ? Number(props.policy.min_avg_grade_point)
+        : null
     form.value.required_eval_grade = props.policy.required_eval_grade || ''
     form.value.required_credentials = props.policy.required_credentials || ''
     form.value.disqualification_conditions = props.policy.disqualification_conditions || ''
@@ -277,9 +280,7 @@ watch(
       삭제한 데이터는 복구할 수 없습니다. 해당 승급 정책을 삭제하시겠습니까?
     </template>
     <template #footer>
-      <v-btn color="warning" size="small" @click="deleteObject(policy.pk as number)">
-        삭제
-      </v-btn>
+      <v-btn color="warning" size="small" @click="deleteObject(policy.pk as number)"> 삭제 </v-btn>
     </template>
   </ConfirmModal>
 

@@ -92,10 +92,18 @@ const saveRole = async (event: Event) => {
           <CFormCheck id="assignable" v-model="form.assignable" label="업무 할당 가능 여부" />
         </div>
         <div class="mb-3">
-          <CFormCheck id="is_for_dev_project" v-model="form.is_for_dev_project" label="부동산개발 프로젝트 기본 적용" />
+          <CFormCheck
+            id="is_for_dev_project"
+            v-model="form.is_for_dev_project"
+            label="부동산개발 프로젝트 기본 적용"
+          />
         </div>
         <div class="mb-3">
-          <CFormCheck id="is_confidential" v-model="form.is_confidential" label="보안 격리 역할 (슈퍼유저 전용)" />
+          <CFormCheck
+            id="is_confidential"
+            v-model="form.is_confidential"
+            label="보안 격리 역할 (슈퍼유저 전용)"
+          />
         </div>
         <div class="mb-3">
           <CFormLabel>업무 보기 권한</CFormLabel>

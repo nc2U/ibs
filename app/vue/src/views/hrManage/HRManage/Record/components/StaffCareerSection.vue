@@ -291,9 +291,7 @@ defineExpose({ openCreateModal })
         </CRow>
 
         <div class="d-flex justify-content-end gap-2 mt-4">
-          <v-btn type="submit" size="small" :color="isEdit ? 'success' : 'primary'">
-            저장
-          </v-btn>
+          <v-btn type="submit" size="small" :color="isEdit ? 'success' : 'primary'"> 저장 </v-btn>
           <v-btn v-if="isEdit" type="button" size="small" color="warning" @click="deleteConfirm">
             삭제
           </v-btn>

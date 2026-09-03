@@ -17,11 +17,7 @@ const form = reactive({
 })
 
 const formsCheck = computed(
-  () =>
-    form.staff === '' &&
-    form.order_type === '' &&
-    form.department === '' &&
-    form.q === '',
+  () => form.staff === '' && form.order_type === '' && form.department === '' && form.q === '',
 )
 
 const comStore = useCompany()

@@ -16,9 +16,7 @@ const workStore = useWork()
 const roleList = computed<Role[]>(() => workStore.roleList)
 
 // 프로젝트 비즈니스 데이터 관리(ibs_pr_manage) 역할 목록 필터링
-const ibsRoles = computed(() =>
-  roleList.value.filter(r => r.category === 'ibs_pr_manage'),
-)
+const ibsRoles = computed(() => roleList.value.filter(r => r.category === 'ibs_pr_manage'))
 
 // 사용 가능한 전체 부동산 개발 (type='2', status='1') 프로젝트 목록
 const allDevProjects = computed(() =>
