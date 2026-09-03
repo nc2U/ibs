@@ -87,7 +87,7 @@ export default withMermaid(
               text: '업무 관리',
               collapsed: true,
               items: [
-                { text: '업무프로젝트', link: '/work-manage/project' },
+                { text: '워크스페이스', link: '/work-manage/workspace' },
                 { text: '회의', link: '/work-manage/meeting' },
                 { text: '업무실행내역', link: '/work-manage/activity' },
                 { text: '로드맵', link: '/work-manage/roadmap' },
