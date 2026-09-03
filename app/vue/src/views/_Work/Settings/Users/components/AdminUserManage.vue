@@ -7,7 +7,7 @@ import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 import UserForm from './atomicViews/UserForm.vue'
 import UserProjects from './atomicViews/UserProjects.vue'
 
-const menu = ref<'일반' | '프로젝트'>('일반')
+const menu = ref<'일반' | '워크스페이스'>('일반')
 
 const accStore = useAccount()
 const user = computed<User | null>(() => accStore.user)
@@ -15,8 +15,8 @@ const user = computed<User | null>(() => accStore.user)
 const route = useRoute()
 
 onBeforeMount(async () => {
-  const savedTab = localStorage.getItem('admin-user-menu-tab') as '일반' | '프로젝트' | null
-  if (savedTab === '일반' || savedTab === '프로젝트') {
+  const savedTab = localStorage.getItem('admin-user-menu-tab') as '일반' | '워크스페이스' | null
+  if (savedTab === '일반' || savedTab === '워크스페이스') {
     menu.value = savedTab
   }
 
@@ -60,7 +60,7 @@ watch(menu, newVal => {
     <CCol>
       <v-tabs v-model="menu" density="compact">
         <v-tab value="일반" variant="tonal"> 일반</v-tab>
-        <v-tab value="프로젝트" variant="tonal"> 프로젝트</v-tab>
+        <v-tab value="워크스페이스" variant="tonal"> 워크스페이스</v-tab>
       </v-tabs>
     </CCol>
   </CRow>
@@ -70,6 +70,6 @@ watch(menu, newVal => {
   </CRow>
 
   <CRow v-else>
-    <UserProjects v-if="menu === '프로젝트'" :user-pk="user?.pk as number" />
+    <UserProjects v-if="menu === '워크스페이스'" :user-pk="user?.pk as number" />
   </CRow>
 </template>

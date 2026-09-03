@@ -7,7 +7,6 @@ import NoData from '@/components/NoData/Index.vue'
 // import QuerySection from '@/views/_Work/Manages/Projects/components/QuerySection.vue'
 import UserItem from '@/views/_Work/Settings/Users/components/UserItem.vue'
 import TextButton from '../../../components/atomics/TextButton.vue'
-import { CRow } from '@coreui/vue'
 
 defineProps({
   userList: { type: Array as PropType<User[]>, default: () => [] },

@@ -61,7 +61,12 @@ const editSubmit = (mem: Member, roles: number[]) => {
 const deleteMemberPk = ref<number | null>(null)
 
 const toDelete = (pk: number) => {
-  confirmModal.value.callModal('', '이 사용자를 해당 프로젝트에서 제거하시겠습니까?', '', 'warning')
+  confirmModal.value.callModal(
+    '',
+    '이 사용자를 해당 워크스페이스에서 제거하시겠습니까?',
+    '',
+    'warning',
+  )
   deleteMemberPk.value = pk
 }
 
@@ -73,7 +78,7 @@ const deleteSubmit = () => {
 }
 
 // ────────────────────────────────────────────────────
-// 새 프로젝트 추가 모달
+// 새 워크스페이스 추가 모달
 // ────────────────────────────────────────────────────
 const validated = ref(false)
 const selectedProject = ref<number | null>(null)
@@ -147,7 +152,7 @@ onBeforeMount(async () => {
     <CRow v-if="canProjectMember" class="py-2">
       <CCol>
         <span class="mr-2 form-text">
-          <TextButton name="프로젝트 추가" @click="callModal" />
+          <TextButton name="워크스페이스 추가" @click="callModal" />
         </span>
       </CCol>
     </CRow>
@@ -155,7 +160,7 @@ onBeforeMount(async () => {
     <!-- 데이터 없음 -->
     <NoData v-if="!memberList.length" />
 
-    <!-- 프로젝트-역할 테이블 -->
+    <!-- 워크스페이스-역할 테이블 -->
     <CRow v-else>
       <CCol>
         <v-divider class="my-0" />
@@ -167,7 +172,7 @@ onBeforeMount(async () => {
           </colgroup>
           <CTableHead>
             <CTableRow>
-              <CTableHeaderCell class="pl-5" scope="col">프로젝트</CTableHeaderCell>
+              <CTableHeaderCell class="pl-5" scope="col">워크스페이스</CTableHeaderCell>
               <CTableHeaderCell class="pl-3" scope="col">역할</CTableHeaderCell>
               <CTableHeaderCell v-if="canProjectMember" scope="col"></CTableHeaderCell>
             </CTableRow>
@@ -175,7 +180,7 @@ onBeforeMount(async () => {
 
           <CTableBody>
             <CTableRow v-for="mem in memberList" :key="mem.pk" align="middle">
-              <!-- 프로젝트명 -->
+              <!-- 워크스페이스명 -->
               <CTableDataCell class="pl-5">
                 <router-link :to="{ name: '(개요)', params: { projId: mem.project.slug } }">
                   {{ mem.project.name }}
@@ -248,10 +253,10 @@ onBeforeMount(async () => {
       </CCol>
     </CRow>
 
-    <!-- 새 프로젝트 추가 모달 -->
+    <!-- 새 워크스페이스 추가 모달 -->
     <FormModal ref="formModal" size="xl">
       <template #icon></template>
-      <template #header>프로젝트 추가</template>
+      <template #header>워크스페이스 추가</template>
       <template #default>
         <CForm
           class="needs-validation"
@@ -260,15 +265,15 @@ onBeforeMount(async () => {
           @submit.prevent="onSubmit"
         >
           <CModalBody class="text-body">
-            <!-- 프로젝트 선택 -->
+            <!-- 워크스페이스 선택 -->
             <CCard class="mb-3">
               <CCardHeader>
                 <v-icon icon="mdi-check" color="success" size="sm" />
-                추가할 프로젝트 선택
+                추가할 워크스페이스 선택
               </CCardHeader>
               <CCardBody class="pb-5">
                 <span v-if="!workStore.allActiveProjects.length" class="text-grey-darken-1">
-                  추가 가능한 프로젝트가 없습니다.
+                  추가 가능한 워크스페이스가 없습니다.
                 </span>
                 <div v-else class="d-flex flex-wrap gap-2">
                   <div
@@ -302,10 +307,10 @@ onBeforeMount(async () => {
               </CCardHeader>
               <CCardBody>
                 <span v-if="!selectedProject" class="text-grey-darken-1">
-                  먼저 프로젝트를 선택해주세요.
+                  먼저 워크스페이스를 선택해주세요.
                 </span>
                 <span v-else-if="selectedProject && !allowedRoleIds.length" class="text-warning">
-                  이 프로젝트에 허용된 역할이 없습니다.
+                  이 워크스페이스에 허용된 역할이 없습니다.
                 </span>
                 <template v-else>
                   <CFormCheck

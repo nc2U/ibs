@@ -90,7 +90,7 @@ const projectResults = computed(() => props.projectResults.slice())
       <template v-if="projectResults.length">
         <CRow>
           <CCol>
-            <span class="h5" style="font-size: 1.15em">프로젝트</span>
+            <span class="h5" style="font-size: 1.15em">워크스페이스</span>
           </CCol>
         </CRow>
 
