@@ -43,6 +43,10 @@ Future<void> exportApprovalPdf(
       pdfUrl: document.pdfUrl,
     );
 
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    }
+
     ResultType? openType;
     try {
       final openResult = await OpenFilex.open(filePath);
@@ -64,6 +68,7 @@ Future<void> exportApprovalPdf(
     }
   } catch (e) {
     if (context.mounted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('PDF 다운로드/열기 실패: $e'),

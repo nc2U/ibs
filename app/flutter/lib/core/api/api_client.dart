@@ -59,11 +59,13 @@ class AuthInterceptor extends QueuedInterceptorsWrapper {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    // 로그인 및 토큰 갱신 요청에는 Authorization 헤더를 붙이지 않음
+    // 로그인 및 토큰 갱신 요청 및 외부 스토리지(S3 등) Presigned URL에는 Authorization 헤더를 붙이지 않음
     final isAuthEndpoint = options.path.contains(ApiEndpoints.jwtCreate) ||
         options.path.contains(ApiEndpoints.jwtRefresh);
 
-    if (!isAuthEndpoint) {
+    final isExternalStorageUrl = options.path.startsWith('http://') || options.path.startsWith('https://');
+
+    if (!isAuthEndpoint && !isExternalStorageUrl) {
       final token = await tokenStorage.getAccessToken();
       if (token != null && token.isNotEmpty) {
         options.headers['Authorization'] = 'Bearer $token';
