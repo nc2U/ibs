@@ -29,11 +29,20 @@ def generate_official_letter_pdf(letter):
     except Logo.DoesNotExist:
         pass
 
+    # 날인 인감 이미지 URL 가져오기
+    seal_url = None
+    if letter.seal and letter.seal.seal_image:
+        try:
+            seal_url = letter.seal.seal_image.url
+        except Exception:
+            pass
+
     # 템플릿 컨텍스트 준비
     context = {
         'letter': letter,
         'company': letter.company,
         'logo_url': logo_url,
+        'seal_url': seal_url,
     }
 
     # HTML 템플릿 렌더링

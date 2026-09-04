@@ -396,6 +396,7 @@ class OfficialLetterSerializer(serializers.ModelSerializer):
     company_name = serializers.SlugField(source='company', read_only=True)
     creator = SimpleUserSerializer(read_only=True)
     updator = SimpleUserSerializer(read_only=True)
+    seal_detail = serializers.SerializerMethodField(read_only=True)
     approval_document_detail = serializers.SerializerMethodField(read_only=True)
     approval_status_desc = serializers.CharField(source='get_approval_status_display', read_only=True)
     prev_pk = serializers.SerializerMethodField(read_only=True)
@@ -406,10 +407,21 @@ class OfficialLetterSerializer(serializers.ModelSerializer):
         fields = ('pk', 'company', 'company_name', 'document_number', 'title',
                   'recipient_name', 'recipient_address', 'recipient_contact',
                   'recipient_reference', 'sender_name', 'sender_position',
-                  'sender_department', 'content', 'issue_date', 'pdf_file',
+                  'sender_department', 'content', 'issue_date', 'seal', 'seal_detail', 'pdf_file',
                   'approval_document', 'approval_document_detail', 'approval_status', 'approval_status_desc',
                   'creator', 'updator', 'created', 'updated', 'prev_pk', 'next_pk')
         read_only_fields = ('document_number', 'pdf_file')
+
+    def get_seal_detail(self, obj):
+        if obj.seal:
+            return {
+                'pk': obj.seal.pk,
+                'name': obj.seal.name,
+                'seal_type': obj.seal.seal_type,
+                'seal_type_desc': obj.seal.get_seal_type_display(),
+                'seal_image': obj.seal.seal_image.url if obj.seal.seal_image else None,
+            }
+        return None
 
     def get_approval_document_detail(self, obj):
         if obj.approval_document:

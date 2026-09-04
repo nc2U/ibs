@@ -302,7 +302,7 @@ const applyExampleTitle = (title: string) => {
 <template>
   <CRow class="">
     <CCol lg="8" xl="7">
-      <CCardHeader class="d-flex align-items-center justify-content-between">
+      <CCardHeader class="d-flex align-items-center justify-content-between border-top">
         <span class="fw-semibold">
           <CIcon name="cilPencil" class="me-2" />
           {{ isEdit ? '결재문서 수정' : '새 기안 작성' }}

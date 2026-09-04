@@ -26,6 +26,18 @@ export interface Logo {
   simple_logo: string
 }
 
+export interface CompanySeal {
+  pk: number
+  company: number
+  seal_type: 'CORP_SEAL' | 'USAGE_SEAL' | 'DEPT_SEAL' | 'SIGN' | 'OMIT'
+  seal_type_desc?: string
+  name: string
+  seal_image: string | null
+  manager?: string
+  is_active: boolean
+  created?: string
+}
+
 interface Department {
   name: string
   task: string

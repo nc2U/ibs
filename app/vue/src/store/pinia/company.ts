@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { useAccount } from '@/store/pinia/account'
 import { errorHandle, message } from '@/utils/helper'
-import { type Company, type Logo } from '@/store/types/settings'
+import { type Company, type Logo, type CompanySeal } from '@/store/types/settings'
 import {
   type Staff,
   type StaffFilter,
@@ -142,6 +142,48 @@ export const useCompany = defineStore('company', () => {
       .delete(`/logo/${pk}/`)
       .then(() => message('warning', '', '해당 오브젝트가 삭제되었습니다.'))
       .catch(err => errorHandle(err.response.data))
+
+  // states & getters - CompanySeal
+  const sealList = ref<CompanySeal[]>([])
+  const seal = ref<CompanySeal | null>(null)
+
+  const fetchCompanySealList = (companyId?: number) => {
+    const com = companyId || currentCompany.value
+    const url = com ? `/company-seal/?company=${com}&is_active=true` : `/company-seal/?is_active=true`
+    return api
+      .get(url)
+      .then(res => (sealList.value = res.data.results || res.data))
+      .catch(err => errorHandle(err.response.data))
+  }
+
+  const fetchCompanySeal = (pk: number) =>
+    api
+      .get(`/company-seal/${pk}/`)
+      .then(res => (seal.value = res.data))
+      .catch(err => errorHandle(err.response.data))
+
+  const createCompanySeal = (payload: FormData | CompanySeal) =>
+    api
+      .post(`/company-seal/`, payload, {
+        headers: payload instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : {},
+      })
+      .then(() => fetchCompanySealList().then(() => message()))
+      .catch(err => errorHandle(err.response.data))
+
+  const updateCompanySeal = (pk: number, payload: FormData | CompanySeal) =>
+    api
+      .put(`/company-seal/${pk}/`, payload, {
+        headers: payload instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : {},
+      })
+      .then(() => fetchCompanySealList().then(() => message()))
+      .catch(err => errorHandle(err.response.data))
+
+  const deleteCompanySeal = (pk: number) =>
+    api
+      .delete(`/company-seal/${pk}/`)
+      .then(() => fetchCompanySealList().then(() => message('warning', '', '해당 인장이 삭제되었습니다.')))
+      .catch(err => errorHandle(err.response.data))
+
 
   const departmentList = ref<Department[]>([])
   const allDepartList = ref<Department[]>([])
@@ -1650,5 +1692,14 @@ export const useCompany = defineStore('company', () => {
     createStaffLeaveUsage,
     updateStaffLeaveUsage,
     deleteStaffLeaveUsage,
+
+    // CompanySeal
+    sealList,
+    seal,
+    fetchCompanySealList,
+    fetchCompanySeal,
+    createCompanySeal,
+    updateCompanySeal,
+    deleteCompanySeal,
   }
 })

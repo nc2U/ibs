@@ -314,6 +314,9 @@ class OfficialLetter(models.Model):
     sender_department = models.CharField('발신 부서', max_length=50, blank=True, default='')
     content = models.TextField('내용')  # 내용
     issue_date = models.DateField('발신일자')  # 발신일자
+    seal = models.ForeignKey('company.CompanySeal', on_delete=models.SET_NULL,
+                            null=True, blank=True, related_name='official_letters',
+                            verbose_name='날인 인감')
     pdf_file = models.FileField('PDF 파일', upload_to=get_letter_pdf_path,
                                 storage=default_storage, null=True, blank=True)  # 생성된 PDF
     APPROVAL_STATUS_CHOICES = (

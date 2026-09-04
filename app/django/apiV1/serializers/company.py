@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from company.models import (
-    Company, Logo, Department, JobGrade, Position, DutyTitle,
+    Company, Logo, CompanySeal, Department, JobGrade, Position, DutyTitle,
     ExecutiveRank, Executive, Staff, StaffAssignment,
     PersonnelOrder, StaffCareer, StaffCertificate, StaffRewardPunishment,
     StaffLeaveQuota, StaffLeaveUsage,
@@ -45,6 +45,14 @@ class LogoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Logo
         fields = ('pk', 'company', 'generic_logo', 'dark_logo', 'simple_logo')
+
+
+class CompanySealSerializer(serializers.ModelSerializer):
+    seal_type_desc = serializers.CharField(source='get_seal_type_display', read_only=True)
+
+    class Meta:
+        model = CompanySeal
+        fields = ('pk', 'company', 'seal_type', 'seal_type_desc', 'name', 'seal_image', 'manager', 'is_active', 'created')
 
 
 class StaffsInDepartmentSerializer(serializers.ModelSerializer):

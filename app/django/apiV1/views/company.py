@@ -2,7 +2,7 @@ from django_filters.rest_framework import FilterSet, CharFilter
 from rest_framework import viewsets
 
 from company.models import (
-    Company, Logo, Department, JobGrade, Position, DutyTitle,
+    Company, Logo, CompanySeal, Department, JobGrade, Position, DutyTitle,
     ExecutiveRank, Executive, Staff, StaffAssignment,
     PersonnelOrder, StaffCareer, StaffCertificate, StaffRewardPunishment,
     StaffLeaveQuota, StaffLeaveUsage,
@@ -12,7 +12,7 @@ from ..pagination import PageNumberPaginationOneThousand
 from apiV1.permissions.auth_perms import permissions, IsSuperUserOrReadOnly, IsStaffOrReadOnly
 from apiV1.permissions.ibs_perms import IbsModulePermission
 from ..serializers.company import (
-    CompanySerializer, LogoSerializer, DepartmentSerializer,
+    CompanySerializer, LogoSerializer, CompanySealSerializer, DepartmentSerializer,
     JobGradeSerializer, PositionSerializer, DutyTitleSerializer,
     ExecutiveRankSerializer, ExecutiveSerializer,
     StaffSerializer, StaffAssignmentSerializer,
@@ -33,6 +33,15 @@ class LogoViewSet(viewsets.ModelViewSet):
     queryset = Logo.objects.all()
     serializer_class = LogoSerializer
     permission_classes = (permissions.IsAuthenticated, IsSuperUserOrReadOnly)
+
+
+class CompanySealViewSet(viewsets.ModelViewSet):
+    queryset = CompanySeal.objects.all()
+    serializer_class = CompanySealSerializer
+    permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
+    pagination_class = PageNumberPaginationOneThousand
+    filterset_fields = ('company', 'seal_type', 'is_active')
+    search_fields = ('name', 'manager')
 
 
 class DepartmentViewSet(viewsets.ModelViewSet):

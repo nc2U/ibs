@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
+import { useCompany } from '@/store/pinia/company'
+import type { CompanySeal } from '@/store/types/settings'
 
 const props = defineProps<{
   modelValue: Record<string, any>
@@ -10,6 +12,9 @@ const emit = defineEmits<{
   (e: 'update:modelValue', val: Record<string, any>): void
 }>()
 
+const comStore = useCompany()
+const sealList = computed<CompanySeal[]>(() => comStore.sealList)
+
 const sendMethods = [
   { value: 'EMAIL', label: '전자우편 (이메일)' },
   { value: 'POST', label: '등기우편' },
@@ -18,10 +23,9 @@ const sendMethods = [
   { value: 'OTHER', label: '기타' },
 ]
 
-const sealTypes = [
+const fallbackSealTypes = [
   { value: 'CORP_SEAL', label: '법인인감 (대표이사 직인)' },
-  { value: 'USAGE_SEAL_1', label: '사용인감 1호' },
-  { value: 'USAGE_SEAL_2', label: '사용인감 2호' },
+  { value: 'USAGE_SEAL', label: '사용인감' },
   { value: 'SIGN', label: '서명 (Sign)' },
   { value: 'OMIT', label: '직인생략' },
 ]
@@ -33,12 +37,38 @@ const updateField = (key: string, val: any) => {
   })
 }
 
+const onSelectSeal = (sealPkStr: string) => {
+  const sealPk = Number(sealPkStr) || null
+  const selected = sealList.value.find(s => s.pk === sealPk)
+  if (selected) {
+    emit('update:modelValue', {
+      ...props.modelValue,
+      seal_id: selected.pk,
+      seal_name: selected.name,
+      seal_type: selected.seal_type,
+      seal_image: selected.seal_image,
+    })
+  } else {
+    emit('update:modelValue', {
+      ...props.modelValue,
+      seal_id: null,
+      seal_name: '',
+      seal_type: sealPkStr || 'OMIT',
+      seal_image: null,
+    })
+  }
+}
+
 const sendDueDate = computed({
   get: () => props.modelValue.send_due_date ?? '',
   set: (val: string) => updateField('send_due_date', val),
 })
 
-onMounted(() => {
+onMounted(async () => {
+  if (!comStore.sealList.length) {
+    await comStore.fetchCompanySealList()
+  }
+
   // 기본값 세팅
   const initial = { ...props.modelValue }
   let changed = false
@@ -47,8 +77,16 @@ onMounted(() => {
     initial.send_method = 'EMAIL'
     changed = true
   }
-  if (!initial.seal_type) {
-    initial.seal_type = 'CORP_SEAL'
+  if (!initial.seal_id && !initial.seal_type) {
+    if (sealList.value.length > 0) {
+      const firstSeal = sealList.value[0]
+      initial.seal_id = firstSeal.pk
+      initial.seal_name = firstSeal.name
+      initial.seal_type = firstSeal.seal_type
+      initial.seal_image = firstSeal.seal_image
+    } else {
+      initial.seal_type = 'CORP_SEAL'
+    }
     changed = true
   }
   if (initial.seal_count === undefined || initial.seal_count === null) {
@@ -186,14 +224,33 @@ onMounted(() => {
       <CFormLabel class="col-sm-2 col-form-label required">날인 인감</CFormLabel>
       <CCol sm="4">
         <CFormSelect
-          :value="modelValue.seal_type ?? 'CORP_SEAL'"
+          :value="modelValue.seal_id ? String(modelValue.seal_id) : (modelValue.seal_type ?? 'CORP_SEAL')"
           required
-          @change="updateField('seal_type', ($event.target as HTMLSelectElement).value)"
+          @change="onSelectSeal(($event.target as HTMLSelectElement).value)"
         >
-          <option v-for="s in sealTypes" :key="s.value" :value="s.value">
-            {{ s.label }}
-          </option>
+          <template v-if="sealList.length > 0">
+            <option v-for="s in sealList" :key="s.pk" :value="String(s.pk)">
+              {{ s.name }} ({{ s.seal_type_desc || s.seal_type }})
+            </option>
+            <option value="OMIT">직인생략</option>
+          </template>
+          <template v-else>
+            <option v-for="s in fallbackSealTypes" :key="s.value" :value="s.value">
+              {{ s.label }}
+            </option>
+          </template>
         </CFormSelect>
+
+        <!-- 인장 미리보기 (이미지가 등록되어 있는 경우) -->
+        <div v-if="modelValue.seal_image" class="mt-2 d-flex align-items-center">
+          <img
+            :src="modelValue.seal_image"
+            alt="인장 미리보기"
+            style="width: 42px; height: 42px; object-fit: contain; border: 1px dashed #ccc; border-radius: 4px; padding: 2px;"
+            class="me-2 bg-white"
+          />
+          <small class="text-muted">{{ modelValue.seal_name }} (인장 등록됨)</small>
+        </div>
       </CCol>
       <CFormLabel class="col-sm-2 col-form-label required">날인 부수</CFormLabel>
       <CCol sm="4">

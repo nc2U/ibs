@@ -261,6 +261,21 @@ const formatDateTime = (dateStr: string | undefined) => {
                   <th>발신일자</th>
                   <td>{{ formatDate(letter.issue_date) }}</td>
                 </tr>
+                <tr v-if="letter.seal_detail">
+                  <th>날인인감</th>
+                  <td>
+                    <div class="d-flex align-items-center">
+                      <span class="me-2">{{ letter.seal_detail.name }} ({{ letter.seal_detail.seal_type_desc }})</span>
+                      <img
+                        v-if="letter.seal_detail.seal_image"
+                        :src="letter.seal_detail.seal_image"
+                        alt="인장"
+                        style="width: 28px; height: 28px; object-fit: contain;"
+                        class="border rounded p-1 bg-white"
+                      />
+                    </div>
+                  </td>
+                </tr>
               </tbody>
             </table>
           </CCardBody>

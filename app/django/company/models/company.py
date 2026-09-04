@@ -43,4 +43,31 @@ class Logo(models.Model):
                                     verbose_name='심플 로고')
 
 
+class CompanySeal(models.Model):
+    SEAL_TYPE_CHOICES = (
+        ('CORP_SEAL', '법인인감 (대표이사 직인)'),
+        ('USAGE_SEAL', '사용인감'),
+        ('DEPT_SEAL', '부서인감/직인'),
+        ('SIGN', '대표자/부서장 서명'),
+        ('OMIT', '직인생략'),
+    )
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='seals', verbose_name='회사')
+    seal_type = models.CharField('인장 종류', max_length=20, choices=SEAL_TYPE_CHOICES, default='USAGE_SEAL')
+    name = models.CharField('인장 명칭', max_length=50, help_text='예: 대표이사 법인인감, 분양계약 전용 사용인감 1호')
+    seal_image = models.ImageField('인장 이미지', upload_to=get_company_image_path, null=True, blank=True,
+                                   help_text='배경이 투명한 PNG 권장 (정방형)')
+    manager = models.CharField('관리 책임자/부서', max_length=50, blank=True, default='')
+    is_active = models.BooleanField('사용 여부', default=True)
+    created = models.DateTimeField('등록일시', auto_now_add=True)
+
+    class Meta:
+        verbose_name = "03. 회사 인장"
+        verbose_name_plural = "03. 회사 인장"
+        ordering = ['-is_active', 'seal_type', 'created']
+
+    def __str__(self):
+        return f"{self.name} ({self.get_seal_type_display()})"
+
+
 file_cleanup_signals(Logo)
+file_cleanup_signals(CompanySeal, file_field_names=['seal_image'])

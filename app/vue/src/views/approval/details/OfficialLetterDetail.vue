@@ -78,7 +78,16 @@ defineProps<{
       <CTableRow>
         <CTableHeaderCell class="text-center bg-more-light">날인 인감</CTableHeaderCell>
         <CTableDataCell class="pl-3">
-          <CBadge color="dark">{{ content.seal_type || '법인인감' }}</CBadge>
+          <div class="d-flex align-items-center">
+            <CBadge color="dark" class="me-2">{{ content.seal_name || content.seal_type || '법인인감' }}</CBadge>
+            <img
+              v-if="content.seal_image"
+              :src="content.seal_image"
+              alt="인장"
+              style="width: 28px; height: 28px; object-fit: contain;"
+              class="border rounded p-1 bg-white"
+            />
+          </div>
         </CTableDataCell>
         <CTableHeaderCell class="text-center bg-more-light">날인 부수</CTableHeaderCell>
         <CTableDataCell class="pl-3">{{ content.seal_count ?? 1 }} 부</CTableDataCell>

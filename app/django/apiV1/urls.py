@@ -34,6 +34,7 @@ router.register(r'notification', accounts.NotificationViewSet, basename='notific
 # company
 router.register(r'company', company.CompanyViewSet)
 router.register(r'logo', company.LogoViewSet)
+router.register(r'company-seal', company.CompanySealViewSet)
 router.register(r'department', company.DepartmentViewSet)
 router.register(r'grade', company.JobGradeViewSet)
 router.register(r'position', company.PositionViewSet)

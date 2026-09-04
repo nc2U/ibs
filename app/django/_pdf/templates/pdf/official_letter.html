@@ -162,6 +162,15 @@
             color: #999;
         }
 
+        .stamp-image {
+            display: inline-block;
+            width: 50px;
+            height: 50px;
+            vertical-align: middle;
+            margin-left: 10px;
+            object-fit: contain;
+        }
+
         .footer {
             margin-top: 50px;
             padding-top: 15px;
@@ -237,7 +246,13 @@
             {% endif %}
             <div class="sender-name-line">
                 {{ letter.sender_name }}
+                {% if seal_url %}
+                <img src="{{ seal_url }}" alt="인감" class="stamp-image">
+                {% elif letter.seal and letter.seal.seal_type == 'OMIT' %}
+                <span class="stamp-placeholder" style="border:none; font-size:10pt;">(직인생략)</span>
+                {% else %}
                 <span class="stamp-placeholder">(인)</span>
+                {% endif %}
             </div>
         </div>
     </div>

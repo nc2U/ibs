@@ -457,7 +457,7 @@ class OfficialLetterFilterSet(FilterSet):
 
 
 class OfficialLetterViewSet(viewsets.ModelViewSet):
-    queryset = OfficialLetter.objects.select_related('company', 'creator', 'updator')
+    queryset = OfficialLetter.objects.select_related('company', 'seal', 'creator', 'updator')
     serializer_class = OfficialLetterSerializer
     permission_classes = (permissions.IsAuthenticated, IsStaffOrReadOnly)
     pagination_class = PageNumberPaginationOneHundred

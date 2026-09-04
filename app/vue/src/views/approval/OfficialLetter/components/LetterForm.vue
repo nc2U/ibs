@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms.ts'
 import { useDocs } from '@/store/pinia/docs'
 import { useAccount } from '@/store/pinia/account.ts'
+import { useCompany } from '@/store/pinia/company'
 import type { OfficialLetter } from '@/store/types/docs'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 
@@ -19,6 +20,14 @@ const emit = defineEmits<{
 
 const { can, PERM } = usePerms()
 const accStore = useAccount()
+const comStore = useCompany()
+const sealList = computed(() => comStore.sealList)
+const selectedSealImage = computed(() => {
+  if (!form.value.seal) return null
+  const s = sealList.value.find(item => item.pk === form.value.seal)
+  return s?.seal_image || null
+})
+
 const isEdit = computed(() => !!props.letter?.pk)
 const canOLManage = computed(() => (isEdit.value ? can(PERM.DOCS_UPDATE) : can(PERM.DOCS_CREATE)))
 
@@ -55,6 +64,9 @@ watch(
 )
 
 onMounted(async () => {
+  if (props.company) {
+    await comStore.fetchCompanySealList(props.company)
+  }
   if (!props.letter && props.company) {
     // Get next document number for new letters
     nextDocNumber.value = await docStore.getNextDocumentNumber(props.company)
@@ -192,6 +204,29 @@ const goBack = () => {
             <CCol md="4">
               <CFormLabel>부서</CFormLabel>
               <CFormInput v-model="form.sender_department" placeholder="부서 (예: 경영지원팀)" />
+            </CCol>
+          </CRow>
+          <CRow>
+            <CCol md="6">
+              <CFormLabel>날인 인감</CFormLabel>
+              <CFormSelect
+                :value="form.seal || ''"
+                @change="form.seal = Number(($event.target as HTMLSelectElement).value) || null"
+              >
+                <option value="">인장 미선택 / 직인생략</option>
+                <option v-for="s in sealList" :key="s.pk" :value="s.pk">
+                  {{ s.name }} ({{ s.seal_type_desc || s.seal_type }})
+                </option>
+              </CFormSelect>
+              <div v-if="selectedSealImage" class="mt-2 d-flex align-items-center">
+                <img
+                  :src="selectedSealImage"
+                  alt="인장"
+                  style="width: 40px; height: 40px; object-fit: contain;"
+                  class="border rounded p-1 bg-white me-2"
+                />
+                <small class="text-muted">등록된 인장 이미지</small>
+              </div>
             </CCol>
           </CRow>
         </CCardBody>

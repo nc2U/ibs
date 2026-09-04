@@ -207,6 +207,14 @@ export interface OfficialLetter {
   sender_department?: string
   content: string
   issue_date: string
+  seal?: number | null
+  seal_detail?: {
+    pk: number
+    name: string
+    seal_type: string
+    seal_type_desc: string
+    seal_image: string | null
+  } | null
   pdf_file?: string | null
   approval_document?: number | null
   approval_document_detail?: {
