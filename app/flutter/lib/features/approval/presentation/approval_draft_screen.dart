@@ -248,15 +248,149 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
     if (c['seal_count'] != null) _sealCountController.text = c['seal_count'].toString();
 
     // 4. 출장
+    if (c['trip_type'] != null) _tripType = c['trip_type'].toString();
     if (c['destination'] != null) _destinationController.text = c['destination'].toString();
     if (c['companion'] != null) _companionController.text = c['companion'].toString();
+    if (c['transportation'] != null) _transportation = c['transportation'].toString();
+    if (c['transport_cost'] != null) _transportCostController.text = c['transport_cost'].toString();
+    if (c['lodging_cost'] != null) _lodgingCostController.text = c['lodging_cost'].toString();
+    if (c['daily_allowance'] != null) _dailyAllowanceController.text = c['daily_allowance'].toString();
+    if (c['other_cost'] != null) _otherCostController.text = c['other_cost'].toString();
     if (c['itinerary'] != null) _itineraryController.text = c['itinerary'].toString();
 
     // 5. 연장근무
     if (c['work_type'] != null) _workType = c['work_type'].toString();
+    if (c['work_date'] != null) _workDate = DateTime.tryParse(c['work_date'].toString());
     if (c['start_time'] != null) _startTimeController.text = c['start_time'].toString();
     if (c['end_time'] != null) _endTimeController.text = c['end_time'].toString();
+    if (c['break_hours'] != null) _breakHoursController.text = c['break_hours'].toString();
     if (c['total_hours'] != null) _totalHoursController.text = c['total_hours'].toString();
+    if (c['compensation_type'] != null) _compensationType = c['compensation_type'].toString();
+    if (c['co_workers'] != null) _coWorkersController.text = c['co_workers'].toString();
+
+    // 6. 인사발령
+    if (c['appointment_type'] != null) _appointmentType = c['appointment_type'].toString();
+    if (c['effective_date'] != null) _effectiveDate = DateTime.tryParse(c['effective_date'].toString());
+    if (c['targets'] is List && (c['targets'] as List).isNotEmpty) {
+      final t = (c['targets'] as List).first as Map<String, dynamic>;
+      if (t['name'] != null) _targetNameController.text = t['name'].toString();
+      if (t['current_dept'] != null) _currentDeptController.text = t['current_dept'].toString();
+      if (t['current_position'] != null) _currentPositionController.text = t['current_position'].toString();
+      if (t['new_dept'] != null) _newDeptController.text = t['new_dept'].toString();
+      if (t['new_position'] != null) _newPositionController.text = t['new_position'].toString();
+      if (t['type_desc'] != null) _typeDescController.text = t['type_desc'].toString();
+    }
+
+    // 7. 인사 관련 신청
+    if (c['request_type'] != null) _hrRequestType = c['request_type'].toString();
+    if (c['cert_type'] != null) _certType = c['cert_type'].toString();
+    if (c['cert_language'] != null) _certLanguage = c['cert_language'].toString();
+    if (c['cert_count'] != null) _certCountController.text = c['cert_count'].toString();
+    if (c['submit_to'] != null) _submitToController.text = c['submit_to'].toString();
+    if (c['usage_purpose'] != null) _usagePurposeController.text = c['usage_purpose'].toString();
+    if (c['include_resident_num'] != null) _includeResidentNum = c['include_resident_num'] == true;
+    if (c['event_type'] != null) _eventType = c['event_type'].toString();
+    if (c['event_date'] != null) _eventDate = DateTime.tryParse(c['event_date'].toString());
+    if (c['event_place'] != null) _eventPlaceController.text = c['event_place'].toString();
+    if (c['support_items'] != null) _supportItemsController.text = c['support_items'].toString();
+
+    // 8. 구매/지출
+    if (c['vendor'] != null) _vendorController.text = c['vendor'].toString();
+    if (c['delivery_location'] != null) _deliveryLocationController.text = c['delivery_location'].toString();
+    if (c['delivery_due_date'] != null) _deliveryDueDate = DateTime.tryParse(c['delivery_due_date'].toString());
+    if (c['expense_type'] != null) _expenseType = c['expense_type'].toString();
+    if (c['payment_due_date'] != null) _paymentDueDate = DateTime.tryParse(c['payment_due_date'].toString());
+    if (c['bank_name'] != null) _bankNameController.text = c['bank_name'].toString();
+    if (c['account_number'] != null) _accountNumberController.text = c['account_number'].toString();
+    if (c['account_holder'] != null) _accountHolderController.text = c['account_holder'].toString();
+
+    // 9. 경비 정산
+    if (c['settlement_type'] != null) _settlementType = c['settlement_type'].toString();
+    if (c['target_month'] != null) _targetMonthController.text = c['target_month'].toString();
+    if (c['card_number'] != null) _cardNumberController.text = c['card_number'].toString();
+
+    // 10. 선급금 / 가지급금
+    if (c['advance_type'] != null) _advanceType = c['advance_type'].toString();
+    if (c['receiver_type'] != null) _receiverType = c['receiver_type'].toString();
+    if (c['settlement_due_date'] != null) _settlementDueDate = DateTime.tryParse(c['settlement_due_date'].toString());
+    if (c['settlement_promise'] != null) _settlementPromise = c['settlement_promise'] == true;
+
+    // 11. 계약 체결
+    if (c['contract_type'] != null) _contractType = c['contract_type'].toString();
+    if (c['contract_kind'] != null) _contractKind = c['contract_kind'].toString();
+    if (c['contract_name'] != null) _contractNameController.text = c['contract_name'].toString();
+    if (c['contractor_name'] != null) _vendorController.text = c['contractor_name'].toString();
+    if (c['contractor_ceo'] != null) _contractorCeoController.text = c['contractor_ceo'].toString();
+    if (c['contractor_reg_number'] != null) _contractorRegNumberController.text = c['contractor_reg_number'].toString();
+    if (c['contractor_contact'] != null) _contractorContactController.text = c['contractor_contact'].toString();
+    if (c['vat_type'] != null) _vatType = c['vat_type'].toString();
+    if (c['contract_start_date'] != null) _startDate = DateTime.tryParse(c['contract_start_date'].toString());
+    if (c['contract_end_date'] != null) _endDate = DateTime.tryParse(c['contract_end_date'].toString());
+    if (c['payment_terms'] != null) _paymentTermsController.text = c['payment_terms'].toString();
+    if (c['warranty_terms'] != null) _warrantyTermsController.text = c['warranty_terms'].toString();
+    if (c['special_terms'] != null) _specialTermsController.text = c['special_terms'].toString();
+
+    // 12. 계약 변경 / 해지
+    if (c['change_type'] != null) _contractChangeType = c['change_type'].toString();
+    if (c['original_contract_name'] != null) _origContractNameController.text = c['original_contract_name'].toString();
+    if (c['original_contract_no'] != null) _origContractNoController.text = c['original_contract_no'].toString();
+    if (c['original_contract_date'] != null) _origContractDate = DateTime.tryParse(c['original_contract_date'].toString());
+    if (c['original_end_date'] != null) _origEndDate = DateTime.tryParse(c['original_end_date'].toString());
+    if (c['original_amount'] != null) _origAmountController.text = c['original_amount'].toString();
+    if (c['change_amount'] != null) _changeAmountController.text = c['change_amount'].toString();
+    if (c['period_change_desc'] != null) _periodChangeDescController.text = c['period_change_desc'].toString();
+    if (c['termination_date'] != null) _terminationDate = DateTime.tryParse(c['termination_date'].toString());
+    if (c['settlement_amount'] != null) _settlementAmountController.text = c['settlement_amount'].toString();
+    if (c['penalty_terms'] != null) _penaltyTermsController.text = c['penalty_terms'].toString();
+    if (c['subsequent_plan'] != null) _subsequentPlanController.text = c['subsequent_plan'].toString();
+
+    // 13. 법무 검토
+    if (c['review_type'] != null) _legalReviewType = c['review_type'].toString();
+    if (c['urgency'] != null) _legalUrgency = c['urgency'].toString();
+    if (c['case_title'] != null) _contractNameController.text = c['case_title'].toString();
+    if (c['review_due_date'] != null) _reviewDueDate = DateTime.tryParse(c['review_due_date'].toString());
+    if (c['key_issues'] != null) _keyIssuesController.text = c['key_issues'].toString();
+
+    // 14. 사업검토
+    if (c['biz_type'] != null) _bizType = c['biz_type'].toString();
+    if (c['location'] != null) _locationController.text = c['location'].toString();
+    if (c['building_scale'] != null) _buildingScaleController.text = c['building_scale'].toString();
+    if (c['land_area'] != null) _landAreaController.text = c['land_area'].toString();
+    if (c['gross_floor_area'] != null) _grossFloorAreaController.text = c['gross_floor_area'].toString();
+    if (c['total_revenue'] != null) _totalRevenueController.text = c['total_revenue'].toString();
+    if (c['total_cost'] != null) _totalCostController.text = c['total_cost'].toString();
+    if (c['required_equity'] != null) _requiredEquityController.text = c['required_equity'].toString();
+    if (c['pf_loan_amount'] != null) _pfLoanAmountController.text = c['pf_loan_amount'].toString();
+    if (c['land_secure_date'] != null) _landSecureDate = DateTime.tryParse(c['land_secure_date'].toString());
+    if (c['approval_target_date'] != null) _approvalTargetDate = DateTime.tryParse(c['approval_target_date'].toString());
+    if (c['completion_date'] != null) _completionDate = DateTime.tryParse(c['completion_date'].toString());
+    if (c['market_analysis'] != null) _marketAnalysisController.text = c['market_analysis'].toString();
+    if (c['risk_factors'] != null) _riskFactorsController.text = c['risk_factors'].toString();
+
+    // 15. 사업추진 승인
+    if (c['approval_type'] != null) _bizApprovalType = c['approval_type'].toString();
+    if (c['biz_scale_summary'] != null) _bizScaleSummaryController.text = c['biz_scale_summary'].toString();
+    if (c['requested_amount'] != null) _requestedAmountController.text = c['requested_amount'].toString();
+    if (c['total_project_cost'] != null) _totalProjectCostController.text = c['total_project_cost'].toString();
+    if (c['total_expected_revenue'] != null) _totalExpectedRevenueController.text = c['total_expected_revenue'].toString();
+    if (c['budget_usage_plan'] != null) _budgetUsagePlanController.text = c['budget_usage_plan'].toString();
+    if (c['resolution_matters'] != null) _resolutionMattersController.text = c['resolution_matters'].toString();
+    if (c['pm_lead'] != null) _pmLeadController.text = c['pm_lead'].toString();
+    if (c['target_schedule'] != null) _targetScheduleController.text = c['target_schedule'].toString();
+    if (c['expected_effects'] != null) _expectedEffectsController.text = c['expected_effects'].toString();
+
+    // 16. 프로젝트 의사결정
+    if (c['decision_type'] != null) _projectDecisionType = c['decision_type'].toString();
+    if (c['urgency'] != null) _decisionUrgency = c['urgency'].toString();
+    if (c['decision_subject'] != null) _docNumberExtController.text = c['decision_subject'].toString();
+    if (c['decision_due_date'] != null) _decisionDueDate = DateTime.tryParse(c['decision_due_date'].toString());
+    if (c['financial_impact'] != null) _amountController.text = c['financial_impact'].toString();
+    if (c['background_issue'] != null) _generalContentController.text = c['background_issue'].toString();
+    if (c['option_1'] != null) _option1Controller.text = c['option_1'].toString();
+    if (c['option_2'] != null) _option2Controller.text = c['option_2'].toString();
+    if (c['option_3'] != null) _option3Controller.text = c['option_3'].toString();
+    if (c['recommendation'] != null) _purposeController.text = c['recommendation'].toString();
+    if (c['action_plan'] != null) _actionPlanController.text = c['action_plan'].toString();
   }
 
   @override

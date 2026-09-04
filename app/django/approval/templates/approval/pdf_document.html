@@ -467,9 +467,32 @@
         <th>지출 목적</th>
         <td colspan="3">{{ document.content.purpose|default:document.title }}</td>
       </tr>
+      {% if document.content.items %}
+      <tr>
+        <th>지출 세부항목</th>
+        <td colspan="3" style="padding: 0;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 8pt;">
+            <tr style="background: #f1f3f5;">
+              <th style="border: 1px solid #ccc; padding: 4px;">일자</th>
+              <th style="border: 1px solid #ccc; padding: 4px;">항목/내역</th>
+              <th style="border: 1px solid #ccc; padding: 4px; text-align: right;">금액</th>
+              <th style="border: 1px solid #ccc; padding: 4px;">비고</th>
+            </tr>
+            {% for item in document.content.items %}
+            <tr>
+              <td style="border: 1px solid #ccc; padding: 4px; text-align: center;">{{ item.date|default:"-" }}</td>
+              <td style="border: 1px solid #ccc; padding: 4px;">{{ item.description|default:item.merchant|default:item.name|default:"-" }}</td>
+              <td style="border: 1px solid #ccc; padding: 4px; text-align: right;">{{ item.amount|default:0 }} 원</td>
+              <td style="border: 1px solid #ccc; padding: 4px;">{{ item.note|default:item.purpose|default:"-" }}</td>
+            </tr>
+            {% endfor %}
+          </table>
+        </td>
+      </tr>
+      {% endif %}
       <tr>
         <th>상세 내역</th>
-        <td colspan="3" style="min-height:30mm; padding:8px;">{{ document.content.body|default:document.title|linebreaks }}</td>
+        <td colspan="3" style="min-height:20mm; padding:8px;">{{ document.content.body|default:document.content.content|default:document.content.purpose|default:document.title|linebreaks }}</td>
       </tr>
     </table>
 
