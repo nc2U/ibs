@@ -232,8 +232,8 @@ onMounted(fetchMyPending)
           {{ fmtDate(doc.submitted_at) }}
         </CTableDataCell>
         <CTableDataCell class="text-center">
-          <v-chip color="warning" variant="elevated" size="x-small">
-            {{ doc.current_step }}단계
+          <v-chip color="success" variant="flat" size="x-small" class="fw-bold">
+            🟢 내 승인 차례 ({{ doc.current_step }}단계)
           </v-chip>
         </CTableDataCell>
         <CTableDataCell class="text-center" @click.stop>

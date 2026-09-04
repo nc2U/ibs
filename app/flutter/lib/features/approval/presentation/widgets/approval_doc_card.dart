@@ -9,6 +9,7 @@ class ApprovalDocCard extends StatelessWidget {
   final VoidCallback onTap;
   final bool isSelectionMode;
   final bool isSelected;
+  final bool isPendingBox;
   final ValueChanged<bool?>? onSelectChanged;
 
   const ApprovalDocCard({
@@ -17,6 +18,7 @@ class ApprovalDocCard extends StatelessWidget {
     required this.onTap,
     this.isSelectionMode = false,
     this.isSelected = false,
+    this.isPendingBox = false,
     this.onSelectChanged,
   });
 
@@ -107,6 +109,8 @@ class ApprovalDocCard extends StatelessWidget {
                   ApprovalStatusChip(
                     status: document.status,
                     statusDesc: document.statusDesc,
+                    currentStep: document.currentStep,
+                    isMyTurn: isPendingBox,
                     isSmall: true,
                   ),
                 ],

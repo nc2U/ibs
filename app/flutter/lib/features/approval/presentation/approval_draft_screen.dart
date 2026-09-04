@@ -8,6 +8,7 @@ import '../../../../core/widgets/loading_shimmer.dart';
 import '../data/approval_repository.dart';
 import '../data/models/approval_model.dart';
 import '../providers/approval_providers.dart';
+import 'data/approval_form_guides.dart';
 
 class ApprovalDraftScreen extends ConsumerStatefulWidget {
   final ApprovalDocumentModel? editDoc;
@@ -1123,21 +1124,30 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
                   if (_selectedDocType == null && widget.editDoc != null) {
                     _selectedDocType = docTypes.where((dt) => dt.id == widget.editDoc!.docType).firstOrNull;
                   }
-                  return DropdownButtonFormField<DocumentTypeModel>(
-                    value: _selectedDocType,
-                    decoration: _inputDecoration(context, '문서 유형 선택'),
-                    items: docTypes.map((dt) {
-                      final cat = dt.categoryName != null ? '[${dt.categoryName}] ' : '';
-                      return DropdownMenuItem(
-                        value: dt,
-                        child: Text('$cat${dt.name}', style: const TextStyle(fontSize: 13)),
-                      );
-                    }).toList(),
-                    onChanged: (val) {
-                      setState(() => _selectedDocType = val);
-                      _updateRoutePreview();
-                    },
-                    validator: (v) => v == null ? '문서 유형을 선택하세요' : null,
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // 자주 쓰는 4대 양식 빠른 선택 칩
+                      _buildQuickDocTypeChips(context, docTypes),
+                      DropdownButtonFormField<DocumentTypeModel>(
+                        value: _selectedDocType,
+                        decoration: _inputDecoration(context, '문서 유형 선택'),
+                        items: docTypes.map((dt) {
+                          final cat = dt.categoryName != null ? '[${dt.categoryName}] ' : '';
+                          return DropdownMenuItem(
+                            value: dt,
+                            child: Text('$cat${dt.name}', style: const TextStyle(fontSize: 13)),
+                          );
+                        }).toList(),
+                        onChanged: (val) {
+                          setState(() => _selectedDocType = val);
+                          _updateRoutePreview();
+                        },
+                        validator: (v) => v == null ? '문서 유형을 선택하세요' : null,
+                      ),
+                      // 선택된 양식의 작성 팁 및 필수 첨부 체크리스트 배너
+                      _buildDocTypeGuideBanner(context),
+                    ],
                   );
                 },
                 loading: () => const LinearProgressIndicator(),
@@ -3576,6 +3586,179 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
     );
   }
 
+  Widget _buildQuickDocTypeChips(BuildContext context, List<DocumentTypeModel> docTypes) {
+    final quickItems = [
+      (
+        '🏖️ 휴가신청',
+        (DocumentTypeModel dt) =>
+            dt.formTemplateKey.toUpperCase().contains('LEAVE') ||
+            dt.name.contains('휴가') ||
+            dt.code.toUpperCase().contains('VACATION')
+      ),
+      (
+        '💳 지출결의',
+        (DocumentTypeModel dt) =>
+            dt.formTemplateKey.toUpperCase().contains('EXPENSE') ||
+            dt.name.contains('지출')
+      ),
+      (
+        '💼 일반품의',
+        (DocumentTypeModel dt) =>
+            dt.formTemplateKey.toUpperCase().contains('GENERAL') ||
+            dt.formTemplateKey.toUpperCase().contains('BIZ') ||
+            dt.name.contains('품의')
+      ),
+      (
+        '🚗 출장신청',
+        (DocumentTypeModel dt) =>
+            dt.formTemplateKey.toUpperCase().contains('TRIP') ||
+            dt.name.contains('출장')
+      ),
+    ];
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: quickItems.map((item) {
+          final label = item.$1;
+          final matcher = item.$2;
+          final matchedDt = docTypes.where(matcher).firstOrNull;
+          if (matchedDt == null) return const SizedBox.shrink();
+
+          final isSelected = _selectedDocType?.id == matchedDt.id;
+
+          return Padding(
+            padding: const EdgeInsets.only(right: 6),
+            child: InkWell(
+              onTap: () {
+                setState(() => _selectedDocType = matchedDt);
+                _updateRoutePreview();
+              },
+              borderRadius: BorderRadius.circular(20),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? context.colors.accentApproval.withAlpha(35)
+                      : context.colors.bgPrimary,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isSelected
+                        ? context.colors.accentApproval
+                        : context.colors.border,
+                    width: isSelected ? 1.2 : 0.8,
+                  ),
+                ),
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                    color: isSelected
+                        ? context.colors.accentApprovalDeep
+                        : context.colors.textPrimary,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildDocTypeGuideBanner(BuildContext context) {
+    if (_selectedDocType == null) return const SizedBox.shrink();
+    final guide = getApprovalGuide(_selectedDocType?.formTemplateKey, _selectedDocType?.code);
+
+    return Container(
+      margin: const EdgeInsets.only(top: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: context.colors.bgPrimary,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: context.colors.accentApproval.withAlpha(70), width: 0.8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.lightbulb_outline_rounded, size: 16, color: Colors.amber.shade700),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  '${guide.title} 작성 팁',
+                  style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: context.colors.textPrimary),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: context.colors.accentApproval.withAlpha(25),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+                child: Text(
+                  guide.category,
+                  style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: context.colors.accentApprovalDeep),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            guide.summary,
+            style: TextStyle(fontSize: 11.5, color: context.colors.textSecond, height: 1.4),
+          ),
+          if (guide.requiredAttachments.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.attach_file_rounded, size: 14, color: context.colors.accentApproval),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    '필수 첨부: ${guide.requiredAttachments.join(', ')}',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: context.colors.accentApprovalDeep, height: 1.3),
+                  ),
+                ),
+              ],
+            ),
+          ],
+          if (guide.exampleTitle != null) ...[
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () {
+                  setState(() {
+                    _titleController.text = guide.exampleTitle!;
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('모범 제목 예시가 적용되었습니다.'),
+                      duration: Duration(seconds: 1),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.auto_fix_high_rounded, size: 14),
+                label: const Text('제목 예시 적용', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700)),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  foregroundColor: context.colors.accentApproval,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildRoutePreviewWidget(BuildContext context) {
     if (_isPreviewLoading) {
       return const Padding(
@@ -3616,7 +3799,7 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    _previewSteps[i].approvers.map((u) => u.username).join(', '),
+                    _previewSteps[i].approvers.map((u) => u.fullName?.isNotEmpty == true ? u.fullName! : (u.name.isNotEmpty ? u.name : u.username)).join(', '),
                     style: TextStyle(fontSize: 11.5, color: context.colors.textSecond),
                     overflow: TextOverflow.ellipsis,
                   ),

@@ -526,6 +526,7 @@ class _ApprovalMainScreenState extends ConsumerState<ApprovalMainScreen>
 
               return ApprovalDocCard(
                 document: doc,
+                isPendingBox: true,
                 isSelectionMode: _isSelectionMode,
                 isSelected: isSelected,
                 onSelectChanged: (val) {

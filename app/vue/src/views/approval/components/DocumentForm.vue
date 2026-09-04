@@ -108,6 +108,51 @@ const groupedDocTypes = computed(() => {
   return groups
 })
 
+// 자주 쓰는 4대 양식 빠른 필터/선택
+const quickDocTypes = computed(() => {
+  const items = [
+    {
+      label: '🏖️ 휴가 / 연차',
+      matcher: (dt: DocumentType) =>
+        (dt.form_template_key || '').toUpperCase().includes('LEAVE') ||
+        dt.name.includes('휴가') ||
+        (dt.code || '').toUpperCase().includes('VACATION'),
+    },
+    {
+      label: '💳 지출결의서',
+      matcher: (dt: DocumentType) =>
+        (dt.form_template_key || '').toUpperCase().includes('EXPENSE') ||
+        dt.name.includes('지출'),
+    },
+    {
+      label: '💼 일반 업무품의',
+      matcher: (dt: DocumentType) =>
+        (dt.form_template_key || '').toUpperCase().includes('GENERAL') ||
+        (dt.form_template_key || '').toUpperCase().includes('BIZ') ||
+        dt.name.includes('품의'),
+    },
+    {
+      label: '🚗 출장신청서',
+      matcher: (dt: DocumentType) =>
+        (dt.form_template_key || '').toUpperCase().includes('TRIP') ||
+        dt.name.includes('출장'),
+    },
+  ]
+
+  return items
+    .map(item => {
+      const matched = forDraftDocTypeList.value.find(item.matcher)
+      return matched ? { label: item.label, docType: matched } : null
+    })
+    .filter(Boolean) as { label: string; docType: DocumentType }[]
+})
+
+const selectQuickDocType = (dt: DocumentType) => {
+  if (isEdit.value) return
+  form.value.doc_type = dt.id
+  onDocTypeChange()
+}
+
 const onDocTypeChange = () => {
   dynamicContent.value = {}
   if (selectedDocType.value && selectedDocType.value.default_security_level) {
@@ -346,6 +391,23 @@ const applyExampleTitle = (title: string) => {
               문서 유형 <span class="text-danger">*</span>
             </CFormLabel>
             <CCol sm="9">
+              <!-- 자주 쓰는 4대 양식 빠른 선택 칩 -->
+              <div v-if="quickDocTypes.length && !isEdit" class="d-flex flex-wrap align-items-center gap-1 mb-2">
+                <span class="small text-muted me-1">자주 쓰는 양식:</span>
+                <CButton
+                  v-for="q in quickDocTypes"
+                  :key="q.docType.id"
+                  size="sm"
+                  :color="form.doc_type === q.docType.id ? 'primary' : 'light'"
+                  :variant="form.doc_type === q.docType.id ? undefined : 'ghost'"
+                  class="border py-0 px-2 rounded-pill small"
+                  style="font-size: 0.78rem"
+                  @click="selectQuickDocType(q.docType)"
+                >
+                  {{ q.label }}
+                </CButton>
+              </div>
+
               <CFormSelect
                 v-model="form.doc_type"
                 :disabled="isEdit"
@@ -369,6 +431,37 @@ const applyExampleTitle = (title: string) => {
               </CFormSelect>
               <div v-if="selectedDocType?.description" class="form-text text-muted">
                 {{ selectedDocType.description }}
+              </div>
+
+              <!-- 모바일/태블릿 전용 접이식 작성 가이드 (d-lg-none) -->
+              <div v-if="selectedDocType" class="d-lg-none mt-2 p-2 border rounded bg-light">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                  <span class="fw-semibold text-primary small d-flex align-items-center">
+                    <v-icon icon="mdi-lightbulb-on-outline" size="small" class="me-1 text-warning" />
+                    {{ currentGuide.title }} 작성 가이드
+                  </span>
+                  <CBadge color="info" size="sm">{{ currentGuide.category }}</CBadge>
+                </div>
+                <div class="small text-muted mb-2">{{ currentGuide.summary }}</div>
+                <div class="small mb-1">
+                  <span class="fw-bold text-dark">• 필수 첨부:</span>
+                  <span class="text-secondary ms-1">{{ currentGuide.requiredAttachments.join(', ') }}</span>
+                </div>
+                <div v-if="currentGuide.example" class="d-flex justify-content-between align-items-center pt-1 border-top mt-1">
+                  <span class="text-muted text-truncate me-2 small" style="font-size: 0.75rem">
+                    예: {{ currentGuide.example.title }}
+                  </span>
+                  <CButton
+                    size="sm"
+                    color="primary"
+                    variant="ghost"
+                    class="py-0 px-2 small flex-shrink-0"
+                    style="font-size: 0.75rem"
+                    @click="applyExampleTitle(currentGuide.example.title)"
+                  >
+                    [제목 적용]
+                  </CButton>
+                </div>
               </div>
             </CCol>
           </CRow>
