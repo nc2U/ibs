@@ -347,7 +347,7 @@ watch(
         <!-- 소송 사건 화면 -->
         <template v-if="isSuitCase">
           <!-- 사건 목록 -->
-          <div v-if="route.name === mainViewName" class="pt-1">
+          <div v-if="route.name === mainViewName" class="pt-4">
             <TableTitleRow
               title="소송 사건 목록"
               excel
