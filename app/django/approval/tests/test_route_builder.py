@@ -1,7 +1,7 @@
 from django.test import TestCase
 from django.contrib.auth import get_user_model
 from company.models import Company, Department, Staff, StaffAssignment, DutyTitle, Position
-from approval.models import DocCategory, DocumentType
+from approval.models import DocCategory, DocumentType, ApprovalPolicyRule
 from approval.services.route_builder import build_dynamic_approval_route
 
 User = get_user_model()
@@ -156,3 +156,100 @@ class ApprovalRouteBuilderTestCase(TestCase):
         self.assertEqual(routes[0]['approver_ids'], [user_ceo2.id])
         self.assertEqual(routes[0]['condition'], 'AND')
         self.assertEqual(routes[0]['role_label'], '공동대표 최종 승인')
+
+    def test_policy_rule_amount_threshold_routes(self):
+        """금액별 조건부 전결 정책(ApprovalPolicyRule)에 따라 결재선이 1단계(팀장) / 2단계(본부장) / 3단계(대표이사)로 정확히 동적 분기되는지 검증"""
+        # 1. 팀장 생성 및 경영지원팀 책임자 지정
+        user_tl = User.objects.create_user(username='team_leader', email='tl@example.com')
+        staff_tl = Staff.objects.create(
+            company=self.company, user=user_tl, name='정팀장',
+            position=self.pos_manager, id_number='830101-1234567', personal_phone='010-3333-1111',
+            date_join='2022-01-01', status='1'
+        )
+        StaffAssignment.objects.create(
+            staff=staff_tl, company=self.company, department=self.dept_team,
+            duty=self.duty_team_leader, is_primary=True
+        )
+        self.dept_team.manager = staff_tl
+        self.dept_team.save()
+
+        # 2. 본부장 생성 및 경영지원본부 책임자 지정
+        user_head = User.objects.create_user(username='division_head', email='head@example.com')
+        staff_head = Staff.objects.create(
+            company=self.company, user=user_head, name='강본부장',
+            position=self.pos_manager, id_number='780101-1234567', personal_phone='010-4444-2222',
+            date_join='2021-01-01', status='1'
+        )
+        StaffAssignment.objects.create(
+            staff=staff_head, company=self.company, department=self.dept_division,
+            duty=self.duty_division_head, is_primary=True
+        )
+        self.dept_division.manager = staff_head
+        self.dept_division.save()
+
+        # 3. 문서 유형 및 금액 구간별 전결 규칙 설정
+        doc_type_expense = DocumentType.objects.create(
+            category=self.category, name='지출품의서', code='EXPENSE',
+            route_type=DocumentType.ROUTE_ORGANIZATION
+        )
+        # 규칙 1: 100만 원 이하 -> 팀장 전결
+        ApprovalPolicyRule.objects.create(
+            doc_type=doc_type_expense,
+            name='100만원 이하 팀장 전결',
+            min_amount=None,
+            max_amount=1000000,
+            final_approval_duty=self.duty_team_leader,
+            priority=1,
+        )
+        # 규칙 2: 1,000만 원 이하 -> 본부장 전결
+        ApprovalPolicyRule.objects.create(
+            doc_type=doc_type_expense,
+            name='1,000만원 이하 본부장 전결',
+            min_amount=1000001,
+            max_amount=10000000,
+            final_approval_duty=self.duty_division_head,
+            priority=2,
+        )
+        # (1,000만 원 초과는 일치 규칙 없음 -> 기본 대표이사 최종 승인까지 진행)
+
+        # ─────────────────────────────────────────────────────────
+        # Case A: 50만 원 품의 -> 1단계(팀장 전결)로 종결
+        # ─────────────────────────────────────────────────────────
+        routes_50 = build_dynamic_approval_route(
+            doc_type=doc_type_expense,
+            drafter_user=self.user_drafter,
+            drafter_assignment=self.assign_drafter,
+            content={'amount': 500000}
+        )
+        self.assertEqual(len(routes_50), 1)
+        self.assertEqual(routes_50[0]['approver_ids'], [user_tl.id])
+        self.assertIn('팀장', routes_50[0]['role_label'])
+
+        # ─────────────────────────────────────────────────────────
+        # Case B: 500만 원 품의 -> 2단계(팀장 -> 본부장 전결)로 종결
+        # ─────────────────────────────────────────────────────────
+        routes_500 = build_dynamic_approval_route(
+            doc_type=doc_type_expense,
+            drafter_user=self.user_drafter,
+            drafter_assignment=self.assign_drafter,
+            content={'amount': 5000000}
+        )
+        self.assertEqual(len(routes_500), 2)
+        self.assertEqual(routes_500[0]['approver_ids'], [user_tl.id])
+        self.assertEqual(routes_500[1]['approver_ids'], [user_head.id])
+        self.assertIn('본부장', routes_500[1]['role_label'])
+
+        # ─────────────────────────────────────────────────────────
+        # Case C: 5,000만 원 품의 -> 3단계(팀장 -> 본부장 -> 대표이사)까지 확장
+        # ─────────────────────────────────────────────────────────
+        routes_5000 = build_dynamic_approval_route(
+            doc_type=doc_type_expense,
+            drafter_user=self.user_drafter,
+            drafter_assignment=self.assign_drafter,
+            content={'amount': 50000000}
+        )
+        self.assertEqual(len(routes_5000), 3)
+        self.assertEqual(routes_5000[0]['approver_ids'], [user_tl.id])
+        self.assertEqual(routes_5000[1]['approver_ids'], [user_head.id])
+        self.assertEqual(routes_5000[2]['approver_ids'], [self.user_ceo.id])
+        self.assertIn('대표이사', routes_5000[2]['role_label'])

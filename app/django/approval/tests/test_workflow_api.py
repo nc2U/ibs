@@ -1,5 +1,7 @@
+import json
 from unittest.mock import patch
 from django.contrib.auth import get_user_model
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -12,6 +14,7 @@ from approval.models import (
     ApprovalStep,
     ApprovalAction,
     ApprovalDelegation,
+    ApprovalAttachment,
 )
 from company.models import Company, Department, Staff, StaffAssignment, DutyTitle, Position
 
@@ -146,6 +149,45 @@ class ApprovalWorkflowAPITestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data['status'], ApprovalDocument.STATUS_DRAFT)
         self.assertIsNone(response.data['doc_number'])  # 임시저장 상태에서는 문서번호 미채번
+
+    def test_create_draft_document_with_file_multipart(self):
+        """파일 첨부와 함께 multipart/form-data로 기안 시 content JSON이 유실 없이 dict로 보존되고 첨부파일이 등록되는지 검증"""
+        self.client.force_authenticate(user=self.user_drafter)
+        mock_file = SimpleUploadedFile(
+            'test_spec.pdf',
+            b'%PDF-1.4 mock content for test',
+            content_type='application/pdf'
+        )
+        content_dict = {
+            'amount': 2500000,
+            'purpose': '개발용 장비 구매',
+            'items': [{'name': '모니터', 'qty': 2, 'price': 1250000}],
+        }
+        payload = {
+            'doc_type': self.doc_type.id,
+            'title': '개발 장비 구매 신청',
+            'content': json.dumps(content_dict),
+            'drafter_assignment': self.assign_drafter.id,
+            'security_level': ApprovalDocument.SECURITY_DEPT,
+            'files': [mock_file],
+        }
+        response = self.client.post('/api/v1/approval-document/', payload, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        doc_id = response.data['id']
+        doc = ApprovalDocument.objects.get(id=doc_id)
+
+        # 🌟 핵심 검증 1: multipart 요청임에도 content JSON이 dict 구조로 완벽히 보존되었는지 검증
+        self.assertIsInstance(doc.content, dict)
+        self.assertEqual(doc.content.get('amount'), 2500000)
+        self.assertEqual(doc.content.get('purpose'), '개발용 장비 구매')
+        self.assertEqual(len(doc.content.get('items', [])), 1)
+
+        # 🌟 핵심 검증 2: ApprovalAttachment 레코드가 문서에 정상 생성 및 링크되었는지 검증
+        self.assertEqual(doc.attachments.count(), 1)
+        attachment = doc.attachments.first()
+        self.assertEqual(attachment.creator, self.user_drafter)
+        self.assertEqual(attachment.file_name, 'test_spec.pdf')
 
     # ─────────────────────────────────────────────────────────────
     # 2. 상신 및 결재 단계 생성 테스트
@@ -395,3 +437,72 @@ class ApprovalWorkflowAPITestCase(APITestCase):
         # 2. 타 부서원이 상세 URL로 직접 접근 시 403 또는 404 차단
         res_detail = self.client.get(f'/api/v1/approval-document/{secret_doc.id}/')
         self.assertIn(res_detail.status_code, [status.HTTP_403_FORBIDDEN, status.HTTP_404_NOT_FOUND])
+
+    def test_security_level_dept_and_public_visibility(self):
+        """2등급(부서공개) 문서의 동일부서/타부서 열람 격리 및 3등급(전사공개) 문서의 전사 열람 허용 검증"""
+        # 1. 2등급(부서공개) 승인 완료 문서
+        dept_doc = ApprovalDocument.objects.create(
+            doc_type=self.doc_type,
+            title='개발팀 2등급 부서공개 문서',
+            drafter=self.user_drafter,
+            drafter_assignment=self.assign_drafter,  # 개발팀(dept_dev)
+            security_level=ApprovalDocument.SECURITY_DEPT,
+            status=ApprovalDocument.STATUS_APPROVED,
+        )
+
+        # 2. 3등급(전사공개) 승인 완료 문서
+        public_doc = ApprovalDocument.objects.create(
+            doc_type=self.doc_type,
+            title='전사 공지 3등급 공개 문서',
+            drafter=self.user_drafter,
+            drafter_assignment=self.assign_drafter,
+            security_level=ApprovalDocument.SECURITY_PUBLIC,
+            status=ApprovalDocument.STATUS_APPROVED,
+        )
+
+        # ── 개발팀 소속 동료(user_delegate) 시점 ──
+        # 기안자나 결재자가 아니지만 개발팀 소속이므로 2등급, 3등급 모두 열람 가능
+        self.client.force_authenticate(user=self.user_delegate)
+        res_team = self.client.get('/api/v1/approval-document/')
+        team_doc_ids = [d['id'] for d in res_team.data.get('results', res_team.data)]
+        self.assertIn(dept_doc.id, team_doc_ids)
+        self.assertIn(public_doc.id, team_doc_ids)
+
+        # ── 인사팀 타 부서원(user_outsider) 시점 ──
+        # 2등급 문서는 목록에 미노출, 3등급 문서는 목록에 노출
+        self.client.force_authenticate(user=self.user_outsider)
+        res_outsider = self.client.get('/api/v1/approval-document/')
+        outsider_doc_ids = [d['id'] for d in res_outsider.data.get('results', res_outsider.data)]
+        self.assertNotIn(dept_doc.id, outsider_doc_ids)
+        self.assertIn(public_doc.id, outsider_doc_ids)
+
+        # 타 부서원이 2등급 문서 상세 URL 직접 접근 -> 차단
+        res_dept_detail = self.client.get(f'/api/v1/approval-document/{dept_doc.id}/')
+        self.assertIn(res_dept_detail.status_code, [status.HTTP_403_FORBIDDEN, status.HTTP_404_NOT_FOUND])
+
+        # 타 부서원이 3등급 문서 상세 URL 직접 접근 -> 성공
+        res_public_detail = self.client.get(f'/api/v1/approval-document/{public_doc.id}/')
+        self.assertEqual(res_public_detail.status_code, status.HTTP_200_OK)
+
+    def test_confidential_document_accessible_by_assigned_observer(self):
+        """1등급(비공개) 비밀 문서라도 '참조자(Observer)'로 지정된 직원은 정상 열람할 수 있는지 검증"""
+        confidential_doc = ApprovalDocument.objects.create(
+            doc_type=self.doc_type,
+            title='극비 전략 기획서',
+            drafter=self.user_drafter,
+            drafter_assignment=self.assign_drafter,
+            security_level=ApprovalDocument.SECURITY_SECRET,
+            status=ApprovalDocument.STATUS_APPROVED,
+        )
+        # 타 부서원(user_outsider)을 참조자로 등록
+        confidential_doc.observers.add(self.user_outsider)
+
+        # user_outsider로 조회 시 목록에 노출되고 상세 조회가 허용되어야 함
+        self.client.force_authenticate(user=self.user_outsider)
+        res_list = self.client.get('/api/v1/approval-document/')
+        doc_ids = [d['id'] for d in res_list.data.get('results', res_list.data)]
+        self.assertIn(confidential_doc.id, doc_ids)
+
+        res_detail = self.client.get(f'/api/v1/approval-document/{confidential_doc.id}/')
+        self.assertEqual(res_detail.status_code, status.HTTP_200_OK)
+        self.assertEqual(res_detail.data['title'], '극비 전략 기획서')
