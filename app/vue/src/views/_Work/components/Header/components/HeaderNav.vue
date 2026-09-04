@@ -24,9 +24,14 @@ const menuName = computed(() => {
 const isMenuActive = (menu: unknown) => {
   const m = String(menu ?? '')
   const current = menuName.value
+  const cleanM = getTitle(m)
+  const cleanCurrent = getTitle(current)
+
   return (
     current === m ||
+    cleanCurrent === cleanM ||
     current.startsWith(`${m} `) ||
+    (cleanCurrent.startsWith(cleanM) && (cleanCurrent === '문서사건' && cleanM === '문서')) ||
     ((route.meta as any)?.title ?? '').includes(m)
   )
 }
