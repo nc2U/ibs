@@ -5,6 +5,8 @@ class ProfileModel {
   final String? birthDate;
   final String? cellPhone;
   final String? image;
+  final String? signImage;
+  final String signType;
   final bool autoWatchCreated;
   final bool autoWatchAssigned;
   final bool meetingCreatedNotification;
@@ -16,6 +18,8 @@ class ProfileModel {
     this.birthDate,
     this.cellPhone,
     this.image,
+    this.signImage,
+    this.signType = 'STAMP',
     this.autoWatchCreated = true,
     this.autoWatchAssigned = true,
     this.meetingCreatedNotification = true,
@@ -29,6 +33,8 @@ class ProfileModel {
       birthDate: json['birth_date'] as String?,
       cellPhone: json['cell_phone'] as String?,
       image: json['image'] as String?,
+      signImage: json['sign_image'] as String?,
+      signType: json['sign_type'] as String? ?? 'STAMP',
       autoWatchCreated: json['auto_watch_created'] as bool? ?? true,
       autoWatchAssigned: json['auto_watch_assigned'] as bool? ?? true,
       meetingCreatedNotification: json['meeting_created_notification'] as bool? ?? true,
@@ -43,6 +49,8 @@ class ProfileModel {
       'birth_date': birthDate,
       'cell_phone': cellPhone,
       'image': image,
+      'sign_image': signImage,
+      'sign_type': signType,
       'auto_watch_created': autoWatchCreated,
       'auto_watch_assigned': autoWatchAssigned,
       'meeting_created_notification': meetingCreatedNotification,
@@ -56,6 +64,8 @@ class ProfileModel {
     String? birthDate,
     String? cellPhone,
     String? image,
+    String? signImage,
+    String? signType,
     bool? autoWatchCreated,
     bool? autoWatchAssigned,
     bool? meetingCreatedNotification,
@@ -67,6 +77,8 @@ class ProfileModel {
       birthDate: birthDate ?? this.birthDate,
       cellPhone: cellPhone ?? this.cellPhone,
       image: image ?? this.image,
+      signImage: signImage ?? this.signImage,
+      signType: signType ?? this.signType,
       autoWatchCreated: autoWatchCreated ?? this.autoWatchCreated,
       autoWatchAssigned: autoWatchAssigned ?? this.autoWatchAssigned,
       meetingCreatedNotification: meetingCreatedNotification ?? this.meetingCreatedNotification,

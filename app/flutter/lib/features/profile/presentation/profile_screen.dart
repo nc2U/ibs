@@ -13,6 +13,7 @@ import '../../../core/widgets/user_avatar.dart';
 import 'change_password_screen.dart';
 import 'delegation_settings_screen.dart';
 import 'email_notification_settings_screen.dart';
+import 'sign_settings_screen.dart';
 
 /// 내 설정 화면 — 프로필 / 알림 / 계정 관리
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -382,6 +383,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
             // ── 전자결재 및 위임 관리 섹션 ─────────────────────────────────────
             const _SectionLabel(title: '전자결재 및 부재 설정'),
+            _SettingTile(
+              leading: Icon(Icons.draw_outlined,
+                  color: context.colors.accentApprovalDeep, size: 24),
+              title: '결재 인장 / 서명 관리',
+              subtitle: '결재 승인 시 날인될 개인 도장 또는 서명 관리',
+              trailing: Icon(Icons.chevron_right_rounded,
+                  color: context.colors.textDisabled),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const SignSettingsScreen()),
+                );
+              },
+            ),
+            const _Divider(),
             _SettingTile(
               leading: Icon(Icons.shield_outlined,
                   color: context.colors.accentApprovalDeep, size: 24),

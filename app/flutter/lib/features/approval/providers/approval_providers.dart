@@ -148,10 +148,10 @@ class ApprovalActionController extends StateNotifier<AsyncValue<void>> {
     try {
       final doc = await _repo.submitDocument(docId);
       _invalidateAllLists(docId);
-      state = const AsyncValue.data(null);
+      if (mounted) state = const AsyncValue.data(null);
       return doc;
     } catch (e, st) {
-      state = AsyncValue.error(e, st);
+      if (mounted) state = AsyncValue.error(e, st);
       rethrow;
     }
   }
@@ -162,10 +162,10 @@ class ApprovalActionController extends StateNotifier<AsyncValue<void>> {
     try {
       final msg = await _repo.actDocument(docId, action: 'approved', comment: comment);
       _invalidateAllLists(docId);
-      state = const AsyncValue.data(null);
+      if (mounted) state = const AsyncValue.data(null);
       return msg;
     } catch (e, st) {
-      state = AsyncValue.error(e, st);
+      if (mounted) state = AsyncValue.error(e, st);
       rethrow;
     }
   }
@@ -176,10 +176,10 @@ class ApprovalActionController extends StateNotifier<AsyncValue<void>> {
     try {
       final msg = await _repo.actDocument(docId, action: 'rejected', comment: comment);
       _invalidateAllLists(docId);
-      state = const AsyncValue.data(null);
+      if (mounted) state = const AsyncValue.data(null);
       return msg;
     } catch (e, st) {
-      state = AsyncValue.error(e, st);
+      if (mounted) state = AsyncValue.error(e, st);
       rethrow;
     }
   }
@@ -190,10 +190,10 @@ class ApprovalActionController extends StateNotifier<AsyncValue<void>> {
     try {
       final msg = await _repo.actDocument(docId, action: 'commented', comment: comment);
       _ref.invalidate(approvalDetailProvider(docId));
-      state = const AsyncValue.data(null);
+      if (mounted) state = const AsyncValue.data(null);
       return msg;
     } catch (e, st) {
-      state = AsyncValue.error(e, st);
+      if (mounted) state = AsyncValue.error(e, st);
       rethrow;
     }
   }
@@ -204,16 +204,16 @@ class ApprovalActionController extends StateNotifier<AsyncValue<void>> {
     try {
       final msg = await _repo.cancelDocument(docId);
       _invalidateAllLists(docId);
-      state = const AsyncValue.data(null);
+      if (mounted) state = const AsyncValue.data(null);
       return msg;
     } catch (e, st) {
-      state = AsyncValue.error(e, st);
+      if (mounted) state = AsyncValue.error(e, st);
       rethrow;
     }
   }
 }
 
-final approvalActionControllerProvider = StateNotifierProvider.autoDispose<ApprovalActionController, AsyncValue<void>>((ref) {
+final approvalActionControllerProvider = StateNotifierProvider<ApprovalActionController, AsyncValue<void>>((ref) {
   final repo = ref.watch(approvalRepositoryProvider);
   return ApprovalActionController(repo, ref);
 });
