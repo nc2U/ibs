@@ -23,13 +23,13 @@ import CaseForm from '@/components/LawSuitCase/CaseForm.vue'
 const cBody = ref()
 const sideNavCAll = () => cBody.value.toggle()
 
-const typeNumber = ref<1 | 2 | 3>(1)
+const typeNumber = ref<1 | 2>(1)
 const types = ref([
   { value: 1, label: '일반문서' },
   { value: 2, label: '소송기록' },
-  { value: 3, label: '소송사건' },
 ])
 
+const isSuitCase = computed(() => String(route.name ?? '').startsWith('문서 사건'))
 const mainViewName = ref('문서 사건')
 
 const comStore = useCompany()
@@ -131,14 +131,20 @@ const getDocsList = (target: unknown) => {
     docsFilter.value.doc_type = target as number
     fetchCategoryList(target as 1 | 2)
     fetchDocsList(docsFilter.value)
-  } else if (target === 3) {
-    caseFilter.value.company = company.value?.pk ?? ''
-    caseFilter.value.issue_project = docsFilter.value.issue_project ?? ''
-    fetchSuitCaseList(caseFilter.value)
-    if (route.name !== '문서 사건' && !String(route.name ?? '').startsWith('문서 사건 -')) {
-      router.push({ name: '문서 사건' })
-    }
   }
+}
+
+const goToSuitCase = () => {
+  caseFilter.value.company = company.value?.pk ?? ''
+  caseFilter.value.issue_project = docsFilter.value.issue_project ?? ''
+  fetchSuitCaseList(caseFilter.value)
+  if (route.name !== '문서 사건' && !String(route.name ?? '').startsWith('문서 사건 -')) {
+    router.push({ name: '문서 사건' })
+  }
+}
+
+const goToDocs = () => {
+  router.push({ name: '문서' })
 }
 
 const selectCate = (cate: number) => {
@@ -221,7 +227,7 @@ const initData = async () => {
   try {
     await workStore.fetchAllProjectList()
     await fetchAllSuitCaseList({ company: company.value?.pk ?? '' })
-    if (typeNumber.value === 3) {
+    if (isSuitCase.value) {
       caseFilter.value.company = company.value?.pk ?? ''
       caseFilter.value.issue_project = docsFilter.value.issue_project ?? ''
       await fetchSuitCaseList(caseFilter.value)
@@ -237,9 +243,7 @@ const initData = async () => {
 }
 
 onBeforeMount(async () => {
-  const currentRouteName = String(route.name ?? '')
-  if (currentRouteName.startsWith('문서 사건')) {
-    typeNumber.value = 3
+  if (isSuitCase.value) {
     if (route.params.caseId) {
       await fetchSuitCase(Number(route.params.caseId))
     }
@@ -252,10 +256,8 @@ watch(
   async newName => {
     const nameStr = String(newName ?? '')
     if (nameStr === '문서') {
-      if (typeNumber.value === 3) typeNumber.value = 1
       await initData()
     } else if (nameStr.startsWith('문서 사건')) {
-      typeNumber.value = 3
       if (route.params.caseId) {
         await fetchSuitCase(Number(route.params.caseId))
       } else {
@@ -272,7 +274,7 @@ watch(
     docsFilter.value.page = 1
     caseFilter.value.issue_project = newProject
     caseFilter.value.page = 1
-    if (typeNumber.value === 3) {
+    if (isSuitCase.value) {
       fetchSuitCaseList(caseFilter.value)
     } else {
       fetchDocsList(docsFilter.value)
@@ -290,34 +292,50 @@ watch(
       <CRow class="py-2">
         <CCol>
           <h5>
-            <v-icon icon="mdi-text-box-search-outline" color="primary" class="mr-2" />
-            문서
+            <v-icon
+              :icon="isSuitCase ? 'mdi-scale-balance' : 'mdi-text-box-search-outline'"
+              color="primary"
+              class="mr-2"
+            />
+            {{ isSuitCase ? '소송 사건' : '문서' }}
           </h5>
         </CCol>
 
         <CCol class="text-right">
-          <!-- 대외 공문 발송 대장 바로가기 -->
+          <!-- 문서/소송사건 전환 및 대외 공문 발송 대장 바로가기 -->
           <v-btn
+            v-if="isSuitCase"
             size="small"
             variant="tonal"
-            color="info"
-            prepend-icon="mdi-email-send-outline"
+            color="indigo-lighten-1"
+            prepend-icon="mdi-text-box-search-outline"
             class="mr-2"
-            :to="{ path: '/approval/official-letters' }"
+            @click="goToDocs"
           >
-            공문 발송 대장
+            문서 목록
+          </v-btn>
+          <v-btn
+            v-else
+            size="small"
+            variant="tonal"
+            color="deep-purple-lighten-1"
+            prepend-icon="mdi-scale-balance"
+            class="mr-2"
+            @click="goToSuitCase"
+          >
+            소송 사건
           </v-btn>
 
           <!-- 새 문서 또는 새 사건 등록 버튼 -->
-          <span v-if="canDocsCreate && typeNumber !== 3" class="mr-2 form-text">
+          <span v-if="canDocsCreate && !isSuitCase" class="mr-2 form-text">
             <TextButton name="새 문서" @click="viewForm = !viewForm" :active="false" />
           </span>
           <span
-            v-else-if="canDocsCreate && typeNumber === 3 && route.name === '문서 사건'"
+            v-else-if="canDocsCreate && isSuitCase && route.name === '문서 사건'"
             class="mr-2 form-text"
           >
             <TextButton
-              name="새 사건 등록"
+              name="새 사건"
               @click="router.push({ name: `${mainViewName} - 작성` })"
               :active="false"
             />
@@ -326,46 +344,10 @@ watch(
       </CRow>
 
       <template v-if="canDocsRead">
-        <CRow class="mb-3 header">
-          <CCol>
-            <v-tabs v-model="typeNumber" density="compact" @update:model-value="getDocsList">
-              <v-tab
-                v-for="type in types"
-                :value="type.value"
-                :key="type.value"
-                variant="tonal"
-                :active="typeNumber === type.value"
-              >
-                {{ type.label }}
-              </v-tab>
-            </v-tabs>
-          </CCol>
-        </CRow>
-
-        <!-- 일반 문서 (1) & 소송 기록 (2) 화면 -->
-        <template v-if="typeNumber === 1 || typeNumber === 2">
-          <DocsForm
-            v-if="viewForm"
-            :type-number="typeNumber"
-            :categories="getCategories"
-            :get-suit-case="getSuitCase"
-            :my-projects="myProjects"
-            @close-form="viewForm = false"
-          />
-
-          <DocsList
-            :category="docsFilter.category as number"
-            :category-list="categoryList"
-            :docs-list="docsList"
-            @select-cate="selectCate"
-            @page-select="pageSelect"
-          />
-        </template>
-
-        <!-- 소송 사건 (3) 화면 -->
-        <template v-else-if="typeNumber === 3">
+        <!-- 소송 사건 화면 -->
+        <template v-if="isSuitCase">
           <!-- 사건 목록 -->
-          <div v-if="route.name === mainViewName || route.name === '문서'" class="pt-1">
+          <div v-if="route.name === mainViewName" class="pt-1">
             <TableTitleRow
               title="소송 사건 목록"
               excel
@@ -422,6 +404,42 @@ watch(
             />
           </div>
         </template>
+
+        <!-- 일반 문서 (1) & 소송 기록 (2) 화면 -->
+        <template v-else>
+          <CRow class="mb-3 header">
+            <CCol>
+              <v-tabs v-model="typeNumber" density="compact" @update:model-value="getDocsList">
+                <v-tab
+                  v-for="type in types"
+                  :value="type.value"
+                  :key="type.value"
+                  variant="tonal"
+                  :active="typeNumber === type.value"
+                >
+                  {{ type.label }}
+                </v-tab>
+              </v-tabs>
+            </CCol>
+          </CRow>
+
+          <DocsForm
+            v-if="viewForm"
+            :type-number="typeNumber"
+            :categories="getCategories"
+            :get-suit-case="getSuitCase"
+            :my-projects="myProjects"
+            @close-form="viewForm = false"
+          />
+
+          <DocsList
+            :category="docsFilter.category as number"
+            :category-list="categoryList"
+            :docs-list="docsList"
+            @select-cate="selectCate"
+            @page-select="pageSelect"
+          />
+        </template>
       </template>
 
       <v-alert v-else color="warning" class="mt-4" variant="tonal">
@@ -433,7 +451,7 @@ watch(
     <template v-slot:aside>
       <DocsListAside
         :my-projects="myProjects"
-        :type-number="typeNumber"
+        :type-number="isSuitCase ? 3 : typeNumber"
         :category-list="categoryList"
         :suit-case-options="getSuitCase"
         :filter="docsFilter"

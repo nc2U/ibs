@@ -18,8 +18,18 @@ const isDark = computed(() => store.theme === 'dark')
 
 const menuName = computed(() => {
   const name = String(route.name ?? '')
-  return name.split(/\s*-\s*/)[0]
+  return name.split(/\s*-\s*/)[0].trim()
 })
+
+const isMenuActive = (menu: unknown) => {
+  const m = String(menu ?? '')
+  const current = menuName.value
+  return (
+    current === m ||
+    current.startsWith(`${m} `) ||
+    ((route.meta as any)?.title ?? '').includes(m)
+  )
+}
 
 const getTitle = (title: String) => (title ?? '').replace(/[() ]/gim, '')
 
@@ -68,7 +78,7 @@ const toLocation = (menu: string) => {
     </CDropdown>
     <CNavItem v-for="(menu, i) in menus" :key="i">
       <CNavLink
-        :active="menuName === menu || ((route.meta as any)?.title ?? '').includes(menu as string)"
+        :active="isMenuActive(menu)"
         @click="router.push(toLocation(menu as string))"
       >
         {{ getTitle(menu as string) }}
