@@ -10138,24 +10138,9 @@
       "user_visible": "PRJ",
       "order": 1,
       "created": "2024-05-07T06:50:23Z",
-      "updated": "2026-08-25T14:14:43.475Z",
+      "updated": "2026-08-30T12:36:11.452Z",
       "creator": 1,
-      "permissions": [
-        11,
-        12,
-        19,
-        28,
-        30,
-        34,
-        39,
-        41,
-        42,
-        46,
-        47,
-        49,
-        51,
-        53
-      ]
+      "permissions": []
     }
   },
   {
@@ -10202,7 +10187,7 @@
       "user_visible": "ALL",
       "order": 1,
       "created": "2024-07-14T00:09:41.189Z",
-      "updated": "2026-08-25T14:15:27.729Z",
+      "updated": "2026-08-28T06:57:16.798Z",
       "creator": 1,
       "permissions": [
         42,
@@ -10210,8 +10195,7 @@
         44,
         54,
         55,
-        56,
-        57
+        56
       ]
     }
   },
@@ -10279,7 +10263,7 @@
       "user_visible": "ALL",
       "order": 3,
       "created": "2026-07-23T17:10:33.447Z",
-      "updated": "2026-08-25T14:16:45.934Z",
+      "updated": "2026-08-28T06:54:07.760Z",
       "creator": 1,
       "permissions": [
         1,
@@ -10330,7 +10314,7 @@
       "user_visible": "PRJ",
       "order": 4,
       "created": "2026-07-23T17:24:27.264Z",
-      "updated": "2026-08-25T14:17:10.152Z",
+      "updated": "2026-08-28T06:56:35.154Z",
       "creator": 1,
       "permissions": [
         42,
@@ -10344,8 +10328,7 @@
         73,
         78,
         79,
-        80,
-        81
+        80
       ]
     }
   },
@@ -10362,7 +10345,7 @@
       "user_visible": "PRJ",
       "order": 5,
       "created": "2026-07-23T17:27:25.976Z",
-      "updated": "2026-08-25T14:17:34.432Z",
+      "updated": "2026-08-28T06:56:36.037Z",
       "creator": 1,
       "permissions": [
         42,
@@ -10371,11 +10354,9 @@
         74,
         75,
         76,
-        77,
         78,
         79,
-        80,
-        81
+        80
       ]
     }
   },
@@ -10392,7 +10373,7 @@
       "user_visible": "PRJ",
       "order": 6,
       "created": "2026-08-23T15:41:04.082Z",
-      "updated": "2026-08-25T14:18:11.172Z",
+      "updated": "2026-08-28T06:56:36.916Z",
       "creator": 1,
       "permissions": [
         42,
@@ -10402,15 +10383,12 @@
         64,
         65,
         66,
-        67,
         74,
         75,
         76,
-        77,
         78,
         79,
-        80,
-        81
+        80
       ]
     }
   },
@@ -10427,15 +10405,39 @@
       "user_visible": "PRJ",
       "order": 7,
       "created": "2026-08-23T18:05:04.246Z",
-      "updated": "2026-08-25T14:18:38.326Z",
+      "updated": "2026-08-30T12:37:20.453Z",
       "creator": 1,
       "permissions": [
         42,
         78,
         82,
         83,
-        84,
-        85
+        84
+      ]
+    }
+  },
+  {
+    "model": "work.role",
+    "pk": 15,
+    "fields": {
+      "name": "[PR] 관계자",
+      "category": "ibs_pr_manage",
+      "is_confidential": false,
+      "is_for_dev_project": true,
+      "assignable": false,
+      "issue_visible": "PUB",
+      "user_visible": "PRJ",
+      "order": 8,
+      "created": "2026-08-30T12:36:40.766Z",
+      "updated": "2026-08-30T12:39:34.797Z",
+      "creator": 1,
+      "permissions": [
+        42,
+        63,
+        68,
+        74,
+        78,
+        82
       ]
     }
   },
@@ -12038,7 +12040,7 @@
     "fields": {
       "category": 1,
       "name": "공문 발신",
-      "code": "OFFICIAL_LETTER",
+      "code": "OL",
       "description": "회사 명의의 대외 공문 발신을 승인",
       "route_type": "organization",
       "final_approval_duty": null,
@@ -12058,12 +12060,12 @@
     "fields": {
       "category": 1,
       "name": "일반품의",
-      "code": "GENERAL",
+      "code": "AP",
       "description": "표준 결재유형으로 분류하기 어려운 일반적인 업무 안건의 승인",
       "route_type": "organization",
       "final_approval_duty": null,
       "final_dept_level": null,
-      "form_template_key": "",
+      "form_template_key": "GENERAL",
       "default_security_level": "2",
       "is_active": true,
       "created_at": "2026-08-19T17:09:34.657Z",
@@ -12078,7 +12080,7 @@
     "fields": {
       "category": 2,
       "name": "휴가/연차 신청",
-      "code": "LEAVE",
+      "code": "LV",
       "description": "연차·반차·기타 휴가의 사용을 신청",
       "route_type": "organization",
       "final_approval_duty": null,
@@ -12098,7 +12100,7 @@
     "fields": {
       "category": 2,
       "name": "출장 신청",
-      "code": "BUSINESS_TRIP",
+      "code": "BT",
       "description": "국내·외 출장 계획 및 승인을 신청",
       "route_type": "organization",
       "final_approval_duty": null,
@@ -12118,7 +12120,7 @@
     "fields": {
       "category": 2,
       "name": "연장/휴일근무 신청",
-      "code": "OVERTIME",
+      "code": "OW",
       "description": "연장근무 또는 휴일근무를 사전 신청",
       "route_type": "organization",
       "final_approval_duty": null,
@@ -12138,7 +12140,7 @@
     "fields": {
       "category": 2,
       "name": "인사발령",
-      "code": "HR_APPOINTMENT",
+      "code": "HR",
       "description": "입사·퇴사·전보·승진·직책 변경 등 인사 조치를 승인",
       "route_type": "organization",
       "final_approval_duty": null,
@@ -12158,7 +12160,7 @@
     "fields": {
       "category": 2,
       "name": "인사 관련 신청",
-      "code": "HR_REQUEST",
+      "code": "HA",
       "description": "재직증명 등 일반적인 인사 관련 신청",
       "route_type": "organization",
       "final_approval_duty": null,
@@ -12178,7 +12180,7 @@
     "fields": {
       "category": 3,
       "name": "구매품의",
-      "code": "PURCHASE",
+      "code": "PR",
       "description": "물품·용역 등의 구매 및 비용 발생을 사전 승인",
       "route_type": "organization",
       "final_approval_duty": null,
@@ -12198,12 +12200,12 @@
     "fields": {
       "category": 3,
       "name": "지출결의",
-      "code": "EXPENSE",
+      "code": "EX",
       "description": "회사 비용의 집행 및 지급을 승인",
       "route_type": "organization",
       "final_approval_duty": null,
       "final_dept_level": null,
-      "form_template_key": "EXPENSE_REPORT",
+      "form_template_key": "GENERAL",
       "default_security_level": "2",
       "is_active": true,
       "created_at": "2026-08-19T17:16:05.250Z",
@@ -12218,7 +12220,7 @@
     "fields": {
       "category": 3,
       "name": "경비 정산",
-      "code": "EXPENSE_SETTLEMENT",
+      "code": "ES",
       "description": "출장·업무 수행 등에 사용한 비용을 정산",
       "route_type": "organization",
       "final_approval_duty": null,
@@ -12238,7 +12240,7 @@
     "fields": {
       "category": 3,
       "name": "선급금/가지급금 신청",
-      "code": "ADVANCE",
+      "code": "AD",
       "description": "업무 수행에 필요한 선급금 또는 가지급금 지급을 신청",
       "route_type": "organization",
       "final_approval_duty": null,
@@ -12258,7 +12260,7 @@
     "fields": {
       "category": 4,
       "name": "계약품의",
-      "code": "CONTRACT",
+      "code": "CR",
       "description": "회사의 계약 체결을 사전 승인",
       "route_type": "organization",
       "final_approval_duty": null,
@@ -12278,7 +12280,7 @@
     "fields": {
       "category": 4,
       "name": "계약 변경/해지",
-      "code": "CONTRACT_CHANGE",
+      "code": "CM",
       "description": "기존 계약의 변경·연장·해지 등을 승인",
       "route_type": "organization",
       "final_approval_duty": null,
@@ -12298,7 +12300,7 @@
     "fields": {
       "category": 4,
       "name": "법무 검토",
-      "code": "LEGAL_REVIEW",
+      "code": "LR",
       "description": "계약·사업·분쟁 등 법률적 검토가 필요한 사항을 요청",
       "route_type": "organization",
       "final_approval_duty": null,
@@ -12318,7 +12320,7 @@
     "fields": {
       "category": 5,
       "name": "사업검토",
-      "code": "BUSINESS_REVIEW",
+      "code": "BR",
       "description": "신규 사업 또는 주요 사업 안건의 타당성을 검토",
       "route_type": "organization",
       "final_approval_duty": null,
@@ -12338,7 +12340,7 @@
     "fields": {
       "category": 5,
       "name": "사업추진 승인",
-      "code": "BUSINESS_APPROVAL",
+      "code": "BA",
       "description": "검토 완료된 사업의 실제 추진 여부를 승인",
       "route_type": "organization",
       "final_approval_duty": null,
@@ -12358,7 +12360,7 @@
     "fields": {
       "category": 5,
       "name": "프로젝트 주요 의사결정",
-      "code": "PROJECT_DECISION",
+      "code": "PD",
       "description": "진행 중인 프로젝트의 주요 사항에 대한 의사결정",
       "route_type": "organization",
       "final_approval_duty": null,
