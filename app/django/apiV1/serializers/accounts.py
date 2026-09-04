@@ -31,10 +31,11 @@ class SimpleUserSerializer(serializers.ModelSerializer):
 
 class ProfileInUserSerializer(serializers.ModelSerializer):
     image = serializers.ImageField(use_url=True, allow_empty_file=False, required=False)
+    sign_image = serializers.ImageField(use_url=True, allow_empty_file=False, required=False)
 
     class Meta:
         model = Profile
-        fields = ('pk', 'name', 'birth_date', 'cell_phone', 'image',
+        fields = ('pk', 'name', 'birth_date', 'cell_phone', 'image', 'sign_image', 'sign_type',
                   'auto_watch_created', 'auto_watch_assigned',
                   'meeting_created_notification', 'meeting_confirmed_notification')
 
@@ -125,10 +126,11 @@ class UserSerializer(serializers.ModelSerializer):
 
 class ProfileSerializer(serializers.ModelSerializer):
     image = serializers.ImageField(use_url=True, allow_empty_file=False, required=False)
+    sign_image = serializers.ImageField(use_url=True, allow_empty_file=False, required=False)
 
     class Meta:
         model = Profile
-        fields = ('pk', 'user', 'name', 'birth_date', 'cell_phone', 'image',
+        fields = ('pk', 'user', 'name', 'birth_date', 'cell_phone', 'image', 'sign_image', 'sign_type',
                   'auto_watch_created', 'auto_watch_assigned',
                   'meeting_created_notification', 'meeting_confirmed_notification',
                   'like_posts', 'like_comments', 'blame_posts', 'blame_comments')

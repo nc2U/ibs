@@ -11,8 +11,9 @@ from .models import User, Profile, DocScrape, Todo, PasswordResetToken, FCMDevic
 
 @admin.register(Profile)
 class ProfileAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('pk', 'user', 'name', 'cell_phone', 'birth_date')
+    list_display = ('pk', 'user', 'name', 'cell_phone', 'birth_date', 'sign_type', 'sign_image')
     list_display_links = ('pk', 'user', 'name')
+    list_filter = ('sign_type',)
     search_fields = ('name', 'user__username', 'cell_phone')
 
 

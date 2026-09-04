@@ -11,6 +11,8 @@ User = get_user_model()
 
 class SimpleUserSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
+    sign_image = serializers.SerializerMethodField()
+    sign_type = serializers.SerializerMethodField()
 
     def get_full_name(self, obj):
         # Profile.name 우선, 없으면 username 반환
@@ -19,9 +21,27 @@ class SimpleUserSerializer(serializers.ModelSerializer):
         except Exception:
             return obj.username
 
+    def get_sign_image(self, obj):
+        try:
+            profile = getattr(obj, 'profile', None)
+            if profile and profile.sign_image:
+                return profile.sign_image.url
+        except Exception:
+            pass
+        return None
+
+    def get_sign_type(self, obj):
+        try:
+            profile = getattr(obj, 'profile', None)
+            if profile:
+                return profile.sign_type
+        except Exception:
+            pass
+        return 'STAMP'
+
     class Meta:
         model = User
-        fields = ('id', 'username', 'full_name')
+        fields = ('id', 'username', 'full_name', 'sign_image', 'sign_type')
 
 
 class ApprovalDelegationSerializer(serializers.ModelSerializer):

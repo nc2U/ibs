@@ -6,6 +6,7 @@ import { useWork } from '@/store/pinia/work_project'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 import AvatarInput from '@/views/_MyPage/Modify/components/AvatarInput.vue'
+import SignInput from '@/views/_MyPage/Modify/components/SignInput.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 
@@ -24,6 +25,8 @@ const form = reactive({
   birth_date: '',
   cell_phone: '',
   image: undefined as File | undefined,
+  sign_image: undefined as File | undefined,
+  sign_type: 'STAMP' as 'STAMP' | 'SIGN',
 
   // notification fields
   auto_watch_created: true,
@@ -51,6 +54,7 @@ const transProfileForm = (img?: File) => (form.image = img)
 
 const formDataSetup = async () => {
   form.image = undefined
+  form.sign_image = undefined
   if (userInfo.value) {
     form.user = userInfo.value.pk || null
     form.email = userInfo.value.email || ''
@@ -60,6 +64,7 @@ const formDataSetup = async () => {
       form.name = profile.value.name || ''
       form.birth_date = profile.value.birth_date || ''
       form.cell_phone = profile.value.cell_phone || ''
+      form.sign_type = (profile.value.sign_type as 'STAMP' | 'SIGN') ?? 'STAMP'
       form.auto_watch_created = profile.value.auto_watch_created ?? true
       form.auto_watch_assigned = profile.value.auto_watch_assigned ?? true
       form.meeting_created_notification = profile.value.meeting_created_notification ?? true
@@ -68,6 +73,7 @@ const formDataSetup = async () => {
       form.name = ''
       form.birth_date = ''
       form.cell_phone = ''
+      form.sign_type = 'STAMP'
       form.auto_watch_created = true
       form.auto_watch_assigned = true
       form.meeting_created_notification = true
@@ -116,7 +122,7 @@ const onSubmit = async (event: Event) => {
 
 const onSubmitConfirm = async () => {
   try {
-    const { pk, image, subscribed_projects, ...profileFields } = form
+    const { pk, image, sign_image, subscribed_projects, ...profileFields } = form
     if (!profileFields.birth_date) profileFields.birth_date = ''
 
     const submitData = new FormData()
@@ -128,6 +134,7 @@ const onSubmitConfirm = async () => {
     })
 
     if (image instanceof File) submitData.append('image', image)
+    if (sign_image instanceof File) submitData.append('sign_image', sign_image)
 
     // 1. 프로필 업데이트 (이미지 포함)
     if (pk) await patchProfile({ pk, form: submitData })
@@ -259,6 +266,26 @@ onBeforeRouteUpdate(async to => {
                     :filename="userInfo?.username || 'profile'"
                     id="avatar"
                     @trans-profile-form="transProfileForm"
+                  />
+                </CCol>
+              </CRow>
+            </CCardBody>
+          </CCard>
+
+          <!-- Seal / Sign Image Card -->
+          <CCard class="mb-4">
+            <CCardHeader class="font-weight-bold">
+              <v-icon icon="mdi-draw-pen" class="mr-1" color="primary" />
+              전자결재 인장 / 서명
+            </CCardHeader>
+            <CCardBody>
+              <CRow class="pt-2 pb-3">
+                <CCol>
+                  <SignInput
+                    :image="profile && profile.sign_image"
+                    :sign-type="form.sign_type"
+                    @update:image="(file) => (form.sign_image = file)"
+                    @update:sign-type="(type) => (form.sign_type = type)"
                   />
                 </CCol>
               </CRow>

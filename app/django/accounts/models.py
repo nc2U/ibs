@@ -89,6 +89,14 @@ class Profile(models.Model):
     birth_date = models.DateField('생년월일', null=True, blank=True)
     cell_phone = models.CharField('휴대폰', max_length=13, blank=True)
     image = models.ImageField(upload_to='users/', null=True, blank=True, verbose_name='프로필 이미지')
+    sign_image = models.ImageField(upload_to='users/signs/', null=True, blank=True,
+                                   verbose_name='결재 서명/인장 이미지',
+                                   help_text='전자결재 승인 시 결재란에 날인될 서명 또는 인장 이미지 (배경 투명 PNG 권장)')
+    SIGN_TYPE_CHOICES = (
+        ('STAMP', '도장(인장)'),
+        ('SIGN', '서명(사인)'),
+    )
+    sign_type = models.CharField('서명 유형', max_length=10, choices=SIGN_TYPE_CHOICES, default='STAMP')
 
     # Notification & Watcher Preferences
     auto_watch_created = models.BooleanField('내가 생성한 업무 자동 모니터링', default=True)

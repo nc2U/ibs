@@ -30,6 +30,8 @@ export type Profile = {
   birth_date: string
   cell_phone: string
   image?: File | string | null
+  sign_image?: File | string | null
+  sign_type?: 'STAMP' | 'SIGN'
   auto_watch_created?: boolean
   auto_watch_assigned?: boolean
   meeting_created_notification?: boolean

@@ -42,7 +42,8 @@ const changePass = async (payload: { old_password: string; new_password: string 
 const callPassVue = () => (passChangeVue.value = true)
 
 const onSubmit = (payload: Profile) => {
-  if (!payload.image) delete payload.image
+  if (!payload.image || typeof payload.image === 'string') delete payload.image
+  if (!payload.sign_image || typeof payload.sign_image === 'string') delete payload.sign_image
 
   const { pk, ...formData } = payload
   if (!formData.user && userInfo.value) formData.user = userInfo.value?.pk
@@ -50,7 +51,11 @@ const onSubmit = (payload: Profile) => {
 
   const form = new FormData()
 
-  for (const key in formData) form.append(key, formData[key] as string | Blob)
+  for (const key in formData) {
+    if (formData[key] !== undefined && formData[key] !== null) {
+      form.append(key, formData[key] as string | Blob)
+    }
+  }
 
   if (pk) patchProfile({ ...{ pk }, ...{ form } })
   else createProfile(form)

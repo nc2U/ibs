@@ -118,7 +118,14 @@
     background: #fff;
   }
 
-  /* 전자 직인 도장 */
+  /* 전자 직인 도장 및 실제 서명 이미지 */
+  .approver-sign-img {
+    display: inline-block;
+    max-width: 48px;
+    max-height: 48px;
+    vertical-align: middle;
+    object-fit: contain;
+  }
   .stamp-circle {
     display: inline-block;
     width: 42px;
@@ -140,6 +147,11 @@
     font-size: 7pt;
     font-weight: 600;
     display: block;
+    margin-top: 1px;
+  }
+  .stamp-sub-name {
+    font-size: 6.5pt;
+    color: #555;
     margin-top: 1px;
   }
 
@@ -310,10 +322,15 @@
         <tr>
           <!-- 기안자 직인/서명 -->
           <td class="stamp-cell">
-            <div class="stamp-circle">
-              기 안<br>
-              <span class="stamp-name">{{ document.drafter.profile.name|default:document.drafter.username }}</span>
-            </div>
+            {% if document.drafter.profile.sign_image %}
+              <img src="{{ document.drafter.profile.sign_image.url }}" class="approver-sign-img" alt="기안인">
+              <div class="stamp-sub-name">{{ document.drafter.profile.name|default:document.drafter.username }}</div>
+            {% else %}
+              <div class="stamp-circle">
+                기 안<br>
+                <span class="stamp-name">{{ document.drafter.profile.name|default:document.drafter.username }}</span>
+              </div>
+            {% endif %}
           </td>
           <!-- 단계별 승인자 직인/서명 -->
           {% for step in steps %}
@@ -321,10 +338,17 @@
               {% with approved_action=step.actions.all|dictsort:"acted_at" %}
                 {% for act in approved_action %}
                   {% if act.action == 'approved' %}
-                    <div class="stamp-circle {% if act.is_delegated %}delegated{% endif %}">
-                      {% if act.is_delegated %}대 결{% else %}승 인{% endif %}<br>
-                      <span class="stamp-name">{{ act.approver.profile.name|default:act.approver.username }}</span>
-                    </div>
+                    {% if act.approver.profile.sign_image %}
+                      <img src="{{ act.approver.profile.sign_image.url }}" class="approver-sign-img" alt="결재인">
+                      <div class="stamp-sub-name">
+                        {% if act.is_delegated %}(대결){% endif %}{{ act.approver.profile.name|default:act.approver.username }}
+                      </div>
+                    {% else %}
+                      <div class="stamp-circle {% if act.is_delegated %}delegated{% endif %}">
+                        {% if act.is_delegated %}대 결{% else %}승 인{% endif %}<br>
+                        <span class="stamp-name">{{ act.approver.profile.name|default:act.approver.username }}</span>
+                      </div>
+                    {% endif %}
                   {% elif act.action == 'rejected' %}
                     <div class="stamp-circle" style="border-color:#b71c1c; color:#b71c1c;">
                       반 려<br>

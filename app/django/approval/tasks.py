@@ -140,9 +140,9 @@ def render_and_save_approval_pdf(document_pk):
 
     try:
         document = ApprovalDocument.objects.select_related(
-            'doc_type', 'drafter', 'drafter_assignment__department', 'drafter_assignment__duty'
+            'doc_type', 'drafter__profile', 'drafter_assignment__department', 'drafter_assignment__duty'
         ).prefetch_related(
-            'steps__approvers', 'steps__actions__approver'
+            'steps__approvers__profile', 'steps__actions__approver__profile'
         ).get(pk=document_pk)
 
         html_string = render_to_string('approval/pdf_document.html', {

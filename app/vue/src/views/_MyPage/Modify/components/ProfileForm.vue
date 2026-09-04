@@ -4,6 +4,7 @@ import { btnLight } from '@/utils/cssMixins.ts'
 import { type Profile, type User } from '@/store/types/accounts'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import AvatarInput from './AvatarInput.vue'
+import SignInput from './SignInput.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import AlertModal from '@/components/Modals/AlertModal.vue'
 
@@ -25,6 +26,8 @@ const form = reactive<Profile & { email: string }>({
   birth_date: '',
   cell_phone: '',
   image: undefined,
+  sign_image: undefined,
+  sign_type: 'STAMP',
 })
 
 const validated = ref(false)
@@ -36,7 +39,9 @@ const formsCheck = computed(() => {
     const c = form.birth_date === props.profile.birth_date
     const d = form.cell_phone === props.profile.cell_phone
     const e = !form.image || form.image === props.profile.image
-    return a && b && c && d && e
+    const f = !form.sign_image || form.sign_image === props.profile.sign_image
+    const g = form.sign_type === (props.profile.sign_type ?? 'STAMP')
+    return a && b && c && d && e && f && g
   } else return false
 })
 
@@ -77,6 +82,8 @@ const formDataReset = () => {
   form.birth_date = ''
   form.cell_phone = ''
   form.image = undefined
+  form.sign_image = undefined
+  form.sign_type = 'STAMP'
 }
 
 const formDataSetup = () => {
@@ -87,6 +94,7 @@ const formDataSetup = () => {
     form.name = props.profile.name
     form.birth_date = props.profile.birth_date
     form.cell_phone = props.profile.cell_phone
+    form.sign_type = props.profile.sign_type ?? 'STAMP'
   }
 }
 
@@ -191,6 +199,16 @@ onMounted(() => formDataSetup())
             :image="(profile && profile.image) || '/static/dist/img/NoImage.jpeg'"
             :filename="userInfo?.username || 'profile'"
             @trans-profile-form="transProfileForm"
+          />
+
+          <v-divider class="my-4" />
+
+          <h6 class="mb-3">전자결재 인장 / 서명</h6>
+          <SignInput
+            :image="profile && profile.sign_image"
+            :sign-type="form.sign_type"
+            @update:image="(file) => (form.sign_image = file)"
+            @update:sign-type="(type) => (form.sign_type = type)"
           />
         </CCol>
       </CRow>
