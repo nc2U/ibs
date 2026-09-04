@@ -31,8 +31,8 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
   // ── 양식별 컨트롤러 ─────────────────────────────────────────────
   // 휴가신청서
   String _leaveType = '연차';
-  DateTime? _startDate;
-  DateTime? _endDate;
+  DateTime? _startDate = DateTime.now();
+  DateTime? _endDate = DateTime.now();
   final _leaveDaysController = TextEditingController(text: '1.0');
   final _leaveReasonController = TextEditingController();
   final _substituteWorkerController = TextEditingController();
@@ -1142,7 +1142,18 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
             DropdownMenuItem(value: '공가', child: Text('공가')),
             DropdownMenuItem(value: '기타', child: Text('기타')),
           ],
-          onChanged: (v) => setState(() => _leaveType = v ?? '연차'),
+          onChanged: (v) {
+            setState(() {
+              _leaveType = v ?? '연차';
+              if (_leaveType == '반차') {
+                _leaveDaysController.text = '0.5';
+                if (_startDate != null) _endDate = _startDate;
+              } else if (_startDate != null && _endDate != null) {
+                final diff = _endDate!.difference(_startDate!).inDays + 1;
+                _leaveDaysController.text = (diff > 0 ? diff : 1).toString();
+              }
+            });
+          },
         ),
         const SizedBox(height: 10),
         Row(
@@ -1156,7 +1167,21 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
                     firstDate: DateTime(2020),
                     lastDate: DateTime(2035),
                   );
-                  if (d != null) setState(() => _startDate = d);
+                  if (d != null) {
+                    setState(() {
+                      _startDate = d;
+                      if (_endDate == null || _endDate!.isBefore(_startDate!)) {
+                        _endDate = _startDate;
+                      }
+                      if (_leaveType == '반차') {
+                        _leaveDaysController.text = '0.5';
+                        _endDate = _startDate;
+                      } else {
+                        final diff = _endDate!.difference(_startDate!).inDays + 1;
+                        _leaveDaysController.text = (diff > 0 ? diff : 1).toString();
+                      }
+                    });
+                  }
                 },
                 style: OutlinedButton.styleFrom(
                   shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
@@ -1179,7 +1204,20 @@ class _ApprovalDraftScreenState extends ConsumerState<ApprovalDraftScreen> {
                     firstDate: DateTime(2020),
                     lastDate: DateTime(2035),
                   );
-                  if (d != null) setState(() => _endDate = d);
+                  if (d != null) {
+                    setState(() {
+                      _endDate = d;
+                      if (_startDate != null && _endDate!.isBefore(_startDate!)) {
+                        _startDate = _endDate;
+                      }
+                      if (_leaveType == '반차') {
+                        _leaveDaysController.text = '0.5';
+                      } else if (_startDate != null) {
+                        final diff = _endDate!.difference(_startDate!).inDays + 1;
+                        _leaveDaysController.text = (diff > 0 ? diff : 1).toString();
+                      }
+                    });
+                  }
                 },
                 style: OutlinedButton.styleFrom(
                   shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),

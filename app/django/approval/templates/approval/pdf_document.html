@@ -413,7 +413,18 @@
     <table class="formatted-table">
       <tr>
         <th style="width:18%;">휴가 구분</th>
-        <td style="width:32%;"><strong>{{ document.content.leave_type|default:"연차" }}</strong></td>
+        <td style="width:32%;">
+          <strong>
+            {% if document.content.leave_type == 'ANNUAL' or document.content.leave_type == '연차' %}연차
+            {% elif document.content.leave_type == 'HALF_AM' %}오전 반차 (0.5일)
+            {% elif document.content.leave_type == 'HALF_PM' %}오후 반차 (0.5일)
+            {% elif document.content.leave_type == 'SPECIAL' or document.content.leave_type == '경조사' %}경조사
+            {% elif document.content.leave_type == 'SICK' or document.content.leave_type == '병가' %}병가
+            {% elif document.content.leave_type == 'REWARD' or document.content.leave_type == '포상' %}포상
+            {% elif document.content.leave_type == '공가' %}공가
+            {% else %}{{ document.content.leave_type|default:"연차" }}{% endif %}
+          </strong>
+        </td>
         <th style="width:18%;">신청 일수</th>
         <td style="width:32%;">{{ document.content.days_count|default:"1" }} 일간</td>
       </tr>

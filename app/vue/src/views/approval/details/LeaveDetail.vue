@@ -8,10 +8,25 @@ import {
   CBadge,
 } from '@coreui/vue'
 
-defineProps<{
+const props = defineProps<{
   content: Record<string, any>
   document?: any
 }>()
+
+const LEAVE_TYPE_MAP: Record<string, string> = {
+  ANNUAL: '연차',
+  HALF_AM: '오전 반차',
+  HALF_PM: '오후 반차',
+  SPECIAL: '경조사',
+  SICK: '병가',
+  REWARD: '포상',
+  OTHER: '기타',
+}
+
+const leaveTypeLabel = (code?: string) => {
+  if (!code) return '연차'
+  return LEAVE_TYPE_MAP[code] || code
+}
 </script>
 
 <template>
@@ -22,7 +37,7 @@ defineProps<{
           휴가 구분
         </CTableHeaderCell>
         <CTableDataCell class="pl-3">
-          <CBadge color="primary">{{ content.leave_type || '연차' }}</CBadge>
+          <CBadge color="primary">{{ leaveTypeLabel(content.leave_type) }}</CBadge>
         </CTableDataCell>
         <CTableHeaderCell class="text-center bg-more-light" style="width: 130px">
           신청 일수

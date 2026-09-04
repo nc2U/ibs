@@ -65,7 +65,11 @@ class AuthInterceptor extends QueuedInterceptorsWrapper {
 
     final isExternalStorageUrl = options.path.startsWith('http://') || options.path.startsWith('https://');
 
-    if (!isAuthEndpoint && !isExternalStorageUrl) {
+    if (isExternalStorageUrl) {
+      // S3 Presigned URL 서명 불일치(403 SignatureDoesNotMatch) 및 복수 인증 오류(400) 방지
+      options.headers.remove('Authorization');
+      options.headers.remove('Content-Type');
+    } else if (!isAuthEndpoint) {
       final token = await tokenStorage.getAccessToken();
       if (token != null && token.isNotEmpty) {
         options.headers['Authorization'] = 'Bearer $token';

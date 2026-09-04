@@ -246,7 +246,21 @@ class ApprovalDocumentSerializer(serializers.ModelSerializer):
         return None
 
     def to_internal_value(self, data):
-        mutable_data = data.copy() if hasattr(data, 'copy') else dict(data)
+        # multipart/form-data 요청 시 Django QueryDict가 전달되면 DRF의 DictField가
+        # HTML form input으로 인식하여 content 필드를 빈 딕셔너리로 초기화하는 문제가 발생함.
+        # 따라서 QueryDict인 경우 일반 Python dict로 정규화(flatten)하여 전달함.
+        if hasattr(data, 'lists'):
+            mutable_data = {}
+            for k, v in data.lists():
+                if k in ('observer_ids', 'observers'):
+                    mutable_data[k] = v
+                elif len(v) == 1:
+                    mutable_data[k] = v[0]
+                else:
+                    mutable_data[k] = v
+        else:
+            mutable_data = data.copy() if hasattr(data, 'copy') else dict(data)
+
         content_val = mutable_data.get('content')
         if content_val is not None:
             if isinstance(content_val, (list, tuple)):
@@ -258,8 +272,11 @@ class ApprovalDocumentSerializer(serializers.ModelSerializer):
                 else:
                     try:
                         mutable_data['content'] = json.loads(content_val)
-                    except Exception:
+                    except Exception as e:
+                        print(f'⚠️ Failed to parse approval content JSON: {e}, val={content_val[:100]}')
                         mutable_data['content'] = {}
+            elif isinstance(content_val, dict):
+                mutable_data['content'] = content_val
         else:
             mutable_data['content'] = {}
 
@@ -269,7 +286,7 @@ class ApprovalDocumentSerializer(serializers.ModelSerializer):
             try:
                 parsed = json.loads(observer_val)
                 if isinstance(parsed, list):
-                    mutable_data.setlist('observer_ids', parsed) if hasattr(mutable_data, 'setlist') else mutable_data.update({'observer_ids': parsed})
+                    mutable_data['observer_ids'] = parsed
             except Exception:
                 pass
 

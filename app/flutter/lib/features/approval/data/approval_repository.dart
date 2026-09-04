@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -126,8 +127,8 @@ class ApprovalRepository {
       final formData = FormData();
       data.forEach((key, value) {
         if (value != null) {
-          if (value is Map) {
-            formData.fields.add(MapEntry(key, value.toString()));
+          if (value is Map || value is List) {
+            formData.fields.add(MapEntry(key, jsonEncode(value)));
           } else {
             formData.fields.add(MapEntry(key, value.toString()));
           }
