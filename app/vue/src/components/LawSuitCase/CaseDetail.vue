@@ -126,7 +126,7 @@ const shareKakaoTalk = () => {
 const toEdit = () => {
   router.push({
     name: `${props.viewRoute} - 수정`,
-    params: { docsId: props.suitcase?.pk },
+    params: { caseId: props.suitcase?.pk, docsId: props.suitcase?.pk },
   })
 }
 
