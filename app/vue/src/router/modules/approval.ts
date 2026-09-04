@@ -73,6 +73,26 @@ const approval = {
       ],
     },
     {
+      path: 'official-letters',
+      name: '공문 발송 대장',
+      component: () => import('@/views/approval/OfficialLetter/Index.vue'),
+      meta: { title: '공문 발송 대장', auth: true },
+      children: [
+        {
+          path: ':letterId(\\d+)',
+          name: '공문 발송 대장 - 보기',
+        },
+        {
+          path: 'create',
+          name: '공문 발송 대장 - 작성',
+        },
+        {
+          path: ':letterId(\\d+)/edit',
+          name: '공문 발송 대장 - 수정',
+        },
+      ],
+    },
+    {
       path: 'delegation',
       name: '결재 위임 관리',
       component: () => import('@/views/approval/Index.vue'),

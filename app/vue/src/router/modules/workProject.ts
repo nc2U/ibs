@@ -188,6 +188,28 @@ const workProject = {
       path: 'document',
       name: '문서',
       component: () => import('@/views/_Work/Manages/Documents/Index.vue'),
+      children: [
+        {
+          path: 'case',
+          name: '문서 사건',
+          component: () => import('@/views/_Work/Manages/Documents/Index.vue'),
+        },
+        {
+          path: 'case/:caseId(\\d+)',
+          name: '문서 사건 - 보기',
+          component: () => import('@/views/_Work/Manages/Documents/Index.vue'),
+        },
+        {
+          path: 'case/create',
+          name: '문서 사건 - 작성',
+          component: () => import('@/views/_Work/Manages/Documents/Index.vue'),
+        },
+        {
+          path: 'case/:caseId(\\d+)/update',
+          name: '문서 사건 - 수정',
+          component: () => import('@/views/_Work/Manages/Documents/Index.vue'),
+        },
+      ],
     },
     {
       path: 'search',

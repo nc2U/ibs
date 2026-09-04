@@ -1,13 +1,13 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, provide, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { navMenu2 as navMenu } from '@/views/_Work/_menu/headermixin1'
 import { useWork } from '@/store/pinia/work_project.ts'
-import { type DocsFilter, useDocs } from '@/store/pinia/docs'
+import { type DocsFilter, type SuitCaseFilter, useDocs } from '@/store/pinia/docs'
 import { useCompany } from '@/store/pinia/company.ts'
 import { usePerms } from '@/composables/usePerms.ts'
 import type { Company } from '@/store/types/settings'
-import type { Docs } from '@/store/types/docs'
+import type { AFile, Docs, Link, SuitCase } from '@/store/types/docs'
 import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import DocsList from './components/DocsList.vue'
@@ -15,21 +15,29 @@ import Loading from '@/components/Loading/Index.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 import DocsForm from '@/views/_Work/Manages/Documents/components/DocsForm.vue'
 import DocsListAside from '@/views/_Work/Manages/Documents/components/atomics/DocsListAside.vue'
+import TableTitleRow from '@/components/TableTitleRow.vue'
+import CaseList from '@/components/LawSuitCase/CaseList.vue'
+import CaseDetail from '@/components/LawSuitCase/CaseDetail.vue'
+import CaseForm from '@/components/LawSuitCase/CaseForm.vue'
 
 const cBody = ref()
 const sideNavCAll = () => cBody.value.toggle()
 
-const typeNumber = ref<1 | 2>(1)
+const typeNumber = ref<1 | 2 | 3>(1)
 const types = ref([
   { value: 1, label: '일반문서' },
   { value: 2, label: '소송기록' },
+  { value: 3, label: '소송사건' },
 ])
+
+const mainViewName = ref('문서 사건')
 
 const comStore = useCompany()
 const company = computed<Company | null>(() => comStore.company)
 const comName = computed(() => company?.value?.name)
 
 const route = useRoute()
+const router = useRouter()
 
 const { can, PERM } = usePerms()
 const canDocsRead = computed(() => can(PERM.DOCS_READ))
@@ -46,8 +54,11 @@ const categoryList = computed(() => docStore.categoryList)
 const getCategories = computed(() => docStore.getCategories)
 const getSuitCase = computed(() => docStore.getSuitCase)
 
+const suitcase = computed(() => docStore.suitcase)
+const suitcaseList = computed(() => docStore.suitcaseList)
+
 const docsFilter = ref<DocsFilter>({
-  doc_type: typeNumber.value,
+  doc_type: 1,
   category: '',
   issue_project: '',
   ordering: '-is_pinned,-created',
@@ -56,18 +67,77 @@ const docsFilter = ref<DocsFilter>({
   limit: '',
 })
 
+const caseFilter = ref<SuitCaseFilter>({
+  company: '',
+  issue_project: '',
+  sort: '',
+  level: '',
+  court: '',
+  related_case: '',
+  in_progress: '',
+  search: '',
+  page: 1,
+  limit: 10,
+})
+
 provide('navMenu', navMenu)
 provide('query', route?.query)
 
 const fetchDocsList = (payload: DocsFilter) => docStore.fetchDocsList(payload)
 const fetchCategoryList = (type: number) => docStore.fetchCategoryList(type)
 
+const fetchSuitCase = (pk: number) => docStore.fetchSuitCase(pk)
+const fetchSuitCaseList = (payload: SuitCaseFilter) => docStore.fetchSuitCaseList(payload)
+const fetchAllSuitCaseList = (payload: SuitCaseFilter) => docStore.fetchAllSuitCaseList(payload)
+const createSuitCase = (payload: SuitCase) => docStore.createSuitCase(payload)
+const updateSuitCase = (payload: SuitCase) => docStore.updateSuitCase(payload)
+const deleteSuitCase = (pk: number) => docStore.deleteSuitCase(pk)
+const fetchLink = (pk: number) => docStore.fetchLink(pk)
+const fetchFile = (pk: number) => docStore.fetchFile(pk)
+const patchLink = (pk: number, payload: Link) => docStore.patchLink(pk, payload)
+const patchFile = (pk: number, payload: any) => docStore.patchFile(pk, payload)
+
+const linkHit = async (pk: number) => {
+  const link = (await fetchLink(pk)) as Link
+  link.hit = (link.hit as number) + 1
+  await patchLink(pk, link)
+}
+
+const fileHit = async (pk: number) => {
+  const file = (await fetchFile(pk)) as AFile
+  const hit = (file.hit as number) + 1
+  await patchFile(pk, { hit })
+}
+
+const casesRenewal = (page: number) => {
+  caseFilter.value.page = page
+  fetchSuitCaseList(caseFilter.value)
+}
+
+const excelFilter = computed(() => {
+  const { issue_project, sort, level, court, in_progress, search } = caseFilter.value
+  return `issue_project=${issue_project ?? ''}&sort=${sort ?? ''}&level=${level ?? ''}&court=${court ?? ''}&in_progress=${in_progress ?? ''}&search=${search ?? ''}`
+})
+const excelUrl = computed(
+  () => `/excel/suitcases/?company=${company.value?.pk ?? ''}&${excelFilter.value}`,
+)
+
 const getDocsList = (target: unknown) => {
   if (target === 1 || target === 2) {
+    if (route.name !== '문서') {
+      router.push({ name: '문서' })
+    }
     docsFilter.value.page = 1
     docsFilter.value.doc_type = target as number
     fetchCategoryList(target as 1 | 2)
     fetchDocsList(docsFilter.value)
+  } else if (target === 3) {
+    caseFilter.value.company = company.value?.pk ?? ''
+    caseFilter.value.issue_project = docsFilter.value.issue_project ?? ''
+    fetchSuitCaseList(caseFilter.value)
+    if (route.name !== '문서 사건' && !String(route.name ?? '').startsWith('문서 사건 -')) {
+      router.push({ name: '문서 사건' })
+    }
   }
 }
 
@@ -82,13 +152,83 @@ const pageSelect = (page: number) => {
   fetchDocsList(docsFilter.value)
 }
 
+const casePageSelect = (page: number) => {
+  caseFilter.value.page = page
+  fetchSuitCaseList(caseFilter.value)
+}
+
+const agencyFilter = (court: string) => {
+  caseFilter.value.page = 1
+  caseFilter.value.court = court
+  fetchSuitCaseList(caseFilter.value)
+}
+
+const agencySearch = (agent: string) => {
+  caseFilter.value.page = 1
+  caseFilter.value.search = agent
+  fetchSuitCaseList(caseFilter.value)
+}
+
+const relatedFilter = (related: number) => {
+  caseFilter.value.page = 1
+  caseFilter.value.related_case = related
+  fetchSuitCaseList(caseFilter.value)
+}
+
+const caseReset = () => {
+  caseFilter.value = {
+    company: company.value?.pk ?? '',
+    issue_project: docsFilter.value.issue_project ?? '',
+    sort: '',
+    level: '',
+    court: '',
+    related_case: '',
+    in_progress: '',
+    search: '',
+    page: 1,
+    limit: 10,
+  }
+  fetchSuitCaseList(caseFilter.value)
+}
+
+const onCaseSubmit = async (payload: SuitCase) => {
+  if (payload.pk) {
+    await updateSuitCase(payload)
+    await router.replace({
+      name: `${mainViewName.value} - 보기`,
+      params: { caseId: payload.pk },
+    })
+  } else {
+    if (!payload.issue_project) {
+      payload.issue_project =
+        (docsFilter.value.issue_project as number) ||
+        (company.value?.com_issue_project as number) ||
+        null
+    }
+    await createSuitCase(payload)
+    await router.replace({ name: mainViewName.value })
+  }
+}
+
+const onCaseDelete = async (pk: number) => {
+  await deleteSuitCase(pk)
+  await router.replace({ name: mainViewName.value })
+}
+
 const loading = ref<boolean>(true)
 const initData = async () => {
   loading.value = true
   try {
     await workStore.fetchAllProjectList()
-    await fetchCategoryList(typeNumber.value)
-    await fetchDocsList(docsFilter.value)
+    await fetchAllSuitCaseList({ company: company.value?.pk ?? '' })
+    if (typeNumber.value === 3) {
+      caseFilter.value.company = company.value?.pk ?? ''
+      caseFilter.value.issue_project = docsFilter.value.issue_project ?? ''
+      await fetchSuitCaseList(caseFilter.value)
+    } else {
+      await fetchCategoryList(typeNumber.value as 1 | 2)
+      await fetchDocsList(docsFilter.value)
+    }
   } catch (err) {
     console.error('Failed to load documents data:', err)
   } finally {
@@ -96,22 +236,47 @@ const initData = async () => {
   }
 }
 
-onBeforeMount(initData)
+onBeforeMount(async () => {
+  const currentRouteName = String(route.name ?? '')
+  if (currentRouteName.startsWith('문서 사건')) {
+    typeNumber.value = 3
+    if (route.params.caseId) {
+      await fetchSuitCase(Number(route.params.caseId))
+    }
+  }
+  await initData()
+})
 
 watch(
   () => route.name,
-  newName => {
-    if (newName === '문서') {
-      initData()
+  async newName => {
+    const nameStr = String(newName ?? '')
+    if (nameStr === '문서') {
+      if (typeNumber.value === 3) typeNumber.value = 1
+      await initData()
+    } else if (nameStr.startsWith('문서 사건')) {
+      typeNumber.value = 3
+      if (route.params.caseId) {
+        await fetchSuitCase(Number(route.params.caseId))
+      } else {
+        docStore.removeSuitcase()
+        await fetchSuitCaseList(caseFilter.value)
+      }
     }
   },
 )
 
 watch(
   () => docsFilter.value.issue_project,
-  () => {
+  newProject => {
     docsFilter.value.page = 1
-    fetchDocsList(docsFilter.value)
+    caseFilter.value.issue_project = newProject
+    caseFilter.value.page = 1
+    if (typeNumber.value === 3) {
+      fetchSuitCaseList(caseFilter.value)
+    } else {
+      fetchDocsList(docsFilter.value)
+    }
   },
 )
 </script>
@@ -131,8 +296,31 @@ watch(
         </CCol>
 
         <CCol class="text-right">
-          <span v-if="canDocsCreate" class="mr-2 form-text">
+          <!-- 대외 공문 발송 대장 바로가기 -->
+          <v-btn
+            size="small"
+            variant="tonal"
+            color="info"
+            prepend-icon="mdi-email-send-outline"
+            class="mr-2"
+            :to="{ path: '/approval/official-letters' }"
+          >
+            공문 발송 대장
+          </v-btn>
+
+          <!-- 새 문서 또는 새 사건 등록 버튼 -->
+          <span v-if="canDocsCreate && typeNumber !== 3" class="mr-2 form-text">
             <TextButton name="새 문서" @click="viewForm = !viewForm" :active="false" />
+          </span>
+          <span
+            v-else-if="canDocsCreate && typeNumber === 3 && route.name === '문서 사건'"
+            class="mr-2 form-text"
+          >
+            <TextButton
+              name="새 사건 등록"
+              @click="router.push({ name: `${mainViewName} - 작성` })"
+              :active="false"
+            />
           </span>
         </CCol>
       </CRow>
@@ -154,22 +342,86 @@ watch(
           </CCol>
         </CRow>
 
-        <DocsForm
-          v-if="viewForm"
-          :type-number="typeNumber"
-          :categories="getCategories"
-          :get-suit-case="getSuitCase"
-          :my-projects="myProjects"
-          @close-form="viewForm = false"
-        />
+        <!-- 일반 문서 (1) & 소송 기록 (2) 화면 -->
+        <template v-if="typeNumber === 1 || typeNumber === 2">
+          <DocsForm
+            v-if="viewForm"
+            :type-number="typeNumber"
+            :categories="getCategories"
+            :get-suit-case="getSuitCase"
+            :my-projects="myProjects"
+            @close-form="viewForm = false"
+          />
 
-        <DocsList
-          :category="docsFilter.category as number"
-          :category-list="categoryList"
-          :docs-list="docsList"
-          @select-cate="selectCate"
-          @page-select="pageSelect"
-        />
+          <DocsList
+            :category="docsFilter.category as number"
+            :category-list="categoryList"
+            :docs-list="docsList"
+            @select-cate="selectCate"
+            @page-select="pageSelect"
+          />
+        </template>
+
+        <!-- 소송 사건 (3) 화면 -->
+        <template v-else-if="typeNumber === 3">
+          <!-- 사건 목록 -->
+          <div v-if="route.name === mainViewName || route.name === '문서'" class="pt-1">
+            <TableTitleRow
+              title="소송 사건 목록"
+              excel
+              :url="excelUrl"
+              filename="소송사건.xlsx"
+              :disabled="!suitcaseList.length"
+            />
+
+            <CaseList
+              :company="company?.pk || undefined"
+              :limit="caseFilter.limit || 10"
+              :page="caseFilter.page || 1"
+              :case-list="suitcaseList"
+              :view-route="mainViewName"
+              @page-select="casePageSelect"
+              @agency-filter="agencyFilter"
+              @agency-search="agencySearch"
+              @related-filter="relatedFilter"
+            />
+          </div>
+
+          <!-- 사건 상세 보기 -->
+          <div v-else-if="String(route.name ?? '').includes('보기')">
+            <CaseDetail
+              v-if="suitcase"
+              :curr-page="caseFilter.page ?? 1"
+              :suitcase="suitcase as SuitCase"
+              :view-route="mainViewName"
+              @link-hit="linkHit"
+              @file-hit="fileHit"
+              @cases-renewal="casesRenewal"
+              @post-delete="onCaseDelete"
+            />
+          </div>
+
+          <!-- 사건 신규 등록 -->
+          <div v-else-if="String(route.name ?? '').includes('작성')">
+            <CaseForm
+              :sort-name="comName ?? '[본사]'"
+              :get-suit-case="getSuitCase"
+              :view-route="mainViewName"
+              @on-submit="onCaseSubmit"
+            />
+          </div>
+
+          <!-- 사건 수정 -->
+          <div v-else-if="String(route.name ?? '').includes('수정')">
+            <CaseForm
+              :sort-name="comName ?? '[본사]'"
+              :get-suit-case="getSuitCase"
+              :suitcase="suitcase"
+              :view-route="mainViewName"
+              @on-submit="onCaseSubmit"
+            />
+          </div>
+        </template>
       </template>
 
       <v-alert v-else color="warning" class="mt-4" variant="tonal">
@@ -185,9 +437,13 @@ watch(
         :category-list="categoryList"
         :suit-case-options="getSuitCase"
         :filter="docsFilter"
+        :case-filter="caseFilter"
         @select-cate="selectCate"
         @search="fetchDocsList(docsFilter)"
         @update:filter="docsFilter = $event"
+        @update:caseFilter="caseFilter = $event"
+        @case-search="fetchSuitCaseList(caseFilter)"
+        @case-reset="caseReset"
       />
     </template>
   </ContentBody>

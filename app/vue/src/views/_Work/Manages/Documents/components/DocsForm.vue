@@ -8,12 +8,13 @@ import { useAccount } from '@/store/pinia/account.ts'
 import { colorLight } from '@/utils/cssMixins'
 import type { CodeValue } from '@/store/types/work_issue.ts'
 import type { selectProject } from '@/store/types/work_project.ts'
-import type { AFile, Attatches, Docs, Link } from '@/store/types/docs'
+import type { AFile, Attatches, Docs, Link, SuitCase } from '@/store/types/docs'
 import MdEditor from '@/components/MdEditor/Index.vue'
 import DatePicker from '@/components/DatePicker/DatePicker.vue'
 import MultiSelect from '@/components/MultiSelect/index.vue'
 import FileForms from '@/components/OtherParts/FileForms.vue'
 import LinkForms from '@/components/OtherParts/LinkForms.vue'
+import ModalCaseForm from '@/components/Documents/ModalCaseForm.vue'
 
 const props = defineProps({
   docs: { type: Object as PropType<Docs>, default: () => null },
@@ -34,6 +35,17 @@ const updateDocs = (payload: { pk: number; form: FormData }) => docStore.updateD
 
 const refFileForms = ref()
 const refLinkForms = ref()
+const refModalCaseForm = ref()
+
+const openCaseModal = () => refModalCaseForm.value?.callModal()
+const onCaseCreated = async (payload: SuitCase) => {
+  payload.issue_project = Number(form.value.issue_project) || props.projectPk || null
+  const res = (await docStore.createSuitCase(payload)) as any
+  await docStore.fetchAllSuitCaseList({})
+  if (res?.pk) {
+    form.value.lawsuit = res.pk
+  }
+}
 
 const { can, PERM } = usePerms()
 const canDocsCreate = computed(() => can(PERM.DOCS_CREATE))
@@ -270,12 +282,24 @@ onBeforeMount(() => dataSetup())
               <CRow>
                 <CFormLabel class="col-form-label text-right col-2 col-lg-4">사건번호</CFormLabel>
                 <CCol class="col-sm-10 col-md-6 col-lg-8 col-xl-6">
-                  <MultiSelect
-                    v-model.number="form.lawsuit"
-                    :options="getSuitCase"
-                    :attrs="typeNumber === 2 ? { required: true } : {}"
-                    placeholder="사건번호 선택"
-                  />
+                  <div class="d-flex align-center gap-1">
+                    <div class="flex-grow-1">
+                      <MultiSelect
+                        v-model.number="form.lawsuit"
+                        :options="getSuitCase"
+                        :attrs="typeNumber === 2 ? { required: true } : {}"
+                        placeholder="사건번호 선택"
+                      />
+                    </div>
+                    <v-btn
+                      size="x-small"
+                      color="secondary"
+                      variant="tonal"
+                      icon="mdi-plus"
+                      title="새 사건 등록"
+                      @click="openCaseModal"
+                    />
+                  </div>
                 </CCol>
               </CRow>
             </CCol>
@@ -337,4 +361,10 @@ onBeforeMount(() => dataSetup())
       </CCol>
     </CRow>
   </CForm>
+
+  <ModalCaseForm
+    ref="refModalCaseForm"
+    :get-suit-case="getSuitCase"
+    @on-submit="onCaseCreated"
+  />
 </template>

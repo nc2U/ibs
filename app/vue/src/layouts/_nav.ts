@@ -202,6 +202,11 @@ const approval = {
     },
     {
       component: 'CNavItem',
+      name: '공문 발송 대장',
+      to: '/approval/official-letters',
+    },
+    {
+      component: 'CNavItem',
       name: '결재 위임 관리',
       to: '/approval/delegation',
     },
