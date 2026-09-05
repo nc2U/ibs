@@ -83,13 +83,15 @@ const weekEvents = computed(() => {
   return map
 })
 
-onMounted(async () => {
+const fetchCalendar = async () => {
   if (weekDays.value.length > 0) {
     const startStr = weekDays.value[0].dateStr
     const endStr = weekDays.value[6].dateStr
     await calendarStore.fetchCalendarEvents(undefined, startStr, endStr)
   }
-})
+}
+
+onMounted(fetchCalendar)
 
 const handleEventClick = (event: any) => {
   if (event.type === 'issue') {
@@ -108,7 +110,13 @@ const handleEventClick = (event: any) => {
 </script>
 
 <template>
-  <WidgetWrapper :widget-id="widgetId" :title="title" :icon="icon" refreshable>
+  <WidgetWrapper
+    :widget-id="widgetId"
+    :title="title"
+    :icon="icon"
+    refreshable
+    @refresh="fetchCalendar"
+  >
     <div class="calendar-widget">
       <!-- 7열 주간 캘린더 그리드 (레드마인 스타일) -->
       <div class="week-grid">

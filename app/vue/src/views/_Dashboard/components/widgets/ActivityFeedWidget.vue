@@ -56,7 +56,7 @@ const getActionText = (log: ActLogEntry) => {
 
 // 대상 텍스트 매핑
 const getTargetText = (log: ActLogEntry) => {
-  return log.title || log.summary || ''
+  return log.title || log.summary || '(제목 없음)'
 }
 
 // 아이콘 매핑
@@ -89,6 +89,7 @@ const handleLogClick = (log: ActLogEntry) => {
       params: { projId: log.project.slug, issueId: log.target_id },
     })
   } else if (log.sort === '2') {
+    if (!log.parent_id) return
     router.push({
       name: '(업무) - 보기',
       params: { projId: log.project.slug, issueId: log.parent_id },
@@ -111,6 +112,7 @@ const handleLogClick = (log: ActLogEntry) => {
       params: { projId: log.project.slug, docId: log.target_id },
     })
   } else if (log.sort === '6') {
+    if (!log.parent_id) return
     router.push({
       name: '(게시판) - 게시물 보기',
       params: { projId: log.project.slug, forumId: log.parent_id, postId: log.target_id },

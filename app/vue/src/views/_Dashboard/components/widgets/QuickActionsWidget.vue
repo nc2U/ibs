@@ -12,6 +12,18 @@ const router = useRouter()
 
 const quickActions = [
   {
+    icon: 'mdi-file-sign',
+    label: '기안 작성',
+    color: 'primary',
+    routeName: '기안 문서함 - 작성',
+  },
+  {
+    icon: 'mdi-file-clock-outline',
+    label: '결재 대기함',
+    color: 'deep-orange-darken-1',
+    routeName: '결재 대기함',
+  },
+  {
     icon: 'mdi-cash-plus',
     label: '거래 등록',
     color: 'teal-lighten-2',
@@ -47,7 +59,6 @@ const quickActions = [
     color: 'brown-lighten-2',
     routeName: '업무실행내역',
   },
-
   {
     icon: 'mdi-bell-plus',
     label: '공지 작성',

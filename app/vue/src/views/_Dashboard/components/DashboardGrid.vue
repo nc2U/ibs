@@ -19,6 +19,7 @@ import MyIssueWidget from './widgets/MyIssueWidget.vue'
 import NoticeListWidget from './widgets/NoticeListWidget.vue'
 import MeetingMinutesWidget from './widgets/MeetingMinutesWidget.vue'
 import DocumentListWidget from './widgets/DocumentListWidget.vue'
+import ApprovalStatusWidget from './widgets/ApprovalStatusWidget.vue'
 
 const dashboardStore = useDashboard()
 
@@ -42,6 +43,7 @@ const widgetComponents: Record<string, Component> = {
   'notice-list': markRaw(NoticeListWidget),
   'meeting-minutes': markRaw(MeetingMinutesWidget),
   'document-list': markRaw(DocumentListWidget),
+  'approval-status': markRaw(ApprovalStatusWidget),
 }
 
 // Computed layouts for grid-layout-plus (read-only — writes go through handleLayoutUpdated)
