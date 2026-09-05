@@ -306,6 +306,9 @@ class ContractPaymentSerializer(serializers.ModelSerializer):
         - account.is_payment = True: 편집 가능 (ContractPayment)
         - account.is_payment = False: 읽기 전용 (기타 분개)
         """
+        if hasattr(obj, '_cached_sibling_entries'):
+            return obj._cached_sibling_entries
+
         try:
             transaction_id = obj.accounting_entry.transaction_id
             if not transaction_id:
@@ -369,3 +372,22 @@ class ContractPaymentSerializer(serializers.ModelSerializer):
             result.append(entry_data)
 
         return result
+
+
+class ContractPaymentListSerializer(ContractPaymentSerializer):
+    """
+    ContractPayment 목록 전용 경량 직렬화기
+
+    목록 조회 시 불필요한 폼 수정용 sibling_entries, bank_transaction_amount를 제외하여
+    대량 목록 조회 시 발생하는 N+1 쿼리를 원천 차단합니다.
+    """
+    class Meta(ContractPaymentSerializer.Meta):
+        fields = (
+            # 기본 필드
+            'pk', 'project', 'contract', 'installment_order',
+            'accounting_entry', 'deal_date', 'amount', 'is_payment_mismatch',
+            'created_at', 'updated_at', 'creator',
+            # 목록용 추가 필드
+            'bank_account', 'trader', 'note', 'bank_transaction_id',
+        )
+

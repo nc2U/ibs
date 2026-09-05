@@ -13,7 +13,7 @@ from apiV1.serializers.work import (IssueCountByMemberSerializer, IssueRelationS
                                     IssueCommentSerializer, TrackerSerializer, IssueCategorySerializer,
                                     IssueCountByTrackerSerializer, IssueStatusSerializer, WorkflowSerializer,
                                     CodeIssuePrioritySerializer)
-from apiV1.serializers.work.issue import IssueSerializer
+from apiV1.serializers.work.issue import IssueSerializer, IssueListSerializer
 from work.models import Issue, IssueRelation, IssueProject, IssueFile, IssueComment, Tracker, \
     IssueCategory, IssueStatus, Workflow, CodeIssuePriority
 from work.models.project import Member, Role
@@ -511,8 +511,8 @@ def build_issue_queryset(user, base_qs=None):
             private_pids.append(member.project_id)
 
     try:
-        non_member_visible = Role.objects.get(pk=2).issue_visible
-    except Role.DoesNotExist:
+        non_member_visible = Role.objects.filter(pk=2).values_list('issue_visible', flat=True).first() or 'NOP'
+    except Exception:
         non_member_visible = 'NOP'
 
     q_expr = Q(creator=user) | Q(assigned_to=user)
@@ -532,6 +532,11 @@ class IssueViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated, IssuePermission)
     pagination_class = PageNumberPaginationTwenty
     filterset_class = IssueFilter
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return IssueListSerializer
+        return IssueSerializer
 
     @property
     def required_permission(self):
@@ -568,12 +573,12 @@ class IssueViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     def get_queryset(self):
-        return build_issue_queryset(
-            self.request.user,
-            Issue.objects.all().select_related(
-                'project', 'status', 'creator', 'assigned_to', 'tracker', 'fixed_version'
-            ).prefetch_related('files', 'links', 'watchers')
-        )
+        base_qs = Issue.objects.all().select_related(
+            'project', 'status', 'creator', 'assigned_to', 'tracker', 'fixed_version', 'parent', 'meeting'
+        ).prefetch_related('watchers')
+        if self.action != 'list':
+            base_qs = base_qs.prefetch_related('files', 'links')
+        return build_issue_queryset(self.request.user, base_qs)
 
     def filter_queryset(self, queryset):
         if self.request and self.request.user and self.request.user.is_authenticated:

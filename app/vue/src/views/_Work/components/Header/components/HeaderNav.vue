@@ -31,7 +31,7 @@ const isMenuActive = (menu: unknown) => {
     current === m ||
     cleanCurrent === cleanM ||
     current.startsWith(`${m} `) ||
-    (cleanCurrent.startsWith(cleanM) && (cleanCurrent === '문서사건' && cleanM === '문서')) ||
+    (cleanCurrent.startsWith(cleanM) && cleanCurrent === '문서사건' && cleanM === '문서') ||
     ((route.meta as any)?.title ?? '').includes(m)
   )
 }
@@ -82,10 +82,7 @@ const toLocation = (menu: string) => {
       </CDropdownMenu>
     </CDropdown>
     <CNavItem v-for="(menu, i) in menus" :key="i">
-      <CNavLink
-        :active="isMenuActive(menu)"
-        @click="router.push(toLocation(menu as string))"
-      >
+      <CNavLink :active="isMenuActive(menu)" @click="router.push(toLocation(menu as string))">
         {{ getTitle(menu as string) }}
       </CNavLink>
     </CNavItem>

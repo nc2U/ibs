@@ -22,6 +22,7 @@ from contract.models import OrderGroup, DocumentType, RequiredDocument, Contract
     ContractorConsultationLogs, Succession, ContractorRelease
 from contract.services import ContractPriceBulkUpdateService
 from items.models import BuildingUnit, UnitType
+from ledger.models import ProjectBankTransaction
 from payment.models import ContractPayment
 from project.models import Project
 from work.models import IssueProject
@@ -456,12 +457,48 @@ class ContractSetViewSet(ContractViewSet):
             'contractor__contractor_files__creator',
             Prefetch(
                 'payments',
-                queryset=ContractPayment.objects.select_related('accounting_entry', 'installment_order')
+                queryset=ContractPayment.objects.select_related(
+                    'accounting_entry',
+                    'installment_order',
+                ).order_by('deal_date', 'created_at')
             )
         )
         if user.is_superuser or getattr(user, 'work_manager', False):
             return qs
         return qs.filter(project_id__in=get_accessible_project_ids(user))
+
+    @staticmethod
+    def _batch_inject_payment_transactions(contracts):
+        """목록 내 모든 계약의 납부 분개에 대해 related_transaction을 단일 쿼리로 일괄 주입 (N+1 방지)"""
+        tx_ids = set()
+        entries = []
+        for contract in contracts:
+            payments = getattr(contract, '_prefetched_objects_cache', {}).get('payments', [])
+            for payment in payments:
+                entry = getattr(payment, 'accounting_entry', None)
+                if entry and not hasattr(entry, '_related_transaction') and entry.transaction_id:
+                    tx_ids.add(entry.transaction_id)
+                    entries.append(entry)
+        if tx_ids:
+            tx_map = {
+                tx.transaction_id: tx
+                for tx in ProjectBankTransaction.objects.filter(transaction_id__in=tx_ids).select_related('bank_account')
+            }
+            for entry in entries:
+                entry._related_transaction = tx_map.get(entry.transaction_id)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            self._batch_inject_payment_transactions(page)
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        instances = list(queryset)
+        self._batch_inject_payment_transactions(instances)
+        serializer = self.get_serializer(instances, many=True)
+        return Response(serializer.data)
 
     def perform_update(self, serializer):
         # from_page 정보를 임시로 저장

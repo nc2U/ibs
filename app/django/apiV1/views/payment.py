@@ -26,7 +26,7 @@ from ..pagination import PageNumberPaginationTwenty, PageNumberPaginationFifty, 
 from ..serializers.payment import InstallmentOrderSerializer, SalesPriceSerializer, \
     PaymentPerInstallmentSerializer, DownPaymentSerializer, OverDueRuleSerializer, \
     PaymentSummaryComponentSerializer, PaymentStatusByUnitTypeSerializer, OverallSummarySerializer, \
-    ContractPaymentSerializer
+    ContractPaymentSerializer, ContractPaymentListSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -1391,6 +1391,11 @@ class ContractPaymentViewSet(viewsets.ModelViewSet):
         return 'payment.read' if self.action in ('list', 'retrieve') else 'payment.create' if self.action == 'create' else 'payment.update' if self.action in (
             'update', 'partial_update') else 'payment.delete' if self.action == 'destroy' else 'payment.read'
 
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return ContractPaymentListSerializer
+        return ContractPaymentSerializer
+
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
         page = self.paginate_queryset(queryset)
@@ -1399,30 +1404,97 @@ class ContractPaymentViewSet(viewsets.ModelViewSet):
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
 
-        self._prefetch_related_transactions(queryset)
-        serializer = self.get_serializer(queryset, many=True)
+        instances = list(queryset)
+        self._prefetch_related_transactions(instances)
+        serializer = self.get_serializer(instances, many=True)
         return Response(serializer.data)
 
-    def _prefetch_related_transactions(self, items):
-        """related_transaction 프로퍼티 조회를 배치 쿼리로 사전 캐싱 (N+1 제거)"""
+    def _prefetch_related_transactions(self, items, include_siblings=False):
+        """related_transaction 및 선택적 sibling_entries 프로퍼티 조회를 배치 쿼리로 사전 캐싱 (N+1 제거)"""
         transaction_ids = [
             item.accounting_entry.transaction_id
             for item in items
-            if item.accounting_entry_id and item.accounting_entry.transaction_id
+            if getattr(item, 'accounting_entry_id', None) and getattr(item.accounting_entry, 'transaction_id', None)
         ]
-        if transaction_ids:
-            transactions = ProjectBankTransaction.objects.filter(transaction_id__in=transaction_ids)
-            trans_map = {t.transaction_id: t for t in transactions}
+        if not transaction_ids:
+            return
+
+        transactions = ProjectBankTransaction.objects.filter(
+            transaction_id__in=transaction_ids
+        ).select_related('bank_account')
+        trans_map = {t.transaction_id: t for t in transactions}
+        for item in items:
+            if getattr(item, 'accounting_entry_id', None):
+                entry = item.accounting_entry
+                entry._related_transaction = trans_map.get(entry.transaction_id)
+                item._cached_related_transaction = entry._related_transaction
+
+        if include_siblings:
+            sibling_entries = ProjectAccountingEntry.objects.filter(
+                transaction_id__in=transaction_ids
+            ).select_related(
+                'account',
+                'contract',
+                'contract__order_group',
+                'contract__unit_type'
+            ).order_by('pk')
+
+            cps = ContractPayment.objects.select_related('installment_order').filter(
+                accounting_entry__in=sibling_entries
+            )
+            cp_map = {cp.accounting_entry_id: cp for cp in cps}
+
+            from collections import defaultdict
+            tx_to_entries = defaultdict(list)
+            for entry in sibling_entries:
+                tx_to_entries[entry.transaction_id].append(entry)
+
             for item in items:
-                if item.accounting_entry_id:
-                    entry = item.accounting_entry
-                    # dynamic property cache matching the logic in AccountingEntry.related_transaction
-                    entry._related_transaction = trans_map.get(entry.transaction_id)
+                tx_id = getattr(item.accounting_entry, 'transaction_id', None) if getattr(item, 'accounting_entry_id', None) else None
+                s_entries = tx_to_entries.get(tx_id, [])
+                result = []
+                for entry in s_entries:
+                    is_payment_account = getattr(entry.account, 'is_payment', False) if entry.account else False
+                    contract_payment = cp_map.get(entry.pk) if is_payment_account else None
+                    entry_data = {
+                        'pk': entry.pk,
+                        'amount': entry.amount,
+                        'trader': entry.trader,
+                        'contract': entry.contract.pk if entry.contract else None,
+                        'account': {
+                            'pk': entry.account.pk if entry.account else None,
+                            'name': entry.account.name if entry.account else None,
+                            'is_payment': is_payment_account
+                        },
+                        'is_contract_payment': is_payment_account,
+                        'contract_payment_pk': contract_payment.pk if (is_payment_account and contract_payment) else None,
+                        'installment_order': contract_payment.installment_order.pk if (is_payment_account and contract_payment and contract_payment.installment_order) else None,
+                        'installment_order_display': str(contract_payment.installment_order) if (is_payment_account and contract_payment and contract_payment.installment_order) else None,
+                    }
+                    result.append(entry_data)
+                item._cached_sibling_entries = result
 
 
 class AllContractPaymentViewSet(ContractPaymentViewSet):
     pagination_class = PageNumberPaginationOneHundred
     ordering = ['installment_order', 'deal_date', 'created_at']
+    serializer_class = ContractPaymentSerializer
+
+    def get_serializer_class(self):
+        return ContractPaymentSerializer
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            self._prefetch_related_transactions(page, include_siblings=True)
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        instances = list(queryset)
+        self._prefetch_related_transactions(instances, include_siblings=True)
+        serializer = self.get_serializer(instances, many=True)
+        return Response(serializer.data)
 
 
 # Aggregation ViewSets ----------------------------------------------------------------

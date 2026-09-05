@@ -89,6 +89,28 @@ class IssueRelationIncomingSerializer(serializers.ModelSerializer):
         fields = ('pk', 'issue', 'delay')
 
 
+class IssueListSerializer(serializers.ModelSerializer):
+    project = SimpleIssueProjectSerializer(read_only=True)
+    tracker = TrackerInIssueProjectSerializer(read_only=True)
+    status = IssueStatusInIssueSerializer(read_only=True)
+    priority = CodePriorityInIssueSerializer(read_only=True)
+    fixed_version = VersionInIssueSerializer(read_only=True)
+    parent = SimpleIssueInIssueSerializer(read_only=True)
+    assigned_to = SimpleUserSerializer(read_only=True)
+    watchers = SimpleUserSerializer(many=True, read_only=True)
+    meeting_desc = MeetingInIssueSerializer(source='meeting', read_only=True)
+    creator = SimpleUserSerializer(read_only=True)
+    expected_duration_display = serializers.CharField(source='get_expected_duration_display', read_only=True)
+
+    class Meta:
+        model = Issue
+        fields = ('pk', 'project', 'tracker', 'status', 'priority', 'subject',
+                  'category', 'fixed_version', 'assigned_to', 'parent', 'watchers', 'is_private',
+                  'expected_duration', 'expected_duration_display', 'start_date', 'due_date',
+                  'done_ratio', 'closed', 'creator', 'updater', 'created', 'updated',
+                  'meeting', 'meeting_desc')
+
+
 class IssueSerializer(serializers.ModelSerializer):
     project = SimpleIssueProjectSerializer(read_only=True)
     tracker = TrackerInIssueProjectSerializer(read_only=True)

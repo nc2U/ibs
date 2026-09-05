@@ -149,7 +149,9 @@ export const useCompany = defineStore('company', () => {
 
   const fetchCompanySealList = (companyId?: number) => {
     const com = companyId || currentCompany.value
-    const url = com ? `/company-seal/?company=${com}&is_active=true` : `/company-seal/?is_active=true`
+    const url = com
+      ? `/company-seal/?company=${com}&is_active=true`
+      : `/company-seal/?is_active=true`
     return api
       .get(url)
       .then(res => (sealList.value = res.data.results || res.data))
@@ -181,9 +183,10 @@ export const useCompany = defineStore('company', () => {
   const deleteCompanySeal = (pk: number) =>
     api
       .delete(`/company-seal/${pk}/`)
-      .then(() => fetchCompanySealList().then(() => message('warning', '', '해당 인장이 삭제되었습니다.')))
+      .then(() =>
+        fetchCompanySealList().then(() => message('warning', '', '해당 인장이 삭제되었습니다.')),
+      )
       .catch(err => errorHandle(err.response.data))
-
 
   const departmentList = ref<Department[]>([])
   const allDepartList = ref<Department[]>([])

@@ -209,9 +209,7 @@ const onCaseSubmit = async (payload: SuitCase) => {
   } else {
     if (!payload.issue_project) {
       payload.issue_project =
-        (currentProject.value?.pk as number) ||
-        (docsFilter.value.issue_project as number) ||
-        null
+        (currentProject.value?.pk as number) || (docsFilter.value.issue_project as number) || null
     }
     await createSuitCase(payload)
     await router.replace({ name: mainViewName.value, params: { projId: projId.value } })
@@ -282,9 +280,7 @@ const dataSetup = async (projId: string, docId?: string | string[]) => {
     caseFilter.value.company = currentProject.value?.company ?? ''
     caseFilter.value.issue_project = currentProjPk
 
-    const tasks: Promise<any>[] = [
-      fetchAllSuitCaseList({ issue_project: currentProjPk }),
-    ]
+    const tasks: Promise<any>[] = [fetchAllSuitCaseList({ issue_project: currentProjPk })]
 
     if (isSuitCase.value) {
       if (route.params.caseId) {

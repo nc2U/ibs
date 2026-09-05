@@ -199,7 +199,9 @@ class ContractPaymentInContractSerializer(serializers.Serializer):
 
     @staticmethod
     def get_deal_date(obj):
-        """거래일자 (related_transaction.deal_date)"""
+        """거래일자 (ContractPayment.deal_date 또는 related_transaction.deal_date)"""
+        if obj.deal_date:
+            return obj.deal_date
         if obj.accounting_entry:
             trans = obj.accounting_entry.related_transaction
             return trans.deal_date if trans else None
@@ -258,22 +260,41 @@ class ContractSetSerializer(serializers.ModelSerializer):
     def get_payments(self, instance):  # 납부 분담금/분양대금 리스트
         """납부 내역 조회 (거래일자 기준 정렬)
 
-        Note: ViewSet의 Prefetch에서 accounting_entry/installment_order 관계가
-        이미 로딩되므로 추가 select_related 없이 prefetch 캐시를 그대로 활용합니다.
+        Note: ViewSet의 Prefetch에서 이미 deal_date, created_at으로 정렬된
+        accounting_entry/installment_order 관계가 로딩되므로 .all()을 호출하여 추가 SQL 쿼리를 방지합니다.
         """
-        payments = instance.payments.order_by('deal_date', 'created_at')
+        payments = list(instance.payments.all())
+        # 단건 조회 등 list 배치 주입이 수행되지 않은 경우에 대한 안전한 폴백
+        tx_ids = [
+            p.accounting_entry.transaction_id
+            for p in payments
+            if getattr(p, 'accounting_entry', None) and not hasattr(p.accounting_entry, '_related_transaction') and p.accounting_entry.transaction_id
+        ]
+        if tx_ids:
+            from ledger.models import ProjectBankTransaction
+            tx_map = {
+                tx.transaction_id: tx
+                for tx in ProjectBankTransaction.objects.filter(transaction_id__in=tx_ids).select_related('bank_account')
+            }
+            for p in payments:
+                if getattr(p, 'accounting_entry', None) and not hasattr(p.accounting_entry, '_related_transaction'):
+                    p.accounting_entry._related_transaction = tx_map.get(p.accounting_entry.transaction_id)
+
         return ContractPaymentInContractSerializer(payments, many=True, read_only=True).data
 
     def _get_total_paid(self, instance):
-        """총 납부액 — 직렬화 중 최초 1회만 DB aggregate 쿼리를 실행하고 인스턴스에 캐싱합니다."""
+        """총 납부액 — prefetch된 payments 및 accounting_entry를 파이썬 메모리에서 합산하여 DB aggregate 쿼리를 방지합니다."""
         cache_attr = '_cached_total_paid'
         if not hasattr(instance, cache_attr):
-            total = instance.payments.aggregate(total=Sum('accounting_entry__amount'))['total'] or 0
+            total = sum(
+                (p.accounting_entry.amount for p in instance.payments.all() if getattr(p, 'accounting_entry', None) and p.accounting_entry.amount),
+                0
+            )
             setattr(instance, cache_attr, total)
         return getattr(instance, cache_attr)
 
     def get_total_paid(self, instance):
-        """총 납부액 계산 - DB 집계 쿼리로 처리 (Python 루프 합산 대비 성능 개선)"""
+        """총 납부액 계산 - 메모리 내 합산으로 N+1 쿼리 방지"""
         return self._get_total_paid(instance)
 
     def get_last_paid_order(self, instance):  # 완납 회차 구하기

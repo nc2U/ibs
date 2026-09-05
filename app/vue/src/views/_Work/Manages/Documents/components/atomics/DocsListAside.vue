@@ -131,7 +131,13 @@ const emit = defineEmits([
         <CFormSelect
           :value="caseFilter.sort ?? ''"
           size="sm"
-          @change="emit('update:caseFilter', { ...caseFilter, sort: ($event.target as HTMLSelectElement).value, page: 1 })"
+          @change="
+            emit('update:caseFilter', {
+              ...caseFilter,
+              sort: ($event.target as HTMLSelectElement).value,
+              page: 1,
+            })
+          "
         >
           <option value="">전체 유형</option>
           <option value="1">민사</option>
@@ -151,7 +157,13 @@ const emit = defineEmits([
         <CFormSelect
           :value="caseFilter.level ?? ''"
           size="sm"
-          @change="emit('update:caseFilter', { ...caseFilter, level: ($event.target as HTMLSelectElement).value, page: 1 })"
+          @change="
+            emit('update:caseFilter', {
+              ...caseFilter,
+              level: ($event.target as HTMLSelectElement).value,
+              page: 1,
+            })
+          "
         >
           <option value="">전체 심급</option>
           <option value="1">1심</option>
@@ -174,7 +186,13 @@ const emit = defineEmits([
         <CFormSelect
           :value="caseFilter.court ?? ''"
           size="sm"
-          @change="emit('update:caseFilter', { ...caseFilter, court: ($event.target as HTMLSelectElement).value, page: 1 })"
+          @change="
+            emit('update:caseFilter', {
+              ...caseFilter,
+              court: ($event.target as HTMLSelectElement).value,
+              page: 1,
+            })
+          "
         >
           <option value="">전체 법원</option>
           <option v-for="c in courtChoices" :key="c.value" :value="c.value">
@@ -190,13 +208,26 @@ const emit = defineEmits([
         <h6 class="text-subtitle-1 mb-2">진행 상태</h6>
         <v-divider class="mt-0" />
         <CFormSelect
-          :value="caseFilter.in_progress === true ? 'true' : caseFilter.in_progress === false ? 'false' : ''"
+          :value="
+            caseFilter.in_progress === true
+              ? 'true'
+              : caseFilter.in_progress === false
+                ? 'false'
+                : ''
+          "
           size="sm"
-          @change="emit('update:caseFilter', {
-            ...caseFilter,
-            in_progress: ($event.target as HTMLSelectElement).value === 'true' ? true : ($event.target as HTMLSelectElement).value === 'false' ? false : '',
-            page: 1
-          })"
+          @change="
+            emit('update:caseFilter', {
+              ...caseFilter,
+              in_progress:
+                ($event.target as HTMLSelectElement).value === 'true'
+                  ? true
+                  : ($event.target as HTMLSelectElement).value === 'false'
+                    ? false
+                    : '',
+              page: 1,
+            })
+          "
         >
           <option value="">전체 (진행+종결)</option>
           <option value="true">진행중</option>

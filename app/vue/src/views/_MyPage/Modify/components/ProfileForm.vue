@@ -207,8 +207,8 @@ onMounted(() => formDataSetup())
           <SignInput
             :image="profile && profile.sign_image"
             :sign-type="form.sign_type"
-            @update:image="(file) => (form.sign_image = file)"
-            @update:sign-type="(type) => (form.sign_type = type)"
+            @update:image="file => (form.sign_image = file)"
+            @update:sign-type="type => (form.sign_type = type)"
           />
         </CCol>
       </CRow>

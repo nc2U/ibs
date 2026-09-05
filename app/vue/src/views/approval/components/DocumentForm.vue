@@ -121,8 +121,7 @@ const quickDocTypes = computed(() => {
     {
       label: '💳 지출결의서',
       matcher: (dt: DocumentType) =>
-        (dt.form_template_key || '').toUpperCase().includes('EXPENSE') ||
-        dt.name.includes('지출'),
+        (dt.form_template_key || '').toUpperCase().includes('EXPENSE') || dt.name.includes('지출'),
     },
     {
       label: '💼 일반 업무품의',
@@ -134,8 +133,7 @@ const quickDocTypes = computed(() => {
     {
       label: '🚗 출장신청서',
       matcher: (dt: DocumentType) =>
-        (dt.form_template_key || '').toUpperCase().includes('TRIP') ||
-        dt.name.includes('출장'),
+        (dt.form_template_key || '').toUpperCase().includes('TRIP') || dt.name.includes('출장'),
     },
   ]
 
@@ -392,7 +390,10 @@ const applyExampleTitle = (title: string) => {
             </CFormLabel>
             <CCol sm="9">
               <!-- 자주 쓰는 4대 양식 빠른 선택 칩 -->
-              <div v-if="quickDocTypes.length && !isEdit" class="d-flex flex-wrap align-items-center gap-1 mb-2">
+              <div
+                v-if="quickDocTypes.length && !isEdit"
+                class="d-flex flex-wrap align-items-center gap-1 mb-2"
+              >
                 <span class="small text-muted me-1">자주 쓰는 양식:</span>
                 <CButton
                   v-for="q in quickDocTypes"
@@ -437,7 +438,11 @@ const applyExampleTitle = (title: string) => {
               <div v-if="selectedDocType" class="d-lg-none mt-2 p-2 border rounded bg-light">
                 <div class="d-flex align-items-center justify-content-between mb-1">
                   <span class="fw-semibold text-primary small d-flex align-items-center">
-                    <v-icon icon="mdi-lightbulb-on-outline" size="small" class="me-1 text-warning" />
+                    <v-icon
+                      icon="mdi-lightbulb-on-outline"
+                      size="small"
+                      class="me-1 text-warning"
+                    />
                     {{ currentGuide.title }} 작성 가이드
                   </span>
                   <CBadge color="info" size="sm">{{ currentGuide.category }}</CBadge>
@@ -445,9 +450,14 @@ const applyExampleTitle = (title: string) => {
                 <div class="small text-muted mb-2">{{ currentGuide.summary }}</div>
                 <div class="small mb-1">
                   <span class="fw-bold text-dark">• 필수 첨부:</span>
-                  <span class="text-secondary ms-1">{{ currentGuide.requiredAttachments.join(', ') }}</span>
+                  <span class="text-secondary ms-1">{{
+                    currentGuide.requiredAttachments.join(', ')
+                  }}</span>
                 </div>
-                <div v-if="currentGuide.example" class="d-flex justify-content-between align-items-center pt-1 border-top mt-1">
+                <div
+                  v-if="currentGuide.example"
+                  class="d-flex justify-content-between align-items-center pt-1 border-top mt-1"
+                >
                   <span class="text-muted text-truncate me-2 small" style="font-size: 0.75rem">
                     예: {{ currentGuide.example.title }}
                   </span>

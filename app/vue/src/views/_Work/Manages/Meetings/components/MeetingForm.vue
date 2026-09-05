@@ -316,10 +316,7 @@ const onSubmit = async (event: Event) => {
       // Process pending inline action items
       if (meetingPk && pendingActionItems.value.length > 0) {
         const projectVal =
-          form.value.project ||
-          (workStore.currentProject as IssueProject)?.slug ||
-          targetSlug ||
-          ''
+          form.value.project || (workStore.currentProject as IssueProject)?.slug || targetSlug || ''
 
         for (const item of pendingActionItems.value) {
           if (!item.subject?.trim()) continue
@@ -499,25 +496,31 @@ const meetingTemplates: MeetingTemplate[] = [
   {
     name: '주간 업무/공정',
     titlePrefix: '[주간업무] ',
-    agenda: '1. 전주 실적 점검 및 이슈 공유\n2. 금주 주요 추진 계획\n3. 부서/파트 간 협조 요청 사항',
+    agenda:
+      '1. 전주 실적 점검 및 이슈 공유\n2. 금주 주요 추진 계획\n3. 부서/파트 간 협조 요청 사항',
     actionItems: '- [ ] 조치 1 (담당: / 기한: )\n- [ ] 조치 2 (담당: / 기한: )',
   },
   {
     name: '설계/인허가 협의',
     titlePrefix: '[인허가협의] ',
-    agenda: '1. 인허가 진행 현황 점검\n2. 설계 변경 요건 및 관련 법규 검토\n3. 관공서 보완 요청 조치 방안',
-    actionItems: '- [ ] 보완 도서 및 서류 제출 (담당: / 기한: )\n- [ ] 유관 부서/기관 협의 (담당: / 기한: )',
+    agenda:
+      '1. 인허가 진행 현황 점검\n2. 설계 변경 요건 및 관련 법규 검토\n3. 관공서 보완 요청 조치 방안',
+    actionItems:
+      '- [ ] 보완 도서 및 서류 제출 (담당: / 기한: )\n- [ ] 유관 부서/기관 협의 (담당: / 기한: )',
   },
   {
     name: '시공/품질/안전 점검',
     titlePrefix: '[안전품질] ',
-    agenda: '1. 안전 점검 결과 및 지적 사항 공유\n2. 품질 시험 및 감리 지적 조치 계획\n3. 위험 공종 작업 계획 심의',
-    actionItems: '- [ ] 안전 위험 요소 시정 조치 및 사진 보고 (담당: / 기한: )\n- [ ] 자재 시험 성적서 확인 (담당: / 기한: )',
+    agenda:
+      '1. 안전 점검 결과 및 지적 사항 공유\n2. 품질 시험 및 감리 지적 조치 계획\n3. 위험 공종 작업 계획 심의',
+    actionItems:
+      '- [ ] 안전 위험 요소 시정 조치 및 사진 보고 (담당: / 기한: )\n- [ ] 자재 시험 성적서 확인 (담당: / 기한: )',
   },
   {
     name: '사업비/예산 심의',
     titlePrefix: '[예산심의] ',
-    agenda: '1. 사업비 집행 실적 분석\n2. 신규 발주/계약 품의 검토\n3. 자금 흐름(Cash Flow) 점검 및 자금 조달안',
+    agenda:
+      '1. 사업비 집행 실적 분석\n2. 신규 발주/계약 품의 검토\n3. 자금 흐름(Cash Flow) 점검 및 자금 조달안',
     actionItems: '- [ ] 기안/품의서 상신 (담당: / 기한: )\n- [ ] 정산 보고서 작성 (담당: / 기한: )',
   },
 ]
@@ -570,7 +573,9 @@ onBeforeMount(async () => {
   } else {
     if (!form.value.project && meetingProjects.value.length > 0) {
       const current = meetingProjects.value.find(p => p.slug === workStore.currentProject?.slug)
-      form.value.project = current ? (current.value as number) : (meetingProjects.value[0]?.value as number)
+      form.value.project = current
+        ? (current.value as number)
+        : (meetingProjects.value[0]?.value as number)
     }
     await meetingStore.fetchCategoryList()
   }
@@ -994,7 +999,8 @@ onBeforeMount(async () => {
                   class="text-muted small p-3 text-center border rounded border-dashed bg-more-light"
                 >
                   <v-icon icon="mdi-information-outline" size="small" class="mr-1" />
-                  연결된 후속 조치 업무가 없습니다. 상단의 <strong>[후속 조치에서 자동 추출]</strong> 또는
+                  연결된 후속 조치 업무가 없습니다. 상단의
+                  <strong>[후속 조치에서 자동 추출]</strong> 또는
                   <strong>[업무 추가]</strong> 버튼을 눌러 후속 조치를 업무로 등록하세요.
                 </div>
               </CCol>

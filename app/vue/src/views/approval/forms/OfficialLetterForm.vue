@@ -224,7 +224,9 @@ onMounted(async () => {
       <CFormLabel class="col-sm-2 col-form-label required">날인 인감</CFormLabel>
       <CCol sm="4">
         <CFormSelect
-          :value="modelValue.seal_id ? String(modelValue.seal_id) : (modelValue.seal_type ?? 'CORP_SEAL')"
+          :value="
+            modelValue.seal_id ? String(modelValue.seal_id) : (modelValue.seal_type ?? 'CORP_SEAL')
+          "
           required
           @change="onSelectSeal(($event.target as HTMLSelectElement).value)"
         >
@@ -246,7 +248,14 @@ onMounted(async () => {
           <img
             :src="modelValue.seal_image"
             alt="인장 미리보기"
-            style="width: 42px; height: 42px; object-fit: contain; border: 1px dashed #ccc; border-radius: 4px; padding: 2px;"
+            style="
+              width: 42px;
+              height: 42px;
+              object-fit: contain;
+              border: 1px dashed #ccc;
+              border-radius: 4px;
+              padding: 2px;
+            "
             class="me-2 bg-white"
           />
           <small class="text-muted">{{ modelValue.seal_name }} (인장 등록됨)</small>

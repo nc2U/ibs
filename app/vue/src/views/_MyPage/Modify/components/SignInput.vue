@@ -82,12 +82,7 @@ onMounted(() => {
           class="sign-preview-box border rounded d-flex align-items-center justify-content-center bg-light"
           @click="browse"
         >
-          <img
-            v-if="previewSrc"
-            :src="previewSrc"
-            alt="Sign/Stamp"
-            class="sign-preview-img"
-          />
+          <img v-if="previewSrc" :src="previewSrc" alt="Sign/Stamp" class="sign-preview-img" />
           <div v-else class="text-center text-muted p-2">
             <CIcon name="cilPencil" size="xl" class="mb-1" />
             <div class="small">인장/서명 등록</div>
@@ -130,7 +125,8 @@ onMounted(() => {
           </span>
         </div>
         <div class="text-muted small mt-1">
-          * 전자결재 승인 시 결재란에 날인될 개인 인장/서명입니다. 미등록 시 시스템 기본 도장으로 자동 날인됩니다.
+          * 전자결재 승인 시 결재란에 날인될 개인 인장/서명입니다. 미등록 시 시스템 기본 도장으로
+          자동 날인됩니다.
         </div>
       </CCol>
     </CRow>

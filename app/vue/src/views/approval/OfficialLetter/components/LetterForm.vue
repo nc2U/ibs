@@ -222,7 +222,7 @@ const goBack = () => {
                 <img
                   :src="selectedSealImage"
                   alt="인장"
-                  style="width: 40px; height: 40px; object-fit: contain;"
+                  style="width: 40px; height: 40px; object-fit: contain"
                   class="border rounded p-1 bg-white me-2"
                 />
                 <small class="text-muted">등록된 인장 이미지</small>

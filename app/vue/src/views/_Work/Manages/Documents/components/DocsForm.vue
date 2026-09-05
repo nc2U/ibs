@@ -362,9 +362,5 @@ onBeforeMount(() => dataSetup())
     </CRow>
   </CForm>
 
-  <ModalCaseForm
-    ref="refModalCaseForm"
-    :get-suit-case="getSuitCase"
-    @on-submit="onCaseCreated"
-  />
+  <ModalCaseForm ref="refModalCaseForm" :get-suit-case="getSuitCase" @on-submit="onCaseCreated" />
 </template>

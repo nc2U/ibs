@@ -12,7 +12,7 @@ export default defineConfig({
     target: 'ESNext',
     outDir: process.env.BUILD_DIR || '../django/static/dist',
     emptyOutDir: true,
-    chunkSizeWarningLimit: 2500,
+    chunkSizeWarningLimit: 1000,
     sourcemap: process.env.NODE_ENV !== 'production',
     cssCodeSplit: true,
     modulePreload: {
@@ -23,6 +23,55 @@ export default defineConfig({
         chunkFileNames: 'assets/[name]-[hash].js',
         entryFileNames: 'assets/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash].[ext]',
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('exceljs')) {
+              return 'vendor-excel'
+            }
+            if (id.includes('vuetify')) {
+              return 'vendor-vuetify'
+            }
+            if (id.includes('@coreui') || id.includes('chart.js')) {
+              return 'vendor-coreui'
+            }
+            if (id.includes('@fullcalendar')) {
+              return 'vendor-calendar'
+            }
+            if (id.includes('quill')) {
+              return 'vendor-quill'
+            }
+            if (id.includes('diff2html')) {
+              return 'vendor-diff'
+            }
+            if (
+              id.includes('md-editor-v3') ||
+              id.includes('markdown-it') ||
+              id.includes('highlight.js')
+            ) {
+              return 'vendor-editor'
+            }
+            if (
+              id.includes('d3') ||
+              id.includes('@gitgraph') ||
+              id.includes('@infectoone')
+            ) {
+              return 'vendor-charts'
+            }
+            if (id.includes('@vuepic/vue-datepicker')) {
+              return 'vendor-datepicker'
+            }
+            if (
+              id.includes('/node_modules/vue/') ||
+              id.includes('/node_modules/@vue/') ||
+              id.includes('/node_modules/vue-router/') ||
+              id.includes('/node_modules/pinia/') ||
+              id.includes('/node_modules/@vueuse/') ||
+              id.includes('/node_modules/axios/')
+            ) {
+              return 'vendor-vue'
+            }
+          }
+        },
       },
     },
     minify: 'esbuild',

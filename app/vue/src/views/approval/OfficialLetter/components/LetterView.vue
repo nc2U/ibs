@@ -157,9 +157,7 @@ const formatDateTime = (dateStr: string | undefined) => {
             <CBadge v-else-if="letter.approval_status === 'rejected'" color="danger" class="ms-1">
               결재 반려
             </CBadge>
-            <CBadge v-else color="secondary" class="ms-1">
-              미상신 (임시/초안)
-            </CBadge>
+            <CBadge v-else color="secondary" class="ms-1"> 미상신 (임시/초안) </CBadge>
           </div>
         </div>
         <div>
@@ -265,12 +263,16 @@ const formatDateTime = (dateStr: string | undefined) => {
                   <th>날인인감</th>
                   <td>
                     <div class="d-flex align-items-center">
-                      <span class="me-2">{{ letter.seal_detail.name }} ({{ letter.seal_detail.seal_type_desc }})</span>
+                      <span class="me-2"
+                        >{{ letter.seal_detail.name }} ({{
+                          letter.seal_detail.seal_type_desc
+                        }})</span
+                      >
                       <img
                         v-if="letter.seal_detail.seal_image"
                         :src="letter.seal_detail.seal_image"
                         alt="인장"
-                        style="width: 28px; height: 28px; object-fit: contain;"
+                        style="width: 28px; height: 28px; object-fit: contain"
                         class="border rounded p-1 bg-white"
                       />
                     </div>

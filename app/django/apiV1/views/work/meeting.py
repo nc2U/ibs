@@ -8,7 +8,9 @@ from rest_framework.response import Response
 
 from apiV1.pagination import PageNumberPaginationTwenty
 from apiV1.permissions.work_perms import ProjectPermission, MeetingPermission
-from apiV1.serializers.work.meeting import MeetingCategorySerializer, MeetingSerializer, MeetingFileSerializer
+from apiV1.serializers.work.meeting import (
+    MeetingCategorySerializer, MeetingSerializer, MeetingListSerializer, MeetingFileSerializer
+)
 from work.models.meeting import MeetingCategory, Meeting, MeetingFile
 
 
@@ -126,6 +128,11 @@ class MeetingViewSet(viewsets.ModelViewSet):
     pagination_class = PageNumberPaginationTwenty
     filterset_class = MeetingFilter
 
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return MeetingListSerializer
+        return MeetingSerializer
+
     def get_queryset(self):
         user = self.request.user
         queryset = super().get_queryset().exclude(project__status='9')
@@ -139,10 +146,13 @@ class MeetingViewSet(viewsets.ModelViewSet):
                 Q(project__is_public=True) | Q(project__members__user=user)
             ).distinct()
 
-        # 3. 성능 최적화
-        return base_qs.select_related(
-            'project', 'category', 'creator', 'updater'
-        ).prefetch_related('attendees', 'files', 'links')
+        # 3. 성능 최적화: 목록 조회 시 필수 관계만, 상세 조회 시 파일/링크/연계업무까지 prefetch
+        base_qs = base_qs.select_related('project', 'category', 'creator', 'updater')
+        if self.action == 'list':
+            return base_qs.prefetch_related('attendees')
+        return base_qs.prefetch_related(
+            'attendees', 'files', 'links', 'issues__assigned_to', 'issues__project'
+        )
 
     @property
     def required_permission(self):

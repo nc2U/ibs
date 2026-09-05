@@ -41,8 +41,7 @@ const filteredIssues = computed(() => {
     // 2. Only my issues
     if (onlyMyIssues.value && accStore.userInfo?.pk) {
       const isMine =
-        issue.assigned_to?.pk === accStore.userInfo.pk ||
-        issue.creator?.pk === accStore.userInfo.pk
+        issue.assigned_to?.pk === accStore.userInfo.pk || issue.creator?.pk === accStore.userInfo.pk
       if (!isMine) return false
     }
 
@@ -168,7 +167,8 @@ const onDrop = async (targetStatus: IssueStatus) => {
       </div>
 
       <div class="text-muted small">
-        총 <strong>{{ filteredIssues.length }}</strong>건의 업무
+        총 <strong>{{ filteredIssues.length }}</strong
+        >건의 업무
       </div>
     </div>
 
@@ -222,7 +222,10 @@ const onDrop = async (targetStatus: IssueStatus) => {
                 <!-- Card Header: Tracker, Priority, Dropdown -->
                 <div class="d-flex align-items-center justify-content-between mb-1">
                   <div class="d-flex align-items-center gap-1">
-                    <span class="badge bg-more-light text-secondary border small" style="font-size: 11px">
+                    <span
+                      class="badge bg-more-light text-secondary border small"
+                      style="font-size: 11px"
+                    >
                       {{ issue.tracker?.name || '업무' }}
                     </span>
                     <v-chip
@@ -291,7 +294,10 @@ const onDrop = async (targetStatus: IssueStatus) => {
                 </div>
 
                 <!-- Card Footer: Assignee & Due Date -->
-                <div class="d-flex align-items-center justify-content-between pt-1 border-top mt-1" style="font-size: 11px">
+                <div
+                  class="d-flex align-items-center justify-content-between pt-1 border-top mt-1"
+                  style="font-size: 11px"
+                >
                   <span class="text-muted text-truncate" style="max-width: 140px">
                     <v-icon icon="mdi-account" size="12" class="mr-1 text-secondary" />
                     {{ issue.assigned_to?.username || '미지정' }}
@@ -300,8 +306,7 @@ const onDrop = async (targetStatus: IssueStatus) => {
                   <span
                     v-if="issue.due_date"
                     :class="{
-                      'text-danger font-weight-bold':
-                        !issue.closed && diffDate(issue.due_date) < 0,
+                      'text-danger font-weight-bold': !issue.closed && diffDate(issue.due_date) < 0,
                       'text-muted': issue.closed || diffDate(issue.due_date) >= 0,
                     }"
                   >

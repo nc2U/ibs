@@ -45,6 +45,22 @@ class IssueInMeetingSerializer(serializers.ModelSerializer):
         fields = ('pk', 'project', 'subject', 'status', 'assigned_to', 'closed')
 
 
+class MeetingListSerializer(serializers.ModelSerializer):
+    project_desc = SimpleIssueProjectSerializer(source='project', read_only=True)
+    category_desc = MeetingCategorySerializer(source='category', read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    attendees_desc = SimpleUserSerializer(source='attendees', many=True, read_only=True)
+    creator = SimpleUserSerializer(read_only=True)
+    updater = SimpleUserSerializer(read_only=True)
+
+    class Meta:
+        model = Meeting
+        fields = ('pk', 'project', 'project_desc', 'title', 'category', 'category_desc',
+                  'status', 'status_display', 'is_confirmed', 'meeting_date', 'location',
+                  'attendees', 'attendees_desc', 'other_attendees', 'created', 'updated',
+                  'creator', 'updater')
+
+
 class MeetingSerializer(serializers.ModelSerializer):
     project_desc = SimpleIssueProjectSerializer(source='project', read_only=True)
     category_desc = MeetingCategorySerializer(source='category', read_only=True)

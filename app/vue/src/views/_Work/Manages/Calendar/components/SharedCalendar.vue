@@ -152,9 +152,7 @@ const renderEventContent = (eventInfo: any) => {
     color = '#f87171'
   }
 
-  const titleStyle = isClosed
-    ? 'text-decoration: line-through; opacity: 0.85;'
-    : ''
+  const titleStyle = isClosed ? 'text-decoration: line-through; opacity: 0.85;' : ''
 
   return {
     html: `
