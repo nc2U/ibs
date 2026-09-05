@@ -81,6 +81,22 @@ const fetchMeeting = async (pk: number) => {
 }
 
 const refIssueModal = ref()
+const initialIssueSubject = ref('')
+const initialIssueDescription = ref('')
+
+const openIssueModalForActionItem = () => {
+  if (meeting.value) {
+    initialIssueSubject.value = `[후속조치] ${meeting.value.title}`
+    initialIssueDescription.value = `### 회의 후속 조치 사항\n${meeting.value.action_items}`
+    refIssueModal.value.callModal()
+  }
+}
+
+const openNormalIssueModal = () => {
+  initialIssueSubject.value = ''
+  initialIssueDescription.value = ''
+  refIssueModal.value.callModal()
+}
 
 const createRelatedIssue = async (payload: any) => {
   if (meeting.value) {
@@ -381,14 +397,25 @@ const refConfirmModal = ref()
           </CCol>
           <CCol md="6" v-if="meeting.action_items">
             <CCallout color="warning" class="mb-4 border-start-4">
-              <div class="d-flex align-items-center mb-2">
-                <v-icon
-                  icon="mdi-clipboard-list-outline"
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <div class="d-flex align-items-center">
+                  <v-icon
+                    icon="mdi-clipboard-list-outline"
+                    color="warning"
+                    size="small"
+                    class="mr-1"
+                  />
+                  <span class="fw-bold text-warning">후속 조치 사항</span>
+                </div>
+                <v-btn
+                  v-if="canIssueCreate"
                   color="warning"
-                  size="small"
-                  class="mr-1"
-                />
-                <span class="fw-bold text-warning">후속 조치 사항</span>
+                  variant="outlined"
+                  size="x-small"
+                  @click="openIssueModalForActionItem"
+                >
+                  <v-icon icon="mdi-plus" size="12" class="mr-1" /> 업무로 등록
+                </v-btn>
               </div>
               <div
                 class="markdown-content bg-transparent"
@@ -451,7 +478,7 @@ const refConfirmModal = ref()
                 v-if="canIssueCreate"
                 color="success"
                 size="x-small"
-                @click="refIssueModal.callModal()"
+                @click="openNormalIssueModal"
               >
                 <v-icon icon="mdi-plus" size="12" class="mr-1" /> 관련 업무 추가
               </v-btn>
@@ -550,6 +577,8 @@ const refConfirmModal = ref()
         :priority-list="priorityList"
         :get-issues="getIssues"
         :btn-size="'small'"
+        :initial-subject="initialIssueSubject"
+        :initial-description="initialIssueDescription"
         @on-submit="createRelatedIssue"
         @close-form="refIssueModal.close()"
       />

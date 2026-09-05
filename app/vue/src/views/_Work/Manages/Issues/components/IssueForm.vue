@@ -26,6 +26,8 @@ const props = defineProps({
   priorityList: { type: Array as PropType<any[]>, default: () => [] },
   getIssues: { type: Array as PropType<{ value: number; label: string }[]>, default: () => [] },
   btnSize: { type: String, default: 'default' },
+  initialSubject: { type: String, default: '' },
+  initialDescription: { type: String, default: '' },
 })
 
 const emit = defineEmits(['on-submit', 'close-form'])
@@ -93,6 +95,29 @@ const canSetPrivate = computed(() => {
 })
 
 const assignedToMe = () => (form.value.assigned_to = userInfo?.value?.pk as number)
+
+watch(
+  [() => props.initialSubject, () => props.initialDescription],
+  ([newSub, newDesc]) => {
+    if (!props.issue) {
+      if (newSub && !form.value.subject) form.value.subject = newSub
+      if (newDesc && !form.value.description) form.value.description = newDesc
+    }
+  },
+  { immediate: true },
+)
+
+const setQuickDueDate = (days: number | 'today' | 'monthEnd') => {
+  const target = new Date()
+  if (days === 'today') {
+    // 오늘
+  } else if (days === 'monthEnd') {
+    target.setMonth(target.getMonth() + 1, 0)
+  } else if (typeof days === 'number') {
+    target.setDate(target.getDate() + days)
+  }
+  form.value.due_date = dateFormat(target)
+}
 
 const comment = ref({
   content: '',
@@ -882,6 +907,54 @@ defineExpose({ callComment, callReply })
                 </CFormLabel>
                 <CCol sm="8">
                   <DatePicker v-model="form.due_date" id="due_date" />
+                  <div class="mt-1 d-flex flex-wrap align-items-center">
+                    <span class="text-muted extra-small mr-1">빠른 선택:</span>
+                    <v-chip
+                      size="x-small"
+                      variant="outlined"
+                      color="primary"
+                      class="mr-1 my-1 cursor-pointer"
+                      @click="setQuickDueDate('today')"
+                    >
+                      오늘
+                    </v-chip>
+                    <v-chip
+                      size="x-small"
+                      variant="outlined"
+                      color="primary"
+                      class="mr-1 my-1 cursor-pointer"
+                      @click="setQuickDueDate(3)"
+                    >
+                      3일 뒤
+                    </v-chip>
+                    <v-chip
+                      size="x-small"
+                      variant="outlined"
+                      color="primary"
+                      class="mr-1 my-1 cursor-pointer"
+                      @click="setQuickDueDate(7)"
+                    >
+                      1주일 뒤
+                    </v-chip>
+                    <v-chip
+                      size="x-small"
+                      variant="outlined"
+                      color="primary"
+                      class="mr-1 my-1 cursor-pointer"
+                      @click="setQuickDueDate(14)"
+                    >
+                      2주일 뒤
+                    </v-chip>
+                    <v-chip
+                      size="x-small"
+                      variant="outlined"
+                      color="secondary"
+                      class="my-1 cursor-pointer"
+                      @click="setQuickDueDate('monthEnd')"
+                    >
+                      이달 말
+                    </v-chip>
+                  </div>
                 </CCol>
               </CRow>
 

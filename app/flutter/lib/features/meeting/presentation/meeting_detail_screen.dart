@@ -329,7 +329,40 @@ class MeetingDetailScreen extends ConsumerWidget {
 
           // ── 후속 조치 사항 ────────────────────────────────────
           if (meeting.actionItems.isNotEmpty) ...[
-            const _SectionLabel(label: '후속 조치 사항'),
+            _SectionLabel(
+              label: '후속 조치 사항',
+              action: (!isClosed &&
+                      ref.can(Perm.issueCreate,
+                          projectSlug: meeting.projectDesc.slug))
+                  ? InkWell(
+                      onTap: () async {
+                        final subject =
+                            Uri.encodeComponent('[후속조치] ${meeting.title}');
+                        await context.push(
+                          '/work/issues/new?meeting_id=${meeting.pk}&project_slug=${meeting.projectDesc.slug}&subject=$subject',
+                        );
+                        if (context.mounted) {
+                          ref.invalidate(meetingDetailProvider(meeting.pk));
+                        }
+                      },
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.add_task_rounded,
+                              size: 14, color: context.colors.accentProject),
+                          const SizedBox(width: 3),
+                          Text(
+                            '업무로 등록',
+                            style: AppTextStyles.caption.copyWith(
+                              color: context.colors.accentProject,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : null,
+            ),
             _TextCard(
               content: meeting.actionItems,
               borderColor: context.colors.accentApproval,

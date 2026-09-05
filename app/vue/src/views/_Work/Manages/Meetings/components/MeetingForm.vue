@@ -319,6 +319,53 @@ const onConfirmToggle = async () => {
   if (form.value.pk) await meetingStore.confirmMeeting(form.value.pk)
 }
 
+interface MeetingTemplate {
+  name: string
+  titlePrefix: string
+  agenda: string
+  actionItems: string
+}
+
+const meetingTemplates: MeetingTemplate[] = [
+  {
+    name: '주간 업무/공정',
+    titlePrefix: '[주간업무] ',
+    agenda: '1. 전주 실적 점검 및 이슈 공유\n2. 금주 주요 추진 계획\n3. 부서/파트 간 협조 요청 사항',
+    actionItems: '- [ ] 조치 1 (담당: / 기한: )\n- [ ] 조치 2 (담당: / 기한: )',
+  },
+  {
+    name: '설계/인허가 협의',
+    titlePrefix: '[인허가협의] ',
+    agenda: '1. 인허가 진행 현황 점검\n2. 설계 변경 요건 및 관련 법규 검토\n3. 관공서 보완 요청 조치 방안',
+    actionItems: '- [ ] 보완 도서 및 서류 제출 (담당: / 기한: )\n- [ ] 유관 부서/기관 협의 (담당: / 기한: )',
+  },
+  {
+    name: '시공/품질/안전 점검',
+    titlePrefix: '[안전품질] ',
+    agenda: '1. 현장 안전 점검 결과 및 지적 사항 공유\n2. 품질 시험 및 감리 지적 조치 계획\n3. 위험 공종 작업 계획 심의',
+    actionItems: '- [ ] 안전 위험 요소 시정 조치 및 사진 보고 (담당: / 기한: )\n- [ ] 자재 시험 성적서 확인 (담당: / 기한: )',
+  },
+  {
+    name: '사업비/예산 심의',
+    titlePrefix: '[예산심의] ',
+    agenda: '1. 사업비 집행 실적 분석\n2. 신규 발주/계약 품의 검토\n3. 자금 흐름(Cash Flow) 점검 및 자금 조달안',
+    actionItems: '- [ ] 기안/품의서 상신 (담당: / 기한: )\n- [ ] 정산 보고서 작성 (담당: / 기한: )',
+  },
+]
+
+const applyMeetingTemplate = (tmpl: MeetingTemplate) => {
+  const dateStr = new Date().toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' })
+  if (!form.value.title || form.value.title.startsWith('[')) {
+    form.value.title = `${tmpl.titlePrefix}${dateStr} 회의`
+  }
+  if (!form.value.agenda) {
+    form.value.agenda = tmpl.agenda
+  }
+  if (!form.value.action_items) {
+    form.value.action_items = tmpl.actionItems
+  }
+}
+
 const projId = computed(() => route.params.projId as string | undefined)
 watch(projId, newVal => {
   if (newVal)
@@ -351,6 +398,32 @@ onBeforeMount(async () => {
         <CRow class="mb-3">
           <!-- Main Content Column -->
           <CCol md="8">
+            <!-- Quick Meeting Template Banner -->
+            <CRow v-if="!form.pk" class="mb-3">
+              <CFormLabel class="col-sm-2 col-form-label text-right pt-0">
+                <span class="text-primary font-weight-bold">회의 템플릿</span>
+              </CFormLabel>
+              <CCol sm="10">
+                <div class="p-2 border rounded bg-light d-flex flex-wrap align-items-center">
+                  <span class="text-muted small mr-2">
+                    <v-icon icon="mdi-magic-staff" size="14" color="primary" class="mr-1" />
+                    자주 쓰는 양식 자동 채우기:
+                  </span>
+                  <v-chip
+                    v-for="tmpl in meetingTemplates"
+                    :key="tmpl.name"
+                    size="small"
+                    variant="elevated"
+                    color="primary"
+                    class="mr-2 my-1 cursor-pointer"
+                    @click="applyMeetingTemplate(tmpl)"
+                  >
+                    {{ tmpl.name }}
+                  </v-chip>
+                </div>
+              </CCol>
+            </CRow>
+
             <CRow class="mb-3">
               <CFormLabel for="title" class="col-sm-2 col-form-label text-right required">
                 회의 제목
