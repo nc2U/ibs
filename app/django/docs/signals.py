@@ -1,3 +1,5 @@
+import html
+from django.utils.html import strip_tags
 from django.db.models.signals import pre_save, post_save, post_delete, pre_delete
 from django.dispatch import receiver
 
@@ -91,9 +93,11 @@ def notify_document_delete(sender, instance, **kwargs):
 def document_log_changes(sender, instance, created, **kwargs):
     """Document 생성 시 ActivityLogEntry 생성"""
     if created and instance.issue_project and instance.issue_project.status == '1':
+        raw_content = instance.description or ''
+        clean_summary = ' '.join(html.unescape(strip_tags(raw_content)).split())
         ActivityLogEntry.objects.create(
             sort='5', project=instance.issue_project, target_id=instance.pk,
-            title=f"[문서] {instance.title}", summary=(instance.description or '')[:150], creator=instance.creator
+            title=f"[문서] {instance.title}"[:250], summary=clean_summary[:150], creator=instance.creator
         )
 
 

@@ -29,17 +29,23 @@ def meeting_log_changes(sender, instance, created, **kwargs):
     old_is_confirmed = getattr(instance, 'old_is_confirmed', None)
 
     if created:
+        title = f"[회의록] #{instance.pk} (등록) {instance.title}"[:250]
+        raw_summary = instance.agenda or instance.content or ''
+        clean_summary = ' '.join(html.unescape(strip_tags(raw_summary)).split())
         ActivityLogEntry.objects.create(
             sort='3', project=instance.project, target_id=instance.pk,
-            title=f"[회의록] #{instance.pk} (등록) {instance.title}",
-            summary=(instance.agenda or '')[:150], creator=instance.creator
+            title=title,
+            summary=clean_summary[:150], creator=instance.creator
         )
     elif hasattr(instance, 'old_status'):
         status_name = instance.get_status_display()
+        title = f"[회의록] #{instance.pk} ({status_name}) {instance.title}"[:250]
+        raw_summary = instance.agenda or instance.content or ''
+        clean_summary = ' '.join(html.unescape(strip_tags(raw_summary)).split())
         ActivityLogEntry.objects.create(
             sort='3', project=instance.project, target_id=instance.pk,
-            title=f"[회의록] #{instance.pk} ({status_name}) {instance.title}",
-            summary=(instance.agenda or '')[:150], status_log=status_name,
+            title=title,
+            summary=clean_summary[:150], status_log=status_name,
             creator=user
         )
 
@@ -98,7 +104,7 @@ def comment_log_changes(sender, instance, created, **kwargs):
         ActivityLogEntry.objects.create(
             sort='2', project=instance.issue.project if instance.issue else None,
             target_id=instance.pk, parent_id=instance.issue.pk if instance.issue else None,
-            title=f"[의견] {issue_info}", summary=clean_summary[:150], creator=instance.creator
+            title=f"[의견] {issue_info}"[:250], summary=clean_summary[:150], creator=instance.creator
         )
 
 
@@ -116,7 +122,7 @@ def news_log_changes(sender, instance, created, **kwargs):
         clean_summary = ' '.join(clean_summary.split())
         ActivityLogEntry.objects.create(
             sort='4', project=instance.project, target_id=instance.pk,
-            title=f"[공지] {instance.title}", summary=clean_summary[:150], creator=instance.author
+            title=f"[공지] {instance.title}"[:250], summary=clean_summary[:150], creator=instance.author
         )
 
 

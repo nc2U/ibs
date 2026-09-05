@@ -31,6 +31,7 @@ const getTargetRoute = (act: ActLogEntry) => {
   if (act.sort === '1') {
     return { name: '(업무) - 보기', params: { projId: act.project.slug, issueId: act.target_id } }
   } else if (act.sort === '2') {
+    if (!act.parent_id) return null
     return {
       name: '(업무) - 보기',
       params: { projId: act.project.slug, issueId: act.parent_id },
@@ -44,6 +45,7 @@ const getTargetRoute = (act: ActLogEntry) => {
   } else if (act.sort === '5') {
     return { name: '(문서) - 보기', params: { projId: act.project.slug, docId: act.target_id } }
   } else if (act.sort === '6') {
+    if (!act.parent_id) return null
     return {
       name: '(게시판) - 게시물 보기',
       params: { projId: act.project.slug, forumId: act.parent_id, postId: act.target_id },
@@ -63,12 +65,12 @@ const getTargetRoute = (act: ActLogEntry) => {
       </CAlert>
 
       <CRow v-for="(act, i) in activity" :key="act.pk" class="pl-3">
-        <CCol :class="{ 'ml-5': i > 0 && act.sort !== '3' && act.sort !== '2' }">
+        <CCol :class="{ 'ml-4': act.sort === '2' }">
           <v-icon
-            :icon="getIcon(act.sort, act.status_log === '종료')"
+            :icon="getIcon(act.sort, act.status_log === '종료' || act.status_log === '완료')"
             size="15"
             :color="
-              (act.sort === '1' && act.status_log === '종료') ||
+              (act.sort === '1' && (act.status_log === '완료' || act.status_log === '종료')) ||
               (act.sort === '3' && act.status_log === '완료됨')
                 ? 'success'
                 : 'brown-lighten-3'
@@ -82,9 +84,9 @@ const getTargetRoute = (act: ActLogEntry) => {
           </span>
 
           <router-link v-if="getTargetRoute(act)" :to="getTargetRoute(act)!">
-            {{ act.title }}
+            {{ act.title || act.summary || '(제목 없음)' }}
           </router-link>
-          <span v-else>{{ act.title }}</span>
+          <span v-else>{{ act.title || act.summary || '(제목 없음)' }}</span>
 
           <div v-if="act.summary" class="ml-5 pl-4 fst-italic form-text">
             <div v-html="markdownRender(cutString(act.summary, 113))" class="form-text" />

@@ -16,7 +16,7 @@ def post_log_changes(sender, instance, created, **kwargs):
         clean_text = ' '.join(clean_text.split())
         ActivityLogEntry.objects.create(
             sort='6', project=project, target_id=instance.pk, parent_id=instance.forum.pk,
-            title=f"[게시물] {instance.title}", summary=clean_text[:150], creator=instance.creator
+            title=f"[게시물] {instance.title}"[:250], summary=clean_text[:150], creator=instance.creator
         )
 
 

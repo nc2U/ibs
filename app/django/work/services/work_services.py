@@ -1,4 +1,6 @@
+import html
 from django.db import transaction
+from django.utils.html import strip_tags
 from work.models.logging import ActivityLogEntry, IssueLogEntry
 from work.tasks import send_issue_mail_task, send_meeting_mail_task
 from rest_framework.exceptions import PermissionDenied
@@ -104,11 +106,11 @@ class IssueService:
             # 생성 로그 및 알림
             tracker_name = str(instance.tracker) if instance.tracker else ''
             status_name = instance.status.name if instance.status else ''
-            title = f"[{tracker_name}] #{instance.pk} ({status_name}) {instance.subject}"
-            summary = (instance.description or '')[:150]
+            title = f"[{tracker_name}] #{instance.pk} ({status_name}) {instance.subject}"[:250]
+            clean_summary = ' '.join(html.unescape(strip_tags(instance.description or '')).split())
             ActivityLogEntry.objects.create(
                 sort='1', project=instance.project, target_id=instance.pk,
-                title=title, summary=summary, creator=user
+                title=title, summary=clean_summary[:150], creator=user
             )
             IssueService.send_issue_mail(instance, user, "create")
         else:
@@ -149,11 +151,11 @@ class IssueService:
 
                 if hasattr(instance, 'old_status'):
                     tracker_name = str(instance.tracker) if instance.tracker else ''
-                    title = f"[{tracker_name}] #{instance.pk} ({status_log}) {instance.subject}"
-                    summary = (instance.description or '')[:150]
+                    title = f"[{tracker_name}] #{instance.pk} ({status_log}) {instance.subject}"[:250]
+                    clean_summary = ' '.join(html.unescape(strip_tags(instance.description or '')).split())
                     ActivityLogEntry.objects.create(
                         sort='1', project=instance.project, target_id=instance.pk,
-                        title=title, summary=summary, status_log=status_log, creator=user
+                        title=title, summary=clean_summary[:150], status_log=status_log, creator=user
                     )
                     IssueService.send_issue_mail(instance, user, "progress", instance.old_status.name)
 
