@@ -13,6 +13,7 @@ import type { Issue, IssueFilter } from '@/store/types/work_issue.ts'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import IssueHeader from '@/views/_Work/Manages/Issues/automics/IssueHeader.vue'
 import IssueTable from '@/views/_Work/Manages/Issues/components/IssueTable.vue'
+import IssueKanban from '@/views/_Work/Manages/Issues/components/IssueKanban.vue'
 import IssueDetail from '@/views/_Work/Manages/Issues/components/IssueDetail.vue'
 import IssueForm from '@/views/_Work/Manages/Issues/components/IssueForm.vue'
 import IssueReport from '@/views/_Work/Manages/Issues/components/IssueReport.vue'
@@ -21,6 +22,14 @@ import QuerySection from '@/views/_Work/Manages/Issues/components/QuerySection.v
 import SavedQueryAside from '@/views/_Work/components/asides/SavedQueryAside.vue'
 import ColumnSelector from '@/components/ColumnSelector/Index.vue'
 import Loading from '@/components/Loading/Index.vue'
+
+const viewMode = ref<'list' | 'kanban'>(
+  (localStorage.getItem('ibs_work_issue_view_mode') as 'list' | 'kanban') || 'list',
+)
+const onViewModeChange = (mode: 'list' | 'kanban') => {
+  viewMode.value = mode
+  localStorage.setItem('ibs_work_issue_view_mode', mode)
+}
 
 const cBody = ref()
 const toggle = () => cBody.value.toggle()
@@ -209,7 +218,11 @@ onBeforeMount(async () => {
   <Loading v-model:active="loading" />
   <ContentBody ref="cBody">
     <template v-slot:default>
-      <IssueHeader :proj-status="currentProject?.status" />
+      <IssueHeader
+        :proj-status="currentProject?.status"
+        :view-mode="viewMode"
+        @update:view-mode="onViewModeChange"
+      />
 
       <QuerySection
         v-if="route.name === '(업무)'"
@@ -230,11 +243,19 @@ onBeforeMount(async () => {
       </QuerySection>
 
       <IssueTable
-        v-if="route.name === '(업무)'"
+        v-if="route.name === '(업무)' && viewMode === 'list'"
         ref="issueListRef"
         :issue-list="issueList as Issue[]"
         :columns="selectedColumns"
         @page-select="pageSelect"
+      />
+
+      <IssueKanban
+        v-if="route.name === '(업무)' && viewMode === 'kanban'"
+        :issue-list="issueList as Issue[]"
+        :status-list="statusList"
+        :priority-list="priorityList"
+        :tracker-list="trackerList"
       />
 
       <IssueDetail

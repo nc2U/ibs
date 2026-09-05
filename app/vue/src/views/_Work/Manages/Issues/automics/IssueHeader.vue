@@ -8,7 +8,10 @@ import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 
 const props = defineProps({
   projStatus: { type: String, default: '' },
+  viewMode: { type: String as () => 'list' | 'kanban', default: 'list' },
 })
+
+const emit = defineEmits(['update:viewMode'])
 
 const accStore = useAccount()
 const workManager = computed(() => accStore.workManager)
@@ -36,7 +39,29 @@ const router = useRouter()
         업무
       </h5>
     </CCol>
-    <CCol v-if="['업무', '(업무)'].includes(route.name as string)" class="text-right">
+    <CCol
+      v-if="['업무', '(업무)'].includes(route.name as string)"
+      class="text-right d-flex align-items-center justify-content-end"
+    >
+      <!-- View mode toggle: List vs Kanban -->
+      <v-btn-toggle
+        :model-value="viewMode"
+        mandatory
+        density="compact"
+        variant="outlined"
+        color="primary"
+        class="mr-2"
+        style="height: 28px"
+        @update:model-value="val => emit('update:viewMode', val)"
+      >
+        <v-btn value="list" size="x-small" title="목록 뷰">
+          <v-icon icon="mdi-format-list-bulleted" size="14" class="mr-1" /> 목록
+        </v-btn>
+        <v-btn value="kanban" size="x-small" title="칸반 보드 뷰">
+          <v-icon icon="mdi-view-column-outline" size="14" class="mr-1" /> 칸반
+        </v-btn>
+      </v-btn-toggle>
+
       <span v-if="canIssueCreate" class="mr-2 form-text">
         <TextButton
           v-if="route.name === '업무'"

@@ -14,10 +14,19 @@ import Header from '@/views/_Work/components/Header/Index.vue'
 import ContentBody from '@/views/_Work/components/ContentBody/Index.vue'
 import IssueHeader from './automics/IssueHeader.vue'
 import IssueTable from './components/IssueTable.vue'
+import IssueKanban from './components/IssueKanban.vue'
 import QuerySection from './components/QuerySection.vue'
 import ColumnSelector from '@/components/ColumnSelector/Index.vue'
 import SavedQueryAside from '@/views/_Work/components/asides/SavedQueryAside.vue'
 import Loading from '@/components/Loading/Index.vue'
+
+const viewMode = ref<'list' | 'kanban'>(
+  (localStorage.getItem('ibs_work_issue_view_mode') as 'list' | 'kanban') || 'list',
+)
+const onViewModeChange = (mode: 'list' | 'kanban') => {
+  viewMode.value = mode
+  localStorage.setItem('ibs_work_issue_view_mode', mode)
+}
 
 const cBody = ref()
 const comStore = useCompany()
@@ -100,7 +109,7 @@ onBeforeMount(async () => {
 
   <ContentBody ref="cBody" :nav-menu="navMenu" :query="route?.query">
     <template v-slot:default>
-      <IssueHeader />
+      <IssueHeader :view-mode="viewMode" @update:view-mode="onViewModeChange" />
 
       <QuerySection
         ref="querySectionRef"
@@ -124,10 +133,19 @@ onBeforeMount(async () => {
       </QuerySection>
 
       <IssueTable
+        v-if="viewMode === 'list'"
         ref="issueListRef"
         :issue-list="issueList as Issue[]"
         :columns="selectedColumns"
         @page-select="pageSelect"
+      />
+
+      <IssueKanban
+        v-else-if="viewMode === 'kanban'"
+        :issue-list="issueList as Issue[]"
+        :status-list="statusList"
+        :priority-list="priorityList"
+        :tracker-list="trackerList"
       />
     </template>
 
