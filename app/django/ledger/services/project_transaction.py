@@ -4,14 +4,20 @@ from collections import defaultdict
 from ledger.models import ProjectBankTransaction, ProjectAccount, ProjectAccountingEntry
 
 
-def get_project_transactions(params):
+def get_project_transactions(params, user=None):
     """
     프로젝트 은행 거래 내역을 필터링하고 검색하는 공용 함수
 
     :param params: request.GET 또는 request.query_params (dict-like object)
+    :param user: 요청 유저 (접근 권한 필터링용)
     :return: 필터링되고 정렬된 ProjectBankTransaction 쿼리셋
     """
     qs = ProjectBankTransaction.objects.all()
+
+    if user and not (user.is_superuser or getattr(user, 'work_manager', False)):
+        from work.models import IssueProject
+        accessible_project_ids = IssueProject.objects.filter(members__user=user).values_list('project__id', flat=True)
+        qs = qs.filter(project_id__in=accessible_project_ids)
 
     project_id = params.get('project')
     if project_id:

@@ -72,10 +72,21 @@ class LedgerProjectBankAccountViewSet(viewsets.ModelViewSet):
     """프로젝트 은행 계좌 ViewSet"""
     queryset = ProjectBankAccount.objects.select_related('bankcode', 'project').all()
     serializer_class = LedgerProjectBankAccountSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     pagination_class = PageNumberPaginationFifty
     filterset_fields = ('project', 'bankcode', 'is_hide', 'inactive', 'directpay', 'is_imprest')
     search_fields = ('alias_name', 'number', 'holder', 'project__name')
+
+    @property
+    def required_permission(self):
+        return {
+            'list': 'ledger.read',
+            'retrieve': 'ledger.read',
+            'create': 'ledger.manage',
+            'update': 'ledger.manage',
+            'partial_update': 'ledger.manage',
+            'destroy': 'ledger.manage',
+        }.get(self.action, 'ledger.read')
 
     def get_queryset(self):
         user = self.request.user
@@ -586,22 +597,33 @@ class ProjectBankTransactionViewSet(viewsets.ModelViewSet):
 
     @property
     def required_permission(self):
-        return 'ledger.read' if self.action in ('list',
-                                                'retrieve') else 'ledger.create' if self.action == 'create' else 'ledger.update' if self.action in (
-            'update', 'partial_update') else 'ledger.delete' if self.action == 'destroy' else 'ledger.read'
+        return {
+            'list': 'ledger.read',
+            'retrieve': 'ledger.read',
+            'create': 'ledger.create',
+            'update': 'ledger.update',
+            'partial_update': 'ledger.update',
+            'destroy': 'ledger.delete',
+            'validate_balance': 'ledger.read',
+            'balance_by_account': 'ledger.read',
+        }.get(self.action, 'ledger.read')
 
     def get_queryset(self):
         """기본 상세 조회 및 생성/수정용 쿼리셋 반환"""
-        return super().get_queryset().select_related(
+        user = self.request.user
+        qs = super().get_queryset().select_related(
             'project', 'bank_account', 'sort', 'creator'
         )
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(project_id__in=get_accessible_project_ids(user))
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
 
     def list(self, request, *args, **kwargs):
         """get_project_transactions 서비스가 필터링한 쿼리셋에 대해 페이징 처리된 instances만 prefetch 맵핑 후 직렬화합니다"""
-        queryset = get_project_transactions(request.query_params)
+        queryset = get_project_transactions(request.query_params, user=request.user)
         page = self.paginate_queryset(queryset)
         instances = page if page is not None else list(queryset)
 
@@ -628,7 +650,21 @@ class ProjectBankTransactionViewSet(viewsets.ModelViewSet):
         is_balance = request.query_params.get('is_balance', '')
 
         queryset = ProjectBankTransaction.objects.filter(deal_date__lte=date).order_by('bank_account')
-        if project:
+        user = request.user
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            accessible = list(get_accessible_project_ids(user))
+            if project:
+                try:
+                    p_id = int(project)
+                    if p_id not in accessible:
+                        queryset = queryset.none()
+                    else:
+                        queryset = queryset.filter(project_id=p_id)
+                except (ValueError, TypeError):
+                    queryset = queryset.none()
+            else:
+                queryset = queryset.filter(project_id__in=accessible)
+        elif project:
             queryset = queryset.filter(project_id=project)
 
         result = queryset.values(
@@ -817,12 +853,30 @@ class ProjectAccountingEntryViewSet(BankTransactionPreloadMixin, viewsets.ModelV
         'project', 'account', 'contract', 'contractor'
     ).all()
     serializer_class = ProjectAccountingEntrySerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     pagination_class = PageNumberPaginationFifteen
     filterset_class = ProjectAccountingEntryFilterSet
     search_fields = ('transaction_id', 'account_code', 'trader', 'project__name')
     ordering = ['-created_at']
     bank_transaction_model = ProjectBankTransaction
+
+    @property
+    def required_permission(self):
+        return {
+            'list': 'ledger.read',
+            'retrieve': 'ledger.read',
+            'create': 'ledger.create',
+            'update': 'ledger.update',
+            'partial_update': 'ledger.update',
+            'destroy': 'ledger.delete',
+        }.get(self.action, 'ledger.read')
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(project_id__in=get_accessible_project_ids(user))
 
 
 # ============================================
@@ -861,13 +915,14 @@ class CompanyCompositeTransactionViewSet(viewsets.ViewSet):
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @staticmethod
-    def update(request, pk=None):
+    def update(self, request, pk=None):
         """본사 거래 수정 (은행거래 + 회계분개)"""
         try:
             bank_transaction = CompanyBankTransaction.objects.get(pk=pk)
         except CompanyBankTransaction.DoesNotExist:
             return Response({'error': '거래를 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+
+        self.check_object_permissions(request, bank_transaction)
 
         serializer = CompanyCompositeTransactionSerializer(
             instance=bank_transaction,
@@ -882,13 +937,14 @@ class CompanyCompositeTransactionViewSet(viewsets.ViewSet):
             }, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @staticmethod
-    def partial_update(request, pk=None):
+    def partial_update(self, request, pk=None):
         """본사 거래 부분 수정 (은행거래 + 회계분개)"""
         try:
             bank_transaction = CompanyBankTransaction.objects.get(pk=pk)
         except CompanyBankTransaction.DoesNotExist:
             return Response({'error': '거래를 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+
+        self.check_object_permissions(request, bank_transaction)
 
         serializer = CompanyCompositeTransactionSerializer(
             instance=bank_transaction,
@@ -904,13 +960,14 @@ class CompanyCompositeTransactionViewSet(viewsets.ViewSet):
             }, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @staticmethod
-    def destroy(request, pk=None):
+    def destroy(self, request, pk=None):
         """본사 거래 삭제 (은행거래 + 회계분개 일괄 삭제)"""
         try:
             bank_transaction = CompanyBankTransaction.objects.get(pk=pk)
         except CompanyBankTransaction.DoesNotExist:
             return Response({'error': '거래를 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+
+        self.check_object_permissions(request, bank_transaction)
 
         # 삭제 전 정보 저장 (로깅용)
         transaction_id = bank_transaction.transaction_id
@@ -957,11 +1014,28 @@ class ProjectCompositeTransactionViewSet(viewsets.ViewSet):
     은행 거래, 회계 분개, 계약 결제를 한 번에 생성/수정/관리합니다.
     프론트엔드 거래 관리 UI에서 사용합니다.
     """
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
 
-    @staticmethod
-    def create(request):
+    @property
+    def required_permission(self):
+        return {
+            'create': 'ledger.create',
+            'update': 'ledger.update',
+            'partial_update': 'ledger.update',
+            'destroy': 'ledger.delete',
+        }.get(self.action, 'ledger.read')
+
+    def create(self, request):
         """프로젝트 거래 생성 (은행거래 + 회계분개 + 계약결제)"""
+        project_id = request.data.get('project')
+        if project_id and not (request.user.is_superuser or getattr(request.user, 'work_manager', False)):
+            try:
+                p_id = int(project_id)
+                if p_id not in get_accessible_project_ids(request.user):
+                    return Response({'detail': '해당 프로젝트에 대한 접근 권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+            except (ValueError, TypeError):
+                return Response({'detail': '유효하지 않은 프로젝트 식별자입니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
         serializer = ProjectCompositeTransactionSerializer(
             data=request.data,
             context={'request': request}
@@ -980,13 +1054,17 @@ class ProjectCompositeTransactionViewSet(viewsets.ViewSet):
             return Response(response_data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @staticmethod
-    def update(request, pk=None):
+    def update(self, request, pk=None):
         """프로젝트 거래 수정 (은행거래 + 회계분개 + 계약결제)"""
+        qs = ProjectBankTransaction.objects.all()
+        if not (request.user.is_superuser or getattr(request.user, 'work_manager', False)):
+            qs = qs.filter(project_id__in=get_accessible_project_ids(request.user))
         try:
-            bank_transaction = ProjectBankTransaction.objects.get(pk=pk)
+            bank_transaction = qs.get(pk=pk)
         except ProjectBankTransaction.DoesNotExist:
             return Response({'error': '거래를 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+
+        self.check_object_permissions(request, bank_transaction)
 
         serializer = ProjectCompositeTransactionSerializer(
             instance=bank_transaction,
@@ -1007,13 +1085,17 @@ class ProjectCompositeTransactionViewSet(viewsets.ViewSet):
             return Response(response_data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @staticmethod
-    def partial_update(request, pk=None):
+    def partial_update(self, request, pk=None):
         """프로젝트 거래 부분 수정 (은행거래 + 회계분개 + 계약결제)"""
+        qs = ProjectBankTransaction.objects.all()
+        if not (request.user.is_superuser or getattr(request.user, 'work_manager', False)):
+            qs = qs.filter(project_id__in=get_accessible_project_ids(request.user))
         try:
-            bank_transaction = ProjectBankTransaction.objects.get(pk=pk)
+            bank_transaction = qs.get(pk=pk)
         except ProjectBankTransaction.DoesNotExist:
             return Response({'error': '거래를 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+
+        self.check_object_permissions(request, bank_transaction)
 
         serializer = ProjectCompositeTransactionSerializer(
             instance=bank_transaction,
@@ -1035,13 +1117,17 @@ class ProjectCompositeTransactionViewSet(viewsets.ViewSet):
             return Response(response_data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @staticmethod
-    def destroy(request, pk=None):
+    def destroy(self, request, pk=None):
         """프로젝트 거래 삭제 (은행거래 + 회계분개 + 계약결제 일괄 삭제)"""
+        qs = ProjectBankTransaction.objects.all()
+        if not (request.user.is_superuser or getattr(request.user, 'work_manager', False)):
+            qs = qs.filter(project_id__in=get_accessible_project_ids(request.user))
         try:
-            bank_transaction = ProjectBankTransaction.objects.get(pk=pk)
+            bank_transaction = qs.get(pk=pk)
         except ProjectBankTransaction.DoesNotExist:
             return Response({'error': '거래를 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+
+        self.check_object_permissions(request, bank_transaction)
 
         # 삭제 전 정보 저장 (로깅용)
         transaction_id = bank_transaction.transaction_id
@@ -1123,8 +1209,19 @@ class ProjectLedgerCalculationViewSet(viewsets.ModelViewSet):
     """프로젝트 원장 정산 ViewSet"""
     queryset = ProjectLedgerCalculation.objects.select_related('project', 'creator')
     serializer_class = ProjectLedgerCalculationSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     filterset_fields = ('project',)
+
+    @property
+    def required_permission(self):
+        return 'ledger.read' if self.action in ('list', 'retrieve') else 'ledger.manage'
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(project_id__in=get_accessible_project_ids(user))
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
@@ -1133,8 +1230,18 @@ class ProjectLedgerCalculationViewSet(viewsets.ModelViewSet):
 class ProjectLedgerLastDealDateViewSet(viewsets.ModelViewSet):
     queryset = ProjectBankTransaction.objects.all()
     serializer_class = ProjectLedgerLastDealDateSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
+
+    @property
+    def required_permission(self):
+        return 'ledger.read'
 
     def get_queryset(self):
+        user = self.request.user
         project = self.request.query_params.get('project')
-        return ProjectBankTransaction.objects.filter(project_id=project).order_by('-deal_date')[:1]
+        qs = ProjectBankTransaction.objects.all()
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            qs = qs.filter(project_id__in=get_accessible_project_ids(user))
+        if project:
+            qs = qs.filter(project_id=project)
+        return qs.order_by('-deal_date')[:1]
