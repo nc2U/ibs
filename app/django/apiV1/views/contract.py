@@ -145,7 +145,7 @@ class ContractViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        qs = super().get_queryset()
+        qs = Contract.objects.select_related('project', 'order_group', 'unit_type')
         if user.is_superuser or getattr(user, 'work_manager', False):
             return qs
         return qs.filter(project_id__in=get_accessible_project_ids(user))
@@ -173,9 +173,6 @@ class ContractViewSet(viewsets.ModelViewSet):
     ordering_fields = ('created', 'contractor__contract_date',
                        'serial_number', 'contractor__name')
     ordering = ['-created', '-pk']  # 기본 정렬 + pk로 안정적인 정렬 보장
-
-    def get_queryset(self):
-        return Contract.objects.select_related('project', 'order_group', 'unit_type')
 
     def filter_queryset(self, queryset):
         """정렬 안정성을 위해 pk를 보조 정렬 키로 항상 추가"""
@@ -445,8 +442,8 @@ class ContractSetViewSet(ContractViewSet):
 
     def get_queryset(self):
         """ContractSetSerializer에서 요구하는 모든 관계들을 미리 select/prefetch하여 N+1 쿼리 방지"""
-
-        return Contract.objects.select_related(
+        user = self.request.user
+        qs = Contract.objects.select_related(
             'project',
             'order_group',
             'unit_type',
@@ -462,6 +459,9 @@ class ContractSetViewSet(ContractViewSet):
                 queryset=ContractPayment.objects.select_related('accounting_entry', 'installment_order')
             )
         )
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(project_id__in=get_accessible_project_ids(user))
 
     def perform_update(self, serializer):
         # from_page 정보를 임시로 저장
@@ -524,7 +524,11 @@ class SimpleContractViewSet(ContractViewSet):
     pagination_class = PageNumberPaginationThreeThousand
 
     def get_queryset(self):
-        return Contract.objects.filter(is_active=True, contractor__is_active=True)
+        user = self.request.user
+        qs = Contract.objects.filter(is_active=True, contractor__is_active=True)
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(project_id__in=get_accessible_project_ids(user))
 
 
 class ContractPriceViewSet(viewsets.ModelViewSet):

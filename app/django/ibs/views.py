@@ -41,9 +41,9 @@ def menu2_1(request):
 
 class CustomHandler404(generic.View):
     @staticmethod
-    def get(request):
+    def get(request, *args, **kwargs):
         context = {}
-        return render(request, "errors/404.html", context)
+        return render(request, "errors/404.html", context, status=404)
 
 
 def handler500(request):

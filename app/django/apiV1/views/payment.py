@@ -108,27 +108,6 @@ class PaymentPerInstallmentViewSet(viewsets.ModelViewSet):
         return qs.filter(sales_price__project_id__in=get_accessible_project_ids(user))
 
 
-class ContractPaymentViewSet(viewsets.ModelViewSet):
-    queryset = ContractPayment.objects.all()
-    serializer_class = ContractPaymentSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
-    pagination_class = PageNumberPaginationTwenty
-    filterset_fields = ('contract__project', 'installment_order', 'contract', 'contract__contractor__status')
-    search_fields = ('contract__serial_number', 'contract__contractor__name')
-    ordering = ('-deal_date', '-id')
-
-    def get_queryset(self):
-        user = self.request.user
-        qs = super().get_queryset()
-        if user.is_superuser or getattr(user, 'work_manager', False):
-            return qs
-        return qs.filter(contract__project_id__in=get_accessible_project_ids(user))
-
-    @property
-    def required_permission(self):
-        return 'payment.read' if self.action in ('list',
-                                                 'retrieve') else 'payment.create' if self.action == 'create' else 'payment.update' if self.action in (
-            'update', 'partial_update') else 'payment.delete' if self.action == 'destroy' else 'payment.read'
 
 
 class DownPaymentViewSet(viewsets.ModelViewSet):
@@ -523,7 +502,11 @@ def is_due_period(order, date_str):
 
 class PaymentSummaryViewSet(viewsets.ViewSet):
     """PaymentSummary 컴포넌트용 unit_type별 요약 현황 ViewSet"""
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
+
+    @property
+    def required_permission(self):
+        return 'payment.read'
 
     @staticmethod
     def list(request):
@@ -595,7 +578,11 @@ class PaymentSummaryViewSet(viewsets.ViewSet):
 
 class PaymentStatusByUnitTypeViewSet(viewsets.ViewSet):
     """ContractPrice 모델 기반의 unit_type별 결제 현황 ViewSet"""
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
+
+    @property
+    def required_permission(self):
+        return 'payment.read'
 
     @staticmethod
     def list(request):
@@ -619,7 +606,11 @@ class PaymentStatusByUnitTypeViewSet(viewsets.ViewSet):
 
 # will be deprecated - use ProjectCashBook
 class OverallSummaryViewSet(viewsets.ViewSet):
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
+
+    @property
+    def required_permission(self):
+        return 'payment.read'
 
     def list(self, request):
         project_id = request.query_params.get('project')
@@ -1378,7 +1369,7 @@ class ContractPaymentViewSet(viewsets.ModelViewSet):
         'project'
     ).all()
     serializer_class = ContractPaymentSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     filterset_class = ContractPaymentFilterSet
     pagination_class = PageNumberPaginationTen
     search_fields = [
@@ -1387,6 +1378,18 @@ class ContractPaymentViewSet(viewsets.ModelViewSet):
     ]
     ordering_fields = ['deal_date', 'created_at', 'installment_order']
     ordering = ['-deal_date', '-created_at']  # 기본 정렬
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(project_id__in=get_accessible_project_ids(user))
+
+    @property
+    def required_permission(self):
+        return 'payment.read' if self.action in ('list', 'retrieve') else 'payment.create' if self.action == 'create' else 'payment.update' if self.action in (
+            'update', 'partial_update') else 'payment.delete' if self.action == 'destroy' else 'payment.read'
 
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
@@ -1431,7 +1434,11 @@ class ContractPaymentSummaryViewSet(viewsets.ViewSet):
     기존 PaymentSummaryViewSet과 동일한 응답 구조 유지
     데이터 소스: ProjectCashBook → ContractPayment로 변경
     """
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
+
+    @property
+    def required_permission(self):
+        return 'payment.read'
 
     @staticmethod
     def list(request):
@@ -1509,7 +1516,11 @@ class ContractPaymentStatusByUnitTypeViewSet(viewsets.ViewSet):
     기존 PaymentStatusByUnitTypeViewSet과 동일한 로직
     실수납금액 계산: ProjectCashBook → ContractPayment로 변경
     """
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
+
+    @property
+    def required_permission(self):
+        return 'payment.read'
 
     @staticmethod
     def list(request):
@@ -1758,7 +1769,11 @@ class ContractPaymentOverallSummaryViewSet(viewsets.ViewSet):
     기존 OverallSummaryViewSet과 동일한 로직
     수납 데이터: ProjectCashBook → ContractPayment로 변경
     """
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
+
+    @property
+    def required_permission(self):
+        return 'payment.read'
 
     def list(self, request):
         project_id = request.query_params.get('project')

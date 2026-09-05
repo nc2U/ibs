@@ -3,14 +3,17 @@ from django.test import TestCase
 from rest_framework.test import APITestCase
 from rest_framework import status as http_status
 
+from datetime import date
 from company.models import Company
 from contract.models import (OrderGroup, Contract, ContractPrice, Contractor,
                              ContractorAddress, ContractorContact, Succession, ContractorRelease)
 from contract.services import ContractPriceUpdateService
-from items.models import UnitType, KeyUnit, HouseUnit
-from payment.models import InstallmentPaymentOrder
-from project.models import Project
-from work.models.project import IssueProject
+from items.models import UnitType, KeyUnit, HouseUnit, BuildingUnit, UnitFloorType
+from payment.models import InstallmentPaymentOrder, SalesPriceByGT, DownPayment, ContractPayment
+from project.models import Project, ProjectIncBudget
+from work.models.project import IssueProject, Member, Role, Permission
+from ibs.models import AccountSort
+from ledger.models import ProjectAccount, ProjectBankAccount, ProjectBankTransaction, ProjectAccountingEntry, BankCode
 
 User = get_user_model()
 
@@ -446,3 +449,302 @@ class SuccessionAndReleaseAPITests(APITestCase):
         self.assertEqual(response.status_code, http_status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data['detail'], '계약 정보는 직접 삭제할 수 없습니다. 계약 해지 절차(ContractorRelease)를 이용하십시오.')
         self.assertTrue(Contract.objects.filter(pk=self.contract.pk).exists())
+
+
+class ContractAndPaymentSecurityTests(APITestCase):
+    """
+    Phase 3: 계약(contract) 및 수납(payment) 도메인 보안 격리(Row-Level Security) 및 무결성 테스트
+    - 미인증 요청 차단 (401 Unauthorized)
+    - 타 프로젝트 멤버의 계약 및 수납 데이터 접근 차단 (목록 필터링 및 단건 404 / 403 차단)
+    - 슈퍼유저 및 work_manager의 전사 프로젝트 데이터 통합 조회
+    - 계약(Contract) 직접 삭제 차단 (400 Bad Request)
+    - ContractPriceUpdateService 납부 계획(payment_amounts) 계산 및 캐싱 정합성
+    """
+
+    def setUp(self):
+        # 1. 사용자 계정 생성
+        self.admin_user = User.objects.create_superuser(
+            username='superadmin', email='super@test.com', password='password123'
+        )
+        self.work_manager_user = User.objects.create_user(
+            username='wm_user', email='wm@test.com', password='password123', work_manager=True
+        )
+        self.user_a = User.objects.create_user(username='user_a', email='user_a@test.com', password='password123')
+        self.user_b = User.objects.create_user(username='user_b', email='user_b@test.com', password='password123')
+
+        # 2. 권한 및 역할 매핑
+        perm_contract_read, _ = Permission.objects.get_or_create(
+            code='contract.read', defaults={'name': '계약 조회', 'module': 'contract'}
+        )
+        perm_contract_create, _ = Permission.objects.get_or_create(
+            code='contract.create', defaults={'name': '계약 생성', 'module': 'contract'}
+        )
+        perm_payment_read, _ = Permission.objects.get_or_create(
+            code='payment.read', defaults={'name': '수납 조회', 'module': 'payment'}
+        )
+        perm_payment_create, _ = Permission.objects.get_or_create(
+            code='payment.create', defaults={'name': '수납 등록', 'module': 'payment'}
+        )
+
+        self.role_staff = Role.objects.create(name='프로젝트 담당자', creator=self.admin_user, issue_visible='ALL')
+        self.role_staff.permissions.set([
+            perm_contract_read, perm_contract_create, perm_payment_read, perm_payment_create
+        ])
+
+        # 3. 프로젝트 A (강남) 및 B (판교) 생성
+        self.company = Company.objects.create(name='IBS 건설')
+
+        self.ip_a = IssueProject.objects.create(
+            company=self.company, name='강남 프로젝트', slug='gangnam-prj', creator=self.admin_user
+        )
+        self.project_a = Project.objects.create(
+            issue_project=self.ip_a, name='강남 프로젝트', order=1, kind='1',
+            start_year='2026', monthly_aggr_start_date='2026-01-01',
+            construction_start_date='2026-06-01', construction_period_months=24
+        )
+
+        self.ip_b = IssueProject.objects.create(
+            company=self.company, name='판교 프로젝트', slug='pangyo-prj', creator=self.admin_user
+        )
+        self.project_b = Project.objects.create(
+            issue_project=self.ip_b, name='판교 프로젝트', order=2, kind='1',
+            start_year='2026', monthly_aggr_start_date='2026-01-01',
+            construction_start_date='2026-06-01', construction_period_months=24
+        )
+
+        # 4. 멤버십 할당 (user_a는 프로젝트 A만, user_b는 프로젝트 B만 속함)
+        m_a = Member.objects.create(user=self.user_a, project=self.ip_a)
+        m_a.roles.add(self.role_staff)
+
+        m_b = Member.objects.create(user=self.user_b, project=self.ip_b)
+        m_b.roles.add(self.role_staff)
+
+        # 5. 프로젝트 A 계약 및 수납 데이터 생성
+        og_a = OrderGroup.objects.create(
+            project=self.project_a, order_number=1, sort='2', name='1차 일반분양', is_default_for_uncontracted=True
+        )
+        ut_a = UnitType.objects.create(
+            project=self.project_a, name='84A', sort='1', color='#FF0000', average_price=500000000, num_unit=10
+        )
+        floor_type_a = UnitFloorType.objects.create(
+            project=self.project_a, start_floor=1, end_floor=5, alias_name='1-5층'
+        )
+        ku_a = KeyUnit.objects.create(project=self.project_a, unit_type=ut_a, unit_code='A-101')
+        bu_a = BuildingUnit.objects.create(project=self.project_a, name='101동')
+        hu_a = HouseUnit.objects.create(
+            unit_type=ut_a, building_unit=bu_a, floor_type=floor_type_a, key_unit=ku_a,
+            name='101호', bldg_line=1, floor_no=1
+        )
+        self.contract_a = Contract.objects.create(
+            project=self.project_a, order_group=og_a, unit_type=ut_a, key_unit=ku_a, serial_number='CONT-A-0001'
+        )
+        self.contractor_a = Contractor.objects.create(
+            contract=self.contract_a, name='홍길동', status='2', is_active=True
+        )
+        self.pay_order_down_a = InstallmentPaymentOrder.objects.create(
+            project=self.project_a, type_sort='1', pay_sort='1', pay_code=1, pay_time=1,
+            pay_name='계약금', pay_ratio=10.0
+        )
+        self.pay_order_remain_a = InstallmentPaymentOrder.objects.create(
+            project=self.project_a, type_sort='1', pay_sort='3', pay_code=10, pay_time=10,
+            pay_name='잔금', pay_ratio=90.0
+        )
+        self.sales_price_a = SalesPriceByGT.objects.create(
+            project=self.project_a, order_group=og_a, unit_type=ut_a, unit_floor_type=floor_type_a,
+            price=500000000
+        )
+        self.cp_a = ContractPrice.objects.create(
+            contract=self.contract_a, house_unit=hu_a, price=500000000, is_cache_valid=True,
+            payment_amounts={'1': 50000000, '10': 450000000}
+        )
+
+        # 6. 프로젝트 B 계약 및 수납 데이터 생성
+        og_b = OrderGroup.objects.create(
+            project=self.project_b, order_number=1, sort='2', name='1차 일반분양', is_default_for_uncontracted=True
+        )
+        ut_b = UnitType.objects.create(
+            project=self.project_b, name='84B', sort='1', color='#00FF00', average_price=600000000, num_unit=10
+        )
+        floor_type_b = UnitFloorType.objects.create(
+            project=self.project_b, start_floor=1, end_floor=5, alias_name='1-5층'
+        )
+        ku_b = KeyUnit.objects.create(project=self.project_b, unit_type=ut_b, unit_code='B-101')
+        bu_b = BuildingUnit.objects.create(project=self.project_b, name='201동')
+        hu_b = HouseUnit.objects.create(
+            unit_type=ut_b, building_unit=bu_b, floor_type=floor_type_b, key_unit=ku_b,
+            name='101호', bldg_line=1, floor_no=1
+        )
+        self.contract_b = Contract.objects.create(
+            project=self.project_b, order_group=og_b, unit_type=ut_b, key_unit=ku_b, serial_number='CONT-B-0001'
+        )
+        self.contractor_b = Contractor.objects.create(
+            contract=self.contract_b, name='이순신', status='2', is_active=True
+        )
+        self.cp_b = ContractPrice.objects.create(
+            contract=self.contract_b, house_unit=hu_b, price=600000000, is_cache_valid=True,
+            payment_amounts={'1': 60000000, '10': 540000000}
+        )
+
+        # 7. 회계 및 수납(ContractPayment) 데이터 생성
+        bank_code = BankCode.objects.create(code='004', name='국민은행')
+        sort_dep = AccountSort.objects.create(name='입금')
+        acc_pay = ProjectAccount.objects.create(
+            name='분양대금', code='4100', category='revenue', is_payment=True, requires_contract=True
+        )
+
+        ba_a = ProjectBankAccount.objects.create(
+            project=self.project_a, bankcode=bank_code, alias_name='강남 분양계좌', number='111-111', holder='강남시행'
+        )
+        tx_a = ProjectBankTransaction.objects.create(
+            project=self.project_a, bank_account=ba_a, deal_date=date(2026, 1, 15),
+            sort=sort_dep, amount=50000000, content='계약금 입금', creator=self.admin_user
+        )
+        pae_a = ProjectAccountingEntry.objects.create(
+            project=self.project_a, transaction_id=tx_a.transaction_id, account=acc_pay,
+            amount=50000000, trader='홍길동', contract=self.contract_a
+        )
+        self.payment_a = ContractPayment.objects.get(accounting_entry=pae_a)
+
+        ba_b = ProjectBankAccount.objects.create(
+            project=self.project_b, bankcode=bank_code, alias_name='판교 분양계좌', number='222-222', holder='판교시행'
+        )
+        tx_b = ProjectBankTransaction.objects.create(
+            project=self.project_b, bank_account=ba_b, deal_date=date(2026, 1, 20),
+            sort=sort_dep, amount=60000000, content='계약금 입금', creator=self.admin_user
+        )
+        pae_b = ProjectAccountingEntry.objects.create(
+            project=self.project_b, transaction_id=tx_b.transaction_id, account=acc_pay,
+            amount=60000000, trader='이순신', contract=self.contract_b
+        )
+        self.payment_b = ContractPayment.objects.get(accounting_entry=pae_b)
+
+    def test_unauthenticated_requests_blocked(self):
+        """미인증 사용자의 계약 및 수납 API 접근 차단 (401 Unauthorized)"""
+        self.client.logout()
+
+        endpoints = [
+            '/api/v1/contract/',
+            '/api/v1/contract-set/',
+            '/api/v1/simple-contract/',
+            '/api/v1/ledger/payment/',
+            '/api/v1/ledger/all-payment/',
+            f'/api/v1/ledger/payment-summary/?project={self.project_a.pk}',
+        ]
+        for ep in endpoints:
+            response = self.client.get(ep)
+            self.assertEqual(
+                response.status_code, http_status.HTTP_401_UNAUTHORIZED,
+                f'Unauthenticated request to {ep} must return 401'
+            )
+
+    def test_row_level_security_contract_isolation(self):
+        """프로젝트 A 멤버는 프로젝트 A 계약만 조회 가능하며 프로젝트 B 계약은 완벽 격리/은닉됨"""
+        self.client.force_authenticate(user=self.user_a)
+
+        # 1. ContractViewSet 목록 및 상세 격리
+        res = self.client.get('/api/v1/contract/')
+        self.assertEqual(res.status_code, http_status.HTTP_200_OK)
+        ids = [item['pk'] for item in res.data['results']]
+        self.assertIn(self.contract_a.pk, ids)
+        self.assertNotIn(self.contract_b.pk, ids)
+
+        # 본인 프로젝트 계약 상세 조회 성공
+        res_a = self.client.get(f'/api/v1/contract/{self.contract_a.pk}/')
+        self.assertEqual(res_a.status_code, http_status.HTTP_200_OK)
+
+        # 타 프로젝트 계약 상세 조회 404 차단
+        res_b = self.client.get(f'/api/v1/contract/{self.contract_b.pk}/')
+        self.assertEqual(res_b.status_code, http_status.HTTP_404_NOT_FOUND)
+
+        # 2. ContractSetViewSet 목록 및 상세 격리
+        res_set = self.client.get('/api/v1/contract-set/')
+        self.assertEqual(res_set.status_code, http_status.HTTP_200_OK)
+        set_ids = [item['pk'] for item in res_set.data['results']]
+        self.assertIn(self.contract_a.pk, set_ids)
+        self.assertNotIn(self.contract_b.pk, set_ids)
+
+        res_set_a = self.client.get(f'/api/v1/contract-set/{self.contract_a.pk}/')
+        self.assertEqual(res_set_a.status_code, http_status.HTTP_200_OK)
+
+        res_set_b = self.client.get(f'/api/v1/contract-set/{self.contract_b.pk}/')
+        self.assertEqual(res_set_b.status_code, http_status.HTTP_404_NOT_FOUND)
+
+        # 3. SimpleContractViewSet(simple-contract) 격리
+        res_subs = self.client.get('/api/v1/simple-contract/')
+        self.assertEqual(res_subs.status_code, http_status.HTTP_200_OK)
+        subs_ids = [item['value'] for item in res_subs.data['results']]
+        self.assertIn(self.contract_a.pk, subs_ids)
+        self.assertNotIn(self.contract_b.pk, subs_ids)
+
+        res_subs_b = self.client.get(f'/api/v1/simple-contract/{self.contract_b.pk}/')
+        self.assertEqual(res_subs_b.status_code, http_status.HTTP_404_NOT_FOUND)
+
+    def test_row_level_security_payment_isolation(self):
+        """프로젝트 A 멤버는 프로젝트 A 수납 데이터만 조회 가능하며 프로젝트 B 수납 데이터는 완벽 은닉/차단됨"""
+        self.client.force_authenticate(user=self.user_a)
+
+        # 1. ContractPaymentViewSet 목록 격리
+        res = self.client.get('/api/v1/ledger/payment/')
+        self.assertEqual(res.status_code, http_status.HTTP_200_OK)
+        ids = [item['pk'] for item in res.data['results']]
+        self.assertIn(self.payment_a.pk, ids)
+        self.assertNotIn(self.payment_b.pk, ids)
+
+        # 본인 프로젝트 수납건 상세 조회 성공
+        res_a = self.client.get(f'/api/v1/ledger/payment/{self.payment_a.pk}/')
+        self.assertEqual(res_a.status_code, http_status.HTTP_200_OK)
+
+        # 타 프로젝트 수납건 상세 조회 404 차단
+        res_b = self.client.get(f'/api/v1/ledger/payment/{self.payment_b.pk}/')
+        self.assertEqual(res_b.status_code, http_status.HTTP_404_NOT_FOUND)
+
+        # 타 프로젝트 project ID 명시 조회 시 403 Forbidden 차단 (IbsModulePermission)
+        res_param_b = self.client.get(f'/api/v1/ledger/payment/?project={self.project_b.pk}')
+        self.assertEqual(res_param_b.status_code, http_status.HTTP_403_FORBIDDEN)
+
+        # 2. ContractPaymentSummaryViewSet 접근 통제
+        # 본인 프로젝트 요약 통계는 200 OK
+        res_sum_a = self.client.get(f'/api/v1/ledger/payment-summary/?project={self.project_a.pk}')
+        self.assertEqual(res_sum_a.status_code, http_status.HTTP_200_OK)
+
+        # 타 프로젝트 요약 통계 접근 시 403 Forbidden 차단
+        res_sum_b = self.client.get(f'/api/v1/ledger/payment-summary/?project={self.project_b.pk}')
+        self.assertEqual(res_sum_b.status_code, http_status.HTTP_403_FORBIDDEN)
+
+    def test_superuser_and_work_manager_global_visibility(self):
+        """슈퍼유저와 work_manager는 전사 모든 프로젝트의 계약 및 수납 데이터 통합 열람 가능"""
+        for test_user in [self.admin_user, self.work_manager_user]:
+            self.client.force_authenticate(user=test_user)
+
+            # 1. Contract 통합 조회
+            res_c = self.client.get('/api/v1/contract/')
+            self.assertEqual(res_c.status_code, http_status.HTTP_200_OK)
+            c_ids = [item['pk'] for item in res_c.data['results']]
+            self.assertIn(self.contract_a.pk, c_ids)
+            self.assertIn(self.contract_b.pk, c_ids)
+
+            # 2. Payment 통합 조회
+            res_p = self.client.get('/api/v1/ledger/payment/')
+            self.assertEqual(res_p.status_code, http_status.HTTP_200_OK)
+            p_ids = [item['pk'] for item in res_p.data['results']]
+            self.assertIn(self.payment_a.pk, p_ids)
+            self.assertIn(self.payment_b.pk, p_ids)
+
+            # 3. 프로젝트 B 수납 통계 정상 조회
+            res_sum_b = self.client.get(f'/api/v1/ledger/payment-summary/?project={self.project_b.pk}')
+            self.assertEqual(res_sum_b.status_code, http_status.HTTP_200_OK)
+
+    def test_contract_price_calculation_and_caching(self):
+        """ContractPriceUpdateService를 통한 약정 금액 및 payment_amounts 캐싱 무결성 검증"""
+        # 서비스 호출하여 계약 가격 업데이트
+        cp, created = ContractPriceUpdateService.update_single_contract_price(self.contract_a)
+
+        # DB 최신 상태 반영
+        cp.refresh_from_db()
+        self.assertTrue(cp.is_cache_valid)
+        self.assertEqual(cp.price, 500000000)
+
+        # 계약금 10% (5,000만원), 잔금 90% (4억 5,000만원) 자동 계산 검증
+        self.assertIn('1', cp.payment_amounts)
+        self.assertEqual(cp.get_payment_amount_by_time(1), 50000000)
+        self.assertEqual(cp.get_payment_amount_by_time(10), 450000000)
