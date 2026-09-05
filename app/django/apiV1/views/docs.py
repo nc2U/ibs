@@ -193,7 +193,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
             | Q(security_level=Document.SECURITY_PROJECT)
             # 2등급(팀공개): 작성자 소속 부서와 일치하는 구성원
             | (Q(security_level=Document.SECURITY_TEAM)
-               & Q(creator__staffassignment__department_id__in=user_dept_ids))
+               & Q(creator__staff__assignments__department_id__in=user_dept_ids))
             # 1등급(비공개): 작성자 본인
             | Q(creator=user)
             # 명시적 허가자
@@ -304,8 +304,9 @@ class LinkViewSet(viewsets.ModelViewSet):
         ).filter(
             Q(docs__security_level=Document.SECURITY_COMPANY)
             | Q(docs__security_level=Document.SECURITY_PROJECT)
+            # LinkViewSet
             | (Q(docs__security_level=Document.SECURITY_TEAM)
-               & Q(docs__creator__staffassignment__department_id__in=user_dept_ids))
+               & Q(docs__creator__staff__assignments__department_id__in=user_dept_ids))
             | Q(docs__creator=user)
             | Q(docs__allowed_users=user)
         ).filter(docs__is_blind=False).distinct()
@@ -355,7 +356,7 @@ class FileViewSet(viewsets.ModelViewSet):
             Q(docs__security_level=Document.SECURITY_COMPANY)
             | Q(docs__security_level=Document.SECURITY_PROJECT)
             | (Q(docs__security_level=Document.SECURITY_TEAM)
-               & Q(docs__creator__staffassignment__department_id__in=user_dept_ids))
+               & Q(docs__creator__staff__assignments__department_id__in=user_dept_ids))
             | Q(docs__creator=user)
             | Q(docs__allowed_users=user)
         ).filter(docs__is_blind=False).distinct()
@@ -400,7 +401,7 @@ class ImageViewSet(viewsets.ModelViewSet):
             Q(docs__security_level=Document.SECURITY_COMPANY)
             | Q(docs__security_level=Document.SECURITY_PROJECT)
             | (Q(docs__security_level=Document.SECURITY_TEAM)
-               & Q(docs__creator__staffassignment__department_id__in=user_dept_ids))
+               & Q(docs__creator__staff__assignments__department_id__in=user_dept_ids))
             | Q(docs__creator=user)
             | Q(docs__allowed_users=user)
         ).filter(docs__is_blind=False).distinct()
@@ -534,6 +535,12 @@ class OfficialLetterViewSet(viewsets.ModelViewSet):
         if not company_id:
             return Response({'error': '회사 ID가 필요합니다.'},
                             status=status.HTTP_400_BAD_REQUEST)
+
+        user = request.user
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            if not hasattr(user, 'staff') or not user.staff.company_id or str(user.staff.company_id) != str(company_id):
+                return Response({'error': '해당 회사의 공문 번호를 조회할 권한이 없습니다.'},
+                                status=status.HTTP_403_FORBIDDEN)
 
         try:
             company = Company.objects.get(pk=company_id)

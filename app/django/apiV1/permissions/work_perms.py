@@ -122,6 +122,9 @@ class ProjectPermission(permissions.BasePermission):
             return obj.forum.project
         if hasattr(obj, 'post') and hasattr(obj.post, 'forum') and hasattr(obj.post.forum, 'project'):
             return obj.post.forum.project
+        # 문서(Document) 및 첨부물 관련 프로젝트 매핑
+        if hasattr(obj, 'docs') and hasattr(obj.docs, 'issue_project'):
+            return obj.docs.issue_project
         return None
 
     def has_permission(self, request, view):
@@ -602,19 +605,30 @@ class NewsPermission(ProjectPermission):
 
 class DocumentPermission(ProjectPermission):
     def has_object_permission(self, request, view, obj):
-        # 1. 기본 프로젝트 레벨 권한 검증
+        # 1. 대상 문서 객체 추출 (Document 본인이거나 첨부파일의 상위 docs)
+        doc = obj if hasattr(obj, 'is_visible_to') else getattr(obj, 'docs', None)
+
+        # 2. 문서 레벨 보안 검증 (4단계 등급, allowed_users, is_blind 등)
+        if doc and hasattr(doc, 'is_visible_to'):
+            if not doc.is_visible_to(request.user):
+                return False
+
+        # 3. 기본 프로젝트 레벨 권한 검증 (공개 여부, 멤버십, required_permission)
         if not super().has_object_permission(request, view, obj):
             return False
 
-        # 2. 조회 요청은 통과
+        # 4. 조회 요청(SAFE_METHODS)은 1, 2, 3단계를 통과했으므로 허용
         if request.method in permissions.SAFE_METHODS:
             return True
 
-        # 3. 연관된 문서(docs)가 있는 경우(링크/파일) 열람 가능 여부 검증
-        docs = getattr(obj, 'docs', None)
-        if docs:
-            if not docs.is_visible_to(request.user):
-                return False
+        # 5. 슈퍼유저 / work_manager 예외 처리
+        if request.user.is_superuser or getattr(request.user, 'work_manager', False):
+            return True
+
+        # 6. 수정/삭제 요청인 경우: 작성자 본인이거나 프로젝트 관리자 권한 확인
+        creator = getattr(obj, 'creator', None)
+        if creator and creator == request.user:
+            return True
 
         return True
 

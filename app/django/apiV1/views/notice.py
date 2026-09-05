@@ -13,6 +13,7 @@ from rest_framework.response import Response
 from contract.models import ContractorContact, Contractor, Contract
 from notice.models import SalesBillIssue, RegisteredSenderNumber, MessageTemplate, MessageSendHistory
 from notice.utils import IwinvSMSService
+from work.models import IssueProject
 from apiV1.permissions.auth_perms import permissions, IsProjectStaffOrReadOnly
 from apiV1.permissions.ibs_perms import IbsModulePermission
 from ..serializers.notice import SallesBillIssueSerializer, RegisteredSenderNumberSerializer, \
@@ -20,11 +21,22 @@ from ..serializers.notice import SallesBillIssueSerializer, RegisteredSenderNumb
     SMSHistoryQuerySerializer, MessageSendHistoryListSerializer, MessageSendHistorySerializer
 
 
+def get_accessible_project_ids(user):
+    return IssueProject.objects.filter(members__user=user).values_list('project__id', flat=True)
+
+
 class BillIssueViewSet(viewsets.ModelViewSet):
     queryset = SalesBillIssue.objects.all()
     serializer_class = SallesBillIssueSerializer
     filterset_fields = ('project',)
     permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(project_id__in=get_accessible_project_ids(user))
 
     @property
     def required_permission(self):
@@ -82,6 +94,17 @@ class MessageViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['post'], url_path='send-sms')
     def send_sms(self, request):
         """SMS/LMS 메시지 발송"""
+        # 프로젝트 권한 검증
+        project_id = request.data.get('project')
+        if project_id and not (request.user.is_superuser or getattr(request.user, 'work_manager', False)):
+            accessible_projects = list(get_accessible_project_ids(request.user))
+            try:
+                p_id_int = int(project_id)
+            except (ValueError, TypeError):
+                p_id_int = None
+            if p_id_int not in accessible_projects:
+                return Response({'error': '해당 프로젝트에 대한 발송 권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+
         serializer = SMSMessageSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -233,6 +256,17 @@ class MessageViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['post'], url_path='send-mms')
     def send_mms(self, request):
         """MMS 메시지 발송"""
+        # 프로젝트 권한 검증
+        project_id = request.data.get('project')
+        if project_id and not (request.user.is_superuser or getattr(request.user, 'work_manager', False)):
+            accessible_projects = list(get_accessible_project_ids(request.user))
+            try:
+                p_id_int = int(project_id)
+            except (ValueError, TypeError):
+                p_id_int = None
+            if p_id_int not in accessible_projects:
+                return Response({'error': '해당 프로젝트에 대한 발송 권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+
         serializer = MMSMessageSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -367,6 +401,17 @@ class MessageViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['post'], url_path='send-kakao')
     def send_kakao(self, request):
         """카카오 알림톡 발송"""
+        # 프로젝트 권한 검증
+        project_id = request.data.get('project')
+        if project_id and not (request.user.is_superuser or getattr(request.user, 'work_manager', False)):
+            accessible_projects = list(get_accessible_project_ids(request.user))
+            try:
+                p_id_int = int(project_id)
+            except (ValueError, TypeError):
+                p_id_int = None
+            if p_id_int not in accessible_projects:
+                return Response({'error': '해당 프로젝트에 대한 발송 권한이 없습니다.'}, status=status.HTTP_403_FORBIDDEN)
+
         serializer = KakaoMessageSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -559,6 +604,19 @@ class MessageViewSet(viewsets.ViewSet):
                 'error': 'project 파라미터가 필요합니다.'
             }, status=status.HTTP_400_BAD_REQUEST)
 
+        # 프로젝트 접근 권한 검증
+        user = request.user
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            accessible_projects = list(get_accessible_project_ids(user))
+            try:
+                p_id_int = int(project_id)
+            except (ValueError, TypeError):
+                p_id_int = None
+            if p_id_int not in accessible_projects:
+                return Response({
+                    'error': '해당 프로젝트에 대한 접근 권한이 없습니다.'
+                }, status=status.HTTP_403_FORBIDDEN)
+
         if not group_type:
             return Response({
                 'error': 'group_type 파라미터가 필요합니다.'
@@ -622,11 +680,15 @@ class MessageViewSet(viewsets.ViewSet):
 class MessageSendHistoryViewSet(viewsets.ReadOnlyModelViewSet):
     """메시지 발송 기록 조회 ViewSet (읽기 전용)"""
     queryset = MessageSendHistory.objects.select_related('sent_by', 'project').all()
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     filter_backends = (DjangoFilterBackend, OrderingFilter)
     filterset_fields = ('message_type', 'sender_number', 'project')
     ordering_fields = ('created', 'sent_at', 'recipient_count')
     ordering = ('-created',)
+
+    @property
+    def required_permission(self):
+        return 'notice.read'
 
     def get_serializer_class(self):
         """액션별로 다른 시리얼라이저 사용"""
@@ -635,8 +697,14 @@ class MessageSendHistoryViewSet(viewsets.ReadOnlyModelViewSet):
         return MessageSendHistorySerializer
 
     def get_queryset(self):
-        """쿼리 파라미터로 필터링"""
+        """쿼리 파라미터로 필터링 및 프로젝트/작성자 격리"""
+        user = self.request.user
         queryset = super().get_queryset()
+        if not (user.is_superuser or getattr(user, 'work_manager', False)):
+            accessible_projects = get_accessible_project_ids(user)
+            queryset = queryset.filter(
+                Q(project_id__in=accessible_projects) | Q(project__isnull=True, sent_by=user)
+            )
 
         # 날짜 범위 필터
         start_date = self.request.query_params.get('start_date')

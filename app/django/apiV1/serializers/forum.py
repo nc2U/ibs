@@ -79,6 +79,43 @@ class PostSerializer(serializers.ModelSerializer):
                   'is_notice', 'is_faq', 'is_blind', 'deleted', 'files', 'comments', 'creator',
                   'created', 'updated', 'is_new', 'prev_pk', 'next_pk')
         read_only_fields = ('ip', 'comments')
+        extra_kwargs = {
+            'password': {'write_only': True}
+        }
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        request = self.context.get('request')
+        user = request.user if request else None
+
+        # 비밀글(is_secret) 본문 및 파일 마스킹
+        if instance.is_secret:
+            is_authorized = False
+            if user and user.is_authenticated:
+                if user.is_superuser or getattr(user, 'work_manager', False):
+                    is_authorized = True
+                elif instance.creator_id and instance.creator_id == user.pk:
+                    is_authorized = True
+                elif instance.forum and instance.forum.manager.filter(pk=user.pk).exists():
+                    is_authorized = True
+
+            if not is_authorized:
+                data['content'] = '비밀글입니다.'
+                data['files'] = []
+
+        # 블라인드(is_blind) 마스킹
+        if instance.is_blind:
+            is_manager = False
+            if user and user.is_authenticated:
+                if user.is_superuser or getattr(user, 'work_manager', False):
+                    is_manager = True
+                elif instance.forum and instance.forum.manager.filter(pk=user.pk).exists():
+                    is_manager = True
+            if not is_manager:
+                data['content'] = '블라인드 처리된 게시물입니다.'
+                data['files'] = []
+
+        return data
 
     def _get_filtered_queryset(self):
         """prev_pk / next_pk 계산용 필터된 쿼리셋 (View 레이어와 필터 조건 동기화 필요)"""
@@ -208,8 +245,9 @@ class PostSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def create(self, validated_data):
-        validated_data['ip'] = self.context.get('request').META.get('REMOTE_ADDR')
-        validated_data['device'] = self.context.get('request').META.get('HTTP_USER_AGENT')
+        request = self.context.get('request')
+        validated_data['ip'] = request.META.get('REMOTE_ADDR') if request else None
+        validated_data['device'] = (request.META.get('HTTP_USER_AGENT') if request else None) or ''
         post = Post.objects.create(**validated_data)
 
         # Files 처리
@@ -225,8 +263,12 @@ class PostSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        validated_data['ip'] = self.context.get('request').META.get('REMOTE_ADDR')
-        validated_data['device'] = self.context.get('request').META.get('HTTP_USER_AGENT')
+        request = self.context.get('request')
+        if request:
+            if request.META.get('REMOTE_ADDR'):
+                validated_data['ip'] = request.META.get('REMOTE_ADDR')
+            if request.META.get('HTTP_USER_AGENT'):
+                validated_data['device'] = request.META.get('HTTP_USER_AGENT')
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
