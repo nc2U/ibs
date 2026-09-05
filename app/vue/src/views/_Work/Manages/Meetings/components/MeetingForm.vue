@@ -36,7 +36,7 @@ const getIssues = computed(() => issueStore.getIssues)
 const validated = ref(false)
 const form = ref({
   pk: null as number | null,
-  project: 6 as number,
+  project: null as number | null,
   category: null as number | null,
   status: '1' as '1' | '2' | '3',
   is_confirmed: false,
@@ -51,6 +51,120 @@ const form = ref({
   other_attendees: '',
   links: [] as any[],
 })
+
+export interface InlineActionItem {
+  id: string
+  subject: string
+  assigned_to: number | null
+  due_date: string
+  priority: number | null
+}
+
+const pendingActionItems = ref<InlineActionItem[]>([])
+
+const addPendingActionItem = (
+  subject = '',
+  assigned_to: number | null = null,
+  due_date = '',
+  priority: number | null = null,
+) => {
+  const defaultPriority =
+    priority ??
+    (priorityList.value.find(p => p.name === '보통' || p.name === 'Normal')?.pk ||
+      priorityList.value[0]?.pk ||
+      null)
+  pendingActionItems.value.push({
+    id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+    subject,
+    assigned_to: assigned_to ?? (accStore.userInfo?.pk || null),
+    due_date,
+    priority: defaultPriority,
+  })
+}
+
+const removePendingActionItem = (index: number) => {
+  pendingActionItems.value.splice(index, 1)
+}
+
+const parseActionItemsFromText = () => {
+  if (!form.value.action_items || !form.value.action_items.trim()) return
+
+  const lines = form.value.action_items.split('\n')
+  const newItems: InlineActionItem[] = []
+
+  const userMapByName = new Map<string, number>()
+  users.value.forEach(u => {
+    if (u.pk !== undefined) {
+      userMapByName.set(u.username.toLowerCase(), u.pk)
+      if (u.profile?.name) {
+        userMapByName.set(u.profile.name.toLowerCase(), u.pk)
+      }
+    }
+  })
+
+  const defaultPriority =
+    priorityList.value.find(p => p.name === '보통' || p.name === 'Normal')?.pk ||
+    priorityList.value[0]?.pk ||
+    null
+
+  lines.forEach(line => {
+    let text = line.trim()
+    if (!text) return
+
+    // Strip markdown bullets / numbers
+    text = text.replace(/^[-*+]\s*(\[[ xX]\])?\s*/, '')
+    text = text.replace(/^\d+[\.\)]\s*/, '')
+    text = text.trim()
+    if (!text) return
+
+    let assignedTo: number | null = null
+    let dueDate = ''
+
+    // 1. Assignee pattern: (담당: 홍길동), (담당자: 홍길동), @홍길동
+    const assigneeMatch =
+      text.match(/\((?:담당(?:자)?|담당자명)\s*:\s*([^/,\)]+)\)/i) ||
+      text.match(/@([a-zA-Z0-9가-힣]+)/)
+    if (assigneeMatch) {
+      const name = assigneeMatch[1].trim()
+      const foundPk = userMapByName.get(name.toLowerCase())
+      if (foundPk) assignedTo = foundPk
+    }
+
+    // 2. Due date pattern: (기한: 2026-09-15), 2026-09-15, 2026.09.15
+    const dateMatch =
+      text.match(/(?:기한|마감|완료|일자)\s*:\s*(\d{4}[-.]\d{2}[-.]\d{2})/i) ||
+      text.match(/(\d{4}[-.]\d{2}[-.]\d{2})/)
+    if (dateMatch) {
+      dueDate = dateMatch[1].replace(/\./g, '-')
+    }
+
+    // Clean subject
+    let cleanSubject = text
+      .replace(/\((?:담당(?:자)?|기한|마감|완료|일자)[^)]*\)/gi, '')
+      .replace(/@([a-zA-Z0-9가-힣]+)/g, '')
+      .trim()
+      .replace(/^[-,:\s]+|[-,:\s]+$/g, '')
+
+    if (cleanSubject) {
+      const alreadyExists = pendingActionItems.value.some(
+        item => item.subject.toLowerCase() === cleanSubject.toLowerCase(),
+      )
+      if (!alreadyExists) {
+        newItems.push({
+          id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+          subject: cleanSubject,
+          assigned_to: assignedTo,
+          due_date: dueDate,
+          priority: defaultPriority,
+        })
+      }
+    }
+  })
+
+  if (newItems.length > 0) {
+    pendingActionItems.value.push(...newItems)
+  }
+}
 
 const { can, PERM } = usePerms()
 const canIssueRead = computed(() => can(PERM.ISSUE_READ))
@@ -135,48 +249,103 @@ const removeLink = (index: number) => {
   newLinks.value.splice(index, 1)
 }
 
+const isSubmitting = ref(false)
+
 const onSubmit = async (event: Event) => {
   if (isValidate(event)) {
     validated.value = true
   } else {
-    const formData = new FormData()
+    isSubmitting.value = true
+    try {
+      const formData = new FormData()
 
-    // Append form fields
-    for (const key in form.value) {
-      const val = (form.value as any)[key]
-      if (key === 'attendees') {
-        val.forEach((v: number) => formData.append('attendees', v.toString()))
-      } else if (val !== null && val !== undefined && val !== '') {
-        formData.append(key, val as string)
+      // Ensure project is bound
+      if (!form.value.project) {
+        if (projId.value) {
+          const found = meetingProjects.value.find(p => p.slug === projId.value)
+          if (found) form.value.project = found.value as number
+        } else if (meetingProjects.value.length > 0) {
+          form.value.project = meetingProjects.value[0].value as number
+        }
       }
-    }
 
-    // Append new files
-    newFiles.value.forEach(f => {
-      formData.append('new_files', f.file)
-      formData.append('descriptions', f.description)
-    })
-    files_del.value?.forEach((dfn: string) => formData.append('files_del', dfn))
-
-    // Append existing links status (del / updates)
-    form.value.links?.forEach(l => {
-      formData.append('links', JSON.stringify(l))
-    })
-
-    // Append new links
-    newLinks.value.forEach(l => {
-      if (l.link && l.link.trim()) {
-        formData.append('newLinks', l.link.trim())
-        formData.append('newLinkNames', l.name)
+      // Append form fields
+      for (const key in form.value) {
+        const val = (form.value as any)[key]
+        if (key === 'attendees') {
+          val.forEach((v: number) => formData.append('attendees', v.toString()))
+        } else if (val !== null && val !== undefined && val !== '') {
+          formData.append(key, val as string)
+        }
       }
-    })
 
-    if (form.value.pk) {
-      await meetingStore.updateMeeting(form.value.pk, formData as any)
-    } else {
-      await meetingStore.createMeeting(formData as any)
+      // Append new files
+      newFiles.value.forEach(f => {
+        formData.append('new_files', f.file)
+        formData.append('descriptions', f.description)
+      })
+      files_del.value?.forEach((dfn: string) => formData.append('files_del', dfn))
+
+      // Append existing links status (del / updates)
+      form.value.links?.forEach(l => {
+        formData.append('links', JSON.stringify(l))
+      })
+
+      // Append new links
+      newLinks.value.forEach(l => {
+        if (l.link && l.link.trim()) {
+          formData.append('newLinks', l.link.trim())
+          formData.append('newLinkNames', l.name)
+        }
+      })
+
+      let meetingPk = form.value.pk
+      let targetSlug = projId.value
+
+      if (meetingPk) {
+        const updated = await meetingStore.updateMeeting(meetingPk, formData as any)
+        if (updated?.project_desc?.slug) targetSlug = updated.project_desc.slug
+      } else {
+        const created = await meetingStore.createMeeting(formData as any)
+        if (created && created.pk) {
+          meetingPk = created.pk
+          if (created.project_desc?.slug) targetSlug = created.project_desc.slug
+        }
+      }
+
+      // Process pending inline action items
+      if (meetingPk && pendingActionItems.value.length > 0) {
+        const projectVal =
+          form.value.project ||
+          (workStore.currentProject as IssueProject)?.slug ||
+          targetSlug ||
+          ''
+
+        for (const item of pendingActionItems.value) {
+          if (!item.subject?.trim()) continue
+          const issueData = new FormData()
+          issueData.append('subject', item.subject.trim())
+          issueData.append('meeting', meetingPk.toString())
+          if (projectVal) issueData.append('project', projectVal.toString())
+          if (item.assigned_to) issueData.append('assigned_to', item.assigned_to.toString())
+          if (item.due_date) issueData.append('due_date', item.due_date)
+          if (item.priority) issueData.append('priority', item.priority.toString())
+          await issueStore.createIssue(issueData)
+        }
+        pendingActionItems.value = []
+      }
+
+      if (targetSlug && meetingPk) {
+        router.push({
+          name: '(회의) - 보기',
+          params: { projId: targetSlug, meetingId: meetingPk },
+        })
+      } else {
+        router.back()
+      }
+    } finally {
+      isSubmitting.value = false
     }
-    router.back()
   }
 }
 
@@ -342,7 +511,7 @@ const meetingTemplates: MeetingTemplate[] = [
   {
     name: '시공/품질/안전 점검',
     titlePrefix: '[안전품질] ',
-    agenda: '1. 현장 안전 점검 결과 및 지적 사항 공유\n2. 품질 시험 및 감리 지적 조치 계획\n3. 위험 공종 작업 계획 심의',
+    agenda: '1. 안전 점검 결과 및 지적 사항 공유\n2. 품질 시험 및 감리 지적 조치 계획\n3. 위험 공종 작업 계획 심의',
     actionItems: '- [ ] 안전 위험 요소 시정 조치 및 사진 보고 (담당: / 기한: )\n- [ ] 자재 시험 성적서 확인 (담당: / 기한: )',
   },
   {
@@ -371,6 +540,20 @@ watch(projId, newVal => {
   if (newVal)
     form.value.project = meetingProjects.value.find(p => p.slug === newVal)?.value as number
 })
+
+watch(
+  meetingProjects,
+  projects => {
+    if (!form.value.project && projects.length > 0) {
+      const target = projId.value
+        ? projects.find(p => p.slug === projId.value)
+        : projects.find(p => p.slug === workStore.currentProject?.slug) || projects[0]
+      if (target) form.value.project = target.value as number
+    }
+  },
+  { immediate: true },
+)
+
 onBeforeMount(async () => {
   await accStore.fetchUsersList()
   await workStore.fetchAllProjectList()
@@ -384,7 +567,13 @@ onBeforeMount(async () => {
       await issueStore.fetchAllIssueList(proj.slug)
     }
     await meetingStore.fetchCategoryList(projId.value as string)
-  } else await meetingStore.fetchCategoryList()
+  } else {
+    if (!form.value.project && meetingProjects.value.length > 0) {
+      const current = meetingProjects.value.find(p => p.slug === workStore.currentProject?.slug)
+      form.value.project = current ? (current.value as number) : (meetingProjects.value[0]?.value as number)
+    }
+    await meetingStore.fetchCategoryList()
+  }
 
   if (route.params.meetingId) await fetchMeeting(Number(route.params.meetingId))
 })
@@ -648,75 +837,165 @@ onBeforeMount(async () => {
               </CCol>
             </CRow>
 
-            <!-- Related Issues Section -->
+            <!-- Related Issues & Inline Action Items Section -->
             <CRow class="mb-3">
-              <CFormLabel class="col-sm-2 col-form-label text-right">관련 업무</CFormLabel>
+              <CFormLabel class="col-sm-2 col-form-label text-right">
+                <span class="text-primary font-weight-bold">후속 조치 업무</span>
+              </CFormLabel>
               <CCol sm="10">
-                <v-divider class="mt-0 mb-2" />
-                <div v-if="form.pk">
-                  <div v-if="meeting?.issues?.length" class="mb-2">
-                    <CTable small striped borderless class="border-bottom">
-                      <CTableBody>
-                        <CTableRow v-for="issue in meeting.issues" :key="issue.pk">
-                          <CTableDataCell style="width: 60%">
-                            <v-icon
-                              icon="mdi-checkbox-marked-circle-outline"
-                              size="small"
-                              class="mr-1"
-                              color="success"
-                            />
-                            <a
-                              v-if="canIssueRead"
-                              href="javascript:void(0)"
-                              @click="callIssueModal(issue.pk)"
-                            >
-                              {{ issue.subject }}
-                            </a>
-                            <span v-else>{{ issue.subject }}</span>
-                          </CTableDataCell>
-                          <CTableDataCell style="width: 15%" class="text-center">
-                            <v-chip size="x-small" label>{{ issue.status }}</v-chip>
-                          </CTableDataCell>
-                          <CTableDataCell style="width: 15%" class="text-right">
-                            <span v-if="issue.assigned_to" class="small text-muted">
-                              {{ issue.assigned_to.username }}
-                            </span>
-                          </CTableDataCell>
-                          <CTableDataCell style="width: 10%" class="text-right">
-                            <v-btn
-                              v-if="canIssueUpdate"
-                              icon
-                              size="x-small"
-                              variant="text"
-                              color="success"
-                              @click="callIssueModal(issue.pk)"
-                            >
-                              <v-icon icon="mdi-pencil" />
-                            </v-btn>
-                          </CTableDataCell>
-                        </CTableRow>
-                      </CTableBody>
-                    </CTable>
-                  </div>
-                  <div
-                    v-else
-                    class="text-muted small p-2 text-center border rounded border-dashed mb-2"
-                  >
-                    연결된 업무가 없습니다.
-                  </div>
-                  <CCol v-if="canIssueCreate" class="text-right">
-                    <v-btn color="success" size="x-small" @click="callIssueModal()">
-                      <v-icon icon="mdi-plus" size="small" class="mr-1" />
-                      관련 업무 추가
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                  <span class="text-muted small">
+                    <v-icon
+                      icon="mdi-clipboard-check-outline"
+                      size="small"
+                      class="mr-1"
+                      color="primary"
+                    />
+                    회의록 저장 시 등록된 업무가 해당 회의와 연동되어 일괄 생성됩니다.
+                  </span>
+                  <div class="d-flex gap-2">
+                    <v-btn
+                      v-if="form.action_items"
+                      color="secondary"
+                      size="x-small"
+                      variant="tonal"
+                      @click="parseActionItemsFromText"
+                    >
+                      <v-icon icon="mdi-magic-staff" size="14" class="mr-1" />
+                      후속 조치에서 자동 추출
                     </v-btn>
-                  </CCol>
+                    <v-btn color="primary" size="x-small" @click="addPendingActionItem()">
+                      <v-icon icon="mdi-plus" size="14" class="mr-1" />
+                      업무 추가
+                    </v-btn>
+                  </div>
                 </div>
+
+                <!-- 1. Existing linked issues (when editing an existing meeting) -->
+                <div v-if="form.pk && meeting?.issues?.length" class="mb-3">
+                  <div class="small fw-bold text-muted mb-1">
+                    <v-icon icon="mdi-link-variant" size="14" class="mr-1" />
+                    이미 등록된 관련 업무 ({{ meeting.issues.length }}건)
+                  </div>
+                  <CTable small striped borderless class="border-bottom">
+                    <CTableBody>
+                      <CTableRow v-for="issue in meeting.issues" :key="issue.pk">
+                        <CTableDataCell style="width: 55%">
+                          <v-icon
+                            icon="mdi-checkbox-marked-circle-outline"
+                            size="small"
+                            class="mr-1"
+                            color="success"
+                          />
+                          <a
+                            v-if="canIssueRead"
+                            href="javascript:void(0)"
+                            @click="callIssueModal(issue.pk)"
+                          >
+                            {{ issue.subject }}
+                          </a>
+                          <span v-else>{{ issue.subject }}</span>
+                        </CTableDataCell>
+                        <CTableDataCell style="width: 15%" class="text-center">
+                          <v-chip
+                            size="x-small"
+                            label
+                            :color="issue.closed ? 'success' : 'primary'"
+                          >
+                            {{ issue.status }}
+                          </v-chip>
+                        </CTableDataCell>
+                        <CTableDataCell style="width: 20%" class="text-right">
+                          <span v-if="issue.assigned_to" class="small text-muted">
+                            <v-icon icon="mdi-account-outline" size="12" class="mr-1" />
+                            {{ issue.assigned_to.username }}
+                          </span>
+                        </CTableDataCell>
+                        <CTableDataCell style="width: 10%" class="text-right">
+                          <v-btn
+                            v-if="canIssueUpdate"
+                            icon
+                            size="x-small"
+                            variant="text"
+                            color="success"
+                            @click="callIssueModal(issue.pk)"
+                          >
+                            <v-icon icon="mdi-pencil" size="14" />
+                          </v-btn>
+                        </CTableDataCell>
+                      </CTableRow>
+                    </CTableBody>
+                  </CTable>
+                </div>
+
+                <!-- 2. Pending Action Items Table -->
+                <div v-if="pendingActionItems.length > 0" class="mb-2">
+                  <div class="small fw-bold text-primary mb-1">
+                    <v-icon icon="mdi-playlist-plus" size="14" class="mr-1" />
+                    새로 등록할 후속 조치 업무 ({{ pendingActionItems.length }}건)
+                  </div>
+                  <CTable small bordered hover responsive class="align-middle mb-1 bg-white">
+                    <CTableHead color="light">
+                      <CTableRow class="text-center small">
+                        <CTableHeaderCell style="width: 45%">업무 제목 (필수)</CTableHeaderCell>
+                        <CTableHeaderCell style="width: 22%">담당자</CTableHeaderCell>
+                        <CTableHeaderCell style="width: 18%">완료 기한</CTableHeaderCell>
+                        <CTableHeaderCell style="width: 10%">우선순위</CTableHeaderCell>
+                        <CTableHeaderCell style="width: 5%">삭제</CTableHeaderCell>
+                      </CTableRow>
+                    </CTableHead>
+                    <CTableBody>
+                      <CTableRow v-for="(item, idx) in pendingActionItems" :key="item.id">
+                        <CTableDataCell>
+                          <CFormInput
+                            v-model="item.subject"
+                            size="sm"
+                            placeholder="업무 제목 입력"
+                            required
+                          />
+                        </CTableDataCell>
+                        <CTableDataCell>
+                          <CFormSelect v-model="item.assigned_to" size="sm">
+                            <option :value="null">미지정</option>
+                            <option v-for="u in users" :key="u.pk" :value="u.pk">
+                              {{ u.username }}
+                            </option>
+                          </CFormSelect>
+                        </CTableDataCell>
+                        <CTableDataCell>
+                          <CFormInput v-model="item.due_date" type="date" size="sm" />
+                        </CTableDataCell>
+                        <CTableDataCell>
+                          <CFormSelect v-model="item.priority" size="sm">
+                            <option v-for="p in priorityList" :key="p.pk" :value="p.pk">
+                              {{ p.name }}
+                            </option>
+                          </CFormSelect>
+                        </CTableDataCell>
+                        <CTableDataCell class="text-center">
+                          <v-btn
+                            icon
+                            size="x-small"
+                            variant="text"
+                            color="danger"
+                            @click="removePendingActionItem(idx)"
+                          >
+                            <v-icon icon="mdi-trash-can-outline" size="14" />
+                          </v-btn>
+                        </CTableDataCell>
+                      </CTableRow>
+                    </CTableBody>
+                  </CTable>
+                </div>
+
+                <!-- Empty state when no issues and no pending action items -->
                 <div
-                  v-else
+                  v-if="!pendingActionItems.length && (!form.pk || !meeting?.issues?.length)"
                   class="text-muted small p-3 text-center border rounded border-dashed bg-more-light"
                 >
                   <v-icon icon="mdi-information-outline" size="small" class="mr-1" />
-                  회의 관련 업무 등록은 회의록을 먼저 <strong>저장</strong>한 후 가능합니다.
+                  연결된 후속 조치 업무가 없습니다. 상단의 <strong>[후속 조치에서 자동 추출]</strong> 또는
+                  <strong>[업무 추가]</strong> 버튼을 눌러 후속 조치를 업무로 등록하세요.
                 </div>
               </CCol>
             </CRow>
@@ -850,7 +1129,8 @@ onBeforeMount(async () => {
             <v-btn
               type="submit"
               :color="form.pk ? 'success' : 'primary'"
-              :disabled="form.pk ? !canMeetingUpdate : !canMeetingCreate"
+              :disabled="(form.pk ? !canMeetingUpdate : !canMeetingCreate) || isSubmitting"
+              :loading="isSubmitting"
             >
               {{ form.pk ? '확인' : '저장' }}
             </v-btn>

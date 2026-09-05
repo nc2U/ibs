@@ -59,12 +59,13 @@ export const useMeeting = defineStore('meeting', () => {
 
   const config_headers = { headers: { 'Content-Type': 'multipart/form-data' } }
 
-  const createMeeting = async (payload: Meeting) =>
+  const createMeeting = async (payload: any) =>
     await api
       .post(`/meeting/`, payload, config_headers)
       .then(res => {
         fetchMeetingList({ page: 1 })
         message()
+        return res.data
       })
       .catch(err => errorHandle(err.response.data))
 
@@ -74,6 +75,7 @@ export const useMeeting = defineStore('meeting', () => {
       .then(async res => {
         await fetchMeeting(res.data.pk)
         message()
+        return res.data
       })
       .catch(err => errorHandle(err.response.data))
 
@@ -83,6 +85,7 @@ export const useMeeting = defineStore('meeting', () => {
       .then(async res => {
         await fetchMeeting(res.data.pk)
         message()
+        return res.data
       })
       .catch(err => errorHandle(err.response.data))
 

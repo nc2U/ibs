@@ -92,6 +92,78 @@ const openIssueModalForActionItem = () => {
   }
 }
 
+export interface ParsedActionItem {
+  raw: string
+  title: string
+  assignedName?: string
+  dueDate?: string
+  linkedIssue?: any
+}
+
+const parsedActionItems = computed<ParsedActionItem[]>(() => {
+  if (!meeting.value?.action_items) return []
+
+  const lines = meeting.value.action_items.split('\n')
+  const results: ParsedActionItem[] = []
+
+  lines.forEach(line => {
+    let text = line.trim()
+    if (!text) return
+    const originalText = text
+
+    text = text.replace(/^[-*+]\s*(\[[ xX]\])?\s*/, '')
+    text = text.replace(/^\d+[\.\)]\s*/, '')
+    text = text.trim()
+    if (!text) return
+
+    let assignedName: string | undefined = undefined
+    let dueDate: string | undefined = undefined
+
+    const assigneeMatch =
+      text.match(/\((?:담당(?:자)?|담당자명)\s*:\s*([^/,\)]+)\)/i) ||
+      text.match(/@([a-zA-Z0-9가-힣]+)/)
+    if (assigneeMatch) assignedName = assigneeMatch[1].trim()
+
+    const dateMatch =
+      text.match(/(?:기한|마감|완료|일자)\s*:\s*(\d{4}[-.]\d{2}[-.]\d{2})/i) ||
+      text.match(/(\d{4}[-.]\d{2}[-.]\d{2})/)
+    if (dateMatch) dueDate = dateMatch[1].replace(/\./g, '-')
+
+    let cleanTitle = text
+      .replace(/\((?:담당(?:자)?|기한|마감|완료|일자)[^)]*\)/gi, '')
+      .replace(/@([a-zA-Z0-9가-힣]+)/g, '')
+      .trim()
+      .replace(/^[-,:\s]+|[-,:\s]+$/g, '')
+
+    if (!cleanTitle) return
+
+    // Match with linked issues in meeting.issues
+    const linkedIssue = meeting.value?.issues?.find(
+      i =>
+        i.subject.toLowerCase().includes(cleanTitle.toLowerCase()) ||
+        cleanTitle.toLowerCase().includes(i.subject.toLowerCase()),
+    )
+
+    results.push({
+      raw: originalText,
+      title: cleanTitle,
+      assignedName,
+      dueDate,
+      linkedIssue,
+    })
+  })
+
+  return results
+})
+
+const openIssueModalForSpecificItem = (item: ParsedActionItem) => {
+  if (meeting.value) {
+    initialIssueSubject.value = item.title
+    initialIssueDescription.value = `### 회의 후속 조치 사항\n- **관련 회의**: #${meeting.value.pk} ${meeting.value.title}\n- **후속 조치 내용**: ${item.raw}`
+    refIssueModal.value.callModal()
+  }
+}
+
 const openNormalIssueModal = () => {
   initialIssueSubject.value = ''
   initialIssueDescription.value = ''
@@ -414,13 +486,97 @@ const refConfirmModal = ref()
                   size="x-small"
                   @click="openIssueModalForActionItem"
                 >
-                  <v-icon icon="mdi-plus" size="12" class="mr-1" /> 업무로 등록
+                  <v-icon icon="mdi-plus" size="12" class="mr-1" /> 전체를 업무로 등록
                 </v-btn>
               </div>
               <div
                 class="markdown-content bg-transparent"
                 v-html="markdownRender(meeting.action_items)"
               ></div>
+
+              <!-- Interactive Parsed Action Items Checklist -->
+              <div v-if="parsedActionItems.length > 0" class="mt-3 pt-2 border-top">
+                <div
+                  class="small fw-bold text-muted mb-2 d-flex align-items-center justify-content-between"
+                >
+                  <span>
+                    <v-icon icon="mdi-format-list-checks" size="14" class="mr-1 text-warning" />
+                    세부 후속 조치 업무 ({{ parsedActionItems.length }}건)
+                  </span>
+                  <span class="text-muted" style="font-size: 11px">
+                    연결 업무:
+                    {{ parsedActionItems.filter(i => !!i.linkedIssue).length }} /
+                    {{ parsedActionItems.length }}
+                  </span>
+                </div>
+                <div
+                  v-for="(item, idx) in parsedActionItems"
+                  :key="idx"
+                  class="d-flex align-items-center justify-content-between p-2 mb-1 rounded bg-light border"
+                >
+                  <div class="d-flex align-items-center flex-grow-1 mr-2 text-truncate">
+                    <v-icon
+                      :icon="
+                        item.linkedIssue
+                          ? item.linkedIssue.closed
+                            ? 'mdi-check-circle'
+                            : 'mdi-clock-outline'
+                          : 'mdi-checkbox-blank-circle-outline'
+                      "
+                      :color="
+                        item.linkedIssue
+                          ? item.linkedIssue.closed
+                            ? 'success'
+                            : 'primary'
+                          : 'grey'
+                      "
+                      size="16"
+                      class="mr-2 flex-shrink-0"
+                    />
+                    <span class="small font-weight-medium text-truncate">{{ item.title }}</span>
+                    <span
+                      v-if="item.assignedName"
+                      class="badge bg-secondary-subtle text-secondary ml-2 small flex-shrink-0"
+                    >
+                      {{ item.assignedName }}
+                    </span>
+                    <span
+                      v-if="item.dueDate"
+                      class="badge bg-info-subtle text-info ml-1 small flex-shrink-0"
+                    >
+                      {{ item.dueDate }}
+                    </span>
+                  </div>
+
+                  <div class="flex-shrink-0">
+                    <router-link
+                      v-if="item.linkedIssue"
+                      :to="{
+                        name: '(업무) - 보기',
+                        params: { projId: item.linkedIssue.project, issueId: item.linkedIssue.pk },
+                      }"
+                      class="text-decoration-none"
+                    >
+                      <v-chip
+                        size="x-small"
+                        :color="item.linkedIssue.closed ? 'success' : 'primary'"
+                        label
+                      >
+                        #{{ item.linkedIssue.pk }} {{ item.linkedIssue.status }}
+                      </v-chip>
+                    </router-link>
+                    <v-btn
+                      v-else-if="canIssueCreate"
+                      color="warning"
+                      size="x-small"
+                      variant="tonal"
+                      @click="openIssueModalForSpecificItem(item)"
+                    >
+                      <v-icon icon="mdi-plus" size="12" class="mr-1" /> 업무 발행
+                    </v-btn>
+                  </div>
+                </div>
+              </div>
             </CCallout>
           </CCol>
         </CRow>

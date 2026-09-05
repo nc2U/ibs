@@ -165,10 +165,13 @@ class IssueSerializer(serializers.ModelSerializer):
             if self.instance:
                 project = self.instance.project
             else:
-                project_slug = self.initial_data.get('project', None)
-                if project_slug:
+                project_val = self.initial_data.get('project', None)
+                if project_val:
                     try:
-                        project = IssueProject.objects.get(slug=project_slug)
+                        if isinstance(project_val, int) or (isinstance(project_val, str) and str(project_val).isdigit()):
+                            project = IssueProject.objects.get(pk=int(project_val))
+                        else:
+                            project = IssueProject.objects.get(slug=project_val)
                     except IssueProject.DoesNotExist:
                         pass
 
@@ -270,10 +273,13 @@ class IssueSerializer(serializers.ModelSerializer):
             if self.instance:
                 project = self.instance.project
             else:
-                project_slug = self.initial_data.get('project', None)
-                if project_slug:
+                project_val = self.initial_data.get('project', None)
+                if project_val:
                     try:
-                        project = IssueProject.objects.get(slug=project_slug)
+                        if isinstance(project_val, int) or (isinstance(project_val, str) and str(project_val).isdigit()):
+                            project = IssueProject.objects.get(pk=int(project_val))
+                        else:
+                            project = IssueProject.objects.get(slug=project_val)
                     except IssueProject.DoesNotExist:
                         pass
 
@@ -302,10 +308,40 @@ class IssueSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def create(self, validated_data):
-        project = IssueProject.objects.get(slug=self.initial_data.get('project', None))
-        tracker = Tracker.objects.get(pk=self.initial_data.get('tracker'))
-        status = IssueStatus.objects.get(pk=self.initial_data.get('status'))
-        priority = CodeIssuePriority.objects.get(pk=self.initial_data.get('priority'))
+        project_val = self.initial_data.get('project', None)
+        if isinstance(project_val, int) or (isinstance(project_val, str) and str(project_val).isdigit()):
+            project = IssueProject.objects.get(pk=int(project_val))
+        else:
+            project = IssueProject.objects.get(slug=project_val)
+
+        tracker_pk = self.initial_data.get('tracker', None)
+        if tracker_pk:
+            tracker = Tracker.objects.get(pk=tracker_pk)
+        else:
+            tracker = project.trackers.first() or Tracker.objects.first()
+
+        status_pk = self.initial_data.get('status', None)
+        if status_pk:
+            status = IssueStatus.objects.get(pk=status_pk)
+        else:
+            status = IssueStatus.objects.filter(default=True).first() or IssueStatus.objects.first()
+
+        priority_pk = self.initial_data.get('priority', None)
+        if priority_pk:
+            priority = CodeIssuePriority.objects.get(pk=priority_pk)
+        else:
+            priority = CodeIssuePriority.objects.filter(default=True).first() or CodeIssuePriority.objects.first()
+
+        if 'start_date' not in validated_data or not validated_data.get('start_date'):
+            validated_data['start_date'] = timezone.now().date()
+
+        meeting_val = self.initial_data.get('meeting', None)
+        if meeting_val and 'meeting' not in validated_data:
+            try:
+                validated_data['meeting'] = Meeting.objects.get(pk=meeting_val)
+            except Meeting.DoesNotExist:
+                pass
+
         fixed_version = self.initial_data.get('fixed_version')
         fixed_version = fixed_version if fixed_version else None
         assigned_to = self.initial_data.get('assigned_to', None)
