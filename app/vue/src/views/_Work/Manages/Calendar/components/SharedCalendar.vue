@@ -87,6 +87,7 @@ const calendarEvents = computed(() => {
         start: event.start,
         end: event.end,
         expected_duration: event.expected_duration,
+        status: event.status,
       },
     }
   })
@@ -114,12 +115,16 @@ const handleEventClick = (info: any) => {
 }
 
 const renderEventContent = (eventInfo: any) => {
-  const { type } = eventInfo.event.extendedProps
+  const { type, status } = eventInfo.event.extendedProps
   if (type === 'meeting') {
     return {
-      html: `<div class="fc-event-main-frame" style="overflow: hidden; text-overflow: ellipsis;">
-               <div class="fc-event-title" style="font-size: 0.85em; white-space: nowrap;">${eventInfo.event.title}</div>
-             </div>`,
+      html: `
+        <div class="fc-event-main-frame d-flex align-items-center" style="overflow: hidden; text-overflow: ellipsis; padding: 1px 4px;">
+          <span style="font-size: 0.85em; font-weight: 600; white-space: nowrap; color: #fff;">
+            📅 ${eventInfo.event.title}
+          </span>
+        </div>
+      `,
     }
   }
 
@@ -128,11 +133,15 @@ const renderEventContent = (eventInfo: any) => {
   const isStartToday = start === today
   const isEndToday = !!end && end === today
   const isSameDayTask = expected_duration === '0'
+  const isClosed = !!status?.closed
 
   let icon = ''
   let color = 'white'
 
-  if (isStartToday && (isEndToday || isSameDayTask)) {
+  if (isClosed) {
+    icon = 'mdi-check'
+    color = '#ffffff'
+  } else if (isStartToday && (isEndToday || isSameDayTask)) {
     icon = 'mdi-rhombus'
     color = '#f87171'
   } else if (isStartToday) {
@@ -143,12 +152,16 @@ const renderEventContent = (eventInfo: any) => {
     color = '#f87171'
   }
 
+  const titleStyle = isClosed
+    ? 'text-decoration: line-through; opacity: 0.85;'
+    : ''
+
   return {
     html: `
       <div class="fc-event-main-frame" style="overflow: hidden; text-overflow: ellipsis;">
         <div class="fc-event-title-container">
-          <div class="fc-event-title fc-sticky" style="font-size: 0.85em; white-space: nowrap;">
-            ${icon ? `<i class="mdi ${icon}" style="color: ${color}; font-size: 12px;"></i>` : ''}
+          <div class="fc-event-title fc-sticky" style="font-size: 0.85em; white-space: nowrap; ${titleStyle}">
+            ${icon ? `<i class="mdi ${icon}" style="color: ${color}; font-size: 12px; margin-right: 2px;"></i>` : ''}
             ${eventInfo.event.title}
           </div>
         </div>
