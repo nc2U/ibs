@@ -6,7 +6,7 @@ import { cutString, dateFormat, timeFormat } from '@/utils/baseMixins'
 import { markdownRender } from '@/utils/helper.ts'
 import { usePerms } from '@/composables/usePerms.ts'
 
-defineProps({
+const props = defineProps({
   activity: { type: Array as PropType<ActLogEntry[]>, required: true },
   date: { type: String, required: true },
 })
@@ -15,6 +15,61 @@ const store = useStore()
 const isDark = computed(() => store.theme === 'dark')
 
 const { canViewUser } = usePerms()
+
+const getEventGroupKey = (act: ActLogEntry): string => {
+  if (act.sort === '1') {
+    return `issue-${act.target_id}`
+  } else if (act.sort === '2') {
+    return `issue-${act.parent_id || act.target_id}`
+  } else if (act.sort === '3') {
+    return `meeting-${act.target_id}`
+  } else if (act.sort === '4') {
+    return `news-${act.target_id}`
+  } else if (act.sort === '5') {
+    return `doc-${act.target_id}`
+  } else if (act.sort === '6') {
+    return `post-${act.target_id}`
+  }
+  return `unknown-${act.pk}`
+}
+
+const sortedActivityEvents = computed(() => {
+  const events = [...props.activity]
+  const eventsByGroup = new Map<string, ActLogEntry[]>()
+
+  for (const event of events) {
+    const key = getEventGroupKey(event)
+    if (!eventsByGroup.has(key)) {
+      eventsByGroup.set(key, [])
+    }
+    eventsByGroup.get(key)!.push(event)
+  }
+
+  const sorted: { act: ActLogEntry; inGroup: boolean }[] = []
+
+  const sortedByTime = [...events].sort(
+    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+  )
+
+  for (const event of sortedByTime) {
+    const key = getEventGroupKey(event)
+    const groupEvents = eventsByGroup.get(key)
+    if (groupEvents) {
+      eventsByGroup.delete(key)
+      groupEvents.sort(
+        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+      )
+      groupEvents.forEach((e, idx) => {
+        sorted.push({
+          act: e,
+          inGroup: idx > 0,
+        })
+      })
+    }
+  }
+
+  return sorted
+})
 
 const getIcon = (sort: string, progress: boolean) => {
   if (sort === '1') return progress ? 'mdi-folder-check' : 'mdi-folder-edit'
@@ -64,8 +119,18 @@ const getTargetRoute = (act: ActLogEntry) => {
         </span>
       </CAlert>
 
-      <CRow v-for="(act, i) in activity" :key="act.pk" class="pl-3">
-        <CCol :class="{ 'ml-4': act.sort === '2' }">
+      <CRow
+        v-for="({ act, inGroup }, i) in sortedActivityEvents"
+        :key="act.pk"
+        class="pl-3"
+      >
+        <CCol :class="{ 'ml-4': inGroup }">
+          <v-icon
+            v-if="inGroup"
+            icon="mdi-subdirectory-arrow-right"
+            size="13"
+            class="mr-1 text-medium-emphasis"
+          />
           <v-icon
             :icon="getIcon(act.sort, act.status_log === '종료' || act.status_log === '완료')"
             size="15"
