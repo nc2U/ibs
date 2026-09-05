@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useApproval } from '@/store/pinia/approval'
@@ -13,6 +13,7 @@ import type {
 } from '@/store/types/approval'
 import { CCard } from '@coreui/vue'
 import { STATIC_DETAIL_REGISTRY, FallbackDetail } from '../details'
+import { markNotificationReadByTarget } from '@/utils/notification.ts'
 
 const route = useRoute()
 const router = useRouter()
@@ -24,6 +25,18 @@ const { fetchDocument, submitDocument, actDocument, cancelDocument } = approvalS
 const myUser = computed(() => accountStore.userInfo)
 
 const docId = computed(() => Number(route.params.docId))
+
+// 전자결재 상세 진입 시 해당 결재 문서의 미확인 알림 자동 읽음 처리
+watch(
+  docId,
+  newId => {
+    if (newId) {
+      markNotificationReadByTarget('approval', newId)
+    }
+  },
+  { immediate: true },
+)
+
 const isMyDoc = computed(() => document.value?.drafter?.id === myUser.value?.pk)
 const canSubmit = computed(
   () =>

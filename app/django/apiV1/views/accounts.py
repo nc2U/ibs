@@ -601,3 +601,19 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
     def unread_count(self, request):
         count = Notification.objects.filter(user=request.user, is_read=False).exclude(category='chat').count()
         return Response({'unread_count': count})
+
+    @action(detail=False, methods=['post'], url_path='read-by-target')
+    def mark_read_by_target(self, request):
+        """특정 대상(업무/회의록/문서 등)에 해당하는 미확인 알림을 일괄 읽음 처리"""
+        target_type = request.data.get('target_type')
+        target_id = str(request.data.get('target_id') or '')
+        if not target_type or not target_id:
+            return Response({'detail': 'target_type and target_id are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        updated_count = Notification.objects.filter(
+            user=request.user,
+            target_type=target_type,
+            target_id=target_id,
+            is_read=False,
+        ).update(is_read=True)
+        return Response({'status': 'ok', 'updated_count': updated_count})

@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/constants/permissions.dart';
 import '../../../../core/providers/permission_provider.dart';
+import '../../../../core/providers/notification_provider.dart';
 import '../../../../core/theme/app_colors_extension.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/loading_shimmer.dart';
@@ -22,6 +23,12 @@ class MeetingDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref
+          .read(notificationListProvider.notifier)
+          .markReadByTarget('meeting', meetingId.toString());
+    });
+
     final detailState = ref.watch(meetingDetailProvider(meetingId));
 
     return Scaffold(

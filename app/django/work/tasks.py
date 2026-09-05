@@ -67,7 +67,8 @@ def send_meeting_mail_task(meeting_pk, user_pk, mail_type):
                 recipient_list=addresses
             )
 
-        # 2. 모바일 푸시 및 인앱 알림 발송
+        # 2. 모바일 푸시 및 인앱 알림 발송 (행위자 본인은 푸시 수신 제외)
+        recipient_user_ids.discard(user.pk)
         if recipient_user_ids:
             send_push_notification(
                 user_ids=list(recipient_user_ids),
@@ -146,7 +147,8 @@ def send_issue_mail_task(issue_pk, user_pk, mail_type, old_status_name=None, old
                 recipient_list=addresses
             )
 
-        # 2. 모바일 푸시 및 인앱 알림 발송
+        # 2. 모바일 푸시 및 인앱 알림 발송 (행위자 본인은 푸시 수신 제외)
+        recipient_user_ids.discard(user.pk)
         if recipient_user_ids:
             send_push_notification(
                 user_ids=list(recipient_user_ids),

@@ -58,6 +58,26 @@ class NotificationListNotifier
       });
     } catch (_) {}
   }
+
+  Future<void> markReadByTarget(String targetType, String targetId) async {
+    if (targetType.isEmpty || targetId.isEmpty) return;
+    try {
+      await _dio.post('/api/v1/notification/read-by-target/', data: {
+        'target_type': targetType,
+        'target_id': targetId,
+      });
+      state.whenData((list) {
+        state = AsyncValue.data(
+          list.map((n) {
+            if (n.targetType == targetType && n.targetId == targetId) {
+              return n.copyWith(isRead: true);
+            }
+            return n;
+          }).toList(),
+        );
+      });
+    } catch (_) {}
+  }
 }
 
 final notificationListProvider = StateNotifierProvider.autoDispose<

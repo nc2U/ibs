@@ -13,6 +13,7 @@ import FileDisplay from '@/views/_Work/components/atomics/FileDisplay.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
 import FormModal from '@/components/Modals/FormModal.vue'
 import IssueForm from '@/views/_Work/Manages/Issues/components/IssueForm.vue'
+import { markNotificationReadByTarget } from '@/utils/notification.ts'
 
 const route = useRoute()
 const router = useRouter()
@@ -22,6 +23,17 @@ const issueStore = useIssue()
 const workStore = useWork()
 
 const meeting = computed(() => meetingStore.meeting)
+
+// 회의록 상세 진입 시 해당 회의록의 미확인 알림 자동 읽음 처리
+watch(
+  () => meeting.value?.pk,
+  newPk => {
+    if (newPk) {
+      markNotificationReadByTarget('meeting', newPk)
+    }
+  },
+  { immediate: true },
+)
 
 const isCreator = computed(() => meeting.value?.creator.pk === accountStore.userInfo?.pk)
 const isAttendee = computed(() =>

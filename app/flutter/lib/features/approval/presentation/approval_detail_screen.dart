@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/providers/auth_provider.dart';
+import '../../../../core/providers/notification_provider.dart';
 import '../../../../core/theme/app_colors_extension.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/loading_shimmer.dart';
@@ -48,6 +49,12 @@ class ApprovalDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref
+          .read(notificationListProvider.notifier)
+          .markReadByTarget('approval', docId.toString());
+    });
+
     final docAsync = ref.watch(approvalDetailProvider(docId));
     final currentUserId = ref.watch(currentUserIdProvider);
 

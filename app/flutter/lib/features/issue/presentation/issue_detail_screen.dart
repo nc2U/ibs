@@ -10,6 +10,7 @@ import '../../../core/constants/app_text_styles.dart';
 import '../../../core/constants/permissions.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/permission_provider.dart';
+import '../../../core/providers/notification_provider.dart';
 import '../../../core/theme/app_colors_extension.dart';
 import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/loading_shimmer.dart';
@@ -37,6 +38,16 @@ class _IssueDetailScreenState extends ConsumerState<IssueDetailScreen> {
   final _commentFocus = FocusNode();
   bool _isSendingComment = false;
   bool _isPrivateComment = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref
+          .read(notificationListProvider.notifier)
+          .markReadByTarget('issue', widget.issueId.toString());
+    });
+  }
 
   @override
   void dispose() {

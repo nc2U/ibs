@@ -19,6 +19,7 @@ import RelSummary from './relation/Summary.vue'
 import Relation from './relation/Index.vue'
 import AddRelationForm from './relation/AddRelationForm.vue'
 import ConfirmModal from '@/components/Modals/ConfirmModal.vue'
+import { markNotificationReadByTarget } from '@/utils/notification.ts'
 
 const props = defineProps({
   issue: { type: Object as PropType<Issue>, required: true },
@@ -30,6 +31,17 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['on-submit'])
+
+// 업무 상세 진입 시 해당 업무의 미확인 알림 자동 읽음 처리
+watch(
+  () => props.issue?.pk,
+  newPk => {
+    if (newPk) {
+      markNotificationReadByTarget('issue', newPk)
+    }
+  },
+  { immediate: true },
+)
 
 const issueFormRef = ref()
 const editForm = ref(false)
