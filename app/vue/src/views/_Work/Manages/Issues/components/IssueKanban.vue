@@ -181,7 +181,7 @@ const onDrop = async (targetStatus: IssueStatus) => {
         <div
           v-for="status in statusList"
           :key="status.pk"
-          class="kanban-column"
+          class="kanban-column bg-more-light"
           :class="{ 'drag-over': dragOverStatusId === status.pk }"
           @dragover.prevent="onDragOver(status.pk)"
           @dragleave="onDragLeave(status.pk)"
@@ -189,7 +189,7 @@ const onDrop = async (targetStatus: IssueStatus) => {
         >
           <!-- Column Header -->
           <div
-            class="kanban-column-header"
+            class="kanban-column-header bg-more-white"
             :style="{ borderTopColor: getStatusBorderColor(status) }"
           >
             <div class="d-flex align-items-center justify-content-between">
@@ -202,7 +202,7 @@ const onDrop = async (targetStatus: IssueStatus) => {
                 />
                 {{ status.name }}
               </span>
-              <span class="badge rounded-pill bg-light text-dark border">
+              <span class="badge rounded-pill bg-more-light text-body border">
                 {{ issuesByStatus.get(status.pk)?.length || 0 }}
               </span>
             </div>
@@ -213,7 +213,7 @@ const onDrop = async (targetStatus: IssueStatus) => {
             <div
               v-for="issue in issuesByStatus.get(status.pk) || []"
               :key="issue.pk"
-              class="kanban-card card shadow-sm mb-2"
+              class="kanban-card card shadow-sm mb-2 bg-more-white"
               :draggable="canIssueUpdate"
               @dragstart="onDragStart($event, issue)"
               @dragend="onDragEnd"
@@ -222,7 +222,7 @@ const onDrop = async (targetStatus: IssueStatus) => {
                 <!-- Card Header: Tracker, Priority, Dropdown -->
                 <div class="d-flex align-items-center justify-content-between mb-1">
                   <div class="d-flex align-items-center gap-1">
-                    <span class="badge bg-light text-secondary border small" style="font-size: 11px">
+                    <span class="badge bg-more-light text-secondary border small" style="font-size: 11px">
                       {{ issue.tracker?.name || '업무' }}
                     </span>
                     <v-chip
@@ -347,7 +347,6 @@ const onDrop = async (targetStatus: IssueStatus) => {
 .kanban-column {
   flex: 0 0 290px;
   max-width: 290px;
-  background-color: #f4f5f7;
   border-radius: 8px;
   display: flex;
   flex-direction: column;
@@ -366,7 +365,6 @@ const onDrop = async (targetStatus: IssueStatus) => {
   border-top: 4px solid #ced4da;
   border-top-left-radius: 6px;
   border-top-right-radius: 6px;
-  background-color: #fff;
   border-bottom: 1px solid #e9ecef;
 }
 
@@ -386,14 +384,17 @@ const onDrop = async (targetStatus: IssueStatus) => {
 .kanban-card {
   border: 1px solid #e2e8f0;
   border-radius: 6px;
-  background-color: #fff;
   cursor: grab;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .kanban-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
 }
 
 .kanban-card:active {
@@ -431,5 +432,63 @@ const onDrop = async (targetStatus: IssueStatus) => {
 
 .text-purple {
   color: #7e22ce;
+}
+
+:global(body.dark-theme .kanban-column),
+:global(.dark-theme .kanban-column) {
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+:global(body.dark-theme .kanban-column-header),
+:global(.dark-theme .kanban-column-header) {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+:global(body.dark-theme .column-title),
+:global(.dark-theme .column-title) {
+  color: #f1f5f9;
+}
+
+:global(body.dark-theme .kanban-card),
+:global(.dark-theme .kanban-card) {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+:global(body.dark-theme .kanban-card:hover),
+:global(.dark-theme .kanban-card:hover) {
+  border-color: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+}
+
+:global(body.dark-theme .issue-subject-link),
+:global(.dark-theme .issue-subject-link) {
+  color: #f1f5f9;
+}
+
+:global(body.dark-theme .issue-subject-link:hover),
+:global(.dark-theme .issue-subject-link:hover) {
+  color: #60a5fa;
+}
+
+:global(body.dark-theme .empty-column-box),
+:global(.dark-theme .empty-column-box) {
+  border-color: rgba(255, 255, 255, 0.15);
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+:global(body.dark-theme .kanban-column.drag-over),
+:global(.dark-theme .kanban-column.drag-over) {
+  background-color: rgba(50, 31, 219, 0.25) !important;
+  border-color: #6366f1;
+}
+
+:global(body.dark-theme .bg-purple-subtle),
+:global(.dark-theme .bg-purple-subtle) {
+  background-color: rgba(126, 34, 206, 0.2);
+}
+
+:global(body.dark-theme .text-purple),
+:global(.dark-theme .text-purple) {
+  color: #c084fc;
 }
 </style>

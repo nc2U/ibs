@@ -5,6 +5,7 @@ import { usePerms } from '@/composables/usePerms.ts'
 import { useAccount } from '@/store/pinia/account.ts'
 import { useWork } from '@/store/pinia/work_project.ts'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
+import { CRow } from '@coreui/vue'
 
 const props = defineProps({
   projStatus: { type: String, default: '' },
@@ -54,10 +55,10 @@ const router = useRouter()
         style="height: 28px"
         @update:model-value="val => emit('update:viewMode', val)"
       >
-        <v-btn value="list" size="x-small" title="목록 뷰">
+        <v-btn value="list" size="x-small" title="목록 뷰" class="text-muted">
           <v-icon icon="mdi-format-list-bulleted" size="14" class="mr-1" /> 목록
         </v-btn>
-        <v-btn value="kanban" size="x-small" title="칸반 보드 뷰">
+        <v-btn value="kanban" size="x-small" title="칸반 보드 뷰" class="text-muted">
           <v-icon icon="mdi-view-column-outline" size="14" class="mr-1" /> 칸반
         </v-btn>
       </v-btn-toggle>

@@ -6,6 +6,7 @@ import type { Version } from '@/store/types/work_project.ts'
 import RoadmapItem from './RoadmapItem.vue'
 import RoadmapGantt from './RoadmapGantt.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
+import { CRow } from '@coreui/vue'
 
 defineProps({
   versionList: { type: Array as PropType<Version[]>, default: () => [] },
@@ -42,10 +43,10 @@ const onViewModeChange = (mode: 'list' | 'gantt') => {
         style="height: 28px"
         @update:model-value="onViewModeChange"
       >
-        <v-btn value="list" size="x-small" title="목록 뷰">
+        <v-btn value="list" size="x-small" title="목록 뷰" class="text-muted">
           <v-icon icon="mdi-format-list-bulleted" size="14" class="mr-1" /> 목록
         </v-btn>
-        <v-btn value="gantt" size="x-small" title="타임라인 뷰">
+        <v-btn value="gantt" size="x-small" title="타임라인 뷰" class="text-muted">
           <v-icon icon="mdi-chart-gantt" size="14" class="mr-1" /> 타임라인
         </v-btn>
       </v-btn-toggle>

@@ -140,13 +140,15 @@ const getBarCoordinates = (startDateStr?: string | null, dueDateStr?: string | n
     <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
       <div class="d-flex align-items-center gap-2">
         <v-btn size="x-small" variant="tonal" color="primary" @click="toggleAll">
-          <v-icon :icon="allExpanded ? 'mdi-collapse-all' : 'mdi-expand-all'" size="14" class="mr-1" />
+          <v-icon
+            :icon="allExpanded ? 'mdi-collapse-all' : 'mdi-expand-all'"
+            size="14"
+            class="mr-1"
+          />
           {{ allExpanded ? '모두 접기' : '모두 펼치기' }}
         </v-btn>
 
-        <span class="text-muted small ml-2">
-          표시 범위:
-        </span>
+        <span class="text-muted small ml-2"> 표시 범위: </span>
         <v-btn-toggle
           v-model="viewMonthsRange"
           mandatory
@@ -178,10 +180,10 @@ const getBarCoordinates = (startDateStr?: string | null, dueDateStr?: string | n
     <NoData v-if="!versionList.length" />
 
     <!-- Gantt Layout Grid -->
-    <div v-else class="gantt-container border rounded bg-white shadow-sm">
+    <div v-else class="gantt-container border rounded bg-more-white shadow-sm">
       <div class="gantt-inner">
         <!-- Gantt Header -->
-        <div class="gantt-header d-flex border-bottom bg-light">
+        <div class="gantt-header d-flex border-bottom bg-more-light">
           <!-- Left Label Column -->
           <div class="gantt-label-col border-end p-2 fw-bold text-secondary small">
             단계 / 업무명
@@ -216,7 +218,9 @@ const getBarCoordinates = (startDateStr?: string | null, dueDateStr?: string | n
             <!-- Version Row -->
             <div class="gantt-row version-row d-flex align-items-center">
               <!-- Version Title and Stats -->
-              <div class="gantt-label-col border-end p-2 d-flex align-items-center justify-content-between">
+              <div
+                class="gantt-label-col border-end p-2 d-flex align-items-center justify-content-between"
+              >
                 <div class="d-flex align-items-center text-truncate mr-2">
                   <v-btn
                     icon
@@ -233,7 +237,7 @@ const getBarCoordinates = (startDateStr?: string | null, dueDateStr?: string | n
                   </v-btn>
                   <router-link
                     :to="{ name: '(로드맵) - 보기', params: { projId, verId: ver.pk } }"
-                    class="fw-bold text-dark text-truncate text-decoration-none small"
+                    class="fw-bold text-body text-truncate text-decoration-none small"
                   >
                     {{ ver.name }}
                   </router-link>
@@ -242,7 +246,9 @@ const getBarCoordinates = (startDateStr?: string | null, dueDateStr?: string | n
                 <div class="d-flex align-items-center gap-1 flex-shrink-0">
                   <v-chip
                     size="x-small"
-                    :color="ver.status === '3' ? 'success' : ver.status === '2' ? 'grey' : 'primary'"
+                    :color="
+                      ver.status === '3' ? 'success' : ver.status === '2' ? 'grey' : 'primary'
+                    "
                     label
                     style="font-size: 10px; height: 18px"
                   >
@@ -281,16 +287,23 @@ const getBarCoordinates = (startDateStr?: string | null, dueDateStr?: string | n
             </div>
 
             <!-- Issues List within Version -->
-            <div v-if="expandedVersions[ver.pk!] && (ver.recent_issues?.length || ver.issues?.length)">
+            <div
+              v-if="expandedVersions[ver.pk!] && (ver.recent_issues?.length || ver.issues?.length)"
+            >
               <div
                 v-for="issue in ver.recent_issues || ver.issues || []"
                 :key="issue.pk"
-                class="gantt-row issue-row d-flex align-items-center bg-light border-top"
+                class="gantt-row issue-row d-flex align-items-center bg-more-light border-top"
               >
                 <!-- Issue Title and Assignee -->
-                <div class="gantt-label-col border-end p-2 pl-4 d-flex align-items-center justify-content-between">
+                <div
+                  class="gantt-label-col border-end p-2 pl-4 d-flex align-items-center justify-content-between"
+                >
                   <div class="d-flex align-items-center text-truncate mr-2">
-                    <span class="badge bg-secondary-subtle text-secondary mr-1" style="font-size: 10px">
+                    <span
+                      class="badge bg-secondary-subtle text-secondary mr-1"
+                      style="font-size: 10px"
+                    >
                       {{ issue.tracker?.name || '업무' }}
                     </span>
                     <router-link
@@ -298,13 +311,17 @@ const getBarCoordinates = (startDateStr?: string | null, dueDateStr?: string | n
                         name: '(업무) - 보기',
                         params: { projId, issueId: issue.pk },
                       }"
-                      class="text-truncate text-decoration-none small text-dark"
+                      class="text-truncate text-decoration-none small text-body"
                     >
                       #{{ issue.pk }} {{ issue.subject }}
                     </router-link>
                   </div>
 
-                  <span v-if="issue.assigned_to" class="text-muted small flex-shrink-0" style="font-size: 11px">
+                  <span
+                    v-if="issue.assigned_to"
+                    class="text-muted small flex-shrink-0"
+                    style="font-size: 11px"
+                  >
                     {{ issue.assigned_to.username }}
                   </span>
                 </div>
@@ -315,11 +332,20 @@ const getBarCoordinates = (startDateStr?: string | null, dueDateStr?: string | n
                     class="gantt-bar issue-bar"
                     :class="{
                       'is-closed': issue.status?.closed,
-                      'is-overdue': !issue.status?.closed && (issue as any).due_date && diffDate((issue as any).due_date) < 0,
+                      'is-overdue':
+                        !issue.status?.closed &&
+                        (issue as any).due_date &&
+                        diffDate((issue as any).due_date) < 0,
                     }"
                     :style="{
-                      left: getBarCoordinates((issue as any).start_date, (issue as any).due_date || ver.effective_date).left,
-                      width: getBarCoordinates((issue as any).start_date, (issue as any).due_date || ver.effective_date).width,
+                      left: getBarCoordinates(
+                        (issue as any).start_date,
+                        (issue as any).due_date || ver.effective_date,
+                      ).left,
+                      width: getBarCoordinates(
+                        (issue as any).start_date,
+                        (issue as any).due_date || ver.effective_date,
+                      ).width,
                     }"
                   >
                     <div
@@ -327,9 +353,7 @@ const getBarCoordinates = (startDateStr?: string | null, dueDateStr?: string | n
                       :class="issue.status?.closed ? 'bg-success' : 'bg-primary'"
                       :style="{ width: `${issue.done_ratio || 0}%` }"
                     ></div>
-                    <span class="bar-label">
-                      {{ issue.done_ratio || 0 }}%
-                    </span>
+                    <span class="bar-label"> {{ issue.done_ratio || 0 }}% </span>
                   </div>
                 </div>
               </div>
@@ -382,11 +406,38 @@ const getBarCoordinates = (startDateStr?: string | null, dueDateStr?: string | n
 }
 
 .version-row:hover {
-  background-color: #f8fafc;
+  background-color: rgba(0, 0, 0, 0.03);
 }
 
 .issue-row:hover {
-  background-color: #f1f5f9;
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+:global(body.dark-theme .version-row:hover),
+:global(.dark-theme .version-row:hover) {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+:global(body.dark-theme .issue-row:hover),
+:global(.dark-theme .issue-row:hover) {
+  background-color: rgba(255, 255, 255, 0.09) !important;
+}
+
+:global(body.dark-theme .version-bar),
+:global(.dark-theme .version-bar) {
+  background-color: #334155;
+  border-color: #475569;
+}
+
+:global(body.dark-theme .issue-bar),
+:global(.dark-theme .issue-bar) {
+  background-color: #1e293b;
+  border-color: #475569;
+}
+
+:global(body.dark-theme .bar-label),
+:global(.dark-theme .bar-label) {
+  color: #f1f5f9;
 }
 
 .gantt-bar {
@@ -399,7 +450,9 @@ const getBarCoordinates = (startDateStr?: string | null, dueDateStr?: string | n
   display: flex;
   align-items: center;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
-  transition: width 0.2s ease, left 0.2s ease;
+  transition:
+    width 0.2s ease,
+    left 0.2s ease;
 }
 
 .version-bar {
