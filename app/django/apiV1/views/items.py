@@ -6,6 +6,7 @@ from django_filters.rest_framework import FilterSet
 from rest_framework import viewsets
 
 from apiV1.permissions.auth_perms import permissions, IsProjectStaffOrReadOnly
+from apiV1.permissions.ibs_perms import IbsModulePermission
 from items.models import UnitType, UnitFloorType, KeyUnit, BuildingUnit, HouseUnit, OptionItem
 from work.models import IssueProject
 from ..pagination import PageNumberPaginationFifty, PageNumberPaginationThreeHundred, PageNumberPaginationThreeThousand
@@ -24,9 +25,15 @@ def get_accessible_project_ids(user):
 class UnitTypeViewSet(viewsets.ModelViewSet):
     queryset = UnitType.objects.all()
     serializer_class = UnitTypeSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     filterset_fields = ('project', 'sort', 'main_or_sub')
     search_fields = ('name',)
+
+    @property
+    def required_permission(self):
+        if self.action in ('list', 'retrieve'):
+            return None
+        return 'contract.update'
 
     def get_queryset(self):
         user = self.request.user
@@ -40,9 +47,15 @@ class UnitFloorTypeViewSet(viewsets.ModelViewSet):
     queryset = UnitFloorType.objects.all()
     serializer_class = UnitFloorTypeSerializer
     pagination_class = PageNumberPaginationFifty
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     filterset_fields = ('project', 'sort')
     search_fields = ('alias_name',)
+
+    @property
+    def required_permission(self):
+        if self.action in ('list', 'retrieve'):
+            return None
+        return 'contract.update'
 
     def get_queryset(self):
         user = self.request.user
@@ -63,10 +76,16 @@ class KeyUnitListFilterSet(FilterSet):
 class KeyUnitViewSet(viewsets.ModelViewSet):
     queryset = KeyUnit.objects.all()
     serializer_class = KeyUnitSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     filterset_class = KeyUnitListFilterSet
     ordering_fields = ('pk', 'unit_code', 'unit_type')
     ordering = ('-pk',)
+
+    @property
+    def required_permission(self):
+        if self.action in ('list', 'retrieve'):
+            return None
+        return 'contract.update'
 
     def get_queryset(self):
         user = self.request.user
@@ -79,9 +98,15 @@ class KeyUnitViewSet(viewsets.ModelViewSet):
 class BuildingUnitViewSet(viewsets.ModelViewSet):
     queryset = BuildingUnit.objects.all()
     serializer_class = BuildingUnitSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     filterset_fields = ('project',)
     search_fields = ('name',)
+
+    @property
+    def required_permission(self):
+        if self.action in ('list', 'retrieve'):
+            return None
+        return 'contract.update'
 
     def get_queryset(self):
         user = self.request.user
@@ -94,10 +119,16 @@ class BuildingUnitViewSet(viewsets.ModelViewSet):
 class HouseUnitViewSet(viewsets.ModelViewSet):
     queryset = HouseUnit.objects.all()
     serializer_class = HouseUnitSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     filterset_fields = ('building_unit__project', 'unit_type__sort', 'unit_type',
                         'floor_type', 'building_unit', 'is_hold')
     search_fields = ('hold_reason',)
+
+    @property
+    def required_permission(self):
+        if self.action in ('list', 'retrieve'):
+            return None
+        return 'contract.update'
 
     def get_queryset(self):
         user = self.request.user
@@ -152,9 +183,15 @@ class AllHouseUnitViewSet(HouseUnitViewSet):
 class HouseUnitSummaryViewSet(viewsets.ModelViewSet):
     queryset = HouseUnit.objects.all()
     serializer_class = HouseUnitSummarySerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     filterset_fields = ('building_unit__project', 'unit_type',
                         'floor_type', 'building_unit', 'is_hold')
+
+    @property
+    def required_permission(self):
+        if self.action in ('list', 'retrieve'):
+            return None
+        return 'contract.update'
 
     def get_queryset(self):
         user = self.request.user
@@ -167,9 +204,15 @@ class HouseUnitSummaryViewSet(viewsets.ModelViewSet):
 class OptionItemViewSet(viewsets.ModelViewSet):
     queryset = OptionItem.objects.all()
     serializer_class = OptionItemSerializer
-    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsProjectStaffOrReadOnly, IbsModulePermission)
     filterset_fields = ('project', 'types')
     search_fields = ('opt_code', 'opt_name', 'opt_desc', 'opt_maker')
+
+    @property
+    def required_permission(self):
+        if self.action in ('list', 'retrieve'):
+            return None
+        return 'contract.update'
 
     def get_queryset(self):
         user = self.request.user

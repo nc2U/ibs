@@ -113,6 +113,12 @@ class UserSerializer(serializers.ModelSerializer):
         return user
 
     def update(self, instance, validated_data):
+        request = self.context.get('request')
+        is_admin = request and (request.user.is_superuser or getattr(request.user, 'work_manager', False))
+        if not is_admin:
+            for restricted in ('is_superuser', 'is_staff', 'work_manager', 'is_active'):
+                validated_data.pop(restricted, None)
+
         password = validated_data.pop('password', None)
 
         for attr, value in validated_data.items():  # 나머지 필드 업데이트

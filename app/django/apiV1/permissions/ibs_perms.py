@@ -53,9 +53,18 @@ class HqProjectModulePermission(permissions.BasePermission):
         if not request.user or not request.user.is_authenticated:
             return False
 
-        # 2. 슈퍼유저 전체 허용
+        # 2. 슈퍼유저 전체 허용 (work_manager는 본사 보안 격리 원칙에 따라 HQ 명시적 권한 필요)
         if request.user.is_superuser:
             return True
+
+        # 소속 회사 이외의 회사 데이터 생성 차단 (PK 또는 회사명 지원)
+        req_company = request.data.get('company') if hasattr(request, 'data') and isinstance(request.data, dict) else None
+        if req_company is not None:
+            staff = getattr(request.user, 'staff', None)
+            if not staff:
+                return False
+            if str(staff.company_id) != str(req_company) and getattr(staff.company, 'name', '') != str(req_company):
+                return False
 
         project_pk = get_project_pk_from_request(request, view)
         issue_project = resolve_issue_project(project_pk, request) if project_pk else None
@@ -86,9 +95,20 @@ class HqProjectModulePermission(permissions.BasePermission):
         if not request.user or not request.user.is_authenticated:
             return False
 
-        # 2. 슈퍼유저 전체 허용
+        # 2. 슈퍼유저 전체 허용 (work_manager는 본사 보안 격리 원칙에 따라 HQ 명시적 권한 필요)
         if request.user.is_superuser:
             return True
+
+        # 타사 소속 객체 접근 차단
+        obj_company_id = getattr(obj, 'company_id', None)
+        if obj_company_id is None and hasattr(obj, 'company'):
+            obj_company = getattr(obj, 'company', None)
+            if obj_company is not None:
+                obj_company_id = getattr(obj_company, 'pk', None)
+        if obj_company_id is not None:
+            staff = getattr(request.user, 'staff', None)
+            if not staff or staff.company_id != obj_company_id:
+                return False
 
         project_pk = get_project_pk_from_request(request, view)
         issue_project = resolve_issue_project(project_pk, request) if project_pk else None
@@ -231,6 +251,18 @@ class IbsModulePermission(ProjectPermission):
                     project_rel = getattr(contract, 'project', None)
                     if project_rel is not None:
                         project_pk = getattr(project_rel, 'pk', None)
+
+        # building_unit 관계를 경유하는 모델 (예: HouseUnit 등) 역추적
+        if project_pk is None and hasattr(obj, 'building_unit'):
+            bldg = getattr(obj, 'building_unit', None)
+            if bldg is not None:
+                project_pk = getattr(bldg, 'project_id', None)
+
+        # unit_type 관계를 경유하는 모델 역추적
+        if project_pk is None and hasattr(obj, 'unit_type'):
+            ut = getattr(obj, 'unit_type', None)
+            if ut is not None:
+                project_pk = getattr(ut, 'project_id', None)
 
         if project_pk is not None:
             project_pk = int(project_pk) if not isinstance(project_pk, int) else project_pk

@@ -33,6 +33,22 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes = (AllowAny,)
     filterset_fields = ('is_staff', 'is_active', 'is_system', 'staff__status')
 
+    def get_permissions(self):
+        if self.action == 'create':
+            return [AllowAny()]
+        return [IsAuthenticated()]
+
+    def check_object_permissions(self, request, obj):
+        super().check_object_permissions(request, obj)
+        if self.action in ('update', 'partial_update', 'destroy'):
+            if not (request.user.is_superuser or getattr(request.user, 'work_manager', False)):
+                if obj.pk != request.user.pk:
+                    self.permission_denied(
+                        request,
+                        message='다른 사용자의 계정 정보를 수정하거나 삭제할 권한이 없습니다.',
+                        code=status.HTTP_403_FORBIDDEN
+                    )
+
     def get_queryset(self):
         user = self.request.user
 
@@ -120,6 +136,14 @@ class DocScrapeViewSet(viewsets.ModelViewSet):
     filterset_fields = ('user',)
     search_fields = ('title', 'post__title', 'post__content')
 
+    def get_queryset(self):
+        user = self.request.user
+        if not user or not user.is_authenticated:
+            return DocScrape.objects.none()
+        if user.is_superuser:
+            return DocScrape.objects.all()
+        return DocScrape.objects.filter(user=user)
+
 
 class PostScrapeViewSet(viewsets.ModelViewSet):
     queryset = PostScrape.objects.all()
@@ -127,6 +151,14 @@ class PostScrapeViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, IsOwnerOnly)
     filterset_fields = ('user',)
     search_fields = ('title', 'post__title', 'post__content')
+
+    def get_queryset(self):
+        user = self.request.user
+        if not user or not user.is_authenticated:
+            return PostScrape.objects.none()
+        if user.is_superuser:
+            return PostScrape.objects.all()
+        return PostScrape.objects.filter(user=user)
 
 
 class TodoViewSet(viewsets.ModelViewSet):
@@ -136,6 +168,14 @@ class TodoViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, IsOwnerOnly)
     filterset_fields = ('user', 'soft_deleted')
     search_fields = ('title',)
+
+    def get_queryset(self):
+        user = self.request.user
+        if not user or not user.is_authenticated:
+            return Todo.objects.none()
+        if user.is_superuser:
+            return Todo.objects.all()
+        return Todo.objects.filter(user=user)
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
