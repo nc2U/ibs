@@ -37,8 +37,11 @@ flowchart TD
 | **종료** | <span style="color: #81c784">● #81c784</span> | <span style="color: #5cb377">● #5cb377</span> | 완수되어 마감된 업무 |
 | **회의록** | <span style="color: #9575cd">● #9575cd</span> | <span style="color: #9575cd">● #9575cd</span> | 공식 회의 일정 (보라색 고정) |
 
+* **회의(Meeting) 시각적 차별화**: 회의 일정은 `📅` 캘린더 아이콘과 함께 **굵은 폰트(Bold)**로 표출되어 일반 업무 과업과 즉시 분리되어 식별됩니다.
+* **완료(Closed) 업무 시각화**: 마감 완료된 업무는 체크마크 아이콘(`mdi-check`)과 함께 제목에 **취소선(Strikethrough)**이 적용되어, 아직 남아있는 잔여 업무와 완수된 작업을 한눈에 구분할 수 있습니다.
+
 ### 🔔 오늘의 일정 알림 아이콘
-업무 타이틀 앞에는 **오늘(Today)**을 기준으로 마감 임박 상태를 직관적으로 경고하는 3대 상태 아이콘이 표시됩니다.
+진행 중인 업무 타이틀 앞에는 **오늘(Today)**을 기준으로 마감 임박 상태를 직관적으로 경고하는 상태 아이콘이 표시됩니다.
 
 * <i class="mdi mdi-arrow-right-bold text-success"></i> **오늘 시작**: 오늘부터 일정이 시작되는 업무 (녹색 화살표)
 * <i class="mdi mdi-arrow-left-bold text-danger"></i> **오늘 마감**: 오늘까지 반드시 완료해야 하는 데드라인 업무 (붉은색 화살표)
