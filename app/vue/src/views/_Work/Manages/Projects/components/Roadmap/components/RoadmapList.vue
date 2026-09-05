@@ -1,9 +1,10 @@
 <script lang="ts" setup>
-import { type PropType } from 'vue'
+import { ref, type PropType } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePerms } from '@/composables/usePerms.ts'
 import type { Version } from '@/store/types/work_project.ts'
 import RoadmapItem from './RoadmapItem.vue'
+import RoadmapGantt from './RoadmapGantt.vue'
 import TextButton from '@/views/_Work/components/atomics/TextButton.vue'
 
 defineProps({
@@ -13,6 +14,14 @@ defineProps({
 
 const { can, PERM } = usePerms()
 const [route, router] = [useRoute(), useRouter()]
+
+const viewMode = ref<'list' | 'gantt'>(
+  (localStorage.getItem('ibs_work_roadmap_view_mode') as 'list' | 'gantt') || 'list',
+)
+const onViewModeChange = (mode: 'list' | 'gantt') => {
+  viewMode.value = mode
+  localStorage.setItem('ibs_work_roadmap_view_mode', mode)
+}
 </script>
 
 <template>
@@ -21,7 +30,26 @@ const [route, router] = [useRoute(), useRouter()]
       <h5><v-icon icon="mdi-target" color="green-darken-1" size="small" class="mr-2" />로드맵</h5>
     </CCol>
 
-    <CCol class="text-right">
+    <CCol class="text-right d-flex align-items-center justify-content-end">
+      <!-- View mode toggle: List vs Gantt Timeline -->
+      <v-btn-toggle
+        :model-value="viewMode"
+        mandatory
+        density="compact"
+        variant="outlined"
+        color="primary"
+        class="mr-2"
+        style="height: 28px"
+        @update:model-value="onViewModeChange"
+      >
+        <v-btn value="list" size="x-small" title="목록 뷰">
+          <v-icon icon="mdi-format-list-bulleted" size="14" class="mr-1" /> 목록
+        </v-btn>
+        <v-btn value="gantt" size="x-small" title="타임라인 뷰">
+          <v-icon icon="mdi-chart-gantt" size="14" class="mr-1" /> 타임라인
+        </v-btn>
+      </v-btn-toggle>
+
       <span v-if="can(PERM.PROJECT_VERSION)" class="mr-2 form-text">
         <TextButton name="새 단계" :to="{ name: '(로드맵) - 추가' }" />
       </span>
@@ -55,10 +83,13 @@ const [route, router] = [useRoute(), useRouter()]
     </CCol>
   </CRow>
 
-  <RoadmapItem
-    v-for="ver in versionList"
-    :key="ver.pk"
-    :version="ver"
-    :is-selected="selectedVersionId === ver.pk"
-  />
+  <template v-if="viewMode === 'list'">
+    <RoadmapItem
+      v-for="ver in versionList"
+      :key="ver.pk"
+      :version="ver"
+      :is-selected="selectedVersionId === ver.pk"
+    />
+  </template>
+  <RoadmapGantt v-else-if="viewMode === 'gantt'" :version-list="versionList" />
 </template>
