@@ -4,6 +4,7 @@ import { useSales } from '@/store/pinia/sales'
 import type { SettlementPeriod } from '@/store/types/sales'
 import { getToday } from '@/utils/baseMixins'
 import FormModal from '@/components/Modals/FormModal.vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 
 const props = defineProps({
   project: { type: Number, required: true },
@@ -95,18 +96,18 @@ defineExpose({ open })
 
           <CCol md="6">
             <CFormLabel>정산 대상 시작일 <span class="text-danger">*</span></CFormLabel>
-            <CFormInput v-model="form.start_date" type="date" required />
+            <DatePicker v-model="form.start_date" required placeholder="정산 대상 시작일" />
             <small class="text-muted">이 기간 내 체결된 계약 실적이 집계됩니다.</small>
           </CCol>
 
           <CCol md="6">
             <CFormLabel>정산 대상 종료일 <span class="text-danger">*</span></CFormLabel>
-            <CFormInput v-model="form.end_date" type="date" required />
+            <DatePicker v-model="form.end_date" required placeholder="정산 대상 종료일" />
           </CCol>
 
           <CCol md="6">
             <CFormLabel>지급 예정일</CFormLabel>
-            <CFormInput v-model="form.payout_date" type="date" />
+            <DatePicker v-model="form.payout_date" placeholder="지급 예정일" />
           </CCol>
 
           <CCol md="6">

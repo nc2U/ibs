@@ -3,6 +3,7 @@ import { ref, reactive, computed } from 'vue'
 import { useSales } from '@/store/pinia/sales'
 import type { SalesPerson, SalesDuty, SalesPersonStatus, TaxType } from '@/store/types/sales'
 import FormModal from '@/components/Modals/FormModal.vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 
 const props = defineProps({
   defaultTeamId: { type: Number, default: null },
@@ -218,12 +219,12 @@ defineExpose({ open })
 
           <CCol md="4">
             <CFormLabel>위촉/입사일</CFormLabel>
-            <CFormInput v-model="form.join_date" type="date" />
+            <DatePicker v-model="form.join_date" placeholder="위촉/입사일" />
           </CCol>
 
           <CCol md="4">
             <CFormLabel>해촉/퇴사일</CFormLabel>
-            <CFormInput v-model="form.quit_date" type="date" />
+            <DatePicker v-model="form.quit_date" placeholder="해촉/퇴사일" />
           </CCol>
 
           <CCol md="12">

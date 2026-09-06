@@ -4,6 +4,7 @@ import { useSales } from '@/store/pinia/sales'
 import type { CommissionPolicy } from '@/store/types/sales'
 import { getToday } from '@/utils/baseMixins'
 import FormModal from '@/components/Modals/FormModal.vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 
 const props = defineProps({
   project: { type: Number, required: true },
@@ -206,12 +207,12 @@ defineExpose({ open })
 
           <CCol md="3">
             <CFormLabel>적용 시작일 <span class="text-danger">*</span></CFormLabel>
-            <CFormInput v-model="form.start_date" type="date" required />
+            <DatePicker v-model="form.start_date" required placeholder="적용 시작일" />
           </CCol>
 
           <CCol md="3">
             <CFormLabel>적용 종료일</CFormLabel>
-            <CFormInput v-model="form.end_date" type="date" placeholder="종료일 없을 시 미지정" />
+            <DatePicker v-model="form.end_date" placeholder="종료일 없을 시 미지정" />
           </CCol>
 
           <CCol md="12" class="d-flex align-items-center pt-2">

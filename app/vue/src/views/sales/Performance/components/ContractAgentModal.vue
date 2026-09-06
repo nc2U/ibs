@@ -4,6 +4,7 @@ import { useSales } from '@/store/pinia/sales'
 import type { ContractSalesAgent } from '@/store/types/sales'
 import { getToday } from '@/utils/baseMixins'
 import FormModal from '@/components/Modals/FormModal.vue'
+import DatePicker from '@/components/DatePicker/DatePicker.vue'
 
 const props = defineProps({
   project: { type: Number, required: true },
@@ -175,7 +176,7 @@ defineExpose({ open })
           <!-- 성과 인정일 -->
           <CCol md="6">
             <CFormLabel>영업 성과 인정일</CFormLabel>
-            <CFormInput v-model="form.contract_date" type="date" />
+            <DatePicker v-model="form.contract_date" placeholder="성과 인정일" />
           </CCol>
 
           <!-- MGM 및 소개 수수료 -->
