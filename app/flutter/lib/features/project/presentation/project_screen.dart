@@ -11,19 +11,20 @@ import '../../contract/presentation/contract_list_screen.dart';
 import '../../docs/presentation/docs_screen.dart';
 import '../../ledger/presentation/ledger_screen.dart';
 import '../../payment/presentation/payment_list_screen.dart';
+import '../../sales/presentation/sales_screen.dart';
 import '../../site/presentation/site_screen.dart';
 import '../providers/project_provider.dart';
 import 'project_settings_screen.dart';
 
 /// 활성화된 서브 모듈 구분
-enum ProjectActiveModule { none, docs, contract, payment, ledger, site, settings }
+enum ProjectActiveModule { none, docs, contract, payment, ledger, site, settings, sales }
 
 /// 전역 서브 모듈 활성화 상태 프로바이더
 final projectActiveModuleProvider =
     StateProvider<ProjectActiveModule>((ref) => ProjectActiveModule.none);
 
 /// 프로젝트 관리 탭 메인 화면 (IBS Global - type == '2' 부동산 개발 프로젝트 전용)
-/// 계약(Contract) / 수납(Payment) / 자금(Ledger) / 부지(Site) 4대 모듈 접근 UI (radius = 0)
+/// 회계(Ledger) / 계약(Contract) / 수납(Payment) / 분양(Sales) / 부지(Site) 5대 모듈 접근 UI (radius = 0)
 class ProjectScreen extends ConsumerStatefulWidget {
   const ProjectScreen({super.key});
 
@@ -120,6 +121,9 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
           break;
         case ProjectActiveModule.site:
           contentWidget = SiteScreen(onBackToMain: _closeSubModule);
+          break;
+        case ProjectActiveModule.sales:
+          contentWidget = SalesScreen(onBackToMain: _closeSubModule);
           break;
         case ProjectActiveModule.settings:
           contentWidget = ProjectSettingsScreen(onBackToMain: _closeSubModule);
@@ -671,7 +675,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
               ),
             const SizedBox(height: 20),
 
-            // ── 2. 프로젝트 전용 4대 핵심 모듈 접근 섹션 (radius = 0) ───────────
+            // ── 2. 프로젝트 전용 5대 핵심 모듈 접근 섹션 (radius = 0) ───────────
             Row(
               children: [
                 Container(
@@ -689,7 +693,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  isRealEstateProject ? '4개 모듈 활성' : '프로젝트 선택 필요',
+                  isRealEstateProject ? '5개 모듈 활성' : '프로젝트 선택 필요',
                   style: AppTextStyles.caption.copyWith(
                     color: isRealEstateProject
                         ? context.colors.textMuted
@@ -700,39 +704,11 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
             ),
             const SizedBox(height: 12),
 
-            // 모듈 1: 계약 정보 관리 (Contract)
-            _ModuleCard(
-              title: '계약 정보 관리',
-              badgeText: 'CONTRACT',
-              subtitle: '동·호수별 분양 계약 내역, 계약자 상세 정보, 권리의무 승계 및 계약 해지 이력 관리',
-              tags: const ['분양 계약', '계약자 정보', '권리의무 승계', '계약 해지'],
-              icon: Icons.assignment_outlined,
-              accentColor: const Color(0xFF38BDF8), // Sky Blue
-              isEnabled: isRealEstateProject,
-              onTap: () => _openSubModule(ProjectActiveModule.contract),
-              onDisabledTap: () => _handleDisabledModuleTap('계약 정보 관리'),
-            ),
-            const SizedBox(height: 12),
-
-            // 모듈 2: 대금 수납 관리 (Payment)
-            _ModuleCard(
-              title: '대금 수납 관리',
-              badgeText: 'PAYMENT',
-              subtitle: '계약금·중도금·잔금 차수별 납부 내역, 건별 입금 등록 및 미납금 현황 분석',
-              tags: const ['회차별 납부', '건별 입금 등록', '미납금 관리', '수납 집계'],
-              icon: Icons.payments_outlined,
-              accentColor: const Color(0xFF34D399), // Emerald
-              isEnabled: isRealEstateProject,
-              onTap: () => _openSubModule(ProjectActiveModule.payment),
-              onDisabledTap: () => _handleDisabledModuleTap('대금 수납 관리'),
-            ),
-            const SizedBox(height: 12),
-
-            // 모듈 3: 회계 자금 관리 (Ledger)
-            _ModuleCard(
+            // 1) 상단 와이드 히어로 카드: 회계 자금 관리 (Ledger) - 전 기간 최고 빈도
+            _HeroModuleCard(
               title: '회계 자금 관리',
               badgeText: 'LEDGER',
-              subtitle: '프로젝트 전용 계좌 거래 내역, 사업비/운영비 지출 정산 및 캐시플로우 흐름 집행',
+              subtitle: '프로젝트 전용 계좌 거래 내역, 사업비/운영비 지출 정산 및 캐시플로우 자금 집행',
               tags: const ['계좌 거래', '사업비 정산', '캐시플로우', '자금 집행'],
               icon: Icons.account_balance_wallet_outlined,
               accentColor: const Color(0xFFFBBF24), // Amber Gold
@@ -740,19 +716,75 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
               onTap: () => _openSubModule(ProjectActiveModule.ledger),
               onDisabledTap: () => _handleDisabledModuleTap('회계 자금 관리'),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
 
-            // 모듈 4: 부지 정보 관리 (Site)
-            _ModuleCard(
-              title: '부지 정보 관리',
-              badgeText: 'SITE',
-              subtitle: '사업 대상지 필지·지번 현황, 토지 소유자 정보, 부지 매매계약 및 권리관계/협의 일지 관리',
-              tags: const ['지번 목록 관리', '소유자 별 관리', '매입 계약 관리', '협의 일지'],
-              icon: Icons.map_outlined,
-              accentColor: const Color(0xFF0D9488), // Teal Green
-              isEnabled: isRealEstateProject,
-              onTap: () => _openSubModule(ProjectActiveModule.site),
-              onDisabledTap: () => _handleDisabledModuleTap('부지 정보 관리'),
+            // 2) 2×2 컴팩트 그리드 행 1: 계약 정보 관리(좌) + 대금 수납 관리(우) -> 가로 연계(계약 ➔ 수납)
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: _GridModuleCard(
+                      title: '계약 정보 관리',
+                      badgeText: 'CONTRACT',
+                      subtitle: '동·호수별 분양 계약, 계약자 정보 및 권리의무 승계·해지 이력',
+                      icon: Icons.assignment_outlined,
+                      accentColor: const Color(0xFF38BDF8), // Sky Blue
+                      isEnabled: isRealEstateProject,
+                      onTap: () => _openSubModule(ProjectActiveModule.contract),
+                      onDisabledTap: () => _handleDisabledModuleTap('계약 정보 관리'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _GridModuleCard(
+                      title: '대금 수납 관리',
+                      badgeText: 'PAYMENT',
+                      subtitle: '차수별 납부 내역, 건별 입금 등록 및 미납금 현황 분석',
+                      icon: Icons.payments_outlined,
+                      accentColor: const Color(0xFF34D399), // Emerald
+                      isEnabled: isRealEstateProject,
+                      onTap: () => _openSubModule(ProjectActiveModule.payment),
+                      onDisabledTap: () => _handleDisabledModuleTap('대금 수납 관리'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            // 3) 2×2 컴팩트 그리드 행 2: 분양 대행 관리(좌) + 부지 정보 관리(우) -> 세로 연계(계약 ➔ 분양대행 실적 연동)
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: _GridModuleCard(
+                      title: '분양 대행 관리',
+                      badgeText: 'SALES',
+                      subtitle: '영업 실적 매핑, 차수별 수수료 정산 및 지급 이력 관리',
+                      icon: Icons.badge_outlined,
+                      accentColor: const Color(0xFF8B5CF6), // Electric Violet
+                      isEnabled: isRealEstateProject,
+                      onTap: () => _openSubModule(ProjectActiveModule.sales),
+                      onDisabledTap: () => _handleDisabledModuleTap('분양 대행 관리'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _GridModuleCard(
+                      title: '부지 정보 관리',
+                      badgeText: 'SITE',
+                      subtitle: '사업 대상지 필지·지번 현황, 소유자 정보 및 매매계약 관리',
+                      icon: Icons.map_outlined,
+                      accentColor: const Color(0xFF0D9488), // Teal Green
+                      isEnabled: isRealEstateProject,
+                      onTap: () => _openSubModule(ProjectActiveModule.site),
+                      onDisabledTap: () => _handleDisabledModuleTap('부지 정보 관리'),
+                    ),
+                  ),
+                ],
+              ),
             ),
 
             const SizedBox(height: 32),
@@ -763,8 +795,8 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
   }
 }
 
-/// radius = 0 이 적용된 정제된 모듈 카드 위젯
-class _ModuleCard extends StatelessWidget {
+/// radius = 0 이 적용된 상단 와이드 히어로 모듈 카드 위젯 (회계 자금 관리용)
+class _HeroModuleCard extends StatelessWidget {
   final String title;
   final String badgeText;
   final String subtitle;
@@ -775,7 +807,7 @@ class _ModuleCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback? onDisabledTap;
 
-  const _ModuleCard({
+  const _HeroModuleCard({
     required this.title,
     required this.badgeText,
     required this.subtitle,
@@ -808,11 +840,11 @@ class _ModuleCard extends StatelessWidget {
           onTap: isEnabled ? onTap : onDisabledTap,
           borderRadius: BorderRadius.zero,
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(15),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ── 상단 헤더: 아이콘 + 타이틀 + 영문 뱃지 ───────────────────────
+                // ── 상단 헤더: 아이콘 + 타이틀 + 영문 뱃지 + chevron ─────────────
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
@@ -831,44 +863,39 @@ class _ModuleCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Row(
                         children: [
-                          Row(
-                            children: [
-                              Text(
-                                title,
-                                style: AppTextStyles.titleSm.copyWith(
-                                  color: isEnabled
-                                      ? context.colors.textPrimary
-                                      : context.colors.textDisabled,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15,
-                                ),
+                          Text(
+                            title,
+                            style: AppTextStyles.titleSm.copyWith(
+                              color: isEnabled
+                                  ? context.colors.textPrimary
+                                  : context.colors.textDisabled,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: effectiveColor.withAlpha(20),
+                              borderRadius: BorderRadius.zero,
+                              border: Border.all(
+                                color: effectiveColor.withAlpha(60),
+                                width: 0.8,
                               ),
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: effectiveColor.withAlpha(20),
-                                  borderRadius: BorderRadius.zero,
-                                  border: Border.all(
-                                    color: effectiveColor.withAlpha(60),
-                                    width: 0.8,
-                                  ),
-                                ),
-                                child: Text(
-                                  badgeText,
-                                  style: AppTextStyles.caption.copyWith(
-                                    color: effectiveColor,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 10,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
+                            ),
+                            child: Text(
+                              badgeText,
+                              style: AppTextStyles.caption.copyWith(
+                                color: effectiveColor,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 10,
+                                letterSpacing: 0.5,
                               ),
-                            ],
+                            ),
                           ),
                         ],
                       ),
@@ -893,7 +920,7 @@ class _ModuleCard extends StatelessWidget {
                     height: 1.38,
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
 
                 // ── 태그 칩스 목록 ────────────────────────────────────────────
                 Wrap(
@@ -935,4 +962,149 @@ class _ModuleCard extends StatelessWidget {
     );
   }
 }
+
+/// radius = 0 이 적용된 2×2 그리드 모듈 카드 위젯
+class _GridModuleCard extends StatelessWidget {
+  final String title;
+  final String badgeText;
+  final String subtitle;
+  final IconData icon;
+  final Color accentColor;
+  final bool isEnabled;
+  final VoidCallback onTap;
+  final VoidCallback? onDisabledTap;
+
+  const _GridModuleCard({
+    required this.title,
+    required this.badgeText,
+    required this.subtitle,
+    required this.icon,
+    required this.accentColor,
+    required this.isEnabled,
+    required this.onTap,
+    this.onDisabledTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final effectiveColor = isEnabled ? accentColor : context.colors.textDisabled;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: context.colors.bgCard,
+        borderRadius: BorderRadius.zero,
+        border: Border.all(
+          color: isEnabled ? accentColor.withAlpha(65) : context.colors.border,
+          width: 1,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.zero,
+        child: InkWell(
+          onTap: isEnabled ? onTap : onDisabledTap,
+          borderRadius: BorderRadius.zero,
+          child: Padding(
+            padding: const EdgeInsets.all(13),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 상단 행: 아이콘 + 뱃지
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 34,
+                          height: 34,
+                          decoration: BoxDecoration(
+                            color: effectiveColor.withAlpha(22),
+                            borderRadius: BorderRadius.zero,
+                            border: Border.all(
+                              color: effectiveColor.withAlpha(60),
+                              width: 0.8,
+                            ),
+                          ),
+                          child: Icon(icon, size: 18, color: effectiveColor),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 5, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: effectiveColor.withAlpha(20),
+                            borderRadius: BorderRadius.zero,
+                            border: Border.all(
+                              color: effectiveColor.withAlpha(60),
+                              width: 0.8,
+                            ),
+                          ),
+                          child: Text(
+                            badgeText,
+                            style: AppTextStyles.caption.copyWith(
+                              color: effectiveColor,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 9.5,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+
+                    // 모듈 타이틀 + 꺾쇠
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            title,
+                            style: AppTextStyles.titleSm.copyWith(
+                              color: isEnabled
+                                  ? context.colors.textPrimary
+                                  : context.colors.textDisabled,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13.5,
+                              letterSpacing: -0.2,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          size: 16,
+                          color: effectiveColor.withAlpha(150),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+
+                    // 부가 설명
+                    Text(
+                      subtitle,
+                      style: AppTextStyles.bodySecond.copyWith(
+                        color: isEnabled
+                            ? context.colors.textSecond
+                            : context.colors.textDisabled,
+                        fontSize: 11.5,
+                        height: 1.35,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 
