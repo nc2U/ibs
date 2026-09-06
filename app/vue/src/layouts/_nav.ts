@@ -257,16 +257,6 @@ const sales = {
   items: [
     {
       component: 'CNavItem',
-      name: '영업 조직 관리',
-      to: '/sales/organization',
-    },
-    {
-      component: 'CNavItem',
-      name: '수수료 정책 관리',
-      to: '/sales/policy',
-    },
-    {
-      component: 'CNavItem',
       name: '계약 실적 관리',
       to: '/sales/performance',
     },
@@ -279,6 +269,16 @@ const sales = {
       component: 'CNavItem',
       name: '수수료 지급 관리',
       to: '/sales/payout',
+    },
+    {
+      component: 'CNavItem',
+      name: '영업 조직 관리',
+      to: '/sales/organization',
+    },
+    {
+      component: 'CNavItem',
+      name: '수수료 정책 관리',
+      to: '/sales/policy',
     },
   ],
 }
