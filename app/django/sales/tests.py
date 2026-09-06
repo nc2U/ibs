@@ -731,3 +731,21 @@ class SalesAPITests(APITestCase):
         self.assertEqual(res_unverify.status_code, http_status.HTTP_200_OK)
         self.assertFalse(res_unverify.data['is_verified'])
 
+        # 6. 서류 구분(doc_type) 필터링 검증
+        res_doc_type = self.client.get(f'/api/v1/sales-person-document/?sales_person={self.counselor.id}&doc_type=2')
+        self.assertEqual(res_doc_type.status_code, http_status.HTTP_200_OK)
+        self.assertEqual(res_doc_type.data['count'], 1)
+
+        res_other_type = self.client.get(f'/api/v1/sales-person-document/?sales_person={self.counselor.id}&doc_type=1')
+        self.assertEqual(res_other_type.status_code, http_status.HTTP_200_OK)
+        self.assertEqual(res_other_type.data['count'], 0)
+
+        # 7. 서류 삭제 API 호출 및 인력 documents_count 반영 검증
+        res_del = self.client.delete(f'/api/v1/sales-person-document/{doc_id}/')
+        self.assertEqual(res_del.status_code, http_status.HTTP_204_NO_CONTENT)
+
+        res_person_after_del = self.client.get(f'/api/v1/sales-person/{self.counselor.id}/')
+        self.assertEqual(res_person_after_del.status_code, http_status.HTTP_200_OK)
+        self.assertEqual(res_person_after_del.data['documents_count'], 0)
+        self.assertEqual(len(res_person_after_del.data['documents']), 0)
+
