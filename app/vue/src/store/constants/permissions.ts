@@ -99,18 +99,18 @@ export const PERM = {
   CONTRACT_SUCCESSION: 'contract.succession',
   CONTRACT_RELEASE: 'contract.release',
 
-  // Payment permissions
-  PAYMENT_READ: 'payment.read',
-  PAYMENT_CREATE: 'payment.create',
-  PAYMENT_UPDATE: 'payment.update',
-  PAYMENT_DELETE: 'payment.delete',
-
   // Sales permissions
   SALES_READ: 'sales.read', // | 분양 대행 조회 | • 대행사/팀/인력 명단 조회• 계약 배정 실적 현황 조회 | 일반 분양상담사, 현장 관계자
   SALES_MANAGE: 'sales.manage', // | 영업 조직 및 인력/서류 관리 | • 대행사/팀/인력 등록, 수정, 삭제• 계약 영업 담당자 배정 및 MGM 연계• | 팀장, 본부장, 대행사
   SALES_POLICY: 'sales.policy', // | 수수료 정책 관리 | • 차수/타입별 수수료 단가(R값, 대행 수수료) 설정 (영업 비밀) | 본사 사업PM, 임원진
   SALES_SETTLE: 'sales.settle', // | 수수료 정산 관리 | • 정산 회차 생성/수정• 계약 실적 자동 집계 실행 (generate-payouts)• | 본사 재경팀, 사업관리자
-  SALES_PAYOUT: 'sales.payout', // | 수수료 지급 승인 및 이체 | • 개인별 지급 상태 변경(승인/보류/완료)• 은행 대량 이체 CSV 파일 반출 | 본사 자금/출납 책임자                                                                     |
+  SALES_PAYOUT: 'sales.payout', // | 수수료 지급 승인 및 이체 | • 개인별 지급 상태 변경(승인/보류/완료)• 은행 대량 이체 CSV 파일 반출 | 본사 자금/출납 책임자
+
+  // Payment permissions
+  PAYMENT_READ: 'payment.read',
+  PAYMENT_CREATE: 'payment.create',
+  PAYMENT_UPDATE: 'payment.update',
+  PAYMENT_DELETE: 'payment.delete',
 
   // Notice permissions
   NOTICE_READ: 'notice.read',
