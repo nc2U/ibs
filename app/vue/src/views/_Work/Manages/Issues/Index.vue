@@ -5,6 +5,7 @@ import { ALL_ISSUE_COLUMNS, DEFAULT_ISSUE_COLUMNS } from './constants.ts'
 import { useAccount } from '@/store/pinia/account'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
+import { useIssueFilter } from '@/store/pinia/work_issue_filter.ts'
 import { useCompany } from '@/store/pinia/company.ts'
 import { useRoute } from 'vue-router'
 import { useTableColumns } from '@/composables/useTableColumns.ts'
@@ -55,7 +56,8 @@ const route = useRoute()
 provide('navMenu', navMenu)
 provide('query', route?.query)
 
-const listFilter = ref<IssueFilter>({ status__closed: '0', project_status: '1' })
+const issueFilterStore = useIssueFilter()
+const listFilter = ref<IssueFilter>(issueFilterStore.buildFilterPayload())
 const filterSubmit = (payload: IssueFilter) => {
   listFilter.value = payload
   issueStore.fetchIssueList(payload)
@@ -66,13 +68,11 @@ const pageSelect = (page: number) => {
 }
 
 const querySectionRef = ref()
-const activeQueryId = ref<number | null>(null)
+const activeQueryId = computed(() => issueFilterStore.activeQueryId)
 const onQueryClick = (query: any) => {
-  activeQueryId.value = query.pk
   querySectionRef.value?.applyQuery(query)
 }
 const onResetQuery = () => {
-  activeQueryId.value = null
   querySectionRef.value?.resetFilter()
 }
 

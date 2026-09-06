@@ -4,6 +4,7 @@ import { ALL_ISSUE_COLUMNS, DEFAULT_ISSUE_COLUMNS } from '@/views/_Work/Manages/
 import { useAccount } from '@/store/pinia/account.ts'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useIssue } from '@/store/pinia/work_issue.ts'
+import { useIssueFilter } from '@/store/pinia/work_issue_filter.ts'
 import { useLogging } from '@/store/pinia/work_logging.ts'
 import { usePerms } from '@/composables/usePerms'
 import { useRoute, useRouter } from 'vue-router'
@@ -62,15 +63,14 @@ const getIssues = computed(() => issueStore.getIssues)
 
 const issueListRef = ref()
 const querySectionRef = ref()
-const activeQueryId = ref<number | undefined>(undefined)
+const issueFilterStore = useIssueFilter()
+const activeQueryId = computed(() => issueFilterStore.activeQueryId)
 
 const onQueryClick = (query: any) => {
-  activeQueryId.value = query.pk
   querySectionRef.value?.applyQuery(query)
 }
 
 const onResetQuery = () => {
-  activeQueryId.value = undefined
   querySectionRef.value?.resetFilter()
 }
 
@@ -134,11 +134,7 @@ const onSubmit = async (payload: any) => {
 const projId = computed(() => (route.params.projId as string) ?? '')
 const issueId = computed(() => (route.params.issueId as string) ?? '')
 
-const listFilter = ref<IssueFilter>({
-  status__closed: '0',
-  project_status: '1',
-  project: projId.value,
-})
+const listFilter = ref<IssueFilter>(issueFilterStore.buildFilterPayload(projId.value))
 
 const filterSubmit = (payload: IssueFilter) => {
   listFilter.value = payload
@@ -152,12 +148,11 @@ const pageSelect = (page: number) => {
 watch(
   () => projId.value,
   nVal => {
-    if (nVal && nVal.length > 0)
-      issueStore.fetchIssueList({
-        status__closed: '0',
-        project_status: '1',
-        project: nVal as string,
-      })
+    if (nVal && nVal.length > 0) {
+      const payload = issueFilterStore.resetFilter(nVal as string)
+      listFilter.value = payload
+      issueStore.fetchIssueList(payload)
+    }
   },
 )
 const logStore = useLogging()
@@ -287,7 +282,7 @@ onBeforeMount(async () => {
     <template v-slot:aside>
       <SavedQueryAside
         target-type="issue"
-        :active-query-id="activeQueryId"
+        :active-query-id="activeQueryId ?? undefined"
         :can-project-pub-query="canPubQuery"
         @on-query-click="onQueryClick"
         @on-reset-query="onResetQuery"

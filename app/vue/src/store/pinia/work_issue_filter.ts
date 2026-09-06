@@ -160,16 +160,20 @@ export const useIssueFilter = defineStore('issueFilter', () => {
 
   const form = ref<IssueFilter & Record<string, any>>({ ...defaultForm })
 
-  // 4. 필터 파라미터 빌드 로직 (DRF API 쿼리 파라미터 생성)
-  const buildFilterPayload = (): IssueFilter => {
+  // 4. 활성화된 저장 검색양식 ID
+  const activeQueryId = ref<number | null>(null)
+
+  // 5. 필터 파라미터 빌드 로직 (DRF API 쿼리 파라미터 생성)
+  const buildFilterPayload = (currentProjectSlug = ''): IssueFilter => {
     const filterData: IssueFilter & Record<string, any> = {
       status__closed: '0',
       project_status: '1',
     }
 
     // 기본 프로젝트 조회 세팅
-    if (form.value.project) {
-      filterData.project__slug = form.value.project
+    const projSlug = currentProjectSlug || form.value.project
+    if (projSlug) {
+      filterData.project__slug = projSlug
     }
 
     // 1. 상태(status) 필터링
@@ -283,8 +287,9 @@ export const useIssueFilter = defineStore('issueFilter', () => {
     return filterData
   }
 
-  // 5. 초기화
+  // 6. 초기화
   const resetFilter = (currentProjectSlug = '') => {
+    activeQueryId.value = null
     searchCond.value = ['status']
     enabledFields.value = ['status']
     cond.value = { ...defaultCond }
@@ -292,16 +297,31 @@ export const useIssueFilter = defineStore('issueFilter', () => {
       ...defaultForm,
       project: currentProjectSlug,
     }
-    return buildFilterPayload()
+    return buildFilterPayload(currentProjectSlug)
   }
 
-  // 6. 저장된 쿼리 복원
-  const applySavedQuery = (query: any, currentUserId?: number, defaultUserId?: number) => {
-    if (!query || !query.filters) return null
+  // 7. 저장된 쿼리 복원
+  const applySavedQuery = (
+    query: any,
+    currentUserId?: number,
+    defaultUserId?: number,
+    currentProjectSlug = '',
+  ) => {
+    if (!query || !query.filters) {
+      activeQueryId.value = null
+      return null
+    }
+
+    activeQueryId.value = query.pk ?? null
 
     const f = query.filters
     searchCond.value = ['status']
     enabledFields.value = ['status']
+    cond.value = { ...defaultCond }
+    form.value = {
+      ...defaultForm,
+      project: currentProjectSlug,
+    }
 
     if (f.searchCond) {
       searchCond.value = [...f.searchCond]
@@ -360,10 +380,11 @@ export const useIssueFilter = defineStore('issueFilter', () => {
       }
     }
 
-    return buildFilterPayload()
+    return buildFilterPayload(currentProjectSlug)
   }
 
   return {
+    activeQueryId,
     searchCond,
     enabledFields,
     cond,

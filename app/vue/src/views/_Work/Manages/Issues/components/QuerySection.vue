@@ -538,7 +538,8 @@ const activeFields = computed(() => {
 })
 
 const filterSubmit = () => {
-  const filterData = issueFilterStore.buildFilterPayload()
+  const currentProj = (route.params.projId as string) ?? ''
+  const filterData = issueFilterStore.buildFilterPayload(currentProj)
   emit('filter-submit', filterData)
 }
 
@@ -698,10 +699,12 @@ onBeforeMount(async () => {
 
 // ----- 저장된 검색양식 복원 (Apply Query) -----
 const applyQuery = (query: any) => {
+  const currentProj = (route.params.projId as string) ?? ''
   const payload = issueFilterStore.applySavedQuery(
     query,
     currentUserId.value,
     props.getUsers[0]?.value,
+    currentProj,
   )
   if (payload) {
     emit('filter-submit', payload)
