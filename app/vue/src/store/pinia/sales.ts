@@ -215,6 +215,7 @@ export const useSales = defineStore('sales', () => {
   const fetchPeriodList = (projectId?: number) => {
     const params = new URLSearchParams()
     if (projectId) params.append('project', String(projectId))
+    params.append('limit', '500')
     return api
       .get(`/sales-settlement-period/?${params}`)
       .then(res => (periodList.value = res.data.results ?? res.data))
@@ -253,9 +254,11 @@ export const useSales = defineStore('sales', () => {
   // ── 지급 명세 ─────────────────────────────────────────
   const payoutList = ref<CommissionPayout[]>([])
 
-  const fetchPayoutList = (periodId?: number) => {
+  const fetchPayoutList = (periodId?: number, payStatus?: string) => {
     const params = new URLSearchParams()
     if (periodId) params.append('period', String(periodId))
+    if (payStatus) params.append('pay_status', payStatus)
+    params.append('limit', '1000')
     return api
       .get(`/sales-payout/?${params}`)
       .then(res => (payoutList.value = res.data.results ?? res.data))
