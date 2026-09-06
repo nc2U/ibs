@@ -39,7 +39,10 @@ export const useProjectFilter = defineStore('projectFilter', () => {
   const selectedProjectVal = ref<number | string>('')
   const selectedParentVal = ref<number | string>('')
 
-  // 5. 필터 페이로드 생성 로직
+  // 5. 활성화된 저장 검색양식 ID
+  const activeQueryId = ref<number | null>(null)
+
+  // 6. 필터 페이로드 생성 로직
   const buildFilterPayload = (allReadableProjects: selectProject[] = []): ProjectFilter => {
     const filterData = {} as ProjectFilter & Record<string, any>
 
@@ -137,8 +140,9 @@ export const useProjectFilter = defineStore('projectFilter', () => {
     return filterData
   }
 
-  // 6. 초기화
+  // 7. 초기화
   const resetFilter = (allReadableProjects: selectProject[] = []) => {
+    activeQueryId.value = null
     searchCond.value = ['status']
     enabledFields.value = ['status']
     cond.value = { ...defaultCond }
@@ -150,9 +154,11 @@ export const useProjectFilter = defineStore('projectFilter', () => {
     return buildFilterPayload(allReadableProjects)
   }
 
-  // 7. 저장된 쿼리 복원
+  // 8. 저장된 쿼리 복원
   const applySavedQuery = (query: any, allReadableProjects: selectProject[] = []) => {
     if (!query || !query.filters) return null
+
+    activeQueryId.value = query.pk ?? null
 
     const f = query.filters
     searchCond.value = ['status']
@@ -204,6 +210,7 @@ export const useProjectFilter = defineStore('projectFilter', () => {
     form,
     selectedProjectVal,
     selectedParentVal,
+    activeQueryId,
     buildFilterPayload,
     resetFilter,
     applySavedQuery,

@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useWork } from '@/store/pinia/work_project.ts'
+import { useProjectFilter } from '@/store/pinia/work_project_filter.ts'
 import {
   ALL_PROJECT_COLUMNS,
   DEFAULT_PROJECT_COLUMNS,
@@ -98,18 +99,17 @@ const colProps = computed(() => {
 })
 
 // 검색양식 관련 계산 및 메서드
-const activeQueryId = ref<number | null>(null)
+const projectFilterStore = useProjectFilter()
+const activeQueryId = computed(() => projectFilterStore.activeQueryId)
 const querySectionRef = ref()
 
 const onQueryClick = (query: any) => {
-  activeQueryId.value = query.pk
   if (querySectionRef.value) {
     querySectionRef.value.applyQuery(query)
   }
 }
 
 const onResetQuery = () => {
-  activeQueryId.value = null
   if (querySectionRef.value) {
     querySectionRef.value.resetFilter()
   }
@@ -122,7 +122,8 @@ onMounted(() => {
 onBeforeUnmount(() => window.removeEventListener('resize', updateBreakpoint))
 
 onBeforeMount(() => {
-  workStore.fetchIssueProjectList({ status: '1' })
+  const initialFilter = projectFilterStore.buildFilterPayload(allReadableProjects.value)
+  workStore.fetchIssueProjectList(initialFilter)
   workStore.fetchBookmarks()
 })
 </script>
