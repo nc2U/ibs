@@ -356,3 +356,194 @@ class CombinedContractPerformanceItem {
   int get mgmFee => mapping?.mgmFee ?? 0;
   String? get note => mapping?.note;
 }
+
+/// 정산 대상 개별 계약 상세 모델
+class PayoutContractDetailModel {
+  final int id;
+  final int payout;
+  final int contract;
+  final String? contractSerial;
+  final String? contractorName;
+  final String roleType; // agent, leader, director, mgm
+  final String? roleTypeDisplay;
+  final int unitFee;
+
+  const PayoutContractDetailModel({
+    required this.id,
+    required this.payout,
+    required this.contract,
+    this.contractSerial,
+    this.contractorName,
+    this.roleType = 'agent',
+    this.roleTypeDisplay,
+    this.unitFee = 0,
+  });
+
+  factory PayoutContractDetailModel.fromJson(Map<String, dynamic> json) {
+    return PayoutContractDetailModel(
+      id: json['id'] as int? ?? 0,
+      payout: json['payout'] as int? ?? 0,
+      contract: json['contract'] as int? ?? 0,
+      contractSerial: json['contract_serial'] as String?,
+      contractorName: json['contractor_name'] as String?,
+      roleType: json['role_type'] as String? ?? 'agent',
+      roleTypeDisplay: json['role_type_display'] as String?,
+      unitFee: json['unit_fee'] as int? ?? 0,
+    );
+  }
+}
+
+/// 개인별 수수료 정산 및 지급 내역 모델
+class CommissionPayoutModel {
+  final int id;
+  final int period;
+  final int salesPerson;
+  final String? salesPersonName;
+  final String? dutyDisplay;
+  final String? teamName;
+  final int basePay;
+  final int contractCount;
+  final int commissionAmount;
+  final int bonusAmount;
+  final int deductionAmount;
+  final int grossAmount;
+  final int incomeTax;
+  final int localIncomeTax;
+  final int totalTax;
+  final int netAmount;
+  final String payStatus; // 1: 대기, 2: 승인, 3: 지급 완료, 4: 지급 보류
+  final String? payStatusDisplay;
+  final String? paidDate;
+  final String? bankName;
+  final String? accountNumber;
+  final String? accountHolder;
+  final String? note;
+  final List<PayoutContractDetailModel> contractDetails;
+
+  const CommissionPayoutModel({
+    required this.id,
+    required this.period,
+    required this.salesPerson,
+    this.salesPersonName,
+    this.dutyDisplay,
+    this.teamName,
+    this.basePay = 0,
+    this.contractCount = 0,
+    this.commissionAmount = 0,
+    this.bonusAmount = 0,
+    this.deductionAmount = 0,
+    this.grossAmount = 0,
+    this.incomeTax = 0,
+    this.localIncomeTax = 0,
+    this.totalTax = 0,
+    this.netAmount = 0,
+    this.payStatus = '1',
+    this.payStatusDisplay,
+    this.paidDate,
+    this.bankName,
+    this.accountNumber,
+    this.accountHolder,
+    this.note,
+    this.contractDetails = const [],
+  });
+
+  factory CommissionPayoutModel.fromJson(Map<String, dynamic> json) {
+    var detailsList = <PayoutContractDetailModel>[];
+    if (json['contract_details'] is List) {
+      detailsList = (json['contract_details'] as List)
+          .map((item) => PayoutContractDetailModel.fromJson(item as Map<String, dynamic>))
+          .toList();
+    }
+
+    return CommissionPayoutModel(
+      id: json['id'] as int? ?? 0,
+      period: json['period'] as int? ?? 0,
+      salesPerson: json['sales_person'] as int? ?? 0,
+      salesPersonName: json['sales_person_name'] as String?,
+      dutyDisplay: json['duty_display'] as String?,
+      teamName: json['team_name'] as String?,
+      basePay: json['base_pay'] as int? ?? 0,
+      contractCount: json['contract_count'] as int? ?? 0,
+      commissionAmount: json['commission_amount'] as int? ?? 0,
+      bonusAmount: json['bonus_amount'] as int? ?? 0,
+      deductionAmount: json['deduction_amount'] as int? ?? 0,
+      grossAmount: json['gross_amount'] as int? ?? 0,
+      incomeTax: json['income_tax'] as int? ?? 0,
+      localIncomeTax: json['local_income_tax'] as int? ?? 0,
+      totalTax: json['total_tax'] as int? ?? 0,
+      netAmount: json['net_amount'] as int? ?? 0,
+      payStatus: json['pay_status'] as String? ?? '1',
+      payStatusDisplay: json['pay_status_display'] as String?,
+      paidDate: json['paid_date'] as String?,
+      bankName: json['bank_name'] as String?,
+      accountNumber: json['account_number'] as String?,
+      accountHolder: json['account_holder'] as String?,
+      note: json['note'] as String?,
+      contractDetails: detailsList,
+    );
+  }
+}
+
+/// 수수료 정산 회차 모델
+class SettlementPeriodModel {
+  final int id;
+  final int project;
+  final String title;
+  final String startDate;
+  final String endDate;
+  final String? payoutDate;
+  final String status; // 1: 정산 작성 중, 2: 정산 확정, 3: 지급 완료
+  final String? statusDisplay;
+  final int totalContracts;
+  final int totalGrossAmount;
+  final int totalTaxAmount;
+  final int totalNetAmount;
+  final int payoutCount;
+  final int? createdBy;
+  final String? createdAt;
+  final String? updatedAt;
+
+  const SettlementPeriodModel({
+    required this.id,
+    required this.project,
+    required this.title,
+    required this.startDate,
+    required this.endDate,
+    this.payoutDate,
+    this.status = '1',
+    this.statusDisplay,
+    this.totalContracts = 0,
+    this.totalGrossAmount = 0,
+    this.totalTaxAmount = 0,
+    this.totalNetAmount = 0,
+    this.payoutCount = 0,
+    this.createdBy,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  bool get isDraft => status == '1';
+  bool get isConfirmed => status == '2';
+  bool get isCompleted => status == '3';
+
+  factory SettlementPeriodModel.fromJson(Map<String, dynamic> json) {
+    return SettlementPeriodModel(
+      id: json['id'] as int? ?? 0,
+      project: json['project'] as int? ?? 0,
+      title: json['title'] as String? ?? '',
+      startDate: json['start_date'] as String? ?? '',
+      endDate: json['end_date'] as String? ?? '',
+      payoutDate: json['payout_date'] as String?,
+      status: json['status'] as String? ?? '1',
+      statusDisplay: json['status_display'] as String?,
+      totalContracts: json['total_contracts'] as int? ?? 0,
+      totalGrossAmount: json['total_gross_amount'] as int? ?? 0,
+      totalTaxAmount: json['total_tax_amount'] as int? ?? 0,
+      totalNetAmount: json['total_net_amount'] as int? ?? 0,
+      payoutCount: json['payout_count'] as int? ?? 0,
+      createdBy: json['created_by'] as int?,
+      createdAt: json['created_at'] as String?,
+      updatedAt: json['updated_at'] as String?,
+    );
+  }
+}

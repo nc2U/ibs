@@ -319,4 +319,89 @@ class SalesRepository {
   Future<void> deleteCommissionPolicy(int id) async {
     await dio.delete('/api/v1/sales-policy/$id/');
   }
+
+  // ── 수수료 정산 회차 CRUD & 액션 ────────────────────────
+  Future<List<SettlementPeriodModel>> fetchSettlementPeriods(int projectId) async {
+    try {
+      final response = await dio.get(
+        '/api/v1/sales-settlement-period/',
+        queryParameters: {'project': projectId, 'limit': 100},
+      );
+      final data = response.data;
+      final results = data is Map && data.containsKey('results')
+          ? data['results'] as List<dynamic>
+          : (data is List ? data : []);
+      return results
+          .map((item) => SettlementPeriodModel.fromJson(item as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<SettlementPeriodModel> createSettlementPeriod(Map<String, dynamic> payload) async {
+    final response = await dio.post('/api/v1/sales-settlement-period/', data: payload);
+    return SettlementPeriodModel.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<SettlementPeriodModel> updateSettlementPeriod(int id, Map<String, dynamic> payload) async {
+    final response = await dio.patch('/api/v1/sales-settlement-period/$id/', data: payload);
+    return SettlementPeriodModel.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<void> deleteSettlementPeriod(int id) async {
+    await dio.delete('/api/v1/sales-settlement-period/$id/');
+  }
+
+  /// 정산 계산 자동 실행 (계약 실적 + R값 + 환수금 집계)
+  Future<Map<String, dynamic>> generatePayouts(int periodId) async {
+    final response = await dio.post(
+      '/api/v1/sales-settlement-period/$periodId/generate-payouts/',
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
+  /// 정산 회차 확정 (상태 1 -> 2)
+  Future<void> confirmSettlement(int periodId) async {
+    await dio.post(
+      '/api/v1/sales-settlement-period/$periodId/confirm-settlement/',
+    );
+  }
+
+  // ── 개인별 수수료 지급 명세 (CommissionPayout) ─────────
+  Future<List<CommissionPayoutModel>> fetchCommissionPayouts({
+    required int periodId,
+    String? payStatus,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{
+        'period': periodId,
+        'limit': 200,
+      };
+      if (payStatus != null && payStatus.isNotEmpty) {
+        queryParams['pay_status'] = payStatus;
+      }
+      final response = await dio.get(
+        '/api/v1/sales-payout/',
+        queryParameters: queryParams,
+      );
+      final data = response.data;
+      final results = data is Map && data.containsKey('results')
+          ? data['results'] as List<dynamic>
+          : (data is List ? data : []);
+      return results
+          .map((item) => CommissionPayoutModel.fromJson(item as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// 지급 상태 변경 (승인 / 완료 / 보류)
+  Future<void> updatePayStatus(int payoutId, String payStatus) async {
+    await dio.post(
+      '/api/v1/sales-payout/$payoutId/update-pay-status/',
+      data: {'pay_status': payStatus},
+    );
+  }
 }

@@ -421,3 +421,78 @@ final filteredSalesPoliciesProvider = Provider<List<CommissionPolicyModel>>((ref
     return true;
   }).toList();
 });
+
+// ═════════════════════════════════════════════════════════════════
+// 💰 수수료 정산 (Settlement) 관련 프로바이더
+// ═════════════════════════════════════════════════════════════════
+
+/// 수수료 정산 회차 목록 프로바이더 (/api/v1/sales-settlement-period/)
+final settlementPeriodsProvider =
+    FutureProvider<List<SettlementPeriodModel>>((ref) async {
+  final selectedProject = ref.watch(selectedRealEstateProjectProvider);
+  if (selectedProject == null) return [];
+
+  final repository = ref.watch(salesRepositoryProvider);
+  return repository.fetchSettlementPeriods(selectedProject.realProjectId);
+});
+
+/// 현재 선택된 정산 회차 ID 프로바이더 (null이면 최신 회차 자동 선택)
+final selectedPeriodIdProvider = StateProvider<int?>((ref) => null);
+
+/// 현재 선택된 정산 회차 객체 프로바이더
+final currentSettlementPeriodProvider = Provider<SettlementPeriodModel?>((ref) {
+  final periods = ref.watch(settlementPeriodsProvider).valueOrNull ?? [];
+  final selectedId = ref.watch(selectedPeriodIdProvider);
+
+  if (periods.isEmpty) return null;
+  if (selectedId != null) {
+    return periods.where((p) => p.id == selectedId).firstOrNull ?? periods.first;
+  }
+  return periods.first;
+});
+
+/// 선택된 회차의 개인별 수수료 지급 명세 목록 프로바이더 (/api/v1/sales-payout/)
+final commissionPayoutsProvider =
+    FutureProvider<List<CommissionPayoutModel>>((ref) async {
+  final currentPeriod = ref.watch(currentSettlementPeriodProvider);
+  if (currentPeriod == null) return [];
+
+  final repository = ref.watch(salesRepositoryProvider);
+  return repository.fetchCommissionPayouts(periodId: currentPeriod.id);
+});
+
+/// ── 수수료 정산 명세 필터 프로바이더 ──────────────────────────────
+final settlementSearchQueryProvider = StateProvider<String>((ref) => '');
+final settlementDutyFilterProvider = StateProvider<String>((ref) => '');
+final settlementPayStatusFilterProvider = StateProvider<String>((ref) => '');
+
+/// ── 필터링된 개인별 수수료 지급 명세 목록 프로바이더 ─────────────────
+final filteredCommissionPayoutsProvider =
+    Provider<List<CommissionPayoutModel>>((ref) {
+  final payouts = ref.watch(commissionPayoutsProvider).valueOrNull ?? [];
+  final query = ref.watch(settlementSearchQueryProvider).trim().toLowerCase();
+  final dutyFilter = ref.watch(settlementDutyFilterProvider);
+  final statusFilter = ref.watch(settlementPayStatusFilterProvider);
+
+  return payouts.where((p) {
+    // 1. 지급 상태 필터
+    if (statusFilter.isNotEmpty && p.payStatus != statusFilter) {
+      return false;
+    }
+
+    // 2. 직책 필터 (dutyDisplay 검사)
+    if (dutyFilter.isNotEmpty && p.dutyDisplay != dutyFilter) {
+      return false;
+    }
+
+    // 3. 검색어 필터 (성명, 소속팀, 계좌주)
+    if (query.isNotEmpty) {
+      final nameMatch = p.salesPersonName?.toLowerCase().contains(query) ?? false;
+      final teamMatch = p.teamName?.toLowerCase().contains(query) ?? false;
+      final holderMatch = p.accountHolder?.toLowerCase().contains(query) ?? false;
+      if (!nameMatch && !teamMatch && !holderMatch) return false;
+    }
+
+    return true;
+  }).toList();
+});
