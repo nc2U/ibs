@@ -5,6 +5,7 @@ import {
   DEFAULT_MEETING_COLUMNS,
 } from '@/views/_Work/Manages/Meetings/constants.ts'
 import { useMeeting } from '@/store/pinia/work_meeting.ts'
+import { useMeetingFilter } from '@/store/pinia/work_meeting_filter.ts'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useRoute } from 'vue-router'
 import { usePerms } from '@/composables/usePerms.ts'
@@ -56,7 +57,8 @@ const viewMode = computed(() => {
 const page = ref(1)
 const meetingListRef = ref()
 const querySectionRef = ref()
-const activeQueryId = ref<number | null>(null)
+const meetingFilterStore = useMeetingFilter()
+const activeQueryId = computed(() => meetingFilterStore.activeQueryId)
 const listFilter = ref<MeetingFilter>({})
 
 const onFilterSubmit = (filter: MeetingFilter) => {
@@ -79,22 +81,23 @@ const onPageSelect = (p: number) => {
 }
 
 const onQueryClick = (query: any) => {
-  activeQueryId.value = query.pk
   querySectionRef.value?.applyQuery(query)
 }
 
 const onResetQuery = () => {
-  activeQueryId.value = null
   querySectionRef.value?.resetFilter()
 }
 
 const fetchMeetings = async () => {
   if (route.params.projId) {
     if (viewMode.value === 'list') {
+      const projSlug = route.params.projId as string
+      const initialFilter = meetingFilterStore.buildFilterPayload(projSlug)
+      listFilter.value = initialFilter
       await meetingStore.fetchMeetingList({
-        ...listFilter.value,
+        ...initialFilter,
         page: page.value,
-        project: route.params.projId as string,
+        project: projSlug,
       })
     }
     await meetingStore.fetchCategoryList(route.params.projId as string)

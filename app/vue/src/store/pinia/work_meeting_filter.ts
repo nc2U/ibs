@@ -61,7 +61,10 @@ export const useMeetingFilter = defineStore('meetingFilter', () => {
   }
   const form = ref<MeetingFilterForm>({ ...defaultForm })
 
-  // 4. 필터 페이로드 생성 로직
+  // 4. 활성화된 저장 검색양식 ID
+  const activeQueryId = ref<number | null>(null)
+
+  // 5. 필터 페이로드 생성 로직
   const buildFilterPayload = (currentProjSlug = ''): MeetingFilter => {
     const payload: MeetingFilter = { page: 1 }
 
@@ -183,8 +186,9 @@ export const useMeetingFilter = defineStore('meetingFilter', () => {
     return payload
   }
 
-  // 5. 초기화
+  // 6. 초기화
   const resetFilter = (currentProjSlug = '') => {
+    activeQueryId.value = null
     searchCond.value = ['status']
     enabledFields.value = ['status']
     cond.value = { ...defaultCond }
@@ -195,7 +199,7 @@ export const useMeetingFilter = defineStore('meetingFilter', () => {
     return buildFilterPayload(currentProjSlug)
   }
 
-  // 6. 저장된 쿼리 복원
+  // 7. 저장된 쿼리 복원
   const applySavedQuery = (
     query: any,
     currentUserId?: number,
@@ -203,6 +207,8 @@ export const useMeetingFilter = defineStore('meetingFilter', () => {
     currentProjSlug = '',
   ) => {
     if (!query || !query.filters) return null
+
+    activeQueryId.value = query.pk ?? null
 
     const f = query.filters
     searchCond.value = ['status']
@@ -260,6 +266,7 @@ export const useMeetingFilter = defineStore('meetingFilter', () => {
     enabledFields,
     cond,
     form,
+    activeQueryId,
     buildFilterPayload,
     resetFilter,
     applySavedQuery,

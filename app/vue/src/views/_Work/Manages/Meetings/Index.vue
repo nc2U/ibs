@@ -5,6 +5,7 @@ import { navMenu1, navMenu2 } from '@/views/_Work/_menu/headermixin1'
 import { ALL_MEETING_COLUMNS, DEFAULT_MEETING_COLUMNS } from './constants'
 import { useWork } from '@/store/pinia/work_project.ts'
 import { useMeeting } from '@/store/pinia/work_meeting.ts'
+import { useMeetingFilter } from '@/store/pinia/work_meeting_filter.ts'
 import { useCompany } from '@/store/pinia/company.ts'
 import { usePerms } from '@/composables/usePerms.ts'
 import { useTableColumns } from '@/composables/useTableColumns'
@@ -51,7 +52,8 @@ provide('navMenu', navMenu)
 const page = ref(1)
 const meetingListRef = ref()
 const querySectionRef = ref()
-const activeQueryId = ref<number | null>(null)
+const meetingFilterStore = useMeetingFilter()
+const activeQueryId = computed(() => meetingFilterStore.activeQueryId)
 
 const listFilter = ref<MeetingFilter>({})
 
@@ -67,12 +69,10 @@ const onPageSelect = (p: number) => {
 }
 
 const onQueryClick = (query: any) => {
-  activeQueryId.value = query.pk
   querySectionRef.value?.applyQuery(query)
 }
 
 const onResetQuery = () => {
-  activeQueryId.value = null
   querySectionRef.value?.resetFilter()
 }
 
@@ -88,7 +88,10 @@ const loading = ref<boolean>(true)
 const initData = async () => {
   loading.value = true
   try {
-    await meetingStore.fetchMeetingList({ page: page.value })
+    const currentProjSlug = (route.params.projId as string) || ''
+    const initialFilter = meetingFilterStore.buildFilterPayload(currentProjSlug)
+    listFilter.value = initialFilter
+    await meetingStore.fetchMeetingList({ ...initialFilter, page: page.value })
     await meetingStore.fetchCategoryList()
   } catch (err) {
     console.error('Failed to load meetings data:', err)
