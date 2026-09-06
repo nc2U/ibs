@@ -111,7 +111,8 @@ const onSaved = async () => {
   />
 
   <ContentBody>
-    <div v-if="!project" class="py-5 text-center text-muted">
+    <CCardBody class="p-3 p-md-4 pb-5">
+      <div v-if="!project" class="py-5 text-center text-muted">
       <v-icon icon="mdi-alert-circle-outline" size="large" class="mb-2 text-warning" />
       <h5>프로젝트를 먼저 선택해 주세요.</h5>
       <p class="mb-0 text-secondary">
@@ -303,6 +304,7 @@ const onSaved = async () => {
         </CCardBody>
       </CCard>
     </div>
+    </CCardBody>
 
     <!-- 등록/수정 모달 -->
     <PolicyFormModal
