@@ -5,6 +5,7 @@ import { useRoute } from 'vue-router'
 import { useWork } from '@/store/pinia/work_project'
 import { useCompany } from '@/store/pinia/company.ts'
 import { useCalendar } from '@/store/pinia/work_calendar'
+import { useCalendarFilter } from '@/store/pinia/work_calendar_filter.ts'
 import { useAccount } from '@/store/pinia/account'
 import { useIssue } from '@/store/pinia/work_issue'
 import { useMeeting } from '@/store/pinia/work_meeting'
@@ -46,11 +47,12 @@ const trackerList = computed(() => issueStore.trackerList)
 const priorityList = computed(() => issueStore.priorityList)
 const meetingCategories = computed(() => meetingStore.categoryList)
 
+const calendarFilterStore = useCalendarFilter()
 const activeProject = ref<string | undefined>(route.query.project as string | undefined)
-const activeFilters = ref<Record<string, any>>({})
+const activeFilters = ref<Record<string, any>>(calendarFilterStore.buildFilterPayload())
 const calendarRef = ref()
 const querySectionRef = ref()
-const activeQueryId = ref<number | undefined>(undefined)
+const activeQueryId = computed(() => calendarFilterStore.activeQueryId)
 
 const filterSubmit = (payload: IssueFilter) => {
   activeProject.value = payload.project
@@ -60,12 +62,10 @@ const filterSubmit = (payload: IssueFilter) => {
 }
 
 const onQueryClick = (query: any) => {
-  activeQueryId.value = query.pk
   querySectionRef.value?.applyQuery(query)
 }
 
 const onResetQuery = () => {
-  activeQueryId.value = undefined
   querySectionRef.value?.resetFilter()
 }
 
@@ -138,7 +138,7 @@ const summary = computed(() => {
     <template v-slot:aside>
       <SavedQueryAside
         target-type="calendar"
-        :active-query-id="activeQueryId"
+        :active-query-id="activeQueryId ?? undefined"
         :can-project-pub-query="canPubQuery"
         @on-query-click="onQueryClick"
         @on-reset-query="onResetQuery"

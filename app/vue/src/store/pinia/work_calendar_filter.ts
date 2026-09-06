@@ -5,7 +5,10 @@ export const useCalendarFilter = defineStore('calendarFilter', () => {
   // 1. 이벤트 종류 (업무, 회의) 선택
   const eventTypes = ref<('issue' | 'meeting')[]>(['issue', 'meeting'])
 
-  // 2. 활성화된 검색 조건 태그 및 체크박스 필드
+  // 2. 활성화된 저장 검색양식 ID
+  const activeQueryId = ref<number | null>(null)
+
+  // 3. 활성화된 검색 조건 태그 및 체크박스 필드
   const searchCond = ref<string[]>(['issue_status'])
   const enabledFields = ref<string[]>(['issue_status'])
 
@@ -88,12 +91,12 @@ export const useCalendarFilter = defineStore('calendarFilter', () => {
   }
 
   // 6. 페이로드 빌드 로직
-  const buildFilterPayload = (): Record<string, any> => {
+  const buildFilterPayload = (currentProjSlug = ''): Record<string, any> => {
     const payload: Record<string, any> = {
       event_type: eventTypes.value.length === 2 ? 'all' : (eventTypes.value[0] ?? 'all'),
     }
 
-    // 프로젝트 (체크 박스 활성화시에만 적용)
+    // 프로젝트 (체크 박스 활성화시에만 적용하거나, 프로젝트 환경일 때 주입)
     if (enabledFields.value.includes('project')) {
       if (form.value.project === '') {
         if (cond.value.project === 'is') payload.project__my_project = true
@@ -108,6 +111,8 @@ export const useCalendarFilter = defineStore('calendarFilter', () => {
         if (cond.value.project === 'is') payload.project = form.value.project
         else if (cond.value.project === 'exclude') payload.project__exclude = form.value.project
       }
+    } else if (currentProjSlug || form.value.project) {
+      payload.project = currentProjSlug || form.value.project
     }
 
     // 업무 상태 (체크 박스 활성화시에만 적용)
@@ -193,25 +198,45 @@ export const useCalendarFilter = defineStore('calendarFilter', () => {
   }
 
   // 7. 초기화
-  const resetFilter = () => {
+  const resetFilter = (currentProjSlug = '') => {
+    activeQueryId.value = null
     eventTypes.value = ['issue', 'meeting']
     searchCond.value = ['issue_status']
     enabledFields.value = ['issue_status']
     cond.value = { ...defaultCond }
-    form.value = { ...defaultForm }
-    return buildFilterPayload()
+    form.value = {
+      ...defaultForm,
+      project: currentProjSlug,
+    }
+    return buildFilterPayload(currentProjSlug)
   }
 
   // 8. 저장된 쿼리 복원
-  const applySavedQuery = (query: any, currentUserId?: number, defaultUserId?: number) => {
-    if (!query || !query.filters) return null
+  const applySavedQuery = (
+    query: any,
+    currentUserId?: number,
+    defaultUserId?: number,
+    currentProjSlug = '',
+  ) => {
+    if (!query || !query.filters) {
+      activeQueryId.value = null
+      return null
+    }
+
+    activeQueryId.value = query.pk ?? null
 
     const f = query.filters
     searchCond.value = ['issue_status']
     enabledFields.value = ['issue_status']
     cond.value = { ...defaultCond }
-    form.value = { ...defaultForm }
+    form.value = {
+      ...defaultForm,
+      project: currentProjSlug,
+    }
 
+    if (f.eventTypes) {
+      eventTypes.value = [...f.eventTypes]
+    }
     if (f.searchCond) {
       searchCond.value = [...f.searchCond]
       enabledFields.value = [...f.searchCond]
@@ -219,6 +244,12 @@ export const useCalendarFilter = defineStore('calendarFilter', () => {
     if (f.cond) cond.value = { ...cond.value, ...f.cond }
     if (f.form) {
       form.value = { ...form.value, ...f.form }
+      if (f.form.project && !searchCond.value.includes('project')) {
+        searchCond.value.push('project')
+        if (!enabledFields.value.includes('project')) {
+          enabledFields.value.push('project')
+        }
+      }
     } else {
       const myId = currentUserId ?? defaultUserId
 
@@ -253,10 +284,11 @@ export const useCalendarFilter = defineStore('calendarFilter', () => {
       }
     }
 
-    return buildFilterPayload()
+    return buildFilterPayload(currentProjSlug)
   }
 
   return {
+    activeQueryId,
     eventTypes,
     searchCond,
     enabledFields,

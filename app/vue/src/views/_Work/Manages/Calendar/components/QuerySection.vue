@@ -270,13 +270,15 @@ const activeFields = computed(() =>
 
 // ----- filterSubmit: 통합 필터 객체 emit -----
 const filterSubmit = () => {
-  const payload = calendarFilterStore.buildFilterPayload()
+  const currentProj = (route.params.projId as string) ?? ''
+  const payload = calendarFilterStore.buildFilterPayload(currentProj)
   emit('filter-submit', payload)
 }
 
 // ----- 초기화 -----
 const resetFilter = () => {
-  const payload = calendarFilterStore.resetFilter()
+  const currentProj = (route.params.projId as string) ?? ''
+  const payload = calendarFilterStore.resetFilter(currentProj)
   emit('filter-submit', payload)
 }
 
@@ -317,10 +319,12 @@ watch(
 
 // ----- 저장된 검색양식 복원 (Apply Query) -----
 const applyQuery = (query: any) => {
+  const currentProj = (route.params.projId as string) ?? ''
   const payload = calendarFilterStore.applySavedQuery(
     query,
     currentUserId.value,
     props.getUsers[0]?.value,
+    currentProj,
   )
   if (payload) {
     emit('filter-submit', payload)

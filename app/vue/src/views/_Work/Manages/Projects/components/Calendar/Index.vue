@@ -5,6 +5,7 @@ import { useWork } from '@/store/pinia/work_project'
 import { useIssue } from '@/store/pinia/work_issue'
 import { useMeeting } from '@/store/pinia/work_meeting'
 import { useCalendar } from '@/store/pinia/work_calendar'
+import { useCalendarFilter } from '@/store/pinia/work_calendar_filter.ts'
 import { useAccount } from '@/store/pinia/account'
 import { usePerms } from '@/composables/usePerms'
 import type { IssueFilter } from '@/store/types/work_issue'
@@ -35,21 +36,25 @@ const trackerList = computed(() => issueStore.trackerList)
 const priorityList = computed(() => issueStore.priorityList)
 const meetingCategories = computed(() => meetingStore.categoryList)
 
-const activeFilters = ref<Record<string, any>>({})
+const calendarFilterStore = useCalendarFilter()
+const activeFilters = ref<Record<string, any>>(
+  calendarFilterStore.buildFilterPayload((route.params.projId as string) || ''),
+)
+const calendarRef = ref()
 const querySectionRef = ref()
-const activeQueryId = ref<number | undefined>(undefined)
+const activeQueryId = computed(() => calendarFilterStore.activeQueryId)
 
 const filterSubmit = (payload: IssueFilter) => {
   activeFilters.value = { ...payload }
+  const range = calendarRef.value?.currentRange || { start: '', end: '' }
+  calendarStore.fetchCalendarEvents(payload, range.start, range.end)
 }
 
 const onQueryClick = (query: any) => {
-  activeQueryId.value = query.pk
   querySectionRef.value?.applyQuery(query)
 }
 
 const onResetQuery = () => {
-  activeQueryId.value = undefined
   querySectionRef.value?.resetFilter()
 }
 
@@ -110,6 +115,7 @@ onBeforeMount(async () => {
       <CRow class="mb-3">
         <CCol>
           <SharedCalendar
+            ref="calendarRef"
             :project-slug="route.params.projId as string"
             :issue-filters="activeFilters"
           />
@@ -162,7 +168,7 @@ onBeforeMount(async () => {
     <template v-slot:aside>
       <SavedQueryAside
         target-type="calendar"
-        :active-query-id="activeQueryId"
+        :active-query-id="activeQueryId ?? undefined"
         :can-project-pub-query="canPubQuery"
         @on-query-click="onQueryClick"
         @on-reset-query="onResetQuery"
