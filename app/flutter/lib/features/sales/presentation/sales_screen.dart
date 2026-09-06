@@ -16,6 +16,7 @@ import 'widgets/policy_form_sheet.dart';
 import 'widgets/period_form_sheet.dart';
 import 'widgets/payout_detail_sheet.dart';
 import 'widgets/banking_csv_helper.dart';
+import 'widgets/person_document_sheet.dart';
 import 'package:flutter/services.dart';
 
 /// 🤝 분양 대행 관리 (Sales Agency) 서브 탭 구분
@@ -4313,8 +4314,83 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                 ),
               ],
             ),
+            const SizedBox(height: 6),
 
-            // 5. 위촉일/해촉일
+            // 5. 증빙 서류 (열람 및 공유 바로가기)
+            Row(
+              children: [
+                Icon(Icons.attach_file,
+                    size: 14, color: context.colors.textMuted),
+                const SizedBox(width: 6),
+                Text(
+                  '증빙 서류:',
+                  style: AppTextStyles.caption.copyWith(
+                    color: context.colors.textMuted,
+                    fontSize: 11.5,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                InkWell(
+                  onTap: () => showPersonDocumentSheet(
+                    context,
+                    person: person,
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: person.documentsCount > 0
+                          ? const Color(0xFF6366F1).withAlpha(15)
+                          : context.colors.borderSubtle,
+                      border: Border.all(
+                        color: person.documentsCount > 0
+                            ? const Color(0xFF6366F1).withAlpha(70)
+                            : context.colors.border,
+                        width: 0.8,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          person.documentsCount > 0
+                              ? Icons.description_outlined
+                              : Icons.file_present_outlined,
+                          size: 11,
+                          color: person.documentsCount > 0
+                              ? const Color(0xFF6366F1)
+                              : context.colors.textMuted,
+                        ),
+                        const SizedBox(width: 3),
+                        Text(
+                          person.documentsCount > 0
+                              ? '서류 ${person.documentsCount}건 열람/공유'
+                              : '서류 미제출 (터치하여 확인)',
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: person.documentsCount > 0
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                            color: person.documentsCount > 0
+                                ? const Color(0xFF6366F1)
+                                : context.colors.textMuted,
+                          ),
+                        ),
+                        const SizedBox(width: 2),
+                        Icon(
+                          Icons.chevron_right,
+                          size: 12,
+                          color: person.documentsCount > 0
+                              ? const Color(0xFF6366F1)
+                              : context.colors.textMuted,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            // 6. 위촉일/해촉일
             if (person.joinDate != null && person.joinDate!.isNotEmpty) ...[
               const SizedBox(height: 6),
               Row(

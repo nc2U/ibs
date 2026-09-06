@@ -6,6 +6,7 @@ import '../../../../core/theme/app_colors_extension.dart';
 import '../../data/models/sales_models.dart';
 import '../../data/sales_repository.dart';
 import '../../providers/sales_provider.dart';
+import 'person_document_sheet.dart';
 
 /// 영업 인력 등록 / 수정 바텀시트 열기 함수
 void showPersonFormSheet(
@@ -573,6 +574,46 @@ class _PersonFormSheetState extends ConsumerState<PersonFormSheet> {
                         ),
                       ],
                     ),
+                    if (isEditing && widget.existingPerson != null) ...[
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          Container(width: 3, height: 12, color: const Color(0xFF6366F1), margin: const EdgeInsets.only(right: 6)),
+                          Text('증빙 서류 관리', style: AppTextStyles.label.copyWith(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      InkWell(
+                        onTap: () => showPersonDocumentSheet(
+                          context,
+                          person: widget.existingPerson!,
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: context.colors.bgSurface,
+                            border: Border.all(color: const Color(0xFF6366F1).withAlpha(80)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.folder_shared_outlined, size: 18, color: Color(0xFF6366F1)),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  '제출 서류 열람 및 공유 (${widget.existingPerson!.documentsCount}건)',
+                                  style: const TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF6366F1),
+                                  ),
+                                ),
+                              ),
+                              const Icon(Icons.chevron_right, size: 16, color: Color(0xFF6366F1)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 14),
 
                     // 6. 비고

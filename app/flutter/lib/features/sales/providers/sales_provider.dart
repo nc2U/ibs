@@ -615,3 +615,14 @@ final payoutTabFilteredListProvider =
     return true;
   }).toList();
 });
+
+// ═════════════════════════════════════════════════════════════════
+// 📂 영업 인력 제출 서류 (Sales Person Document) 프로바이더
+// ═════════════════════════════════════════════════════════════════
+
+/// 영업 인력별 제출 증빙 서류 목록 프로바이더 (/api/v1/sales-person-document/)
+final salesPersonDocumentsProvider =
+    FutureProvider.family<List<SalesPersonDocumentModel>, int>((ref, personId) async {
+  final repository = ref.watch(salesRepositoryProvider);
+  return repository.fetchSalesPersonDocuments(salesPersonId: personId);
+});
