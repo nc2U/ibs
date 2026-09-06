@@ -9,12 +9,17 @@ const props = defineProps({
   defaultTeamId: { type: Number, default: null },
 })
 
-const emit = defineEmits(['saved'])
+const emit = defineEmits(['saved', 'open-docs'])
 
 const salesStore = useSales()
 const modalRef = ref()
 const isEdit = ref(false)
 const targetId = ref<number | null>(null)
+
+const currentPerson = computed(() => {
+  if (!targetId.value) return null
+  return salesStore.personList.find(p => p.id === targetId.value) || null
+})
 
 const teamList = computed(() => salesStore.teamList)
 
@@ -227,17 +232,53 @@ defineExpose({ open })
             <DatePicker v-model="form.quit_date" placeholder="해촉/퇴사일" />
           </CCol>
 
+          <!-- 증빙 서류 정보 안내 (수정 모드) -->
+          <CCol v-if="isEdit && currentPerson" md="12" class="pt-2">
+            <div class="border-bottom pb-1 text-primary fw-bold d-flex justify-content-between align-items-center">
+              <div>
+                <v-icon icon="mdi-file-document-multiple-outline" size="small" class="mr-1" />
+                증빙 서류 현황
+              </div>
+              <v-btn
+                color="primary"
+                size="x-small"
+                variant="tonal"
+                @click="emit('open-docs', currentPerson)"
+              >
+                <v-icon icon="mdi-paperclip" size="x-small" class="mr-1" />
+                서류 접수 및 관리 ({{ currentPerson.documents_count ?? 0 }}건)
+              </v-btn>
+            </div>
+            <div class="small text-muted mt-2">
+              주민등록등본, 통장 사본, 신분증, 영업 위촉계약서, 보안서약서 등 접수된 증빙 서류를 확인하고 관리합니다.
+            </div>
+          </CCol>
+
           <CCol md="12">
             <CFormLabel>비고 / 특이사항</CFormLabel>
             <CFormTextarea v-model="form.notes" rows="2" placeholder="경력 사항, 추천인, 메모 등" />
           </CCol>
         </CRow>
       </CModalBody>
-      <CModalFooter>
-        <v-btn color="primary" size="small" @click="submit">
-          {{ isEdit ? '수정 저장' : '등록하기' }}
-        </v-btn>
-        <v-btn color="light" size="small" flat @click="modalRef.close()">취소</v-btn>
+      <CModalFooter class="d-flex justify-content-between">
+        <div>
+          <v-btn
+            v-if="isEdit && currentPerson"
+            color="info"
+            variant="tonal"
+            size="small"
+            @click="emit('open-docs', currentPerson)"
+          >
+            <v-icon icon="mdi-file-document-multiple-outline" size="small" class="mr-1" />
+            증빙 서류 관리 ({{ currentPerson.documents_count ?? 0 }}건)
+          </v-btn>
+        </div>
+        <div>
+          <v-btn color="primary" size="small" class="me-2" @click="submit">
+            {{ isEdit ? '수정 저장' : '등록하기' }}
+          </v-btn>
+          <v-btn color="light" size="small" flat @click="modalRef.close()">취소</v-btn>
+        </div>
       </CModalFooter>
     </template>
   </FormModal>

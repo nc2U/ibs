@@ -10,7 +10,7 @@ const props = defineProps({
   selectedAgencyId: { type: Number as PropType<number | null>, default: null },
 })
 
-const emit = defineEmits(['add-person', 'edit-person'])
+const emit = defineEmits(['add-person', 'edit-person', 'open-docs'])
 
 const salesStore = useSales()
 const personList = computed(() => salesStore.personList)
@@ -120,13 +120,14 @@ const deletePerson = async (person: SalesPerson) => {
       <CTable hover responsive bordered align="middle" class="mb-0 text-center text-body small">
         <colgroup>
           <col style="width: 10%" />
-          <col style="width: 13%" />
-          <col style="width: 10%" />
-          <col style="width: 10%" />
           <col style="width: 12%" />
-          <col style="width: 12%" />
-          <col style="width: 18%" />
-          <col style="width: 8%" />
+          <col style="width: 9%" />
+          <col style="width: 9%" />
+          <col style="width: 11%" />
+          <col style="width: 10%" />
+          <col style="width: 15%" />
+          <col style="width: 10%" />
+          <col style="width: 7%" />
           <col style="width: 7%" />
         </colgroup>
         <CTableHead :color="TableSecondary">
@@ -138,6 +139,7 @@ const deletePerson = async (person: SalesPerson) => {
             <CTableHeaderCell>연락처</CTableHeaderCell>
             <CTableHeaderCell>소득구분</CTableHeaderCell>
             <CTableHeaderCell>정산 계좌 정보</CTableHeaderCell>
+            <CTableHeaderCell>제출 서류</CTableHeaderCell>
             <CTableHeaderCell>상태</CTableHeaderCell>
             <CTableHeaderCell>관리</CTableHeaderCell>
           </CTableRow>
@@ -179,6 +181,19 @@ const deletePerson = async (person: SalesPerson) => {
               <span v-else class="text-muted">미등록</span>
             </CTableDataCell>
             <CTableDataCell>
+              <v-btn
+                size="x-small"
+                :color="(person.documents_count ?? 0) > 0 ? 'primary' : 'secondary'"
+                variant="tonal"
+                class="text-nowrap"
+                title="제출 서류 관리"
+                @click="emit('open-docs', person)"
+              >
+                <v-icon icon="mdi-paperclip" size="x-small" class="mr-1" />
+                서류 {{ person.documents_count ?? 0 }}건
+              </v-btn>
+            </CTableDataCell>
+            <CTableDataCell>
               <CBadge :color="statusBadgeColor[person.status] || 'secondary'">
                 {{ person.status_display }}
               </CBadge>
@@ -204,7 +219,7 @@ const deletePerson = async (person: SalesPerson) => {
           </CTableRow>
 
           <CTableRow v-if="filteredPersons.length === 0">
-            <CTableDataCell colspan="9" class="py-5 text-center text-muted">
+            <CTableDataCell colspan="10" class="py-5 text-center text-muted">
               등록된 영업 인력이 없거나 검색 조건에 일치하는 결과가 없습니다.
             </CTableDataCell>
           </CTableRow>

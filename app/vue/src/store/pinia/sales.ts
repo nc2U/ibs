@@ -6,6 +6,7 @@ import type {
   SalesAgency,
   SalesTeam,
   SalesPerson,
+  SalesPersonDocument,
   CommissionPolicy,
   ContractSalesAgent,
   SettlementPeriod,
@@ -133,6 +134,46 @@ export const useSales = defineStore('sales', () => {
       .delete(`/sales-person/${id}/`)
       .then(() => {
         message('warning', '알림!', '영업 인력이 삭제되었습니다.')
+      })
+      .catch(err => errorHandle(err))
+
+  // ── 영업 인력 제출 증빙 서류 ──────────────────────────
+  const personDocumentList = ref<SalesPersonDocument[]>([])
+
+  const fetchPersonDocuments = (salesPersonId: number) => {
+    return api
+      .get(`/sales-person-document/?sales_person=${salesPersonId}`)
+      .then(res => (personDocumentList.value = res.data.results ?? res.data))
+      .catch(err => {
+        console.warn('fetchPersonDocuments failed:', err?.message || err)
+      })
+  }
+
+  const uploadPersonDocument = (formData: FormData) =>
+    api
+      .post('/sales-person-document/', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      .then(res => {
+        message('success', '알림!', '서류가 등록되었습니다.')
+        return res.data
+      })
+      .catch(err => errorHandle(err))
+
+  const verifyPersonDocument = (docId: number, isVerified: boolean) =>
+    api
+      .post(`/sales-person-document/${docId}/verify/`, { is_verified: isVerified })
+      .then(res => {
+        message('success', '알림!', res.data?.detail || '서류 검증 상태가 변경되었습니다.')
+        return res.data
+      })
+      .catch(err => errorHandle(err))
+
+  const deletePersonDocument = (docId: number) =>
+    api
+      .delete(`/sales-person-document/${docId}/`)
+      .then(() => {
+        message('warning', '알림!', '서류가 삭제되었습니다.')
       })
       .catch(err => errorHandle(err))
 
@@ -308,6 +349,12 @@ export const useSales = defineStore('sales', () => {
     createPerson,
     updatePerson,
     deletePerson,
+
+    personDocumentList,
+    fetchPersonDocuments,
+    uploadPersonDocument,
+    verifyPersonDocument,
+    deletePersonDocument,
 
     policyList,
     fetchPolicyList,

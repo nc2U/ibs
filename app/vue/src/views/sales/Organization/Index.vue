@@ -12,6 +12,7 @@ import PersonList from './components/PersonList.vue'
 import AgencyFormModal from './components/AgencyFormModal.vue'
 import TeamFormModal from './components/TeamFormModal.vue'
 import PersonFormModal from './components/PersonFormModal.vue'
+import PersonDocumentModal from './components/PersonDocumentModal.vue'
 
 const projStore = useProject()
 const project = computed(() => (projStore.project as Project)?.pk)
@@ -26,6 +27,7 @@ const selectedTeamId = ref<number | null>(null)
 const agencyModalRef = ref()
 const teamModalRef = ref()
 const personModalRef = ref()
+const docModalRef = ref()
 
 const loadData = async (projId: number) => {
   await Promise.all([
@@ -79,6 +81,7 @@ const openEditTeam = (team: SalesTeam) => teamModalRef.value?.open(team)
 
 const openAddPerson = () => personModalRef.value?.open(undefined, selectedTeamId.value ?? undefined)
 const openEditPerson = (person: SalesPerson) => personModalRef.value?.open(person)
+const openDocModal = (person: SalesPerson) => docModalRef.value?.open(person)
 
 const onDataChanged = async () => {
   if (project.value) {
@@ -129,6 +132,7 @@ const onDataChanged = async () => {
           :selected-team-id="selectedTeamId"
           @add-person="openAddPerson"
           @edit-person="openEditPerson"
+          @open-docs="openDocModal"
         />
       </CCol>
     </CRow>
@@ -150,6 +154,11 @@ const onDataChanged = async () => {
       ref="personModalRef"
       :default-team-id="selectedTeamId ?? undefined"
       @saved="onDataChanged"
+      @open-docs="openDocModal"
+    />
+    <PersonDocumentModal
+      ref="docModalRef"
+      @updated="onDataChanged"
     />
   </ContentBody>
 </template>

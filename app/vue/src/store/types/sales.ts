@@ -28,6 +28,28 @@ export interface SalesTeam {
 export type SalesDuty = '1' | '2' | '3' | '4' | '5' // 1:상담사, 2:팀장, 3:본부장, 4:총괄본부장, 5:지원/기타
 export type SalesPersonStatus = '1' | '2' | '3' // 1:재직, 2:휴직, 3:해촉
 export type TaxType = '1' | '2' | '3' | '4' // 1:3.3%사업소득, 2:근로소득, 3:사업자, 4:기타
+export type SalesDocType = '1' | '2' | '3' | '4' | '5' | '9' // 1:등본, 2:통장, 3:신분증, 4:위촉계약서, 5:각종서약서, 9:기타
+
+export interface SalesPersonDocument {
+  id: number
+  sales_person: number
+  sales_person_name?: string
+  doc_type: SalesDocType
+  doc_type_display?: string
+  title: string
+  file: string
+  file_name: string
+  file_type: string
+  file_size: number | null
+  is_verified: boolean
+  verified_at: string | null
+  verified_by: number | null
+  verified_by_name?: string | null
+  uploader: number | null
+  uploader_name?: string | null
+  created_at: string
+  updated_at: string
+}
 
 export interface SalesPerson {
   id: number
@@ -50,6 +72,8 @@ export interface SalesPerson {
   join_date: string | null
   quit_date: string | null
   notes: string
+  documents_count?: number
+  documents?: SalesPersonDocument[]
   created_at: string
   updated_at: string
 }
