@@ -277,7 +277,7 @@ const onSaved = async () => {
                     v-if="item.mapping"
                     size="x-small"
                     variant="tonal"
-                    color="primary"
+                    color="success"
                     @click="openAssignModal(item.mapping, item.contractId)"
                   >
                     수정
@@ -285,7 +285,8 @@ const onSaved = async () => {
                   <v-btn
                     v-else
                     size="x-small"
-                    color="success"
+                    variant="tonal"
+                    color="primary"
                     @click="openAssignModal(undefined, item.contractId)"
                   >
                     배정하기

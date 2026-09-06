@@ -148,14 +148,14 @@ const onPeriodSaved = async () => {
 
           <!-- 우측: 액션 버튼 그룹 -->
           <div class="d-flex align-items-center gap-2">
-            <v-btn color="secondary" size="small" variant="tonal" @click="openCreatePeriod">
+            <v-btn color="primary" size="small" @click="openCreatePeriod">
               <v-icon icon="mdi-plus" size="small" class="mr-1" />
               신규 회차 생성
             </v-btn>
 
             <v-btn
               v-if="selectedPeriod"
-              color="primary"
+              color="info"
               size="small"
               @click="runGeneratePayouts"
             >

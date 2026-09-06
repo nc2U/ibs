@@ -279,7 +279,7 @@ const onSaved = async () => {
                     icon="mdi-pencil"
                     size="x-small"
                     variant="text"
-                    color="info"
+                    color="success"
                     title="수정"
                     @click="openEditPolicy(policy)"
                   />

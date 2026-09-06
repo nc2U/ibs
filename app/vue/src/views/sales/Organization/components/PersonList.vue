@@ -188,7 +188,7 @@ const deletePerson = async (person: SalesPerson) => {
                 icon="mdi-pencil"
                 size="x-small"
                 variant="text"
-                color="info"
+                color="success"
                 title="수정"
                 @click="emit('edit-person', person)"
               />

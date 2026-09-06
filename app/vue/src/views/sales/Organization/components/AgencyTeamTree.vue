@@ -100,7 +100,7 @@ const deleteTeam = async (team: SalesTeam) => {
             {{ agency.name }}
           </div>
           <div>
-            <v-btn icon="mdi-pencil" size="x-small" variant="text" color="secondary" @click.stop="emit('edit-agency', agency)" />
+            <v-btn icon="mdi-pencil" size="x-small" variant="text" color="success" @click.stop="emit('edit-agency', agency)" />
             <v-btn icon="mdi-delete" size="x-small" variant="text" color="danger" @click.stop="deleteAgency(agency)" />
             <v-btn icon="mdi-plus-box" size="x-small" variant="text" color="primary" title="팀 추가" @click.stop="emit('add-team', agency.id)" />
           </div>
@@ -128,7 +128,7 @@ const deleteTeam = async (team: SalesTeam) => {
                 icon="mdi-pencil"
                 size="x-small"
                 variant="text"
-                :color="selectedTeamId === team.id ? 'white' : 'secondary'"
+                :color="selectedTeamId === team.id ? 'white' : 'success'"
                 @click.stop="emit('edit-team', team)"
               />
               <v-btn
