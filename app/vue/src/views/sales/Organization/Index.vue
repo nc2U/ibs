@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { ref, computed, watch, onMounted } from 'vue'
-import { navMenu, pageTitle } from '@/views/sales/_menu/headermixin'
+import { pageTitle, useSalesNavMenu } from '@/views/sales/_menu/headermixin'
 import { useProject } from '@/store/pinia/project'
 import { useSales } from '@/store/pinia/sales'
 import type { Project } from '@/store/types/project'
@@ -16,6 +16,7 @@ import PersonDocumentModal from './components/PersonDocumentModal.vue'
 
 const projStore = useProject()
 const project = computed(() => (projStore.project as Project)?.pk)
+const navMenu = useSalesNavMenu(project)
 
 const salesStore = useSales()
 

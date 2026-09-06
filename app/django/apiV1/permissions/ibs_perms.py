@@ -214,11 +214,15 @@ class IbsModulePermission(ProjectPermission):
         if not required_perm:
             return True
 
-        # 5. list 또는 단일 객체 액션 / 안전 메서드 + project 미지정 → has_object_permission 또는 Row-Level Security 에서 필터링 및 검증
+        # 5. list 또는 단일 객체 액션(detail=True 포함) / 안전 메서드 + project 미지정 → has_object_permission 또는 Row-Level Security 에서 필터링 및 검증
         action = getattr(view, 'action', None)
         if not project_pk:
-            if action in ('list', 'retrieve', 'update', 'partial_update',
-                          'destroy') or request.method in permissions.SAFE_METHODS:
+            if (
+                getattr(view, 'detail', False)
+                or 'pk' in getattr(view, 'kwargs', {})
+                or action in ('list', 'retrieve', 'update', 'partial_update', 'destroy')
+                or request.method in permissions.SAFE_METHODS
+            ):
                 return True
             return False
 
@@ -263,6 +267,40 @@ class IbsModulePermission(ProjectPermission):
             ut = getattr(obj, 'unit_type', None)
             if ut is not None:
                 project_pk = getattr(ut, 'project_id', None)
+
+        # sales 모델 역추적 (agency, team, sales_person, period, payout)
+        if project_pk is None and hasattr(obj, 'agency'):
+            agency = getattr(obj, 'agency', None)
+            if agency is not None:
+                project_pk = getattr(agency, 'project_id', None)
+
+        if project_pk is None and hasattr(obj, 'team'):
+            team = getattr(obj, 'team', None)
+            if team is not None:
+                agency = getattr(team, 'agency', None)
+                if agency is not None:
+                    project_pk = getattr(agency, 'project_id', None)
+
+        if project_pk is None and hasattr(obj, 'sales_person'):
+            sp = getattr(obj, 'sales_person', None)
+            if sp is not None:
+                team = getattr(sp, 'team', None)
+                if team is not None:
+                    agency = getattr(team, 'agency', None)
+                    if agency is not None:
+                        project_pk = getattr(agency, 'project_id', None)
+
+        if project_pk is None and hasattr(obj, 'period'):
+            period = getattr(obj, 'period', None)
+            if period is not None:
+                project_pk = getattr(period, 'project_id', None)
+
+        if project_pk is None and hasattr(obj, 'payout'):
+            payout = getattr(obj, 'payout', None)
+            if payout is not None:
+                period = getattr(payout, 'period', None)
+                if period is not None:
+                    project_pk = getattr(period, 'project_id', None)
 
         if project_pk is not None:
             project_pk = int(project_pk) if not isinstance(project_pk, int) else project_pk

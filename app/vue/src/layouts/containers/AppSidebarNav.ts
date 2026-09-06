@@ -78,6 +78,11 @@ const getAuthMap = (
     siteRead: boolean
     comManage: boolean
     authManage: boolean
+    salesRead: boolean
+    salesManage: boolean
+    salesPolicy: boolean
+    salesSettle: boolean
+    salesPayout: boolean
   },
 ) => ({
   isStaff,
@@ -93,6 +98,17 @@ const getAuthMap = (
   isSetMenu: permissions.comManage || permissions.authManage,
   isCompany: permissions.comManage,
   isAuthor: permissions.authManage,
+  isSales:
+    permissions.salesRead ||
+    permissions.salesManage ||
+    permissions.salesPolicy ||
+    permissions.salesSettle ||
+    permissions.salesPayout,
+  isSalesRead: permissions.salesRead,
+  isSalesManage: permissions.salesManage,
+  isSalesPolicy: permissions.salesPolicy,
+  isSalesSettle: permissions.salesSettle,
+  isSalesPayout: permissions.salesPayout,
 })
 
 const AppSidebarNav = defineComponent({
@@ -141,6 +157,11 @@ const AppSidebarNav = defineComponent({
       comManage:
         isStaff.value && (canGlobal(PERM.PROJECT_CREATE) || canGlobal(PERM.PROJECT_UPDATE)),
       authManage: isStaff.value && canGlobal(PERM.PROJECT_MEMBER),
+      salesRead: canGlobal(PERM.SALES_READ),
+      salesManage: canGlobal(PERM.SALES_MANAGE),
+      salesPolicy: canGlobal(PERM.SALES_POLICY),
+      salesSettle: canGlobal(PERM.SALES_SETTLE),
+      salesPayout: canGlobal(PERM.SALES_PAYOUT),
     }))
 
     const predicates = computed(() => {

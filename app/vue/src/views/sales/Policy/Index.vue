@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { ref, computed, watch, onMounted } from 'vue'
-import { navMenu, pageTitle } from '@/views/sales/_menu/headermixin'
+import { pageTitle, useSalesNavMenu } from '@/views/sales/_menu/headermixin'
 import { useProject } from '@/store/pinia/project'
 import { useProjectData } from '@/store/pinia/project_data'
 import { useContract } from '@/store/pinia/contract'
@@ -8,12 +8,15 @@ import { useSales } from '@/store/pinia/sales'
 import type { Project } from '@/store/types/project'
 import type { CommissionPolicy } from '@/store/types/sales'
 import { TableSecondary } from '@/utils/cssMixins'
+import { usePerms } from '@/composables/usePerms'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import PolicyFormModal from './components/PolicyFormModal.vue'
 
+const { can, PERM } = usePerms()
 const projStore = useProject()
 const project = computed(() => (projStore.project as Project)?.pk)
+const navMenu = useSalesNavMenu(project)
 
 const pDataStore = useProjectData()
 const unitTypeList = computed(() => pDataStore.unitTypeList)
@@ -165,7 +168,12 @@ const onSaved = async () => {
             />
 
             <!-- 신규 등록 버튼 -->
-            <v-btn color="primary" size="small" @click="openAddPolicy">
+            <v-btn
+              v-if="can(PERM.SALES_POLICY)"
+              color="primary"
+              size="small"
+              @click="openAddPolicy"
+            >
               <v-icon icon="mdi-plus" size="small" class="mr-1" />
               신규 정책 등록
             </v-btn>
@@ -207,12 +215,14 @@ const onSaved = async () => {
                 <!-- 정책명 -->
                 <CTableDataCell class="text-left font-weight-bold">
                   <a
+                    v-if="can(PERM.SALES_POLICY)"
                     href="javascript:void(0);"
                     class="text-primary text-decoration-none"
                     @click="openEditPolicy(policy)"
                   >
                     {{ policy.name }}
                   </a>
+                  <span v-else>{{ policy.name }}</span>
                   <div class="small text-muted font-monospace">
                     적용일: {{ policy.start_date }} ~ {{ policy.end_date || '종료일 없음' }}
                   </div>
@@ -275,22 +285,25 @@ const onSaved = async () => {
 
                 <!-- 관리 버튼 -->
                 <CTableDataCell>
-                  <v-btn
-                    icon="mdi-pencil"
-                    size="x-small"
-                    variant="text"
-                    color="success"
-                    title="수정"
-                    @click="openEditPolicy(policy)"
-                  />
-                  <v-btn
-                    icon="mdi-delete"
-                    size="x-small"
-                    variant="text"
-                    color="danger"
-                    title="삭제"
-                    @click="deletePolicy(policy)"
-                  />
+                  <template v-if="can(PERM.SALES_POLICY)">
+                    <v-btn
+                      icon="mdi-pencil"
+                      size="x-small"
+                      variant="text"
+                      color="success"
+                      title="수정"
+                      @click="openEditPolicy(policy)"
+                    />
+                    <v-btn
+                      icon="mdi-delete"
+                      size="x-small"
+                      variant="text"
+                      color="danger"
+                      title="삭제"
+                      @click="deletePolicy(policy)"
+                    />
+                  </template>
+                  <span v-else class="text-muted">-</span>
                 </CTableDataCell>
               </CTableRow>
 

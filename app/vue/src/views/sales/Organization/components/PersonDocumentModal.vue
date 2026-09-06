@@ -1,12 +1,14 @@
 <script lang="ts" setup>
 import { ref, reactive, computed } from 'vue'
 import { useSales } from '@/store/pinia/sales'
+import { usePerms } from '@/composables/usePerms'
 import type { SalesPerson, SalesPersonDocument, SalesDocType } from '@/store/types/sales'
 import FormModal from '@/components/Modals/FormModal.vue'
 import { TableSecondary } from '@/utils/cssMixins'
 
 const emit = defineEmits(['updated'])
 
+const { can, PERM } = usePerms()
 const salesStore = useSales()
 const modalRef = ref()
 const fileInputRef = ref<HTMLInputElement | null>(null)
@@ -140,7 +142,7 @@ defineExpose({ open })
     <template #default>
       <CModalBody>
         <!-- 1. 신규 서류 첨부 영역 -->
-        <CCard class="mb-4 bg-light border">
+        <CCard v-if="can(PERM.SALES_MANAGE)" class="mb-4 bg-light border">
           <CCardHeader class="py-2 bg-transparent fw-bold d-flex align-items-center">
             <v-icon icon="mdi-cloud-upload-outline" size="small" class="mr-1 text-primary" />
             신규 서류 접수 및 업로드
@@ -280,6 +282,7 @@ defineExpose({ open })
                   />
                   <!-- 검증 토글 -->
                   <v-btn
+                    v-if="can(PERM.SALES_MANAGE)"
                     size="x-small"
                     :color="doc.is_verified ? 'secondary' : 'success'"
                     variant="tonal"
@@ -289,6 +292,7 @@ defineExpose({ open })
                   </v-btn>
                   <!-- 삭제 -->
                   <v-btn
+                    v-if="can(PERM.SALES_MANAGE)"
                     icon="mdi-delete"
                     size="x-small"
                     variant="text"

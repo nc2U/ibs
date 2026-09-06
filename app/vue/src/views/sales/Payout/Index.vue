@@ -1,18 +1,21 @@
 <script lang="ts" setup>
 import { ref, computed, watch, onMounted } from 'vue'
-import { navMenu, pageTitle } from '@/views/sales/_menu/headermixin'
+import { pageTitle, useSalesNavMenu } from '@/views/sales/_menu/headermixin'
 import { useProject } from '@/store/pinia/project'
 import { useSales } from '@/store/pinia/sales'
 import type { Project } from '@/store/types/project'
 import type { CommissionPayout } from '@/store/types/sales'
 import { TableSecondary } from '@/utils/cssMixins'
+import { usePerms } from '@/composables/usePerms'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import PayoutStatusSummary from './components/PayoutStatusSummary.vue'
 import PayoutDetailModal from '@/views/sales/Settlement/components/PayoutDetailModal.vue'
 
+const { can, PERM } = usePerms()
 const projStore = useProject()
 const project = computed(() => (projStore.project as Project)?.pk)
+const navMenu = useSalesNavMenu(project)
 
 const salesStore = useSales()
 const periodList = computed(() => salesStore.periodList)
@@ -329,38 +332,40 @@ const openPayoutDetail = (payout: CommissionPayout) => {
                 선택 {{ selectedPayoutIds.length }}명 ({{ selectedTotalAmount.toLocaleString() }}원)
               </CBadge>
 
-              <v-btn
-                size="small"
-                color="primary"
-                variant="flat"
-                :disabled="isBatchLoading"
-                @click="batchUpdateStatus('2', '지급승인')"
-              >
-                <v-icon icon="mdi-check" size="small" class="mr-1" />
-                선택 승인
-              </v-btn>
+              <template v-if="can(PERM.SALES_PAYOUT)">
+                <v-btn
+                  size="small"
+                  color="primary"
+                  variant="flat"
+                  :disabled="isBatchLoading"
+                  @click="batchUpdateStatus('2', '지급승인')"
+                >
+                  <v-icon icon="mdi-check" size="small" class="mr-1" />
+                  선택 승인
+                </v-btn>
 
-              <v-btn
-                size="small"
-                color="success"
-                variant="flat"
-                :disabled="isBatchLoading"
-                @click="batchUpdateStatus('3', '지급완료')"
-              >
-                <v-icon icon="mdi-cash-check" size="small" class="mr-1" />
-                선택 지급완료
-              </v-btn>
+                <v-btn
+                  size="small"
+                  color="success"
+                  variant="flat"
+                  :disabled="isBatchLoading"
+                  @click="batchUpdateStatus('3', '지급완료')"
+                >
+                  <v-icon icon="mdi-cash-check" size="small" class="mr-1" />
+                  선택 지급완료
+                </v-btn>
 
-              <v-btn
-                size="small"
-                color="warning"
-                variant="flat"
-                :disabled="isBatchLoading"
-                @click="batchUpdateStatus('4', '지급보류')"
-              >
-                <v-icon icon="mdi-pause-circle" size="small" class="mr-1" />
-                선택 지급보류
-              </v-btn>
+                <v-btn
+                  size="small"
+                  color="warning"
+                  variant="flat"
+                  :disabled="isBatchLoading"
+                  @click="batchUpdateStatus('4', '지급보류')"
+                >
+                  <v-icon icon="mdi-pause-circle" size="small" class="mr-1" />
+                  선택 지급보류
+                </v-btn>
+              </template>
 
               <v-btn
                 size="small"
@@ -464,6 +469,7 @@ const openPayoutDetail = (payout: CommissionPayout) => {
                 <!-- 지급 상태 드롭다운 셀렉터 -->
                 <CTableDataCell>
                   <select
+                    v-if="can(PERM.SALES_PAYOUT)"
                     :value="payout.pay_status"
                     class="form-select form-select-sm"
                     :class="{
@@ -479,6 +485,12 @@ const openPayoutDetail = (payout: CommissionPayout) => {
                     <option value="3">지급완료</option>
                     <option value="4">지급보류</option>
                   </select>
+                  <CBadge
+                    v-else
+                    :color="payout.pay_status === '3' ? 'success' : (payout.pay_status === '2' ? 'primary' : 'secondary')"
+                  >
+                    {{ payout.pay_status_display }}
+                  </CBadge>
                   <div v-if="payout.pay_status === '3' && payout.paid_date" class="text-muted font-monospace" style="font-size: 0.72rem;">
                     {{ payout.paid_date }}
                   </div>

@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed, type PropType } from 'vue'
 import { useSales } from '@/store/pinia/sales'
+import { usePerms } from '@/composables/usePerms'
 import type { SalesAgency, SalesTeam } from '@/store/types/sales'
 
 const props = defineProps({
@@ -18,6 +19,7 @@ const emit = defineEmits([
   'edit-team',
 ])
 
+const { can, PERM } = usePerms()
 const salesStore = useSales()
 const agencyList = computed(() => salesStore.agencyList)
 const teamList = computed(() => salesStore.teamList)
@@ -60,7 +62,13 @@ const deleteTeam = async (team: SalesTeam) => {
         <v-icon icon="mdi-sitemap" size="small" class="mr-1 text-primary" />
         영업 조직 체계
       </div>
-      <v-btn color="primary" size="x-small" variant="tonal" @click="emit('add-agency')">
+      <v-btn
+        v-if="can(PERM.SALES_MANAGE)"
+        color="primary"
+        size="x-small"
+        variant="tonal"
+        @click="emit('add-agency')"
+      >
         <v-icon icon="mdi-plus" size="x-small" class="mr-1" />
         대행사 추가
       </v-btn>
@@ -83,7 +91,7 @@ const deleteTeam = async (team: SalesTeam) => {
       <!-- 대행사가 없는 경우 -->
       <div v-if="agencyList.length === 0" class="py-4 text-center text-muted small">
         등록된 분양 대행사가 없습니다.<br />
-        상단의 [대행사 추가]를 눌러 등록하세요.
+        <span v-if="can(PERM.SALES_MANAGE)">상단의 [대행사 추가]를 눌러 등록하세요.</span>
       </div>
 
       <!-- 대행사 및 팀 목록 -->
@@ -99,7 +107,7 @@ const deleteTeam = async (team: SalesTeam) => {
             </CBadge>
             {{ agency.name }}
           </div>
-          <div>
+          <div v-if="can(PERM.SALES_MANAGE)">
             <v-btn icon="mdi-pencil" size="x-small" variant="text" color="success" @click.stop="emit('edit-agency', agency)" />
             <v-btn icon="mdi-delete" size="x-small" variant="text" color="danger" @click.stop="deleteAgency(agency)" />
             <v-btn icon="mdi-plus-box" size="x-small" variant="text" color="primary" title="팀 추가" @click.stop="emit('add-team', agency.id)" />
@@ -124,20 +132,22 @@ const deleteTeam = async (team: SalesTeam) => {
               <CBadge color="light" text-color="dark" class="mr-1" shape="rounded-pill">
                 {{ team.members_count ?? 0 }}명
               </CBadge>
-              <v-btn
-                icon="mdi-pencil"
-                size="x-small"
-                variant="text"
-                :color="selectedTeamId === team.id ? 'white' : 'success'"
-                @click.stop="emit('edit-team', team)"
-              />
-              <v-btn
-                icon="mdi-close"
-                size="x-small"
-                variant="text"
-                :color="selectedTeamId === team.id ? 'white' : 'danger'"
-                @click.stop="deleteTeam(team)"
-              />
+              <template v-if="can(PERM.SALES_MANAGE)">
+                <v-btn
+                  icon="mdi-pencil"
+                  size="x-small"
+                  variant="text"
+                  :color="selectedTeamId === team.id ? 'white' : 'success'"
+                  @click.stop="emit('edit-team', team)"
+                />
+                <v-btn
+                  icon="mdi-close"
+                  size="x-small"
+                  variant="text"
+                  :color="selectedTeamId === team.id ? 'white' : 'danger'"
+                  @click.stop="deleteTeam(team)"
+                />
+              </template>
             </div>
           </div>
 

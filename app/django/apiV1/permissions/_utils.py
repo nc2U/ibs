@@ -41,6 +41,66 @@ def get_project_pk_from_request(request, view):
         except Exception:
             pass
 
+    # contract 기반 프로젝트 ID 역추적
+    contract_pk = (
+        (data.get('contract') if isinstance(data, dict) else None)
+        or query_params.get('contract')
+    )
+    if contract_pk is not None:
+        try:
+            from contract.models import Contract
+            return Contract.objects.filter(pk=int(contract_pk)).values_list('project_id', flat=True).first()
+        except Exception:
+            pass
+
+    # sales.SalesAgency 기반 프로젝트 ID 역추적
+    agency_pk = (
+        (data.get('agency') if isinstance(data, dict) else None)
+        or query_params.get('agency')
+    )
+    if agency_pk is not None:
+        try:
+            from sales.models import SalesAgency
+            return SalesAgency.objects.filter(pk=int(agency_pk)).values_list('project_id', flat=True).first()
+        except Exception:
+            pass
+
+    # sales.SalesTeam 기반 프로젝트 ID 역추적
+    team_pk = (
+        (data.get('team') if isinstance(data, dict) else None)
+        or query_params.get('team')
+    )
+    if team_pk is not None:
+        try:
+            from sales.models import SalesTeam
+            return SalesTeam.objects.filter(pk=int(team_pk)).values_list('agency__project_id', flat=True).first()
+        except Exception:
+            pass
+
+    # sales.SalesPerson 기반 프로젝트 ID 역추적
+    sp_pk = (
+        (data.get('sales_person') if isinstance(data, dict) else None)
+        or query_params.get('sales_person')
+    )
+    if sp_pk is not None:
+        try:
+            from sales.models import SalesPerson
+            return SalesPerson.objects.filter(pk=int(sp_pk)).values_list('team__agency__project_id', flat=True).first()
+        except Exception:
+            pass
+
+    # sales.SettlementPeriod 기반 프로젝트 ID 역추적
+    period_pk = (
+        (data.get('period') if isinstance(data, dict) else None)
+        or query_params.get('period')
+    )
+    if period_pk is not None:
+        try:
+            from sales.models import SettlementPeriod
+            return SettlementPeriod.objects.filter(pk=int(period_pk)).values_list('project_id', flat=True).first()
+        except Exception:
+            pass
+
     return None
 
 

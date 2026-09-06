@@ -7,6 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from apiV1.pagination import PageNumberPaginationCustomBasic, PageNumberPaginationOneHundred
+from apiV1.permissions.ibs_perms import IbsModulePermission
 from apiV1.serializers.sales import (
     SalesAgencySerializer, SalesTeamSerializer, SalesPersonSerializer,
     SalesPersonDocumentSerializer, CommissionPolicySerializer,
@@ -19,46 +20,101 @@ from sales.models import (
     ContractSalesAgent, SettlementPeriod, CommissionPayout,
     PayoutContractDetail, CommissionClawback
 )
+from work.models import IssueProject
+
+
+def get_accessible_project_ids(user):
+    return IssueProject.objects.filter(members__user=user).values_list('project__id', flat=True)
 
 
 class SalesAgencyViewSet(viewsets.ModelViewSet):
     """분양 대행사 ViewSet"""
     queryset = SalesAgency.objects.all()
     serializer_class = SalesAgencySerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IbsModulePermission)
     pagination_class = PageNumberPaginationOneHundred
     filterset_fields = ('project', 'is_direct_managed', 'is_active')
     search_fields = ('name', 'ceo_name', 'business_number')
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(project_id__in=get_accessible_project_ids(user))
+
+    @property
+    def required_permission(self):
+        if self.action in ('list', 'retrieve'):
+            return 'sales.read'
+        return 'sales.manage'
 
 
 class SalesTeamViewSet(viewsets.ModelViewSet):
     """영업 조직 (본부/팀) ViewSet"""
     queryset = SalesTeam.objects.all().select_related('agency', 'parent')
     serializer_class = SalesTeamSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IbsModulePermission)
     pagination_class = PageNumberPaginationOneHundred
     filterset_fields = ('agency', 'agency__project', 'parent', 'is_active')
     search_fields = ('name',)
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(agency__project_id__in=get_accessible_project_ids(user))
+
+    @property
+    def required_permission(self):
+        if self.action in ('list', 'retrieve'):
+            return 'sales.read'
+        return 'sales.manage'
 
 
 class SalesPersonViewSet(viewsets.ModelViewSet):
     """영업 인력 (분양상담사/팀장/본부장) ViewSet"""
     queryset = SalesPerson.objects.all().select_related('team__agency', 'user').prefetch_related('documents')
     serializer_class = SalesPersonSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IbsModulePermission)
     pagination_class = PageNumberPaginationOneHundred
     filterset_fields = ('team', 'team__agency__project', 'duty', 'status', 'tax_type')
     search_fields = ('name', 'phone', 'id_number', 'account_holder')
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(team__agency__project_id__in=get_accessible_project_ids(user))
+
+    @property
+    def required_permission(self):
+        if self.action in ('list', 'retrieve'):
+            return 'sales.read'
+        return 'sales.manage'
 
 
 class CommissionPolicyViewSet(viewsets.ModelViewSet):
     """수수료 정책 ViewSet"""
     queryset = CommissionPolicy.objects.all().select_related('project', 'order_group', 'unit_type')
     serializer_class = CommissionPolicySerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IbsModulePermission)
     pagination_class = PageNumberPaginationOneHundred
     filterset_fields = ('project', 'order_group', 'unit_type', 'pay_condition', 'is_active')
     search_fields = ('name',)
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(project_id__in=get_accessible_project_ids(user))
+
+    @property
+    def required_permission(self):
+        return 'sales.policy'
 
 
 class ContractSalesAgentViewSet(viewsets.ModelViewSet):
@@ -68,20 +124,46 @@ class ContractSalesAgentViewSet(viewsets.ModelViewSet):
         'sales_person', 'team', 'policy'
     )
     serializer_class = ContractSalesAgentSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IbsModulePermission)
     pagination_class = PageNumberPaginationCustomBasic
     filterset_fields = ('team__agency__project', 'contract__project', 'sales_person', 'team', 'contract')
     search_fields = ('contract__serial_number', 'sales_person__name', 'mgm_name')
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(contract__project_id__in=get_accessible_project_ids(user))
+
+    @property
+    def required_permission(self):
+        if self.action in ('list', 'retrieve'):
+            return 'sales.read'
+        return 'sales.manage'
 
 
 class SettlementPeriodViewSet(viewsets.ModelViewSet):
     """수수료 정산 회차 ViewSet"""
     queryset = SettlementPeriod.objects.all().select_related('project', 'created_by')
     serializer_class = SettlementPeriodSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IbsModulePermission)
     pagination_class = PageNumberPaginationCustomBasic
     filterset_fields = ('project', 'status')
     search_fields = ('title',)
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(project_id__in=get_accessible_project_ids(user))
+
+    @property
+    def required_permission(self):
+        if self.action in ('list', 'retrieve'):
+            return 'sales.read'
+        return 'sales.settle'
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
@@ -232,10 +314,25 @@ class CommissionPayoutViewSet(viewsets.ModelViewSet):
         'period__project', 'sales_person__team'
     ).prefetch_related('contract_details__contract')
     serializer_class = CommissionPayoutSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IbsModulePermission)
     pagination_class = PageNumberPaginationCustomBasic
     filterset_fields = ('period', 'period__project', 'sales_person', 'pay_status')
     search_fields = ('sales_person__name', 'account_holder')
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(period__project_id__in=get_accessible_project_ids(user))
+
+    @property
+    def required_permission(self):
+        if self.action == 'update_pay_status':
+            return 'sales.payout'
+        if self.action in ('list', 'retrieve'):
+            return 'sales.read'
+        return 'sales.settle'
 
     @action(detail=True, methods=['post'], url_path='update-pay-status')
     def update_pay_status(self, request, pk=None):
@@ -255,10 +352,23 @@ class CommissionClawbackViewSet(viewsets.ModelViewSet):
     """수수료 환수 관리 ViewSet"""
     queryset = CommissionClawback.objects.all().select_related('contract', 'sales_person')
     serializer_class = CommissionClawbackSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IbsModulePermission)
     pagination_class = PageNumberPaginationCustomBasic
     filterset_fields = ('contract', 'sales_person', 'is_settled')
     search_fields = ('sales_person__name', 'contract__serial_number')
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(contract__project_id__in=get_accessible_project_ids(user))
+
+    @property
+    def required_permission(self):
+        if self.action in ('list', 'retrieve'):
+            return 'sales.read'
+        return 'sales.settle'
 
 
 class SalesPersonDocumentViewSet(viewsets.ModelViewSet):
@@ -267,13 +377,26 @@ class SalesPersonDocumentViewSet(viewsets.ModelViewSet):
         'sales_person__team__agency__project', 'verified_by', 'uploader'
     )
     serializer_class = SalesPersonDocumentSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IbsModulePermission)
     pagination_class = PageNumberPaginationCustomBasic
     filterset_fields = (
         'sales_person', 'sales_person__team__agency__project',
         'doc_type', 'is_verified'
     )
     search_fields = ('title', 'file_name', 'sales_person__name')
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        if user.is_superuser or getattr(user, 'work_manager', False):
+            return qs
+        return qs.filter(sales_person__team__agency__project_id__in=get_accessible_project_ids(user))
+
+    @property
+    def required_permission(self):
+        if self.action in ('list', 'retrieve'):
+            return 'sales.read'
+        return 'sales.manage'
 
     def perform_create(self, serializer):
         serializer.save(uploader=self.request.user)

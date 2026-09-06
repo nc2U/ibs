@@ -1,18 +1,21 @@
 <script lang="ts" setup>
 import { ref, computed, watch, onMounted } from 'vue'
-import { navMenu, pageTitle } from '@/views/sales/_menu/headermixin'
+import { pageTitle, useSalesNavMenu } from '@/views/sales/_menu/headermixin'
 import { useProject } from '@/store/pinia/project'
 import { useSales } from '@/store/pinia/sales'
 import type { Project } from '@/store/types/project'
 import type { CommissionPayout } from '@/store/types/sales'
 import { TableSecondary } from '@/utils/cssMixins'
+import { usePerms } from '@/composables/usePerms'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import PeriodFormModal from './components/PeriodFormModal.vue'
 import PayoutDetailModal from './components/PayoutDetailModal.vue'
 
+const { can, PERM } = usePerms()
 const projStore = useProject()
 const project = computed(() => (projStore.project as Project)?.pk)
+const navMenu = useSalesNavMenu(project)
 
 const salesStore = useSales()
 const periodList = computed(() => salesStore.periodList)
@@ -148,13 +151,18 @@ const onPeriodSaved = async () => {
 
           <!-- 우측: 액션 버튼 그룹 -->
           <div class="d-flex align-items-center gap-2">
-            <v-btn color="primary" size="small" @click="openCreatePeriod">
+            <v-btn
+              v-if="can(PERM.SALES_SETTLE)"
+              color="primary"
+              size="small"
+              @click="openCreatePeriod"
+            >
               <v-icon icon="mdi-plus" size="small" class="mr-1" />
               신규 회차 생성
             </v-btn>
 
             <v-btn
-              v-if="selectedPeriod"
+              v-if="selectedPeriod && can(PERM.SALES_SETTLE)"
               color="info"
               size="small"
               @click="runGeneratePayouts"
@@ -164,7 +172,7 @@ const onPeriodSaved = async () => {
             </v-btn>
 
             <v-btn
-              v-if="selectedPeriod && selectedPeriod.status === '1'"
+              v-if="selectedPeriod && selectedPeriod.status === '1' && can(PERM.SALES_SETTLE)"
               color="success"
               size="small"
               @click="runConfirmSettlement"

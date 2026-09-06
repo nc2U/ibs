@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { ref, computed, type PropType } from 'vue'
 import { useSales } from '@/store/pinia/sales'
+import { usePerms } from '@/composables/usePerms'
 import type { SalesPerson } from '@/store/types/sales'
 import { TableSecondary } from '@/utils/cssMixins'
 
@@ -12,6 +13,7 @@ const props = defineProps({
 
 const emit = defineEmits(['add-person', 'edit-person', 'open-docs'])
 
+const { can, PERM } = usePerms()
 const salesStore = useSales()
 const personList = computed(() => salesStore.personList)
 
@@ -109,7 +111,12 @@ const deletePerson = async (person: SalesPerson) => {
         />
 
         <!-- 등록 버튼 -->
-        <v-btn color="primary" size="small" @click="emit('add-person')">
+        <v-btn
+          v-if="can(PERM.SALES_MANAGE)"
+          color="primary"
+          size="small"
+          @click="emit('add-person')"
+        >
           <v-icon icon="mdi-account-plus" size="small" class="mr-1" />
           신규 인력 등록
         </v-btn>
@@ -199,22 +206,25 @@ const deletePerson = async (person: SalesPerson) => {
               </CBadge>
             </CTableDataCell>
             <CTableDataCell>
-              <v-btn
-                icon="mdi-pencil"
-                size="x-small"
-                variant="text"
-                color="success"
-                title="수정"
-                @click="emit('edit-person', person)"
-              />
-              <v-btn
-                icon="mdi-delete"
-                size="x-small"
-                variant="text"
-                color="danger"
-                title="삭제"
-                @click="deletePerson(person)"
-              />
+              <template v-if="can(PERM.SALES_MANAGE)">
+                <v-btn
+                  icon="mdi-pencil"
+                  size="x-small"
+                  variant="text"
+                  color="success"
+                  title="수정"
+                  @click="emit('edit-person', person)"
+                />
+                <v-btn
+                  icon="mdi-delete"
+                  size="x-small"
+                  variant="text"
+                  color="danger"
+                  title="삭제"
+                  @click="deletePerson(person)"
+                />
+              </template>
+              <span v-else class="text-muted">-</span>
             </CTableDataCell>
           </CTableRow>
 

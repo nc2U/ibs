@@ -10,7 +10,7 @@ from company.models import Company
 from contract.models import OrderGroup, Contract, Contractor
 from items.models import UnitType, KeyUnit, BuildingUnit, HouseUnit
 from project.models import Project
-from work.models.project import IssueProject
+from work.models.project import IssueProject, Role, Permission, Member
 
 from sales.models import (
     SalesAgency, SalesTeam, SalesPerson, SalesPersonDocument, CommissionPolicy,
@@ -307,6 +307,7 @@ class SalesAPITests(APITestCase):
             company=self.company,
             name='강남 센트럴타워',
             slug='gangnam-central',
+            type='2',
             creator=self.user
         )
         self.project = Project.objects.create(
@@ -319,6 +320,30 @@ class SalesAPITests(APITestCase):
             construction_start_date='2026-06-01',
             construction_period_months=24
         )
+
+        # 권한 및 역할 생성
+        perms = []
+        for code, name in [
+            ('sales.read', '분양 대행 조회'),
+            ('sales.manage', '분양 조직/인력 관리'),
+            ('sales.policy', '분양 수수료 정책'),
+            ('sales.settle', '분양 수수료 정산'),
+            ('sales.payout', '분양 수수료 지급'),
+        ]:
+            p, _ = Permission.objects.get_or_create(
+                code=code,
+                defaults={'name': name, 'module': 'sales', 'is_for_project': True}
+            )
+            perms.append(p)
+
+        self.sales_role = Role.objects.create(
+            name='분양총괄관리자', category='ibs_pr_manage', creator=self.user
+        )
+        self.sales_role.permissions.add(*perms)
+
+        # 멤버 배정
+        member = Member.objects.create(user=self.user, project=self.issue_project)
+        member.roles.add(self.sales_role)
         self.order_group = OrderGroup.objects.create(
             project=self.project,
             order_number=1,
@@ -748,4 +773,167 @@ class SalesAPITests(APITestCase):
         self.assertEqual(res_person_after_del.status_code, http_status.HTTP_200_OK)
         self.assertEqual(res_person_after_del.data['documents_count'], 0)
         self.assertEqual(len(res_person_after_del.data['documents']), 0)
+
+
+class SalesPermissionSecurityTests(APITestCase):
+    """분양 대행 (sales) 권한 체계 및 Row-Level Security 격리 검증"""
+
+    def setUp(self):
+        # 1. 관리자, 회사 및 프로젝트 2개 생성
+        self.admin_user = User.objects.create_superuser(
+            username='admin_sales', email='admin_sales@test.com', password='password123'
+        )
+        self.company = Company.objects.create(name='㈜한국개발')
+        self.ip_a = IssueProject.objects.create(
+            company=self.company, name='프로젝트A', slug='project-a', type='2', creator=self.admin_user
+        )
+        self.project_a = Project.objects.create(
+            issue_project=self.ip_a, name='프로젝트A', order=1, kind='2',
+            start_year='2026', monthly_aggr_start_date='2026-01-01',
+            construction_start_date='2026-06-01', construction_period_months=24
+        )
+
+        self.ip_b = IssueProject.objects.create(
+            company=self.company, name='프로젝트B', slug='project-b', type='2', creator=self.admin_user
+        )
+        self.project_b = Project.objects.create(
+            issue_project=self.ip_b, name='프로젝트B', order=2, kind='2',
+            start_year='2026', monthly_aggr_start_date='2026-01-01',
+            construction_start_date='2026-06-01', construction_period_months=24
+        )
+
+        # 2. 권한 객체 조회/생성
+        self.perm_read, _ = Permission.objects.get_or_create(
+            code='sales.read', defaults={'name': '분양 대행 조회', 'module': 'sales', 'is_for_project': True}
+        )
+        self.perm_manage, _ = Permission.objects.get_or_create(
+            code='sales.manage', defaults={'name': '분양 조직/인력 관리', 'module': 'sales', 'is_for_project': True}
+        )
+        self.perm_policy, _ = Permission.objects.get_or_create(
+            code='sales.policy', defaults={'name': '분양 수수료 정책', 'module': 'sales', 'is_for_project': True}
+        )
+        self.perm_settle, _ = Permission.objects.get_or_create(
+            code='sales.settle', defaults={'name': '분양 수수료 정산', 'module': 'sales', 'is_for_project': True}
+        )
+        self.perm_payout, _ = Permission.objects.get_or_create(
+            code='sales.payout', defaults={'name': '분양 수수료 지급', 'module': 'sales', 'is_for_project': True}
+        )
+
+        # 3. 역할 정의
+        # 3-1. 읽기 전용 역할
+        self.role_readonly = Role.objects.create(name='영업조회자', category='ibs_pr_manage', creator=self.admin_user)
+        self.role_readonly.permissions.add(self.perm_read)
+
+        # 3-2. 조직 관리자 역할
+        self.role_manager = Role.objects.create(name='영업관리자', category='ibs_pr_manage', creator=self.admin_user)
+        self.role_manager.permissions.add(self.perm_read, self.perm_manage)
+
+        # 3-3. 정산 관리자 역할
+        self.role_settler = Role.objects.create(name='정산관리자', category='ibs_pr_manage', creator=self.admin_user)
+        self.role_settler.permissions.add(self.perm_read, self.perm_settle)
+
+        # 4. 사용자 생성 및 프로젝트A 멤버 배정
+        self.user_readonly = User.objects.create_user(
+            username='user_ro', email='ro@test.com', password='password123'
+        )
+        mem_ro = Member.objects.create(user=self.user_readonly, project=self.ip_a)
+        mem_ro.roles.add(self.role_readonly)
+
+        self.user_manager = User.objects.create_user(
+            username='user_mgr', email='mgr@test.com', password='password123'
+        )
+        mem_mgr = Member.objects.create(user=self.user_manager, project=self.ip_a)
+        mem_mgr.roles.add(self.role_manager)
+
+        self.user_settler = User.objects.create_user(
+            username='user_settle', email='settle@test.com', password='password123'
+        )
+        mem_settle = Member.objects.create(user=self.user_settler, project=self.ip_a)
+        mem_settle.roles.add(self.role_settler)
+
+        # 외부 사용자 (프로젝트B 소속)
+        self.user_outsider = User.objects.create_user(
+            username='user_outsider', email='out@test.com', password='password123'
+        )
+        mem_out = Member.objects.create(user=self.user_outsider, project=self.ip_b)
+        mem_out.roles.add(self.role_manager)
+
+        # 5. 기본 데이터 생성 (프로젝트A)
+        self.agency_a = SalesAgency.objects.create(project=self.project_a, name='A대행사')
+        self.team_a = SalesTeam.objects.create(agency=self.agency_a, name='A-1팀')
+        self.person_a = SalesPerson.objects.create(team=self.team_a, name='상담사A', phone='010-1111-2222')
+        self.period_a = SettlementPeriod.objects.create(
+            project=self.project_a, title='A-1회차', start_date='2026-09-01', end_date='2026-09-30'
+        )
+        self.payout_a = CommissionPayout.objects.create(
+            period=self.period_a, sales_person=self.person_a, commission_amount=1000000
+        )
+
+        # 기본 데이터 생성 (프로젝트B)
+        self.agency_b = SalesAgency.objects.create(project=self.project_b, name='B대행사')
+
+    def test_sales_readonly_user_permission_denials(self):
+        """sales.read만 가진 사용자는 대행사 등록, 정산 회차 생성 등이 차단(403)되어야 함"""
+        self.client.force_authenticate(user=self.user_readonly)
+
+        # 1. 대행사 조회는 허용 (200 OK)
+        res_get = self.client.get(f'/api/v1/sales-agency/?project={self.project_a.id}')
+        self.assertEqual(res_get.status_code, http_status.HTTP_200_OK)
+
+        # 2. 대행사 생성 차단 (403 Forbidden - sales.manage 필요)
+        res_post = self.client.post('/api/v1/sales-agency/', {
+            'project': self.project_a.id,
+            'name': '신규대행사'
+        })
+        self.assertEqual(res_post.status_code, http_status.HTTP_403_FORBIDDEN)
+
+        # 3. 정산 회차 생성 차단 (403 Forbidden - sales.settle 필요)
+        res_period = self.client.post('/api/v1/sales-settlement-period/', {
+            'project': self.project_a.id,
+            'title': '임의회차',
+            'start_date': '2026-10-01',
+            'end_date': '2026-10-31'
+        })
+        self.assertEqual(res_period.status_code, http_status.HTTP_403_FORBIDDEN)
+
+    def test_sales_manager_cannot_manage_settlement_or_payout(self):
+        """sales.manage만 가진 사용자는 정산 회차 생성 및 지급 상태 변경이 차단(403)되어야 함"""
+        self.client.force_authenticate(user=self.user_manager)
+
+        # 1. 조직(팀) 등록 허용 (201 Created)
+        res_team = self.client.post('/api/v1/sales-team/', {
+            'agency': self.agency_a.id,
+            'name': '신규팀'
+        })
+        self.assertEqual(res_team.status_code, http_status.HTTP_201_CREATED)
+
+        # 2. 정산 회차 생성 차단 (403 Forbidden - sales.settle 필요)
+        res_period = self.client.post('/api/v1/sales-settlement-period/', {
+            'project': self.project_a.id,
+            'title': '임의회차',
+            'start_date': '2026-10-01',
+            'end_date': '2026-10-31'
+        })
+        self.assertEqual(res_period.status_code, http_status.HTTP_403_FORBIDDEN)
+
+        # 3. 지급 상태 변경 차단 (403 Forbidden - sales.payout 필요)
+        res_payout = self.client.post(
+            f'/api/v1/sales-payout/{self.payout_a.id}/update-pay-status/',
+            {'pay_status': '2'}
+        )
+        self.assertEqual(res_payout.status_code, http_status.HTTP_403_FORBIDDEN)
+
+    def test_row_level_security_isolation_between_projects(self):
+        """프로젝트B 사용자는 프로젝트A의 대행사, 팀, 인력 목록을 조회할 수 없음"""
+        self.client.force_authenticate(user=self.user_outsider)
+
+        # 타 프로젝트(A)를 명시하여 조회 시 해당 프로젝트의 권한이 없으므로 403 Forbidden 차단
+        res = self.client.get(f'/api/v1/sales-agency/?project={self.project_a.id}')
+        self.assertEqual(res.status_code, http_status.HTTP_403_FORBIDDEN)
+
+        # 전체 대행사 목록 조회 시 본인 소속(프로젝트B) 대행사만 조회됨 (Row-Level Security)
+        res_all = self.client.get('/api/v1/sales-agency/')
+        self.assertEqual(res_all.status_code, http_status.HTTP_200_OK)
+        self.assertEqual(res_all.data['count'], 1)
+        self.assertEqual(res_all.data['results'][0]['id'], self.agency_b.id)
 

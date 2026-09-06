@@ -253,32 +253,37 @@ const sales = {
   name: '분양 대행 관리',
   to: '/sales',
   icon: 'cil-briefcase',
-  auth: 'isContManager',
+  auth: 'isSales',
   items: [
     {
       component: 'CNavItem',
       name: '계약 실적 관리',
       to: '/sales/performance',
+      auth: 'isSalesRead',
     },
     {
       component: 'CNavItem',
       name: '수수료 정산 관리',
       to: '/sales/settlement',
+      auth: 'isSalesSettle',
     },
     {
       component: 'CNavItem',
       name: '수수료 지급 관리',
       to: '/sales/payout',
+      auth: 'isSalesPayout',
     },
     {
       component: 'CNavItem',
       name: '영업 조직 관리',
       to: '/sales/organization',
+      auth: 'isSalesManage',
     },
     {
       component: 'CNavItem',
       name: '수수료 정책 관리',
       to: '/sales/policy',
+      auth: 'isSalesPolicy',
     },
   ],
 }

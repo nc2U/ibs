@@ -1,19 +1,22 @@
 <script lang="ts" setup>
 import { ref, computed, watch, onMounted } from 'vue'
-import { navMenu, pageTitle } from '@/views/sales/_menu/headermixin'
+import { pageTitle, useSalesNavMenu } from '@/views/sales/_menu/headermixin'
 import { useProject } from '@/store/pinia/project'
 import { useSales } from '@/store/pinia/sales'
 import { useContract } from '@/store/pinia/contract'
 import type { Project } from '@/store/types/project'
 import type { ContractSalesAgent } from '@/store/types/sales'
 import { TableSecondary } from '@/utils/cssMixins'
+import { usePerms } from '@/composables/usePerms'
 import ContentHeader from '@/layouts/ContentHeader/Index.vue'
 import ContentBody from '@/layouts/ContentBody/Index.vue'
 import PerformanceSummary from './components/PerformanceSummary.vue'
 import ContractAgentModal from './components/ContractAgentModal.vue'
 
+const { can, PERM } = usePerms()
 const projStore = useProject()
 const project = computed(() => (projStore.project as Project)?.pk)
+const navMenu = useSalesNavMenu(project)
 
 const salesStore = useSales()
 const contStore = useContract()
@@ -189,7 +192,12 @@ const onSaved = async () => {
             />
 
             <!-- 배정 버튼 -->
-            <v-btn color="primary" size="small" @click="openAssignModal()">
+            <v-btn
+              v-if="can(PERM.SALES_MANAGE)"
+              color="primary"
+              size="small"
+              @click="openAssignModal()"
+            >
               <v-icon icon="mdi-plus" size="small" class="mr-1" />
               담당자 배정
             </v-btn>
@@ -273,24 +281,27 @@ const onSaved = async () => {
 
                 <!-- 관리 액션 -->
                 <CTableDataCell>
-                  <v-btn
-                    v-if="item.mapping"
-                    size="x-small"
-                    variant="tonal"
-                    color="success"
-                    @click="openAssignModal(item.mapping, item.contractId)"
-                  >
-                    수정
-                  </v-btn>
-                  <v-btn
-                    v-else
-                    size="x-small"
-                    variant="tonal"
-                    color="primary"
-                    @click="openAssignModal(undefined, item.contractId)"
-                  >
-                    배정하기
-                  </v-btn>
+                  <template v-if="can(PERM.SALES_MANAGE)">
+                    <v-btn
+                      v-if="item.mapping"
+                      size="x-small"
+                      variant="tonal"
+                      color="success"
+                      @click="openAssignModal(item.mapping, item.contractId)"
+                    >
+                      수정
+                    </v-btn>
+                    <v-btn
+                      v-else
+                      size="x-small"
+                      variant="tonal"
+                      color="primary"
+                      @click="openAssignModal(undefined, item.contractId)"
+                    >
+                      배정하기
+                    </v-btn>
+                  </template>
+                  <span v-else class="text-muted">-</span>
                 </CTableDataCell>
               </CTableRow>
 
