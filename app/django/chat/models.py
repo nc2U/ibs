@@ -50,6 +50,13 @@ class ChatRoom(models.Model):
         verbose_name = '대화방'
         verbose_name_plural = '01. 대화방 목록'
         ordering = ['-updated']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['project'],
+                condition=models.Q(room_type='channel', project__isnull=False),
+                name='unique_project_channel'
+            )
+        ]
 
     def __str__(self):
         if self.room_type == 'channel':

@@ -39,22 +39,33 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
         my_project_ids = list(user.member_project_ids()) if hasattr(user, 'member_project_ids') else []
 
         # 내 활성 워크스페이스 중 메신저 공용 채널이 활성화된(chat_channel_enabled=True) 곳의 대화방 자동 생성
-        my_projects = IssueProject.objects.filter(
-            pk__in=my_project_ids,
-            status='1',
-            chat_channel_enabled=True
-        )
-
-        for pjt in my_projects:
-            ChatRoom.objects.get_or_create(
-                project=pjt,
-                room_type='channel',
-                defaults={
-                    'title': pjt.name,
-                    'description': f'{pjt.name} 공용 대화방',
-                    'created_by': user,
-                }
+        # (total_unread와 같은 빈번한 카운트 호출 시에는 자동 생성 스킵)
+        if getattr(self, 'action', None) != 'total_unread' and my_project_ids:
+            existing_channel_pjt_ids = set(
+                ChatRoom.objects.filter(
+                    project_id__in=my_project_ids,
+                    room_type='channel'
+                ).values_list('project_id', flat=True)
             )
+            missing_projects = IssueProject.objects.filter(
+                pk__in=my_project_ids,
+                status='1',
+                chat_channel_enabled=True
+            ).exclude(pk__in=existing_channel_pjt_ids)
+
+            for pjt in missing_projects:
+                try:
+                    ChatRoom.objects.get_or_create(
+                        project=pjt,
+                        room_type='channel',
+                        defaults={
+                            'title': pjt.name,
+                            'description': f'{pjt.name} 공용 대화방',
+                            'created_by': user,
+                        }
+                    )
+                except Exception:
+                    pass
 
         # 슈퍼유저도 1:1 DM 및 그룹방은 본인이 참여한 방만 조회되어야 하며(사생활 격리), 공용 채널만 전체 열람 가능
         if user.is_superuser:
