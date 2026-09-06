@@ -304,8 +304,8 @@ class Role(models.Model):
 class Permission(models.Model):
     MODULE_CHOICES = (('project', '워크스페이스'), ('meeting', '회의'), ('issue', '업무'),
                       ('news', '공지'), ('docs', '문서'), ('forum', '게시판'), ('calendar', '캘린더'),
-                      ('contract', '계약 관리'), ('payment', '수납 관리'), ('notice', '고지 관리'),
-                      ('ledger', '자금/원장 관리'), ('site', '사업 부지 관리'), ('hr_work', '인사 관리'))
+                      ('contract', '계약 관리'), ('sales', '분양 관리'), ('payment', '수납 관리'), ('notice', '고지 관리'),
+                      ('ledger', '회계 관리'), ('site', '부지 관리'), ('hr_work', '인사 관리'))
     module = models.CharField('모듈', max_length=10, choices=MODULE_CHOICES, db_index=True)
     is_for_workspace = models.BooleanField('워크스페이스 적용', default=True)
     is_for_hq = models.BooleanField('본사 관리 적용', default=False)
