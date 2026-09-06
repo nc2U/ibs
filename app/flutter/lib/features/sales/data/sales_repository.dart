@@ -164,15 +164,21 @@ class SalesRepository {
   }
 
   /// 6. 수수료 정책 목록 조회 (/api/v1/sales-policy/)
-  Future<List<CommissionPolicyModel>> fetchCommissionPolicies(int projectId) async {
+  Future<List<CommissionPolicyModel>> fetchCommissionPolicies(
+    int projectId, {
+    bool? isActive,
+  }) async {
     try {
+      final queryParams = <String, dynamic>{
+        'project': projectId,
+        'limit': 150,
+      };
+      if (isActive != null) {
+        queryParams['is_active'] = isActive;
+      }
       final response = await dio.get(
         '/api/v1/sales-policy/',
-        queryParameters: {
-          'project': projectId,
-          'is_active': true,
-          'limit': 100,
-        },
+        queryParameters: queryParams,
       );
 
       final data = response.data;
@@ -182,6 +188,44 @@ class SalesRepository {
 
       return results
           .map((item) => CommissionPolicyModel.fromJson(item as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// 6-1. 프로젝트 공급 차수 목록 조회 (/api/v1/order-group/)
+  Future<List<OrderGroupOption>> fetchOrderGroups(int projectId) async {
+    try {
+      final response = await dio.get(
+        '/api/v1/order-group/',
+        queryParameters: {'project': projectId, 'limit': 100},
+      );
+      final data = response.data;
+      final results = data is Map && data.containsKey('results')
+          ? data['results'] as List<dynamic>
+          : (data is List ? data : []);
+      return results
+          .map((item) => OrderGroupOption.fromJson(item as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// 6-2. 프로젝트 유니트 타입 목록 조회 (/api/v1/type/)
+  Future<List<UnitTypeOption>> fetchUnitTypes(int projectId) async {
+    try {
+      final response = await dio.get(
+        '/api/v1/type/',
+        queryParameters: {'project': projectId, 'limit': 100},
+      );
+      final data = response.data;
+      final results = data is Map && data.containsKey('results')
+          ? data['results'] as List<dynamic>
+          : (data is List ? data : []);
+      return results
+          .map((item) => UnitTypeOption.fromJson(item as Map<String, dynamic>))
           .toList();
     } catch (e) {
       return [];
@@ -259,5 +303,20 @@ class SalesRepository {
 
   Future<void> deleteSalesPerson(int id) async {
     await dio.delete('/api/v1/sales-person/$id/');
+  }
+
+  // ── 수수료 정책 CRUD ─────────────────────────────────────
+  Future<CommissionPolicyModel> createCommissionPolicy(Map<String, dynamic> payload) async {
+    final response = await dio.post('/api/v1/sales-policy/', data: payload);
+    return CommissionPolicyModel.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<CommissionPolicyModel> updateCommissionPolicy(int id, Map<String, dynamic> payload) async {
+    final response = await dio.patch('/api/v1/sales-policy/$id/', data: payload);
+    return CommissionPolicyModel.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<void> deleteCommissionPolicy(int id) async {
+    await dio.delete('/api/v1/sales-policy/$id/');
   }
 }

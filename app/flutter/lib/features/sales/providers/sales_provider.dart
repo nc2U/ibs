@@ -318,3 +318,106 @@ final filteredOrgPersonsProvider = Provider<List<SalesPersonModel>>((ref) {
     return true;
   }).toList();
 });
+
+// ═════════════════════════════════════════════════════════════════
+// 📋 수수료 정책 (Commission Policy) 관련 프로바이더
+// ═════════════════════════════════════════════════════════════════
+
+/// 공급 차수 목록 프로바이더 (/api/v1/order-group/)
+final orderGroupsProvider = FutureProvider<List<OrderGroupOption>>((ref) async {
+  final selectedProject = ref.watch(selectedRealEstateProjectProvider);
+  if (selectedProject == null) return [];
+
+  final repository = ref.watch(salesRepositoryProvider);
+  return repository.fetchOrderGroups(selectedProject.realProjectId);
+});
+
+/// 유니트 타입 목록 프로바이더 (/api/v1/type/)
+final unitTypesProvider = FutureProvider<List<UnitTypeOption>>((ref) async {
+  final selectedProject = ref.watch(selectedRealEstateProjectProvider);
+  if (selectedProject == null) return [];
+
+  final repository = ref.watch(salesRepositoryProvider);
+  return repository.fetchUnitTypes(selectedProject.realProjectId);
+});
+
+/// ── 수수료 정책 필터 프로바이더 ──────────────────────────────────
+final policyOrderGroupFilterProvider = StateProvider<int?>((ref) => null);
+final policyUnitTypeFilterProvider = StateProvider<int?>((ref) => null);
+final policyActiveFilterProvider = StateProvider<String>((ref) => 'true'); // 'true': 활성, '': 전체, 'false': 비활성
+final policySearchQueryProvider = StateProvider<String>((ref) => '');
+
+/// ── 수수료 정책 요약 지표 모델 & 프로바이더 ───────────────────────
+class SalesPolicySummary {
+  final int totalCount;
+  final int activeCount;
+  final int maxFee;
+  final int coveredTypesCount;
+
+  const SalesPolicySummary({
+    this.totalCount = 0,
+    this.activeCount = 0,
+    this.maxFee = 0,
+    this.coveredTypesCount = 0,
+  });
+}
+
+final salesPolicySummaryProvider = Provider<SalesPolicySummary>((ref) {
+  final policies = ref.watch(salesPoliciesProvider).valueOrNull ?? [];
+  final activePolicies = policies.where((p) => p.isActive).toList();
+
+  int maxFee = 0;
+  final coveredTypes = <int>{};
+  for (final p in policies) {
+    if (p.totalFee > maxFee) {
+      maxFee = p.totalFee;
+    }
+    if (p.unitType != null) {
+      coveredTypes.add(p.unitType!);
+    }
+  }
+
+  return SalesPolicySummary(
+    totalCount: policies.length,
+    activeCount: activePolicies.length,
+    maxFee: maxFee,
+    coveredTypesCount: coveredTypes.length,
+  );
+});
+
+/// ── 필터링된 수수료 정책 목록 프로바이더 ───────────────────────────
+final filteredSalesPoliciesProvider = Provider<List<CommissionPolicyModel>>((ref) {
+  final policies = ref.watch(salesPoliciesProvider).valueOrNull ?? [];
+  final orderGroupFilter = ref.watch(policyOrderGroupFilterProvider);
+  final unitTypeFilter = ref.watch(policyUnitTypeFilterProvider);
+  final activeFilter = ref.watch(policyActiveFilterProvider);
+  final query = ref.watch(policySearchQueryProvider).trim().toLowerCase();
+
+  return policies.where((p) {
+    // 1. 차수 필터
+    if (orderGroupFilter != null && p.orderGroup != orderGroupFilter) {
+      return false;
+    }
+
+    // 2. 유니트 타입 필터
+    if (unitTypeFilter != null && p.unitType != unitTypeFilter) {
+      return false;
+    }
+
+    // 3. 활성화 상태 필터
+    if (activeFilter.isNotEmpty) {
+      final reqActive = activeFilter == 'true';
+      if (p.isActive != reqActive) return false;
+    }
+
+    // 4. 검색어 필터
+    if (query.isNotEmpty) {
+      final nameMatch = p.name.toLowerCase().contains(query);
+      final typeMatch = p.unitTypeName?.toLowerCase().contains(query) ?? false;
+      final ogMatch = p.orderGroupName?.toLowerCase().contains(query) ?? false;
+      if (!nameMatch && !typeMatch && !ogMatch) return false;
+    }
+
+    return true;
+  }).toList();
+});

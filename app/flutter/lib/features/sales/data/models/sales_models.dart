@@ -224,7 +224,40 @@ class CommissionPolicyModel {
       payConditionDisplay: json['pay_condition_display'] as String?,
       startDate: json['start_date'] as String? ?? '',
       endDate: json['end_date'] as String?,
-      isActive: json['is_active'] as bool? ?? true,
+    );
+  }
+
+  int get totalFee => agentFee + leaderFee + directorFee + agencyFee;
+}
+
+/// 차수 (OrderGroup) 간략 옵션 모델
+class OrderGroupOption {
+  final int id;
+  final String name;
+
+  const OrderGroupOption({required this.id, required this.name});
+
+  factory OrderGroupOption.fromJson(Map<String, dynamic> json) {
+    return OrderGroupOption(
+      id: json['pk'] as int? ?? json['id'] as int? ?? 0,
+      name: json['name'] as String? ?? '',
+    );
+  }
+}
+
+/// 유니트 타입 (UnitType) 간략 옵션 모델
+class UnitTypeOption {
+  final int id;
+  final String name;
+  final String? color;
+
+  const UnitTypeOption({required this.id, required this.name, this.color});
+
+  factory UnitTypeOption.fromJson(Map<String, dynamic> json) {
+    return UnitTypeOption(
+      id: json['pk'] as int? ?? json['id'] as int? ?? 0,
+      name: json['name'] as String? ?? '',
+      color: json['color'] as String?,
     );
   }
 }
